@@ -2808,6 +2808,7 @@
         "npm:@preact/signals-react-transform@~0.8.1",
         "npm:@preact/signals-react@^3.9.0",
         "npm:@reduxjs/toolkit@^2.11.2",
+        "npm:@tanstack/react-query@^5.90.21",
         "npm:@testing-library/jest-dom@6",
         "npm:@testing-library/react@14",
         "npm:@testing-library/user-event@14",

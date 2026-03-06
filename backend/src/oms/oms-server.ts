@@ -1,15 +1,12 @@
 /**
  * Order Management System (OMS)
  *
- * Subscribes to "orders.new" from the message bus (published by the gateway
- * when the GUI submits an order). Validates, enriches, assigns a canonical
- * order ID, and publishes routing events before dispatching to algo services.
+ * Subscribes to: orders.new, orders.kill, orders.resume
+ * Publishes to:  orders.submitted, orders.routed, orders.rejected,
+ *                orders.cancelled, orders.resumed, orders.kill.audit, orders.resume.audit
  *
- * All inter-service communication is via Redpanda. The OMS no longer exposes
- * an HTTP order-submission endpoint; algos are notified via "orders.routed".
- *
- * HTTP surface (internal, not exposed to GUI):
- *   GET /health — liveness probe
+ * Kill/resume events are captured by observability for regulatory audit.
+ * HTTP surface: GET /health
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
@@ -91,26 +88,60 @@ const consumer = await createConsumer("oms-new-orders", ["orders.new"]).catch((e
   return null;
 });
 
+// Subscribe to kill/resume commands — published by gateway from GUI killswitch
+const killConsumer = await createConsumer("oms-kill-orders", ["orders.kill", "orders.resume"]).catch((err) => {
+  console.warn("[oms] Cannot subscribe to orders.kill/orders.resume:", err.message);
+  return null;
+});
+
 interface NewOrder {
-  // Fields from the GUI Trade object
   asset: string;
   side: "BUY" | "SELL";
   quantity: number;
   limitPrice: number;
-  expiresAt: number;       // seconds
+  expiresAt: number;
   strategy?: string;
   algoParams?: Record<string, unknown>;
-  // Optional client-generated ID from GUI (used for idempotency)
   clientOrderId?: string;
-  // Injected by gateway after authentication
   userId?: string;
   userRole?: string;
 }
 
+type KillScope = "all" | "user" | "algo" | "market" | "symbol";
+
+interface KillCommand {
+  scope: KillScope;
+  scopeValue?: string;
+  targetUserId?: string;
+  issuedBy: string;
+  issuedByRole: string;
+  ts: number;
+}
+
+interface ResumeCommand {
+  scope: KillScope;
+  scopeValue?: string;
+  targetUserId?: string;
+  resumeAt?: number;
+  issuedBy: string;
+  issuedByRole: string;
+  ts: number;
+}
+
+interface ActiveOrder {
+  orderId: string;
+  clientOrderId: string;
+  userId?: string;
+  asset: string;
+  strategy: string;
+  status: "queued" | "executing";
+}
+
+const activeOrders = new Map<string, ActiveOrder>();
+
 consumer?.onMessage(async (_topic, raw) => {
   const order = raw as NewOrder;
 
-  // ── Basic field validation ────────────────────────────────────────────────
   if (!order.asset || !order.side || !order.quantity) {
     console.warn("[oms] Malformed order — missing required fields");
     await producer?.send("orders.rejected", {
@@ -134,7 +165,6 @@ consumer?.onMessage(async (_topic, raw) => {
     return;
   }
 
-  // ── Role enforcement — admins cannot trade ────────────────────────────────
   if (order.userRole === "admin") {
     console.warn(`[oms] Order rejected — admin user ${order.userId} attempted to submit an order`);
     await producer?.send("orders.rejected", {
@@ -146,7 +176,6 @@ consumer?.onMessage(async (_topic, raw) => {
     return;
   }
 
-  // ── Trading limit enforcement ─────────────────────────────────────────────
   if (order.userId) {
     const limits = await getUserLimits(order.userId);
 
@@ -211,8 +240,122 @@ consumer?.onMessage(async (_topic, raw) => {
 
   console.log(`[oms] Accepted ${strategy} order ${orderId}: ${order.side} ${order.quantity} ${order.asset} (user=${order.userId ?? "unknown"})`);
 
+  if (order.clientOrderId) {
+    activeOrders.set(order.clientOrderId, {
+      orderId,
+      clientOrderId: order.clientOrderId,
+      userId: order.userId,
+      asset: order.asset,
+      strategy,
+      status: "queued",
+    });
+  }
+
   await producer?.send("orders.submitted", enriched).catch(() => {});
   await producer?.send("orders.routed", { ...enriched, routedAt: Date.now() }).catch(() => {});
+});
+
+killConsumer?.onMessage(async (topic, raw) => {
+  const ts = Date.now();
+
+  if (topic === "orders.kill") {
+    const cmd = raw as KillCommand;
+    const { scope, scopeValue, targetUserId, issuedBy, issuedByRole } = cmd;
+
+    if (issuedByRole !== "admin" && targetUserId && targetUserId !== issuedBy) {
+      console.warn(`[oms] Kill rejected — trader ${issuedBy} attempted to kill orders for user ${targetUserId}`);
+      return;
+    }
+
+    const isOwned = (order: ActiveOrder) => issuedByRole === "admin" || order.userId === issuedBy;
+
+    const toCancel: ActiveOrder[] = [];
+    for (const order of activeOrders.values()) {
+      if (scope === "all") {
+        if (isOwned(order)) toCancel.push(order);
+      } else if (scope === "user") {
+        const targetId = (issuedByRole === "admin" && targetUserId) ? targetUserId : issuedBy;
+        if (order.userId === targetId) toCancel.push(order);
+      } else if (scope === "algo") {
+        if (order.strategy === scopeValue && isOwned(order)) toCancel.push(order);
+      } else if (scope === "market") {
+        if ((!scopeValue || order.asset.startsWith(scopeValue) || scopeValue === "*") && isOwned(order)) toCancel.push(order);
+      } else if (scope === "symbol") {
+        if (order.asset === scopeValue && isOwned(order)) toCancel.push(order);
+      }
+    }
+
+    if (toCancel.length === 0) {
+      console.log(`[oms] Kill command from ${issuedBy}: no matching active orders (scope=${scope} scopeValue=${scopeValue ?? "—"})`);
+      return;
+    }
+
+    console.log(`[oms] Kill command from ${issuedBy} (role=${issuedByRole}): cancelling ${toCancel.length} orders (scope=${scope} scopeValue=${scopeValue ?? "—"})`);
+
+    for (const order of toCancel) {
+      activeOrders.delete(order.clientOrderId);
+      await producer?.send("orders.cancelled", {
+        orderId: order.orderId,
+        clientOrderId: order.clientOrderId,
+        userId: order.userId,
+        asset: order.asset,
+        strategy: order.strategy,
+        reason: `Killswitch: ${scope}${scopeValue ? `=${scopeValue}` : ""}`,
+        issuedBy,
+        issuedByRole,
+        ts,
+      }).catch(() => {});
+    }
+
+    await producer?.send("orders.kill.audit", {
+      scope,
+      scopeValue,
+      targetUserId,
+      issuedBy,
+      issuedByRole,
+      cancelledCount: toCancel.length,
+      cancelledIds: toCancel.map((o) => o.clientOrderId),
+      ts,
+    }).catch(() => {});
+  }
+
+  if (topic === "orders.resume") {
+    const cmd = raw as ResumeCommand;
+    const { scope, scopeValue, targetUserId, resumeAt, issuedBy, issuedByRole } = cmd;
+
+    const effectiveAt = resumeAt && resumeAt > ts ? resumeAt : ts;
+    const delayMs = effectiveAt - ts;
+
+    const doResume = async () => {
+      console.log(`[oms] Resume command from ${issuedBy} (role=${issuedByRole}): scope=${scope} scopeValue=${scopeValue ?? "—"}`);
+      await producer?.send("orders.resumed", {
+        scope,
+        scopeValue,
+        targetUserId,
+        issuedBy,
+        issuedByRole,
+        ts: Date.now(),
+      }).catch(() => {});
+
+      // Regulatory audit log
+      await producer?.send("orders.resume.audit", {
+        scope,
+        scopeValue,
+        targetUserId,
+        issuedBy,
+        issuedByRole,
+        resumeAt: effectiveAt,
+        ts: Date.now(),
+      }).catch(() => {});
+    };
+
+    if (delayMs > 0) {
+      console.log(`[oms] Resume scheduled in ${delayMs}ms (at ${new Date(effectiveAt).toISOString()})`);
+      setTimeout(() => { doResume().catch(() => {}); }, delayMs);
+    } else {
+      await doResume();
+    }
+  }
 });
 
 console.log(`[oms] Listening for orders.new on message bus`);

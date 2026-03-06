@@ -6,6 +6,7 @@ import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
 import type { ServiceHealth } from "../types.ts";
 import { ComponentPicker } from "./ComponentPicker.tsx";
 import { useDashboard } from "./DashboardLayout.tsx";
+import { KillSwitchButton } from "./KillSwitchButton.tsx";
 import { ServiceStatus } from "./ServiceStatus.tsx";
 import { TemplatePicker } from "./TemplatePicker.tsx";
 
@@ -121,6 +122,7 @@ export function AppHeader() {
             </svg>
             <span className="sr-only">View source on GitHub</span>
           </a>
+          <KillSwitchButton />
           <span className="tabular-nums text-gray-500">{time.value}</span>
           {user && (
             <div className="flex items-center gap-2 pl-3 border-l border-gray-800">

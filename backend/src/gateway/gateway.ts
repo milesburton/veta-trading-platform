@@ -1,21 +1,10 @@
 /**
- * API Gateway / BFF (Backend for Frontend)
+ * API Gateway / BFF — single entry point for the GUI.
  *
- * The GUI connects ONLY here. No other backend service is reachable from the browser.
+ * Subscribes: market.ticks, orders.*, orders.cancelled, orders.resumed, algo.heartbeat, news.feed
+ * Publishes:  orders.new, orders.kill, orders.resume, user.access
  *
- * Responsibilities:
- *   - WebSocket hub: push market ticks, order events, fills to every GUI client
- *   - Accepts order submission from GUI → publishes to orders.new on the bus
- *   - Proxies read-only HTTP requests (assets, candles, orders history)
- *   - Provides /health for service discovery
- *
- * Message bus topics subscribed:
- *   market.ticks  → forwarded to GUI as { event: "marketUpdate", data: ... }
- *   orders.*      → forwarded to GUI as { event: "orderEvent", topic, data: ... }
- *   algo.heartbeat→ forwarded to GUI as { event: "algoHeartbeat", data: ... }
- *
- * Topic published:
- *   orders.new    → OMS picks this up to route the order
+ * WS messages accepted from GUI: submitOrder, killOrders, resumeOrders
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
@@ -118,12 +107,14 @@ function isResponse(v: unknown): v is Response {
 
 /** Publish a user.access event to the bus (best-effort, never throws). */
 function publishAccessEvent(event: {
-  action: string;         // "ws_connect" | "http_request" | "auth_failure" | "order_submitted" | "order_rejected"
+  action: string;         // "ws_connect" | "http_request" | "auth_failure" | "order_submitted" | "order_rejected" | "orders_kill" | "orders_resume"
   userId?: string;
   userRole?: string;
   path?: string;
   reason?: string;        // for rejections/failures
   orderId?: string;
+  scope?: string;         // kill/resume scope: "all" | "user" | "algo" | "market" | "symbol"
+  scopeValue?: string;    // the specific value for the scope (e.g. algo name, symbol)
 }) {
   producer?.send("user.access", { ...event, ts: Date.now() }).catch(() => {});
 }
@@ -159,6 +150,8 @@ const ORDER_TOPICS = [
   "orders.child",
   "orders.filled",
   "orders.expired",
+  "orders.cancelled",
+  "orders.resumed",
 ];
 
 async function startConsumers(): Promise<void> {
@@ -275,11 +268,10 @@ serve(async (req: Request): Promise<Response> => {
     };
 
     socket.onmessage = async (event) => {
-      // GUI sends: { type: "submitOrder", payload: Trade }
       try {
         const msg = JSON.parse(event.data as string) as { type: string; payload: Record<string, unknown> };
+
         if (msg.type === "submitOrder") {
-          // Re-validate on every order submission (token may have expired)
           const currentToken = token;
           const currentAuth = currentToken ? await validateToken(currentToken) : null;
           if (!currentAuth) {
@@ -297,7 +289,6 @@ serve(async (req: Request): Promise<Response> => {
             socket.send(JSON.stringify({ event: "error", message: "Bus unavailable — order not submitted" }));
             return;
           }
-          // Attach user identity to the order so OMS can enforce limits
           const orderWithUser = {
             ...msg.payload,
             userId: currentAuth.user.id,
@@ -310,8 +301,65 @@ serve(async (req: Request): Promise<Response> => {
             userRole: currentAuth.user.role,
             orderId: (msg.payload.clientOrderId ?? msg.payload.orderId) as string | undefined,
           });
-          // Ack so GUI knows the order reached the bus
           socket.send(JSON.stringify({ event: "orderAck", data: orderWithUser }));
+        }
+
+        if (msg.type === "killOrders") {
+          const currentToken = token;
+          const currentAuth = currentToken ? await validateToken(currentToken) : null;
+          if (!currentAuth) {
+            publishAccessEvent({ action: "auth_failure", reason: "killOrders — unauthenticated" });
+            socket.send(JSON.stringify({ event: "error", data: { message: "Unauthenticated — please log in again" } }));
+            return;
+          }
+          if (!producer) {
+            socket.send(JSON.stringify({ event: "error", data: { message: "Bus unavailable" } }));
+            return;
+          }
+          const killCommand = {
+            ...msg.payload,
+            issuedBy: currentAuth.user.id,
+            issuedByRole: currentAuth.user.role,
+            ts: Date.now(),
+          };
+          await producer.send("orders.kill", killCommand);
+          publishAccessEvent({
+            action: "orders_kill",
+            userId: currentAuth.user.id,
+            userRole: currentAuth.user.role,
+            scope: msg.payload.scope as string | undefined,
+            scopeValue: msg.payload.scopeValue as string | undefined,
+          });
+          socket.send(JSON.stringify({ event: "killAck", data: killCommand }));
+        }
+
+        if (msg.type === "resumeOrders") {
+          const currentToken = token;
+          const currentAuth = currentToken ? await validateToken(currentToken) : null;
+          if (!currentAuth) {
+            publishAccessEvent({ action: "auth_failure", reason: "resumeOrders — unauthenticated" });
+            socket.send(JSON.stringify({ event: "error", data: { message: "Unauthenticated — please log in again" } }));
+            return;
+          }
+          if (!producer) {
+            socket.send(JSON.stringify({ event: "error", data: { message: "Bus unavailable" } }));
+            return;
+          }
+          const resumeCommand = {
+            ...msg.payload,
+            issuedBy: currentAuth.user.id,
+            issuedByRole: currentAuth.user.role,
+            ts: Date.now(),
+          };
+          await producer.send("orders.resume", resumeCommand);
+          publishAccessEvent({
+            action: "orders_resume",
+            userId: currentAuth.user.id,
+            userRole: currentAuth.user.role,
+            scope: msg.payload.scope as string | undefined,
+            scopeValue: msg.payload.scopeValue as string | undefined,
+          });
+          socket.send(JSON.stringify({ event: "resumeAck", data: resumeCommand }));
         }
       } catch (err) {
         socket.send(JSON.stringify({ event: "error", message: (err as Error).message }));

@@ -32,6 +32,7 @@ import {
   childAdded,
   fillReceived,
   orderAdded,
+  orderCancelled,
   orderPatched,
   setGatewayWs,
 } from "../ordersSlice.ts";
@@ -230,6 +231,12 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
         }
         break;
       }
+      case "orders.cancelled": {
+        if (data.clientOrderId) {
+          storeAPI.dispatch(orderCancelled({ clientOrderId: data.clientOrderId as string }));
+        }
+        break;
+      }
     }
     // Invalidate server-side grid query cache so blotters refetch with updated data
     queryClient.invalidateQueries({ queryKey: ["grid"] });
@@ -293,6 +300,12 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             (storeAPI.dispatch as any)(loadGridPrefs());
             break;
           }
+          case "killAck":
+            queryClient.invalidateQueries({ queryKey: ["grid"] });
+            break;
+          case "resumeAck":
+            queryClient.invalidateQueries({ queryKey: ["grid"] });
+            break;
           case "newsUpdate":
             storeAPI.dispatch(newsItemReceived(msg.data as NewsItem));
             break;

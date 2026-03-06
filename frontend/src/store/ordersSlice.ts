@@ -3,6 +3,21 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 import type { ChildOrder, MarketPrices, OrderRecord, Trade } from "../types.ts";
 
+export type KillScope = "all" | "user" | "algo" | "market" | "symbol";
+
+export interface KillOrdersPayload {
+  scope: KillScope;
+  scopeValue?: string;
+  targetUserId?: string;
+}
+
+export interface ResumeOrdersPayload {
+  scope: KillScope;
+  scopeValue?: string;
+  targetUserId?: string;
+  resumeAt?: number;
+}
+
 export interface FillReceivedPayload {
   clOrdId: string;
   filledQty: number;
@@ -57,6 +72,25 @@ export const submitOrderThunk = createAsyncThunk(
       );
     } else {
       console.warn("[orders] Gateway WebSocket not connected — order queued locally only");
+    }
+  }
+);
+
+export const killOrdersThunk = createAsyncThunk("orders/kill", (payload: KillOrdersPayload) => {
+  if (_gatewayWs?.readyState === WebSocket.OPEN) {
+    _gatewayWs.send(JSON.stringify({ type: "killOrders", payload }));
+  } else {
+    console.warn("[orders] Gateway WebSocket not connected — kill command not sent");
+  }
+});
+
+export const resumeOrdersThunk = createAsyncThunk(
+  "orders/resume",
+  (payload: ResumeOrdersPayload) => {
+    if (_gatewayWs?.readyState === WebSocket.OPEN) {
+      _gatewayWs.send(JSON.stringify({ type: "resumeOrders", payload }));
+    } else {
+      console.warn("[orders] Gateway WebSocket not connected — resume command not sent");
     }
   }
 );
@@ -119,8 +153,19 @@ export const ordersSlice = createSlice({
         order.status = "executing";
       }
     },
+    orderCancelled(state, action: PayloadAction<{ clientOrderId: string }>) {
+      const { clientOrderId } = action.payload;
+      const idx = state.orders.findIndex((o) => o.id === clientOrderId);
+      if (idx !== -1) state.orders[idx].status = "cancelled";
+    },
   },
 });
 
-export const { orderAdded, orderPatched, childAdded, limitOrdersChecked, fillReceived } =
-  ordersSlice.actions;
+export const {
+  orderAdded,
+  orderPatched,
+  childAdded,
+  limitOrdersChecked,
+  fillReceived,
+  orderCancelled,
+} = ordersSlice.actions;

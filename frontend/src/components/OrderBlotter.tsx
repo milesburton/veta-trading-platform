@@ -23,6 +23,7 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
   filled: "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50",
   expired: "bg-gray-800/50 text-gray-500 border border-gray-700/50",
   rejected: "bg-red-950/60 text-red-400 border border-red-800/50",
+  cancelled: "bg-orange-950/50 text-orange-400 border border-orange-800/50",
 };
 
 const LIQ_STYLES: Record<LiquidityFlag, string> = {
@@ -41,7 +42,7 @@ const BLOTTER_FIELDS: FieldDef[] = [
     key: "status",
     label: "Status",
     type: "enum",
-    options: ["queued", "executing", "filled", "expired", "rejected"],
+    options: ["queued", "executing", "filled", "expired", "rejected", "cancelled"],
   },
   { key: "filled", label: "Filled", type: "number" },
   { key: "userId", label: "Booked By", type: "string" },
