@@ -14,8 +14,10 @@ import { OrderBlotter } from "../OrderBlotter";
 // ── Mock useGridQuery ─────────────────────────────────────────────────────────
 
 const mockUseGridQuery = vi.fn();
+const mockContainerRef = { current: null };
 vi.mock("../../hooks/useGridQuery", () => ({
   useGridQuery: (...args: unknown[]) => mockUseGridQuery(...args),
+  useContainerLimit: () => ({ containerRef: mockContainerRef, limit: 50 }),
 }));
 
 function defaultQueryResult(rows: OrderRecord[] = [], total?: number) {

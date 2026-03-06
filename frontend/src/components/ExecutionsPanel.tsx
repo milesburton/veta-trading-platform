@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
-import { useGridQuery } from "../hooks/useGridQuery.ts";
+import { useContainerLimit, useGridQuery } from "../hooks/useGridQuery.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import type { FieldDef } from "../types/gridPrefs.ts";
 import type { LiquidityFlag, OrderRecord } from "../types.ts";
@@ -284,8 +284,8 @@ export function ExecutionsPanel() {
   const filterOrderId = incoming !== null ? channelIn.selectedOrderId : null;
   const filterAsset = incoming !== null && !filterOrderId ? channelIn.selectedAsset : null;
 
-  // Server-driven query: filter/sort applied by journal service
-  const { rows: serverRows, total, isLoading } = useGridQuery<OrderRecord>("executions");
+  const { containerRef, limit } = useContainerLimit();
+  const { rows: serverRows, total, isLoading } = useGridQuery<OrderRecord>("executions", 0, limit);
 
   // Channel context filter (selected order / asset) applied client-side after server query
   const tradeOrders = useMemo(
@@ -337,7 +337,7 @@ export function ExecutionsPanel() {
       {/* Filter bar */}
       <FilterBar gridId="executions" fields={EXEC_FIELDS} />
 
-      <div className="flex-1 overflow-auto">
+      <div ref={containerRef} className="flex-1 overflow-auto">
         {isLoading && tradeOrders.length === 0 ? (
           <div className="flex items-center justify-center h-24 text-gray-600">Loading…</div>
         ) : tradeOrders.length === 0 ? (

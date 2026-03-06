@@ -10,13 +10,16 @@
  */
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "../store/hooks.ts";
 import { EMPTY_EXPR_GROUP } from "../types/gridPrefs.ts";
 import type { GridId, GridQueryRequest, GridQueryResponse } from "../types/gridQuery.ts";
 
 const GATEWAY_URL = typeof window !== "undefined" ? `${window.location.origin}/api/gateway` : "";
 
-const DEFAULT_LIMIT = 200;
+const ROW_HEIGHT_PX = 30;
+const BUFFER_FACTOR = 1.2;
+const MIN_LIMIT = 20;
 
 export interface UseGridQueryResult<T> {
   rows: T[];
@@ -27,10 +30,35 @@ export interface UseGridQueryResult<T> {
   isFetching: boolean;
 }
 
+/**
+ * Returns a ref to attach to the scroll container and a limit derived from
+ * the container's current height — visible rows × BUFFER_FACTOR.
+ */
+export function useContainerLimit(): {
+  containerRef: React.RefObject<HTMLDivElement>;
+  limit: number;
+} {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [limit, setLimit] = useState(MIN_LIMIT);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(([entry]) => {
+      const height = entry.contentRect.height;
+      setLimit(Math.max(MIN_LIMIT, Math.ceil((height / ROW_HEIGHT_PX) * BUFFER_FACTOR)));
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return { containerRef, limit };
+}
+
 export function useGridQuery<T = Record<string, unknown>>(
   gridId: GridId,
   offset = 0,
-  limit = DEFAULT_LIMIT
+  limit = MIN_LIMIT
 ): UseGridQueryResult<T> {
   const { filterExpr, sortField, sortDir } = useAppSelector((s) => s.gridPrefs[gridId]);
 

@@ -21,7 +21,7 @@
 
 import type { Middleware } from "@reduxjs/toolkit";
 import { queryClient } from "../../lib/queryClient.ts";
-import type { AssetDef, OhlcCandle, OrderBookSnapshot, OrderRecord } from "../../types.ts";
+import type { AssetDef, OhlcCandle, OrderBookSnapshot } from "../../types.ts";
 import type { AuthUser, TradingLimits } from "../authSlice.ts";
 import { setUserWithLimits } from "../authSlice.ts";
 import { loadGridPrefs } from "../gridPrefsSlice.ts";
@@ -33,7 +33,6 @@ import { newsBatchReceived, newsItemReceived } from "../newsSlice.ts";
 import {
   childAdded,
   fillReceived,
-  orderAdded,
   orderCancelled,
   orderPatched,
   setGatewayWs,
@@ -389,19 +388,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     }
   }
 
-  async function hydrateOrders() {
-    try {
-      const res = await fetch(`${GATEWAY_URL}/orders?limit=200`);
-      if (!res.ok) return;
-      const orders: OrderRecord[] = await res.json();
-      for (const order of [...orders].reverse()) {
-        storeAPI.dispatch(orderAdded(order));
-      }
-    } catch {
-      // journal unavailable
-    }
-  }
-
   async function hydrateNewsForSymbol(symbol: string) {
     try {
       const NEWS_URL = import.meta.env.VITE_NEWS_AGGREGATOR_URL ?? `${_origin}/api/news-aggregator`;
@@ -416,7 +402,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
 
   if (!started) {
     started = true;
-    hydrateOrders();
     fetchAssetsAndSeedCandles().then(() => {
       // Hydrate news for first selected asset after assets are loaded
       const state = storeAPI.getState() as { ui: { selectedAsset: string | null } };

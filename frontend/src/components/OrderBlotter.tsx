@@ -2,7 +2,7 @@ import { useSignal } from "@preact/signals-react";
 import { Fragment, useEffect } from "react";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelOut } from "../hooks/useChannelOut.ts";
-import { useGridQuery } from "../hooks/useGridQuery.ts";
+import { useContainerLimit, useGridQuery } from "../hooks/useGridQuery.ts";
 import { saveGridPrefs, setSort } from "../store/gridPrefsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { orderPatched } from "../store/ordersSlice.ts";
@@ -136,7 +136,12 @@ function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
 
 export function OrderBlotter() {
   const { cfRules } = useAppSelector((s) => s.gridPrefs.orderBlotter);
-  const { rows: displayOrders, total, isLoading } = useGridQuery<OrderRecord>("orderBlotter");
+  const { containerRef, limit } = useContainerLimit();
+  const {
+    rows: displayOrders,
+    total,
+    isLoading,
+  } = useGridQuery<OrderRecord>("orderBlotter", 0, limit);
   const expanded = useSignal<Set<string>>(new Set());
   const selectedOrderId = useSignal<string | null>(null);
   const showCfEditor = useSignal(false);
@@ -305,7 +310,7 @@ export function OrderBlotter() {
       <FilterBar gridId="orderBlotter" fields={BLOTTER_FIELDS} openFieldSignal={filterField} />
 
       {/* Table */}
-      <div className="overflow-auto flex-1">
+      <div ref={containerRef} className="overflow-auto flex-1">
         {isLoading && displayOrders.length === 0 ? (
           <div className="flex items-center justify-center h-24 text-gray-600 text-xs">
             Loading…
