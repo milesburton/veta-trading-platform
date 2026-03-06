@@ -6,15 +6,17 @@ export interface WorkspacePrefs {
   layouts: Record<string, IJsonModel>;
 }
 
+let cachedOtherPrefs: Record<string, unknown> = {};
+
 export async function loadWorkspacePrefs(): Promise<WorkspacePrefs | null> {
   try {
     const res = await fetch("/api/gateway/preferences");
     if (!res.ok) return null;
     const blob = await res.json();
-    const workspaces = blob?.workspaces;
-    const layouts = blob?.layouts ?? {};
+    const { workspaces, layouts, ...rest } = blob ?? {};
+    cachedOtherPrefs = rest;
     if (!Array.isArray(workspaces) || workspaces.length === 0) return null;
-    return { workspaces, layouts };
+    return { workspaces, layouts: layouts ?? {} };
   } catch {
     return null;
   }
@@ -22,13 +24,14 @@ export async function loadWorkspacePrefs(): Promise<WorkspacePrefs | null> {
 
 export async function saveWorkspacePrefs(prefs: WorkspacePrefs): Promise<void> {
   try {
-    const existing = await fetch("/api/gateway/preferences")
-      .then((r) => (r.ok ? r.json() : {}))
-      .catch(() => ({}));
     await fetch("/api/gateway/preferences", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...existing, workspaces: prefs.workspaces, layouts: prefs.layouts }),
+      body: JSON.stringify({
+        ...cachedOtherPrefs,
+        workspaces: prefs.workspaces,
+        layouts: prefs.layouts,
+      }),
     });
   } catch {
     // fire-and-forget — silently ignore network errors
