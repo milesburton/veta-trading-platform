@@ -83,95 +83,87 @@ export function makeDefaultModel(): IJsonModel {
             },
           ],
         },
-        // ── Column 3: Orders cake (left) + Order Progress sidebar (right) ────
+        // ── Column 3: Orders cake — vertical stack, all on channel 1 ─────────
         // Blotter (ch1 out) → Child Orders / Algo / Decision Log (ch1 in)
-        // Order Progress pinned right, receiving ch1
         {
           type: "row",
-          weight: 60,
+          weight: 46,
           children: [
-            // Left: vertical cake stack
-            {
-              type: "row",
-              weight: 82,
-              children: [
-                {
-                  type: "tabset",
-                  weight: 28,
-                  children: [
-                    {
-                      type: "tab",
-                      id: "order-blotter",
-                      name: PANEL_TITLES["order-blotter"],
-                      component: "order-blotter",
-                      config: {
-                        panelType: "order-blotter",
-                        outgoing: 1,
-                      } satisfies TabChannelConfig,
-                    },
-                  ],
-                },
-                {
-                  type: "tabset",
-                  weight: 24,
-                  children: [
-                    {
-                      type: "tab",
-                      id: "child-orders",
-                      name: PANEL_TITLES["child-orders"],
-                      component: "child-orders",
-                      config: {
-                        panelType: "child-orders",
-                        incoming: 1,
-                        outgoing: 3,
-                      } satisfies TabChannelConfig,
-                    },
-                  ],
-                },
-                {
-                  type: "tabset",
-                  weight: 24,
-                  children: [
-                    {
-                      type: "tab",
-                      id: "algo-monitor",
-                      name: PANEL_TITLES["algo-monitor"],
-                      component: "algo-monitor",
-                      config: { panelType: "algo-monitor", incoming: 1 } satisfies TabChannelConfig,
-                    },
-                  ],
-                },
-                {
-                  type: "tabset",
-                  weight: 24,
-                  children: [
-                    {
-                      type: "tab",
-                      id: "decision-log",
-                      name: PANEL_TITLES["decision-log"],
-                      component: "decision-log",
-                      config: { panelType: "decision-log", incoming: 1 } satisfies TabChannelConfig,
-                    },
-                  ],
-                },
-              ],
-            },
-            // Right: Order Progress sidebar (full height)
             {
               type: "tabset",
-              weight: 18,
+              weight: 28,
               children: [
                 {
                   type: "tab",
-                  id: "order-progress",
-                  name: PANEL_TITLES["order-progress"],
-                  component: "order-progress",
+                  id: "order-blotter",
+                  name: PANEL_TITLES["order-blotter"],
+                  component: "order-blotter",
                   config: {
-                    panelType: "order-progress",
-                    incoming: 1,
+                    panelType: "order-blotter",
+                    outgoing: 1,
                   } satisfies TabChannelConfig,
                 },
               ],
+            },
+            {
+              type: "tabset",
+              weight: 24,
+              children: [
+                {
+                  type: "tab",
+                  id: "child-orders",
+                  name: PANEL_TITLES["child-orders"],
+                  component: "child-orders",
+                  config: {
+                    panelType: "child-orders",
+                    incoming: 1,
+                    outgoing: 3,
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 24,
+              children: [
+                {
+                  type: "tab",
+                  id: "algo-monitor",
+                  name: PANEL_TITLES["algo-monitor"],
+                  component: "algo-monitor",
+                  config: { panelType: "algo-monitor", incoming: 1 } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 24,
+              children: [
+                {
+                  type: "tab",
+                  id: "decision-log",
+                  name: PANEL_TITLES["decision-log"],
+                  component: "decision-log",
+                  config: { panelType: "decision-log", incoming: 1 } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        // ── Column 4: Order Progress sidebar (full height) ────────────────────
+        {
+          type: "tabset",
+          weight: 14,
+          children: [
+            {
+              type: "tab",
+              id: "order-progress",
+              name: PANEL_TITLES["order-progress"],
+              component: "order-progress",
+              config: {
+                panelType: "order-progress",
+                incoming: 1,
+              } satisfies TabChannelConfig,
             },
           ],
         },
