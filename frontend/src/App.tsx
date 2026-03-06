@@ -23,6 +23,47 @@ import { useAppDispatch, useAppSelector } from "./store/hooks.ts";
 import { store } from "./store/index.ts";
 import { reportError } from "./store/observabilitySlice.ts";
 
+// ── Global toast for save errors ───────────────────────────────────────────────
+
+function ToastHost() {
+  const [toasts, setToasts] = useState<{ id: number; message: string }[]>([]);
+
+  useEffect(() => {
+    let next = 0;
+    function onSaveError() {
+      const id = next++;
+      setToasts((prev) => [
+        ...prev,
+        { id, message: "Workspace save failed — check your connection." },
+      ]);
+      setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 6000);
+    }
+    window.addEventListener("workspace-save-error", onSaveError);
+    return () => window.removeEventListener("workspace-save-error", onSaveError);
+  }, []);
+
+  if (toasts.length === 0) return null;
+  return (
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className="flex items-center gap-3 bg-red-900 border border-red-700 text-red-200 text-xs px-4 py-2 rounded shadow-lg"
+        >
+          <span>{t.message}</span>
+          <button
+            type="button"
+            onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+            className="text-red-400 hover:text-red-200 leading-none"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolean }> {
   state = { crashed: false };
   componentDidCatch(error: Error) {
@@ -318,6 +359,7 @@ export default function App() {
       <AuthGate>
         <TradingApp />
       </AuthGate>
+      <ToastHost />
     </ErrorBoundary>
   );
 }

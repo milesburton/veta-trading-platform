@@ -24,7 +24,7 @@ export async function loadWorkspacePrefs(): Promise<WorkspacePrefs | null> {
 
 export async function saveWorkspacePrefs(prefs: WorkspacePrefs): Promise<void> {
   try {
-    await fetch("/api/gateway/preferences", {
+    const res = await fetch("/api/gateway/preferences", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       keepalive: true,
@@ -34,8 +34,19 @@ export async function saveWorkspacePrefs(prefs: WorkspacePrefs): Promise<void> {
         layouts: prefs.layouts,
       }),
     });
+    if (!res.ok) {
+      window.dispatchEvent(
+        new CustomEvent("workspace-save-error", {
+          detail: { status: res.status },
+        })
+      );
+    }
   } catch {
-    // fire-and-forget — silently ignore network errors
+    window.dispatchEvent(
+      new CustomEvent("workspace-save-error", {
+        detail: { status: 0 },
+      })
+    );
   }
 }
 
