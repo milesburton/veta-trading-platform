@@ -420,7 +420,7 @@ function reconstructOrders(): Record<string, unknown>[] {
 
     if (eventType === "orders.rejected" && !orderMap.has(orderId)) {
       orderMap.set(orderId, {
-        id: orderId,
+        id: (raw.clientOrderId as string | undefined) ?? orderId,
         submittedAt: ts,
         asset: raw.asset ?? raw.instrument ?? "",
         side: raw.side ?? "BUY",
@@ -437,7 +437,7 @@ function reconstructOrders(): Record<string, unknown>[] {
       });
     } else if (eventType === "orders.submitted") {
       orderMap.set(orderId, {
-        id: orderId,
+        id: (raw.clientOrderId as string | undefined) ?? orderId,
         submittedAt: ts,
         asset: raw.asset ?? raw.instrument ?? "",
         side: raw.side ?? "BUY",

@@ -150,6 +150,7 @@ const ORDER_TOPICS = [
   "orders.child",
   "orders.filled",
   "orders.expired",
+  "orders.rejected",
   "orders.cancelled",
   "orders.resumed",
 ];
