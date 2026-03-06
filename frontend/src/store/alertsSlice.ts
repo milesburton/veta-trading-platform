@@ -63,3 +63,13 @@ export const selectAlertCount = createSelector(
   selectActiveAlerts,
   (alerts) => alerts.filter((a) => a.severity !== "INFO").length
 );
+
+export const selectHighestSeverity = createSelector(
+  selectActiveAlerts,
+  (alerts): AlertSeverity | null => {
+    if (alerts.some((a) => a.severity === "CRITICAL")) return "CRITICAL";
+    if (alerts.some((a) => a.severity === "WARNING")) return "WARNING";
+    if (alerts.some((a) => a.severity === "INFO")) return "INFO";
+    return null;
+  }
+);

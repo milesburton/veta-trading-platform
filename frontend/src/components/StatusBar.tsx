@@ -1,6 +1,7 @@
 import { useSignal } from "@preact/signals-react";
 import { useEffect, useRef, useState } from "react";
-import { alertAdded, selectAlertCount, selectCriticalAlerts } from "../store/alertsSlice.ts";
+import type { AlertSeverity } from "../store/alertsSlice.ts";
+import { alertAdded, selectAlertCount, selectHighestSeverity } from "../store/alertsSlice.ts";
 import { clearUser } from "../store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
@@ -59,10 +60,9 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
   const dispatch = useAppDispatch();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const alertCount = useAppSelector(selectAlertCount);
-  const criticalAlerts = useAppSelector(selectCriticalAlerts);
+  const highestSeverity = useAppSelector(selectHighestSeverity);
   const prevServiceStates = useRef<Record<string, string>>({});
 
-  // Detect service state transitions and create alerts
   useEffect(() => {
     const prev = prevServiceStates.current;
     for (const svc of services) {
@@ -93,7 +93,12 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
     }
   }, [services, dispatch]);
 
-  const hasCritical = criticalAlerts.length > 0;
+  const SEVERITY_CLS: Record<AlertSeverity, string> = {
+    CRITICAL: "border-red-500 bg-red-600 text-white animate-pulse",
+    WARNING: "border-amber-500 bg-amber-600/80 text-white",
+    INFO: "border-gray-700 bg-gray-800/60 text-gray-400 hover:bg-gray-700/60 hover:border-gray-500 hover:text-gray-300",
+  };
+  const btnCls = highestSeverity ? SEVERITY_CLS[highestSeverity] : SEVERITY_CLS.INFO;
 
   return (
     <>
@@ -101,24 +106,12 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
         type="button"
         onClick={() => setDrawerOpen(true)}
         title="Alert Centre"
-        className="relative flex items-center justify-center w-7 h-7 text-gray-500 hover:text-gray-300 transition-colors"
+        className={`flex items-center gap-1.5 px-2 py-1 rounded border font-semibold text-[11px] tracking-wide transition-all ${btnCls}`}
       >
-        {/* Bell icon */}
-        <svg
-          aria-hidden="true"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 16 16"
-          fill="currentColor"
-          className="w-4 h-4"
-        >
-          <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2ZM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.921L8 1.918ZM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6a5 5 0 0 1 10 0c0 .88.32 4.2 1.22 6Z" />
-        </svg>
+        <span aria-hidden="true">🔔</span>
+        Alerts
         {alertCount > 0 && (
-          <span
-            className={`absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] rounded-full text-[9px] font-bold flex items-center justify-center px-0.5 ${
-              hasCritical ? "bg-red-500 text-white" : "bg-amber-500 text-gray-900"
-            }`}
-          >
+          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/20 text-[9px] font-bold leading-none">
             {alertCount > 99 ? "99+" : alertCount}
           </span>
         )}
