@@ -14,17 +14,34 @@ import {
   assertExists,
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
 
-const GATEWAY_URL = "http://localhost:5011";
-const MARKET_URL  = "http://localhost:5000";
-const JOURNAL_URL = "http://localhost:5009";
-const OMS_URL     = "http://localhost:5002";
-const LIMIT_URL   = "http://localhost:5003";
-const TWAP_URL    = "http://localhost:5004";
-const POV_URL     = "http://localhost:5005";
-const VWAP_URL    = "http://localhost:5006";
-const ARCHIVE_URL = "http://localhost:5012";
+const GATEWAY_URL   = "http://localhost:5011";
+const MARKET_URL    = "http://localhost:5000";
+const JOURNAL_URL   = "http://localhost:5009";
+const OMS_URL       = "http://localhost:5002";
+const LIMIT_URL     = "http://localhost:5003";
+const TWAP_URL      = "http://localhost:5004";
+const POV_URL       = "http://localhost:5005";
+const VWAP_URL      = "http://localhost:5006";
+const ARCHIVE_URL   = "http://localhost:5012";
+const USER_SVC_URL  = "http://localhost:5008";
 
 function t(ms = 5_000) { return AbortSignal.timeout(ms); }
+
+/** Log in as the given user and return the Set-Cookie header value. */
+async function loginAs(userId: string): Promise<string> {
+  const res = await fetch(`${USER_SVC_URL}/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId }),
+    signal: t(),
+  });
+  assertEquals(res.status, 200, `Login as ${userId} failed`);
+  await res.body?.cancel();
+  const cookie = res.headers.get("set-cookie") ?? "";
+  const match = cookie.match(/veta_user=([^;]+)/);
+  assert(match, `No veta_user cookie in login response for ${userId}`);
+  return `veta_user=${match[1]}`;
+}
 
 // ── OPTIONS preflight (CORS) ──────────────────────────────────────────────────
 
@@ -244,4 +261,97 @@ Deno.test("[grid/query] POST /grid/query direct to journal returns correct shape
   assertEquals(typeof body.evalMs, "number");
   assert(body.evalMs >= 0, "evalMs should be non-negative");
   assert(body.total >= 0, "total should be non-negative");
+});
+
+// ── Shared workspaces ─────────────────────────────────────────────────────────
+
+Deno.test("[shared-workspaces] GET /shared-workspaces without auth returns 401", async () => {
+  const res = await fetch(`${GATEWAY_URL}/shared-workspaces`, { signal: t() });
+  assertEquals(res.status, 401);
+  await res.body?.cancel();
+});
+
+Deno.test("[shared-workspaces] full lifecycle: POST → GET → DELETE", async () => {
+  const aliceCookie = await loginAs("alice");
+  const bobCookie   = await loginAs("bob");
+
+  // Alice publishes a workspace
+  const model = { global: {}, layout: { type: "row", children: [] } };
+  const postRes = await fetch(`${GATEWAY_URL}/shared-workspaces`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: aliceCookie },
+    body: JSON.stringify({ name: "Test Workspace", model }),
+    signal: t(),
+  });
+  assertEquals(postRes.status, 200);
+  const { id } = await postRes.json() as { id: string };
+  assertExists(id);
+
+  // GET lists it (Bob can see it)
+  const listRes = await fetch(`${GATEWAY_URL}/shared-workspaces`, {
+    headers: { cookie: bobCookie },
+    signal: t(),
+  });
+  assertEquals(listRes.status, 200);
+  const list = await listRes.json() as { id: string; name: string; ownerName: string }[];
+  const found = list.find((e) => e.id === id);
+  assertExists(found, "Published workspace should appear in list");
+  assertEquals(found.name, "Test Workspace");
+  assertEquals(found.ownerName, "Alice Chen");
+
+  // Bob cannot delete Alice's workspace
+  const bobDeleteRes = await fetch(`${GATEWAY_URL}/shared-workspaces/${id}`, {
+    method: "DELETE",
+    headers: { cookie: bobCookie },
+    signal: t(),
+  });
+  assertEquals(bobDeleteRes.status, 403);
+  await bobDeleteRes.body?.cancel();
+
+  // Alice deletes her own workspace
+  const deleteRes = await fetch(`${GATEWAY_URL}/shared-workspaces/${id}`, {
+    method: "DELETE",
+    headers: { cookie: aliceCookie },
+    signal: t(),
+  });
+  assertEquals(deleteRes.status, 200);
+  await deleteRes.body?.cancel();
+
+  // No longer in list
+  const afterRes = await fetch(`${GATEWAY_URL}/shared-workspaces`, {
+    headers: { cookie: aliceCookie },
+    signal: t(),
+  });
+  const afterList = await afterRes.json() as { id: string }[];
+  assert(!afterList.find((e) => e.id === id), "Deleted workspace should not appear in list");
+});
+
+Deno.test("[shared-workspaces] GET /:id returns model JSON", async () => {
+  const aliceCookie = await loginAs("alice");
+  const model = { global: {}, layout: { type: "row", children: [] } };
+
+  const postRes = await fetch(`${GATEWAY_URL}/shared-workspaces`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: aliceCookie },
+    body: JSON.stringify({ name: "Detail Test", model }),
+    signal: t(),
+  });
+  const { id } = await postRes.json() as { id: string };
+
+  const detailRes = await fetch(`${GATEWAY_URL}/shared-workspaces/${id}`, {
+    headers: { cookie: aliceCookie },
+    signal: t(),
+  });
+  assertEquals(detailRes.status, 200);
+  const detail = await detailRes.json() as { id: string; model: unknown; name: string };
+  assertEquals(detail.id, id);
+  assertEquals(detail.name, "Detail Test");
+  assertExists(detail.model);
+
+  // Cleanup
+  await fetch(`${GATEWAY_URL}/shared-workspaces/${id}`, {
+    method: "DELETE",
+    headers: { cookie: aliceCookie },
+    signal: t(),
+  });
 });

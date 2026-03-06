@@ -373,3 +373,11 @@ Deno.test("[e2e] gateway WS connects and receives messages", async () => {
     assertExists(lastOrderEvent, `Order pipeline response should be orderAck or orderRejected`);
   }
 });
+
+// ── Shared workspaces ─────────────────────────────────────────────────────────
+
+Deno.test("[shared-workspaces] GET /shared-workspaces requires auth", async () => {
+  const res = await fetch(`${GATEWAY_URL}/shared-workspaces`, { signal: timeout(5_000) });
+  assertEquals(res.status, 401);
+  await res.body?.cancel();
+});

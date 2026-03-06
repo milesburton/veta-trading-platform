@@ -2,7 +2,7 @@ import type { IJsonModel, IJsonTabNode, TabNode } from "flexlayout-react";
 import { Actions, DockLocation, Model } from "flexlayout-react";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useState } from "react";
-import { makeClearModel, makeDefaultModel, STORAGE_KEY } from "./layoutModels.ts";
+import { makeClearModel, makeDefaultModel } from "./layoutModels.ts";
 import type { LayoutItem, TabChannelConfig } from "./layoutUtils.ts";
 import { DEFAULT_LAYOUT, modelToLayoutItems } from "./layoutUtils.ts";
 import type { PanelId } from "./panelRegistry.ts";
@@ -27,7 +27,7 @@ export const DashboardContext = createContext<DashboardContextValue>({
   addPanel: () => {},
   removePanel: () => {},
   resetLayout: () => {},
-  storageKey: STORAGE_KEY,
+  storageKey: "",
   model: Model.fromJson(makeDefaultModel()),
   setModel: () => {},
 });
@@ -38,30 +38,25 @@ export function useDashboard() {
 
 interface DashboardProviderProps {
   children: ReactNode;
-  storageKey?: string;
+  /** Pre-loaded Model instance. When omitted falls back to initialModel or a blank canvas. */
+  model?: Model;
+  /** Called whenever the layout changes (for server persistence). */
+  onModelChange?: (m: Model) => void;
+  /** @deprecated — only used by unit tests that cannot pass a Model instance. */
   initialModel?: IJsonModel;
-}
-
-/** Load a persisted model from localStorage, falling back to initialModel or default. */
-function loadModel(storageKey: string, initialModel?: IJsonModel): Model {
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      const json = JSON.parse(raw) as IJsonModel;
-      return Model.fromJson(json);
-    }
-  } catch {
-    // corrupted — fall through
-  }
-  return Model.fromJson(initialModel ?? makeClearModel());
+  /** @deprecated — no longer used; kept to avoid breaking existing call sites. */
+  storageKey?: string;
 }
 
 export function DashboardProvider({
   children,
-  storageKey = STORAGE_KEY,
+  model: modelProp,
+  onModelChange,
   initialModel,
 }: DashboardProviderProps) {
-  const [model, setModelState] = useState<Model>(() => loadModel(storageKey, initialModel));
+  const [model, setModelState] = useState<Model>(
+    () => modelProp ?? Model.fromJson(initialModel ?? makeClearModel())
+  );
   const [layout, setLayoutState] = useState<LayoutItem[]>(() => modelToLayoutItems(model));
 
   const activePanelIds = new Set(layout.map((l) => l.panelType));
@@ -70,13 +65,9 @@ export function DashboardProvider({
     (m: Model) => {
       setModelState(m);
       setLayoutState(modelToLayoutItems(m));
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(m.toJson()));
-      } catch {
-        // quota exceeded — silently ignore
-      }
+      onModelChange?.(m);
     },
-    [storageKey]
+    [onModelChange]
   );
 
   const setLayout = useCallback(
@@ -84,67 +75,71 @@ export function DashboardProvider({
     []
   );
 
-  const addPanel = useCallback((panelType: PanelId) => {
-    setModelState((prev) => {
-      if (
-        SINGLETON_PANELS.has(panelType) &&
-        modelToLayoutItems(prev).some((l) => l.panelType === panelType)
-      )
-        return prev;
+  const addPanel = useCallback(
+    (panelType: PanelId) => {
+      setModelState((prev) => {
+        if (
+          SINGLETON_PANELS.has(panelType) &&
+          modelToLayoutItems(prev).some((l) => l.panelType === panelType)
+        )
+          return prev;
 
-      const newTab: IJsonTabNode = {
-        type: "tab",
-        id: `${panelType}-${Date.now()}`,
-        name: PANEL_TITLES[panelType],
-        component: panelType,
-        config: { panelType } satisfies TabChannelConfig,
-      };
+        const newTab: IJsonTabNode = {
+          type: "tab",
+          id: `${panelType}-${Date.now()}`,
+          name: PANEL_TITLES[panelType],
+          component: panelType,
+          config: { panelType } satisfies TabChannelConfig,
+        };
 
-      let targetId: string | undefined;
-      prev.visitNodes((node) => {
-        if (!targetId && node.getType() === "tabset") {
-          targetId = node.getId();
-        }
+        let targetId: string | undefined;
+        prev.visitNodes((node) => {
+          if (!targetId && node.getType() === "tabset") {
+            targetId = node.getId();
+          }
+        });
+        if (!targetId) return prev;
+
+        const next = Model.fromJson(prev.toJson() as IJsonModel);
+        next.doAction(Actions.addNode(newTab, targetId, DockLocation.CENTER, -1));
+        setLayoutState(modelToLayoutItems(next));
+        onModelChange?.(next);
+        return next;
       });
-      if (!targetId) return prev;
+    },
+    [onModelChange]
+  );
 
-      const next = Model.fromJson(prev.toJson() as IJsonModel);
-      next.doAction(Actions.addNode(newTab, targetId, DockLocation.CENTER, -1));
-      setLayoutState(modelToLayoutItems(next));
-      return next;
-    });
-  }, []);
+  const removePanel = useCallback(
+    (panelType: PanelId) => {
+      setModelState((prev) => {
+        let tabId: string | undefined;
+        prev.visitNodes((node) => {
+          if (!tabId && node.getType() === "tab") {
+            const cfg = (node as TabNode).getConfig() as TabChannelConfig | undefined;
+            if (cfg?.panelType === panelType) tabId = node.getId();
+          }
+        });
+        if (!tabId) return prev;
 
-  const removePanel = useCallback((panelType: PanelId) => {
-    setModelState((prev) => {
-      let tabId: string | undefined;
-      prev.visitNodes((node) => {
-        if (!tabId && node.getType() === "tab") {
-          const cfg = (node as TabNode).getConfig() as TabChannelConfig | undefined;
-          if (cfg?.panelType === panelType) tabId = node.getId();
-        }
+        const next = Model.fromJson(prev.toJson() as IJsonModel);
+        next.doAction(Actions.deleteTab(tabId));
+        setLayoutState(modelToLayoutItems(next));
+        onModelChange?.(next);
+        return next;
       });
-      if (!tabId) return prev;
-
-      const next = Model.fromJson(prev.toJson() as IJsonModel);
-      next.doAction(Actions.deleteTab(tabId));
-      setLayoutState(modelToLayoutItems(next));
-      return next;
-    });
-  }, []);
+    },
+    [onModelChange]
+  );
 
   const resetLayout = useCallback(
     (templateModel?: IJsonModel) => {
       const next = Model.fromJson(templateModel ?? makeDefaultModel());
       setModelState(next);
       setLayoutState(modelToLayoutItems(next));
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(next.toJson()));
-      } catch {
-        // quota exceeded — silently ignore
-      }
+      onModelChange?.(next);
     },
-    [storageKey]
+    [onModelChange]
   );
 
   return (
@@ -156,7 +151,7 @@ export function DashboardProvider({
         addPanel,
         removePanel,
         resetLayout,
-        storageKey,
+        storageKey: "",
         model,
         setModel,
       }}

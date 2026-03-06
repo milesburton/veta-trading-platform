@@ -48,6 +48,14 @@ db.query(`CREATE TABLE IF NOT EXISTS user_preferences (
   data TEXT NOT NULL DEFAULT '{}'
 );`);
 
+db.query(`CREATE TABLE IF NOT EXISTS shared_workspaces (
+  id         TEXT PRIMARY KEY,
+  owner_id   TEXT NOT NULL REFERENCES users(id),
+  name       TEXT NOT NULL,
+  model_json TEXT NOT NULL,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch())
+);`);
+
 // Seed users (INSERT OR IGNORE — idempotent)
 const SEED_USERS = [
   { id: "alice", name: "Alice Chen",    role: "trader", emoji: "AC" },
@@ -278,6 +286,68 @@ async function handle(req: Request): Promise<Response> {
       );
       return json({ success: true });
     }
+  }
+
+  // GET /shared-workspaces — list all shared workspaces (auth required)
+  if (req.method === "GET" && path === "/shared-workspaces") {
+    const token = getCookieToken(req);
+    if (!getUserFromToken(token)) return json({ error: "unauthenticated" }, 401);
+    const rows = [...db.query(
+      `SELECT sw.id, sw.owner_id, u.name, u.avatar_emoji, sw.name, sw.created_at
+       FROM shared_workspaces sw JOIN users u ON u.id = sw.owner_id
+       ORDER BY sw.created_at DESC;`,
+    )];
+    return json(rows.map(([id, ownerId, ownerName, ownerEmoji, name, createdAt]) => ({
+      id, ownerId, ownerName, ownerEmoji, name, createdAt,
+    })));
+  }
+
+  // POST /shared-workspaces — publish a workspace (auth required)
+  if (req.method === "POST" && path === "/shared-workspaces") {
+    const token = getCookieToken(req);
+    const caller = getUserFromToken(token);
+    if (!caller) return json({ error: "unauthenticated" }, 401);
+    let body: { name?: string; model?: unknown };
+    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+    if (!body.name || !body.model) return json({ error: "name and model required" }, 400);
+    const id = crypto.randomUUID();
+    db.query(
+      "INSERT INTO shared_workspaces (id, owner_id, name, model_json) VALUES (?, ?, ?, ?);",
+      [id, caller.id, body.name, JSON.stringify(body.model)],
+    );
+    return json({ id });
+  }
+
+  // DELETE /shared-workspaces/:id — retract (owner or admin only)
+  const sharedDeleteMatch = path.match(/^\/shared-workspaces\/([^/]+)$/);
+  if (req.method === "DELETE" && sharedDeleteMatch) {
+    const token = getCookieToken(req);
+    const caller = getUserFromToken(token);
+    if (!caller) return json({ error: "unauthenticated" }, 401);
+    const sharedId = sharedDeleteMatch[1];
+    const rows = [...db.query("SELECT owner_id FROM shared_workspaces WHERE id = ?;", [sharedId])];
+    if (rows.length === 0) return json({ error: "not found" }, 404);
+    if (rows[0][0] !== caller.id && caller.role !== "admin") return json({ error: "forbidden" }, 403);
+    db.query("DELETE FROM shared_workspaces WHERE id = ?;", [sharedId]);
+    return json({ success: true });
+  }
+
+  // GET /shared-workspaces/:id — fetch a single shared workspace by id (auth required)
+  const sharedGetMatch = path.match(/^\/shared-workspaces\/([^/]+)$/);
+  if (req.method === "GET" && sharedGetMatch) {
+    const token = getCookieToken(req);
+    if (!getUserFromToken(token)) return json({ error: "unauthenticated" }, 401);
+    const sharedId = sharedGetMatch[1];
+    const rows = [...db.query(
+      `SELECT sw.id, sw.owner_id, u.name, u.avatar_emoji, sw.name, sw.model_json, sw.created_at
+       FROM shared_workspaces sw JOIN users u ON u.id = sw.owner_id WHERE sw.id = ?;`,
+      [sharedId],
+    )];
+    if (rows.length === 0) return json({ error: "not found" }, 404);
+    const [id, ownerId, ownerName, ownerEmoji, name, modelJson, createdAt] = rows[0];
+    let model: unknown;
+    try { model = JSON.parse(modelJson as string); } catch { model = null; }
+    return json({ id, ownerId, ownerName, ownerEmoji, name, model, createdAt });
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
