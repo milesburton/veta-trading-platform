@@ -9,7 +9,7 @@ import {
 } from "./components/DashboardLayout.tsx";
 import { LoginPage } from "./components/LoginPage.tsx";
 import { AppHeader, WorkspaceToolbar } from "./components/StatusBar.tsx";
-import { useWorkspaces, WorkspaceSidebar } from "./components/WorkspaceBar.tsx";
+import { seedWorkspaces, useWorkspaces, WorkspaceSidebar } from "./components/WorkspaceBar.tsx";
 import { TradingProvider } from "./context/TradingContext.tsx";
 import {
   fetchSharedWorkspace,
@@ -73,26 +73,40 @@ function TradingApp() {
     model: IJsonModel;
   } | null>(null);
 
-  // Load workspace prefs from server once authenticated
   useEffect(() => {
     if (authStatus !== "authenticated") return;
     loadWorkspacePrefs().then((prefs) => {
-      if (prefs) {
-        setWorkspaces(prefs.workspaces);
-        const loaded: Record<string, Model> = {};
-        for (const [wsId, json] of Object.entries(prefs.layouts)) {
-          try {
-            loaded[wsId] = Model.fromJson(json);
-          } catch {
-            // ignore corrupted layout
-          }
-        }
-        setLayouts(loaded);
-      }
-    });
-  }, [authStatus, setWorkspaces]);
+      let finalWorkspaces = prefs?.workspaces ?? [];
+      let finalLayoutsJson = prefs?.layouts ?? {};
 
-  // Check for ?shared=<id> share link on mount
+      if (finalWorkspaces.length === 0) {
+        const seed = seedWorkspaces();
+        finalWorkspaces = seed.workspaces;
+        finalLayoutsJson = seed.layouts;
+        saveWorkspacePrefs({ workspaces: finalWorkspaces, layouts: finalLayoutsJson });
+      }
+
+      const loaded: Record<string, Model> = {};
+      for (const [wsId, json] of Object.entries(finalLayoutsJson)) {
+        try {
+          loaded[wsId] = Model.fromJson(json);
+        } catch {
+          /* skip corrupted layout */
+        }
+      }
+
+      const urlWsId = new URLSearchParams(window.location.search).get("ws");
+      const preferred =
+        urlWsId && finalWorkspaces.find((w) => w.id === urlWsId)
+          ? urlWsId
+          : (finalWorkspaces[0]?.id ?? "");
+
+      setWorkspaces(finalWorkspaces);
+      setLayouts(loaded);
+      if (preferred) handleSelect(preferred);
+    });
+  }, [authStatus, setWorkspaces, handleSelect]);
+
   useEffect(() => {
     if (authStatus !== "authenticated") return;
     const sharedId = new URLSearchParams(window.location.search).get("shared");
