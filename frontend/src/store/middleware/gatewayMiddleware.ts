@@ -265,7 +265,8 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             handleOrderEvent(msg.topic ?? "", msg.data as OrderEventData);
             break;
           case "orderAck": {
-            // Gateway confirmed order on bus — order already in Redux from submitOrderThunk
+            // Gateway confirmed order on bus — invalidate grid cache so blotter refetches
+            queryClient.invalidateQueries({ queryKey: ["grid"] });
             break;
           }
           case "orderRejected": {
@@ -280,6 +281,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
                 })
               );
             }
+            queryClient.invalidateQueries({ queryKey: ["grid"] });
             break;
           }
           case "authIdentity": {

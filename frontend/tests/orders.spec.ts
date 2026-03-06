@@ -175,6 +175,36 @@ test.describe("Order submission", () => {
     await blotter.waitForStatus("expired");
   });
 
+  // ── Server-driven grid query ───────────────────────────────────────────────
+
+  test("blotter shows correct order count from server total", async ({ page }) => {
+    // Submit two orders and verify the header count updates to reflect server total
+    const app = await setupWithPrice(page);
+    const ticket = await app.getOrderTicket();
+    const blotter = await app.getOrderBlotter();
+
+    // First order
+    await ticket.fillOrder({ quantity: 100, limitPrice: AAPL_PRICE });
+    await ticket.submit();
+    await blotter.waitForStatus("queued");
+
+    // Second order — get a fresh ticket reference after re-render
+    const ticket2 = await app.getOrderTicket();
+    await ticket2.fillOrder({ quantity: 50, limitPrice: AAPL_PRICE });
+    const outboundPromise = app.gateway.nextOutbound("submitOrder");
+    await ticket2.submit();
+    await outboundPromise;
+
+    // Both orders should be visible (blotter shows ≥ 1 row with "queued")
+    await expect(blotter.orderRows()).toHaveCount(2, { timeout: 8_000 });
+  });
+
+  test("blotter empty state appears before first order is submitted", async ({ page }) => {
+    const app = await setupWithPrice(page);
+    const blotter = await app.getOrderBlotter();
+    await blotter.expectEmpty();
+  });
+
   // ── Trading limits ─────────────────────────────────────────────────────────
 
   test("quantity exceeding max_order_qty shows warning and disables submit", async ({ page }) => {

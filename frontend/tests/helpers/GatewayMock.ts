@@ -2,9 +2,10 @@
  * GatewayMock — typed WebSocket + HTTP interceptor for Playwright tests.
  *
  * Intercepts:
- *   ws://localhost:PORT/ws/gateway   → fake WebSocket server
- *   /api/user-service/sessions/me   → mock session response
- *   /api/**                         → stub all other GETs to null
+ *   ws://localhost:PORT/ws/gateway        → fake WebSocket server
+ *   POST /api/gateway/grid/query         → server-driven grid query (returns mock order store)
+ *   /api/user-service/sessions/me        → mock session response
+ *   /api/**                              → stub all other GETs to null
  *
  * Usage:
  *   const gw = await GatewayMock.attach(page);
@@ -83,12 +84,33 @@ export const DEFAULT_ASSETS: AssetDef[] = [
   { symbol: "GOOGL", name: "Alphabet Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 1800, beta: 1.1 },
 ];
 
+// ── Mock order record (matches OrderRecord shape used in blotter) ─────────────
+
+interface MockOrder {
+  id: string;
+  clientOrderId: string;
+  submittedAt: number;
+  asset: string;
+  side: "BUY" | "SELL";
+  quantity: number;
+  limitPrice: number;
+  expiresAt: number;
+  strategy: string;
+  status: "queued" | "executing" | "filled" | "expired" | "rejected";
+  filled: number;
+  algoParams: Record<string, unknown>;
+  children: unknown[];
+}
+
 // ── GatewayMock class ─────────────────────────────────────────────────────────
 
 export class GatewayMock {
   private _wsRoute: WebSocketRoute | null = null;
   private _outboundQueue: GatewayOutbound[] = [];
   private _outboundResolvers: Array<{ type: string; resolve: (msg: GatewayOutbound) => void }> = [];
+
+  /** In-memory order store — keyed by clientOrderId. Served by grid/query mock. */
+  private _orders = new Map<string, MockOrder>();
 
   private constructor(private readonly page: Page) {}
 
@@ -107,10 +129,18 @@ export class GatewayMock {
     // Playwright matches routes in reverse-registration order (last registered wins).
     // Register the catch-all FIRST so specific routes registered after take precedence.
 
-    // Catch-all: stub remaining GET /api/** to null (registered first = lowest priority)
+    // Catch-all: stub remaining /api/** (GET → null, other methods → fallback)
     await page.route("/api/**", (route) => {
       if (route.request().method() !== "GET") return route.fallback();
       return route.fulfill({ status: 200, contentType: "application/json", body: "null" });
+    });
+
+    // Grid query endpoint — serve mock order store (registered after catch-all = higher priority)
+    await page.route("/api/gateway/grid/query", async (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      const rows = Array.from(mock._orders.values()).reverse();
+      const body = JSON.stringify({ rows, total: rows.length, evalMs: 0 });
+      return route.fulfill({ status: 200, contentType: "application/json", body });
     });
 
     // Stub news
@@ -148,6 +178,31 @@ export class GatewayMock {
       ws.onMessage((raw) => {
         try {
           const msg = JSON.parse(raw as string) as GatewayOutbound;
+
+          // Track submitted orders in the internal store and send orderAck back
+          if (msg.type === "submitOrder") {
+            const p = msg.payload;
+            const clientOrderId = p.clientOrderId as string;
+            mock._orders.set(clientOrderId, {
+              id: clientOrderId,
+              clientOrderId,
+              submittedAt: Date.now(),
+              asset: (p.asset as string) ?? "AAPL",
+              side: (p.side as "BUY" | "SELL") ?? "BUY",
+              quantity: (p.quantity as number) ?? 0,
+              limitPrice: (p.limitPrice as number) ?? 0,
+              expiresAt: Date.now() + ((p.expiresAt as number) ?? 60) * 1_000,
+              strategy: (p.strategy as string) ?? "LIMIT",
+              status: "queued",
+              filled: 0,
+              algoParams: (p.algoParams as Record<string, unknown>) ?? {},
+              children: [],
+            });
+            // Send orderAck back so the middleware can invalidate the grid cache
+            // after the order is recorded in the mock store
+            ws.send(JSON.stringify({ event: "orderAck", data: { clientOrderId } }));
+          }
+
           // Settle any waiting promises first
           const idx = mock._outboundResolvers.findIndex((r) => r.type === msg.type);
           if (idx !== -1) {
@@ -218,12 +273,15 @@ export class GatewayMock {
     for (const stage of stages) {
       switch (stage) {
         case "submitted":
+          this._patchOrder(clientOrderId, { status: "queued" });
           this.sendOrderEvent("orders.submitted", { orderId, clientOrderId, asset, side, quantity, limitPrice, status: "queued" });
           break;
         case "routed":
+          this._patchOrder(clientOrderId, { status: "executing" });
           this.sendOrderEvent("orders.routed", { orderId, clientOrderId, strategy: "LIMIT" });
           break;
         case "filled":
+          this._patchOrder(clientOrderId, { status: "filled", filled: quantity });
           this.sendOrderEvent("orders.filled", {
             parentOrderId: orderId,
             clientOrderId,
@@ -240,17 +298,26 @@ export class GatewayMock {
           });
           break;
         case "rejected":
+          this._patchOrder(clientOrderId, { status: "rejected" });
           this.sendOrderEvent("orders.rejected", { clientOrderId, reason: "Insufficient funds" });
           break;
         case "expired":
+          this._patchOrder(clientOrderId, { status: "expired" });
           this.sendOrderEvent("orders.expired", { orderId, clientOrderId });
           break;
       }
     }
   }
 
+  /** Patch an order's fields in the internal store (used to keep grid/query in sync). */
+  private _patchOrder(clientOrderId: string, patch: Partial<MockOrder>) {
+    const order = this._orders.get(clientOrderId);
+    if (order) Object.assign(order, patch);
+  }
+
   /** Send a gateway-level orderRejected (auth failure path). */
   sendOrderRejected(clientOrderId: string, reason = "Unauthenticated") {
+    this._patchOrder(clientOrderId, { status: "rejected" });
     this._send({ event: "orderRejected", data: { clientOrderId, reason } });
   }
 
