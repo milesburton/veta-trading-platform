@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
 import { ChannelContext } from "../../contexts/ChannelContext";
 import { channelsSlice } from "../../store/channelsSlice";
+import { gridPrefsSlice } from "../../store/gridPrefsSlice";
 import { ordersSlice } from "../../store/ordersSlice";
 import { uiSlice } from "../../store/uiSlice";
 import { windowSlice } from "../../store/windowSlice";
@@ -37,6 +38,7 @@ function makeStore(orders: OrderRecord[] = []) {
       windows: windowSlice.reducer,
       channels: channelsSlice.reducer,
       ui: uiSlice.reducer,
+      gridPrefs: gridPrefsSlice.reducer,
     },
     preloadedState: {
       orders: { orders },
@@ -176,4 +178,81 @@ describe("OrderBlotter – status styles", () => {
       expect(screen.getByText(status)).toBeInTheDocument();
     });
   }
+});
+
+describe("OrderBlotter – sort headers", () => {
+  it("renders sortable column header for Asset", () => {
+    renderBlotter([makeOrder()]);
+    // The SortableHeader renders a <th> containing the label and a sort indicator
+    const assetHeader = screen.getByRole("columnheader", { name: /asset/i });
+    expect(assetHeader).toBeInTheDocument();
+  });
+
+  it("sort headers are clickable", () => {
+    renderBlotter([makeOrder({ asset: "MSFT" }), makeOrder({ id: "order-2", asset: "AAPL" })]);
+    const assetHeader = screen.getByRole("columnheader", { name: /asset/i });
+    // Just verifying click doesn't throw
+    expect(() => fireEvent.click(assetHeader)).not.toThrow();
+  });
+});
+
+describe("OrderBlotter – filter bar", () => {
+  it("renders the '+ Filter' add button", () => {
+    renderBlotter([]);
+    expect(screen.getByRole("button", { name: /add filter/i })).toBeInTheDocument();
+  });
+
+  it("shows 'No orders match' message when all orders are filtered out", () => {
+    // Pre-load store with a filter that won't match anything
+    const store = configureStore({
+      reducer: {
+        orders: ordersSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        ui: uiSlice.reducer,
+        gridPrefs: gridPrefsSlice.reducer,
+      },
+      preloadedState: {
+        orders: { orders: [makeOrder({ asset: "AAPL" })] },
+        gridPrefs: {
+          loading: false,
+          orderBlotter: {
+            sortField: null,
+            sortDir: null,
+            cfRules: [],
+            filters: [{ id: "f1", field: "asset", op: "=" as const, value: "NVDA" }],
+          },
+          executions: { sortField: null, sortDir: null, cfRules: [], filters: [] },
+        },
+      },
+    });
+    render(
+      <Provider store={store}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "order-blotter",
+            panelType: "order-blotter",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <OrderBlotter />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getByText(/No orders match the active filters/i)).toBeInTheDocument();
+  });
+});
+
+describe("OrderBlotter – Format button", () => {
+  it("renders the Format ⚙ button", () => {
+    renderBlotter([]);
+    expect(screen.getByText(/Format/i)).toBeInTheDocument();
+  });
+
+  it("opens the CF rule editor when Format button is clicked", () => {
+    renderBlotter([]);
+    fireEvent.click(screen.getByText(/Format/i));
+    expect(screen.getByText(/Conditional Formatting/i)).toBeInTheDocument();
+  });
 });

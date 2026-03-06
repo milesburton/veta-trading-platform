@@ -23,6 +23,7 @@ import type { Middleware } from "@reduxjs/toolkit";
 import type { AssetDef, OhlcCandle, OrderBookSnapshot, OrderRecord } from "../../types.ts";
 import type { AuthUser, TradingLimits } from "../authSlice.ts";
 import { setUserWithLimits } from "../authSlice.ts";
+import { loadGridPrefs } from "../gridPrefsSlice.ts";
 import { candlesSeeded, marketSlice, orderBookUpdated } from "../marketSlice.ts";
 import type { NewsItem } from "../newsSlice.ts";
 import { newsBatchReceived, newsItemReceived } from "../newsSlice.ts";
@@ -282,6 +283,9 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             // Gateway sends user identity + limits after WS connection is established
             const identityData = msg.data as { user: AuthUser; limits: TradingLimits };
             storeAPI.dispatch(setUserWithLimits(identityData));
+            // Hydrate persisted grid preferences (filters, sort, CF rules) from server
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (storeAPI.dispatch as any)(loadGridPrefs());
             break;
           }
           case "newsUpdate":

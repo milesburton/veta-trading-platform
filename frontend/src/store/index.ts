@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { authSlice } from "./authSlice.ts";
 import { createBroadcastChannelMiddleware } from "./channel.ts";
 import { channelsSlice } from "./channelsSlice.ts";
+import { gridPrefsSlice } from "./gridPrefsSlice.ts";
 import { marketSlice } from "./marketSlice.ts";
 import { gatewayMiddleware } from "./middleware/gatewayMiddleware.ts";
 import { observabilityMiddleware } from "./middleware/observabilityMiddleware.ts";
@@ -25,6 +26,7 @@ export const store = configureStore({
     ui: uiSlice.reducer,
     windows: windowSlice.reducer,
     channels: channelsSlice.reducer,
+    gridPrefs: gridPrefsSlice.reducer,
     [servicesApi.reducerPath]: servicesApi.reducer,
     [obsApi.reducerPath]: obsApi.reducer,
   },

@@ -1,13 +1,18 @@
 import { useSignal } from "@preact/signals-react";
-import { Fragment, useEffect } from "react";
+import { Fragment, useEffect, useMemo } from "react";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelOut } from "../hooks/useChannelOut.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { orderPatched } from "../store/ordersSlice.ts";
+import type { FieldDef } from "../types/gridPrefs.ts";
 import type { ChildOrder, LiquidityFlag, OrderStatus } from "../types.ts";
+import { applyCfRules, applyFilters, applySort } from "../utils/gridFilter.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
 import { CHANNEL_COLOURS } from "./DashboardLayout.tsx";
+import { CfRuleEditor } from "./grid/CfRuleEditor.tsx";
+import { FilterBar } from "./grid/FilterBar.tsx";
+import { SortableHeader } from "./grid/SortableHeader.tsx";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
@@ -24,6 +29,21 @@ const LIQ_STYLES: Record<LiquidityFlag, string> = {
   CROSS: "text-sky-500",
 };
 
+const BLOTTER_FIELDS: FieldDef[] = [
+  { key: "asset", label: "Asset", type: "string" },
+  { key: "side", label: "Side", type: "enum", options: ["BUY", "SELL"] },
+  { key: "quantity", label: "Qty", type: "number" },
+  { key: "limitPrice", label: "Limit Px", type: "number" },
+  { key: "strategy", label: "Strategy", type: "enum", options: ["LIMIT", "TWAP", "POV", "VWAP"] },
+  {
+    key: "status",
+    label: "Status",
+    type: "enum",
+    options: ["queued", "executing", "filled", "expired", "rejected"],
+  },
+  { key: "filled", label: "Filled", type: "number" },
+];
+
 function formatTime(ms: number) {
   return new Date(ms).toLocaleTimeString([], {
     hour: "2-digit",
@@ -39,7 +59,6 @@ function formatPrice(asset: string, price: number) {
 function avgFillPrice(children: ChildOrder[]): string {
   const filled = children.filter((c) => c.status === "filled" && c.filled > 0);
   if (filled.length === 0) return "—";
-  // Use avgFillPrice if available, else fall back to limitPrice
   const totalQty = filled.reduce((s, c) => s + c.filled, 0);
   const totalValue = filled.reduce((s, c) => s + (c.avgFillPrice ?? c.limitPrice) * c.filled, 0);
   return totalQty > 0 ? (totalValue / totalQty).toFixed(4) : "—";
@@ -88,7 +107,6 @@ function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
               {child.status}
             </span>
           </td>
-          {/* Enriched columns */}
           <td className="px-3 py-1 text-gray-600 font-mono text-[9px]">
             {child.counterparty ?? "—"}
           </td>
@@ -111,13 +129,21 @@ function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
 
 export function OrderBlotter() {
   const orders = useAppSelector((s) => s.orders.orders);
+  const { sortField, sortDir, filters, cfRules } = useAppSelector((s) => s.gridPrefs.orderBlotter);
   const expanded = useSignal<Set<string>>(new Set());
   const selectedOrderId = useSignal<string | null>(null);
+  const showCfEditor = useSignal(false);
   const broadcast = useChannelOut();
   const dispatch = useAppDispatch();
   const ctxMenu = useSignal<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
   const { outgoing } = useChannelContext();
   const channelColour = outgoing !== null ? (CHANNEL_COLOURS[outgoing]?.hex ?? null) : null;
+
+  // Apply filter + sort
+  const displayOrders = useMemo(
+    () => applySort(applyFilters([...orders], filters), sortField, sortDir),
+    [orders, filters, sortField, sortDir]
+  );
 
   // Auto-select the most recent order on first load (once orders arrive)
   useEffect(() => {
@@ -180,8 +206,10 @@ export function OrderBlotter() {
     ctxMenu.value = { x: e.clientX, y: e.clientY, items };
   }
 
+  const thBase = "text-left px-3 py-2";
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {ctxMenu.value && (
         <ContextMenu
           items={ctxMenu.value.items}
@@ -192,7 +220,8 @@ export function OrderBlotter() {
           }}
         />
       )}
-      <div className="px-3 py-1.5 border-b border-gray-800 flex items-center gap-2">
+      {/* Header bar */}
+      <div className="px-3 py-1.5 border-b border-gray-800 flex items-center gap-2 shrink-0">
         {selectedOrderId.value && channelColour && (
           <span
             className="text-[10px] rounded px-1.5 py-0.5 font-mono tabular-nums shrink-0"
@@ -203,160 +232,233 @@ export function OrderBlotter() {
           </span>
         )}
         <span className="text-[10px] text-gray-600 ml-auto">
-          {orders.length} order{orders.length !== 1 ? "s" : ""}
+          {displayOrders.length !== orders.length
+            ? `${displayOrders.length} / ${orders.length}`
+            : `${orders.length} order${orders.length !== 1 ? "s" : ""}`}
         </span>
+        <button
+          type="button"
+          onClick={() => {
+            showCfEditor.value = !showCfEditor.value;
+          }}
+          title="Conditional formatting rules"
+          className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+            showCfEditor.value
+              ? "bg-sky-900/50 text-sky-400"
+              : "text-gray-600 hover:text-gray-400 hover:bg-gray-800"
+          }`}
+        >
+          Format ⚙
+        </button>
         <PopOutButton panelId="order-blotter" />
       </div>
+
+      {/* Filter bar */}
+      <FilterBar gridId="orderBlotter" fields={BLOTTER_FIELDS} />
+
+      {/* Table */}
       <div className="overflow-auto flex-1">
         {orders.length === 0 ? (
           <div className="flex items-center justify-center h-24 text-gray-600 text-xs">
             No orders submitted yet
           </div>
+        ) : displayOrders.length === 0 ? (
+          <div className="flex items-center justify-center h-24 text-gray-600 text-xs">
+            No orders match the active filters
+          </div>
         ) : (
           <table className="w-full text-xs">
             <thead>
               <tr className="text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950">
-                <th className="text-left px-3 py-2" title="Time order was submitted">
-                  Time
-                </th>
-                <th
-                  className="text-left px-3 py-2"
-                  title="Order ID — click ▸ to expand child executions"
+                <SortableHeader
+                  field="submittedAt"
+                  gridId="orderBlotter"
+                  className={thBase}
+                  title="Time order was submitted"
                 >
+                  Time
+                </SortableHeader>
+                <th className={thBase} title="Order ID — click ▸ to expand child executions">
                   ID
                 </th>
-                <th className="text-left px-3 py-2" title="Instrument / ticker symbol">
+                <SortableHeader
+                  field="asset"
+                  gridId="orderBlotter"
+                  className={thBase}
+                  title="Instrument / ticker symbol"
+                >
                   Asset
-                </th>
-                <th className="text-left px-3 py-2" title="Order direction: BUY or SELL">
+                </SortableHeader>
+                <SortableHeader
+                  field="side"
+                  gridId="orderBlotter"
+                  className={thBase}
+                  title="Order direction: BUY or SELL"
+                >
                   Side
-                </th>
-                <th className="text-right px-3 py-2" title="Total order quantity (shares)">
+                </SortableHeader>
+                <SortableHeader
+                  field="quantity"
+                  gridId="orderBlotter"
+                  className={`text-right px-3 py-2`}
+                  title="Total order quantity (shares)"
+                >
                   Qty
-                </th>
-                <th
-                  className="text-right px-3 py-2"
+                </SortableHeader>
+                <SortableHeader
+                  field="limitPrice"
+                  gridId="orderBlotter"
+                  className={`text-right px-3 py-2`}
                   title="Limit price for parent orders; average fill price for algo orders with child executions"
                 >
                   Limit/Fill
-                </th>
-                <th
-                  className="text-left px-3 py-2"
+                </SortableHeader>
+                <SortableHeader
+                  field="strategy"
+                  gridId="orderBlotter"
+                  className={thBase}
                   title="Execution strategy (LIMIT, TWAP, POV, VWAP) or execution venue for child orders"
                 >
                   Strat/Venue
-                </th>
-                <th className="text-left px-3 py-2" title="Order lifecycle status">
-                  Status
-                </th>
-                <th
-                  className="text-left px-3 py-2"
-                  title="Counterparty that took the other side of the trade"
+                </SortableHeader>
+                <SortableHeader
+                  field="status"
+                  gridId="orderBlotter"
+                  className={thBase}
+                  title="Order lifecycle status"
                 >
+                  Status
+                </SortableHeader>
+                <th className={thBase} title="Counterparty that took the other side of the trade">
                   Cpty
                 </th>
                 <th
-                  className="text-left px-3 py-2"
+                  className={thBase}
                   title="Liquidity flag: MAKER (passive, added liquidity), TAKER (aggressive, removed liquidity), CROSS (internal match)"
                 >
                   Liq
                 </th>
-                <th className="text-right px-3 py-2" title="Total execution commission in USD">
+                <th className={`text-right px-3 py-2`} title="Total execution commission in USD">
                   Comm
                 </th>
-                <th className="text-left px-3 py-2" title="Settlement date (T+2 for equities)">
+                <th className={thBase} title="Settlement date (T+2 for equities)">
                   Settle
                 </th>
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
-                <Fragment key={order.id}>
-                  <tr
-                    onClick={() => selectOrder(order.id)}
-                    onContextMenu={(e) => openOrderCtxMenu(e, order.id)}
-                    aria-selected={selectedOrderId.value === order.id}
-                    title={`${order.side} ${order.quantity.toLocaleString()} ${order.asset} @ ${formatPrice(order.asset, order.limitPrice)} — ${order.status}. Right-click for actions. Click to ${selectedOrderId.value === order.id ? "deselect" : "select and broadcast to linked panels"}`}
-                    style={
-                      selectedOrderId.value === order.id && channelColour
-                        ? {
-                            borderLeft: `3px solid ${channelColour}`,
-                            background: `${channelColour}18`,
-                          }
-                        : { borderLeft: "3px solid transparent" }
-                    }
-                    className={`border-b border-gray-800/40 cursor-pointer transition-colors ${
-                      selectedOrderId.value === order.id && !channelColour
-                        ? "bg-sky-900/20 border-l-2 border-l-sky-500"
-                        : selectedOrderId.value !== order.id
-                          ? "hover:bg-gray-800/20"
-                          : ""
-                    }`}
-                  >
-                    <td className="px-3 py-1.5 text-gray-500 tabular-nums whitespace-nowrap">
-                      {formatTime(order.submittedAt)}
-                    </td>
-                    <td className="px-3 py-1.5 text-gray-500 font-mono">
-                      {order.children.length > 0 ? (
-                        <button
-                          type="button"
-                          aria-expanded={expanded.value.has(order.id)}
-                          aria-label={`${expanded.value.has(order.id) ? "Collapse" : "Expand"} ${order.children.length} child executions for order ${order.id.slice(0, 8)}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleExpand(order.id);
-                          }}
-                          className="flex items-center gap-1 hover:text-gray-300 transition-colors"
-                        >
-                          <span>{expanded.value.has(order.id) ? "▾" : "▸"}</span>
-                          {order.id.slice(0, 8)}
-                          <span className="text-gray-700 ml-0.5">({order.children.length})</span>
-                        </button>
-                      ) : (
-                        order.id.slice(0, 8)
-                      )}
-                    </td>
-                    <td className="px-3 py-1.5 font-semibold text-gray-200">{order.asset}</td>
-                    <td
-                      className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"}`}
+              {displayOrders.map((order) => {
+                const { rowClasses, cellClasses } = applyCfRules(order, cfRules);
+                return (
+                  <Fragment key={order.id}>
+                    <tr
+                      onClick={() => selectOrder(order.id)}
+                      onContextMenu={(e) => openOrderCtxMenu(e, order.id)}
+                      aria-selected={selectedOrderId.value === order.id}
+                      title={`${order.side} ${order.quantity.toLocaleString()} ${order.asset} @ ${formatPrice(order.asset, order.limitPrice)} — ${order.status}. Right-click for actions. Click to ${selectedOrderId.value === order.id ? "deselect" : "select and broadcast to linked panels"}`}
+                      style={
+                        selectedOrderId.value === order.id && channelColour
+                          ? {
+                              borderLeft: `3px solid ${channelColour}`,
+                              background: `${channelColour}18`,
+                            }
+                          : { borderLeft: "3px solid transparent" }
+                      }
+                      className={`border-b border-gray-800/40 cursor-pointer transition-colors ${rowClasses} ${
+                        selectedOrderId.value === order.id && !channelColour
+                          ? "bg-sky-900/20 border-l-2 border-l-sky-500"
+                          : selectedOrderId.value !== order.id
+                            ? "hover:bg-gray-800/20"
+                            : ""
+                      }`}
                     >
-                      {order.side}
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-gray-200">
-                      {order.quantity.toLocaleString()}
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-gray-300">
-                      {order.children.length > 0
-                        ? avgFillPrice(order.children)
-                        : formatPrice(order.asset, order.limitPrice)}
-                    </td>
-                    <td className="px-3 py-1.5 text-gray-400">{order.strategy}</td>
-                    <td className="px-3 py-1.5">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${STATUS_STYLES[order.status]}`}
+                      <td className="px-3 py-1.5 text-gray-500 tabular-nums whitespace-nowrap">
+                        {formatTime(order.submittedAt)}
+                      </td>
+                      <td className="px-3 py-1.5 text-gray-500 font-mono">
+                        {order.children.length > 0 ? (
+                          <button
+                            type="button"
+                            aria-expanded={expanded.value.has(order.id)}
+                            aria-label={`${expanded.value.has(order.id) ? "Collapse" : "Expand"} ${order.children.length} child executions for order ${order.id.slice(0, 8)}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleExpand(order.id);
+                            }}
+                            className="flex items-center gap-1 hover:text-gray-300 transition-colors"
+                          >
+                            <span>{expanded.value.has(order.id) ? "▾" : "▸"}</span>
+                            {order.id.slice(0, 8)}
+                            <span className="text-gray-700 ml-0.5">({order.children.length})</span>
+                          </button>
+                        ) : (
+                          order.id.slice(0, 8)
+                        )}
+                      </td>
+                      <td
+                        className={`px-3 py-1.5 font-semibold text-gray-200 ${cellClasses["asset"] ?? ""}`}
                       >
-                        {order.status}
-                      </span>
-                    </td>
-                    {/* Parent row: show aggregated commission */}
-                    <td className="px-3 py-1.5 text-gray-600">—</td>
-                    <td className="px-3 py-1.5 text-gray-600">—</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-gray-500">
-                      {totalCommission(order.children)}
-                    </td>
-                    <td className="px-3 py-1.5 text-gray-600 font-mono text-[9px]">
-                      {order.settlementDate ?? "—"}
-                    </td>
-                  </tr>
-                  {expanded.value.has(order.id) && order.children.length > 0 && (
-                    <ChildRows rows={order.children} asset={order.asset} />
-                  )}
-                </Fragment>
-              ))}
+                        {order.asset}
+                      </td>
+                      <td
+                        className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"} ${cellClasses["side"] ?? ""}`}
+                      >
+                        {order.side}
+                      </td>
+                      <td
+                        className={`px-3 py-1.5 text-right tabular-nums text-gray-200 ${cellClasses["quantity"] ?? ""}`}
+                      >
+                        {order.quantity.toLocaleString()}
+                      </td>
+                      <td
+                        className={`px-3 py-1.5 text-right tabular-nums text-gray-300 ${cellClasses["limitPrice"] ?? ""}`}
+                      >
+                        {order.children.length > 0
+                          ? avgFillPrice(order.children)
+                          : formatPrice(order.asset, order.limitPrice)}
+                      </td>
+                      <td className={`px-3 py-1.5 text-gray-400 ${cellClasses["strategy"] ?? ""}`}>
+                        {order.strategy}
+                      </td>
+                      <td className={`px-3 py-1.5 ${cellClasses["status"] ?? ""}`}>
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${STATUS_STYLES[order.status]}`}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-1.5 text-gray-600">—</td>
+                      <td className="px-3 py-1.5 text-gray-600">—</td>
+                      <td
+                        className={`px-3 py-1.5 text-right tabular-nums text-gray-500 ${cellClasses["filled"] ?? ""}`}
+                      >
+                        {totalCommission(order.children)}
+                      </td>
+                      <td className="px-3 py-1.5 text-gray-600 font-mono text-[9px]">
+                        {order.settlementDate ?? "—"}
+                      </td>
+                    </tr>
+                    {expanded.value.has(order.id) && order.children.length > 0 && (
+                      <ChildRows rows={order.children} asset={order.asset} />
+                    )}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         )}
       </div>
+
+      {/* CF rule editor — slides in from the right */}
+      {showCfEditor.value && (
+        <CfRuleEditor
+          gridId="orderBlotter"
+          fields={BLOTTER_FIELDS}
+          onClose={() => {
+            showCfEditor.value = false;
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -32,7 +32,7 @@ const USER_SERVICE_URL = `http://${Deno.env.get("USER_SERVICE_HOST") ?? "localho
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
@@ -347,6 +347,51 @@ serve(async (req: Request): Promise<Response> => {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
     return proxyGet(`${JOURNAL_URL}/orders`, req);
+  }
+
+  // ── User preferences (auth required) ──
+  if (path === "/preferences" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    try {
+      const res = await fetch(`${USER_SERVICE_URL}/users/${auth.user.id}/preferences`, {
+        signal: AbortSignal.timeout(5_000),
+      });
+      const body = await res.arrayBuffer();
+      return new Response(body, {
+        status: res.status,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: (err as Error).message }), {
+        status: 502,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+  }
+
+  if (path === "/preferences" && req.method === "PUT") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    try {
+      const body = await req.text();
+      const res = await fetch(`${USER_SERVICE_URL}/users/${auth.user.id}/preferences`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body,
+        signal: AbortSignal.timeout(5_000),
+      });
+      const resBody = await res.arrayBuffer();
+      return new Response(resBody, {
+        status: res.status,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: (err as Error).message }), {
+        status: 502,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });

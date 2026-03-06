@@ -13,7 +13,12 @@ import {
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import type { FieldDef } from "../types/gridPrefs.ts";
 import type { LiquidityFlag, OrderRecord } from "../types.ts";
+import { applyCfRules, applyFilters, applySort } from "../utils/gridFilter.ts";
+import { CfRuleEditor } from "./grid/CfRuleEditor.tsx";
+import { FilterBar } from "./grid/FilterBar.tsx";
+import { SortableHeader } from "./grid/SortableHeader.tsx";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 const LIQ_COLORS: Record<LiquidityFlag, string> = {
@@ -21,6 +26,18 @@ const LIQ_COLORS: Record<LiquidityFlag, string> = {
   TAKER: "#f59e0b",
   CROSS: "#38bdf8",
 };
+
+const EXEC_FIELDS: FieldDef[] = [
+  { key: "asset", label: "Asset", type: "string" },
+  { key: "side", label: "Side", type: "enum", options: ["BUY", "SELL"] },
+  { key: "strategy", label: "Strategy", type: "enum", options: ["LIMIT", "TWAP", "POV", "VWAP"] },
+  {
+    key: "status",
+    label: "Status",
+    type: "enum",
+    options: ["queued", "executing", "filled", "expired", "rejected"],
+  },
+];
 
 function formatTime(ms: number) {
   return new Date(ms).toLocaleTimeString([], {
@@ -56,6 +73,7 @@ function buildFillTimeline(order: OrderRecord) {
 
 function TradeRow({ order }: { order: OrderRecord }) {
   const expanded = useSignal(false);
+  const cfRules = useAppSelector((s) => s.gridPrefs.executions.cfRules);
 
   const filledChildren = order.children.filter((c) => c.status === "filled" && c.filled > 0);
   const totalFilledQty = filledChildren.reduce((s, c) => s + c.filled, 0);
@@ -86,7 +104,6 @@ function TradeRow({ order }: { order: OrderRecord }) {
         ? "text-gray-500"
         : "text-sky-400";
 
-  // Liquidity mix for this order
   const liqTotals = filledChildren.reduce(
     (acc, c) => {
       if (c.liquidityFlag === "MAKER") acc.maker += c.filled;
@@ -97,25 +114,35 @@ function TradeRow({ order }: { order: OrderRecord }) {
     { maker: 0, taker: 0, cross: 0 }
   );
 
+  const { rowClasses, cellClasses } = applyCfRules(order, cfRules);
+
   return (
     <>
       <tr
-        className="border-b border-gray-800/40 cursor-pointer hover:bg-gray-800/20 transition-colors"
+        className={`border-b border-gray-800/40 cursor-pointer hover:bg-gray-800/20 transition-colors ${rowClasses}`}
         onClick={() => {
           expanded.value = !expanded.value;
         }}
       >
-        <td className="px-3 py-1.5 text-gray-500 tabular-nums whitespace-nowrap text-[10px]">
+        <td
+          className={`px-3 py-1.5 text-gray-500 tabular-nums whitespace-nowrap text-[10px] ${cellClasses["submittedAt"] ?? ""}`}
+        >
           {formatTime(order.submittedAt)}
         </td>
-        <td className="px-3 py-1.5 font-semibold text-gray-200">{order.asset}</td>
+        <td className={`px-3 py-1.5 font-semibold text-gray-200 ${cellClasses["asset"] ?? ""}`}>
+          {order.asset}
+        </td>
         <td
-          className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"}`}
+          className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"} ${cellClasses["side"] ?? ""}`}
         >
           {order.side}
         </td>
-        <td className="px-3 py-1.5 text-gray-400">{order.strategy}</td>
-        <td className={`px-3 py-1.5 font-semibold ${statusColor}`}>{order.status}</td>
+        <td className={`px-3 py-1.5 text-gray-400 ${cellClasses["strategy"] ?? ""}`}>
+          {order.strategy}
+        </td>
+        <td className={`px-3 py-1.5 font-semibold ${statusColor} ${cellClasses["status"] ?? ""}`}>
+          {order.status}
+        </td>
         <td className="px-3 py-1.5 text-right tabular-nums text-gray-300">{fillPct.toFixed(0)}%</td>
         <td className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${impactColor}`}>
           {totalFilledQty > 0 ? formatBps(impactBps) : "—"}
@@ -133,7 +160,6 @@ function TradeRow({ order }: { order: OrderRecord }) {
         <tr>
           <td colSpan={10} className="p-0">
             <div className="bg-gray-900/40 border-b border-gray-800/40 px-4 py-3 flex flex-col gap-3">
-              {/* Fill stats */}
               {totalFilledQty > 0 && (
                 <div className="flex items-center gap-4 text-[10px]">
                   <span className="text-gray-500">
@@ -165,7 +191,6 @@ function TradeRow({ order }: { order: OrderRecord }) {
                 </div>
               )}
 
-              {/* Fill chart */}
               {timeline.length >= 2 ? (
                 <div>
                   <div className="text-[10px] text-gray-500 mb-1">
@@ -248,15 +273,20 @@ function TradeRow({ order }: { order: OrderRecord }) {
 
 export function ExecutionsPanel() {
   const orders = useAppSelector((s) => s.orders.orders);
+  const {
+    sortField,
+    sortDir,
+    filters,
+    cfRules: _cfRules,
+  } = useAppSelector((s) => s.gridPrefs.executions);
   const { incoming } = useChannelContext();
   const channelIn = useChannelIn();
-  // When wired to a channel: prefer filtering by the broadcast orderId (1:1 with a trade),
-  // falling back to asset if only an asset is broadcast.
-  // Without a channel link, show all executions.
+  const showCfEditor = useSignal(false);
+
   const filterOrderId = incoming !== null ? channelIn.selectedOrderId : null;
   const filterAsset = incoming !== null && !filterOrderId ? channelIn.selectedAsset : null;
 
-  const tradeOrders = useMemo(
+  const baseOrders = useMemo(
     () =>
       orders
         .filter((o) => o.children.length > 0 || o.status === "filled" || o.status === "expired")
@@ -270,8 +300,16 @@ export function ExecutionsPanel() {
     [orders, filterOrderId, filterAsset]
   );
 
+  const tradeOrders = useMemo(
+    () => applySort(applyFilters([...baseOrders], filters), sortField, sortDir),
+    [baseOrders, filters, sortField, sortDir]
+  );
+
+  const thBase = "text-left px-3 py-2";
+
   return (
-    <div className="flex flex-col h-full text-xs">
+    <div className="flex flex-col h-full text-xs relative">
+      {/* Header */}
       <div className="px-2 py-1.5 border-b border-gray-800 flex items-center gap-2 shrink-0">
         {filterOrderId && (
           <span className="text-[10px] text-amber-400 bg-amber-900/30 font-mono px-1.5 py-0.5 rounded">
@@ -282,10 +320,31 @@ export function ExecutionsPanel() {
           <span className="text-[10px] text-gray-500 font-mono">{filterAsset}</span>
         )}
         {tradeOrders.length > 0 && (
-          <span className="text-[10px] text-gray-600 ml-auto">{tradeOrders.length}</span>
+          <span className="text-[10px] text-gray-600 ml-auto">
+            {tradeOrders.length !== baseOrders.length
+              ? `${tradeOrders.length} / ${baseOrders.length}`
+              : tradeOrders.length}
+          </span>
         )}
+        <button
+          type="button"
+          onClick={() => {
+            showCfEditor.value = !showCfEditor.value;
+          }}
+          title="Conditional formatting rules"
+          className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+            showCfEditor.value
+              ? "bg-sky-900/50 text-sky-400"
+              : "text-gray-600 hover:text-gray-400 hover:bg-gray-800"
+          }`}
+        >
+          Format ⚙
+        </button>
         <PopOutButton panelId="executions" />
       </div>
+
+      {/* Filter bar */}
+      <FilterBar gridId="executions" fields={EXEC_FIELDS} />
 
       <div className="flex-1 overflow-auto">
         {tradeOrders.length === 0 ? (
@@ -294,17 +353,29 @@ export function ExecutionsPanel() {
               ? `No executions for order ${filterOrderId.slice(0, 8)}`
               : filterAsset
                 ? `No executions for ${filterAsset}`
-                : "No executions yet"}
+                : filters.length > 0
+                  ? "No executions match the active filters"
+                  : "No executions yet"}
           </div>
         ) : (
           <table className="w-full text-xs">
             <thead>
               <tr className="text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950">
-                <th className="text-left px-3 py-2">Time</th>
-                <th className="text-left px-3 py-2">Asset</th>
-                <th className="text-left px-3 py-2">Side</th>
-                <th className="text-left px-3 py-2">Strategy</th>
-                <th className="text-left px-3 py-2">Status</th>
+                <SortableHeader field="submittedAt" gridId="executions" className={thBase}>
+                  Time
+                </SortableHeader>
+                <SortableHeader field="asset" gridId="executions" className={thBase}>
+                  Asset
+                </SortableHeader>
+                <SortableHeader field="side" gridId="executions" className={thBase}>
+                  Side
+                </SortableHeader>
+                <SortableHeader field="strategy" gridId="executions" className={thBase}>
+                  Strategy
+                </SortableHeader>
+                <SortableHeader field="status" gridId="executions" className={thBase}>
+                  Status
+                </SortableHeader>
                 <th className="text-right px-3 py-2">Fill%</th>
                 <th className="text-right px-3 py-2">Impact</th>
                 <th className="text-right px-3 py-2">Comm</th>
@@ -320,6 +391,17 @@ export function ExecutionsPanel() {
           </table>
         )}
       </div>
+
+      {/* CF rule editor */}
+      {showCfEditor.value && (
+        <CfRuleEditor
+          gridId="executions"
+          fields={EXEC_FIELDS}
+          onClose={() => {
+            showCfEditor.value = false;
+          }}
+        />
+      )}
     </div>
   );
 }
