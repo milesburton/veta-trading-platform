@@ -44,6 +44,7 @@ export interface SharedWorkspaceEntry {
   ownerName: string;
   ownerEmoji: string;
   name: string;
+  description: string;
   createdAt: number;
 }
 
@@ -69,13 +70,14 @@ export async function fetchSharedWorkspace(id: string): Promise<SharedWorkspaceD
 
 export async function publishSharedWorkspace(
   name: string,
+  description: string,
   model: IJsonModel
 ): Promise<string | null> {
   try {
     const res = await fetch("/api/gateway/shared-workspaces", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, model }),
+      body: JSON.stringify({ name, description, model }),
     });
     if (!res.ok) return null;
     const { id } = await res.json();

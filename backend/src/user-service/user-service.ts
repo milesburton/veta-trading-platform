@@ -49,12 +49,16 @@ db.query(`CREATE TABLE IF NOT EXISTS user_preferences (
 );`);
 
 db.query(`CREATE TABLE IF NOT EXISTS shared_workspaces (
-  id         TEXT PRIMARY KEY,
-  owner_id   TEXT NOT NULL REFERENCES users(id),
-  name       TEXT NOT NULL,
-  model_json TEXT NOT NULL,
-  created_at INTEGER NOT NULL DEFAULT (unixepoch())
+  id          TEXT PRIMARY KEY,
+  owner_id    TEXT NOT NULL REFERENCES users(id),
+  name        TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  model_json  TEXT NOT NULL,
+  created_at  INTEGER NOT NULL DEFAULT (unixepoch())
 );`);
+try {
+  db.query("ALTER TABLE shared_workspaces ADD COLUMN description TEXT NOT NULL DEFAULT '';");
+} catch { /* column already exists */ }
 
 // Seed users (INSERT OR IGNORE — idempotent)
 const SEED_USERS = [
@@ -288,17 +292,20 @@ async function handle(req: Request): Promise<Response> {
     }
   }
 
-  // GET /shared-workspaces — list all shared workspaces (auth required)
+  // GET /shared-workspaces — list all shared workspaces except the caller's own (auth required)
   if (req.method === "GET" && path === "/shared-workspaces") {
     const token = getCookieToken(req);
-    if (!getUserFromToken(token)) return json({ error: "unauthenticated" }, 401);
+    const caller = getUserFromToken(token);
+    if (!caller) return json({ error: "unauthenticated" }, 401);
     const rows = [...db.query(
-      `SELECT sw.id, sw.owner_id, u.name, u.avatar_emoji, sw.name, sw.created_at
+      `SELECT sw.id, sw.owner_id, u.name, u.avatar_emoji, sw.name, sw.description, sw.created_at
        FROM shared_workspaces sw JOIN users u ON u.id = sw.owner_id
+       WHERE sw.owner_id != ?
        ORDER BY sw.created_at DESC;`,
+      [caller.id],
     )];
-    return json(rows.map(([id, ownerId, ownerName, ownerEmoji, name, createdAt]) => ({
-      id, ownerId, ownerName, ownerEmoji, name, createdAt,
+    return json(rows.map(([id, ownerId, ownerName, ownerEmoji, name, description, createdAt]) => ({
+      id, ownerId, ownerName, ownerEmoji, name, description, createdAt,
     })));
   }
 
@@ -307,13 +314,13 @@ async function handle(req: Request): Promise<Response> {
     const token = getCookieToken(req);
     const caller = getUserFromToken(token);
     if (!caller) return json({ error: "unauthenticated" }, 401);
-    let body: { name?: string; model?: unknown };
+    let body: { name?: string; description?: string; model?: unknown };
     try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
     if (!body.name || !body.model) return json({ error: "name and model required" }, 400);
     const id = crypto.randomUUID();
     db.query(
-      "INSERT INTO shared_workspaces (id, owner_id, name, model_json) VALUES (?, ?, ?, ?);",
-      [id, caller.id, body.name, JSON.stringify(body.model)],
+      "INSERT INTO shared_workspaces (id, owner_id, name, description, model_json) VALUES (?, ?, ?, ?, ?);",
+      [id, caller.id, body.name, body.description ?? "", JSON.stringify(body.model)],
     );
     return json({ id });
   }
@@ -339,15 +346,15 @@ async function handle(req: Request): Promise<Response> {
     if (!getUserFromToken(token)) return json({ error: "unauthenticated" }, 401);
     const sharedId = sharedGetMatch[1];
     const rows = [...db.query(
-      `SELECT sw.id, sw.owner_id, u.name, u.avatar_emoji, sw.name, sw.model_json, sw.created_at
+      `SELECT sw.id, sw.owner_id, u.name, u.avatar_emoji, sw.name, sw.description, sw.model_json, sw.created_at
        FROM shared_workspaces sw JOIN users u ON u.id = sw.owner_id WHERE sw.id = ?;`,
       [sharedId],
     )];
     if (rows.length === 0) return json({ error: "not found" }, 404);
-    const [id, ownerId, ownerName, ownerEmoji, name, modelJson, createdAt] = rows[0];
+    const [id, ownerId, ownerName, ownerEmoji, name, description, modelJson, createdAt] = rows[0];
     let model: unknown;
     try { model = JSON.parse(modelJson as string); } catch { model = null; }
-    return json({ id, ownerId, ownerName, ownerEmoji, name, model, createdAt });
+    return json({ id, ownerId, ownerName, ownerEmoji, name, description, model, createdAt });
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });

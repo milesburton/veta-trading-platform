@@ -94,6 +94,9 @@ export function WorkspaceSidebar({
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [browseOpen, setBrowseOpen] = useState(false);
   const [sharedIds, setSharedIds] = useState<Set<string>>(new Set());
+  const [shareDialog, setShareDialog] = useState<{ ws: Workspace; description: string } | null>(
+    null
+  );
 
   const isExpanded = pinned.value || hovered.value;
 
@@ -163,10 +166,18 @@ export function WorkspaceSidebar({
     editValue.value = currentName;
   }
 
-  async function shareWorkspace(ws: Workspace) {
+  function shareWorkspace(ws: Workspace) {
+    if (!layouts[ws.id]) return;
+    setShareDialog({ ws, description: "" });
+  }
+
+  async function confirmShare() {
+    if (!shareDialog) return;
+    const { ws, description } = shareDialog;
+    setShareDialog(null);
     const model = layouts[ws.id];
     if (!model) return;
-    const id = await publishSharedWorkspace(ws.name, model.toJson() as IJsonModel);
+    const id = await publishSharedWorkspace(ws.name, description, model.toJson() as IJsonModel);
     if (!id) return;
     setSharedIds((prev) => new Set([...prev, ws.id]));
     const url = `${window.location.origin}${window.location.pathname}?shared=${id}`;
@@ -409,6 +420,50 @@ export function WorkspaceSidebar({
             setBrowseOpen(false);
           }}
         />
+      )}
+
+      {shareDialog && (
+        // biome-ignore lint/a11y/noStaticElementInteractions: modal backdrop
+        // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard handled by buttons inside
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShareDialog(null);
+          }}
+        >
+          <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-sm mx-4 p-4 flex flex-col gap-3">
+            <p className="text-sm font-semibold text-gray-200">
+              Share &ldquo;{shareDialog.ws.name}&rdquo;
+            </p>
+            <textarea
+              rows={3}
+              placeholder="Add a description so others know what this workspace is for… (optional)"
+              value={shareDialog.description}
+              onChange={(e) =>
+                setShareDialog((prev) =>
+                  prev ? { ...prev, description: e.currentTarget.value } : prev
+                )
+              }
+              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500 resize-none"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setShareDialog(null)}
+                className="px-3 py-1.5 rounded text-xs text-gray-400 hover:text-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmShare}
+                className="px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-xs transition-colors"
+              >
+                Share &amp; copy link
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

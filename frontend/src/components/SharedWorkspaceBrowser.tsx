@@ -25,14 +25,23 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
   const [entries, setEntries] = useState<SharedWorkspaceEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [cloningId, setCloningId] = useState<string | null>(null);
-  const userId = useAppSelector((s) => s.auth.user?.id ?? "");
-  const userRole = useAppSelector((s) => s.auth.user?.role);
+  const [search, setSearch] = useState("");
+  const isAdmin = useAppSelector((s) => s.auth.user?.role === "admin");
 
   useEffect(() => {
     listSharedWorkspaces()
       .then(setEntries)
       .finally(() => setLoading(false));
   }, []);
+
+  const filtered = entries.filter((e) => {
+    const q = search.toLowerCase();
+    return (
+      e.name.toLowerCase().includes(q) ||
+      e.description.toLowerCase().includes(q) ||
+      e.ownerName.toLowerCase().includes(q)
+    );
+  });
 
   async function handleClone(entry: SharedWorkspaceEntry) {
     setCloningId(entry.id);
@@ -56,7 +65,7 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-lg mx-4 flex flex-col max-h-[80vh]">
+      <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-xl mx-4 flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
           <span className="text-sm font-semibold text-gray-200">Shared Workspaces</span>
@@ -69,36 +78,51 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
           </button>
         </div>
 
+        {/* Search */}
+        <div className="px-4 py-2 border-b border-gray-800 shrink-0">
+          <input
+            type="search"
+            placeholder="Filter by name, description or owner…"
+            value={search}
+            onChange={(e) => setSearch(e.currentTarget.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"
+          />
+        </div>
+
         {/* Body */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12 text-gray-600 text-sm">
               Loading...
             </div>
-          ) : entries.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-2 text-gray-600 text-sm">
               <span className="text-2xl">⊞</span>
-              <span>No shared workspaces yet.</span>
-              <span className="text-[11px] text-gray-700">
-                Share a workspace using the ↑ icon in the sidebar.
+              <span>
+                {search ? "No workspaces match your search." : "No shared workspaces yet."}
               </span>
             </div>
           ) : (
             <ul className="divide-y divide-gray-800 list-none m-0 p-0">
-              {entries.map((entry) => (
-                <li key={entry.id} className="flex items-center gap-3 px-4 py-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-400">
+              {filtered.map((entry) => (
+                <li key={entry.id} className="flex items-start gap-3 px-4 py-3">
+                  <span className="shrink-0 w-7 h-7 rounded-full bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-400 mt-0.5">
                     {entry.ownerEmoji}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-[12px] font-medium text-gray-200 truncate">
                       {entry.name}
                     </div>
-                    <div className="text-[10px] text-gray-500">
+                    {entry.description && (
+                      <div className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">
+                        {entry.description}
+                      </div>
+                    )}
+                    <div className="text-[10px] text-gray-600 mt-0.5">
                       {entry.ownerName} · {relativeTime(entry.createdAt)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0 mt-0.5">
                     <button
                       type="button"
                       disabled={cloningId === entry.id}
@@ -107,7 +131,7 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
                     >
                       {cloningId === entry.id ? "Cloning…" : "Clone"}
                     </button>
-                    {(entry.ownerId === userId || userRole === "admin") && (
+                    {isAdmin && (
                       <button
                         type="button"
                         onClick={() => handleDelete(entry.id)}
@@ -123,6 +147,15 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
             </ul>
           )}
         </div>
+
+        {/* Footer count */}
+        {!loading && entries.length > 0 && (
+          <div className="px-4 py-2 border-t border-gray-800 shrink-0 text-[10px] text-gray-600">
+            {filtered.length === entries.length
+              ? `${entries.length} workspace${entries.length !== 1 ? "s" : ""}`
+              : `${filtered.length} of ${entries.length}`}
+          </div>
+        )}
       </div>
     </div>
   );
