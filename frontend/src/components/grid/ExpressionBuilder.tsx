@@ -131,75 +131,71 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
       </select>
 
       {/* Value input — hidden for is_null / is_not_null */}
-      {!noValue && (
-        <>
-          {rule.op === "between" ? (
-            <div className="flex gap-1">
-              <input
-                type="number"
-                placeholder="From"
-                value={Array.isArray(rule.value) ? String((rule.value as [number, number])[0]) : ""}
-                onChange={(e) => {
-                  const hi = Array.isArray(rule.value) ? (rule.value as [number, number])[1] : 0;
-                  onChange({ ...rule, value: [Number(e.target.value) || 0, hi] });
-                }}
-                className="w-20 bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500 tabular-nums"
-              />
-              <input
-                type="number"
-                placeholder="To"
-                value={Array.isArray(rule.value) ? String((rule.value as [number, number])[1]) : ""}
-                onChange={(e) => {
-                  const lo = Array.isArray(rule.value) ? (rule.value as [number, number])[0] : 0;
-                  onChange({ ...rule, value: [lo, Number(e.target.value) || 0] });
-                }}
-                className="w-20 bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500 tabular-nums"
-              />
-            </div>
-          ) : rule.op === "in" && fieldDef?.options ? (
-            <div className="flex flex-wrap gap-1">
-              {fieldDef.options.map((opt) => {
-                const selected =
-                  Array.isArray(rule.value) && (rule.value as string[]).includes(opt);
-                return (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => {
-                      const cur = Array.isArray(rule.value) ? (rule.value as string[]) : [];
-                      onChange({
-                        ...rule,
-                        value: selected ? cur.filter((v) => v !== opt) : [...cur, opt],
-                      });
-                    }}
-                    className={`px-1.5 py-0.5 rounded text-[10px] border transition-colors ${
-                      selected
-                        ? "bg-sky-700 border-sky-600 text-white"
-                        : "border-gray-700 text-gray-400 hover:text-gray-200"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
+      {!noValue &&
+        (rule.op === "between" ? (
+          <div className="flex gap-1">
             <input
-              type={fieldDef?.type === "number" ? "number" : "text"}
-              value={Array.isArray(rule.value) ? "" : String(rule.value ?? "")}
+              type="number"
+              placeholder="From"
+              value={Array.isArray(rule.value) ? String((rule.value as [number, number])[0]) : ""}
               onChange={(e) => {
-                const raw = e.target.value;
-                onChange({
-                  ...rule,
-                  value: fieldDef?.type === "number" ? Number(raw) || 0 : raw,
-                });
+                const hi = Array.isArray(rule.value) ? (rule.value as [number, number])[1] : 0;
+                onChange({ ...rule, value: [Number(e.target.value) || 0, hi] });
               }}
-              placeholder="value…"
-              className="w-28 bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500 tabular-nums"
+              className="w-20 bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500 tabular-nums"
             />
-          )}
-        </>
-      )}
+            <input
+              type="number"
+              placeholder="To"
+              value={Array.isArray(rule.value) ? String((rule.value as [number, number])[1]) : ""}
+              onChange={(e) => {
+                const lo = Array.isArray(rule.value) ? (rule.value as [number, number])[0] : 0;
+                onChange({ ...rule, value: [lo, Number(e.target.value) || 0] });
+              }}
+              className="w-20 bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500 tabular-nums"
+            />
+          </div>
+        ) : rule.op === "in" && fieldDef?.options ? (
+          <div className="flex flex-wrap gap-1">
+            {fieldDef.options.map((opt) => {
+              const selected = Array.isArray(rule.value) && (rule.value as string[]).includes(opt);
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => {
+                    const cur = Array.isArray(rule.value) ? (rule.value as string[]) : [];
+                    onChange({
+                      ...rule,
+                      value: selected ? cur.filter((v) => v !== opt) : [...cur, opt],
+                    });
+                  }}
+                  className={`px-1.5 py-0.5 rounded text-[10px] border transition-colors ${
+                    selected
+                      ? "bg-sky-700 border-sky-600 text-white"
+                      : "border-gray-700 text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <input
+            type={fieldDef?.type === "number" ? "number" : "text"}
+            value={Array.isArray(rule.value) ? "" : String(rule.value ?? "")}
+            onChange={(e) => {
+              const raw = e.target.value;
+              onChange({
+                ...rule,
+                value: fieldDef?.type === "number" ? Number(raw) || 0 : raw,
+              });
+            }}
+            placeholder="value…"
+            className="w-28 bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500 tabular-nums"
+          />
+        ))}
 
       {/* Delete rule */}
       <button
@@ -353,9 +349,22 @@ export function ExpressionBuilder({ gridId, fields, initial, initialField, onClo
   const expr = useSignal<ExprGroup>(startExpr);
 
   useEffect(() => {
-    dialogRef.current?.showModal();
-    return () => dialogRef.current?.close();
-  }, []);
+    const el = dialogRef.current;
+    if (!el) return;
+    el.showModal();
+    // Handle Escape key via the cancel event (fires before close)
+    const onCancel = (e: Event) => {
+      e.preventDefault();
+      onClose();
+    };
+    el.addEventListener("cancel", onCancel);
+    return () => {
+      el.removeEventListener("cancel", onCancel);
+      // Close without triggering the onClose callback (component is unmounting)
+      if (!el.open) return;
+      el.close();
+    };
+  }, [onClose]);
 
   function handleApply() {
     dispatch(setFilterExpr({ gridId, expr: expr.value }));
@@ -373,7 +382,6 @@ export function ExpressionBuilder({ gridId, fields, initial, initialField, onClo
     <dialog
       ref={dialogRef}
       className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl p-0 w-[520px] max-w-[95vw] text-xs text-gray-200 backdrop:bg-black/60"
-      onClose={onClose}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800">
