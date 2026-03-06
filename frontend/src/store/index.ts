@@ -1,5 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { alertsSlice } from "./alertsSlice.ts";
+import { analyticsApi } from "./analyticsApi.ts";
 import { authSlice } from "./authSlice.ts";
 import { createBroadcastChannelMiddleware } from "./channel.ts";
 import { channelsSlice } from "./channelsSlice.ts";
@@ -34,11 +35,13 @@ export const store = configureStore({
     alerts: alertsSlice.reducer,
     [servicesApi.reducerPath]: servicesApi.reducer,
     [obsApi.reducerPath]: obsApi.reducer,
+    [analyticsApi.reducerPath]: analyticsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat(servicesApi.middleware)
       .concat(obsApi.middleware)
+      .concat(analyticsApi.middleware)
       .concat(gatewayMiddleware)
       .concat(alertsMiddleware)
       .concat(observabilityMiddleware)

@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v3`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v4`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -350,7 +350,7 @@ export function makeAnalysisModel(): IJsonModel {
             },
           ],
         },
-        // ── Right: News & Signals ─────────────────────────────────────────────
+        // ── Right: News & Analytics ───────────────────────────────────────────
         {
           type: "tabset",
           weight: 30,
@@ -361,6 +361,27 @@ export function makeAnalysisModel(): IJsonModel {
               name: PANEL_TITLES.news,
               component: "news",
               config: { panelType: "news" } satisfies TabChannelConfig,
+            },
+            {
+              type: "tab",
+              id: "option-pricing",
+              name: PANEL_TITLES["option-pricing"],
+              component: "option-pricing",
+              config: { panelType: "option-pricing" } satisfies TabChannelConfig,
+            },
+            {
+              type: "tab",
+              id: "scenario-matrix",
+              name: PANEL_TITLES["scenario-matrix"],
+              component: "scenario-matrix",
+              config: { panelType: "scenario-matrix" } satisfies TabChannelConfig,
+            },
+            {
+              type: "tab",
+              id: "trade-recommendation",
+              name: PANEL_TITLES["trade-recommendation"],
+              component: "trade-recommendation",
+              config: { panelType: "trade-recommendation" } satisfies TabChannelConfig,
             },
           ],
         },
@@ -592,7 +613,7 @@ export const LAYOUT_TEMPLATES: {
   {
     id: "analysis",
     label: "Market Analysis",
-    description: "Chart, depth, and ladder — no order entry",
+    description: "Chart, depth, ladder, and options analytics — no order entry",
     model: makeAnalysisModel(),
   },
   {

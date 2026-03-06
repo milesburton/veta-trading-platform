@@ -23,6 +23,10 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "market-heatmap": "Sector treemap heatmap — assets sized by market cap, coloured by % change",
   alerts:
     "System alert log — kill switch events, service outages, order rejections and heartbeat loss",
+  "option-pricing": "Black-Scholes European option pricing — theoretical price and full Greeks",
+  "scenario-matrix": "Spot/vol shock scenario matrix with Monte Carlo distribution",
+  "trade-recommendation":
+    "Rule-based option trade recommendations — scored signals with reason codes",
 };
 
 export function ComponentPicker() {

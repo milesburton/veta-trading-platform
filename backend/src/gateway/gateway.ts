@@ -18,6 +18,7 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MARKET_SIM_URL = `http://${Deno.env.get("MARKET_SIM_HOST") ?? "localhost"}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
 const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
 const USER_SERVICE_URL = `http://${Deno.env.get("USER_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("USER_SERVICE_PORT") ?? "5008"}`;
+const ANALYTICS_URL = `http://${Deno.env.get("ANALYTICS_HOST") ?? "localhost"}:${Deno.env.get("ANALYTICS_PORT") ?? "5014"}`;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -188,6 +189,31 @@ function startConsumers(): void {
 await startConsumers();
 
 // ── HTTP / WebSocket handler ──────────────────────────────────────────────────
+
+async function proxyPost(internalUrl: string, req: Request): Promise<Response> {
+  try {
+    const body = await req.text();
+    const res = await fetch(internalUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      signal: AbortSignal.timeout(15_000),
+    });
+    const resBody = await res.arrayBuffer();
+    return new Response(resBody, {
+      status: res.status,
+      headers: {
+        "Content-Type": res.headers.get("Content-Type") ?? "application/json",
+        ...CORS_HEADERS,
+      },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
+      status: 502,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  }
+}
 
 async function proxyGet(internalUrl: string, req: Request): Promise<Response> {
   const src = new URL(req.url);
@@ -591,6 +617,27 @@ serve(async (req: Request): Promise<Response> => {
     } catch (err) {
       return new Response(JSON.stringify({ error: (err as Error).message }), { status: 502, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
     }
+  }
+
+  // ── Analytics: option quote ──
+  if (path === "/analytics/quote" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyPost(`${ANALYTICS_URL}/quote`, req);
+  }
+
+  // ── Analytics: scenario matrix ──
+  if (path === "/analytics/scenario" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyPost(`${ANALYTICS_URL}/scenario`, req);
+  }
+
+  // ── Analytics: trade recommendations ──
+  if (path === "/analytics/recommend" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyPost(`${ANALYTICS_URL}/recommend`, req);
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });

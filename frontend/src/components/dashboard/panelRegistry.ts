@@ -29,6 +29,9 @@ export const PANEL_IDS = [
   "order-progress",
   "market-heatmap",
   "alerts",
+  "option-pricing",
+  "scenario-matrix",
+  "trade-recommendation",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -51,6 +54,9 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "order-progress": "Order Progress (fill tracker)",
   "market-heatmap": "Market Heatmap (sector view)",
   alerts: "Alerts (system notifications)",
+  "option-pricing": "Option Pricing (Black-Scholes)",
+  "scenario-matrix": "Scenario Matrix (spot/vol shocks)",
+  "trade-recommendation": "Trade Recommendations (rule-based)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -79,6 +85,12 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Sector treemap heatmap — all assets sized by market cap, coloured by % price change. Click a tile to broadcast the symbol.",
   alerts:
     "System alert log — kill switch events, service outages, order rejections and algo heartbeat loss",
+  "option-pricing":
+    "Black-Scholes European option pricing — theoretical price and full Greeks for calls and puts",
+  "scenario-matrix":
+    "Spot/vol shock scenario matrix with Monte Carlo distribution — visualise option P&L across market conditions",
+  "trade-recommendation":
+    "Rule-based option trade recommendations — scored signals with reason codes for all strikes and expiries",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -116,4 +128,7 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "order-progress": { out: false, in: true },
   "market-heatmap": { out: true, in: false },
   alerts: { out: false, in: false },
+  "option-pricing": { out: false, in: false },
+  "scenario-matrix": { out: false, in: false },
+  "trade-recommendation": { out: false, in: false },
 };

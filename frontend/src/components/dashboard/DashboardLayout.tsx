@@ -31,10 +31,13 @@ import { MarketLadder } from "../MarketLadder.tsx";
 import { MarketMatch } from "../MarketMatch.tsx";
 import { NewsSourcesPanel } from "../NewsSourcesPanel.tsx";
 import { ObservabilityPanel } from "../ObservabilityPanel.tsx";
+import { OptionPricingPanel } from "../OptionPricingPanel.tsx";
 import { OrderBlotter } from "../OrderBlotter.tsx";
 import { OrderProgressPanel } from "../OrderProgressPanel.tsx";
 import { OrderTicket } from "../OrderTicket.tsx";
 import { clearDraggedPanelId, draggedPanelId } from "../panelDragState.ts";
+import { ScenarioMatrixPanel } from "../ScenarioMatrixPanel.tsx";
+import { TradeRecommendationPanel } from "../TradeRecommendationPanel.tsx";
 import { DashboardContext, useDashboard } from "./DashboardContext.tsx";
 import { LAYOUT_TEMPLATES } from "./layoutModels.ts";
 import type { LayoutItem } from "./layoutUtils.ts";
@@ -641,6 +644,12 @@ export function DashboardLayout() {
           return wrap(<MarketHeatmap />);
         case "alerts":
           return wrap(<AlertsPanel />);
+        case "option-pricing":
+          return wrap(<OptionPricingPanel />);
+        case "scenario-matrix":
+          return wrap(<ScenarioMatrixPanel />);
+        case "trade-recommendation":
+          return wrap(<TradeRecommendationPanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }
