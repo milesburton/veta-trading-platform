@@ -48,6 +48,14 @@ function saveWorkspaces(userId: string, ws: Workspace[]) {
   localStorage.setItem(workspacesKey(userId), JSON.stringify(ws));
 }
 
+function loadPinned(): boolean {
+  return localStorage.getItem("sidebar-pinned") !== "false";
+}
+
+function savePinned(pinned: boolean) {
+  localStorage.setItem("sidebar-pinned", String(pinned));
+}
+
 // ─── History helpers ──────────────────────────────────────────────────────────
 
 const WORKSPACE_PARAM = "ws";
@@ -74,6 +82,26 @@ const VIEW_PRESETS = [
 
 type ViewPresetId = (typeof VIEW_PRESETS)[number]["id"];
 
+// ─── Active view persistence ──────────────────────────────────────────────────
+
+function activeViewKey(userId: string, workspaceId: string) {
+  return `active-view:${userId}:${workspaceId}`;
+}
+
+function loadActiveView(userId: string, workspaceId: string, fallback: ViewPresetId): ViewPresetId {
+  try {
+    const raw = localStorage.getItem(activeViewKey(userId, workspaceId));
+    if (raw && VIEW_PRESETS.some((p) => p.id === raw)) return raw as ViewPresetId;
+  } catch {
+    // ignore
+  }
+  return fallback;
+}
+
+function saveActiveView(userId: string, workspaceId: string, view: ViewPresetId) {
+  localStorage.setItem(activeViewKey(userId, workspaceId), view);
+}
+
 // ─── Vertical workspace sidebar ───────────────────────────────────────────────
 
 interface Props {
@@ -84,14 +112,21 @@ interface Props {
 }
 
 export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, workspaces }: Props) {
-  const expanded = useSignal(false);
+  // Pinned = always expanded. Unpinned = collapses to icon strip, expands on hover.
+  const pinned = useSignal(loadPinned());
+  const hovered = useSignal(false);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const editingId = useSignal<string | null>(null);
   const editValue = useSignal("");
   const inputRef = useRef<HTMLInputElement>(null);
   const userId = useAppSelector((s) => s.auth.user?.id ?? "anonymous");
   const userRole = useAppSelector((s) => s.auth.user?.role);
-  const activeView = useSignal<ViewPresetId>(userRole === "admin" ? "admin" : "trading");
+  const defaultView: ViewPresetId = userRole === "admin" ? "admin" : "trading";
+  const activeView = useSignal<ViewPresetId>(loadActiveView(userId, activeId, defaultView));
   const { resetLayout } = useDashboard();
+
+  const isExpanded = pinned.value || hovered.value;
 
   useEffect(() => {
     if (editingId.value !== null) {
@@ -100,6 +135,27 @@ export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, works
     }
   }, [editingId.value]);
 
+  function handleMouseEnter() {
+    if (pinned.value) return;
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hovered.value = true;
+  }
+
+  function handleMouseLeave() {
+    if (pinned.value) return;
+    // Small delay so a quick mouse-out doesn't flash closed
+    hoverTimeoutRef.current = setTimeout(() => {
+      hovered.value = false;
+    }, 150);
+  }
+
+  function togglePin() {
+    const next = !pinned.value;
+    pinned.value = next;
+    savePinned(next);
+    if (!next) hovered.value = false;
+  }
+
   const addWorkspace = useCallback(() => {
     const id = `ws-${Date.now()}`;
     const name = `Workspace ${workspaces.length + 1}`;
@@ -107,8 +163,8 @@ export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, works
     saveWorkspaces(userId, next);
     onWorkspacesChange(next);
     onSelect(id);
-    expanded.value = true;
-  }, [workspaces, onSelect, onWorkspacesChange, userId, expanded]);
+    // Do NOT touch expanded/pinned state here — pin/hover handles it
+  }, [workspaces, onSelect, onWorkspacesChange, userId]);
 
   const renameWorkspace = useCallback(
     (id: string, name: string) => {
@@ -139,28 +195,32 @@ export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, works
     }
   }
 
-  const isExpanded = expanded.value;
-
   return (
     <nav
       aria-label="Workspace navigation"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={`flex flex-col shrink-0 bg-gray-950 border-r border-gray-800 transition-all duration-200 ${
         isExpanded ? "w-40" : "w-8"
       }`}
     >
+      {/* ── Pin toggle ── */}
       <button
         type="button"
-        aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
-        aria-expanded={isExpanded}
-        title={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
-        onClick={() => {
-          expanded.value = !expanded.value;
-        }}
-        className="flex items-center justify-center h-8 w-full shrink-0 text-gray-600 hover:text-gray-300 hover:bg-gray-900/50 transition-colors border-b border-gray-800 text-xs"
+        aria-label={pinned.value ? "Unpin sidebar (collapse when not hovered)" : "Pin sidebar open"}
+        title={pinned.value ? "Unpin sidebar" : "Pin sidebar open"}
+        onClick={togglePin}
+        className={`flex items-center justify-center h-8 w-full shrink-0 transition-colors border-b border-gray-800 text-xs ${
+          pinned.value
+            ? "text-emerald-500 hover:text-emerald-400 hover:bg-gray-900/50"
+            : "text-gray-600 hover:text-gray-300 hover:bg-gray-900/50"
+        }`}
       >
-        {isExpanded ? "‹" : "›"}
+        {/* Show a pin icon: filled when pinned, outline when not */}
+        <span aria-hidden="true">{pinned.value ? "⦿" : "⦾"}</span>
       </button>
 
+      {/* ── View presets ── */}
       <fieldset
         aria-label="View presets"
         className="shrink-0 border-b border-gray-800 border-0 m-0 p-0"
@@ -184,6 +244,7 @@ export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, works
               title={`${preset.label} — switch to ${preset.label.toLowerCase()} layout`}
               onClick={() => {
                 activeView.value = preset.id;
+                saveActiveView(userId, activeId, preset.id);
                 resetLayout(preset.makeModel());
               }}
               className={`flex items-center w-full border-b border-gray-800/40 transition-colors ${
@@ -201,6 +262,7 @@ export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, works
         })}
       </fieldset>
 
+      {/* ── Workspaces list (only shown when >1) ── */}
       <ul
         aria-label="Workspaces"
         className="flex-1 overflow-y-auto overflow-x-hidden list-none m-0 p-0"
@@ -296,17 +358,23 @@ export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, works
           })}
       </ul>
 
+      {/* ── Add workspace button — prominent, always visible ── */}
       <button
         type="button"
         aria-label="Add new workspace"
         title="Add new workspace"
         onClick={addWorkspace}
-        className={`shrink-0 flex items-center border-t border-gray-800 text-gray-600 hover:text-gray-300 hover:bg-gray-900/50 transition-colors text-sm ${
-          isExpanded ? "px-3 py-1.5 gap-1.5 text-[11px]" : "justify-center h-8"
+        className={`shrink-0 flex items-center border-t-2 border-gray-700 bg-gray-900/60 text-emerald-600 hover:text-emerald-400 hover:bg-gray-800/80 transition-colors ${
+          isExpanded ? "px-3 py-2 gap-2 justify-start" : "justify-center h-10"
         }`}
       >
-        <span aria-hidden="true">+</span>
-        {isExpanded && <span className="text-[11px]">New workspace</span>}
+        <span
+          aria-hidden="true"
+          className={`font-bold leading-none ${isExpanded ? "text-base" : "text-lg"}`}
+        >
+          +
+        </span>
+        {isExpanded && <span className="text-[11px] font-semibold">New workspace</span>}
       </button>
     </nav>
   );

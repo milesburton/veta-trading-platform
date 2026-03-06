@@ -42,22 +42,42 @@ interface DashboardProviderProps {
   initialModel?: IJsonModel;
 }
 
+/** Load a persisted model from localStorage, falling back to initialModel or default. */
+function loadModel(storageKey: string, initialModel?: IJsonModel): Model {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      const json = JSON.parse(raw) as IJsonModel;
+      return Model.fromJson(json);
+    }
+  } catch {
+    // corrupted — fall through
+  }
+  return Model.fromJson(initialModel ?? makeDefaultModel());
+}
+
 export function DashboardProvider({
   children,
   storageKey = STORAGE_KEY,
   initialModel,
 }: DashboardProviderProps) {
-  const [model, setModelState] = useState<Model>(() =>
-    Model.fromJson(initialModel ?? makeDefaultModel())
-  );
+  const [model, setModelState] = useState<Model>(() => loadModel(storageKey, initialModel));
   const [layout, setLayoutState] = useState<LayoutItem[]>(() => modelToLayoutItems(model));
 
   const activePanelIds = new Set(layout.map((l) => l.panelType));
 
-  const setModel = useCallback((m: Model) => {
-    setModelState(m);
-    setLayoutState(modelToLayoutItems(m));
-  }, []);
+  const setModel = useCallback(
+    (m: Model) => {
+      setModelState(m);
+      setLayoutState(modelToLayoutItems(m));
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(m.toJson()));
+      } catch {
+        // quota exceeded — silently ignore
+      }
+    },
+    [storageKey]
+  );
 
   const setLayout = useCallback(
     (_next: LayoutItem[] | ((prev: LayoutItem[]) => LayoutItem[])) => {},
@@ -113,11 +133,19 @@ export function DashboardProvider({
     });
   }, []);
 
-  const resetLayout = useCallback((templateModel?: IJsonModel) => {
-    const next = Model.fromJson(templateModel ?? makeDefaultModel());
-    setModelState(next);
-    setLayoutState(modelToLayoutItems(next));
-  }, []);
+  const resetLayout = useCallback(
+    (templateModel?: IJsonModel) => {
+      const next = Model.fromJson(templateModel ?? makeDefaultModel());
+      setModelState(next);
+      setLayoutState(modelToLayoutItems(next));
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(next.toJson()));
+      } catch {
+        // quota exceeded — silently ignore
+      }
+    },
+    [storageKey]
+  );
 
   return (
     <DashboardContext.Provider
