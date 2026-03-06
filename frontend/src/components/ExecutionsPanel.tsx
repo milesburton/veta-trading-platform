@@ -16,6 +16,7 @@ import { useGridQuery } from "../hooks/useGridQuery.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import type { FieldDef } from "../types/gridPrefs.ts";
 import type { LiquidityFlag, OrderRecord } from "../types.ts";
+import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
 import { applyCfRules } from "../utils/gridFilter.ts";
 import { CfRuleEditor } from "./grid/CfRuleEditor.tsx";
 import { FilterBar } from "./grid/FilterBar.tsx";
@@ -141,7 +142,10 @@ function TradeRow({ order }: { order: OrderRecord }) {
         <td className={`px-3 py-1.5 text-gray-400 ${cellClasses.strategy ?? ""}`}>
           {order.strategy}
         </td>
-        <td className={`px-3 py-1.5 font-semibold ${statusColor} ${cellClasses.status ?? ""}`}>
+        <td
+          className={`px-3 py-1.5 font-semibold ${statusColor} ${cellClasses.status ?? ""}`}
+          title={ORDER_STATUS_DESCRIPTIONS[order.status]}
+        >
           {order.status}
         </td>
         <td className="px-3 py-1.5 text-right tabular-nums text-gray-300">{fillPct.toFixed(0)}%</td>

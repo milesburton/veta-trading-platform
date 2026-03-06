@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { orderPatched } from "../store/ordersSlice.ts";
 import type { FieldDef } from "../types/gridPrefs.ts";
 import type { ChildOrder, LiquidityFlag, OrderRecord, OrderStatus } from "../types.ts";
+import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
 import { applyCfRules } from "../utils/gridFilter.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
@@ -108,6 +109,7 @@ function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
           <td className="px-3 py-1">
             <span
               className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase ${STATUS_STYLES[child.status]}`}
+              title={ORDER_STATUS_DESCRIPTIONS[child.status]}
             >
               {child.status}
             </span>
@@ -506,6 +508,7 @@ export function OrderBlotter() {
                       <td className={`px-3 py-1.5 ${cellClasses.status ?? ""}`}>
                         <span
                           className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${STATUS_STYLES[order.status]}`}
+                          title={ORDER_STATUS_DESCRIPTIONS[order.status]}
                         >
                           {order.status}
                         </span>
