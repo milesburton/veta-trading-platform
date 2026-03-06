@@ -83,28 +83,80 @@ export function makeDefaultModel(): IJsonModel {
             },
           ],
         },
-        // ── Column 3: Orders cake — all on channel 1 ─────────────────────────
-        // Order Blotter (ch1 out) → Order Progress + Child Orders + Algo + Decision Log (ch1 in)
+        // ── Column 3: Orders cake (left) + Order Progress sidebar (right) ────
+        // Blotter (ch1 out) → Child Orders / Algo / Decision Log (ch1 in)
+        // Order Progress pinned right, receiving ch1
         {
           type: "row",
           weight: 60,
           children: [
+            // Left: vertical cake stack
             {
-              type: "tabset",
-              weight: 22,
+              type: "row",
+              weight: 82,
               children: [
                 {
-                  type: "tab",
-                  id: "order-blotter",
-                  name: PANEL_TITLES["order-blotter"],
-                  component: "order-blotter",
-                  config: {
-                    panelType: "order-blotter",
-                    outgoing: 1,
-                  } satisfies TabChannelConfig,
+                  type: "tabset",
+                  weight: 28,
+                  children: [
+                    {
+                      type: "tab",
+                      id: "order-blotter",
+                      name: PANEL_TITLES["order-blotter"],
+                      component: "order-blotter",
+                      config: {
+                        panelType: "order-blotter",
+                        outgoing: 1,
+                      } satisfies TabChannelConfig,
+                    },
+                  ],
+                },
+                {
+                  type: "tabset",
+                  weight: 24,
+                  children: [
+                    {
+                      type: "tab",
+                      id: "child-orders",
+                      name: PANEL_TITLES["child-orders"],
+                      component: "child-orders",
+                      config: {
+                        panelType: "child-orders",
+                        incoming: 1,
+                        outgoing: 3,
+                      } satisfies TabChannelConfig,
+                    },
+                  ],
+                },
+                {
+                  type: "tabset",
+                  weight: 24,
+                  children: [
+                    {
+                      type: "tab",
+                      id: "algo-monitor",
+                      name: PANEL_TITLES["algo-monitor"],
+                      component: "algo-monitor",
+                      config: { panelType: "algo-monitor", incoming: 1 } satisfies TabChannelConfig,
+                    },
+                  ],
+                },
+                {
+                  type: "tabset",
+                  weight: 24,
+                  children: [
+                    {
+                      type: "tab",
+                      id: "decision-log",
+                      name: PANEL_TITLES["decision-log"],
+                      component: "decision-log",
+                      config: { panelType: "decision-log", incoming: 1 } satisfies TabChannelConfig,
+                    },
+                  ],
                 },
               ],
             },
+            // Right: Order Progress sidebar (full height)
             {
               type: "tabset",
               weight: 18,
@@ -118,49 +170,6 @@ export function makeDefaultModel(): IJsonModel {
                     panelType: "order-progress",
                     incoming: 1,
                   } satisfies TabChannelConfig,
-                },
-              ],
-            },
-            {
-              type: "tabset",
-              weight: 20,
-              children: [
-                {
-                  type: "tab",
-                  id: "child-orders",
-                  name: PANEL_TITLES["child-orders"],
-                  component: "child-orders",
-                  config: {
-                    panelType: "child-orders",
-                    incoming: 1,
-                    outgoing: 1,
-                  } satisfies TabChannelConfig,
-                },
-              ],
-            },
-            {
-              type: "tabset",
-              weight: 20,
-              children: [
-                {
-                  type: "tab",
-                  id: "algo-monitor",
-                  name: PANEL_TITLES["algo-monitor"],
-                  component: "algo-monitor",
-                  config: { panelType: "algo-monitor", incoming: 1 } satisfies TabChannelConfig,
-                },
-              ],
-            },
-            {
-              type: "tabset",
-              weight: 20,
-              children: [
-                {
-                  type: "tab",
-                  id: "decision-log",
-                  name: PANEL_TITLES["decision-log"],
-                  component: "decision-log",
-                  config: { panelType: "decision-log", incoming: 1 } satisfies TabChannelConfig,
                 },
               ],
             },
