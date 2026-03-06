@@ -1,4 +1,6 @@
 import { useSignal } from "@preact/signals-react";
+import type { IJsonModel, TabNode } from "flexlayout-react";
+import { Actions, Model } from "flexlayout-react";
 import { useEffect, useRef, useState } from "react";
 import type { AlertSeverity } from "../store/alertsSlice.ts";
 import { alertAdded, selectAlertCount, selectHighestSeverity } from "../store/alertsSlice.ts";
@@ -9,6 +11,7 @@ import type { ServiceHealth } from "../types.ts";
 import { AlertDrawer } from "./AlertDrawer.tsx";
 import { ComponentPicker } from "./ComponentPicker.tsx";
 import { useDashboard } from "./dashboard/DashboardContext.tsx";
+import type { TabChannelConfig } from "./dashboard/panelRegistry.ts";
 import { KillSwitchButton } from "./KillSwitchButton.tsx";
 import { ServiceStatus } from "./ServiceStatus.tsx";
 import { TemplatePicker } from "./TemplatePicker.tsx";
@@ -63,8 +66,22 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
   const alertCount = useAppSelector(selectAlertCount);
   const highestSeverity = useAppSelector(selectHighestSeverity);
   const prevServiceStates = useRef<Record<string, string>>({});
-  const { activePanelIds } = useDashboard();
+  const { activePanelIds, model, setModel } = useDashboard();
   const isPinned = activePanelIds.has("alerts");
+
+  function focusAlertsTab() {
+    let tabId: string | undefined;
+    model.visitNodes((node) => {
+      if (!tabId && node.getType() === "tab") {
+        const cfg = (node as TabNode).getConfig() as TabChannelConfig | undefined;
+        if (cfg?.panelType === "alerts") tabId = node.getId();
+      }
+    });
+    if (tabId) {
+      model.doAction(Actions.selectTab(tabId));
+      setModel(Model.fromJson(model.toJson() as IJsonModel));
+    }
+  }
 
   useEffect(() => {
     const prev = prevServiceStates.current;
@@ -108,9 +125,10 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
       <button
         type="button"
         onClick={() => {
-          if (!isPinned) setDrawerOpen(true);
+          if (isPinned) focusAlertsTab();
+          else setDrawerOpen(true);
         }}
-        title={isPinned ? "Alerts panel is open in dashboard" : "Alert Centre"}
+        title={isPinned ? "Jump to Alerts panel" : "Alert Centre"}
         className={`flex items-center gap-1.5 px-2 py-1 rounded border font-semibold text-[11px] tracking-wide transition-all ${btnCls}`}
       >
         Alerts

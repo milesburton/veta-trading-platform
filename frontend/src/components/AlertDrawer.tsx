@@ -146,19 +146,22 @@ export function AlertDrawer({ onClose }: Props) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
           <span className="text-sm font-semibold text-gray-200">Alert Centre</span>
           <div className="flex items-center gap-2">
-            {!isPinned && (
-              <button
-                type="button"
-                title="Pin to dashboard"
-                onClick={() => {
+            <button
+              type="button"
+              title={isPinned ? "Alerts panel is open in dashboard" : "Pin to dashboard"}
+              onClick={() => {
+                if (!isPinned) {
                   addPanel("alerts");
                   onClose();
-                }}
-                className="text-gray-500 hover:text-gray-300 transition-colors text-xs leading-none px-1.5 py-0.5 border border-gray-700 hover:border-gray-500 rounded"
-              >
-                Pin
-              </button>
-            )}
+                }
+              }}
+              className={`flex items-center justify-center w-5 h-5 rounded transition-colors ${
+                isPinned ? "text-amber-400 cursor-default" : "text-gray-600 hover:text-gray-300"
+              }`}
+              style={{ fontSize: "11px", lineHeight: 1 }}
+            >
+              {isPinned ? "◈" : "◇"}
+            </button>
             {alerts.length > 0 && (
               <button
                 type="button"
