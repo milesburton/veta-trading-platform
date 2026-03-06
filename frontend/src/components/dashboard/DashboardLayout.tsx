@@ -35,6 +35,7 @@ import { OrderProgressPanel } from "../OrderProgressPanel.tsx";
 import { OrderTicket } from "../OrderTicket.tsx";
 import { clearDraggedPanelId, draggedPanelId } from "../panelDragState.ts";
 import { DashboardContext, useDashboard } from "./DashboardContext.tsx";
+import { LAYOUT_TEMPLATES } from "./layoutModels.ts";
 import type { LayoutItem } from "./layoutUtils.ts";
 import { wouldCreateCycleIn, wouldCreateCycleOut } from "./layoutUtils.ts";
 import type { PanelId, TabChannelConfig } from "./panelRegistry.ts";
@@ -441,65 +442,39 @@ function CandleChartPanel({ incoming }: { incoming: ChannelNumber | null }) {
 
 // ── EmptyWorkspace ────────────────────────────────────────────────────────────
 
-const SUGGESTED_PANELS: { id: PanelId; icon: string; desc: string }[] = [
-  { id: "market-ladder", icon: "▤", desc: "Live bid/ask quotes" },
-  { id: "order-ticket", icon: "✎", desc: "Submit buy/sell orders" },
-  { id: "candle-chart", icon: "📈", desc: "OHLCV price chart" },
-  { id: "order-blotter", icon: "☰", desc: "Active & filled orders" },
-  { id: "algo-monitor", icon: "⊞", desc: "Strategy status" },
-  { id: "market-heatmap", icon: "⊟", desc: "Sector heatmap" },
-];
+const ADMIN_ONLY_TEMPLATE_IDS = new Set(["admin"]);
 
-function EmptyWorkspace({ onAddPanel }: { onAddPanel: (id: PanelId) => void }) {
-  const { activePanelIds } = useDashboard();
-  const user = useAppSelector((s) => s.auth.user);
-  const isAdmin = user?.role === "admin";
+function EmptyWorkspace() {
+  const { resetLayout } = useDashboard();
+  const userRole = useAppSelector((s) => s.auth.user?.role);
 
-  const panels = SUGGESTED_PANELS.filter((p) => {
-    if (p.id === "order-ticket") return !isAdmin;
-    return true;
-  });
+  const templates = LAYOUT_TEMPLATES.filter(
+    (t) => t.id !== "clear" && (!ADMIN_ONLY_TEMPLATE_IDS.has(t.id) || userRole === "admin")
+  );
 
   return (
     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gray-950 gap-6 px-8">
       <div className="text-center">
         <div className="text-2xl text-gray-700 mb-2">Empty workspace</div>
-        <p className="text-sm text-gray-600">
-          Add panels below, or drag them from{" "}
-          <span className="text-gray-400 font-medium">⊞ Add Panel</span> in the status bar.
-        </p>
+        <p className="text-sm text-gray-600">Choose a layout to get started.</p>
       </div>
 
       <div className="grid grid-cols-3 gap-3 w-full max-w-lg">
-        {panels.map((p) => {
-          const alreadyOpen = activePanelIds.has(p.id);
-          return (
-            <button
-              key={p.id}
-              type="button"
-              disabled={alreadyOpen}
-              onClick={() => onAddPanel(p.id)}
-              title={
-                alreadyOpen ? `${PANEL_TITLES[p.id]} already open` : `Add ${PANEL_TITLES[p.id]}`
-              }
-              className={`flex flex-col items-center gap-1.5 rounded-lg border px-4 py-4 transition-colors text-center ${
-                alreadyOpen
-                  ? "border-gray-800 text-gray-700 cursor-not-allowed"
-                  : "border-gray-700 hover:border-emerald-600 hover:bg-emerald-950/30 text-gray-400 hover:text-emerald-300 cursor-pointer"
-              }`}
-            >
-              <span className="text-xl leading-none" aria-hidden="true">
-                {p.icon}
-              </span>
-              <span className="text-[11px] font-medium leading-tight">{PANEL_TITLES[p.id]}</span>
-              <span className="text-[9px] text-gray-600 leading-tight">{p.desc}</span>
-            </button>
-          );
-        })}
+        {templates.map((tpl) => (
+          <button
+            key={tpl.id}
+            type="button"
+            onClick={() => resetLayout(tpl.model)}
+            className="flex flex-col items-start gap-1 rounded-lg border border-gray-700 px-4 py-3 text-left transition-colors hover:border-emerald-600 hover:bg-emerald-950/30 cursor-pointer"
+          >
+            <span className="text-[11px] font-semibold text-gray-300">{tpl.label}</span>
+            <span className="text-[9px] text-gray-600 leading-tight">{tpl.description}</span>
+          </button>
+        ))}
       </div>
 
       <p className="text-[10px] text-gray-700">
-        Double-click any panel tab to rename · Drag tabs to rearrange
+        Or use <span className="text-gray-500">⊞ Layout</span> in the toolbar to switch at any time.
       </p>
     </div>
   );
@@ -922,7 +897,7 @@ export function DashboardLayout() {
 
   return (
     <div className="h-full w-full relative">
-      {isEmpty && <EmptyWorkspace onAddPanel={addPanel} />}
+      {isEmpty && <EmptyWorkspace />}
       <Layout
         model={model}
         factory={factory}
