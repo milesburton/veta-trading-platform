@@ -91,6 +91,10 @@ function TradingApp() {
 
   const { workspaces, activeId, handleSelect, handleChange, setWorkspaces } = useWorkspaces(userId);
 
+  // Track whether the user has mutated workspaces before the server prefs load
+  // resolves — if so, we skip overwriting their changes with stale server data.
+  const locallyModifiedRef = useRef(false);
+
   const [layouts, setLayouts] = useState<Record<string, Model>>(() => {
     const seed = seedWorkspaces();
     const initial: Record<string, Model> = {};
@@ -114,6 +118,9 @@ function TradingApp() {
   useEffect(() => {
     if (authStatus !== "authenticated") return;
     loadWorkspacePrefs().then((prefs) => {
+      // If the user made changes while the fetch was in-flight, don't overwrite.
+      if (locallyModifiedRef.current) return;
+
       let finalWorkspaces = prefs?.workspaces ?? [];
       let finalLayoutsJson = prefs?.layouts ?? {};
 
@@ -154,10 +161,18 @@ function TradingApp() {
     });
   }, [authStatus]);
 
+  // Keep a ref to the latest prefs so beforeunload can flush synchronously.
+  const pendingSaveRef = useRef<{
+    workspaces: typeof workspaces;
+    layouts: Record<string, Model>;
+  } | null>(null);
+
   const savePrefs = useCallback(
     (nextWorkspaces: typeof workspaces, nextLayouts: Record<string, Model>) => {
+      pendingSaveRef.current = { workspaces: nextWorkspaces, layouts: nextLayouts };
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
+        pendingSaveRef.current = null;
         const layoutsJson: Record<string, IJsonModel> = {};
         for (const [id, m] of Object.entries(nextLayouts)) {
           layoutsJson[id] = m.toJson() as IJsonModel;
@@ -168,8 +183,25 @@ function TradingApp() {
     []
   );
 
+  // Flush any pending debounced save before the page unloads.
+  useEffect(() => {
+    function flushOnUnload() {
+      if (!pendingSaveRef.current) return;
+      const { workspaces: ws, layouts: ls } = pendingSaveRef.current;
+      const layoutsJson: Record<string, IJsonModel> = {};
+      for (const [id, m] of Object.entries(ls)) {
+        layoutsJson[id] = m.toJson() as IJsonModel;
+      }
+      // Use keepalive fetch so the browser doesn't cancel the request on unload.
+      saveWorkspacePrefs({ workspaces: ws, layouts: layoutsJson });
+    }
+    window.addEventListener("beforeunload", flushOnUnload);
+    return () => window.removeEventListener("beforeunload", flushOnUnload);
+  }, []);
+
   const handleWorkspacesChange = useCallback(
     (next: typeof workspaces) => {
+      locallyModifiedRef.current = true;
       handleChange(next);
       const existingIds = new Set(Object.keys(layouts));
       const newLayouts = { ...layouts };

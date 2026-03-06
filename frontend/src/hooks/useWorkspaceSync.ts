@@ -27,6 +27,7 @@ export async function saveWorkspacePrefs(prefs: WorkspacePrefs): Promise<void> {
     await fetch("/api/gateway/preferences", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
+      keepalive: true,
       body: JSON.stringify({
         ...cachedOtherPrefs,
         workspaces: prefs.workspaces,
