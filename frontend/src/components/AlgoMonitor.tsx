@@ -1,10 +1,33 @@
 import { useSignal } from "@preact/signals-react";
 import { Fragment } from "react";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
+import { useColumnLayout } from "../hooks/useColumnLayout.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { submitOrderThunk } from "../store/ordersSlice.ts";
+import type { ColDef } from "../types/gridPrefs.ts";
 import type { ChildOrder, LiquidityFlag, OrderRecord } from "../types.ts";
+import { ResizableHeader } from "./grid/ResizableHeader.tsx";
 import { PopOutButton } from "./PopOutButton.tsx";
+
+const ALGO_COLS: ColDef[] = [
+  { key: "asset", label: "Asset", type: "string", defaultWidth: 72 },
+  { key: "side", label: "Side", type: "enum", options: ["BUY", "SELL"], defaultWidth: 52 },
+  {
+    key: "strategy",
+    label: "Strategy",
+    type: "enum",
+    options: ["LIMIT", "TWAP", "POV", "VWAP"],
+    defaultWidth: 72,
+  },
+  { key: "filled", label: "Filled", type: "number", defaultWidth: 72, align: "right" },
+  { key: "unfilled", label: "Unfilled", type: "number", defaultWidth: 72, align: "right" },
+  { key: "total", label: "Total", type: "number", defaultWidth: 72, align: "right" },
+  { key: "progress", label: "Progress", type: "number", defaultWidth: 112 },
+  { key: "limitPrice", label: "Limit", type: "number", defaultWidth: 64, align: "right" },
+  { key: "lastPrice", label: "Last", type: "number", defaultWidth: 64, align: "right" },
+  { key: "impact", label: "Impact", type: "number", defaultWidth: 64, align: "right" },
+  { key: "commission", label: "Comm", type: "number", defaultWidth: 64, align: "right" },
+];
 
 type ViewTab = "active" | "needs-action" | "history";
 
@@ -252,6 +275,8 @@ export function AlgoMonitor() {
   const stratFilter = useSignal("ALL");
   const tab = useSignal<ViewTab>("active");
   const expandedPerf = useSignal<Set<string>>(new Set());
+  const dragKey = useSignal<string | null>(null);
+  const { orderedCols, getWidth, onResize, onReorder } = useColumnLayout("algoMonitor", ALGO_COLS);
 
   function togglePerf(id: string) {
     const next = new Set(expandedPerf.value);
@@ -287,7 +312,7 @@ export function AlgoMonitor() {
         : historyOrders;
 
   const isNeedsAction = tab.value === "needs-action";
-  const colSpan = isNeedsAction ? 12 : 11;
+  const colSpan = orderedCols.length + (isNeedsAction ? 1 : 0);
 
   return (
     <div className="flex flex-col h-full">
@@ -375,52 +400,28 @@ export function AlgoMonitor() {
           <table className="w-full text-xs">
             <thead>
               <tr className="text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950">
-                <th className="text-left px-3 py-2" title="Instrument being traded">
-                  Asset
-                </th>
-                <th className="text-left px-3 py-2" title="Order direction: BUY or SELL">
-                  Side
-                </th>
-                <th
-                  className="text-left px-3 py-2"
-                  title="Execution algorithm: LIMIT, TWAP, POV, or VWAP"
-                >
-                  Strategy
-                </th>
-                <th className="text-right px-3 py-2" title="Quantity filled so far">
-                  Filled
-                </th>
-                <th className="text-right px-3 py-2" title="Remaining quantity not yet filled">
-                  Unfilled
-                </th>
-                <th className="text-right px-3 py-2" title="Total order quantity">
-                  Total
-                </th>
-                <th className="px-3 py-2 w-28" title="Fill completion percentage">
-                  Progress
-                </th>
-                <th
-                  className="text-right px-3 py-2"
-                  title="Original limit price submitted with the order"
-                >
-                  Limit
-                </th>
-                <th
-                  className="text-right px-3 py-2"
-                  title="Current market price — green if order is in-the-money"
-                >
-                  Last
-                </th>
-                <th
-                  className="text-right px-3 py-2"
-                  title="Market impact in basis points (1bp = 0.01%) — measures execution quality vs arrival price. Positive = paid more than arrival, negative = better than arrival"
-                >
-                  Impact
-                </th>
-                <th className="text-right px-3 py-2" title="Total execution commission in USD">
-                  Comm
-                </th>
-                {isNeedsAction && <th className="px-3 py-2" />}
+                {orderedCols.map((col) => (
+                  <ResizableHeader
+                    key={col.key}
+                    colKey={col.key}
+                    width={getWidth(col.key)}
+                    minWidth={col.minWidth}
+                    gridId="algoMonitor"
+                    onResize={onResize}
+                    onColumnDragStart={(k) => {
+                      dragKey.value = k;
+                    }}
+                    onColumnDrop={(target) => {
+                      if (dragKey.value) onReorder(dragKey.value, target);
+                      dragKey.value = null;
+                    }}
+                    align={col.align}
+                    className={`px-3 py-2 ${col.align === "right" ? "text-right" : "text-left"}`}
+                  >
+                    {col.label}
+                  </ResizableHeader>
+                ))}
+                {isNeedsAction && <th className="px-3 py-2 w-24" />}
               </tr>
             </thead>
             <tbody>

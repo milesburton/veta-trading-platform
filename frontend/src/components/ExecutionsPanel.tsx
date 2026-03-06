@@ -12,15 +12,16 @@ import {
 } from "recharts";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
+import { useColumnLayout } from "../hooks/useColumnLayout.ts";
 import { useContainerLimit, useGridQuery } from "../hooks/useGridQuery.ts";
 import { useAppSelector } from "../store/hooks.ts";
-import type { FieldDef } from "../types/gridPrefs.ts";
+import type { ColDef } from "../types/gridPrefs.ts";
 import type { LiquidityFlag, OrderRecord } from "../types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
 import { applyCfRules } from "../utils/gridFilter.ts";
 import { CfRuleEditor } from "./grid/CfRuleEditor.tsx";
 import { FilterBar } from "./grid/FilterBar.tsx";
-import { SortableHeader } from "./grid/SortableHeader.tsx";
+import { ResizableHeader } from "./grid/ResizableHeader.tsx";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 const LIQ_COLORS: Record<LiquidityFlag, string> = {
@@ -29,16 +30,29 @@ const LIQ_COLORS: Record<LiquidityFlag, string> = {
   CROSS: "#38bdf8",
 };
 
-const EXEC_FIELDS: FieldDef[] = [
-  { key: "asset", label: "Asset", type: "string" },
-  { key: "side", label: "Side", type: "enum", options: ["BUY", "SELL"] },
-  { key: "strategy", label: "Strategy", type: "enum", options: ["LIMIT", "TWAP", "POV", "VWAP"] },
+const EXEC_COLS: ColDef[] = [
+  { key: "submittedAt", label: "Time", type: "string", defaultWidth: 80 },
+  { key: "asset", label: "Asset", type: "string", defaultWidth: 72 },
+  { key: "side", label: "Side", type: "enum", options: ["BUY", "SELL"], defaultWidth: 52 },
+  {
+    key: "strategy",
+    label: "Strategy",
+    type: "enum",
+    options: ["LIMIT", "TWAP", "POV", "VWAP"],
+    defaultWidth: 72,
+  },
   {
     key: "status",
     label: "Status",
     type: "enum",
     options: ["pending", "working", "filled", "expired", "rejected", "cancelled", "held"],
+    defaultWidth: 72,
   },
+  { key: "fillPct", label: "Fill%", type: "number", defaultWidth: 56, align: "right" },
+  { key: "impact", label: "Impact", type: "number", defaultWidth: 56, align: "right" },
+  { key: "commission", label: "Comm", type: "number", defaultWidth: 64, align: "right" },
+  { key: "slices", label: "Slices", type: "number", defaultWidth: 52, align: "right" },
+  { key: "_expand", label: "", type: "string", defaultWidth: 24 },
 ];
 
 function formatTime(ms: number) {
@@ -73,7 +87,15 @@ function buildFillTimeline(order: OrderRecord) {
   });
 }
 
-function TradeRow({ order }: { order: OrderRecord }) {
+function TradeRow({
+  order,
+  cols,
+  getWidth,
+}: {
+  order: OrderRecord;
+  cols: ColDef[];
+  getWidth: (key: string) => number;
+}) {
   const expanded = useSignal(false);
   const cfRules = useAppSelector((s) => s.gridPrefs.executions.cfRules);
 
@@ -126,44 +148,122 @@ function TradeRow({ order }: { order: OrderRecord }) {
           expanded.value = !expanded.value;
         }}
       >
-        <td
-          className={`px-3 py-1.5 text-gray-500 tabular-nums whitespace-nowrap text-[10px] ${cellClasses.submittedAt ?? ""}`}
-        >
-          {formatTime(order.submittedAt)}
-        </td>
-        <td className={`px-3 py-1.5 font-semibold text-gray-200 ${cellClasses.asset ?? ""}`}>
-          {order.asset}
-        </td>
-        <td
-          className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"} ${cellClasses.side ?? ""}`}
-        >
-          {order.side}
-        </td>
-        <td className={`px-3 py-1.5 text-gray-400 ${cellClasses.strategy ?? ""}`}>
-          {order.strategy}
-        </td>
-        <td
-          className={`px-3 py-1.5 font-semibold ${statusColor} ${cellClasses.status ?? ""}`}
-          title={ORDER_STATUS_DESCRIPTIONS[order.status]}
-        >
-          {order.status}
-        </td>
-        <td className="px-3 py-1.5 text-right tabular-nums text-gray-300">{fillPct.toFixed(0)}%</td>
-        <td className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${impactColor}`}>
-          {totalFilledQty > 0 ? formatBps(impactBps) : "—"}
-        </td>
-        <td className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${commColor}`}>
-          {totalFilledQty > 0 ? `$${totalComm.toFixed(2)}` : "—"}
-        </td>
-        <td className="px-3 py-1.5 text-right tabular-nums text-gray-500 text-[10px]">
-          {filledChildren.length}
-        </td>
-        <td className="px-3 py-1.5 text-gray-600 text-[10px]">{expanded.value ? "▾" : "▸"}</td>
+        {cols.map((col) => {
+          const cellCls = cellClasses[col.key] ?? "";
+          const w = getWidth(col.key);
+          switch (col.key) {
+            case "submittedAt":
+              return (
+                <td
+                  key={col.key}
+                  style={{ width: w }}
+                  className={`px-3 py-1.5 text-gray-500 tabular-nums whitespace-nowrap text-[10px] ${cellCls}`}
+                >
+                  {formatTime(order.submittedAt)}
+                </td>
+              );
+            case "asset":
+              return (
+                <td
+                  key={col.key}
+                  style={{ width: w }}
+                  className={`px-3 py-1.5 font-semibold text-gray-200 ${cellCls}`}
+                >
+                  {order.asset}
+                </td>
+              );
+            case "side":
+              return (
+                <td
+                  key={col.key}
+                  style={{ width: w }}
+                  className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"} ${cellCls}`}
+                >
+                  {order.side}
+                </td>
+              );
+            case "strategy":
+              return (
+                <td
+                  key={col.key}
+                  style={{ width: w }}
+                  className={`px-3 py-1.5 text-gray-400 ${cellCls}`}
+                >
+                  {order.strategy}
+                </td>
+              );
+            case "status":
+              return (
+                <td
+                  key={col.key}
+                  style={{ width: w }}
+                  className={`px-3 py-1.5 font-semibold ${statusColor} ${cellCls}`}
+                  title={ORDER_STATUS_DESCRIPTIONS[order.status]}
+                >
+                  {order.status}
+                </td>
+              );
+            case "fillPct":
+              return (
+                <td
+                  key={col.key}
+                  style={{ width: w }}
+                  className="px-3 py-1.5 text-right tabular-nums text-gray-300"
+                >
+                  {fillPct.toFixed(0)}%
+                </td>
+              );
+            case "impact":
+              return (
+                <td
+                  key={col.key}
+                  style={{ width: w }}
+                  className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${impactColor}`}
+                >
+                  {totalFilledQty > 0 ? formatBps(impactBps) : "—"}
+                </td>
+              );
+            case "commission":
+              return (
+                <td
+                  key={col.key}
+                  style={{ width: w }}
+                  className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${commColor}`}
+                >
+                  {totalFilledQty > 0 ? `$${totalComm.toFixed(2)}` : "—"}
+                </td>
+              );
+            case "slices":
+              return (
+                <td
+                  key={col.key}
+                  style={{ width: w }}
+                  className="px-3 py-1.5 text-right tabular-nums text-gray-500 text-[10px]"
+                >
+                  {filledChildren.length}
+                </td>
+              );
+            case "_expand":
+              return (
+                <td
+                  key={col.key}
+                  style={{ width: w }}
+                  className="px-3 py-1.5 text-gray-600 text-[10px]"
+                >
+                  {expanded.value ? "▾" : "▸"}
+                </td>
+              );
+            default:
+              return (
+                <td key={col.key} style={{ width: w }} className="px-3 py-1.5 text-gray-600" />
+              );
+          }
+        })}
       </tr>
 
       {expanded.value && (
         <tr>
-          <td colSpan={10} className="p-0">
+          <td colSpan={cols.length} className="p-0">
             <div className="bg-gray-900/40 border-b border-gray-800/40 px-4 py-3 flex flex-col gap-3">
               {totalFilledQty > 0 && (
                 <div className="flex items-center gap-4 text-[10px]">
@@ -280,6 +380,7 @@ export function ExecutionsPanel() {
   const { incoming } = useChannelContext();
   const channelIn = useChannelIn();
   const showCfEditor = useSignal(false);
+  const dragKey = useSignal<string | null>(null);
 
   const filterOrderId = incoming !== null ? channelIn.selectedOrderId : null;
   const filterAsset = incoming !== null && !filterOrderId ? channelIn.selectedAsset : null;
@@ -287,7 +388,22 @@ export function ExecutionsPanel() {
   const { containerRef, limit } = useContainerLimit();
   const { rows: serverRows, total, isLoading } = useGridQuery<OrderRecord>("executions", 0, limit);
 
-  // Channel context filter (selected order / asset) applied client-side after server query
+  const { orderedCols, getWidth, onResize, onReorder } = useColumnLayout("executions", EXEC_COLS);
+
+  const EXEC_FIELDS = EXEC_COLS.filter(
+    (c) =>
+      c.key !== "fillPct" &&
+      c.key !== "impact" &&
+      c.key !== "commission" &&
+      c.key !== "slices" &&
+      c.key !== "_expand"
+  ).map(({ key, label, type, options }) => ({
+    key,
+    label,
+    type,
+    options,
+  }));
+
   const tradeOrders = useMemo(
     () =>
       serverRows.filter((o) => {
@@ -298,11 +414,10 @@ export function ExecutionsPanel() {
     [serverRows, filterOrderId, filterAsset]
   );
 
-  const thBase = "text-left px-3 py-2";
+  const SORTABLE_COLS = new Set(["submittedAt", "asset", "side", "strategy", "status"]);
 
   return (
     <div className="flex flex-col h-full text-xs relative">
-      {/* Header */}
       <div className="px-2 py-1.5 border-b border-gray-800 flex items-center gap-2 shrink-0">
         {filterOrderId && (
           <span className="text-[10px] text-amber-400 bg-amber-900/30 font-mono px-1.5 py-0.5 rounded">
@@ -334,7 +449,6 @@ export function ExecutionsPanel() {
         <PopOutButton panelId="executions" />
       </div>
 
-      {/* Filter bar */}
       <FilterBar gridId="executions" fields={EXEC_FIELDS} />
 
       <div ref={containerRef} className="flex-1 overflow-auto">
@@ -354,42 +468,43 @@ export function ExecutionsPanel() {
           <table className="w-full text-xs">
             <thead>
               <tr className="text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950">
-                <SortableHeader field="submittedAt" gridId="executions" className={thBase}>
-                  Time
-                </SortableHeader>
-                <SortableHeader field="asset" gridId="executions" className={thBase}>
-                  Asset
-                </SortableHeader>
-                <SortableHeader field="side" gridId="executions" className={thBase}>
-                  Side
-                </SortableHeader>
-                <SortableHeader field="strategy" gridId="executions" className={thBase}>
-                  Strategy
-                </SortableHeader>
-                <SortableHeader field="status" gridId="executions" className={thBase}>
-                  Status
-                </SortableHeader>
-                <th className="text-right px-3 py-2">Fill%</th>
-                <th className="text-right px-3 py-2">Impact</th>
-                <th className="text-right px-3 py-2">Comm</th>
-                <th className="text-right px-3 py-2">Slices</th>
-                <th className="px-3 py-2" />
+                {orderedCols.map((col) => (
+                  <ResizableHeader
+                    key={col.key}
+                    colKey={col.key}
+                    width={getWidth(col.key)}
+                    minWidth={col.minWidth}
+                    gridId="executions"
+                    sortable={SORTABLE_COLS.has(col.key)}
+                    onResize={onResize}
+                    onColumnDragStart={(k) => {
+                      dragKey.value = k;
+                    }}
+                    onColumnDrop={(target) => {
+                      if (dragKey.value) onReorder(dragKey.value, target);
+                      dragKey.value = null;
+                    }}
+                    align={col.align}
+                    className={`px-3 py-2 ${col.align === "right" ? "text-right" : "text-left"}`}
+                  >
+                    {col.label}
+                  </ResizableHeader>
+                ))}
               </tr>
             </thead>
             <tbody>
               {tradeOrders.map((order) => (
-                <TradeRow key={order.id} order={order} />
+                <TradeRow key={order.id} order={order} cols={orderedCols} getWidth={getWidth} />
               ))}
             </tbody>
           </table>
         )}
       </div>
 
-      {/* CF rule editor */}
       {showCfEditor.value && (
         <CfRuleEditor
           gridId="executions"
-          fields={EXEC_FIELDS}
+          fields={EXEC_COLS}
           onClose={() => {
             showCfEditor.value = false;
           }}

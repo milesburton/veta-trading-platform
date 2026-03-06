@@ -1,5 +1,6 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { v4 as uuidv4 } from "uuid";
 import type {
   AllGridPrefs,
   ConditionalFormatRule,
@@ -10,21 +11,76 @@ import type {
 import { EMPTY_EXPR_GROUP, EMPTY_GRID_PREFS } from "../types/gridPrefs.ts";
 import type { RootState } from "./index.ts";
 
-export type GridId = "orderBlotter" | "executions";
+export type GridId =
+  | "orderBlotter"
+  | "executions"
+  | "algoMonitor"
+  | "childOrders"
+  | "marketMatch"
+  | "marketLadder";
 
 interface GridPrefsState {
   orderBlotter: GridPrefs;
   executions: GridPrefs;
+  algoMonitor: GridPrefs;
+  childOrders: GridPrefs;
+  marketMatch: GridPrefs;
+  marketLadder: GridPrefs;
   loading: boolean;
 }
 
 const initialState: GridPrefsState = {
   orderBlotter: { ...EMPTY_GRID_PREFS },
   executions: { ...EMPTY_GRID_PREFS },
+  algoMonitor: { ...EMPTY_GRID_PREFS },
+  childOrders: { ...EMPTY_GRID_PREFS },
+  marketMatch: { ...EMPTY_GRID_PREFS },
+  marketLadder: { ...EMPTY_GRID_PREFS },
   loading: false,
 };
 
-// ── Async thunks ───────────────────────────────────────────────────────────────
+function migrateCfRules(rules: ConditionalFormatRule[]): ConditionalFormatRule[] {
+  return rules.map((r) => {
+    if (r.expr) return r;
+    const legacy = r as ConditionalFormatRule & {
+      field?: string;
+      op?: string;
+      value?: unknown;
+    };
+    const ruleNode = legacy.field
+      ? [
+          {
+            kind: "rule" as const,
+            id: uuidv4(),
+            field: legacy.field,
+            op: (legacy.op ?? "=") as ExprGroup["rules"][number] extends { op: infer O }
+              ? O
+              : never,
+            value: (legacy.value ?? "") as string,
+          },
+        ]
+      : [];
+    return {
+      id: r.id,
+      scope: r.scope,
+      cellField: legacy.field,
+      expr: { kind: "group" as const, id: uuidv4(), join: "AND" as const, rules: ruleNode },
+      style: r.style,
+      label: r.label,
+    } satisfies ConditionalFormatRule;
+  });
+}
+
+function migratePrefs(raw: GridPrefs): GridPrefs {
+  return {
+    ...EMPTY_GRID_PREFS,
+    ...raw,
+    filterExpr: raw.filterExpr ?? EMPTY_EXPR_GROUP,
+    cfRules: migrateCfRules(raw.cfRules ?? []),
+    columnWidths: raw.columnWidths ?? {},
+    columnOrder: raw.columnOrder ?? [],
+  };
+}
 
 export const loadGridPrefs = createAsyncThunk("gridPrefs/load", async () => {
   const res = await fetch("/api/gateway/preferences");
@@ -35,7 +91,6 @@ export const loadGridPrefs = createAsyncThunk("gridPrefs/load", async () => {
 
 export const saveGridPrefs = createAsyncThunk("gridPrefs/save", async (_, { getState }) => {
   const state = getState() as RootState;
-  // First fetch existing prefs so we don't clobber other keys in the blob
   const existing = await fetch("/api/gateway/preferences")
     .then((r) => (r.ok ? r.json() : {}))
     .catch(() => ({}));
@@ -45,6 +100,10 @@ export const saveGridPrefs = createAsyncThunk("gridPrefs/save", async (_, { getS
     gridPrefs: {
       orderBlotter: state.gridPrefs.orderBlotter,
       executions: state.gridPrefs.executions,
+      algoMonitor: state.gridPrefs.algoMonitor,
+      childOrders: state.gridPrefs.childOrders,
+      marketMatch: state.gridPrefs.marketMatch,
+      marketLadder: state.gridPrefs.marketLadder,
     } satisfies AllGridPrefs,
   };
 
@@ -54,8 +113,6 @@ export const saveGridPrefs = createAsyncThunk("gridPrefs/save", async (_, { getS
     body: JSON.stringify(merged),
   });
 });
-
-// ── Slice ──────────────────────────────────────────────────────────────────────
 
 export const gridPrefsSlice = createSlice({
   name: "gridPrefs",
@@ -81,6 +138,12 @@ export const gridPrefsSlice = createSlice({
     setCfRules(state, action: PayloadAction<{ gridId: GridId; rules: ConditionalFormatRule[] }>) {
       state[action.payload.gridId].cfRules = action.payload.rules;
     },
+    setColumnWidth(state, action: PayloadAction<{ gridId: GridId; key: string; width: number }>) {
+      state[action.payload.gridId].columnWidths[action.payload.key] = action.payload.width;
+    },
+    setColumnOrder(state, action: PayloadAction<{ gridId: GridId; order: string[] }>) {
+      state[action.payload.gridId].columnOrder = action.payload.order;
+    },
     resetGrid(state, action: PayloadAction<{ gridId: GridId }>) {
       state[action.payload.gridId] = {
         ...EMPTY_GRID_PREFS,
@@ -88,11 +151,18 @@ export const gridPrefsSlice = createSlice({
       };
     },
     setAllPrefs(state, action: PayloadAction<AllGridPrefs>) {
-      if (action.payload.orderBlotter) {
-        state.orderBlotter = action.payload.orderBlotter;
-      }
-      if (action.payload.executions) {
-        state.executions = action.payload.executions;
+      const ids: GridId[] = [
+        "orderBlotter",
+        "executions",
+        "algoMonitor",
+        "childOrders",
+        "marketMatch",
+        "marketLadder",
+      ];
+      for (const id of ids) {
+        if (action.payload[id]) {
+          state[id] = migratePrefs(action.payload[id]!);
+        }
       }
     },
   },
@@ -103,21 +173,18 @@ export const gridPrefsSlice = createSlice({
       })
       .addCase(loadGridPrefs.fulfilled, (state, action) => {
         state.loading = false;
-        if (action.payload) {
-          if (action.payload.orderBlotter) {
-            // Migrate: ensure filterExpr is present for prefs saved before the builder
-            state.orderBlotter = {
-              ...EMPTY_GRID_PREFS,
-              ...action.payload.orderBlotter,
-              filterExpr: action.payload.orderBlotter.filterExpr ?? EMPTY_EXPR_GROUP,
-            };
-          }
-          if (action.payload.executions) {
-            state.executions = {
-              ...EMPTY_GRID_PREFS,
-              ...action.payload.executions,
-              filterExpr: action.payload.executions.filterExpr ?? EMPTY_EXPR_GROUP,
-            };
+        if (!action.payload) return;
+        const ids: GridId[] = [
+          "orderBlotter",
+          "executions",
+          "algoMonitor",
+          "childOrders",
+          "marketMatch",
+          "marketLadder",
+        ];
+        for (const id of ids) {
+          if (action.payload[id]) {
+            state[id] = migratePrefs(action.payload[id]!);
           }
         }
       })
@@ -127,5 +194,13 @@ export const gridPrefsSlice = createSlice({
   },
 });
 
-export const { setFilters, setFilterExpr, setSort, setCfRules, resetGrid, setAllPrefs } =
-  gridPrefsSlice.actions;
+export const {
+  setFilters,
+  setFilterExpr,
+  setSort,
+  setCfRules,
+  setColumnWidth,
+  setColumnOrder,
+  resetGrid,
+  setAllPrefs,
+} = gridPrefsSlice.actions;

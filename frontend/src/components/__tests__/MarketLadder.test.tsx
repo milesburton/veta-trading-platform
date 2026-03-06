@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
 import { ChannelContext } from "../../contexts/ChannelContext";
 import { channelsSlice } from "../../store/channelsSlice";
+import { gridPrefsSlice } from "../../store/gridPrefsSlice";
 import { marketSlice } from "../../store/marketSlice";
 import { uiSlice } from "../../store/uiSlice";
 import { windowSlice } from "../../store/windowSlice";
@@ -35,6 +36,7 @@ function makeStore(
       ui: uiSlice.reducer,
       windows: windowSlice.reducer,
       channels: channelsSlice.reducer,
+      gridPrefs: gridPrefsSlice.reducer,
     },
     preloadedState: {
       market: {

@@ -3,14 +3,24 @@ import { memo, useEffect, useMemo, useRef } from "react";
 import { List } from "react-window";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelOut } from "../hooks/useChannelOut.ts";
+import { useColumnLayout } from "../hooks/useColumnLayout.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import type { ColDef } from "../types/gridPrefs.ts";
 import type { AssetDef, MarketPrices, OrderBookSnapshot, PriceHistory } from "../types.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
 import { CHANNEL_COLOURS } from "./DashboardLayout.tsx";
 import { PopOutButton } from "./PopOutButton.tsx";
 
-const ROW_HEIGHT = 48; // taller to show second info line
+const ROW_HEIGHT = 48;
+
+const LADDER_COLS: ColDef[] = [
+  { key: "symbol", label: "Symbol", type: "string", defaultWidth: 90, minWidth: 60 },
+  { key: "bid", label: "Bid", type: "number", defaultWidth: 64, minWidth: 40, align: "right" },
+  { key: "ask", label: "Ask", type: "number", defaultWidth: 64, minWidth: 40, align: "right" },
+  { key: "last", label: "Last", type: "number", defaultWidth: 64, minWidth: 40, align: "right" },
+  { key: "change", label: "Δ%", type: "number", defaultWidth: 56, minWidth: 40, align: "right" },
+];
 
 function formatPrice(symbol: string, price: number) {
   return symbol.includes("/") ? price.toFixed(4) : price.toFixed(2);
@@ -84,7 +94,8 @@ interface RowData {
   priceHistory: PriceHistory;
   orderBook: Record<string, OrderBookSnapshot>;
   selectedAsset: string | null;
-  channelHex: string | null; // colour of the outgoing channel, null if unlinked
+  channelHex: string | null;
+  colWidths: Record<string, number>;
   onSelectAsset: (symbol: string | null) => void;
   onContextMenu: (e: React.MouseEvent, symbol: string) => void;
 }
@@ -94,6 +105,7 @@ interface RowComponentProps extends RowData {
   index: number;
   style: React.CSSProperties;
   onContextMenu: (e: React.MouseEvent, symbol: string) => void;
+  colWidths: Record<string, number>;
 }
 
 const Row = memo(function Row({
@@ -105,6 +117,7 @@ const Row = memo(function Row({
   orderBook,
   selectedAsset,
   channelHex,
+  colWidths,
   onSelectAsset,
   onContextMenu,
   ariaAttributes,
@@ -154,7 +167,7 @@ const Row = memo(function Row({
           : "Click to select and view in chart, order ticket, and market depth"
       }
     >
-      <div className="w-[90px] px-3 flex-shrink-0">
+      <div style={{ width: colWidths.symbol ?? 90 }} className="px-3 flex-shrink-0">
         <div
           className="font-semibold leading-tight"
           style={{ color: isSelected ? (accentColour ?? "#34d399") : "#e5e7eb" }}
@@ -175,7 +188,7 @@ const Row = memo(function Row({
           </div>
         )}
       </div>
-      <div className="w-[64px] text-right px-2 flex-shrink-0">
+      <div style={{ width: colWidths.bid ?? 64 }} className="text-right px-2 flex-shrink-0">
         <div className="text-sky-400 tabular-nums text-[10px]">
           {price > 0 ? formatPrice(asset.symbol, bid) : "—"}
         </div>
@@ -183,10 +196,13 @@ const Row = memo(function Row({
           <div className="text-gray-700 text-[9px] tabular-nums">{spreadBps.toFixed(1)}bp</div>
         )}
       </div>
-      <div className="w-[64px] text-right px-2 text-red-400 tabular-nums flex-shrink-0">
+      <div
+        style={{ width: colWidths.ask ?? 64 }}
+        className="text-right px-2 text-red-400 tabular-nums flex-shrink-0"
+      >
         {price > 0 ? formatPrice(asset.symbol, ask) : "—"}
       </div>
-      <div className="w-[64px] text-right px-2 flex-shrink-0">
+      <div style={{ width: colWidths.last ?? 64 }} className="text-right px-2 flex-shrink-0">
         {price > 0 ? (
           <PriceFlash value={price} asset={asset.symbol} />
         ) : (
@@ -194,7 +210,8 @@ const Row = memo(function Row({
         )}
       </div>
       <div
-        className={`w-[56px] text-right px-2 tabular-nums flex-shrink-0 ${changePos ? "text-emerald-400" : "text-red-400"}`}
+        style={{ width: colWidths.change ?? 56 }}
+        className={`text-right px-2 tabular-nums flex-shrink-0 ${changePos ? "text-emerald-400" : "text-red-400"}`}
       >
         {price > 0 ? `${changePos ? "+" : ""}${changePct.toFixed(2)}%` : "—"}
       </div>
@@ -226,12 +243,45 @@ export function MarketLadder() {
   const priceHistory = useAppSelector((s) => s.market.priceHistory);
   const orderBook = useAppSelector((s) => s.market.orderBook);
 
+  const { getWidth, onResize } = useColumnLayout("marketLadder", LADDER_COLS);
+  const colWidths = useMemo(
+    () => Object.fromEntries(LADDER_COLS.map((c) => [c.key, getWidth(c.key)])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [getWidth]
+  );
+  const resizeDragKey = useSignal<string | null>(null);
+  const resizeStartX = useRef(0);
+  const resizeStartW = useRef(0);
+
   const search = useSignal("");
   const sectorFilter = useSignal("All");
   const localSelected = useSignal<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const listHeight = useSignal(400);
   const ctxMenu = useSignal<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
+
+  function startColResize(e: React.MouseEvent, key: string) {
+    e.preventDefault();
+    resizeDragKey.value = key;
+    resizeStartX.current = e.clientX;
+    resizeStartW.current = getWidth(key);
+
+    function onMove(me: MouseEvent) {
+      const newW = Math.max(40, resizeStartW.current + me.clientX - resizeStartX.current);
+      onResize(resizeDragKey.value ?? key, newW);
+    }
+    function onUp() {
+      resizeDragKey.value = null;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    }
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }
 
   const sectors = useMemo(
     () => ["All", ...Array.from(new Set(assets.map((a) => a.sector))).sort()],
@@ -322,6 +372,7 @@ export function MarketLadder() {
     orderBook,
     selectedAsset: localSelected.value,
     channelHex,
+    colWidths,
     onSelectAsset,
     onContextMenu: handleRowContextMenu,
   };
@@ -373,34 +424,22 @@ export function MarketLadder() {
         </select>
       </div>
 
-      <div className="flex text-xs text-gray-500 border-b border-gray-800 bg-gray-950">
-        <div className="w-[90px] px-3 py-1.5 flex-shrink-0" title="Ticker symbol and sector">
-          Symbol
-        </div>
-        <div
-          className="w-[64px] text-right px-2 py-1.5 flex-shrink-0"
-          title="Best bid price — highest price a buyer will pay"
-        >
-          Bid
-        </div>
-        <div
-          className="w-[64px] text-right px-2 py-1.5 flex-shrink-0"
-          title="Best ask price — lowest price a seller will accept"
-        >
-          Ask
-        </div>
-        <div className="w-[64px] text-right px-2 py-1.5 flex-shrink-0" title="Last traded price">
-          Last
-        </div>
-        <div
-          className="w-[56px] text-right px-2 py-1.5 flex-shrink-0"
-          title="Percentage change since session open"
-        >
-          Δ%
-        </div>
-        <div className="flex-1 text-right pr-2 py-1.5" title="Price trend over last 30 ticks">
-          Trend
-        </div>
+      <div className="flex text-xs text-gray-500 border-b border-gray-800 bg-gray-950 select-none">
+        {LADDER_COLS.map((col) => (
+          <div
+            key={col.key}
+            style={{ width: getWidth(col.key), flexShrink: 0, position: "relative" }}
+            className={`px-2 py-1.5 ${col.align === "right" ? "text-right" : "text-left"}`}
+          >
+            {col.label}
+            <div
+              className="resize-handle"
+              onMouseDown={(e) => startColResize(e, col.key)}
+              aria-hidden="true"
+            />
+          </div>
+        ))}
+        <div className="flex-1 text-right pr-2 py-1.5">Trend</div>
       </div>
 
       <div ref={containerRef} className="flex-1 overflow-hidden">

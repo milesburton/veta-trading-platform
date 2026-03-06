@@ -34,6 +34,20 @@
     display: inline-block;
     animation: flashRed 0.4s ease-out;
   }
+  .resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    cursor: col-resize;
+    user-select: none;
+    z-index: 1;
+  }
+  .resize-handle:hover,
+  .resize-handle:active {
+    background: rgba(56, 189, 248, 0.4);
+  }
 }
 
 @keyframes flashGreen {

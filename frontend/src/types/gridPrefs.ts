@@ -7,8 +7,6 @@ export interface FilterCriteria {
   value: string | number | [number, number] | string[];
 }
 
-// ── Expression tree (replaces flat FilterCriteria[] for the builder UI) ────────
-
 export type ExprJoin = "AND" | "OR";
 
 export type ExprOp =
@@ -55,26 +53,20 @@ export interface CfStyle {
 export interface ConditionalFormatRule {
   id: string;
   scope: CfScope;
-  /** Required when scope = "cell" */
-  field?: string;
-  op: FilterOp;
-  value: string | number | [number, number] | string[];
+  cellField?: string;
+  expr: ExprGroup;
   style: CfStyle;
-  /** User-friendly label shown in the rule editor */
   label?: string;
 }
 
-export interface GridPrefs {
-  sortField: string | null;
-  sortDir: "asc" | "desc" | null;
-  filters: FilterCriteria[]; // legacy — kept for backwards compat
-  filterExpr: ExprGroup; // expression builder tree
-  cfRules: ConditionalFormatRule[];
-}
-
-export interface AllGridPrefs {
-  orderBlotter?: GridPrefs;
-  executions?: GridPrefs;
+export interface ColDef {
+  key: string;
+  label: string;
+  type: "string" | "number" | "enum";
+  options?: string[];
+  defaultWidth: number;
+  minWidth?: number;
+  align?: "left" | "right";
 }
 
 export interface FieldDef {
@@ -82,6 +74,25 @@ export interface FieldDef {
   label: string;
   type: "string" | "number" | "enum";
   options?: string[];
+}
+
+export interface GridPrefs {
+  sortField: string | null;
+  sortDir: "asc" | "desc" | null;
+  filters: FilterCriteria[];
+  filterExpr: ExprGroup;
+  cfRules: ConditionalFormatRule[];
+  columnWidths: Record<string, number>;
+  columnOrder: string[];
+}
+
+export interface AllGridPrefs {
+  orderBlotter?: GridPrefs;
+  executions?: GridPrefs;
+  algoMonitor?: GridPrefs;
+  childOrders?: GridPrefs;
+  marketMatch?: GridPrefs;
+  marketLadder?: GridPrefs;
 }
 
 export const EMPTY_EXPR_GROUP: ExprGroup = { kind: "group", id: "root", join: "AND", rules: [] };
@@ -92,4 +103,6 @@ export const EMPTY_GRID_PREFS: GridPrefs = {
   filters: [],
   filterExpr: EMPTY_EXPR_GROUP,
   cfRules: [],
+  columnWidths: {},
+  columnOrder: [],
 };

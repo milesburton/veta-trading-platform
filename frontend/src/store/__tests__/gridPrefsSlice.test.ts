@@ -80,9 +80,20 @@ describe("gridPrefsSlice – setCfRules", () => {
       {
         id: "r1",
         scope: "row" as const,
-        field: "status",
-        op: "=" as const,
-        value: "filled",
+        expr: {
+          kind: "group" as const,
+          id: "g1",
+          join: "AND" as const,
+          rules: [
+            {
+              kind: "rule" as const,
+              id: "rr1",
+              field: "status",
+              op: "=" as const,
+              value: "filled",
+            },
+          ],
+        },
         style: { bg: "bg-emerald-900/40" },
       },
     ];
@@ -132,6 +143,8 @@ describe("gridPrefsSlice – setAllPrefs", () => {
         filters: [{ id: "f1", field: "side", op: "=", value: "BUY" }],
         filterExpr: { kind: "group", id: "root", join: "AND", rules: [] },
         cfRules: [],
+        columnWidths: {},
+        columnOrder: [],
       },
       executions: {
         sortField: null,
@@ -139,6 +152,8 @@ describe("gridPrefsSlice – setAllPrefs", () => {
         filters: [],
         filterExpr: { kind: "group", id: "root", join: "AND", rules: [] },
         cfRules: [],
+        columnWidths: {},
+        columnOrder: [],
       },
     };
     const state = reducer(initial, setAllPrefs(prefs));

@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
 import { ChannelContext } from "../../contexts/ChannelContext";
 import { channelsSlice } from "../../store/channelsSlice";
+import { gridPrefsSlice } from "../../store/gridPrefsSlice";
 import { marketSlice } from "../../store/marketSlice";
 import { observabilitySlice } from "../../store/observabilitySlice";
 import { ordersSlice } from "../../store/ordersSlice";
@@ -21,6 +22,7 @@ function makeStore(events: ObsEvent[] = [], channelAsset?: string) {
       windows: windowSlice.reducer,
       observability: observabilitySlice.reducer,
       channels: channelsSlice.reducer,
+      gridPrefs: gridPrefsSlice.reducer,
     },
     preloadedState: {
       observability: { events },

@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 import { ChannelContext } from "../../contexts/ChannelContext";
 import { channelsSlice } from "../../store/channelsSlice";
+import { gridPrefsSlice } from "../../store/gridPrefsSlice";
 import { marketSlice } from "../../store/marketSlice";
 import { ordersSlice } from "../../store/ordersSlice";
 import { uiSlice } from "../../store/uiSlice";
@@ -39,6 +40,7 @@ function makeStore(orders: OrderRecord[] = [], prices: MarketPrices = {}) {
       windows: windowSlice.reducer,
       ui: uiSlice.reducer,
       channels: channelsSlice.reducer,
+      gridPrefs: gridPrefsSlice.reducer,
     },
     preloadedState: {
       orders: { orders },

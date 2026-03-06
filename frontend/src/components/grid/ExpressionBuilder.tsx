@@ -320,6 +320,22 @@ function GroupNode({ group, fields, onChange, onDelete, depth }: GroupNodeProps)
   );
 }
 
+// ── Inline mode (for CfRuleEditor — no dialog wrapper) ────────────────────────
+
+interface InlineProps {
+  fields: FieldDef[];
+  value: ExprGroup;
+  onChange: (expr: ExprGroup) => void;
+}
+
+export function ExpressionBuilderInline({ fields, value, onChange }: InlineProps) {
+  return (
+    <div className="border border-gray-800 rounded p-2">
+      <GroupNode group={value} fields={fields} onChange={onChange} depth={0} />
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface Props {

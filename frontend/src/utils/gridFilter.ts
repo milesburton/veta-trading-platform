@@ -199,39 +199,23 @@ function cfStyleToClasses(style: CfStyle): string {
   return parts.join(" ");
 }
 
-/**
- * Evaluate conditional format rules against a single row.
- *
- * Row-scoped rules: first matching rule wins (applies to the entire row).
- * Cell-scoped rules: all matching rules for a given field are merged (later wins).
- *
- * Returns Tailwind class strings ready to spread into className props.
- */
 export function applyCfRules<T>(
   row: T,
   rules: ConditionalFormatRule[]
 ): { rowClasses: string; cellClasses: Record<string, string> } {
-  const rowRecord = row as Record<string, unknown>;
   let rowClasses = "";
   const cellClasses: Record<string, string> = {};
 
   for (const rule of rules) {
-    const fieldVal = rule.field ? getField(rowRecord, rule.field) : undefined;
-    const testVal = rule.scope === "cell" ? fieldVal : getField(rowRecord, rule.field ?? "");
+    if (!evalExprGroup(row, rule.expr)) continue;
 
     if (rule.scope === "row") {
-      if (
-        !rowClasses &&
-        rule.field &&
-        evalOp(getField(rowRecord, rule.field), rule.op, rule.value)
-      ) {
-        rowClasses = cfStyleToClasses(rule.style);
-      }
+      if (!rowClasses) rowClasses = cfStyleToClasses(rule.style);
     } else {
-      // cell scope — field is required
-      if (rule.field && evalOp(testVal, rule.op, rule.value)) {
-        const existing = cellClasses[rule.field] ?? "";
-        cellClasses[rule.field] = `${existing} ${cfStyleToClasses(rule.style)}`.trim();
+      const field = rule.cellField;
+      if (field) {
+        const existing = cellClasses[field] ?? "";
+        cellClasses[field] = `${existing} ${cfStyleToClasses(rule.style)}`.trim();
       }
     }
   }

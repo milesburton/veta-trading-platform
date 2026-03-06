@@ -161,9 +161,12 @@ describe("applyCfRules", () => {
       {
         id: "r1",
         scope: "row",
-        field: "status",
-        op: "=",
-        value: "filled",
+        expr: {
+          kind: "group",
+          id: "g1",
+          join: "AND",
+          rules: [{ kind: "rule", id: "rr1", field: "status", op: "=", value: "filled" }],
+        },
         style: { bg: "bg-emerald-900/40" },
       },
     ];
@@ -176,9 +179,12 @@ describe("applyCfRules", () => {
       {
         id: "r1",
         scope: "row",
-        field: "status",
-        op: "=",
-        value: "filled",
+        expr: {
+          kind: "group",
+          id: "g1",
+          join: "AND",
+          rules: [{ kind: "rule", id: "rr1", field: "status", op: "=", value: "filled" }],
+        },
         style: { bg: "bg-emerald-900/40" },
       },
     ];
@@ -191,17 +197,23 @@ describe("applyCfRules", () => {
       {
         id: "r1",
         scope: "row",
-        field: "side",
-        op: "=",
-        value: "BUY",
+        expr: {
+          kind: "group",
+          id: "g1",
+          join: "AND",
+          rules: [{ kind: "rule", id: "rr1", field: "side", op: "=", value: "BUY" }],
+        },
         style: { bg: "bg-blue-900/40" },
       },
       {
         id: "r2",
         scope: "row",
-        field: "status",
-        op: "=",
-        value: "filled",
+        expr: {
+          kind: "group",
+          id: "g2",
+          join: "AND",
+          rules: [{ kind: "rule", id: "rr2", field: "status", op: "=", value: "filled" }],
+        },
         style: { bg: "bg-emerald-900/40" },
       },
     ];
@@ -216,9 +228,13 @@ describe("applyCfRules", () => {
       {
         id: "c1",
         scope: "cell",
-        field: "status",
-        op: "=",
-        value: "expired",
+        cellField: "status",
+        expr: {
+          kind: "group",
+          id: "g1",
+          join: "AND",
+          rules: [{ kind: "rule", id: "rr1", field: "status", op: "=", value: "expired" }],
+        },
         style: { textColor: "text-gray-500" },
       },
     ];
@@ -231,9 +247,13 @@ describe("applyCfRules", () => {
       {
         id: "c1",
         scope: "cell",
-        field: "status",
-        op: "=",
-        value: "expired",
+        cellField: "status",
+        expr: {
+          kind: "group",
+          id: "g1",
+          join: "AND",
+          rules: [{ kind: "rule", id: "rr1", field: "status", op: "=", value: "expired" }],
+        },
         style: { textColor: "text-gray-500" },
       },
     ];
@@ -246,17 +266,25 @@ describe("applyCfRules", () => {
       {
         id: "c1",
         scope: "cell",
-        field: "quantity",
-        op: ">",
-        value: 9000,
+        cellField: "quantity",
+        expr: {
+          kind: "group",
+          id: "g1",
+          join: "AND",
+          rules: [{ kind: "rule", id: "rr1", field: "quantity", op: ">", value: 9000 }],
+        },
         style: { textColor: "text-amber-400" },
       },
       {
         id: "c2",
         scope: "cell",
-        field: "quantity",
-        op: ">",
-        value: 9000,
+        cellField: "quantity",
+        expr: {
+          kind: "group",
+          id: "g2",
+          join: "AND",
+          rules: [{ kind: "rule", id: "rr2", field: "quantity", op: ">", value: 9000 }],
+        },
         style: { bold: true },
       },
     ];
@@ -270,9 +298,12 @@ describe("applyCfRules", () => {
       {
         id: "r1",
         scope: "row",
-        field: "side",
-        op: "=",
-        value: "BUY",
+        expr: {
+          kind: "group",
+          id: "g1",
+          join: "AND",
+          rules: [{ kind: "rule", id: "rr1", field: "side", op: "=", value: "BUY" }],
+        },
         style: { bold: true },
       },
     ];
@@ -285,9 +316,12 @@ describe("applyCfRules", () => {
       {
         id: "r1",
         scope: "row",
-        field: "quantity",
-        op: ">",
-        value: 90000,
+        expr: {
+          kind: "group",
+          id: "g1",
+          join: "AND",
+          rules: [{ kind: "rule", id: "rr1", field: "quantity", op: ">", value: 90000 }],
+        },
         style: { border: "border-l-2 border-l-red-500" },
       },
     ];

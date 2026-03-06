@@ -2,10 +2,27 @@ import { useSignal } from "@preact/signals-react";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useChannelOut } from "../hooks/useChannelOut.ts";
+import { useColumnLayout } from "../hooks/useColumnLayout.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import type { ColDef } from "../types/gridPrefs.ts";
 import type { ChildOrder, LiquidityFlag, OrderStatus } from "../types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
 import { CHANNEL_COLOURS } from "./DashboardLayout.tsx";
+import { ResizableHeader } from "./grid/ResizableHeader.tsx";
+
+const CHILD_COLS: ColDef[] = [
+  { key: "time", label: "Time", type: "string", defaultWidth: 80 },
+  { key: "sliceId", label: "Slice ID", type: "string", defaultWidth: 96 },
+  { key: "qty", label: "Qty", type: "number", defaultWidth: 64, align: "right" },
+  { key: "fillPx", label: "Fill Px", type: "number", defaultWidth: 72, align: "right" },
+  { key: "filled", label: "Filled", type: "number", defaultWidth: 64, align: "right" },
+  { key: "venue", label: "Venue", type: "string", defaultWidth: 64 },
+  { key: "status", label: "Status", type: "string", defaultWidth: 72 },
+  { key: "cpty", label: "Cpty", type: "string", defaultWidth: 72 },
+  { key: "liq", label: "Liq", type: "string", defaultWidth: 44 },
+  { key: "comm", label: "Comm", type: "number", defaultWidth: 64, align: "right" },
+  { key: "settle", label: "Settle", type: "string", defaultWidth: 64 },
+];
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
   pending: "bg-amber-900/50 text-amber-300 border border-amber-700/50",
@@ -41,10 +58,13 @@ export function ChildOrdersPanel() {
 
   const parentOrderId = channelIn.selectedOrderId;
   const selectedChildId = useSignal<string | null>(null);
+  const dragKey = useSignal<string | null>(null);
 
   const orders = useAppSelector((s) => s.orders.orders);
   const parentOrder = parentOrderId ? orders.find((o) => o.id === parentOrderId) : null;
   const children: ChildOrder[] = parentOrder?.children ?? [];
+
+  const { orderedCols, getWidth, onResize, onReorder } = useColumnLayout("childOrders", CHILD_COLS);
 
   function selectChild(id: string) {
     const next = selectedChildId.value === id ? null : id;
@@ -97,38 +117,28 @@ export function ChildOrdersPanel() {
         <div className="flex-1 overflow-auto min-h-0">
           <table className="w-full text-xs border-collapse">
             <thead className="sticky top-0 z-10 bg-gray-900">
-              <tr className="border-b border-gray-700">
-                <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">
-                  Time
-                </th>
-                <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">
-                  Slice ID
-                </th>
-                <th className="px-3 py-1.5 text-right text-[10px] font-medium text-gray-500">
-                  Qty
-                </th>
-                <th className="px-3 py-1.5 text-right text-[10px] font-medium text-gray-500">
-                  Fill Px
-                </th>
-                <th className="px-3 py-1.5 text-right text-[10px] font-medium text-gray-500">
-                  Filled
-                </th>
-                <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500">
-                  Venue
-                </th>
-                <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500">
-                  Status
-                </th>
-                <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500">
-                  Cpty
-                </th>
-                <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500">Liq</th>
-                <th className="px-3 py-1.5 text-right text-[10px] font-medium text-gray-500">
-                  Comm
-                </th>
-                <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500">
-                  Settle
-                </th>
+              <tr className="border-b border-gray-700 text-gray-500 text-[10px] font-medium">
+                {orderedCols.map((col) => (
+                  <ResizableHeader
+                    key={col.key}
+                    colKey={col.key}
+                    width={getWidth(col.key)}
+                    minWidth={col.minWidth}
+                    gridId="childOrders"
+                    onResize={onResize}
+                    onColumnDragStart={(k) => {
+                      dragKey.value = k;
+                    }}
+                    onColumnDrop={(target) => {
+                      if (dragKey.value) onReorder(dragKey.value, target);
+                      dragKey.value = null;
+                    }}
+                    align={col.align}
+                    className={`px-3 py-1.5 ${col.align === "right" ? "text-right" : "text-left"}`}
+                  >
+                    {col.label}
+                  </ResizableHeader>
+                ))}
               </tr>
             </thead>
             <tbody>

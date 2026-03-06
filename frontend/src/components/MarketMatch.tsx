@@ -2,9 +2,26 @@ import { useSignal } from "@preact/signals-react";
 import { useMemo } from "react";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
+import { useColumnLayout } from "../hooks/useColumnLayout.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import type { ColDef } from "../types/gridPrefs.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
+import { ResizableHeader } from "./grid/ResizableHeader.tsx";
+
+const MATCH_COLS: ColDef[] = [
+  { key: "time", label: "Time", type: "string", defaultWidth: 72 },
+  { key: "side", label: "Side", type: "string", defaultWidth: 44 },
+  { key: "asset", label: "Asset", type: "string", defaultWidth: 72 },
+  { key: "qty", label: "Qty", type: "number", defaultWidth: 72, align: "right" },
+  { key: "fillPx", label: "Fill Px", type: "number", defaultWidth: 72, align: "right" },
+  { key: "bookPosition", label: "Book Position", type: "string", defaultWidth: 128 },
+  { key: "liq", label: "Liq", type: "string", defaultWidth: 56 },
+  { key: "venue", label: "Venue", type: "string", defaultWidth: 64 },
+  { key: "counterparty", label: "Counterparty", type: "string", defaultWidth: 88 },
+  { key: "impact", label: "Impact", type: "number", defaultWidth: 56, align: "right" },
+  { key: "comm", label: "Comm", type: "number", defaultWidth: 56, align: "right" },
+];
 
 interface FillEvent {
   ts: number;
@@ -144,6 +161,8 @@ export function MarketMatch() {
   const channelIn = useChannelIn();
   const filterAsset = incoming !== null ? (channelIn.selectedAsset ?? null) : null;
   const ctxMenu = useSignal<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
+  const dragKey = useSignal<string | null>(null);
+  const { orderedCols, getWidth, onResize, onReorder } = useColumnLayout("marketMatch", MATCH_COLS);
 
   function openFillCtxMenu(e: React.MouseEvent, f: FillEvent) {
     e.preventDefault();
@@ -326,51 +345,27 @@ export function MarketMatch() {
             <table className="w-full text-[10px]">
               <thead>
                 <tr className="text-gray-600 border-b border-gray-800 sticky top-0 bg-gray-950 text-[9px] uppercase tracking-wider">
-                  <th className="text-left px-3 py-1.5" title="Fill timestamp">
-                    Time
-                  </th>
-                  <th className="text-left px-2 py-1.5" title="Buy or Sell">
-                    Side
-                  </th>
-                  <th className="text-left px-2 py-1.5" title="Instrument">
-                    Asset
-                  </th>
-                  <th className="text-right px-2 py-1.5" title="Quantity filled">
-                    Qty
-                  </th>
-                  <th className="text-right px-2 py-1.5" title="Average fill price">
-                    Fill Px
-                  </th>
-                  <th
-                    className="text-left px-2 py-1.5"
-                    title="Book position relative to bid/ask at fill time"
-                  >
-                    Book Position
-                  </th>
-                  <th
-                    className="text-left px-2 py-1.5"
-                    title="Liquidity flag — MAKER added liquidity, TAKER removed it"
-                  >
-                    Liq
-                  </th>
-                  <th className="text-left px-2 py-1.5" title="Execution venue (exchange MIC code)">
-                    Venue
-                  </th>
-                  <th
-                    className="text-left px-2 py-1.5"
-                    title="Counterparty on the other side of the trade"
-                  >
-                    Counterparty
-                  </th>
-                  <th
-                    className="text-right px-2 py-1.5"
-                    title="Market impact vs arrival price in basis points (1bp = 0.01%)"
-                  >
-                    Impact
-                  </th>
-                  <th className="text-right pr-3 py-1.5" title="Commission charged for this fill">
-                    Comm
-                  </th>
+                  {orderedCols.map((col) => (
+                    <ResizableHeader
+                      key={col.key}
+                      colKey={col.key}
+                      width={getWidth(col.key)}
+                      minWidth={col.minWidth}
+                      gridId="marketMatch"
+                      onResize={onResize}
+                      onColumnDragStart={(k) => {
+                        dragKey.value = k;
+                      }}
+                      onColumnDrop={(target) => {
+                        if (dragKey.value) onReorder(dragKey.value, target);
+                        dragKey.value = null;
+                      }}
+                      align={col.align}
+                      className={`px-2 py-1.5 ${col.align === "right" ? "text-right" : "text-left"}`}
+                    >
+                      {col.label}
+                    </ResizableHeader>
+                  ))}
                 </tr>
               </thead>
               <tbody>
