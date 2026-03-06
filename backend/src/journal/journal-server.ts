@@ -203,6 +203,62 @@ function ingest(topic: string, value: any) {
   }
 }
 
+// ── Reconcile missing fills from fix-archive on startup ───────────────────────
+// If the journal missed orders.filled events (e.g. consumer wasn't ready when
+// fills were published), fetch executions from fix-archive and write synthetic
+// journal entries so reconstructOrders() returns correct filled/working status.
+
+const FIX_ARCHIVE_URL = Deno.env.get("FIX_ARCHIVE_URL") || "http://localhost:5012";
+
+async function reconcileFillsFromArchive(): Promise<void> {
+  try {
+    const res = await fetch(`${FIX_ARCHIVE_URL}/executions`);
+    if (!res.ok) return;
+    const executions = await res.json() as Array<{
+      execId: string; clOrdId: string; origClOrdId: string; symbol: string;
+      side: string; cumQty: number; avgPx: number; leavesQty: number;
+      commission: number; ts: number;
+    }>;
+
+    let reconciled = 0;
+    for (const ex of executions) {
+      // origClOrdId is the OMS parent order ID (order_id in journal)
+      const parentOrderId = ex.origClOrdId;
+      // Check if we already have a filled event for this execution
+      const existing = [...db.query(
+        "SELECT id FROM journal WHERE event_type = 'orders.filled' AND child_id = ? LIMIT 1",
+        [ex.clOrdId],
+      )];
+      if (existing.length > 0) continue;
+
+      // Write a synthetic orders.filled entry
+      const synthetic = {
+        execId: ex.execId,
+        childId: ex.clOrdId,
+        parentOrderId,
+        asset: ex.symbol,
+        side: ex.side === "1" ? "BUY" : "SELL",
+        filledQty: ex.cumQty,
+        avgFillPrice: ex.avgPx,
+        remainingQty: ex.leavesQty,
+        commissionUSD: ex.commission,
+        ts: ex.ts,
+        _reconciled: true,
+      };
+      ingest("orders.filled", synthetic);
+      reconciled++;
+    }
+    if (reconciled > 0) {
+      console.log(`[journal] Reconciled ${reconciled} missing fill(s) from fix-archive`);
+    }
+  } catch (err) {
+    console.warn("[journal] Fill reconciliation failed (fix-archive unavailable):", (err as Error).message);
+  }
+}
+
+// Run reconciliation after a short delay to let fix-archive come up first
+setTimeout(() => reconcileFillsFromArchive(), 5_000);
+
 // ── Observability producer (best-effort, for grid.query timing events) ────────
 
 const obsProducer = await createProducer("journal-obs").catch(() => null);
