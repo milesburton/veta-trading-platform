@@ -8,7 +8,15 @@ const OBS_URL = import.meta.env.VITE_OBS_URL ?? `${_origin}/api/observability`;
 const SKIP_POST = new Set([
   "observability/eventReceived",
   "observability/historicEventsLoaded",
+  "observability/reportError",
   "observability/stop",
+  "market/tickReceived",
+  "market/orderBookUpdated",
+  "market/candleUpdated",
+  "market/candlesSeeded",
+  "market/setAssets",
+  "news/newsItemReceived",
+  "news/newsBatchReceived",
 ]);
 
 function postEvent(type: string, payload: Record<string, unknown>) {

@@ -99,6 +99,8 @@ interface OrdersState {
   orders: OrderRecord[];
 }
 
+const MAX_ORDERS = 500;
+
 const initialState: OrdersState = { orders: [] };
 
 export const ordersSlice = createSlice({
@@ -106,9 +108,9 @@ export const ordersSlice = createSlice({
   initialState,
   reducers: {
     orderAdded(state, action: PayloadAction<OrderRecord>) {
-      // Avoid duplicates (hydration vs live event)
       if (!state.orders.find((o) => o.id === action.payload.id)) {
         state.orders.unshift(action.payload);
+        if (state.orders.length > MAX_ORDERS) state.orders.length = MAX_ORDERS;
       }
     },
     orderPatched(state, action: PayloadAction<{ id: string; patch: Partial<OrderRecord> }>) {
