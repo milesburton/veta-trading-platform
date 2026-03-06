@@ -1,14 +1,7 @@
 import { useSignal } from "@preact/signals-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "../store/hooks.ts";
-import {
-  makeAdminModel,
-  makeAlgoModel,
-  makeAnalysisModel,
-  makeDefaultModel,
-  makeOverviewModel,
-  useDashboard,
-} from "./DashboardLayout.tsx";
+import { useDashboard } from "./DashboardLayout.tsx";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,38 +63,6 @@ function pushWorkspaceHistory(workspaceId: string, workspaceName: string) {
   history.pushState({ workspaceId }, workspaceName, url.toString());
 }
 
-// ─── View presets ─────────────────────────────────────────────────────────────
-
-const VIEW_PRESETS = [
-  { id: "trading", label: "Trading", icon: "▲", makeModel: makeDefaultModel, adminOnly: false },
-  { id: "analysis", label: "Analysis", icon: "◈", makeModel: makeAnalysisModel, adminOnly: false },
-  { id: "algo", label: "Algo", icon: "⊞", makeModel: makeAlgoModel, adminOnly: false },
-  { id: "admin", label: "Mission Control", icon: "⚙", makeModel: makeAdminModel, adminOnly: true },
-  { id: "overview", label: "Overview", icon: "⊟", makeModel: makeOverviewModel, adminOnly: false },
-] as const;
-
-type ViewPresetId = (typeof VIEW_PRESETS)[number]["id"];
-
-// ─── Active view persistence ──────────────────────────────────────────────────
-
-function activeViewKey(userId: string, workspaceId: string) {
-  return `active-view:${userId}:${workspaceId}`;
-}
-
-function loadActiveView(userId: string, workspaceId: string, fallback: ViewPresetId): ViewPresetId {
-  try {
-    const raw = localStorage.getItem(activeViewKey(userId, workspaceId));
-    if (raw && VIEW_PRESETS.some((p) => p.id === raw)) return raw as ViewPresetId;
-  } catch {
-    // ignore
-  }
-  return fallback;
-}
-
-function saveActiveView(userId: string, workspaceId: string, view: ViewPresetId) {
-  localStorage.setItem(activeViewKey(userId, workspaceId), view);
-}
-
 // ─── Vertical workspace sidebar ───────────────────────────────────────────────
 
 interface Props {
@@ -121,10 +82,7 @@ export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, works
   const editValue = useSignal("");
   const inputRef = useRef<HTMLInputElement>(null);
   const userId = useAppSelector((s) => s.auth.user?.id ?? "anonymous");
-  const userRole = useAppSelector((s) => s.auth.user?.role);
-  const defaultView: ViewPresetId = userRole === "admin" ? "admin" : "trading";
-  const activeView = useSignal<ViewPresetId>(loadActiveView(userId, activeId, defaultView));
-  const { resetLayout } = useDashboard();
+  const { resetLayout: _resetLayout } = useDashboard();
 
   const isExpanded = pinned.value || hovered.value;
 
@@ -143,7 +101,6 @@ export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, works
 
   function handleMouseLeave() {
     if (pinned.value) return;
-    // Small delay so a quick mouse-out doesn't flash closed
     hoverTimeoutRef.current = setTimeout(() => {
       hovered.value = false;
     }, 150);
@@ -163,7 +120,6 @@ export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, works
     saveWorkspaces(userId, next);
     onWorkspacesChange(next);
     onSelect(id);
-    // Do NOT touch expanded/pinned state here — pin/hover handles it
   }, [workspaces, onSelect, onWorkspacesChange, userId]);
 
   const renameWorkspace = useCallback(
@@ -195,6 +151,11 @@ export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, works
     }
   }
 
+  function startRename(id: string, currentName: string) {
+    editingId.value = id;
+    editValue.value = currentName;
+  }
+
   return (
     <nav
       aria-label="Workspace navigation"
@@ -204,178 +165,132 @@ export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, works
         isExpanded ? "w-40" : "w-8"
       }`}
     >
-      {/* ── Pin toggle ── */}
-      <button
-        type="button"
-        aria-label={pinned.value ? "Unpin sidebar (collapse when not hovered)" : "Pin sidebar open"}
-        title={pinned.value ? "Unpin sidebar" : "Pin sidebar open"}
-        onClick={togglePin}
-        className={`flex items-center justify-center h-8 w-full shrink-0 transition-colors border-b border-gray-800 text-xs ${
-          pinned.value
-            ? "text-emerald-500 hover:text-emerald-400 hover:bg-gray-900/50"
-            : "text-gray-600 hover:text-gray-300 hover:bg-gray-900/50"
-        }`}
-      >
-        {/* Show a pin icon: filled when pinned, outline when not */}
-        <span aria-hidden="true">{pinned.value ? "⦿" : "⦾"}</span>
-      </button>
+      {/* ── Top bar: New workspace (left) + Pin (right) ── */}
+      <div className="flex items-center shrink-0 border-b border-gray-800 h-8">
+        {/* New workspace button — left, prominent */}
+        <button
+          type="button"
+          aria-label="Add new workspace"
+          title="Add new workspace"
+          onClick={addWorkspace}
+          className={`flex items-center gap-1.5 h-full text-emerald-600 hover:text-emerald-400 hover:bg-gray-900/60 transition-colors ${
+            isExpanded ? "flex-1 px-2.5 text-[11px] font-semibold" : "w-8 justify-center"
+          }`}
+        >
+          <span aria-hidden="true" className="text-base font-bold leading-none">
+            +
+          </span>
+          {isExpanded && <span>New workspace</span>}
+        </button>
 
-      {/* ── View presets ── */}
-      <fieldset
-        aria-label="View presets"
-        className="shrink-0 border-b border-gray-800 border-0 m-0 p-0"
-      >
+        {/* Pin button — right-aligned, only visible when expanded */}
         {isExpanded && (
-          <div
-            className="px-2 pt-2 pb-1 text-[9px] uppercase tracking-widest text-gray-600"
-            aria-hidden="true"
+          <button
+            type="button"
+            aria-label={pinned.value ? "Unpin sidebar" : "Pin sidebar open"}
+            title={pinned.value ? "Unpin sidebar (auto-collapse)" : "Pin sidebar open"}
+            onClick={togglePin}
+            className={`flex items-center justify-center w-7 h-full shrink-0 transition-colors text-base ${
+              pinned.value
+                ? "text-emerald-500 hover:text-emerald-400"
+                : "text-gray-600 hover:text-gray-300"
+            }`}
           >
-            Views
-          </div>
+            {/* 📌 = pinned, 📍 = unpinned */}
+            <span aria-hidden="true">{pinned.value ? "📌" : "📍"}</span>
+          </button>
         )}
-        {VIEW_PRESETS.filter((p) => !p.adminOnly || userRole === "admin").map((preset) => {
-          const isActive = activeView.value === preset.id;
-          return (
-            <button
-              key={preset.id}
-              type="button"
-              aria-label={`${preset.label} view`}
-              aria-pressed={isActive}
-              title={`${preset.label} — switch to ${preset.label.toLowerCase()} layout`}
-              onClick={() => {
-                activeView.value = preset.id;
-                saveActiveView(userId, activeId, preset.id);
-                resetLayout(preset.makeModel());
-              }}
-              className={`flex items-center w-full border-b border-gray-800/40 transition-colors ${
-                isActive
-                  ? "bg-gray-800 text-emerald-400"
-                  : "text-gray-500 hover:bg-gray-900/60 hover:text-gray-300"
-              } ${isExpanded ? "gap-2 px-2.5 py-1.5" : "justify-center h-8"}`}
-            >
-              <span className="text-sm leading-none" aria-hidden="true">
-                {preset.icon}
-              </span>
-              {isExpanded && <span className="text-[11px] font-medium">{preset.label}</span>}
-            </button>
-          );
-        })}
-      </fieldset>
+      </div>
 
-      {/* ── Workspaces list (only shown when >1) ── */}
+      {/* ── Workspaces list ── */}
       <ul
         aria-label="Workspaces"
         className="flex-1 overflow-y-auto overflow-x-hidden list-none m-0 p-0"
       >
-        {workspaces.length > 1 &&
-          workspaces.map((ws) => {
-            const active = ws.id === activeId;
-            const isEditing = editingId.value === ws.id;
+        {workspaces.map((ws) => {
+          const active = ws.id === activeId;
+          const isEditing = editingId.value === ws.id;
 
-            return (
-              <li
-                key={ws.id}
-                className={`group relative flex items-center border-b border-gray-800/60 ${
-                  active
-                    ? "bg-gray-900 border-l-2 border-l-emerald-500"
-                    : "border-l-2 border-l-transparent hover:bg-gray-900/40"
-                }`}
-              >
-                {isExpanded ? (
-                  <div className="flex items-center w-full min-w-0 px-2 py-1.5 gap-1">
-                    {isEditing ? (
-                      <input
-                        ref={inputRef}
-                        aria-label={`Rename workspace ${ws.name}`}
-                        value={editValue.value}
-                        onChange={(e) => {
-                          editValue.value = e.target.value;
-                        }}
-                        onBlur={commitRename}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") commitRename();
-                          if (e.key === "Escape") {
-                            editingId.value = null;
-                          }
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="flex-1 min-w-0 bg-gray-800 text-gray-100 text-[11px] px-1 rounded outline-none border border-emerald-500"
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        aria-label={`Switch to workspace: ${ws.name}`}
-                        aria-current={active ? "page" : undefined}
-                        title={
-                          active
-                            ? `${ws.name} (active — double-click to rename)`
-                            : `Switch to ${ws.name}`
+          return (
+            <li
+              key={ws.id}
+              className={`group relative flex items-center border-b border-gray-800/60 ${
+                active
+                  ? "bg-gray-900 border-l-2 border-l-emerald-500"
+                  : "border-l-2 border-l-transparent hover:bg-gray-900/40"
+              }`}
+            >
+              {isExpanded ? (
+                <div className="flex items-center w-full min-w-0 px-2 py-1.5 gap-1">
+                  {isEditing ? (
+                    <input
+                      ref={inputRef}
+                      aria-label={`Rename workspace ${ws.name}`}
+                      value={editValue.value}
+                      onChange={(e) => {
+                        editValue.value = e.target.value;
+                      }}
+                      onBlur={commitRename}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitRename();
+                        if (e.key === "Escape") {
+                          editingId.value = null;
                         }
-                        className={`flex-1 min-w-0 text-left text-[11px] truncate bg-transparent border-0 p-0 cursor-pointer ${
-                          active ? "text-gray-200" : "text-gray-500 hover:text-gray-300"
-                        }`}
-                        onClick={() => onSelect(ws.id)}
-                        onDoubleClick={(e) => {
-                          e.stopPropagation();
-                          editingId.value = ws.id;
-                          editValue.value = ws.name;
-                        }}
-                      >
-                        {ws.name}
-                      </button>
-                    )}
-                    {active && !isEditing && (
-                      <button
-                        type="button"
-                        aria-label={`Remove workspace ${ws.name}`}
-                        title={`Remove ${ws.name}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeWorkspace(ws.id);
-                        }}
-                        className="shrink-0 text-gray-700 hover:text-gray-400 text-xs leading-none opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    aria-label={`Switch to workspace: ${ws.name}`}
-                    aria-current={active ? "page" : undefined}
-                    title={`Switch to workspace: ${ws.name}`}
-                    onClick={() => onSelect(ws.id)}
-                    className={`flex items-center justify-center w-8 h-8 text-[9px] font-semibold uppercase tracking-wider transition-colors ${
-                      active ? "text-emerald-400" : "text-gray-600 hover:text-gray-300"
-                    }`}
-                  >
-                    {ws.name.charAt(0)}
-                  </button>
-                )}
-              </li>
-            );
-          })}
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-1 min-w-0 bg-gray-800 text-gray-100 text-[11px] px-1 rounded outline-none border border-emerald-500"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label={`Switch to workspace: ${ws.name}`}
+                      aria-current={active ? "page" : undefined}
+                      title="Click to switch · Right-click to rename"
+                      className={`flex-1 min-w-0 text-left text-[11px] truncate bg-transparent border-0 p-0 cursor-pointer ${
+                        active ? "text-gray-200" : "text-gray-500 hover:text-gray-300"
+                      }`}
+                      onClick={() => onSelect(ws.id)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        startRename(ws.id, ws.name);
+                      }}
+                    >
+                      {ws.name}
+                    </button>
+                  )}
+                  {active && !isEditing && workspaces.length > 1 && (
+                    <button
+                      type="button"
+                      aria-label={`Remove workspace ${ws.name}`}
+                      title={`Remove ${ws.name}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeWorkspace(ws.id);
+                      }}
+                      className="shrink-0 text-gray-700 hover:text-gray-400 text-xs leading-none opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  aria-label={`Switch to workspace: ${ws.name}`}
+                  aria-current={active ? "page" : undefined}
+                  title={`Switch to workspace: ${ws.name}`}
+                  onClick={() => onSelect(ws.id)}
+                  className={`flex items-center justify-center w-8 h-8 text-[9px] font-semibold uppercase tracking-wider transition-colors ${
+                    active ? "text-emerald-400" : "text-gray-600 hover:text-gray-300"
+                  }`}
+                >
+                  {ws.name.charAt(0)}
+                </button>
+              )}
+            </li>
+          );
+        })}
       </ul>
-
-      {/* ── Add workspace button — prominent, always visible ── */}
-      <button
-        type="button"
-        aria-label="Add new workspace"
-        title="Add new workspace"
-        onClick={addWorkspace}
-        className={`shrink-0 flex items-center border-t-2 border-gray-700 bg-gray-900/60 text-emerald-600 hover:text-emerald-400 hover:bg-gray-800/80 transition-colors ${
-          isExpanded ? "px-3 py-2 gap-2 justify-start" : "justify-center h-10"
-        }`}
-      >
-        <span
-          aria-hidden="true"
-          className={`font-bold leading-none ${isExpanded ? "text-base" : "text-lg"}`}
-        >
-          +
-        </span>
-        {isExpanded && <span className="text-[11px] font-semibold">New workspace</span>}
-      </button>
     </nav>
   );
 }

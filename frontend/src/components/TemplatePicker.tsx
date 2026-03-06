@@ -1,10 +1,19 @@
 import { useEffect, useRef, useState } from "react";
+import { useAppSelector } from "../store/hooks.ts";
 import { LAYOUT_TEMPLATES, useDashboard } from "./DashboardLayout.tsx";
+
+// Templates only available to admins
+const ADMIN_ONLY_TEMPLATES = new Set(["admin"]);
 
 export function TemplatePicker() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { resetLayout } = useDashboard();
+  const userRole = useAppSelector((s) => s.auth.user?.role);
+
+  const visibleTemplates = LAYOUT_TEMPLATES.filter(
+    (tpl) => !ADMIN_ONLY_TEMPLATES.has(tpl.id) || userRole === "admin"
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -32,7 +41,7 @@ export function TemplatePicker() {
           <span className="text-[9px] text-gray-500 px-2 py-1 uppercase tracking-wider">
             Layout Templates
           </span>
-          {LAYOUT_TEMPLATES.map((tpl) => (
+          {visibleTemplates.map((tpl) => (
             <button
               key={tpl.id}
               type="button"
