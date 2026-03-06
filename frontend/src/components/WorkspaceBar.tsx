@@ -3,6 +3,7 @@ import type { IJsonModel, Model } from "flexlayout-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { publishSharedWorkspace } from "../hooks/useWorkspaceSync.ts";
 import {
+  makeAdminModel,
   makeAlgoModel,
   makeAnalysisModel,
   makeDefaultModel,
@@ -17,17 +18,26 @@ export interface Workspace {
   name: string;
 }
 
-const PRESET_WORKSPACES: { id: string; name: string; makeModel: () => IJsonModel }[] = [
+const TRADER_PRESET_WORKSPACES: { id: string; name: string; makeModel: () => IJsonModel }[] = [
   { id: "ws-trading", name: "Trading", makeModel: makeDefaultModel },
   { id: "ws-analysis", name: "Analysis", makeModel: makeAnalysisModel },
   { id: "ws-algo", name: "Algo", makeModel: makeAlgoModel },
   { id: "ws-overview", name: "Overview", makeModel: makeOverviewModel },
 ];
 
-export function seedWorkspaces(): { workspaces: Workspace[]; layouts: Record<string, IJsonModel> } {
-  const workspaces = PRESET_WORKSPACES.map(({ id, name }) => ({ id, name }));
+const ADMIN_PRESET_WORKSPACES: { id: string; name: string; makeModel: () => IJsonModel }[] = [
+  { id: "ws-mission-control", name: "Mission Control", makeModel: makeAdminModel },
+  { id: "ws-overview", name: "Overview", makeModel: makeOverviewModel },
+];
+
+export function seedWorkspaces(role?: string): {
+  workspaces: Workspace[];
+  layouts: Record<string, IJsonModel>;
+} {
+  const presets = role === "admin" ? ADMIN_PRESET_WORKSPACES : TRADER_PRESET_WORKSPACES;
+  const workspaces = presets.map(({ id, name }) => ({ id, name }));
   const layouts: Record<string, IJsonModel> = {};
-  for (const preset of PRESET_WORKSPACES) {
+  for (const preset of presets) {
     layouts[preset.id] = preset.makeModel();
   }
   return { workspaces, layouts };

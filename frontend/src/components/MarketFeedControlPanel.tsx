@@ -32,8 +32,8 @@ function getMarketSession(): MarketSession {
     weekday: "short",
     hour12: false,
   }).formatToParts(now);
-  const h = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0") % 24;
-  const m = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0");
+  const h = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10) % 24;
+  const m = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0", 10);
   const day = parts.find((p) => p.type === "weekday")?.value ?? "Mon";
   const dow: Record<string, number> = {
     Sun: 0,

@@ -179,7 +179,7 @@ function TradingApp() {
       let finalLayoutsJson = prefs?.layouts ?? {};
 
       if (finalWorkspaces.length === 0) {
-        const seed = seedWorkspaces();
+        const seed = seedWorkspaces(userRole);
         finalWorkspaces = seed.workspaces;
         finalLayoutsJson = seed.layouts;
         saveWorkspacePrefs({ workspaces: finalWorkspaces, layouts: finalLayoutsJson });
@@ -204,7 +204,7 @@ function TradingApp() {
       setLayouts(loaded);
       if (preferred) handleSelect(preferred);
     });
-  }, [authStatus, setWorkspaces, handleSelect]);
+  }, [authStatus, setWorkspaces, handleSelect, userRole]);
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;
