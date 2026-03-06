@@ -1,6 +1,7 @@
 import type { IJsonModel } from "flexlayout-react";
 import { Model } from "flexlayout-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { Component, useCallback, useEffect, useRef, useState } from "react";
 import {
   DashboardLayout,
   DashboardProvider,
@@ -19,8 +20,35 @@ import {
 import type { AuthUser } from "./store/authSlice.ts";
 import { setStatus, setUser } from "./store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "./store/hooks.ts";
+import { store } from "./store/index.ts";
+import { reportError } from "./store/observabilitySlice.ts";
 
-// ── Auth gate ──────────────────────────────────────────────────────────────────
+class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolean }> {
+  state = { crashed: false };
+  componentDidCatch(error: Error) {
+    store.dispatch(
+      reportError({ message: error.message, source: "ErrorBoundary", stack: error.stack })
+    );
+    this.setState({ crashed: true });
+  }
+  render() {
+    if (this.state.crashed) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 text-gray-300 gap-4">
+          <p className="text-lg font-semibold">Something went wrong.</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="px-4 py-1.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-sm"
+          >
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
@@ -236,8 +264,10 @@ function TradingApp() {
 
 export default function App() {
   return (
-    <AuthGate>
-      <TradingApp />
-    </AuthGate>
+    <ErrorBoundary>
+      <AuthGate>
+        <TradingApp />
+      </AuthGate>
+    </ErrorBoundary>
   );
 }

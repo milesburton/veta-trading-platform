@@ -18,7 +18,14 @@ export const observabilitySlice = createSlice({
     eventReceived(state, action: PayloadAction<ObsEvent>) {
       state.events = [action.payload, ...state.events].slice(0, 1000);
     },
+    reportError(
+      state,
+      action: PayloadAction<{ message: string; source?: string; stack?: string }>
+    ) {
+      const evt: ObsEvent = { type: "client.error", ts: Date.now(), payload: action.payload };
+      state.events = [evt, ...state.events].slice(0, 1000);
+    },
   },
 });
 
-export const { historicEventsLoaded, eventReceived } = observabilitySlice.actions;
+export const { historicEventsLoaded, eventReceived, reportError } = observabilitySlice.actions;

@@ -8,6 +8,24 @@ import { PopOutHost } from "./components/PopOutHost.tsx";
 import { queryClient } from "./lib/queryClient.ts";
 import { listenForStateRequests } from "./store/channel.ts";
 import { store } from "./store/index.ts";
+import { reportError } from "./store/observabilitySlice.ts";
+
+window.onerror = (_msg, source, _line, _col, error) => {
+  store.dispatch(
+    reportError({ message: error?.message ?? String(_msg), source, stack: error?.stack })
+  );
+};
+
+window.onunhandledrejection = (event) => {
+  const err = event.reason instanceof Error ? event.reason : null;
+  store.dispatch(
+    reportError({
+      message: err?.message ?? String(event.reason),
+      source: "unhandledrejection",
+      stack: err?.stack,
+    })
+  );
+};
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element not found");
