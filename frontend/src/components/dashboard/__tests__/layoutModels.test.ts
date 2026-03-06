@@ -145,8 +145,8 @@ describe("makeAdminModel", () => {
 });
 
 describe("LAYOUT_TEMPLATES", () => {
-  it("has 6 templates", () => {
-    expect(LAYOUT_TEMPLATES).toHaveLength(6);
+  it("has 7 templates", () => {
+    expect(LAYOUT_TEMPLATES).toHaveLength(7);
   });
 
   it("every template has id, label, description, and a valid model", () => {

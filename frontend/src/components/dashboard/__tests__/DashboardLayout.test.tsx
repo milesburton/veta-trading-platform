@@ -1,9 +1,9 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { IJsonModel } from "flexlayout-react";
-import { Model } from "flexlayout-react";
 import { useContext } from "react";
 import { describe, expect, it } from "vitest";
 import { DashboardContext, DashboardProvider, useDashboard } from "../DashboardContext";
+import { makeDefaultModel } from "../layoutModels";
 import { DEFAULT_LAYOUT } from "../layoutUtils";
 import type { PanelId } from "../panelRegistry";
 import { PANEL_DESCRIPTIONS, PANEL_IDS, PANEL_TITLES } from "../panelRegistry";
@@ -52,15 +52,19 @@ function ContextInspector() {
   );
 }
 
-function renderProvider(children = <ContextInspector />) {
-  return render(<DashboardProvider>{children}</DashboardProvider>);
+function renderProvider(children = <ContextInspector />, initialModel?: IJsonModel) {
+  return render(<DashboardProvider initialModel={initialModel}>{children}</DashboardProvider>);
+}
+
+function renderWithDefault(children = <ContextInspector />) {
+  return renderProvider(children, makeDefaultModel());
 }
 
 // ─── DashboardProvider – initial state ───────────────────────────────────────
 
 describe("DashboardProvider – initial state", () => {
   it("provides activePanelIds from DEFAULT_LAYOUT on mount", () => {
-    renderProvider();
+    renderWithDefault();
     const defaultIds = DEFAULT_LAYOUT.map((l) => l.panelType)
       .sort()
       .join(",");
@@ -70,10 +74,15 @@ describe("DashboardProvider – initial state", () => {
 
   it("always starts from DEFAULT_LAYOUT regardless of localStorage contents", () => {
     localStorage.setItem("dashboard-layout", JSON.stringify({ _v: 99, flex: {} }));
-    renderProvider();
+    renderWithDefault();
     const count = Number(screen.getByTestId("active-count").textContent);
     expect(count).toBe(DEFAULT_LAYOUT.length);
     localStorage.clear();
+  });
+
+  it("starts with empty layout when no initialModel provided", () => {
+    renderProvider();
+    expect(Number(screen.getByTestId("active-count").textContent)).toBe(0);
   });
 });
 
@@ -81,23 +90,17 @@ describe("DashboardProvider – initial state", () => {
 
 describe("DashboardProvider – addPanel", () => {
   it("adds a panel that was not in the active set", () => {
-    // Render with a model that doesn't include candle-chart
-    const model = Model.fromJson(makeMinimalModel(["market-ladder", "order-ticket"]));
-    void model; // we can't inject models externally now — use the default and remove chart first
-    renderProvider();
-
-    // Remove order-blotter first so candle-chart is the unique addition
-    // candle-chart IS in the default, so test adding market-match (not in default)
+    renderProvider(undefined, makeMinimalModel(["market-ladder", "order-ticket"]));
     const before = Number(screen.getByTestId("active-count").textContent);
-
-    // candle-chart is already in DEFAULT_LAYOUT, so adding it again should be a no-op
-    // This is tested in "does not duplicate" below.
-    // Instead, we test that activePanelIds is populated correctly.
     expect(before).toBeGreaterThan(0);
+    act(() => {
+      fireEvent.click(screen.getByText("Add Chart"));
+    });
+    expect(Number(screen.getByTestId("active-count").textContent)).toBe(before + 1);
   });
 
   it("does not duplicate a singleton panel already in the layout", () => {
-    renderProvider();
+    renderWithDefault();
     const before = Number(screen.getByTestId("active-count").textContent);
     act(() => {
       fireEvent.click(screen.getByText("Add Chart"));
@@ -110,7 +113,7 @@ describe("DashboardProvider – addPanel", () => {
 
 describe("DashboardProvider – removePanel", () => {
   it("removes a panel from the active set", () => {
-    renderProvider();
+    renderWithDefault();
     const before = Number(screen.getByTestId("active-count").textContent);
     act(() => {
       fireEvent.click(screen.getByText("Remove Blotter"));
@@ -125,7 +128,7 @@ describe("DashboardProvider – removePanel", () => {
 
 describe("DashboardProvider – resetLayout", () => {
   it("restores the DEFAULT_LAYOUT panel set after removal", () => {
-    renderProvider();
+    renderWithDefault();
 
     // Remove blotter first
     act(() => {

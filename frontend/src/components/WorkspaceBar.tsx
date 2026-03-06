@@ -1,7 +1,13 @@
 import { useSignal } from "@preact/signals-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "../store/hooks.ts";
-import { useDashboard } from "./DashboardLayout.tsx";
+import {
+  makeAlgoModel,
+  makeAnalysisModel,
+  makeDefaultModel,
+  makeOverviewModel,
+  useDashboard,
+} from "./DashboardLayout.tsx";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -10,7 +16,12 @@ export interface Workspace {
   name: string;
 }
 
-const DEFAULT_WORKSPACES: Workspace[] = [{ id: "default", name: "Main" }];
+const PRESET_WORKSPACES: { id: string; name: string; makeModel: () => object }[] = [
+  { id: "ws-trading", name: "Trading", makeModel: makeDefaultModel },
+  { id: "ws-analysis", name: "Analysis", makeModel: makeAnalysisModel },
+  { id: "ws-algo", name: "Algo", makeModel: makeAlgoModel },
+  { id: "ws-overview", name: "Overview", makeModel: makeOverviewModel },
+];
 
 // ─── Per-user storage helpers ─────────────────────────────────────────────────
 
@@ -24,6 +35,18 @@ export function workspaceStorageKey(userId: string, workspaceId: string) {
   return `dashboard-layout:${userId}:${workspaceId}`;
 }
 
+function seedWorkspaces(userId: string): Workspace[] {
+  const ws = PRESET_WORKSPACES.map(({ id, name }) => ({ id, name }));
+  saveWorkspaces(userId, ws);
+  for (const preset of PRESET_WORKSPACES) {
+    const key = workspaceStorageKey(userId, preset.id);
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, JSON.stringify(preset.makeModel()));
+    }
+  }
+  return ws;
+}
+
 function loadWorkspaces(userId: string): Workspace[] {
   try {
     const raw = localStorage.getItem(workspacesKey(userId));
@@ -32,9 +55,9 @@ function loadWorkspaces(userId: string): Workspace[] {
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
   } catch {
-    // corrupted
+    // corrupted — fall through and seed
   }
-  return DEFAULT_WORKSPACES;
+  return seedWorkspaces(userId);
 }
 
 function saveWorkspaces(userId: string, ws: Workspace[]) {

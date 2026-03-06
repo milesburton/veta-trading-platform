@@ -2,7 +2,7 @@ import type { IJsonModel, IJsonTabNode, TabNode } from "flexlayout-react";
 import { Actions, DockLocation, Model } from "flexlayout-react";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useState } from "react";
-import { makeDefaultModel, STORAGE_KEY } from "./layoutModels.ts";
+import { makeClearModel, makeDefaultModel, STORAGE_KEY } from "./layoutModels.ts";
 import type { LayoutItem, TabChannelConfig } from "./layoutUtils.ts";
 import { DEFAULT_LAYOUT, modelToLayoutItems } from "./layoutUtils.ts";
 import type { PanelId } from "./panelRegistry.ts";
@@ -53,7 +53,7 @@ function loadModel(storageKey: string, initialModel?: IJsonModel): Model {
   } catch {
     // corrupted — fall through
   }
-  return Model.fromJson(initialModel ?? makeDefaultModel());
+  return Model.fromJson(initialModel ?? makeClearModel());
 }
 
 export function DashboardProvider({

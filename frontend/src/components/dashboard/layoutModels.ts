@@ -608,4 +608,10 @@ export const LAYOUT_TEMPLATES: {
       "Full-screen heatmap — sector view with room for key stocks, most traded, most moved",
     model: makeOverviewModel(),
   },
+  {
+    id: "clear",
+    label: "Clear Layout",
+    description: "Empty canvas — add panels from the panel picker",
+    model: makeClearModel(),
+  },
 ];
