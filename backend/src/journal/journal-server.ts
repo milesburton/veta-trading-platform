@@ -149,6 +149,7 @@ function ingestTick(msg: { prices?: Record<string, number>; volumes?: Record<str
 
 const CONSUME_TOPICS = [
   "orders.submitted",
+  "orders.routed",
   "orders.child",
   "orders.filled",
   "orders.expired",
@@ -505,7 +506,9 @@ function reconstructOrders(): Record<string, unknown>[] {
       });
     } else if (orderMap.has(orderId)) {
       const order = orderMap.get(orderId)!;
-      if (eventType === "orders.filled") {
+      if (eventType === "orders.routed") {
+        if (order.status === "pending") order.status = "working";
+      } else if (eventType === "orders.filled") {
         const childFilled = Number(raw.filledQty ?? 0);
         order.filled = Number(order.filled ?? 0) + childFilled;
         const qty = Number(order.quantity ?? 0);
@@ -528,6 +531,7 @@ function reconstructOrders(): Record<string, unknown>[] {
           submittedAt: ts,
           status: "pending",
         });
+        if (order.status === "pending") order.status = "working";
       }
     }
   }
