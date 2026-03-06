@@ -26,8 +26,11 @@ export function setGatewayWs(ws: WebSocket | null): void {
  */
 export const submitOrderThunk = createAsyncThunk(
   "orders/submit",
-  async (trade: Trade, { dispatch }) => {
+  async (trade: Trade, { dispatch, getState }) => {
     const clientOrderId = uuidv4();
+    // Pick up the current user's ID from auth state (may be undefined if not logged in)
+    const state = getState() as { auth?: { user?: { id?: string } } };
+    const userId = state.auth?.user?.id;
     const order: OrderRecord = {
       id: clientOrderId,
       submittedAt: Date.now(),
@@ -41,6 +44,7 @@ export const submitOrderThunk = createAsyncThunk(
       filled: 0,
       algoParams: trade.algoParams,
       children: [],
+      userId,
     };
     dispatch(ordersSlice.actions.orderAdded(order));
 

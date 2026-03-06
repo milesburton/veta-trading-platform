@@ -3,10 +3,11 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import type {
   AllGridPrefs,
   ConditionalFormatRule,
+  ExprGroup,
   FilterCriteria,
   GridPrefs,
 } from "../types/gridPrefs.ts";
-import { EMPTY_GRID_PREFS } from "../types/gridPrefs.ts";
+import { EMPTY_EXPR_GROUP, EMPTY_GRID_PREFS } from "../types/gridPrefs.ts";
 import type { RootState } from "./index.ts";
 
 export type GridId = "orderBlotter" | "executions";
@@ -63,6 +64,9 @@ export const gridPrefsSlice = createSlice({
     setFilters(state, action: PayloadAction<{ gridId: GridId; filters: FilterCriteria[] }>) {
       state[action.payload.gridId].filters = action.payload.filters;
     },
+    setFilterExpr(state, action: PayloadAction<{ gridId: GridId; expr: ExprGroup }>) {
+      state[action.payload.gridId].filterExpr = action.payload.expr;
+    },
     setSort(
       state,
       action: PayloadAction<{
@@ -78,7 +82,10 @@ export const gridPrefsSlice = createSlice({
       state[action.payload.gridId].cfRules = action.payload.rules;
     },
     resetGrid(state, action: PayloadAction<{ gridId: GridId }>) {
-      state[action.payload.gridId] = { ...EMPTY_GRID_PREFS };
+      state[action.payload.gridId] = {
+        ...EMPTY_GRID_PREFS,
+        filterExpr: { ...EMPTY_EXPR_GROUP, rules: [] },
+      };
     },
     setAllPrefs(state, action: PayloadAction<AllGridPrefs>) {
       if (action.payload.orderBlotter) {
@@ -98,10 +105,19 @@ export const gridPrefsSlice = createSlice({
         state.loading = false;
         if (action.payload) {
           if (action.payload.orderBlotter) {
-            state.orderBlotter = action.payload.orderBlotter;
+            // Migrate: ensure filterExpr is present for prefs saved before the builder
+            state.orderBlotter = {
+              ...EMPTY_GRID_PREFS,
+              ...action.payload.orderBlotter,
+              filterExpr: action.payload.orderBlotter.filterExpr ?? EMPTY_EXPR_GROUP,
+            };
           }
           if (action.payload.executions) {
-            state.executions = action.payload.executions;
+            state.executions = {
+              ...EMPTY_GRID_PREFS,
+              ...action.payload.executions,
+              filterExpr: action.payload.executions.filterExpr ?? EMPTY_EXPR_GROUP,
+            };
           }
         }
       })
@@ -111,4 +127,5 @@ export const gridPrefsSlice = createSlice({
   },
 });
 
-export const { setFilters, setSort, setCfRules, resetGrid, setAllPrefs } = gridPrefsSlice.actions;
+export const { setFilters, setFilterExpr, setSort, setCfRules, resetGrid, setAllPrefs } =
+  gridPrefsSlice.actions;

@@ -2,11 +2,13 @@ import { useSignal } from "@preact/signals-react";
 import { Fragment, useEffect, useMemo } from "react";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelOut } from "../hooks/useChannelOut.ts";
+import { saveGridPrefs, setSort } from "../store/gridPrefsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { orderPatched } from "../store/ordersSlice.ts";
 import type { FieldDef } from "../types/gridPrefs.ts";
+import { EMPTY_EXPR_GROUP } from "../types/gridPrefs.ts";
 import type { ChildOrder, LiquidityFlag, OrderStatus } from "../types.ts";
-import { applyCfRules, applyFilters, applySort } from "../utils/gridFilter.ts";
+import { applyCfRules, applyExprGroup, applySort } from "../utils/gridFilter.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
 import { CHANNEL_COLOURS } from "./DashboardLayout.tsx";
@@ -42,6 +44,7 @@ const BLOTTER_FIELDS: FieldDef[] = [
     options: ["queued", "executing", "filled", "expired", "rejected"],
   },
   { key: "filled", label: "Filled", type: "number" },
+  { key: "userId", label: "Booked By", type: "string" },
 ];
 
 function formatTime(ms: number) {
@@ -129,20 +132,24 @@ function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
 
 export function OrderBlotter() {
   const orders = useAppSelector((s) => s.orders.orders);
-  const { sortField, sortDir, filters, cfRules } = useAppSelector((s) => s.gridPrefs.orderBlotter);
+  const { sortField, sortDir, filterExpr, cfRules } = useAppSelector(
+    (s) => s.gridPrefs.orderBlotter
+  );
   const expanded = useSignal<Set<string>>(new Set());
   const selectedOrderId = useSignal<string | null>(null);
   const showCfEditor = useSignal(false);
+  const filterField = useSignal<string | null>(null);
   const broadcast = useChannelOut();
   const dispatch = useAppDispatch();
   const ctxMenu = useSignal<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
   const { outgoing } = useChannelContext();
   const channelColour = outgoing !== null ? (CHANNEL_COLOURS[outgoing]?.hex ?? null) : null;
+  const expr = filterExpr ?? EMPTY_EXPR_GROUP;
 
-  // Apply filter + sort
+  // Apply expression filter + sort
   const displayOrders = useMemo(
-    () => applySort(applyFilters([...orders], filters), sortField, sortDir),
-    [orders, filters, sortField, sortDir]
+    () => applySort(applyExprGroup([...orders], expr), sortField, sortDir),
+    [orders, expr, sortField, sortDir]
   );
 
   // Auto-select the most recent order on first load (once orders arrive)
@@ -206,6 +213,50 @@ export function OrderBlotter() {
     ctxMenu.value = { x: e.clientX, y: e.clientY, items };
   }
 
+  function openHeaderCtxMenu(e: React.MouseEvent, field: string | null, label: string) {
+    e.preventDefault();
+    const items: ContextMenuEntry[] = [];
+    if (field) {
+      items.push(
+        {
+          label: "Sort A → Z",
+          icon: "↑",
+          onClick: () => {
+            dispatch(setSort({ gridId: "orderBlotter", field, dir: "asc" }));
+            dispatch(saveGridPrefs());
+          },
+        },
+        {
+          label: "Sort Z → A",
+          icon: "↓",
+          onClick: () => {
+            dispatch(setSort({ gridId: "orderBlotter", field, dir: "desc" }));
+            dispatch(saveGridPrefs());
+          },
+        }
+      );
+    }
+    items.push(
+      {
+        label: "Reset sort",
+        icon: "↕",
+        onClick: () => {
+          dispatch(setSort({ gridId: "orderBlotter", field: null, dir: null }));
+          dispatch(saveGridPrefs());
+        },
+      },
+      { separator: true },
+      {
+        label: `Filter by ${label}`,
+        icon: "⊟",
+        onClick: () => {
+          filterField.value = field ?? BLOTTER_FIELDS[0].key;
+        },
+      }
+    );
+    ctxMenu.value = { x: e.clientX, y: e.clientY, items };
+  }
+
   const thBase = "text-left px-3 py-2";
 
   return (
@@ -254,7 +305,7 @@ export function OrderBlotter() {
       </div>
 
       {/* Filter bar */}
-      <FilterBar gridId="orderBlotter" fields={BLOTTER_FIELDS} />
+      <FilterBar gridId="orderBlotter" fields={BLOTTER_FIELDS} openFieldSignal={filterField} />
 
       {/* Table */}
       <div className="overflow-auto flex-1">
@@ -275,10 +326,15 @@ export function OrderBlotter() {
                   gridId="orderBlotter"
                   className={thBase}
                   title="Time order was submitted"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, "submittedAt", "Time")}
                 >
                   Time
                 </SortableHeader>
-                <th className={thBase} title="Order ID — click ▸ to expand child executions">
+                <th
+                  className={thBase}
+                  title="Order ID — click ▸ to expand child executions"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, null, "ID")}
+                >
                   ID
                 </th>
                 <SortableHeader
@@ -286,6 +342,7 @@ export function OrderBlotter() {
                   gridId="orderBlotter"
                   className={thBase}
                   title="Instrument / ticker symbol"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, "asset", "Asset")}
                 >
                   Asset
                 </SortableHeader>
@@ -294,22 +351,25 @@ export function OrderBlotter() {
                   gridId="orderBlotter"
                   className={thBase}
                   title="Order direction: BUY or SELL"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, "side", "Side")}
                 >
                   Side
                 </SortableHeader>
                 <SortableHeader
                   field="quantity"
                   gridId="orderBlotter"
-                  className={`text-right px-3 py-2`}
+                  className="text-right px-3 py-2"
                   title="Total order quantity (shares)"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, "quantity", "Qty")}
                 >
                   Qty
                 </SortableHeader>
                 <SortableHeader
                   field="limitPrice"
                   gridId="orderBlotter"
-                  className={`text-right px-3 py-2`}
+                  className="text-right px-3 py-2"
                   title="Limit price for parent orders; average fill price for algo orders with child executions"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, "limitPrice", "Limit/Fill")}
                 >
                   Limit/Fill
                 </SortableHeader>
@@ -318,6 +378,7 @@ export function OrderBlotter() {
                   gridId="orderBlotter"
                   className={thBase}
                   title="Execution strategy (LIMIT, TWAP, POV, VWAP) or execution venue for child orders"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, "strategy", "Strategy")}
                 >
                   Strat/Venue
                 </SortableHeader>
@@ -326,22 +387,45 @@ export function OrderBlotter() {
                   gridId="orderBlotter"
                   className={thBase}
                   title="Order lifecycle status"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, "status", "Status")}
                 >
                   Status
                 </SortableHeader>
-                <th className={thBase} title="Counterparty that took the other side of the trade">
+                <SortableHeader
+                  field="userId"
+                  gridId="orderBlotter"
+                  className={thBase}
+                  title="User who submitted this order"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, "userId", "Booked By")}
+                >
+                  Booked By
+                </SortableHeader>
+                <th
+                  className={thBase}
+                  title="Counterparty that took the other side of the trade"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, null, "Cpty")}
+                >
                   Cpty
                 </th>
                 <th
                   className={thBase}
                   title="Liquidity flag: MAKER (passive, added liquidity), TAKER (aggressive, removed liquidity), CROSS (internal match)"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, null, "Liq")}
                 >
                   Liq
                 </th>
-                <th className={`text-right px-3 py-2`} title="Total execution commission in USD">
+                <th
+                  className="text-right px-3 py-2"
+                  title="Total execution commission in USD"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, null, "Comm")}
+                >
                   Comm
                 </th>
-                <th className={thBase} title="Settlement date (T+2 for equities)">
+                <th
+                  className={thBase}
+                  title="Settlement date (T+2 for equities)"
+                  onContextMenu={(e) => openHeaderCtxMenu(e, null, "Settle")}
+                >
                   Settle
                 </th>
               </tr>
@@ -426,6 +510,12 @@ export function OrderBlotter() {
                         >
                           {order.status}
                         </span>
+                      </td>
+                      <td
+                        className={`px-3 py-1.5 text-gray-500 font-mono text-[10px] ${cellClasses["userId"] ?? ""}`}
+                        title={order.userId}
+                      >
+                        {order.userId ?? "—"}
                       </td>
                       <td className="px-3 py-1.5 text-gray-600">—</td>
                       <td className="px-3 py-1.5 text-gray-600">—</td>

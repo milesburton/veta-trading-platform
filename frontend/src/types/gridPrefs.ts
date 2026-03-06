@@ -7,6 +7,42 @@ export interface FilterCriteria {
   value: string | number | [number, number] | string[];
 }
 
+// ── Expression tree (replaces flat FilterCriteria[] for the builder UI) ────────
+
+export type ExprJoin = "AND" | "OR";
+
+export type ExprOp =
+  | "="
+  | "!="
+  | ">"
+  | "<"
+  | ">="
+  | "<="
+  | "contains"
+  | "starts_with"
+  | "ends_with"
+  | "between"
+  | "in"
+  | "is_null"
+  | "is_not_null";
+
+export interface ExprRule {
+  kind: "rule";
+  id: string;
+  field: string;
+  op: ExprOp;
+  value: string | number | [number, number] | string[];
+}
+
+export interface ExprGroup {
+  kind: "group";
+  id: string;
+  join: ExprJoin;
+  rules: ExprNode[];
+}
+
+export type ExprNode = ExprRule | ExprGroup;
+
 export type CfScope = "row" | "cell";
 
 export interface CfStyle {
@@ -31,7 +67,8 @@ export interface ConditionalFormatRule {
 export interface GridPrefs {
   sortField: string | null;
   sortDir: "asc" | "desc" | null;
-  filters: FilterCriteria[];
+  filters: FilterCriteria[]; // legacy — kept for backwards compat
+  filterExpr: ExprGroup; // expression builder tree
   cfRules: ConditionalFormatRule[];
 }
 
@@ -47,9 +84,12 @@ export interface FieldDef {
   options?: string[];
 }
 
+export const EMPTY_EXPR_GROUP: ExprGroup = { kind: "group", id: "root", join: "AND", rules: [] };
+
 export const EMPTY_GRID_PREFS: GridPrefs = {
   sortField: null,
   sortDir: null,
   filters: [],
+  filterExpr: EMPTY_EXPR_GROUP,
   cfRules: [],
 };

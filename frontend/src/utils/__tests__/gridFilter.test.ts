@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { ConditionalFormatRule, FilterCriteria } from "../../types/gridPrefs.ts";
-import { applyCfRules, applyFilters, applySort } from "../gridFilter.ts";
+import type { ConditionalFormatRule, ExprGroup, FilterCriteria } from "../../types/gridPrefs.ts";
+import {
+  applyCfRules,
+  applyExprGroup,
+  applyFilters,
+  applySort,
+  evalExprGroup,
+  exprGroupToDisplay,
+} from "../gridFilter.ts";
 
 // ── Test data ──────────────────────────────────────────────────────────────────
 
@@ -286,5 +293,194 @@ describe("applyCfRules", () => {
     ];
     const { rowClasses } = applyCfRules(rows[3] as Row, rules);
     expect(rowClasses).toContain("border-l-2");
+  });
+});
+
+// ── evalExprGroup / applyExprGroup ─────────────────────────────────────────────
+
+const exprRows = [
+  { id: "1", asset: "AAPL", side: "BUY", quantity: 10000, status: "filled", note: null },
+  { id: "2", asset: "MSFT", side: "SELL", quantity: 50000, status: "executing", note: "large" },
+  { id: "3", asset: "GOOG", side: "BUY", quantity: 5000, status: "queued", note: undefined },
+  { id: "4", asset: "TSLA", side: "SELL", quantity: 100000, status: "expired", note: "" },
+];
+
+describe("evalExprGroup – AND group", () => {
+  it("passes all rows when group is empty", () => {
+    const g: ExprGroup = { kind: "group", id: "g1", join: "AND", rules: [] };
+    expect(exprRows.every((r) => evalExprGroup(r, g))).toBe(true);
+  });
+
+  it("AND: all rules must match", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "g1",
+      join: "AND",
+      rules: [
+        { kind: "rule", id: "r1", field: "side", op: "=", value: "BUY" },
+        { kind: "rule", id: "r2", field: "quantity", op: ">", value: 5000 },
+      ],
+    };
+    const result = applyExprGroup(exprRows, g);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("1");
+  });
+});
+
+describe("evalExprGroup – OR group", () => {
+  it("OR: at least one rule must match", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "g1",
+      join: "OR",
+      rules: [
+        { kind: "rule", id: "r1", field: "side", op: "=", value: "BUY" },
+        { kind: "rule", id: "r2", field: "quantity", op: ">=", value: 100000 },
+      ],
+    };
+    const result = applyExprGroup(exprRows, g);
+    // BUY rows (1, 3) + TSLA qty=100000 (4)
+    expect(result.map((r) => r.id).sort()).toEqual(["1", "3", "4"]);
+  });
+});
+
+describe("evalExprGroup – nested groups", () => {
+  it("AND group containing an OR sub-group", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "root",
+      join: "AND",
+      rules: [
+        { kind: "rule", id: "r1", field: "quantity", op: ">", value: 5000 },
+        {
+          kind: "group",
+          id: "sub",
+          join: "OR",
+          rules: [
+            { kind: "rule", id: "r2", field: "side", op: "=", value: "BUY" },
+            { kind: "rule", id: "r3", field: "status", op: "=", value: "expired" },
+          ],
+        },
+      ],
+    };
+    // qty > 5000: rows 1(10k), 2(50k), 4(100k)
+    // AND (side=BUY OR status=expired): row1(BUY✓), row2(SELL/executing✗), row4(SELL/expired✓)
+    const result = applyExprGroup(exprRows, g);
+    expect(result.map((r) => r.id).sort()).toEqual(["1", "4"]);
+  });
+});
+
+describe("evalExprGroup – new operators", () => {
+  it("is_null matches null/undefined/empty", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "g",
+      join: "AND",
+      rules: [{ kind: "rule", id: "r", field: "note", op: "is_null", value: "" }],
+    };
+    const result = applyExprGroup(exprRows, g);
+    // null, undefined, "" all count as null → rows 1, 3, 4
+    expect(result.map((r) => r.id).sort()).toEqual(["1", "3", "4"]);
+  });
+
+  it("is_not_null matches non-empty values", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "g",
+      join: "AND",
+      rules: [{ kind: "rule", id: "r", field: "note", op: "is_not_null", value: "" }],
+    };
+    const result = applyExprGroup(exprRows, g);
+    expect(result).toHaveLength(1);
+    expect(result[0].note).toBe("large");
+  });
+
+  it("starts_with", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "g",
+      join: "AND",
+      rules: [{ kind: "rule", id: "r", field: "asset", op: "starts_with", value: "MS" }],
+    };
+    expect(applyExprGroup(exprRows, g)).toHaveLength(1);
+    expect(applyExprGroup(exprRows, g)[0].asset).toBe("MSFT");
+  });
+
+  it("ends_with", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "g",
+      join: "AND",
+      rules: [{ kind: "rule", id: "r", field: "asset", op: "ends_with", value: "OG" }],
+    };
+    expect(applyExprGroup(exprRows, g)[0].asset).toBe("GOOG");
+  });
+});
+
+describe("exprGroupToDisplay", () => {
+  const fields = [
+    { key: "asset", label: "Asset", type: "string" as const },
+    { key: "side", label: "Side", type: "enum" as const },
+    { key: "quantity", label: "Qty", type: "number" as const },
+    { key: "status", label: "Status", type: "enum" as const },
+  ];
+
+  it("returns empty string for empty group", () => {
+    const g: ExprGroup = { kind: "group", id: "g", join: "AND", rules: [] };
+    expect(exprGroupToDisplay(g, fields)).toBe("");
+  });
+
+  it("renders single rule", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "g",
+      join: "AND",
+      rules: [{ kind: "rule", id: "r", field: "side", op: "=", value: "BUY" }],
+    };
+    expect(exprGroupToDisplay(g, fields)).toBe("Side = BUY");
+  });
+
+  it("renders is_null without value", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "g",
+      join: "AND",
+      rules: [{ kind: "rule", id: "r", field: "status", op: "is_null", value: "" }],
+    };
+    expect(exprGroupToDisplay(g, fields)).toBe("Status IS NULL");
+  });
+
+  it("renders AND-joined rules", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "g",
+      join: "AND",
+      rules: [
+        { kind: "rule", id: "r1", field: "side", op: "=", value: "BUY" },
+        { kind: "rule", id: "r2", field: "quantity", op: ">", value: 50000 },
+      ],
+    };
+    expect(exprGroupToDisplay(g, fields)).toBe("Side = BUY AND Qty > 50000");
+  });
+
+  it("wraps sub-groups in parentheses", () => {
+    const g: ExprGroup = {
+      kind: "group",
+      id: "root",
+      join: "AND",
+      rules: [
+        { kind: "rule", id: "r1", field: "quantity", op: ">", value: 5000 },
+        {
+          kind: "group",
+          id: "sub",
+          join: "OR",
+          rules: [
+            { kind: "rule", id: "r2", field: "side", op: "=", value: "BUY" },
+            { kind: "rule", id: "r3", field: "status", op: "=", value: "expired" },
+          ],
+        },
+      ],
+    };
+    expect(exprGroupToDisplay(g, fields)).toBe("Qty > 5000 AND (Side = BUY OR Status = expired)");
   });
 });

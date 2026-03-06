@@ -15,7 +15,7 @@ import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import type { FieldDef } from "../types/gridPrefs.ts";
 import type { LiquidityFlag, OrderRecord } from "../types.ts";
-import { applyCfRules, applyFilters, applySort } from "../utils/gridFilter.ts";
+import { applyCfRules, applyExprGroup, applySort } from "../utils/gridFilter.ts";
 import { CfRuleEditor } from "./grid/CfRuleEditor.tsx";
 import { FilterBar } from "./grid/FilterBar.tsx";
 import { SortableHeader } from "./grid/SortableHeader.tsx";
@@ -276,7 +276,7 @@ export function ExecutionsPanel() {
   const {
     sortField,
     sortDir,
-    filters,
+    filterExpr,
     cfRules: _cfRules,
   } = useAppSelector((s) => s.gridPrefs.executions);
   const { incoming } = useChannelContext();
@@ -300,9 +300,15 @@ export function ExecutionsPanel() {
     [orders, filterOrderId, filterAsset]
   );
 
+  const execExpr = filterExpr ?? {
+    kind: "group" as const,
+    id: "root",
+    join: "AND" as const,
+    rules: [],
+  };
   const tradeOrders = useMemo(
-    () => applySort(applyFilters([...baseOrders], filters), sortField, sortDir),
-    [baseOrders, filters, sortField, sortDir]
+    () => applySort(applyExprGroup([...baseOrders], execExpr), sortField, sortDir),
+    [baseOrders, execExpr, sortField, sortDir]
   );
 
   const thBase = "text-left px-3 py-2";
@@ -353,7 +359,7 @@ export function ExecutionsPanel() {
               ? `No executions for order ${filterOrderId.slice(0, 8)}`
               : filterAsset
                 ? `No executions for ${filterAsset}`
-                : filters.length > 0
+                : execExpr.rules.length > 0
                   ? "No executions match the active filters"
                   : "No executions yet"}
           </div>

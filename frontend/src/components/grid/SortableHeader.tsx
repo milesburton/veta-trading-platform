@@ -7,10 +7,18 @@ interface Props {
   gridId: GridId;
   className?: string;
   title?: string;
+  onContextMenu?: (e: React.MouseEvent) => void;
   children: React.ReactNode;
 }
 
-export function SortableHeader({ field, gridId, className = "", title, children }: Props) {
+export function SortableHeader({
+  field,
+  gridId,
+  className = "",
+  title,
+  onContextMenu,
+  children,
+}: Props) {
   const dispatch = useAppDispatch();
   const { sortField, sortDir } = useAppSelector((s) => s.gridPrefs[gridId]);
 
@@ -34,6 +42,7 @@ export function SortableHeader({ field, gridId, className = "", title, children 
     <th
       className={`cursor-pointer select-none group ${className}`}
       onClick={handleClick}
+      onContextMenu={onContextMenu}
       title={title}
       aria-sort={isActive ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
     >

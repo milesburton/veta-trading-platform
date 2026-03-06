@@ -130,12 +130,14 @@ describe("gridPrefsSlice – setAllPrefs", () => {
         sortField: "quantity",
         sortDir: "desc",
         filters: [{ id: "f1", field: "side", op: "=", value: "BUY" }],
+        filterExpr: { kind: "group", id: "root", join: "AND", rules: [] },
         cfRules: [],
       },
       executions: {
         sortField: null,
         sortDir: null,
         filters: [],
+        filterExpr: { kind: "group", id: "root", join: "AND", rules: [] },
         cfRules: [],
       },
     };

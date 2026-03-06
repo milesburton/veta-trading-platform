@@ -203,7 +203,7 @@ describe("OrderBlotter – filter bar", () => {
   });
 
   it("shows 'No orders match' message when all orders are filtered out", () => {
-    // Pre-load store with a filter that won't match anything
+    // Pre-load store with an expression filter that won't match anything
     const store = configureStore({
       reducer: {
         orders: ordersSlice.reducer,
@@ -220,9 +220,29 @@ describe("OrderBlotter – filter bar", () => {
             sortField: null,
             sortDir: null,
             cfRules: [],
-            filters: [{ id: "f1", field: "asset", op: "=" as const, value: "NVDA" }],
+            filters: [],
+            filterExpr: {
+              kind: "group" as const,
+              id: "root",
+              join: "AND" as const,
+              rules: [
+                {
+                  kind: "rule" as const,
+                  id: "r1",
+                  field: "asset",
+                  op: "=" as const,
+                  value: "NVDA",
+                },
+              ],
+            },
           },
-          executions: { sortField: null, sortDir: null, cfRules: [], filters: [] },
+          executions: {
+            sortField: null,
+            sortDir: null,
+            cfRules: [],
+            filters: [],
+            filterExpr: { kind: "group" as const, id: "root", join: "AND" as const, rules: [] },
+          },
         },
       },
     });
@@ -254,5 +274,39 @@ describe("OrderBlotter – Format button", () => {
     renderBlotter([]);
     fireEvent.click(screen.getByText(/Format/i));
     expect(screen.getByText(/Conditional Formatting/i)).toBeInTheDocument();
+  });
+});
+
+describe("OrderBlotter – Booked By column", () => {
+  it("renders Booked By column header", () => {
+    renderBlotter([makeOrder()]);
+    expect(screen.getByRole("columnheader", { name: /booked by/i })).toBeInTheDocument();
+  });
+
+  it("shows userId when present on order", () => {
+    renderBlotter([makeOrder({ userId: "trader-alice" })]);
+    expect(screen.getByText("trader-alice")).toBeInTheDocument();
+  });
+
+  it("shows — when userId is absent", () => {
+    renderBlotter([makeOrder()]);
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThan(0);
+  });
+});
+
+describe("OrderBlotter – header context menu", () => {
+  it("right-clicking a column header does not throw", () => {
+    renderBlotter([makeOrder()]);
+    const assetHeader = screen.getByRole("columnheader", { name: /asset/i });
+    expect(() => fireEvent.contextMenu(assetHeader)).not.toThrow();
+  });
+
+  it("shows context menu items on right-click", () => {
+    renderBlotter([makeOrder()]);
+    const assetHeader = screen.getByRole("columnheader", { name: /asset/i });
+    fireEvent.contextMenu(assetHeader);
+    expect(screen.getByText(/Sort A → Z/i)).toBeInTheDocument();
+    expect(screen.getByText(/Reset sort/i)).toBeInTheDocument();
   });
 });

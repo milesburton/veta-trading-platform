@@ -154,6 +154,8 @@ export interface OrderRecord {
   settlementDate?: string;
   /** Client order notes / free text. */
   notes?: string;
+  /** ID of the authenticated user who submitted this order (injected by gateway). */
+  userId?: string;
 }
 
 export interface ObsEvent {
