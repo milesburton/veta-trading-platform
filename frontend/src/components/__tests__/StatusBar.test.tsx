@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { Model } from "flexlayout-react";
 import { Provider } from "react-redux";
 import { vi } from "vitest";
@@ -52,7 +52,7 @@ function makeStore(connected: boolean) {
   });
 }
 
-function renderBar(connected: boolean, resetLayout = vi.fn()) {
+function renderBar(connected: boolean) {
   return render(
     <Provider store={makeStore(connected)}>
       <DashboardContext.Provider
@@ -62,7 +62,7 @@ function renderBar(connected: boolean, resetLayout = vi.fn()) {
           activePanelIds: new Set(),
           addPanel: vi.fn(),
           removePanel: vi.fn(),
-          resetLayout,
+          resetLayout: vi.fn(),
           storageKey: "dashboard-layout",
           model: Model.fromJson({ global: {}, layout: { type: "row", children: [] } }),
           setModel: vi.fn(),
@@ -85,11 +85,4 @@ test("shows Live when connected and shows time", () => {
 test("shows Disconnected when not connected", () => {
   renderBar(false);
   expect(screen.getByText(/Disconnected/)).toBeInTheDocument();
-});
-
-test("reset layout button calls resetLayout", () => {
-  const resetLayout = vi.fn();
-  renderBar(true, resetLayout);
-  fireEvent.click(screen.getByRole("button", { name: /reset layout/i }));
-  expect(resetLayout).toHaveBeenCalledTimes(1);
 });

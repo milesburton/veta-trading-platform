@@ -5,7 +5,6 @@ import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
 import type { ServiceHealth } from "../types.ts";
 import { ComponentPicker } from "./ComponentPicker.tsx";
-import { useDashboard } from "./DashboardLayout.tsx";
 import { KillSwitchButton } from "./KillSwitchButton.tsx";
 import { ServiceStatus } from "./ServiceStatus.tsx";
 import { TemplatePicker } from "./TemplatePicker.tsx";
@@ -166,22 +165,11 @@ export function AppHeader() {
 // ─── WorkspaceToolbar: layout controls scoped to the active workspace ─────────
 
 export function WorkspaceToolbar() {
-  const { resetLayout } = useDashboard();
-
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-950 border-b border-gray-800 text-xs">
       <ComponentPicker />
       <div className="w-px h-3.5 bg-gray-800" />
       <TemplatePicker />
-      <button
-        type="button"
-        onClick={() => resetLayout()}
-        title="Reset workspace to default layout"
-        className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 transition-colors px-1.5 py-0.5 rounded border border-gray-700 hover:border-gray-500"
-        aria-label="Reset layout"
-      >
-        ↺ Reset layout
-      </button>
     </div>
   );
 }
