@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v5`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v6`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -517,6 +517,13 @@ export function makeAdminModel(): IJsonModel {
                   name: PANEL_TITLES["market-data-sources"],
                   component: "market-data-sources",
                   config: { panelType: "market-data-sources" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "market-feed-control",
+                  name: PANEL_TITLES["market-feed-control"],
+                  component: "market-feed-control",
+                  config: { panelType: "market-feed-control" } satisfies TabChannelConfig,
                 },
               ],
             },

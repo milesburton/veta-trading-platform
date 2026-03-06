@@ -33,6 +33,7 @@ export const PANEL_IDS = [
   "scenario-matrix",
   "trade-recommendation",
   "market-data-sources",
+  "market-feed-control",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -59,6 +60,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "scenario-matrix": "Scenario Matrix (spot/vol shocks)",
   "trade-recommendation": "Trade Recommendations (rule-based)",
   "market-data-sources": "Market Data Sources (provider config)",
+  "market-feed-control": "Market Feed Control (feed health)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -95,6 +97,8 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Rule-based option trade recommendations — scored signals with reason codes for all strikes and expiries",
   "market-data-sources":
     "Configure per-symbol market data sources — switch symbols between synthetic GBM and real-world Alpha Vantage prices",
+  "market-feed-control":
+    "Feed health and market context — global Alpha Vantage pause/resume, exchange market hours, and symbol source overview",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -106,6 +110,7 @@ export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
   "news-sources",
   "alerts",
   "market-data-sources",
+  "market-feed-control",
 ]);
 
 export interface TabChannelConfig {
@@ -137,4 +142,5 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "scenario-matrix": { out: false, in: false },
   "trade-recommendation": { out: false, in: false },
   "market-data-sources": { out: false, in: false },
+  "market-feed-control": { out: false, in: false },
 };

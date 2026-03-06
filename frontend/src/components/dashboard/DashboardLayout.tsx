@@ -27,6 +27,7 @@ import { DecisionLog } from "../DecisionLog.tsx";
 import { ExecutionsPanel } from "../ExecutionsPanel.tsx";
 import { MarketDataSourcesPanel } from "../MarketDataSourcesPanel.tsx";
 import { MarketDepth } from "../MarketDepth.tsx";
+import { MarketFeedControlPanel } from "../MarketFeedControlPanel.tsx";
 import { MarketHeatmap } from "../MarketHeatmap.tsx";
 import { MarketLadder } from "../MarketLadder.tsx";
 import { MarketMatch } from "../MarketMatch.tsx";
@@ -653,6 +654,8 @@ export function DashboardLayout() {
           return wrap(<TradeRecommendationPanel />);
         case "market-data-sources":
           return wrap(<MarketDataSourcesPanel />);
+        case "market-feed-control":
+          return wrap(<MarketFeedControlPanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }

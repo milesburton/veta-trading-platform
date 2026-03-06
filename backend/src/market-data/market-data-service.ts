@@ -9,6 +9,7 @@
  * HTTP API:
  *   GET  /health
  *   GET  /sources                    → DataSource[]
+ *   POST /sources/:id/toggle         → DataSource[] (toggle feed active state)
  *   GET  /quote/:symbol              → CachedQuote or 404
  *   GET  /overrides                  → { overrides: Record<string, string> }
  *   PUT  /overrides                  → { overrides: Record<string, string> }
@@ -23,6 +24,9 @@ const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Den
 const ALPHA_VANTAGE_KEY = Deno.env.get("ALPHA_VANTAGE_KEY") ?? "";
 const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
 const OVERRIDES_FILE = "market_data_overrides.json";
+const FEED_STATE_FILE = "market_data_feed_state.json";
+
+let feedPaused = false;
 
 // How long between polls per symbol (free tier: 25 calls/day → ~3456s per call if 1 symbol,
 // but we target 5-min intervals per symbol in a round-robin queue)
@@ -31,7 +35,7 @@ const CACHE_TTL_MS = 310_000;              // 310 seconds — slightly over 5 mi
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
@@ -51,9 +55,13 @@ export interface DataSource {
   enabled: boolean;
   requiresApiKey: boolean;
   apiKeyConfigured: boolean;
+  /** false when the feed has been globally paused by an admin */
+  active: boolean;
 }
 
-const SOURCES: DataSource[] = [
+type SourceDef = Omit<DataSource, "active">;
+
+const SOURCES: SourceDef[] = [
   {
     id: "synthetic",
     label: "Synthetic (market-sim)",
@@ -71,6 +79,14 @@ const SOURCES: DataSource[] = [
     apiKeyConfigured: ALPHA_VANTAGE_KEY.length > 0,
   },
 ];
+
+/** Returns sources with runtime `active` state hydrated. */
+function getSources(): DataSource[] {
+  return SOURCES.map((s) => ({
+    ...s,
+    active: s.id === "alpha-vantage" ? !feedPaused : true,
+  }));
+}
 
 // ── Override store ─────────────────────────────────────────────────────────────
 
@@ -94,6 +110,25 @@ async function saveOverrides(): Promise<void> {
     await Deno.writeTextFile(OVERRIDES_FILE, JSON.stringify(data, null, 2));
   } catch (err) {
     console.warn(`[market-data] Failed to persist overrides: ${(err as Error).message}`);
+  }
+}
+
+async function loadFeedState(): Promise<void> {
+  try {
+    const text = await Deno.readTextFile(FEED_STATE_FILE);
+    const data = JSON.parse(text) as { feedPaused: boolean };
+    feedPaused = data.feedPaused === true;
+    console.log(`[market-data] Feed state: paused=${feedPaused}`);
+  } catch {
+    console.log(`[market-data] No feed state file — defaulting to active`);
+  }
+}
+
+async function saveFeedState(): Promise<void> {
+  try {
+    await Deno.writeTextFile(FEED_STATE_FILE, JSON.stringify({ feedPaused }, null, 2));
+  } catch (err) {
+    console.warn(`[market-data] Failed to persist feed state: ${(err as Error).message}`);
   }
 }
 
@@ -200,6 +235,7 @@ let pollQueueIndex = 0;
 
 function startPollLoop(): void {
   setInterval(() => {
+    if (feedPaused) return;
     const symbols = alphaVantageSymbols();
     if (symbols.length === 0 || !ALPHA_VANTAGE_KEY) return;
     // Round-robin: poll one symbol per interval
@@ -224,6 +260,7 @@ function startStalenessChecker(): void {
 // ── Startup ───────────────────────────────────────────────────────────────────
 
 await loadOverrides();
+await loadFeedState();
 
 // Seed intraday history for all configured symbols on startup (staggered)
 if (ALPHA_VANTAGE_KEY) {
@@ -255,12 +292,26 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       overrides: overrides.size,
       cachedQuotes: quoteCache.size,
       alphaVantageConfigured: ALPHA_VANTAGE_KEY.length > 0,
+      feedPaused,
     });
   }
 
   // GET /sources
   if (path === "/sources" && req.method === "GET") {
-    return json(SOURCES);
+    return json(getSources());
+  }
+
+  // POST /sources/:id/toggle
+  const toggleMatch = path.match(/^\/sources\/([^/]+)\/toggle$/);
+  if (toggleMatch && req.method === "POST") {
+    const sourceId = toggleMatch[1];
+    if (sourceId !== "alpha-vantage") {
+      return json({ error: `Source "${sourceId}" does not support toggling` }, 400);
+    }
+    feedPaused = !feedPaused;
+    await saveFeedState();
+    console.log(`[market-data] Alpha Vantage feed ${feedPaused ? "paused" : "resumed"}`);
+    return json(getSources());
   }
 
   // GET /cache (debug)

@@ -28,6 +28,7 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "trade-recommendation":
     "Rule-based option trade recommendations — scored signals with reason codes",
   "market-data-sources": "Configure per-symbol market data sources — synthetic or Alpha Vantage",
+  "market-feed-control": "Global feed pause/resume, market hours, and per-symbol source overview",
 };
 
 export function ComponentPicker() {
@@ -40,6 +41,7 @@ export function ComponentPicker() {
     "admin",
     "news-sources",
     "market-data-sources",
+    "market-feed-control",
   ]);
   // Panels hidden from admins (trading capability — admins must not interfere with the market)
   const TRADER_ONLY_PANELS: ReadonlySet<PanelId> = new Set(["order-ticket"]);

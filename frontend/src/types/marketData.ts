@@ -9,6 +9,8 @@ export interface DataSource {
   enabled: boolean;
   requiresApiKey: boolean;
   apiKeyConfigured: boolean;
+  /** false when the feed has been globally paused by an admin */
+  active: boolean;
 }
 
 export interface CachedQuote {

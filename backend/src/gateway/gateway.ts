@@ -665,6 +665,14 @@ serve(async (req: Request): Promise<Response> => {
     return proxyPut(`${MARKET_DATA_URL}/overrides`, req);
   }
 
+  // ── Market Data: feed toggle ──
+  const mdsToggleMatch = path.match(/^\/market-data\/sources\/([^/]+)\/toggle$/);
+  if (mdsToggleMatch && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyPost(`${MARKET_DATA_URL}/sources/${mdsToggleMatch[1]}/toggle`, req);
+  }
+
   // ── Analytics: option quote ──
   if (path === "/analytics/quote" && req.method === "POST") {
     const auth = await requireAuth(req);
