@@ -171,7 +171,15 @@ function TradingApp() {
   const handleWorkspacesChange = useCallback(
     (next: typeof workspaces) => {
       handleChange(next);
-      savePrefs(next, layouts);
+      const existingIds = new Set(Object.keys(layouts));
+      const newLayouts = { ...layouts };
+      for (const ws of next) {
+        if (!existingIds.has(ws.id)) {
+          newLayouts[ws.id] = Model.fromJson(makeClearModel());
+        }
+      }
+      setLayouts(newLayouts);
+      savePrefs(next, newLayouts);
     },
     [handleChange, layouts, savePrefs]
   );
