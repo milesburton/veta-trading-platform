@@ -36,7 +36,7 @@ const EXEC_FIELDS: FieldDef[] = [
     key: "status",
     label: "Status",
     type: "enum",
-    options: ["queued", "executing", "filled", "expired", "rejected", "cancelled"],
+    options: ["queued", "executing", "filled", "expired", "rejected", "cancelled", "held"],
   },
 ];
 

@@ -4,7 +4,9 @@ import { Model } from "flexlayout-react";
 import { Provider } from "react-redux";
 import { vi } from "vitest";
 import { authSlice } from "../../store/authSlice";
+import { killSwitchSlice } from "../../store/killSwitchSlice";
 import { marketSlice } from "../../store/marketSlice";
+import { ordersSlice } from "../../store/ordersSlice";
 import { servicesApi } from "../../store/servicesApi";
 import { uiSlice } from "../../store/uiSlice";
 import { windowSlice } from "../../store/windowSlice";
@@ -29,8 +31,10 @@ function makeStore(connected: boolean) {
     reducer: {
       auth: authSlice.reducer,
       market: marketSlice.reducer,
+      orders: ordersSlice.reducer,
       ui: uiSlice.reducer,
       windows: windowSlice.reducer,
+      killSwitch: killSwitchSlice.reducer,
       [servicesApi.reducerPath]: servicesApi.reducer,
     },
     middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(servicesApi.middleware),

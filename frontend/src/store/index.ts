@@ -3,6 +3,7 @@ import { authSlice } from "./authSlice.ts";
 import { createBroadcastChannelMiddleware } from "./channel.ts";
 import { channelsSlice } from "./channelsSlice.ts";
 import { gridPrefsSlice } from "./gridPrefsSlice.ts";
+import { killSwitchSlice } from "./killSwitchSlice.ts";
 import { marketSlice } from "./marketSlice.ts";
 import { gatewayMiddleware } from "./middleware/gatewayMiddleware.ts";
 import { observabilityMiddleware } from "./middleware/observabilityMiddleware.ts";
@@ -27,6 +28,7 @@ export const store = configureStore({
     windows: windowSlice.reducer,
     channels: channelsSlice.reducer,
     gridPrefs: gridPrefsSlice.reducer,
+    killSwitch: killSwitchSlice.reducer,
     [servicesApi.reducerPath]: servicesApi.reducer,
     [obsApi.reducerPath]: obsApi.reducer,
   },

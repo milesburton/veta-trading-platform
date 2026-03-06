@@ -4,6 +4,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useTradingContext } from "../context/TradingContext.tsx";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+import { isOrderBlocked } from "../store/killSwitchSlice.ts";
 import { submitOrderThunk } from "../store/ordersSlice.ts";
 import { setActiveSide, setActiveStrategy } from "../store/uiSlice.ts";
 import type { AlgoParams, LimitParams, PovParams, TwapParams, VwapParams } from "../types.ts";
@@ -149,6 +150,8 @@ export function OrderTicket() {
   const { registerTicketRef } = useTradingContext();
   const channelIn = useChannelIn();
   const userRole = useAppSelector((s) => s.auth.user?.role);
+  const userId = useAppSelector((s) => s.auth.user?.id);
+  const blocks = useAppSelector((s) => s.killSwitch.blocks);
 
   const assets = useAppSelector((s) => s.market.assets);
   const prices = useAppSelector((s) => s.market.prices);
@@ -222,6 +225,9 @@ export function OrderTicket() {
   }
   if (!limits.allowed_strategies.includes(activeStrategy)) {
     limitWarnings.push(`Strategy ${activeStrategy} is not permitted for your account`);
+  }
+  if (isOrderBlocked(blocks, { asset: selectedAsset?.symbol, strategy: activeStrategy, userId })) {
+    limitWarnings.push("⛔ Kill switch active — this order is currently blocked");
   }
 
   const isValid =

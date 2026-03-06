@@ -25,6 +25,8 @@ import type { AssetDef, OhlcCandle, OrderBookSnapshot, OrderRecord } from "../..
 import type { AuthUser, TradingLimits } from "../authSlice.ts";
 import { setUserWithLimits } from "../authSlice.ts";
 import { loadGridPrefs } from "../gridPrefsSlice.ts";
+import type { KillBlock } from "../killSwitchSlice.ts";
+import { allBlocksCleared, blockAdded } from "../killSwitchSlice.ts";
 import { candlesSeeded, marketSlice, orderBookUpdated } from "../marketSlice.ts";
 import type { NewsItem } from "../newsSlice.ts";
 import { newsBatchReceived, newsItemReceived } from "../newsSlice.ts";
@@ -300,10 +302,30 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             (storeAPI.dispatch as any)(loadGridPrefs());
             break;
           }
-          case "killAck":
+          case "killAck": {
+            const killData = msg.data as {
+              scope: KillBlock["scope"];
+              scopeValues?: string[];
+              scopeValue?: string;
+              targetUserId?: string;
+              issuedBy: string;
+            };
+            storeAPI.dispatch(
+              blockAdded({
+                id: `block-${Date.now()}`,
+                scope: killData.scope,
+                scopeValues:
+                  killData.scopeValues ?? (killData.scopeValue ? [killData.scopeValue] : []),
+                targetUserId: killData.targetUserId,
+                issuedBy: killData.issuedBy,
+                issuedAt: Date.now(),
+              })
+            );
             queryClient.invalidateQueries({ queryKey: ["grid"] });
             break;
+          }
           case "resumeAck":
+            storeAPI.dispatch(allBlocksCleared());
             queryClient.invalidateQueries({ queryKey: ["grid"] });
             break;
           case "newsUpdate":

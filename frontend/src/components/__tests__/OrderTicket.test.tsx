@@ -6,6 +6,7 @@ import { TradingProvider } from "../../context/TradingContext";
 import { ChannelContext } from "../../contexts/ChannelContext";
 import { authSlice } from "../../store/authSlice";
 import { channelsSlice } from "../../store/channelsSlice";
+import { killSwitchSlice } from "../../store/killSwitchSlice";
 import { marketSlice } from "../../store/marketSlice";
 import { ordersSlice } from "../../store/ordersSlice";
 import { uiSlice } from "../../store/uiSlice";
@@ -29,6 +30,7 @@ function makeStore() {
       ui: uiSlice.reducer,
       windows: windowSlice.reducer,
       channels: channelsSlice.reducer,
+      killSwitch: killSwitchSlice.reducer,
     },
     preloadedState: {
       market: {
