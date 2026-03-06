@@ -8,6 +8,7 @@ import {
   makeClearModel,
   makeDefaultModel,
   makeExecutionModel,
+  makeOverviewModel,
   STORAGE_KEY,
   STORAGE_KEY_PREFIX,
 } from "../layoutModels.ts";
@@ -115,6 +116,16 @@ describe("makeClearModel", () => {
   });
 });
 
+describe("makeOverviewModel", () => {
+  it("contains market-heatmap", () => {
+    const ids = new Set<string>();
+    Model.fromJson(makeOverviewModel()).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("market-heatmap")).toBe(true);
+  });
+});
+
 describe("makeAdminModel", () => {
   it("includes admin panel", () => {
     const ids = new Set<string>();
@@ -152,9 +163,13 @@ describe("LAYOUT_TEMPLATES", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("includes a 'clear' template with zero tabs", () => {
-    const clearTpl = LAYOUT_TEMPLATES.find((t) => t.id === "clear");
-    expect(clearTpl).toBeDefined();
-    expect(countTabs(clearTpl!.model)).toBe(0);
+  it("includes an 'overview' template with the market-heatmap tab", () => {
+    const overviewTpl = LAYOUT_TEMPLATES.find((t) => t.id === "overview");
+    if (!overviewTpl) throw new Error("overview template not found");
+    const ids = new Set<string>();
+    Model.fromJson(overviewTpl.model).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("market-heatmap")).toBe(true);
   });
 });

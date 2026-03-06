@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v2`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v3`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -83,97 +83,84 @@ export function makeDefaultModel(): IJsonModel {
             },
           ],
         },
-        // ── Column 3: Orders+FillProgress | Executions | Algo | Decision Log ───
+        // ── Column 3: Orders cake — all on channel 1 ─────────────────────────
+        // Order Blotter (ch1 out) → Order Progress + Child Orders + Algo + Decision Log (ch1 in)
         {
           type: "row",
           weight: 60,
           children: [
-            // Order Blotter (top) + Child Orders / Fill Progress (bottom)
-            {
-              type: "row",
-              weight: 30,
-              children: [
-                {
-                  type: "tabset",
-                  weight: 55,
-                  children: [
-                    {
-                      type: "tab",
-                      id: "order-blotter",
-                      name: PANEL_TITLES["order-blotter"],
-                      component: "order-blotter",
-                      config: {
-                        panelType: "order-blotter",
-                        outgoing: 2,
-                      } satisfies TabChannelConfig,
-                    },
-                  ],
-                },
-                {
-                  type: "tabset",
-                  weight: 45,
-                  children: [
-                    {
-                      type: "tab",
-                      id: "child-orders",
-                      name: PANEL_TITLES["child-orders"],
-                      component: "child-orders",
-                      config: {
-                        panelType: "child-orders",
-                        incoming: 2,
-                        outgoing: 3,
-                      } satisfies TabChannelConfig,
-                    },
-                    {
-                      type: "tab",
-                      id: "order-progress",
-                      name: PANEL_TITLES["order-progress"],
-                      component: "order-progress",
-                      config: {
-                        panelType: "order-progress",
-                        incoming: 2,
-                      } satisfies TabChannelConfig,
-                    },
-                  ],
-                },
-              ],
-            },
             {
               type: "tabset",
-              weight: 23,
+              weight: 22,
               children: [
                 {
                   type: "tab",
-                  id: "executions",
-                  name: PANEL_TITLES.executions,
-                  component: "executions",
-                  config: { panelType: "executions", incoming: 2 } satisfies TabChannelConfig,
+                  id: "order-blotter",
+                  name: PANEL_TITLES["order-blotter"],
+                  component: "order-blotter",
+                  config: {
+                    panelType: "order-blotter",
+                    outgoing: 1,
+                  } satisfies TabChannelConfig,
                 },
               ],
             },
             {
               type: "tabset",
-              weight: 23,
+              weight: 18,
+              children: [
+                {
+                  type: "tab",
+                  id: "order-progress",
+                  name: PANEL_TITLES["order-progress"],
+                  component: "order-progress",
+                  config: {
+                    panelType: "order-progress",
+                    incoming: 1,
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 20,
+              children: [
+                {
+                  type: "tab",
+                  id: "child-orders",
+                  name: PANEL_TITLES["child-orders"],
+                  component: "child-orders",
+                  config: {
+                    panelType: "child-orders",
+                    incoming: 1,
+                    outgoing: 1,
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 20,
               children: [
                 {
                   type: "tab",
                   id: "algo-monitor",
                   name: PANEL_TITLES["algo-monitor"],
                   component: "algo-monitor",
-                  config: { panelType: "algo-monitor", incoming: 2 } satisfies TabChannelConfig,
+                  config: { panelType: "algo-monitor", incoming: 1 } satisfies TabChannelConfig,
                 },
               ],
             },
             {
               type: "tabset",
-              weight: 24,
+              weight: 20,
               children: [
                 {
                   type: "tab",
                   id: "decision-log",
                   name: PANEL_TITLES["decision-log"],
                   component: "decision-log",
-                  config: { panelType: "decision-log", incoming: 3 } satisfies TabChannelConfig,
+                  config: { panelType: "decision-log", incoming: 1 } satisfies TabChannelConfig,
                 },
               ],
             },
@@ -398,6 +385,34 @@ export function makeClearModel(): IJsonModel {
 }
 
 /**
+ * Market Overview layout — full-screen heatmap with room to add more panels.
+ * Designed to grow: key stocks, most traded, most moved panels can be added here.
+ */
+export function makeOverviewModel(): IJsonModel {
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        {
+          type: "tabset",
+          weight: 100,
+          children: [
+            {
+              type: "tab",
+              id: "market-heatmap",
+              name: PANEL_TITLES["market-heatmap"],
+              component: "market-heatmap",
+              config: { panelType: "market-heatmap", outgoing: 1 } satisfies TabChannelConfig,
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+/**
  * Admin-focused default layout — read-only market surveillance + admin tools.
  * Admins cannot trade; no Order Ticket is included.
  *
@@ -586,9 +601,10 @@ export const LAYOUT_TEMPLATES: {
     model: makeAdminModel(),
   },
   {
-    id: "clear",
-    label: "Clear Layout",
-    description: "Empty canvas — add panels from the panel picker",
-    model: makeClearModel(),
+    id: "overview",
+    label: "Market Overview",
+    description:
+      "Full-screen heatmap — sector view with room for key stocks, most traded, most moved",
+    model: makeOverviewModel(),
   },
 ];
