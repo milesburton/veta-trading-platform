@@ -320,9 +320,9 @@ export function WorkspaceSidebar({
                             e.stopPropagation();
                             shareWorkspace(ws);
                           }}
-                          className="shrink-0 text-gray-700 hover:text-emerald-400 text-xs leading-none opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="shrink-0 text-gray-500 hover:text-emerald-400 text-[11px] leading-none opacity-0 group-hover:opacity-100 transition-all px-0.5 hover:scale-110"
                         >
-                          ↑
+                          ⬆
                         </button>
                         <button
                           type="button"
@@ -332,9 +332,9 @@ export function WorkspaceSidebar({
                             e.stopPropagation();
                             setConfirmDeleteId(ws.id);
                           }}
-                          className="shrink-0 text-gray-700 hover:text-red-400 text-xs leading-none opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="shrink-0 text-gray-500 hover:text-red-400 text-[11px] leading-none opacity-0 group-hover:opacity-100 transition-all px-0.5 hover:scale-110"
                         >
-                          ✕
+                          🗑
                         </button>
                       </>
                     )}
