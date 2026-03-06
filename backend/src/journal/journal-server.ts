@@ -532,9 +532,18 @@ function reconstructOrders(): Record<string, unknown>[] {
     }
   }
 
-  return [...orderMap.values()].sort(
-    (a, b) => Number(b.submittedAt) - Number(a.submittedAt),
-  );
+  const now = Date.now();
+  return [...orderMap.values()]
+    .map((order) => {
+      if (
+        (order.status === "pending" || order.status === "working") &&
+        Number(order.expiresAt) < now
+      ) {
+        return { ...order, status: "expired" };
+      }
+      return order;
+    })
+    .sort((a, b) => Number(b.submittedAt) - Number(a.submittedAt));
 }
 
 Deno.serve({ port: PORT }, handle);
