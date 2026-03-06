@@ -16,6 +16,7 @@ import { createConsumer, createProducer } from "../lib/messaging.ts";
 const PORT = Number(Deno.env.get("OMS_PORT")) || 5_002;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const USER_SERVICE_URL = `http://${Deno.env.get("USER_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("USER_SERVICE_PORT") ?? "5008"}`;
+const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -359,6 +360,43 @@ killConsumer?.onMessage(async (topic, raw) => {
 });
 
 console.log(`[oms] Listening for orders.new on message bus`);
+
+// ── Startup expiry sweep ──────────────────────────────────────────────────────
+// On restart the OMS loses its in-memory activeOrders map. Query the journal
+// for any orders still pending/working past their expiresAt and publish
+// orders.expired so the journal records a real event rather than inferring
+// status at read time.
+
+async function expireOrphanedOrders() {
+  try {
+    const res = await fetch(`${JOURNAL_URL}/orders?limit=500`);
+    if (!res.ok) return;
+    const orders = await res.json() as Array<{
+      id: string;
+      clientOrderId?: string;
+      status: string;
+      expiresAt: number;
+      userId?: string;
+    }>;
+    const now = Date.now();
+    for (const order of orders) {
+      if ((order.status === "pending" || order.status === "working") && order.expiresAt < now) {
+        await producer?.send("orders.expired", {
+          orderId: order.id,
+          clientOrderId: order.clientOrderId ?? order.id,
+          userId: order.userId,
+          ts: now,
+          reason: "expired_on_oms_restart",
+        }).catch(() => {});
+        console.log(`[oms] Expired orphaned order ${order.id} (status was ${order.status})`);
+      }
+    }
+  } catch {
+    // journal may not be up yet — best effort
+  }
+}
+
+setTimeout(() => { expireOrphanedOrders().catch(() => {}); }, 3_000);
 
 // ── Health endpoint ───────────────────────────────────────────────────────────
 
