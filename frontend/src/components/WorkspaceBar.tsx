@@ -93,6 +93,7 @@ export function WorkspaceSidebar({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [browseOpen, setBrowseOpen] = useState(false);
+  const [sharedIds, setSharedIds] = useState<Set<string>>(new Set());
 
   const isExpanded = pinned.value || hovered.value;
 
@@ -167,6 +168,7 @@ export function WorkspaceSidebar({
     if (!model) return;
     const id = await publishSharedWorkspace(ws.name, model.toJson() as IJsonModel);
     if (!id) return;
+    setSharedIds((prev) => new Set([...prev, ws.id]));
     const url = `${window.location.origin}${window.location.pathname}?shared=${id}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -315,12 +317,20 @@ export function WorkspaceSidebar({
                         <button
                           type="button"
                           aria-label={`Share workspace ${ws.name}`}
-                          title="Share workspace (copies link)"
+                          title={
+                            sharedIds.has(ws.id)
+                              ? "Shared — click to copy link again"
+                              : "Share workspace (copies link)"
+                          }
                           onClick={(e) => {
                             e.stopPropagation();
                             shareWorkspace(ws);
                           }}
-                          className="shrink-0 text-gray-300 hover:text-emerald-300 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 p-0.5"
+                          className={`shrink-0 transition-all hover:scale-110 p-0.5 ${
+                            sharedIds.has(ws.id)
+                              ? "text-emerald-400 opacity-100 hover:text-emerald-300"
+                              : "text-gray-300 opacity-0 group-hover:opacity-100 hover:text-emerald-300"
+                          }`}
                         >
                           {/* Globe icon */}
                           <svg
