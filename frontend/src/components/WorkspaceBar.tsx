@@ -320,9 +320,18 @@ export function WorkspaceSidebar({
                             e.stopPropagation();
                             shareWorkspace(ws);
                           }}
-                          className="shrink-0 text-gray-500 hover:text-emerald-400 text-[11px] leading-none opacity-0 group-hover:opacity-100 transition-all px-0.5 hover:scale-110"
+                          className="shrink-0 text-gray-300 hover:text-emerald-300 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 p-0.5"
                         >
-                          ⬆
+                          {/* Globe icon */}
+                          <svg
+                            aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 16 16"
+                            fill="currentColor"
+                            className="w-3 h-3"
+                          >
+                            <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 1.5a5.5 5.5 0 0 1 4.91 3H10.5c-.2-.9-.54-1.71-.98-2.38A5.52 5.52 0 0 0 8 2.5Zm0 11a5.5 5.5 0 0 1-4.91-3H4.5c.2.9.54 1.71.98 2.38.45.67.97 1.14 1.52 1.42V13a.5.5 0 0 0 1 0v-.7c.55-.28 1.07-.75 1.52-1.42.44-.67.78-1.48.98-2.38h1.41A5.5 5.5 0 0 1 8 13.5Zm-1.5-2c-.37-.57-.66-1.28-.82-2H9.32c-.16.72-.45 1.43-.82 2H6.5Zm-2.41-2A5.52 5.52 0 0 1 4 8c0-.52.07-1.02.19-1.5H3.09A5.5 5.5 0 0 0 2.5 8c0 .52.07 1.02.19 1.5h1.4Zm.59-3h2.14C6.98 5.77 7.48 5.5 8 5.5s1.02.27 1.18.5H11.3A5.51 5.51 0 0 0 8 2.5a5.51 5.51 0 0 0-3.3 1.5H4.68Zm5.94 0h-1.4c.12.48.19.98.19 1.5 0 .52-.07 1.02-.19 1.5h1.4c.12-.48.19-.98.19-1.5 0-.52-.07-1.02-.19-1.5Z" />
+                          </svg>
                         </button>
                         <button
                           type="button"
@@ -332,9 +341,22 @@ export function WorkspaceSidebar({
                             e.stopPropagation();
                             setConfirmDeleteId(ws.id);
                           }}
-                          className="shrink-0 text-gray-500 hover:text-red-400 text-[11px] leading-none opacity-0 group-hover:opacity-100 transition-all px-0.5 hover:scale-110"
+                          className="shrink-0 text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 p-0.5"
                         >
-                          🗑
+                          {/* Trash icon */}
+                          <svg
+                            aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 16 16"
+                            fill="currentColor"
+                            className="w-3 h-3"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5A.75.75 0 0 1 9.95 6Z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
                         </button>
                       </>
                     )}
