@@ -155,46 +155,34 @@ const ORDER_TOPICS = [
   "orders.resumed",
 ];
 
-async function startConsumers(): Promise<void> {
+function startConsumers(): void {
   // Market ticks — forwarded verbatim
-  try {
-    const marketConsumer = await createConsumer("gateway-market", ["market.ticks"]);
-    marketConsumer.onMessage((_topic, value) => {
+  createConsumer("gateway-market", ["market.ticks"]).then((c) => {
+    c.onMessage((_topic, value) => {
       broadcast({ event: "marketUpdate", data: value });
     });
-  } catch (err) {
-    console.warn("[gateway] Could not subscribe to market.ticks:", (err as Error).message);
-  }
+  });
 
   // Order lifecycle events
-  try {
-    const orderConsumer = await createConsumer("gateway-orders", ORDER_TOPICS);
-    orderConsumer.onMessage((topic, value) => {
+  createConsumer("gateway-orders", ORDER_TOPICS).then((c) => {
+    c.onMessage((topic, value) => {
       broadcast({ event: "orderEvent", topic, data: value });
     });
-  } catch (err) {
-    console.warn("[gateway] Could not subscribe to order topics:", (err as Error).message);
-  }
+  });
 
   // Algo heartbeats
-  try {
-    const algoConsumer = await createConsumer("gateway-algo", ["algo.heartbeat"]);
-    algoConsumer.onMessage((_topic, value) => {
+  createConsumer("gateway-algo", ["algo.heartbeat"]).then((c) => {
+    c.onMessage((_topic, value) => {
       broadcast({ event: "algoHeartbeat", data: value });
     });
-  } catch (err) {
-    console.warn("[gateway] Could not subscribe to algo.heartbeat:", (err as Error).message);
-  }
+  });
 
   // News feed — forward to GUI as newsUpdate events
-  try {
-    const newsConsumer = await createConsumer("gateway-news", ["news.feed"]);
-    newsConsumer.onMessage((_topic, value) => {
+  createConsumer("gateway-news", ["news.feed"]).then((c) => {
+    c.onMessage((_topic, value) => {
       broadcast({ event: "newsUpdate", data: value });
     });
-  } catch (err) {
-    console.warn("[gateway] Could not subscribe to news.feed:", (err as Error).message);
-  }
+  });
 }
 
 await startConsumers();

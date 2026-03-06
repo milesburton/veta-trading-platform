@@ -212,8 +212,6 @@ createConsumer("journal-group", CONSUME_TOPICS).then((consumer) => {
     ingest(topic, value as Record<string, unknown>);
   });
   console.log(`[journal] Subscribed to: ${CONSUME_TOPICS.join(", ")}`);
-}).catch((err) => {
-  console.warn("[journal] Redpanda unavailable, no audit events will be captured:", err.message);
 });
 
 // Subscribe to market ticks to build OHLCV candle history
@@ -222,8 +220,6 @@ createConsumer("journal-market", ["market.ticks"]).then((consumer) => {
     ingestTick(value as { prices?: Record<string, number>; volumes?: Record<string, number> });
   });
   console.log("[journal] Subscribed to: market.ticks (candle aggregation)");
-}).catch((err) => {
-  console.warn("[journal] Could not subscribe to market.ticks:", err.message);
 });
 
 // ── HTTP handlers ──────────────────────────────────────────────────────────────

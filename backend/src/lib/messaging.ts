@@ -71,37 +71,53 @@ export async function createConsumer(
   topics: string[],
   clientId = `veta-${groupId}`,
 ): Promise<MsgConsumer> {
-  const kafka = makeKafka(clientId);
-  const consumer: Consumer = kafka.consumer({ groupId });
-  await consumer.connect();
+  const MAX_DELAY_MS = 30_000;
+  let delay = 2_000;
 
-  for (const topic of topics) {
-    await consumer.subscribe({ topic, fromBeginning: false });
+  // Retry until Redpanda is ready — services start in parallel and the broker
+  // may not be accepting connections immediately after a full restart.
+  for (;;) {
+    try {
+      const kafka = makeKafka(clientId);
+      const consumer: Consumer = kafka.consumer({ groupId });
+      await consumer.connect();
+
+      for (const topic of topics) {
+        await consumer.subscribe({ topic, fromBeginning: false });
+      }
+
+      const handlers: MessageHandler[] = [];
+
+      await consumer.run({
+        eachMessage: async ({ topic, message }: { topic: string; message: KafkaMessage }) => {
+          if (!message.value) return;
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(message.value.toString());
+          } catch {
+            return; // malformed — skip
+          }
+          for (const handler of handlers) {
+            await handler(topic, parsed);
+          }
+        },
+      });
+
+      return {
+        onMessage(handler: MessageHandler): void {
+          handlers.push(handler);
+        },
+        async disconnect(): Promise<void> {
+          await consumer.disconnect();
+        },
+      };
+    } catch (err) {
+      console.warn(
+        `[messaging] createConsumer(${groupId}) failed, retrying in ${delay / 1000}s:`,
+        (err as Error).message,
+      );
+      await new Promise((r) => setTimeout(r, delay));
+      delay = Math.min(delay * 2, MAX_DELAY_MS);
+    }
   }
-
-  const handlers: MessageHandler[] = [];
-
-  await consumer.run({
-    eachMessage: async ({ topic, message }: { topic: string; message: KafkaMessage }) => {
-      if (!message.value) return;
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(message.value.toString());
-      } catch {
-        return; // malformed — skip
-      }
-      for (const handler of handlers) {
-        await handler(topic, parsed);
-      }
-    },
-  });
-
-  return {
-    onMessage(handler: MessageHandler): void {
-      handlers.push(handler);
-    },
-    async disconnect(): Promise<void> {
-      await consumer.disconnect();
-    },
-  };
 }
