@@ -211,6 +211,31 @@ async function handle(req: Request): Promise<Response> {
     });
   }
 
+  if (req.method === "POST" && url.pathname === "/events/batch") {
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ success: false, message: "invalid json" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+    if (!Array.isArray(body)) {
+      return new Response(JSON.stringify({ success: false, message: "expected array" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+    const now = Date.now();
+    for (const item of body as ObsEvent[]) {
+      ingestEvent({ ts: now, ...item });
+    }
+    return new Response(JSON.stringify({ success: true, count: (body as ObsEvent[]).length }), {
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  }
+
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 }
 

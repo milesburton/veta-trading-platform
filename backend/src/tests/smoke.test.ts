@@ -381,3 +381,20 @@ Deno.test("[shared-workspaces] GET /shared-workspaces requires auth", async () =
   assertEquals(res.status, 401);
   await res.body?.cancel();
 });
+
+Deno.test("[observability] POST /events/batch accepts array and returns count", async () => {
+  const batch = [
+    { type: "client.action.test", ts: Date.now(), payload: { x: 1 } },
+    { type: "client.action.test", ts: Date.now(), payload: { x: 2 } },
+  ];
+  const res = await fetch(`${OBS_URL}/events/batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(batch),
+    signal: timeout(5_000),
+  });
+  assertEquals(res.status, 200);
+  const body = await res.json() as { success: boolean; count: number };
+  assertEquals(body.success, true);
+  assertEquals(body.count, 2);
+});

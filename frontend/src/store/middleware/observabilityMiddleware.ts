@@ -19,14 +19,28 @@ const SKIP_POST = new Set([
   "news/newsBatchReceived",
 ]);
 
+let worker: Worker | null = null;
+
+function getWorker(): Worker | null {
+  if (worker) return worker;
+  if (typeof Worker === "undefined") return null;
+  try {
+    worker = new Worker(new URL("../../workers/obs.worker.ts", import.meta.url), {
+      type: "module",
+    });
+    worker.postMessage({ type: "init", url: OBS_URL });
+  } catch {
+    worker = null;
+  }
+  return worker;
+}
+
 function postEvent(type: string, payload: Record<string, unknown>) {
   const evt: ObsEvent = { type, ts: Date.now(), payload };
-  fetch(`${OBS_URL}/events`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(evt),
-    credentials: "include",
-  }).catch(() => {});
+  const w = getWorker();
+  if (w) {
+    w.postMessage({ type: "event", event: evt });
+  }
 }
 
 export const observabilityMiddleware: Middleware = (storeAPI) => {
