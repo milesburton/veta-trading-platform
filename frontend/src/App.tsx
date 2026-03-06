@@ -91,8 +91,18 @@ function TradingApp() {
 
   const { workspaces, activeId, handleSelect, handleChange, setWorkspaces } = useWorkspaces(userId);
 
-  // layouts map: workspaceId → Model instance
-  const [layouts, setLayouts] = useState<Record<string, Model>>({});
+  const [layouts, setLayouts] = useState<Record<string, Model>>(() => {
+    const seed = seedWorkspaces();
+    const initial: Record<string, Model> = {};
+    for (const [id, json] of Object.entries(seed.layouts)) {
+      try {
+        initial[id] = Model.fromJson(json);
+      } catch {
+        /* skip */
+      }
+    }
+    return initial;
+  });
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [cloneBanner, setCloneBanner] = useState<{
     id: string;
