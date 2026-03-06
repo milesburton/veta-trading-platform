@@ -59,6 +59,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
   const interval = useSignal<Interval>("1m");
   const loadedKeyRef = useRef<string>("");
   const lastBarTimeRef = useRef<number>(0);
+  const loadedBarCountRef = useRef<number>(0);
   const fitOnNextTickRef = useRef(false);
   // Set to true once the container has non-zero width (chart is ready to receive data)
   const chartSizedRef = useRef(false);
@@ -128,7 +129,12 @@ export function CandlestickChart({ symbol, candles }: Props) {
     const isNewSeries = loadedKeyRef.current !== newKey;
     const last = raw[raw.length - 1];
     const lastTime = last.time;
-    const isFullReplace = isNewSeries || lastTime < lastBarTimeRef.current;
+    // Full replace when: new series, time went backwards, or bar count jumped
+    // (the last case catches a seed arriving after a few live-tick bars were loaded)
+    const isFullReplace =
+      isNewSeries ||
+      lastTime < lastBarTimeRef.current ||
+      raw.length > loadedBarCountRef.current + 1;
 
     function doLoad() {
       if (isFullReplace) {
@@ -136,6 +142,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
         vs?.setData(raw.map(toVolData));
         loadedKeyRef.current = newKey;
         lastBarTimeRef.current = lastTime;
+        loadedBarCountRef.current = raw.length;
         fitOnNextTickRef.current = true;
         requestAnimationFrame(() =>
           requestAnimationFrame(() => chartRef.current?.timeScale().fitContent())
@@ -144,6 +151,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
         cs?.update(toBarData(last));
         vs?.update(toVolData(last));
         lastBarTimeRef.current = lastTime;
+        loadedBarCountRef.current = raw.length;
         if (fitOnNextTickRef.current) {
           fitOnNextTickRef.current = false;
           requestAnimationFrame(() => chartRef.current?.timeScale().fitContent());
