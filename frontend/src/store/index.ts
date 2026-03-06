@@ -6,6 +6,7 @@ import { createBroadcastChannelMiddleware } from "./channel.ts";
 import { channelsSlice } from "./channelsSlice.ts";
 import { gridPrefsSlice } from "./gridPrefsSlice.ts";
 import { killSwitchSlice } from "./killSwitchSlice.ts";
+import { marketDataApi } from "./marketDataApi.ts";
 import { marketSlice } from "./marketSlice.ts";
 import { alertsMiddleware } from "./middleware/alertsMiddleware.ts";
 import { gatewayMiddleware } from "./middleware/gatewayMiddleware.ts";
@@ -36,12 +37,14 @@ export const store = configureStore({
     [servicesApi.reducerPath]: servicesApi.reducer,
     [obsApi.reducerPath]: obsApi.reducer,
     [analyticsApi.reducerPath]: analyticsApi.reducer,
+    [marketDataApi.reducerPath]: marketDataApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat(servicesApi.middleware)
       .concat(obsApi.middleware)
       .concat(analyticsApi.middleware)
+      .concat(marketDataApi.middleware)
       .concat(gatewayMiddleware)
       .concat(alertsMiddleware)
       .concat(observabilityMiddleware)

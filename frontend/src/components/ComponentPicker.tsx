@@ -27,6 +27,7 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "scenario-matrix": "Spot/vol shock scenario matrix with Monte Carlo distribution",
   "trade-recommendation":
     "Rule-based option trade recommendations — scored signals with reason codes",
+  "market-data-sources": "Configure per-symbol market data sources — synthetic or Alpha Vantage",
 };
 
 export function ComponentPicker() {
@@ -35,7 +36,11 @@ export function ComponentPicker() {
   const user = useAppSelector((s) => s.auth.user);
 
   // Admin-only panels
-  const ADMIN_ONLY_PANELS: ReadonlySet<PanelId> = new Set(["admin", "news-sources"]);
+  const ADMIN_ONLY_PANELS: ReadonlySet<PanelId> = new Set([
+    "admin",
+    "news-sources",
+    "market-data-sources",
+  ]);
   // Panels hidden from admins (trading capability — admins must not interfere with the market)
   const TRADER_ONLY_PANELS: ReadonlySet<PanelId> = new Set(["order-ticket"]);
 

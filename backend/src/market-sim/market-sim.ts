@@ -8,6 +8,52 @@ import { createProducer } from "../lib/messaging.ts";
 const PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
+const MARKET_DATA_URL = `http://${Deno.env.get("MARKET_DATA_HOST") ?? "localhost"}:${Deno.env.get("MARKET_DATA_PORT") ?? "5015"}`;
+
+// ── Real price overlay ─────────────────────────────────────────────────────────
+// Asynchronously fetches real prices for overridden symbols from market-data-service.
+// Never blocks the tick loop — updates happen in the background.
+
+const realPriceCache = new Map<string, number>(); // symbol → latest real price
+let overriddenSymbols = new Set<string>();
+
+async function refreshOverrides(): Promise<void> {
+  try {
+    const res = await fetch(`${MARKET_DATA_URL}/overrides`, { signal: AbortSignal.timeout(5_000) });
+    if (!res.ok) return;
+    const data = await res.json() as { overrides: Record<string, string> };
+    overriddenSymbols = new Set(Object.keys(data.overrides));
+  } catch {
+    // market-data-service not yet available — keep current set
+  }
+}
+
+async function fetchRealPrice(symbol: string): Promise<void> {
+  try {
+    const res = await fetch(`${MARKET_DATA_URL}/quote/${encodeURIComponent(symbol)}`, {
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!res.ok) return;
+    const data = await res.json() as { price: number };
+    if (data.price > 0) {
+      realPriceCache.set(symbol, data.price);
+      console.log(`[market-sim] Seeding ${symbol} with real price: $${data.price.toFixed(4)}`);
+    }
+  } catch {
+    // market-data-service unavailable — keep using cached/GBM price
+  }
+}
+
+// Refresh overrides every 30s
+setInterval(() => refreshOverrides().catch(() => {}), 30_000);
+// Refresh real prices for overridden symbols every 5 min
+setInterval(() => {
+  for (const sym of overriddenSymbols) {
+    fetchRealPrice(sym).catch(() => {});
+  }
+}, 5 * 60 * 1_000);
+// Initial load
+refreshOverrides().catch(() => {});
 
 const producer = await createProducer("market-sim").catch((err) => {
   console.warn("[market-sim] Redpanda unavailable, ticks will not be published to bus:", err.message);
@@ -123,6 +169,11 @@ setInterval(() => {
   // Advance shared state before generating individual prices
   advanceRegime();
   refreshSectorShocks();
+  // Seed real prices for overridden symbols before GBM step
+  for (const sym of overriddenSymbols) {
+    const real = realPriceCache.get(sym);
+    if (real) seedPrice(sym, real);
+  }
   Object.keys(marketData).forEach((asset) => generatePrice(asset));
   const volumes = computeTickVolumes(marketMinute);
   const orderBook = computeOrderBook(marketData, volumes);

@@ -25,6 +25,7 @@ import type { ContextMenuEntry } from "../ContextMenu.tsx";
 import { ContextMenu } from "../ContextMenu.tsx";
 import { DecisionLog } from "../DecisionLog.tsx";
 import { ExecutionsPanel } from "../ExecutionsPanel.tsx";
+import { MarketDataSourcesPanel } from "../MarketDataSourcesPanel.tsx";
 import { MarketDepth } from "../MarketDepth.tsx";
 import { MarketHeatmap } from "../MarketHeatmap.tsx";
 import { MarketLadder } from "../MarketLadder.tsx";
@@ -650,6 +651,8 @@ export function DashboardLayout() {
           return wrap(<ScenarioMatrixPanel />);
         case "trade-recommendation":
           return wrap(<TradeRecommendationPanel />);
+        case "market-data-sources":
+          return wrap(<MarketDataSourcesPanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }
