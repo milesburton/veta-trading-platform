@@ -10,6 +10,7 @@ export interface KillBlock {
   issuedBy: string;
   issuedAt: number;
   resumeAt?: number;
+  fromGateway?: boolean;
 }
 
 interface KillSwitchState {

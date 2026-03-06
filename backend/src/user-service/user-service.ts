@@ -48,6 +48,19 @@ db.query(`CREATE TABLE IF NOT EXISTS user_preferences (
   data TEXT NOT NULL DEFAULT '{}'
 );`);
 
+db.query(`CREATE TABLE IF NOT EXISTS user_alerts (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  severity TEXT NOT NULL,
+  source TEXT NOT NULL,
+  message TEXT NOT NULL,
+  detail TEXT,
+  ts INTEGER NOT NULL,
+  dismissed INTEGER NOT NULL DEFAULT 0,
+  dismissed_at INTEGER
+);`);
+db.query("CREATE INDEX IF NOT EXISTS idx_user_alerts_user ON user_alerts(user_id, ts DESC);");
+
 db.query(`CREATE TABLE IF NOT EXISTS shared_workspaces (
   id          TEXT PRIMARY KEY,
   owner_id    TEXT NOT NULL REFERENCES users(id),
@@ -355,6 +368,69 @@ async function handle(req: Request): Promise<Response> {
     let model: unknown;
     try { model = JSON.parse(modelJson as string); } catch { model = null; }
     return json({ id, ownerId, ownerName, ownerEmoji, name, description, model, createdAt });
+  }
+
+  const alertsMatch = path.match(/^\/users\/([^/]+)\/alerts$/);
+  if (alertsMatch) {
+    const userId = alertsMatch[1];
+    if (req.method === "GET") {
+      const token = getCookieToken(req);
+      const caller = getUserFromToken(token);
+      if (!caller) return json({ error: "unauthenticated" }, 401);
+      if (caller.id !== userId && caller.role !== "admin") return json({ error: "forbidden" }, 403);
+      const rows = [...db.query(
+        "SELECT id, severity, source, message, detail, ts, dismissed, dismissed_at FROM user_alerts WHERE user_id = ? ORDER BY ts DESC LIMIT 200;",
+        [userId],
+      )];
+      return json(rows.map(([id, severity, source, message, detail, ts, dismissed, dismissedAt]) => ({
+        id, severity, source, message, detail: detail ?? undefined, ts,
+        dismissed: dismissed === 1, dismissedAt: dismissedAt ?? undefined,
+      })));
+    }
+    if (req.method === "POST") {
+      const token = getCookieToken(req);
+      const caller = getUserFromToken(token);
+      if (!caller) return json({ error: "unauthenticated" }, 401);
+      if (caller.id !== userId && caller.role !== "admin") return json({ error: "forbidden" }, 403);
+      let body: { id?: string; severity?: string; source?: string; message?: string; detail?: string; ts?: number };
+      try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+      if (!body.severity || !body.source || !body.message) return json({ error: "severity, source and message required" }, 400);
+      const id = body.id ?? crypto.randomUUID();
+      db.query(
+        "INSERT OR IGNORE INTO user_alerts (id, user_id, severity, source, message, detail, ts) VALUES (?, ?, ?, ?, ?, ?, ?);",
+        [id, userId, body.severity, body.source, body.message, body.detail ?? null, body.ts ?? Date.now()],
+      );
+      return json({ id });
+    }
+  }
+
+  const alertsDismissAllMatch = path.match(/^\/users\/([^/]+)\/alerts\/dismiss-all$/);
+  if (req.method === "PUT" && alertsDismissAllMatch) {
+    const userId = alertsDismissAllMatch[1];
+    const token = getCookieToken(req);
+    const caller = getUserFromToken(token);
+    if (!caller) return json({ error: "unauthenticated" }, 401);
+    if (caller.id !== userId && caller.role !== "admin") return json({ error: "forbidden" }, 403);
+    db.query(
+      "UPDATE user_alerts SET dismissed = 1, dismissed_at = ? WHERE user_id = ? AND dismissed = 0;",
+      [Date.now(), userId],
+    );
+    return json({ success: true });
+  }
+
+  const alertDismissMatch = path.match(/^\/users\/([^/]+)\/alerts\/([^/]+)\/dismiss$/);
+  if (req.method === "PUT" && alertDismissMatch) {
+    const userId = alertDismissMatch[1];
+    const alertId = alertDismissMatch[2];
+    const token = getCookieToken(req);
+    const caller = getUserFromToken(token);
+    if (!caller) return json({ error: "unauthenticated" }, 401);
+    if (caller.id !== userId && caller.role !== "admin") return json({ error: "forbidden" }, 403);
+    db.query(
+      "UPDATE user_alerts SET dismissed = 1, dismissed_at = ? WHERE id = ? AND user_id = ?;",
+      [Date.now(), alertId, userId],
+    );
+    return json({ success: true });
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });

@@ -16,6 +16,7 @@ import {
   panelPopped,
 } from "../../store/windowSlice.ts";
 import { AdminPanel } from "../AdminPanel.tsx";
+import { AlertsPanel } from "../AlertsPanel.tsx";
 import { AlgoMonitor } from "../AlgoMonitor.tsx";
 import { AnalysisPanel } from "../AnalysisPanel.tsx";
 import { CandlestickChart } from "../CandlestickChart.tsx";
@@ -638,6 +639,8 @@ export function DashboardLayout() {
           return wrap(<OrderProgressPanel />);
         case "market-heatmap":
           return wrap(<MarketHeatmap />);
+        case "alerts":
+          return wrap(<AlertsPanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }

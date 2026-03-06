@@ -527,6 +527,72 @@ serve(async (req: Request): Promise<Response> => {
     }
   }
 
+  if (path === "/alerts" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    try {
+      const res = await fetch(`${USER_SERVICE_URL}/users/${auth.user.id}/alerts`, {
+        headers: { cookie: req.headers.get("cookie") ?? "" },
+        signal: AbortSignal.timeout(5_000),
+      });
+      const resBody = await res.arrayBuffer();
+      return new Response(resBody, { status: res.status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: (err as Error).message }), { status: 502, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    }
+  }
+
+  if (path === "/alerts" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    try {
+      const body = await req.arrayBuffer();
+      const res = await fetch(`${USER_SERVICE_URL}/users/${auth.user.id}/alerts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", cookie: req.headers.get("cookie") ?? "" },
+        body,
+        signal: AbortSignal.timeout(5_000),
+      });
+      const resBody = await res.arrayBuffer();
+      return new Response(resBody, { status: res.status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: (err as Error).message }), { status: 502, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    }
+  }
+
+  if (path === "/alerts/dismiss-all" && req.method === "PUT") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    try {
+      const res = await fetch(`${USER_SERVICE_URL}/users/${auth.user.id}/alerts/dismiss-all`, {
+        method: "PUT",
+        headers: { cookie: req.headers.get("cookie") ?? "" },
+        signal: AbortSignal.timeout(5_000),
+      });
+      const resBody = await res.arrayBuffer();
+      return new Response(resBody, { status: res.status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: (err as Error).message }), { status: 502, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    }
+  }
+
+  const alertDismissMatch = path.match(/^\/alerts\/([^/]+)\/dismiss$/);
+  if (req.method === "PUT" && alertDismissMatch) {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    try {
+      const res = await fetch(`${USER_SERVICE_URL}/users/${auth.user.id}/alerts/${alertDismissMatch[1]}/dismiss`, {
+        method: "PUT",
+        headers: { cookie: req.headers.get("cookie") ?? "" },
+        signal: AbortSignal.timeout(5_000),
+      });
+      const resBody = await res.arrayBuffer();
+      return new Response(resBody, { status: res.status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: (err as Error).message }), { status: 502, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    }
+  }
+
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 }, { port: PORT });
 

@@ -8,6 +8,7 @@ import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
 import type { ServiceHealth } from "../types.ts";
 import { AlertDrawer } from "./AlertDrawer.tsx";
 import { ComponentPicker } from "./ComponentPicker.tsx";
+import { useDashboard } from "./dashboard/DashboardContext.tsx";
 import { KillSwitchButton } from "./KillSwitchButton.tsx";
 import { ServiceStatus } from "./ServiceStatus.tsx";
 import { TemplatePicker } from "./TemplatePicker.tsx";
@@ -62,6 +63,8 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
   const alertCount = useAppSelector(selectAlertCount);
   const highestSeverity = useAppSelector(selectHighestSeverity);
   const prevServiceStates = useRef<Record<string, string>>({});
+  const { activePanelIds } = useDashboard();
+  const isPinned = activePanelIds.has("alerts");
 
   useEffect(() => {
     const prev = prevServiceStates.current;
@@ -104,11 +107,12 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
     <>
       <button
         type="button"
-        onClick={() => setDrawerOpen(true)}
-        title="Alert Centre"
+        onClick={() => {
+          if (!isPinned) setDrawerOpen(true);
+        }}
+        title={isPinned ? "Alerts panel is open in dashboard" : "Alert Centre"}
         className={`flex items-center gap-1.5 px-2 py-1 rounded border font-semibold text-[11px] tracking-wide transition-all ${btnCls}`}
       >
-        <span aria-hidden="true">🔔</span>
         Alerts
         {alertCount > 0 && (
           <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/20 text-[9px] font-bold leading-none">
@@ -116,7 +120,7 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
           </span>
         )}
       </button>
-      {drawerOpen && <AlertDrawer onClose={() => setDrawerOpen(false)} />}
+      {drawerOpen && !isPinned && <AlertDrawer onClose={() => setDrawerOpen(false)} />}
     </>
   );
 }

@@ -1,7 +1,40 @@
 import type { Middleware } from "@reduxjs/toolkit";
-import { alertAdded } from "../alertsSlice.ts";
+import { alertAdded, alertDismissed, allAlertsDismissed } from "../alertsSlice.ts";
 import { allBlocksCleared, blockAdded } from "../killSwitchSlice.ts";
 import { orderPatched } from "../ordersSlice.ts";
+
+const _origin = typeof window !== "undefined" ? window.location.origin : "";
+const ALERTS_URL = `${_origin}/api/gateway/alerts`;
+
+function postAlert(alert: {
+  id: string;
+  severity: string;
+  source: string;
+  message: string;
+  detail?: string;
+  ts: number;
+}) {
+  fetch(ALERTS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(alert),
+  }).catch(() => {});
+}
+
+function dismissAlert(id: string) {
+  fetch(`${ALERTS_URL}/${id}/dismiss`, {
+    method: "PUT",
+    credentials: "include",
+  }).catch(() => {});
+}
+
+function dismissAllAlerts() {
+  fetch(`${ALERTS_URL}/dismiss-all`, {
+    method: "PUT",
+    credentials: "include",
+  }).catch(() => {});
+}
 
 export const alertsMiddleware: Middleware = (storeAPI) => {
   if (typeof window !== "undefined") {
@@ -20,7 +53,7 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
   return (next) => (action) => {
     const result = next(action);
 
-    if (blockAdded.match(action)) {
+    if (blockAdded.match(action) && action.payload.fromGateway) {
       const b = action.payload;
       const scopeDetail =
         b.scope === "all"
@@ -59,6 +92,32 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
           ts: Date.now(),
         })
       );
+    }
+
+    if (alertAdded.match(action)) {
+      const a = (
+        storeAPI.getState() as {
+          alerts: {
+            alerts: Array<{
+              id: string;
+              severity: string;
+              source: string;
+              message: string;
+              detail?: string;
+              ts: number;
+            }>;
+          };
+        }
+      ).alerts.alerts[0];
+      if (a) postAlert(a);
+    }
+
+    if (alertDismissed.match(action)) {
+      dismissAlert(action.payload);
+    }
+
+    if (allAlertsDismissed.match(action)) {
+      dismissAllAlerts();
     }
 
     return result;

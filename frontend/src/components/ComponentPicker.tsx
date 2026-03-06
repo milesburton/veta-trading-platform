@@ -21,6 +21,8 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "news-sources": "Enable or disable news feed sources",
   "order-progress": "Fill progress pies and avg fill rate by strategy",
   "market-heatmap": "Sector treemap heatmap — assets sized by market cap, coloured by % change",
+  alerts:
+    "System alert log — kill switch events, service outages, order rejections and heartbeat loss",
 };
 
 export function ComponentPicker() {

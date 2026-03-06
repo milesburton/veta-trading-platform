@@ -17,7 +17,13 @@ import {
   loadWorkspacePrefs,
   saveWorkspacePrefs,
 } from "./hooks/useWorkspaceSync.ts";
-import { alertDismissed, selectActiveAlerts, selectCriticalAlerts } from "./store/alertsSlice.ts";
+import type { Alert } from "./store/alertsSlice.ts";
+import {
+  alertDismissed,
+  alertsLoaded,
+  selectActiveAlerts,
+  selectCriticalAlerts,
+} from "./store/alertsSlice.ts";
 import type { AuthUser } from "./store/authSlice.ts";
 import { setStatus, setUser } from "./store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "./store/hooks.ts";
@@ -199,6 +205,17 @@ function TradingApp() {
       if (preferred) handleSelect(preferred);
     });
   }, [authStatus, setWorkspaces, handleSelect]);
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    fetch("/api/gateway/alerts", { credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = (await res.json()) as Alert[];
+        dispatch(alertsLoaded(data));
+      })
+      .catch(() => {});
+  }, [authStatus, dispatch]);
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;

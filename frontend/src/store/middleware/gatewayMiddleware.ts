@@ -320,6 +320,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
                 targetUserId: killData.targetUserId,
                 issuedBy: killData.issuedBy,
                 issuedAt: Date.now(),
+                fromGateway: true,
               })
             );
             queryClient.invalidateQueries({ queryKey: ["grid"] });

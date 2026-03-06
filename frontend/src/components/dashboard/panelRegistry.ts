@@ -28,6 +28,7 @@ export const PANEL_IDS = [
   "news-sources",
   "order-progress",
   "market-heatmap",
+  "alerts",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -49,6 +50,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "news-sources": "News Sources (mission control)",
   "order-progress": "Order Progress (fill tracker)",
   "market-heatmap": "Market Heatmap (sector view)",
+  alerts: "Alerts (system notifications)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -75,6 +77,8 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Pie charts showing fill progress per active order, plus avg fill rate by strategy",
   "market-heatmap":
     "Sector treemap heatmap — all assets sized by market cap, coloured by % price change. Click a tile to broadcast the symbol.",
+  alerts:
+    "System alert log — kill switch events, service outages, order rejections and algo heartbeat loss",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -84,6 +88,7 @@ export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
   "executions",
   "admin",
   "news-sources",
+  "alerts",
 ]);
 
 export interface TabChannelConfig {
@@ -110,4 +115,5 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "news-sources": { out: false, in: false },
   "order-progress": { out: false, in: true },
   "market-heatmap": { out: true, in: false },
+  alerts: { out: false, in: false },
 };
