@@ -8,6 +8,7 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "market-ladder": "Live bid/ask ladder for any asset",
   "order-ticket": "Submit buy/sell orders",
   "order-blotter": "Live view of all open orders",
+  "child-orders": "Execution slices for the selected parent order",
   "algo-monitor": "Monitor running algo strategies",
   observability: "System events and service health",
   "candle-chart": "OHLCV candlestick price chart",

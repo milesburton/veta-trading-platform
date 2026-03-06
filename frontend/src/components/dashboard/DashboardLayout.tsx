@@ -19,6 +19,7 @@ import { AdminPanel } from "../AdminPanel.tsx";
 import { AlgoMonitor } from "../AlgoMonitor.tsx";
 import { AnalysisPanel } from "../AnalysisPanel.tsx";
 import { CandlestickChart } from "../CandlestickChart.tsx";
+import { ChildOrdersPanel } from "../ChildOrdersPanel.tsx";
 import type { ContextMenuEntry } from "../ContextMenu.tsx";
 import { ContextMenu } from "../ContextMenu.tsx";
 import { DecisionLog } from "../DecisionLog.tsx";
@@ -305,6 +306,7 @@ const DIALOG_PANEL_MAP: Record<string, React.ComponentType<{ instanceId: string 
   "market-ladder": MarketLadder,
   "order-ticket": OrderTicket,
   "order-blotter": OrderBlotter,
+  "child-orders": ChildOrdersPanel,
   "algo-monitor": AlgoMonitor,
   observability: ObservabilityPanel,
   executions: ExecutionsPanel,
@@ -554,6 +556,8 @@ export function DashboardLayout() {
           return wrap(<OrderTicket />);
         case "order-blotter":
           return wrap(<OrderBlotter />);
+        case "child-orders":
+          return wrap(<ChildOrdersPanel />);
         case "algo-monitor":
           return wrap(<AlgoMonitor />);
         case "observability":

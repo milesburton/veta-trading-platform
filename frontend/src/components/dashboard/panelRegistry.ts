@@ -15,6 +15,7 @@ export const PANEL_IDS = [
   "market-ladder",
   "order-ticket",
   "order-blotter",
+  "child-orders",
   "algo-monitor",
   "observability",
   "candle-chart",
@@ -35,6 +36,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "market-ladder": "Market Ladder (live quotes)",
   "order-ticket": "Order Ticket (place trades)",
   "order-blotter": "Orders (active & filled)",
+  "child-orders": "Child Orders (executions)",
   "algo-monitor": "Algo Monitor (strategy status)",
   observability: "Observability (system health)",
   "candle-chart": "Price Chart (OHLC history)",
@@ -55,6 +57,8 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "order-ticket":
     "Submit buy/sell orders — receives the selected symbol from a linked Market Ladder",
   "order-blotter": "History of submitted orders with status, fill price, and P&L",
+  "child-orders":
+    "Child execution slices for a selected parent order — link to an Order Blotter channel to auto-select. Click a slice to broadcast it to a linked Decision Log.",
   "algo-monitor": "Monitor running algorithmic strategies and their real-time state",
   observability: "System health metrics — latency, throughput, and service status",
   "candle-chart":
@@ -95,6 +99,7 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "candle-chart": { out: false, in: true },
   "market-depth": { out: false, in: true },
   "order-blotter": { out: true, in: false },
+  "child-orders": { out: true, in: true },
   "algo-monitor": { out: false, in: true },
   observability: { out: false, in: false },
   executions: { out: false, in: true },
