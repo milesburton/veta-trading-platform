@@ -20,6 +20,7 @@
  */
 
 import type { Middleware } from "@reduxjs/toolkit";
+import { queryClient } from "../../lib/queryClient.ts";
 import type { AssetDef, OhlcCandle, OrderBookSnapshot, OrderRecord } from "../../types.ts";
 import type { AuthUser, TradingLimits } from "../authSlice.ts";
 import { setUserWithLimits } from "../authSlice.ts";
@@ -230,6 +231,8 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
         break;
       }
     }
+    // Invalidate server-side grid query cache so blotters refetch with updated data
+    queryClient.invalidateQueries({ queryKey: ["grid"] });
   }
 
   function connect() {

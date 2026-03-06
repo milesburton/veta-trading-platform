@@ -245,6 +245,30 @@ Deno.test("[journal] GET /candles?instrument=AAPL&interval=1m returns array", as
   assert(Array.isArray(body));
 });
 
+// ── Grid query ────────────────────────────────────────────────────────────────
+
+Deno.test("[grid/query] POST /grid/query via journal returns correct shape", async () => {
+  const res = await fetch(`${JOURNAL_URL}/grid/query`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      gridId: "orderBlotter",
+      filterExpr: { kind: "group", id: "root", join: "AND", rules: [] },
+      sortField: null,
+      sortDir: null,
+      offset: 0,
+      limit: 50,
+    }),
+    signal: timeout(8_000),
+  });
+  assertEquals(res.status, 200);
+  const body = await res.json() as { rows: unknown[]; total: number; evalMs: number };
+  assert(Array.isArray(body.rows), "rows must be an array");
+  assertEquals(typeof body.total, "number", "total must be a number");
+  assertEquals(typeof body.evalMs, "number", "evalMs must be a number");
+  assert(body.evalMs >= 0, "evalMs must be non-negative");
+});
+
 // ── Version consistency ───────────────────────────────────────────────────────
 
 Deno.test("[e2e] all services report consistent version string", async () => {

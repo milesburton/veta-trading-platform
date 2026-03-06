@@ -1,7 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ChannelContext } from "../../contexts/ChannelContext";
 import { channelsSlice } from "../../store/channelsSlice";
 import { gridPrefsSlice } from "../../store/gridPrefsSlice";
@@ -10,6 +10,26 @@ import { uiSlice } from "../../store/uiSlice";
 import { windowSlice } from "../../store/windowSlice";
 import type { OrderRecord } from "../../types";
 import { OrderBlotter } from "../OrderBlotter";
+
+// ── Mock useGridQuery ─────────────────────────────────────────────────────────
+
+const mockUseGridQuery = vi.fn();
+vi.mock("../../hooks/useGridQuery", () => ({
+  useGridQuery: (...args: unknown[]) => mockUseGridQuery(...args),
+}));
+
+function defaultQueryResult(rows: OrderRecord[] = [], total?: number) {
+  return {
+    rows,
+    total: total ?? rows.length,
+    evalMs: 0,
+    isLoading: false,
+    isError: false,
+    isFetching: false,
+  };
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const now = Date.now();
 
@@ -31,7 +51,7 @@ function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
   };
 }
 
-function makeStore(orders: OrderRecord[] = []) {
+function makeStore() {
   return configureStore({
     reducer: {
       orders: ordersSlice.reducer,
@@ -40,15 +60,13 @@ function makeStore(orders: OrderRecord[] = []) {
       ui: uiSlice.reducer,
       gridPrefs: gridPrefsSlice.reducer,
     },
-    preloadedState: {
-      orders: { orders },
-    },
   });
 }
 
-function renderBlotter(orders: OrderRecord[] = []) {
+function renderBlotter(rows: OrderRecord[] = [], total?: number) {
+  mockUseGridQuery.mockReturnValue(defaultQueryResult(rows, total));
   return render(
-    <Provider store={makeStore(orders)}>
+    <Provider store={makeStore()}>
       <ChannelContext.Provider
         value={{
           instanceId: "order-blotter",
@@ -62,6 +80,8 @@ function renderBlotter(orders: OrderRecord[] = []) {
     </Provider>
   );
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("OrderBlotter – empty state", () => {
   it("shows empty placeholder when there are no orders", () => {
@@ -103,7 +123,6 @@ describe("OrderBlotter – single order", () => {
 
   it("shows — for avg fill when there are no children", () => {
     renderBlotter([makeOrder()]);
-    // The last column cell for avg fill shows —
     const dashes = screen.getAllByText("—");
     expect(dashes.length).toBeGreaterThan(0);
   });
@@ -113,6 +132,14 @@ describe("OrderBlotter – multiple orders", () => {
   it("shows plural 'orders' in header count", () => {
     renderBlotter([makeOrder(), makeOrder({ id: "order-2" })]);
     expect(screen.getByText(/2 orders/i)).toBeInTheDocument();
+  });
+});
+
+describe("OrderBlotter – server-side filter count", () => {
+  it("shows filtered / total count when server returns subset", () => {
+    // Server returned 1 row (filtered) but total is 5
+    renderBlotter([makeOrder()], 5);
+    expect(screen.getByText("1 / 5")).toBeInTheDocument();
   });
 });
 
@@ -132,7 +159,6 @@ describe("OrderBlotter – child order expansion", () => {
   it("shows expand button when order has children", () => {
     const order = makeOrder({ children: [child] });
     renderBlotter([order]);
-    // The expand button is the ▸ character
     expect(screen.getByText("▸")).toBeInTheDocument();
   });
 
@@ -142,7 +168,6 @@ describe("OrderBlotter – child order expansion", () => {
 
     fireEvent.click(screen.getByText("▸"));
 
-    // child row shows ↳ prefix on id
     expect(screen.getByText(/↳/)).toBeInTheDocument();
   });
 
@@ -164,7 +189,6 @@ describe("OrderBlotter – child order expansion", () => {
       status: "filled",
     });
     renderBlotter([order]);
-    // avg fill = 150.0000
     expect(screen.getByText("150.0000")).toBeInTheDocument();
   });
 });
@@ -183,7 +207,6 @@ describe("OrderBlotter – status styles", () => {
 describe("OrderBlotter – sort headers", () => {
   it("renders sortable column header for Asset", () => {
     renderBlotter([makeOrder()]);
-    // The SortableHeader renders a <th> containing the label and a sort indicator
     const assetHeader = screen.getByRole("columnheader", { name: /asset/i });
     expect(assetHeader).toBeInTheDocument();
   });
@@ -191,7 +214,6 @@ describe("OrderBlotter – sort headers", () => {
   it("sort headers are clickable", () => {
     renderBlotter([makeOrder({ asset: "MSFT" }), makeOrder({ id: "order-2", asset: "AAPL" })]);
     const assetHeader = screen.getByRole("columnheader", { name: /asset/i });
-    // Just verifying click doesn't throw
     expect(() => fireEvent.click(assetHeader)).not.toThrow();
   });
 });
@@ -202,52 +224,18 @@ describe("OrderBlotter – filter bar", () => {
     expect(screen.getByRole("button", { name: /add filter/i })).toBeInTheDocument();
   });
 
-  it("shows 'No orders match' message when all orders are filtered out", () => {
-    // Pre-load store with an expression filter that won't match anything
-    const store = configureStore({
-      reducer: {
-        orders: ordersSlice.reducer,
-        windows: windowSlice.reducer,
-        channels: channelsSlice.reducer,
-        ui: uiSlice.reducer,
-        gridPrefs: gridPrefsSlice.reducer,
-      },
-      preloadedState: {
-        orders: { orders: [makeOrder({ asset: "AAPL" })] },
-        gridPrefs: {
-          loading: false,
-          orderBlotter: {
-            sortField: null,
-            sortDir: null,
-            cfRules: [],
-            filters: [],
-            filterExpr: {
-              kind: "group" as const,
-              id: "root",
-              join: "AND" as const,
-              rules: [
-                {
-                  kind: "rule" as const,
-                  id: "r1",
-                  field: "asset",
-                  op: "=" as const,
-                  value: "NVDA",
-                },
-              ],
-            },
-          },
-          executions: {
-            sortField: null,
-            sortDir: null,
-            cfRules: [],
-            filters: [],
-            filterExpr: { kind: "group" as const, id: "root", join: "AND" as const, rules: [] },
-          },
-        },
-      },
+  it("shows 'No orders match' message when server returns empty rows but total > 0", () => {
+    // Simulate server filtering: rows=[], total=1 means there are orders but filter excluded them
+    mockUseGridQuery.mockReturnValue({
+      rows: [],
+      total: 1,
+      evalMs: 0,
+      isLoading: false,
+      isError: false,
+      isFetching: false,
     });
     render(
-      <Provider store={store}>
+      <Provider store={makeStore()}>
         <ChannelContext.Provider
           value={{
             instanceId: "order-blotter",
@@ -308,5 +296,33 @@ describe("OrderBlotter – header context menu", () => {
     fireEvent.contextMenu(assetHeader);
     expect(screen.getByText(/Sort A → Z/i)).toBeInTheDocument();
     expect(screen.getByText(/Reset sort/i)).toBeInTheDocument();
+  });
+});
+
+describe("OrderBlotter – loading state", () => {
+  it("shows loading indicator when isLoading is true and no rows yet", () => {
+    mockUseGridQuery.mockReturnValue({
+      rows: [],
+      total: 0,
+      evalMs: 0,
+      isLoading: true,
+      isError: false,
+      isFetching: true,
+    });
+    render(
+      <Provider store={makeStore()}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "order-blotter",
+            panelType: "order-blotter",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <OrderBlotter />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getByText(/Loading/i)).toBeInTheDocument();
   });
 });

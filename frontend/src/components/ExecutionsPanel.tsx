@@ -12,10 +12,11 @@ import {
 } from "recharts";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
+import { useGridQuery } from "../hooks/useGridQuery.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import type { FieldDef } from "../types/gridPrefs.ts";
 import type { LiquidityFlag, OrderRecord } from "../types.ts";
-import { applyCfRules, applyExprGroup, applySort } from "../utils/gridFilter.ts";
+import { applyCfRules } from "../utils/gridFilter.ts";
 import { CfRuleEditor } from "./grid/CfRuleEditor.tsx";
 import { FilterBar } from "./grid/FilterBar.tsx";
 import { SortableHeader } from "./grid/SortableHeader.tsx";
@@ -125,22 +126,22 @@ function TradeRow({ order }: { order: OrderRecord }) {
         }}
       >
         <td
-          className={`px-3 py-1.5 text-gray-500 tabular-nums whitespace-nowrap text-[10px] ${cellClasses["submittedAt"] ?? ""}`}
+          className={`px-3 py-1.5 text-gray-500 tabular-nums whitespace-nowrap text-[10px] ${cellClasses.submittedAt ?? ""}`}
         >
           {formatTime(order.submittedAt)}
         </td>
-        <td className={`px-3 py-1.5 font-semibold text-gray-200 ${cellClasses["asset"] ?? ""}`}>
+        <td className={`px-3 py-1.5 font-semibold text-gray-200 ${cellClasses.asset ?? ""}`}>
           {order.asset}
         </td>
         <td
-          className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"} ${cellClasses["side"] ?? ""}`}
+          className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"} ${cellClasses.side ?? ""}`}
         >
           {order.side}
         </td>
-        <td className={`px-3 py-1.5 text-gray-400 ${cellClasses["strategy"] ?? ""}`}>
+        <td className={`px-3 py-1.5 text-gray-400 ${cellClasses.strategy ?? ""}`}>
           {order.strategy}
         </td>
-        <td className={`px-3 py-1.5 font-semibold ${statusColor} ${cellClasses["status"] ?? ""}`}>
+        <td className={`px-3 py-1.5 font-semibold ${statusColor} ${cellClasses.status ?? ""}`}>
           {order.status}
         </td>
         <td className="px-3 py-1.5 text-right tabular-nums text-gray-300">{fillPct.toFixed(0)}%</td>
@@ -272,13 +273,6 @@ function TradeRow({ order }: { order: OrderRecord }) {
 }
 
 export function ExecutionsPanel() {
-  const orders = useAppSelector((s) => s.orders.orders);
-  const {
-    sortField,
-    sortDir,
-    filterExpr,
-    cfRules: _cfRules,
-  } = useAppSelector((s) => s.gridPrefs.executions);
   const { incoming } = useChannelContext();
   const channelIn = useChannelIn();
   const showCfEditor = useSignal(false);
@@ -286,29 +280,18 @@ export function ExecutionsPanel() {
   const filterOrderId = incoming !== null ? channelIn.selectedOrderId : null;
   const filterAsset = incoming !== null && !filterOrderId ? channelIn.selectedAsset : null;
 
-  const baseOrders = useMemo(
-    () =>
-      orders
-        .filter((o) => o.children.length > 0 || o.status === "filled" || o.status === "expired")
-        .filter((o) => {
-          if (filterOrderId) return o.id === filterOrderId;
-          if (filterAsset) return o.asset === filterAsset;
-          return true;
-        })
-        .slice()
-        .reverse(),
-    [orders, filterOrderId, filterAsset]
-  );
+  // Server-driven query: filter/sort applied by journal service
+  const { rows: serverRows, total, isLoading } = useGridQuery<OrderRecord>("executions");
 
-  const execExpr = filterExpr ?? {
-    kind: "group" as const,
-    id: "root",
-    join: "AND" as const,
-    rules: [],
-  };
+  // Channel context filter (selected order / asset) applied client-side after server query
   const tradeOrders = useMemo(
-    () => applySort(applyExprGroup([...baseOrders], execExpr), sortField, sortDir),
-    [baseOrders, execExpr, sortField, sortDir]
+    () =>
+      serverRows.filter((o) => {
+        if (filterOrderId) return o.id === filterOrderId;
+        if (filterAsset) return o.asset === filterAsset;
+        return true;
+      }),
+    [serverRows, filterOrderId, filterAsset]
   );
 
   const thBase = "text-left px-3 py-2";
@@ -325,11 +308,9 @@ export function ExecutionsPanel() {
         {filterAsset && !filterOrderId && (
           <span className="text-[10px] text-gray-500 font-mono">{filterAsset}</span>
         )}
-        {tradeOrders.length > 0 && (
+        {!isLoading && tradeOrders.length > 0 && (
           <span className="text-[10px] text-gray-600 ml-auto">
-            {tradeOrders.length !== baseOrders.length
-              ? `${tradeOrders.length} / ${baseOrders.length}`
-              : tradeOrders.length}
+            {tradeOrders.length !== total ? `${tradeOrders.length} / ${total}` : tradeOrders.length}
           </span>
         )}
         <button
@@ -353,13 +334,15 @@ export function ExecutionsPanel() {
       <FilterBar gridId="executions" fields={EXEC_FIELDS} />
 
       <div className="flex-1 overflow-auto">
-        {tradeOrders.length === 0 ? (
+        {isLoading && tradeOrders.length === 0 ? (
+          <div className="flex items-center justify-center h-24 text-gray-600">Loading…</div>
+        ) : tradeOrders.length === 0 ? (
           <div className="flex items-center justify-center h-24 text-gray-600">
             {filterOrderId
               ? `No executions for order ${filterOrderId.slice(0, 8)}`
               : filterAsset
                 ? `No executions for ${filterAsset}`
-                : execExpr.rules.length > 0
+                : total > 0
                   ? "No executions match the active filters"
                   : "No executions yet"}
           </div>

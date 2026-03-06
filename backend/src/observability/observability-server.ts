@@ -82,6 +82,7 @@ const BUS_TOPICS = [
   "algo.heartbeat",
   "user.session",
   "user.access",
+  "grid.query",
 ];
 
 createConsumer("observability-group", BUS_TOPICS).then((consumer) => {

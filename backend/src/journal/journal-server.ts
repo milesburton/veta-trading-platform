@@ -1,6 +1,8 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { DB } from "https://deno.land/x/sqlite@v3.9.1/mod.ts";
-import { createConsumer } from "../lib/messaging.ts";
+import { applyExprGroup, applySort } from "../lib/gridQuery.ts";
+import { createConsumer, createProducer } from "../lib/messaging.ts";
+import type { GridQueryRequest, GridQueryResponse } from "../types/gridQuery.ts";
 
 const PORT = Number(Deno.env.get("JOURNAL_PORT")) || 5_009;
 const DB_PATH = Deno.env.get("JOURNAL_DB_PATH") || "./backend/data/journal.db";
@@ -201,6 +203,10 @@ function ingest(topic: string, value: any) {
   }
 }
 
+// ── Observability producer (best-effort, for grid.query timing events) ────────
+
+const obsProducer = await createProducer("journal-obs").catch(() => null);
+
 createConsumer("journal-group", CONSUME_TOPICS).then((consumer) => {
   consumer.onMessage((topic, value) => {
     ingest(topic, value as Record<string, unknown>);
@@ -240,7 +246,7 @@ function rowToEntry(row: unknown[]) {
   };
 }
 
-function handle(req: Request): Response {
+async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
 
   const url = new URL(req.url);
@@ -332,93 +338,151 @@ function handle(req: Request): Response {
   // GET /orders?limit=200 — reconstruct OrderRecord[] from journal events for UI hydration
   if (req.method === "GET" && path === "/orders") {
     const limit = Math.min(Number(url.searchParams.get("limit") ?? 200), 500);
-    const since = Date.now() - RETENTION_MS;
+    const allOrders = reconstructOrders();
+    return json(allOrders.slice(0, limit));
+  }
 
-    // Fetch all order-related events within retention window, oldest first
-    const rows = [...db.query(
-      `SELECT order_id, event_type, ts, raw FROM journal
-       WHERE order_id IS NOT NULL AND ts >= ?
-       ORDER BY ts ASC;`,
-      [since],
-    )] as [string, string, number, string][];
-
-    // Group events by order_id and reconstruct OrderRecord
-    const orderMap = new Map<string, Record<string, unknown>>();
-    for (const [orderId, eventType, ts, rawStr] of rows) {
-      let raw: Record<string, unknown> = {};
-      try { raw = JSON.parse(rawStr); } catch { /* skip */ }
-
-      if (eventType === "orders.rejected" && !orderMap.has(orderId)) {
-        // Gateway-rejected before OMS: create a minimal stub so the order appears in the blotter
-        orderMap.set(orderId, {
-          id: orderId,
-          submittedAt: ts,
-          asset: raw.asset ?? raw.instrument ?? "",
-          side: raw.side ?? "BUY",
-          quantity: raw.quantity ?? raw.requestedQty ?? 0,
-          limitPrice: raw.limitPrice ?? 0,
-          expiresAt: ts + 86_400_000,
-          strategy: raw.strategy ?? raw.algo ?? "LIMIT",
-          status: "rejected",
-          rejectReason: raw.reason ?? raw.message ?? null,
-          filled: 0,
-          algoParams: raw.algoParams ?? { strategy: raw.strategy ?? "LIMIT" },
-          children: [],
-        });
-      } else if (eventType === "orders.submitted") {
-        orderMap.set(orderId, {
-          id: orderId,
-          submittedAt: ts,
-          asset: raw.asset ?? raw.instrument ?? "",
-          side: raw.side ?? "BUY",
-          quantity: raw.quantity ?? raw.requestedQty ?? 0,
-          limitPrice: raw.limitPrice ?? 0,
-          expiresAt: raw.expiresAt ?? ts + 86_400_000,
-          strategy: raw.strategy ?? raw.algo ?? "LIMIT",
-          status: "queued",
-          filled: 0,
-          algoParams: raw.algoParams ?? { strategy: raw.strategy ?? "LIMIT" },
-          children: [],
-        });
-      } else if (orderMap.has(orderId)) {
-        const order = orderMap.get(orderId)!;
-        if (eventType === "orders.filled") {
-          // EMS sends per-child filledQty; accumulate across all fill events
-          // for this parent order to get the running total.
-          const childFilled = Number(raw.filledQty ?? 0);
-          order.filled = Number(order.filled ?? 0) + childFilled;
-          const qty = Number(order.quantity ?? 0);
-          order.status = qty > 0 && Number(order.filled) >= qty ? "filled" : "executing";
-        } else if (eventType === "orders.expired") {
-          order.status = "expired";
-        } else if (eventType === "orders.rejected") {
-          order.status = "rejected";
-          if (raw.reason) order.rejectReason = raw.reason;
-        } else if (eventType === "orders.child") {
-          const children = order.children as unknown[];
-          children.push({
-            id: raw.childId ?? raw.orderId ?? "",
-            side: raw.side ?? order.side,
-            quantity: raw.qty ?? raw.quantity ?? 0,
-            limitPrice: raw.price ?? raw.limitPrice ?? 0,
-            filledQty: 0,
-            avgFillPrice: 0,
-            commissionUSD: 0,
-            submittedAt: ts,
-            status: "queued",
-          });
-        }
-      }
+  // POST /grid/query — server-side filter + sort + paginate
+  if (req.method === "POST" && path === "/grid/query") {
+    let body: GridQueryRequest;
+    try {
+      body = await req.json() as GridQueryRequest;
+    } catch {
+      return json({ error: "Invalid JSON body" }, 400);
     }
 
-    const orders = [...orderMap.values()]
-      .sort((a, b) => Number(b.submittedAt) - Number(a.submittedAt))
-      .slice(0, limit);
+    const { gridId, filterExpr, sortField, sortDir, offset = 0, limit = 200 } = body;
+    if (!gridId || !filterExpr) {
+      return json({ error: "gridId and filterExpr are required" }, 400);
+    }
+    const safeLimit = Math.min(Number(limit) || 200, 500);
+    const safeOffset = Math.max(Number(offset) || 0, 0);
 
-    return json(orders);
+    // Build dataset from journal
+    const allOrders = reconstructOrders();
+    const dataset: Record<string, unknown>[] =
+      gridId === "executions"
+        ? allOrders.flatMap((o) =>
+            (o.children as Record<string, unknown>[]).map((c) => ({
+              ...c,
+              parentId: o.id,
+              asset: o.asset,
+              strategy: o.strategy,
+              userId: o.userId,
+            }))
+          )
+        : allOrders;
+
+    const t0 = performance.now();
+    const filtered = applyExprGroup(dataset, filterExpr);
+    const sorted = applySort(filtered, sortField ?? null, sortDir ?? null);
+    const total = sorted.length;
+    const rows = sorted.slice(safeOffset, safeOffset + safeLimit);
+    const evalMs = Number((performance.now() - t0).toFixed(3));
+
+    // Emit timing event to observability bus (best-effort)
+    obsProducer?.send("grid.query", {
+      gridId,
+      total,
+      evalMs,
+      userId: req.headers.get("x-user-id") ?? null,
+      ts: Date.now(),
+    }).catch(() => {});
+
+    const response: GridQueryResponse = { rows, total, evalMs };
+    return json(response);
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
+}
+
+// ── Shared dataset reconstruction ─────────────────────────────────────────────
+
+/**
+ * Reconstruct all OrderRecord objects from journal events within the retention
+ * window. Used by both GET /orders (hydration) and POST /grid/query (filtered
+ * queries). Returns orders sorted newest-first.
+ */
+function reconstructOrders(): Record<string, unknown>[] {
+  const since = Date.now() - RETENTION_MS;
+
+  const rows = [...db.query(
+    `SELECT order_id, event_type, ts, raw FROM journal
+     WHERE order_id IS NOT NULL AND ts >= ?
+     ORDER BY ts ASC;`,
+    [since],
+  )] as [string, string, number, string][];
+
+  const orderMap = new Map<string, Record<string, unknown>>();
+  for (const [orderId, eventType, ts, rawStr] of rows) {
+    let raw: Record<string, unknown> = {};
+    try { raw = JSON.parse(rawStr); } catch { /* skip */ }
+
+    if (eventType === "orders.rejected" && !orderMap.has(orderId)) {
+      orderMap.set(orderId, {
+        id: orderId,
+        submittedAt: ts,
+        asset: raw.asset ?? raw.instrument ?? "",
+        side: raw.side ?? "BUY",
+        quantity: raw.quantity ?? raw.requestedQty ?? 0,
+        limitPrice: raw.limitPrice ?? 0,
+        expiresAt: ts + 86_400_000,
+        strategy: raw.strategy ?? raw.algo ?? "LIMIT",
+        status: "rejected",
+        rejectReason: raw.reason ?? raw.message ?? null,
+        filled: 0,
+        algoParams: raw.algoParams ?? { strategy: raw.strategy ?? "LIMIT" },
+        userId: raw.userId ?? null,
+        children: [],
+      });
+    } else if (eventType === "orders.submitted") {
+      orderMap.set(orderId, {
+        id: orderId,
+        submittedAt: ts,
+        asset: raw.asset ?? raw.instrument ?? "",
+        side: raw.side ?? "BUY",
+        quantity: raw.quantity ?? raw.requestedQty ?? 0,
+        limitPrice: raw.limitPrice ?? 0,
+        expiresAt: raw.expiresAt ?? ts + 86_400_000,
+        strategy: raw.strategy ?? raw.algo ?? "LIMIT",
+        status: "queued",
+        filled: 0,
+        algoParams: raw.algoParams ?? { strategy: raw.strategy ?? "LIMIT" },
+        userId: raw.userId ?? null,
+        children: [],
+      });
+    } else if (orderMap.has(orderId)) {
+      const order = orderMap.get(orderId)!;
+      if (eventType === "orders.filled") {
+        const childFilled = Number(raw.filledQty ?? 0);
+        order.filled = Number(order.filled ?? 0) + childFilled;
+        const qty = Number(order.quantity ?? 0);
+        order.status = qty > 0 && Number(order.filled) >= qty ? "filled" : "executing";
+      } else if (eventType === "orders.expired") {
+        order.status = "expired";
+      } else if (eventType === "orders.rejected") {
+        order.status = "rejected";
+        if (raw.reason) order.rejectReason = raw.reason;
+      } else if (eventType === "orders.child") {
+        const children = order.children as unknown[];
+        children.push({
+          id: raw.childId ?? raw.orderId ?? "",
+          side: raw.side ?? order.side,
+          quantity: raw.qty ?? raw.quantity ?? 0,
+          limitPrice: raw.price ?? raw.limitPrice ?? 0,
+          filledQty: 0,
+          avgFillPrice: 0,
+          commissionUSD: 0,
+          submittedAt: ts,
+          status: "queued",
+        });
+      }
+    }
+  }
+
+  return [...orderMap.values()].sort(
+    (a, b) => Number(b.submittedAt) - Number(a.submittedAt),
+  );
 }
 
 Deno.serve({ port: PORT }, handle);

@@ -188,3 +188,60 @@ Deno.test("[oms] POST / returns 404 (order submission moved to bus)", async () =
   assertEquals(res.status, 404);
   await res.body?.cancel();
 });
+
+// ── Grid query endpoint ───────────────────────────────────────────────────────
+
+const EMPTY_FILTER_EXPR = { kind: "group", id: "root", join: "AND", rules: [] };
+
+Deno.test("[grid/query] POST /grid/query without auth returns 401", async () => {
+  const res = await fetch(`${GATEWAY_URL}/grid/query`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      gridId: "orderBlotter",
+      filterExpr: EMPTY_FILTER_EXPR,
+      sortField: null,
+      sortDir: null,
+      offset: 0,
+      limit: 50,
+    }),
+    signal: t(),
+  });
+  assertEquals(res.status, 401);
+  await res.body?.cancel();
+});
+
+Deno.test("[grid/query] POST /grid/query with malformed body returns 400", async () => {
+  // Direct to journal (bypassing gateway auth for this structural test)
+  const res = await fetch(`${JOURNAL_URL}/grid/query`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ notAValidRequest: true }),
+    signal: t(),
+  });
+  assertEquals(res.status, 400);
+  await res.body?.cancel();
+});
+
+Deno.test("[grid/query] POST /grid/query direct to journal returns correct shape", async () => {
+  const res = await fetch(`${JOURNAL_URL}/grid/query`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      gridId: "orderBlotter",
+      filterExpr: EMPTY_FILTER_EXPR,
+      sortField: null,
+      sortDir: null,
+      offset: 0,
+      limit: 50,
+    }),
+    signal: t(8_000),
+  });
+  assertEquals(res.status, 200);
+  const body = await res.json() as { rows: unknown[]; total: number; evalMs: number };
+  assert(Array.isArray(body.rows), "rows should be an array");
+  assertEquals(typeof body.total, "number");
+  assertEquals(typeof body.evalMs, "number");
+  assert(body.evalMs >= 0, "evalMs should be non-negative");
+  assert(body.total >= 0, "total should be non-negative");
+});

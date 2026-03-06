@@ -1,14 +1,14 @@
 import { useSignal } from "@preact/signals-react";
-import { Fragment, useEffect, useMemo } from "react";
+import { Fragment, useEffect } from "react";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelOut } from "../hooks/useChannelOut.ts";
+import { useGridQuery } from "../hooks/useGridQuery.ts";
 import { saveGridPrefs, setSort } from "../store/gridPrefsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { orderPatched } from "../store/ordersSlice.ts";
 import type { FieldDef } from "../types/gridPrefs.ts";
-import { EMPTY_EXPR_GROUP } from "../types/gridPrefs.ts";
-import type { ChildOrder, LiquidityFlag, OrderStatus } from "../types.ts";
-import { applyCfRules, applyExprGroup, applySort } from "../utils/gridFilter.ts";
+import type { ChildOrder, LiquidityFlag, OrderRecord, OrderStatus } from "../types.ts";
+import { applyCfRules } from "../utils/gridFilter.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
 import { CHANNEL_COLOURS } from "./DashboardLayout.tsx";
@@ -131,10 +131,8 @@ function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
 }
 
 export function OrderBlotter() {
-  const orders = useAppSelector((s) => s.orders.orders);
-  const { sortField, sortDir, filterExpr, cfRules } = useAppSelector(
-    (s) => s.gridPrefs.orderBlotter
-  );
+  const { cfRules } = useAppSelector((s) => s.gridPrefs.orderBlotter);
+  const { rows: displayOrders, total, isLoading } = useGridQuery<OrderRecord>("orderBlotter");
   const expanded = useSignal<Set<string>>(new Set());
   const selectedOrderId = useSignal<string | null>(null);
   const showCfEditor = useSignal(false);
@@ -144,23 +142,16 @@ export function OrderBlotter() {
   const ctxMenu = useSignal<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
   const { outgoing } = useChannelContext();
   const channelColour = outgoing !== null ? (CHANNEL_COLOURS[outgoing]?.hex ?? null) : null;
-  const expr = filterExpr ?? EMPTY_EXPR_GROUP;
-
-  // Apply expression filter + sort
-  const displayOrders = useMemo(
-    () => applySort(applyExprGroup([...orders], expr), sortField, sortDir),
-    [orders, expr, sortField, sortDir]
-  );
 
   // Auto-select the most recent order on first load (once orders arrive)
   useEffect(() => {
-    if (selectedOrderId.value === null && orders.length > 0) {
-      const latest = orders[orders.length - 1];
+    if (selectedOrderId.value === null && displayOrders.length > 0) {
+      const latest = displayOrders[displayOrders.length - 1];
       selectedOrderId.value = latest.id;
       broadcast({ selectedOrderId: latest.id });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orders.length, orders, broadcast, selectedOrderId]);
+  }, [displayOrders.length, displayOrders, broadcast, selectedOrderId]);
 
   function selectOrder(id: string) {
     const next = selectedOrderId.value === id ? null : id;
@@ -178,7 +169,7 @@ export function OrderBlotter() {
   function openOrderCtxMenu(e: React.MouseEvent, orderId: string) {
     e.preventDefault();
     e.stopPropagation();
-    const order = orders.find((o) => o.id === orderId);
+    const order = displayOrders.find((o) => o.id === orderId);
     if (!order) return;
     const isActive = order.status === "queued" || order.status === "executing";
     const items: ContextMenuEntry[] = [
@@ -283,9 +274,11 @@ export function OrderBlotter() {
           </span>
         )}
         <span className="text-[10px] text-gray-600 ml-auto">
-          {displayOrders.length !== orders.length
-            ? `${displayOrders.length} / ${orders.length}`
-            : `${orders.length} order${orders.length !== 1 ? "s" : ""}`}
+          {isLoading
+            ? "…"
+            : displayOrders.length !== total
+              ? `${displayOrders.length} / ${total}`
+              : `${total} order${total !== 1 ? "s" : ""}`}
         </span>
         <button
           type="button"
@@ -309,7 +302,11 @@ export function OrderBlotter() {
 
       {/* Table */}
       <div className="overflow-auto flex-1">
-        {orders.length === 0 ? (
+        {isLoading && displayOrders.length === 0 ? (
+          <div className="flex items-center justify-center h-24 text-gray-600 text-xs">
+            Loading…
+          </div>
+        ) : total === 0 ? (
           <div className="flex items-center justify-center h-24 text-gray-600 text-xs">
             No orders submitted yet
           </div>
@@ -480,31 +477,31 @@ export function OrderBlotter() {
                         )}
                       </td>
                       <td
-                        className={`px-3 py-1.5 font-semibold text-gray-200 ${cellClasses["asset"] ?? ""}`}
+                        className={`px-3 py-1.5 font-semibold text-gray-200 ${cellClasses.asset ?? ""}`}
                       >
                         {order.asset}
                       </td>
                       <td
-                        className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"} ${cellClasses["side"] ?? ""}`}
+                        className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"} ${cellClasses.side ?? ""}`}
                       >
                         {order.side}
                       </td>
                       <td
-                        className={`px-3 py-1.5 text-right tabular-nums text-gray-200 ${cellClasses["quantity"] ?? ""}`}
+                        className={`px-3 py-1.5 text-right tabular-nums text-gray-200 ${cellClasses.quantity ?? ""}`}
                       >
                         {order.quantity.toLocaleString()}
                       </td>
                       <td
-                        className={`px-3 py-1.5 text-right tabular-nums text-gray-300 ${cellClasses["limitPrice"] ?? ""}`}
+                        className={`px-3 py-1.5 text-right tabular-nums text-gray-300 ${cellClasses.limitPrice ?? ""}`}
                       >
                         {order.children.length > 0
                           ? avgFillPrice(order.children)
                           : formatPrice(order.asset, order.limitPrice)}
                       </td>
-                      <td className={`px-3 py-1.5 text-gray-400 ${cellClasses["strategy"] ?? ""}`}>
+                      <td className={`px-3 py-1.5 text-gray-400 ${cellClasses.strategy ?? ""}`}>
                         {order.strategy}
                       </td>
-                      <td className={`px-3 py-1.5 ${cellClasses["status"] ?? ""}`}>
+                      <td className={`px-3 py-1.5 ${cellClasses.status ?? ""}`}>
                         <span
                           className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${STATUS_STYLES[order.status]}`}
                         >
@@ -512,7 +509,7 @@ export function OrderBlotter() {
                         </span>
                       </td>
                       <td
-                        className={`px-3 py-1.5 text-gray-500 font-mono text-[10px] ${cellClasses["userId"] ?? ""}`}
+                        className={`px-3 py-1.5 text-gray-500 font-mono text-[10px] ${cellClasses.userId ?? ""}`}
                         title={order.userId}
                       >
                         {order.userId ?? "—"}
@@ -520,7 +517,7 @@ export function OrderBlotter() {
                       <td className="px-3 py-1.5 text-gray-600">—</td>
                       <td className="px-3 py-1.5 text-gray-600">—</td>
                       <td
-                        className={`px-3 py-1.5 text-right tabular-nums text-gray-500 ${cellClasses["filled"] ?? ""}`}
+                        className={`px-3 py-1.5 text-right tabular-nums text-gray-500 ${cellClasses.filled ?? ""}`}
                       >
                         {totalCommission(order.children)}
                       </td>

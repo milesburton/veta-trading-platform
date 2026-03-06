@@ -349,6 +349,35 @@ serve(async (req: Request): Promise<Response> => {
     return proxyGet(`${JOURNAL_URL}/orders`, req);
   }
 
+  // ── Proxy: server-side grid query (auth required) ──
+  if (path === "/grid/query" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    try {
+      const body = await req.text();
+      const res = await fetch(`${JOURNAL_URL}/grid/query`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Inject userId so journal can tag observability events
+          "x-user-id": auth.user.id,
+        },
+        body,
+        signal: AbortSignal.timeout(10_000),
+      });
+      const resBody = await res.arrayBuffer();
+      return new Response(resBody, {
+        status: res.status,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: (err as Error).message }), {
+        status: 502,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+  }
+
   // ── User preferences (auth required) ──
   if (path === "/preferences" && req.method === "GET") {
     const auth = await requireAuth(req);
