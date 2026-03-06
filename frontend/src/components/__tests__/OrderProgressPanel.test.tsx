@@ -23,7 +23,7 @@ function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
     limitPrice: 150,
     expiresAt: now + 60_000,
     strategy: "TWAP",
-    status: "executing",
+    status: "working",
     filled: 50,
     algoParams: { strategy: "TWAP", numSlices: 4, participationCap: 25 },
     children: [],

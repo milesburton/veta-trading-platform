@@ -264,14 +264,14 @@ export function AlgoMonitor() {
     stratFilter.value === "ALL" || o.strategy === stratFilter.value;
 
   const activeOrders = orders.filter(
-    (o) => (o.status === "queued" || o.status === "executing") && filterStrat(o)
+    (o) => (o.status === "pending" || o.status === "working") && filterStrat(o)
   );
 
   const needsActionOrders = orders.filter(
     (o) =>
       o.filled < o.quantity &&
       (o.status === "expired" ||
-        (o.status === "executing" && o.filled === 0 && Date.now() - o.submittedAt > 30_000)) &&
+        (o.status === "working" && o.filled === 0 && Date.now() - o.submittedAt > 30_000)) &&
       filterStrat(o)
   );
 
@@ -296,7 +296,7 @@ export function AlgoMonitor() {
           <div className="flex rounded overflow-hidden border border-gray-700 text-[11px]">
             <button
               type="button"
-              title="Orders currently queued or executing"
+              title="Orders currently pending or working"
               aria-pressed={tab.value === "active"}
               onClick={() => {
                 tab.value = "active";
@@ -560,9 +560,9 @@ export function AlgoMonitor() {
                     {!isExpanded && (
                       <tr key={`${order.id}-state`} className="border-b border-gray-800/20">
                         <td colSpan={colSpan} className="px-3 py-0.5 text-[10px] text-gray-600">
-                          {order.status === "queued" ? (
+                          {order.status === "pending" ? (
                             <span className="text-amber-600">
-                              Queued — waiting for fill conditions
+                              Pending — waiting for fill conditions
                             </span>
                           ) : order.status === "expired" ? (
                             <span className="text-gray-500">

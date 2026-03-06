@@ -58,7 +58,7 @@ function buildSummaryStats(orders: OrderRecord[]) {
   const completed = orders.filter((o) => o.status === "filled" || o.status === "expired");
   const filled = completed.filter((o) => o.status === "filled");
   const expired = completed.filter((o) => o.status === "expired");
-  const active = orders.filter((o) => o.status === "queued" || o.status === "executing");
+  const active = orders.filter((o) => o.status === "pending" || o.status === "working");
 
   let totalNotional = 0;
   let totalCommission = 0;

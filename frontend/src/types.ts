@@ -49,8 +49,8 @@ export interface CandleHistory {
 }
 
 export type OrderStatus =
-  | "queued"
-  | "executing"
+  | "pending"
+  | "working"
   | "filled"
   | "expired"
   | "rejected"

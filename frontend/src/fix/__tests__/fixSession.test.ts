@@ -58,7 +58,7 @@ function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
     limitPrice: 150.0,
     expiresAt: Date.now() + 60_000,
     strategy: "LIMIT",
-    status: "queued",
+    status: "pending",
     filled: 0,
     algoParams: { strategy: "LIMIT" },
     children: [],

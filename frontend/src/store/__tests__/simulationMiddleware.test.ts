@@ -30,7 +30,7 @@ function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
     limitPrice: 150,
     expiresAt: NOW + 60_000, // 60 s from NOW
     strategy: "LIMIT",
-    status: "queued",
+    status: "pending",
     filled: 0,
     algoParams: { strategy: "LIMIT" },
     children: [],
@@ -100,7 +100,7 @@ describe("simulationMiddleware – TWAP", () => {
     );
 
     const [order] = store.getState().orders.orders;
-    expect(order.status).toBe("executing");
+    expect(order.status).toBe("working");
   });
 
   it("adds child orders on each interval tick", () => {
@@ -175,7 +175,7 @@ describe("simulationMiddleware – POV", () => {
       )
     );
 
-    expect(store.getState().orders.orders[0].status).toBe("executing");
+    expect(store.getState().orders.orders[0].status).toBe("working");
   });
 
   it("adds child orders over interval ticks", () => {
@@ -242,7 +242,7 @@ describe("simulationMiddleware – VWAP", () => {
       )
     );
 
-    expect(store.getState().orders.orders[0].status).toBe("executing");
+    expect(store.getState().orders.orders[0].status).toBe("working");
   });
 
   it("adds child orders when price is within deviation band", () => {
@@ -368,7 +368,7 @@ describe("simulationMiddleware – gateway-connected guard", () => {
 
     // Status should remain queued — local simulation must not have started
     const [order] = store.getState().orders.orders;
-    expect(order.status).toBe("queued");
+    expect(order.status).toBe("pending");
   });
 
   it("does NOT fill LIMIT orders on tick when gateway is connected", () => {
@@ -380,7 +380,7 @@ describe("simulationMiddleware – gateway-connected guard", () => {
     store.dispatch(marketSlice.actions.tickReceived({ prices: { AAPL: 100 }, ts: NOW + 1000 }));
 
     const [order] = store.getState().orders.orders;
-    expect(order.status).toBe("queued");
+    expect(order.status).toBe("pending");
   });
 
   it("DOES run local TWAP simulation when gateway is disconnected", () => {
@@ -398,6 +398,6 @@ describe("simulationMiddleware – gateway-connected guard", () => {
     );
 
     const [order] = store.getState().orders.orders;
-    expect(order.status).toBe("executing");
+    expect(order.status).toBe("working");
   });
 });

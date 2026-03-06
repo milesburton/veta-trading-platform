@@ -18,8 +18,8 @@ import { SortableHeader } from "./grid/SortableHeader.tsx";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
-  queued: "bg-amber-900/50 text-amber-300 border border-amber-700/50",
-  executing: "bg-sky-900/50 text-sky-300 border border-sky-700/50",
+  pending: "bg-amber-900/50 text-amber-300 border border-amber-700/50",
+  working: "bg-sky-900/50 text-sky-300 border border-sky-700/50",
   filled: "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50",
   expired: "bg-gray-800/50 text-gray-500 border border-gray-700/50",
   rejected: "bg-red-950/60 text-red-400 border border-red-800/50",
@@ -43,7 +43,7 @@ const BLOTTER_FIELDS: FieldDef[] = [
     key: "status",
     label: "Status",
     type: "enum",
-    options: ["queued", "executing", "filled", "expired", "rejected", "cancelled", "held"],
+    options: ["pending", "working", "filled", "expired", "rejected", "cancelled", "held"],
   },
   { key: "filled", label: "Filled", type: "number" },
   { key: "userId", label: "Booked By", type: "string" },
@@ -173,7 +173,7 @@ export function OrderBlotter() {
     e.stopPropagation();
     const order = displayOrders.find((o) => o.id === orderId);
     if (!order) return;
-    const isActive = order.status === "queued" || order.status === "executing";
+    const isActive = order.status === "pending" || order.status === "working";
     const items: ContextMenuEntry[] = [
       {
         label: "Select & broadcast",

@@ -134,7 +134,7 @@ interface ActiveOrder {
   userId?: string;
   asset: string;
   strategy: string;
-  status: "queued" | "executing";
+  status: "pending" | "working";
 }
 
 const activeOrders = new Map<string, ActiveOrder>();
@@ -247,7 +247,7 @@ consumer?.onMessage(async (_topic, raw) => {
       userId: order.userId,
       asset: order.asset,
       strategy,
-      status: "queued",
+      status: "pending",
     });
   }
 

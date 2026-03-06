@@ -23,7 +23,7 @@ function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
     limitPrice: 150,
     expiresAt: now + 60_000,
     strategy: "TWAP",
-    status: "executing",
+    status: "working",
     filled: 25,
     algoParams: { strategy: "TWAP", numSlices: 4, participationCap: 25 },
     children: [],
@@ -97,16 +97,16 @@ describe("AlgoMonitor – Active tab (default)", () => {
     expect(screen.getAllByText("TWAP").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("shows queued order status indicator", () => {
-    renderMonitor([makeOrder({ status: "queued", filled: 0 })]);
-    expect(screen.getByText(/Queued/i)).toBeInTheDocument();
+  it("shows pending order status indicator", () => {
+    renderMonitor([makeOrder({ status: "pending", filled: 0 })]);
+    expect(screen.getByText(/Pending/i)).toBeInTheDocument();
   });
 
   it("shows LIMIT executing order as 'Monitoring'", () => {
     renderMonitor([
       makeOrder({
         strategy: "LIMIT",
-        status: "executing",
+        status: "working",
         algoParams: { strategy: "LIMIT" },
       }),
     ]);

@@ -108,7 +108,7 @@ function sendObsEvent(evt: Partial<ObsEvent>): void {
 }
 
 function startTwapSimulation(order: OrderRecord, api: SimListenerAPI): void {
-  api.dispatch(ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "executing" } }));
+  api.dispatch(ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "working" } }));
   const params = order.algoParams.strategy === "TWAP" ? order.algoParams : null;
   const durationMs = order.expiresAt - Date.now();
   const numSlices = params?.numSlices ?? Math.max(1, Math.round(durationMs / TWAP_INTERVAL_MS));
@@ -136,7 +136,7 @@ function startTwapSimulation(order: OrderRecord, api: SimListenerAPI): void {
     api.dispatch(
       ordersSlice.actions.orderPatched({
         id: order.id,
-        patch: { filled, status: done ? "filled" : "executing" },
+        patch: { filled, status: done ? "filled" : "working" },
       })
     );
     if (done) clearInterval(handle);
@@ -154,7 +154,7 @@ function startTwapSimulation(order: OrderRecord, api: SimListenerAPI): void {
 }
 
 function startPovSimulation(order: OrderRecord, api: SimListenerAPI): void {
-  api.dispatch(ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "executing" } }));
+  api.dispatch(ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "working" } }));
   const params = order.algoParams.strategy === "POV" ? order.algoParams : null;
   const participationRate = params?.participationRate ?? 10;
   const minSlice = params?.minSliceSize ?? 0;
@@ -184,7 +184,7 @@ function startPovSimulation(order: OrderRecord, api: SimListenerAPI): void {
     api.dispatch(
       ordersSlice.actions.orderPatched({
         id: order.id,
-        patch: { filled, status: done ? "filled" : "executing" },
+        patch: { filled, status: done ? "filled" : "working" },
       })
     );
     if (done) clearInterval(handle);
@@ -202,7 +202,7 @@ function startPovSimulation(order: OrderRecord, api: SimListenerAPI): void {
 }
 
 function startVwapSimulation(order: OrderRecord, api: SimListenerAPI): void {
-  api.dispatch(ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "executing" } }));
+  api.dispatch(ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "working" } }));
   const params = order.algoParams.strategy === "VWAP" ? order.algoParams : null;
   const maxDev = params?.maxDeviation ?? 0.005;
   const durationMs = order.expiresAt - Date.now();
@@ -234,7 +234,7 @@ function startVwapSimulation(order: OrderRecord, api: SimListenerAPI): void {
     api.dispatch(
       ordersSlice.actions.orderPatched({
         id: order.id,
-        patch: { filled, status: done ? "filled" : "executing" },
+        patch: { filled, status: done ? "filled" : "working" },
       })
     );
     if (done) clearInterval(handle);

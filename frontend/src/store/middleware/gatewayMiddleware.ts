@@ -135,7 +135,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           storeAPI.dispatch(
             orderPatched({
               id: data.clientOrderId ?? data.orderId,
-              patch: { status: "queued" },
+              patch: { status: "pending" },
             })
           );
         }
@@ -146,7 +146,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           storeAPI.dispatch(
             orderPatched({
               id: data.clientOrderId ?? data.orderId,
-              patch: { status: "executing" },
+              patch: { status: "working" },
             })
           );
         }
@@ -164,7 +164,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
                 side: data.side ?? "BUY",
                 quantity: data.quantity ?? 0,
                 limitPrice: data.limitPrice ?? 0,
-                status: "executing",
+                status: "working",
                 filled: 0,
                 submittedAt: data.ts ?? Date.now(),
               },

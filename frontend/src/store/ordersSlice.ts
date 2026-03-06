@@ -55,7 +55,7 @@ export const submitOrderThunk = createAsyncThunk(
       limitPrice: trade.limitPrice,
       expiresAt: Date.now() + trade.expiresAt * 1000,
       strategy: trade.algoParams.strategy,
-      status: "queued",
+      status: "pending",
       filled: 0,
       algoParams: trade.algoParams,
       children: [],
@@ -138,7 +138,7 @@ export const ordersSlice = createSlice({
           (order.side === "BUY" && marketPrice <= order.limitPrice) ||
           (order.side === "SELL" && marketPrice >= order.limitPrice);
         if (triggered) return { ...order, status: "filled", filled: order.quantity };
-        if (order.status === "queued") return { ...order, status: "executing" };
+        if (order.status === "pending") return { ...order, status: "working" };
         return order;
       });
     },
@@ -150,7 +150,7 @@ export const ordersSlice = createSlice({
       if (order.filled >= order.quantity) {
         order.status = "filled";
       } else if (filledQty > 0) {
-        order.status = "executing";
+        order.status = "working";
       }
     },
     orderCancelled(state, action: PayloadAction<{ clientOrderId: string }>) {

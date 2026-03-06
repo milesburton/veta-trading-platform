@@ -21,7 +21,7 @@ function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
     limitPrice: 150,
     expiresAt: Date.now() + 300_000,
     strategy: "LIMIT",
-    status: "queued",
+    status: "pending",
     filled: 0,
     algoParams: { strategy: "LIMIT" },
     children: [],
@@ -49,17 +49,17 @@ describe("ordersSlice – orderAdded", () => {
 
 describe("ordersSlice – orderPatched", () => {
   it("patches a matching order", () => {
-    const order = makeOrder({ status: "queued" });
+    const order = makeOrder({ status: "pending" });
     let state = reducer(initial, orderAdded(order));
-    state = reducer(state, orderPatched({ id: "order-1", patch: { status: "executing" } }));
-    expect(state.orders[0].status).toBe("executing");
+    state = reducer(state, orderPatched({ id: "order-1", patch: { status: "working" } }));
+    expect(state.orders[0].status).toBe("working");
   });
 
   it("ignores patch for unknown id", () => {
     const order = makeOrder();
     let state = reducer(initial, orderAdded(order));
     state = reducer(state, orderPatched({ id: "unknown-id", patch: { status: "filled" } }));
-    expect(state.orders[0].status).toBe("queued");
+    expect(state.orders[0].status).toBe("pending");
   });
 
   it("patches filled quantity", () => {
@@ -109,7 +109,7 @@ describe("ordersSlice – childAdded", () => {
 
 describe("ordersSlice – limitOrdersChecked", () => {
   it("fills a BUY order when market price ≤ limit price", () => {
-    const order = makeOrder({ side: "BUY", limitPrice: 155, status: "queued" });
+    const order = makeOrder({ side: "BUY", limitPrice: 155, status: "pending" });
     let state = reducer(initial, orderAdded(order));
     state = reducer(state, limitOrdersChecked({ AAPL: 154 }));
     expect(state.orders[0].status).toBe("filled");
@@ -117,26 +117,26 @@ describe("ordersSlice – limitOrdersChecked", () => {
   });
 
   it("fills a SELL order when market price ≥ limit price", () => {
-    const order = makeOrder({ side: "SELL", limitPrice: 150, status: "queued" });
+    const order = makeOrder({ side: "SELL", limitPrice: 150, status: "pending" });
     let state = reducer(initial, orderAdded(order));
     state = reducer(state, limitOrdersChecked({ AAPL: 151 }));
     expect(state.orders[0].status).toBe("filled");
   });
 
   it("does NOT fill a BUY when market price > limit price", () => {
-    const order = makeOrder({ side: "BUY", limitPrice: 150, status: "queued" });
+    const order = makeOrder({ side: "BUY", limitPrice: 150, status: "pending" });
     let state = reducer(initial, orderAdded(order));
     state = reducer(state, limitOrdersChecked({ AAPL: 160 }));
     // queued → executing on first check
-    expect(state.orders[0].status).toBe("executing");
+    expect(state.orders[0].status).toBe("working");
   });
 
   it("transitions queued → executing when not triggered", () => {
-    const order = makeOrder({ status: "queued", limitPrice: 100, side: "BUY" });
+    const order = makeOrder({ status: "pending", limitPrice: 100, side: "BUY" });
     let state = reducer(initial, orderAdded(order));
     // price above limit — no fill
     state = reducer(state, limitOrdersChecked({ AAPL: 200 }));
-    expect(state.orders[0].status).toBe("executing");
+    expect(state.orders[0].status).toBe("working");
   });
 
   it("expires order when past expiresAt", () => {
@@ -161,17 +161,17 @@ describe("ordersSlice – limitOrdersChecked", () => {
   });
 
   it("skips non-LIMIT strategy orders", () => {
-    const order = makeOrder({ strategy: "TWAP", status: "executing" });
+    const order = makeOrder({ strategy: "TWAP", status: "working" });
     let state = reducer(initial, orderAdded(order));
     state = reducer(state, limitOrdersChecked({ AAPL: 1 }));
     // Status unchanged — only LIMIT orders are evaluated
-    expect(state.orders[0].status).toBe("executing");
+    expect(state.orders[0].status).toBe("working");
   });
 
   it("skips order when no price for asset", () => {
-    const order = makeOrder({ asset: "XYZ", status: "queued" });
+    const order = makeOrder({ asset: "XYZ", status: "pending" });
     let state = reducer(initial, orderAdded(order));
     state = reducer(state, limitOrdersChecked({ AAPL: 100 })); // no XYZ price
-    expect(state.orders[0].status).toBe("queued");
+    expect(state.orders[0].status).toBe("pending");
   });
 });

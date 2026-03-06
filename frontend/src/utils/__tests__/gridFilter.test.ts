@@ -13,8 +13,8 @@ import {
 
 const rows = [
   { id: "1", asset: "AAPL", side: "BUY", quantity: 10000, status: "filled" },
-  { id: "2", asset: "MSFT", side: "SELL", quantity: 50000, status: "executing" },
-  { id: "3", asset: "GOOG", side: "BUY", quantity: 5000, status: "queued" },
+  { id: "2", asset: "MSFT", side: "SELL", quantity: 50000, status: "working" },
+  { id: "3", asset: "GOOG", side: "BUY", quantity: 5000, status: "pending" },
   { id: "4", asset: "TSLA", side: "SELL", quantity: 100000, status: "expired" },
 ] as const;
 
@@ -85,7 +85,7 @@ describe("applyFilters", () => {
 
   it("filters with in (enum multi-select)", () => {
     const criteria: FilterCriteria[] = [
-      { id: "1", field: "status", op: "in", value: ["filled", "executing"] },
+      { id: "1", field: "status", op: "in", value: ["filled", "working"] },
     ];
     const result = applyFilters([...rows], criteria);
     expect(result).toHaveLength(2);
@@ -300,8 +300,8 @@ describe("applyCfRules", () => {
 
 const exprRows = [
   { id: "1", asset: "AAPL", side: "BUY", quantity: 10000, status: "filled", note: null },
-  { id: "2", asset: "MSFT", side: "SELL", quantity: 50000, status: "executing", note: "large" },
-  { id: "3", asset: "GOOG", side: "BUY", quantity: 5000, status: "queued", note: undefined },
+  { id: "2", asset: "MSFT", side: "SELL", quantity: 50000, status: "working", note: "large" },
+  { id: "3", asset: "GOOG", side: "BUY", quantity: 5000, status: "pending", note: undefined },
   { id: "4", asset: "TSLA", side: "SELL", quantity: 100000, status: "expired", note: "" },
 ];
 

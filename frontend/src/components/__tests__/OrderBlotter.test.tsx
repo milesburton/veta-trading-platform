@@ -43,7 +43,7 @@ function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
     limitPrice: 150,
     expiresAt: now + 300_000,
     strategy: "LIMIT",
-    status: "queued",
+    status: "pending",
     filled: 0,
     algoParams: { strategy: "LIMIT" },
     children: [],
@@ -112,8 +112,8 @@ describe("OrderBlotter – single order", () => {
   });
 
   it("renders the status badge", () => {
-    renderBlotter([makeOrder({ status: "executing" })]);
-    expect(screen.getByText("executing")).toBeInTheDocument();
+    renderBlotter([makeOrder({ status: "working" })]);
+    expect(screen.getByText("working")).toBeInTheDocument();
   });
 
   it("renders the side in colour-coded cell", () => {
@@ -194,7 +194,7 @@ describe("OrderBlotter – child order expansion", () => {
 });
 
 describe("OrderBlotter – status styles", () => {
-  const statuses = ["queued", "executing", "filled", "expired"] as const;
+  const statuses = ["pending", "working", "filled", "expired"] as const;
 
   for (const status of statuses) {
     it(`renders ${status} badge`, () => {

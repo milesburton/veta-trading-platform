@@ -445,7 +445,7 @@ function reconstructOrders(): Record<string, unknown>[] {
         limitPrice: raw.limitPrice ?? 0,
         expiresAt: raw.expiresAt ?? ts + 86_400_000,
         strategy: raw.strategy ?? raw.algo ?? "LIMIT",
-        status: "queued",
+        status: "pending",
         filled: 0,
         algoParams: raw.algoParams ?? { strategy: raw.strategy ?? "LIMIT" },
         userId: raw.userId ?? null,
@@ -457,7 +457,7 @@ function reconstructOrders(): Record<string, unknown>[] {
         const childFilled = Number(raw.filledQty ?? 0);
         order.filled = Number(order.filled ?? 0) + childFilled;
         const qty = Number(order.quantity ?? 0);
-        order.status = qty > 0 && Number(order.filled) >= qty ? "filled" : "executing";
+        order.status = qty > 0 && Number(order.filled) >= qty ? "filled" : "working";
       } else if (eventType === "orders.expired") {
         order.status = "expired";
       } else if (eventType === "orders.rejected") {
@@ -474,7 +474,7 @@ function reconstructOrders(): Record<string, unknown>[] {
           avgFillPrice: 0,
           commissionUSD: 0,
           submittedAt: ts,
-          status: "queued",
+          status: "pending",
         });
       }
     }
