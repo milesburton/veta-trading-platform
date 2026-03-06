@@ -443,7 +443,7 @@ serve(async (req: Request): Promise<Response> => {
       const body = await req.text();
       const res = await fetch(`${USER_SERVICE_URL}/users/${auth.user.id}/preferences`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", cookie: req.headers.get("cookie") ?? "" },
         body,
         signal: AbortSignal.timeout(5_000),
       });
