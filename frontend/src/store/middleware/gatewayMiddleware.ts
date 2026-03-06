@@ -22,6 +22,7 @@
 import type { Middleware } from "@reduxjs/toolkit";
 import { queryClient } from "../../lib/queryClient.ts";
 import type { AssetDef, OhlcCandle, OrderBookSnapshot } from "../../types.ts";
+import { alertAdded } from "../alertsSlice.ts";
 import type { AuthUser, TradingLimits } from "../authSlice.ts";
 import { setUserWithLimits } from "../authSlice.ts";
 import { loadGridPrefs } from "../gridPrefsSlice.ts";
@@ -46,6 +47,7 @@ const GATEWAY_WS_URL = import.meta.env.VITE_GATEWAY_WS_URL ?? `${_wsOrigin}/ws/g
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? `${_origin}/api/gateway`;
 
 const UI_TICK_INTERVAL_MS = 250;
+const ALGO_HEARTBEAT_TIMEOUT_MS = 10_000;
 
 // ── Inbound message shapes ────────────────────────────────────────────────────
 
@@ -92,6 +94,8 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   let reconnectDelay = 2_000;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let started = false;
+
+  const algoLastSeen: Record<string, number> = {};
 
   // Tick batching
   let pendingPrices: Record<string, number> | null = null;
@@ -296,8 +300,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             // Gateway sends user identity + limits after WS connection is established
             const identityData = msg.data as { user: AuthUser; limits: TradingLimits };
             storeAPI.dispatch(setUserWithLimits(identityData));
-            // Hydrate persisted grid preferences (filters, sort, CF rules) from server
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (storeAPI.dispatch as any)(loadGridPrefs());
             break;
           }
@@ -327,6 +329,23 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             storeAPI.dispatch(allBlocksCleared());
             queryClient.invalidateQueries({ queryKey: ["grid"] });
             break;
+          case "algoHeartbeat": {
+            const hb = msg.data as { algo: string; ts?: number };
+            const now = Date.now();
+            const prev = algoLastSeen[hb.algo];
+            algoLastSeen[hb.algo] = now;
+            if (prev && now - prev > ALGO_HEARTBEAT_TIMEOUT_MS) {
+              storeAPI.dispatch(
+                alertAdded({
+                  severity: "WARNING",
+                  source: "algo",
+                  message: `Algo ${hb.algo} heartbeat resumed after ${Math.round((now - prev) / 1000)}s gap`,
+                  ts: now,
+                })
+              );
+            }
+            break;
+          }
           case "newsUpdate":
             storeAPI.dispatch(newsItemReceived(msg.data as NewsItem));
             break;
@@ -342,6 +361,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     ws.onclose = () => {
       setGatewayWs(null);
       storeAPI.dispatch(marketSlice.actions.setConnected(false));
+      for (const key of Object.keys(algoLastSeen)) delete algoLastSeen[key];
       if (tickTimer) {
         clearTimeout(tickTimer);
         tickTimer = null;

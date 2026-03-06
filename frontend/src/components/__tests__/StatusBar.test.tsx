@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { Model } from "flexlayout-react";
 import { Provider } from "react-redux";
 import { vi } from "vitest";
+import { alertsSlice } from "../../store/alertsSlice";
 import { authSlice } from "../../store/authSlice";
 import { killSwitchSlice } from "../../store/killSwitchSlice";
 import { marketSlice } from "../../store/marketSlice";
@@ -13,7 +14,6 @@ import { windowSlice } from "../../store/windowSlice";
 import { DashboardContext, DEFAULT_LAYOUT } from "../DashboardLayout";
 import { StatusBar } from "../StatusBar";
 
-// Stub the RTK Query hook so the test doesn't need a real HTTP server
 vi.mock("../../store/servicesApi", async (importOriginal) => {
   const original = await importOriginal<typeof import("../../store/servicesApi")>();
   return {
@@ -35,6 +35,7 @@ function makeStore(connected: boolean) {
       ui: uiSlice.reducer,
       windows: windowSlice.reducer,
       killSwitch: killSwitchSlice.reducer,
+      alerts: alertsSlice.reducer,
       [servicesApi.reducerPath]: servicesApi.reducer,
     },
     middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(servicesApi.middleware),
@@ -78,7 +79,6 @@ test("shows Live when connected and shows time", () => {
   renderBar(true);
   expect(screen.getByText(/Live/)).toBeInTheDocument();
   expect(screen.getByText(/Equities Trading Simulator/)).toBeInTheDocument();
-  // time element should exist
   expect(screen.getByText(/:/)).toBeInTheDocument();
 });
 

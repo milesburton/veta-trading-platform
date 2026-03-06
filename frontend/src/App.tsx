@@ -17,44 +17,51 @@ import {
   loadWorkspacePrefs,
   saveWorkspacePrefs,
 } from "./hooks/useWorkspaceSync.ts";
+import { alertDismissed, selectActiveAlerts, selectCriticalAlerts } from "./store/alertsSlice.ts";
 import type { AuthUser } from "./store/authSlice.ts";
 import { setStatus, setUser } from "./store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "./store/hooks.ts";
 import { store } from "./store/index.ts";
 import { reportError } from "./store/observabilitySlice.ts";
 
-// ── Global toast for save errors ───────────────────────────────────────────────
-
 function ToastHost() {
-  const [toasts, setToasts] = useState<{ id: number; message: string }[]>([]);
+  const alerts = useAppSelector(selectActiveAlerts);
+  const dispatch = useAppDispatch();
+  const [shown, setShown] = useState<Set<string>>(new Set());
+
+  const toastable = alerts.filter(
+    (a) => (a.severity === "WARNING" || a.severity === "INFO") && !shown.has(a.id)
+  );
 
   useEffect(() => {
-    let next = 0;
-    function onSaveError() {
-      const id = next++;
-      setToasts((prev) => [
-        ...prev,
-        { id, message: "Workspace save failed — check your connection." },
-      ]);
-      setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 6000);
+    for (const a of toastable) {
+      setShown((prev) => new Set([...prev, a.id]));
+      const id = a.id;
+      setTimeout(() => dispatch(alertDismissed(id)), 6000);
     }
-    window.addEventListener("workspace-save-error", onSaveError);
-    return () => window.removeEventListener("workspace-save-error", onSaveError);
-  }, []);
+  }, [toastable, dispatch]);
 
-  if (toasts.length === 0) return null;
+  const visible = alerts.filter(
+    (a) => (a.severity === "WARNING" || a.severity === "INFO") && shown.has(a.id)
+  );
+
+  if (visible.length === 0) return null;
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center">
-      {toasts.map((t) => (
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center pointer-events-none">
+      {visible.map((a) => (
         <div
-          key={t.id}
-          className="flex items-center gap-3 bg-red-900 border border-red-700 text-red-200 text-xs px-4 py-2 rounded shadow-lg"
+          key={a.id}
+          className={`flex items-center gap-3 text-xs px-4 py-2 rounded shadow-lg pointer-events-auto border ${
+            a.severity === "WARNING"
+              ? "bg-amber-900 border-amber-700 text-amber-200"
+              : "bg-gray-800 border-gray-700 text-gray-300"
+          }`}
         >
-          <span>{t.message}</span>
+          <span>{a.message}</span>
           <button
             type="button"
-            onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
-            className="text-red-400 hover:text-red-200 leading-none"
+            onClick={() => dispatch(alertDismissed(a.id))}
+            className="opacity-60 hover:opacity-100 leading-none"
           >
             ×
           </button>
@@ -128,12 +135,13 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 function TradingApp() {
   const userId = useAppSelector((s) => s.auth.user?.id ?? "anonymous");
   const userRole = useAppSelector((s) => s.auth.user?.role);
+  const dispatch = useAppDispatch();
+  const criticalAlerts = useAppSelector(selectCriticalAlerts);
+  const latestCritical = criticalAlerts[0] ?? null;
   const authStatus = useAppSelector((s) => s.auth.status);
 
   const { workspaces, activeId, handleSelect, handleChange, setWorkspaces } = useWorkspaces(userId);
 
-  // Track whether the user has mutated workspaces before the server prefs load
-  // resolves — if so, we skip overwriting their changes with stale server data.
   const locallyModifiedRef = useRef(false);
 
   const [layouts, setLayouts] = useState<Record<string, Model>>(() => {
@@ -143,7 +151,7 @@ function TradingApp() {
       try {
         initial[id] = Model.fromJson(json);
       } catch {
-        /* skip */
+        // ignore
       }
     }
     return initial;
@@ -159,7 +167,6 @@ function TradingApp() {
   useEffect(() => {
     if (authStatus !== "authenticated") return;
     loadWorkspacePrefs().then((prefs) => {
-      // If the user made changes while the fetch was in-flight, don't overwrite.
       if (locallyModifiedRef.current) return;
 
       let finalWorkspaces = prefs?.workspaces ?? [];
@@ -177,7 +184,7 @@ function TradingApp() {
         try {
           loaded[wsId] = Model.fromJson(json);
         } catch {
-          /* skip corrupted layout */
+          // ignore corrupted layout
         }
       }
 
@@ -202,7 +209,6 @@ function TradingApp() {
     });
   }, [authStatus]);
 
-  // Keep a ref to the latest prefs so beforeunload can flush synchronously.
   const pendingSaveRef = useRef<{
     workspaces: typeof workspaces;
     layouts: Record<string, Model>;
@@ -224,7 +230,6 @@ function TradingApp() {
     []
   );
 
-  // Flush any pending debounced save before the page unloads.
   useEffect(() => {
     function flushOnUnload() {
       if (!pendingSaveRef.current) return;
@@ -233,7 +238,6 @@ function TradingApp() {
       for (const [id, m] of Object.entries(ls)) {
         layoutsJson[id] = m.toJson() as IJsonModel;
       }
-      // Use keepalive fetch so the browser doesn't cancel the request on unload.
       saveWorkspacePrefs({ workspaces: ws, layouts: layoutsJson });
     }
     window.addEventListener("beforeunload", flushOnUnload);
@@ -279,7 +283,6 @@ function TradingApp() {
     handleSelect(newId);
     savePrefs(newWorkspaces, newLayouts);
     setCloneBanner(null);
-    // Remove ?shared= from URL
     const url = new URL(window.location.href);
     url.searchParams.delete("shared");
     history.replaceState(null, "", url.toString());
@@ -294,7 +297,23 @@ function TradingApp() {
       <div className="flex flex-col h-screen bg-gray-950 text-gray-100 overflow-hidden">
         <AppHeader />
 
-        {/* Share clone banner */}
+        {latestCritical && (
+          <div className="flex items-center gap-3 px-4 py-2 bg-red-950 border-b border-red-800 text-sm text-red-200 shrink-0">
+            <span className="font-bold text-red-400 shrink-0">⚠ CRITICAL</span>
+            <span className="flex-1 truncate">{latestCritical.message}</span>
+            {latestCritical.detail && (
+              <span className="text-red-400 text-xs shrink-0">{latestCritical.detail}</span>
+            )}
+            <button
+              type="button"
+              onClick={() => dispatch(alertDismissed(latestCritical.id))}
+              className="shrink-0 text-red-500 hover:text-red-300 text-lg leading-none transition-colors"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {cloneBanner && (
           <div className="flex items-center gap-3 px-4 py-2 bg-emerald-950 border-b border-emerald-800 text-sm text-emerald-200 shrink-0">
             <span>

@@ -1,10 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { alertsSlice } from "./alertsSlice.ts";
 import { authSlice } from "./authSlice.ts";
 import { createBroadcastChannelMiddleware } from "./channel.ts";
 import { channelsSlice } from "./channelsSlice.ts";
 import { gridPrefsSlice } from "./gridPrefsSlice.ts";
 import { killSwitchSlice } from "./killSwitchSlice.ts";
 import { marketSlice } from "./marketSlice.ts";
+import { alertsMiddleware } from "./middleware/alertsMiddleware.ts";
 import { gatewayMiddleware } from "./middleware/gatewayMiddleware.ts";
 import { observabilityMiddleware } from "./middleware/observabilityMiddleware.ts";
 import { simulationMiddleware } from "./middleware/simulationMiddleware.ts";
@@ -29,6 +31,7 @@ export const store = configureStore({
     channels: channelsSlice.reducer,
     gridPrefs: gridPrefsSlice.reducer,
     killSwitch: killSwitchSlice.reducer,
+    alerts: alertsSlice.reducer,
     [servicesApi.reducerPath]: servicesApi.reducer,
     [obsApi.reducerPath]: obsApi.reducer,
   },
@@ -37,6 +40,7 @@ export const store = configureStore({
       .concat(servicesApi.middleware)
       .concat(obsApi.middleware)
       .concat(gatewayMiddleware)
+      .concat(alertsMiddleware)
       .concat(observabilityMiddleware)
       .concat(simulationMiddleware.middleware)
       .concat(versionWatchMiddleware)

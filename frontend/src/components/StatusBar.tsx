@@ -1,9 +1,11 @@
 import { useSignal } from "@preact/signals-react";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { alertAdded, selectAlertCount, selectCriticalAlerts } from "../store/alertsSlice.ts";
 import { clearUser } from "../store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
 import type { ServiceHealth } from "../types.ts";
+import { AlertDrawer } from "./AlertDrawer.tsx";
 import { ComponentPicker } from "./ComponentPicker.tsx";
 import { KillSwitchButton } from "./KillSwitchButton.tsx";
 import { ServiceStatus } from "./ServiceStatus.tsx";
@@ -49,6 +51,81 @@ function useAllServiceHealth(): ServiceHealth[] {
       lastChecked: null,
     };
   });
+}
+
+// ─── AlertCentreButton ────────────────────────────────────────────────────────
+
+function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
+  const dispatch = useAppDispatch();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const alertCount = useAppSelector(selectAlertCount);
+  const criticalAlerts = useAppSelector(selectCriticalAlerts);
+  const prevServiceStates = useRef<Record<string, string>>({});
+
+  // Detect service state transitions and create alerts
+  useEffect(() => {
+    const prev = prevServiceStates.current;
+    for (const svc of services) {
+      const prevState = prev[svc.name];
+      const curState = svc.state;
+      if (prevState !== undefined && prevState !== "error" && curState === "error") {
+        dispatch(
+          alertAdded({
+            severity: "CRITICAL",
+            source: "service",
+            message: `Service offline: ${svc.name}`,
+            detail: svc.url,
+            ts: Date.now(),
+          })
+        );
+      }
+      if (prevState === "error" && curState === "ok") {
+        dispatch(
+          alertAdded({
+            severity: "INFO",
+            source: "service",
+            message: `Service recovered: ${svc.name}`,
+            ts: Date.now(),
+          })
+        );
+      }
+      prev[svc.name] = curState;
+    }
+  }, [services, dispatch]);
+
+  const hasCritical = criticalAlerts.length > 0;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setDrawerOpen(true)}
+        title="Alert Centre"
+        className="relative flex items-center justify-center w-7 h-7 text-gray-500 hover:text-gray-300 transition-colors"
+      >
+        {/* Bell icon */}
+        <svg
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          className="w-4 h-4"
+        >
+          <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2ZM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.921L8 1.918ZM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6a5 5 0 0 1 10 0c0 .88.32 4.2 1.22 6Z" />
+        </svg>
+        {alertCount > 0 && (
+          <span
+            className={`absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] rounded-full text-[9px] font-bold flex items-center justify-center px-0.5 ${
+              hasCritical ? "bg-red-500 text-white" : "bg-amber-500 text-gray-900"
+            }`}
+          >
+            {alertCount > 99 ? "99+" : alertCount}
+          </span>
+        )}
+      </button>
+      {drawerOpen && <AlertDrawer onClose={() => setDrawerOpen(false)} />}
+    </>
+  );
 }
 
 // ─── AppHeader: brand + feed + services + clock + user ───────────────────────
@@ -121,6 +198,7 @@ export function AppHeader() {
             </svg>
             <span className="sr-only">View source on GitHub</span>
           </a>
+          <AlertCentreButton services={services} />
           <KillSwitchButton />
           <span className="tabular-nums text-gray-500">{time.value}</span>
           {user && (
