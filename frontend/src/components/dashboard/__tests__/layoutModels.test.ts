@@ -22,8 +22,8 @@ function countTabs(model: ReturnType<typeof makeDefaultModel>): number {
 }
 
 describe("STORAGE_KEY", () => {
-  it("STORAGE_KEY equals STORAGE_KEY_PREFIX", () => {
-    expect(STORAGE_KEY).toBe(STORAGE_KEY_PREFIX);
+  it("STORAGE_KEY starts with STORAGE_KEY_PREFIX", () => {
+    expect(STORAGE_KEY).toMatch(new RegExp(`^${STORAGE_KEY_PREFIX}`));
   });
 
   it("is a non-empty string", () => {

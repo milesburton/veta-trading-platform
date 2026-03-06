@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = STORAGE_KEY_PREFIX;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v2`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -19,7 +19,7 @@ export function makeDefaultModel(): IJsonModel {
     layout: {
       type: "row",
       children: [
-        // ── Column 1: Order Ticket + Heatmap (tabset, pinned) ────────────────
+        // ── Column 1: Order Ticket (pinned) ──────────────────────────────────
         {
           type: "tabset",
           weight: 18,
@@ -36,16 +36,6 @@ export function makeDefaultModel(): IJsonModel {
                 panelType: "order-ticket",
                 incoming: 1,
                 pinned: true,
-              } satisfies TabChannelConfig,
-            },
-            {
-              type: "tab",
-              id: "market-heatmap",
-              name: PANEL_TITLES["market-heatmap"],
-              component: "market-heatmap",
-              config: {
-                panelType: "market-heatmap",
-                outgoing: 1,
               } satisfies TabChannelConfig,
             },
           ],
@@ -98,14 +88,14 @@ export function makeDefaultModel(): IJsonModel {
           type: "row",
           weight: 60,
           children: [
-            // Order Blotter + Fill Progress side by side
+            // Order Blotter (top) + Child Orders / Fill Progress (bottom)
             {
               type: "row",
               weight: 30,
               children: [
                 {
                   type: "tabset",
-                  weight: 60,
+                  weight: 55,
                   children: [
                     {
                       type: "tab",
@@ -121,8 +111,19 @@ export function makeDefaultModel(): IJsonModel {
                 },
                 {
                   type: "tabset",
-                  weight: 40,
+                  weight: 45,
                   children: [
+                    {
+                      type: "tab",
+                      id: "child-orders",
+                      name: PANEL_TITLES["child-orders"],
+                      component: "child-orders",
+                      config: {
+                        panelType: "child-orders",
+                        incoming: 2,
+                        outgoing: 3,
+                      } satisfies TabChannelConfig,
+                    },
                     {
                       type: "tab",
                       id: "order-progress",
@@ -172,7 +173,7 @@ export function makeDefaultModel(): IJsonModel {
                   id: "decision-log",
                   name: PANEL_TITLES["decision-log"],
                   component: "decision-log",
-                  config: { panelType: "decision-log", incoming: 2 } satisfies TabChannelConfig,
+                  config: { panelType: "decision-log", incoming: 3 } satisfies TabChannelConfig,
                 },
               ],
             },
