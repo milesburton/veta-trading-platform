@@ -5,8 +5,8 @@ import {
   makeAdminModel,
   makeAlgoModel,
   makeAnalysisModel,
-  makeClearModel,
   makeDefaultModel,
+  makeOverviewModel,
   useDashboard,
 } from "./DashboardLayout.tsx";
 
@@ -69,7 +69,7 @@ const VIEW_PRESETS = [
   { id: "analysis", label: "Analysis", icon: "◈", makeModel: makeAnalysisModel, adminOnly: false },
   { id: "algo", label: "Algo", icon: "⊞", makeModel: makeAlgoModel, adminOnly: false },
   { id: "admin", label: "Mission Control", icon: "⚙", makeModel: makeAdminModel, adminOnly: true },
-  { id: "clear", label: "Clear", icon: "☐", makeModel: makeClearModel, adminOnly: false },
+  { id: "overview", label: "Overview", icon: "⊟", makeModel: makeOverviewModel, adminOnly: false },
 ] as const;
 
 type ViewPresetId = (typeof VIEW_PRESETS)[number]["id"];
@@ -175,28 +175,21 @@ export function WorkspaceSidebar({ activeId, onSelect, onWorkspacesChange, works
         )}
         {VIEW_PRESETS.filter((p) => !p.adminOnly || userRole === "admin").map((preset) => {
           const isActive = activeView.value === preset.id;
-          const isClear = preset.id === "clear";
           return (
             <button
               key={preset.id}
               type="button"
               aria-label={`${preset.label} view`}
               aria-pressed={isActive}
-              title={
-                isClear
-                  ? "Clear layout — remove all panels (add from picker)"
-                  : `${preset.label} — switch to ${preset.label.toLowerCase()} layout`
-              }
+              title={`${preset.label} — switch to ${preset.label.toLowerCase()} layout`}
               onClick={() => {
                 activeView.value = preset.id;
                 resetLayout(preset.makeModel());
               }}
               className={`flex items-center w-full border-b border-gray-800/40 transition-colors ${
-                isClear
-                  ? "text-gray-600 hover:bg-gray-900/60 hover:text-red-400"
-                  : isActive
-                    ? "bg-gray-800 text-emerald-400"
-                    : "text-gray-500 hover:bg-gray-900/60 hover:text-gray-300"
+                isActive
+                  ? "bg-gray-800 text-emerald-400"
+                  : "text-gray-500 hover:bg-gray-900/60 hover:text-gray-300"
               } ${isExpanded ? "gap-2 px-2.5 py-1.5" : "justify-center h-8"}`}
             >
               <span className="text-sm leading-none" aria-hidden="true">
