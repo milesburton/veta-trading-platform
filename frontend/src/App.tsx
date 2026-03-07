@@ -30,13 +30,17 @@ import { useAppDispatch, useAppSelector } from "./store/hooks.ts";
 import { store } from "./store/index.ts";
 import { reportError } from "./store/observabilitySlice.ts";
 
+const TOAST_EPOCH = Date.now();
+
 function ToastHost() {
   const alerts = useAppSelector(selectActiveAlerts);
   const dispatch = useAppDispatch();
   const [shown, setShown] = useState<Set<string>>(new Set());
 
+  // Only toast alerts that arrived after this session started (not loaded from history)
   const toastable = alerts.filter(
-    (a) => (a.severity === "WARNING" || a.severity === "INFO") && !shown.has(a.id)
+    (a) =>
+      (a.severity === "WARNING" || a.severity === "INFO") && !shown.has(a.id) && a.ts >= TOAST_EPOCH
   );
 
   useEffect(() => {
