@@ -130,7 +130,26 @@ export interface IcebergParams {
   visibleQty: number;
 }
 
-export type AlgoParams = LimitParams | TwapParams | PovParams | VwapParams | IcebergParams;
+export interface SniperParams {
+  strategy: "SNIPER";
+  aggressionPct: number;
+  maxVenues: number;
+}
+
+export interface ArrivalPriceParams {
+  strategy: "ARRIVAL_PRICE";
+  urgency: number;
+  maxSlippageBps: number;
+}
+
+export type AlgoParams =
+  | LimitParams
+  | TwapParams
+  | PovParams
+  | VwapParams
+  | IcebergParams
+  | SniperParams
+  | ArrivalPriceParams;
 
 export interface Trade {
   asset: string;

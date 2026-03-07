@@ -22,6 +22,14 @@ const defaultProps = {
   setVwapEnd: vi.fn(),
   icebergVisible: "100",
   setIcebergVisible: vi.fn(),
+  sniperAggression: "80",
+  setSniperAggression: vi.fn(),
+  sniperMaxVenues: "2",
+  setSniperMaxVenues: vi.fn(),
+  apUrgency: "50",
+  setApUrgency: vi.fn(),
+  apMaxSlippageBps: "30",
+  setApMaxSlippageBps: vi.fn(),
 };
 
 test("renders nothing when strategy is LIMIT", () => {
@@ -144,4 +152,81 @@ test("does not render other strategy content when ICEBERG is active", () => {
   expect(screen.queryByText(/TWAP Params/i)).not.toBeInTheDocument();
   expect(screen.queryByText(/POV Params/i)).not.toBeInTheDocument();
   expect(screen.queryByText(/VWAP Params/i)).not.toBeInTheDocument();
+});
+
+test("renders SNIPER params when SNIPER active", () => {
+  render(<StrategyParams {...defaultProps} activeStrategy="SNIPER" />);
+  expect(screen.getByLabelText(/Aggression %/)).toBeInTheDocument();
+  expect(screen.getByLabelText(/Max Venues/)).toBeInTheDocument();
+  expect(screen.getByText(/SNIPER Params/i)).toBeInTheDocument();
+});
+
+test("calls setSniperAggression when aggression input changes", () => {
+  const setSniperAggression = vi.fn();
+  render(
+    <StrategyParams
+      {...defaultProps}
+      activeStrategy="SNIPER"
+      setSniperAggression={setSniperAggression}
+    />
+  );
+  fireEvent.change(screen.getByLabelText(/Aggression %/), { target: { value: "60" } });
+  expect(setSniperAggression).toHaveBeenCalledWith("60");
+});
+
+test("calls setSniperMaxVenues when max venues input changes", () => {
+  const setSniperMaxVenues = vi.fn();
+  render(
+    <StrategyParams
+      {...defaultProps}
+      activeStrategy="SNIPER"
+      setSniperMaxVenues={setSniperMaxVenues}
+    />
+  );
+  fireEvent.change(screen.getByLabelText(/Max Venues/), { target: { value: "3" } });
+  expect(setSniperMaxVenues).toHaveBeenCalledWith("3");
+});
+
+test("renders ARRIVAL_PRICE params when ARRIVAL_PRICE active", () => {
+  render(<StrategyParams {...defaultProps} activeStrategy="ARRIVAL_PRICE" />);
+  expect(screen.getByLabelText(/Urgency/)).toBeInTheDocument();
+  expect(screen.getByLabelText(/Max Slippage Bps/)).toBeInTheDocument();
+  expect(screen.getByText(/ARRIVAL PRICE Params/i)).toBeInTheDocument();
+});
+
+test("calls setApUrgency when urgency input changes", () => {
+  const setApUrgency = vi.fn();
+  render(
+    <StrategyParams {...defaultProps} activeStrategy="ARRIVAL_PRICE" setApUrgency={setApUrgency} />
+  );
+  fireEvent.change(screen.getByLabelText(/Urgency/), { target: { value: "75" } });
+  expect(setApUrgency).toHaveBeenCalledWith("75");
+});
+
+test("calls setApMaxSlippageBps when max slippage input changes", () => {
+  const setApMaxSlippageBps = vi.fn();
+  render(
+    <StrategyParams
+      {...defaultProps}
+      activeStrategy="ARRIVAL_PRICE"
+      setApMaxSlippageBps={setApMaxSlippageBps}
+    />
+  );
+  fireEvent.change(screen.getByLabelText(/Max Slippage Bps/), { target: { value: "50" } });
+  expect(setApMaxSlippageBps).toHaveBeenCalledWith("50");
+});
+
+test("does not render other strategy content when SNIPER is active", () => {
+  render(<StrategyParams {...defaultProps} activeStrategy="SNIPER" />);
+  expect(screen.queryByText(/TWAP Params/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/POV Params/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/ICEBERG Params/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/ARRIVAL PRICE Params/i)).not.toBeInTheDocument();
+});
+
+test("does not render other strategy content when ARRIVAL_PRICE is active", () => {
+  render(<StrategyParams {...defaultProps} activeStrategy="ARRIVAL_PRICE" />);
+  expect(screen.queryByText(/TWAP Params/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/SNIPER Params/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/ICEBERG Params/i)).not.toBeInTheDocument();
 });

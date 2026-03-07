@@ -11,10 +11,12 @@ import { setActiveSide, setActiveStrategy } from "../store/uiSlice.ts";
 import type { OptionQuoteResponse } from "../types/analytics.ts";
 import type {
   AlgoParams,
+  ArrivalPriceParams,
   IcebergParams,
   InstrumentType,
   LimitParams,
   PovParams,
+  SniperParams,
   TwapParams,
   VwapParams,
 } from "../types.ts";
@@ -220,6 +222,10 @@ export function OrderTicket() {
   const vwapStart = useSignal("0");
   const vwapEnd = useSignal("300");
   const icebergVisible = useSignal("100");
+  const sniperAggression = useSignal("80");
+  const sniperMaxVenues = useSignal("2");
+  const apUrgency = useSignal("50");
+  const apMaxSlippageBps = useSignal("30");
 
   // ── Options-mode signals ───────────────────────────────────────────────────
   const optionType = useSignal<"call" | "put">("call");
@@ -369,6 +375,22 @@ export function OrderTicket() {
       const p: IcebergParams = {
         strategy: "ICEBERG",
         visibleQty: Number(icebergVisible.value),
+      };
+      return p;
+    }
+    if (activeStrategy === "SNIPER") {
+      const p: SniperParams = {
+        strategy: "SNIPER",
+        aggressionPct: Number(sniperAggression.value),
+        maxVenues: Number(sniperMaxVenues.value),
+      };
+      return p;
+    }
+    if (activeStrategy === "ARRIVAL_PRICE") {
+      const p: ArrivalPriceParams = {
+        strategy: "ARRIVAL_PRICE",
+        urgency: Number(apUrgency.value),
+        maxSlippageBps: Number(apMaxSlippageBps.value),
       };
       return p;
     }
@@ -533,12 +555,16 @@ export function OrderTicket() {
                 ICEBERG — Hidden quantity reveal
                 {!limits.allowed_strategies.includes("ICEBERG") ? " (not permitted)" : ""}
               </option>
-              <option disabled>── Coming soon ──</option>
-              <option value="SNIPER" disabled>
-                SNIPER — Opportunistic fill at dips
+              <option value="SNIPER" disabled={!limits.allowed_strategies.includes("SNIPER")}>
+                SNIPER — Multi-venue smart routing
+                {!limits.allowed_strategies.includes("SNIPER") ? " (not permitted)" : ""}
               </option>
-              <option value="ARRIVAL_PRICE" disabled>
+              <option
+                value="ARRIVAL_PRICE"
+                disabled={!limits.allowed_strategies.includes("ARRIVAL_PRICE")}
+              >
                 ARRIVAL PRICE — Minimise arrival slippage
+                {!limits.allowed_strategies.includes("ARRIVAL_PRICE") ? " (not permitted)" : ""}
               </option>
             </select>
           </div>
@@ -888,6 +914,22 @@ export function OrderTicket() {
               icebergVisible={icebergVisible.value}
               setIcebergVisible={(v) => {
                 icebergVisible.value = v;
+              }}
+              sniperAggression={sniperAggression.value}
+              setSniperAggression={(v) => {
+                sniperAggression.value = v;
+              }}
+              sniperMaxVenues={sniperMaxVenues.value}
+              setSniperMaxVenues={(v) => {
+                sniperMaxVenues.value = v;
+              }}
+              apUrgency={apUrgency.value}
+              setApUrgency={(v) => {
+                apUrgency.value = v;
+              }}
+              apMaxSlippageBps={apMaxSlippageBps.value}
+              setApMaxSlippageBps={(v) => {
+                apMaxSlippageBps.value = v;
               }}
             />
           </>

@@ -20,6 +20,14 @@ interface Props {
   setVwapEnd: (v: string) => void;
   icebergVisible: string;
   setIcebergVisible: (v: string) => void;
+  sniperAggression: string;
+  setSniperAggression: (v: string) => void;
+  sniperMaxVenues: string;
+  setSniperMaxVenues: (v: string) => void;
+  apUrgency: string;
+  setApUrgency: (v: string) => void;
+  apMaxSlippageBps: string;
+  setApMaxSlippageBps: (v: string) => void;
 }
 
 export function StrategyParams({
@@ -42,6 +50,14 @@ export function StrategyParams({
   setVwapEnd,
   icebergVisible,
   setIcebergVisible,
+  sniperAggression,
+  setSniperAggression,
+  sniperMaxVenues,
+  setSniperMaxVenues,
+  apUrgency,
+  setApUrgency,
+  apMaxSlippageBps,
+  setApMaxSlippageBps,
 }: Props) {
   if (activeStrategy === "TWAP") {
     return (
@@ -196,6 +212,81 @@ export function StrategyParams({
             onChange={(e) => setIcebergVisible(e.target.value)}
             className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
           />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeStrategy === "SNIPER") {
+    return (
+      <div className="border border-gray-800 rounded p-2 space-y-2">
+        <div className="text-[10px] text-gray-600 uppercase tracking-wider">SNIPER Params</div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label htmlFor="sniperAggression" className="block text-xs text-gray-500 mb-1">
+              Aggression %
+            </label>
+            <input
+              id="sniperAggression"
+              type="number"
+              min="1"
+              max="100"
+              value={sniperAggression}
+              onChange={(e) => setSniperAggression(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
+          <div>
+            <label htmlFor="sniperMaxVenues" className="block text-xs text-gray-500 mb-1">
+              Max Venues
+            </label>
+            <input
+              id="sniperMaxVenues"
+              type="number"
+              min="1"
+              max="3"
+              value={sniperMaxVenues}
+              onChange={(e) => setSniperMaxVenues(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeStrategy === "ARRIVAL_PRICE") {
+    return (
+      <div className="border border-gray-800 rounded p-2 space-y-2">
+        <div className="text-[10px] text-gray-600 uppercase tracking-wider">ARRIVAL PRICE Params</div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label htmlFor="apUrgency" className="block text-xs text-gray-500 mb-1">
+              Urgency
+            </label>
+            <input
+              id="apUrgency"
+              type="number"
+              min="1"
+              max="100"
+              value={apUrgency}
+              onChange={(e) => setApUrgency(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
+          <div>
+            <label htmlFor="apMaxSlippageBps" className="block text-xs text-gray-500 mb-1">
+              Max Slippage Bps
+            </label>
+            <input
+              id="apMaxSlippageBps"
+              type="number"
+              min="1"
+              value={apMaxSlippageBps}
+              onChange={(e) => setApMaxSlippageBps(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
         </div>
       </div>
     );

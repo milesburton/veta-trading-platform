@@ -25,22 +25,28 @@ const POV_URL     = "http://localhost:5005";
 const VWAP_URL    = "http://localhost:5006";
 const OBS_URL     = "http://localhost:5007";
 const JOURNAL_URL = "http://localhost:5009";
-const ARCHIVE_URL = "http://localhost:5012";
-const NEWS_URL    = "http://localhost:5013";
+const ARCHIVE_URL  = "http://localhost:5012";
+const NEWS_URL     = "http://localhost:5013";
+const ICEBERG_URL  = "http://localhost:5016";
+const SNIPER_URL   = "http://localhost:5017";
+const AP_URL       = "http://localhost:5018";
 
 const INTERNAL_SERVICES = [
-  { name: "market-sim",  url: MARKET_URL },
-  { name: "ems",         url: EMS_URL    },
-  { name: "oms",         url: OMS_URL    },
-  { name: "limit-algo",  url: LIMIT_URL  },
-  { name: "twap-algo",   url: TWAP_URL   },
-  { name: "pov-algo",    url: POV_URL    },
-  { name: "vwap-algo",   url: VWAP_URL   },
-  { name: "observability", url: OBS_URL  },
-  { name: "journal",     url: JOURNAL_URL },
-  { name: "fix-archive",      url: ARCHIVE_URL },
-  { name: "news-aggregator", url: NEWS_URL    },
-  { name: "gateway",         url: GATEWAY_URL },
+  { name: "market-sim",         url: MARKET_URL  },
+  { name: "ems",                url: EMS_URL     },
+  { name: "oms",                url: OMS_URL     },
+  { name: "limit-algo",         url: LIMIT_URL   },
+  { name: "twap-algo",          url: TWAP_URL    },
+  { name: "pov-algo",           url: POV_URL     },
+  { name: "vwap-algo",          url: VWAP_URL    },
+  { name: "iceberg-algo",       url: ICEBERG_URL },
+  { name: "sniper-algo",        url: SNIPER_URL  },
+  { name: "arrival-price-algo", url: AP_URL      },
+  { name: "observability",      url: OBS_URL     },
+  { name: "journal",            url: JOURNAL_URL },
+  { name: "fix-archive",        url: ARCHIVE_URL },
+  { name: "news-aggregator",    url: NEWS_URL    },
+  { name: "gateway",            url: GATEWAY_URL },
 ];
 
 function timeout(ms: number) { return AbortSignal.timeout(ms); }
@@ -203,10 +209,13 @@ Deno.test("[ems] health endpoint is ok", async () => {
 // ── Algo services: health ─────────────────────────────────────────────────────
 
 for (const [name, url] of [
-  ["limit-algo", LIMIT_URL],
-  ["twap-algo",  TWAP_URL ],
-  ["pov-algo",   POV_URL  ],
-  ["vwap-algo",  VWAP_URL ],
+  ["limit-algo",         LIMIT_URL   ],
+  ["twap-algo",          TWAP_URL    ],
+  ["pov-algo",           POV_URL     ],
+  ["vwap-algo",          VWAP_URL    ],
+  ["iceberg-algo",       ICEBERG_URL ],
+  ["sniper-algo",        SNIPER_URL  ],
+  ["arrival-price-algo", AP_URL      ],
 ] as const) {
   Deno.test(`[algo] ${name} health is ok`, async () => {
     const res = await fetch(`${url}/health`, { signal: timeout(5_000) });
