@@ -1,7 +1,16 @@
+export interface OrderBookLevel { price: number; size: number; }
+export interface OrderBookSnapshot {
+  bids: OrderBookLevel[];
+  asks: OrderBookLevel[];
+  mid: number;
+  ts: number;
+}
+
 export interface MarketTick {
   prices: Record<string, number>;
   volumes: Record<string, number>;
   marketMinute: number;
+  venueBooks?: Record<string, Record<string, OrderBookSnapshot>>;
 }
 
 type TickCallback = (tick: MarketTick) => void;
@@ -80,8 +89,18 @@ export class MarketSimClient {
       "prices" in (data as object) &&
       "volumes" in (data as object)
     ) {
-      const d = data as { prices: Record<string, number>; volumes: Record<string, number>; marketMinute: number };
-      return { prices: d.prices, volumes: d.volumes, marketMinute: d.marketMinute ?? 0 };
+      const d = data as {
+        prices: Record<string, number>;
+        volumes: Record<string, number>;
+        marketMinute: number;
+        venueBooks?: Record<string, Record<string, OrderBookSnapshot>>;
+      };
+      return {
+        prices: d.prices,
+        volumes: d.volumes,
+        marketMinute: d.marketMinute ?? 0,
+        venueBooks: d.venueBooks,
+      };
     }
     return { prices: data as Record<string, number>, volumes: {}, marketMinute: 0 };
   }

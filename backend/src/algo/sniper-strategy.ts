@@ -17,6 +17,7 @@
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { MarketSimClient } from "../lib/marketSimClient.ts";
+import type { MarketTick } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("SNIPER_ALGO_PORT")) || 5_017;
@@ -26,6 +27,8 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 const ALGO = "SNIPER" as const;
 const COOLDOWN_MS = 2_000;
+const VENUES = ["XNAS", "ARCX", "BATS", "EDGX", "IEX", "MEMX", "XNYS"] as const;
+type SorVenueMIC = (typeof VENUES)[number];
 
 console.log(`[sniper-algo] Starting on port ${PORT}`);
 
@@ -37,22 +40,18 @@ const producer = await createProducer("sniper-algo").catch((err) => {
   return null;
 });
 
-// ── Venue definitions ─────────────────────────────────────────────────────────
+// ── Venue price lookup ────────────────────────────────────────────────────────
 
-/** Stable spread offsets per venue relative to mid-price. */
-const VENUE_SPREADS: Record<string, number> = {
-  XNAS: 0.0000,  // reference price
-  ARCX: 0.0008,  // slightly wider spread (worse ask, better bid)
-  BATS: -0.0005, // tighter spread (better ask, worse bid)
-};
-const VENUES = Object.keys(VENUE_SPREADS) as ("XNAS" | "ARCX" | "BATS")[];
-
-/** Compute the effective execution price for a venue on this tick. */
-function venuePrice(mid: number, venue: string, side: "BUY" | "SELL", noise: number): number {
-  const spread = VENUE_SPREADS[venue] ?? 0;
-  // BUY pays the ask: positive spread = worse; SELL receives the bid: positive spread = better
-  const direction = side === "BUY" ? 1 : -1;
-  return mid * (1 + direction * spread + noise);
+function bestVenuePrice(
+  tick: MarketTick,
+  asset: string,
+  venue: string,
+  side: "BUY" | "SELL",
+  fallback: number,
+): number {
+  const book = tick.venueBooks?.[venue]?.[asset];
+  const level = side === "BUY" ? book?.asks[0] : book?.bids[0];
+  return level?.price ?? fallback;
 }
 
 // ── Order state ───────────────────────────────────────────────────────────────
@@ -227,21 +226,22 @@ marketClient.onTick(async (tick) => {
 
     if (!triggered || now < order.cooldownUntil || order.totalRemaining <= 0) continue;
 
-    // Score venues: small per-tick random noise (±0.0003) simulates spread variation
-    const noise = (Math.random() - 0.5) * 0.0006;
     const scored = VENUES
-      .map((v) => ({ venue: v, price: venuePrice(marketPrice, v, order.side, noise) }))
-      .sort((a, b) =>
-        order.side === "BUY" ? a.price - b.price : b.price - a.price
-      );
+      .map((v) => ({ venue: v as SorVenueMIC, price: bestVenuePrice(tick, order.asset, v, order.side, marketPrice) }))
+      .sort((a, b) => order.side === "BUY" ? a.price - b.price : b.price - a.price);
 
     const selected = scored.slice(0, order.maxVenues);
     const routeQty = Math.max(1, Math.round(order.totalRemaining * order.aggressionPct / 100));
-    const perVenueQty = Math.max(1, Math.floor(routeQty / selected.length));
 
     let dispatched = 0;
     for (const { venue, price: effectivePrice } of selected) {
-      const qty = Math.min(perVenueQty, order.totalRemaining - dispatched);
+      const book = tick.venueBooks?.[venue]?.[order.asset];
+      const l1Size = (order.side === "BUY" ? book?.asks[0]?.size : book?.bids[0]?.size) ?? Infinity;
+      const qty = Math.min(
+        Math.max(1, Math.floor(routeQty / selected.length)),
+        Math.floor(l1Size * 0.5),
+        order.totalRemaining - dispatched,
+      );
       if (qty <= 0) break;
 
       order.sliceCount += 1;

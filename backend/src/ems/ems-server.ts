@@ -30,13 +30,22 @@ const FINRA_TAF_PER_SHARE = 0.000119;
 const marketClient = new MarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
-// Simulated execution venues
 const VENUES = [
   { mic: "XNAS", weight: 30 }, { mic: "XNYS", weight: 25 }, { mic: "ARCX", weight: 15 },
   { mic: "BATS", weight: 12 }, { mic: "EDGX", weight: 8  }, { mic: "IEX",  weight: 6  },
   { mic: "MEMX", weight: 4  },
 ] as const;
 type VenueMIC = (typeof VENUES)[number]["mic"];
+
+const VENUE_SPREAD_MULT: Record<string, number> = {
+  XNAS: 1.00, ARCX: 1.08, BATS: 0.95,
+  EDGX: 0.98, IEX:  1.02, MEMX: 0.97, XNYS: 1.05,
+};
+const VENUE_DEPTH_MULT: Record<string, number> = {
+  XNAS: 1.00, ARCX: 0.85, BATS: 0.90,
+  EDGX: 0.75, IEX:  0.95, MEMX: 0.65, XNYS: 1.20,
+};
+const VALID_VENUES = new Set(Object.keys(VENUE_SPREAD_MULT));
 
 const COUNTERPARTIES = ["GSCO","MSCO","JPMS","BAML","CITI","UBSS","DBSI","BARX","MKTX","VIRX","CITD","SUSG","GETC","JNST","TWOC"];
 
@@ -49,9 +58,10 @@ function pickWeightedVenue(): VenueMIC {
 function pickCounterparty(): string {
   return COUNTERPARTIES[Math.floor(Math.random() * COUNTERPARTIES.length)];
 }
-function pickLiquidityFlag(): "MAKER" | "TAKER" | "CROSS" {
+function pickLiquidityFlag(venue: string): "MAKER" | "TAKER" | "CROSS" {
   const r = Math.random();
-  return r < 0.40 ? "MAKER" : r < 0.95 ? "TAKER" : "CROSS";
+  const makerBias = (venue === "BATS" || venue === "EDGX") ? 0.65 : 0.40;
+  return r < makerBias ? "MAKER" : r < 0.95 ? "TAKER" : "CROSS";
 }
 function settlementDate(fromMs = Date.now()): string {
   const d = new Date(fromMs);
@@ -79,6 +89,8 @@ interface ChildOrder {
   quantity: number;
   limitPrice?: number;
   marketPrice?: number;
+  venue?: string;
+  effectivePrice?: number;
   sliceIndex?: number;
   numSlices?: number;
   vwap?: number;
@@ -106,17 +118,24 @@ consumer?.onMessage(async (_topic, raw) => {
     return;
   }
 
+  const venue = (child.venue && VALID_VENUES.has(child.venue))
+    ? child.venue as VenueMIC
+    : pickWeightedVenue();
+
+  const depthMult = VENUE_DEPTH_MULT[venue] ?? 1.0;
+  const spreadMult = VENUE_SPREAD_MULT[venue] ?? 1.0;
   const tickVolume = tick.volumes[child.asset] ?? 1_000;
-  const maxFill = Math.floor(tickVolume * PARTICIPATION_CAP);
+  const maxFill = Math.floor(tickVolume * PARTICIPATION_CAP * depthMult);
   const filledQty = Math.min(child.quantity, maxFill);
   const remainingQty = child.quantity - filledQty;
-  const impactBps = (filledQty / 1_000) * IMPACT_PER_1000;
+  const impactBps = (filledQty / 1_000) * IMPACT_PER_1000 * spreadMult;
   const impactFactor = child.side === "BUY" ? 1 + impactBps / 10_000 : 1 - impactBps / 10_000;
-  const avgFillPrice = parseFloat((midPrice * impactFactor).toFixed(4));
+  const avgFillPrice = parseFloat(
+    (child.effectivePrice ?? midPrice * impactFactor).toFixed(4),
+  );
 
-  const venue = pickWeightedVenue();
   const counterparty = pickCounterparty();
-  const liquidityFlag = pickLiquidityFlag();
+  const liquidityFlag = pickLiquidityFlag(venue);
   const sd = settlementDate();
   const commissionPerShare = liquidityFlag === "MAKER" ? -0.002 : COMMISSION_PER_SHARE;
   const commissionUSD = parseFloat((filledQty * commissionPerShare).toFixed(2));

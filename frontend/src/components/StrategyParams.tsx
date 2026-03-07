@@ -258,7 +258,9 @@ export function StrategyParams({
   if (activeStrategy === "ARRIVAL_PRICE") {
     return (
       <div className="border border-gray-800 rounded p-2 space-y-2">
-        <div className="text-[10px] text-gray-600 uppercase tracking-wider">ARRIVAL PRICE Params</div>
+        <div className="text-[10px] text-gray-600 uppercase tracking-wider">
+          ARRIVAL PRICE Params
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label htmlFor="apUrgency" className="block text-xs text-gray-500 mb-1">

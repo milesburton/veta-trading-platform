@@ -4,6 +4,7 @@ import { advanceRegime, generatePrice, marketData, seedPrice, refreshSectorShock
 import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
 import { intradayVolumeFactor } from "../lib/timeScale.ts";
 import { createProducer } from "../lib/messaging.ts";
+import type { OrderBookLevel, OrderBookSnapshot } from "../lib/marketSimClient.ts";
 
 const PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -113,8 +114,45 @@ function computeTickVolumes(minute: number): Record<string, number> {
   return result;
 }
 
-interface OrderBookLevel { price: number; size: number; }
-interface OrderBookSnapshot { bids: OrderBookLevel[]; asks: OrderBookLevel[]; mid: number; ts: number; }
+const SOR_VENUES = [
+  { mic: "XNAS", spreadMult: 1.00, depthMult: 1.00 },
+  { mic: "ARCX", spreadMult: 1.08, depthMult: 0.85 },
+  { mic: "BATS", spreadMult: 0.95, depthMult: 0.90 },
+  { mic: "EDGX", spreadMult: 0.98, depthMult: 0.75 },
+  { mic: "IEX",  spreadMult: 1.02, depthMult: 0.95 },
+  { mic: "MEMX", spreadMult: 0.97, depthMult: 0.65 },
+  { mic: "XNYS", spreadMult: 1.05, depthMult: 1.20 },
+] as const;
+type SorVenueMIC = (typeof SOR_VENUES)[number]["mic"];
+
+function buildBookForVenue(
+  mid: number,
+  dailyVol: number,
+  dailyVolume: number,
+  spreadMult: number,
+  depthMult: number,
+  now: number,
+): OrderBookSnapshot {
+  const spreadBps = Math.max(3, Math.min(25, dailyVol * 700 * (0.85 + Math.random() * 0.3)));
+  const halfSpread = mid * (spreadBps / 10_000) * spreadMult;
+  const avgLotSize = Math.max(100, Math.round(dailyVolume / 5_000));
+  const LEVELS = 10;
+  const bids: OrderBookLevel[] = [];
+  const asks: OrderBookLevel[] = [];
+  for (let i = 0; i < LEVELS; i++) {
+    const priceStep = halfSpread * (1 + i * 0.6);
+    const decay = Math.max(0.05, 1 - i * 0.09);
+    bids.push({
+      price: parseFloat((mid - priceStep).toFixed(4)),
+      size: Math.max(100, Math.round(avgLotSize * depthMult * decay * (0.5 + Math.random()))),
+    });
+    asks.push({
+      price: parseFloat((mid + priceStep).toFixed(4)),
+      size: Math.max(100, Math.round(avgLotSize * depthMult * decay * (0.5 + Math.random()))),
+    });
+  }
+  return { bids, asks, mid, ts: now };
+}
 
 function computeOrderBook(
   prices: Record<string, number>,
@@ -124,39 +162,23 @@ function computeOrderBook(
   const now = Date.now();
   for (const [symbol, mid] of Object.entries(prices)) {
     const asset = ASSET_MAP.get(symbol);
-    const dailyVol = asset?.volatility ?? 0.02;
-    const dailyVolume = asset?.dailyVolume ?? 1_000_000;
-
-    // Spread: 3–25 bps half-spread, scaled by volatility with per-tick noise
-    const spreadBps = Math.max(3, Math.min(25, dailyVol * 700 * (0.85 + Math.random() * 0.3)));
-    const halfSpread = mid * (spreadBps / 10_000);
-
-    // Typical lot size based on daily volume (100–2000 shares per level near the mid)
-    const avgLotSize = Math.max(100, Math.round(dailyVolume / 5_000));
-
-    const LEVELS = 10;
-    const bids: OrderBookLevel[] = [];
-    const asks: OrderBookLevel[] = [];
-
-    for (let i = 0; i < LEVELS; i++) {
-      // Price levels: tightest near mid, wider gaps further out (exponential-ish spacing)
-      const priceStep = halfSpread * (1 + i * 0.6);
-      const bidPrice = parseFloat((mid - priceStep).toFixed(4));
-      const askPrice = parseFloat((mid + priceStep).toFixed(4));
-
-      // Size: larger near mid, decaying with noise — bids and asks are independent
-      const bidDecay = Math.max(0.05, 1 - i * 0.09);
-      const askDecay = Math.max(0.05, 1 - i * 0.09);
-      const bidSize = Math.max(100, Math.round(avgLotSize * bidDecay * (0.5 + Math.random())));
-      const askSize = Math.max(100, Math.round(avgLotSize * askDecay * (0.5 + Math.random())));
-
-      bids.push({ price: bidPrice, size: bidSize });
-      asks.push({ price: askPrice, size: askSize });
-    }
-
-    book[symbol] = { bids, asks, mid, ts: now };
+    book[symbol] = buildBookForVenue(mid, asset?.volatility ?? 0.02, asset?.dailyVolume ?? 1_000_000, 1.0, 1.0, now);
   }
   return book;
+}
+
+function computeVenueBooks(prices: Record<string, number>): Record<SorVenueMIC, Record<string, OrderBookSnapshot>> {
+  const result = {} as Record<SorVenueMIC, Record<string, OrderBookSnapshot>>;
+  const now = Date.now();
+  for (const venue of SOR_VENUES) {
+    const book: Record<string, OrderBookSnapshot> = {};
+    for (const [symbol, mid] of Object.entries(prices)) {
+      const asset = ASSET_MAP.get(symbol);
+      book[symbol] = buildBookForVenue(mid, asset?.volatility ?? 0.02, asset?.dailyVolume ?? 1_000_000, venue.spreadMult, venue.depthMult, now);
+    }
+    result[venue.mic] = book;
+  }
+  return result;
 }
 
 // Track active WebSocket clients for broadcast
@@ -177,15 +199,17 @@ setInterval(() => {
   Object.keys(marketData).forEach((asset) => generatePrice(asset));
   const volumes = computeTickVolumes(marketMinute);
   const orderBook = computeOrderBook(marketData, volumes);
-  const tick = { prices: { ...marketData }, volumes, marketMinute, orderBook };
+  const venueBooks = computeVenueBooks(marketData);
+  const tick = { prices: { ...marketData }, volumes, marketMinute, orderBook, venueBooks };
   const msg = JSON.stringify({ event: "marketUpdate", data: tick });
 
   for (const socket of clients) {
     try { socket.send(msg); } catch { clients.delete(socket); }
   }
 
-  // Publish once to Redpanda per tick (not per client)
-  producer?.send("market.ticks", tick).catch(() => {});
+  // Publish to Redpanda without venueBooks (too large for default message limits;
+  // algo services consume venue data via the direct WebSocket connection instead)
+  producer?.send("market.ticks", { prices: tick.prices, volumes: tick.volumes, marketMinute: tick.marketMinute, orderBook: tick.orderBook }).catch(() => {});
 }, 250);
 
 console.log(`Market Simulator running on ws://localhost:${PORT}`);
@@ -217,7 +241,8 @@ serve((req) => {
     clients.add(socket);
     const volumes = computeTickVolumes(marketMinute);
     const orderBook = computeOrderBook(marketData, volumes);
-    const snapshot = { prices: { ...marketData }, volumes, marketMinute, orderBook };
+    const venueBooks = computeVenueBooks(marketData);
+    const snapshot = { prices: { ...marketData }, volumes, marketMinute, orderBook, venueBooks };
     socket.send(JSON.stringify({ event: "marketData", data: snapshot }));
   };
 
