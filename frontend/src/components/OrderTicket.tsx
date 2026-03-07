@@ -3,11 +3,20 @@ import { useEffect, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useTradingContext } from "../context/TradingContext.tsx";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
+import { useGetQuoteMutation } from "../store/analyticsApi.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { isOrderBlocked } from "../store/killSwitchSlice.ts";
 import { submitOrderThunk } from "../store/ordersSlice.ts";
 import { setActiveSide, setActiveStrategy } from "../store/uiSlice.ts";
-import type { AlgoParams, LimitParams, PovParams, TwapParams, VwapParams } from "../types.ts";
+import type { OptionQuoteResponse } from "../types/analytics.ts";
+import type {
+  AlgoParams,
+  InstrumentType,
+  LimitParams,
+  PovParams,
+  TwapParams,
+  VwapParams,
+} from "../types.ts";
 import { AssetSelector } from "./AssetSelector";
 import { StrategyParams } from "./StrategyParams";
 
@@ -136,6 +145,27 @@ function OrderPreview({
   );
 }
 
+function OptionPreview({ qty, premium }: { qty: number; premium: number }) {
+  if (qty <= 0 || premium <= 0) return null;
+  const notional = qty * 100 * premium;
+  return (
+    <div className="rounded bg-gray-800/40 border border-gray-700/40 px-2.5 py-1.5 text-[10px] flex items-center justify-between gap-3">
+      <span className="text-gray-500">
+        {qty} contract{qty !== 1 ? "s" : ""}
+      </span>
+      <span className="tabular-nums text-gray-200 font-semibold">
+        $
+        {notional >= 1_000_000
+          ? `${(notional / 1_000_000).toFixed(2)}M`
+          : notional >= 1_000
+            ? `${(notional / 1_000).toFixed(1)}K`
+            : fmt2(notional)}
+        {" notional"}
+      </span>
+    </div>
+  );
+}
+
 const TIF_OPTIONS = [
   { value: "DAY", label: "DAY", title: "Day order — expires at market close" },
   { value: "GTC", label: "GTC", title: "Good Till Cancelled" },
@@ -144,6 +174,14 @@ const TIF_OPTIONS = [
 ] as const;
 
 type TifValue = (typeof TIF_OPTIONS)[number]["value"];
+
+const OPTION_EXPIRIES = [
+  { label: "7d", secs: 7 * 86400 },
+  { label: "14d", secs: 14 * 86400 },
+  { label: "30d", secs: 30 * 86400 },
+  { label: "60d", secs: 60 * 86400 },
+  { label: "90d", secs: 90 * 86400 },
+];
 
 export function OrderTicket() {
   const dispatch = useAppDispatch();
@@ -159,8 +197,16 @@ export function OrderTicket() {
   const activeSide = useAppSelector((s) => s.ui.activeSide);
   const limits = useAppSelector((s) => s.auth.limits);
 
+  const [getQuote] = useGetQuoteMutation();
+
+  // ── Shared signals ─────────────────────────────────────────────────────────
+  const instrumentType = useSignal<InstrumentType>("equity");
   const assetSearch = useSignal("AAPL");
   const quantity = useSignal("100");
+  const submitting = useSignal(false);
+  const feedback = useSignal<{ ok: boolean; msg: string } | null>(null);
+
+  // ── Equity-mode signals ────────────────────────────────────────────────────
   const limitPrice = useSignal("");
   const expiresAt = useSignal("300");
   const tif = useSignal<TifValue>("DAY");
@@ -172,8 +218,15 @@ export function OrderTicket() {
   const vwapDev = useSignal("0.5");
   const vwapStart = useSignal("0");
   const vwapEnd = useSignal("300");
-  const submitting = useSignal(false);
-  const feedback = useSignal<{ ok: boolean; msg: string } | null>(null);
+
+  // ── Options-mode signals ───────────────────────────────────────────────────
+  const optionType = useSignal<"call" | "put">("call");
+  const optionStrike = useSignal("");
+  const optionExpiry = useSignal(String(30 * 86400));
+  const optionQuote = useSignal<OptionQuoteResponse | null>(null);
+  const quoteFetching = useSignal(false);
+
+  const quoteDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const assetInputRef = useRef<HTMLInputElement | null>(null);
@@ -186,7 +239,7 @@ export function OrderTicket() {
   const currentPrice = selectedAsset ? prices[selectedAsset.symbol] : undefined;
 
   const _priceInitialised = useRef(false);
-  if (!_priceInitialised.current && currentPrice) {
+  if (!_priceInitialised.current && currentPrice && instrumentType.value === "equity") {
     _priceInitialised.current = true;
     limitPrice.value = formatPrice(selectedAsset?.symbol ?? "", currentPrice);
   }
@@ -194,7 +247,11 @@ export function OrderTicket() {
   function selectAsset(symbol: string) {
     assetSearch.value = symbol;
     const price = prices[symbol];
-    limitPrice.value = price ? formatPrice(symbol, price) : "";
+    if (instrumentType.value === "equity") {
+      limitPrice.value = price ? formatPrice(symbol, price) : "";
+    }
+    optionQuote.value = null;
+    scheduleQuoteFetch();
   }
 
   const channelAsset = channelIn.selectedAsset;
@@ -205,37 +262,79 @@ export function OrderTicket() {
     }
   }, [channelAsset]);
 
+  function scheduleQuoteFetch() {
+    if (instrumentType.value !== "option") return;
+    if (quoteDebounceRef.current) clearTimeout(quoteDebounceRef.current);
+    quoteDebounceRef.current = setTimeout(async () => {
+      const symbol = assetSearch.value;
+      const strike = Number(optionStrike.value);
+      const expirySecs = Number(optionExpiry.value);
+      if (!symbol || strike <= 0 || expirySecs <= 0) return;
+      quoteFetching.value = true;
+      try {
+        const result = await getQuote({ symbol, optionType: optionType.value, strike, expirySecs });
+        if ("data" in result && result.data) {
+          optionQuote.value = result.data;
+          limitPrice.value = result.data.price.toFixed(4);
+        }
+      } finally {
+        quoteFetching.value = false;
+      }
+    }, 600);
+  }
+
+  function handleSwitchToOptions() {
+    instrumentType.value = "option";
+    dispatch(setActiveStrategy("LIMIT"));
+    optionQuote.value = null;
+    scheduleQuoteFetch();
+  }
+
+  function handleSwitchToEquity() {
+    instrumentType.value = "equity";
+    optionQuote.value = null;
+    const price = currentPrice;
+    if (price) limitPrice.value = formatPrice(selectedAsset?.symbol ?? "", price);
+  }
+
   const qty = Number(quantity.value);
   const lx = Number(limitPrice.value);
+  const isOptions = instrumentType.value === "option";
 
-  // Trading limit violations (shown as warnings before submission)
+  // ── Validation ─────────────────────────────────────────────────────────────
   const limitWarnings: string[] = [];
-  if (qty > 0 && limits.max_order_qty > 0 && qty > limits.max_order_qty) {
-    limitWarnings.push(
-      `Quantity ${qty.toLocaleString()} exceeds your limit of ${limits.max_order_qty.toLocaleString()} shares`
-    );
-  }
-  if (qty > 0 && lx > 0) {
-    const notional = qty * lx;
-    if (notional > limits.max_daily_notional) {
+  if (!isOptions) {
+    if (qty > 0 && limits.max_order_qty > 0 && qty > limits.max_order_qty) {
       limitWarnings.push(
-        `Notional $${notional.toLocaleString(undefined, { maximumFractionDigits: 0 })} exceeds your daily limit of $${limits.max_daily_notional.toLocaleString()}`
+        `Quantity ${qty.toLocaleString()} exceeds your limit of ${limits.max_order_qty.toLocaleString()} shares`
       );
     }
-  }
-  if (!limits.allowed_strategies.includes(activeStrategy)) {
-    limitWarnings.push(`Strategy ${activeStrategy} is not permitted for your account`);
-  }
-  if (isOrderBlocked(blocks, { asset: selectedAsset?.symbol, strategy: activeStrategy, userId })) {
-    limitWarnings.push("⛔ Kill switch active — this order is currently blocked");
+    if (qty > 0 && lx > 0) {
+      const notional = qty * lx;
+      if (notional > limits.max_daily_notional) {
+        limitWarnings.push(
+          `Notional $${notional.toLocaleString(undefined, { maximumFractionDigits: 0 })} exceeds your daily limit of $${limits.max_daily_notional.toLocaleString()}`
+        );
+      }
+    }
+    if (!limits.allowed_strategies.includes(activeStrategy)) {
+      limitWarnings.push(`Strategy ${activeStrategy} is not permitted for your account`);
+    }
+    if (
+      isOrderBlocked(blocks, { asset: selectedAsset?.symbol, strategy: activeStrategy, userId })
+    ) {
+      limitWarnings.push("⛔ Kill switch active — this order is currently blocked");
+    }
   }
 
-  const isValid =
-    qty > 0 &&
-    lx > 0 &&
-    Number(expiresAt.value) > 0 &&
-    selectedAsset !== undefined &&
-    limitWarnings.length === 0;
+  const optionStrikeNum = Number(optionStrike.value);
+  const isValid = isOptions
+    ? qty > 0 && optionStrikeNum > 0 && !!optionQuote.value && !quoteFetching.value
+    : qty > 0 &&
+      lx > 0 &&
+      Number(expiresAt.value) > 0 &&
+      selectedAsset !== undefined &&
+      limitWarnings.length === 0;
 
   function buildAlgoParams(): AlgoParams {
     if (activeStrategy === "TWAP") {
@@ -275,20 +374,45 @@ export function OrderTicket() {
     submitting.value = true;
     feedback.value = null;
 
-    const trade = {
-      asset: selectedAsset.symbol,
-      side: activeSide,
-      quantity: qty,
-      limitPrice: lx,
-      expiresAt: Number(expiresAt.value),
-      algoParams: buildAlgoParams(),
-    };
+    const algoParams: LimitParams = { strategy: "LIMIT" };
+
+    const trade = isOptions
+      ? {
+          asset: selectedAsset.symbol,
+          side: activeSide,
+          quantity: qty,
+          limitPrice: lx,
+          expiresAt: 300,
+          algoParams,
+          instrumentType: "option" as const,
+          optionSpec: {
+            optionType: optionType.value,
+            strike: optionStrikeNum,
+            expirySecs: Number(optionExpiry.value),
+            premium: optionQuote.value?.price,
+          },
+        }
+      : {
+          asset: selectedAsset.symbol,
+          side: activeSide,
+          quantity: qty,
+          limitPrice: lx,
+          expiresAt: Number(expiresAt.value),
+          algoParams: buildAlgoParams(),
+        };
 
     try {
       await dispatch(submitOrderThunk(trade)).unwrap();
-      feedback.value = { ok: true, msg: "Order submitted." };
-      quantity.value = "100";
-      limitPrice.value = currentPrice ? formatPrice(selectedAsset.symbol, currentPrice) : "";
+      if (isOptions) {
+        feedback.value = {
+          ok: false,
+          msg: "Options not supported in this simulation — order rejected",
+        };
+      } else {
+        feedback.value = { ok: true, msg: "Order submitted." };
+        quantity.value = "100";
+        limitPrice.value = currentPrice ? formatPrice(selectedAsset.symbol, currentPrice) : "";
+      }
     } catch {
       feedback.value = { ok: false, msg: "Failed to submit order." };
     } finally {
@@ -318,7 +442,6 @@ export function OrderTicket() {
 
   const symbol = selectedAsset?.symbol ?? "";
 
-  // Admins cannot submit orders — show a read-only notice instead of the form
   if (userRole === "admin") {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
@@ -340,35 +463,76 @@ export function OrderTicket() {
         onSubmit={handleSubmit}
         className="flex flex-col gap-2.5 p-3 overflow-auto flex-1"
       >
-        <div>
-          <label htmlFor="strategy" className="block text-xs text-gray-500 mb-1">
-            Strategy
-          </label>
-          <select
-            id="strategy"
-            aria-label="Execution strategy"
-            title="Choose how the order is executed. LIMIT sends a single order. TWAP/POV/VWAP are algorithmic strategies that slice the order over time."
-            value={activeStrategy}
-            onChange={(e) => dispatch(setActiveStrategy(e.target.value as typeof activeStrategy))}
-            className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
+        {/* Instrument type toggle */}
+        <div className="flex gap-1">
+          <button
+            type="button"
+            aria-pressed={!isOptions}
+            onClick={handleSwitchToEquity}
+            className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
+              !isOptions
+                ? "bg-gray-700 border-gray-500 text-gray-100"
+                : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+            }`}
           >
-            <option value="LIMIT" disabled={!limits.allowed_strategies.includes("LIMIT")}>
-              Limit Order{!limits.allowed_strategies.includes("LIMIT") ? " (not permitted)" : ""}
-            </option>
-            <option value="TWAP" disabled={!limits.allowed_strategies.includes("TWAP")}>
-              TWAP — Time Weighted Avg Price
-              {!limits.allowed_strategies.includes("TWAP") ? " (not permitted)" : ""}
-            </option>
-            <option value="POV" disabled={!limits.allowed_strategies.includes("POV")}>
-              POV — Percentage of Volume
-              {!limits.allowed_strategies.includes("POV") ? " (not permitted)" : ""}
-            </option>
-            <option value="VWAP" disabled={!limits.allowed_strategies.includes("VWAP")}>
-              VWAP — Volume Weighted Avg Price
-              {!limits.allowed_strategies.includes("VWAP") ? " (not permitted)" : ""}
-            </option>
-          </select>
+            Equity
+          </button>
+          <button
+            type="button"
+            aria-pressed={isOptions}
+            onClick={handleSwitchToOptions}
+            className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
+              isOptions
+                ? "bg-gray-700 border-gray-500 text-gray-100"
+                : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+            }`}
+          >
+            Options
+          </button>
         </div>
+
+        {/* Strategy — equity only */}
+        {!isOptions && (
+          <div>
+            <label htmlFor="strategy" className="block text-xs text-gray-500 mb-1">
+              Strategy
+            </label>
+            <select
+              id="strategy"
+              aria-label="Execution strategy"
+              title="Choose how the order is executed. LIMIT sends a single order. TWAP/POV/VWAP are algorithmic strategies that slice the order over time."
+              value={activeStrategy}
+              onChange={(e) => dispatch(setActiveStrategy(e.target.value as typeof activeStrategy))}
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
+            >
+              <option value="LIMIT" disabled={!limits.allowed_strategies.includes("LIMIT")}>
+                Limit Order{!limits.allowed_strategies.includes("LIMIT") ? " (not permitted)" : ""}
+              </option>
+              <option value="TWAP" disabled={!limits.allowed_strategies.includes("TWAP")}>
+                TWAP — Time Weighted Avg Price
+                {!limits.allowed_strategies.includes("TWAP") ? " (not permitted)" : ""}
+              </option>
+              <option value="POV" disabled={!limits.allowed_strategies.includes("POV")}>
+                POV — Percentage of Volume
+                {!limits.allowed_strategies.includes("POV") ? " (not permitted)" : ""}
+              </option>
+              <option value="VWAP" disabled={!limits.allowed_strategies.includes("VWAP")}>
+                VWAP — Volume Weighted Avg Price
+                {!limits.allowed_strategies.includes("VWAP") ? " (not permitted)" : ""}
+              </option>
+              <option disabled>── Coming soon ──</option>
+              <option value="ICEBERG" disabled>
+                ICEBERG — Hidden quantity reveal
+              </option>
+              <option value="SNIPER" disabled>
+                SNIPER — Opportunistic fill at dips
+              </option>
+              <option value="ARRIVAL_PRICE" disabled>
+                ARRIVAL PRICE — Minimise arrival slippage
+              </option>
+            </select>
+          </div>
+        )}
 
         <AssetSelector
           assets={assets}
@@ -381,8 +545,143 @@ export function OrderTicket() {
           prices={prices}
         />
 
-        {symbol && <AssetInfoBar symbol={symbol} />}
+        {/* Equity: asset info bar */}
+        {!isOptions && symbol && <AssetInfoBar symbol={symbol} />}
 
+        {/* Options: option type + strike + expiry */}
+        {isOptions && (
+          <>
+            <fieldset>
+              <legend className="block text-xs text-gray-500 mb-1">Option Type</legend>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  aria-pressed={optionType.value === "call"}
+                  onClick={() => {
+                    optionType.value = "call";
+                    optionQuote.value = null;
+                    scheduleQuoteFetch();
+                  }}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded border transition-colors ${
+                    optionType.value === "call"
+                      ? "bg-emerald-800 border-emerald-600 text-emerald-100"
+                      : "bg-gray-800 border-gray-700 text-gray-400 hover:border-emerald-700"
+                  }`}
+                >
+                  CALL
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={optionType.value === "put"}
+                  onClick={() => {
+                    optionType.value = "put";
+                    optionQuote.value = null;
+                    scheduleQuoteFetch();
+                  }}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded border transition-colors ${
+                    optionType.value === "put"
+                      ? "bg-red-800 border-red-600 text-red-100"
+                      : "bg-gray-800 border-gray-700 text-gray-400 hover:border-red-700"
+                  }`}
+                >
+                  PUT
+                </button>
+              </div>
+            </fieldset>
+
+            <div>
+              <label htmlFor="optionStrike" className="block text-xs text-gray-500 mb-1">
+                Strike
+              </label>
+              <input
+                id="optionStrike"
+                type="number"
+                min="1"
+                step="0.5"
+                aria-label="Option strike price"
+                value={optionStrike.value}
+                onChange={(e) => {
+                  optionStrike.value = e.target.value;
+                  optionQuote.value = null;
+                  scheduleQuoteFetch();
+                }}
+                placeholder={currentPrice ? Math.round(currentPrice).toString() : "e.g. 150"}
+                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="optionExpiry" className="block text-xs text-gray-500 mb-1">
+                Expiry
+              </label>
+              <select
+                id="optionExpiry"
+                aria-label="Option expiry"
+                value={optionExpiry.value}
+                onChange={(e) => {
+                  optionExpiry.value = e.target.value;
+                  optionQuote.value = null;
+                  scheduleQuoteFetch();
+                }}
+                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
+              >
+                {OPTION_EXPIRIES.map((ex) => (
+                  <option key={ex.secs} value={String(ex.secs)}>
+                    {ex.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Premium card */}
+            {quoteFetching.value && (
+              <div className="text-[10px] text-gray-600 text-center py-1">Pricing…</div>
+            )}
+            {optionQuote.value && !quoteFetching.value && (
+              <section
+                className="rounded bg-gray-800/60 border border-gray-700/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1"
+                aria-label="Option premium"
+              >
+                <div className="flex justify-between col-span-2">
+                  <span className="text-gray-500">Premium</span>
+                  <span className="tabular-nums font-semibold text-gray-100">
+                    ${optionQuote.value.price.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Δ Delta</span>
+                  <span className="tabular-nums text-gray-300">
+                    {optionQuote.value.greeks.delta.toFixed(4)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Θ Theta/d</span>
+                  <span className="tabular-nums text-gray-300">
+                    {optionQuote.value.greeks.theta.toFixed(4)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">IV</span>
+                  <span className="tabular-nums text-gray-300">
+                    {(optionQuote.value.impliedVol * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Spot</span>
+                  <span className="tabular-nums text-gray-300">
+                    ${optionQuote.value.spotPrice.toFixed(2)}
+                  </span>
+                </div>
+              </section>
+            )}
+
+            <div className="rounded border border-amber-700/40 bg-amber-950/30 px-2.5 py-1.5 text-[10px] text-amber-500">
+              Algorithmic strategies are not available for options. All option orders use LIMIT.
+            </div>
+          </>
+        )}
+
+        {/* Side */}
         <fieldset>
           <legend className="block text-xs text-gray-500 mb-1">
             Side <span className="text-gray-700">(B / S)</span>
@@ -419,14 +718,26 @@ export function OrderTicket() {
 
         <div>
           <label htmlFor="quantity" className="block text-xs text-gray-500 mb-1">
-            Quantity <span className="text-gray-600">(shares)</span>
+            {isOptions ? (
+              <>
+                Contracts <span className="text-gray-600">(1 contract = 100 shares)</span>
+              </>
+            ) : (
+              <>
+                Quantity <span className="text-gray-600">(shares)</span>
+              </>
+            )}
           </label>
           <input
             id="quantity"
             type="number"
             min="1"
-            aria-label="Order quantity in shares"
-            title="Number of shares to buy or sell"
+            aria-label={isOptions ? "Number of contracts" : "Order quantity in shares"}
+            title={
+              isOptions
+                ? "Number of option contracts (1 contract = 100 shares)"
+                : "Number of shares to buy or sell"
+            }
             value={quantity.value}
             onChange={(e) => {
               quantity.value = e.target.value;
@@ -436,125 +747,137 @@ export function OrderTicket() {
           />
         </div>
 
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label htmlFor="limitPrice" className="text-xs text-gray-500">
-              Limit Price
-            </label>
-            <div className="flex items-center gap-2">
-              {currentPrice && (
-                <>
-                  <span className="text-[10px] text-gray-600 tabular-nums" title="Live mid price">
-                    mid <span className="text-gray-400">{formatPrice(symbol, currentPrice)}</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      limitPrice.value = formatPrice(symbol, currentPrice);
-                    }}
-                    className="text-[10px] text-sky-400 hover:text-sky-300 transition-colors"
-                    title="Snap limit price to current mid"
-                  >
-                    ↺
-                  </button>
-                </>
-              )}
+        {/* Equity: limit price */}
+        {!isOptions && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label htmlFor="limitPrice" className="text-xs text-gray-500">
+                Limit Price
+              </label>
+              <div className="flex items-center gap-2">
+                {currentPrice && (
+                  <>
+                    <span className="text-[10px] text-gray-600 tabular-nums" title="Live mid price">
+                      mid <span className="text-gray-400">{formatPrice(symbol, currentPrice)}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        limitPrice.value = formatPrice(symbol, currentPrice);
+                      }}
+                      className="text-[10px] text-sky-400 hover:text-sky-300 transition-colors"
+                      title="Snap limit price to current mid"
+                    >
+                      ↺
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
+            <input
+              id="limitPrice"
+              type="number"
+              step="0.0001"
+              min="0"
+              value={limitPrice.value}
+              onChange={(e) => {
+                limitPrice.value = e.target.value;
+              }}
+              placeholder="e.g. 150.00"
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
           </div>
-          <input
-            id="limitPrice"
-            type="number"
-            step="0.0001"
-            min="0"
-            value={limitPrice.value}
-            onChange={(e) => {
-              limitPrice.value = e.target.value;
-            }}
-            placeholder="e.g. 150.00"
-            className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
-          />
-        </div>
-
-        {qty > 0 && lx > 0 && (
-          <OrderPreview symbol={symbol} qty={qty} limitPx={lx} side={activeSide} />
         )}
 
-        <div>
-          <span className="block text-xs text-gray-500 mb-1">Time In Force</span>
-          <div className="flex gap-1">
-            {TIF_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                title={opt.title}
-                onClick={() => {
-                  tif.value = opt.value;
+        {/* Previews */}
+        {!isOptions && qty > 0 && lx > 0 && (
+          <OrderPreview symbol={symbol} qty={qty} limitPx={lx} side={activeSide} />
+        )}
+        {isOptions && optionQuote.value && (
+          <OptionPreview qty={qty} premium={optionQuote.value.price} />
+        )}
+
+        {/* Equity: TIF + duration + strategy params */}
+        {!isOptions && (
+          <>
+            <div>
+              <span className="block text-xs text-gray-500 mb-1">Time In Force</span>
+              <div className="flex gap-1">
+                {TIF_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    title={opt.title}
+                    onClick={() => {
+                      tif.value = opt.value;
+                    }}
+                    className={`flex-1 py-1 text-[10px] font-mono rounded border transition-colors ${
+                      tif.value === opt.value
+                        ? "bg-gray-600 border-gray-500 text-gray-100"
+                        : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="expiresAt" className="block text-xs text-gray-500 mb-1">
+                Duration <span className="text-gray-600">(seconds)</span>
+              </label>
+              <input
+                id="expiresAt"
+                type="number"
+                min="1"
+                aria-label="Order duration in seconds"
+                title="How long the order remains active before expiring. 300 = 5 minutes."
+                value={expiresAt.value}
+                onChange={(e) => {
+                  expiresAt.value = e.target.value;
                 }}
-                className={`flex-1 py-1 text-[10px] font-mono rounded border transition-colors ${
-                  tif.value === opt.value
-                    ? "bg-gray-600 border-gray-500 text-gray-100"
-                    : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              />
+            </div>
 
-        <div>
-          <label htmlFor="expiresAt" className="block text-xs text-gray-500 mb-1">
-            Duration <span className="text-gray-600">(seconds)</span>
-          </label>
-          <input
-            id="expiresAt"
-            type="number"
-            min="1"
-            aria-label="Order duration in seconds"
-            title="How long the order remains active before expiring. 300 = 5 minutes."
-            value={expiresAt.value}
-            onChange={(e) => {
-              expiresAt.value = e.target.value;
-            }}
-            className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
-          />
-        </div>
-
-        <StrategyParams
-          activeStrategy={activeStrategy}
-          twapSlices={twapSlices.value}
-          setTwapSlices={(v) => {
-            twapSlices.value = v;
-          }}
-          twapCap={twapCap.value}
-          setTwapCap={(v) => {
-            twapCap.value = v;
-          }}
-          povRate={povRate.value}
-          setPovRate={(v) => {
-            povRate.value = v;
-          }}
-          povMin={povMin.value}
-          setPovMin={(v) => {
-            povMin.value = v;
-          }}
-          povMax={povMax.value}
-          setPovMax={(v) => {
-            povMax.value = v;
-          }}
-          vwapDev={vwapDev.value}
-          setVwapDev={(v) => {
-            vwapDev.value = v;
-          }}
-          vwapStart={vwapStart.value}
-          setVwapStart={(v) => {
-            vwapStart.value = v;
-          }}
-          vwapEnd={vwapEnd.value}
-          setVwapEnd={(v) => {
-            vwapEnd.value = v;
-          }}
-        />
+            <StrategyParams
+              activeStrategy={activeStrategy}
+              twapSlices={twapSlices.value}
+              setTwapSlices={(v) => {
+                twapSlices.value = v;
+              }}
+              twapCap={twapCap.value}
+              setTwapCap={(v) => {
+                twapCap.value = v;
+              }}
+              povRate={povRate.value}
+              setPovRate={(v) => {
+                povRate.value = v;
+              }}
+              povMin={povMin.value}
+              setPovMin={(v) => {
+                povMin.value = v;
+              }}
+              povMax={povMax.value}
+              setPovMax={(v) => {
+                povMax.value = v;
+              }}
+              vwapDev={vwapDev.value}
+              setVwapDev={(v) => {
+                vwapDev.value = v;
+              }}
+              vwapStart={vwapStart.value}
+              setVwapStart={(v) => {
+                vwapStart.value = v;
+              }}
+              vwapEnd={vwapEnd.value}
+              setVwapEnd={(v) => {
+                vwapEnd.value = v;
+              }}
+            />
+          </>
+        )}
 
         {limitWarnings.length > 0 && (
           <div
@@ -572,15 +895,19 @@ export function OrderTicket() {
           type="submit"
           disabled={!isValid || submitting.value}
           title={
-            limitWarnings.length > 0
-              ? `Order blocked: ${limitWarnings[0]}`
-              : isValid
-                ? `Submit order — keyboard shortcut: Ctrl+Enter`
-                : "Fill in all required fields to submit"
+            !isValid && isOptions && !optionQuote.value
+              ? "Enter a strike and wait for the premium to load"
+              : limitWarnings.length > 0
+                ? `Order blocked: ${limitWarnings[0]}`
+                : isValid
+                  ? `Submit order — keyboard shortcut: Ctrl+Enter`
+                  : "Fill in all required fields to submit"
           }
           aria-label={
             isValid
-              ? `Submit ${activeSide} order for ${qty} shares of ${symbol} at $${lx}`
+              ? isOptions
+                ? `Submit ${activeSide} option for ${qty} ${optionType.value === "call" ? "CALL" : "PUT"} on ${symbol} strike ${optionStrikeNum}`
+                : `Submit ${activeSide} order for ${qty} shares of ${symbol} at $${lx}`
               : "Submit order (form incomplete)"
           }
           className={`w-full py-2.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${
@@ -591,7 +918,9 @@ export function OrderTicket() {
         >
           {submitting.value
             ? "Submitting…"
-            : `${activeSide} ${symbol}${qty > 0 && lx > 0 ? ` · $${(qty * lx).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : ""}`}
+            : isOptions
+              ? `${activeSide} ${qty}× ${symbol} ${optionStrikeNum > 0 ? `$${optionStrikeNum}` : ""}${optionType.value.toUpperCase()}${optionQuote.value ? ` · $${(qty * 100 * optionQuote.value.price).toFixed(0)}` : ""}`
+              : `${activeSide} ${symbol}${qty > 0 && lx > 0 ? ` · $${(qty * lx).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : ""}`}
         </button>
 
         <p

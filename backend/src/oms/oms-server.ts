@@ -106,6 +106,7 @@ interface NewOrder {
   clientOrderId?: string;
   userId?: string;
   userRole?: string;
+  instrumentType?: string;
 }
 
 type KillScope = "all" | "user" | "algo" | "market" | "symbol";
@@ -149,6 +150,17 @@ consumer?.onMessage(async (_topic, raw) => {
       clientOrderId: order.clientOrderId,
       userId: order.userId,
       reason: "Missing required fields: asset, side, quantity",
+      ts: Date.now(),
+    }).catch(() => {});
+    return;
+  }
+
+  if (order.instrumentType === "option") {
+    console.warn(`[oms] Option order rejected — options not supported (user=${order.userId})`);
+    await producer?.send("orders.rejected", {
+      clientOrderId: order.clientOrderId,
+      userId: order.userId,
+      reason: "Options trading is not supported in this simulation",
       ts: Date.now(),
     }).catch(() => {});
     return;

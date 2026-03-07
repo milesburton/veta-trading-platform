@@ -92,4 +92,78 @@ export class OrderTicketPage {
   async expectAdminNotice() {
     await expect(this.root.getByText(/Admin account/i)).toBeVisible({ timeout: 5_000 });
   }
+
+  // ── Options mode helpers ───────────────────────────────────────────────────
+
+  /** Click the Options instrument type tab. */
+  async switchToOptions() {
+    await this.root.getByRole("button", { name: "Options" }).click();
+  }
+
+  /** Click the Equity instrument type tab. */
+  async switchToEquity() {
+    await this.root.getByRole("button", { name: "Equity" }).click();
+  }
+
+  /** Enter a strike price and wait for the premium card to appear. */
+  async enterStrikeAndWaitForQuote(strike: number, timeoutMs = 5_000) {
+    const strikeInput = this.root.getByLabel(/Option strike price/i);
+    await strikeInput.click();
+    await strikeInput.fill(String(strike));
+    await expect(this.root.getByLabel("Option premium")).toBeVisible({ timeout: timeoutMs });
+  }
+
+  /** Click the PUT option type toggle button. */
+  async selectPut() {
+    await this.root.getByRole("button", { name: "PUT" }).click();
+  }
+
+  /** Click the CALL option type toggle button. */
+  async selectCall() {
+    await this.root.getByRole("button", { name: "CALL" }).click();
+  }
+
+  /** Click the options-mode submit button (aria-label starts with Submit). */
+  async submitOption() {
+    await this.root.getByRole("button", { name: /^Submit (BUY|SELL)/i }).click({ force: true });
+  }
+
+  /** Assert the option premium card is visible. */
+  async expectPremiumCard(timeoutMs = 3_000) {
+    await expect(this.root.getByLabel("Option premium")).toBeVisible({ timeout: timeoutMs });
+  }
+
+  /** Assert the rejection feedback for options is shown. */
+  async expectOptionRejectionFeedback(timeoutMs = 5_000) {
+    await expect(
+      this.root.getByText(/Options not supported in this simulation/i)
+    ).toBeVisible({ timeout: timeoutMs });
+  }
+
+  /** Assert the options submit button is enabled. */
+  async expectOptionSubmitEnabled(timeoutMs = 3_000) {
+    await expect(
+      this.root.getByRole("button", { name: /^Submit (BUY|SELL)/i })
+    ).toBeEnabled({ timeout: timeoutMs });
+  }
+
+  /** Assert the strategy option with given name is in the DOM and disabled. */
+  async expectStrategyOptionDisabled(namePattern: string | RegExp) {
+    const option = this.root.getByRole("option", { name: namePattern });
+    await expect(option).toBeAttached();
+    await expect(option).toBeDisabled();
+  }
+
+  /** Assert the CALL button has aria-pressed state. */
+  async expectCallPressed(pressed: boolean) {
+    await expect(this.root.getByRole("button", { name: "CALL" })).toHaveAttribute(
+      "aria-pressed",
+      String(pressed)
+    );
+  }
+
+  /** Expose root locator for assertions not covered by helpers. */
+  get locator() {
+    return this.root;
+  }
 }

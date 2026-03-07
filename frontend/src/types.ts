@@ -67,7 +67,7 @@ export const ORDER_STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
   held: "Blocked by an active kill switch — submit disabled",
 };
 
-export type Strategy = "LIMIT" | "TWAP" | "POV" | "VWAP";
+export type Strategy = "LIMIT" | "TWAP" | "POV" | "VWAP" | "ICEBERG" | "SNIPER" | "ARRIVAL_PRICE";
 
 /** FIX Time In Force (tag 59). */
 export type TimeInForce = "DAY" | "GTC" | "IOC" | "FOK" | "GTD";
@@ -76,7 +76,30 @@ export type TimeInForce = "DAY" | "GTC" | "IOC" | "FOK" | "GTD";
 export type LiquidityFlag = "MAKER" | "TAKER" | "CROSS";
 
 /** Execution venue MIC code. */
-export type VenueMIC = "XNAS" | "XNYS" | "XCHI" | "ARCX" | "BATS" | "EDGX" | "IEX" | "MEMX";
+export type VenueMIC =
+  | "XNAS"
+  | "XNYS"
+  | "XCHI"
+  | "ARCX"
+  | "BATS"
+  | "EDGX"
+  | "IEX"
+  | "MEMX"
+  | "XLON"
+  | "XHKG"
+  | "XTSE"
+  | "XASX"
+  | "XPAR"
+  | "XFRA";
+
+export type InstrumentType = "equity" | "option";
+
+export interface OptionSpec {
+  optionType: "call" | "put";
+  strike: number;
+  expirySecs: number;
+  premium?: number;
+}
 
 export interface LimitParams {
   strategy: "LIMIT";
@@ -111,6 +134,8 @@ export interface Trade {
   limitPrice: number;
   expiresAt: number;
   algoParams: AlgoParams;
+  instrumentType?: InstrumentType;
+  optionSpec?: OptionSpec;
 }
 
 export interface ChildOrder {
@@ -172,8 +197,9 @@ export interface OrderRecord {
   settlementDate?: string;
   /** Client order notes / free text. */
   notes?: string;
-  /** ID of the authenticated user who submitted this order (injected by gateway). */
   userId?: string;
+  instrumentType?: InstrumentType;
+  optionSpec?: OptionSpec;
 }
 
 export interface ObsEvent {

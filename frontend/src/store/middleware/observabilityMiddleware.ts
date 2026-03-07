@@ -19,6 +19,13 @@ const SKIP_POST = new Set([
   "news/newsBatchReceived",
 ]);
 
+function shouldSkipPost(actionType: string): boolean {
+  if (SKIP_POST.has(actionType)) return true;
+  if (actionType.startsWith("analyticsApi/")) return true;
+  if (actionType.startsWith("servicesApi/")) return true;
+  return false;
+}
+
 let worker: Worker | null = null;
 
 function getWorker(): Worker | null {
@@ -99,7 +106,7 @@ export const observabilityMiddleware: Middleware = (storeAPI) => {
     }
 
     const actionType = (action as { type: string }).type;
-    if (!SKIP_POST.has(actionType)) {
+    if (!shouldSkipPost(actionType)) {
       const { type: _type, ...rest } = action as { type: string; [k: string]: unknown };
       postEvent(`client.action.${actionType}`, rest);
     }

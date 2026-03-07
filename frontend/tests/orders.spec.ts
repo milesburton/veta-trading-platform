@@ -30,6 +30,123 @@ async function setupWithPrice(page: Parameters<typeof AppPage>[0]["page"]) {
   return app;
 }
 
+const MOCK_QUOTE_RESPONSE = {
+  symbol: "AAPL",
+  optionType: "call",
+  strike: 190,
+  expirySecs: 30 * 86400,
+  spotPrice: AAPL_PRICE,
+  impliedVol: 0.28,
+  price: 4.23,
+  greeks: { delta: 0.42, gamma: 0.03, theta: -0.08, vega: 0.12, rho: 0.05 },
+  computedAt: Date.now(),
+};
+
+async function setupOptionsMode(page: Parameters<typeof AppPage>[0]["page"]) {
+  const app = await setupWithPrice(page);
+
+  // Register analytics quote mock AFTER GatewayMock.attach() so it takes precedence (last-wins).
+  await page.route("/api/gateway/analytics/quote", (route) => {
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_QUOTE_RESPONSE),
+    });
+  });
+
+  const ticket = await app.getOrderTicket();
+  await ticket.switchToOptions();
+  return { app, ticket };
+}
+
+test.describe("Option order ticket", () => {
+  test("Options tab shows CALL/PUT buttons, strike input, and expiry selector", async ({ page }) => {
+    const { ticket } = await setupOptionsMode(page);
+    await expect(ticket.locator.getByRole("button", { name: "CALL" })).toBeVisible();
+    await expect(ticket.locator.getByRole("button", { name: "PUT" })).toBeVisible();
+    await expect(ticket.locator.getByLabel(/Option strike price/i)).toBeVisible();
+    await expect(ticket.locator.getByLabel(/Option expiry/i)).toBeVisible();
+  });
+
+  test("Options tab hides equity-only fields", async ({ page }) => {
+    const { ticket } = await setupOptionsMode(page);
+    await expect(ticket.locator.getByLabel(/Limit Price/i)).not.toBeVisible();
+    await expect(ticket.locator.getByLabel(/Order duration/i)).not.toBeVisible();
+    await expect(ticket.locator.getByLabel(/Execution strategy/i)).not.toBeVisible();
+  });
+
+  test("CALL is pressed by default in options mode", async ({ page }) => {
+    const { ticket } = await setupOptionsMode(page);
+    await ticket.expectCallPressed(true);
+  });
+
+  test("algo strategies notice is shown in options mode", async ({ page }) => {
+    const { ticket } = await setupOptionsMode(page);
+    await expect(
+      ticket.locator.getByText(/Algorithmic strategies are not available for options/i)
+    ).toBeVisible();
+  });
+
+  test("premium card appears after entering a valid strike", async ({ page }) => {
+    const { ticket } = await setupOptionsMode(page);
+    await ticket.enterStrikeAndWaitForQuote(190);
+    await ticket.expectPremiumCard();
+  });
+
+  test("submit button becomes enabled after quote loads", async ({ page }) => {
+    const { ticket } = await setupOptionsMode(page);
+    await ticket.enterStrikeAndWaitForQuote(190);
+    await ticket.expectOptionSubmitEnabled();
+  });
+
+  test("option order submission sends submitOrder WS message with instrumentType=option", async ({ page }) => {
+    const { app, ticket } = await setupOptionsMode(page);
+    await ticket.enterStrikeAndWaitForQuote(190);
+
+    const outboundPromise = app.gateway.nextOutbound("submitOrder");
+    await ticket.submitOption();
+    const msg = await outboundPromise;
+
+    expect(msg.payload.instrumentType).toBe("option");
+    expect((msg.payload.optionSpec as Record<string, unknown>).optionType).toBe("call");
+    expect((msg.payload.optionSpec as Record<string, unknown>).strike).toBe(190);
+  });
+
+  test("option order shows rejection feedback after submission", async ({ page }) => {
+    const { ticket } = await setupOptionsMode(page);
+    await ticket.enterStrikeAndWaitForQuote(190);
+    await ticket.submitOption();
+    await ticket.expectOptionRejectionFeedback();
+  });
+
+  test("switching back to Equity restores equity-only fields", async ({ page }) => {
+    const { ticket } = await setupOptionsMode(page);
+    await ticket.switchToEquity();
+    await expect(ticket.locator.getByLabel(/Limit Price/i)).toBeVisible();
+    await expect(ticket.locator.getByLabel(/Option strike price/i)).not.toBeVisible();
+  });
+});
+
+test.describe("Equity mode stub strategies", () => {
+  test("ICEBERG appears as a disabled option in the strategy selector", async ({ page }) => {
+    const app = await setupWithPrice(page);
+    const ticket = await app.getOrderTicket();
+    await ticket.expectStrategyOptionDisabled(/ICEBERG/i);
+  });
+
+  test("SNIPER appears as a disabled option in the strategy selector", async ({ page }) => {
+    const app = await setupWithPrice(page);
+    const ticket = await app.getOrderTicket();
+    await ticket.expectStrategyOptionDisabled(/SNIPER/i);
+  });
+
+  test("ARRIVAL PRICE appears as a disabled option in the strategy selector", async ({ page }) => {
+    const app = await setupWithPrice(page);
+    const ticket = await app.getOrderTicket();
+    await ticket.expectStrategyOptionDisabled(/ARRIVAL PRICE/i);
+  });
+});
+
 test.describe("Order submission", () => {
   // ── Outbound message ───────────────────────────────────────────────────────
 

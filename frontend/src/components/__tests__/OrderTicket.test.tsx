@@ -14,6 +14,25 @@ import { windowSlice } from "../../store/windowSlice";
 import type { AssetDef, MarketPrices } from "../../types";
 import { OrderTicket } from "../OrderTicket";
 
+const MOCK_QUOTE = {
+  symbol: "AAPL",
+  optionType: "call" as const,
+  strike: 155,
+  expirySecs: 30 * 86400,
+  spotPrice: 155,
+  impliedVol: 0.28,
+  price: 4.23,
+  greeks: { delta: 0.42, gamma: 0.03, theta: -0.08, vega: 0.12, rho: 0.05 },
+  computedAt: Date.now(),
+};
+
+vi.mock("../../store/analyticsApi", () => ({
+  useGetQuoteMutation: () => [
+    vi.fn().mockResolvedValue({ data: MOCK_QUOTE }),
+    { isLoading: false },
+  ],
+}));
+
 const assets: AssetDef[] = [
   { symbol: "AAPL", initialPrice: 150, volatility: 0.02, sector: "Technology" },
   { symbol: "MSFT", initialPrice: 300, volatility: 0.015, sector: "Technology" },
@@ -225,5 +244,150 @@ describe("OrderTicket – Mid button", () => {
 
     fireEvent.click(screen.getByTitle(/Snap limit price to current mid/i));
     expect(priceInput.value).toBe("155.00");
+  });
+});
+
+describe("OrderTicket – instrument type toggle", () => {
+  it("renders Equity and Options tabs", () => {
+    renderTicket();
+    expect(screen.getByRole("button", { name: "Equity" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Options" })).toBeInTheDocument();
+  });
+
+  it("starts in Equity mode with equity fields visible", () => {
+    renderTicket();
+    expect(screen.getByLabelText(/Limit Price/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Strike/i)).not.toBeInTheDocument();
+  });
+
+  it("clicking Options tab shows option-specific fields", () => {
+    renderTicket();
+    fireEvent.click(screen.getByRole("button", { name: "Options" }));
+    expect(screen.getByLabelText(/Option strike price/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Option expiry/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "CALL" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "PUT" })).toBeInTheDocument();
+  });
+
+  it("clicking Options tab hides equity-only fields", () => {
+    renderTicket();
+    fireEvent.click(screen.getByRole("button", { name: "Options" }));
+    expect(screen.queryByLabelText(/Limit Price/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Order duration/i)).not.toBeInTheDocument();
+  });
+
+  it("switching back to Equity restores equity fields", () => {
+    renderTicket();
+    fireEvent.click(screen.getByRole("button", { name: "Options" }));
+    fireEvent.click(screen.getByRole("button", { name: "Equity" }));
+    expect(screen.getByLabelText(/Limit Price/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Option strike price/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("OrderTicket – options mode", () => {
+  function openOptionsMode() {
+    renderTicket();
+    fireEvent.click(screen.getByRole("button", { name: "Options" }));
+  }
+
+  it("shows CALL/PUT toggle in options mode", () => {
+    openOptionsMode();
+    expect(screen.getByRole("button", { name: "CALL" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "PUT" })).toBeInTheDocument();
+  });
+
+  it("CALL button is pressed by default", () => {
+    openOptionsMode();
+    expect(screen.getByRole("button", { name: "CALL" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "PUT" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("clicking PUT toggles the pressed state", () => {
+    openOptionsMode();
+    fireEvent.click(screen.getByRole("button", { name: "PUT" }));
+    expect(screen.getByRole("button", { name: "PUT" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "CALL" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("shows expiry selector with 5 options", () => {
+    openOptionsMode();
+    const select = screen.getByLabelText(/Option expiry/i) as HTMLSelectElement;
+    expect(select.options.length).toBe(5);
+    expect(select.options[0].text).toBe("7d");
+    expect(select.options[4].text).toBe("90d");
+  });
+
+  it("shows algo strategies unavailable notice in options mode", () => {
+    openOptionsMode();
+    expect(
+      screen.getByText(/Algorithmic strategies are not available for options/i)
+    ).toBeInTheDocument();
+  });
+
+  it("strategy selector is not shown in options mode", () => {
+    openOptionsMode();
+    expect(screen.queryByLabelText(/Execution strategy/i)).not.toBeInTheDocument();
+  });
+
+  it("submit button is disabled without a strike", () => {
+    openOptionsMode();
+    const submit = screen.getByRole("button", { name: /Submit order/i });
+    expect(submit).toBeDisabled();
+  });
+
+  it("quantity label changes to Contracts in options mode", () => {
+    openOptionsMode();
+    expect(screen.getByText(/Contracts/i)).toBeInTheDocument();
+  });
+
+  it("premium card appears after quote is fetched", async () => {
+    openOptionsMode();
+    fireEvent.change(screen.getByLabelText(/Option strike price/i), {
+      target: { value: "155" },
+    });
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText("Option premium")).toBeInTheDocument();
+      },
+      { timeout: 2000 }
+    );
+  });
+
+  it("submit button becomes enabled after quote loads with valid strike", async () => {
+    openOptionsMode();
+    fireEvent.change(screen.getByLabelText(/Option strike price/i), {
+      target: { value: "155" },
+    });
+    await waitFor(
+      () => {
+        const submit = screen.getByRole("button", { name: /Submit (BUY|SELL)/i });
+        expect(submit).not.toBeDisabled();
+      },
+      { timeout: 2000 }
+    );
+  });
+});
+
+describe("OrderTicket – stub strategies in equity mode", () => {
+  it("ICEBERG appears as a disabled option in the strategy selector", () => {
+    renderTicket();
+    const icebergOption = screen.getByRole("option", { name: /ICEBERG/i });
+    expect(icebergOption).toBeInTheDocument();
+    expect(icebergOption).toBeDisabled();
+  });
+
+  it("SNIPER appears as a disabled option in the strategy selector", () => {
+    renderTicket();
+    const sniperOption = screen.getByRole("option", { name: /SNIPER/i });
+    expect(sniperOption).toBeInTheDocument();
+    expect(sniperOption).toBeDisabled();
+  });
+
+  it("ARRIVAL_PRICE appears as a disabled option in the strategy selector", () => {
+    renderTicket();
+    const apOption = screen.getByRole("option", { name: /ARRIVAL PRICE/i });
+    expect(apOption).toBeInTheDocument();
+    expect(apOption).toBeDisabled();
   });
 });
