@@ -18,6 +18,8 @@ interface Props {
   setVwapStart: (v: string) => void;
   vwapEnd: string;
   setVwapEnd: (v: string) => void;
+  icebergVisible: string;
+  setIcebergVisible: (v: string) => void;
 }
 
 export function StrategyParams({
@@ -38,6 +40,8 @@ export function StrategyParams({
   setVwapStart,
   vwapEnd,
   setVwapEnd,
+  icebergVisible,
+  setIcebergVisible,
 }: Props) {
   if (activeStrategy === "TWAP") {
     return (
@@ -171,6 +175,27 @@ export function StrategyParams({
               className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeStrategy === "ICEBERG") {
+    return (
+      <div className="border border-gray-800 rounded p-2 space-y-2">
+        <div className="text-[10px] text-gray-600 uppercase tracking-wider">ICEBERG Params</div>
+        <div>
+          <label htmlFor="icebergVisible" className="block text-xs text-gray-500 mb-1">
+            Visible Qty <span className="text-gray-600">(shares per slice)</span>
+          </label>
+          <input
+            id="icebergVisible"
+            type="number"
+            min="1"
+            value={icebergVisible}
+            onChange={(e) => setIcebergVisible(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+          />
         </div>
       </div>
     );

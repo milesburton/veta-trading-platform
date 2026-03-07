@@ -125,7 +125,12 @@ export interface VwapParams {
   endOffsetSecs: number;
 }
 
-export type AlgoParams = LimitParams | TwapParams | PovParams | VwapParams;
+export interface IcebergParams {
+  strategy: "ICEBERG";
+  visibleQty: number;
+}
+
+export type AlgoParams = LimitParams | TwapParams | PovParams | VwapParams | IcebergParams;
 
 export interface Trade {
   asset: string;

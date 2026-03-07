@@ -11,6 +11,7 @@ import { setActiveSide, setActiveStrategy } from "../store/uiSlice.ts";
 import type { OptionQuoteResponse } from "../types/analytics.ts";
 import type {
   AlgoParams,
+  IcebergParams,
   InstrumentType,
   LimitParams,
   PovParams,
@@ -218,6 +219,7 @@ export function OrderTicket() {
   const vwapDev = useSignal("0.5");
   const vwapStart = useSignal("0");
   const vwapEnd = useSignal("300");
+  const icebergVisible = useSignal("100");
 
   // ── Options-mode signals ───────────────────────────────────────────────────
   const optionType = useSignal<"call" | "put">("call");
@@ -360,6 +362,13 @@ export function OrderTicket() {
         maxDeviation: Number(vwapDev.value) / 100,
         startOffsetSecs: Number(vwapStart.value),
         endOffsetSecs: Number(vwapEnd.value),
+      };
+      return p;
+    }
+    if (activeStrategy === "ICEBERG") {
+      const p: IcebergParams = {
+        strategy: "ICEBERG",
+        visibleQty: Number(icebergVisible.value),
       };
       return p;
     }
@@ -520,10 +529,11 @@ export function OrderTicket() {
                 VWAP — Volume Weighted Avg Price
                 {!limits.allowed_strategies.includes("VWAP") ? " (not permitted)" : ""}
               </option>
-              <option disabled>── Coming soon ──</option>
-              <option value="ICEBERG" disabled>
+              <option value="ICEBERG" disabled={!limits.allowed_strategies.includes("ICEBERG")}>
                 ICEBERG — Hidden quantity reveal
+                {!limits.allowed_strategies.includes("ICEBERG") ? " (not permitted)" : ""}
               </option>
+              <option disabled>── Coming soon ──</option>
               <option value="SNIPER" disabled>
                 SNIPER — Opportunistic fill at dips
               </option>
@@ -874,6 +884,10 @@ export function OrderTicket() {
               vwapEnd={vwapEnd.value}
               setVwapEnd={(v) => {
                 vwapEnd.value = v;
+              }}
+              icebergVisible={icebergVisible.value}
+              setIcebergVisible={(v) => {
+                icebergVisible.value = v;
               }}
             />
           </>

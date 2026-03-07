@@ -20,6 +20,8 @@ const defaultProps = {
   setVwapStart: vi.fn(),
   vwapEnd: "300",
   setVwapEnd: vi.fn(),
+  icebergVisible: "100",
+  setIcebergVisible: vi.fn(),
 };
 
 test("renders nothing when strategy is LIMIT", () => {
@@ -116,4 +118,30 @@ test("does not render TWAP or POV content when VWAP is active", () => {
   render(<StrategyParams {...defaultProps} activeStrategy="VWAP" />);
   expect(screen.queryByText(/TWAP Params/i)).not.toBeInTheDocument();
   expect(screen.queryByText(/POV Params/i)).not.toBeInTheDocument();
+});
+
+test("renders ICEBERG params when ICEBERG active", () => {
+  render(<StrategyParams {...defaultProps} activeStrategy="ICEBERG" />);
+  expect(screen.getByLabelText(/Visible Qty/)).toBeInTheDocument();
+  expect(screen.getByText(/ICEBERG Params/i)).toBeInTheDocument();
+});
+
+test("calls setIcebergVisible when visible qty input changes", () => {
+  const setIcebergVisible = vi.fn();
+  render(
+    <StrategyParams
+      {...defaultProps}
+      activeStrategy="ICEBERG"
+      setIcebergVisible={setIcebergVisible}
+    />
+  );
+  fireEvent.change(screen.getByLabelText(/Visible Qty/), { target: { value: "50" } });
+  expect(setIcebergVisible).toHaveBeenCalledWith("50");
+});
+
+test("does not render other strategy content when ICEBERG is active", () => {
+  render(<StrategyParams {...defaultProps} activeStrategy="ICEBERG" />);
+  expect(screen.queryByText(/TWAP Params/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/POV Params/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/VWAP Params/i)).not.toBeInTheDocument();
 });
