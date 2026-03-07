@@ -1,10 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { advisoryApi } from "./advisoryApi.ts";
+import { advisorySlice } from "./advisorySlice.ts";
 import { alertsSlice } from "./alertsSlice.ts";
 import { analyticsApi } from "./analyticsApi.ts";
 import { authSlice } from "./authSlice.ts";
 import { createBroadcastChannelMiddleware } from "./channel.ts";
 import { channelsSlice } from "./channelsSlice.ts";
 import { gridPrefsSlice } from "./gridPrefsSlice.ts";
+import { intelligenceSlice } from "./intelligenceSlice.ts";
 import { killSwitchSlice } from "./killSwitchSlice.ts";
 import { marketDataApi } from "./marketDataApi.ts";
 import { marketSlice } from "./marketSlice.ts";
@@ -18,6 +21,7 @@ import { obsApi } from "./obsApi.ts";
 import { observabilitySlice } from "./observabilitySlice.ts";
 import { ordersSlice } from "./ordersSlice.ts";
 import { servicesApi } from "./servicesApi.ts";
+import { themeSlice } from "./themeSlice.ts";
 import { uiSlice } from "./uiSlice.ts";
 import { windowSlice } from "./windowSlice.ts";
 
@@ -32,12 +36,16 @@ export const store = configureStore({
     windows: windowSlice.reducer,
     channels: channelsSlice.reducer,
     gridPrefs: gridPrefsSlice.reducer,
+    theme: themeSlice.reducer,
     killSwitch: killSwitchSlice.reducer,
     alerts: alertsSlice.reducer,
+    intelligence: intelligenceSlice.reducer,
+    advisory: advisorySlice.reducer,
     [servicesApi.reducerPath]: servicesApi.reducer,
     [obsApi.reducerPath]: obsApi.reducer,
     [analyticsApi.reducerPath]: analyticsApi.reducer,
     [marketDataApi.reducerPath]: marketDataApi.reducer,
+    [advisoryApi.reducerPath]: advisoryApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
@@ -45,6 +53,7 @@ export const store = configureStore({
       .concat(obsApi.middleware)
       .concat(analyticsApi.middleware)
       .concat(marketDataApi.middleware)
+      .concat(advisoryApi.middleware)
       .concat(gatewayMiddleware)
       .concat(alertsMiddleware)
       .concat(observabilityMiddleware)

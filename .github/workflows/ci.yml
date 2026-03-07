@@ -102,20 +102,24 @@ jobs:
           SHA=$(git rev-parse --short HEAD)
           COMMIT_SHA=$SHA MARKET_SIM_PORT=5000 deno run --allow-all backend/src/market-sim/market-sim.ts &
           COMMIT_SHA=$SHA EMS_PORT=5001 deno run --allow-all backend/src/ems/ems-server.ts &
-          COMMIT_SHA=$SHA OMS_PORT=5002 ALGO_TRADER_PORT=5003 TWAP_ALGO_PORT=5004 POV_ALGO_PORT=5005 VWAP_ALGO_PORT=5006 deno run --allow-all backend/src/oms/oms-server.ts &
+          COMMIT_SHA=$SHA OMS_PORT=5002 ALGO_TRADER_PORT=5003 TWAP_ALGO_PORT=5004 POV_ALGO_PORT=5005 VWAP_ALGO_PORT=5006 ICEBERG_ALGO_PORT=5021 SNIPER_ALGO_PORT=5022 ARRIVAL_PRICE_ALGO_PORT=5023 deno run --allow-all backend/src/oms/oms-server.ts &
           COMMIT_SHA=$SHA ALGO_TRADER_PORT=5003 deno run --allow-all backend/src/algo/limit-strategy.ts &
           COMMIT_SHA=$SHA TWAP_ALGO_PORT=5004 deno run --allow-all backend/src/algo/twap-strategy.ts &
           COMMIT_SHA=$SHA POV_ALGO_PORT=5005 deno run --allow-all backend/src/algo/pov-strategy.ts &
           COMMIT_SHA=$SHA VWAP_ALGO_PORT=5006 deno run --allow-all backend/src/algo/vwap-strategy.ts &
+          COMMIT_SHA=$SHA ICEBERG_ALGO_PORT=5021 deno run --allow-all backend/src/algo/iceberg-strategy.ts &
+          COMMIT_SHA=$SHA SNIPER_ALGO_PORT=5022 deno run --allow-all backend/src/algo/sniper-strategy.ts &
+          COMMIT_SHA=$SHA ARRIVAL_PRICE_ALGO_PORT=5023 deno run --allow-all backend/src/algo/arrival-price-strategy.ts &
           COMMIT_SHA=$SHA JOURNAL_PORT=5009 deno run --allow-all backend/src/journal/journal-server.ts &
           COMMIT_SHA=$SHA OBSERVABILITY_PORT=5007 deno run --allow-all backend/src/observability/observability-server.ts &
+          COMMIT_SHA=$SHA USER_SERVICE_PORT=5008 deno run --allow-all backend/src/user-service/user-service.ts &
           COMMIT_SHA=$SHA FIX_ARCHIVE_PORT=5012 deno run --allow-all backend/src/fix/fix-archive.ts &
-          COMMIT_SHA=$SHA NEWS_AGGREGATOR_PORT=5013 deno run --allow-all backend/src/news/news-aggregator.ts &
-          COMMIT_SHA=$SHA GATEWAY_PORT=5011 deno run --allow-all backend/src/gateway/gateway.ts &
+          COMMIT_SHA=$SHA deno run --allow-all backend/src/news/news-aggregator.ts &
+          COMMIT_SHA=$SHA GATEWAY_PORT=5011 JOURNAL_HOST=localhost JOURNAL_PORT=5009 USER_SERVICE_HOST=localhost USER_SERVICE_PORT=5008 deno run --allow-all backend/src/gateway/gateway.ts &
 
       - name: Wait for services to be ready
         run: |
-          for port in 5000 5001 5002 5003 5004 5005 5006 5007 5009 5011 5012 5013; do
+          for port in 5000 5001 5002 5003 5004 5005 5006 5007 5008 5009 5011 5012 5021 5022 5023; do
             for i in $(seq 1 30); do
               curl -sf http://localhost:$port/health && break || sleep 1
             done

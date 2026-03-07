@@ -17,6 +17,7 @@ import {
 } from "../../store/windowSlice.ts";
 import { AdminPanel } from "../AdminPanel.tsx";
 import { AlertsPanel } from "../AlertsPanel.tsx";
+import { AlgoLeaderboardPanel } from "../AlgoLeaderboardPanel.tsx";
 import { AlgoMonitor } from "../AlgoMonitor.tsx";
 import { AnalysisPanel } from "../AnalysisPanel.tsx";
 import { CandlestickChart } from "../CandlestickChart.tsx";
@@ -25,6 +26,8 @@ import type { ContextMenuEntry } from "../ContextMenu.tsx";
 import { ContextMenu } from "../ContextMenu.tsx";
 import { DecisionLog } from "../DecisionLog.tsx";
 import { ExecutionsPanel } from "../ExecutionsPanel.tsx";
+import { InstrumentAnalysisPanel } from "../InstrumentAnalysisPanel.tsx";
+import { LoadTestPanel } from "../LoadTestPanel.tsx";
 import { MarketDataSourcesPanel } from "../MarketDataSourcesPanel.tsx";
 import { MarketDepth } from "../MarketDepth.tsx";
 import { MarketFeedControlPanel } from "../MarketFeedControlPanel.tsx";
@@ -38,7 +41,11 @@ import { OrderBlotter } from "../OrderBlotter.tsx";
 import { OrderProgressPanel } from "../OrderProgressPanel.tsx";
 import { OrderTicket } from "../OrderTicket.tsx";
 import { clearDraggedPanelId, draggedPanelId } from "../panelDragState.ts";
+import { ResearchRadarPanel } from "../ResearchRadarPanel.tsx";
 import { ScenarioMatrixPanel } from "../ScenarioMatrixPanel.tsx";
+import { ServiceHealthPanel } from "../ServiceHealthPanel.tsx";
+import { SignalExplainabilityPanel } from "../SignalExplainabilityPanel.tsx";
+import { ThroughputGaugesPanel } from "../ThroughputGaugesPanel.tsx";
 import { TradeRecommendationPanel } from "../TradeRecommendationPanel.tsx";
 import { DashboardContext, useDashboard } from "./DashboardContext.tsx";
 import { LAYOUT_TEMPLATES } from "./layoutModels.ts";
@@ -656,6 +663,20 @@ export function DashboardLayout() {
           return wrap(<MarketDataSourcesPanel />);
         case "market-feed-control":
           return wrap(<MarketFeedControlPanel />);
+        case "research-radar":
+          return wrap(<ResearchRadarPanel />);
+        case "instrument-analysis":
+          return wrap(<InstrumentAnalysisPanel />);
+        case "signal-explainability":
+          return wrap(<SignalExplainabilityPanel />);
+        case "service-health":
+          return wrap(<ServiceHealthPanel />);
+        case "throughput-gauges":
+          return wrap(<ThroughputGaugesPanel />);
+        case "algo-leaderboard":
+          return wrap(<AlgoLeaderboardPanel />);
+        case "load-test":
+          return wrap(<LoadTestPanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }

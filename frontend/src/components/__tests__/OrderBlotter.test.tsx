@@ -158,30 +158,10 @@ describe("OrderBlotter – child order expansion", () => {
     submittedAt: now,
   };
 
-  it("shows expand button when order has children", () => {
+  it("shows child count badge when order has children", () => {
     const order = makeOrder({ children: [child] });
     renderBlotter([order]);
-    expect(screen.getByText("▸")).toBeInTheDocument();
-  });
-
-  it("expands child rows when expand button is clicked", () => {
-    const order = makeOrder({ children: [child] });
-    renderBlotter([order]);
-
-    fireEvent.click(screen.getByText("▸"));
-
-    expect(screen.getByText(/↳/)).toBeInTheDocument();
-  });
-
-  it("collapses child rows when expand button clicked again", () => {
-    const order = makeOrder({ children: [child] });
-    renderBlotter([order]);
-
-    fireEvent.click(screen.getByText("▸"));
-    expect(screen.getByText("▾")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("▾"));
-    expect(screen.queryByText(/↳/)).not.toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
   });
 
   it("shows avg fill price when children exist", () => {

@@ -22,10 +22,19 @@
 import type { Middleware } from "@reduxjs/toolkit";
 import { queryClient } from "../../lib/queryClient.ts";
 import type { AssetDef, OhlcCandle, OrderBookSnapshot } from "../../types.ts";
+import { advisoryNoteReceived } from "../advisorySlice.ts";
 import { alertAdded } from "../alertsSlice.ts";
 import type { AuthUser, TradingLimits } from "../authSlice.ts";
 import { setUserWithLimits } from "../authSlice.ts";
 import { loadGridPrefs } from "../gridPrefsSlice.ts";
+import {
+  type FeatureVector,
+  featureReceived,
+  recommendationReceived,
+  type Signal,
+  signalReceived,
+  type TradeRecommendation,
+} from "../intelligenceSlice.ts";
 import type { KillBlock } from "../killSwitchSlice.ts";
 import { allBlocksCleared, blockAdded } from "../killSwitchSlice.ts";
 import { candlesSeeded, marketSlice, orderBookUpdated } from "../marketSlice.ts";
@@ -350,6 +359,28 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           case "newsUpdate":
             storeAPI.dispatch(newsItemReceived(msg.data as NewsItem));
             break;
+          case "signalUpdate":
+            storeAPI.dispatch(signalReceived(msg.data as Signal));
+            break;
+          case "featureUpdate":
+            storeAPI.dispatch(featureReceived(msg.data as FeatureVector));
+            break;
+          case "recommendationUpdate":
+            storeAPI.dispatch(recommendationReceived(msg.data as TradeRecommendation));
+            break;
+          case "advisoryUpdate": {
+            const advisoryData = msg.data as {
+              jobId: string;
+              symbol: string;
+              noteId: string;
+              content: string;
+              provider: string;
+              modelId: string;
+              createdAt: number;
+            };
+            storeAPI.dispatch(advisoryNoteReceived(advisoryData));
+            break;
+          }
           case "error":
             console.error("[gateway] Server error:", (msg.data as { message?: string }).message);
             break;

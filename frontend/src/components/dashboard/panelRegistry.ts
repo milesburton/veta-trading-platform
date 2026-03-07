@@ -34,6 +34,13 @@ export const PANEL_IDS = [
   "trade-recommendation",
   "market-data-sources",
   "market-feed-control",
+  "research-radar",
+  "instrument-analysis",
+  "signal-explainability",
+  "service-health",
+  "throughput-gauges",
+  "algo-leaderboard",
+  "load-test",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -61,6 +68,13 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "trade-recommendation": "Trade Recommendations (rule-based)",
   "market-data-sources": "Market Data Sources (provider config)",
   "market-feed-control": "Market Feed Control (feed health)",
+  "research-radar": "Signal Radar (market intelligence)",
+  "instrument-analysis": "Instrument Analysis (feature deep-dive)",
+  "signal-explainability": "Signal Explainability (factor breakdown)",
+  "service-health": "Service Health (system status)",
+  "throughput-gauges": "Throughput (pipeline metrics)",
+  "algo-leaderboard": "Algo Leaderboard (strategy performance)",
+  "load-test": "Load Test (bulk order injection)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -99,6 +113,20 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Configure per-symbol market data sources — switch symbols between synthetic GBM and real-world Alpha Vantage prices",
   "market-feed-control":
     "Feed health and market context — global Alpha Vantage pause/resume, exchange market hours, and symbol source overview",
+  "research-radar":
+    "Signal Radar — all symbols scored by the intelligence pipeline, sized by confidence",
+  "instrument-analysis":
+    "Per-symbol deep-dive — 7 feature bars, live signal gauge, news timeline, and backtest replay overlay",
+  "signal-explainability":
+    "Factor contribution waterfall — how each feature drives the current signal score for the selected symbol",
+  "service-health":
+    "Live health grid for all backend services — status, version, and last-checked age for each service",
+  "throughput-gauges":
+    "Pipeline throughput metrics — orders/min, fills/min, fill rate, and active strategies from live order flow",
+  "algo-leaderboard":
+    "Strategy performance leaderboard — fill rate, average slippage, and total filled quantity per algo in the last 5 minutes",
+  "load-test":
+    "Admin-only bulk order injector — submit configurable volumes of synthetic orders to stress-test the pipeline",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -111,6 +139,10 @@ export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
   "alerts",
   "market-data-sources",
   "market-feed-control",
+  "service-health",
+  "throughput-gauges",
+  "algo-leaderboard",
+  "load-test",
 ]);
 
 export interface TabChannelConfig {
@@ -143,4 +175,11 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "trade-recommendation": { out: false, in: false },
   "market-data-sources": { out: false, in: false },
   "market-feed-control": { out: false, in: false },
+  "research-radar": { out: true, in: false },
+  "instrument-analysis": { out: false, in: true },
+  "signal-explainability": { out: false, in: true },
+  "service-health": { out: false, in: false },
+  "throughput-gauges": { out: false, in: false },
+  "algo-leaderboard": { out: false, in: false },
+  "load-test": { out: false, in: false },
 };

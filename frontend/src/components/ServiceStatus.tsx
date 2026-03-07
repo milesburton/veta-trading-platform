@@ -37,7 +37,7 @@ export function ServiceStatus({ services }: Props) {
   const { consistent, version, lastChecked } = versionSummary(services);
 
   const okCount = services.filter((s) => s.state === "ok").length;
-  const requiredTotal = services.filter((s) => !s.optional).length;
+  const totalCount = services.length;
 
   return (
     <div className="relative">
@@ -52,7 +52,7 @@ export function ServiceStatus({ services }: Props) {
         <span>
           Services{" "}
           <span className="tabular-nums text-gray-500">
-            {okCount}/{requiredTotal}
+            {okCount}/{totalCount}
           </span>
           {consistent && version && (
             <span className="ml-1 font-mono text-gray-600">v{version}</span>

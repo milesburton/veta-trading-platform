@@ -93,6 +93,11 @@ for (const u of SEED_USERS) {
     "INSERT OR IGNORE INTO trading_limits (user_id) VALUES (?);",
     [u.id],
   );
+  // Ensure all seeded users have the full strategy list (idempotent upgrade)
+  db.query(
+    "UPDATE trading_limits SET allowed_strategies = 'LIMIT,TWAP,POV,VWAP,ICEBERG,SNIPER,ARRIVAL_PRICE' WHERE user_id = ?;",
+    [u.id],
+  );
   db.query(
     "INSERT OR IGNORE INTO user_preferences (user_id, data) VALUES (?, '{}');",
     [u.id],

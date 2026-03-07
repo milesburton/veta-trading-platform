@@ -238,8 +238,8 @@ export interface ServiceHealth {
   name: string;
   url: string;
   link?: string;
-  /** If true, an error state does not affect the aggregate status indicator */
   optional?: boolean;
+  alertOnDeployments?: string[];
   state: ServiceState;
   version: string;
   meta: Record<string, unknown>;

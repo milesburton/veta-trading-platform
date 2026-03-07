@@ -21,6 +21,7 @@ import type { Alert } from "./store/alertsSlice.ts";
 import {
   alertDismissed,
   alertsLoaded,
+  purgeServiceAlerts,
   selectActiveAlerts,
   selectCriticalAlerts,
 } from "./store/alertsSlice.ts";
@@ -29,6 +30,7 @@ import { setStatus, setUser } from "./store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "./store/hooks.ts";
 import { store } from "./store/index.ts";
 import { reportError } from "./store/observabilitySlice.ts";
+import { loadTheme } from "./store/themeSlice.ts";
 
 const TOAST_EPOCH = Date.now();
 
@@ -149,6 +151,11 @@ function TradingApp() {
   const criticalAlerts = useAppSelector(selectCriticalAlerts);
   const latestCritical = criticalAlerts[0] ?? null;
   const authStatus = useAppSelector((s) => s.auth.status);
+  const theme = useAppSelector((s) => s.theme.theme);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   const { workspaces, activeId, handleSelect, handleChange, setWorkspaces } = useWorkspaces(userId);
 
@@ -187,6 +194,12 @@ function TradingApp() {
         finalWorkspaces = seed.workspaces;
         finalLayoutsJson = seed.layouts;
         saveWorkspacePrefs({ workspaces: finalWorkspaces, layouts: finalLayoutsJson });
+      } else {
+        const { workspaces: presetWs } = seedWorkspaces(userRole);
+        const lockedIds = new Set(presetWs.filter((w) => w.locked).map((w) => w.id));
+        finalWorkspaces = finalWorkspaces.map((w) =>
+          lockedIds.has(w.id) ? { ...w, locked: true as const } : w
+        );
       }
 
       const loaded: Record<string, Model> = {};
@@ -212,11 +225,20 @@ function TradingApp() {
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;
+    dispatch(loadTheme());
+  }, [authStatus, dispatch]);
+
+  useEffect(() => {
+    dispatch(purgeServiceAlerts());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
     fetch("/api/gateway/alerts", { credentials: "include" })
       .then(async (res) => {
         if (!res.ok) return;
         const data = (await res.json()) as Alert[];
-        dispatch(alertsLoaded(data));
+        dispatch(alertsLoaded(data.filter((a) => a.source !== "service")));
       })
       .catch(() => {});
   }, [authStatus, dispatch]);
@@ -315,7 +337,10 @@ function TradingApp() {
 
   return (
     <TradingProvider>
-      <div className="flex flex-col h-screen bg-gray-950 text-gray-100 overflow-hidden">
+      <div
+        data-theme={theme}
+        className="flex flex-col h-screen bg-gray-950 text-gray-100 overflow-hidden"
+      >
         <AppHeader />
 
         {latestCritical && (

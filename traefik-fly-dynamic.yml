@@ -109,6 +109,55 @@ http:
       service: journal
       priority: 10
 
+    gateway:
+      rule: "PathPrefix(`/api/gateway`)"
+      entryPoints: [web]
+      middlewares: [gateway-strip]
+      service: gateway
+      priority: 15
+
+    gateway-ws:
+      rule: "PathPrefix(`/ws/gateway`)"
+      entryPoints: [web]
+      middlewares: [gateway-ws-strip]
+      service: gateway
+      priority: 15
+
+    iceberg-algo:
+      rule: "PathPrefix(`/api/iceberg-algo`)"
+      entryPoints: [web]
+      middlewares: [iceberg-strip]
+      service: iceberg-algo
+      priority: 10
+
+    sniper-algo:
+      rule: "PathPrefix(`/api/sniper-algo`)"
+      entryPoints: [web]
+      middlewares: [sniper-strip]
+      service: sniper-algo
+      priority: 10
+
+    arrival-price-algo:
+      rule: "PathPrefix(`/api/arrival-price-algo`)"
+      entryPoints: [web]
+      middlewares: [arrival-price-strip]
+      service: arrival-price-algo
+      priority: 10
+
+    analytics:
+      rule: "PathPrefix(`/api/analytics`)"
+      entryPoints: [web]
+      middlewares: [analytics-strip]
+      service: analytics
+      priority: 10
+
+    market-data-service:
+      rule: "PathPrefix(`/api/market-data`)"
+      entryPoints: [web]
+      middlewares: [market-data-strip]
+      service: market-data-service
+      priority: 10
+
     frontend:
       rule: "PathPrefix(`/`)"
       entryPoints: [web]
@@ -161,6 +210,27 @@ http:
     journal-strip:
       stripPrefix:
         prefixes: ["/api/journal"]
+    gateway-strip:
+      stripPrefix:
+        prefixes: ["/api/gateway"]
+    gateway-ws-strip:
+      stripPrefix:
+        prefixes: ["/ws/gateway"]
+    iceberg-strip:
+      stripPrefix:
+        prefixes: ["/api/iceberg-algo"]
+    sniper-strip:
+      stripPrefix:
+        prefixes: ["/api/sniper-algo"]
+    arrival-price-strip:
+      stripPrefix:
+        prefixes: ["/api/arrival-price-algo"]
+    analytics-strip:
+      stripPrefix:
+        prefixes: ["/api/analytics"]
+    market-data-strip:
+      stripPrefix:
+        prefixes: ["/api/market-data"]
 
   services:
     market-sim:
@@ -211,6 +281,30 @@ http:
       loadBalancer:
         servers:
           - url: "http://localhost:5009"
+    gateway:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:5011"
+    iceberg-algo:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:5021"
+    sniper-algo:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:5022"
+    arrival-price-algo:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:5023"
+    analytics:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:5014"
+    market-data-service:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:5015"
     frontend:
       loadBalancer:
         servers:

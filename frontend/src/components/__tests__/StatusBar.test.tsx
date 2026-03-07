@@ -9,6 +9,7 @@ import { killSwitchSlice } from "../../store/killSwitchSlice";
 import { marketSlice } from "../../store/marketSlice";
 import { ordersSlice } from "../../store/ordersSlice";
 import { servicesApi } from "../../store/servicesApi";
+import { themeSlice } from "../../store/themeSlice";
 import { uiSlice } from "../../store/uiSlice";
 import { windowSlice } from "../../store/windowSlice";
 import { DashboardContext, DEFAULT_LAYOUT } from "../DashboardLayout";
@@ -36,6 +37,7 @@ function makeStore(connected: boolean) {
       windows: windowSlice.reducer,
       killSwitch: killSwitchSlice.reducer,
       alerts: alertsSlice.reducer,
+      theme: themeSlice.reducer,
       [servicesApi.reducerPath]: servicesApi.reducer,
     },
     middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(servicesApi.middleware),

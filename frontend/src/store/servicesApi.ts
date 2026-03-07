@@ -1,14 +1,20 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { ServiceHealth } from "../types.ts";
 
-// Derive base from current origin so the app works behind Traefik without env vars.
-// VITE_* overrides remain available for non-standard deployments.
 const _origin = typeof window !== "undefined" ? window.location.origin : "";
 
 const _traefik =
   import.meta.env.VITE_TRAEFIK_DASHBOARD_URL ?? `${_origin.replace(/:(\d+)$/, "")}:8888`;
 
-const SERVICES: { name: string; url: string; link?: string; optional?: boolean }[] = [
+export const DEPLOYMENT = (import.meta.env.VITE_DEPLOYMENT as string | undefined) ?? "local";
+
+const SERVICES: {
+  name: string;
+  url: string;
+  link?: string;
+  optional?: boolean;
+  alertOnDeployments?: string[];
+}[] = [
   {
     name: "Market Sim",
     url: `${import.meta.env.VITE_MARKET_HTTP_URL ?? `${_origin}/api/market-sim`}/health`,
@@ -61,6 +67,7 @@ const SERVICES: { name: string; url: string; link?: string; optional?: boolean }
     url: `${_traefik}/api/overview`,
     link: _traefik,
     optional: true,
+    alertOnDeployments: ["fly"],
   },
   {
     name: "User Service",
@@ -84,7 +91,13 @@ export const servicesApi = createApi({
   endpoints: (builder) => ({
     getServiceHealth: builder.query<
       ServiceHealth,
-      { name: string; url: string; link?: string; optional?: boolean }
+      {
+        name: string;
+        url: string;
+        link?: string;
+        optional?: boolean;
+        alertOnDeployments?: string[];
+      }
     >({
       query: ({ url }) => ({ url }),
       transformResponse: (body: Record<string, unknown>, _meta, arg) => {
@@ -95,6 +108,7 @@ export const servicesApi = createApi({
           url: arg.url,
           link: arg.link,
           optional: arg.optional,
+          alertOnDeployments: arg.alertOnDeployments,
           state: "ok" as const,
           version: String(version ?? "—"),
           meta: meta as Record<string, unknown>,
@@ -106,6 +120,7 @@ export const servicesApi = createApi({
         url: arg.url,
         link: arg.link,
         optional: arg.optional,
+        alertOnDeployments: arg.alertOnDeployments,
         state: "error" as const,
         version: "—",
         meta: {},

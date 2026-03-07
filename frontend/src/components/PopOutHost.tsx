@@ -130,10 +130,14 @@ export function PopOutHost({
   panelType: string;
   layoutKey: string;
 }) {
+  const theme = useAppSelector((s) => s.theme.theme);
   const PanelComponent = PANEL_MAP[panelType];
   if (!PanelComponent) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-950 text-gray-500 text-sm">
+      <div
+        data-theme={theme}
+        className="flex items-center justify-center h-screen bg-gray-950 text-gray-500 text-sm"
+      >
         Unknown panel: {panelType}
       </div>
     );
@@ -143,7 +147,7 @@ export function PopOutHost({
 
   return (
     <ChannelContext.Provider value={channelCtx}>
-      <div className="h-screen bg-gray-950 text-gray-100 overflow-hidden">
+      <div data-theme={theme} className="h-screen bg-gray-950 text-gray-100 overflow-hidden">
         <PanelComponent />
       </div>
     </ChannelContext.Provider>

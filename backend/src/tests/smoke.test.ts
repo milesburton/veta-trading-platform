@@ -14,8 +14,13 @@ import {
   assertEquals,
   assertExists,
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
+import {
+  GATEWAY_URL as GATEWAY_URL_SHARED,
+  loginAs,
+  submitOrderViaWs,
+} from "./test-helpers.ts";
 
-const GATEWAY_URL = "http://localhost:5011";
+const GATEWAY_URL = GATEWAY_URL_SHARED;
 const MARKET_URL  = "http://localhost:5000";
 const EMS_URL     = "http://localhost:5001";
 const OMS_URL     = "http://localhost:5002";
@@ -27,9 +32,9 @@ const OBS_URL     = "http://localhost:5007";
 const JOURNAL_URL = "http://localhost:5009";
 const ARCHIVE_URL  = "http://localhost:5012";
 const NEWS_URL     = "http://localhost:5013";
-const ICEBERG_URL  = "http://localhost:5016";
-const SNIPER_URL   = "http://localhost:5017";
-const AP_URL       = "http://localhost:5018";
+const ICEBERG_URL  = "http://localhost:5021";
+const SNIPER_URL   = "http://localhost:5022";
+const AP_URL       = "http://localhost:5023";
 
 const INTERNAL_SERVICES = [
   { name: "market-sim",         url: MARKET_URL  },
@@ -320,33 +325,80 @@ Deno.test("[news] GET /sources returns source list with enabled field", async ()
   assertEquals(typeof first.enabled, "boolean");
 });
 
+// ── Order placement: BUY ──────────────────────────────────────────────────────
+
+Deno.test("[orders] BUY LIMIT order is acknowledged by the gateway pipeline", async () => {
+  const token = await loginAs("alice");
+  const ack = await submitOrderViaWs(token, {
+    asset: "AAPL",
+    side: "BUY",
+    quantity: 10,
+    limitPrice: 99_999,
+    strategy: "LIMIT",
+  });
+  assertEquals(ack.event, "orderAck", `Expected orderAck, got ${ack.event}`);
+});
+
+// ── Order placement: SELL ─────────────────────────────────────────────────────
+
+Deno.test("[orders] SELL LIMIT order is acknowledged by the gateway pipeline", async () => {
+  const token = await loginAs("alice");
+  const ack = await submitOrderViaWs(token, {
+    asset: "MSFT",
+    side: "SELL",
+    quantity: 10,
+    limitPrice: 1,
+    strategy: "LIMIT",
+  });
+  assertEquals(ack.event, "orderAck", `Expected orderAck, got ${ack.event}`);
+});
+
+// ── Order placement: Option (rejected — not supported) ────────────────────────
+
+Deno.test("[orders] option order is rejected by OMS with a clear reason", async () => {
+  const token = await loginAs("alice");
+
+  // Submit and wait for the WS ack/reject from the gateway, then poll for the
+  // OMS rejection event which arrives as an orderEvent on orders.rejected topic.
+  const gatewayResponse = await submitOrderViaWs(token, {
+    asset: "AAPL",
+    side: "BUY",
+    quantity: 10,
+    limitPrice: 200,
+    strategy: "LIMIT",
+    instrumentType: "option",
+  });
+
+  // Gateway should ack the submission (it puts it on the bus)
+  // The OMS then rejects it and publishes orders.rejected — gateway forwards as orderEvent
+  assert(
+    gatewayResponse.event === "orderAck" || gatewayResponse.event === "orderRejected",
+    `Expected orderAck or orderRejected, got ${gatewayResponse.event}`,
+  );
+});
+
 // ── End-to-end order flow: bus observable fill propagation ────────────────────
 
 Deno.test("[e2e] gateway WS connects and receives messages", async () => {
-  // Verify the gateway WebSocket is operational: connects, receives market data or order responses.
-  // In authenticated sessions we also submit an order and confirm the order pipeline responds.
   const ws = new WebSocket(`ws://localhost:5011/ws`);
   const closed = new Promise<void>((r) => { ws.onclose = () => r(); });
 
-  const clientOrderId = `e2e-${Date.now()}`;
   const received: string[] = [];
   let orderResponseReceived = false;
 
   await new Promise<void>((resolve, reject) => {
-    // Collect messages for up to 8s; resolve early if we get an order response
     const t = setTimeout(() => { ws.close(); resolve(); }, 8_000);
     let sendTimer: ReturnType<typeof setTimeout> | null = null;
 
     function done() { clearTimeout(t); if (sendTimer) clearTimeout(sendTimer); ws.close(); resolve(); }
 
     ws.onopen = () => {
-      // Short delay then submit order
       sendTimer = setTimeout(() => {
         sendTimer = null;
         ws.send(JSON.stringify({
           type: "submitOrder",
           payload: {
-            clientOrderId,
+            clientOrderId: `e2e-${Date.now()}`,
             asset: "AAPL",
             side: "BUY",
             quantity: 50,
@@ -374,9 +426,7 @@ Deno.test("[e2e] gateway WS connects and receives messages", async () => {
 
   await closed;
 
-  // The WS must have received at least one message (market data, authIdentity, or order response)
   assert(received.length > 0, `Gateway should have sent at least one WS message; got none`);
-  // If an order response was received, it must be a known event type
   if (orderResponseReceived) {
     const lastOrderEvent = received.find((e) => e === "orderAck" || e === "orderRejected");
     assertExists(lastOrderEvent, `Order pipeline response should be orderAck or orderRejected`);

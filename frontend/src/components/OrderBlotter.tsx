@@ -8,7 +8,7 @@ import { saveGridPrefs, setSort } from "../store/gridPrefsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { orderPatched } from "../store/ordersSlice.ts";
 import type { ColDef } from "../types/gridPrefs.ts";
-import type { ChildOrder, LiquidityFlag, OrderRecord, OrderStatus } from "../types.ts";
+import type { ChildOrder, OrderRecord, OrderStatus } from "../types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
 import { applyCfRules } from "../utils/gridFilter.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
@@ -27,12 +27,6 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
   rejected: "bg-red-950/60 text-red-400 border border-red-800/50",
   cancelled: "bg-orange-950/50 text-orange-400 border border-orange-800/50",
   held: "bg-yellow-950/50 text-yellow-400 border border-yellow-700/50",
-};
-
-const LIQ_STYLES: Record<LiquidityFlag, string> = {
-  MAKER: "text-emerald-500",
-  TAKER: "text-amber-500",
-  CROSS: "text-sky-500",
 };
 
 const BLOTTER_COLS: ColDef[] = [
@@ -89,64 +83,6 @@ function totalCommission(children: ChildOrder[]): string {
   return `$${total.toFixed(2)}`;
 }
 
-function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
-  return (
-    <>
-      {rows.map((child) => (
-        <tr key={child.id} className="border-b border-gray-800/20 bg-gray-900/40">
-          <td className="pl-8 pr-3 py-1 text-gray-600 tabular-nums whitespace-nowrap">
-            {formatTime(child.submittedAt)}
-          </td>
-          <td className="px-3 py-1 text-gray-600 font-mono">↳ {child.id.slice(0, 8)}</td>
-          <td className="px-3 py-1 text-gray-500">{asset}</td>
-          <td
-            className={`px-3 py-1 text-xs ${child.side === "BUY" ? "text-emerald-600" : "text-red-600"}`}
-          >
-            {child.side}
-          </td>
-          <td className="px-3 py-1 text-right tabular-nums text-gray-500">
-            {child.quantity.toFixed(1)}
-          </td>
-          <td className="px-3 py-1 text-right tabular-nums text-gray-500">
-            {formatPrice(asset, child.avgFillPrice ?? child.limitPrice)}
-          </td>
-          <td className="px-3 py-1 text-gray-600">
-            {child.venue ? (
-              <span className="text-[9px] font-mono text-gray-500 bg-gray-800 rounded px-1">
-                {child.venue}
-              </span>
-            ) : (
-              "child"
-            )}
-          </td>
-          <td className="px-3 py-1">
-            <span
-              className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase ${STATUS_STYLES[child.status]}`}
-              title={ORDER_STATUS_DESCRIPTIONS[child.status]}
-            >
-              {child.status}
-            </span>
-          </td>
-          <td className="px-3 py-1 text-gray-600 font-mono text-[9px]">
-            {child.counterparty ?? "—"}
-          </td>
-          <td
-            className={`px-3 py-1 text-[9px] font-semibold ${child.liquidityFlag ? LIQ_STYLES[child.liquidityFlag] : "text-gray-600"}`}
-          >
-            {child.liquidityFlag ?? "—"}
-          </td>
-          <td className="px-3 py-1 text-right tabular-nums text-gray-500 text-[9px]">
-            {child.commissionUSD !== undefined ? `$${child.commissionUSD.toFixed(2)}` : "—"}
-          </td>
-          <td className="px-3 py-1 text-gray-600 font-mono text-[9px]">
-            {child.settlementDate ?? "—"}
-          </td>
-        </tr>
-      ))}
-    </>
-  );
-}
-
 export function OrderBlotter() {
   const { cfRules } = useAppSelector((s) => s.gridPrefs.orderBlotter);
   const { containerRef, limit } = useContainerLimit();
@@ -155,7 +91,6 @@ export function OrderBlotter() {
     total,
     isLoading,
   } = useGridQuery<OrderRecord>("orderBlotter", 0, limit);
-  const expanded = useSignal<Set<string>>(new Set());
   const selectedOrderId = useSignal<string | null>(null);
   const showCfEditor = useSignal(false);
   const filterField = useSignal<string | null>(null);
@@ -180,7 +115,7 @@ export function OrderBlotter() {
 
   useEffect(() => {
     if (selectedOrderId.value === null && displayOrders.length > 0) {
-      const latest = displayOrders[displayOrders.length - 1];
+      const latest = displayOrders[0];
       selectedOrderId.value = latest.id;
       broadcast({ selectedOrderId: latest.id });
     }
@@ -190,13 +125,6 @@ export function OrderBlotter() {
     const next = selectedOrderId.value === id ? null : id;
     selectedOrderId.value = next;
     broadcast({ selectedOrderId: next });
-  }
-
-  function toggleExpand(id: string) {
-    const next = new Set(expanded.value);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    expanded.value = next;
   }
 
   function openOrderCtxMenu(e: React.MouseEvent, orderId: string) {
@@ -426,26 +354,14 @@ export function OrderBlotter() {
                                 key={col.key}
                                 className={`px-3 py-1.5 text-gray-500 font-mono ${cellCls}`}
                               >
-                                {order.children.length > 0 ? (
-                                  <button
-                                    type="button"
-                                    aria-expanded={expanded.value.has(order.id)}
-                                    aria-label={`${expanded.value.has(order.id) ? "Collapse" : "Expand"} ${order.children.length} child executions`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggleExpand(order.id);
-                                    }}
-                                    className="flex items-center gap-1 hover:text-gray-300 transition-colors"
-                                  >
-                                    <span>{expanded.value.has(order.id) ? "▾" : "▸"}</span>
-                                    {order.id.slice(0, 8)}
-                                    <span className="text-gray-700 ml-0.5">
-                                      ({order.children.length})
+                                <span className="flex items-center gap-1.5">
+                                  {order.id.slice(0, 8)}
+                                  {order.children.length > 0 && (
+                                    <span className="text-[9px] text-gray-600 bg-gray-800 rounded px-1 tabular-nums">
+                                      {order.children.length}
                                     </span>
-                                  </button>
-                                ) : (
-                                  order.id.slice(0, 8)
-                                )}
+                                  )}
+                                </span>
                               </td>
                             );
                           case "asset":
@@ -548,9 +464,6 @@ export function OrderBlotter() {
                         }
                       })}
                     </tr>
-                    {expanded.value.has(order.id) && order.children.length > 0 && (
-                      <ChildRows rows={order.children} asset={order.asset} />
-                    )}
                   </Fragment>
                 );
               })}

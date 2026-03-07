@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v6`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v8`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -19,7 +19,6 @@ export function makeDefaultModel(): IJsonModel {
     layout: {
       type: "row",
       children: [
-        // ── Column 1: Order Ticket (pinned) ──────────────────────────────────
         {
           type: "tabset",
           weight: 18,
@@ -40,7 +39,6 @@ export function makeDefaultModel(): IJsonModel {
             },
           ],
         },
-        // ── Column 2: Market Ladder (2/3) + Candle Chart (1/3) ───────────────
         {
           type: "row",
           weight: 22,
@@ -83,8 +81,6 @@ export function makeDefaultModel(): IJsonModel {
             },
           ],
         },
-        // ── Column 3: Orders cake — vertical stack, all on channel 1 ─────────
-        // Blotter (ch1 out) → Child Orders / Algo / Decision Log (ch1 in)
         {
           type: "row",
           weight: 46,
@@ -150,7 +146,6 @@ export function makeDefaultModel(): IJsonModel {
             },
           ],
         },
-        // ── Column 4: Order Progress sidebar (full height) ────────────────────
         {
           type: "tabset",
           weight: 14,
@@ -303,7 +298,6 @@ export function makeAnalysisModel(): IJsonModel {
     layout: {
       type: "row",
       children: [
-        // ── Left: Market Ladder ───────────────────────────────────────────────
         {
           type: "tabset",
           weight: 25,
@@ -317,7 +311,6 @@ export function makeAnalysisModel(): IJsonModel {
             },
           ],
         },
-        // ── Centre: Chart (top) + Market Depth (bottom) ───────────────────────
         {
           type: "row",
           weight: 45,
@@ -350,7 +343,6 @@ export function makeAnalysisModel(): IJsonModel {
             },
           ],
         },
-        // ── Right: News & Analytics ───────────────────────────────────────────
         {
           type: "tabset",
           weight: 30,
@@ -390,6 +382,88 @@ export function makeAnalysisModel(): IJsonModel {
   };
 }
 
+export function makeResearchModel(): IJsonModel {
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        {
+          type: "tabset",
+          weight: 35,
+          children: [
+            {
+              type: "tab",
+              id: "research-radar",
+              name: PANEL_TITLES["research-radar"],
+              component: "research-radar",
+              config: { panelType: "research-radar", outgoing: 1 } satisfies TabChannelConfig,
+            },
+          ],
+        },
+        {
+          type: "row",
+          weight: 40,
+          children: [
+            {
+              type: "tabset",
+              weight: 60,
+              children: [
+                {
+                  type: "tab",
+                  id: "instrument-analysis",
+                  name: PANEL_TITLES["instrument-analysis"],
+                  component: "instrument-analysis",
+                  config: {
+                    panelType: "instrument-analysis",
+                    incoming: 1,
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 40,
+              children: [
+                {
+                  type: "tab",
+                  id: "candle-chart",
+                  name: PANEL_TITLES["candle-chart"],
+                  component: "candle-chart",
+                  config: { panelType: "candle-chart", incoming: 1 } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "tabset",
+          weight: 25,
+          children: [
+            {
+              type: "tab",
+              id: "signal-explainability",
+              name: PANEL_TITLES["signal-explainability"],
+              component: "signal-explainability",
+              config: {
+                panelType: "signal-explainability",
+                incoming: 1,
+              } satisfies TabChannelConfig,
+            },
+            {
+              type: "tab",
+              id: "news",
+              name: PANEL_TITLES.news,
+              component: "news",
+              config: { panelType: "news" } satisfies TabChannelConfig,
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
 export function makeClearModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,
@@ -406,10 +480,6 @@ export function makeClearModel(): IJsonModel {
   };
 }
 
-/**
- * Market Overview layout — full-screen heatmap with room to add more panels.
- * Designed to grow: key stocks, most traded, most moved panels can be added here.
- */
 export function makeOverviewModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,
@@ -434,21 +504,12 @@ export function makeOverviewModel(): IJsonModel {
   };
 }
 
-/**
- * Admin-focused default layout — read-only market surveillance + admin tools.
- * Admins cannot trade; no Order Ticket is included.
- *
- * Left:   Market Heatmap (primary) + Market Ladder (read-only price feed)
- * Centre: Admin config / Observability / News Sources + Candle Chart
- * Right:  Decision Log / Executions / Algo Monitor / Order Blotter (read-only audit)
- */
 export function makeAdminModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,
     layout: {
       type: "row",
       children: [
-        // ── Column 1: Market surveillance (read-only) ─────────────────────────
         {
           type: "row",
           weight: 30,
@@ -481,7 +542,6 @@ export function makeAdminModel(): IJsonModel {
             },
           ],
         },
-        // ── Column 2: Admin config + Chart ────────────────────────────────────
         {
           type: "row",
           weight: 35,
@@ -490,6 +550,20 @@ export function makeAdminModel(): IJsonModel {
               type: "tabset",
               weight: 50,
               children: [
+                {
+                  type: "tab",
+                  id: "service-health",
+                  name: PANEL_TITLES["service-health"],
+                  component: "service-health",
+                  config: { panelType: "service-health" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "throughput-gauges",
+                  name: PANEL_TITLES["throughput-gauges"],
+                  component: "throughput-gauges",
+                  config: { panelType: "throughput-gauges" } satisfies TabChannelConfig,
+                },
                 {
                   type: "tab",
                   id: "admin",
@@ -542,11 +616,30 @@ export function makeAdminModel(): IJsonModel {
             },
           ],
         },
-        // ── Column 3: Audit trail + Monitoring ───────────────────────────────
         {
           type: "row",
           weight: 35,
           children: [
+            {
+              type: "tabset",
+              weight: 30,
+              children: [
+                {
+                  type: "tab",
+                  id: "algo-leaderboard",
+                  name: PANEL_TITLES["algo-leaderboard"],
+                  component: "algo-leaderboard",
+                  config: { panelType: "algo-leaderboard" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "load-test",
+                  name: PANEL_TITLES["load-test"],
+                  component: "load-test",
+                  config: { panelType: "load-test" } satisfies TabChannelConfig,
+                },
+              ],
+            },
             {
               type: "tabset",
               weight: 35,
@@ -578,12 +671,6 @@ export function makeAdminModel(): IJsonModel {
                   component: "order-blotter",
                   config: { panelType: "order-blotter", outgoing: 2 } satisfies TabChannelConfig,
                 },
-              ],
-            },
-            {
-              type: "tabset",
-              weight: 30,
-              children: [
                 {
                   type: "tab",
                   id: "algo-monitor",
@@ -642,6 +729,13 @@ export const LAYOUT_TEMPLATES: {
     description:
       "Full-screen heatmap — sector view with room for key stocks, most traded, most moved",
     model: makeOverviewModel(),
+  },
+  {
+    id: "research",
+    label: "Research",
+    description:
+      "Signal radar, instrument analysis, and factor explainability — market intelligence pipeline",
+    model: makeResearchModel(),
   },
   {
     id: "clear",

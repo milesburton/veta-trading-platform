@@ -48,7 +48,11 @@ type GatewayInbound =
   | { event: "marketUpdate"; data: { prices: Record<string, number>; volumes: Record<string, number> } }
   | { event: "orderEvent"; topic: string; data: Record<string, unknown> }
   | { event: "orderRejected"; data: { clientOrderId: string; reason: string } }
-  | { event: "newsUpdate"; data: Record<string, unknown> };
+  | { event: "newsUpdate"; data: Record<string, unknown> }
+  | { event: "signalUpdate"; data: Record<string, unknown> }
+  | { event: "featureUpdate"; data: Record<string, unknown> }
+  | { event: "recommendationUpdate"; data: Record<string, unknown> }
+  | { event: "advisoryUpdate"; data: Record<string, unknown> };
 
 // Outbound message shape (client → gateway)
 interface GatewayOutbound {
@@ -141,6 +145,17 @@ export class GatewayMock {
       const rows = Array.from(mock._orders.values()).reverse();
       const body = JSON.stringify({ rows, total: rows.length, evalMs: 0 });
       return route.fulfill({ status: 200, contentType: "application/json", body });
+    });
+
+    // Stub advisory request (POST) — default: respond with "disabled" (503)
+    // Tests that need a different response can override this route after attach().
+    await page.route("/api/gateway/advisory/request", (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      return route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "LLM advisory is not enabled on this deployment" }),
+      });
     });
 
     // Stub news
@@ -334,6 +349,26 @@ export class GatewayMock {
     relatedSymbols: string[];
   }) {
     this._send({ event: "newsUpdate", data: item });
+  }
+
+  /** Send a signal update (intelligence pipeline output). */
+  sendSignalUpdate(signal: Record<string, unknown>) {
+    this._send({ event: "signalUpdate", data: signal });
+  }
+
+  /** Send a feature vector update (feature-engine output). */
+  sendFeatureUpdate(fv: Record<string, unknown>) {
+    this._send({ event: "featureUpdate", data: fv });
+  }
+
+  /** Send a trade recommendation update. */
+  sendRecommendationUpdate(rec: Record<string, unknown>) {
+    this._send({ event: "recommendationUpdate", data: rec });
+  }
+
+  /** Send an LLM advisory note ready event. */
+  sendAdvisoryUpdate(advisory: Record<string, unknown>) {
+    this._send({ event: "advisoryUpdate", data: advisory });
   }
 
   // ── Receive helpers (client → gateway) ─────────────────────────────────────

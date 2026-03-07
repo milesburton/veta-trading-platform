@@ -1,14 +1,16 @@
 import { useSignal } from "@preact/signals-react";
+import { useQuery } from "@tanstack/react-query";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useChannelOut } from "../hooks/useChannelOut.ts";
 import { useColumnLayout } from "../hooks/useColumnLayout.ts";
-import { useAppSelector } from "../store/hooks.ts";
 import type { ColDef } from "../types/gridPrefs.ts";
-import type { ChildOrder, LiquidityFlag, OrderStatus } from "../types.ts";
+import type { ChildOrder, LiquidityFlag, OrderRecord, OrderStatus } from "../types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
 import { CHANNEL_COLOURS } from "./DashboardLayout.tsx";
 import { ResizableHeader } from "./grid/ResizableHeader.tsx";
+
+const GATEWAY_URL = typeof window !== "undefined" ? `${window.location.origin}/api/gateway` : "";
 
 const CHILD_COLS: ColDef[] = [
   { key: "time", label: "Time", type: "string", defaultWidth: 80 },
@@ -60,9 +62,32 @@ export function ChildOrdersPanel() {
   const selectedChildId = useSignal<string | null>(null);
   const dragKey = useSignal<string | null>(null);
 
-  const orders = useAppSelector((s) => s.orders.orders);
-  const parentOrder = parentOrderId ? orders.find((o) => o.id === parentOrderId) : null;
-  const children: ChildOrder[] = parentOrder?.children ?? [];
+  const { data: parentOrder } = useQuery<OrderRecord | null>({
+    queryKey: ["order", parentOrderId],
+    queryFn: async () => {
+      if (!parentOrderId) return null;
+      const res = await fetch(`${GATEWAY_URL}/grid/query`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          gridId: "orderBlotter",
+          filterExpr: { operator: "AND", rules: [{ field: "id", op: "eq", value: parentOrderId }] },
+          sortField: null,
+          sortDir: null,
+          offset: 0,
+          limit: 1,
+        }),
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { rows: OrderRecord[] };
+      return data.rows[0] ?? null;
+    },
+    enabled: !!parentOrderId,
+    staleTime: 2_000,
+    refetchInterval: 3_000,
+  });
+  const children: ChildOrder[] = (parentOrder?.children as ChildOrder[] | undefined) ?? [];
 
   const { orderedCols, getWidth, onResize, onReorder } = useColumnLayout("childOrders", CHILD_COLS);
 

@@ -1,3 +1,60 @@
+:root,
+[data-theme="dark"] {
+  --gray-50: 249 250 251;
+  --gray-100: 243 244 246;
+  --gray-200: 229 231 235;
+  --gray-300: 209 213 219;
+  --gray-400: 156 163 175;
+  --gray-500: 107 114 128;
+  --gray-600: 75 85 99;
+  --gray-700: 55 65 81;
+  --gray-800: 31 41 55;
+  --gray-900: 17 24 39;
+  --gray-950: 3 7 18;
+}
+
+[data-theme="darker"] {
+  --gray-50: 249 250 251;
+  --gray-100: 255 255 255;
+  --gray-200: 229 231 235;
+  --gray-300: 209 213 219;
+  --gray-400: 160 160 160;
+  --gray-500: 102 102 102;
+  --gray-600: 68 68 68;
+  --gray-700: 51 51 51;
+  --gray-800: 17 17 17;
+  --gray-900: 8 8 8;
+  --gray-950: 0 0 0;
+}
+
+[data-theme="light"] {
+  --gray-50: 17 24 39;
+  --gray-100: 31 41 55;
+  --gray-200: 55 65 81;
+  --gray-300: 75 85 99;
+  --gray-400: 107 114 128;
+  --gray-500: 156 163 175;
+  --gray-600: 209 213 219;
+  --gray-700: 229 231 235;
+  --gray-800: 243 244 246;
+  --gray-900: 255 255 255;
+  --gray-950: 249 250 251;
+}
+
+[data-theme="high-contrast"] {
+  --gray-50: 0 0 0;
+  --gray-100: 0 0 0;
+  --gray-200: 10 10 10;
+  --gray-300: 17 17 17;
+  --gray-400: 51 51 51;
+  --gray-500: 85 85 85;
+  --gray-600: 153 153 153;
+  --gray-700: 204 204 204;
+  --gray-800: 255 255 255;
+  --gray-900: 255 255 255;
+  --gray-950: 245 245 245;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,7 +65,6 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Scrollbar styling */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -23,7 +79,6 @@
     @apply bg-gray-500;
   }
 }
-
 
 @layer utilities {
   .flash-green {
@@ -60,34 +115,37 @@
   100% { background-color: transparent; }
 }
 
-/* ── flexlayout-react dark theme overrides ──────────────────────────────────
-   Override the library's dark.css variables to match our gray-950 palette. */
 .flexlayout__layout {
-  --color-tabset-background: #030712;       /* gray-950 */
-  --color-tabset-background-selected: #111827; /* gray-900 */
-  --color-tabset-header-background: #111827;
-  --color-tab-selected-background: #030712;
-  --color-tab-background: #111827;
-  --color-tab-unselected: #6b7280;          /* gray-500 */
-  --color-tab-selected: #f9fafb;            /* gray-50 */
-  --color-border: #1f2937;                  /* gray-800 */
-  --color-splitter: #1f2937;
-  --color-splitter-hover: #374151;          /* gray-700 */
-  --color-splitter-drag: #10b981;           /* emerald-500 */
+  --color-background: rgb(var(--gray-950));
+  --color-text: rgb(var(--gray-100));
+  --color-1: rgb(var(--gray-900));
+  --color-2: rgb(var(--gray-800));
+  --color-3: rgb(var(--gray-700));
+  --color-4: rgb(var(--gray-700));
+  --color-5: rgb(var(--gray-600));
+  --color-6: rgb(var(--gray-500));
+  --color-tabset-background: rgb(var(--gray-950));
+  --color-tabset-background-selected: rgb(var(--gray-900));
+  --color-tabset-header-background: rgb(var(--gray-900));
+  --color-tab-selected-background: rgb(var(--gray-950));
+  --color-tab-unselected: rgb(var(--gray-500));
+  --color-tab-selected: rgb(var(--gray-50));
+  --color-border: rgb(var(--gray-800));
+  --color-splitter: rgb(var(--gray-800));
+  --color-splitter-hover: rgb(var(--gray-700));
+  --color-splitter-drag: #10b981;
   --color-drag-rect-border: #10b981;
   --color-drag-rect-background: rgb(16 185 129 / 0.08);
-  --color-toolbar-button-hover: #374151;
-  --color-overflow: #6b7280;
+  --color-toolbar-button-hover: rgb(var(--gray-700));
+  --color-overflow: rgb(var(--gray-500));
 }
 
-/* Tighten the tab strip height to match our compact UI */
 .flexlayout__tab_button {
   padding: 3px 10px !important;
   font-size: 10px !important;
   font-family: ui-monospace, monospace !important;
 }
 
-/* Ensure panel content fills the tab pane completely */
 .flexlayout__tab {
   overflow: hidden;
 }

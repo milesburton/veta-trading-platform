@@ -29,6 +29,13 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Rule-based option trade recommendations — scored signals with reason codes",
   "market-data-sources": "Configure per-symbol market data sources — synthetic or Alpha Vantage",
   "market-feed-control": "Global feed pause/resume, market hours, and per-symbol source overview",
+  "research-radar": "Signal Radar — all symbols scored by the intelligence pipeline",
+  "instrument-analysis": "Per-symbol deep-dive — features, signal gauge, and backtest replay",
+  "signal-explainability": "Factor waterfall — how each feature drives the signal score",
+  "service-health": "Live health grid for all backend services — status, version, and latency",
+  "throughput-gauges": "Pipeline throughput metrics — orders/min, fills/min, and fill rate",
+  "algo-leaderboard": "Strategy performance leaderboard — fill rate and slippage per algo",
+  "load-test": "Admin-only bulk order injector — stress-test the pipeline",
 };
 
 export function ComponentPicker() {
@@ -42,6 +49,7 @@ export function ComponentPicker() {
     "news-sources",
     "market-data-sources",
     "market-feed-control",
+    "load-test",
   ]);
   // Panels hidden from admins (trading capability — admins must not interfere with the market)
   const TRADER_ONLY_PANELS: ReadonlySet<PanelId> = new Set(["order-ticket"]);

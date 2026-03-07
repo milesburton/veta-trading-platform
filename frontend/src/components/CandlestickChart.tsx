@@ -8,6 +8,7 @@ import {
   HistogramSeries,
 } from "lightweight-charts";
 import { useEffect, useRef } from "react";
+import { useAppSelector } from "../store/hooks.ts";
 import type { OhlcCandle } from "../types.ts";
 
 type Interval = "1m" | "5m";
@@ -17,21 +18,27 @@ interface Props {
   candles: { "1m": OhlcCandle[]; "5m": OhlcCandle[] };
 }
 
-const CHART_THEME = {
-  layout: {
-    background: { type: ColorType.Solid, color: "#030712" },
-    textColor: "#9ca3af",
-    attributionLogo: false,
-  },
-  grid: {
-    vertLines: { color: "#111827" },
-    horzLines: { color: "#111827" },
-  },
-  crosshair: { mode: CrosshairMode.Normal },
-  leftPriceScale: { visible: false },
-  rightPriceScale: { borderColor: "#1f2937" },
-  timeScale: { borderColor: "#1f2937", timeVisible: true, secondsVisible: false },
-};
+function getChartTheme() {
+  const s = getComputedStyle(document.documentElement);
+  function ch(v: string) {
+    return `rgb(${s.getPropertyValue(v).trim()})`;
+  }
+  return {
+    layout: {
+      background: { type: ColorType.Solid, color: ch("--gray-950") },
+      textColor: ch("--gray-400"),
+      attributionLogo: false,
+    },
+    grid: {
+      vertLines: { color: ch("--gray-900") },
+      horzLines: { color: ch("--gray-900") },
+    },
+    crosshair: { mode: CrosshairMode.Normal },
+    leftPriceScale: { visible: false },
+    rightPriceScale: { borderColor: ch("--gray-800") },
+    timeScale: { borderColor: ch("--gray-800"), timeVisible: true, secondsVisible: false },
+  };
+}
 
 function toBarData(c: OhlcCandle) {
   return {
@@ -54,6 +61,7 @@ function toVolData(c: OhlcCandle) {
 export function CandlestickChart({ symbol, candles }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const theme = useAppSelector((s) => s.theme.theme);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const interval = useSignal<Interval>("1m");
@@ -71,7 +79,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
     if (!containerRef.current) return;
 
     const chart = createChart(containerRef.current, {
-      ...CHART_THEME,
+      ...getChartTheme(),
       autoSize: true,
     });
 
@@ -115,6 +123,10 @@ export function CandlestickChart({ symbol, candles }: Props) {
       chart.remove();
     };
   }, []);
+
+  useEffect(() => {
+    chartRef.current?.applyOptions(getChartTheme());
+  }, [theme]);
 
   // Update data when interval or candles change
   useEffect(() => {

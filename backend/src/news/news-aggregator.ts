@@ -1,21 +1,6 @@
-/**
- * News Aggregator Service
- *
- * Polls RSS feeds for symbol-specific news, scores sentiment, and publishes:
- *   news.feed   → gateway → GUI (NewsItem per headline)
- *   news.signal → algos (sentiment signal per symbol)
- *
- * HTTP API:
- *   GET  /health
- *   GET  /news?symbol=AAPL&limit=20
- *   GET  /sources
- *   POST /sources/:id/enable
- *   POST /sources/:id/disable
- *   POST /sources/:id/toggle
- */
-
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createProducer } from "../lib/messaging.ts";
+import type { NewsEvent } from "../types/intelligence.ts";
 
 const PORT = Number(Deno.env.get("NEWS_AGGREGATOR_PORT")) || 5_013;
 const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") || "http://localhost:5000";
@@ -24,8 +9,6 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MAX_ITEMS_PER_SYMBOL = 100;
 
 console.log(`[news-aggregator] Starting, poll=${POLL_INTERVAL_MS}ms`);
-
-// ── News sources ──────────────────────────────────────────────────────────────
 
 interface NewsSource {
   id: string;
@@ -60,8 +43,6 @@ const SOURCES: NewsSource[] = [
   },
 ];
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 export interface NewsItem {
   id: string;
   symbol: string;
@@ -73,8 +54,6 @@ export interface NewsItem {
   sentimentScore: number;
   relatedSymbols: string[];
 }
-
-// ── Sentiment + ticker extraction ─────────────────────────────────────────────
 
 const POSITIVE_WORDS = [
   "surge", "rally", "gain", "rise", "beat", "record", "profit", "growth",
@@ -107,10 +86,8 @@ function extractTickers(text: string): string[] {
   return [...new Set(matches.filter((m) => !IGNORE_TICKERS.has(m)))].slice(0, 5);
 }
 
-// ── In-memory store ───────────────────────────────────────────────────────────
-
-const newsBySymbol = new Map<string, NewsItem[]>(); // symbol → items (newest first)
-const seenIds = new Set<string>(); // dedup by item id
+const newsBySymbol = new Map<string, NewsItem[]>();
+const seenIds = new Set<string>();
 let knownSymbols: string[] = [];
 
 function storeItem(item: NewsItem): void {
@@ -125,8 +102,6 @@ function totalItems(): number {
   for (const v of newsBySymbol.values()) n += v.length;
   return n;
 }
-
-// ── RSS fetching ──────────────────────────────────────────────────────────────
 
 interface RssItem {
   title?: string;
@@ -150,8 +125,6 @@ async function fetchRss(url: string): Promise<RssItem[]> {
   }
 }
 
-// ── Produce to bus ────────────────────────────────────────────────────────────
-
 const producer = await createProducer("news-aggregator").catch((err) => {
   console.warn("[news-aggregator] Redpanda unavailable:", err.message);
   return null;
@@ -160,7 +133,6 @@ const producer = await createProducer("news-aggregator").catch((err) => {
 async function publishItem(item: NewsItem): Promise<void> {
   if (!producer) return;
   await producer.send("news.feed", item).catch(() => {});
-  // Also publish a signal for algos
   await producer.send("news.signal", {
     symbol: item.symbol,
     sentiment: item.sentiment,
@@ -169,9 +141,20 @@ async function publishItem(item: NewsItem): Promise<void> {
     source: item.source,
     ts: item.publishedAt,
   }).catch(() => {});
+  const normScore = Math.max(-1, Math.min(1, item.sentimentScore / 3));
+  const newsEvent: NewsEvent = {
+    id: item.id,
+    source: item.source,
+    headline: item.headline,
+    tickers: [item.symbol, ...item.relatedSymbols].filter((v, i, a) => a.indexOf(v) === i).slice(0, 5),
+    sentiment: item.sentiment,
+    sentimentScore: normScore,
+    relevanceScore: item.relatedSymbols.length > 0 ? 0.8 : 0.5,
+    publishedAt: item.publishedAt,
+    ts: Date.now(),
+  };
+  await producer.send("news.events.normalised", newsEvent).catch(() => {});
 }
-
-// ── Polling ───────────────────────────────────────────────────────────────────
 
 async function pollSourceForSymbol(source: NewsSource, symbol: string): Promise<void> {
   const url = source.symbolSpecific
@@ -185,7 +168,6 @@ async function pollSourceForSymbol(source: NewsSource, symbol: string): Promise<
     const headline = raw.title ?? "";
     if (!headline) continue;
 
-    // For general feeds, only process items that mention this symbol
     if (!source.symbolSpecific) {
       const tickers = extractTickers(headline + " " + (raw.description ?? ""));
       if (!tickers.includes(symbol)) continue;
@@ -225,8 +207,6 @@ async function pollAll(): Promise<void> {
   const enabledSources = SOURCES.filter((s) => s.enabled);
   if (enabledSources.length === 0 || knownSymbols.length === 0) return;
 
-  // Symbol-specific sources: poll for each symbol
-  // General sources: poll once (they scan all symbols internally)
   const symbolSpecific = enabledSources.filter((s) => s.symbolSpecific);
   const general = enabledSources.filter((s) => !s.symbolSpecific);
 
@@ -238,8 +218,6 @@ async function pollAll(): Promise<void> {
     }
   }
 
-  // For general sources, poll once per source using the first symbol as dummy context
-  // but scan all symbols inside pollSourceForSymbol
   for (const source of general) {
     for (const symbol of knownSymbols) {
       tasks.push(pollSourceForSymbol(source, symbol));
@@ -261,17 +239,14 @@ async function loadSymbols(): Promise<void> {
   }
 }
 
-// Start polling loop
 (async () => {
   await loadSymbols();
   await pollAll();
   setInterval(async () => {
-    await loadSymbols(); // refresh in case assets change
+    await loadSymbols();
     await pollAll();
   }, POLL_INTERVAL_MS);
 })();
-
-// ── HTTP handlers ─────────────────────────────────────────────────────────────
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -292,7 +267,6 @@ Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  // ── GET /health ────────────────────────────────────────────────────────────
   if (req.method === "GET" && path === "/health") {
     return json({
       service: "news-aggregator",
@@ -304,7 +278,6 @@ Deno.serve({ port: PORT }, (req) => {
     });
   }
 
-  // ── GET /news?symbol=AAPL&limit=20 ────────────────────────────────────────
   if (req.method === "GET" && path === "/news") {
     const symbol = url.searchParams.get("symbol");
     const limit = Math.min(Number(url.searchParams.get("limit") ?? 20), MAX_ITEMS_PER_SYMBOL);
@@ -313,14 +286,12 @@ Deno.serve({ port: PORT }, (req) => {
     return json(items);
   }
 
-  // ── GET /sources ───────────────────────────────────────────────────────────
   if (req.method === "GET" && path === "/sources") {
     return json(SOURCES.map(({ id, label, enabled, symbolSpecific }) => ({
       id, label, enabled, symbolSpecific,
     })));
   }
 
-  // ── POST /sources/:id/enable|disable|toggle ────────────────────────────────
   const sourceMatch = path.match(/^\/sources\/([^/]+)\/(enable|disable|toggle)$/);
   if (req.method === "POST" && sourceMatch) {
     const [, id, action] = sourceMatch;

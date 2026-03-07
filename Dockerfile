@@ -8,6 +8,9 @@ FROM redpandadata/console:v2.7.2 AS console-src
 FROM node:24-alpine AS builder
 WORKDIR /src/frontend
 
+ARG VITE_DEPLOYMENT=local
+ENV VITE_DEPLOYMENT=$VITE_DEPLOYMENT
+
 COPY frontend/package.json frontend/package-lock.json* ./
 COPY frontend/ ./
 RUN npm ci --silent || npm install --silent
@@ -66,11 +69,26 @@ RUN deno cache \
     backend/src/algo/twap-strategy.ts \
     backend/src/algo/pov-strategy.ts \
     backend/src/algo/vwap-strategy.ts \
+    backend/src/algo/iceberg-strategy.ts \
+    backend/src/algo/sniper-strategy.ts \
+    backend/src/algo/arrival-price-strategy.ts \
     backend/src/observability/observability-server.ts \
     backend/src/user-service/user-service.ts \
     backend/src/journal/journal-server.ts \
     backend/src/fix/fix-exchange.ts \
-    backend/src/fix/fix-gateway.ts
+    backend/src/fix/fix-gateway.ts \
+    backend/src/fix/fix-archive.ts \
+    backend/src/analytics/analytics-server.ts \
+    backend/src/market-data/market-data-service.ts \
+    backend/src/news/news-aggregator.ts \
+    backend/src/market-data-adapters/adapter-server.ts \
+    backend/src/feature-engine/feature-engine.ts \
+    backend/src/signal-engine/signal-engine.ts \
+    backend/src/recommendation-engine/recommendation-server.ts \
+    backend/src/scenario-engine/scenario-server.ts \
+    backend/src/gateway/gateway.ts \
+    backend/src/llm-advisory/orchestrator.ts \
+    backend/src/llm-advisory/worker.ts
 
 EXPOSE 80
 CMD ["supervisord", "-c", "/app/supervisord-fly.conf"]

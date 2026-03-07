@@ -48,10 +48,14 @@ export const alertsSlice = createSlice({
     alertsLoaded(state, action: PayloadAction<Alert[]>) {
       state.alerts = action.payload.slice(0, MAX_ALERTS);
     },
+    purgeServiceAlerts(state) {
+      state.alerts = state.alerts.filter((a) => a.source !== "service");
+    },
   },
 });
 
-export const { alertAdded, alertDismissed, allAlertsDismissed, alertsLoaded } = alertsSlice.actions;
+export const { alertAdded, alertDismissed, allAlertsDismissed, alertsLoaded, purgeServiceAlerts } =
+  alertsSlice.actions;
 
 export const selectActiveAlerts = createSelector(
   (s: RootState) => s.alerts.alerts,

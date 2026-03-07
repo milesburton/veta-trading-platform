@@ -95,21 +95,23 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
     }
 
     if (alertAdded.match(action)) {
-      const a = (
-        storeAPI.getState() as {
-          alerts: {
-            alerts: Array<{
-              id: string;
-              severity: string;
-              source: string;
-              message: string;
-              detail?: string;
-              ts: number;
-            }>;
-          };
-        }
-      ).alerts.alerts[0];
-      if (a) postAlert(a);
+      if (action.payload.source !== "service") {
+        const a = (
+          storeAPI.getState() as {
+            alerts: {
+              alerts: Array<{
+                id: string;
+                severity: string;
+                source: string;
+                message: string;
+                detail?: string;
+                ts: number;
+              }>;
+            };
+          }
+        ).alerts.alerts[0];
+        if (a) postAlert(a);
+      }
     }
 
     if (alertDismissed.match(action)) {

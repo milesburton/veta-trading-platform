@@ -25,6 +25,10 @@ const RETENTION_MS = Number(Deno.env.get("OBS_RETENTION_MS")) || 24 * 60 * 60 * 
 
 await Deno.mkdir(DB_PATH.substring(0, DB_PATH.lastIndexOf("/")), { recursive: true }).catch(() => {});
 const db = new DB(DB_PATH);
+db.query("PRAGMA journal_mode=WAL");
+db.query("PRAGMA synchronous=NORMAL");
+db.query("PRAGMA cache_size=-32000"); // 32 MB — large DB benefits from bigger cache
+db.query("PRAGMA busy_timeout=5000");
 db.query(`CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   type TEXT NOT NULL,
@@ -32,31 +36,82 @@ db.query(`CREATE TABLE IF NOT EXISTS events (
   payload TEXT
 );`);
 db.query(`CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);`);
+db.query(`CREATE INDEX IF NOT EXISTS idx_events_type_ts ON events(type, ts);`);
 
-function persistEvent(evt: ObsEvent) {
+// ── High-frequency in-memory buffers (not persisted to DB) ───────────────────
+// These event types flood SQLite if persisted; serve from memory instead.
+const NO_PERSIST_TYPES = new Set(["algo.heartbeat", "user.access"]);
+const MAX_IN_MEMORY_EVENTS = 200;
+const inMemoryBuffers = new Map<string, ObsEvent[]>();
+
+function inMemoryAppend(evt: ObsEvent) {
+  let buf = inMemoryBuffers.get(evt.type);
+  if (!buf) { buf = []; inMemoryBuffers.set(evt.type, buf); }
+  buf.push(evt);
+  if (buf.length > MAX_IN_MEMORY_EVENTS) buf.shift();
+}
+
+// ── Batched write queue ───────────────────────────────────────────────────────
+// SQLite writes are synchronous and block the Deno event loop. Buffer incoming
+// events and flush in a single transaction every 50ms to keep the loop free
+// for HTTP handlers between flushes.
+type PendingObs = [string, number, string | null];
+const writeQueue: PendingObs[] = [];
+const OBS_FLUSH_BATCH = 50;
+let pruneScheduled = false;
+
+function flushObsWriteQueue() {
+  if (writeQueue.length === 0) return;
+  const batch = writeQueue.splice(0, OBS_FLUSH_BATCH);
   try {
-    const payload = evt.payload ? JSON.stringify(evt.payload) : null;
-    const ts = evt.ts ?? Date.now();
-    db.query("INSERT INTO events (type, ts, payload) VALUES (?, ?, ?);", [evt.type, ts, payload]);
-    // delete older than retention window
-    const cutoff = Date.now() - RETENTION_MS;
-    db.query("DELETE FROM events WHERE ts < ?;", [cutoff]);
+    db.query("BEGIN");
+    for (const [type, ts, payload] of batch) {
+      db.query("INSERT INTO events (type, ts, payload) VALUES (?, ?, ?);", [type, ts, payload]);
+    }
+    db.query("COMMIT");
   } catch {
-    // best-effort
+    try { db.query("ROLLBACK"); } catch { /* ignore */ }
+  }
+  if (!pruneScheduled) {
+    pruneScheduled = true;
+    setTimeout(() => {
+      pruneScheduled = false;
+      try { db.query("DELETE FROM events WHERE ts < ?;", [Date.now() - RETENTION_MS]); } catch { /* ignore */ }
+    }, 10_000);
   }
 }
 
+setInterval(flushObsWriteQueue, 50);
+
+function persistEvent(evt: ObsEvent) {
+  const payload = evt.payload ? JSON.stringify(evt.payload) : null;
+  writeQueue.push([evt.type, evt.ts ?? Date.now(), payload]);
+}
+
 function ingestEvent(evt: ObsEvent) {
-  persistEvent(evt);
+  if (NO_PERSIST_TYPES.has(evt.type)) {
+    inMemoryAppend(evt);
+  } else {
+    persistEvent(evt);
+  }
   sendToClients(evt);
 }
 
-function loadRecent(limit = 1000) {
+function loadRecent(limit = 1000, typeFilter?: string) {
+  // Non-persisted types are served from in-memory buffers.
+  if (typeFilter && NO_PERSIST_TYPES.has(typeFilter)) {
+    const buf = inMemoryBuffers.get(typeFilter) ?? [];
+    return buf.slice(-limit).reverse();
+  }
+
   const rows = [] as ObsEvent[];
-  for (const [_id, type, ts, payload] of db.query(
-    "SELECT id, type, ts, payload FROM events WHERE ts >= ? ORDER BY ts DESC LIMIT ?;",
-    [Date.now() - RETENTION_MS, limit],
-  )) {
+  const sql = typeFilter
+    ? "SELECT id, type, ts, payload FROM events WHERE ts >= ? AND type = ? ORDER BY ts DESC LIMIT ?;"
+    : "SELECT id, type, ts, payload FROM events WHERE ts >= ? ORDER BY ts DESC LIMIT ?;";
+  const params = typeFilter
+    ? [Date.now() - RETENTION_MS, typeFilter, limit]
+    : [Date.now() - RETENTION_MS, limit];
+  for (const [_id, type, ts, payload] of db.query(sql, params)) {
     let parsed = null;
     try {
       parsed = payload ? JSON.parse(payload as string) : null;
@@ -71,40 +126,52 @@ function loadRecent(limit = 1000) {
 // ── Redpanda consumer ────────────────────────────────────────────────────────
 // Subscribe to all system topics; each message becomes an observability event.
 // Non-fatal if Redpanda is not yet available — HTTP POST still works as fallback.
-const BUS_TOPICS = [
-  "market.ticks",
+// Three consumer groups with different priorities:
+//
+// LOW_FREQ_TOPICS: low-volume lifecycle events — dedicated consumer so they're
+//   never queued behind high-frequency fill/child events.
+// HIGH_FREQ_TOPICS: child slices and fills — high volume, separate consumer.
+// HEARTBEAT_TOPICS: algo heartbeats — separate so they don't block order events.
+// market.ticks is excluded entirely (available via market-sim WS).
+//
+// All groups use per-instance IDs so each restart begins from the latest offset
+// rather than replaying a potentially large historical backlog.
+// Order lifecycle events — critical, must not be delayed by volume spikes.
+const ORDER_LIFECYCLE_TOPICS = [
   "orders.submitted",
   "orders.routed",
-  "orders.child",
-  "orders.filled",
   "orders.expired",
   "orders.rejected",
   "orders.cancelled",
   "orders.resumed",
   "orders.kill.audit",
   "orders.resume.audit",
-  "algo.heartbeat",
   "user.session",
-  "user.access",
-  "grid.query",
 ];
 
-createConsumer("observability-group", BUS_TOPICS).then((consumer) => {
-  consumer.onMessage((topic, value) => {
-    // Skip high-frequency market ticks from being stored — they'd flood the DB.
-    // Ticks are still available via the WebSocket from market-sim directly.
-    if (topic === "market.ticks") return;
+// High-volume topics get their own consumer so they don't block lifecycle events.
+const HIGH_FREQ_TOPICS = ["orders.child", "orders.filled", "user.access", "grid.query"];
+const HEARTBEAT_TOPICS = ["algo.heartbeat"];
 
-    ingestEvent({
-      type: topic,
-      ts: Date.now(),
-      payload: value as Record<string, unknown>,
+const instanceId = Date.now().toString(36);
+const ORDER_GROUP = `observability-ord-${instanceId}`;
+const HIGH_GROUP  = `observability-high-${instanceId}`;
+const HB_GROUP    = `observability-hb-${instanceId}`;
+
+function makeIngestConsumer(group: string, topics: string[]) {
+  createConsumer(group, topics).then((consumer) => {
+    consumer.onMessage((topic, value) => {
+      ingestEvent({ type: topic, ts: Date.now(), payload: value as Record<string, unknown> });
     });
+    console.log(`[observability] ${group} subscribed to: ${topics.join(", ")}`);
+  }).catch((err) => {
+    console.warn(`[observability] ${group} unavailable:`, err.message);
   });
-  console.log(`[observability] Subscribed to Redpanda topics: ${BUS_TOPICS.join(", ")}`);
-}).catch((err) => {
-  console.warn("[observability] Redpanda unavailable, falling back to HTTP-only ingest:", err.message);
-});
+}
+
+makeIngestConsumer(ORDER_GROUP, ORDER_LIFECYCLE_TOPICS);
+makeIngestConsumer(HIGH_GROUP,  HIGH_FREQ_TOPICS);
+makeIngestConsumer(HB_GROUP,    HEARTBEAT_TOPICS);
 
 // ── HTTP handlers ─────────────────────────────────────────────────────────────
 
@@ -151,7 +218,8 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (req.method === "GET" && url.pathname === "/events") {
-    const rows = loadRecent(1000);
+    const typeFilter = url.searchParams.get("type") ?? undefined; // e.g. ?type=algo.heartbeat
+    const rows = loadRecent(1000, typeFilter);
     return new Response(JSON.stringify(rows), {
       headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });

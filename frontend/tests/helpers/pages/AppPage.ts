@@ -77,11 +77,10 @@ export class AppPage {
    * This async method resolves the path at call time, then returns a stable
    * locator scoped to the matched content pane.
    */
-  private async panelByTitle(tabTitle: string | RegExp): Promise<ReturnType<Page["locator"]>> {
+  async panelByTitle(tabTitle: string | RegExp): Promise<ReturnType<Page["locator"]>> {
     const btn = this.page.locator(".flexlayout__tab_button", { hasText: tabTitle }).first();
     const btnPath = await btn.getAttribute("data-layout-path");
     if (!btnPath) throw new Error(`No tab button found with title matching ${tabTitle}`);
-    // Convert button path to content path: replace last tb<n> with t<n>
     const contentPath = btnPath.replace(/tb(\d+)$/, "t$1");
     return this.page.locator(`.flexlayout__tab[data-layout-path="${contentPath}"]`);
   }

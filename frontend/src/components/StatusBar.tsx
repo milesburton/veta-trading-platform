@@ -6,7 +6,9 @@ import type { AlertSeverity } from "../store/alertsSlice.ts";
 import { alertAdded, selectAlertCount, selectHighestSeverity } from "../store/alertsSlice.ts";
 import { clearUser } from "../store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
+import { DEPLOYMENT, SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
+import type { Theme } from "../store/themeSlice.ts";
+import { saveTheme, setTheme } from "../store/themeSlice.ts";
 import type { ServiceHealth } from "../types.ts";
 import { AlertDrawer } from "./AlertDrawer.tsx";
 import { ComponentPicker } from "./ComponentPicker.tsx";
@@ -39,6 +41,7 @@ function useAllServiceHealth(): ServiceHealth[] {
         url: svc.url,
         link: svc.link,
         optional: svc.optional,
+        alertOnDeployments: svc.alertOnDeployments,
         state: "error" as const,
         version: "—",
         meta: {},
@@ -50,12 +53,77 @@ function useAllServiceHealth(): ServiceHealth[] {
       url: svc.url,
       link: svc.link,
       optional: svc.optional,
+      alertOnDeployments: svc.alertOnDeployments,
       state: "unknown" as const,
       version: "—",
       meta: {},
       lastChecked: null,
     };
   });
+}
+
+// ─── ThemeSwitcher ────────────────────────────────────────────────────────────
+
+const THEME_OPTIONS: { id: Theme; label: string }[] = [
+  { id: "dark", label: "Dark" },
+  { id: "darker", label: "OLED" },
+  { id: "light", label: "Light" },
+  { id: "high-contrast", label: "High Contrast" },
+];
+
+function ThemeSwitcher() {
+  const dispatch = useAppDispatch();
+  const theme = useAppSelector((s) => s.theme.theme);
+  const open = useSignal(false);
+
+  function handleSelect(t: Theme) {
+    dispatch(setTheme(t));
+    localStorage.setItem("veta-theme", t);
+    dispatch(saveTheme(t));
+    open.value = false;
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          open.value = !open.value;
+        }}
+        className="flex items-center gap-1.5 px-2 py-1 rounded border border-gray-700 bg-gray-800/60 text-gray-400 hover:bg-gray-700/60 hover:border-gray-500 hover:text-gray-300 font-semibold text-[11px] tracking-wide transition-all"
+      >
+        Theme
+      </button>
+      {open.value && (
+        <>
+          <button
+            type="button"
+            aria-label="Close theme picker"
+            className="fixed inset-0 z-10 cursor-default"
+            onClick={() => {
+              open.value = false;
+            }}
+          />
+          <div className="absolute right-0 top-7 z-20 w-36 bg-gray-900 border border-gray-700 rounded shadow-xl text-xs overflow-hidden">
+            {THEME_OPTIONS.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => handleSelect(id)}
+                className={`w-full text-left px-3 py-2 transition-colors ${
+                  theme === id
+                    ? "bg-gray-700 text-gray-100"
+                    : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 // ─── AlertCentreButton ────────────────────────────────────────────────────────
@@ -88,7 +156,8 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
     for (const svc of services) {
       const prevState = prev[svc.name];
       const curState = svc.state;
-      if (prevState !== undefined && prevState !== "error" && curState === "error") {
+      const alertable = !svc.alertOnDeployments || svc.alertOnDeployments.includes(DEPLOYMENT);
+      if (alertable && prevState !== undefined && prevState !== "error" && curState === "error") {
         dispatch(
           alertAdded({
             severity: "CRITICAL",
@@ -99,7 +168,7 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
           })
         );
       }
-      if (prevState === "error" && curState === "ok") {
+      if (alertable && prevState === "error" && curState === "ok") {
         dispatch(
           alertAdded({
             severity: "INFO",
@@ -213,6 +282,7 @@ export function AppHeader() {
             </svg>
             <span className="sr-only">View source on GitHub</span>
           </a>
+          <ThemeSwitcher />
           <AlertCentreButton services={services} />
           <KillSwitchButton />
           <span className="tabular-nums text-gray-500">{time.value}</span>
