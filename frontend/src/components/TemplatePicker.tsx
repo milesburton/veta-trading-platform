@@ -51,7 +51,10 @@ export function TemplatePicker() {
               }}
               className="flex flex-col items-start gap-0.5 px-2 py-1.5 rounded text-left hover:bg-gray-800 transition-colors"
             >
-              <span className="text-xs text-gray-200 font-medium">{tpl.label}</span>
+              <span className="flex items-center gap-1 text-xs text-gray-200 font-medium">
+                {tpl.locked && <span className="text-[10px] text-gray-500">🔒</span>}
+                {tpl.label}
+              </span>
               <span className="text-[10px] text-gray-500">{tpl.description}</span>
             </button>
           ))}

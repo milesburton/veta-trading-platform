@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { useAppSelector } from "../store/hooks.ts";
+import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+import { alertAdded } from "../store/alertsSlice.ts";
 
 interface SparkPoint {
   t: number;
@@ -11,11 +12,19 @@ interface Metrics {
   ordersPerMin: number;
   fillsPerMin: number;
   fillRate: number;
+  fillRateRecentChildren: number;
   activeStrategies: number;
   busEventsPerMin: number;
 }
 
 const WINDOW_MS = 60_000;
+
+// Thresholds
+const FILL_RATE_WARN = 50;   // below → WARNING
+const FILL_RATE_CRIT = 30;   // below → red card
+const FILL_RATE_OK   = 60;   // above → recovery
+const ORDER_FLOOD    = 200;  // above → WARNING
+const ORDER_OK       = 150;  // below → recovery
 
 interface SlimChild {
   status: string;
@@ -55,6 +64,7 @@ function computeMetrics(orders: SlimOrder[], events: { type: string; ts?: number
     ordersPerMin,
     fillsPerMin: filledChildCount,
     fillRate: recentChildCount > 0 ? Math.round((filledChildCount / recentChildCount) * 100) : 0,
+    fillRateRecentChildren: recentChildCount,
     activeStrategies: activeStratSet.size,
     busEventsPerMin: events.filter((e) => (e.ts ?? 0) > cutoff).length,
   };
@@ -91,6 +101,7 @@ function MetricCard({ label, value, borderClass, textClass }: MetricCardProps) {
 }
 
 export function ThroughputGaugesPanel() {
+  const dispatch = useAppDispatch();
   const orders = useAppSelector((s) => s.orders.orders);
   const events = useAppSelector((s) => s.observability.events);
 
@@ -98,28 +109,101 @@ export function ThroughputGaugesPanel() {
     ordersPerMin: 0,
     fillsPerMin: 0,
     fillRate: 0,
+    fillRateRecentChildren: 0,
     activeStrategies: 0,
     busEventsPerMin: 0,
   });
   const [sparkline, setSparkline] = useState<SparkPoint[]>([]);
 
+  // Track threshold state for transition detection
+  const threshRef = useRef({ fillRateLow: false, orderFlood: false });
+
   useEffect(() => {
     function refresh() {
-      setMetrics(computeMetrics(orders, events));
+      const m = computeMetrics(orders, events);
+      setMetrics(m);
       setSparkline(buildSparkline(orders));
+
+      // Fill rate threshold transitions
+      const hasFillData = m.fillRateRecentChildren >= 5;
+      const isFillLow = hasFillData && m.fillRate < FILL_RATE_WARN;
+      const wasFillLow = threshRef.current.fillRateLow;
+      if (isFillLow && !wasFillLow) {
+        threshRef.current.fillRateLow = true;
+        dispatch(
+          alertAdded({
+            severity: "WARNING",
+            source: "order",
+            message: `Fill rate degraded: ${m.fillRate}%`,
+            ts: Date.now(),
+          }),
+        );
+      } else if (!isFillLow && wasFillLow && m.fillRate >= FILL_RATE_OK) {
+        threshRef.current.fillRateLow = false;
+        dispatch(
+          alertAdded({
+            severity: "INFO",
+            source: "order",
+            message: `Fill rate recovered: ${m.fillRate}%`,
+            ts: Date.now(),
+          }),
+        );
+      }
+
+      // Order flood threshold transitions
+      const isFlood = m.ordersPerMin > ORDER_FLOOD;
+      const wasFlood = threshRef.current.orderFlood;
+      if (isFlood && !wasFlood) {
+        threshRef.current.orderFlood = true;
+        dispatch(
+          alertAdded({
+            severity: "WARNING",
+            source: "order",
+            message: `Order flood detected: ${m.ordersPerMin}/min`,
+            ts: Date.now(),
+          }),
+        );
+      } else if (!isFlood && wasFlood && m.ordersPerMin < ORDER_OK) {
+        threshRef.current.orderFlood = false;
+        dispatch(
+          alertAdded({
+            severity: "INFO",
+            source: "order",
+            message: "Order rate normalised",
+            ts: Date.now(),
+          }),
+        );
+      }
     }
 
     refresh();
     const id = setInterval(refresh, 5_000);
     return () => clearInterval(id);
-  }, [orders, events]);
+  }, [orders, events, dispatch]);
+
+  // Fill rate card colouring
+  const fillRateBorder =
+    metrics.fillRate < FILL_RATE_CRIT && metrics.fillRateRecentChildren >= 5
+      ? "border-red-700/60"
+      : metrics.fillRate < FILL_RATE_WARN && metrics.fillRateRecentChildren >= 5
+        ? "border-yellow-700/60"
+        : "border-yellow-700/60";
+  const fillRateText =
+    metrics.fillRate < FILL_RATE_CRIT && metrics.fillRateRecentChildren >= 5
+      ? "text-red-400"
+      : metrics.fillRate < FILL_RATE_WARN && metrics.fillRateRecentChildren >= 5
+        ? "text-yellow-300"
+        : "text-yellow-400";
+
+  const ordersBorder = metrics.ordersPerMin > ORDER_FLOOD ? "border-red-700/60" : "border-blue-700/60";
+  const ordersText = metrics.ordersPerMin > ORDER_FLOOD ? "text-red-400" : "text-blue-400";
 
   const cards: MetricCardProps[] = [
     {
       label: "Orders / min",
       value: metrics.ordersPerMin,
-      borderClass: "border-blue-700/60",
-      textClass: "text-blue-400",
+      borderClass: ordersBorder,
+      textClass: ordersText,
     },
     {
       label: "Fills / min",
@@ -130,8 +214,8 @@ export function ThroughputGaugesPanel() {
     {
       label: "Fill rate",
       value: `${metrics.fillRate}%`,
-      borderClass: "border-yellow-700/60",
-      textClass: "text-yellow-400",
+      borderClass: fillRateBorder,
+      textClass: fillRateText,
     },
     {
       label: "Active strategies",
@@ -186,7 +270,7 @@ export function ThroughputGaugesPanel() {
               <Line
                 type="monotone"
                 dataKey="count"
-                stroke="#3b82f6"
+                stroke={metrics.ordersPerMin > ORDER_FLOOD ? "#f87171" : "#3b82f6"}
                 strokeWidth={1.5}
                 dot={false}
                 isAnimationActive={false}

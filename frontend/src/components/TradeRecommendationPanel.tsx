@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useGetRecommendationsMutation } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
-import type { Recommendation, RecommendationResponse, SignalStrength } from "../types/analytics.ts";
+import type {
+  Recommendation,
+  RecommendationResponse,
+  SignalStrength,
+} from "../types/analytics.ts";
 
 const SIGNAL_STYLES: Record<SignalStrength, { badge: string; dot: string }> = {
   STRONG_BUY: {
@@ -18,6 +22,7 @@ const SIGNAL_STYLES: Record<SignalStrength, { badge: string; dot: string }> = {
 };
 
 const REASON_LABELS: Record<string, string> = {
+  // Structural rule codes
   DEEP_ITM: "Deep ITM",
   DEEP_OTM: "Deep OTM",
   ATM_HIGH_VOL: "ATM + High Vol",
@@ -30,11 +35,18 @@ const REASON_LABELS: Record<string, string> = {
   NEAR_EXPIRY_RISK: "Near Expiry",
   WIDE_BID_ASK_PROXY: "Wide Spread",
   FAVOURABLE_RISK_REWARD: "Good R/R",
+  // Intelligence feature names
+  momentum: "Momentum",
+  relativeVolume: "Rel. Volume",
+  realisedVol: "Realised Vol",
+  sectorRelativeStrength: "Sector RS",
+  eventScore: "Event Score",
+  newsVelocity: "News Velocity",
+  sentimentDelta: "Sentiment Δ",
 };
 
 function fmtExpiry(secs: number): string {
-  const days = Math.round(secs / 86400);
-  return `${days}d`;
+  return `${Math.round(secs / 86400)}d`;
 }
 
 function ScoreBar({ score }: { score: number }) {
@@ -64,6 +76,15 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
   const [expanded, setExpanded] = useState(false);
   const s = SIGNAL_STYLES[rec.signalStrength];
 
+  // Format reason string: factor contribution codes look like "momentum:+0.123"
+  function formatReason(r: string): string {
+    if (r.includes(":")) {
+      const [name, contrib] = r.split(":");
+      return `${REASON_LABELS[name] ?? name} ${contrib}`;
+    }
+    return REASON_LABELS[r] ?? r;
+  }
+
   return (
     <li className="border-b border-gray-800 last:border-0" data-testid="recommendation-row">
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: list row toggle */}
@@ -90,7 +111,7 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
         <ScoreBar score={rec.score} />
         <span className="text-[10px] text-gray-500 tabular-nums w-8 text-right">
           {rec.score > 0 ? "+" : ""}
-          {rec.score}
+          {rec.score.toFixed(0)}
         </span>
         <span className="text-gray-600 text-xs ml-1">{expanded ? "▾" : "▸"}</span>
       </div>
@@ -105,14 +126,40 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
             <div className="text-[10px] text-gray-500">
               Vol {(rec.impliedVol * 100).toFixed(1)}%
             </div>
+            {rec.scoringMode && (
+              <div className="text-[10px]">
+                <span
+                  className={`px-1 py-0.5 rounded text-[8px] ${
+                    rec.scoringMode === "signal-driven"
+                      ? "bg-blue-900/40 text-blue-400"
+                      : "bg-gray-800 text-gray-500"
+                  }`}
+                >
+                  {rec.scoringMode}
+                </span>
+              </div>
+            )}
           </div>
+          {rec.scoringMode === "signal-driven" && rec.signalScore !== undefined && (
+            <div className="text-[9px] text-gray-500 mb-2">
+              Signal: {rec.signalScore >= 0 ? "+" : ""}{rec.signalScore.toFixed(3)} ·{" "}
+              <span className="capitalize">{rec.signalDirection}</span> ·{" "}
+              conf {((rec.signalConfidence ?? 0) * 100).toFixed(0)}%
+            </div>
+          )}
           <div className="flex flex-wrap gap-1">
             {rec.reasons.map((r) => (
               <span
                 key={r}
-                className="text-[9px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-500 border border-gray-700"
+                className={`text-[9px] px-1.5 py-0.5 rounded border ${
+                  r.includes(":") && r.includes("+")
+                    ? "bg-emerald-900/30 text-emerald-400 border-emerald-800"
+                    : r.includes(":") && r.includes("-")
+                      ? "bg-red-900/30 text-red-400 border-red-800"
+                      : "bg-gray-800 text-gray-500 border-gray-700"
+                }`}
               >
-                {REASON_LABELS[r] ?? r}
+                {formatReason(r)}
               </span>
             ))}
           </div>
@@ -123,16 +170,31 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
 }
 
 export function TradeRecommendationPanel() {
-  const symbols = useAppSelector((s) => Object.keys(s.market.assets));
+  const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
   const [symbol, setSymbol] = useState(symbols[0] ?? "AAPL");
   const [result, setResult] = useState<RecommendationResponse | null>(null);
   const [filterStrength, setFilterStrength] = useState<SignalStrength | "ALL">("ALL");
+
+  // Read live intelligence signal for this symbol
+  const signal = useAppSelector((s) => s.intelligence.signals[symbol]);
 
   const [getRecommendations, { isLoading, error }] = useGetRecommendationsMutation();
 
   async function handleFetch() {
     try {
-      const res = await getRecommendations({ symbol }).unwrap();
+      const res = await getRecommendations({
+        symbol,
+        ...(signal
+          ? {
+              signal: {
+                score: signal.score,
+                direction: signal.direction,
+                confidence: signal.confidence,
+                factors: signal.factors,
+              },
+            }
+          : {}),
+      }).unwrap();
       setResult(res);
       setFilterStrength("ALL");
     } catch {
@@ -145,6 +207,13 @@ export function TradeRecommendationPanel() {
       ? result.recommendations
       : result.recommendations.filter((r) => r.signalStrength === filterStrength)
     : [];
+
+  const signalColor =
+    signal?.direction === "long"
+      ? "text-emerald-400"
+      : signal?.direction === "short"
+        ? "text-red-400"
+        : "text-gray-400";
 
   return (
     <div
@@ -180,6 +249,40 @@ export function TradeRecommendationPanel() {
           {isLoading ? "Analysing…" : "Analyse"}
         </button>
       </div>
+
+      {/* Live signal context banner */}
+      {signal && (
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-gray-900/50 border-b border-gray-800 shrink-0">
+          <span className="text-[9px] text-gray-600 uppercase tracking-wide shrink-0">Signal</span>
+          <span className={`text-[11px] font-mono tabular-nums ${signalColor}`}>
+            {signal.score >= 0 ? "+" : ""}
+            {signal.score.toFixed(3)}
+          </span>
+          <span className={`text-[9px] capitalize ${signalColor}`}>{signal.direction}</span>
+          <span className="text-[9px] text-gray-600">
+            conf {(signal.confidence * 100).toFixed(0)}%
+          </span>
+          <div className="ml-auto flex gap-1 flex-wrap">
+            {[...signal.factors]
+              .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
+              .slice(0, 3)
+              .map((f) => (
+                <span
+                  key={f.name}
+                  className={`text-[8px] px-1 py-0.5 rounded ${
+                    f.contribution > 0
+                      ? "bg-emerald-900/40 text-emerald-400"
+                      : "bg-red-900/40 text-red-400"
+                  }`}
+                >
+                  {REASON_LABELS[f.name] ?? f.name}:{" "}
+                  {f.contribution > 0 ? "+" : ""}
+                  {f.contribution.toFixed(3)}
+                </span>
+              ))}
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="px-4 py-2 text-red-400 text-[10px] border-b border-gray-800">
@@ -237,8 +340,8 @@ export function TradeRecommendationPanel() {
           </div>
 
           <div className="px-4 py-1.5 border-t border-gray-800 shrink-0 text-[9px] text-gray-700">
-            {new Date(result.computedAt).toLocaleTimeString()} · Rule-based scoring · For
-            educational use only
+            {new Date(result.computedAt).toLocaleTimeString()} ·{" "}
+            {signal ? "Signal-driven scoring" : "Rule-based scoring"} · For educational use only
           </div>
         </>
       )}

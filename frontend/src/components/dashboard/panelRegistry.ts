@@ -42,6 +42,11 @@ export const PANEL_IDS = [
   "algo-leaderboard",
   "load-test",
   "llm-subsystem",
+  "greeks-surface",
+  "vol-profile",
+  "estate-overview",
+  "yield-curve",
+  "price-fan",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -66,7 +71,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   alerts: "Alerts (system notifications)",
   "option-pricing": "Option Pricing (Black-Scholes)",
   "scenario-matrix": "Scenario Matrix (spot/vol shocks)",
-  "trade-recommendation": "Trade Recommendations (rule-based)",
+  "trade-recommendation": "Trade Recommendations (signal-driven)",
   "market-data-sources": "Market Data Sources (provider config)",
   "market-feed-control": "Market Feed Control (feed health)",
   "research-radar": "Signal Radar (market intelligence)",
@@ -77,6 +82,11 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "algo-leaderboard": "Algo Leaderboard (strategy performance)",
   "load-test": "Load Test (bulk order injection)",
   "llm-subsystem": "LLM Advisory Subsystem (operator controls)",
+  "greeks-surface": "Greeks Surface (strike profile)",
+  "vol-profile": "Volatility Profile (EWMA trend)",
+  "estate-overview": "Estate Overview (command centre)",
+  "yield-curve": "Yield Curve (Nelson-Siegel)",
+  "price-fan": "Price Fan (GBM projection)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -131,6 +141,16 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Admin-only bulk order injector — submit configurable volumes of synthetic orders to stress-test the pipeline",
   "llm-subsystem":
     "LLM Advisory Subsystem operator controls — arm/disarm the advisory engine, set trigger mode, and start the worker",
+  "greeks-surface":
+    "Delta, gamma, theta, and vega across the strike surface — visualise Greeks vs moneyness for any symbol and expiry",
+  "vol-profile":
+    "EWMA volatility trend (λ=0.94) with rolling baseline — auto-refreshes every 60s to track realised vol evolution",
+  "estate-overview":
+    "Unified estate command centre — service health chips, throughput gauges, 5-minute event timeline, and live alert feed in one panel",
+  "yield-curve":
+    "Nelson-Siegel spot yield curve with implied forward rates and bond pricing (price, duration, convexity, DV01)",
+  "price-fan":
+    "Forward price projection fan chart — GBM Monte Carlo confidence bands (p5/p25/p50/p75/p95) for any equity",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -188,4 +208,9 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "algo-leaderboard": { out: false, in: false },
   "load-test": { out: false, in: false },
   "llm-subsystem": { out: false, in: false },
+  "greeks-surface": { out: false, in: false },
+  "vol-profile": { out: false, in: false },
+  "estate-overview": { out: false, in: false },
+  "yield-curve": { out: false, in: false },
+  "price-fan": { out: false, in: false },
 };

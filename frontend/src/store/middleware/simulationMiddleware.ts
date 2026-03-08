@@ -5,7 +5,6 @@ import type {
   ChildOrder,
   LiquidityFlag,
   MarketPrices,
-  ObsEvent,
   OrderRecord,
   VenueMIC,
 } from "../../types.ts";
@@ -97,15 +96,6 @@ type SimListenerAPI = ListenerEffectAPI<SimState, Dispatch<UnknownAction>>;
 const TWAP_INTERVAL_MS = 5000;
 const POV_INTERVAL_MS = 5000;
 const VWAP_INTERVAL_MS = 5000;
-const OBS_URL = import.meta.env.VITE_OBS_URL ?? "http://localhost:5007";
-
-function sendObsEvent(evt: Partial<ObsEvent>): void {
-  fetch(`${OBS_URL}/events`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(evt),
-  }).catch(() => {});
-}
 
 function startTwapSimulation(order: OrderRecord, api: SimListenerAPI): void {
   api.dispatch(ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "working" } }));
@@ -281,21 +271,3 @@ startAppListening({
   },
 });
 
-startAppListening({
-  actionCreator: ordersSlice.actions.orderAdded,
-  effect: (action) => {
-    sendObsEvent({ type: "order_submitted", ts: Date.now(), payload: { order: action.payload } });
-  },
-});
-startAppListening({
-  actionCreator: ordersSlice.actions.orderPatched,
-  effect: (action) => {
-    sendObsEvent({ type: "order_patch", ts: Date.now(), payload: action.payload });
-  },
-});
-startAppListening({
-  actionCreator: ordersSlice.actions.childAdded,
-  effect: (action) => {
-    sendObsEvent({ type: "child_created", ts: Date.now(), payload: action.payload });
-  },
-});

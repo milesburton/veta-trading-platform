@@ -75,12 +75,32 @@ try {
 } catch { /* column already exists */ }
 
 // Seed users (INSERT OR IGNORE — idempotent)
-const SEED_USERS = [
-  { id: "alice", name: "Alice Chen",    role: "trader", emoji: "AC" },
-  { id: "bob",   name: "Bob Martinez",  role: "trader", emoji: "BM" },
-  { id: "carol", name: "Carol Singh",   role: "trader", emoji: "CS" },
-  { id: "dave",  name: "Dave Okafor",   role: "trader", emoji: "DO" },
-  { id: "admin", name: "Admin",         role: "admin",  emoji: "AD" },
+const SEED_USERS: { id: string; name: string; role: string; emoji: string; limits?: { max_order_qty: number; max_daily_notional: number; allowed_strategies: string } }[] = [
+  { id: "alice", name: "Alice Chen",        role: "trader", emoji: "AC" },
+  { id: "bob",   name: "Bob Martinez",      role: "trader", emoji: "BM" },
+  { id: "carol", name: "Carol Singh",       role: "trader", emoji: "CS" },
+  { id: "dave",  name: "Dave Okafor",       role: "trader", emoji: "DO" },
+  // High-touch FI trader — large block sizes, all strategies, high daily notional
+  {
+    id: "frank", name: "Frank Liu",          role: "trader", emoji: "FL",
+    limits: { max_order_qty: 500_000, max_daily_notional: 50_000_000, allowed_strategies: "LIMIT,TWAP,POV,VWAP,ICEBERG,SNIPER,ARRIVAL_PRICE" },
+  },
+  // Low-touch FI trader — algo execution only (TWAP/VWAP), restricted notional
+  {
+    id: "grace", name: "Grace Kim",          role: "trader", emoji: "GK",
+    limits: { max_order_qty: 50_000, max_daily_notional: 5_000_000, allowed_strategies: "TWAP,VWAP" },
+  },
+  // High-touch equity trader — same profile as alice/bob but larger block size
+  {
+    id: "henry", name: "Henry Walsh",        role: "trader", emoji: "HW",
+    limits: { max_order_qty: 100_000, max_daily_notional: 10_000_000, allowed_strategies: "LIMIT,TWAP,POV,VWAP,ICEBERG,SNIPER,ARRIVAL_PRICE" },
+  },
+  // Low-touch equity trader — limit + simple algos only, smaller notional
+  {
+    id: "iris",  name: "Iris Nakamura",      role: "trader", emoji: "IN",
+    limits: { max_order_qty: 10_000, max_daily_notional: 1_000_000, allowed_strategies: "LIMIT,TWAP" },
+  },
+  { id: "admin", name: "Admin",             role: "admin",  emoji: "AD" },
 ];
 
 for (const u of SEED_USERS) {
@@ -94,11 +114,19 @@ for (const u of SEED_USERS) {
     "INSERT OR IGNORE INTO trading_limits (user_id) VALUES (?);",
     [u.id],
   );
-  // Ensure all seeded users have the full strategy list (idempotent upgrade)
-  db.query(
-    "UPDATE trading_limits SET allowed_strategies = 'LIMIT,TWAP,POV,VWAP,ICEBERG,SNIPER,ARRIVAL_PRICE' WHERE user_id = ?;",
-    [u.id],
-  );
+  if (u.limits) {
+    // Apply persona-specific limits (idempotent — only set if this user has custom limits defined)
+    db.query(
+      "UPDATE trading_limits SET max_order_qty = ?, max_daily_notional = ?, allowed_strategies = ? WHERE user_id = ?;",
+      [u.limits.max_order_qty, u.limits.max_daily_notional, u.limits.allowed_strategies, u.id],
+    );
+  } else {
+    // Ensure generic traders have the full strategy list (idempotent upgrade)
+    db.query(
+      "UPDATE trading_limits SET allowed_strategies = 'LIMIT,TWAP,POV,VWAP,ICEBERG,SNIPER,ARRIVAL_PRICE' WHERE user_id = ?;",
+      [u.id],
+    );
+  }
   db.query(
     "INSERT OR IGNORE INTO user_preferences (user_id, data) VALUES (?, '{}');",
     [u.id],

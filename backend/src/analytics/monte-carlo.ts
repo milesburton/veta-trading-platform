@@ -2,7 +2,8 @@
  * Monte Carlo simulation for option price distribution.
  *
  * Uses single-step Geometric Brownian Motion with a seeded LCG for
- * deterministic results given the same inputs.
+ * deterministic results given the same inputs. Employs antithetic variates
+ * (pairing z and -z) to halve estimator variance at no additional cost.
  */
 
 import type { OptionType } from "./types.ts";
@@ -10,7 +11,7 @@ import type { OptionType } from "./types.ts";
 // ── Seeded LCG PRNG ───────────────────────────────────────────────────────────
 
 /** Linear congruential generator — Park-Miller parameters. */
-function makeLcg(seed: number): () => number {
+export function makeLcg(seed: number): () => number {
   let s = seed >>> 0;
   return () => {
     s = Math.imul(s, 1664525) + 1013904223;
@@ -22,7 +23,7 @@ function makeLcg(seed: number): () => number {
  * Simple hash of a string to a uint32 seed.
  * djb2 variant — good enough for seeding Monte Carlo.
  */
-function hashSeed(key: string): number {
+export function hashSeed(key: string): number {
   let h = 5381;
   for (let i = 0; i < key.length; i++) {
     h = (Math.imul(h, 33) ^ key.charCodeAt(i)) >>> 0;
@@ -33,7 +34,7 @@ function hashSeed(key: string): number {
 // ── Box-Muller transform ──────────────────────────────────────────────────────
 
 /** Generate a standard normal sample from two uniform(0,1) samples. */
-function boxMuller(u1: number, u2: number): number {
+export function boxMuller(u1: number, u2: number): number {
   return Math.sqrt(-2 * Math.log(u1 + 1e-15)) * Math.cos(2 * Math.PI * u2);
 }
 
@@ -66,7 +67,7 @@ export interface MonteCarloResult {
  * @param T          - time to expiry in years
  * @param r          - risk-free rate (annual)
  * @param sigma      - volatility (annual)
- * @param paths      - number of simulation paths (default 1000)
+ * @param paths      - number of simulation paths (default 5000; must be even)
  * @param seedKey    - deterministic seed string (e.g. "AAPL-150-3600")
  */
 export function monteCarlo(
@@ -76,7 +77,7 @@ export function monteCarlo(
   T: number,
   r: number,
   sigma: number,
-  paths = 1000,
+  paths = 5000,
   seedKey = "",
 ): MonteCarloResult {
   if (T <= 0 || sigma <= 0) {
@@ -84,27 +85,29 @@ export function monteCarlo(
     return { p5: intrinsic, p25: intrinsic, mean: intrinsic, p75: intrinsic, p95: intrinsic };
   }
 
+  // Ensure paths is even for antithetic pairing
+  const n = paths % 2 === 0 ? paths : paths + 1;
+
   const rand = makeLcg(hashSeed(seedKey || `${optionType}-${S}-${K}-${T}`));
   const discount = Math.exp(-r * T);
   const drift = (r - 0.5 * sigma * sigma) * T;
   const diffusion = sigma * Math.sqrt(T);
 
-  const prices = new Float64Array(paths);
-  for (let i = 0; i < paths; i += 2) {
-    const z1 = boxMuller(rand(), rand());
-    const z2 = i + 1 < paths ? boxMuller(rand(), rand()) : z1;
+  const prices = new Float64Array(n);
+  for (let i = 0; i < n; i += 2) {
+    // Antithetic variates: use z and -z to reduce variance
+    const z = boxMuller(rand(), rand());
+    const zAnt = -z;
 
-    for (let j = 0; j < 2 && i + j < paths; j++) {
-      const z = j === 0 ? z1 : z2;
-      const ST = S * Math.exp(drift + diffusion * z);
-      const payoff = optionType === "call" ? Math.max(0, ST - K) : Math.max(0, K - ST);
-      prices[i + j] = payoff * discount;
-    }
+    const ST = S * Math.exp(drift + diffusion * z);
+    const STa = S * Math.exp(drift + diffusion * zAnt);
+    prices[i] = (optionType === "call" ? Math.max(0, ST - K) : Math.max(0, K - ST)) * discount;
+    prices[i + 1] = (optionType === "call" ? Math.max(0, STa - K) : Math.max(0, K - STa)) * discount;
   }
 
   prices.sort();
 
-  const mean = prices.reduce((a, b) => a + b, 0) / paths;
+  const mean = prices.reduce((a, b) => a + b, 0) / n;
 
   return {
     p5: percentile(prices, 5),

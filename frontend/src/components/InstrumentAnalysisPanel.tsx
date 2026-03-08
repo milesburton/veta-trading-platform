@@ -2,12 +2,22 @@
  * Instrument Analysis Panel
  *
  * Deep-dive for the symbol received on the incoming channel:
- *  - 7 feature bars
+ *  - 7 feature bars (z-score normalised across all tracked symbols)
  *  - Signal direction + score header
- *  - Backtest replay button
+ *  - Backtest replay as dual-axis Recharts ComposedChart
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import {
+  ComposedChart,
+  Line,
+  YAxis,
+  XAxis,
+  ReferenceLine,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import { AdvisoryPanel } from "./AdvisoryPanel.tsx";
@@ -22,19 +32,10 @@ const FEATURE_LABELS: Record<string, string> = {
   sentimentDelta: "Sent. Delta",
 };
 
-const FEATURE_SCALES: Record<string, number> = {
-  momentum: 0.05,
-  relativeVolume: 3.0,
-  realisedVol: 0.8,
-  sectorRelativeStrength: 0.03,
-  eventScore: 2.0,
-  newsVelocity: 10,
-  sentimentDelta: 1.0,
-};
+const FEATURE_KEYS = Object.keys(FEATURE_LABELS);
 
-function FeatureBar({ name, value }: { name: string; value: number }) {
-  const scale = FEATURE_SCALES[name] ?? 1;
-  const normalised = Math.max(-1, Math.min(1, value / scale));
+function FeatureBar({ name, value, zScore }: { name: string; value: number; zScore: number }) {
+  const normalised = Math.max(-1, Math.min(1, zScore));
   const isPositive = normalised >= 0;
 
   return (
@@ -65,11 +66,40 @@ interface ReplayFrame {
   signal: { score: number; direction: string; confidence: number };
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: recharts tooltip type
+function ReplayTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  const score = payload.find((p: { dataKey: string }) => p.dataKey === "score");
+  const price = payload.find((p: { dataKey: string }) => p.dataKey === "close");
+  return (
+    <div className="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[10px]">
+      <div className="text-gray-500 mb-0.5">{new Date(label).toLocaleTimeString()}</div>
+      {price && (
+        <div className="text-gray-300">
+          Price: <span className="tabular-nums">${(price.value as number).toFixed(2)}</span>
+        </div>
+      )}
+      {score && (
+        <div style={{ color: (score.value as number) >= 0 ? "#34d399" : "#f87171" }}>
+          Score:{" "}
+          <span className="tabular-nums">
+            {(score.value as number) >= 0 ? "+" : ""}
+            {(score.value as number).toFixed(3)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function InstrumentAnalysisPanel() {
   const channelData = useChannelIn();
   const symbol = channelData?.selectedAsset ?? "";
   const signal = useAppSelector((s) => (symbol ? s.intelligence.signals[symbol] : undefined));
   const fv = useAppSelector((s) => (symbol ? s.intelligence.features[symbol] : undefined));
+
+  // All features across all symbols for cross-symbol z-score normalisation
+  const allFeatures = useAppSelector((s) => s.intelligence.features);
 
   const [replayLoading, setReplayLoading] = useState(false);
   const [replayFrames, setReplayFrames] = useState<ReplayFrame[] | null>(null);
@@ -77,6 +107,25 @@ export function InstrumentAnalysisPanel() {
 
   const GATEWAY =
     (import.meta as { env: Record<string, string> }).env.VITE_GATEWAY_URL ?? "/api/gateway";
+
+  // Compute per-feature mean and std across all tracked symbols
+  const featureStats = useMemo(() => {
+    const symbols = Object.keys(allFeatures);
+    const stats: Record<string, { mean: number; std: number }> = {};
+    for (const key of FEATURE_KEYS) {
+      const vals = symbols
+        .map((s) => (allFeatures[s] as unknown as Record<string, number>)[key])
+        .filter((v) => typeof v === "number" && Number.isFinite(v));
+      if (vals.length === 0) {
+        stats[key] = { mean: 0, std: 1 };
+        continue;
+      }
+      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const variance = vals.reduce((a, b) => a + (b - mean) ** 2, 0) / vals.length;
+      stats[key] = { mean, std: Math.sqrt(variance) || 1 };
+    }
+    return stats;
+  }, [allFeatures]);
 
   async function runBacktest() {
     if (!symbol) return;
@@ -116,6 +165,13 @@ export function InstrumentAnalysisPanel() {
         ? "text-red-400"
         : "text-gray-400";
 
+  // Build chart data: ts, close, score
+  const chartData = replayFrames?.map((f) => ({
+    ts: f.ts,
+    close: f.close,
+    score: f.signal.score,
+  }));
+
   return (
     <div className="h-full flex flex-col bg-gray-950 text-gray-100 overflow-auto">
       <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-800 shrink-0">
@@ -139,13 +195,13 @@ export function InstrumentAnalysisPanel() {
       <div className="p-3 border-b border-gray-800 shrink-0">
         <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Features</div>
         {fv ? (
-          Object.keys(FEATURE_LABELS).map((k) => (
-            <FeatureBar
-              key={k}
-              name={k}
-              value={(fv as unknown as Record<string, number>)[k] ?? 0}
-            />
-          ))
+          FEATURE_KEYS.map((k) => {
+            const raw = (fv as unknown as Record<string, number>)[k] ?? 0;
+            const { mean, std } = featureStats[k] ?? { mean: 0, std: 1 };
+            return (
+              <FeatureBar key={k} name={k} value={raw} zScore={(raw - mean) / std} />
+            );
+          })
         ) : (
           <div className="text-xs text-gray-600">No feature data yet…</div>
         )}
@@ -164,46 +220,64 @@ export function InstrumentAnalysisPanel() {
           {replayLoading ? "Running…" : "Run Backtest"}
         </button>
         {replayError && <div className="mt-2 text-xs text-red-400">{replayError}</div>}
-        {replayFrames && (
-          <div className="mt-2 overflow-auto max-h-40">
-            <div className="text-[10px] text-gray-500 mb-1">{replayFrames.length} frames</div>
-            <table className="w-full text-[10px] font-mono">
-              <thead>
-                <tr className="text-gray-500 border-b border-gray-800">
-                  <th className="text-left py-0.5">Time</th>
-                  <th className="text-right py-0.5">Close</th>
-                  <th className="text-right py-0.5">Score</th>
-                  <th className="text-left py-0.5 pl-2">Dir</th>
-                </tr>
-              </thead>
-              <tbody>
-                {replayFrames.slice(-20).map((f) => {
-                  const c =
-                    f.signal.direction === "long"
-                      ? "#34d399"
-                      : f.signal.direction === "short"
-                        ? "#f87171"
-                        : "#9ca3af";
-                  return (
-                    <tr key={f.ts} className="border-b border-gray-900">
-                      <td className="py-0.5 text-gray-500">
-                        {new Date(f.ts).toLocaleTimeString()}
-                      </td>
-                      <td className="text-right py-0.5 tabular-nums text-gray-300">
-                        {f.close.toFixed(2)}
-                      </td>
-                      <td className="text-right py-0.5 tabular-nums" style={{ color: c }}>
-                        {f.signal.score >= 0 ? "+" : ""}
-                        {f.signal.score.toFixed(3)}
-                      </td>
-                      <td className="py-0.5 pl-2 capitalize" style={{ color: c }}>
-                        {f.signal.direction}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+
+        {chartData && chartData.length > 0 && (
+          <div className="mt-3">
+            <div className="text-[10px] text-gray-500 mb-1">{chartData.length} frames</div>
+            <ResponsiveContainer width="100%" height={160}>
+              <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis
+                  dataKey="ts"
+                  hide
+                  type="number"
+                  domain={["dataMin", "dataMax"]}
+                  scale="time"
+                />
+                {/* Left Y: signal score */}
+                <YAxis
+                  yAxisId="score"
+                  domain={[-1, 1]}
+                  tick={{ fill: "#60a5fa", fontSize: 9 }}
+                  width={30}
+                  tickFormatter={(v: number) => v.toFixed(1)}
+                />
+                {/* Right Y: price */}
+                <YAxis
+                  yAxisId="price"
+                  orientation="right"
+                  tick={{ fill: "#9ca3af", fontSize: 9 }}
+                  width={38}
+                  tickFormatter={(v: number) => `$${v.toFixed(0)}`}
+                />
+                <Tooltip content={<ReplayTooltip />} />
+                <ReferenceLine yAxisId="score" y={0} stroke="#374151" strokeDasharray="3 3" />
+                <Line
+                  yAxisId="score"
+                  dataKey="score"
+                  stroke="#60a5fa"
+                  dot={false}
+                  strokeWidth={1.5}
+                  isAnimationActive={false}
+                />
+                <Line
+                  yAxisId="price"
+                  dataKey="close"
+                  stroke="#6b7280"
+                  dot={false}
+                  strokeWidth={1}
+                  isAnimationActive={false}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+            <div className="flex gap-4 mt-1 text-[9px] text-gray-600">
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-3 h-px bg-blue-400" /> Signal score (left)
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-3 h-px bg-gray-500" /> Price (right)
+              </span>
+            </div>
           </div>
         )}
       </div>

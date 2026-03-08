@@ -297,57 +297,6 @@ describe("simulationMiddleware – VWAP", () => {
   });
 });
 
-// ─── Observability side-effects ───────────────────────────────────────────────
-
-describe("simulationMiddleware – observability events", () => {
-  it("calls fetch when an order is added (order_submitted event)", () => {
-    const store = makeStore();
-    store.dispatch(ordersSlice.actions.orderAdded(makeOrder()));
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/events"),
-      expect.objectContaining({ method: "POST" })
-    );
-  });
-
-  it("calls fetch when an order is patched (order_patch event)", () => {
-    const store = makeStore();
-    store.dispatch(ordersSlice.actions.orderAdded(makeOrder()));
-    vi.clearAllMocks();
-    store.dispatch(
-      ordersSlice.actions.orderPatched({ id: "order-1", patch: { status: "filled" } })
-    );
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/events"),
-      expect.objectContaining({ method: "POST" })
-    );
-  });
-
-  it("calls fetch when a child is added (child_created event)", () => {
-    const store = makeStore();
-    store.dispatch(ordersSlice.actions.orderAdded(makeOrder()));
-    vi.clearAllMocks();
-    store.dispatch(
-      ordersSlice.actions.childAdded({
-        parentId: "order-1",
-        child: {
-          id: "c-1",
-          parentId: "order-1",
-          asset: "AAPL",
-          side: "BUY",
-          quantity: 25,
-          limitPrice: 150,
-          status: "filled",
-          filled: 25,
-          submittedAt: NOW,
-        },
-      })
-    );
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/events"),
-      expect.objectContaining({ method: "POST" })
-    );
-  });
-});
 
 // ─── Gateway-connected guard ──────────────────────────────────────────────────
 

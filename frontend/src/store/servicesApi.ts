@@ -51,9 +51,9 @@ const SERVICES: {
     link: `${import.meta.env.VITE_VWAP_URL ?? `${_origin}/api/vwap-algo`}/health`,
   },
   {
-    name: "Observability",
-    url: `${import.meta.env.VITE_OBS_URL ?? `${_origin}/api/observability`}/health`,
-    link: `${import.meta.env.VITE_OBS_URL ?? `${_origin}/api/observability`}/health`,
+    name: "Grafana",
+    url: `${import.meta.env.VITE_GRAFANA_URL ?? "http://localhost:3000"}/api/health`,
+    link: import.meta.env.VITE_GRAFANA_URL ?? "http://localhost:3000",
     optional: true,
   },
   {

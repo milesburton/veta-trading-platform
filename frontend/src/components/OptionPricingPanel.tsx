@@ -1,7 +1,61 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { useGetQuoteMutation } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import type { OptionQuoteResponse, OptionType } from "../types/analytics.ts";
+
+// ── Inline Black-Scholes Greeks for client-side sensitivity chart ─────────────
+
+function normCdf(x: number): number {
+  const sign = x < 0 ? -1 : 1;
+  const t = 1.0 / (1.0 + 0.3275911 * Math.abs(x));
+  const y =
+    ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) *
+    t;
+  return 0.5 * (1.0 + sign * (1.0 - y * Math.exp(-x * x)));
+}
+
+function normPdf(x: number): number {
+  return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+}
+
+function bsGreeks(
+  type: OptionType,
+  S: number,
+  K: number,
+  T: number,
+  r: number,
+  sigma: number,
+): { delta: number; gamma: number; theta: number; vega: number } {
+  if (T <= 0 || sigma <= 0 || S <= 0 || K <= 0) {
+    return { delta: 0, gamma: 0, theta: 0, vega: 0 };
+  }
+  const sqrtT = Math.sqrt(T);
+  const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * sqrtT);
+  const d2 = d1 - sigma * sqrtT;
+  const nd1 = normPdf(d1);
+  const discount = Math.exp(-r * T);
+
+  const delta = type === "call" ? normCdf(d1) : normCdf(d1) - 1;
+  const gamma = nd1 / (S * sigma * sqrtT);
+  const theta =
+    (-(S * nd1 * sigma) / (2 * sqrtT) -
+      r * K * discount * (type === "call" ? normCdf(d2) : 1 - normCdf(d2))) /
+    365;
+  const vega = (S * sqrtT * nd1) / 100;
+  return { delta, gamma, theta, vega };
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const EXPIRY_OPTIONS = [
   { label: "7d", secs: 7 * 86400 },
@@ -31,15 +85,40 @@ function GreekRow({ label, value, title }: { label: string; value: string; title
   );
 }
 
+const CHART_TOOLTIP_STYLE = {
+  backgroundColor: "#111827",
+  border: "1px solid #374151",
+  fontSize: 9,
+  padding: "4px 8px",
+};
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export function OptionPricingPanel() {
-  const symbols = useAppSelector((s) => Object.keys(s.market.assets));
+  const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
   const [symbol, setSymbol] = useState(symbols[0] ?? "AAPL");
   const [optionType, setOptionType] = useState<OptionType>("call");
   const [strike, setStrike] = useState("");
   const [expirySecs, setExpirySecs] = useState(30 * 86400);
+  const [customDate, setCustomDate] = useState("");
   const [result, setResult] = useState<OptionQuoteResponse | null>(null);
 
   const [getQuote, { isLoading, error }] = useGetQuoteMutation();
+
+  // Auto-populate strike from live market price when symbol changes
+  const currentPrice = useAppSelector((s) => s.market.prices[symbol]);
+  useEffect(() => {
+    if (currentPrice && currentPrice > 0) {
+      setStrike(currentPrice.toFixed(2));
+    }
+  }, [symbol, currentPrice]);
+
+  function handleCustomDate(dateStr: string) {
+    setCustomDate(dateStr);
+    if (!dateStr) return;
+    const days = Math.max(1, Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86_400_000));
+    setExpirySecs(days * 86400);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,6 +131,31 @@ export function OptionPricingPanel() {
       /* error shown below */
     }
   }
+
+  // Build 25-point sensitivity series client-side (no extra network round-trip)
+  const sensitivityData = useMemo(() => {
+    if (!result) return [];
+    const T = result.expirySecs / (365 * 86400);
+    const r = 0.05;
+    return Array.from({ length: 25 }, (_, i) => {
+      const S = result.spotPrice * (0.70 + i * (0.60 / 24));
+      const { delta, gamma, theta, vega } = bsGreeks(
+        result.optionType,
+        S,
+        result.strike,
+        T,
+        r,
+        result.impliedVol,
+      );
+      return {
+        spot: S.toFixed(1),
+        delta: +delta.toFixed(4),
+        "gamma×100": +(gamma * 100).toFixed(5),
+        theta: +theta.toFixed(5),
+        vega: +vega.toFixed(4),
+      };
+    });
+  }, [result]);
 
   return (
     <div
@@ -115,13 +219,18 @@ export function OptionPricingPanel() {
             </div>
           </div>
 
-          {/* Strike */}
+          {/* Strike — auto-populated from live price */}
           <div className="flex flex-col gap-1">
             <label
               htmlFor="op-strike"
               className="text-[10px] text-gray-500 uppercase tracking-wide"
             >
-              Strike ($)
+              Strike ($){" "}
+              {currentPrice ? (
+                <span className="text-gray-600 normal-case">
+                  (spot {currentPrice.toFixed(2)})
+                </span>
+              ) : null}
             </label>
             <input
               id="op-strike"
@@ -136,27 +245,41 @@ export function OptionPricingPanel() {
             />
           </div>
 
-          {/* Expiry */}
+          {/* Expiry — presets + custom date */}
           <div className="flex flex-col gap-1">
             <label
-              htmlFor="op-expiry"
+              htmlFor="op-expiry-date"
               className="text-[10px] text-gray-500 uppercase tracking-wide"
             >
               Expiry
             </label>
-            <select
-              id="op-expiry"
-              value={expirySecs}
-              onChange={(e) => setExpirySecs(Number(e.target.value))}
-              data-testid="expiry-input"
-              className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200"
-            >
+            <div className="flex gap-1 flex-wrap">
               {EXPIRY_OPTIONS.map((o) => (
-                <option key={o.secs} value={o.secs}>
+                <button
+                  key={o.secs}
+                  type="button"
+                  onClick={() => {
+                    setExpirySecs(o.secs);
+                    setCustomDate("");
+                  }}
+                  className={`px-1.5 py-0.5 rounded text-[9px] transition-colors ${
+                    expirySecs === o.secs && !customDate
+                      ? "bg-blue-700 text-white"
+                      : "bg-gray-800 text-gray-500 hover:text-gray-300"
+                  }`}
+                >
                   {o.label}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
+            <input
+              id="op-expiry-date"
+              type="date"
+              value={customDate}
+              onChange={(e) => handleCustomDate(e.target.value)}
+              data-testid="expiry-input"
+              className="bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-[10px] text-gray-200 mt-0.5"
+            />
           </div>
         </div>
 
@@ -197,11 +320,15 @@ export function OptionPricingPanel() {
               </div>
               <div>
                 <span className="text-gray-500">Strike</span>
-                <div className="text-gray-300 tabular-nums font-mono">${fmt(result.strike, 2)}</div>
+                <div className="text-gray-300 tabular-nums font-mono">
+                  ${fmt(result.strike, 2)}
+                </div>
               </div>
               <div>
                 <span className="text-gray-500">Impl. Vol</span>
-                <div className="text-gray-300 tabular-nums font-mono">{pct(result.impliedVol)}</div>
+                <div className="text-gray-300 tabular-nums font-mono">
+                  {pct(result.impliedVol)}
+                </div>
               </div>
             </div>
           </div>
@@ -238,8 +365,61 @@ export function OptionPricingPanel() {
             </div>
           </div>
 
+          {/* Greeks sensitivity chart */}
+          {sensitivityData.length > 0 && (
+            <div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">
+                Greeks vs Spot (±30%)
+              </div>
+              <ResponsiveContainer width="100%" height={170}>
+                <LineChart data={sensitivityData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis
+                    dataKey="spot"
+                    tick={{ fontSize: 8, fill: "#6b7280" }}
+                    interval={4}
+                  />
+                  <YAxis tick={{ fontSize: 8, fill: "#6b7280" }} />
+                  <Tooltip
+                    contentStyle={CHART_TOOLTIP_STYLE}
+                    formatter={(val: number, name: string) => [val.toFixed(5), name]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 8, paddingTop: 4 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="delta"
+                    stroke="#34d399"
+                    dot={false}
+                    strokeWidth={1.5}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="gamma×100"
+                    stroke="#60a5fa"
+                    dot={false}
+                    strokeWidth={1.5}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="theta"
+                    stroke="#f87171"
+                    dot={false}
+                    strokeWidth={1.5}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="vega"
+                    stroke="#a78bfa"
+                    dot={false}
+                    strokeWidth={1.5}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
           <div className="text-[9px] text-gray-700 text-right">
-            Computed {new Date(result.computedAt).toLocaleTimeString()}
+            Computed {new Date(result.computedAt).toLocaleTimeString()} · EWMA vol
           </div>
         </div>
       )}
@@ -252,3 +432,4 @@ export function OptionPricingPanel() {
     </div>
   );
 }
+

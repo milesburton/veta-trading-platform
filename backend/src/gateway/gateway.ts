@@ -739,6 +739,22 @@ serve(async (req: Request): Promise<Response> => {
     return proxyPost(`${ANALYTICS_URL}/recommend`, req);
   }
 
+  const volProfileMatch = path.match(/^\/analytics\/vol-profile\/(.+)$/);
+  if (volProfileMatch && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    const qs = url.search;
+    return proxyGet(`${ANALYTICS_URL}/vol-profile/${encodeURIComponent(volProfileMatch[1])}${qs}`, req);
+  }
+
+  const greeksSurfaceMatch = path.match(/^\/analytics\/greeks-surface\/(.+)$/);
+  if (greeksSurfaceMatch && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    const qs = url.search;
+    return proxyGet(`${ANALYTICS_URL}/greeks-surface/${encodeURIComponent(greeksSurfaceMatch[1])}${qs}`, req);
+  }
+
   const featureMatch = path.match(/^\/intelligence\/features(\/.*)?$/);
   if (featureMatch && req.method === "GET") {
     const auth = await requireAuth(req);

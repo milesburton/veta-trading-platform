@@ -73,19 +73,12 @@ export interface ScenarioResponse {
 
 export type SignalStrength = "STRONG_BUY" | "BUY" | "NEUTRAL" | "SELL" | "STRONG_SELL";
 
-export type SignalReason =
-  | "DEEP_ITM"
-  | "DEEP_OTM"
-  | "ATM_HIGH_VOL"
-  | "LOW_TIME_VALUE"
-  | "HIGH_THETA_DECAY"
-  | "POSITIVE_DELTA_TREND"
-  | "NEGATIVE_DELTA_TREND"
-  | "VOL_PREMIUM_ELEVATED"
-  | "VOL_DISCOUNT"
-  | "NEAR_EXPIRY_RISK"
-  | "WIDE_BID_ASK_PROXY"
-  | "FAVOURABLE_RISK_REWARD";
+export interface SignalInput {
+  score: number;
+  direction: "long" | "short" | "neutral";
+  confidence: number;
+  factors: { name: string; weight: number; contribution: number }[];
+}
 
 export interface Recommendation {
   optionType: OptionType;
@@ -94,9 +87,14 @@ export interface Recommendation {
   price: number;
   score: number;
   signalStrength: SignalStrength;
-  reasons: SignalReason[];
+  reasons: string[];
   greeks: Greeks;
   impliedVol: number;
+  scoringMode: "rule-based" | "signal-driven";
+  signalScore?: number;
+  signalConfidence?: number;
+  signalDirection?: string;
+  topFactors?: { name: string; contribution: number }[];
 }
 
 export interface RecommendationRequest {
@@ -104,6 +102,7 @@ export interface RecommendationRequest {
   riskFreeRate?: number;
   strikes?: number[];
   expiries?: number[];
+  signal?: SignalInput;
 }
 
 export interface RecommendationResponse {
@@ -111,5 +110,115 @@ export interface RecommendationResponse {
   spotPrice: number;
   impliedVol: number;
   recommendations: Recommendation[];
+  computedAt: number;
+}
+
+// ── Volatility Profile ────────────────────────────────────────────────────────
+
+export interface VolProfileSample {
+  ts: number;
+  vol: number;
+}
+
+export interface VolProfileResponse {
+  symbol: string;
+  spotPrice: number | null;
+  ewmaVol: number;
+  rollingVol: number;
+  series: VolProfileSample[];
+  computedAt: number;
+}
+
+// ── Bond Pricing ──────────────────────────────────────────────────────────────
+
+export interface BondPriceRequest {
+  face?: number;
+  couponRate: number;
+  periodsPerYear?: number;
+  totalPeriods: number;
+  yieldAnnual: number;
+}
+
+export interface BondPriceResponse {
+  price: number;
+  yieldAnnual: number;
+  modifiedDuration: number;
+  convexity: number;
+  dv01: number;
+  cashFlows: { t: number; cf: number; pv: number }[];
+  computedAt: number;
+}
+
+// ── Yield Curve ───────────────────────────────────────────────────────────────
+
+export interface NelsonSiegelParams {
+  beta0: number;
+  beta1: number;
+  beta2: number;
+  lambda: number;
+}
+
+export interface YieldCurvePoint {
+  tenorYears: number;
+  tenorLabel: string;
+  spotRate: number;
+}
+
+export interface ForwardRate {
+  fromYears: number;
+  toYears: number;
+  label: string;
+  rate: number;
+}
+
+export interface YieldCurveRequest {
+  params?: Partial<NelsonSiegelParams>;
+}
+
+export interface YieldCurveResponse {
+  curve: YieldCurvePoint[];
+  forwardRates: ForwardRate[];
+  computedAt: number;
+}
+
+// ── Price Fan ─────────────────────────────────────────────────────────────────
+
+export interface PriceFanStep {
+  step: number;
+  tSecs: number;
+  p5: number;
+  p25: number;
+  p50: number;
+  p75: number;
+  p95: number;
+}
+
+export interface PriceFanResponse {
+  symbol: string;
+  spotPrice: number;
+  impliedVol: number;
+  riskFreeRate: number;
+  steps: PriceFanStep[];
+  computedAt: number;
+}
+
+// ── Greeks Surface ────────────────────────────────────────────────────────────
+
+export interface GreeksSurfacePoint {
+  strike: number;
+  moneyness: number;
+  callDelta: number;
+  gamma: number;
+  theta: number;
+  vega: number;
+  callPrice: number;
+}
+
+export interface GreeksSurfaceResponse {
+  symbol: string;
+  spotPrice: number;
+  impliedVol: number;
+  expirySecs: number;
+  strikes: GreeksSurfacePoint[];
   computedAt: number;
 }

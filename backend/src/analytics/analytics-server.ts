@@ -1,27 +1,45 @@
 /**
  * Analytics Service — port 5014
  *
- * Endpoints (all POST, JSON body):
- *   POST /quote        — Black-Scholes option price + Greeks
- *   POST /scenario     — Scenario matrix (spot/vol shocks) with Monte Carlo
- *   POST /recommend    — Rule-based trade recommendations
+ * Endpoints:
+ *   POST /quote                  — Black-Scholes option price + Greeks
+ *   POST /scenario               — Scenario matrix (spot/vol shocks) with Monte Carlo
+ *   POST /recommend              — Trade recommendations (rule-based or signal-driven)
+ *   GET  /vol-profile/:symbol    — EWMA vol trend series for charting
+ *   GET  /greeks-surface/:symbol — Greeks across strike range at given expiry
  *   GET  /health
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { blackScholes } from "./black-scholes.ts";
+import { priceBond } from "./bond-pricing.ts";
 import { monteCarlo } from "./monte-carlo.ts";
-import { DEFAULT_EXPIRIES_SECS, generateStrikes, scoreOption } from "./recommendation-engine.ts";
+import { priceFan } from "./price-fan.ts";
+import {
+  DEFAULT_EXPIRIES_SECS,
+  generateStrikes,
+  scoreOption,
+  scoreOptionWithSignal,
+} from "./recommendation-engine.ts";
 import type {
+  BondPriceRequest,
+  BondPriceResponse,
+  GreeksSurfacePoint,
+  GreeksSurfaceResponse,
   OptionQuoteRequest,
   OptionQuoteResponse,
+  PriceFanResponse,
   RecommendationRequest,
   RecommendationResponse,
   ScenarioCell,
   ScenarioRequest,
   ScenarioResponse,
+  VolProfileResponse,
+  YieldCurveRequest,
+  YieldCurveResponse,
 } from "./types.ts";
-import { estimateVol, fetchSpotPrice } from "./volatility-estimator.ts";
+import { estimateVol, estimateVolProfile, fetchSpotPrice } from "./volatility-estimator.ts";
+import { buildYieldCurveResponse } from "./yield-curve.ts";
 
 const PORT = Number(Deno.env.get("ANALYTICS_PORT")) || 5_014;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -175,7 +193,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       return err("Invalid JSON body");
     }
 
-    const { symbol, riskFreeRate = 0.05, strikes: reqStrikes, expiries: reqExpiries } = body;
+    const { symbol, riskFreeRate = 0.05, strikes: reqStrikes, expiries: reqExpiries, signal } = body;
     if (!symbol) return err("Missing required field: symbol");
 
     const spot = await resolveSpot(symbol);
@@ -190,12 +208,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       for (const expirySecs of expiries) {
         const T = expirySecs / (365 * 86400);
         for (const optionType of ["call", "put"] as const) {
-          recommendations.push(scoreOption(optionType, spot, K, T, riskFreeRate, sigma));
+          const rec = signal
+            ? scoreOptionWithSignal(optionType, spot, K, T, riskFreeRate, sigma, signal)
+            : scoreOption(optionType, spot, K, T, riskFreeRate, sigma);
+          recommendations.push(rec);
         }
       }
     }
 
-    // Sort by score descending
     recommendations.sort((a, b) => b.score - a.score);
 
     const response: RecommendationResponse = {
@@ -203,6 +223,125 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       spotPrice: spot,
       impliedVol: sigma,
       recommendations,
+      computedAt: Date.now(),
+    };
+    return json(response);
+  }
+
+  // ── GET /vol-profile/:symbol ─────────────────────────────────────────────────
+  if (path.startsWith("/vol-profile/") && req.method === "GET") {
+    const symbol = decodeURIComponent(path.slice("/vol-profile/".length));
+    if (!symbol) return err("Missing symbol");
+
+    const profile = await estimateVolProfile(JOURNAL_URL, symbol);
+    if (!profile) return err(`Insufficient candle data for ${symbol}`, 404);
+
+    const spot = await resolveSpot(symbol);
+
+    const response: VolProfileResponse = {
+      symbol,
+      spotPrice: spot,
+      ewmaVol: profile.ewmaVol,
+      rollingVol: profile.rollingVol,
+      series: profile.ewmaSeries,
+      computedAt: Date.now(),
+    };
+    return json(response);
+  }
+
+  // ── GET /greeks-surface/:symbol ──────────────────────────────────────────────
+  if (path.startsWith("/greeks-surface/") && req.method === "GET") {
+    const symbol = decodeURIComponent(path.slice("/greeks-surface/".length));
+    if (!symbol) return err("Missing symbol");
+
+    const expirySecs = Number(url.searchParams.get("expirySecs")) || 30 * 86400;
+    const riskFreeRate = Number(url.searchParams.get("riskFreeRate")) || 0.05;
+
+    const spot = await resolveSpot(symbol);
+    if (!spot) return err(`Cannot resolve spot for ${symbol}`, 404);
+
+    const sigma = await estimateVol(JOURNAL_URL, symbol);
+    const T = expirySecs / (365 * 86400);
+
+    // 25 strikes from 70% to 130% of spot
+    const strikePoints: GreeksSurfacePoint[] = Array.from({ length: 25 }, (_, i) => {
+      const K = spot * (0.70 + i * (0.60 / 24));
+      const { price: callPrice, greeks } = blackScholes("call", spot, K, T, riskFreeRate, sigma);
+      return {
+        strike: K,
+        moneyness: K / spot,
+        callDelta: greeks.delta,
+        gamma: greeks.gamma,
+        theta: greeks.theta,
+        vega: greeks.vega,
+        callPrice,
+      };
+    });
+
+    const response: GreeksSurfaceResponse = {
+      symbol,
+      spotPrice: spot,
+      impliedVol: sigma,
+      expirySecs,
+      strikes: strikePoints,
+      computedAt: Date.now(),
+    };
+    return json(response);
+  }
+
+  // ── POST /bond-price ──────────────────────────────────────────────────────────
+  if (path === "/bond-price" && req.method === "POST") {
+    let body: BondPriceRequest;
+    try {
+      body = await req.json() as BondPriceRequest;
+    } catch {
+      return err("Invalid JSON body");
+    }
+
+    const { couponRate, totalPeriods, yieldAnnual } = body;
+    if (couponRate == null || totalPeriods == null || yieldAnnual == null) {
+      return err("Missing required fields: couponRate, totalPeriods, yieldAnnual");
+    }
+
+    const response: BondPriceResponse = priceBond(body);
+    return json(response);
+  }
+
+  // ── POST /yield-curve ─────────────────────────────────────────────────────────
+  if (path === "/yield-curve" && req.method === "POST") {
+    let body: YieldCurveRequest = {};
+    try {
+      body = await req.json() as YieldCurveRequest;
+    } catch { /* empty body is fine */ }
+
+    const response: YieldCurveResponse = buildYieldCurveResponse(body.params);
+    return json(response);
+  }
+
+  // ── GET /price-fan/:symbol ────────────────────────────────────────────────────
+  if (path.startsWith("/price-fan/") && req.method === "GET") {
+    const symbol = decodeURIComponent(path.slice("/price-fan/".length));
+    if (!symbol) return err("Missing symbol");
+
+    const steps = Math.max(1, Math.min(200, Number(url.searchParams.get("steps")) || 24));
+    const stepSecs = Math.max(60, Number(url.searchParams.get("stepSecs")) || 3600);
+    const paths = Math.max(100, Math.min(2000, Number(url.searchParams.get("paths")) || 500));
+    const riskFreeRate = Number(url.searchParams.get("riskFreeRate")) || 0.05;
+
+    const spot = await resolveSpot(symbol);
+    if (spot === null) return err(`Cannot resolve spot price for ${symbol}`, 404);
+
+    const sigma = await estimateVol(JOURNAL_URL, symbol);
+    const seedKey = `fan-${symbol}-${steps}-${stepSecs}`;
+
+    const fanSteps = priceFan(spot, sigma, riskFreeRate, steps, stepSecs, paths, seedKey);
+
+    const response: PriceFanResponse = {
+      symbol,
+      spotPrice: spot,
+      impliedVol: sigma,
+      riskFreeRate,
+      steps: fanSteps,
       computedAt: Date.now(),
     };
     return json(response);

@@ -14,11 +14,9 @@ import { marketDataApi } from "./marketDataApi.ts";
 import { marketSlice } from "./marketSlice.ts";
 import { alertsMiddleware } from "./middleware/alertsMiddleware.ts";
 import { gatewayMiddleware } from "./middleware/gatewayMiddleware.ts";
-import { observabilityMiddleware } from "./middleware/observabilityMiddleware.ts";
 import { simulationMiddleware } from "./middleware/simulationMiddleware.ts";
 import { versionWatchMiddleware } from "./middleware/versionWatchMiddleware.ts";
 import { newsSlice } from "./newsSlice.ts";
-import { obsApi } from "./obsApi.ts";
 import { observabilitySlice } from "./observabilitySlice.ts";
 import { ordersSlice } from "./ordersSlice.ts";
 import { servicesApi } from "./servicesApi.ts";
@@ -44,7 +42,6 @@ export const store = configureStore({
     advisory: advisorySlice.reducer,
     llmSubsystem: llmSubsystemSlice.reducer,
     [servicesApi.reducerPath]: servicesApi.reducer,
-    [obsApi.reducerPath]: obsApi.reducer,
     [analyticsApi.reducerPath]: analyticsApi.reducer,
     [marketDataApi.reducerPath]: marketDataApi.reducer,
     [advisoryApi.reducerPath]: advisoryApi.reducer,
@@ -52,13 +49,11 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat(servicesApi.middleware)
-      .concat(obsApi.middleware)
       .concat(analyticsApi.middleware)
       .concat(marketDataApi.middleware)
       .concat(advisoryApi.middleware)
       .concat(gatewayMiddleware)
       .concat(alertsMiddleware)
-      .concat(observabilityMiddleware)
       .concat(simulationMiddleware.middleware)
       .concat(versionWatchMiddleware)
       .concat(createBroadcastChannelMiddleware()),

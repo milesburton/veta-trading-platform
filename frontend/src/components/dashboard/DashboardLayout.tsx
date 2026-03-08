@@ -28,6 +28,11 @@ import { DecisionLog } from "../DecisionLog.tsx";
 import { ExecutionsPanel } from "../ExecutionsPanel.tsx";
 import { InstrumentAnalysisPanel } from "../InstrumentAnalysisPanel.tsx";
 import { LlmSubsystemPanel } from "../LlmSubsystemPanel.tsx";
+import { EstateOverviewPanel } from "../EstateOverviewPanel.tsx";
+import { GreeksSurfacePanel } from "../GreeksSurfacePanel.tsx";
+import { PriceFanPanel } from "../PriceFanPanel.tsx";
+import { VolatilityProfilePanel } from "../VolatilityProfilePanel.tsx";
+import { YieldCurvePanel } from "../YieldCurvePanel.tsx";
 import { LoadTestPanel } from "../LoadTestPanel.tsx";
 import { MarketDataSourcesPanel } from "../MarketDataSourcesPanel.tsx";
 import { MarketDepth } from "../MarketDepth.tsx";
@@ -470,7 +475,10 @@ function EmptyWorkspace() {
             onClick={() => resetLayout(tpl.model)}
             className="flex flex-col items-start gap-1 rounded-lg border border-gray-700 px-4 py-3 text-left transition-colors hover:border-emerald-600 hover:bg-emerald-950/30 cursor-pointer"
           >
-            <span className="text-[11px] font-semibold text-gray-300">{tpl.label}</span>
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-300">
+              {tpl.locked && <span className="text-[10px] text-gray-500">🔒</span>}
+              {tpl.label}
+            </span>
             <span className="text-[9px] text-gray-600 leading-tight">{tpl.description}</span>
           </button>
         ))}
@@ -669,6 +677,16 @@ export function DashboardLayout() {
           return wrap(<LoadTestPanel />);
         case "llm-subsystem":
           return wrap(<LlmSubsystemPanel />);
+        case "estate-overview":
+          return wrap(<EstateOverviewPanel />);
+        case "greeks-surface":
+          return wrap(<GreeksSurfacePanel />);
+        case "vol-profile":
+          return wrap(<VolatilityProfilePanel />);
+        case "yield-curve":
+          return wrap(<YieldCurvePanel />);
+        case "price-fan":
+          return wrap(<PriceFanPanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }

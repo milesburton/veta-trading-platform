@@ -1,23 +1,51 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { alertAdded, purgeServiceAlerts } from "../store/alertsSlice.ts";
+import { useAppDispatch } from "../store/hooks.ts";
+import type { AppDispatch } from "../store/index.ts";
 import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
 import type { ServiceHealth } from "../types.ts";
+
+const REQUIRED_SERVICES = new Set([
+  "Market Sim",
+  "EMS",
+  "OMS",
+  "Limit Algo",
+  "TWAP Algo",
+  "POV Algo",
+  "VWAP Algo",
+]);
 
 interface ServiceRowProps {
   svc: (typeof SERVICES)[number];
   onUpdate: (health: ServiceHealth) => void;
+  dispatch: AppDispatch;
 }
 
-function ServiceRow({ svc, onUpdate }: ServiceRowProps) {
+function ServiceRow({ svc, onUpdate, dispatch }: ServiceRowProps) {
   const { data, isError } = useGetServiceHealthQuery(svc, { pollingInterval: 10_000 });
 
   const prevRef = useRef<ServiceHealth | null>(null);
 
   useEffect(() => {
     if (data && data !== prevRef.current) {
+      const prev = prevRef.current;
       prevRef.current = data;
       onUpdate(data);
+
+      // Transition: error → ok — recovery alert + purge prior service alerts
+      if (prev?.state === "error" && data.state === "ok") {
+        dispatch(purgeServiceAlerts());
+        dispatch(
+          alertAdded({
+            severity: "INFO",
+            source: "service",
+            message: `${svc.name}: recovered`,
+            ts: Date.now(),
+          })
+        );
+      }
     }
-  }, [data, onUpdate]);
+  }, [data, onUpdate, dispatch, svc.name]);
 
   useEffect(() => {
     if (isError) {
@@ -35,9 +63,21 @@ function ServiceRow({ svc, onUpdate }: ServiceRowProps) {
       if (prevRef.current?.state !== "error") {
         prevRef.current = errHealth;
         onUpdate(errHealth);
+
+        // Transition: ok/unknown → error — tiered alert
+        const isRequired = REQUIRED_SERVICES.has(svc.name);
+        dispatch(
+          alertAdded({
+            severity: isRequired ? "CRITICAL" : "WARNING",
+            source: "service",
+            message: `${svc.name}: service down`,
+            detail: svc.url,
+            ts: Date.now(),
+          })
+        );
       }
     }
-  }, [isError, svc, onUpdate]);
+  }, [isError, svc, dispatch, onUpdate]);
 
   return null;
 }
@@ -90,6 +130,7 @@ function RowDisplay({ health, index, now }: RowDisplayProps) {
 }
 
 export function ServiceHealthPanel() {
+  const dispatch = useAppDispatch();
   const [healthMap, setHealthMap] = useState<Map<string, ServiceHealth>>(new Map());
   const [now, setNow] = useState(Date.now());
 
@@ -113,7 +154,7 @@ export function ServiceHealthPanel() {
   return (
     <div className="h-full flex flex-col bg-gray-950 text-gray-200 overflow-auto">
       {SERVICES.map((svc) => (
-        <ServiceRow key={svc.name} svc={svc} onUpdate={handleUpdate} />
+        <ServiceRow key={svc.name} svc={svc} onUpdate={handleUpdate} dispatch={dispatch} />
       ))}
 
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800 flex-shrink-0">
