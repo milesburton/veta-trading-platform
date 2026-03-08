@@ -1,8 +1,8 @@
-# Equities Trading Simulator
+# VETA Platform
 
-**Live demo:** https://virtual-equities-trading.fly.dev/
+**Virtual Equities Trading Application** — **Live demo:** https://virtual-equities-trading.fly.dev/
 
-A simulated equities trading environment comprising a market price engine, execution and order management systems, four algorithmic trading strategies, an observability service, and a React frontend.
+A simulated equities trading environment comprising a market price engine, execution and order management systems, algorithmic trading strategies, an observability service, and a React frontend.
 
 ## Documentation
 

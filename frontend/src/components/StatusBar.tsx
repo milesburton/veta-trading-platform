@@ -259,7 +259,7 @@ export function AppHeader() {
       <div className="flex items-center justify-between px-4 h-10 bg-gray-900 border-b border-gray-800 text-xs text-gray-400">
         <div className="flex items-center gap-5">
           <span className="text-emerald-400 font-bold tracking-widest uppercase text-[11px]">
-            Equities Trading Simulator
+            VETA Platform
           </span>
           <div className="flex items-center gap-1.5">
             <span

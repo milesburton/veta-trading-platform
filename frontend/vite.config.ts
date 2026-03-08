@@ -2,6 +2,14 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
+  define: {
+    "import.meta.env.VITE_BUILD_DATE": JSON.stringify(
+      process.env.VITE_BUILD_DATE ?? new Date().toISOString().slice(0, 10)
+    ),
+    "import.meta.env.VITE_COMMIT_SHA": JSON.stringify(
+      process.env.VITE_COMMIT_SHA ?? "dev"
+    ),
+  },
   plugins: [react({ babel: { plugins: [["module:@preact/signals-react-transform"]] } })],
   server: {
     port: 5173, // socat on 8080 proxies here

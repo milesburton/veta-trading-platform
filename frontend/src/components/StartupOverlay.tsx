@@ -19,7 +19,13 @@ const SERVICE_LABELS: Record<keyof ReadyResponse["services"], string> = {
 
 const POLL_INTERVAL_MS = 2_000;
 
-export function StartupOverlay({ onReady }: { onReady: () => void }) {
+interface Props {
+  onReady: () => void;
+  buildDate?: string;
+  commitSha?: string;
+}
+
+export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
   const [elapsed, setElapsed] = useState(0);
   const [services, setServices] = useState<ReadyResponse["services"] | null>(null);
   const startRef = useRef(Date.now());
@@ -72,11 +78,14 @@ export function StartupOverlay({ onReady }: { onReady: () => void }) {
     >
       <div className="flex flex-col items-center gap-4">
         <div className="flex flex-col items-center gap-1">
-          <div data-testid="brand-title" className="text-4xl font-bold text-white tracking-tight">
-            Veta
+          <div
+            data-testid="brand-title"
+            className="text-4xl font-bold text-gray-100 tracking-tight"
+          >
+            VETA
           </div>
           <div className="text-xs font-medium text-emerald-500 tracking-widest uppercase">
-            Equities Trading Simulator
+            Platform
           </div>
         </div>
         <div className="w-px h-6 bg-gray-800" />
@@ -112,6 +121,12 @@ export function StartupOverlay({ onReady }: { onReady: () => void }) {
 
       <div data-testid="startup-elapsed" className="text-xs text-gray-600 tabular-nums">
         {timeStr} elapsed
+      </div>
+
+      <div data-testid="startup-build-info" className="text-[10px] text-gray-700 tabular-nums">
+        {buildDate && <span>{buildDate}</span>}
+        {buildDate && commitSha && <span className="mx-1">·</span>}
+        {commitSha && <span>{commitSha}</span>}
       </div>
     </div>
   );

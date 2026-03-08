@@ -4,7 +4,6 @@ import { setUser } from "../store/authSlice.ts";
 import { useAppDispatch } from "../store/hooks.ts";
 import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
 
-// Core (non-optional) services that must be up for the platform to be tradeable
 const CORE_SERVICES = SERVICES.filter((s) => !s.optional);
 
 // Each service needs its own hook call — fixed list means fixed hook order is safe
@@ -68,8 +67,7 @@ function PlatformStatus() {
       : "bg-yellow-400";
 
   return (
-    <div data-testid="platform-status" className="mt-10 border-t border-gray-800 pt-5 space-y-3">
-      {/* Summary */}
+    <div data-testid="platform-status" className="mt-10 border-t border-gray-700 pt-5 space-y-3">
       <div className="flex items-center justify-center gap-2">
         <span
           data-testid="platform-status-dot"
@@ -79,7 +77,6 @@ function PlatformStatus() {
           {summaryLabel}
         </span>
       </div>
-      {/* Per-service dots */}
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">
         {CORE_SERVICES.map((s, i) => {
           const r = results[i];
@@ -129,7 +126,12 @@ const SEED_USERS: SeedUser[] = [
   { id: "admin", name: "Mission Control", role: "admin", avatar_emoji: "MC" },
 ];
 
-export function LoginPage() {
+interface LoginPageProps {
+  buildDate?: string;
+  commitSha?: string;
+}
+
+export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -157,19 +159,18 @@ export function LoginPage() {
   return (
     <div
       data-testid="login-page"
-      className="flex items-center justify-center min-h-screen bg-gray-950"
+      className="flex flex-col items-center justify-center min-h-screen bg-gray-950 py-8"
     >
-      <div className="w-full max-w-2xl px-6">
-        {/* Header */}
+      <div className="w-full max-w-2xl px-6 flex-1 flex flex-col justify-center">
         <div className="text-center mb-10">
           <div
             data-testid="brand-title"
-            className="text-3xl font-bold text-white tracking-tight mb-1"
+            className="text-3xl font-bold text-gray-100 tracking-tight mb-1"
           >
-            Veta
+            VETA
           </div>
           <div className="text-xs font-medium text-emerald-500 tracking-widest uppercase mb-6">
-            Equities Trading Simulator
+            Platform
           </div>
           <h1 data-testid="login-heading" className="text-2xl font-semibold text-gray-100 mb-1">
             Select your profile
@@ -177,7 +178,6 @@ export function LoginPage() {
           <p className="text-gray-500 text-sm">Choose a trader to begin your session</p>
         </div>
 
-        {/* Avatar tiles */}
         <div className="grid grid-cols-5 gap-3">
           {SEED_USERS.map((user) => {
             const isLoading = loading === user.id;
@@ -188,40 +188,42 @@ export function LoginPage() {
                 type="button"
                 onClick={() => handleSelect(user)}
                 disabled={loading !== null}
-                className={`
-                  group flex flex-col items-center gap-3 p-4 rounded-xl border transition-all duration-150
-                  ${
-                    loading !== null && !isLoading
-                      ? "opacity-40 cursor-not-allowed border-gray-800 bg-gray-900/30"
-                      : "cursor-pointer border-gray-700 bg-gray-900 hover:border-emerald-500 hover:bg-gray-800 hover:shadow-[0_0_20px_rgba(52,211,153,0.15)]"
-                  }
-                  ${isLoading ? "border-emerald-500 bg-gray-800 shadow-[0_0_20px_rgba(52,211,153,0.15)]" : ""}
-                `}
+                className={`group flex flex-col items-center gap-4 p-4 rounded-xl border transition-all duration-150 w-full ${
+                  loading !== null && !isLoading
+                    ? "opacity-40 cursor-not-allowed border-gray-800 bg-gray-900/30"
+                    : "cursor-pointer border-gray-700 bg-gray-900 hover:border-emerald-500 hover:bg-gray-800 hover:shadow-[0_0_20px_rgba(52,211,153,0.15)]"
+                } ${isLoading ? "border-emerald-500 bg-gray-800 shadow-[0_0_20px_rgba(52,211,153,0.15)]" : ""}`}
               >
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold tracking-wide select-none ${
-                    user.role === "admin"
-                      ? "bg-orange-900/60 text-orange-300 border border-orange-700/50"
-                      : "bg-gray-800 text-gray-200 border border-gray-600/50"
-                  }`}
-                >
-                  {user.avatar_emoji}
-                </div>
-                <div className="text-center">
-                  <div className="text-gray-100 font-medium text-xs leading-tight">{user.name}</div>
+                <div className="flex flex-col items-center gap-2 w-full">
                   <div
-                    className={`text-[10px] mt-1 font-medium uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                    className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold tracking-wide select-none shrink-0 ${
                       user.role === "admin"
-                        ? "bg-orange-900/50 text-orange-400"
-                        : "bg-blue-900/50 text-blue-400"
+                        ? "bg-orange-500/20 text-orange-500 border border-orange-500/40"
+                        : "bg-gray-700/50 text-gray-300 border border-gray-600/50"
+                    }`}
+                  >
+                    {user.avatar_emoji}
+                  </div>
+                  <div className="text-gray-200 font-medium text-xs leading-tight text-center min-h-[2.5em] flex items-center justify-center">
+                    {user.name}
+                  </div>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <div
+                    className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                      user.role === "admin"
+                        ? "bg-orange-500/15 text-orange-500 ring-1 ring-orange-500/30"
+                        : "bg-blue-500/15 text-blue-500 ring-1 ring-blue-500/30"
                     }`}
                   >
                     {user.role}
                   </div>
+                  <div className="h-3 flex items-center justify-center">
+                    {isLoading && (
+                      <div className="w-3 h-3 border border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </div>
                 </div>
-                {isLoading && (
-                  <div className="w-3 h-3 border border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                )}
               </button>
             );
           })}
@@ -237,6 +239,12 @@ export function LoginPage() {
         )}
 
         <PlatformStatus />
+      </div>
+
+      <div data-testid="login-build-info" className="text-[10px] text-gray-700 tabular-nums pb-4">
+        {buildDate && <span>{buildDate}</span>}
+        {buildDate && commitSha && <span className="mx-1">·</span>}
+        {commitSha && <span>{commitSha}</span>}
       </div>
     </div>
   );

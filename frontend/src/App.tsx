@@ -143,13 +143,16 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   if (status === "unauthenticated") {
-    return <LoginPage />;
+    return (
+      <LoginPage
+        buildDate={import.meta.env.VITE_BUILD_DATE}
+        commitSha={import.meta.env.VITE_COMMIT_SHA}
+      />
+    );
   }
 
   return <>{children}</>;
 }
-
-// ── TradingApp ─────────────────────────────────────────────────────────────────
 
 function TradingApp() {
   const userId = useAppSelector((s) => s.auth.user?.id ?? "anonymous");
@@ -431,7 +434,13 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      {!platformReady && <StartupOverlay onReady={() => setPlatformReady(true)} />}
+      {!platformReady && (
+        <StartupOverlay
+          onReady={() => setPlatformReady(true)}
+          buildDate={import.meta.env.VITE_BUILD_DATE}
+          commitSha={import.meta.env.VITE_COMMIT_SHA}
+        />
+      )}
       {platformReady && (
         <AuthGate>
           <TradingApp />

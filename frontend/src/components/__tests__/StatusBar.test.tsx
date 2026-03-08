@@ -80,7 +80,7 @@ function renderBar(connected: boolean) {
 test("shows Live when connected and shows time", () => {
   renderBar(true);
   expect(screen.getByText(/Live/)).toBeInTheDocument();
-  expect(screen.getByText(/Equities Trading Simulator/)).toBeInTheDocument();
+  expect(screen.getByText(/VETA Platform/)).toBeInTheDocument();
   expect(screen.getByText(/:/)).toBeInTheDocument();
 });
 
