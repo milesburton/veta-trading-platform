@@ -17,6 +17,7 @@ export interface Workspace {
   id: string;
   name: string;
   locked?: boolean;
+  userLocked?: boolean;
 }
 
 const TRADER_PRESET_WORKSPACES: {
@@ -205,7 +206,8 @@ export function WorkspaceSidebar({
     (id: string, name: string) => {
       const trimmed = name.trim();
       if (!trimmed) return;
-      if (workspaces.find((w) => w.id === id)?.locked) return;
+      const ws = workspaces.find((w) => w.id === id);
+      if (ws?.locked || ws?.userLocked) return;
       const next = workspaces.map((w) => (w.id === id ? { ...w, name: trimmed } : w));
       onWorkspacesChange(next);
     },
@@ -214,12 +216,23 @@ export function WorkspaceSidebar({
 
   const removeWorkspace = useCallback(
     (id: string) => {
-      if (workspaces.find((w) => w.id === id)?.locked) return;
+      const ws = workspaces.find((w) => w.id === id);
+      if (ws?.locked || ws?.userLocked) return;
       const next = workspaces.filter((w) => w.id !== id);
       onWorkspacesChange(next);
       if (activeId === id) onSelect(next[0]?.id ?? "");
     },
     [workspaces, activeId, onSelect, onWorkspacesChange]
+  );
+
+  const toggleUserLock = useCallback(
+    (id: string) => {
+      const ws = workspaces.find((w) => w.id === id);
+      if (!ws || ws.locked) return;
+      const next = workspaces.map((w) => (w.id === id ? { ...w, userLocked: !w.userLocked } : w));
+      onWorkspacesChange(next);
+    },
+    [workspaces, onWorkspacesChange]
   );
 
   function commitRename() {
@@ -235,7 +248,7 @@ export function WorkspaceSidebar({
   }
 
   function shareWorkspace(ws: Workspace) {
-    if (!layouts[ws.id]) return;
+    if (!layouts[ws.id] || ws.locked || ws.userLocked) return;
     setShareDialog({ ws, description: "" });
   }
 
@@ -324,7 +337,8 @@ export function WorkspaceSidebar({
             const active = ws.id === activeId;
             const isEditing = editingId.value === ws.id;
             const isConfirmingDelete = confirmDeleteId === ws.id;
-            const locked = ws.locked === true;
+            const presetLocked = ws.locked === true;
+            const locked = presetLocked || ws.userLocked === true;
 
             return (
               <li
@@ -386,9 +400,11 @@ export function WorkspaceSidebar({
                           aria-label={`Switch to workspace: ${ws.name}`}
                           aria-current={active ? "page" : undefined}
                           title={
-                            locked
-                              ? "Click to switch (locked — cannot rename or delete)"
-                              : "Click to switch · Right-click to rename"
+                            presetLocked
+                              ? "Click to switch (default workspace — cannot rename or delete)"
+                              : locked
+                                ? "Click to switch (locked — right-click to unlock)"
+                                : "Click to switch · Right-click to rename"
                           }
                           className={`flex-1 min-w-0 text-left text-[11px] truncate bg-transparent border-0 p-0 cursor-pointer ${
                             active ? "text-gray-200" : "text-gray-500 hover:text-gray-300"
@@ -396,32 +412,84 @@ export function WorkspaceSidebar({
                           onClick={() => onSelect(ws.id)}
                           onContextMenu={(e) => {
                             e.preventDefault();
-                            if (!locked) startRename(ws.id, ws.name);
+                            if (presetLocked) return;
+                            if (ws.userLocked) {
+                              toggleUserLock(ws.id);
+                            } else {
+                              startRename(ws.id, ws.name);
+                            }
                           }}
                         >
                           {ws.name}
                         </button>
                         {locked ? (
-                          <span
-                            title="This workspace is locked and cannot be renamed or deleted"
-                            className="shrink-0 text-gray-600 opacity-0 group-hover:opacity-100 p-0.5"
-                          >
-                            <svg
-                              aria-hidden="true"
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 16 16"
-                              fill="currentColor"
-                              className="w-3 h-3"
+                          presetLocked ? (
+                            <span
+                              title="Default workspace — cannot be renamed, deleted, or shared"
+                              className="shrink-0 text-gray-600 p-0.5"
                             >
-                              <path
-                                fillRule="evenodd"
-                                d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H3.75A1.75 1.75 0 0 0 2 7.75v4.5C2 13.216 2.784 14 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-4.5A1.75 1.75 0 0 0 12.25 6H11.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5V4.5a2 2 0 1 0-4 0V6h4Zm-1 4.25a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </span>
+                              <svg
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 16 16"
+                                fill="currentColor"
+                                className="w-3 h-3"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H3.75A1.75 1.75 0 0 0 2 7.75v4.5C2 13.216 2.784 14 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-4.5A1.75 1.75 0 0 0 12.25 6H11.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5V4.5a2 2 0 1 0-4 0V6h4Zm-1 4.25a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              aria-label={`Unlock workspace ${ws.name}`}
+                              title="Locked by you — right-click or click to unlock"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleUserLock(ws.id);
+                              }}
+                              className="shrink-0 text-amber-500 hover:text-amber-400 p-0.5 transition-colors"
+                            >
+                              <svg
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 16 16"
+                                fill="currentColor"
+                                className="w-3 h-3"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H3.75A1.75 1.75 0 0 0 2 7.75v4.5C2 13.216 2.784 14 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-4.5A1.75 1.75 0 0 0 12.25 6H11.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5V4.5a2 2 0 1 0-4 0V6h4Zm-1 4.25a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          )
                         ) : (
                           <>
+                            <button
+                              type="button"
+                              aria-label={`Lock workspace ${ws.name}`}
+                              title="Lock workspace (prevent rename and delete)"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleUserLock(ws.id);
+                              }}
+                              className="shrink-0 text-gray-600 hover:text-gray-400 opacity-0 group-hover:opacity-100 p-0.5 transition-all"
+                            >
+                              <svg
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 16 16"
+                                fill="currentColor"
+                                className="w-3 h-3"
+                              >
+                                <path d="M11.5 4.5a3.5 3.5 0 0 0-7 0V6H3.75A1.75 1.75 0 0 0 2 7.75v4.5C2 13.216 2.784 14 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-4.5A1.75 1.75 0 0 0 12.25 6H11.5V4.5Zm-1.5 0V6h-4V4.5a2 2 0 1 1 4 0Zm-1 5.75a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
+                              </svg>
+                            </button>
                             <button
                               type="button"
                               data-testid="share-workspace-btn"
@@ -486,15 +554,26 @@ export function WorkspaceSidebar({
                     data-testid={`workspace-tab-${ws.id}`}
                     aria-label={`Switch to workspace: ${ws.name}`}
                     aria-current={active ? "page" : undefined}
-                    title={locked ? `${ws.name} (locked)` : `Switch to workspace: ${ws.name}`}
+                    title={
+                      presetLocked
+                        ? `${ws.name} (default workspace)`
+                        : ws.userLocked
+                          ? `${ws.name} (locked by you)`
+                          : `Switch to workspace: ${ws.name}`
+                    }
                     onClick={() => onSelect(ws.id)}
                     className={`relative flex items-center justify-center w-8 h-8 text-[9px] font-semibold uppercase tracking-wider transition-colors ${
                       active ? "text-emerald-400" : "text-gray-600 hover:text-gray-300"
                     }`}
                   >
                     {ws.name.charAt(0)}
-                    {locked && (
+                    {presetLocked && (
                       <span className="absolute bottom-0.5 right-0.5 text-[6px] text-gray-600 leading-none">
+                        🔒
+                      </span>
+                    )}
+                    {ws.userLocked && !presetLocked && (
+                      <span className="absolute bottom-0.5 right-0.5 text-[6px] text-amber-500 leading-none">
                         🔒
                       </span>
                     )}

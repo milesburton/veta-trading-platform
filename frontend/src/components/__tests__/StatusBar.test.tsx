@@ -77,14 +77,8 @@ function renderBar(connected: boolean) {
   );
 }
 
-test("shows Live when connected and shows time", () => {
+test("shows brand name and time", () => {
   renderBar(true);
-  expect(screen.getByText(/Live/)).toBeInTheDocument();
   expect(screen.getByText(/VETA Platform/)).toBeInTheDocument();
   expect(screen.getByText(/:/)).toBeInTheDocument();
-});
-
-test("shows Disconnected when not connected", () => {
-  renderBar(false);
-  expect(screen.getByText(/Disconnected/)).toBeInTheDocument();
 });

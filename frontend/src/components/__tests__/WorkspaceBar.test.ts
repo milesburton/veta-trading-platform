@@ -138,3 +138,41 @@ describe("reconcilePresetWorkspaces", () => {
     expect(out).toHaveLength(4);
   });
 });
+
+// ── userLocked ────────────────────────────────────────────────────────────────
+
+describe("Workspace userLocked field", () => {
+  test("preset workspace does not have userLocked set", () => {
+    const { workspaces } = seedWorkspaces();
+    for (const w of workspaces) expect(w.userLocked).toBeUndefined();
+  });
+
+  test("custom workspace can carry userLocked=true", () => {
+    const custom: Workspace = { id: "ws-custom-1", name: "My Setup", userLocked: true };
+    expect(custom.userLocked).toBe(true);
+    expect(custom.locked).toBeUndefined();
+  });
+
+  test("reconcile preserves userLocked on custom workspaces", () => {
+    const { workspaces, layouts } = seedWorkspaces();
+    const custom: Workspace = { id: "ws-custom-1", name: "My Setup", userLocked: true };
+    const withCustom = [...workspaces, custom];
+
+    const { workspaces: out } = reconcilePresetWorkspaces(withCustom, layouts);
+    const found = out.find((w) => w.id === "ws-custom-1");
+    expect(found?.userLocked).toBe(true);
+  });
+
+  test("reconcile does not set userLocked on restored presets", () => {
+    const { workspaces, layouts } = seedWorkspaces();
+    const withoutAlgo = workspaces.filter((w) => w.id !== "ws-algo");
+    const withoutAlgoLayouts = Object.fromEntries(
+      Object.entries(layouts).filter(([k]) => k !== "ws-algo")
+    );
+
+    const { workspaces: out } = reconcilePresetWorkspaces(withoutAlgo, withoutAlgoLayouts);
+    const restored = out.find((w) => w.id === "ws-algo");
+    expect(restored?.userLocked).toBeUndefined();
+    expect(restored?.locked).toBe(true);
+  });
+});

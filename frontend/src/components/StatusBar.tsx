@@ -216,7 +216,6 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
 // ─── AppHeader: brand + feed + services + clock + user ───────────────────────
 
 export function AppHeader() {
-  const connected = useAppSelector((s) => s.market.connected);
   const updateAvailable = useAppSelector((s) => s.ui.updateAvailable);
   const user = useAppSelector((s) => s.auth.user);
   const services = useAllServiceHealth();
@@ -261,16 +260,6 @@ export function AppHeader() {
           <span className="text-emerald-400 font-bold tracking-widest uppercase text-[11px]">
             VETA Platform
           </span>
-          <div className="flex items-center gap-1.5">
-            <span
-              className={`inline-block w-2 h-2 rounded-full shrink-0 ${
-                connected ? "bg-emerald-400 shadow-[0_0_6px_#34d399]" : "bg-red-500"
-              }`}
-            />
-            <span className={connected ? "text-emerald-400" : "text-red-400"}>
-              {connected ? "Live" : "Disconnected"}
-            </span>
-          </div>
         </div>
 
         <div className="flex items-center gap-4">
