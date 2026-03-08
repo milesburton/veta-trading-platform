@@ -67,13 +67,6 @@ http:
       service: observability
       priority: 10
 
-    health:
-      rule: "Path(`/health`)"
-      entryPoints: [web]
-      middlewares: [health-rewrite]
-      service: observability
-      priority: 20
-
     redpanda-console:
       rule: "PathPrefix(`/admin/redpanda`)"
       entryPoints: [web]
@@ -198,9 +191,6 @@ http:
     obs-strip:
       stripPrefix:
         prefixes: ["/api/observability"]
-    health-rewrite:
-      replacePath:
-        path: "/health/all"
     fix-gw-strip:
       stripPrefix:
         prefixes: ["/api/fix-gateway"]
@@ -314,4 +304,4 @@ http:
     frontend:
       loadBalancer:
         servers:
-          - url: "http://localhost:8080"
+          - url: "http://localhost:3000"
