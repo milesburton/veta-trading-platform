@@ -1,16 +1,16 @@
 :root,
 [data-theme="dark"] {
-  --gray-50: 249 250 251;
-  --gray-100: 243 244 246;
-  --gray-200: 229 231 235;
-  --gray-300: 209 213 219;
-  --gray-400: 156 163 175;
-  --gray-500: 107 114 128;
-  --gray-600: 75 85 99;
-  --gray-700: 55 65 81;
-  --gray-800: 31 41 55;
-  --gray-900: 17 24 39;
-  --gray-950: 3 7 18;
+  --gray-50:  255 255 255;   /* pure white — high-emphasis headings */
+  --gray-100: 241 245 249;   /* primary text (~18:1 on 950) */
+  --gray-200: 214 224 236;   /* strong secondary text (~12:1) */
+  --gray-300: 182 196 212;   /* body / value text (~8:1) */
+  --gray-400: 152 165 182;   /* secondary labels (~5.5:1) */
+  --gray-500: 122 135 152;   /* muted labels (~3.5:1) */
+  --gray-600: 78  90 106;    /* disabled / decorative */
+  --gray-700: 52  64  80;    /* subtle borders */
+  --gray-800: 30  41  55;    /* panel backgrounds */
+  --gray-900: 15  23  38;    /* surface backgrounds */
+  --gray-950: 3    7  18;    /* page background */
 }
 
 [data-theme="darker"] {
