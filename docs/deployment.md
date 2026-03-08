@@ -1,6 +1,6 @@
 # Deployment — Fly.io
 
-Deployments to [https://virtual-equities-trading.fly.dev](https://virtual-equities-trading.fly.dev) are triggered automatically by GitHub Actions on push to `main` (lint → unit tests → deploy).
+Deployments to [https://virtual-equities-trading.fly.dev](https://virtual-equities-trading.fly.dev) are triggered manually via GitHub Actions (`workflow_dispatch`). Navigate to **Actions → Deploy to Fly.io → Run workflow** to deploy.
 
 ## First-time setup
 

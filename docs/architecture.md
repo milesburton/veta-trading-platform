@@ -39,17 +39,15 @@ The VETA Trading Platform is a multi-service backend connected by a **Redpanda m
    ▼       ▼          ▼                  ▼                ▼           ▼
 Market   OMS      Algo Strategies    Journal :5009   Observability  Intelligence
 Sim      :5002    Limit  :5003       (audit trail     :5007          Pipeline
-:5000    (route   TWAP   :5004        + candle store)  (events SSE)  :5016–5020
+:5000    (route   TWAP   :5004        + candle store)  (events SSE)  :5019–5023
          →        POV    :5005
          orders.  VWAP   :5006
-         routed)  Iceberg:5016*
-                  Sniper :5017*
-                  ArrPx  :5018*
+         routed)  Iceberg:5016
+                  Sniper :5017
+                  ArrPx  :5018
                   → EMS :5001
                   → orders.filled
 ```
-
-*Note: Iceberg, Sniper, and Arrival Price algos share port range 5016–5018 with intelligence services in the original plan but are at separate ports in this deployment — see [Service Ports](#service-ports) below.*
 
 ## Service Ports
 
@@ -103,24 +101,24 @@ Rejected orders (limit violation, expired session, admin role) publish `orders.r
 
 ```
 market.ticks ──────────────────────────────────┐
-news.events.normalised (from news-aggregator) ──┤→ Feature Engine :5019
+news.events.normalised (from news-aggregator) ──┤→ Feature Engine :5020
 market.external.events (from mkt-data-adapters)─┘  (7-feature FeatureVector per symbol)
                                                         │ market.features
                                                         ▼
-                                                Signal Engine :5020
+                                                Signal Engine :5021
                                                 (weighted scoring → Signal)
                                                         │ market.signals
                                                         ▼
-                                               Recommendation Engine :5021
+                                               Recommendation Engine :5022
                                                (confidence > 0.6 → TradeRecommendation)
                                                         │ market.recommendations
                                                         ▼
                                                     Gateway → GUI
 ```
 
-**Scenario Engine** (:5022): REST-only. Accepts `POST /scenario` with factor shocks, fetches the current FeatureVector from the Feature Engine, re-runs the signal scorer, returns `{ baseline, shocked, delta }`.
+**Scenario Engine** (:5023): REST-only. Accepts `POST /scenario` with factor shocks, fetches the current FeatureVector from the Feature Engine, re-runs the signal scorer, returns `{ baseline, shocked, delta }`.
 
-**Signal Engine backtest**: `POST /replay` accepts `{ symbol, from, to }`, reconstructs approximate FeatureVectors from historical candles, and returns a `ReplayFrame[]` array for signal history overlays.
+**Signal Engine backtest** (:5021): `POST /replay` accepts `{ symbol, from, to }`, reconstructs approximate FeatureVectors from historical candles, and returns a `ReplayFrame[]` array for signal history overlays.
 
 ### Feature Vectors (7 features per symbol, ~4/s)
 
@@ -400,7 +398,7 @@ Key middleware:
 
 ### Dashboard Panels
 
-The FlexLayout-based dashboard supports 20+ panel types registered in `panelRegistry.ts`. Layout templates are defined in `layoutModels.ts` (current storage key: `v8`).
+The FlexLayout-based dashboard supports 20+ panel types registered in `panelRegistry.ts`. Layout templates are defined in `layoutModels.ts` (current storage key: `v9`).
 
 | Panel ID | Description | Singleton |
 |---|---|---|
@@ -436,6 +434,8 @@ The FlexLayout-based dashboard supports 20+ panel types registered in `panelRegi
 | Research | Signal radar + instrument analysis + explainability |
 | Market Overview | 3-column price-focused layout |
 | Admin / Mission Control | Service health + throughput + algo leaderboard + load test + LLM subsystem |
+| AI Advisory | Signal radar → instrument analysis + price chart + order entry |
+| Intelligence Hub | Signal radar + heatmap → feature deep-dive + recommendations → news + alerts |
 
 ## Authentication
 
@@ -449,7 +449,7 @@ Session tokens are stored as `veta_user` HTTP-only cookies set by the User Servi
 | Backend integration | `deno test --allow-all backend/src/tests/integration.test.ts` | End-to-end order fill, algo slice counts, fill rates |
 | Algo integration | `deno test --allow-all backend/src/tests/algo.integration.test.ts` | LIMIT/TWAP/ICEBERG/SNIPER fill + performance assertions |
 | Load test | `deno test --allow-all backend/src/tests/load.test.ts` | Bulk injection, pipeline throughput, fill rate under load |
-| Frontend unit | `cd frontend && npm run test:unit` | Slices, components, panel registry, layout models (507 tests) |
+| Frontend unit | `cd frontend && npm run test:unit` | Slices, components, panel registry, layout models (570+ tests) |
 | Frontend E2E | `cd frontend && npx playwright test` | Auth, market data, order placement (34 tests, mocked gateway) |
 
 **Algo coverage gap**: POV, VWAP, and Arrival Price algos have health-check coverage only — no order-placement integration tests yet.

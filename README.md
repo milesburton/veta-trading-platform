@@ -2,40 +2,56 @@
 
 **Virtual Equities Trading Application** — **Live demo:** https://virtual-equities-trading.fly.dev/
 
-A simulated equities trading environment comprising a market price engine, execution and order management systems, algorithmic trading strategies, an observability service, and a React frontend.
+A simulated equities trading environment comprising a market price engine, execution and order management systems, algorithmic trading strategies, a market intelligence pipeline with LLM advisory, and a React frontend.
 
 ## Documentation
 
 - [Architecture & service map](docs/architecture.md)
 - [API reference](docs/api/)
+- [Deployment](docs/deployment.md)
 
 ## Project Structure
 
 ```
 backend/
   src/
-    market-sim/       Price engine and WebSocket feed
-    ems/              Execution Management System
-    oms/              Order Management System
-    algo/             Limit, TWAP, POV, and VWAP strategy servers
-    observability/    Event ingestion and SSE streaming
-    lib/              Shared utilities
-    types/            Shared type definitions
-    tests/            Unit, integration, and smoke tests
-  .env.template       Environment variable reference
+    market-sim/             Price engine and WebSocket feed
+    ems/                    Execution Management System
+    oms/                    Order Management System
+    algo/                   Limit, TWAP, POV, VWAP, Iceberg, Sniper, Arrival Price strategies
+    analytics/              Black-Scholes, Monte Carlo, rule-based recommendations
+    feature-engine/         7-feature FeatureVector computation per symbol
+    signal-engine/          Weighted signal scoring and backtest replay
+    recommendation-engine/  Trade recommendations from high-confidence signals
+    scenario-engine/        Factor-shock scenario analysis
+    llm-advisory/           LLM advisory orchestrator + worker (opt-in, local-only)
+    market-data/            Per-symbol source overrides (synthetic vs Alpha Vantage)
+    market-data-adapters/   Earnings, dividend, and macro event seeding
+    news/                   News aggregator with sentiment scoring
+    user-service/           Session tokens, user accounts, trading limits
+    journal/                Audit trail + candle store (SQLite)
+    observability/          Event ingestion and SSE streaming
+    fix/                    FIX 4.4 protocol engine and archive
+    gateway/                API Gateway / BFF (single browser entry point)
+    lib/                    Shared utilities (messaging, time scale)
+    types/                  Shared type definitions
+    tests/                  Unit, integration, algo, and smoke tests
+  .env.template             Environment variable reference
 
-frontend/             React + Vite + TypeScript trading UI
+frontend/                   React + Vite + TypeScript trading UI
   src/
-    components/       UI panels (OrderTicket, MarketLadder, OrderBlotter, etc.)
-    store/            Redux Toolkit slices, RTK Query APIs, and middleware
-    hooks/            usePopOut
-    context/          TradingContext (DOM focus only)
+    components/             UI panels (OrderTicket, MarketLadder, OrderBlotter, etc.)
+    store/                  Redux Toolkit slices, RTK Query APIs, and middleware
+    hooks/                  useChannelOut, useChannelIn
+    context/                TradingContext (DOM focus), ChannelContext
+    tests/                  Playwright E2E tests
 
 docs/
   architecture.md
+  deployment.md
   api/
 
-.devcontainer/        Dev Container definition
+.devcontainer/              Dev Container definition
 ```
 
 ## Getting Started
@@ -59,9 +75,9 @@ All backend services are written in Deno. Tasks are defined in `deno.json` at th
 ```sh
 deno task lint          # Lint backend source
 deno task check         # Type-check backend source
-deno task test:unit     # Run unit tests
+deno task test          # Run unit tests
 deno task test:smoke    # Run smoke tests (requires running services)
-deno task all           # lint → check → test:unit
+deno task all           # lint → check → test → test:smoke
 ```
 
 ## Frontend
