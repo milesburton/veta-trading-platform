@@ -9,6 +9,7 @@ import {
   makeClearModel,
 } from "./components/DashboardLayout.tsx";
 import { LoginPage } from "./components/LoginPage.tsx";
+import { StartupOverlay } from "./components/StartupOverlay.tsx";
 import { AppHeader, WorkspaceToolbar } from "./components/StatusBar.tsx";
 import { seedWorkspaces, useWorkspaces, WorkspaceSidebar } from "./components/WorkspaceBar.tsx";
 import { TradingProvider } from "./context/TradingContext.tsx";
@@ -419,11 +420,16 @@ function TradingApp() {
 }
 
 export default function App() {
+  const [platformReady, setPlatformReady] = useState(false);
+
   return (
     <ErrorBoundary>
-      <AuthGate>
-        <TradingApp />
-      </AuthGate>
+      {!platformReady && <StartupOverlay onReady={() => setPlatformReady(true)} />}
+      {platformReady && (
+        <AuthGate>
+          <TradingApp />
+        </AuthGate>
+      )}
       <ToastHost />
     </ErrorBoundary>
   );
