@@ -90,5 +90,5 @@ RUN deno cache \
     backend/src/llm-advisory/orchestrator.ts \
     backend/src/llm-advisory/worker.ts
 
-EXPOSE 80
+EXPOSE 8080
 CMD ["supervisord", "-c", "/app/supervisord-fly.conf"]

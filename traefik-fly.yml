@@ -7,7 +7,7 @@ api:
 
 entryPoints:
   web:
-    address: ":80"
+    address: ":8080"
 
 providers:
   file:
