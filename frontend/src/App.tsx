@@ -11,7 +11,12 @@ import {
 import { LoginPage } from "./components/LoginPage.tsx";
 import { StartupOverlay } from "./components/StartupOverlay.tsx";
 import { AppHeader, WorkspaceToolbar } from "./components/StatusBar.tsx";
-import { seedWorkspaces, useWorkspaces, WorkspaceSidebar } from "./components/WorkspaceBar.tsx";
+import {
+  reconcilePresetWorkspaces,
+  seedWorkspaces,
+  useWorkspaces,
+  WorkspaceSidebar,
+} from "./components/WorkspaceBar.tsx";
 import { TradingProvider } from "./context/TradingContext.tsx";
 import {
   fetchSharedWorkspace,
@@ -210,6 +215,12 @@ function TradingApp() {
         finalWorkspaces = finalWorkspaces.map((w) =>
           lockedIds.has(w.id) ? { ...w, locked: true as const } : w
         );
+        const reconciled = reconcilePresetWorkspaces(finalWorkspaces, finalLayoutsJson, userRole);
+        if (reconciled.restored.length > 0) {
+          finalWorkspaces = reconciled.workspaces;
+          finalLayoutsJson = reconciled.layouts;
+          saveWorkspacePrefs({ workspaces: finalWorkspaces, layouts: finalLayoutsJson });
+        }
       }
 
       const loaded: Record<string, Model> = {};

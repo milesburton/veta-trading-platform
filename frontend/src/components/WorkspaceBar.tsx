@@ -54,6 +54,51 @@ export function seedWorkspaces(role?: string): {
   return { workspaces, layouts };
 }
 
+/**
+ * Reconciles a user's saved workspace list against the current preset definitions.
+ *
+ * For each preset workspace the user is missing (e.g. added in a newer release),
+ * this inserts it at the correct position so the preset ordering is preserved.
+ * Existing workspaces (including custom user ones) are kept intact.
+ *
+ * Returns the merged workspace list and any newly-seeded layout JSON that must be
+ * saved alongside it.
+ */
+export function reconcilePresetWorkspaces(
+  saved: Workspace[],
+  layouts: Record<string, IJsonModel>,
+  role?: string
+): {
+  workspaces: Workspace[];
+  layouts: Record<string, IJsonModel>;
+  restored: string[];
+} {
+  const presets = role === "admin" ? ADMIN_PRESET_WORKSPACES : TRADER_PRESET_WORKSPACES;
+  const savedIds = new Set(saved.map((w) => w.id));
+  const restored: string[] = [];
+  const merged = [...saved];
+  const newLayouts: Record<string, IJsonModel> = {};
+
+  for (let i = 0; i < presets.length; i++) {
+    const preset = presets[i];
+    if (savedIds.has(preset.id)) continue;
+
+    const entry: Workspace = { id: preset.id, name: preset.name, locked: true };
+    newLayouts[preset.id] = preset.makeModel();
+    restored.push(preset.name);
+
+    const prevPresetId = i > 0 ? presets[i - 1].id : null;
+    const insertAfter = prevPresetId ? merged.findIndex((w) => w.id === prevPresetId) : -1;
+    merged.splice(insertAfter + 1, 0, entry);
+  }
+
+  return {
+    workspaces: merged,
+    layouts: { ...layouts, ...newLayouts },
+    restored,
+  };
+}
+
 // ─── Storage key (exported for backwards compat, no longer used for layouts) ──
 
 export function workspaceStorageKey(_userId: string, _workspaceId: string): string {
