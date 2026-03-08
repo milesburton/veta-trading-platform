@@ -116,6 +116,12 @@ http:
       service: gateway
       priority: 15
 
+    gateway-health:
+      rule: "Path(`/health`)"
+      entryPoints: [web]
+      service: gateway
+      priority: 20
+
     gateway-ws:
       rule: "PathPrefix(`/ws/gateway`)"
       entryPoints: [web]
