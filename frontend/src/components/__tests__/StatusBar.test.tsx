@@ -79,6 +79,6 @@ function renderBar(connected: boolean) {
 
 test("shows brand name and time", () => {
   renderBar(true);
-  expect(screen.getByText(/VETA Platform/)).toBeInTheDocument();
+  expect(screen.getByText(/VETA Trading Platform/)).toBeInTheDocument();
   expect(screen.getByText(/:/)).toBeInTheDocument();
 });

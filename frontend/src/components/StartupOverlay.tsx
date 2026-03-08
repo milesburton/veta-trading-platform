@@ -85,7 +85,7 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
             VETA
           </div>
           <div className="text-xs font-medium text-emerald-500 tracking-widest uppercase">
-            Platform
+            Trading Platform
           </div>
         </div>
         <div className="w-px h-6 bg-gray-800" />

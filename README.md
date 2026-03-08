@@ -1,4 +1,4 @@
-# VETA Platform
+# VETA Trading Platform
 
 **Virtual Equities Trading Application** — **Live demo:** https://virtual-equities-trading.fly.dev/
 

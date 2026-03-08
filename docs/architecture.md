@@ -2,7 +2,7 @@
 
 ## Overview
 
-The VETA Platform is a multi-service backend connected by a **Redpanda message bus** (Kafka-compatible). The React + Vite frontend connects to a single **API Gateway** — the only service reachable from the browser. All inter-service communication flows through bus topics; no service calls another service directly over HTTP (except the gateway→user-service for auth validation and the scenario-engine→feature-engine for feature lookups).
+The VETA Trading Platform is a multi-service backend connected by a **Redpanda message bus** (Kafka-compatible). The React + Vite frontend connects to a single **API Gateway** — the only service reachable from the browser. All inter-service communication flows through bus topics; no service calls another service directly over HTTP (except the gateway→user-service for auth validation and the scenario-engine→feature-engine for feature lookups).
 
 ## Service Map
 

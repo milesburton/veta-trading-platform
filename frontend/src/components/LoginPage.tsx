@@ -170,7 +170,7 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
             VETA
           </div>
           <div className="text-xs font-medium text-emerald-500 tracking-widest uppercase mb-6">
-            Platform
+            Trading Platform
           </div>
           <h1 data-testid="login-heading" className="text-2xl font-semibold text-gray-100 mb-1">
             Select your profile
