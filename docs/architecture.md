@@ -79,6 +79,7 @@ Sim      :5002    Limit  :5003       (audit trail     :5007          Pipeline
 | 5021 | Signal Engine | `signal-engine` |
 | 5022 | Recommendation Engine | `recommendation-engine` |
 | 5023 | Scenario Engine | `scenario-engine` |
+| 5024 | LLM Orchestrator | `llm-advisory` |
 
 ## Order Flow
 
@@ -250,6 +251,131 @@ REST-only. Accepts `POST /scenario` with a symbol and a list of factor shocks (`
 
 Source: [backend/src/scenario-engine/scenario-server.ts](../backend/src/scenario-engine/scenario-server.ts)
 
+---
+
+## LLM Advisory Subsystem
+
+The LLM Advisory Subsystem is a **strictly advisory layer** — it reads deterministic signal and recommendation data and produces natural-language commentary. It has **no write path** to the order bus and cannot submit, modify, or cancel orders. The deterministic engines remain the source of truth.
+
+### Design Principles
+
+- The LLM worker runs **locally within the container** (no external inference APIs are called unless the operator explicitly configures an external provider key).
+- The subsystem is **fully isolated** from execution: the worker only reads from the intelligence pipeline and writes to its own SQLite advisory store.
+- Safe defaults: `LLM_ENABLED=false`, `LLM_WORKER_ENABLED=false`, `LLM_TRIGGER_MODE=manual`.
+- The worker must **never autostart** or restart indefinitely — it is launched on-demand and exits after completing its job queue or hitting an idle timeout.
+
+### Service: LLM Orchestrator (port 5024)
+
+Manages job scheduling, runtime configuration, and subsystem state. Subscribes to several bus topics to decide when to enqueue advisory jobs.
+
+**Bus subscriptions:**
+- `market.signals` — queues a job when a new high-confidence signal arrives (if trigger mode permits)
+- `llm.worker.status` — tracks worker lifecycle events to update last-error and last-activity timestamps
+
+**Bus publications:**
+- `llm.state.update` — broadcasts the current `LlmSubsystemStatus` payload (consumed by the gateway and forwarded to all WebSocket clients as `llmStateUpdate` events)
+- `llm.job.queued` — emitted when a new job is enqueued
+- `llm.advisory.ready` — emitted when an advisory note is written to the store
+
+**Admin REST endpoints (all require admin role via gateway):**
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/admin/state` | Returns the full `LlmSubsystemStatus` (state, effective policy, pending jobs, etc.) |
+| `PUT` | `/admin/state` | Patches the runtime config (enable/disable advisory, enable/disable worker, change trigger mode) |
+| `POST` | `/admin/watchlist-brief` | Enqueues a one-shot advisory job for every tracked symbol |
+| `POST` | `/admin/trigger-worker` | Starts the LLM worker process (requires `workerEnabled = true`) |
+
+Source: [backend/src/llm-advisory/orchestrator.ts](../backend/src/llm-advisory/orchestrator.ts)
+
+### Subsystem State Machine
+
+The subsystem state is derived deterministically from the effective policy, pending job count, and timestamps — it is never stored directly.
+
+```
+disabled  ←  enabled = false (env or runtime config)
+   │
+armed     ←  enabled + no pending jobs + cooldown window elapsed
+   │
+active    ←  enabled + pendingJobs > 0
+   │
+cooldown  ←  enabled + no pending jobs + last activity < minRefreshMinutes ago
+   │
+error     ←  enabled + last error < 30 s ago
+```
+
+The `deriveSubsystemState()` function in `runtime-config-store.ts` implements this state machine.
+
+### Runtime Config (SQLite)
+
+Operator controls persist to `llm_runtime_config` (SQLite, single row `id=1`). Environment variables define the **base policy**; the SQLite row provides **runtime overrides** that survive service restarts.
+
+| Setting | Env Var | Default | Description |
+|---|---|---|---|
+| Advisory enabled | `LLM_ENABLED` | `false` | Master switch; `disabled` state when false |
+| Worker enabled | `LLM_WORKER_ENABLED` | `false` | Whether the worker process may be started |
+| Trigger mode | `LLM_TRIGGER_MODE` | `manual` | `manual` \| `on-demand-ui` \| `scheduled-batch` \| `event-driven` |
+| Min refresh | `LLM_MIN_REFRESH_MINUTES` | `15` | Minimum minutes between jobs per symbol (cooldown window) |
+| Worker idle timeout | `LLM_WORKER_IDLE_TIMEOUT_SECONDS` | `60` | Worker exits if no new jobs arrive within this window |
+| Max jobs per session | `LLM_WORKER_MAX_JOBS_PER_SESSION` | `20` | Worker exits after processing this many jobs |
+| Max concurrent jobs | `LLM_MAX_CONCURRENT_JOBS` | `2` | Maximum jobs running simultaneously |
+| Allowed hours | `LLM_ALLOWED_HOURS` | *(unrestricted)* | UTC hour range, e.g. `"08-18"` |
+
+`resolveEffectivePolicy()` merges these two sources; the runtime config values take precedence over the env-var base policy.
+
+### Worker Lifecycle
+
+```
+operator: PUT /admin/state { workerEnabled: true }
+operator: POST /admin/trigger-worker
+                │
+         orchestrator forks worker subprocess
+                │
+         worker checks isWorkerAllowed() — exits immediately if false
+                │
+         worker registers session in llm_worker_sessions
+                │
+         loop:
+           if jobsProcessed >= maxJobsPerSession → exit "max-jobs-per-session"
+           claimNextJob()
+             found → processJob() → write advisory note → publish llm.advisory.ready
+             not found → idle-wait loop (poll every 2 s)
+               if idle > workerIdleTimeoutSeconds → exit "idle-timeout"
+                │
+         worker updates session with exitReason, publishes llm.worker.status "stopped"
+```
+
+The worker never restarts itself. Supervisord is configured with `autostart=false` and `autorestart=false` for the `llm-worker` program.
+
+### Provider Abstraction
+
+The `LlmProvider` interface abstracts the inference backend. Two implementations are shipped:
+
+| Provider | Description |
+|---|---|
+| `MockProvider` | Returns canned responses instantly — used in tests and when no model is configured |
+| `OllamaProvider` | Calls a local Ollama server (`OLLAMA_BASE_URL`, default `http://localhost:11434`) |
+
+The active provider is selected at startup via `LLM_PROVIDER` env var (`mock` \| `ollama`).
+
+### Job Store (SQLite)
+
+`JobStore` persists to `llm_advisory.db` and maintains four tables:
+
+| Table | Description |
+|---|---|
+| `llm_jobs` | Job queue with status, priority, context hash, and retry count |
+| `advisory_notes` | Completed advisory notes with token counts and signal snapshot |
+| `llm_prompt_audit` | Full prompt text for every job (compliance/audit trail) |
+| `llm_response_audit` | Raw LLM response for every job |
+| `llm_worker_sessions` | Session records with `exitReason` |
+
+Deduplication: `hasRecentJob(contextHash, windowMs)` prevents re-running identical context within the cooldown window.
+
+Source: [backend/src/llm-advisory/](../backend/src/llm-advisory/)
+
+---
+
 ## Frontend Architecture
 
 The React frontend (Vite + Redux Toolkit) uses a single `gatewayMiddleware` for all backend communication. On start it opens a WebSocket to the gateway and keeps it alive with exponential-backoff reconnection.
@@ -270,6 +396,7 @@ Key middleware:
 | `observabilitySlice` | `{ events: ObsEvent[] }` — updated by SSE stream |
 | `newsSlice` | Latest news per symbol; updated by `newsUpdate` WS events |
 | `intelligenceSlice` | `{ signals, features, recommendations }` keyed by symbol |
+| `llmSubsystemSlice` | `{ status: LlmSubsystemStatus \| null }` — updated by `llmStateUpdate` WS events |
 
 ### Dashboard Panels
 
@@ -298,6 +425,7 @@ The FlexLayout-based dashboard supports 20+ panel types registered in `panelRegi
 | `throughput-gauges` | Orders/min, fills/min, fill rate, bus events (last 60 s) | ✓ |
 | `algo-leaderboard` | Fill rate and slippage by strategy | ✓ |
 | `load-test` | Admin-only bulk order injection form | ✓ |
+| `llm-subsystem` | LLM Advisory Subsystem operator controls (admin) | ✓ |
 
 ### Layout Templates
 
@@ -307,7 +435,7 @@ The FlexLayout-based dashboard supports 20+ panel types registered in `panelRegi
 | Analysis | Market ladder + candle chart + analytics panels |
 | Research | Signal radar + instrument analysis + explainability |
 | Market Overview | 3-column price-focused layout |
-| Admin / Mission Control | Service health + throughput + algo leaderboard + load test |
+| Admin / Mission Control | Service health + throughput + algo leaderboard + load test + LLM subsystem |
 
 ## Authentication
 
@@ -335,4 +463,6 @@ supervisorctl -c /home/deno/supervisord.conf status        # check all
 supervisorctl -c /home/deno/supervisord.conf restart <svc> # restart one
 ```
 
-Service names: `market-sim`, `ems`, `oms`, `algo-trader`, `twap-algo`, `pov-algo`, `vwap-algo`, `iceberg-algo`, `sniper-algo`, `arrival-price-algo`, `observability`, `user-service`, `journal`, `candle-store`, `news-aggregator`, `fix-archive`, `analytics-service`, `market-data-service`, `market-data-adapters`, `feature-engine`, `signal-engine`, `recommendation-engine`, `scenario-engine`, `gateway`
+Service names: `market-sim`, `ems`, `oms`, `algo-trader`, `twap-algo`, `pov-algo`, `vwap-algo`, `iceberg-algo`, `sniper-algo`, `arrival-price-algo`, `observability`, `user-service`, `journal`, `candle-store`, `news-aggregator`, `fix-archive`, `analytics-service`, `market-data-service`, `market-data-adapters`, `feature-engine`, `signal-engine`, `recommendation-engine`, `scenario-engine`, `llm-advisory`, `gateway`
+
+The `llm-worker` program is registered separately in supervisord with `autostart=false` and `autorestart=false` — it is launched on-demand by the orchestrator via `POST /admin/trigger-worker`.

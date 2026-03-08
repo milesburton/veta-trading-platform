@@ -72,7 +72,7 @@ export class JobStore {
         id TEXT PRIMARY KEY, started_at INTEGER NOT NULL, ended_at INTEGER,
         provider TEXT NOT NULL, model_id TEXT NOT NULL,
         jobs_processed INTEGER NOT NULL DEFAULT 0, jobs_failed INTEGER NOT NULL DEFAULT 0,
-        pid INTEGER NOT NULL
+        pid INTEGER NOT NULL, exit_reason TEXT
       )
     `);
   }
@@ -278,8 +278,8 @@ export class JobStore {
     const id = crypto.randomUUID();
     this.db.query(
       `INSERT INTO llm_worker_sessions
-        (id, started_at, ended_at, provider, model_id, jobs_processed, jobs_failed, pid)
-       VALUES (?,?,?,?,?,?,?,?)`,
+        (id, started_at, ended_at, provider, model_id, jobs_processed, jobs_failed, pid, exit_reason)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
       [
         id,
         session.startedAt,
@@ -289,6 +289,7 @@ export class JobStore {
         session.jobsProcessed,
         session.jobsFailed,
         session.pid,
+        session.exitReason ?? null,
       ],
     );
     return id;
@@ -296,18 +297,20 @@ export class JobStore {
 
   updateWorkerSession(
     sessionId: string,
-    fields: { endedAt?: number; jobsProcessed?: number; jobsFailed?: number },
+    fields: { endedAt?: number; jobsProcessed?: number; jobsFailed?: number; exitReason?: string },
   ): void {
     this.db.query(
       `UPDATE llm_worker_sessions
        SET ended_at = COALESCE(?, ended_at),
            jobs_processed = COALESCE(?, jobs_processed),
-           jobs_failed = COALESCE(?, jobs_failed)
+           jobs_failed = COALESCE(?, jobs_failed),
+           exit_reason = COALESCE(?, exit_reason)
        WHERE id = ?`,
       [
         fields.endedAt ?? null,
         fields.jobsProcessed ?? null,
         fields.jobsFailed ?? null,
+        fields.exitReason ?? null,
         sessionId,
       ],
     );

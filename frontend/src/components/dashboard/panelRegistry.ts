@@ -41,6 +41,7 @@ export const PANEL_IDS = [
   "throughput-gauges",
   "algo-leaderboard",
   "load-test",
+  "llm-subsystem",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -75,6 +76,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "throughput-gauges": "Throughput (pipeline metrics)",
   "algo-leaderboard": "Algo Leaderboard (strategy performance)",
   "load-test": "Load Test (bulk order injection)",
+  "llm-subsystem": "LLM Advisory Subsystem (operator controls)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -127,6 +129,8 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Strategy performance leaderboard — fill rate, average slippage, and total filled quantity per algo in the last 5 minutes",
   "load-test":
     "Admin-only bulk order injector — submit configurable volumes of synthetic orders to stress-test the pipeline",
+  "llm-subsystem":
+    "LLM Advisory Subsystem operator controls — arm/disarm the advisory engine, set trigger mode, and start the worker",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -143,6 +147,7 @@ export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
   "throughput-gauges",
   "algo-leaderboard",
   "load-test",
+  "llm-subsystem",
 ]);
 
 export interface TabChannelConfig {
@@ -182,4 +187,5 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "throughput-gauges": { out: false, in: false },
   "algo-leaderboard": { out: false, in: false },
   "load-test": { out: false, in: false },
+  "llm-subsystem": { out: false, in: false },
 };

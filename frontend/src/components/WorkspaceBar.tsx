@@ -316,13 +316,29 @@ export function WorkspaceSidebar({
                 aria-label={pinned.value ? "Unpin sidebar" : "Pin sidebar open"}
                 title={pinned.value ? "Unpin sidebar (auto-collapse)" : "Pin sidebar open"}
                 onClick={togglePin}
-                className={`flex items-center justify-center w-7 h-full shrink-0 transition-colors text-base ${
+                className={`flex items-center justify-center w-7 h-full shrink-0 transition-colors ${
                   pinned.value
                     ? "text-emerald-500 hover:text-emerald-400"
                     : "text-gray-600 hover:text-gray-300"
                 }`}
               >
-                <span aria-hidden="true">{pinned.value ? "📌" : "📍"}</span>
+                <svg
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                  className="w-3.5 h-3.5"
+                >
+                  {pinned.value ? (
+                    <path
+                      fillRule="evenodd"
+                      d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H3.75A1.75 1.75 0 0 0 2 7.75v4.5C2 13.216 2.784 14 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-4.5A1.75 1.75 0 0 0 12.25 6H11.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5V4.5a2 2 0 1 0-4 0V6h4Zm-1 4.25a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
+                      clipRule="evenodd"
+                    />
+                  ) : (
+                    <path d="M11.5 4.5a3.5 3.5 0 0 0-7 0V6H3.75A1.75 1.75 0 0 0 2 7.75v4.5C2 13.216 2.784 14 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-4.5A1.75 1.75 0 0 0 12.25 6H11.5V4.5Zm-1.5 0V6h-4V4.5a2 2 0 1 1 4 0Zm-1 5.75a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
+                  )}
+                </svg>
               </button>
             </>
           )}

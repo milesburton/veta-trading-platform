@@ -5,6 +5,7 @@ import { createProducer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("USER_SERVICE_PORT")) || 5_008;
 const DB_PATH = Deno.env.get("USER_DB_PATH") || "./backend/data/users.db";
+const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -145,7 +146,7 @@ async function handle(req: Request): Promise<Response> {
 
   // GET /health
   if (req.method === "GET" && path === "/health") {
-    return json({ service: "user-service", status: "ok" });
+    return json({ service: "user-service", version: VERSION, status: "ok" });
   }
 
   // GET /users

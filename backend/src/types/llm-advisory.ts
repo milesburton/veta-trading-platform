@@ -8,6 +8,20 @@ export type AdvisoryStatus =
   | "failed"
   | "stale";
 
+export type LlmSubsystemState =
+  | "disabled"
+  | "armed"
+  | "active"
+  | "cooldown"
+  | "error";
+
+export type LlmTriggerMode =
+  | "disabled"
+  | "manual"
+  | "on-demand-ui"
+  | "scheduled-batch"
+  | "event-driven";
+
 export enum AdvisoryTriggerReason {
   HIGH_CONVICTION_SIGNAL = "HIGH_CONVICTION_SIGNAL",
   RECOMMENDATION_CHANGED = "RECOMMENDATION_CHANGED",
@@ -74,19 +88,44 @@ export interface LlmWorkerSession {
   jobsProcessed: number;
   jobsFailed: number;
   pid: number;
+  exitReason: string | null;
 }
 
 export interface LlmPolicy {
   enabled: boolean;
+  workerEnabled: boolean;
+  triggerMode: LlmTriggerMode;
   provider: string;
   modelId: string;
   ollamaBaseUrl: string;
   maxConcurrentJobs: number;
   maxNoteAgeMs: number;
+  minRefreshMinutes: number;
+  workerIdleTimeoutSeconds: number;
+  workerMaxJobsPerSession: number;
+  allowedHours: string | null;
   signalConvictionThreshold: number;
   confidenceThreshold: number;
   dedupeWindowMs: number;
   autoTriggerEnabled: boolean;
+}
+
+export interface LlmRuntimeConfig {
+  enabled: boolean;
+  workerEnabled: boolean;
+  triggerMode: LlmTriggerMode;
+  updatedAt: number;
+  updatedBy: string;
+}
+
+export interface LlmSubsystemStatus {
+  state: LlmSubsystemState;
+  policy: LlmPolicy;
+  runtimeConfig: LlmRuntimeConfig;
+  pendingJobs: number;
+  trackedSymbols: number;
+  lastWorkerSession: LlmWorkerSession | null;
+  ts: number;
 }
 
 export interface LlmProviderResponse {

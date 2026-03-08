@@ -209,6 +209,12 @@ function startConsumers(): void {
       broadcast({ event: "advisoryUpdate", data: value });
     });
   }).catch(() => {});
+
+  createConsumer("gateway-llm-state", ["llm.state.update"]).then((c) => {
+    c.onMessage((_topic, value) => {
+      broadcast({ event: "llmStateUpdate", data: value });
+    });
+  }).catch(() => {});
 }
 
 await startConsumers();
@@ -808,6 +814,54 @@ serve(async (req: Request): Promise<Response> => {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
     return proxyGet(`${LLM_ADVISORY_URL}/jobs`, req);
+  }
+
+  if (path === "/advisory/admin/state" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${LLM_ADVISORY_URL}/admin/state`, req);
+  }
+
+  if (path === "/advisory/admin/state" && req.method === "PUT") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    if (auth.user.role !== "admin") {
+      return new Response(JSON.stringify({ error: "Admin role required" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+    const body = await req.text();
+    const parsed = JSON.parse(body) as Record<string, unknown>;
+    return proxyPut(`${LLM_ADVISORY_URL}/admin/state`, new Request(req.url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...parsed, updatedBy: auth.user.id }),
+    }));
+  }
+
+  if (path === "/advisory/admin/watchlist-brief" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    const body = await req.text();
+    const parsed = JSON.parse(body) as Record<string, unknown>;
+    return proxyPost(`${LLM_ADVISORY_URL}/admin/watchlist-brief`, new Request(req.url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...parsed, requestedBy: auth.user.id }),
+    }));
+  }
+
+  if (path === "/advisory/admin/trigger-worker" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    if (auth.user.role !== "admin") {
+      return new Response(JSON.stringify({ error: "Admin role required" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+    return proxyPost(`${LLM_ADVISORY_URL}/admin/trigger-worker`, req);
   }
 
   if (path === "/load-test" && req.method === "POST") {

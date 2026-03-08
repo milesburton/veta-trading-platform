@@ -92,6 +92,7 @@ export function OrderBlotter() {
     isLoading,
   } = useGridQuery<OrderRecord>("orderBlotter", 0, limit);
   const selectedOrderId = useSignal<string | null>(null);
+  const userPinnedId = useSignal<string | null>(null);
   const showCfEditor = useSignal(false);
   const filterField = useSignal<string | null>(null);
   const dragKey = useSignal<string | null>(null);
@@ -113,17 +114,24 @@ export function OrderBlotter() {
     options,
   }));
 
+  const topOrderId = displayOrders[0]?.id ?? null;
+
+  // Auto-select the newest order when it arrives, unless the user has pinned a different one
   useEffect(() => {
-    if (selectedOrderId.value === null && displayOrders.length > 0) {
-      const latest = displayOrders[0];
-      selectedOrderId.value = latest.id;
-      broadcast({ selectedOrderId: latest.id });
+    if (topOrderId === null) return;
+    if (
+      selectedOrderId.value === null ||
+      (topOrderId !== selectedOrderId.value && userPinnedId.value === null)
+    ) {
+      selectedOrderId.value = topOrderId;
+      broadcast({ selectedOrderId: topOrderId });
     }
-  }, [displayOrders.length, displayOrders, broadcast, selectedOrderId]);
+  }, [topOrderId, broadcast, selectedOrderId, userPinnedId]);
 
   function selectOrder(id: string) {
     const next = selectedOrderId.value === id ? null : id;
     selectedOrderId.value = next;
+    userPinnedId.value = next; // user explicitly chose this row
     broadcast({ selectedOrderId: next });
   }
 

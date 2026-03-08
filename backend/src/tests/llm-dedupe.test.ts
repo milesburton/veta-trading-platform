@@ -10,11 +10,17 @@ import type { LlmPolicy } from "../types/llm-advisory.ts";
 
 const ENABLED_POLICY: LlmPolicy = {
   enabled: true,
+  workerEnabled: true,
+  triggerMode: "manual",
   provider: "mock",
   modelId: "mock-v1",
   ollamaBaseUrl: "http://localhost:11434",
   maxConcurrentJobs: 1,
   maxNoteAgeMs: 300_000,
+  minRefreshMinutes: 60,
+  workerIdleTimeoutSeconds: 300,
+  workerMaxJobsPerSession: 10,
+  allowedHours: null,
   signalConvictionThreshold: 0.7,
   confidenceThreshold: 0.8,
   dedupeWindowMs: 60_000,

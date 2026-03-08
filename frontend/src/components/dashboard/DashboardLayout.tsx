@@ -27,6 +27,7 @@ import { ContextMenu } from "../ContextMenu.tsx";
 import { DecisionLog } from "../DecisionLog.tsx";
 import { ExecutionsPanel } from "../ExecutionsPanel.tsx";
 import { InstrumentAnalysisPanel } from "../InstrumentAnalysisPanel.tsx";
+import { LlmSubsystemPanel } from "../LlmSubsystemPanel.tsx";
 import { LoadTestPanel } from "../LoadTestPanel.tsx";
 import { MarketDataSourcesPanel } from "../MarketDataSourcesPanel.tsx";
 import { MarketDepth } from "../MarketDepth.tsx";
@@ -70,7 +71,6 @@ interface ChannelPickerProps {
   current: ChannelNumber | null;
   blockedChannels: Set<ChannelNumber>;
   onPick: (ch: ChannelNumber | null) => void;
-  disabled?: boolean;
   allItems?: LayoutItem[];
   instanceId?: string;
 }
@@ -80,7 +80,6 @@ function ChannelPicker({
   current,
   blockedChannels,
   onPick,
-  disabled = false,
   allItems = [],
   instanceId,
 }: ChannelPickerProps) {
@@ -103,7 +102,6 @@ function ChannelPicker({
   }, [open]);
 
   function handleOpen() {
-    if (disabled) return;
     if (btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
       setDropdownPos({ top: rect.bottom + 4, left: rect.left });
@@ -114,7 +112,6 @@ function ChannelPicker({
   const colour = current !== null ? CHANNEL_COLOURS[current] : null;
   const isOut = dir === "out";
   const dirLabel = isOut ? "Broadcast" : "Listen";
-  const disabledLabel = isOut ? "This panel cannot broadcast" : "This panel cannot listen";
 
   const connectedPanels =
     current !== null && allItems.length > 0
@@ -128,11 +125,9 @@ function ChannelPicker({
   const connectedStr =
     connectedPanels.length > 0 ? ` · ${isOut ? "→" : "←"} ${connectedPanels.join(", ")}` : "";
 
-  const buttonTitle = disabled
-    ? disabledLabel
-    : colour
-      ? `${dirLabel} Ch ${current} ${colour.label}${connectedStr} — click to change`
-      : `${dirLabel}: not set — click to connect`;
+  const buttonTitle = colour
+    ? `${dirLabel} Ch ${current} ${colour.label}${connectedStr} — click to change`
+    : `${dirLabel}: not set — click to connect`;
 
   const dropdown = open
     ? createPortal(
@@ -194,19 +189,14 @@ function ChannelPicker({
         type="button"
         title={buttonTitle}
         onClick={handleOpen}
-        disabled={disabled}
         className={`flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors text-[9px] font-medium leading-none ${
-          disabled
-            ? "opacity-30 cursor-not-allowed text-gray-600"
-            : colour
-              ? "hover:bg-gray-700/60"
-              : "text-gray-500 hover:bg-gray-700/40 border border-dashed border-gray-700/60 hover:border-gray-500 hover:text-gray-400"
+          colour
+            ? "hover:bg-gray-700/60"
+            : "text-gray-500 hover:bg-gray-700/40 border border-dashed border-gray-700/60 hover:border-gray-500 hover:text-gray-400"
         }`}
       >
-        <span className={disabled ? "text-gray-700" : colour ? "text-gray-500" : "text-gray-600"}>
-          {isOut ? "Out:" : "In:"}
-        </span>
-        {colour && !disabled ? (
+        <span className={colour ? "text-gray-500" : "text-gray-600"}>{isOut ? "Out:" : "In:"}</span>
+        {colour ? (
           <>
             <span
               className="w-2 h-2 rounded-full shrink-0"
@@ -217,9 +207,7 @@ function ChannelPicker({
             </span>
           </>
         ) : (
-          <span className={disabled ? "text-gray-700 font-mono" : "font-mono text-gray-600"}>
-            —
-          </span>
+          <span className="font-mono text-gray-600">—</span>
         )}
       </button>
       {dropdown}
@@ -265,26 +253,28 @@ function tabChannelButtons({
   );
 
   return [
-    <ChannelPicker
-      key="out"
-      dir="out"
-      current={outgoing}
-      blockedChannels={blockedOut}
-      onPick={(ch) => onChannelChange(instanceId, "out", ch)}
-      disabled={!caps.out}
-      allItems={allItems}
-      instanceId={instanceId}
-    />,
-    <ChannelPicker
-      key="in"
-      dir="in"
-      current={incoming}
-      blockedChannels={blockedIn}
-      onPick={(ch) => onChannelChange(instanceId, "in", ch)}
-      disabled={!caps.in}
-      allItems={allItems}
-      instanceId={instanceId}
-    />,
+    caps.out ? (
+      <ChannelPicker
+        key="out"
+        dir="out"
+        current={outgoing}
+        blockedChannels={blockedOut}
+        onPick={(ch) => onChannelChange(instanceId, "out", ch)}
+        allItems={allItems}
+        instanceId={instanceId}
+      />
+    ) : null,
+    caps.in ? (
+      <ChannelPicker
+        key="in"
+        dir="in"
+        current={incoming}
+        blockedChannels={blockedIn}
+        onPick={(ch) => onChannelChange(instanceId, "in", ch)}
+        allItems={allItems}
+        instanceId={instanceId}
+      />
+    ) : null,
   ];
 }
 
@@ -677,6 +667,8 @@ export function DashboardLayout() {
           return wrap(<AlgoLeaderboardPanel />);
         case "load-test":
           return wrap(<LoadTestPanel />);
+        case "llm-subsystem":
+          return wrap(<LlmSubsystemPanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }
@@ -717,9 +709,24 @@ export function DashboardLayout() {
           className={`flex items-center justify-center w-4 h-4 rounded transition-colors ${
             isPinned ? "text-amber-400 hover:text-amber-300" : "text-gray-600 hover:text-gray-400"
           }`}
-          style={{ fontSize: "10px", lineHeight: 1 }}
         >
-          {isPinned ? "◈" : "◇"}
+          <svg
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            className="w-3 h-3"
+          >
+            {isPinned ? (
+              <path
+                fillRule="evenodd"
+                d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H3.75A1.75 1.75 0 0 0 2 7.75v4.5C2 13.216 2.784 14 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-4.5A1.75 1.75 0 0 0 12.25 6H11.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5V4.5a2 2 0 1 0-4 0V6h4Zm-1 4.25a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
+                clipRule="evenodd"
+              />
+            ) : (
+              <path d="M11.5 4.5a3.5 3.5 0 0 0-7 0V6H3.75A1.75 1.75 0 0 0 2 7.75v4.5C2 13.216 2.784 14 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-4.5A1.75 1.75 0 0 0 12.25 6H11.5V4.5Zm-1.5 0V6h-4V4.5a2 2 0 1 1 4 0Zm-1 5.75a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
+            )}
+          </svg>
         </button>
       );
 

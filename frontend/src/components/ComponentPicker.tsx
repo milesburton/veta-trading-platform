@@ -36,6 +36,7 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "throughput-gauges": "Pipeline throughput metrics — orders/min, fills/min, and fill rate",
   "algo-leaderboard": "Strategy performance leaderboard — fill rate and slippage per algo",
   "load-test": "Admin-only bulk order injector — stress-test the pipeline",
+  "llm-subsystem": "LLM Advisory Subsystem operator controls — arm/disarm the advisory engine",
 };
 
 export function ComponentPicker() {
@@ -50,6 +51,7 @@ export function ComponentPicker() {
     "market-data-sources",
     "market-feed-control",
     "load-test",
+    "llm-subsystem",
   ]);
   // Panels hidden from admins (trading capability — admins must not interfere with the market)
   const TRADER_ONLY_PANELS: ReadonlySet<PanelId> = new Set(["order-ticket"]);

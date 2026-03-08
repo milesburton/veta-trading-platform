@@ -1,7 +1,8 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createProducer } from "../lib/messaging.ts";
 import { JobStore } from "./job-store.ts";
-import { loadPolicy } from "./policy.ts";
+import { loadPolicy, isWorkerAllowed } from "./policy.ts";
+import { RuntimeConfigStore, resolveEffectivePolicy } from "./runtime-config-store.ts";
 import { buildPrompt, computeSystemPromptHash, SYSTEM_PROMPT } from "./prompt-builder.ts";
 import { MockProvider } from "./providers/mock.ts";
 import { OllamaProvider } from "./providers/ollama.ts";
@@ -15,16 +16,23 @@ const SIGNAL_ENGINE_URL = Deno.env.get("SIGNAL_ENGINE_URL") || "http://localhost
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MAX_RETRIES = 3;
 
-const policy = loadPolicy();
+const basePolicy = loadPolicy();
+const store = new JobStore(DB_PATH);
+const runtimeConfig = new RuntimeConfigStore(DB_PATH);
 
-if (!policy.enabled) {
-  console.log("[llm-worker] LLM_ADVISORY_ENABLED is not set — exiting");
+const effectivePolicy = resolveEffectivePolicy(basePolicy, runtimeConfig.getConfig());
+
+if (!isWorkerAllowed(effectivePolicy)) {
+  console.log("[llm-worker] LLM_ENABLED or LLM_WORKER_ENABLED is false — exiting");
   Deno.exit(0);
 }
 
+const IDLE_TIMEOUT_MS = effectivePolicy.workerIdleTimeoutSeconds * 1_000;
+const MAX_JOBS_PER_SESSION = effectivePolicy.workerMaxJobsPerSession;
+
 function buildProvider(): ILlmProvider {
-  if (policy.provider === "ollama") {
-    return new OllamaProvider(policy.modelId, policy.ollamaBaseUrl);
+  if (effectivePolicy.provider === "ollama") {
+    return new OllamaProvider(effectivePolicy.modelId, effectivePolicy.ollamaBaseUrl);
   }
   return new MockProvider();
 }
@@ -33,11 +41,9 @@ const provider = buildProvider();
 
 const available = await provider.isAvailable();
 if (!available) {
-  console.warn(`[llm-worker] Provider '${policy.provider}' is not available — exiting`);
+  console.warn(`[llm-worker] Provider '${effectivePolicy.provider}' is not available — exiting`);
   Deno.exit(0);
 }
-
-const store = new JobStore(DB_PATH);
 
 const producer = await createProducer("llm-worker").catch((err) => {
   console.warn("[llm-worker] Redpanda unavailable:", err.message);
@@ -52,13 +58,14 @@ const sessionId = store.insertWorkerSession({
   jobsProcessed: 0,
   jobsFailed: 0,
   pid: Deno.pid,
+  exitReason: null,
 });
 
-console.log(`[llm-worker] Session ${sessionId} started. Provider: ${provider.providerId}`);
+console.log(`[llm-worker] Session ${sessionId} started. Provider: ${provider.providerId}. Max jobs: ${MAX_JOBS_PER_SESSION}. Idle timeout: ${IDLE_TIMEOUT_MS}ms`);
 
 producer?.send("llm.worker.status", {
+  event: "started",
   sessionId,
-  status: "started",
   jobsProcessed: 0,
   jobsFailed: 0,
   ts: Date.now(),
@@ -172,12 +179,29 @@ async function processJob(jobId: string): Promise<boolean> {
       ts: Date.now(),
     }).catch(() => {});
 
+    producer?.send("llm.worker.status", {
+      event: "completed",
+      sessionId,
+      symbol: job.symbol,
+      jobId: job.id,
+      ts: Date.now(),
+    }).catch(() => {});
+
     jobsProcessed++;
     store.updateWorkerSession(sessionId, { jobsProcessed });
     return true;
   } catch (err) {
     const errMsg = (err as Error).message;
     console.error(`[llm-worker] Job ${job.id} failed:`, errMsg);
+
+    producer?.send("llm.worker.status", {
+      event: "error",
+      sessionId,
+      symbol: job.symbol,
+      jobId: job.id,
+      error: errMsg,
+      ts: Date.now(),
+    }).catch(() => {});
 
     const newRetryCount = job.retryCount + 1;
     if (newRetryCount >= MAX_RETRIES) {
@@ -209,27 +233,57 @@ const server = Deno.serve({ port: PORT }, (_req: Request): Response => {
 });
 
 console.log("[llm-worker] Entering work loop");
-while (true) {
-  const job = store.claimNextJob(sessionId);
-  if (!job) {
-    console.log(`[llm-worker] Queue empty. Processed: ${jobsProcessed}, failed: ${jobsFailed}`);
+
+let exitReason = "queue-exhausted";
+const sessionStart = Date.now();
+
+outer: while (true) {
+  if (jobsProcessed >= MAX_JOBS_PER_SESSION) {
+    exitReason = "max-jobs-per-session";
+    console.log(`[llm-worker] Reached max jobs per session (${MAX_JOBS_PER_SESSION}) — exiting`);
     break;
   }
+
+  const job = store.claimNextJob(sessionId);
+  if (!job) {
+    console.log(`[llm-worker] Queue empty — waiting up to ${IDLE_TIMEOUT_MS}ms for new jobs`);
+    const deadline = Date.now() + IDLE_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 2_000));
+      const next = store.claimNextJob(sessionId);
+      if (next) {
+        if (jobsProcessed >= MAX_JOBS_PER_SESSION) {
+          store.updateJobStatus(next.id, "queued");
+          exitReason = "max-jobs-per-session";
+          break outer;
+        }
+        console.log(`[llm-worker] Processing job ${next.id} for ${next.symbol} (${next.triggerReason})`);
+        await processJob(next.id);
+        continue outer;
+      }
+    }
+    exitReason = "idle-timeout";
+    console.log(`[llm-worker] Idle timeout reached — exiting`);
+    break;
+  }
+
   console.log(`[llm-worker] Processing job ${job.id} for ${job.symbol} (${job.triggerReason})`);
   await processJob(job.id);
 }
 
-store.updateWorkerSession(sessionId, { endedAt: Date.now() });
+store.updateWorkerSession(sessionId, { endedAt: Date.now(), exitReason });
 
 producer?.send("llm.worker.status", {
+  event: "stopped",
   sessionId,
-  status: "stopped",
   jobsProcessed,
   jobsFailed,
+  exitReason,
+  durationMs: Date.now() - sessionStart,
   ts: Date.now(),
 }).catch(() => {});
 
-console.log("[llm-worker] Session ended cleanly");
+console.log(`[llm-worker] Session ended. Reason: ${exitReason}. Processed: ${jobsProcessed}, failed: ${jobsFailed}`);
 server.shutdown();
 store.close();
 Deno.exit(0);

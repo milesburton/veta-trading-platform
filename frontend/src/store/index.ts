@@ -9,6 +9,7 @@ import { channelsSlice } from "./channelsSlice.ts";
 import { gridPrefsSlice } from "./gridPrefsSlice.ts";
 import { intelligenceSlice } from "./intelligenceSlice.ts";
 import { killSwitchSlice } from "./killSwitchSlice.ts";
+import { llmSubsystemSlice } from "./llmSubsystemSlice.ts";
 import { marketDataApi } from "./marketDataApi.ts";
 import { marketSlice } from "./marketSlice.ts";
 import { alertsMiddleware } from "./middleware/alertsMiddleware.ts";
@@ -41,6 +42,7 @@ export const store = configureStore({
     alerts: alertsSlice.reducer,
     intelligence: intelligenceSlice.reducer,
     advisory: advisorySlice.reducer,
+    llmSubsystem: llmSubsystemSlice.reducer,
     [servicesApi.reducerPath]: servicesApi.reducer,
     [obsApi.reducerPath]: obsApi.reducer,
     [analyticsApi.reducerPath]: analyticsApi.reducer,

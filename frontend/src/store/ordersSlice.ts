@@ -41,7 +41,7 @@ export function setGatewayWs(ws: WebSocket | null): void {
  */
 export const submitOrderThunk = createAsyncThunk(
   "orders/submit",
-  async (trade: Trade, { dispatch, getState }) => {
+  async (trade: Trade, { dispatch, getState }): Promise<string> => {
     const clientOrderId = uuidv4();
     // Pick up the current user's ID from auth state (may be undefined if not logged in)
     const state = getState() as { auth?: { user?: { id?: string } } };
@@ -73,6 +73,7 @@ export const submitOrderThunk = createAsyncThunk(
     } else {
       console.warn("[orders] Gateway WebSocket not connected — order queued locally only");
     }
+    return clientOrderId;
   }
 );
 
