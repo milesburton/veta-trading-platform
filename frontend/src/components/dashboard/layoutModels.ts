@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v8`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v9`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -694,6 +694,243 @@ export function makeAdminModel(): IJsonModel {
   };
 }
 
+export function makeAiAdvisoryModel(): IJsonModel {
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        {
+          type: "tabset",
+          weight: 28,
+          children: [
+            {
+              type: "tab",
+              id: "research-radar",
+              name: PANEL_TITLES["research-radar"],
+              component: "research-radar",
+              config: { panelType: "research-radar", outgoing: 1 } satisfies TabChannelConfig,
+            },
+          ],
+        },
+        {
+          type: "row",
+          weight: 44,
+          children: [
+            {
+              type: "tabset",
+              weight: 60,
+              children: [
+                {
+                  type: "tab",
+                  id: "instrument-analysis",
+                  name: PANEL_TITLES["instrument-analysis"],
+                  component: "instrument-analysis",
+                  config: {
+                    panelType: "instrument-analysis",
+                    incoming: 1,
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 40,
+              children: [
+                {
+                  type: "tab",
+                  id: "candle-chart",
+                  name: PANEL_TITLES["candle-chart"],
+                  component: "candle-chart",
+                  config: { panelType: "candle-chart", incoming: 1 } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "market-depth",
+                  name: PANEL_TITLES["market-depth"],
+                  component: "market-depth",
+                  config: { panelType: "market-depth", incoming: 1 } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "row",
+          weight: 28,
+          children: [
+            {
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "order-ticket",
+                  name: PANEL_TITLES["order-ticket"],
+                  component: "order-ticket",
+                  config: { panelType: "order-ticket", incoming: 1 } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "signal-explainability",
+                  name: PANEL_TITLES["signal-explainability"],
+                  component: "signal-explainability",
+                  config: {
+                    panelType: "signal-explainability",
+                    incoming: 1,
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "order-blotter",
+                  name: PANEL_TITLES["order-blotter"],
+                  component: "order-blotter",
+                  config: { panelType: "order-blotter", outgoing: 2 } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "trade-recommendation",
+                  name: PANEL_TITLES["trade-recommendation"],
+                  component: "trade-recommendation",
+                  config: { panelType: "trade-recommendation" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+export function makeIntelligenceModel(): IJsonModel {
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        {
+          type: "tabset",
+          weight: 30,
+          children: [
+            {
+              type: "tab",
+              id: "research-radar",
+              name: PANEL_TITLES["research-radar"],
+              component: "research-radar",
+              config: { panelType: "research-radar", outgoing: 1 } satisfies TabChannelConfig,
+            },
+            {
+              type: "tab",
+              id: "market-heatmap",
+              name: PANEL_TITLES["market-heatmap"],
+              component: "market-heatmap",
+              config: { panelType: "market-heatmap", outgoing: 1 } satisfies TabChannelConfig,
+            },
+          ],
+        },
+        {
+          type: "row",
+          weight: 45,
+          children: [
+            {
+              type: "tabset",
+              weight: 65,
+              children: [
+                {
+                  type: "tab",
+                  id: "instrument-analysis",
+                  name: PANEL_TITLES["instrument-analysis"],
+                  component: "instrument-analysis",
+                  config: {
+                    panelType: "instrument-analysis",
+                    incoming: 1,
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 35,
+              children: [
+                {
+                  type: "tab",
+                  id: "signal-explainability",
+                  name: PANEL_TITLES["signal-explainability"],
+                  component: "signal-explainability",
+                  config: {
+                    panelType: "signal-explainability",
+                    incoming: 1,
+                  } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "trade-recommendation",
+                  name: PANEL_TITLES["trade-recommendation"],
+                  component: "trade-recommendation",
+                  config: { panelType: "trade-recommendation" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "scenario-matrix",
+                  name: PANEL_TITLES["scenario-matrix"],
+                  component: "scenario-matrix",
+                  config: { panelType: "scenario-matrix" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "row",
+          weight: 25,
+          children: [
+            {
+              type: "tabset",
+              weight: 55,
+              children: [
+                {
+                  type: "tab",
+                  id: "candle-chart",
+                  name: PANEL_TITLES["candle-chart"],
+                  component: "candle-chart",
+                  config: { panelType: "candle-chart", incoming: 1 } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 45,
+              children: [
+                {
+                  type: "tab",
+                  id: "news",
+                  name: PANEL_TITLES.news,
+                  component: "news",
+                  config: { panelType: "news" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "alerts",
+                  name: PANEL_TITLES.alerts,
+                  component: "alerts",
+                  config: { panelType: "alerts" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
 export const LAYOUT_TEMPLATES: {
   id: string;
   label: string;
@@ -743,6 +980,20 @@ export const LAYOUT_TEMPLATES: {
     description:
       "Signal radar, instrument analysis, and factor explainability — market intelligence pipeline",
     model: makeResearchModel(),
+  },
+  {
+    id: "ai-advisory",
+    label: "AI Advisory",
+    description:
+      "Signal radar → instrument analysis with LLM advisory note → order ticket for immediate action",
+    model: makeAiAdvisoryModel(),
+  },
+  {
+    id: "intelligence",
+    label: "Intelligence Hub",
+    description:
+      "Full intelligence pipeline — radar, heatmap, instrument deep-dive, signal explainability, scenario matrix, and news",
+    model: makeIntelligenceModel(),
   },
   {
     id: "clear",
