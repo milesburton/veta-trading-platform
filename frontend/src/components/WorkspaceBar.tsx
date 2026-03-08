@@ -216,6 +216,7 @@ export function WorkspaceSidebar({
   return (
     <>
       <nav
+        data-testid="workspace-sidebar"
         aria-label="Workspace navigation"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -227,6 +228,7 @@ export function WorkspaceSidebar({
         <div className="flex items-center shrink-0 border-b border-gray-800 h-8">
           <button
             type="button"
+            data-testid="add-workspace-btn"
             aria-label="Add new workspace"
             title="Add new workspace"
             onClick={addWorkspace}
@@ -335,6 +337,7 @@ export function WorkspaceSidebar({
                       <>
                         <button
                           type="button"
+                          data-testid={`workspace-tab-${ws.id}`}
                           aria-label={`Switch to workspace: ${ws.name}`}
                           aria-current={active ? "page" : undefined}
                           title={
@@ -376,6 +379,7 @@ export function WorkspaceSidebar({
                           <>
                             <button
                               type="button"
+                              data-testid="share-workspace-btn"
                               aria-label={`Share workspace ${ws.name}`}
                               title={
                                 sharedIds.has(ws.id)
@@ -434,6 +438,7 @@ export function WorkspaceSidebar({
                 ) : (
                   <button
                     type="button"
+                    data-testid={`workspace-tab-${ws.id}`}
                     aria-label={`Switch to workspace: ${ws.name}`}
                     aria-current={active ? "page" : undefined}
                     title={locked ? `${ws.name} (locked)` : `Switch to workspace: ${ws.name}`}

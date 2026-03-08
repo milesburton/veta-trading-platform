@@ -122,7 +122,10 @@ export function OrderProgressPanel() {
   const stratColour = STRATEGY_COLOURS[order.strategy] ?? "#6b7280";
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 overflow-y-auto">
+    <div
+      className="flex flex-col h-full bg-gray-950 overflow-y-auto"
+      data-testid="order-progress-panel"
+    >
       <div className="px-3 pt-2.5 pb-2 border-b border-gray-800 shrink-0 flex items-center gap-2">
         <span
           className="text-[10px] font-semibold px-1.5 py-0.5 rounded tabular-nums font-mono"
@@ -162,6 +165,7 @@ export function OrderProgressPanel() {
           <div>
             <span
               className="text-4xl font-bold tabular-nums"
+              data-testid="fill-percentage"
               style={{ color: pct === 1 ? FILL_COLOUR : "#e5e7eb" }}
             >
               {pctDisplay}%
@@ -194,7 +198,7 @@ export function OrderProgressPanel() {
               Slice fills ({childBars.length})
             </span>
           </div>
-          <div className="px-2 pb-4" style={{ height: 110 }}>
+          <div className="px-2 pb-4" style={{ height: 110 }} data-testid="child-orders-list">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={childBars} margin={{ top: 4, right: 8, bottom: 4, left: -16 }}>
                 <XAxis

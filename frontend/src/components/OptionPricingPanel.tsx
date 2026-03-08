@@ -54,7 +54,10 @@ export function OptionPricingPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs">
+    <div
+      className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs"
+      data-testid="option-pricing-panel"
+    >
       <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
         <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
           Option Pricing — Black-Scholes
@@ -96,6 +99,7 @@ export function OptionPricingPanel() {
                 <button
                   key={t}
                   type="button"
+                  data-testid={t === "call" ? "call-btn" : "put-btn"}
                   onClick={() => setOptionType(t)}
                   className={`flex-1 py-1 rounded text-[11px] font-semibold transition-colors ${
                     optionType === t
@@ -127,6 +131,7 @@ export function OptionPricingPanel() {
               value={strike}
               onChange={(e) => setStrike(e.target.value)}
               placeholder="e.g. 150"
+              data-testid="strike-input"
               className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 placeholder:text-gray-600"
             />
           </div>
@@ -143,6 +148,7 @@ export function OptionPricingPanel() {
               id="op-expiry"
               value={expirySecs}
               onChange={(e) => setExpirySecs(Number(e.target.value))}
+              data-testid="expiry-input"
               className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200"
             >
               {EXPIRY_OPTIONS.map((o) => (
@@ -157,6 +163,7 @@ export function OptionPricingPanel() {
         <button
           type="submit"
           disabled={isLoading || !strike}
+          data-testid="get-quote-btn"
           className="w-full py-1.5 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-40 text-[11px] font-semibold text-white transition-colors"
         >
           {isLoading ? "Computing…" : "Price Option"}
@@ -172,7 +179,7 @@ export function OptionPricingPanel() {
       </form>
 
       {result && (
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4" data-testid="quote-result">
           {/* Summary */}
           <div className="bg-gray-900 rounded p-3">
             <div className="flex justify-between mb-2">

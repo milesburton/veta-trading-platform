@@ -60,6 +60,7 @@ export function AlertList({
             key={f}
             type="button"
             onClick={() => onFilter(f)}
+            data-testid={`severity-filter-${f}`}
             className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${
               filter === f ? "bg-gray-700 text-gray-100" : "text-gray-500 hover:text-gray-300"
             }`}
@@ -80,7 +81,11 @@ export function AlertList({
             {filtered.map((alert) => {
               const s = SEVERITY_STYLES[alert.severity];
               return (
-                <li key={alert.id} className="flex items-start gap-3 px-4 py-3">
+                <li
+                  key={alert.id}
+                  className="flex items-start gap-3 px-4 py-3"
+                  data-testid="alert-row"
+                >
                   <span className={`shrink-0 w-2 h-2 rounded-full mt-1.5 ${s.dot}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">

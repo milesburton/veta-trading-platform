@@ -181,13 +181,17 @@ export function CandlestickChart({ symbol, candles }: Props) {
   const raw = candles[interval.value];
 
   return (
-    <div className="relative flex flex-col h-full bg-gray-950">
+    <div
+      className="relative flex flex-col h-full bg-gray-950"
+      data-testid="candlestick-chart-panel"
+    >
       <div className="flex items-center gap-2 px-2 py-1.5 border-b border-gray-800 shrink-0">
         <div className="flex rounded overflow-hidden border border-gray-700">
           {(["1m", "5m"] as Interval[]).map((iv) => (
             <button
               key={iv}
               type="button"
+              data-testid={`interval-${iv}-tab`}
               onClick={() => {
                 interval.value = iv;
               }}
@@ -232,7 +236,11 @@ export function CandlestickChart({ symbol, candles }: Props) {
           <span className="text-[11px] text-gray-600">Collecting {interval.value} candles…</span>
         </div>
       )}
-      <div ref={containerRef} className="flex-1 min-h-0 overflow-hidden" />
+      <div
+        ref={containerRef}
+        className="flex-1 min-h-0 overflow-hidden"
+        data-testid="chart-container"
+      />
     </div>
   );
 }

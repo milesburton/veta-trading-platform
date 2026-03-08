@@ -245,7 +245,7 @@ export function MarketMatch() {
   const asset = filterAsset ?? fills[0]?.asset ?? "";
 
   return (
-    <div className="flex flex-col h-full text-xs">
+    <div className="flex flex-col h-full text-xs" data-testid="market-match-panel">
       {ctxMenu.value && (
         <ContextMenu
           items={ctxMenu.value.items}
@@ -341,7 +341,7 @@ export function MarketMatch() {
           </div>
 
           {/* Fill tape */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto" data-testid="fill-tape">
             <table className="w-full text-[10px]">
               <thead>
                 <tr className="text-gray-600 border-b border-gray-800 sticky top-0 bg-gray-950 text-[9px] uppercase tracking-wider">
@@ -375,6 +375,7 @@ export function MarketMatch() {
                   return (
                     <tr
                       key={`${f.ts}-${f.asset}-${f.parentOrderId ?? ""}-${f.side}`}
+                      data-testid="fill-row"
                       className="border-b border-gray-800/30 hover:bg-gray-900/40 transition-colors cursor-context-menu"
                       onContextMenu={(e) => openFillCtxMenu(e, f)}
                       title="Right-click for options"

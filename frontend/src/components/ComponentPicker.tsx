@@ -61,7 +61,7 @@ export function ComponentPicker() {
   });
 
   return (
-    <div className="relative">
+    <div data-testid="component-picker" className="relative">
       <button
         type="button"
         onClick={() => {
@@ -79,6 +79,7 @@ export function ComponentPicker() {
           <button
             type="button"
             aria-label="Close panel picker"
+            data-testid="component-picker-close-btn"
             className="fixed inset-0 z-10 cursor-default"
             onClick={() => {
               open.value = false;
@@ -100,6 +101,7 @@ export function ComponentPicker() {
                       type="button"
                       disabled={disabled}
                       draggable={!disabled}
+                      data-testid={`add-panel-${id}`}
                       onDragStart={(e) => {
                         e.dataTransfer.setData("text/panel-id", id);
                         e.dataTransfer.effectAllowed = "copy";

@@ -26,7 +26,7 @@ export function MarketDepth({ symbol }: Props) {
   const decimals = symbol.includes("/") ? 4 : 2;
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-xs">
+    <div data-testid="market-depth-panel" className="flex flex-col h-full bg-gray-950 text-xs">
       {/* Column headers */}
       <div className="grid grid-cols-[1fr_auto_auto] px-3 py-1 border-b border-gray-800/50 text-[10px] text-gray-600 uppercase tracking-wider shrink-0">
         <span title="Number of shares available at this price level">Size</span>
@@ -40,7 +40,7 @@ export function MarketDepth({ symbol }: Props) {
 
       <div className="flex-1 overflow-hidden flex flex-col">
         {/* Asks — shown top-to-bottom, lowest ask at bottom */}
-        <div className="flex-1 flex flex-col justify-end overflow-hidden">
+        <div data-testid="ask-table" className="flex-1 flex flex-col justify-end overflow-hidden">
           {[...asks].reverse().map((level, i) => {
             const barPct = (level.size / maxSize) * 100;
             // asks[0] is best ask; reversed display means index i from top = asks[LEVELS-1-i]
@@ -96,7 +96,7 @@ export function MarketDepth({ symbol }: Props) {
         </div>
 
         {/* Bids */}
-        <div className="flex-1 overflow-hidden">
+        <div data-testid="bid-table" className="flex-1 overflow-hidden">
           {bids.map((level, i) => {
             const barPct = (level.size / maxSize) * 100;
             const cum = bids.slice(0, i + 1).reduce((s, l) => s + l.size, 0);

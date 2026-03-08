@@ -62,7 +62,7 @@ export function AnalysisPanel() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-300">
+    <div className="flex flex-col h-full bg-gray-950 text-gray-300" data-testid="analysis-panel">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800 shrink-0">
         <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">News</span>
@@ -123,11 +123,15 @@ export function AnalysisPanel() {
         )}
 
         {selectedAsset && items.length > 0 && (
-          <ul className="divide-y divide-gray-800/60">
+          <ul className="divide-y divide-gray-800/60" data-testid="news-feed">
             {items.map((item) => {
               const s = SENTIMENT_STYLES[item.sentiment];
               return (
-                <li key={item.id} className="px-3 py-2.5 hover:bg-gray-900/50 transition-colors">
+                <li
+                  key={item.id}
+                  className="px-3 py-2.5 hover:bg-gray-900/50 transition-colors"
+                  data-testid="news-item"
+                >
                   <div className="flex items-start gap-2">
                     <span
                       className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`}

@@ -85,7 +85,10 @@ export function ScenarioMatrixPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs">
+    <div
+      className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs"
+      data-testid="scenario-matrix-panel"
+    >
       <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
         <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
           Scenario Matrix — Spot / Vol Shocks
@@ -173,6 +176,7 @@ export function ScenarioMatrixPanel() {
         <button
           type="submit"
           disabled={isLoading || !strike}
+          data-testid="run-scenario-btn"
           className="px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-40 text-[11px] font-semibold text-white transition-colors"
         >
           {isLoading ? "Running…" : "Run Scenario"}
@@ -209,7 +213,7 @@ export function ScenarioMatrixPanel() {
               Spot ${result.spotPrice.toFixed(2)} · Vol {(result.impliedVol * 100).toFixed(1)}% ·
               Base {result.baselinePrice.toFixed(4)}
             </div>
-            <table className="border-collapse text-[10px] w-full">
+            <table className="border-collapse text-[10px] w-full" data-testid="scenario-table">
               <thead>
                 <tr>
                   <th className="text-[9px] text-gray-600 text-left pr-2 pb-1 font-normal">

@@ -143,6 +143,7 @@ function TradeRow({
   return (
     <>
       <tr
+        data-testid="execution-row"
         className={`border-b border-gray-800/40 cursor-pointer hover:bg-gray-800/20 transition-colors ${rowClasses}`}
         onClick={() => {
           expanded.value = !expanded.value;
@@ -417,7 +418,7 @@ export function ExecutionsPanel() {
   const SORTABLE_COLS = new Set(["submittedAt", "asset", "side", "strategy", "status"]);
 
   return (
-    <div className="flex flex-col h-full text-xs relative">
+    <div className="flex flex-col h-full text-xs relative" data-testid="executions-panel">
       <div className="px-2 py-1.5 border-b border-gray-800 flex items-center gap-2 shrink-0">
         {filterOrderId && (
           <span className="text-[10px] text-amber-400 bg-amber-900/30 font-mono px-1.5 py-0.5 rounded">
@@ -465,7 +466,7 @@ export function ExecutionsPanel() {
                   : "No executions yet"}
           </div>
         ) : (
-          <table className="w-full text-xs">
+          <table className="w-full text-xs" data-testid="executions-table">
             <thead>
               <tr className="text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950">
                 {orderedCols.map((col) => (

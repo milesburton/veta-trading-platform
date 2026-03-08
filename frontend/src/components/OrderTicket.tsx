@@ -43,7 +43,10 @@ function AssetInfoBar({ symbol }: { symbol: string }) {
   const spreadBps = bid && ask ? (((ask - bid) / ((bid + ask) / 2)) * 10_000).toFixed(1) : null;
 
   return (
-    <div className="rounded bg-gray-800/60 border border-gray-700/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1">
+    <div
+      className="rounded bg-gray-800/60 border border-gray-700/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1"
+      data-testid="asset-info-bar"
+    >
       <div className="flex justify-between">
         <span className="text-gray-500">Bid</span>
         <span className="tabular-nums text-sky-400">{bid ? formatPrice(symbol, bid) : "—"}</span>
@@ -488,7 +491,7 @@ export function OrderTicket() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" data-testid="order-ticket-panel">
       <form
         ref={formRef}
         onSubmit={handleSubmit}
@@ -530,6 +533,7 @@ export function OrderTicket() {
             </label>
             <select
               id="strategy"
+              data-testid="strategy-select"
               aria-label="Execution strategy"
               title="Choose how the order is executed. LIMIT sends a single order. TWAP/POV/VWAP are algorithmic strategies that slice the order over time."
               value={activeStrategy}
@@ -725,6 +729,7 @@ export function OrderTicket() {
           <div className="flex gap-2">
             <button
               type="button"
+              data-testid="side-buy-tab"
               aria-pressed={activeSide === "BUY"}
               title="Buy — go long. Keyboard shortcut: B"
               onClick={() => dispatch(setActiveSide("BUY"))}
@@ -738,6 +743,7 @@ export function OrderTicket() {
             </button>
             <button
               type="button"
+              data-testid="side-sell-tab"
               aria-pressed={activeSide === "SELL"}
               title="Sell — go short. Keyboard shortcut: S"
               onClick={() => dispatch(setActiveSide("SELL"))}
@@ -768,6 +774,7 @@ export function OrderTicket() {
             id="quantity"
             type="number"
             min="1"
+            data-testid="qty-input"
             aria-label={isOptions ? "Number of contracts" : "Order quantity in shares"}
             title={
               isOptions
@@ -815,6 +822,7 @@ export function OrderTicket() {
               type="number"
               step="0.0001"
               min="0"
+              data-testid="limit-price-input"
               value={limitPrice.value}
               onChange={(e) => {
                 limitPrice.value = e.target.value;
@@ -940,6 +948,7 @@ export function OrderTicket() {
             className="rounded border border-amber-700/60 bg-amber-950/40 px-2.5 py-2 text-[10px] text-amber-400 space-y-0.5"
             role="alert"
             aria-label="Trading limit violations"
+            data-testid="order-warning-msg"
           >
             {limitWarnings.map((w) => (
               <div key={w}>⚠ {w}</div>
@@ -949,6 +958,7 @@ export function OrderTicket() {
 
         <button
           type="submit"
+          data-testid="submit-order-btn"
           disabled={!isValid || submitting.value}
           title={
             !isValid && isOptions && !optionQuote.value

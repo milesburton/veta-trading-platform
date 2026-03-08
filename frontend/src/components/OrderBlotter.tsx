@@ -221,7 +221,7 @@ export function OrderBlotter() {
   ]);
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col h-full relative" data-testid="order-blotter-panel">
       {ctxMenu.value && (
         <ContextMenu
           items={ctxMenu.value.items}
@@ -232,7 +232,10 @@ export function OrderBlotter() {
           }}
         />
       )}
-      <div className="px-3 py-1.5 border-b border-gray-800 flex items-center gap-2 shrink-0">
+      <div
+        className="px-3 py-1.5 border-b border-gray-800 flex items-center gap-2 shrink-0"
+        data-testid="blotter-filter-bar"
+      >
         {selectedOrderId.value && channelColour && (
           <span
             className="text-[10px] rounded px-1.5 py-0.5 font-mono tabular-nums shrink-0"
@@ -282,7 +285,7 @@ export function OrderBlotter() {
             No orders match the active filters
           </div>
         ) : (
-          <table className="w-full text-xs">
+          <table className="w-full text-xs" data-testid="orders-table">
             <thead>
               <tr className="text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950">
                 {orderedCols.map((col) => (
@@ -316,6 +319,7 @@ export function OrderBlotter() {
                 return (
                   <Fragment key={order.id}>
                     <tr
+                      data-testid={`order-row-${order.id}`}
                       onClick={() => selectOrder(order.id)}
                       onContextMenu={(e) => openOrderCtxMenu(e, order.id)}
                       aria-selected={selectedOrderId.value === order.id}
@@ -412,6 +416,7 @@ export function OrderBlotter() {
                             return (
                               <td key={col.key} className={`px-3 py-1.5 ${cellCls}`}>
                                 <span
+                                  data-testid="order-status-badge"
                                   className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${STATUS_STYLES[order.status]}`}
                                   title={ORDER_STATUS_DESCRIPTIONS[order.status]}
                                 >

@@ -212,7 +212,10 @@ export function MarketHeatmap() {
   });
 
   return (
-    <div className="flex flex-col h-full bg-[#0d1117] text-gray-100 select-none">
+    <div
+      data-testid="market-heatmap-panel"
+      className="flex flex-col h-full bg-[#0d1117] text-gray-100 select-none"
+    >
       {/* Toolbar */}
       <div className="px-3 py-1.5 border-b border-gray-800 flex items-center gap-3 shrink-0 text-[11px]">
         <span className="font-semibold text-gray-400 uppercase tracking-wider">Market Heatmap</span>
@@ -293,6 +296,7 @@ export function MarketHeatmap() {
                     // biome-ignore lint/a11y/useSemanticElements: SVG <g> cannot be replaced by <button>
                     <g
                       key={tile.symbol}
+                      data-testid={`heatmap-cell-${tile.symbol}`}
                       onClick={() => broadcast({ selectedAsset: tile.symbol })}
                       onMouseEnter={() => {
                         hovered.value = tile.symbol;

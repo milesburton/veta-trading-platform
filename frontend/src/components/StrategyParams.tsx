@@ -61,7 +61,7 @@ export function StrategyParams({
 }: Props) {
   if (activeStrategy === "TWAP") {
     return (
-      <div className="border border-gray-800 rounded p-2 space-y-2">
+      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
         <div className="text-[10px] text-gray-600 uppercase tracking-wider">TWAP Params</div>
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -74,6 +74,7 @@ export function StrategyParams({
               min="1"
               value={twapSlices}
               onChange={(e) => setTwapSlices(e.target.value)}
+              data-testid="param-slices"
               className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
@@ -88,6 +89,7 @@ export function StrategyParams({
               max="100"
               value={twapCap}
               onChange={(e) => setTwapCap(e.target.value)}
+              data-testid="param-participation-cap"
               className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
@@ -98,7 +100,7 @@ export function StrategyParams({
 
   if (activeStrategy === "POV") {
     return (
-      <div className="border border-gray-800 rounded p-2 space-y-2">
+      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
         <div className="text-[10px] text-gray-600 uppercase tracking-wider">POV Params</div>
         <div>
           <label htmlFor="povRate" className="block text-xs text-gray-500 mb-1">
@@ -111,6 +113,7 @@ export function StrategyParams({
             max="100"
             value={povRate}
             onChange={(e) => setPovRate(e.target.value)}
+            data-testid="param-participation-rate"
             className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
           />
         </div>
@@ -125,6 +128,7 @@ export function StrategyParams({
               min="0"
               value={povMin}
               onChange={(e) => setPovMin(e.target.value)}
+              data-testid="param-min-slice"
               className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
@@ -138,6 +142,7 @@ export function StrategyParams({
               min="1"
               value={povMax}
               onChange={(e) => setPovMax(e.target.value)}
+              data-testid="param-max-slice"
               className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
@@ -148,7 +153,7 @@ export function StrategyParams({
 
   if (activeStrategy === "VWAP") {
     return (
-      <div className="border border-gray-800 rounded p-2 space-y-2">
+      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
         <div className="text-[10px] text-gray-600 uppercase tracking-wider">VWAP Params</div>
         <div>
           <label htmlFor="vwapDev" className="block text-xs text-gray-500 mb-1">
@@ -161,6 +166,7 @@ export function StrategyParams({
             step="0.01"
             value={vwapDev}
             onChange={(e) => setVwapDev(e.target.value)}
+            data-testid="param-max-deviation"
             className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
           />
         </div>
@@ -175,6 +181,7 @@ export function StrategyParams({
               min="0"
               value={vwapStart}
               onChange={(e) => setVwapStart(e.target.value)}
+              data-testid="param-start-offset"
               className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
@@ -188,6 +195,7 @@ export function StrategyParams({
               min="1"
               value={vwapEnd}
               onChange={(e) => setVwapEnd(e.target.value)}
+              data-testid="param-end-offset"
               className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
@@ -198,7 +206,7 @@ export function StrategyParams({
 
   if (activeStrategy === "ICEBERG") {
     return (
-      <div className="border border-gray-800 rounded p-2 space-y-2">
+      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
         <div className="text-[10px] text-gray-600 uppercase tracking-wider">ICEBERG Params</div>
         <div>
           <label htmlFor="icebergVisible" className="block text-xs text-gray-500 mb-1">
@@ -210,6 +218,7 @@ export function StrategyParams({
             min="1"
             value={icebergVisible}
             onChange={(e) => setIcebergVisible(e.target.value)}
+            data-testid="param-visible-qty"
             className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
           />
         </div>
@@ -219,7 +228,7 @@ export function StrategyParams({
 
   if (activeStrategy === "SNIPER") {
     return (
-      <div className="border border-gray-800 rounded p-2 space-y-2">
+      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
         <div className="text-[10px] text-gray-600 uppercase tracking-wider">SNIPER Params</div>
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -233,6 +242,7 @@ export function StrategyParams({
               max="100"
               value={sniperAggression}
               onChange={(e) => setSniperAggression(e.target.value)}
+              data-testid="param-aggression"
               className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
@@ -247,6 +257,7 @@ export function StrategyParams({
               max="3"
               value={sniperMaxVenues}
               onChange={(e) => setSniperMaxVenues(e.target.value)}
+              data-testid="param-max-venues"
               className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
@@ -257,7 +268,7 @@ export function StrategyParams({
 
   if (activeStrategy === "ARRIVAL_PRICE") {
     return (
-      <div className="border border-gray-800 rounded p-2 space-y-2">
+      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
         <div className="text-[10px] text-gray-600 uppercase tracking-wider">
           ARRIVAL PRICE Params
         </div>
@@ -273,6 +284,7 @@ export function StrategyParams({
               max="100"
               value={apUrgency}
               onChange={(e) => setApUrgency(e.target.value)}
+              data-testid="param-urgency"
               className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
@@ -286,6 +298,7 @@ export function StrategyParams({
               min="1"
               value={apMaxSlippageBps}
               onChange={(e) => setApMaxSlippageBps(e.target.value)}
+              data-testid="param-max-slippage-bps"
               className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>

@@ -68,11 +68,16 @@ function PlatformStatus() {
       : "bg-yellow-400";
 
   return (
-    <div className="mt-10 border-t border-gray-800 pt-5 space-y-3">
+    <div data-testid="platform-status" className="mt-10 border-t border-gray-800 pt-5 space-y-3">
       {/* Summary */}
       <div className="flex items-center justify-center gap-2">
-        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`} />
-        <span className={`text-xs font-medium ${summaryColor}`}>{summaryLabel}</span>
+        <span
+          data-testid="platform-status-dot"
+          className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`}
+        />
+        <span data-testid="platform-status-label" className={`text-xs font-medium ${summaryColor}`}>
+          {summaryLabel}
+        </span>
       </div>
       {/* Per-service dots */}
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">
@@ -150,14 +155,25 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-950">
+    <div
+      data-testid="login-page"
+      className="flex items-center justify-center min-h-screen bg-gray-950"
+    >
       <div className="w-full max-w-2xl px-6">
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="text-emerald-400 font-bold tracking-widest uppercase text-sm mb-2">
-            Virtual Equities Trading
+          <div
+            data-testid="brand-title"
+            className="text-3xl font-bold text-white tracking-tight mb-1"
+          >
+            Veta
           </div>
-          <h1 className="text-2xl font-semibold text-gray-100 mb-1">Select your profile</h1>
+          <div className="text-xs font-medium text-emerald-500 tracking-widest uppercase mb-6">
+            Equities Trading Simulator
+          </div>
+          <h1 data-testid="login-heading" className="text-2xl font-semibold text-gray-100 mb-1">
+            Select your profile
+          </h1>
           <p className="text-gray-500 text-sm">Choose a trader to begin your session</p>
         </div>
 
@@ -168,6 +184,7 @@ export function LoginPage() {
             return (
               <button
                 key={user.id}
+                data-testid={`user-btn-${user.id}`}
                 type="button"
                 onClick={() => handleSelect(user)}
                 disabled={loading !== null}
@@ -211,7 +228,10 @@ export function LoginPage() {
         </div>
 
         {error && (
-          <div className="mt-6 text-center text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-lg px-4 py-2">
+          <div
+            data-testid="login-error"
+            className="mt-6 text-center text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-lg px-4 py-2"
+          >
             {error}
           </div>
         )}

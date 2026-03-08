@@ -28,17 +28,20 @@
 }
 
 [data-theme="light"] {
-  --gray-50: 17 24 39;
-  --gray-100: 31 41 55;
-  --gray-200: 55 65 81;
-  --gray-300: 75 85 99;
-  --gray-400: 107 114 128;
-  --gray-500: 156 163 175;
-  --gray-600: 209 213 219;
-  --gray-700: 229 231 235;
-  --gray-800: 243 244 246;
-  --gray-900: 255 255 255;
-  --gray-950: 249 250 251;
+  /* Light mode: slate-tinted whites for backgrounds, dark ink for text.
+     The gray scale runs light→dark (950=lightest bg, 100=darkest text)
+     so components built for dark mode remain readable when inverted. */
+  --gray-950: 248 250 252;   /* page background — slate-50 */
+  --gray-900: 241 245 249;   /* card / panel background — slate-100 */
+  --gray-800: 226 232 240;   /* subtle borders, hover — slate-200 */
+  --gray-700: 203 213 225;   /* dividers — slate-300 */
+  --gray-600: 148 163 184;   /* muted text, placeholders — slate-400 */
+  --gray-500: 100 116 139;   /* secondary text — slate-500 */
+  --gray-400: 71 85 105;     /* body text — slate-600 */
+  --gray-300: 51 65 85;      /* strong text — slate-700 */
+  --gray-200: 30 41 59;      /* headings — slate-800 */
+  --gray-100: 15 23 42;      /* primary text, near-black — slate-900 */
+  --gray-50:  2 6 23;        /* max contrast — slate-950 */
 }
 
 [data-theme="high-contrast"] {
@@ -58,6 +61,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  background-color: rgb(var(--gray-950));
+}
 
 @layer base {
   body {

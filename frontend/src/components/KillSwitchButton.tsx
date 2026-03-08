@@ -229,6 +229,7 @@ export function KillSwitchButton() {
             ? `Kill switch active — ${activeCount} block(s)`
             : "Kill switch — cancel or resume active orders"
         }
+        data-testid="kill-switch-btn"
         className={`flex items-center gap-1.5 px-2 py-1 rounded border font-semibold text-[11px] tracking-wide transition-all ${
           activeCount > 0
             ? "border-red-500 bg-red-600 text-white animate-pulse"
@@ -254,6 +255,7 @@ export function KillSwitchButton() {
             role="dialog"
             aria-modal="true"
             aria-label="Kill Switch"
+            data-testid="kill-switch-dialog"
             className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-[480px] max-w-[95vw] text-xs text-gray-300 flex flex-col max-h-[90vh]"
             onKeyDown={(e) => {
               if (e.key === "Escape") close();
@@ -550,6 +552,7 @@ export function KillSwitchButton() {
               <button
                 type="button"
                 onClick={close}
+                data-testid="kill-switch-cancel-btn"
                 className="px-3 py-1.5 rounded border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors text-[11px]"
               >
                 Cancel
@@ -560,6 +563,7 @@ export function KillSwitchButton() {
                   handleConfirm().catch(() => {});
                 }}
                 disabled={!canSubmit || isSending.value}
+                data-testid="kill-switch-confirm-btn"
                 className={`px-4 py-1.5 rounded border font-semibold text-[11px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                   isKill
                     ? "border-red-600 bg-red-700 hover:bg-red-600 text-white"

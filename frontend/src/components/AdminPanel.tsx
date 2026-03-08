@@ -102,7 +102,7 @@ export function AdminPanel() {
   const isAdmin = currentUser?.role === "admin";
 
   return (
-    <div className="h-full overflow-auto p-3 space-y-4 text-xs">
+    <div data-testid="admin-panel" className="h-full overflow-auto p-3 space-y-4 text-xs">
       {/* Trading Limits table */}
       <div>
         <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
@@ -114,7 +114,7 @@ export function AdminPanel() {
           )}
         </div>
         <div className="border border-gray-800 rounded overflow-hidden">
-          <table className="w-full text-left">
+          <table data-testid="users-table" className="w-full text-left">
             <thead>
               <tr className="bg-gray-900 text-gray-500 text-[10px] uppercase tracking-wider">
                 <th className="px-3 py-2">User</th>
@@ -132,6 +132,7 @@ export function AdminPanel() {
                   return (
                     <tr
                       key={user.id}
+                      data-testid="user-row"
                       className={`border-t border-gray-800 ${idx % 2 === 0 ? "bg-gray-950" : "bg-gray-900/40"}`}
                     >
                       <td className="px-3 py-2">
@@ -236,7 +237,7 @@ export function AdminPanel() {
           Recent Audit Journal (last 50)
         </div>
         <div className="border border-gray-800 rounded overflow-hidden">
-          <table className="w-full text-left text-[10px]">
+          <table data-testid="audit-table" className="w-full text-left text-[10px]">
             <thead>
               <tr className="bg-gray-900 text-gray-500 uppercase tracking-wider">
                 <th className="px-3 py-1.5">Time</th>

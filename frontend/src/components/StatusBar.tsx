@@ -198,6 +198,7 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
           else setDrawerOpen(true);
         }}
         title={isPinned ? "Jump to Alerts panel" : "Alert Centre"}
+        data-testid="alert-bell-btn"
         className={`flex items-center gap-1.5 px-2 py-1 rounded border font-semibold text-[11px] tracking-wide transition-all ${btnCls}`}
       >
         Alerts
@@ -238,13 +239,17 @@ export function AppHeader() {
   }
 
   return (
-    <div className="shrink-0">
+    <div className="shrink-0" data-testid="app-header">
       {updateAvailable && (
-        <div className="flex items-center justify-center gap-3 px-4 py-1.5 bg-amber-900/60 border-b border-amber-700/60 text-xs text-amber-300">
+        <div
+          data-testid="update-banner"
+          className="flex items-center justify-center gap-3 px-4 py-1.5 bg-amber-900/60 border-b border-amber-700/60 text-xs text-amber-300"
+        >
           <span>A new version is available.</span>
           <button
             type="button"
             onClick={() => window.location.reload()}
+            data-testid="reload-btn"
             className="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-medium transition-colors"
           >
             Reload
@@ -269,7 +274,9 @@ export function AppHeader() {
         </div>
 
         <div className="flex items-center gap-4">
-          <ServiceStatus services={services} />
+          <div data-testid="service-health-cluster">
+            <ServiceStatus services={services} />
+          </div>
           <a
             href="https://github.com/milesburton/equities-trading-simulator"
             target="_blank"
@@ -282,13 +289,17 @@ export function AppHeader() {
             </svg>
             <span className="sr-only">View source on GitHub</span>
           </a>
-          <ThemeSwitcher />
+          <div data-testid="theme-selector">
+            <ThemeSwitcher />
+          </div>
           <AlertCentreButton services={services} />
-          <KillSwitchButton />
+          <div data-testid="kill-switch-wrapper">
+            <KillSwitchButton />
+          </div>
           <span className="tabular-nums text-gray-500">{time.value}</span>
           {user && (
             <div className="flex items-center gap-2 pl-3 border-l border-gray-800">
-              <span className="flex items-center gap-1.5 text-gray-400">
+              <span data-testid="user-menu-btn" className="flex items-center gap-1.5 text-gray-400">
                 <span
                   className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-semibold tracking-wide ${
                     user.role === "admin"
@@ -313,6 +324,7 @@ export function AppHeader() {
                 type="button"
                 onClick={handleLogout}
                 title="Log out"
+                data-testid="logout-btn"
                 className="text-gray-600 hover:text-gray-300 transition-colors text-[10px] leading-none px-1.5 py-0.5 border border-gray-700 hover:border-gray-500 rounded"
               >
                 Log out
@@ -329,7 +341,10 @@ export function AppHeader() {
 
 export function WorkspaceToolbar() {
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-950 border-b border-gray-800 text-xs">
+    <div
+      data-testid="workspace-toolbar"
+      className="flex items-center gap-2 px-3 py-1.5 bg-gray-950 border-b border-gray-800 text-xs"
+    >
       <ComponentPicker />
       <div className="w-px h-3.5 bg-gray-800" />
       <TemplatePicker />

@@ -66,11 +66,27 @@ export function StartupOverlay({ onReady }: { onReady: () => void }) {
   const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-950 gap-6">
-      <div className="flex flex-col items-center gap-2">
-        <div className="text-2xl font-semibold text-gray-100 tracking-wide">Platform Starting</div>
-        <div className="text-sm text-gray-500">
-          Services are initialising — this usually takes 30–60 seconds
+    <div
+      data-testid="startup-overlay"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-950 gap-6"
+    >
+      <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-1">
+          <div data-testid="brand-title" className="text-4xl font-bold text-white tracking-tight">
+            Veta
+          </div>
+          <div className="text-xs font-medium text-emerald-500 tracking-widest uppercase">
+            Equities Trading Simulator
+          </div>
+        </div>
+        <div className="w-px h-6 bg-gray-800" />
+        <div className="flex flex-col items-center gap-1">
+          <div data-testid="startup-status" className="text-sm font-medium text-gray-300">
+            Starting up
+          </div>
+          <div className="text-xs text-gray-600">
+            Initialising trading services — usually takes 30–60 seconds
+          </div>
         </div>
       </div>
 
@@ -78,7 +94,11 @@ export function StartupOverlay({ onReady }: { onReady: () => void }) {
         {(Object.keys(SERVICE_LABELS) as Array<keyof ReadyResponse["services"]>).map((key) => {
           const up = services?.[key] ?? false;
           return (
-            <div key={key} className="flex items-center gap-3 text-sm">
+            <div
+              key={key}
+              data-testid={`service-indicator-${key}`}
+              className="flex items-center gap-3 text-sm"
+            >
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${
                   up ? "bg-emerald-400" : "bg-gray-600 animate-pulse"
@@ -90,7 +110,9 @@ export function StartupOverlay({ onReady }: { onReady: () => void }) {
         })}
       </div>
 
-      <div className="text-xs text-gray-600 tabular-nums">{timeStr} elapsed</div>
+      <div data-testid="startup-elapsed" className="text-xs text-gray-600 tabular-nums">
+        {timeStr} elapsed
+      </div>
     </div>
   );
 }

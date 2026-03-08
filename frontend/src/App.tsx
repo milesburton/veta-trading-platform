@@ -95,7 +95,10 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolea
   render() {
     if (this.state.crashed) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 text-gray-300 gap-4">
+        <div
+          data-testid="error-boundary"
+          className="flex flex-col items-center justify-center min-h-screen bg-gray-950 text-gray-300 gap-4"
+        >
           <p className="text-lg font-semibold">Something went wrong.</p>
           <button
             type="button"
@@ -130,7 +133,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-950 text-gray-500 text-sm">
+      <div
+        data-testid="auth-loading"
+        className="flex items-center justify-center min-h-screen bg-gray-950 text-gray-500 text-sm"
+      >
         Loading...
       </div>
     );
@@ -339,6 +345,7 @@ function TradingApp() {
   return (
     <TradingProvider>
       <div
+        data-testid="trading-app"
         data-theme={theme}
         className="flex flex-col h-screen bg-gray-950 text-gray-100 overflow-hidden"
       >

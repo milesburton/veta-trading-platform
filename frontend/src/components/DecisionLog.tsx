@@ -175,7 +175,7 @@ export function DecisionLog() {
   }, [events, showHeartbeats.value, algoFilter.value, filterAsset, filterOrderId]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" data-testid="decision-log-panel">
       {ctxMenu.value && (
         <ContextMenu
           items={ctxMenu.value.items}
@@ -187,7 +187,10 @@ export function DecisionLog() {
         />
       )}
       {/* Toolbar */}
-      <div className="px-3 py-1.5 border-b border-gray-800 flex items-center gap-2 flex-wrap shrink-0">
+      <div
+        className="px-3 py-1.5 border-b border-gray-800 flex items-center gap-2 flex-wrap shrink-0"
+        data-testid="decision-log-filter"
+      >
         <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
           Decision Log
         </span>
@@ -245,7 +248,7 @@ export function DecisionLog() {
                 : "No events match current filters"}
           </div>
         ) : (
-          <table className="w-full text-[10px]">
+          <table className="w-full text-[10px]" data-testid="decision-log-table">
             <tbody>
               {filtered.map((e, i) => {
                 const p = (e.payload ?? {}) as unknown as AlgoEvent;
@@ -258,6 +261,7 @@ export function DecisionLog() {
                 return (
                   <tr
                     key={`${ts}-${e.type}-${p.orderId ?? p.parentOrderId ?? i}`}
+                    data-testid="decision-log-row"
                     className={`border-b border-gray-800/30 hover:bg-gray-900/40 transition-colors cursor-context-menu ${
                       isFill ? "bg-emerald-950/10" : isExpired ? "bg-red-950/10" : ""
                     }`}

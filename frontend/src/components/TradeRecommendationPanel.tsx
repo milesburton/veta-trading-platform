@@ -65,7 +65,7 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
   const s = SIGNAL_STYLES[rec.signalStrength];
 
   return (
-    <li className="border-b border-gray-800 last:border-0">
+    <li className="border-b border-gray-800 last:border-0" data-testid="recommendation-row">
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: list row toggle */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: list row toggle */}
       <div
@@ -147,7 +147,10 @@ export function TradeRecommendationPanel() {
     : [];
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs">
+    <div
+      className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs"
+      data-testid="recommendation-panel"
+    >
       <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
         <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
           Trade Recommendations
@@ -171,6 +174,7 @@ export function TradeRecommendationPanel() {
           type="button"
           onClick={handleFetch}
           disabled={isLoading}
+          data-testid="refresh-recommendations-btn"
           className="px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-40 text-[11px] font-semibold text-white transition-colors shrink-0"
         >
           {isLoading ? "Analysing…" : "Analyse"}

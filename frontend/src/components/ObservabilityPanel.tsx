@@ -363,7 +363,7 @@ export function ObservabilityPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full text-xs">
+    <div className="flex flex-col h-full text-xs" data-testid="observability-panel">
       <div className="px-3 py-1.5 border-b border-gray-800 flex items-center justify-between gap-2 flex-wrap shrink-0">
         <div className="flex items-center gap-1">
           <div className="flex rounded overflow-hidden border border-gray-700 text-[11px]">
@@ -374,6 +374,7 @@ export function ObservabilityPanel() {
               }}
               title="Summary — overview of fill statistics, notional, commission, and liquidity mix"
               aria-pressed={tab.value === "summary"}
+              data-testid="summary-tab"
               className={`px-2.5 py-1 transition-colors ${tab.value === "summary" ? "bg-sky-900/60 text-sky-300" : "text-gray-500 hover:text-gray-300"}`}
             >
               Summary
@@ -385,6 +386,7 @@ export function ObservabilityPanel() {
               }}
               title="Trades — individual trade records with fill progression charts"
               aria-pressed={tab.value === "trades"}
+              data-testid="trades-tab"
               className={`px-2.5 py-1 transition-colors ${tab.value === "trades" ? "bg-sky-900/60 text-sky-300" : "text-gray-500 hover:text-gray-300"}`}
             >
               Trades
@@ -401,6 +403,7 @@ export function ObservabilityPanel() {
               }}
               title="Events — raw observability event stream from the algo engine"
               aria-pressed={tab.value === "events"}
+              data-testid="events-tab"
               className={`px-2.5 py-1 transition-colors ${tab.value === "events" ? "bg-sky-900/60 text-sky-300" : "text-gray-500 hover:text-gray-300"}`}
             >
               Events
@@ -589,11 +592,12 @@ export function ObservabilityPanel() {
             {latest.length === 0 ? (
               <div className="text-gray-600">No events yet</div>
             ) : (
-              <ul className="space-y-1.5">
+              <ul className="space-y-1.5" data-testid="events-table">
                 {latest.map((e) => (
                   <li
                     key={`${e.ts}-${e.type}`}
                     className="p-2 bg-gray-900/40 rounded border border-gray-800/50"
+                    data-testid="event-row"
                   >
                     <div className="flex items-center justify-between">
                       <div className="text-gray-500 text-[10px]">

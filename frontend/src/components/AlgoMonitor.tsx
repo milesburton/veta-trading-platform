@@ -259,6 +259,7 @@ function TradeAtLastButton({
         e.stopPropagation();
         handleTradeAtLast();
       }}
+      data-testid="trade-at-last-btn"
       className="px-2 py-0.5 text-[10px] font-semibold rounded border border-amber-600/60 text-amber-400 hover:bg-amber-900/30 transition-colors whitespace-nowrap"
       title={`Submit LIMIT order for ${formatQty(remaining)} @ ${marketPrice ? formatPrice(marketPrice) : "—"}`}
     >
@@ -315,7 +316,7 @@ export function AlgoMonitor() {
   const colSpan = orderedCols.length + (isNeedsAction ? 1 : 0);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" data-testid="algo-monitor-panel">
       <div className="px-3 py-1.5 border-b border-gray-800 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <div className="flex rounded overflow-hidden border border-gray-700 text-[11px]">
@@ -326,6 +327,7 @@ export function AlgoMonitor() {
               onClick={() => {
                 tab.value = "active";
               }}
+              data-testid="active-tab"
               className={`px-2.5 py-1 transition-colors ${tab.value === "active" ? "bg-sky-900/60 text-sky-300" : "text-gray-500 hover:text-gray-300"}`}
             >
               Active
@@ -342,6 +344,7 @@ export function AlgoMonitor() {
               onClick={() => {
                 tab.value = "needs-action";
               }}
+              data-testid="needs-action-tab"
               className={`px-2.5 py-1 transition-colors ${tab.value === "needs-action" ? "bg-amber-900/60 text-amber-300" : "text-gray-500 hover:text-gray-300"}`}
             >
               Needs Action
@@ -358,6 +361,7 @@ export function AlgoMonitor() {
               onClick={() => {
                 tab.value = "history";
               }}
+              data-testid="history-tab"
               className={`px-2.5 py-1 transition-colors ${tab.value === "history" ? "bg-gray-700/80 text-gray-200" : "text-gray-500 hover:text-gray-300"}`}
             >
               History
@@ -397,7 +401,7 @@ export function AlgoMonitor() {
                 : "No completed orders yet"}
           </div>
         ) : (
-          <table className="w-full text-xs">
+          <table className="w-full text-xs" data-testid="algo-orders-table">
             <thead>
               <tr className="text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950">
                 {orderedCols.map((col) => (
@@ -438,6 +442,7 @@ export function AlgoMonitor() {
                   <Fragment key={order.id}>
                     <tr
                       onClick={() => togglePerf(order.id)}
+                      data-testid={`algo-order-row-${order.id}`}
                       className={`border-b border-gray-800/40 cursor-pointer transition-colors ${
                         isLinked
                           ? "bg-sky-900/20 border-l-2 border-l-sky-500"

@@ -146,6 +146,7 @@ const Row = memo(function Row({
   return (
     <button
       type="button"
+      data-testid={`asset-row-${asset.symbol}`}
       style={{
         ...style,
         borderLeft: isSelected ? `3px solid ${accentColour}` : "3px solid transparent",
@@ -378,7 +379,7 @@ export function MarketLadder() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" data-testid="market-ladder-panel">
       {ctxMenu.value && (
         <ContextMenu
           items={ctxMenu.value.items}
@@ -442,7 +443,7 @@ export function MarketLadder() {
         <div className="flex-1 text-right pr-2 py-1.5">Trend</div>
       </div>
 
-      <div ref={containerRef} className="flex-1 overflow-hidden">
+      <div ref={containerRef} className="flex-1 overflow-hidden" data-testid="ladder-table">
         <List<RowData>
           rowComponent={Row as Parameters<typeof List<RowData>>[0]["rowComponent"]}
           rowCount={filtered.length}

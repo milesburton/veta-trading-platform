@@ -16,7 +16,7 @@ export function AssetSelector({ assets, value, onChange, onSelect, inputRef, pri
   const currentPrice = selected ? prices[selected.symbol] : undefined;
 
   return (
-    <div className="relative">
+    <div data-testid="asset-selector" className="relative">
       <label htmlFor="asset-search" className="block text-xs text-gray-500 mb-1">
         Asset
       </label>
@@ -28,6 +28,7 @@ export function AssetSelector({ assets, value, onChange, onSelect, inputRef, pri
           autoComplete="off"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          data-testid="asset-search-input"
           className="flex-1 bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
         />
         {currentPrice ? (
@@ -44,7 +45,10 @@ export function AssetSelector({ assets, value, onChange, onSelect, inputRef, pri
       </div>
 
       {filtered.length > 0 && value && (
-        <ul className="absolute left-0 right-0 top-full mt-0.5 z-30 bg-gray-900 border border-gray-700 rounded shadow-xl max-h-48 overflow-auto text-xs">
+        <ul
+          data-testid="asset-dropdown"
+          className="absolute left-0 right-0 top-full mt-0.5 z-30 bg-gray-900 border border-gray-700 rounded shadow-xl max-h-48 overflow-auto text-xs"
+        >
           {filtered.slice(0, 40).map((a) => (
             <li key={a.symbol}>
               <button
@@ -52,6 +56,7 @@ export function AssetSelector({ assets, value, onChange, onSelect, inputRef, pri
                 onMouseDown={() => onSelect(a.symbol)}
                 title={`Select ${a.symbol} — ${a.sector}`}
                 aria-label={`Select ${a.symbol}`}
+                data-testid={`asset-option-${a.symbol}`}
                 className="w-full text-left px-2.5 py-1.5 hover:bg-gray-700 flex items-center justify-between"
               >
                 <span className="font-semibold text-gray-200">{a.symbol}</span>
