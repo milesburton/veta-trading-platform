@@ -66,58 +66,60 @@ export interface MsgConsumer {
   disconnect(): Promise<void>;
 }
 
-export async function createConsumer(
+export function createConsumer(
   groupId: string,
   topics: string[],
   clientId = `veta-${groupId}`,
 ): Promise<MsgConsumer> {
-  const MAX_DELAY_MS = 30_000;
-  let delay = 2_000;
+  const handlers: MessageHandler[] = [];
+  let activeConsumer: Consumer | null = null;
+  let stopped = false;
 
-  // Retry until Redpanda is ready — services start in parallel and the broker
-  // may not be accepting connections immediately after a full restart.
-  for (;;) {
-    try {
-      const kafka = makeKafka(clientId);
-      const consumer: Consumer = kafka.consumer({ groupId });
-      await consumer.connect();
-
-      for (const topic of topics) {
-        await consumer.subscribe({ topic, fromBeginning: false });
+  // Connect in the background so callers get an immediate handle.
+  // Services bind their HTTP port before Kafka is ready; message delivery
+  // begins once the broker accepts the subscription.
+  async function connectLoop() {
+    const MAX_DELAY_MS = 30_000;
+    let delay = 2_000;
+    while (!stopped) {
+      try {
+        const kafka = makeKafka(clientId);
+        const consumer: Consumer = kafka.consumer({ groupId });
+        await consumer.connect();
+        for (const topic of topics) {
+          await consumer.subscribe({ topic, fromBeginning: false });
+        }
+        await consumer.run({
+          eachMessage: async ({ topic, message }: { topic: string; message: KafkaMessage }) => {
+            if (!message.value) return;
+            let parsed: unknown;
+            try { parsed = JSON.parse(message.value.toString()); } catch { return; }
+            for (const handler of handlers) await handler(topic, parsed);
+          },
+        });
+        activeConsumer = consumer;
+        delay = 2_000; // reset backoff on success
+        return; // connected — exit retry loop
+      } catch (err) {
+        console.warn(
+          `[messaging] createConsumer(${groupId}) failed, retrying in ${delay / 1000}s:`,
+          (err as Error).message,
+        );
+        await new Promise((r) => setTimeout(r, delay));
+        delay = Math.min(delay * 2, MAX_DELAY_MS);
       }
-
-      const handlers: MessageHandler[] = [];
-
-      await consumer.run({
-        eachMessage: async ({ topic, message }: { topic: string; message: KafkaMessage }) => {
-          if (!message.value) return;
-          let parsed: unknown;
-          try {
-            parsed = JSON.parse(message.value.toString());
-          } catch {
-            return; // malformed — skip
-          }
-          for (const handler of handlers) {
-            await handler(topic, parsed);
-          }
-        },
-      });
-
-      return {
-        onMessage(handler: MessageHandler): void {
-          handlers.push(handler);
-        },
-        async disconnect(): Promise<void> {
-          await consumer.disconnect();
-        },
-      };
-    } catch (err) {
-      console.warn(
-        `[messaging] createConsumer(${groupId}) failed, retrying in ${delay / 1000}s:`,
-        (err as Error).message,
-      );
-      await new Promise((r) => setTimeout(r, delay));
-      delay = Math.min(delay * 2, MAX_DELAY_MS);
     }
   }
+
+  connectLoop(); // fire-and-forget
+
+  return Promise.resolve({
+    onMessage(handler: MessageHandler): void {
+      handlers.push(handler);
+    },
+    async disconnect(): Promise<void> {
+      stopped = true;
+      await activeConsumer?.disconnect();
+    },
+  });
 }
