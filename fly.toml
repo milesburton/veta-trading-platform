@@ -9,6 +9,8 @@ primary_region = "iad"
 
 [build]
   dockerfile = "Dockerfile"
+  # VITE_COMMIT_SHA and VITE_BUILD_DATE are injected at deploy time via:
+  #   flyctl deploy --build-arg VITE_COMMIT_SHA=$(git rev-parse --short HEAD) --build-arg VITE_BUILD_DATE=$(date -u +%Y-%m-%d)
   args = { VITE_DEPLOYMENT = "fly" }
 
 [env]

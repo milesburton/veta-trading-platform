@@ -9,7 +9,11 @@ FROM node:24-alpine AS builder
 WORKDIR /src/frontend
 
 ARG VITE_DEPLOYMENT=local
+ARG VITE_COMMIT_SHA=dev
+ARG VITE_BUILD_DATE=dev
 ENV VITE_DEPLOYMENT=$VITE_DEPLOYMENT
+ENV VITE_COMMIT_SHA=$VITE_COMMIT_SHA
+ENV VITE_BUILD_DATE=$VITE_BUILD_DATE
 
 COPY frontend/package.json frontend/package-lock.json* ./
 COPY frontend/ ./
@@ -35,11 +39,11 @@ COPY --from=redpanda-src /opt/redpanda/libexec/rpk /usr/local/bin/rpk
 # Copy Redpanda Console binary
 COPY --from=console-src /app/console /usr/local/bin/redpanda-console
 RUN chmod +x /usr/local/bin/redpanda /usr/local/bin/rpk /usr/local/bin/redpanda-console
-## Avoid exporting LD_LIBRARY_PATH globally here. Some system utilities
-## (invoked during image builds or by devcontainer features) can break
-## if Redpanda's private libc is picked up. Set the library path only
-## when launching Redpanda at runtime via the supervisord command or
-## wrapper scripts instead.
+# Create a wrapper that launches redpanda using its own bundled dynamic linker.
+# This avoids glibc version conflicts on the host: denoland/deno:2.x now ships
+# Debian 13 with glibc 2.41, but redpanda:v24.3.6 bundles an older libc.
+# Using the bundled ld.so as the interpreter bypasses the host linker entirely.
+RUN printf '#!/bin/sh\nmkdir -p /var/lib/redpanda/data /etc/redpanda\nexec /usr/local/lib/redpanda/ld.so \\\n  --library-path /usr/local/lib/redpanda \\\n  /usr/local/bin/redpanda redpanda \\\n  --redpanda-cfg /etc/redpanda/redpanda.yaml \\\n  --overprovisioned \\\n  --unsafe-bypass-fsync=true \\\n  --reserve-memory=0M \\\n  --lock-memory=false \\\n  --default-log-level=warn \\\n  --smp=1 \\\n  --memory=200M \\\n  --kafka-addr=0.0.0.0:9092 \\\n  --advertise-kafka-addr=localhost:9092\n' > /usr/local/bin/redpanda-start.sh && chmod +x /usr/local/bin/redpanda-start.sh
 
 # Download Traefik v3 binary
 ARG TRAEFIK_VERSION=3.3.3

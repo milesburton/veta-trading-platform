@@ -352,19 +352,27 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   if (path === "/ready" && req.method === "GET") {
+    const emsUrl = `http://localhost:${Deno.env.get("EMS_PORT") ?? "5001"}`;
+    const omsUrl = `http://localhost:${Deno.env.get("OMS_PORT") ?? "5002"}`;
     const checks = await Promise.all([
-      fetch(`${MARKET_SIM_URL}/health`, { signal: AbortSignal.timeout(2_000) })
-        .then((r) => r.ok).catch(() => false),
-      fetch(`${JOURNAL_URL}/health`, { signal: AbortSignal.timeout(2_000) })
-        .then((r) => r.ok).catch(() => false),
-      fetch(`${USER_SERVICE_URL}/health`, { signal: AbortSignal.timeout(2_000) })
-        .then((r) => r.ok).catch(() => false),
+      fetch(`${MARKET_SIM_URL}/health`, { signal: AbortSignal.timeout(2_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${JOURNAL_URL}/health`, { signal: AbortSignal.timeout(2_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${USER_SERVICE_URL}/health`, { signal: AbortSignal.timeout(2_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${emsUrl}/health`, { signal: AbortSignal.timeout(2_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${omsUrl}/health`, { signal: AbortSignal.timeout(2_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${ANALYTICS_URL}/health`, { signal: AbortSignal.timeout(2_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${FEATURE_ENGINE_URL}/health`, { signal: AbortSignal.timeout(2_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${SIGNAL_ENGINE_URL}/health`, { signal: AbortSignal.timeout(2_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${LLM_ADVISORY_URL}/health`, { signal: AbortSignal.timeout(2_000) }).then((r) => r.ok).catch(() => false),
     ]);
-    const [marketSim, journal, userService] = checks;
+    const [marketSim, journal, userService, ems, oms, analytics, featureEngine, signalEngine, llmAdvisory] = checks;
     const bus = producer !== null;
-    const ready = marketSim && journal && userService && bus;
+    const ready = marketSim && journal && userService && bus && ems && oms;
     return new Response(
-      JSON.stringify({ ready, services: { marketSim, journal, userService, bus } }),
+      JSON.stringify({
+        ready,
+        services: { marketSim, journal, userService, bus, ems, oms, analytics, featureEngine, signalEngine, llmAdvisory },
+      }),
       {
         status: ready ? 200 : 503,
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
