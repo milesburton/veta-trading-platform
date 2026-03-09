@@ -97,15 +97,6 @@ const SERVICES: {
     optional: true,
   },
   {
-    name: "Candle Store",
-    url: `${_origin}/api/candle-store/health`,
-    link: `${_origin}/api/candle-store/health`,
-    category: "data",
-    description: "SQLite OHLCV candle aggregator (WAL mode)",
-    port: 5010,
-    optional: true,
-  },
-  {
     name: "Analytics",
     url: `${_origin}/api/analytics/health`,
     link: `${_origin}/api/analytics/health`,
