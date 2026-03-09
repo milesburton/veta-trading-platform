@@ -2,7 +2,7 @@
 
 **Virtual Equities Trading Application** — **Live demo:** https://virtual-equities-trading.fly.dev/
 
-A simulated equities trading environment comprising a market price engine, execution and order management systems, algorithmic trading strategies, a market intelligence pipeline with LLM advisory, and a React frontend.
+A simulated equities trading environment comprising 30 microservices: a market price engine, execution and order management systems, seven algorithmic trading strategies, a market intelligence pipeline with LLM advisory, FIX 4.4 protocol support, and a React frontend. All services run in a single Fly.io machine on 4 GB RAM with Redpanda as the message bus.
 
 ## Documentation
 
@@ -103,6 +103,17 @@ npm run test:ui:headed    # With visible browser
 ## Deployment
 
 See [docs/deployment.md](docs/deployment.md) for Fly.io deployment instructions.
+
+The live deployment runs on a single Fly.io machine (`performance-2x`, 2 shared CPUs, 4 GB RAM) in `iad` (Northern Virginia). 30 services share this machine via supervisord, with Redpanda as the message bus.
+
+**Memory breakdown (approximate):**
+- Redpanda broker: ~800 MB
+- Traefik reverse proxy: ~30 MB
+- 28 Deno microservices: ~30–80 MB each (~1.4 GB total)
+- OS + overhead: ~200 MB
+- **Typical usage: 2.5–3.5 GB.** 4 GB is sufficient for normal load; upgrade to `8gb` in `fly.toml` if OOM errors appear under sustained burst traffic.
+
+**Fly.io app name:** The app is deployed as `virtual-equities-trading` (determines the `.fly.dev` subdomain and cannot be renamed). To rebrand to a new name, create a fresh app: `flyctl apps create <new-name> && flyctl deploy --app <new-name>`.
 
 ## Built with
 
