@@ -126,13 +126,11 @@ export const marketSlice = createSlice({
         const price = prices[asset];
         const tickVolume = (volumes[asset] ?? 0) / TICKS_PER_MINUTE;
 
-        // priceHistory: mutate in place via Immer (no spread/slice allocation)
         const hist = state.priceHistory[asset] ?? [];
         state.priceHistory[asset] = hist; // ensure initialised
         hist.push(price);
         if (hist.length > HISTORY_LENGTH) hist.splice(0, hist.length - HISTORY_LENGTH);
 
-        // candleHistory: mutate in place via Immer
         if (!state.candleHistory[asset]) {
           state.candleHistory[asset] = { "1m": [], "5m": [] };
         }

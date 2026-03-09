@@ -1008,12 +1008,6 @@ export function makeIntelligenceModel(): IJsonModel {
   };
 }
 
-// ── Fixed Income layouts ──────────────────────────────────────────────────────
-
-/**
- * FI Analysis — yield curve + price fan + vol profile + candle chart + ladder.
- * Pure analysis view, no order entry. Suited to FI analysts and low-touch traders.
- */
 export function makeFiAnalysisModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,
@@ -1104,11 +1098,6 @@ export function makeFiAnalysisModel(): IJsonModel {
   };
 }
 
-/**
- * FI Trading — high-touch bond desk layout.
- * Yield curve + price fan on the left, order ticket + blotter in the centre,
- * market ladder + candle chart on the right.
- */
 export function makeFiTradingModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,
@@ -1248,11 +1237,6 @@ export function makeFiTradingModel(): IJsonModel {
   };
 }
 
-/**
- * FI Research — rates intelligence view.
- * Yield curve + price fan + signal radar + instrument analysis + news.
- * No order entry — for macro and rates research workflows.
- */
 export function makeFiResearchModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,
@@ -1375,17 +1359,12 @@ export function makeFiResearchModel(): IJsonModel {
   };
 }
 
-// ── Observability layout ──────────────────────────────────────────────────────
-// Estate overview + service health + throughput on top, Grafana embed + algo
-// leaderboard + decision log below. No order entry.
-
 export function makeObservabilityModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,
     layout: {
       type: "row",
       children: [
-        // Left column — live pipeline summary
         {
           type: "row",
           weight: 35,
@@ -1432,7 +1411,6 @@ export function makeObservabilityModel(): IJsonModel {
             },
           ],
         },
-        // Centre column — Grafana embed + observability panel
         {
           type: "row",
           weight: 40,
@@ -1472,7 +1450,6 @@ export function makeObservabilityModel(): IJsonModel {
             },
           ],
         },
-        // Right column — order audit trail
         {
           type: "row",
           weight: 25,
@@ -1517,17 +1494,12 @@ export function makeObservabilityModel(): IJsonModel {
   };
 }
 
-// ── Pipeline Monitor layout ───────────────────────────────────────────────────
-// Real-time algo pipeline view — algo monitor, throughput, child order slices,
-// fill progress, execution feed, and blotter. No market ladder or order entry.
-
 export function makeAlgoPipelineModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,
     layout: {
       type: "row",
       children: [
-        // Left — strategy status + controls
         {
           type: "row",
           weight: 30,
@@ -1570,7 +1542,6 @@ export function makeAlgoPipelineModel(): IJsonModel {
             },
           ],
         },
-        // Centre — execution detail
         {
           type: "row",
           weight: 40,
@@ -1620,7 +1591,6 @@ export function makeAlgoPipelineModel(): IJsonModel {
             },
           ],
         },
-        // Right — fills + algo audit trail
         {
           type: "row",
           weight: 30,

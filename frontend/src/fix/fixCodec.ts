@@ -4,8 +4,6 @@
 export const SOH = "\x01";
 export const BEGIN_STRING = "FIX.4.4";
 
-// ─── Tag / MsgType constants ─────────────────────────────────────────────────
-
 export const Tag = {
   BeginString: 8,
   BodyLength: 9,
@@ -60,8 +58,6 @@ export const ExecType = { New: "0", PartialFill: "1", Fill: "F", Canceled: "4" }
 export const OrdStatus = { New: "0", PartiallyFilled: "1", Filled: "2", Canceled: "4" } as const;
 export const EncryptMethod = { None: "0" } as const;
 
-// ─── Encoder ─────────────────────────────────────────────────────────────────
-
 export function encode(tags: [number, string | number][]): string {
   const bodyParts = tags.map(([t, v]) => `${t}=${v}${SOH}`);
   const body = bodyParts.join("");
@@ -79,8 +75,6 @@ export function encode(tags: [number, string | number][]): string {
   return `${rawNoChecksum}10=${checksum}${SOH}`;
 }
 
-// ─── Decoder ─────────────────────────────────────────────────────────────────
-
 export function decode(raw: string): Map<number, string> {
   const map = new Map<number, string>();
   for (const pair of raw.split(SOH)) {
@@ -94,8 +88,6 @@ export function decode(raw: string): Map<number, string> {
   return map;
 }
 
-// ─── Utilities ───────────────────────────────────────────────────────────────
-
 export function utcTimestamp(d = new Date()): string {
   const pad2 = (n: number) => String(n).padStart(2, "0");
   const pad3 = (n: number) => String(n).padStart(3, "0");
@@ -105,9 +97,7 @@ export function utcTimestamp(d = new Date()): string {
   );
 }
 
-// ─── Message splitter ────────────────────────────────────────────────────────
 // Splits a raw buffer that may contain multiple concatenated FIX messages.
-
 export function splitMessages(buffer: string): { messages: string[]; remainder: string } {
   const messages: string[] = [];
   let remaining = buffer;

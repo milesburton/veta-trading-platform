@@ -15,7 +15,7 @@ export interface NewsItem {
 }
 
 interface NewsState {
-  bySymbol: Record<string, NewsItem[]>; // newest first, capped at MAX_PER_SYMBOL
+  bySymbol: Record<string, NewsItem[]>;
 }
 
 const MAX_PER_SYMBOL = 50;
@@ -29,7 +29,6 @@ export const newsSlice = createSlice({
     newsItemReceived(state, action: PayloadAction<NewsItem>) {
       const { symbol } = action.payload;
       const list = state.bySymbol[symbol] ?? [];
-      // Deduplicate by id
       if (list.some((i) => i.id === action.payload.id)) return;
       list.unshift(action.payload);
       if (list.length > MAX_PER_SYMBOL) list.length = MAX_PER_SYMBOL;
@@ -44,7 +43,6 @@ export const newsSlice = createSlice({
         }
         state.bySymbol[symbol] = list;
       }
-      // Sort descending and cap
       for (const symbol of Object.keys(state.bySymbol)) {
         state.bySymbol[symbol].sort((a, b) => b.publishedAt - a.publishedAt);
         if (state.bySymbol[symbol].length > MAX_PER_SYMBOL) {

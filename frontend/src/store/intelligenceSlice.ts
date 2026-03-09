@@ -61,7 +61,6 @@ export const intelligenceSlice = createSlice({
       state.features[action.payload.symbol] = action.payload;
     },
     recommendationReceived(state, action: PayloadAction<TradeRecommendation>) {
-      // Keep last 100 recommendations
       state.recommendations.unshift(action.payload);
       if (state.recommendations.length > 100) state.recommendations.length = 100;
     },

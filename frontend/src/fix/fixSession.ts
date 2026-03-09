@@ -61,8 +61,6 @@ export class FIXSession {
     return this.state;
   }
 
-  // ─── Public API ─────────────────────────────────────────────────────────────
-
   sendLogon(resetSeq = false): void {
     if (resetSeq) {
       this.outSeq = 1;
@@ -92,7 +90,7 @@ export class FIXSession {
     const msg = this.buildMessage([
       [Tag.MsgType, MsgType.NewOrderSingle],
       [Tag.ClOrdID, order.id],
-      [Tag.HandlInst, "1"], // automated
+      [Tag.HandlInst, "1"],
       [Tag.Symbol, order.asset],
       [Tag.Side, side],
       [Tag.TransactTime, utcTimestamp()],
@@ -142,8 +140,6 @@ export class FIXSession {
     this.stopHeartbeat();
     this.setState("DISCONNECTED");
   }
-
-  // ─── Private handlers ────────────────────────────────────────────────────────
 
   private onLogon(tags: Map<number, string>): void {
     const heartBtInt = Number(tags.get(Tag.HeartBtInt) ?? this.config.heartBtInt);
@@ -216,8 +212,6 @@ export class FIXSession {
     this.config.onSend(req);
   }
 
-  // ─── Heartbeat ───────────────────────────────────────────────────────────────
-
   private startHeartbeat(intervalSecs: number): void {
     this.stopHeartbeat();
     this.heartbeatTimer = setInterval(() => {
@@ -243,12 +237,10 @@ export class FIXSession {
     }
   }
 
-  // ─── Message builder ─────────────────────────────────────────────────────────
-
   private buildMessage(bodyTags: [number, string | number][]): string {
     const seq = this.outSeq++;
     const fullTags: [number, string | number][] = [
-      ...bodyTags.slice(0, 1), // MsgType first
+      ...bodyTags.slice(0, 1),
       [Tag.SenderCompID, this.config.senderCompID],
       [Tag.TargetCompID, this.config.targetCompID],
       [Tag.MsgSeqNum, seq],

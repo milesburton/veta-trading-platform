@@ -9,20 +9,15 @@ import type {
   FilterCriteria,
 } from "../types/gridPrefs.ts";
 
-// ── Field value accessor ───────────────────────────────────────────────────────
-
 function getField(row: Record<string, unknown>, field: string): unknown {
   return row[field];
 }
-
-// ── Operator evaluation ────────────────────────────────────────────────────────
 
 function evalOp(
   rowVal: unknown,
   op: FilterCriteria["op"] | ExprOp,
   filterVal: FilterCriteria["value"]
 ): boolean {
-  // Null-check ops (ignore filterVal)
   if (op === "is_null") return rowVal === null || rowVal === undefined || rowVal === "";
   if (op === "is_not_null") return rowVal !== null && rowVal !== undefined && rowVal !== "";
 
@@ -49,7 +44,6 @@ function evalOp(
     return String(rowVal).toLowerCase().endsWith(String(filterVal).toLowerCase());
   }
 
-  // Numeric-aware comparisons
   const rv = Number(rowVal);
   const fv = Number(filterVal);
   const numericOk = !Number.isNaN(rv) && !Number.isNaN(fv);
@@ -75,8 +69,6 @@ function evalOp(
       return true;
   }
 }
-
-// ── Public API — legacy flat filter ───────────────────────────────────────────
 
 /**
  * Filter rows by an AND-joined list of criteria.
@@ -110,8 +102,6 @@ export function applySort<T>(rows: T[], field: string | null, dir: "asc" | "desc
   });
 }
 
-// ── Expression tree evaluation ─────────────────────────────────────────────────
-
 function evalExprRule<T>(row: T, rule: ExprRule): boolean {
   const val = getField(row as Record<string, unknown>, rule.field);
   return evalOp(val, rule.op, rule.value);
@@ -140,8 +130,6 @@ export function applyExprGroup<T>(rows: T[], group: ExprGroup): T[] {
   if (group.rules.length === 0) return rows;
   return rows.filter((row) => evalExprGroup(row, group));
 }
-
-// ── Human-readable expression summary ─────────────────────────────────────────
 
 const OP_DISPLAY: Record<ExprOp, string> = {
   "=": "=",
@@ -187,8 +175,6 @@ export function exprGroupToDisplay(group: ExprGroup, fields: FieldDef[]): string
   });
   return parts.join(` ${group.join} `);
 }
-
-// ── Conditional formatting ─────────────────────────────────────────────────────
 
 function cfStyleToClasses(style: CfStyle): string {
   const parts: string[] = [];
