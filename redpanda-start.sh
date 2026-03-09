@@ -22,7 +22,7 @@ EOF
 
 exec /usr/local/lib/redpanda/ld.so \
   --library-path /usr/local/lib/redpanda \
-  /usr/local/bin/redpanda redpanda \
+  /usr/local/bin/redpanda \
   --redpanda-cfg /etc/redpanda/redpanda.yaml \
   --overprovisioned \
   --unsafe-bypass-fsync=true \
