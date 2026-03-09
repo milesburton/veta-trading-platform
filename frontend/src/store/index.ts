@@ -6,6 +6,8 @@ import { analyticsApi } from "./analyticsApi.ts";
 import { authSlice } from "./authSlice.ts";
 import { createBroadcastChannelMiddleware } from "./channel.ts";
 import { channelsSlice } from "./channelsSlice.ts";
+import { gatewayApi } from "./gatewayApi.ts";
+import { gridApi } from "./gridApi.ts";
 import { gridPrefsSlice } from "./gridPrefsSlice.ts";
 import { intelligenceSlice } from "./intelligenceSlice.ts";
 import { killSwitchSlice } from "./killSwitchSlice.ts";
@@ -16,12 +18,14 @@ import { alertsMiddleware } from "./middleware/alertsMiddleware.ts";
 import { gatewayMiddleware } from "./middleware/gatewayMiddleware.ts";
 import { simulationMiddleware } from "./middleware/simulationMiddleware.ts";
 import { versionWatchMiddleware } from "./middleware/versionWatchMiddleware.ts";
+import { newsApi } from "./newsApi.ts";
 import { newsSlice } from "./newsSlice.ts";
 import { observabilitySlice } from "./observabilitySlice.ts";
 import { ordersSlice } from "./ordersSlice.ts";
 import { servicesApi } from "./servicesApi.ts";
 import { themeSlice } from "./themeSlice.ts";
 import { uiSlice } from "./uiSlice.ts";
+import { userApi } from "./userApi.ts";
 import { windowSlice } from "./windowSlice.ts";
 
 export const store = configureStore({
@@ -45,6 +49,10 @@ export const store = configureStore({
     [analyticsApi.reducerPath]: analyticsApi.reducer,
     [marketDataApi.reducerPath]: marketDataApi.reducer,
     [advisoryApi.reducerPath]: advisoryApi.reducer,
+    [gatewayApi.reducerPath]: gatewayApi.reducer,
+    [gridApi.reducerPath]: gridApi.reducer,
+    [newsApi.reducerPath]: newsApi.reducer,
+    [userApi.reducerPath]: userApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
@@ -52,6 +60,10 @@ export const store = configureStore({
       .concat(analyticsApi.middleware)
       .concat(marketDataApi.middleware)
       .concat(advisoryApi.middleware)
+      .concat(gatewayApi.middleware)
+      .concat(gridApi.middleware)
+      .concat(newsApi.middleware)
+      .concat(userApi.middleware)
       .concat(gatewayMiddleware)
       .concat(alertsMiddleware)
       .concat(simulationMiddleware.middleware)

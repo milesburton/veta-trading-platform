@@ -1,8 +1,8 @@
-import { useState } from "react";
 import type { AuthUser } from "../store/authSlice.ts";
 import { setUser } from "../store/authSlice.ts";
 import { useAppDispatch } from "../store/hooks.ts";
 import { SERVICES, type ServiceCategory, useGetServiceHealthQuery } from "../store/servicesApi.ts";
+import { useCreateSessionMutation } from "../store/userApi.ts";
 
 // ── Service catalogue ─────────────────────────────────────────────────────────
 
@@ -298,28 +298,20 @@ interface LoginPageProps {
 
 export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
   const dispatch = useAppDispatch();
-  const [loading, setLoading] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [createSession, { isLoading: sessionLoading, error: sessionError, reset }] =
+    useCreateSessionMutation();
 
   async function handleSelect(user: SeedUser) {
-    setLoading(user.id);
-    setError(null);
-    try {
-      const res = await fetch("/api/user-service/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error(`Login failed (${res.status})`);
-      const data: AuthUser = await res.json();
-      dispatch(setUser(data));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setLoading(null);
+    reset();
+    const result = await createSession({ userId: user.id });
+    if ("data" in result) {
+      dispatch(setUser(result.data as AuthUser));
     }
   }
+
+  const loadingUserId = sessionLoading
+    ? ((document.activeElement as HTMLButtonElement | null)?.dataset?.userId ?? null)
+    : null;
 
   return (
     <div
@@ -345,63 +337,19 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
         </div>
 
         {/* User cards */}
-        <div className="grid grid-cols-5 gap-3">
-          {SEED_USERS.map((user) => {
-            const isLoading = loading === user.id;
-            return (
-              <button
-                key={user.id}
-                data-testid={`user-btn-${user.id}`}
-                type="button"
-                onClick={() => handleSelect(user)}
-                disabled={loading !== null}
-                className={`group flex flex-col items-center gap-4 p-4 rounded-xl border transition-all duration-150 w-full ${
-                  loading !== null && !isLoading
-                    ? "opacity-40 cursor-not-allowed border-gray-800 bg-gray-900/30"
-                    : "cursor-pointer border-gray-700 bg-gray-900 hover:border-emerald-500 hover:bg-gray-800 hover:shadow-[0_0_20px_rgba(52,211,153,0.15)]"
-                } ${isLoading ? "border-emerald-500 bg-gray-800 shadow-[0_0_20px_rgba(52,211,153,0.15)]" : ""}`}
-              >
-                <div className="flex flex-col items-center gap-2 w-full">
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold tracking-wide select-none shrink-0 ${
-                      user.role === "admin"
-                        ? "bg-orange-500/20 text-orange-500 border border-orange-500/40"
-                        : "bg-gray-700/50 text-gray-300 border border-gray-600/50"
-                    }`}
-                  >
-                    {user.avatar_emoji}
-                  </div>
-                  <div className="text-gray-200 font-medium text-xs leading-tight text-center min-h-[2.5em] flex items-center justify-center">
-                    {user.name}
-                  </div>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <div
-                    className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                      user.role === "admin"
-                        ? "bg-orange-500/15 text-orange-500 ring-1 ring-orange-500/30"
-                        : "bg-blue-500/15 text-blue-500 ring-1 ring-blue-500/30"
-                    }`}
-                  >
-                    {user.role}
-                  </div>
-                  <div className="h-3 flex items-center justify-center">
-                    {isLoading && (
-                      <div className="w-3 h-3 border border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                    )}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <LoginCards
+          users={SEED_USERS}
+          loading={sessionLoading}
+          loadingUserId={loadingUserId}
+          onSelect={handleSelect}
+        />
 
-        {error && (
+        {sessionError && (
           <div
             data-testid="login-error"
             className="mt-6 text-center text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-lg px-4 py-2"
           >
-            {error}
+            {"status" in sessionError ? `Login failed (${sessionError.status})` : "Login failed"}
           </div>
         )}
 
@@ -414,6 +362,71 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
         {buildDate && commitSha && <span className="mx-1">·</span>}
         {commitSha && <span>{commitSha}</span>}
       </div>
+    </div>
+  );
+}
+
+// ── LoginCards ────────────────────────────────────────────────────────────────
+
+interface LoginCardsProps {
+  users: SeedUser[];
+  loading: boolean;
+  loadingUserId: string | null;
+  onSelect: (user: SeedUser) => void;
+}
+
+function LoginCards({ users, loading, loadingUserId, onSelect }: LoginCardsProps) {
+  return (
+    <div className="grid grid-cols-5 gap-3">
+      {users.map((user) => {
+        const isLoading = loading && loadingUserId === user.id;
+        return (
+          <button
+            key={user.id}
+            data-testid={`user-btn-${user.id}`}
+            data-user-id={user.id}
+            type="button"
+            onClick={() => onSelect(user)}
+            disabled={loading}
+            className={`group flex flex-col items-center gap-4 p-4 rounded-xl border transition-all duration-150 w-full ${
+              loading && !isLoading
+                ? "opacity-40 cursor-not-allowed border-gray-800 bg-gray-900/30"
+                : "cursor-pointer border-gray-700 bg-gray-900 hover:border-emerald-500 hover:bg-gray-800 hover:shadow-[0_0_20px_rgba(52,211,153,0.15)]"
+            } ${isLoading ? "border-emerald-500 bg-gray-800 shadow-[0_0_20px_rgba(52,211,153,0.15)]" : ""}`}
+          >
+            <div className="flex flex-col items-center gap-2 w-full">
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold tracking-wide select-none shrink-0 ${
+                  user.role === "admin"
+                    ? "bg-orange-500/20 text-orange-500 border border-orange-500/40"
+                    : "bg-gray-700/50 text-gray-300 border border-gray-600/50"
+                }`}
+              >
+                {user.avatar_emoji}
+              </div>
+              <div className="text-gray-200 font-medium text-xs leading-tight text-center min-h-[2.5em] flex items-center justify-center">
+                {user.name}
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                  user.role === "admin"
+                    ? "bg-orange-500/15 text-orange-500 ring-1 ring-orange-500/30"
+                    : "bg-blue-500/15 text-blue-500 ring-1 ring-blue-500/30"
+                }`}
+              >
+                {user.role}
+              </div>
+              <div className="h-3 flex items-center justify-center">
+                {isLoading && (
+                  <div className="w-3 h-3 border border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                )}
+              </div>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }

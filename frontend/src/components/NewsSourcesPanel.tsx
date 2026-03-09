@@ -1,57 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
-
-interface NewsSource {
-  id: string;
-  label: string;
-  enabled: boolean;
-  symbolSpecific: boolean;
-}
-
-const NEWS_AGGREGATOR_URL =
-  (import.meta.env?.VITE_NEWS_AGGREGATOR_URL as string | undefined) ?? "/api/news-aggregator";
+import { useGetNewsSourcesQuery, useToggleNewsSourceMutation } from "../store/newsApi.ts";
 
 export function NewsSourcesPanel() {
-  const [sources, setSources] = useState<NewsSource[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [toggling, setToggling] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchSources = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`${NEWS_AGGREGATOR_URL}/sources`, {
-        signal: AbortSignal.timeout(5_000),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setSources(await res.json());
-    } catch (e) {
-      setError((e as Error).message ?? "Could not reach news-aggregator service");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSources();
-  }, [fetchSources]);
-
-  const toggle = useCallback(async (id: string) => {
-    setToggling(id);
-    try {
-      const res = await fetch(`${NEWS_AGGREGATOR_URL}/sources/${id}/toggle`, {
-        method: "POST",
-        signal: AbortSignal.timeout(5_000),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const updated: NewsSource = await res.json();
-      setSources((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-    } catch (e) {
-      setError((e as Error).message ?? "Toggle failed");
-    } finally {
-      setToggling(null);
-    }
-  }, []);
+  const { data: sources = [], isLoading, isError, refetch } = useGetNewsSourcesQuery();
+  const [toggleSource, { isLoading: toggling, originalArgs: togglingId }] =
+    useToggleNewsSourceMutation();
 
   return (
     <div className="flex flex-col h-full bg-gray-950 text-gray-300">
@@ -63,8 +15,8 @@ export function NewsSourcesPanel() {
         <div className="ml-auto">
           <button
             type="button"
-            onClick={fetchSources}
-            disabled={loading}
+            onClick={() => refetch()}
+            disabled={isLoading}
             title="Refresh news source list"
             aria-label="Refresh news sources"
             className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors disabled:opacity-40 px-1 py-0.5 rounded border border-gray-700 hover:border-gray-500"
@@ -76,18 +28,20 @@ export function NewsSourcesPanel() {
 
       {/* Body */}
       <div className="flex-1 min-h-0 overflow-y-auto p-3">
-        {loading && (
+        {isLoading && (
           <div className="flex items-center justify-center h-full">
             <span className="text-[11px] text-gray-600">Loading sources…</span>
           </div>
         )}
 
-        {!loading && error && (
+        {!isLoading && isError && (
           <div className="flex flex-col items-center justify-center gap-2 h-full px-4 text-center">
-            <span className="text-[11px] text-red-400/70">{error}</span>
+            <span className="text-[11px] text-red-400/70">
+              Could not reach news-aggregator service
+            </span>
             <button
               type="button"
-              onClick={fetchSources}
+              onClick={() => refetch()}
               title="Retry loading news sources"
               className="text-[10px] text-gray-500 hover:text-gray-300 border border-gray-700 hover:border-gray-500 px-2 py-0.5 rounded transition-colors mt-1"
             >
@@ -96,7 +50,7 @@ export function NewsSourcesPanel() {
           </div>
         )}
 
-        {!loading && !error && sources.length > 0 && (
+        {!isLoading && !isError && sources.length > 0 && (
           <div className="space-y-2">
             <p className="text-[10px] text-gray-600 mb-3">
               Enable or disable news feed sources. Changes take effect on the next poll cycle.
@@ -139,8 +93,8 @@ export function NewsSourcesPanel() {
                 {/* Toggle button */}
                 <button
                   type="button"
-                  onClick={() => toggle(source.id)}
-                  disabled={toggling === source.id}
+                  onClick={() => toggleSource(source.id)}
+                  disabled={toggling && togglingId === source.id}
                   title={source.enabled ? `Disable ${source.label}` : `Enable ${source.label}`}
                   aria-pressed={source.enabled}
                   className={`shrink-0 text-[10px] px-2.5 py-1 rounded border transition-colors disabled:opacity-40 ${
@@ -149,7 +103,11 @@ export function NewsSourcesPanel() {
                       : "text-emerald-400 border-emerald-700/50 hover:bg-emerald-900/20 hover:border-emerald-600"
                   }`}
                 >
-                  {toggling === source.id ? "…" : source.enabled ? "Disable" : "Enable"}
+                  {toggling && togglingId === source.id
+                    ? "…"
+                    : source.enabled
+                      ? "Disable"
+                      : "Enable"}
                 </button>
               </div>
             ))}

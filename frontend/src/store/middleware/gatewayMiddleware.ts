@@ -20,12 +20,12 @@
  */
 
 import type { Middleware } from "@reduxjs/toolkit";
-import { queryClient } from "../../lib/queryClient.ts";
 import type { AssetDef, OhlcCandle, OrderBookSnapshot } from "../../types.ts";
 import { advisoryNoteReceived } from "../advisorySlice.ts";
 import { alertAdded } from "../alertsSlice.ts";
 import type { AuthUser, TradingLimits } from "../authSlice.ts";
 import { setUserWithLimits } from "../authSlice.ts";
+import { gridApi } from "../gridApi.ts";
 import { loadGridPrefs } from "../gridPrefsSlice.ts";
 import {
   type FeatureVector,
@@ -39,6 +39,7 @@ import type { KillBlock } from "../killSwitchSlice.ts";
 import { allBlocksCleared, blockAdded } from "../killSwitchSlice.ts";
 import { type LlmSubsystemStatus, llmStateReceived } from "../llmSubsystemSlice.ts";
 import { candlesSeeded, marketSlice, orderBookUpdated } from "../marketSlice.ts";
+import { newsApi } from "../newsApi.ts";
 import type { NewsItem } from "../newsSlice.ts";
 import { newsBatchReceived, newsItemReceived } from "../newsSlice.ts";
 import {
@@ -254,7 +255,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       }
     }
     // Invalidate server-side grid query cache so blotters refetch with updated data
-    queryClient.invalidateQueries({ queryKey: ["grid"] });
+    storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
   }
 
   function connect() {
@@ -288,7 +289,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             break;
           case "orderAck": {
             // Gateway confirmed order on bus — invalidate grid cache so blotter refetches
-            queryClient.invalidateQueries({ queryKey: ["grid"] });
+            storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
             break;
           }
           case "orderRejected": {
@@ -303,7 +304,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
                 })
               );
             }
-            queryClient.invalidateQueries({ queryKey: ["grid"] });
+            storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
             break;
           }
           case "authIdentity": {
@@ -333,12 +334,12 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
                 fromGateway: true,
               })
             );
-            queryClient.invalidateQueries({ queryKey: ["grid"] });
+            storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
             break;
           }
           case "resumeAck":
             storeAPI.dispatch(allBlocksCleared());
-            queryClient.invalidateQueries({ queryKey: ["grid"] });
+            storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
             break;
           case "algoHeartbeat": {
             const hb = msg.data as { algo: string; ts?: number };
@@ -446,11 +447,13 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
 
   async function hydrateNewsForSymbol(symbol: string) {
     try {
-      const NEWS_URL = import.meta.env.VITE_NEWS_AGGREGATOR_URL ?? `${_origin}/api/news-aggregator`;
-      const res = await fetch(`${NEWS_URL}/news?symbol=${encodeURIComponent(symbol)}&limit=50`);
-      if (!res.ok) return;
-      const items: NewsItem[] = await res.json();
-      if (items.length > 0) storeAPI.dispatch(newsBatchReceived(items));
+      const dispatch = storeAPI.dispatch as (action: unknown) => Promise<{ data?: NewsItem[] }>;
+      const result = await dispatch(
+        newsApi.endpoints.getNewsBySymbol.initiate({ symbol, limit: 50 })
+      );
+      if (result.data && result.data.length > 0) {
+        storeAPI.dispatch(newsBatchReceived(result.data));
+      }
     } catch {
       // news-aggregator unavailable
     }

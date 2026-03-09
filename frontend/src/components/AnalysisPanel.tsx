@@ -1,5 +1,6 @@
-import { useCallback, useState } from "react";
+import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+import { useGetNewsBySymbolQuery } from "../store/newsApi.ts";
 import type { NewsItem } from "../store/newsSlice.ts";
 import { newsBatchReceived, selectNewsForSymbol } from "../store/newsSlice.ts";
 
@@ -25,35 +26,23 @@ const SENTIMENT_LABELS: Record<NewsItem["sentiment"], string> = {
   neutral: "—",
 };
 
-const NEWS_AGGREGATOR_URL =
-  (import.meta.env?.VITE_NEWS_AGGREGATOR_URL as string | undefined) ?? "/api/news-aggregator";
-
 export function AnalysisPanel() {
   const dispatch = useAppDispatch();
   const selectedAsset = useAppSelector((s) => s.ui.selectedAsset);
   const items = useAppSelector((s) => selectNewsForSymbol(s, selectedAsset));
-  const [refreshing, setRefreshing] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState(0);
 
-  const refresh = useCallback(async () => {
-    if (!selectedAsset) return;
-    setRefreshing(true);
-    try {
-      const res = await fetch(
-        `${NEWS_AGGREGATOR_URL}/news?symbol=${encodeURIComponent(selectedAsset)}&limit=50`,
-        { signal: AbortSignal.timeout(10_000) }
-      );
-      if (res.ok) {
-        const data: NewsItem[] = await res.json();
-        if (data.length > 0) dispatch(newsBatchReceived(data));
-      }
-    } catch {
-      // service unavailable — live bus updates will still arrive
-    } finally {
-      setRefreshing(false);
-      setLastRefresh(Date.now());
+  const {
+    data: fetchedNews,
+    isFetching,
+    refetch,
+  } = useGetNewsBySymbolQuery({ symbol: selectedAsset ?? "" }, { skip: !selectedAsset });
+
+  // Seed Redux news slice when fresh data arrives
+  useEffect(() => {
+    if (fetchedNews && fetchedNews.length > 0) {
+      dispatch(newsBatchReceived(fetchedNews));
     }
-  }, [selectedAsset, dispatch]);
+  }, [fetchedNews, dispatch]);
 
   const sentimentCounts = {
     positive: items.filter((i) => i.sentiment === "positive").length,
@@ -84,15 +73,10 @@ export function AnalysisPanel() {
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          {lastRefresh > 0 && (
-            <span className="text-[10px] text-gray-600 tabular-nums">
-              {relativeTime(lastRefresh)}
-            </span>
-          )}
           <button
             type="button"
-            onClick={refresh}
-            disabled={refreshing || !selectedAsset}
+            onClick={() => refetch()}
+            disabled={isFetching || !selectedAsset}
             className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors disabled:opacity-40 px-1 py-0.5 rounded border border-gray-700 hover:border-gray-500"
           >
             ↺
@@ -113,11 +97,11 @@ export function AnalysisPanel() {
             <span className="text-[11px] text-gray-600">No news for {selectedAsset} yet</span>
             <button
               type="button"
-              onClick={refresh}
-              disabled={refreshing}
+              onClick={() => refetch()}
+              disabled={isFetching}
               className="text-[10px] text-gray-500 hover:text-gray-300 border border-gray-700 hover:border-gray-500 px-2 py-0.5 rounded transition-colors disabled:opacity-40"
             >
-              {refreshing ? "Loading…" : "Fetch now"}
+              {isFetching ? "Loading…" : "Fetch now"}
             </button>
           </div>
         )}

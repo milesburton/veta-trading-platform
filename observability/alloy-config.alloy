@@ -1,0 +1,79 @@
+// ── OTLP receiver ─────────────────────────────────────────────────────────────
+// Receives traces, metrics, and logs from Deno services instrumented with
+// OTEL_DENO=true and the kafka-relay service.
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces  = [otelcol.processor.batch.default.input]
+    metrics = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+  }
+}
+
+// ── Batch processor ───────────────────────────────────────────────────────────
+
+otelcol.processor.batch "default" {
+  output {
+    traces  = [otelcol.exporter.otlphttp.tempo.input]
+    metrics = [otelcol.exporter.prometheus.default.input]
+    logs    = [otelcol.exporter.loki.default.input]
+  }
+}
+
+// ── Exporters ─────────────────────────────────────────────────────────────────
+
+otelcol.exporter.otlphttp "tempo" {
+  client {
+    endpoint = "http://tempo:3200/otlp"
+  }
+}
+
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+otelcol.exporter.loki "default" {
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// ── Prometheus scrape ─────────────────────────────────────────────────────────
+// Scrape /metrics from all Deno services (auto-exposed by OTEL_DENO=true).
+
+prometheus.scrape "deno_services" {
+  targets = [
+    {"__address__" = "host.docker.internal:5000", "service" = "market-sim"},
+    {"__address__" = "host.docker.internal:5001", "service" = "ems"},
+    {"__address__" = "host.docker.internal:5002", "service" = "oms"},
+    {"__address__" = "host.docker.internal:5003", "service" = "limit-algo"},
+    {"__address__" = "host.docker.internal:5004", "service" = "twap-algo"},
+    {"__address__" = "host.docker.internal:5005", "service" = "pov-algo"},
+    {"__address__" = "host.docker.internal:5006", "service" = "vwap-algo"},
+    {"__address__" = "host.docker.internal:5007", "service" = "kafka-relay"},
+    {"__address__" = "host.docker.internal:5008", "service" = "user-service"},
+    {"__address__" = "host.docker.internal:5009", "service" = "journal"},
+    {"__address__" = "host.docker.internal:5011", "service" = "gateway"},
+    {"__address__" = "host.docker.internal:5014", "service" = "analytics"},
+    {"__address__" = "host.docker.internal:5015", "service" = "market-data-service"},
+  ]
+  scrape_interval = "15s"
+  forward_to = [prometheus.remote_write.default.receiver]
+}

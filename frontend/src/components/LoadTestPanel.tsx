@@ -1,16 +1,13 @@
 import { useState } from "react";
+import type { LoadTestResult } from "../store/gatewayApi.ts";
+import { useRunLoadTestMutation } from "../store/gatewayApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
 
-type LoadTestStatus = "idle" | "running" | "done" | "error";
-
-interface LoadTestResult {
-  jobId: string;
-  submitted: number;
-  symbols: string[];
-  strategy: string;
-}
-
 const STRATEGIES = ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE"] as const;
+
+interface LocalLoadTestResult extends LoadTestResult {
+  jobId: string;
+}
 
 export function LoadTestPanel() {
   const user = useAppSelector((s) => s.auth.user);
@@ -18,9 +15,10 @@ export function LoadTestPanel() {
   const [orderCount, setOrderCount] = useState(100);
   const [strategy, setStrategy] = useState<string>("LIMIT");
   const [symbols, setSymbols] = useState("AAPL,MSFT,GOOGL,AMZN,TSLA");
-  const [status, setStatus] = useState<LoadTestStatus>("idle");
-  const [lastResult, setLastResult] = useState<LoadTestResult | null>(null);
+  const [lastResult, setLastResult] = useState<LocalLoadTestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [runLoadTest, { isLoading: isRunning }] = useRunLoadTestMutation();
 
   if (user?.role !== "admin") {
     return (
@@ -49,7 +47,6 @@ export function LoadTestPanel() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("running");
     setError(null);
     setLastResult(null);
 
@@ -58,39 +55,20 @@ export function LoadTestPanel() {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    try {
-      const res = await fetch("/api/gateway/load-test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ orderCount, strategy, symbols: symbolsArray }),
-      });
+    const result = await runLoadTest({ orderCount, strategy, symbols: symbolsArray });
 
-      if (res.status === 202) {
-        const data = (await res.json()) as LoadTestResult;
-        setLastResult(data);
-        setStatus("done");
-      } else if (res.status === 403) {
-        setError("Admin role required — you are not an admin");
-        setStatus("error");
+    if ("data" in result) {
+      setLastResult(result.data as LocalLoadTestResult);
+    } else if ("error" in result) {
+      const err = result.error;
+      if (err && "status" in err) {
+        const data = (err as { status: number; data?: { error?: string } }).data;
+        setError(data?.error ?? `Request failed with status ${(err as { status: number }).status}`);
       } else {
-        let msg = `Request failed with status ${res.status}`;
-        try {
-          const body = (await res.json()) as { error?: string };
-          if (body.error) msg = body.error;
-        } catch {
-          // ignore parse failure
-        }
-        setError(msg);
-        setStatus("error");
+        setError("Network error — request failed");
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error — request failed");
-      setStatus("error");
     }
   }
-
-  const isRunning = status === "running";
 
   return (
     <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs">
@@ -216,14 +194,16 @@ export function LoadTestPanel() {
           </button>
         </form>
 
-        {status === "done" && lastResult && (
+        {!isRunning && lastResult && (
           <div className="rounded border border-emerald-700/50 bg-emerald-950/30 px-3 py-2.5 space-y-1.5">
             <div className="text-[11px] font-semibold text-emerald-400">Job submitted</div>
             <div className="space-y-0.5 text-[10px] text-gray-400">
-              <div>
-                <span className="text-gray-600">Job ID:</span>{" "}
-                <span className="font-mono text-gray-300">{lastResult.jobId}</span>
-              </div>
+              {"jobId" in lastResult && (
+                <div>
+                  <span className="text-gray-600">Job ID:</span>{" "}
+                  <span className="font-mono text-gray-300">{lastResult.jobId}</span>
+                </div>
+              )}
               <div>
                 <span className="text-gray-600">Orders submitted:</span>{" "}
                 <span className="tabular-nums text-gray-300">
@@ -246,7 +226,7 @@ export function LoadTestPanel() {
           </div>
         )}
 
-        {status === "error" && error && (
+        {!isRunning && error && (
           <div className="rounded border border-red-700/50 bg-red-950/30 px-3 py-2 text-[10px] text-red-400 leading-relaxed">
             <span className="font-semibold">Error:</span> {error}
           </div>

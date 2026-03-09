@@ -95,7 +95,6 @@ export const advisoryApi = createApi({
 });
 
 export const {
-  useGetAdvisoryQuery,
   useRequestAdvisoryMutation,
   useGetLlmSubsystemStateQuery,
   useUpdateLlmSubsystemStateMutation,

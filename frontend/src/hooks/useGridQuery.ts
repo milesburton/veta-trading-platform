@@ -2,20 +2,18 @@
  * useGridQuery — server-driven grid data hook.
  *
  * Reads the current filterExpr, sortField and sortDir from Redux, posts a
- * GridQueryRequest to the gateway, and returns the paginated server response.
+ * GridQueryRequest to the gateway via RTK Query, and returns the paginated
+ * server response.
  *
- * TanStack Query handles caching, background refetch, and stale-while-revalidate.
- * The queryClient.invalidateQueries(["grid"]) call in gatewayMiddleware triggers
- * a background refetch whenever a live order event arrives over the WebSocket.
+ * gatewayMiddleware calls dispatch(gridApi.util.invalidateTags(["Grid"])) on
+ * live order events to trigger a background refetch.
  */
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { useQueryGridQuery } from "../store/gridApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import { EMPTY_EXPR_GROUP } from "../types/gridPrefs.ts";
 import type { GridId, GridQueryRequest, GridQueryResponse } from "../types/gridQuery.ts";
-
-const GATEWAY_URL = typeof window !== "undefined" ? `${window.location.origin}/api/gateway` : "";
 
 const ROW_HEIGHT_PX = 30;
 const BUFFER_FACTOR = 1.2;
@@ -71,27 +69,10 @@ export function useGridQuery<T = Record<string, unknown>>(
     limit,
   };
 
-  const { data, isLoading, isError, isFetching } = useQuery<GridQueryResponse<T>>({
-    queryKey: ["grid", gridId, request],
-    queryFn: async () => {
-      const res = await fetch(`${GATEWAY_URL}/grid/query`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(request),
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => res.statusText);
-        throw new Error(`Grid query failed: ${res.status} ${text}`);
-      }
-      return res.json() as Promise<GridQueryResponse<T>>;
-    },
-    staleTime: 2_000,
-    placeholderData: keepPreviousData,
-  });
+  const { data, isLoading, isError, isFetching } = useQueryGridQuery(request);
 
   return {
-    rows: data?.rows ?? [],
+    rows: (data as GridQueryResponse<T> | undefined)?.rows ?? [],
     total: data?.total ?? 0,
     evalMs: data?.evalMs ?? 0,
     isLoading,

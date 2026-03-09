@@ -1,0 +1,376 @@
+{
+  "id": null,
+  "uid": "trading",
+  "title": "Trading Overview",
+  "tags": ["trading"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 2,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Service Health",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 3 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "UP", "color": "green" } } },
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" } } }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "up",
+          "legendFormat": "{{service}}",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Order Pipeline — Submitted / Filled / Rejected / Expired",
+      "gridPos": { "x": 0, "y": 3, "w": 12, "h": 9 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" } },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (type) (count_over_time({service_name=\"kafka-relay\"} | json | type =~ \"orders\\.(submitted|filled|rejected|expired)\" [30s]))",
+          "legendFormat": "{{type}}",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "HTTP Request Rate (req/s per service)",
+      "gridPos": { "x": 12, "y": 3, "w": 12, "h": 9 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "color": { "mode": "palette-classic" } },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (service_name) (rate(http_server_request_duration_seconds_count[1m]))",
+          "legendFormat": "{{service_name}}",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "HTTP Latency p99 (all services)",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "color": { "mode": "palette-classic" } },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum by (service_name, le) (rate(http_server_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{service_name}} p99",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Algo Heartbeat Rate (beats/min per strategy)",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (strategy) (count_over_time({service_name=\"kafka-relay\"} | json | type=\"algo.heartbeat\" [1m]))",
+          "legendFormat": "{{strategy}}",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Order Funnel (selected window)",
+      "description": "Counts of orders at each lifecycle stage over the selected time window",
+      "gridPos": { "x": 0, "y": 20, "w": 8, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["sum"] },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.submitted\" [$__range]))",
+          "legendFormat": "Submitted",
+          "datasource": { "uid": "loki", "type": "loki" }
+        },
+        {
+          "expr": "sum(count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.routed\" [$__range]))",
+          "legendFormat": "Routed",
+          "datasource": { "uid": "loki", "type": "loki" }
+        },
+        {
+          "expr": "sum(count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.filled\" [$__range]))",
+          "legendFormat": "Filled",
+          "datasource": { "uid": "loki", "type": "loki" }
+        },
+        {
+          "expr": "sum(count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.rejected\" [$__range]))",
+          "legendFormat": "Rejected",
+          "datasource": { "uid": "loki", "type": "loki" }
+        },
+        {
+          "expr": "sum(count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.expired\" [$__range]))",
+          "legendFormat": "Expired",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+
+    {
+      "id": 7,
+      "type": "gauge",
+      "title": "Fill Rate % (last 5 min)",
+      "gridPos": { "x": 8, "y": 20, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 80 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "expr": "100 * clamp_min(sum(count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.filled\" [5m])), 0) / clamp_min(sum(count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.submitted\" [5m])), 1)",
+          "legendFormat": "Fill rate",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Service Versions",
+      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 5 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "left" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "service" },
+            "properties": [{ "id": "displayName", "value": "Service" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "version" },
+            "properties": [{ "id": "displayName", "value": "Version" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          }
+        ]
+      },
+      "options": {
+        "sortBy": [{ "displayName": "Service", "desc": false }],
+        "footer": { "show": false }
+      },
+      "transformations": [
+        { "id": "labelsToFields", "options": { "mode": "columns" } },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "__name__": true, "job": true }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "build_info",
+          "legendFormat": "",
+          "instant": true,
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+
+    {
+      "id": 9,
+      "type": "logs",
+      "title": "Order Events — live stream",
+      "gridPos": { "x": 0, "y": 25, "w": 12, "h": 10 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "expr": "{service_name=\"kafka-relay\"} | json | type =~ \"orders\\.(submitted|filled|rejected|expired|kill\\.audit)\"",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+
+    {
+      "id": 10,
+      "type": "logs",
+      "title": "Algo Decision Log — live stream",
+      "gridPos": { "x": 12, "y": 25, "w": 12, "h": 10 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "expr": "{service_name=\"kafka-relay\"} | json | type =~ \"algo\\.(heartbeat|decision)\"",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Child Order & Fill Throughput (per min)",
+      "gridPos": { "x": 0, "y": 35, "w": 12, "h": 8 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.child\" [1m]))",
+          "legendFormat": "Child orders",
+          "datasource": { "uid": "loki", "type": "loki" }
+        },
+        {
+          "expr": "sum(count_over_time({service_name=\"kafka-relay\"} | json | type=\"orders.filled\" [1m]))",
+          "legendFormat": "Fills",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Process Resident Memory (MB) per service",
+      "gridPos": { "x": 12, "y": 35, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "decmbytes", "color": { "mode": "palette-classic" } },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes / 1024 / 1024",
+          "legendFormat": "{{service_name}}",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    }
+  ]
+}

@@ -1,19 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks.ts";
-
-interface TradingLimits {
-  userId: string;
-  max_order_qty: number;
-  max_daily_notional: number;
-  allowed_strategies: string[];
-}
-
-interface UserRow {
-  id: string;
-  name: string;
-  role: string;
-  avatar_emoji: string;
-}
+import type { UserLimits, UserRow } from "../store/userApi.ts";
+import {
+  useGetUserLimitsQuery,
+  useGetUsersQuery,
+  useUpdateUserLimitsMutation,
+} from "../store/userApi.ts";
 
 interface JournalEntry {
   id: number;
@@ -32,74 +24,163 @@ interface JournalEntry {
 
 const ALL_STRATEGIES = ["LIMIT", "TWAP", "POV", "VWAP"];
 
+// ── Per-user limits row with local edit state ─────────────────────────────────
+
+interface UserLimitsRowProps {
+  user: UserRow;
+  isAdmin: boolean;
+  idx: number;
+}
+
+function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
+  const { data: serverLimits } = useGetUserLimitsQuery(user.id);
+  const [updateLimits, { isLoading: saving, error: saveError }] = useUpdateUserLimitsMutation();
+  const [localLimits, setLocalLimits] = useState<UserLimits | null>(null);
+
+  const lim = localLimits ?? serverLimits ?? null;
+
+  function toggleStrategy(strategy: string) {
+    if (!lim) return;
+    const current = lim.allowed_strategies;
+    const updated = current.includes(strategy)
+      ? current.filter((s) => s !== strategy)
+      : [...current, strategy];
+    setLocalLimits({ ...lim, allowed_strategies: updated });
+  }
+
+  async function saveLimitsHandler() {
+    if (!lim) return;
+    await updateLimits({
+      userId: user.id,
+      max_order_qty: lim.max_order_qty,
+      max_daily_notional: lim.max_daily_notional,
+      allowed_strategies: lim.allowed_strategies,
+    });
+    setLocalLimits(null);
+  }
+
+  return (
+    <>
+      <tr
+        key={user.id}
+        data-testid="user-row"
+        className={`border-t border-gray-800 ${idx % 2 === 0 ? "bg-gray-950" : "bg-gray-900/40"}`}
+      >
+        <td className="px-3 py-2">
+          <span className="mr-1">{user.avatar_emoji}</span>
+          <span className="text-gray-200">{user.name}</span>
+          <span
+            className={`ml-1.5 text-[9px] px-1 py-0.5 rounded ${
+              user.role === "admin"
+                ? "bg-orange-900/50 text-orange-400"
+                : "bg-blue-900/50 text-blue-400"
+            }`}
+          >
+            {user.role}
+          </span>
+        </td>
+        <td className="px-3 py-2">
+          {lim ? (
+            <input
+              type="number"
+              value={lim.max_order_qty}
+              disabled={!isAdmin}
+              onChange={(e) =>
+                setLocalLimits((prev) => ({
+                  ...(prev ?? lim),
+                  max_order_qty: Number(e.target.value),
+                }))
+              }
+              className="w-24 bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          ) : (
+            <span className="text-gray-600">—</span>
+          )}
+        </td>
+        <td className="px-3 py-2">
+          {lim ? (
+            <input
+              type="number"
+              value={lim.max_daily_notional}
+              disabled={!isAdmin}
+              onChange={(e) =>
+                setLocalLimits((prev) => ({
+                  ...(prev ?? lim),
+                  max_daily_notional: Number(e.target.value),
+                }))
+              }
+              className="w-28 bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          ) : (
+            <span className="text-gray-600">—</span>
+          )}
+        </td>
+        <td className="px-3 py-2">
+          {lim ? (
+            <div className="flex gap-1">
+              {ALL_STRATEGIES.map((s) => {
+                const enabled = lim.allowed_strategies.includes(s);
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    disabled={!isAdmin}
+                    onClick={() => toggleStrategy(s)}
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors disabled:cursor-not-allowed ${
+                      enabled
+                        ? "bg-emerald-900/50 text-emerald-400 hover:bg-emerald-900"
+                        : "bg-gray-800 text-gray-600 hover:bg-gray-700"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <span className="text-gray-600">—</span>
+          )}
+        </td>
+        {isAdmin && (
+          <td className="px-3 py-2">
+            <button
+              type="button"
+              disabled={saving || !lim}
+              onClick={saveLimitsHandler}
+              className="px-2 py-0.5 bg-emerald-800/60 text-emerald-400 hover:bg-emerald-800 rounded text-[10px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </td>
+        )}
+      </tr>
+      {saveError && (
+        <tr>
+          <td colSpan={isAdmin ? 5 : 4} className="px-3 py-1 text-red-400 text-[10px]">
+            {"status" in saveError ? `Save failed (${saveError.status})` : "Save failed"}
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+// ── AdminPanel ────────────────────────────────────────────────────────────────
+
 export function AdminPanel() {
   const currentUser = useAppSelector((s) => s.auth.user);
-  const [users, setUsers] = useState<UserRow[]>([]);
-  const [limits, setLimits] = useState<Record<string, TradingLimits>>({});
+  const { data: users = [] } = useGetUsersQuery();
   const [journal, setJournal] = useState<JournalEntry[]>([]);
-  const [saving, setSaving] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/user-service/users", { credentials: "include" })
-      .then((r) => r.json())
-      .then((data: UserRow[]) => {
-        setUsers(data);
-        // fetch limits for each user
-        for (const u of data) {
-          fetch(`/api/user-service/users/${u.id}/limits`, { credentials: "include" })
-            .then((r) => r.json())
-            .then((lim: TradingLimits) => {
-              setLimits((prev) => ({ ...prev, [u.id]: lim }));
-            })
-            .catch(() => {});
-        }
-      })
-      .catch(() => {});
-
     fetch("/api/journal/journal?limit=50", { credentials: "include" })
       .then((r) => r.json())
       .then((data: { entries: JournalEntry[] }) => setJournal(data.entries ?? []))
       .catch(() => {});
   }, []);
 
-  async function saveLimits(userId: string) {
-    const lim = limits[userId];
-    if (!lim) return;
-    setSaving(userId);
-    setSaveError(null);
-    try {
-      const res = await fetch(`/api/user-service/users/${userId}/limits`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          max_order_qty: lim.max_order_qty,
-          max_daily_notional: lim.max_daily_notional,
-          allowed_strategies: lim.allowed_strategies,
-        }),
-      });
-      if (!res.ok) throw new Error(`Save failed (${res.status})`);
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Save failed");
-    } finally {
-      setSaving(null);
-    }
-  }
-
-  function toggleStrategy(userId: string, strategy: string) {
-    setLimits((prev) => {
-      const lim = prev[userId];
-      if (!lim) return prev;
-      const current = lim.allowed_strategies;
-      const updated = current.includes(strategy)
-        ? current.filter((s) => s !== strategy)
-        : [...current, strategy];
-      return { ...prev, [userId]: { ...lim, allowed_strategies: updated } };
-    });
-  }
-
   const isAdmin = currentUser?.role === "admin";
+  const traderUsers = users.filter((u) => u.role !== "admin");
 
   return (
     <div data-testid="admin-panel" className="h-full overflow-auto p-3 space-y-4 text-xs">
@@ -125,110 +206,12 @@ export function AdminPanel() {
               </tr>
             </thead>
             <tbody>
-              {users
-                .filter((u) => u.role !== "admin")
-                .map((user, idx) => {
-                  const lim = limits[user.id];
-                  return (
-                    <tr
-                      key={user.id}
-                      data-testid="user-row"
-                      className={`border-t border-gray-800 ${idx % 2 === 0 ? "bg-gray-950" : "bg-gray-900/40"}`}
-                    >
-                      <td className="px-3 py-2">
-                        <span className="mr-1">{user.avatar_emoji}</span>
-                        <span className="text-gray-200">{user.name}</span>
-                        <span
-                          className={`ml-1.5 text-[9px] px-1 py-0.5 rounded ${
-                            user.role === "admin"
-                              ? "bg-orange-900/50 text-orange-400"
-                              : "bg-blue-900/50 text-blue-400"
-                          }`}
-                        >
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2">
-                        {lim ? (
-                          <input
-                            type="number"
-                            value={lim.max_order_qty}
-                            disabled={!isAdmin}
-                            onChange={(e) =>
-                              setLimits((prev) => ({
-                                ...prev,
-                                [user.id]: { ...lim, max_order_qty: Number(e.target.value) },
-                              }))
-                            }
-                            className="w-24 bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                        ) : (
-                          <span className="text-gray-600">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2">
-                        {lim ? (
-                          <input
-                            type="number"
-                            value={lim.max_daily_notional}
-                            disabled={!isAdmin}
-                            onChange={(e) =>
-                              setLimits((prev) => ({
-                                ...prev,
-                                [user.id]: { ...lim, max_daily_notional: Number(e.target.value) },
-                              }))
-                            }
-                            className="w-28 bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                        ) : (
-                          <span className="text-gray-600">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2">
-                        {lim ? (
-                          <div className="flex gap-1">
-                            {ALL_STRATEGIES.map((s) => {
-                              const enabled = lim.allowed_strategies.includes(s);
-                              return (
-                                <button
-                                  key={s}
-                                  type="button"
-                                  disabled={!isAdmin}
-                                  onClick={() => toggleStrategy(user.id, s)}
-                                  className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors disabled:cursor-not-allowed ${
-                                    enabled
-                                      ? "bg-emerald-900/50 text-emerald-400 hover:bg-emerald-900"
-                                      : "bg-gray-800 text-gray-600 hover:bg-gray-700"
-                                  }`}
-                                >
-                                  {s}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <span className="text-gray-600">—</span>
-                        )}
-                      </td>
-                      {isAdmin && (
-                        <td className="px-3 py-2">
-                          <button
-                            type="button"
-                            disabled={saving === user.id || !lim}
-                            onClick={() => saveLimits(user.id)}
-                            className="px-2 py-0.5 bg-emerald-800/60 text-emerald-400 hover:bg-emerald-800 rounded text-[10px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          >
-                            {saving === user.id ? "Saving…" : "Save"}
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
+              {traderUsers.map((user, idx) => (
+                <UserLimitsRow key={user.id} user={user} isAdmin={isAdmin} idx={idx} />
+              ))}
             </tbody>
           </table>
         </div>
-        {saveError && <div className="mt-1 text-red-400 text-[10px]">{saveError}</div>}
       </div>
 
       {/* Journal (last 50 entries) */}

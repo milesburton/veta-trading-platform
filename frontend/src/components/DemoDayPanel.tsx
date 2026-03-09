@@ -1,12 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { DemoDayResult } from "../store/gatewayApi.ts";
+import { useRunDemoDayMutation } from "../store/gatewayApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
 
-type DemoStatus = "idle" | "running" | "done" | "error";
-
-interface DemoResult {
+interface LocalDemoResult extends DemoDayResult {
   jobId: string;
-  submitted: number;
-  scenario: string;
 }
 
 interface Scenario {
@@ -75,58 +73,49 @@ const BADGE_MAP: Record<string, string> = {
 export function DemoDayPanel() {
   const user = useAppSelector((s) => s.auth.user);
   const [selected, setSelected] = useState<string>("standard");
-  const [status, setStatus] = useState<DemoStatus>("idle");
-  const [result, setResult] = useState<DemoResult | null>(null);
+  const [result, setResult] = useState<LocalDemoResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState<number>(0);
+  const tickerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const isRunning = status === "running";
+  const [runDemoDay, { isLoading: isRunning }] = useRunDemoDayMutation();
+
+  // Clean up elapsed timer on unmount
+  useEffect(() => {
+    return () => {
+      if (tickerRef.current) clearInterval(tickerRef.current);
+    };
+  }, []);
 
   async function handleLaunch() {
-    setStatus("running");
     setError(null);
     setResult(null);
+    setElapsed(0);
     const startedAt = Date.now();
 
-    // Tick elapsed time while running
-    const ticker = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 500);
+    tickerRef.current = setInterval(
+      () => setElapsed(Math.floor((Date.now() - startedAt) / 1000)),
+      500
+    );
 
-    try {
-      const res = await fetch("/api/gateway/demo-day", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ scenario: selected }),
-      });
+    const res = await runDemoDay({ scenario: selected });
 
-      clearInterval(ticker);
-      setElapsed(Math.floor((Date.now() - startedAt) / 1000));
+    if (tickerRef.current) clearInterval(tickerRef.current);
+    setElapsed(Math.floor((Date.now() - startedAt) / 1000));
 
-      if (res.status === 202) {
-        const data = (await res.json()) as DemoResult;
-        setResult(data);
-        setStatus("done");
-      } else if (res.status === 401) {
-        setError("Session expired — please log in again");
-        setStatus("error");
-      } else if (res.status === 503) {
-        setError("Message bus unavailable — is Redpanda running?");
-        setStatus("error");
+    if ("data" in res) {
+      setResult(res.data as LocalDemoResult);
+    } else if ("error" in res) {
+      const err = res.error;
+      if (err && "status" in err) {
+        const status = (err as { status: number }).status;
+        const data = (err as { data?: { error?: string } }).data;
+        if (status === 401) setError("Session expired — please log in again");
+        else if (status === 503) setError("Message bus unavailable — is Redpanda running?");
+        else setError(data?.error ?? `Request failed (${status})`);
       } else {
-        let msg = `Request failed (${res.status})`;
-        try {
-          const body = (await res.json()) as { error?: string };
-          if (body.error) msg = body.error;
-        } catch {
-          /* ignore */
-        }
-        setError(msg);
-        setStatus("error");
+        setError("Network error");
       }
-    } catch (err) {
-      clearInterval(ticker);
-      setError(err instanceof Error ? err.message : "Network error");
-      setStatus("error");
     }
   }
 
@@ -235,7 +224,7 @@ export function DemoDayPanel() {
               </svg>
               Launching… ({elapsed}s)
             </>
-          ) : status === "done" ? (
+          ) : result ? (
             "Launch Another Demo"
           ) : (
             `Launch Demo — ${scenario.label}`
@@ -243,7 +232,7 @@ export function DemoDayPanel() {
         </button>
 
         {/* Success result */}
-        {status === "done" && result && (
+        {!isRunning && result && (
           <div className="rounded border border-emerald-700/50 bg-emerald-950/30 px-3 py-2.5 space-y-2">
             <div className="text-[11px] font-semibold text-emerald-400">Demo launched</div>
             <div className="space-y-1 text-[10px]">
@@ -257,10 +246,12 @@ export function DemoDayPanel() {
                   {result.submitted.toLocaleString()}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500">Job ID</span>
-                <span className="text-gray-400 font-mono text-[9px]">{result.jobId}</span>
-              </div>
+              {"jobId" in result && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Job ID</span>
+                  <span className="text-gray-400 font-mono text-[9px]">{result.jobId}</span>
+                </div>
+              )}
             </div>
             <p className="text-[10px] text-gray-600 leading-relaxed pt-1">
               Orders are staggered over the next ~30 seconds. Watch the Order Blotter, Algo Monitor,
@@ -270,7 +261,7 @@ export function DemoDayPanel() {
         )}
 
         {/* Error */}
-        {status === "error" && error && (
+        {!isRunning && error && (
           <div className="rounded border border-red-700/50 bg-red-950/30 px-3 py-2 text-[10px] text-red-400 leading-relaxed">
             <span className="font-semibold">Error:</span> {error}
           </div>

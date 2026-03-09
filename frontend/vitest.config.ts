@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react({ babel: { plugins: [["module:@preact/signals-react-transform"]] } })],
   test: {
     environment: 'jsdom',
+    environmentOptions: { jsdom: { url: 'http://localhost:3000' } },
     globals: true,
     setupFiles: ['./src/setupTests.ts'],
     include: ['src/**/*.{test,spec}.{js,ts,tsx}'],

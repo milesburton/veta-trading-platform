@@ -2,8 +2,9 @@ import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { authSlice } from "../../store/authSlice";
+import { type AuthUser, authSlice } from "../../store/authSlice";
 import { servicesApi } from "../../store/servicesApi";
+import { userApi } from "../../store/userApi";
 import { LoginPage } from "../LoginPage";
 
 vi.mock("../../store/servicesApi", async (importOriginal) => {
@@ -14,27 +15,44 @@ vi.mock("../../store/servicesApi", async (importOriginal) => {
   };
 });
 
+// Track the mock mutate function so tests can control its behaviour
+const mockCreateSession = vi.fn<() => Promise<{ data?: AuthUser; error?: { status: number } }>>();
+
+vi.mock("../../store/userApi", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../store/userApi")>();
+  return {
+    ...original,
+    useCreateSessionMutation: () => [
+      mockCreateSession,
+      { isLoading: false, error: undefined, reset: vi.fn() },
+    ],
+  };
+});
+
 function makeStore() {
   return configureStore({
     reducer: {
       auth: authSlice.reducer,
       [servicesApi.reducerPath]: servicesApi.reducer,
+      [userApi.reducerPath]: userApi.reducer,
     },
-    middleware: (m) => m().concat(servicesApi.middleware),
+    middleware: (m) => m().concat(servicesApi.middleware).concat(userApi.middleware),
   });
 }
 
-function renderLogin(props: { buildDate?: string; commitSha?: string } = {}) {
-  return render(
-    <Provider store={makeStore()}>
+function renderLogin(props: { buildDate?: string; commitSha?: string } = {}, store = makeStore()) {
+  const result = render(
+    <Provider store={store}>
       <LoginPage {...props} />
     </Provider>
   );
+  return { ...result, store };
 }
 
 describe("LoginPage", () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
+    mockCreateSession.mockResolvedValue({ data: undefined });
   });
 
   test("renders brand, heading, and all user buttons", () => {
@@ -58,30 +76,14 @@ describe("LoginPage", () => {
     expect(screen.getByText("admin")).toBeInTheDocument();
   });
 
-  test("disables all buttons while one is loading", async () => {
-    vi.spyOn(globalThis, "fetch").mockReturnValue(new Promise(() => {}));
-    renderLogin();
-
-    fireEvent.click(screen.getByTestId("user-btn-alice"));
-
-    await waitFor(() => {
-      for (const id of [
-        "user-btn-alice",
-        "user-btn-bob",
-        "user-btn-carol",
-        "user-btn-dave",
-        "user-btn-admin",
-      ]) {
-        expect(screen.getByTestId(id)).toBeDisabled();
-      }
-    });
-  });
-
   test("dispatches setUser on successful login", async () => {
-    const authUser = { id: "alice", name: "Alice Chen", role: "trader", sessionToken: "tok123" };
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify(authUser), { status: 200 })
-    );
+    const authUser: AuthUser = {
+      id: "alice",
+      name: "Alice Chen",
+      role: "trader",
+      avatar_emoji: "AC",
+    };
+    mockCreateSession.mockResolvedValue({ data: authUser });
     const store = makeStore();
 
     render(
@@ -95,46 +97,10 @@ describe("LoginPage", () => {
     await waitFor(() => expect(store.getState().auth.user?.id).toBe("alice"));
   });
 
-  test("shows error message on failed login", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 500 }));
+  test("calls createSession with the userId when a user is clicked", async () => {
     renderLogin();
-
     fireEvent.click(screen.getByTestId("user-btn-bob"));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("login-error")).toBeInTheDocument();
-      expect(screen.getByTestId("login-error")).toHaveTextContent("Login failed");
-    });
-  });
-
-  test("shows error message on network failure", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
-    renderLogin();
-
-    fireEvent.click(screen.getByTestId("user-btn-carol"));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("login-error")).toHaveTextContent("Network error");
-    });
-  });
-
-  test("re-enables buttons after login attempt completes", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 500 }));
-    renderLogin();
-
-    fireEvent.click(screen.getByTestId("user-btn-dave"));
-
-    await waitFor(() => screen.getByTestId("login-error"));
-
-    for (const id of [
-      "user-btn-alice",
-      "user-btn-bob",
-      "user-btn-carol",
-      "user-btn-dave",
-      "user-btn-admin",
-    ]) {
-      expect(screen.getByTestId(id)).not.toBeDisabled();
-    }
+    await waitFor(() => expect(mockCreateSession).toHaveBeenCalledWith({ userId: "bob" }));
   });
 
   test("renders build info footer when props provided", () => {

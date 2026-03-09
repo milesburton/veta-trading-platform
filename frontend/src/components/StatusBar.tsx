@@ -9,6 +9,7 @@ import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { DEPLOYMENT, SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
 import type { Theme } from "../store/themeSlice.ts";
 import { saveTheme, setTheme } from "../store/themeSlice.ts";
+import { useDeleteSessionMutation } from "../store/userApi.ts";
 import type { ServiceHealth } from "../types.ts";
 import { AlertDrawer } from "./AlertDrawer.tsx";
 import { ComponentPicker } from "./ComponentPicker.tsx";
@@ -247,6 +248,7 @@ export function AppHeader() {
   const services = useAllServiceHealth();
   const time = useSignal(new Date().toLocaleTimeString());
   const dispatch = useAppDispatch();
+  const [deleteSession] = useDeleteSessionMutation();
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -257,7 +259,7 @@ export function AppHeader() {
 
   async function handleLogout() {
     try {
-      await fetch("/api/user-service/sessions", { method: "DELETE", credentials: "include" });
+      await deleteSession();
     } finally {
       dispatch(clearUser());
     }

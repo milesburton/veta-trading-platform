@@ -1,0 +1,88 @@
+services:
+  alloy:
+    image: grafana/alloy:v1.7.0
+    container_name: lgtm-alloy
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "12345:12345" # Alloy UI
+    volumes:
+      - ./alloy-config.alloy:/etc/alloy/config.alloy:ro
+      - /tmp:/var/log/supervisor:ro   # tail supervisord stdout logs
+    command: run /etc/alloy/config.alloy --server.http.listen-addr=0.0.0.0:12345
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - lgtm
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.3.2
+    container_name: lgtm-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - lgtm
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: lgtm-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-remote-write-receiver
+      - --storage.tsdb.retention.time=7d
+    networks:
+      - lgtm
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.7.1
+    container_name: lgtm-tempo
+    ports:
+      - "3200:3200"
+      - "4319:4317"   # Tempo's own OTLP gRPC (offset to avoid conflict with alloy)
+    volumes:
+      - ./tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    command: -config.file=/etc/tempo/tempo.yaml
+    networks:
+      - lgtm
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: lgtm-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_FEATURE_TOGGLES_ENABLE: "traceToMetrics,traceToLogs"
+      GF_SERVER_ROOT_URL: "http://localhost:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    networks:
+      - lgtm
+    restart: unless-stopped
+    depends_on:
+      - loki
+      - prometheus
+      - tempo
+
+volumes:
+  prometheus-data:
+  tempo-data:
+  grafana-data:
+
+networks:
+  lgtm:
+    driver: bridge
