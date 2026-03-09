@@ -53,6 +53,7 @@ export async function submitOrderViaWs(
     strategy?: string;
     instrumentType?: string;
     algoParams?: Record<string, unknown>;
+    expiresAt?: number;
   },
   timeoutMs = 10_000,
 ): Promise<WsOrderResponse & { clientOrderId: string }> {
@@ -78,7 +79,7 @@ export async function submitOrderViaWs(
             side: order.side,
             quantity: order.quantity,
             limitPrice: order.limitPrice,
-            expiresAt: 300,
+            expiresAt: order.expiresAt ?? 60,
             strategy: order.strategy ?? "LIMIT",
             instrumentType: order.instrumentType,
             algoParams: order.algoParams ?? { strategy: order.strategy ?? "LIMIT" },

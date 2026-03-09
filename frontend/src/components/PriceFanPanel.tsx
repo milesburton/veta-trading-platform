@@ -28,16 +28,16 @@ interface HorizonPreset {
 }
 
 const HORIZONS: HorizonPreset[] = [
-  { label: "1h",  steps: 6,  stepSecs: 600   },
-  { label: "4h",  steps: 8,  stepSecs: 1800  },
-  { label: "1d",  steps: 24, stepSecs: 3600  },
-  { label: "1w",  steps: 7,  stepSecs: 86400 },
+  { label: "1h", steps: 6, stepSecs: 600 },
+  { label: "4h", steps: 8, stepSecs: 1800 },
+  { label: "1d", steps: 24, stepSecs: 3600 },
+  { label: "1w", steps: 7, stepSecs: 86400 },
 ];
 
 function formatStepLabel(tSecs: number, stepSecs: number): string {
   const total = tSecs;
   if (stepSecs >= 86400) return `+${Math.round(total / 86400)}d`;
-  if (stepSecs >= 3600)  return `+${Math.round(total / 3600)}h`;
+  if (stepSecs >= 3600) return `+${Math.round(total / 3600)}h`;
   return `+${Math.round(total / 60)}m`;
 }
 
@@ -52,7 +52,7 @@ export function PriceFanPanel() {
 
   const { data, isFetching, isError } = useGetPriceFanQuery(
     { symbol, steps: horizon.steps, stepSecs: horizon.stepSecs },
-    { pollingInterval: 60_000, skip: !symbol },
+    { pollingInterval: 60_000, skip: !symbol }
   );
 
   function handleSymbolSubmit(e: React.FormEvent) {
@@ -67,7 +67,15 @@ export function PriceFanPanel() {
 
   // Build chart data: prepend step 0 (spot) so the fan starts at current price
   const chartData = [
-    { label: "now", tSecs: 0, p5: spotPrice, p25: spotPrice, p50: spotPrice, p75: spotPrice, p95: spotPrice },
+    {
+      label: "now",
+      tSecs: 0,
+      p5: spotPrice,
+      p25: spotPrice,
+      p50: spotPrice,
+      p75: spotPrice,
+      p95: spotPrice,
+    },
     ...steps.map((s) => ({
       label: formatStepLabel(s.tSecs, horizon.stepSecs),
       tSecs: s.tSecs,
@@ -84,9 +92,9 @@ export function PriceFanPanel() {
   const areaData = chartData.map((d) => ({
     label: d.label,
     p5: +d.p5.toFixed(2),
-    band1: +(d.p25 - d.p5).toFixed(2),   // p5 → p25
-    band2: +(d.p75 - d.p25).toFixed(2),  // p25 → p75
-    band3: +(d.p95 - d.p75).toFixed(2),  // p75 → p95
+    band1: +(d.p25 - d.p5).toFixed(2), // p5 → p25
+    band2: +(d.p75 - d.p25).toFixed(2), // p25 → p75
+    band3: +(d.p95 - d.p75).toFixed(2), // p75 → p95
     p50: +d.p50.toFixed(2),
   }));
 
@@ -154,17 +162,54 @@ export function PriceFanPanel() {
                 tick={{ fontSize: 9, fill: "#6b7280" }}
               />
               <Tooltip
-                contentStyle={{ background: "#111827", border: "1px solid #374151", borderRadius: 4, fontSize: 9, color: "#d1d5db" }}
+                contentStyle={{
+                  background: "#111827",
+                  border: "1px solid #374151",
+                  borderRadius: 4,
+                  fontSize: 9,
+                  color: "#d1d5db",
+                }}
                 formatter={(v: number, name: string) => {
                   if (name === "p50") return [`$${v.toFixed(2)}`, "median"];
                   return [null, null]; // hide band segments from tooltip
                 }}
               />
               {/* Stacked areas: p5 base (transparent), then 3 bands */}
-              <Area dataKey="p5" stackId="fan" stroke="none" fill="transparent" isAnimationActive={false} legendType="none" />
-              <Area dataKey="band1" stackId="fan" stroke="none" fill="#3b82f6" fillOpacity={0.12} isAnimationActive={false} legendType="none" />
-              <Area dataKey="band2" stackId="fan" stroke="none" fill="#3b82f6" fillOpacity={0.22} isAnimationActive={false} legendType="none" />
-              <Area dataKey="band3" stackId="fan" stroke="none" fill="#3b82f6" fillOpacity={0.12} isAnimationActive={false} legendType="none" />
+              <Area
+                dataKey="p5"
+                stackId="fan"
+                stroke="none"
+                fill="transparent"
+                isAnimationActive={false}
+                legendType="none"
+              />
+              <Area
+                dataKey="band1"
+                stackId="fan"
+                stroke="none"
+                fill="#3b82f6"
+                fillOpacity={0.12}
+                isAnimationActive={false}
+                legendType="none"
+              />
+              <Area
+                dataKey="band2"
+                stackId="fan"
+                stroke="none"
+                fill="#3b82f6"
+                fillOpacity={0.22}
+                isAnimationActive={false}
+                legendType="none"
+              />
+              <Area
+                dataKey="band3"
+                stackId="fan"
+                stroke="none"
+                fill="#3b82f6"
+                fillOpacity={0.12}
+                isAnimationActive={false}
+                legendType="none"
+              />
               {/* Median line */}
               <Line
                 type="monotone"
@@ -176,7 +221,12 @@ export function PriceFanPanel() {
               />
               {/* Current price reference */}
               {spotPrice > 0 && (
-                <ReferenceLine y={spotPrice} stroke="#6b7280" strokeDasharray="4 3" strokeWidth={1} />
+                <ReferenceLine
+                  y={spotPrice}
+                  stroke="#6b7280"
+                  strokeDasharray="4 3"
+                  strokeWidth={1}
+                />
               )}
             </ComposedChart>
           </ResponsiveContainer>

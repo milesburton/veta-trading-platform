@@ -47,6 +47,7 @@ export const PANEL_IDS = [
   "estate-overview",
   "yield-curve",
   "price-fan",
+  "demo-day",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -87,6 +88,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "estate-overview": "Estate Overview (command centre)",
   "yield-curve": "Yield Curve (Nelson-Siegel)",
   "price-fan": "Price Fan (GBM projection)",
+  "demo-day": "Demo Day (simulate trading session)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -151,6 +153,8 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Nelson-Siegel spot yield curve with implied forward rates and bond pricing (price, duration, convexity, DV01)",
   "price-fan":
     "Forward price projection fan chart — GBM Monte Carlo confidence bands (p5/p25/p50/p75/p95) for any equity",
+  "demo-day":
+    "One-click trading day simulator — injects a realistic wave of mixed-strategy orders across all assets to demonstrate the full pipeline in action",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -168,6 +172,7 @@ export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
   "algo-leaderboard",
   "load-test",
   "llm-subsystem",
+  "demo-day",
 ]);
 
 export interface TabChannelConfig {
@@ -213,4 +218,5 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "estate-overview": { out: false, in: false },
   "yield-curve": { out: false, in: false },
   "price-fan": { out: false, in: false },
+  "demo-day": { out: false, in: false },
 };

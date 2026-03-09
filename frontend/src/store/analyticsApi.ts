@@ -40,10 +40,12 @@ export const analyticsApi = createApi({
         body,
       }),
     }),
-    getGreeksSurface: builder.query<GreeksSurfaceResponse, { symbol: string; expirySecs?: number }>({
-      query: ({ symbol, expirySecs = 30 * 86400 }) =>
-        `/analytics/greeks-surface/${encodeURIComponent(symbol)}?expirySecs=${expirySecs}`,
-    }),
+    getGreeksSurface: builder.query<GreeksSurfaceResponse, { symbol: string; expirySecs?: number }>(
+      {
+        query: ({ symbol, expirySecs = 30 * 86400 }) =>
+          `/analytics/greeks-surface/${encodeURIComponent(symbol)}?expirySecs=${expirySecs}`,
+      }
+    ),
     getVolProfile: builder.query<VolProfileResponse, string>({
       query: (symbol) => `/analytics/vol-profile/${encodeURIComponent(symbol)}`,
     }),
@@ -61,7 +63,10 @@ export const analyticsApi = createApi({
         body,
       }),
     }),
-    getPriceFan: builder.query<PriceFanResponse, { symbol: string; steps?: number; stepSecs?: number; paths?: number }>({
+    getPriceFan: builder.query<
+      PriceFanResponse,
+      { symbol: string; steps?: number; stepSecs?: number; paths?: number }
+    >({
       query: ({ symbol, steps = 24, stepSecs = 3600, paths = 500 }) =>
         `/analytics/price-fan/${encodeURIComponent(symbol)}?steps=${steps}&stepSecs=${stepSecs}&paths=${paths}`,
     }),

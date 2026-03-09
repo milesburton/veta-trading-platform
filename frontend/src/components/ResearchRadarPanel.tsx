@@ -7,18 +7,18 @@
  * Filter by direction; sort by score, confidence, or news velocity.
  */
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
-  ScatterChart,
+  CartesianGrid,
+  Cell,
+  ReferenceLine,
+  ResponsiveContainer,
   Scatter,
+  ScatterChart,
+  Tooltip,
   XAxis,
   YAxis,
   ZAxis,
-  CartesianGrid,
-  ReferenceLine,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
 } from "recharts";
 import { useChannelOut } from "../hooks/useChannelOut.ts";
 import { useAppSelector } from "../store/hooks.ts";
@@ -102,12 +102,12 @@ export function ResearchRadarPanel() {
       short: allEntries.filter((e) => e.direction === "short").length,
       neutral: allEntries.filter((e) => e.direction === "neutral").length,
     }),
-    [allEntries],
+    [allEntries]
   );
 
   const filtered = useMemo(
     () => (filter === "ALL" ? allEntries : allEntries.filter((e) => e.direction === filter)),
-    [allEntries, filter],
+    [allEntries, filter]
   );
 
   const sorted = useMemo(() => {
@@ -186,7 +186,13 @@ export function ResearchRadarPanel() {
               domain={[-1, 1]}
               tick={{ fill: "#6b7280", fontSize: 9 }}
               tickFormatter={(v: number) => v.toFixed(1)}
-              label={{ value: "Score", position: "insideBottom", fill: "#4b5563", fontSize: 9, dy: 8 }}
+              label={{
+                value: "Score",
+                position: "insideBottom",
+                fill: "#4b5563",
+                fontSize: 9,
+                dy: 8,
+              }}
             />
             <YAxis
               type="number"

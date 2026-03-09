@@ -3,7 +3,9 @@ name: Build Dev Container Base Image
 on:
   push:
     branches: [main]
-    paths: ['.devcontainer/Dockerfile.base']
+    paths:
+      - '.devcontainer/Dockerfile.base'
+      - '.devcontainer/config.fish'
   workflow_dispatch:
 
 jobs:

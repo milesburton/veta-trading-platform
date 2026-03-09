@@ -6,6 +6,7 @@
     "npm:@preact/signals-react-transform@~0.8.1": "0.8.1_@babel+core@7.29.0_react@18.3.1",
     "npm:@preact/signals-react@^3.9.0": "3.9.0_react@18.3.1",
     "npm:@reduxjs/toolkit@^2.11.2": "2.11.2_react@18.3.1_react-redux@9.2.0__@types+react@18.3.28__react@18.3.1__redux@5.0.1_@types+react@18.3.28_redux@5.0.1",
+    "npm:@tanstack/react-query@^5.90.21": "5.90.21_react@18.3.1",
     "npm:@testing-library/jest-dom@6": "6.9.1",
     "npm:@testing-library/react@14": "14.3.1_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+react@18.3.28",
     "npm:@testing-library/user-event@14": "14.6.1_@testing-library+dom@9.3.4",
@@ -596,6 +597,16 @@
     },
     "@standard-schema/utils@0.3.0": {
       "integrity": "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g=="
+    },
+    "@tanstack/query-core@5.90.20": {
+      "integrity": "sha512-OMD2HLpNouXEfZJWcKeVKUgQ5n+n3A2JFmBaScpNDUqSrQSjiveC7dKMe53uJUg1nDG16ttFPz2xfilz6i2uVg=="
+    },
+    "@tanstack/react-query@5.90.21_react@18.3.1": {
+      "integrity": "sha512-0Lu6y5t+tvlTJMTO7oh5NSpJfpg/5D41LlThfepTixPYkJ0sE2Jj0m0f6yYqujBwIXlId87e234+MxG3D3g7kg==",
+      "dependencies": [
+        "@tanstack/query-core",
+        "react"
+      ]
     },
     "@testing-library/dom@9.3.4": {
       "integrity": "sha512-FlS4ZWlp97iiNWig0Muq8p+3rVDjRiYE+YKGbAqXOu9nwJFFOdL00kFpz42M+4huzYi86vAK1sOOfyOG45muIQ==",
@@ -2799,6 +2810,14 @@
       "integrity": "sha512-mplynKqc1C2hTVYxd0PU2xQAc22TI1vShAYGksCCfxbn/dFwnHTNi1bvYsBTkhdUNtGIf5xNOg938rrSSYvS9A==",
       "bin": true
     }
+  },
+  "remote": {
+    "https://deno.land/std@0.210.0/async/delay.ts": "d414b6ff5b597a3b8a90b1b860b675062a106ad0e311816256f4696aa40ec1a1",
+    "https://deno.land/std@0.210.0/dotenv/load.ts": "0636983549b98f29ab75c9a22a42d9723f0a389ece5498fe971e7bb2556a12e2",
+    "https://deno.land/std@0.210.0/dotenv/mod.ts": "55d51d0c244da70e10ccbbdb68644064ce19c8af1683289d16ac802ceef64c8c",
+    "https://deno.land/std@0.210.0/dotenv/parse.ts": "d76ff5a59bd7c374a40249dc28bd15c740da0428559c838b1ea5644f561bff20",
+    "https://deno.land/std@0.210.0/dotenv/stringify.ts": "df8c503a9d46c567f1daa6554211dcfbe05179f9b3ca3d9adc9d92a14987442e",
+    "https://deno.land/std@0.210.0/http/server.ts": "59a47779624ff748a058c6959d75fc5ca9f334d32b327344a2eec20561880b58"
   },
   "workspace": {
     "packageJson": {

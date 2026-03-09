@@ -22,6 +22,7 @@ const dashCtx: DashboardContextValue = {
   activePanelIds: new Set(),
   addPanel: () => {},
   removePanel: () => {},
+  removeTabById: () => {},
   resetLayout: () => {},
   storageKey: STORAGE_KEY,
   model: Model.fromJson({ global: {}, layout: { type: "row", children: [] } }),

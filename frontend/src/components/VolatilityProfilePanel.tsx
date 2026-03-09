@@ -8,14 +8,14 @@
 
 import { useState } from "react";
 import {
-  AreaChart,
   Area,
-  XAxis,
-  YAxis,
+  AreaChart,
   CartesianGrid,
-  Tooltip,
   ReferenceLine,
   ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 import { useGetVolProfileQuery } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
@@ -26,13 +26,9 @@ function VolTooltip({ active, payload, label }: any) {
   const vol = payload[0]?.value as number | undefined;
   return (
     <div className="bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-[10px]">
-      <div className="text-gray-500 mb-0.5">
-        {new Date(label as number).toLocaleTimeString()}
-      </div>
+      <div className="text-gray-500 mb-0.5">{new Date(label as number).toLocaleTimeString()}</div>
       {vol !== undefined && (
-        <div className="text-blue-400 tabular-nums">
-          EWMA Vol: {(vol * 100).toFixed(2)}%
-        </div>
+        <div className="text-blue-400 tabular-nums">EWMA Vol: {(vol * 100).toFixed(2)}%</div>
       )}
     </div>
   );
@@ -119,13 +115,7 @@ export function VolatilityProfilePanel() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-              <XAxis
-                dataKey="ts"
-                type="number"
-                domain={["dataMin", "dataMax"]}
-                scale="time"
-                hide
-              />
+              <XAxis dataKey="ts" type="number" domain={["dataMin", "dataMax"]} scale="time" hide />
               <YAxis
                 tick={{ fill: "#6b7280", fontSize: 9 }}
                 tickFormatter={(v: number) => `${(v * 100).toFixed(1)}%`}

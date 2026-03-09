@@ -293,6 +293,49 @@ async function proxyGet(internalUrl: string, req: Request): Promise<Response> {
   }
 }
 
+// ── Demo Day helpers (module-scope to satisfy no-inner-declarations lint) ──────
+type OrderSpec = {
+  asset: string; side: "BUY" | "SELL"; quantity: number;
+  limitPriceFactor: number; strategy: string;
+  algoParams: Record<string, unknown>; expiresAt: number;
+  delayMs: number;
+};
+
+function makeWave(
+  assets: string[],
+  count: number,
+  strategyMix: Array<{ strategy: string; algoParams: Record<string, unknown>; weight: number }>,
+  sideRatio = 0.6,
+  baseDelay = 0,
+  spreadMs = 8_000,
+): OrderSpec[] {
+  const totalWeight = strategyMix.reduce((s, m) => s + m.weight, 0);
+  const orders: OrderSpec[] = [];
+  for (let i = 0; i < count; i++) {
+    const asset = assets[i % assets.length];
+    const side: "BUY" | "SELL" = Math.random() < sideRatio ? "BUY" : "SELL";
+    const tier = Math.random();
+    const quantity = tier < 0.6
+      ? Math.round(10 + Math.random() * 90)
+      : tier < 0.9
+      ? Math.round(100 + Math.random() * 400)
+      : Math.round(500 + Math.random() * 1500);
+    const spread = (Math.random() * 0.03) * (side === "BUY" ? 1 : -1);
+    const limitPriceFactor = 1 + spread;
+    let r = Math.random() * totalWeight;
+    let chosen = strategyMix[0];
+    for (const m of strategyMix) { r -= m.weight; if (r <= 0) { chosen = m; break; } }
+    orders.push({
+      asset, side, quantity, limitPriceFactor,
+      strategy: chosen.strategy,
+      algoParams: chosen.algoParams,
+      expiresAt: 300 + Math.round(Math.random() * 600),
+      delayMs: baseDelay + Math.round(Math.random() * spreadMs),
+    });
+  }
+  return orders;
+}
+
 serve(async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
@@ -940,6 +983,171 @@ serve(async (req: Request): Promise<Response> => {
 
     return new Response(
       JSON.stringify({ jobId, submitted: orderCount, symbols, strategy }),
+      { status: 202, headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+    );
+  }
+
+  // ── Demo Day ──────────────────────────────────────────────────────────────
+  // Simulate a realistic trading day: mixed strategies, varied quantities,
+  // prices anchored to live market data, staggered in natural wave patterns.
+  // Available to all authenticated users (not admin-only).
+
+  if (path === "/demo-day" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    if (!producer) {
+      return new Response(JSON.stringify({ error: "Bus unavailable" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+
+    let body: { scenario?: string };
+    try {
+      body = await req.json() as typeof body;
+    } catch {
+      body = {};
+    }
+
+    const scenario = body.scenario ?? "standard";
+
+    // Fetch live prices from market-sim so limit prices are anchored to market
+    const livePrices: Record<string, number> = {};
+    try {
+      const priceRes = await fetch(`${MARKET_SIM_URL}/assets`);
+      if (priceRes.ok) {
+        const assets = await priceRes.json() as { symbol: string; price: number }[];
+        for (const a of assets) livePrices[a.symbol] = a.price;
+      }
+    } catch { /* fall back to reasonable defaults */ }
+
+    // Fallback prices if market-sim is unavailable
+    const defaultPrices: Record<string, number> = {
+      AAPL: 189, MSFT: 421, GOOGL: 175, AMZN: 185, TSLA: 172,
+      NVDA: 870, META: 510, JPM: 195, GS: 460, V: 275,
+    };
+    const priceFor = (symbol: string) => livePrices[symbol] ?? defaultPrices[symbol] ?? 100;
+
+    const ALL_ASSETS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "JPM", "GS", "V"];
+    const LARGE_CAP = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META"];
+    const FIN_ASSETS = ["JPM", "GS", "V"];
+
+    const limitMix = [
+      { strategy: "LIMIT", algoParams: { strategy: "LIMIT" }, weight: 4 },
+      { strategy: "TWAP",  algoParams: { strategy: "TWAP", slices: 4, intervalSeconds: 15 }, weight: 2 },
+      { strategy: "POV",   algoParams: { strategy: "POV", povRate: 0.08 }, weight: 1 },
+      { strategy: "VWAP",  algoParams: { strategy: "VWAP", intervalSeconds: 20 }, weight: 1 },
+    ];
+    const algoHeavyMix = [
+      { strategy: "LIMIT",    algoParams: { strategy: "LIMIT" }, weight: 1 },
+      { strategy: "TWAP",     algoParams: { strategy: "TWAP", slices: 5, intervalSeconds: 10 }, weight: 3 },
+      { strategy: "POV",      algoParams: { strategy: "POV", povRate: 0.10 }, weight: 2 },
+      { strategy: "VWAP",     algoParams: { strategy: "VWAP", intervalSeconds: 15 }, weight: 2 },
+      { strategy: "ICEBERG",  algoParams: { strategy: "ICEBERG", visibleQty: 100 }, weight: 1 },
+      { strategy: "SNIPER",   algoParams: { strategy: "SNIPER" }, weight: 1 },
+    ];
+    const volatilityMix = [
+      { strategy: "SNIPER",       algoParams: { strategy: "SNIPER" }, weight: 3 },
+      { strategy: "ICEBERG",      algoParams: { strategy: "ICEBERG", visibleQty: 50 }, weight: 2 },
+      { strategy: "ARRIVAL_PRICE", algoParams: { strategy: "ARRIVAL_PRICE" }, weight: 2 },
+      { strategy: "LIMIT",        algoParams: { strategy: "LIMIT" }, weight: 1 },
+    ];
+
+    let waves: OrderSpec[];
+    let scenarioLabel: string;
+
+    switch (scenario) {
+      case "market-open": {
+        // Frenzied open: large burst of LIMIT + SNIPER, then calmer TWAP/VWAP
+        scenarioLabel = "Market Open";
+        waves = [
+          ...makeWave(ALL_ASSETS, 60, [
+            { strategy: "LIMIT",  algoParams: { strategy: "LIMIT" }, weight: 5 },
+            { strategy: "SNIPER", algoParams: { strategy: "SNIPER" }, weight: 3 },
+          ], 0.65, 0, 3_000),
+          ...makeWave(ALL_ASSETS, 40, limitMix, 0.55, 4_000, 10_000),
+          ...makeWave(LARGE_CAP,  20, algoHeavyMix, 0.5, 15_000, 8_000),
+        ];
+        break;
+      }
+      case "volatile": {
+        // Volatile session: many SNIPER/ICEBERG, high BUY pressure, large quantities
+        scenarioLabel = "Volatile Session";
+        waves = [
+          ...makeWave(ALL_ASSETS, 40, volatilityMix, 0.7, 0, 5_000),
+          ...makeWave(ALL_ASSETS, 40, volatilityMix, 0.65, 6_000, 5_000),
+          ...makeWave(ALL_ASSETS, 20, limitMix, 0.5, 12_000, 5_000),
+        ];
+        break;
+      }
+      case "institutional": {
+        // Institutional flow: large TWAP/VWAP/ICEBERG block trades
+        scenarioLabel = "Institutional Flow";
+        waves = [
+          ...makeWave(LARGE_CAP, 30, [
+            { strategy: "TWAP",    algoParams: { strategy: "TWAP", slices: 8, intervalSeconds: 20 }, weight: 3 },
+            { strategy: "VWAP",    algoParams: { strategy: "VWAP", intervalSeconds: 25 }, weight: 3 },
+            { strategy: "ICEBERG", algoParams: { strategy: "ICEBERG", visibleQty: 200 }, weight: 2 },
+          ], 0.5, 0, 12_000),
+          ...makeWave(FIN_ASSETS, 20, [
+            { strategy: "ARRIVAL_PRICE", algoParams: { strategy: "ARRIVAL_PRICE" }, weight: 2 },
+            { strategy: "TWAP",          algoParams: { strategy: "TWAP", slices: 6, intervalSeconds: 15 }, weight: 2 },
+            { strategy: "ICEBERG",       algoParams: { strategy: "ICEBERG", visibleQty: 150 }, weight: 1 },
+          ], 0.45, 5_000, 10_000),
+        ];
+        break;
+      }
+      default: {
+        // standard: balanced mix across all strategies, representative of a normal day
+        scenarioLabel = "Standard Trading Day";
+        waves = [
+          ...makeWave(ALL_ASSETS, 30, limitMix, 0.55, 0, 6_000),
+          ...makeWave(ALL_ASSETS, 25, algoHeavyMix, 0.5, 7_000, 8_000),
+          ...makeWave(LARGE_CAP,  20, limitMix, 0.6, 16_000, 6_000),
+          ...makeWave(ALL_ASSETS, 15, volatilityMix, 0.45, 23_000, 5_000),
+          ...makeWave(FIN_ASSETS,  10, algoHeavyMix, 0.5, 29_000, 4_000),
+        ];
+        break;
+      }
+    }
+
+    const jobId = `demo-${Date.now()}`;
+    const total = waves.length;
+
+    // Fire each order after its scheduled delay (non-blocking — returns 202 immediately)
+    for (const [i, spec] of waves.entries()) {
+      const price = priceFor(spec.asset) * spec.limitPriceFactor;
+      const order = {
+        clientOrderId: `${jobId}-${i}`,
+        asset: spec.asset,
+        side: spec.side,
+        quantity: spec.quantity,
+        limitPrice: Math.round(price * 100) / 100,
+        expiresAt: spec.expiresAt,
+        strategy: spec.strategy,
+        algoParams: spec.algoParams,
+        userId: auth.user.id,
+        userRole: auth.user.role,
+        _demoDayJobId: jobId,
+      };
+      if (spec.delayMs === 0) {
+        await producer.send("orders.new", order);
+      } else {
+        setTimeout(() => {
+          producer!.send("orders.new", order).catch(() => {});
+        }, spec.delayMs);
+      }
+    }
+
+    publishAccessEvent({
+      action: "http_request",
+      userId: auth.user.id,
+      userRole: auth.user.role,
+      path: "/demo-day",
+    });
+
+    return new Response(
+      JSON.stringify({ jobId, submitted: total, scenario: scenarioLabel }),
       { status: 202, headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
     );
   }

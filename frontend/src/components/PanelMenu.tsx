@@ -3,12 +3,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import {
-  panelClosed,
-  panelDialogClosed,
-  panelDialogOpened,
-  panelPopped,
-} from "../store/windowSlice.ts";
+import { panelDialogClosed, panelDialogOpened } from "../store/windowSlice.ts";
 import { useDashboard } from "./DashboardLayout.tsx";
 
 /**
@@ -21,11 +16,10 @@ import { useDashboard } from "./DashboardLayout.tsx";
 export function PanelMenu({ panelId }: { panelId?: string }) {
   const dispatch = useAppDispatch();
   const ctx = useChannelContext();
-  const { storageKey } = useDashboard();
+  const { storageKey, removeTabById } = useDashboard();
   const instanceId = panelId ?? ctx.instanceId;
   const panelType = ctx.panelType;
 
-  const isPopOut = useAppSelector((s) => s.windows.popOuts[instanceId]?.open ?? false);
   const isDialog = useAppSelector((s) => s.windows.dialogs[instanceId]?.open ?? false);
 
   const open = useSignal(false);
@@ -65,13 +59,8 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
     const url = `${window.location.origin}${window.location.pathname}?${params}`;
     const w = window.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
     if (w) {
-      dispatch(panelPopped({ panelId: instanceId }));
-      const interval = setInterval(() => {
-        if (w.closed) {
-          clearInterval(interval);
-          dispatch(panelClosed({ panelId: instanceId }));
-        }
-      }, 500);
+      // Remove the tab from the host layout immediately so the space is reclaimed.
+      removeTabById(instanceId);
     }
   }
 
@@ -84,7 +73,7 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
     dispatch(panelDialogClosed({ panelId: instanceId }));
   }
 
-  const isActive = isPopOut || isDialog;
+  const isActive = isDialog;
 
   // Calculate menu position from button
   const menuStyle = (): React.CSSProperties => {
@@ -127,14 +116,9 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
             <button
               role="menuitem"
               type="button"
-              disabled={isPopOut}
               onClick={openNewWindow}
-              title={
-                isPopOut
-                  ? "Already open in a separate window"
-                  : "Open this panel in a new browser window"
-              }
-              className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              title="Open this panel in a new browser window"
+              className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 flex items-center gap-2"
             >
               <span aria-hidden="true">↗</span>
               New window

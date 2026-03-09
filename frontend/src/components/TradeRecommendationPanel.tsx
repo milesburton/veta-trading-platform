@@ -1,11 +1,7 @@
 import { useState } from "react";
 import { useGetRecommendationsMutation } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
-import type {
-  Recommendation,
-  RecommendationResponse,
-  SignalStrength,
-} from "../types/analytics.ts";
+import type { Recommendation, RecommendationResponse, SignalStrength } from "../types/analytics.ts";
 
 const SIGNAL_STYLES: Record<SignalStrength, { badge: string; dot: string }> = {
   STRONG_BUY: {
@@ -142,9 +138,10 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
           </div>
           {rec.scoringMode === "signal-driven" && rec.signalScore !== undefined && (
             <div className="text-[9px] text-gray-500 mb-2">
-              Signal: {rec.signalScore >= 0 ? "+" : ""}{rec.signalScore.toFixed(3)} ·{" "}
-              <span className="capitalize">{rec.signalDirection}</span> ·{" "}
-              conf {((rec.signalConfidence ?? 0) * 100).toFixed(0)}%
+              Signal: {rec.signalScore >= 0 ? "+" : ""}
+              {rec.signalScore.toFixed(3)} ·{" "}
+              <span className="capitalize">{rec.signalDirection}</span> · conf{" "}
+              {((rec.signalConfidence ?? 0) * 100).toFixed(0)}%
             </div>
           )}
           <div className="flex flex-wrap gap-1">
@@ -275,8 +272,7 @@ export function TradeRecommendationPanel() {
                       : "bg-red-900/40 text-red-400"
                   }`}
                 >
-                  {REASON_LABELS[f.name] ?? f.name}:{" "}
-                  {f.contribution > 0 ? "+" : ""}
+                  {REASON_LABELS[f.name] ?? f.name}: {f.contribution > 0 ? "+" : ""}
                   {f.contribution.toFixed(3)}
                 </span>
               ))}

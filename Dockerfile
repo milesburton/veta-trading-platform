@@ -72,7 +72,7 @@ RUN deno cache \
     backend/src/algo/iceberg-strategy.ts \
     backend/src/algo/sniper-strategy.ts \
     backend/src/algo/arrival-price-strategy.ts \
-    backend/src/observability/observability-server.ts \
+    observability/kafka-relay.ts \
     backend/src/user-service/user-service.ts \
     backend/src/journal/journal-server.ts \
     backend/src/fix/fix-exchange.ts \

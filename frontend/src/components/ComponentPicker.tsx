@@ -39,9 +39,11 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "llm-subsystem": "LLM Advisory Subsystem operator controls — arm/disarm the advisory engine",
   "greeks-surface": "Delta, gamma, theta, and vega across the strike surface for any expiry",
   "vol-profile": "EWMA volatility trend with rolling baseline — auto-refreshes every 60s",
-  "estate-overview": "Unified estate command centre — service health, throughput, event timeline, and alert feed",
+  "estate-overview":
+    "Unified estate command centre — service health, throughput, event timeline, and alert feed",
   "yield-curve": "Nelson-Siegel spot yield curve with forward rates and bond pricing",
   "price-fan": "GBM Monte Carlo forward price projection fan chart",
+  "demo-day": "One-click trading day simulator — inject realistic mixed-strategy orders",
 };
 
 export function ComponentPicker() {

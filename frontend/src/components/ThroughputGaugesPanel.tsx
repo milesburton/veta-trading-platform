@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { alertAdded } from "../store/alertsSlice.ts";
+import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 
 interface SparkPoint {
   t: number;
@@ -20,11 +20,11 @@ interface Metrics {
 const WINDOW_MS = 60_000;
 
 // Thresholds
-const FILL_RATE_WARN = 50;   // below → WARNING
-const FILL_RATE_CRIT = 30;   // below → red card
-const FILL_RATE_OK   = 60;   // above → recovery
-const ORDER_FLOOD    = 200;  // above → WARNING
-const ORDER_OK       = 150;  // below → recovery
+const FILL_RATE_WARN = 50; // below → WARNING
+const FILL_RATE_CRIT = 30; // below → red card
+const FILL_RATE_OK = 60; // above → recovery
+const ORDER_FLOOD = 200; // above → WARNING
+const ORDER_OK = 150; // below → recovery
 
 interface SlimChild {
   status: string;
@@ -136,7 +136,7 @@ export function ThroughputGaugesPanel() {
             source: "order",
             message: `Fill rate degraded: ${m.fillRate}%`,
             ts: Date.now(),
-          }),
+          })
         );
       } else if (!isFillLow && wasFillLow && m.fillRate >= FILL_RATE_OK) {
         threshRef.current.fillRateLow = false;
@@ -146,7 +146,7 @@ export function ThroughputGaugesPanel() {
             source: "order",
             message: `Fill rate recovered: ${m.fillRate}%`,
             ts: Date.now(),
-          }),
+          })
         );
       }
 
@@ -161,7 +161,7 @@ export function ThroughputGaugesPanel() {
             source: "order",
             message: `Order flood detected: ${m.ordersPerMin}/min`,
             ts: Date.now(),
-          }),
+          })
         );
       } else if (!isFlood && wasFlood && m.ordersPerMin < ORDER_OK) {
         threshRef.current.orderFlood = false;
@@ -171,7 +171,7 @@ export function ThroughputGaugesPanel() {
             source: "order",
             message: "Order rate normalised",
             ts: Date.now(),
-          }),
+          })
         );
       }
     }
@@ -195,7 +195,8 @@ export function ThroughputGaugesPanel() {
         ? "text-yellow-300"
         : "text-yellow-400";
 
-  const ordersBorder = metrics.ordersPerMin > ORDER_FLOOD ? "border-red-700/60" : "border-blue-700/60";
+  const ordersBorder =
+    metrics.ordersPerMin > ORDER_FLOOD ? "border-red-700/60" : "border-blue-700/60";
   const ordersText = metrics.ordersPerMin > ORDER_FLOOD ? "text-red-400" : "text-blue-400";
 
   const cards: MetricCardProps[] = [

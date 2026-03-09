@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v12`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v13`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -1187,7 +1187,11 @@ export function makeFiTradingModel(): IJsonModel {
                   id: "child-orders",
                   name: PANEL_TITLES["child-orders"],
                   component: "child-orders",
-                  config: { panelType: "child-orders", incoming: 2, outgoing: 3 } satisfies TabChannelConfig,
+                  config: {
+                    panelType: "child-orders",
+                    incoming: 2,
+                    outgoing: 3,
+                  } satisfies TabChannelConfig,
                 },
                 {
                   type: "tab",
@@ -1281,7 +1285,10 @@ export function makeFiResearchModel(): IJsonModel {
                   id: "instrument-analysis",
                   name: PANEL_TITLES["instrument-analysis"],
                   component: "instrument-analysis",
-                  config: { panelType: "instrument-analysis", incoming: 1 } satisfies TabChannelConfig,
+                  config: {
+                    panelType: "instrument-analysis",
+                    incoming: 1,
+                  } satisfies TabChannelConfig,
                 },
               ],
             },
@@ -1334,7 +1341,10 @@ export function makeFiResearchModel(): IJsonModel {
                   id: "signal-explainability",
                   name: PANEL_TITLES["signal-explainability"],
                   component: "signal-explainability",
-                  config: { panelType: "signal-explainability", incoming: 1 } satisfies TabChannelConfig,
+                  config: {
+                    panelType: "signal-explainability",
+                    incoming: 1,
+                  } satisfies TabChannelConfig,
                 },
               ],
             },
@@ -1355,6 +1365,292 @@ export function makeFiResearchModel(): IJsonModel {
                   name: PANEL_TITLES["trade-recommendation"],
                   component: "trade-recommendation",
                   config: { panelType: "trade-recommendation" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+// ── Observability layout ──────────────────────────────────────────────────────
+// Estate overview + service health + throughput on top, Grafana embed + algo
+// leaderboard + decision log below. No order entry.
+
+export function makeObservabilityModel(): IJsonModel {
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        // Left column — live pipeline summary
+        {
+          type: "row",
+          weight: 35,
+          children: [
+            {
+              type: "tabset",
+              weight: 55,
+              children: [
+                {
+                  type: "tab",
+                  id: "estate-overview",
+                  name: PANEL_TITLES["estate-overview"],
+                  component: "estate-overview",
+                  config: { panelType: "estate-overview" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 45,
+              children: [
+                {
+                  type: "tab",
+                  id: "service-health",
+                  name: PANEL_TITLES["service-health"],
+                  component: "service-health",
+                  config: { panelType: "service-health" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "throughput-gauges",
+                  name: PANEL_TITLES["throughput-gauges"],
+                  component: "throughput-gauges",
+                  config: { panelType: "throughput-gauges" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "alerts",
+                  name: PANEL_TITLES.alerts,
+                  component: "alerts",
+                  config: { panelType: "alerts" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        // Centre column — Grafana embed + observability panel
+        {
+          type: "row",
+          weight: 40,
+          children: [
+            {
+              type: "tabset",
+              weight: 60,
+              children: [
+                {
+                  type: "tab",
+                  id: "observability",
+                  name: PANEL_TITLES.observability,
+                  component: "observability",
+                  config: { panelType: "observability" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 40,
+              children: [
+                {
+                  type: "tab",
+                  id: "algo-leaderboard",
+                  name: PANEL_TITLES["algo-leaderboard"],
+                  component: "algo-leaderboard",
+                  config: { panelType: "algo-leaderboard" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "order-progress",
+                  name: PANEL_TITLES["order-progress"],
+                  component: "order-progress",
+                  config: { panelType: "order-progress" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        // Right column — order audit trail
+        {
+          type: "row",
+          weight: 25,
+          children: [
+            {
+              type: "tabset",
+              weight: 55,
+              children: [
+                {
+                  type: "tab",
+                  id: "decision-log",
+                  name: PANEL_TITLES["decision-log"],
+                  component: "decision-log",
+                  config: { panelType: "decision-log", incoming: 1 } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 45,
+              children: [
+                {
+                  type: "tab",
+                  id: "order-blotter",
+                  name: PANEL_TITLES["order-blotter"],
+                  component: "order-blotter",
+                  config: { panelType: "order-blotter", outgoing: 1 } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "executions",
+                  name: PANEL_TITLES.executions,
+                  component: "executions",
+                  config: { panelType: "executions" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+// ── Pipeline Monitor layout ───────────────────────────────────────────────────
+// Real-time algo pipeline view — algo monitor, throughput, child order slices,
+// fill progress, execution feed, and blotter. No market ladder or order entry.
+
+export function makeAlgoPipelineModel(): IJsonModel {
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        // Left — strategy status + controls
+        {
+          type: "row",
+          weight: 30,
+          children: [
+            {
+              type: "tabset",
+              weight: 55,
+              children: [
+                {
+                  type: "tab",
+                  id: "algo-monitor",
+                  name: PANEL_TITLES["algo-monitor"],
+                  component: "algo-monitor",
+                  config: {
+                    panelType: "algo-monitor",
+                    incoming: 1,
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 45,
+              children: [
+                {
+                  type: "tab",
+                  id: "throughput-gauges",
+                  name: PANEL_TITLES["throughput-gauges"],
+                  component: "throughput-gauges",
+                  config: { panelType: "throughput-gauges" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "algo-leaderboard",
+                  name: PANEL_TITLES["algo-leaderboard"],
+                  component: "algo-leaderboard",
+                  config: { panelType: "algo-leaderboard" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        // Centre — execution detail
+        {
+          type: "row",
+          weight: 40,
+          children: [
+            {
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "order-blotter",
+                  name: PANEL_TITLES["order-blotter"],
+                  component: "order-blotter",
+                  config: {
+                    panelType: "order-blotter",
+                    outgoing: 1,
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "child-orders",
+                  name: PANEL_TITLES["child-orders"],
+                  component: "child-orders",
+                  config: {
+                    panelType: "child-orders",
+                    incoming: 1,
+                    outgoing: 2,
+                  } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "order-progress",
+                  name: PANEL_TITLES["order-progress"],
+                  component: "order-progress",
+                  config: {
+                    panelType: "order-progress",
+                    incoming: 1,
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        // Right — fills + algo audit trail
+        {
+          type: "row",
+          weight: 30,
+          children: [
+            {
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "executions",
+                  name: PANEL_TITLES.executions,
+                  component: "executions",
+                  config: { panelType: "executions" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "decision-log",
+                  name: PANEL_TITLES["decision-log"],
+                  component: "decision-log",
+                  config: {
+                    panelType: "decision-log",
+                    incoming: 2,
+                  } satisfies TabChannelConfig,
                 },
               ],
             },
@@ -1459,6 +1755,22 @@ export const LAYOUT_TEMPLATES: {
     label: "FI Research",
     description: "Rates intelligence — signal radar, instrument analysis, yield curve, and news",
     model: makeFiResearchModel(),
+  },
+  {
+    id: "observability",
+    locked: true,
+    label: "Observability",
+    description:
+      "System health command centre — service status, throughput gauges, Grafana embed, algo leaderboard, and order audit trail",
+    model: makeObservabilityModel(),
+  },
+  {
+    id: "algo-pipeline",
+    locked: true,
+    label: "Pipeline Monitor",
+    description:
+      "Real-time algo pipeline — strategy monitor, throughput, child order slices, fill progress, executions, and decision log",
+    model: makeAlgoPipelineModel(),
   },
   {
     id: "clear",

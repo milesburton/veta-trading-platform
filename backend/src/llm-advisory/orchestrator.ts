@@ -40,7 +40,10 @@ const prevRecs = new Map<string, TradeRecommendation>();
 let lastErrorMs: number | null = null;
 let lastActivityMs: number | null = null;
 
-const producer = await createProducer("llm-advisory-orchestrator").catch((err) => {
+const producer = await Promise.race([
+  createProducer("llm-advisory-orchestrator"),
+  new Promise<null>((resolve) => setTimeout(() => resolve(null), 8_000)),
+]).catch((err) => {
   console.warn("[llm-advisory] Redpanda unavailable for publishing:", err.message);
   return null;
 });

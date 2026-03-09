@@ -19,8 +19,7 @@ function normCdf(x: number): number {
   const sign = x < 0 ? -1 : 1;
   const t = 1.0 / (1.0 + 0.3275911 * Math.abs(x));
   const y =
-    ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) *
-    t;
+    ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t;
   return 0.5 * (1.0 + sign * (1.0 - y * Math.exp(-x * x)));
 }
 
@@ -34,7 +33,7 @@ function bsGreeks(
   K: number,
   T: number,
   r: number,
-  sigma: number,
+  sigma: number
 ): { delta: number; gamma: number; theta: number; vega: number } {
   if (T <= 0 || sigma <= 0 || S <= 0 || K <= 0) {
     return { delta: 0, gamma: 0, theta: 0, vega: 0 };
@@ -138,14 +137,14 @@ export function OptionPricingPanel() {
     const T = result.expirySecs / (365 * 86400);
     const r = 0.05;
     return Array.from({ length: 25 }, (_, i) => {
-      const S = result.spotPrice * (0.70 + i * (0.60 / 24));
+      const S = result.spotPrice * (0.7 + i * (0.6 / 24));
       const { delta, gamma, theta, vega } = bsGreeks(
         result.optionType,
         S,
         result.strike,
         T,
         r,
-        result.impliedVol,
+        result.impliedVol
       );
       return {
         spot: S.toFixed(1),
@@ -227,9 +226,7 @@ export function OptionPricingPanel() {
             >
               Strike ($){" "}
               {currentPrice ? (
-                <span className="text-gray-600 normal-case">
-                  (spot {currentPrice.toFixed(2)})
-                </span>
+                <span className="text-gray-600 normal-case">(spot {currentPrice.toFixed(2)})</span>
               ) : null}
             </label>
             <input
@@ -320,15 +317,11 @@ export function OptionPricingPanel() {
               </div>
               <div>
                 <span className="text-gray-500">Strike</span>
-                <div className="text-gray-300 tabular-nums font-mono">
-                  ${fmt(result.strike, 2)}
-                </div>
+                <div className="text-gray-300 tabular-nums font-mono">${fmt(result.strike, 2)}</div>
               </div>
               <div>
                 <span className="text-gray-500">Impl. Vol</span>
-                <div className="text-gray-300 tabular-nums font-mono">
-                  {pct(result.impliedVol)}
-                </div>
+                <div className="text-gray-300 tabular-nums font-mono">{pct(result.impliedVol)}</div>
               </div>
             </div>
           </div>
@@ -372,13 +365,12 @@ export function OptionPricingPanel() {
                 Greeks vs Spot (±30%)
               </div>
               <ResponsiveContainer width="100%" height={170}>
-                <LineChart data={sensitivityData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <LineChart
+                  data={sensitivityData}
+                  margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                  <XAxis
-                    dataKey="spot"
-                    tick={{ fontSize: 8, fill: "#6b7280" }}
-                    interval={4}
-                  />
+                  <XAxis dataKey="spot" tick={{ fontSize: 8, fill: "#6b7280" }} interval={4} />
                   <YAxis tick={{ fontSize: 8, fill: "#6b7280" }} />
                   <Tooltip
                     contentStyle={CHART_TOOLTIP_STYLE}
@@ -432,4 +424,3 @@ export function OptionPricingPanel() {
     </div>
   );
 }
-

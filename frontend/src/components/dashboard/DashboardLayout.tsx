@@ -9,12 +9,7 @@ import { useSignal } from "@preact/signals-react";
 import { ChannelContext } from "../../contexts/ChannelContext.tsx";
 import type { ChannelNumber } from "../../store/channelsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../../store/hooks.ts";
-import {
-  panelClosed,
-  panelDialogClosed,
-  panelDialogOpened,
-  panelPopped,
-} from "../../store/windowSlice.ts";
+import { panelDialogClosed, panelDialogOpened } from "../../store/windowSlice.ts";
 import { AdminPanel } from "../AdminPanel.tsx";
 import { AlertsPanel } from "../AlertsPanel.tsx";
 import { AlgoLeaderboardPanel } from "../AlgoLeaderboardPanel.tsx";
@@ -25,14 +20,12 @@ import { ChildOrdersPanel } from "../ChildOrdersPanel.tsx";
 import type { ContextMenuEntry } from "../ContextMenu.tsx";
 import { ContextMenu } from "../ContextMenu.tsx";
 import { DecisionLog } from "../DecisionLog.tsx";
+import { DemoDayPanel } from "../DemoDayPanel.tsx";
+import { EstateOverviewPanel } from "../EstateOverviewPanel.tsx";
 import { ExecutionsPanel } from "../ExecutionsPanel.tsx";
+import { GreeksSurfacePanel } from "../GreeksSurfacePanel.tsx";
 import { InstrumentAnalysisPanel } from "../InstrumentAnalysisPanel.tsx";
 import { LlmSubsystemPanel } from "../LlmSubsystemPanel.tsx";
-import { EstateOverviewPanel } from "../EstateOverviewPanel.tsx";
-import { GreeksSurfacePanel } from "../GreeksSurfacePanel.tsx";
-import { PriceFanPanel } from "../PriceFanPanel.tsx";
-import { VolatilityProfilePanel } from "../VolatilityProfilePanel.tsx";
-import { YieldCurvePanel } from "../YieldCurvePanel.tsx";
 import { LoadTestPanel } from "../LoadTestPanel.tsx";
 import { MarketDataSourcesPanel } from "../MarketDataSourcesPanel.tsx";
 import { MarketDepth } from "../MarketDepth.tsx";
@@ -46,6 +39,7 @@ import { OptionPricingPanel } from "../OptionPricingPanel.tsx";
 import { OrderBlotter } from "../OrderBlotter.tsx";
 import { OrderProgressPanel } from "../OrderProgressPanel.tsx";
 import { OrderTicket } from "../OrderTicket.tsx";
+import { PriceFanPanel } from "../PriceFanPanel.tsx";
 import { clearDraggedPanelId, draggedPanelId } from "../panelDragState.ts";
 import { ResearchRadarPanel } from "../ResearchRadarPanel.tsx";
 import { ScenarioMatrixPanel } from "../ScenarioMatrixPanel.tsx";
@@ -53,6 +47,8 @@ import { ServiceHealthPanel } from "../ServiceHealthPanel.tsx";
 import { SignalExplainabilityPanel } from "../SignalExplainabilityPanel.tsx";
 import { ThroughputGaugesPanel } from "../ThroughputGaugesPanel.tsx";
 import { TradeRecommendationPanel } from "../TradeRecommendationPanel.tsx";
+import { VolatilityProfilePanel } from "../VolatilityProfilePanel.tsx";
+import { YieldCurvePanel } from "../YieldCurvePanel.tsx";
 import { DashboardContext, useDashboard } from "./DashboardContext.tsx";
 import { LAYOUT_TEMPLATES } from "./layoutModels.ts";
 import type { LayoutItem } from "./layoutUtils.ts";
@@ -556,7 +552,11 @@ export function DashboardLayout() {
         layout: "dashboard-layout",
       });
       const url = `${window.location.origin}${window.location.pathname}?${params}`;
-      window.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
+      const w = window.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
+      if (w) {
+        // Remove the tab so the host layout closes the gap left by the drag.
+        model.doAction(Actions.deleteTab(instanceId));
+      }
     }
 
     document.addEventListener("mousedown", onMouseDown);
@@ -687,6 +687,8 @@ export function DashboardLayout() {
           return wrap(<YieldCurvePanel />);
         case "price-fan":
           return wrap(<PriceFanPanel />);
+        case "demo-day":
+          return wrap(<DemoDayPanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }
@@ -830,13 +832,10 @@ export function DashboardLayout() {
         const url = `${window.location.origin}${window.location.pathname}?${params}`;
         const w = window.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
         if (w) {
-          dispatch(panelPopped({ panelId: instanceId }));
-          const interval = setInterval(() => {
-            if (w.closed) {
-              clearInterval(interval);
-              dispatch(panelClosed({ panelId: instanceId }));
-            }
-          }, 500);
+          // Remove the tab from the host layout so it leaves no gap.
+          // The panel lives entirely in the new window; the user re-adds it
+          // from the component picker when they want it back on this screen.
+          model.doAction(Actions.deleteTab(instanceId));
         }
       }
 

@@ -155,4 +155,51 @@ describe("LoginPage", () => {
     expect(screen.getByTestId("platform-status")).toBeInTheDocument();
     expect(screen.getByTestId("platform-status-label")).toHaveTextContent("Checking platform…");
   });
+
+  test("shows all service category headings in the platform status grid", () => {
+    renderLogin();
+    const status = screen.getByTestId("platform-status");
+    expect(status).toHaveTextContent("Order Flow");
+    expect(status).toHaveTextContent("Algo Engines");
+    expect(status).toHaveTextContent("Data Services");
+    expect(status).toHaveTextContent("Infrastructure");
+    expect(status).toHaveTextContent("Observability");
+  });
+
+  test("shows core service names with port numbers in platform status", () => {
+    renderLogin();
+    const status = screen.getByTestId("platform-status");
+    expect(status).toHaveTextContent("Market Sim");
+    expect(status).toHaveTextContent(":5000");
+    expect(status).toHaveTextContent("Gateway");
+    expect(status).toHaveTextContent(":5011");
+  });
+
+  test("shows algo engine services in platform status", () => {
+    renderLogin();
+    const status = screen.getByTestId("platform-status");
+    expect(status).toHaveTextContent("TWAP Algo");
+    expect(status).toHaveTextContent("POV Algo");
+    expect(status).toHaveTextContent("VWAP Algo");
+  });
+
+  test("shows observability services including Kafka Relay and Grafana", () => {
+    renderLogin();
+    const status = screen.getByTestId("platform-status");
+    expect(status).toHaveTextContent("Kafka Relay");
+    expect(status).toHaveTextContent("Grafana");
+  });
+
+  test("renders Grafana Dashboards button in platform status header", () => {
+    renderLogin();
+    const status = screen.getByTestId("platform-status");
+    expect(status).toHaveTextContent("Grafana Dashboards");
+  });
+
+  test("services show their description text", () => {
+    renderLogin();
+    const status = screen.getByTestId("platform-status");
+    expect(status).toHaveTextContent("GBM price simulation");
+    expect(status).toHaveTextContent("Black-Scholes");
+  });
 });

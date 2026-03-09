@@ -7,15 +7,15 @@
 
 import { useState } from "react";
 import {
+  CartesianGrid,
   ComposedChart,
+  Legend,
   Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ReferenceLine,
-  Legend,
-  ResponsiveContainer,
 } from "recharts";
 import { useGetGreeksSurfaceQuery } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
@@ -53,7 +53,7 @@ export function GreeksSurfacePanel() {
 
   const { data, isFetching, error } = useGetGreeksSurfaceQuery(
     { symbol, expirySecs },
-    { skip: !symbol },
+    { skip: !symbol }
   );
 
   const chartData = data?.strikes.map((pt) => ({
@@ -104,23 +104,17 @@ export function GreeksSurfacePanel() {
           ))}
         </div>
 
-        {isFetching && (
-          <span className="text-[10px] text-gray-600 ml-auto">Loading…</span>
-        )}
+        {isFetching && <span className="text-[10px] text-gray-600 ml-auto">Loading…</span>}
       </div>
 
       {/* Summary bar */}
       {data && (
         <div className="flex items-center gap-3 px-4 py-1.5 border-b border-gray-800 shrink-0">
-          <span className="text-[10px] text-gray-500">
-            Spot ${data.spotPrice.toFixed(2)}
-          </span>
+          <span className="text-[10px] text-gray-500">Spot ${data.spotPrice.toFixed(2)}</span>
           <span className="text-[10px] text-gray-500">
             IV {(data.impliedVol * 100).toFixed(1)}%
           </span>
-          <span className="text-[10px] text-gray-600">
-            {data.strikes.length} strikes
-          </span>
+          <span className="text-[10px] text-gray-600">{data.strikes.length} strikes</span>
         </div>
       )}
 
@@ -157,15 +151,41 @@ export function GreeksSurfacePanel() {
                 width={36}
               />
               <Tooltip content={<SurfaceTooltip />} />
-              <Legend
-                iconSize={8}
-                wrapperStyle={{ fontSize: "9px", paddingTop: "4px" }}
+              <Legend iconSize={8} wrapperStyle={{ fontSize: "9px", paddingTop: "4px" }} />
+              <ReferenceLine
+                x={1.0}
+                stroke="#374151"
+                strokeDasharray="4 2"
+                label={{ value: "ATM", fill: "#6b7280", fontSize: 8 }}
               />
-              <ReferenceLine x={1.0} stroke="#374151" strokeDasharray="4 2" label={{ value: "ATM", fill: "#6b7280", fontSize: 8 }} />
-              <Line dataKey="delta" stroke="#34d399" dot={false} strokeWidth={1.5} isAnimationActive={false} />
-              <Line dataKey="gamma×100" stroke="#60a5fa" dot={false} strokeWidth={1.5} isAnimationActive={false} />
-              <Line dataKey="theta" stroke="#f87171" dot={false} strokeWidth={1.5} isAnimationActive={false} />
-              <Line dataKey="vega" stroke="#a78bfa" dot={false} strokeWidth={1.5} isAnimationActive={false} />
+              <Line
+                dataKey="delta"
+                stroke="#34d399"
+                dot={false}
+                strokeWidth={1.5}
+                isAnimationActive={false}
+              />
+              <Line
+                dataKey="gamma×100"
+                stroke="#60a5fa"
+                dot={false}
+                strokeWidth={1.5}
+                isAnimationActive={false}
+              />
+              <Line
+                dataKey="theta"
+                stroke="#f87171"
+                dot={false}
+                strokeWidth={1.5}
+                isAnimationActive={false}
+              />
+              <Line
+                dataKey="vega"
+                stroke="#a78bfa"
+                dot={false}
+                strokeWidth={1.5}
+                isAnimationActive={false}
+              />
             </ComposedChart>
           </ResponsiveContainer>
         </div>

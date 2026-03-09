@@ -1,21 +1,40 @@
 import { useEffect, useRef, useState } from "react";
 
-interface ReadyResponse {
-  ready: boolean;
-  services: {
-    marketSim: boolean;
-    journal: boolean;
-    userService: boolean;
-    bus: boolean;
-  };
+interface ReadyServices {
+  marketSim: boolean;
+  journal: boolean;
+  userService: boolean;
+  bus: boolean;
+  ems?: boolean;
+  oms?: boolean;
+  gateway?: boolean;
 }
 
-const SERVICE_LABELS: Record<keyof ReadyResponse["services"], string> = {
-  marketSim: "Market Simulator",
-  journal: "Trade Journal",
-  userService: "User Service",
+interface ReadyResponse {
+  ready: boolean;
+  services: ReadyServices;
+}
+
+const SERVICE_LABELS: Record<keyof ReadyServices, string> = {
+  gateway: "Gateway (BFF)",
   bus: "Message Bus",
+  marketSim: "Market Simulator",
+  userService: "User Service",
+  journal: "Trade Journal",
+  ems: "Execution Engine",
+  oms: "Order Manager",
 };
+
+// Display order — gateway + bus first (infrastructure), then trading services
+const SERVICE_ORDER: (keyof ReadyServices)[] = [
+  "gateway",
+  "bus",
+  "marketSim",
+  "userService",
+  "journal",
+  "ems",
+  "oms",
+];
 
 const POLL_INTERVAL_MS = 2_000;
 
@@ -27,7 +46,7 @@ interface Props {
 
 export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
   const [elapsed, setElapsed] = useState(0);
-  const [services, setServices] = useState<ReadyResponse["services"] | null>(null);
+  const [services, setServices] = useState<ReadyServices | null>(null);
   const startRef = useRef(Date.now());
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
@@ -48,14 +67,18 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
           const res = await fetch("/api/gateway/ready");
           if (!cancelled && res.ok) {
             const data: ReadyResponse = await res.json();
-            setServices(data.services);
+            // Merge gateway itself as "up" since we got a response
+            setServices({ gateway: true, ...data.services });
             if (data.ready) {
               onReadyRef.current();
               return;
             }
           }
         } catch {
-          // gateway not yet reachable — keep polling
+          // gateway not yet reachable — keep polling; mark gateway as down
+          if (!cancelled) {
+            setServices((prev) => ({ ...prev, gateway: false }) as ReadyServices);
+          }
         }
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
       }
@@ -70,6 +93,11 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
   const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+  // Count how many known services are up
+  const knownKeys = SERVICE_ORDER.filter((k) => services !== null && k in services);
+  const upCount = knownKeys.filter((k) => services?.[k]).length;
+  const totalCount = knownKeys.length;
 
   return (
     <div
@@ -99,9 +127,10 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 min-w-52">
-        {(Object.keys(SERVICE_LABELS) as Array<keyof ReadyResponse["services"]>).map((key) => {
-          const up = services?.[key] ?? false;
+      {/* Service checklist */}
+      <div className="flex flex-col gap-1.5 min-w-64">
+        {SERVICE_ORDER.map((key) => {
+          const up = services?.[key];
           return (
             <div
               key={key}
@@ -114,10 +143,18 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
                 }`}
               />
               <span className={up ? "text-gray-300" : "text-gray-500"}>{SERVICE_LABELS[key]}</span>
+              {up && <span className="ml-auto text-[10px] text-gray-600">ready</span>}
             </div>
           );
         })}
       </div>
+
+      {/* Progress summary */}
+      {services !== null && totalCount > 0 && (
+        <div className="text-xs text-gray-600">
+          {upCount} / {totalCount} services ready
+        </div>
+      )}
 
       <div data-testid="startup-elapsed" className="text-xs text-gray-600 tabular-nums">
         {timeStr} elapsed

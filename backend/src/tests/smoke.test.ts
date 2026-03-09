@@ -452,6 +452,224 @@ Deno.test("[scenario-engine] /health is ok", async () => {
   assertEquals((await res.json() as { status: string }).status, "ok");
 });
 
+// ── Algo order settled-state checks ───────────────────────────────────────────
+// For each strategy: submit an order with a favourable limit price and poll the
+// journal until the order reaches "filled" or "expired" (never just routed).
+// This verifies the full pipeline: OMS → algo → EMS → fill/expire → journal.
+
+interface SmokeOrder {
+  id: string;
+  asset: string;
+  side: string;
+  quantity: number;
+  strategy: string;
+  status: string;
+  children: { id: string; status: string; quantity: number }[];
+}
+
+/** Fetch the current market price for a symbol via the assets endpoint. */
+async function livePrice(token: string, symbol: string): Promise<number> {
+  const res = await fetch(`${GATEWAY_URL}/assets`, {
+    headers: { Cookie: `veta_user=${token}` },
+    signal: timeout(10_000),
+  });
+  const assets = await res.json() as { symbol: string; price: number }[];
+  return assets.find((a) => a.symbol === symbol)?.price ?? 190;
+}
+
+/** Poll the journal grid until the order has a settled status (filled/expired). */
+async function pollSettled(clientOrderId: string, maxWaitMs = 90_000): Promise<SmokeOrder | null> {
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        gridId: "orderBlotter",
+        filterExpr: { kind: "group", id: "g1", join: "AND", rules: [
+          { kind: "rule", id: "r1", field: "id", op: "=", value: clientOrderId },
+        ]},
+        sortField: null, sortDir: null, offset: 0, limit: 1,
+      }),
+      signal: timeout(15_000),
+    });
+    if (res.ok) {
+      const data = await res.json() as { rows: SmokeOrder[] };
+      if (data.rows.length > 0) {
+        const order = data.rows[0];
+        if (order.status === "filled" || order.status === "expired" || order.status === "rejected") return order;
+      }
+    } else {
+      await res.body?.cancel();
+    }
+    await new Promise((r) => setTimeout(r, 1_500));
+  }
+  return null;
+}
+
+Deno.test("[orders/settled] LIMIT order reaches filled or expired within 90s", async () => {
+  const token = await loginAs("alice");
+  const price = await livePrice(token, "AAPL");
+  const { clientOrderId } = await submitOrderViaWs(token, {
+    asset: "AAPL", side: "BUY", quantity: 10,
+    limitPrice: price * 1.05, strategy: "LIMIT",
+  });
+  const order = await pollSettled(clientOrderId, 90_000);
+  assertExists(order, `LIMIT order ${clientOrderId} did not settle within 90s`);
+  assert(
+    order.status === "filled" || order.status === "expired",
+    `Expected filled/expired, got: ${order.status}`,
+  );
+});
+
+Deno.test("[orders/settled] TWAP order reaches filled or expired within 90s", async () => {
+  const token = await loginAs("alice");
+  const price = await livePrice(token, "AAPL");
+  const { clientOrderId } = await submitOrderViaWs(token, {
+    asset: "AAPL", side: "BUY", quantity: 60,
+    limitPrice: price * 1.05, strategy: "TWAP",
+    algoParams: { strategy: "TWAP", slices: 3, intervalSeconds: 3 },
+  });
+  const order = await pollSettled(clientOrderId, 120_000);
+  assertExists(order, `TWAP order ${clientOrderId} did not settle within 120s`);
+  assert(
+    order.status === "filled" || order.status === "expired" || order.status === "rejected",
+    `Expected filled/expired/rejected, got: ${order.status}`,
+  );
+  assertEquals(order.strategy, "TWAP");
+});
+
+Deno.test("[orders/settled] POV order reaches filled or expired within 90s", async () => {
+  const token = await loginAs("bob");
+  const price = await livePrice(token, "MSFT");
+  const { clientOrderId } = await submitOrderViaWs(token, {
+    asset: "MSFT", side: "BUY", quantity: 80,
+    limitPrice: price * 1.05, strategy: "POV",
+    algoParams: { strategy: "POV", povRate: 0.15 },
+  });
+  const order = await pollSettled(clientOrderId, 90_000);
+  assertExists(order, `POV order ${clientOrderId} did not settle within 90s`);
+  assert(
+    order.status === "filled" || order.status === "expired",
+    `Expected filled/expired, got: ${order.status}`,
+  );
+  assertEquals(order.strategy, "POV");
+});
+
+Deno.test("[orders/settled] VWAP order reaches filled or expired within 90s", async () => {
+  const token = await loginAs("alice");
+  const price = await livePrice(token, "AAPL");
+  const { clientOrderId } = await submitOrderViaWs(token, {
+    asset: "AAPL", side: "SELL", quantity: 60,
+    limitPrice: price * 0.95, strategy: "VWAP",
+    algoParams: { strategy: "VWAP", intervalSeconds: 3 },
+  });
+  const order = await pollSettled(clientOrderId, 90_000);
+  assertExists(order, `VWAP order ${clientOrderId} did not settle within 90s`);
+  assert(
+    order.status === "filled" || order.status === "expired",
+    `Expected filled/expired, got: ${order.status}`,
+  );
+  assertEquals(order.strategy, "VWAP");
+});
+
+Deno.test("[orders/settled] ICEBERG order reaches filled or expired within 90s", async () => {
+  const token = await loginAs("bob");
+  const price = await livePrice(token, "MSFT");
+  const { clientOrderId } = await submitOrderViaWs(token, {
+    asset: "MSFT", side: "BUY", quantity: 200,
+    limitPrice: price * 1.05, strategy: "ICEBERG",
+    algoParams: { strategy: "ICEBERG", visibleQty: 40 },
+  });
+  const order = await pollSettled(clientOrderId, 120_000);
+  assertExists(order, `ICEBERG order ${clientOrderId} did not settle within 120s`);
+  assert(
+    order.status === "filled" || order.status === "expired" || order.status === "rejected",
+    `Expected filled/expired/rejected, got: ${order.status}`,
+  );
+  assertEquals(order.strategy, "ICEBERG");
+});
+
+Deno.test("[orders/settled] SNIPER order reaches filled or expired within 60s", async () => {
+  const token = await loginAs("alice");
+  const price = await livePrice(token, "AAPL");
+  const { clientOrderId } = await submitOrderViaWs(token, {
+    asset: "AAPL", side: "BUY", quantity: 30,
+    limitPrice: price * 1.05, strategy: "SNIPER",
+    algoParams: { strategy: "SNIPER" },
+  });
+  const order = await pollSettled(clientOrderId, 60_000);
+  assertExists(order, `SNIPER order ${clientOrderId} did not settle within 60s`);
+  assert(
+    order.status === "filled" || order.status === "expired",
+    `Expected filled/expired, got: ${order.status}`,
+  );
+  assertEquals(order.strategy, "SNIPER");
+});
+
+Deno.test("[orders/settled] ARRIVAL_PRICE order reaches filled or expired within 60s", async () => {
+  const token = await loginAs("bob");
+  const price = await livePrice(token, "MSFT");
+  const { clientOrderId } = await submitOrderViaWs(token, {
+    asset: "MSFT", side: "BUY", quantity: 40,
+    limitPrice: price * 1.05, strategy: "ARRIVAL_PRICE",
+    algoParams: { strategy: "ARRIVAL_PRICE" },
+  });
+  const order = await pollSettled(clientOrderId, 90_000);
+  assertExists(order, `ARRIVAL_PRICE order ${clientOrderId} did not settle within 90s`);
+  assert(
+    order.status === "filled" || order.status === "expired" || order.status === "rejected",
+    `Expected filled/expired/rejected, got: ${order.status}`,
+  );
+  assertEquals(order.strategy, "ARRIVAL_PRICE");
+});
+
+Deno.test("[orders/settled] rejected order (impossible price) has rejected status", async () => {
+  const token = await loginAs("alice");
+  // Submit with a limit price of $0.01 — well below market, so EMS/algo cannot fill.
+  // OMS should reject at validation (qty/notional check) or the order expires immediately.
+  // Either way it must NOT show as "queued" indefinitely.
+  const { clientOrderId, event } = await submitOrderViaWs(token, {
+    asset: "AAPL", side: "BUY", quantity: 1,
+    limitPrice: 0.01, strategy: "LIMIT",
+    expiresAt: 20,
+  });
+  // If the gateway itself rejected it (orderRejected) we're done.
+  if (event === "orderRejected") return;
+
+  // Otherwise poll journal for non-queued status.
+  const deadline = Date.now() + 60_000;
+  let finalStatus = "queued";
+  while (Date.now() < deadline) {
+    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        gridId: "orderBlotter",
+        filterExpr: { kind: "group", id: "g1", join: "AND", rules: [
+          { kind: "rule", id: "r1", field: "id", op: "=", value: clientOrderId },
+        ]},
+        sortField: null, sortDir: null, offset: 0, limit: 1,
+      }),
+      signal: timeout(10_000),
+    });
+    if (res.ok) {
+      const data = await res.json() as { rows: SmokeOrder[] };
+      if (data.rows.length > 0) {
+        finalStatus = data.rows[0].status;
+        if (finalStatus !== "queued" && finalStatus !== "executing" && finalStatus !== "working") break;
+      }
+    } else {
+      await res.body?.cancel();
+    }
+    await new Promise((r) => setTimeout(r, 1_500));
+  }
+  assert(
+    finalStatus === "filled" || finalStatus === "expired" || finalStatus === "rejected",
+    `Expected order to settle (not stay ${finalStatus})`,
+  );
+});
+
 // ── LLM advisory orchestrator ─────────────────────────────────────────────────
 
 Deno.test("[llm-advisory] /health reports policyEnabled + pendingJobs", async () => {

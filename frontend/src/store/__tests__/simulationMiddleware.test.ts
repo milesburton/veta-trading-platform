@@ -297,7 +297,6 @@ describe("simulationMiddleware – VWAP", () => {
   });
 });
 
-
 // ─── Gateway-connected guard ──────────────────────────────────────────────────
 
 describe("simulationMiddleware – gateway-connected guard", () => {

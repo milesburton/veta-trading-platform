@@ -8,77 +8,176 @@ const _traefik =
 
 export const DEPLOYMENT = (import.meta.env.VITE_DEPLOYMENT as string | undefined) ?? "local";
 
+export type ServiceCategory = "core" | "algo" | "data" | "infra" | "observability";
+
 const SERVICES: {
   name: string;
   url: string;
   link?: string;
   optional?: boolean;
+  category: ServiceCategory;
+  description: string;
+  port: number;
   alertOnDeployments?: string[];
 }[] = [
+  // ── Core order management ──────────────────────────────────────────────────
   {
     name: "Market Sim",
     url: `${import.meta.env.VITE_MARKET_HTTP_URL ?? `${_origin}/api/market-sim`}/health`,
     link: `${import.meta.env.VITE_MARKET_HTTP_URL ?? `${_origin}/api/market-sim`}/health`,
+    category: "core",
+    description: "GBM price simulation & synthetic market feed",
+    port: 5000,
   },
   {
     name: "EMS",
     url: `${import.meta.env.VITE_EMS_URL ?? `${_origin}/api/ems`}/health`,
     link: `${import.meta.env.VITE_EMS_URL ?? `${_origin}/api/ems`}/health`,
+    category: "core",
+    description: "Execution management — child order routing & fills",
+    port: 5001,
   },
   {
     name: "OMS",
     url: `${import.meta.env.VITE_OMS_URL ?? `${_origin}/api/oms`}/health`,
     link: `${import.meta.env.VITE_OMS_URL ?? `${_origin}/api/oms`}/health`,
+    category: "core",
+    description: "Order management — validation, RBAC limits & routing",
+    port: 5002,
   },
+  {
+    name: "Gateway",
+    url: `${_origin}/api/gateway/health`,
+    link: `${_origin}/api/gateway/health`,
+    category: "core",
+    description: "BFF — single WebSocket + HTTP entry point for the UI",
+    port: 5011,
+  },
+  // ── Algo engines ──────────────────────────────────────────────────────────
   {
     name: "Limit Algo",
     url: `${import.meta.env.VITE_LIMIT_URL ?? `${_origin}/api/limit-algo`}/health`,
     link: `${import.meta.env.VITE_LIMIT_URL ?? `${_origin}/api/limit-algo`}/health`,
+    category: "algo",
+    description: "Passive limit order strategy with configurable aggression",
+    port: 5003,
   },
   {
     name: "TWAP Algo",
     url: `${import.meta.env.VITE_TWAP_URL ?? `${_origin}/api/twap-algo`}/health`,
     link: `${import.meta.env.VITE_TWAP_URL ?? `${_origin}/api/twap-algo`}/health`,
+    category: "algo",
+    description: "Time-Weighted Average Price — uniform slice scheduling",
+    port: 5004,
   },
   {
     name: "POV Algo",
     url: `${import.meta.env.VITE_POV_URL ?? `${_origin}/api/pov-algo`}/health`,
     link: `${import.meta.env.VITE_POV_URL ?? `${_origin}/api/pov-algo`}/health`,
+    category: "algo",
+    description: "Percentage of Volume — tracks market participation rate",
+    port: 5005,
   },
   {
     name: "VWAP Algo",
     url: `${import.meta.env.VITE_VWAP_URL ?? `${_origin}/api/vwap-algo`}/health`,
     link: `${import.meta.env.VITE_VWAP_URL ?? `${_origin}/api/vwap-algo`}/health`,
+    category: "algo",
+    description: "Volume-Weighted Average Price — historically-shaped slices",
+    port: 5006,
+  },
+  // ── Data services ─────────────────────────────────────────────────────────
+  {
+    name: "Journal",
+    url: `${_origin}/api/journal/health`,
+    link: `${_origin}/api/journal/health`,
+    category: "data",
+    description: "Trade lifecycle store — orders, fills & OHLCV grid",
+    port: 5009,
+    optional: true,
   },
   {
-    name: "Grafana",
-    url: `${import.meta.env.VITE_GRAFANA_URL ?? "http://localhost:3000"}/api/health`,
-    link: import.meta.env.VITE_GRAFANA_URL ?? "http://localhost:3000",
+    name: "Candle Store",
+    url: `${_origin}/api/candle-store/health`,
+    link: `${_origin}/api/candle-store/health`,
+    category: "data",
+    description: "SQLite OHLCV candle aggregator (WAL mode)",
+    port: 5010,
+    optional: true,
+  },
+  {
+    name: "Analytics",
+    url: `${_origin}/api/analytics/health`,
+    link: `${_origin}/api/analytics/health`,
+    category: "data",
+    description: "Black-Scholes pricing, Monte Carlo scenarios & recommendations",
+    port: 5014,
+    optional: true,
+  },
+  {
+    name: "Market Data",
+    url: `${_origin}/api/market-data/health`,
+    link: `${_origin}/api/market-data/health`,
+    category: "data",
+    description: "Alpha Vantage polling & per-symbol source overrides",
+    port: 5015,
+    optional: true,
+  },
+  // ── Infra ─────────────────────────────────────────────────────────────────
+  {
+    name: "User Service",
+    url: `${_origin}/api/user-service/health`,
+    link: `${_origin}/api/user-service/health`,
+    category: "infra",
+    description: "Session management, RBAC token validation & trading limits",
+    port: 5008,
     optional: true,
   },
   {
     name: "FIX Gateway",
     url: `${import.meta.env.VITE_FIX_GW_URL ?? `${_origin}/api/fix-gateway`}/health`,
     link: `${import.meta.env.VITE_FIX_GW_URL ?? `${_origin}/api/fix-gateway`}/health`,
+    category: "infra",
+    description: "WebSocket bridge to FIX exchange (port 9880)",
+    port: 9881,
+    optional: true,
+  },
+  {
+    name: "FIX Archive",
+    url: `${_origin}/api/fix-archive/health`,
+    link: `${_origin}/api/fix-archive/health`,
+    category: "infra",
+    description: "SQLite persistence for FIX execution reports",
+    port: 5012,
     optional: true,
   },
   {
     name: "Traefik",
     url: `${_traefik}/api/overview`,
     link: _traefik,
+    category: "infra",
+    description: "Reverse proxy & load balancer dashboard",
+    port: 8888,
     optional: true,
     alertOnDeployments: ["fly"],
   },
+  // ── Observability ─────────────────────────────────────────────────────────
   {
-    name: "User Service",
-    url: `${_origin}/api/user-service/health`,
-    link: `${_origin}/api/user-service/health`,
+    name: "Kafka Relay",
+    url: `${_origin}/api/kafka-relay/health`,
+    link: `${_origin}/api/kafka-relay/health`,
+    category: "observability",
+    description: "Kafka → stdout relay feeding Grafana Alloy / Loki",
+    port: 5007,
     optional: true,
   },
   {
-    name: "Journal",
-    url: `${_origin}/api/journal/health`,
-    link: `${_origin}/api/journal/health`,
+    name: "Grafana",
+    url: `${import.meta.env.VITE_GRAFANA_URL ?? "http://localhost:3000"}/api/health`,
+    link: import.meta.env.VITE_GRAFANA_URL ?? "http://localhost:3000",
+    category: "observability",
+    description: "LGTM dashboards — metrics, logs & traces",
+    port: 3000,
     optional: true,
   },
 ];

@@ -4,10 +4,12 @@ import {
   LAYOUT_TEMPLATES,
   makeAdminModel,
   makeAlgoModel,
+  makeAlgoPipelineModel,
   makeAnalysisModel,
   makeClearModel,
   makeDefaultModel,
   makeExecutionModel,
+  makeObservabilityModel,
   makeOverviewModel,
   STORAGE_KEY,
   STORAGE_KEY_PREFIX,
@@ -144,9 +146,72 @@ describe("makeAdminModel", () => {
   });
 });
 
+describe("makeObservabilityModel", () => {
+  it("includes service-health, throughput-gauges, estate-overview, and observability", () => {
+    const ids = new Set<string>();
+    Model.fromJson(makeObservabilityModel()).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("service-health")).toBe(true);
+    expect(ids.has("throughput-gauges")).toBe(true);
+    expect(ids.has("estate-overview")).toBe(true);
+    expect(ids.has("observability")).toBe(true);
+  });
+
+  it("does not include order-ticket or market-ladder (ops view, no trading)", () => {
+    const ids = new Set<string>();
+    Model.fromJson(makeObservabilityModel()).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("order-ticket")).toBe(false);
+    expect(ids.has("market-ladder")).toBe(false);
+  });
+
+  it("includes algo-leaderboard and decision-log for audit trail", () => {
+    const ids = new Set<string>();
+    Model.fromJson(makeObservabilityModel()).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("algo-leaderboard")).toBe(true);
+    expect(ids.has("decision-log")).toBe(true);
+  });
+});
+
+describe("makeAlgoPipelineModel", () => {
+  it("includes algo-monitor, throughput-gauges, order-blotter, child-orders, executions, and decision-log", () => {
+    const ids = new Set<string>();
+    Model.fromJson(makeAlgoPipelineModel()).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("algo-monitor")).toBe(true);
+    expect(ids.has("throughput-gauges")).toBe(true);
+    expect(ids.has("order-blotter")).toBe(true);
+    expect(ids.has("child-orders")).toBe(true);
+    expect(ids.has("executions")).toBe(true);
+    expect(ids.has("decision-log")).toBe(true);
+  });
+
+  it("does not include order-ticket or market-ladder (pipeline monitor, no trading)", () => {
+    const ids = new Set<string>();
+    Model.fromJson(makeAlgoPipelineModel()).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("order-ticket")).toBe(false);
+    expect(ids.has("market-ladder")).toBe(false);
+  });
+
+  it("includes algo-leaderboard for strategy performance overview", () => {
+    const ids = new Set<string>();
+    Model.fromJson(makeAlgoPipelineModel()).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("algo-leaderboard")).toBe(true);
+  });
+});
+
 describe("LAYOUT_TEMPLATES", () => {
-  it("has 13 templates", () => {
-    expect(LAYOUT_TEMPLATES).toHaveLength(13);
+  it("has 15 templates", () => {
+    expect(LAYOUT_TEMPLATES).toHaveLength(15);
   });
 
   it("every template has id, label, description, and a valid model", () => {
@@ -171,5 +236,28 @@ describe("LAYOUT_TEMPLATES", () => {
       if (node.getType() === "tab") ids.add(node.getId());
     });
     expect(ids.has("market-heatmap")).toBe(true);
+  });
+
+  it("includes an 'observability' template with service-health and throughput-gauges", () => {
+    const tpl = LAYOUT_TEMPLATES.find((t) => t.id === "observability");
+    if (!tpl) throw new Error("observability template not found");
+    const ids = new Set<string>();
+    Model.fromJson(tpl.model).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("service-health")).toBe(true);
+    expect(ids.has("throughput-gauges")).toBe(true);
+  });
+
+  it("includes an 'algo-pipeline' template with algo-monitor, child-orders, and executions", () => {
+    const tpl = LAYOUT_TEMPLATES.find((t) => t.id === "algo-pipeline");
+    if (!tpl) throw new Error("algo-pipeline template not found");
+    const ids = new Set<string>();
+    Model.fromJson(tpl.model).visitNodes((node) => {
+      if (node.getType() === "tab") ids.add(node.getId());
+    });
+    expect(ids.has("algo-monitor")).toBe(true);
+    expect(ids.has("child-orders")).toBe(true);
+    expect(ids.has("executions")).toBe(true);
   });
 });

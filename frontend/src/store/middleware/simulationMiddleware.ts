@@ -270,4 +270,3 @@ startAppListening({
     if (order.strategy === "VWAP") startVwapSimulation(order, api);
   },
 });
-

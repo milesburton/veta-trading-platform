@@ -2,114 +2,277 @@ import { useState } from "react";
 import type { AuthUser } from "../store/authSlice.ts";
 import { setUser } from "../store/authSlice.ts";
 import { useAppDispatch } from "../store/hooks.ts";
-import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
+import { SERVICES, type ServiceCategory, useGetServiceHealthQuery } from "../store/servicesApi.ts";
 
-const CORE_SERVICES = SERVICES.filter((s) => !s.optional);
+// ── Service catalogue ─────────────────────────────────────────────────────────
 
-// Each service needs its own hook call — fixed list means fixed hook order is safe
-function useCoreServiceStates() {
-  const r0 = useGetServiceHealthQuery(CORE_SERVICES[0], {
-    pollingInterval: 5_000,
-    skip: !CORE_SERVICES[0],
+const CATEGORY_LABELS: Record<ServiceCategory, string> = {
+  core: "Order Flow",
+  algo: "Algo Engines",
+  data: "Data Services",
+  infra: "Infrastructure",
+  observability: "Observability",
+};
+
+const CATEGORY_ORDER: ServiceCategory[] = ["core", "algo", "data", "infra", "observability"];
+
+// Fixed hook-per-service pattern — one hook per index, count is stable.
+// Adding services requires adding a corresponding hook call here.
+function useAllServiceStates() {
+  const r0 = useGetServiceHealthQuery(SERVICES[0], { pollingInterval: 8_000, skip: !SERVICES[0] });
+  const r1 = useGetServiceHealthQuery(SERVICES[1], { pollingInterval: 8_000, skip: !SERVICES[1] });
+  const r2 = useGetServiceHealthQuery(SERVICES[2], { pollingInterval: 8_000, skip: !SERVICES[2] });
+  const r3 = useGetServiceHealthQuery(SERVICES[3], { pollingInterval: 8_000, skip: !SERVICES[3] });
+  const r4 = useGetServiceHealthQuery(SERVICES[4], { pollingInterval: 8_000, skip: !SERVICES[4] });
+  const r5 = useGetServiceHealthQuery(SERVICES[5], { pollingInterval: 8_000, skip: !SERVICES[5] });
+  const r6 = useGetServiceHealthQuery(SERVICES[6], { pollingInterval: 8_000, skip: !SERVICES[6] });
+  const r7 = useGetServiceHealthQuery(SERVICES[7], { pollingInterval: 8_000, skip: !SERVICES[7] });
+  const r8 = useGetServiceHealthQuery(SERVICES[8], { pollingInterval: 8_000, skip: !SERVICES[8] });
+  const r9 = useGetServiceHealthQuery(SERVICES[9], { pollingInterval: 8_000, skip: !SERVICES[9] });
+  const r10 = useGetServiceHealthQuery(SERVICES[10], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[10],
   });
-  const r1 = useGetServiceHealthQuery(CORE_SERVICES[1], {
-    pollingInterval: 5_000,
-    skip: !CORE_SERVICES[1],
+  const r11 = useGetServiceHealthQuery(SERVICES[11], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[11],
   });
-  const r2 = useGetServiceHealthQuery(CORE_SERVICES[2], {
-    pollingInterval: 5_000,
-    skip: !CORE_SERVICES[2],
+  const r12 = useGetServiceHealthQuery(SERVICES[12], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[12],
   });
-  const r3 = useGetServiceHealthQuery(CORE_SERVICES[3], {
-    pollingInterval: 5_000,
-    skip: !CORE_SERVICES[3],
+  const r13 = useGetServiceHealthQuery(SERVICES[13], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[13],
   });
-  const r4 = useGetServiceHealthQuery(CORE_SERVICES[4], {
-    pollingInterval: 5_000,
-    skip: !CORE_SERVICES[4],
+  const r14 = useGetServiceHealthQuery(SERVICES[14], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[14],
   });
-  const r5 = useGetServiceHealthQuery(CORE_SERVICES[5], {
-    pollingInterval: 5_000,
-    skip: !CORE_SERVICES[5],
+  const r15 = useGetServiceHealthQuery(SERVICES[15], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[15],
   });
-  const r6 = useGetServiceHealthQuery(CORE_SERVICES[6], {
-    pollingInterval: 5_000,
-    skip: !CORE_SERVICES[6],
+  const r16 = useGetServiceHealthQuery(SERVICES[16], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[16],
   });
-  const r7 = useGetServiceHealthQuery(CORE_SERVICES[7], {
-    pollingInterval: 5_000,
-    skip: !CORE_SERVICES[7],
+  const r17 = useGetServiceHealthQuery(SERVICES[17], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[17],
   });
-  return [r0, r1, r2, r3, r4, r5, r6, r7].slice(0, CORE_SERVICES.length);
+  const r18 = useGetServiceHealthQuery(SERVICES[18], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[18],
+  });
+  const r19 = useGetServiceHealthQuery(SERVICES[19], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[19],
+  });
+  return [
+    r0,
+    r1,
+    r2,
+    r3,
+    r4,
+    r5,
+    r6,
+    r7,
+    r8,
+    r9,
+    r10,
+    r11,
+    r12,
+    r13,
+    r14,
+    r15,
+    r16,
+    r17,
+    r18,
+    r19,
+  ].slice(0, SERVICES.length);
+}
+
+interface ServicePillProps {
+  name: string;
+  description: string;
+  port: number;
+  link?: string;
+  optional?: boolean;
+  state: "ok" | "error" | "checking";
+  version?: string;
+}
+
+function ServicePill({
+  name,
+  description,
+  port,
+  link,
+  optional,
+  state,
+  version,
+}: ServicePillProps) {
+  const dot =
+    state === "ok"
+      ? "bg-emerald-400"
+      : state === "error"
+        ? "bg-red-500"
+        : "bg-gray-600 animate-pulse";
+  const nameColor =
+    state === "ok" ? "text-gray-200" : state === "error" ? "text-red-400" : "text-gray-500";
+
+  const inner = (
+    <div
+      className={`flex items-start gap-2.5 px-3 py-2 rounded-lg border transition-colors ${
+        state === "ok"
+          ? "border-gray-700/60 bg-gray-900/60 hover:border-gray-600"
+          : state === "error"
+            ? "border-red-900/60 bg-red-950/20"
+            : "border-gray-800 bg-gray-900/30"
+      }`}
+    >
+      <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-1.5">
+          <span className={`text-xs font-medium ${nameColor}`}>{name}</span>
+          {optional && <span className="text-[10px] text-gray-600">(opt)</span>}
+          <span className="text-[10px] text-gray-700 tabular-nums ml-auto">:{port}</span>
+        </div>
+        <div className="text-[10px] text-gray-600 leading-tight mt-0.5">{description}</div>
+        {version && version !== "—" && (
+          <div className="text-[10px] text-gray-700 font-mono mt-0.5">{version}</div>
+        )}
+      </div>
+    </div>
+  );
+
+  if (link && state === "ok") {
+    return (
+      <a href={link} target="_blank" rel="noreferrer" className="block">
+        {inner}
+      </a>
+    );
+  }
+  return inner;
 }
 
 function PlatformStatus() {
-  const results = useCoreServiceStates();
+  const results = useAllServiceStates();
 
-  const anyLoading = results.some((r) => r.isLoading);
-  const anyError = results.some((r) => !r.isLoading && r.data?.state !== "ok");
-  const allOk = !anyLoading && !anyError;
+  const byCategory = CATEGORY_ORDER.map((cat) => ({
+    cat,
+    services: SERVICES.map((svc, i) => ({ svc, result: results[i] })).filter(
+      ({ svc }) => svc.category === cat
+    ),
+  }));
+
+  const coreResults = results.filter((_, i) => SERVICES[i].category === "core");
+  const anyLoading = coreResults.some((r) => r.isLoading);
+  const coreAllOk = !anyLoading && coreResults.every((r) => r.data?.state === "ok");
+  const anyError = !anyLoading && coreResults.some((r) => r.data?.state === "error" || r.isError);
 
   const summaryLabel = anyLoading
     ? "Checking platform…"
-    : allOk
+    : coreAllOk
       ? "Platform ready"
-      : "Platform degraded";
+      : anyError
+        ? "Platform degraded"
+        : "Checking platform…";
+
   const summaryColor = anyLoading
     ? "text-gray-500"
-    : allOk
+    : coreAllOk
       ? "text-emerald-400"
       : "text-yellow-400";
+
   const dotColor = anyLoading
     ? "bg-gray-500 animate-pulse"
-    : allOk
+    : coreAllOk
       ? "bg-emerald-400"
-      : "bg-yellow-400";
+      : anyError
+        ? "bg-yellow-400"
+        : "bg-gray-500 animate-pulse";
+
+  // Find Grafana link for the button
+  const grafanaSvc = SERVICES.find((s) => s.name === "Grafana");
+  const grafanaIdx = grafanaSvc ? SERVICES.indexOf(grafanaSvc) : -1;
+  const grafanaResult = grafanaIdx >= 0 ? results[grafanaIdx] : undefined;
+  const grafanaUp = grafanaResult?.data?.state === "ok";
 
   return (
-    <div data-testid="platform-status" className="mt-10 border-t border-gray-700 pt-5 space-y-3">
-      <div className="flex items-center justify-center gap-2">
-        <span
-          data-testid="platform-status-dot"
-          className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`}
-        />
-        <span data-testid="platform-status-label" className={`text-xs font-medium ${summaryColor}`}>
-          {summaryLabel}
-        </span>
+    <div data-testid="platform-status" className="mt-8 border-t border-gray-800 pt-6 space-y-5">
+      {/* Summary row */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span
+            data-testid="platform-status-dot"
+            className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`}
+          />
+          <span
+            data-testid="platform-status-label"
+            className={`text-xs font-medium ${summaryColor}`}
+          >
+            {summaryLabel}
+          </span>
+        </div>
+        {grafanaSvc && (
+          <a
+            href={grafanaSvc.link}
+            target="_blank"
+            rel="noreferrer"
+            className={`flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded border transition-colors ${
+              grafanaUp
+                ? "border-orange-700/60 text-orange-400 hover:border-orange-500 hover:text-orange-300"
+                : "border-gray-800 text-gray-600 cursor-not-allowed pointer-events-none"
+            }`}
+          >
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" aria-label="Grafana">
+              <title>Grafana</title>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
+            </svg>
+            Grafana Dashboards
+          </a>
+        )}
       </div>
-      <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">
-        {CORE_SERVICES.map((s, i) => {
-          const r = results[i];
-          const state = r?.isLoading ? "checking" : (r?.data?.state ?? "error");
-          return (
-            <span key={s.name} title={s.name} className="flex items-center gap-1 text-[11px]">
-              <span
-                className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                  state === "ok"
-                    ? "bg-emerald-400"
-                    : state === "checking"
-                      ? "bg-gray-500 animate-pulse"
-                      : "bg-red-500"
-                }`}
-              />
-              <span
-                className={
-                  state === "ok"
-                    ? "text-gray-500"
-                    : state === "checking"
-                      ? "text-gray-600"
-                      : "text-red-400"
-                }
-              >
-                {s.name}
-              </span>
-            </span>
-          );
-        })}
+
+      {/* Categorised service grid */}
+      <div className="space-y-4">
+        {byCategory.map(({ cat, services }) => (
+          <div key={cat}>
+            <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-2">
+              {CATEGORY_LABELS[cat]}
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {services.map(({ svc, result }) => {
+                const state = result.isLoading
+                  ? "checking"
+                  : result.isError || result.data?.state === "error"
+                    ? "error"
+                    : result.data?.state === "ok"
+                      ? "ok"
+                      : "checking";
+                return (
+                  <ServicePill
+                    key={svc.name}
+                    name={svc.name}
+                    description={svc.description}
+                    port={svc.port}
+                    link={svc.link}
+                    optional={svc.optional}
+                    state={state}
+                    version={result.data?.version}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
+
+// ── Seed users ────────────────────────────────────────────────────────────────
 
 interface SeedUser {
   id: string;
@@ -125,6 +288,8 @@ const SEED_USERS: SeedUser[] = [
   { id: "dave", name: "Dave Okafor", role: "trader", avatar_emoji: "DO" },
   { id: "admin", name: "Mission Control", role: "admin", avatar_emoji: "MC" },
 ];
+
+// ── LoginPage ─────────────────────────────────────────────────────────────────
 
 interface LoginPageProps {
   buildDate?: string;
@@ -162,6 +327,7 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
       className="flex flex-col items-center justify-center min-h-screen bg-gray-950 py-8"
     >
       <div className="w-full max-w-2xl px-6 flex-1 flex flex-col justify-center">
+        {/* Header */}
         <div className="text-center mb-10">
           <div
             data-testid="brand-title"
@@ -178,6 +344,7 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
           <p className="text-gray-500 text-sm">Choose a trader to begin your session</p>
         </div>
 
+        {/* User cards */}
         <div className="grid grid-cols-5 gap-3">
           {SEED_USERS.map((user) => {
             const isLoading = loading === user.id;
@@ -238,6 +405,7 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
           </div>
         )}
 
+        {/* Full platform status with all services */}
         <PlatformStatus />
       </div>
 

@@ -14,6 +14,8 @@ export interface DashboardContextValue {
   activePanelIds: Set<PanelId>;
   addPanel: (id: PanelId) => void;
   removePanel: (id: PanelId) => void;
+  /** Remove a tab by its FlexLayout instance ID (not panel type). Used for popout. */
+  removeTabById: (instanceId: string) => void;
   resetLayout: (templateModel?: IJsonModel) => void;
   storageKey: string;
   model: Model;
@@ -26,6 +28,7 @@ export const DashboardContext = createContext<DashboardContextValue>({
   activePanelIds: new Set(),
   addPanel: () => {},
   removePanel: () => {},
+  removeTabById: () => {},
   resetLayout: () => {},
   storageKey: "",
   model: Model.fromJson(makeDefaultModel()),
@@ -132,6 +135,19 @@ export function DashboardProvider({
     [onModelChange]
   );
 
+  const removeTabById = useCallback(
+    (instanceId: string) => {
+      setModelState((prev) => {
+        const next = Model.fromJson(prev.toJson() as IJsonModel);
+        next.doAction(Actions.deleteTab(instanceId));
+        setLayoutState(modelToLayoutItems(next));
+        onModelChange?.(next);
+        return next;
+      });
+    },
+    [onModelChange]
+  );
+
   const resetLayout = useCallback(
     (templateModel?: IJsonModel) => {
       const next = Model.fromJson(templateModel ?? makeDefaultModel());
@@ -150,6 +166,7 @@ export function DashboardProvider({
         activePanelIds,
         addPanel,
         removePanel,
+        removeTabById,
         resetLayout,
         storageKey: "",
         model,

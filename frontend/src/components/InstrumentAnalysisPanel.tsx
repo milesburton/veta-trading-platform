@@ -7,16 +7,16 @@
  *  - Backtest replay as dual-axis Recharts ComposedChart
  */
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
+  CartesianGrid,
   ComposedChart,
   Line,
-  YAxis,
-  XAxis,
   ReferenceLine,
-  Tooltip,
   ResponsiveContainer,
-  CartesianGrid,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useAppSelector } from "../store/hooks.ts";
@@ -198,9 +198,7 @@ export function InstrumentAnalysisPanel() {
           FEATURE_KEYS.map((k) => {
             const raw = (fv as unknown as Record<string, number>)[k] ?? 0;
             const { mean, std } = featureStats[k] ?? { mean: 0, std: 1 };
-            return (
-              <FeatureBar key={k} name={k} value={raw} zScore={(raw - mean) / std} />
-            );
+            return <FeatureBar key={k} name={k} value={raw} zScore={(raw - mean) / std} />;
           })
         ) : (
           <div className="text-xs text-gray-600">No feature data yet…</div>

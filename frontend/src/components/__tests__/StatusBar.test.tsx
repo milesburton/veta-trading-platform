@@ -65,6 +65,7 @@ function renderBar(connected: boolean) {
           activePanelIds: new Set(),
           addPanel: vi.fn(),
           removePanel: vi.fn(),
+          removeTabById: vi.fn(),
           resetLayout: vi.fn(),
           storageKey: "dashboard-layout",
           model: Model.fromJson({ global: {}, layout: { type: "row", children: [] } }),

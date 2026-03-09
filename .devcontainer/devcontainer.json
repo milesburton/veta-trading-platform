@@ -4,9 +4,12 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-  "forwardPorts": [8080, 5000, 5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 9879, 9881],
+  "forwardPorts": [8080, 3000, 9090, 3100, 5000, 5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5011, 5013, 5014, 5015, 5017, 5018, 5021, 5022, 5023, 5024, 9879, 9881],
   "portsAttributes": {
     "8080": { "label": "Frontend UI", "onAutoForward": "notify", "protocol": "http", "elevateIfNeeded": false },
+    "3000": { "label": "Grafana", "onAutoForward": "notify", "protocol": "http" },
+    "9090": { "label": "Prometheus", "onAutoForward": "ignore" },
+    "3100": { "label": "Loki", "onAutoForward": "ignore" },
     "5000": { "label": "Market Sim", "onAutoForward": "ignore" },
     "5001": { "label": "EMS", "onAutoForward": "ignore" },
     "5002": { "label": "OMS", "onAutoForward": "ignore" },
@@ -16,6 +19,17 @@
     "5006": { "label": "VWAP Algo", "onAutoForward": "ignore" },
     "5007": { "label": "Observability", "onAutoForward": "ignore" },
     "5008": { "label": "User Service", "onAutoForward": "ignore" },
+    "5009": { "label": "Journal", "onAutoForward": "ignore" },
+    "5011": { "label": "Gateway (BFF)", "onAutoForward": "ignore" },
+    "5013": { "label": "News Aggregator", "onAutoForward": "ignore" },
+    "5014": { "label": "Analytics", "onAutoForward": "ignore" },
+    "5015": { "label": "Market Data Service", "onAutoForward": "ignore" },
+    "5017": { "label": "Feature Engine", "onAutoForward": "ignore" },
+    "5018": { "label": "Signal Engine", "onAutoForward": "ignore" },
+    "5021": { "label": "Iceberg Algo", "onAutoForward": "ignore" },
+    "5022": { "label": "Sniper Algo", "onAutoForward": "ignore" },
+    "5023": { "label": "Arrival Price Algo", "onAutoForward": "ignore" },
+    "5024": { "label": "LLM Advisory", "onAutoForward": "ignore" },
     "9879": { "label": "FIX Exchange (health)", "onAutoForward": "ignore" },
     "9881": { "label": "FIX Gateway (WS)", "onAutoForward": "ignore" }
   },
@@ -57,7 +71,8 @@
     "source=${localEnv:HOME}/.ssh,target=/home/deno/.ssh,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.config/gh,target=/home/deno/.config/gh,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.gitconfig,target=/home/deno/.gitconfig,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.claude,target=/home/deno/.claude,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/.claude,target=/home/deno/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.fly,target=/home/deno/.fly,type=bind,consistency=cached"
   ],
   "postCreateCommand": "cd /workspaces/virtual-equities-trading-application/frontend && npm ci --ignore-scripts && cd /workspaces/virtual-equities-trading-application && ./frontend/node_modules/.bin/husky install .husky",
   "postStartCommand": "chmod 700 /home/deno/.ssh && chmod 600 /home/deno/.ssh/* || true && rm -f /var/lib/redpanda/data/pid.lock && cd /workspaces/virtual-equities-trading-application/frontend && deno install --allow-scripts && cd /workspaces/virtual-equities-trading-application && supervisord -c /home/deno/supervisord.conf"
