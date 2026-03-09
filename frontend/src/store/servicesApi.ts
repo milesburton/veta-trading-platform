@@ -86,6 +86,30 @@ const SERVICES: {
     description: "Volume-Weighted Average Price — historically-shaped slices",
     port: 5006,
   },
+  {
+    name: "Iceberg Algo",
+    url: `${import.meta.env.VITE_ICEBERG_URL ?? `${_origin}/api/iceberg-algo`}/health`,
+    link: `${import.meta.env.VITE_ICEBERG_URL ?? `${_origin}/api/iceberg-algo`}/health`,
+    category: "algo",
+    description: "Hidden quantity — exposes only visible slice to the market",
+    port: 5021,
+  },
+  {
+    name: "Sniper Algo",
+    url: `${import.meta.env.VITE_SNIPER_URL ?? `${_origin}/api/sniper-algo`}/health`,
+    link: `${import.meta.env.VITE_SNIPER_URL ?? `${_origin}/api/sniper-algo`}/health`,
+    category: "algo",
+    description: "Opportunistic aggressive fills at favourable price levels",
+    port: 5022,
+  },
+  {
+    name: "Arrival Price Algo",
+    url: `${import.meta.env.VITE_AP_URL ?? `${_origin}/api/arrival-price-algo`}/health`,
+    link: `${import.meta.env.VITE_AP_URL ?? `${_origin}/api/arrival-price-algo`}/health`,
+    category: "algo",
+    description: "Benchmarks execution against arrival price with slippage control",
+    port: 5023,
+  },
   // ── Data services ─────────────────────────────────────────────────────────
   {
     name: "Journal",

@@ -56,6 +56,18 @@ export default defineConfig({
         target: "http://localhost:5006",
         rewrite: (path) => path.replace(/^\/api\/vwap-algo/, ""),
       },
+      "/api/iceberg-algo": {
+        target: "http://localhost:5021",
+        rewrite: (path) => path.replace(/^\/api\/iceberg-algo/, ""),
+      },
+      "/api/sniper-algo": {
+        target: "http://localhost:5022",
+        rewrite: (path) => path.replace(/^\/api\/sniper-algo/, ""),
+      },
+      "/api/arrival-price-algo": {
+        target: "http://localhost:5023",
+        rewrite: (path) => path.replace(/^\/api\/arrival-price-algo/, ""),
+      },
       "/api/observability": {
         target: "http://localhost:5007",
         rewrite: (path) => path.replace(/^\/api\/observability/, ""),
