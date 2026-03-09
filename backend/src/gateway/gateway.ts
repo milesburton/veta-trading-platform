@@ -1053,11 +1053,14 @@ serve(async (req: Request): Promise<Response> => {
       { strategy: "VWAP",     algoParams: { strategy: "VWAP", intervalSeconds: 15 }, weight: 2 },
       { strategy: "ICEBERG",  algoParams: { strategy: "ICEBERG", visibleQty: 100 }, weight: 1 },
       { strategy: "SNIPER",   algoParams: { strategy: "SNIPER" }, weight: 1 },
+      { strategy: "IS",       algoParams: { strategy: "IS", urgency: 0.6 }, weight: 1 },
+      { strategy: "MOMENTUM", algoParams: { strategy: "MOMENTUM", entryThresholdBps: 8 }, weight: 1 },
     ];
     const volatilityMix = [
       { strategy: "SNIPER",       algoParams: { strategy: "SNIPER" }, weight: 3 },
       { strategy: "ICEBERG",      algoParams: { strategy: "ICEBERG", visibleQty: 50 }, weight: 2 },
       { strategy: "ARRIVAL_PRICE", algoParams: { strategy: "ARRIVAL_PRICE" }, weight: 2 },
+      { strategy: "MOMENTUM",     algoParams: { strategy: "MOMENTUM", entryThresholdBps: 5, urgency: 0.8 }, weight: 1 },
       { strategy: "LIMIT",        algoParams: { strategy: "LIMIT" }, weight: 1 },
     ];
 

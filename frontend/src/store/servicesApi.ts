@@ -110,6 +110,22 @@ const SERVICES: {
     description: "Benchmarks execution against arrival price with slippage control",
     port: 5023,
   },
+  {
+    name: "IS Algo",
+    url: `${import.meta.env.VITE_IS_URL ?? `${_origin}/api/is-algo`}/health`,
+    link: `${import.meta.env.VITE_IS_URL ?? `${_origin}/api/is-algo`}/health`,
+    category: "algo",
+    description: "Implementation Shortfall — balances market impact vs timing risk",
+    port: 5026,
+  },
+  {
+    name: "Momentum Algo",
+    url: `${import.meta.env.VITE_MOMENTUM_URL ?? `${_origin}/api/momentum-algo`}/health`,
+    link: `${import.meta.env.VITE_MOMENTUM_URL ?? `${_origin}/api/momentum-algo`}/health`,
+    category: "algo",
+    description: "EMA crossover momentum — routes tranches on favourable price signals",
+    port: 5025,
+  },
   // ── Data services ─────────────────────────────────────────────────────────
   {
     name: "Journal",

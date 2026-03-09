@@ -68,6 +68,14 @@ export default defineConfig({
         target: "http://localhost:5023",
         rewrite: (path) => path.replace(/^\/api\/arrival-price-algo/, ""),
       },
+      "/api/is-algo": {
+        target: "http://localhost:5026",
+        rewrite: (path) => path.replace(/^\/api\/is-algo/, ""),
+      },
+      "/api/momentum-algo": {
+        target: "http://localhost:5025",
+        rewrite: (path) => path.replace(/^\/api\/momentum-algo/, ""),
+      },
       "/api/observability": {
         target: "http://localhost:5007",
         rewrite: (path) => path.replace(/^\/api\/observability/, ""),

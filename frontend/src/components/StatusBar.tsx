@@ -68,6 +68,14 @@ function useAllServiceHealth(): ServiceHealth[] {
     pollingInterval: 10_000,
     skip: !SERVICES[20],
   });
+  const r21 = useGetServiceHealthQuery(SERVICES[21], {
+    pollingInterval: 10_000,
+    skip: !SERVICES[21],
+  });
+  const r22 = useGetServiceHealthQuery(SERVICES[22], {
+    pollingInterval: 10_000,
+    skip: !SERVICES[22],
+  });
 
   return SERVICES.map((svc, i) => {
     const result = [
@@ -92,6 +100,8 @@ function useAllServiceHealth(): ServiceHealth[] {
       r18,
       r19,
       r20,
+      r21,
+      r22,
     ][i];
     if (result.data) return result.data;
     if (result.isError) {

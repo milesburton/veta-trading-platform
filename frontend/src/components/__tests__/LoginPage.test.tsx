@@ -150,6 +150,8 @@ describe("LoginPage", () => {
     expect(status).toHaveTextContent("Iceberg Algo");
     expect(status).toHaveTextContent("Sniper Algo");
     expect(status).toHaveTextContent("Arrival Price Algo");
+    expect(status).toHaveTextContent("IS Algo");
+    expect(status).toHaveTextContent("Momentum Algo");
   });
 
   test("shows observability services including Kafka Relay and Grafana", () => {

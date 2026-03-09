@@ -507,3 +507,47 @@ Deno.test("[algo] decision log: order events appear in observability for a submi
   const hasRouted = eventTypes.some((t) => t.includes("orders."));
   assert(hasRouted, `Expected at least one orders.* event, got: ${eventTypes.join(", ")}`);
 });
+
+// ── IS (Implementation Shortfall) ─────────────────────────────────────────────
+
+Deno.test("[algo] IS order routes at least one child slice within 60s", async () => {
+  const token = await loginAs("alice");
+  const price = await fetch(`${GATEWAY_URL}/assets`, { headers: { cookie: `veta_user=${token}` }, signal: t() })
+    .then((r) => r.json() as Promise<{ symbol: string; price: number }[]>)
+    .then((assets) => assets.find((a) => a.symbol === "AAPL")?.price ?? 190);
+
+  const { clientOrderId: id } = await submitOrderViaWs(token, {
+    asset: "AAPL",
+    side: "BUY",
+    quantity: 100,
+    limitPrice: Number(price) * 1.05,
+    strategy: "IS",
+    algoParams: { strategy: "IS", urgency: 0.7, maxSlippageBps: 100 },
+  });
+
+  const order = await pollForChildren(id, 1, 60_000);
+  assertExists(order, `IS order ${id} did not produce any child slices within 60s`);
+  assert(order.children.length >= 1, `IS order produced no children`);
+});
+
+// ── MOMENTUM ──────────────────────────────────────────────────────────────────
+
+Deno.test("[algo] MOMENTUM order routes at least one tranche within 60s", async () => {
+  const token = await loginAs("alice");
+  const price = await fetch(`${GATEWAY_URL}/assets`, { headers: { cookie: `veta_user=${token}` }, signal: t() })
+    .then((r) => r.json() as Promise<{ symbol: string; price: number }[]>)
+    .then((assets) => assets.find((a) => a.symbol === "AAPL")?.price ?? 190);
+
+  const { clientOrderId: id } = await submitOrderViaWs(token, {
+    asset: "AAPL",
+    side: "BUY",
+    quantity: 100,
+    limitPrice: Number(price) * 1.05,
+    strategy: "MOMENTUM",
+    algoParams: { strategy: "MOMENTUM", entryThresholdBps: 5, maxTranches: 5 },
+  });
+
+  const order = await pollForChildren(id, 1, 60_000);
+  assertExists(order, `MOMENTUM order ${id} did not produce any child tranches within 60s`);
+  assert(order.children.length >= 1, `MOMENTUM order produced no children`);
+});

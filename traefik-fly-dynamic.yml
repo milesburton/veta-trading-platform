@@ -143,6 +143,20 @@ http:
       service: arrival-price-algo
       priority: 10
 
+    is-algo:
+      rule: "PathPrefix(`/api/is-algo`)"
+      entryPoints: [web]
+      middlewares: [is-algo-strip]
+      service: is-algo
+      priority: 10
+
+    momentum-algo:
+      rule: "PathPrefix(`/api/momentum-algo`)"
+      entryPoints: [web]
+      middlewares: [momentum-strip]
+      service: momentum-algo
+      priority: 10
+
     analytics:
       rule: "PathPrefix(`/api/analytics`)"
       entryPoints: [web]
@@ -221,6 +235,12 @@ http:
     arrival-price-strip:
       stripPrefix:
         prefixes: ["/api/arrival-price-algo"]
+    is-algo-strip:
+      stripPrefix:
+        prefixes: ["/api/is-algo"]
+    momentum-strip:
+      stripPrefix:
+        prefixes: ["/api/momentum-algo"]
     analytics-strip:
       stripPrefix:
         prefixes: ["/api/analytics"]
@@ -293,6 +313,14 @@ http:
       loadBalancer:
         servers:
           - url: "http://localhost:5023"
+    is-algo:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:5026"
+    momentum-algo:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:5025"
     analytics:
       loadBalancer:
         servers:

@@ -69,6 +69,18 @@ function useAllServiceStates() {
     pollingInterval: 8_000,
     skip: !SERVICES[19],
   });
+  const r20 = useGetServiceHealthQuery(SERVICES[20], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[20],
+  });
+  const r21 = useGetServiceHealthQuery(SERVICES[21], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[21],
+  });
+  const r22 = useGetServiceHealthQuery(SERVICES[22], {
+    pollingInterval: 8_000,
+    skip: !SERVICES[22],
+  });
   return [
     r0,
     r1,
@@ -90,6 +102,9 @@ function useAllServiceStates() {
     r17,
     r18,
     r19,
+    r20,
+    r21,
+    r22,
   ].slice(0, SERVICES.length);
 }
 

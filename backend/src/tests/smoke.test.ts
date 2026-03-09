@@ -45,6 +45,8 @@ const ICEBERG_URL   = "http://localhost:5021";
 const SNIPER_URL    = "http://localhost:5022";
 const AP_URL        = "http://localhost:5023";
 const LLM_URL       = "http://localhost:5024";
+const MOMENTUM_URL  = "http://localhost:5025";
+const IS_URL        = "http://localhost:5026";
 
 // ── All services expected to be healthy ───────────────────────────────────────
 
@@ -61,6 +63,8 @@ const ALL_SERVICES = [
   { name: "iceberg-algo",              url: ICEBERG_URL   },
   { name: "sniper-algo",               url: SNIPER_URL    },
   { name: "arrival-price-algo",        url: AP_URL        },
+  { name: "momentum-algo",             url: MOMENTUM_URL  },
+  { name: "is-algo",                   url: IS_URL        },
   // Platform services
   { name: "user-service",              url: USER_SVC_URL  },
   { name: "observability",             url: OBS_URL       },
