@@ -355,15 +355,15 @@ serve(async (req: Request): Promise<Response> => {
     const emsUrl = `http://localhost:${Deno.env.get("EMS_PORT") ?? "5001"}`;
     const omsUrl = `http://localhost:${Deno.env.get("OMS_PORT") ?? "5002"}`;
     const checks = await Promise.all([
-      fetch(`${MARKET_SIM_URL}/health`, { signal: AbortSignal.timeout(5_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${JOURNAL_URL}/health`, { signal: AbortSignal.timeout(5_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${USER_SERVICE_URL}/health`, { signal: AbortSignal.timeout(5_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${emsUrl}/health`, { signal: AbortSignal.timeout(5_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${omsUrl}/health`, { signal: AbortSignal.timeout(5_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${ANALYTICS_URL}/health`, { signal: AbortSignal.timeout(5_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${FEATURE_ENGINE_URL}/health`, { signal: AbortSignal.timeout(5_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${SIGNAL_ENGINE_URL}/health`, { signal: AbortSignal.timeout(5_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${LLM_ADVISORY_URL}/health`, { signal: AbortSignal.timeout(5_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${MARKET_SIM_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${JOURNAL_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${USER_SERVICE_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${emsUrl}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${omsUrl}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${ANALYTICS_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${FEATURE_ENGINE_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${SIGNAL_ENGINE_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${LLM_ADVISORY_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
     ]);
     const [marketSim, journal, userService, ems, oms, analytics, featureEngine, signalEngine, llmAdvisory] = checks;
     const bus = producer !== null;
@@ -576,7 +576,7 @@ serve(async (req: Request): Promise<Response> => {
     if (isResponse(auth)) return auth;
     try {
       const res = await fetch(`${USER_SERVICE_URL}/users/${auth.user.id}/preferences`, {
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(8_000),
       });
       const body = await res.arrayBuffer();
       return new Response(body, {
@@ -600,7 +600,7 @@ serve(async (req: Request): Promise<Response> => {
         method: "PUT",
         headers: { "Content-Type": "application/json", cookie: req.headers.get("cookie") ?? "" },
         body,
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(8_000),
       });
       const resBody = await res.arrayBuffer();
       return new Response(resBody, {
@@ -621,7 +621,7 @@ serve(async (req: Request): Promise<Response> => {
     try {
       const res = await fetch(`${USER_SERVICE_URL}/shared-workspaces`, {
         headers: { cookie: req.headers.get("cookie") ?? "" },
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(8_000),
       });
       const body = await res.arrayBuffer();
       return new Response(body, { status: res.status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
@@ -639,7 +639,7 @@ serve(async (req: Request): Promise<Response> => {
         method: "POST",
         headers: { "Content-Type": "application/json", cookie: req.headers.get("cookie") ?? "" },
         body,
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(8_000),
       });
       const resBody = await res.arrayBuffer();
       return new Response(resBody, { status: res.status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
@@ -656,7 +656,7 @@ serve(async (req: Request): Promise<Response> => {
       const res = await fetch(`${USER_SERVICE_URL}/shared-workspaces/${sharedWsDeleteMatch[1]}`, {
         method: "DELETE",
         headers: { cookie: req.headers.get("cookie") ?? "" },
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(8_000),
       });
       const resBody = await res.arrayBuffer();
       return new Response(resBody, { status: res.status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
@@ -672,7 +672,7 @@ serve(async (req: Request): Promise<Response> => {
     try {
       const res = await fetch(`${USER_SERVICE_URL}/shared-workspaces/${sharedWsGetMatch[1]}`, {
         headers: { cookie: req.headers.get("cookie") ?? "" },
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(8_000),
       });
       const resBody = await res.arrayBuffer();
       return new Response(resBody, { status: res.status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
@@ -687,7 +687,7 @@ serve(async (req: Request): Promise<Response> => {
     try {
       const res = await fetch(`${USER_SERVICE_URL}/users/${auth.user.id}/alerts`, {
         headers: { cookie: req.headers.get("cookie") ?? "" },
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(8_000),
       });
       const resBody = await res.arrayBuffer();
       return new Response(resBody, { status: res.status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
@@ -705,7 +705,7 @@ serve(async (req: Request): Promise<Response> => {
         method: "POST",
         headers: { "Content-Type": "application/json", cookie: req.headers.get("cookie") ?? "" },
         body,
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(8_000),
       });
       const resBody = await res.arrayBuffer();
       return new Response(resBody, { status: res.status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
@@ -721,7 +721,7 @@ serve(async (req: Request): Promise<Response> => {
       const res = await fetch(`${USER_SERVICE_URL}/users/${auth.user.id}/alerts/dismiss-all`, {
         method: "PUT",
         headers: { cookie: req.headers.get("cookie") ?? "" },
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(8_000),
       });
       const resBody = await res.arrayBuffer();
       return new Response(resBody, { status: res.status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
@@ -738,7 +738,7 @@ serve(async (req: Request): Promise<Response> => {
       const res = await fetch(`${USER_SERVICE_URL}/users/${auth.user.id}/alerts/${alertDismissMatch[1]}/dismiss`, {
         method: "PUT",
         headers: { cookie: req.headers.get("cookie") ?? "" },
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(8_000),
       });
       const resBody = await res.arrayBuffer();
       return new Response(resBody, { status: res.status, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
