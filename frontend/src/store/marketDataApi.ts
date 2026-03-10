@@ -3,7 +3,10 @@ import type { DataSource, OverridesResponse } from "../types/marketData.ts";
 
 export const marketDataApi = createApi({
   reducerPath: "marketDataApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api/gateway", credentials: "include" }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway",
+    credentials: "include",
+  }),
   tagTypes: ["Overrides", "Sources"],
   endpoints: (builder) => ({
     getSources: builder.query<DataSource[], void>({

@@ -1,7 +1,8 @@
 {
-  "name": "equities-market-emulator-ui",
+  "name": "veta-trading-platform",
   "version": "1.0.0",
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite --port 5173",
     "build": "tsc && vite build",
@@ -12,6 +13,9 @@
     "test:unit": "NODE_OPTIONS=--max-old-space-size=4096 vitest",
     "test:ui": "npx playwright test",
     "test:ui:headed": "npx playwright test --headed",
+    "electron:dev": "ELECTRON_BUILD=1 vite --mode electron",
+    "electron:build": "tsc && ELECTRON_BUILD=1 vite build --mode electron && electron-builder --dir",
+    "test:electron": "npx playwright test --config=playwright.electron.config.ts",
     "prepare": "cd .. && ./frontend/node_modules/.bin/husky"
   },
   "lint-staged": {
@@ -19,6 +23,28 @@
       "deno run -A npm:@biomejs/biome check --write",
       "bash -c './node_modules/.bin/tsc --noEmit --skipLibCheck --project tsconfig.json'"
     ]
+  },
+  "build": {
+    "appId": "com.veta.trading-platform",
+    "productName": "VETA Trading Platform",
+    "directories": {
+      "output": "dist-app"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.finance",
+      "target": [{ "target": "dmg", "arch": ["universal"] }]
+    },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }]
+    },
+    "linux": {
+      "target": [{ "target": "AppImage", "arch": ["x64"] }],
+      "category": "Finance"
+    }
   },
   "dependencies": {
     "@preact/signals-react": "^3.9.0",
@@ -50,6 +76,8 @@
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.4.19",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "husky": "^9.1.7",
     "jsdom": "^22.1.0",
     "lint-staged": "^15.2.10",
@@ -58,6 +86,8 @@
     "tailwindcss": "^3.4.6",
     "typescript": "^5.5.3",
     "vite": "^7.3.1",
+    "vite-plugin-electron": "^0.28.8",
+    "vite-plugin-electron-renderer": "^0.14.6",
     "vitest": "^4.0.18"
   }
 }

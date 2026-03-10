@@ -21,7 +21,10 @@ export interface UpdateLimitsRequest {
 
 export const userApi = createApi({
   reducerPath: "userApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api/user-service", credentials: "include" }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: import.meta.env.VITE_USER_SERVICE_URL ?? "/api/user-service",
+    credentials: "include",
+  }),
   tagTypes: ["UserLimits"],
   endpoints: (builder) => ({
     createSession: builder.mutation<AuthUser, { userId: string }>({

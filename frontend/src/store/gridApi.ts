@@ -3,7 +3,10 @@ import type { GridQueryRequest, GridQueryResponse } from "../types/gridQuery.ts"
 
 export const gridApi = createApi({
   reducerPath: "gridApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api/gateway", credentials: "include" }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway",
+    credentials: "include",
+  }),
   tagTypes: ["Grid"],
   endpoints: (builder) => ({
     queryGrid: builder.query<GridQueryResponse, GridQueryRequest>({

@@ -25,7 +25,10 @@ export interface DemoDayResult {
 
 export const gatewayApi = createApi({
   reducerPath: "gatewayApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api/gateway", credentials: "include" }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway",
+    credentials: "include",
+  }),
   endpoints: (builder) => ({
     runLoadTest: builder.mutation<LoadTestResult, LoadTestRequest>({
       query: (body) => ({

@@ -17,7 +17,10 @@ import type {
 
 export const analyticsApi = createApi({
   reducerPath: "analyticsApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api/gateway", credentials: "include" }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway",
+    credentials: "include",
+  }),
   endpoints: (builder) => ({
     getQuote: builder.mutation<OptionQuoteResponse, OptionQuoteRequest>({
       query: (body) => ({
