@@ -230,35 +230,21 @@ services:
     labels:
       - "traefik.enable=true"
 
-  # ── Local LLM (Ollama) ───────────────────────────────────────────────────────
+  # ── Local LLM (Ollama — model baked into image) ──────────────────────────────
   ollama:
-    image: ollama/ollama:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
     container_name: ollama
     restart: unless-stopped
     networks:
       - trading-net
-    volumes:
-      - ollama-data:/root/.ollama
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 6
       start_period: 30s
-    labels:
-      - "traefik.enable=false"
-
-  ollama-pull:
-    image: ollama/ollama:latest
-    container_name: ollama-pull
-    networks:
-      - trading-net
-    depends_on:
-      ollama:
-        condition: service_healthy
-    environment:
-      OLLAMA_HOST: http://ollama:11434
-    entrypoint: ["ollama", "pull", "qwen2.5:3b"]
     labels:
       - "traefik.enable=false"
 
@@ -826,8 +812,6 @@ services:
         condition: service_healthy
       ollama:
         condition: service_healthy
-      ollama-pull:
-        condition: service_completed_successfully
     environment:
       LLM_ADVISORY_PORT: 5024
       LLM_ENABLED: "true"
@@ -919,4 +903,3 @@ services:
 volumes:
   postgres-data:
   opensearch-data:
-  ollama-data:
