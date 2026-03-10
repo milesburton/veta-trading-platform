@@ -1,10 +1,8 @@
 # Fly.io configuration for VETA Trading Platform
 # Deploy with: flyctl deploy
-# Live: https://virtual-equities-trading.fly.dev/
-# Note: app name is immutable after creation (determines DNS). To rename,
-# create a new app with flyctl apps create and flyctl deploy --app <new-name>.
+# Live: https://veta-trading.fly.dev/
 
-app = "virtual-equities-trading"
+app = "veta-trading"
 primary_region = "iad"
 
 [build]
