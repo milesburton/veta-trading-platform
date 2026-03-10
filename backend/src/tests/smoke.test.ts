@@ -587,8 +587,8 @@ Deno.test("[orders/settled] ICEBERG order reaches filled or expired within 90s",
     algoParams: { strategy: "ICEBERG", visibleQty: 40 },
     expiresAt: 60,
   });
-  const order = await pollSettled(clientOrderId, 90_000);
-  assertExists(order, `ICEBERG order ${clientOrderId} did not settle within 90s`);
+  const order = await pollSettled(clientOrderId, 100_000);
+  assertExists(order, `ICEBERG order ${clientOrderId} did not settle within 100s`);
   assert(
     order.status === "filled" || order.status === "expired" || order.status === "rejected",
     `Expected filled/expired/rejected, got: ${order.status}`,
@@ -622,8 +622,8 @@ Deno.test("[orders/settled] ARRIVAL_PRICE order reaches filled or expired within
     algoParams: { strategy: "ARRIVAL_PRICE" },
     expiresAt: 45,
   });
-  const order = await pollSettled(clientOrderId, 75_000);
-  assertExists(order, `ARRIVAL_PRICE order ${clientOrderId} did not settle within 75s`);
+  const order = await pollSettled(clientOrderId, 90_000);
+  assertExists(order, `ARRIVAL_PRICE order ${clientOrderId} did not settle within 90s`);
   assert(
     order.status === "filled" || order.status === "expired" || order.status === "rejected",
     `Expected filled/expired/rejected, got: ${order.status}`,

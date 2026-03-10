@@ -288,6 +288,27 @@ marketClient.onTick(async (tick) => {
   }
 });
 
+// ── Independent expiry sweep (fires even when market ticks are sparse) ────────
+
+setInterval(async () => {
+  const now = Date.now();
+  for (const order of [...activeOrders.values()]) {
+    if (now >= order.expiresAt) {
+      const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
+      console.log(`[arrival-price-algo] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
+      activeOrders.delete(order.orderId);
+      await producer?.send("orders.expired", {
+        orderId: order.orderId,
+        clientOrderId: order.clientOrderId,
+        algo: "ARRIVAL_PRICE",
+        filledQty: order.filledQty,
+        avgFillPrice: order.filledQty > 0 ? avgFill : 0,
+        ts: now,
+      }).catch(() => {});
+    }
+  }
+}, 5_000);
+
 // ── Health endpoint ───────────────────────────────────────────────────────────
 
 const CORS_HEADERS = {
