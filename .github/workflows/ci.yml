@@ -133,7 +133,7 @@ jobs:
           COMMIT_SHA=$SHA SNIPER_ALGO_PORT=5022 deno run --allow-all backend/src/algo/sniper-strategy.ts &
           COMMIT_SHA=$SHA ARRIVAL_PRICE_ALGO_PORT=5023 deno run --allow-all backend/src/algo/arrival-price-strategy.ts &
           COMMIT_SHA=$SHA JOURNAL_PORT=5009 deno run --allow-all backend/src/journal/journal-server.ts &
-          COMMIT_SHA=$SHA OBSERVABILITY_PORT=5007 deno run --allow-all backend/src/observability/observability-server.ts &
+          COMMIT_SHA=$SHA OBSERVABILITY_PORT=5007 deno run --allow-all observability/kafka-relay.ts &
           COMMIT_SHA=$SHA USER_SERVICE_PORT=5008 deno run --allow-all backend/src/user-service/user-service.ts &
           COMMIT_SHA=$SHA FIX_ARCHIVE_PORT=5012 deno run --allow-all backend/src/fix/fix-archive.ts &
           COMMIT_SHA=$SHA deno run --allow-all backend/src/news/news-aggregator.ts &
