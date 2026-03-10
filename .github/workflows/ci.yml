@@ -168,6 +168,11 @@ jobs:
             sleep 2
           done
 
+      - name: Wait for Kafka consumers to subscribe
+        run: |
+          echo "Allowing 20s for all algo Kafka consumers to subscribe to their topics..."
+          sleep 20
+
       - name: Integration tests
         run: deno task test:integration
         env:
