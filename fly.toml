@@ -11,10 +11,6 @@ primary_region = "iad"
   #   flyctl deploy --build-arg VITE_COMMIT_SHA=$(git rev-parse --short HEAD) --build-arg VITE_BUILD_DATE=$(date -u +%Y-%m-%d)
   args = { VITE_DEPLOYMENT = "fly" }
 
-[deploy]
-  # Run DB migrations before new instances start (uses release VM, not app VM)
-  release_command = "deno run --allow-all /app/backend/db/migrate.ts"
-
 [env]
   MARKET_SIM_PORT = "5000"
   EMS_PORT = "5001"
