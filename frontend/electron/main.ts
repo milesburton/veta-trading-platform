@@ -1,13 +1,12 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage } from "electron";
 import { writeFile } from "fs/promises";
 import * as path from "path";
 
-// ── Environment ───────────────────────────────────────────────────────────────
 const isDev = !app.isPackaged;
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 
-// ── Window management ─────────────────────────────────────────────────────────
 let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -18,7 +17,7 @@ function createWindow(): void {
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     frame: process.platform !== "darwin",
     show: false,
-    backgroundColor: "#030712", // matches bg-gray-950
+    backgroundColor: "#030712",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -28,7 +27,14 @@ function createWindow(): void {
     },
   });
 
-  mainWindow.once("ready-to-show", () => mainWindow?.show());
+  mainWindow.once("ready-to-show", () => {
+    mainWindow?.show();
+    mainWindow?.setTitle(`VETA Trading Platform v${app.getVersion()}`);
+  });
+
+  mainWindow.webContents.on("page-title-updated", (e) => {
+    e.preventDefault();
+  });
 
   mainWindow.on("maximize", () =>
     mainWindow?.webContents.send("window:maximizeChange", true)
@@ -37,7 +43,6 @@ function createWindow(): void {
     mainWindow?.webContents.send("window:maximizeChange", false)
   );
 
-  // New windows: allow same-origin pop-outs (panel pop-outs), block everything else
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     const allowed =
       url.startsWith("http://localhost") || url.startsWith("file://");
@@ -68,27 +73,100 @@ function createWindow(): void {
   mainWindow.on("closed", () => { mainWindow = null; });
 }
 
-// ── App lifecycle ─────────────────────────────────────────────────────────────
+function createTray(): void {
+  const iconName = process.platform === "win32" ? "tray-icon.ico" : "tray-icon.png";
+  const iconPath = path.join(__dirname, "assets", iconName);
+  const icon = nativeImage.createFromPath(iconPath);
+  tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon.resize({ width: 16, height: 16 }));
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "Show VETA",
+      click: () => {
+        mainWindow?.show();
+        mainWindow?.focus();
+      },
+    },
+    { type: "separator" },
+    {
+      label: "Quit VETA",
+      click: () => {
+        tray?.destroy();
+        app.quit();
+      },
+    },
+  ]);
+
+  tray.setToolTip(`VETA Trading Platform v${app.getVersion()}`);
+  tray.setContextMenu(contextMenu);
+  tray.on("double-click", () => {
+    mainWindow?.show();
+    mainWindow?.focus();
+  });
+}
+
+function handleDeepLink(url: string): void {
+  mainWindow?.show();
+  mainWindow?.focus();
+  mainWindow?.webContents.send("deeplink:navigate", url);
+}
+
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient("veta", process.execPath, [
+      path.resolve(process.argv[1]),
+    ]);
+  }
+} else {
+  app.setAsDefaultProtocolClient("veta");
+}
+
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on("second-instance", (_event, argv) => {
+    const url = argv.find((arg) => arg.startsWith("veta://"));
+    if (url) handleDeepLink(url);
+    mainWindow?.show();
+    mainWindow?.focus();
+  });
+}
+
 app.whenReady().then(() => {
   buildMenu();
   createWindow();
+  createTray();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  if (mainWindow) {
+    handleDeepLink(url);
+  } else {
+    app.whenReady().then(() => handleDeepLink(url));
+  }
 });
 
-// ── IPC ───────────────────────────────────────────────────────────────────────
+app.on("window-all-closed", () => {
+  mainWindow?.hide();
+});
+
 ipcMain.on("window:minimize", () => mainWindow?.minimize());
 ipcMain.on("window:maximize", () => {
   if (mainWindow?.isMaximized()) mainWindow.unmaximize();
   else mainWindow?.maximize();
 });
-ipcMain.on("window:close", () => mainWindow?.close());
+ipcMain.on("window:close", () => mainWindow?.hide());
 ipcMain.handle("window:isMaximized", () => mainWindow?.isMaximized() ?? false);
+
+ipcMain.on("app:quit", () => {
+  tray?.destroy();
+  app.quit();
+});
 
 ipcMain.on("shell:openExternal", (_, url: string) => {
   if (typeof url === "string" && /^https?:\/\//.test(url)) shell.openExternal(url);
@@ -109,7 +187,6 @@ ipcMain.handle("fs:writeFile", async (_, filePath: string, content: string) => {
   await writeFile(filePath, content, "utf-8");
 });
 
-// ── Native menu ───────────────────────────────────────────────────────────────
 function buildMenu(): void {
   const isMac = process.platform === "darwin";
 
@@ -132,7 +209,12 @@ function buildMenu(): void {
       : []),
     {
       label: "File",
-      submenu: [isMac ? { role: "close" as const } : { role: "quit" as const }],
+      submenu: [
+        isMac ? { role: "close" as const } : {
+          label: "Quit VETA",
+          click: () => { tray?.destroy(); app.quit(); },
+        },
+      ],
     },
     {
       label: "Edit",

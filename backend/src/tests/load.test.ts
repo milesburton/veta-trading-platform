@@ -22,6 +22,20 @@ import {
   timeout as t,
 } from "./test-helpers.ts";
 
+const SLA_INGESTION_ORDER_COUNT = 100;
+const SLA_INGESTION_THRESHOLD = 0.90;
+const SLA_INGESTION_MIN = Math.ceil(SLA_INGESTION_ORDER_COUNT * SLA_INGESTION_THRESHOLD);
+const SLA_INGESTION_WINDOW_MS = 30_000;
+
+const SLA_FILL_ORDER_COUNT = 50;
+const SLA_FILL_RATE = 0.80;
+const SLA_FILL_MIN = Math.ceil(SLA_FILL_ORDER_COUNT * SLA_FILL_RATE);
+const SLA_FILL_WINDOW_MS = 60_000;
+
+const SLA_OBS_COVERAGE = 0.50;
+const SLA_HEALTH_SETTLE_MS = 5_000;
+const SLA_PIPELINE_LATENCY_MS = 30_000;
+
 function loginAsAdmin(): Promise<string> {
   return loginAs("admin");
 }
@@ -101,10 +115,10 @@ Deno.test("[load] orderCount is capped at 500", async () => {
 
 Deno.test("[load] 100-order burst: all orders appear in journal within 30s", async () => {
   const token = await loginAsAdmin();
-  const result = await triggerLoadTest(token, { orderCount: 100, strategy: "LIMIT" });
+  const result = await triggerLoadTest(token, { orderCount: SLA_INGESTION_ORDER_COUNT, strategy: "LIMIT" });
 
   const jobId = result.jobId;
-  const deadline = Date.now() + 30_000;
+  const deadline = Date.now() + SLA_INGESTION_WINDOW_MS;
   let seenCount = 0;
 
   while (Date.now() < deadline) {
@@ -127,7 +141,7 @@ Deno.test("[load] 100-order burst: all orders appear in journal within 30s", asy
     if (res.ok) {
       const data = await res.json() as { rows: unknown[]; total: number };
       seenCount = data.total;
-      if (seenCount >= 100) break;
+      if (seenCount >= SLA_INGESTION_ORDER_COUNT) break;
     } else {
       await res.body?.cancel();
     }
@@ -135,22 +149,23 @@ Deno.test("[load] 100-order burst: all orders appear in journal within 30s", asy
   }
 
   assert(
-    seenCount >= 90,
-    `Expected ≥90/100 orders in journal within 30s, got ${seenCount}`,
+    seenCount >= SLA_INGESTION_MIN,
+    `Expected ≥${SLA_INGESTION_MIN}/${SLA_INGESTION_ORDER_COUNT} orders in journal within ${SLA_INGESTION_WINDOW_MS}ms, got ${seenCount}`,
   );
 });
 
 Deno.test("[load] 100-order burst: observability receives orders.submitted events", async () => {
   const token = await loginAsAdmin();
   const result = await triggerLoadTest(token, {
-    orderCount: 100,
+    orderCount: SLA_INGESTION_ORDER_COUNT,
     strategy: "LIMIT",
     symbols: ["AAPL", "MSFT"],
   });
 
   const jobId = result.jobId;
-  const deadline = Date.now() + 30_000;
+  const deadline = Date.now() + SLA_INGESTION_WINDOW_MS;
   let matchCount = 0;
+  const obsMin = Math.ceil(SLA_INGESTION_ORDER_COUNT * SLA_OBS_COVERAGE);
 
   while (Date.now() < deadline) {
     const res = await fetch(`${OBS_URL}/events?type=orders.submitted`, { signal: t(10_000) });
@@ -160,7 +175,7 @@ Deno.test("[load] 100-order burst: observability receives orders.submitted event
         (e) => typeof e.payload?.clientOrderId === "string" &&
                (e.payload.clientOrderId as string).startsWith(jobId),
       ).length;
-      if (matchCount >= 50) break;
+      if (matchCount >= obsMin) break;
     } else {
       await res.body?.cancel();
     }
@@ -168,8 +183,8 @@ Deno.test("[load] 100-order burst: observability receives orders.submitted event
   }
 
   assert(
-    matchCount >= 50,
-    `Expected ≥50 orders.submitted events for job ${jobId}, got ${matchCount}`,
+    matchCount >= obsMin,
+    `Expected ≥${obsMin} orders.submitted events for job ${jobId}, got ${matchCount}`,
   );
 });
 
@@ -177,10 +192,10 @@ Deno.test("[load] 100-order burst: observability receives orders.submitted event
 
 Deno.test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
   const token = await loginAsAdmin();
-  const result = await triggerLoadTest(token, { orderCount: 50, strategy: "LIMIT" });
+  const result = await triggerLoadTest(token, { orderCount: SLA_FILL_ORDER_COUNT, strategy: "LIMIT" });
 
   const jobId = result.jobId;
-  const deadline = Date.now() + 60_000;
+  const deadline = Date.now() + SLA_FILL_WINDOW_MS;
   let filledCount = 0;
 
   while (Date.now() < deadline) {
@@ -203,17 +218,17 @@ Deno.test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
     if (res.ok) {
       const data = await res.json() as { total: number };
       filledCount = data.total;
-      if (filledCount >= 40) break;
+      if (filledCount >= SLA_FILL_MIN) break;
     } else {
       await res.body?.cancel();
     }
     await new Promise((r) => setTimeout(r, 3_000));
   }
 
-  const fillRate = filledCount / 50;
+  const fillRate = filledCount / SLA_FILL_ORDER_COUNT;
   assert(
-    fillRate >= 0.8,
-    `Fill rate ${(fillRate * 100).toFixed(1)}% below 80% threshold (${filledCount}/50 filled within 60s)`,
+    fillRate >= SLA_FILL_RATE,
+    `Fill rate ${(fillRate * 100).toFixed(1)}% below ${(SLA_FILL_RATE * 100).toFixed(0)}% SLA (${filledCount}/${SLA_FILL_ORDER_COUNT} filled within ${SLA_FILL_WINDOW_MS}ms)`,
   );
 });
 
@@ -241,11 +256,49 @@ Deno.test("[load] FIX archive grows after load injection", async () => {
 
 // ── System stability after load ───────────────────────────────────────────────
 
+Deno.test("[load] pipeline latency: 90% of orders visible in journal within SLA budget", async () => {
+  const token = await loginAsAdmin();
+  const t0 = Date.now();
+  const result = await triggerLoadTest(token, { orderCount: SLA_INGESTION_ORDER_COUNT, strategy: "LIMIT" });
+
+  const jobId = result.jobId;
+  const deadline = t0 + SLA_PIPELINE_LATENCY_MS;
+  let seenCount = 0;
+
+  while (Date.now() < deadline) {
+    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        gridId: "orderBlotter",
+        filterExpr: {
+          kind: "group", id: "root", join: "AND",
+          rules: [{ kind: "rule", id: "r1", field: "clientOrderId", op: "contains", value: jobId }],
+        },
+        sortField: null, sortDir: null, offset: 0, limit: 200,
+      }),
+      signal: t(20_000),
+    });
+    if (res.ok) {
+      const data = await res.json() as { total: number };
+      seenCount = data.total;
+      if (seenCount >= SLA_INGESTION_MIN) break;
+    } else {
+      await res.body?.cancel();
+    }
+    await new Promise((r) => setTimeout(r, 2_000));
+  }
+
+  const elapsed = Date.now() - t0;
+  assert(seenCount >= SLA_INGESTION_MIN, `Only ${seenCount}/${SLA_INGESTION_ORDER_COUNT} orders visible after ${elapsed}ms`);
+  assert(elapsed <= SLA_PIPELINE_LATENCY_MS, `Pipeline latency ${elapsed}ms exceeds SLA of ${SLA_PIPELINE_LATENCY_MS}ms`);
+});
+
 Deno.test("[load] all services remain healthy after 100-order burst", async () => {
   const token = await loginAsAdmin();
-  await triggerLoadTest(token, { orderCount: 100, strategy: "LIMIT" });
+  await triggerLoadTest(token, { orderCount: SLA_INGESTION_ORDER_COUNT, strategy: "LIMIT" });
 
-  await new Promise((r) => setTimeout(r, 5_000));
+  await new Promise((r) => setTimeout(r, SLA_HEALTH_SETTLE_MS));
 
   const services = [
     { name: "gateway",   url: GATEWAY_URL },

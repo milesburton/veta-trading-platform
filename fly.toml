@@ -22,6 +22,7 @@ primary_region = "iad"
   OBSERVABILITY_PORT = "5007"
   USER_SERVICE_PORT = "5008"
   JOURNAL_PORT = "5009"
+  JOURNAL_RETENTION_DAYS = "90"
   FIX_ARCHIVE_PORT = "5012"
   ANALYTICS_PORT = "5014"
   MARKET_DATA_PORT = "5015"
@@ -57,8 +58,8 @@ primary_region = "iad"
   internal_port = 8080
   force_https = true
   auto_start_machines = true
-  auto_stop_machines = "stop"
-  min_machines_running = 0
+  auto_stop_machines = "suspend"
+  min_machines_running = 1
 
   [[http_service.checks]]
     grace_period = "120s"
@@ -73,6 +74,10 @@ primary_region = "iad"
   destination = "/app/backend/data"
   initial_size = "10gb"
 
+# Redpanda HA: requires 3 machines for quorum. Scale with:
+#   flyctl scale count 3 --app veta-trading
+# Each machine advertises its private IP in redpanda.yaml.
+# For single-machine deployments, min_machines_running=1 prevents state loss.
 [[vm]]
   memory = "4gb"
   cpus = 2

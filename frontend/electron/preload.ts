@@ -33,6 +33,14 @@ const api = {
   writeFile(filePath: string, content: string): Promise<void> {
     return ipcRenderer.invoke("fs:writeFile", filePath, content);
   },
+  quit(): void {
+    ipcRenderer.send("app:quit");
+  },
+  onDeepLink(cb: (url: string) => void): () => void {
+    const handler = (_: Electron.IpcRendererEvent, url: string) => cb(url);
+    ipcRenderer.on("deeplink:navigate", handler);
+    return () => ipcRenderer.off("deeplink:navigate", handler);
+  },
 };
 
 contextBridge.exposeInMainWorld("electronAPI", api);

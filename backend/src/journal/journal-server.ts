@@ -177,6 +177,24 @@ async function flushWriteQueue() {
 
 setInterval(() => { flushWriteQueue().catch(() => {}); }, 50);
 
+async function pruneOldEvents(): Promise<void> {
+  const c = await journalPool.connect();
+  try {
+    const result = await c.queryArray(
+      "DELETE FROM journal.events WHERE ts < now() - ($1 || ' milliseconds')::interval",
+      [RETENTION_MS],
+    );
+    console.log(`[journal] Prune: removed ${result.rowCount ?? 0} events older than ${RETENTION_DAYS}d`);
+  } catch (err) {
+    console.warn("[journal] Prune failed:", (err as Error).message);
+  } finally {
+    c.release();
+  }
+}
+
+setTimeout(() => pruneOldEvents().catch(() => {}), 30_000);
+setInterval(() => pruneOldEvents().catch(() => {}), 24 * 60 * 60 * 1_000);
+
 // deno-lint-ignore no-explicit-any
 function ingest(topic: string, value: any) {
   const ts = new Date(value.ts ?? Date.now());

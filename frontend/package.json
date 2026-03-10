@@ -34,6 +34,9 @@
       "dist/**/*",
       "dist-electron/**/*"
     ],
+    "protocols": [
+      { "name": "VETA Trading Platform", "schemes": ["veta"] }
+    ],
     "mac": {
       "category": "public.app-category.finance",
       "target": [{ "target": "dmg", "arch": ["universal"] }]
