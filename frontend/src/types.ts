@@ -92,7 +92,7 @@ export type VenueMIC =
   | "XPAR"
   | "XFRA";
 
-export type InstrumentType = "equity" | "option";
+export type InstrumentType = "equity" | "option" | "bond";
 
 export interface OptionSpec {
   optionType: "call" | "put";
@@ -151,6 +151,19 @@ export type AlgoParams =
   | SniperParams
   | ArrivalPriceParams;
 
+export interface BondSpec {
+  isin: string;
+  symbol: string;
+  description: string;
+  couponRate: number;
+  maturityDate: string;
+  totalPeriods: number;
+  periodsPerYear: number;
+  faceValue: number;
+  yieldAtOrder: number;
+  creditRating: string;
+}
+
 export interface Trade {
   asset: string;
   side: "BUY" | "SELL";
@@ -160,6 +173,7 @@ export interface Trade {
   algoParams: AlgoParams;
   instrumentType?: InstrumentType;
   optionSpec?: OptionSpec;
+  bondSpec?: BondSpec;
 }
 
 export interface ChildOrder {
@@ -224,6 +238,7 @@ export interface OrderRecord {
   userId?: string;
   instrumentType?: InstrumentType;
   optionSpec?: OptionSpec;
+  bondSpec?: BondSpec;
 }
 
 export interface ObsEvent {

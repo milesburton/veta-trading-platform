@@ -10,7 +10,8 @@ import {
   YAxis,
 } from "recharts";
 import { useGetQuoteMutation } from "../store/analyticsApi.ts";
-import { useAppSelector } from "../store/hooks.ts";
+import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+import { setOptionPrefill } from "../store/uiSlice.ts";
 import type { OptionQuoteResponse, OptionType } from "../types/analytics.ts";
 
 // ── Inline Black-Scholes Greeks for client-side sensitivity chart ─────────────
@@ -103,6 +104,7 @@ export function OptionPricingPanel() {
   const [result, setResult] = useState<OptionQuoteResponse | null>(null);
 
   const [getQuote, { isLoading, error }] = useGetQuoteMutation();
+  const dispatch = useAppDispatch();
 
   // Auto-populate strike from live market price when symbol changes
   const currentPrice = useAppSelector((s) => s.market.prices[symbol]);
@@ -111,6 +113,18 @@ export function OptionPricingPanel() {
       setStrike(currentPrice.toFixed(2));
     }
   }, [symbol, currentPrice]);
+
+  // Consume prefill dispatched by VolSurfacePanel (strike + expirySecs)
+  const optionPrefill = useAppSelector((s) => s.ui.optionPrefill);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional — consume once and clear
+  useEffect(() => {
+    if (optionPrefill) {
+      setStrike(optionPrefill.strike.toFixed(2));
+      setExpirySecs(optionPrefill.expirySecs);
+      setCustomDate("");
+      dispatch(setOptionPrefill(null));
+    }
+  }, [optionPrefill]);
 
   function handleCustomDate(dateStr: string) {
     setCustomDate(dateStr);

@@ -2,11 +2,17 @@
  * Analytics Service — port 5014
  *
  * Endpoints:
- *   POST /quote                  — Black-Scholes option price + Greeks
- *   POST /scenario               — Scenario matrix (spot/vol shocks) with Monte Carlo
- *   POST /recommend              — Trade recommendations (rule-based or signal-driven)
- *   GET  /vol-profile/:symbol    — EWMA vol trend series for charting
- *   GET  /greeks-surface/:symbol — Greeks across strike range at given expiry
+ *   POST /quote                    — Black-Scholes option price + Greeks
+ *   POST /scenario                 — Scenario matrix (spot/vol shocks) with Monte Carlo
+ *   POST /recommend                — Trade recommendations (rule-based or signal-driven)
+ *   GET  /vol-profile/:symbol      — EWMA vol trend series for charting
+ *   GET  /greeks-surface/:symbol   — Greeks across strike range at given expiry
+ *   POST /bond-price               — Bond pricing (DCF, duration, convexity, DV01)
+ *   POST /yield-curve              — Nelson-Siegel spot curve + forward rates
+ *   GET  /price-fan/:symbol        — GBM forward price fan (p5/p25/p50/p75/p95)
+ *   POST /spread-analysis          — Z-spread, G-spread, OAS vs Nelson-Siegel curve
+ *   POST /duration-ladder          — Key-rate DV01 ladder for a bond portfolio
+ *   GET  /vol-surface/:symbol      — Implied vol surface (5 expiries × 9 strikes)
  *   GET  /health
  */
 
@@ -40,6 +46,11 @@ import type {
 } from "./types.ts";
 import { estimateVol, estimateVolProfile, fetchSpotPrice } from "./volatility-estimator.ts";
 import { buildYieldCurveResponse } from "./yield-curve.ts";
+import { computeSpreadAnalysis } from "./spread-analysis.ts";
+import type { SpreadAnalysisRequest } from "./spread-analysis.ts";
+import { computeDurationLadder } from "./duration-ladder.ts";
+import type { BondPosition } from "./duration-ladder.ts";
+import { buildVolSurface } from "./vol-surface.ts";
 
 const PORT = Number(Deno.env.get("ANALYTICS_PORT")) || 5_014;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -345,6 +356,47 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       computedAt: Date.now(),
     };
     return json(response);
+  }
+
+  // ── POST /spread-analysis ────────────────────────────────────────────────────
+  if (path === "/spread-analysis" && req.method === "POST") {
+    let body: SpreadAnalysisRequest;
+    try {
+      body = await req.json() as SpreadAnalysisRequest;
+    } catch {
+      return err("Invalid JSON body");
+    }
+    const { couponRate, totalPeriods, yieldAnnual } = body;
+    if (couponRate == null || totalPeriods == null || yieldAnnual == null) {
+      return err("Missing required fields: couponRate, totalPeriods, yieldAnnual");
+    }
+    return json(computeSpreadAnalysis(body));
+  }
+
+  // ── POST /duration-ladder ─────────────────────────────────────────────────────
+  if (path === "/duration-ladder" && req.method === "POST") {
+    let body: { positions: BondPosition[] };
+    try {
+      body = await req.json() as { positions: BondPosition[] };
+    } catch {
+      return err("Invalid JSON body");
+    }
+    if (!body.positions?.length) {
+      return err("positions array required and must be non-empty");
+    }
+    return json(computeDurationLadder(body.positions));
+  }
+
+  // ── GET /vol-surface/:symbol ──────────────────────────────────────────────────
+  if (path.startsWith("/vol-surface/") && req.method === "GET") {
+    const symbol = decodeURIComponent(path.slice("/vol-surface/".length));
+    if (!symbol) return err("Missing symbol");
+
+    const spot = await resolveSpot(symbol);
+    if (spot === null) return err(`Cannot resolve spot price for ${symbol}`, 404);
+
+    const sigma = await estimateVol(JOURNAL_URL, symbol);
+    return json(buildVolSurface(symbol, spot, sigma));
   }
 
   return new Response("Not Found", { status: 404, headers: CORS });

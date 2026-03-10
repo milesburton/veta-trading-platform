@@ -222,3 +222,75 @@ export interface GreeksSurfaceResponse {
   strikes: GreeksSurfacePoint[];
   computedAt: number;
 }
+
+// ── Spread Analysis ───────────────────────────────────────────────────────────
+
+export interface SpreadAnalysisRequest {
+  couponRate: number;
+  totalPeriods: number;
+  periodsPerYear?: number;
+  yieldAnnual: number;
+  face?: number;
+  nsParams?: Partial<NelsonSiegelParams>;
+}
+
+export interface SpreadAnalysisResponse {
+  bondYield: number;
+  tenorYears: number;
+  govSpotRate: number;
+  gSpread: number; // basis points
+  zSpread: number; // basis points
+  oas: number; // basis points
+  computedAt: number;
+}
+
+// ── Duration Ladder ───────────────────────────────────────────────────────────
+
+export interface BondPosition {
+  faceValue: number;
+  couponRate: number;
+  totalPeriods: number;
+  periodsPerYear?: number;
+  yieldAnnual: number;
+  quantity: number;
+}
+
+export interface DurationLadderResponse {
+  positions: {
+    bondIndex: number;
+    totalDv01: number;
+    modifiedDuration: number;
+    contributions: {
+      bondIndex: number;
+      tenorLabel: string;
+      dv01Contribution: number;
+    }[];
+  }[];
+  buckets: {
+    tenorLabel: string;
+    tenorYears: number;
+    netDv01: number;
+  }[];
+  totalPortfolioDv01: number;
+  computedAt: number;
+}
+
+// ── Vol Surface ───────────────────────────────────────────────────────────────
+
+export interface VolSurfacePoint {
+  expirySecs: number;
+  expiryLabel: string;
+  moneyness: number;
+  strike: number;
+  impliedVol: number;
+}
+
+export interface VolSurfaceResponse {
+  symbol: string;
+  spotPrice: number;
+  atTheMoneyVol: number;
+  expiries: number[];
+  moneynesses: number[];
+  surface: VolSurfacePoint[];
+  computedAt: number;
+}

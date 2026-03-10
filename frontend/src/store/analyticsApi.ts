@@ -1,7 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type {
+  BondPosition,
   BondPriceRequest,
   BondPriceResponse,
+  DurationLadderResponse,
   GreeksSurfaceResponse,
   OptionQuoteRequest,
   OptionQuoteResponse,
@@ -10,7 +12,10 @@ import type {
   RecommendationResponse,
   ScenarioRequest,
   ScenarioResponse,
+  SpreadAnalysisRequest,
+  SpreadAnalysisResponse,
   VolProfileResponse,
+  VolSurfaceResponse,
   YieldCurveRequest,
   YieldCurveResponse,
 } from "../types/analytics.ts";
@@ -73,6 +78,23 @@ export const analyticsApi = createApi({
       query: ({ symbol, steps = 24, stepSecs = 3600, paths = 500 }) =>
         `/analytics/price-fan/${encodeURIComponent(symbol)}?steps=${steps}&stepSecs=${stepSecs}&paths=${paths}`,
     }),
+    getSpreadAnalysis: builder.mutation<SpreadAnalysisResponse, SpreadAnalysisRequest>({
+      query: (body) => ({
+        url: "/analytics/spread-analysis",
+        method: "POST",
+        body,
+      }),
+    }),
+    getDurationLadder: builder.mutation<DurationLadderResponse, { positions: BondPosition[] }>({
+      query: (body) => ({
+        url: "/analytics/duration-ladder",
+        method: "POST",
+        body,
+      }),
+    }),
+    getVolSurface: builder.query<VolSurfaceResponse, string>({
+      query: (symbol) => `/analytics/vol-surface/${encodeURIComponent(symbol)}`,
+    }),
   }),
 });
 
@@ -85,4 +107,7 @@ export const {
   useGetBondPriceMutation,
   useGetYieldCurveMutation,
   useGetPriceFanQuery,
+  useGetSpreadAnalysisMutation,
+  useGetDurationLadderMutation,
+  useGetVolSurfaceQuery,
 } = analyticsApi;

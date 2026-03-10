@@ -71,26 +71,29 @@ export function computeYieldCurve(params?: Partial<NelsonSiegelParams>): YieldCu
  * Derive implied forward rates from a spot curve.
  * Uses continuous compounding: f(t₁,t₂) = (R(t₂)×t₂ - R(t₁)×t₁) / (t₂ - t₁)
  */
-export function forwardRates(curve: YieldCurvePoint[]): ForwardRate[] {
-  const rateAt = (t: number): number => {
-    // Interpolate linearly between nearest tenors
-    const sorted = [...curve].sort((a, b) => a.tenorYears - b.tenorYears);
-    if (t <= sorted[0].tenorYears) return sorted[0].spotRate;
-    if (t >= sorted[sorted.length - 1].tenorYears) return sorted[sorted.length - 1].spotRate;
-    for (let i = 0; i < sorted.length - 1; i++) {
-      const lo = sorted[i];
-      const hi = sorted[i + 1];
-      if (t >= lo.tenorYears && t <= hi.tenorYears) {
-        const w = (t - lo.tenorYears) / (hi.tenorYears - lo.tenorYears);
-        return lo.spotRate + w * (hi.spotRate - lo.spotRate);
-      }
+/**
+ * Linearly interpolate a spot rate from the curve at tenor t (years).
+ * Exported for use by spread-analysis and other modules.
+ */
+export function rateAt(curve: YieldCurvePoint[], t: number): number {
+  const sorted = [...curve].sort((a, b) => a.tenorYears - b.tenorYears);
+  if (t <= sorted[0].tenorYears) return sorted[0].spotRate;
+  if (t >= sorted[sorted.length - 1].tenorYears) return sorted[sorted.length - 1].spotRate;
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const lo = sorted[i];
+    const hi = sorted[i + 1];
+    if (t >= lo.tenorYears && t <= hi.tenorYears) {
+      const w = (t - lo.tenorYears) / (hi.tenorYears - lo.tenorYears);
+      return lo.spotRate + w * (hi.spotRate - lo.spotRate);
     }
-    return sorted[sorted.length - 1].spotRate;
-  };
+  }
+  return sorted[sorted.length - 1].spotRate;
+}
 
+export function forwardRates(curve: YieldCurvePoint[]): ForwardRate[] {
   return FORWARD_PAIRS.map(({ from, to, label }) => {
-    const r1 = rateAt(from);
-    const r2 = rateAt(to);
+    const r1 = rateAt(curve, from);
+    const r2 = rateAt(curve, to);
     const rate = (r2 * to - r1 * from) / (to - from);
     return { fromYears: from, toYears: to, label, rate };
   });

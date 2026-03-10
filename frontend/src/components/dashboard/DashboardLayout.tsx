@@ -21,6 +21,7 @@ import type { ContextMenuEntry } from "../ContextMenu.tsx";
 import { ContextMenu } from "../ContextMenu.tsx";
 import { DecisionLog } from "../DecisionLog.tsx";
 import { DemoDayPanel } from "../DemoDayPanel.tsx";
+import { DurationLadderPanel } from "../DurationLadderPanel.tsx";
 import { EstateOverviewPanel } from "../EstateOverviewPanel.tsx";
 import { ExecutionsPanel } from "../ExecutionsPanel.tsx";
 import { GreeksSurfacePanel } from "../GreeksSurfacePanel.tsx";
@@ -45,9 +46,11 @@ import { ResearchRadarPanel } from "../ResearchRadarPanel.tsx";
 import { ScenarioMatrixPanel } from "../ScenarioMatrixPanel.tsx";
 import { ServiceHealthPanel } from "../ServiceHealthPanel.tsx";
 import { SignalExplainabilityPanel } from "../SignalExplainabilityPanel.tsx";
+import { SpreadAnalysisPanel } from "../SpreadAnalysisPanel.tsx";
 import { ThroughputGaugesPanel } from "../ThroughputGaugesPanel.tsx";
 import { TradeRecommendationPanel } from "../TradeRecommendationPanel.tsx";
 import { VolatilityProfilePanel } from "../VolatilityProfilePanel.tsx";
+import { VolSurfacePanel } from "../VolSurfacePanel.tsx";
 import { YieldCurvePanel } from "../YieldCurvePanel.tsx";
 import { DashboardContext, useDashboard } from "./DashboardContext.tsx";
 import { LAYOUT_TEMPLATES } from "./layoutModels.ts";
@@ -689,6 +692,12 @@ export function DashboardLayout() {
           return wrap(<PriceFanPanel />);
         case "demo-day":
           return wrap(<DemoDayPanel />);
+        case "spread-analysis":
+          return wrap(<SpreadAnalysisPanel />);
+        case "duration-ladder":
+          return wrap(<DurationLadderPanel />);
+        case "vol-surface":
+          return wrap(<VolSurfacePanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }

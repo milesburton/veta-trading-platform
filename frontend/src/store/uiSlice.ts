@@ -2,12 +2,19 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
 import type { Strategy } from "../types.ts";
 
+interface OptionPrefill {
+  strike: number;
+  expirySecs: number;
+}
+
 interface UiState {
   activeStrategy: Strategy;
   activeSide: "BUY" | "SELL";
   showShortcuts: boolean;
   selectedAsset: string | null;
   updateAvailable: boolean;
+  /** Set by VolSurfacePanel when a cell is clicked — consumed by OptionPricingPanel. */
+  optionPrefill: OptionPrefill | null;
 }
 
 const initialState: UiState = {
@@ -16,6 +23,7 @@ const initialState: UiState = {
   showShortcuts: false,
   selectedAsset: null,
   updateAvailable: false,
+  optionPrefill: null,
 };
 
 export const uiSlice = createSlice({
@@ -40,6 +48,9 @@ export const uiSlice = createSlice({
     setUpdateAvailable(state) {
       state.updateAvailable = true;
     },
+    setOptionPrefill(state, action: PayloadAction<OptionPrefill | null>) {
+      state.optionPrefill = action.payload;
+    },
   },
 });
 
@@ -50,4 +61,5 @@ export const {
   hideShortcuts,
   setSelectedAsset,
   setUpdateAvailable,
+  setOptionPrefill,
 } = uiSlice.actions;

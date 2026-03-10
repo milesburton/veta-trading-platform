@@ -44,6 +44,9 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "yield-curve": "Nelson-Siegel spot yield curve with forward rates and bond pricing",
   "price-fan": "GBM Monte Carlo forward price projection fan chart",
   "demo-day": "One-click trading day simulator — inject realistic mixed-strategy orders",
+  "spread-analysis": "G-spread, Z-spread and OAS for corporate bonds vs the government curve",
+  "duration-ladder": "Portfolio DV01 key-rate attribution by tenor bucket — stacked bar chart",
+  "vol-surface": "Implied vol heatmap (5 expiries × 9 strikes) — click to prefill Option Pricing",
 };
 
 export function ComponentPicker() {

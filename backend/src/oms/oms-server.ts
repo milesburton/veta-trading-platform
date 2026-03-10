@@ -95,6 +95,19 @@ const killConsumer = await createConsumer("oms-kill-orders", ["orders.kill", "or
   return null;
 });
 
+interface BondSpec {
+  isin: string;
+  symbol: string;
+  description: string;
+  couponRate: number;
+  maturityDate: string;
+  totalPeriods: number;
+  periodsPerYear: number;
+  faceValue: number;
+  yieldAtOrder: number;
+  creditRating: string;
+}
+
 interface NewOrder {
   asset: string;
   side: "BUY" | "SELL";
@@ -107,6 +120,7 @@ interface NewOrder {
   userId?: string;
   userRole?: string;
   instrumentType?: string;
+  bondSpec?: BondSpec;
 }
 
 type KillScope = "all" | "user" | "algo" | "market" | "symbol";
@@ -164,6 +178,23 @@ consumer?.onMessage(async (_topic, raw) => {
       ts: Date.now(),
     }).catch(() => {});
     return;
+  }
+
+  // Bond orders: validate bondSpec is present, force LIMIT strategy
+  if (order.instrumentType === "bond") {
+    if (!order.bondSpec) {
+      console.warn(`[oms] Bond order missing bondSpec (user=${order.userId})`);
+      await producer?.send("orders.rejected", {
+        clientOrderId: order.clientOrderId,
+        userId: order.userId,
+        reason: "Bond orders require bondSpec (isin, couponRate, totalPeriods, yieldAtOrder)",
+        ts: Date.now(),
+      }).catch(() => {});
+      return;
+    }
+    // Force LIMIT strategy for bond orders — algo strategies don't apply
+    order.strategy = "LIMIT";
+    console.log(`[oms] Bond order accepted: ${order.bondSpec.symbol} qty=${order.quantity} yield=${(order.bondSpec.yieldAtOrder * 100).toFixed(3)}% (user=${order.userId})`);
   }
 
   const strategy = (order.strategy ?? "LIMIT").toUpperCase();

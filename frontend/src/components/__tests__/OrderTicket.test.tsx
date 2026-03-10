@@ -31,6 +31,7 @@ vi.mock("../../store/analyticsApi", () => ({
     vi.fn().mockResolvedValue({ data: MOCK_QUOTE }),
     { isLoading: false },
   ],
+  useGetBondPriceMutation: () => [vi.fn().mockResolvedValue({ data: null }), { isLoading: false }],
 }));
 
 const assets: AssetDef[] = [

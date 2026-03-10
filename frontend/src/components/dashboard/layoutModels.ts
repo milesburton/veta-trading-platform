@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v13`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v14`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -1091,6 +1091,27 @@ export function makeFiAnalysisModel(): IJsonModel {
               component: "scenario-matrix",
               config: { panelType: "scenario-matrix" } satisfies TabChannelConfig,
             },
+            {
+              type: "tab",
+              id: "spread-analysis",
+              name: PANEL_TITLES["spread-analysis"],
+              component: "spread-analysis",
+              config: { panelType: "spread-analysis" } satisfies TabChannelConfig,
+            },
+            {
+              type: "tab",
+              id: "duration-ladder",
+              name: PANEL_TITLES["duration-ladder"],
+              component: "duration-ladder",
+              config: { panelType: "duration-ladder" } satisfies TabChannelConfig,
+            },
+            {
+              type: "tab",
+              id: "vol-surface",
+              name: PANEL_TITLES["vol-surface"],
+              component: "vol-surface",
+              config: { panelType: "vol-surface" } satisfies TabChannelConfig,
+            },
           ],
         },
       ],
@@ -1349,6 +1370,27 @@ export function makeFiResearchModel(): IJsonModel {
                   name: PANEL_TITLES["trade-recommendation"],
                   component: "trade-recommendation",
                   config: { panelType: "trade-recommendation" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "spread-analysis",
+                  name: PANEL_TITLES["spread-analysis"],
+                  component: "spread-analysis",
+                  config: { panelType: "spread-analysis" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "duration-ladder",
+                  name: PANEL_TITLES["duration-ladder"],
+                  component: "duration-ladder",
+                  config: { panelType: "duration-ladder" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "vol-surface",
+                  name: PANEL_TITLES["vol-surface"],
+                  component: "vol-surface",
+                  config: { panelType: "vol-surface" } satisfies TabChannelConfig,
                 },
               ],
             },

@@ -806,6 +806,46 @@ serve(async (req: Request): Promise<Response> => {
     return proxyGet(`${ANALYTICS_URL}/greeks-surface/${encodeURIComponent(greeksSurfaceMatch[1])}${qs}`, req);
   }
 
+  if (path === "/analytics/bond-price" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyPost(`${ANALYTICS_URL}/bond-price`, req);
+  }
+
+  if (path === "/analytics/yield-curve" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyPost(`${ANALYTICS_URL}/yield-curve`, req);
+  }
+
+  const priceFanMatch = path.match(/^\/analytics\/price-fan\/(.+)$/);
+  if (priceFanMatch && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    const qs = url.search;
+    return proxyGet(`${ANALYTICS_URL}/price-fan/${encodeURIComponent(priceFanMatch[1])}${qs}`, req);
+  }
+
+  if (path === "/analytics/spread-analysis" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyPost(`${ANALYTICS_URL}/spread-analysis`, req);
+  }
+
+  if (path === "/analytics/duration-ladder" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyPost(`${ANALYTICS_URL}/duration-ladder`, req);
+  }
+
+  const volSurfaceMatch = path.match(/^\/analytics\/vol-surface\/(.+)$/);
+  if (volSurfaceMatch && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    const qs = url.search;
+    return proxyGet(`${ANALYTICS_URL}/vol-surface/${encodeURIComponent(volSurfaceMatch[1])}${qs}`, req);
+  }
+
   const featureMatch = path.match(/^\/intelligence\/features(\/.*)?$/);
   if (featureMatch && req.method === "GET") {
     const auth = await requireAuth(req);

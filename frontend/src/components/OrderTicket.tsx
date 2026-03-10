@@ -2,21 +2,24 @@ import { useSignal } from "@preact/signals-react";
 import { useEffect, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useTradingContext } from "../context/TradingContext.tsx";
+import { BOND_UNIVERSE } from "../data/bondUniverse.ts";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
-import { useGetQuoteMutation } from "../store/analyticsApi.ts";
+import { useGetBondPriceMutation, useGetQuoteMutation } from "../store/analyticsApi.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { isOrderBlocked } from "../store/killSwitchSlice.ts";
 import { submitOrderThunk } from "../store/ordersSlice.ts";
 import { setActiveSide, setActiveStrategy } from "../store/uiSlice.ts";
-import type { OptionQuoteResponse } from "../types/analytics.ts";
+import type { BondPriceResponse, OptionQuoteResponse } from "../types/analytics.ts";
 import type {
   AlgoParams,
   ArrivalPriceParams,
+  BondSpec,
   IcebergParams,
   InstrumentType,
   LimitParams,
   PovParams,
   SniperParams,
+  Trade,
   TwapParams,
   VwapParams,
 } from "../types.ts";
@@ -237,6 +240,15 @@ export function OrderTicket() {
   const optionQuote = useSignal<OptionQuoteResponse | null>(null);
   const quoteFetching = useSignal(false);
 
+  // ── Bond-mode signals ──────────────────────────────────────────────────────
+  const bondSymbol = useSignal(BOND_UNIVERSE[4]?.symbol ?? "US10Y"); // default to US10Y
+  const bondYield = useSignal("");
+  const bondQuote = useSignal<BondPriceResponse | null>(null);
+  const bondFetching = useSignal(false);
+
+  const [getBondPrice] = useGetBondPriceMutation();
+  const bondDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const quoteDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -308,13 +320,46 @@ export function OrderTicket() {
     if (price) limitPrice.value = formatPrice(selectedAsset?.symbol ?? "", price);
   }
 
+  function handleSwitchToBond() {
+    instrumentType.value = "bond";
+    dispatch(setActiveStrategy("LIMIT"));
+    bondQuote.value = null;
+    scheduleBondQuoteFetch();
+  }
+
+  function scheduleBondQuoteFetch() {
+    if (bondDebounceRef.current) clearTimeout(bondDebounceRef.current);
+    bondDebounceRef.current = setTimeout(async () => {
+      const def = BOND_UNIVERSE.find((b) => b.symbol === bondSymbol.value);
+      if (!def) return;
+      const yld = Number(bondYield.value) > 0 ? Number(bondYield.value) / 100 : def.initialYield;
+      bondFetching.value = true;
+      try {
+        const result = await getBondPrice({
+          face: def.faceValue,
+          couponRate: def.couponRate,
+          periodsPerYear: def.periodsPerYear,
+          totalPeriods: def.totalPeriods,
+          yieldAnnual: yld,
+        });
+        if ("data" in result && result.data) {
+          bondQuote.value = result.data;
+          limitPrice.value = (result.data.price / def.faceValue).toFixed(6); // price as fraction
+        }
+      } finally {
+        bondFetching.value = false;
+      }
+    }, 600);
+  }
+
   const qty = Number(quantity.value);
   const lx = Number(limitPrice.value);
   const isOptions = instrumentType.value === "option";
+  const isBond = instrumentType.value === "bond";
 
   // ── Validation ─────────────────────────────────────────────────────────────
   const limitWarnings: string[] = [];
-  if (!isOptions) {
+  if (!isOptions && !isBond) {
     if (qty > 0 && limits.max_order_qty > 0 && qty > limits.max_order_qty) {
       limitWarnings.push(
         `Quantity ${qty.toLocaleString()} exceeds your limit of ${limits.max_order_qty.toLocaleString()} shares`
@@ -339,13 +384,16 @@ export function OrderTicket() {
   }
 
   const optionStrikeNum = Number(optionStrike.value);
+  const selectedBondDef = BOND_UNIVERSE.find((b) => b.symbol === bondSymbol.value);
   const isValid = isOptions
     ? qty > 0 && optionStrikeNum > 0 && !!optionQuote.value && !quoteFetching.value
-    : qty > 0 &&
-      lx > 0 &&
-      Number(expiresAt.value) > 0 &&
-      selectedAsset !== undefined &&
-      limitWarnings.length === 0;
+    : isBond
+      ? qty > 0 && !!bondQuote.value && !bondFetching.value && !!selectedBondDef
+      : qty > 0 &&
+        lx > 0 &&
+        Number(expiresAt.value) > 0 &&
+        selectedAsset !== undefined &&
+        limitWarnings.length === 0;
 
   function buildAlgoParams(): AlgoParams {
     if (activeStrategy === "TWAP") {
@@ -410,30 +458,58 @@ export function OrderTicket() {
 
     const algoParams: LimitParams = { strategy: "LIMIT" };
 
-    const trade = isOptions
-      ? {
-          asset: selectedAsset.symbol,
-          side: activeSide,
-          quantity: qty,
-          limitPrice: lx,
-          expiresAt: 300,
-          algoParams,
-          instrumentType: "option" as const,
-          optionSpec: {
-            optionType: optionType.value,
-            strike: optionStrikeNum,
-            expirySecs: Number(optionExpiry.value),
-            premium: optionQuote.value?.price,
-          },
-        }
-      : {
-          asset: selectedAsset.symbol,
-          side: activeSide,
-          quantity: qty,
-          limitPrice: lx,
-          expiresAt: Number(expiresAt.value),
-          algoParams: buildAlgoParams(),
-        };
+    let trade: Trade;
+    if (isOptions) {
+      trade = {
+        asset: selectedAsset.symbol,
+        side: activeSide,
+        quantity: qty,
+        limitPrice: lx,
+        expiresAt: 300,
+        algoParams,
+        instrumentType: "option" as const,
+        optionSpec: {
+          optionType: optionType.value,
+          strike: optionStrikeNum,
+          expirySecs: Number(optionExpiry.value),
+          premium: optionQuote.value?.price,
+        },
+      };
+    } else if (isBond && selectedBondDef) {
+      const yldDecimal =
+        Number(bondYield.value) > 0 ? Number(bondYield.value) / 100 : selectedBondDef.initialYield;
+      const bondSpec: BondSpec = {
+        isin: selectedBondDef.isin,
+        symbol: selectedBondDef.symbol,
+        description: selectedBondDef.description,
+        couponRate: selectedBondDef.couponRate,
+        maturityDate: selectedBondDef.maturityDate,
+        totalPeriods: selectedBondDef.totalPeriods,
+        periodsPerYear: selectedBondDef.periodsPerYear,
+        faceValue: selectedBondDef.faceValue,
+        yieldAtOrder: yldDecimal,
+        creditRating: selectedBondDef.creditRating,
+      };
+      trade = {
+        asset: selectedBondDef.symbol,
+        side: activeSide,
+        quantity: qty,
+        limitPrice: bondQuote.value?.price ?? 0,
+        expiresAt: 300,
+        algoParams,
+        instrumentType: "bond" as const,
+        bondSpec,
+      };
+    } else {
+      trade = {
+        asset: selectedAsset.symbol,
+        side: activeSide,
+        quantity: qty,
+        limitPrice: lx,
+        expiresAt: Number(expiresAt.value),
+        algoParams: buildAlgoParams(),
+      };
+    }
 
     try {
       await dispatch(submitOrderThunk(trade)).unwrap();
@@ -442,6 +518,11 @@ export function OrderTicket() {
           ok: false,
           msg: "Options not supported in this simulation — order rejected",
         };
+      } else if (isBond) {
+        feedback.value = { ok: true, msg: "Bond order submitted." };
+        quantity.value = "100";
+        bondQuote.value = null;
+        scheduleBondQuoteFetch();
       } else {
         feedback.value = { ok: true, msg: "Order submitted." };
         quantity.value = "100";
@@ -501,10 +582,10 @@ export function OrderTicket() {
         <div className="flex gap-1">
           <button
             type="button"
-            aria-pressed={!isOptions}
+            aria-pressed={!isOptions && !isBond}
             onClick={handleSwitchToEquity}
             className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
-              !isOptions
+              !isOptions && !isBond
                 ? "bg-gray-700 border-gray-500 text-gray-100"
                 : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
             }`}
@@ -523,10 +604,22 @@ export function OrderTicket() {
           >
             Options
           </button>
+          <button
+            type="button"
+            aria-pressed={isBond}
+            onClick={handleSwitchToBond}
+            className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
+              isBond
+                ? "bg-gray-700 border-gray-500 text-gray-100"
+                : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+            }`}
+          >
+            Bond
+          </button>
         </div>
 
         {/* Strategy — equity only */}
-        {!isOptions && (
+        {!isOptions && !isBond && (
           <div>
             <label htmlFor="strategy" className="block text-xs text-gray-500 mb-1">
               Strategy
@@ -574,19 +667,192 @@ export function OrderTicket() {
           </div>
         )}
 
-        <AssetSelector
-          assets={assets}
-          value={assetSearch.value}
-          onChange={(v) => {
-            assetSearch.value = v;
-          }}
-          onSelect={selectAsset}
-          inputRef={assetInputRef}
-          prices={prices}
-        />
+        {!isBond && (
+          <AssetSelector
+            assets={assets}
+            value={assetSearch.value}
+            onChange={(v) => {
+              assetSearch.value = v;
+            }}
+            onSelect={selectAsset}
+            inputRef={assetInputRef}
+            prices={prices}
+          />
+        )}
 
         {/* Equity: asset info bar */}
-        {!isOptions && symbol && <AssetInfoBar symbol={symbol} />}
+        {!isOptions && !isBond && symbol && <AssetInfoBar symbol={symbol} />}
+
+        {/* Bond: ISIN selector + bond info + yield input */}
+        {isBond && (
+          <>
+            <div>
+              <label htmlFor="bondSymbol" className="block text-xs text-gray-500 mb-1">
+                Bond / ISIN
+              </label>
+              <select
+                id="bondSymbol"
+                value={bondSymbol.value}
+                onChange={(e) => {
+                  bondSymbol.value = e.target.value;
+                  bondYield.value = "";
+                  bondQuote.value = null;
+                  scheduleBondQuoteFetch();
+                }}
+                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-purple-500"
+              >
+                <optgroup label="US Treasuries">
+                  {BOND_UNIVERSE.filter((b) => b.issuer === "UST").map((b) => (
+                    <option key={b.symbol} value={b.symbol}>
+                      {b.symbol} — {b.description}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Corporate">
+                  {BOND_UNIVERSE.filter((b) => b.issuer === "Corp").map((b) => (
+                    <option key={b.symbol} value={b.symbol}>
+                      {b.symbol} — {b.description}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+
+            {selectedBondDef && (
+              <div className="rounded bg-gray-800/60 border border-gray-700/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">ISIN</span>
+                  <span className="tabular-nums text-gray-300 font-mono">
+                    {selectedBondDef.isin}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Rating</span>
+                  <span
+                    className={`font-semibold ${
+                      selectedBondDef.creditRating === "AAA"
+                        ? "text-emerald-400"
+                        : selectedBondDef.creditRating.startsWith("A")
+                          ? "text-sky-400"
+                          : "text-amber-400"
+                    }`}
+                  >
+                    {selectedBondDef.creditRating}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Coupon</span>
+                  <span className="tabular-nums text-gray-300">
+                    {(selectedBondDef.couponRate * 100).toFixed(2)}%
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Maturity</span>
+                  <span className="tabular-nums text-gray-300">{selectedBondDef.maturityDate}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Face $</span>
+                  <span className="tabular-nums text-gray-300">
+                    ${selectedBondDef.faceValue.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Issuer</span>
+                  <span className="text-gray-300">
+                    {selectedBondDef.issuer === "UST"
+                      ? "US Treasury"
+                      : (selectedBondDef.sector ?? "Corp")}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="bondYield" className="block text-xs text-gray-500 mb-1">
+                Yield (% p.a.){" "}
+                {selectedBondDef && (
+                  <span className="text-gray-600 normal-case">
+                    (ref {(selectedBondDef.initialYield * 100).toFixed(2)}%)
+                  </span>
+                )}
+              </label>
+              <input
+                id="bondYield"
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={bondYield.value}
+                onChange={(e) => {
+                  bondYield.value = e.target.value;
+                  bondQuote.value = null;
+                  scheduleBondQuoteFetch();
+                }}
+                placeholder={
+                  selectedBondDef
+                    ? `${(selectedBondDef.initialYield * 100).toFixed(2)}`
+                    : "e.g. 4.75"
+                }
+                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-purple-500 tabular-nums"
+              />
+            </div>
+
+            {bondFetching.value && (
+              <div className="text-[10px] text-gray-600 text-center py-1">Pricing bond…</div>
+            )}
+            {bondQuote.value && !bondFetching.value && (
+              <section
+                className="rounded bg-gray-800/60 border border-gray-700/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1"
+                aria-label="Bond price"
+              >
+                <div className="flex justify-between col-span-2">
+                  <span className="text-gray-500">Clean Price</span>
+                  <span className="tabular-nums font-semibold text-gray-100">
+                    ${bondQuote.value.price.toFixed(4)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Mod Duration</span>
+                  <span className="tabular-nums text-gray-300">
+                    {bondQuote.value.modifiedDuration.toFixed(3)}y
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">DV01</span>
+                  <span className="tabular-nums text-gray-300">
+                    ${bondQuote.value.dv01.toFixed(4)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Convexity</span>
+                  <span className="tabular-nums text-gray-300">
+                    {bondQuote.value.convexity.toFixed(3)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Yield p.a.</span>
+                  <span className="tabular-nums text-gray-300">
+                    {(bondQuote.value.yieldAnnual * 100).toFixed(3)}%
+                  </span>
+                </div>
+                {selectedBondDef && qty > 0 && bondQuote.value && (
+                  <div className="col-span-2 flex justify-between border-t border-gray-700 pt-1 mt-0.5">
+                    <span className="text-gray-500">Notional ({qty} bonds)</span>
+                    <span className="tabular-nums font-semibold text-gray-200">
+                      $
+                      {(qty * bondQuote.value.price).toLocaleString(undefined, {
+                        maximumFractionDigits: 0,
+                      })}
+                    </span>
+                  </div>
+                )}
+              </section>
+            )}
+
+            <div className="rounded border border-purple-700/40 bg-purple-950/30 px-2.5 py-1.5 text-[10px] text-purple-400">
+              Bond orders always use LIMIT strategy at computed clean price.
+            </div>
+          </>
+        )}
 
         {/* Options: option type + strike + expiry */}
         {isOptions && (
@@ -764,6 +1030,10 @@ export function OrderTicket() {
               <>
                 Contracts <span className="text-gray-600">(1 contract = 100 shares)</span>
               </>
+            ) : isBond ? (
+              <>
+                Quantity <span className="text-gray-600">(bonds)</span>
+              </>
             ) : (
               <>
                 Quantity <span className="text-gray-600">(shares)</span>
@@ -791,7 +1061,7 @@ export function OrderTicket() {
         </div>
 
         {/* Equity: limit price */}
-        {!isOptions && (
+        {!isOptions && !isBond && (
           <div>
             <div className="flex items-center justify-between mb-1">
               <label htmlFor="limitPrice" className="text-xs text-gray-500">
@@ -834,7 +1104,7 @@ export function OrderTicket() {
         )}
 
         {/* Previews */}
-        {!isOptions && qty > 0 && lx > 0 && (
+        {!isOptions && !isBond && qty > 0 && lx > 0 && (
           <OrderPreview symbol={symbol} qty={qty} limitPx={lx} side={activeSide} />
         )}
         {isOptions && optionQuote.value && (
@@ -842,7 +1112,7 @@ export function OrderTicket() {
         )}
 
         {/* Equity: TIF + duration + strategy params */}
-        {!isOptions && (
+        {!isOptions && !isBond && (
           <>
             <div>
               <span className="block text-xs text-gray-500 mb-1">Time In Force</span>
@@ -963,17 +1233,21 @@ export function OrderTicket() {
           title={
             !isValid && isOptions && !optionQuote.value
               ? "Enter a strike and wait for the premium to load"
-              : limitWarnings.length > 0
-                ? `Order blocked: ${limitWarnings[0]}`
-                : isValid
-                  ? `Submit order — keyboard shortcut: Ctrl+Enter`
-                  : "Fill in all required fields to submit"
+              : !isValid && isBond && !bondQuote.value
+                ? "Select a bond and wait for the price to load"
+                : limitWarnings.length > 0
+                  ? `Order blocked: ${limitWarnings[0]}`
+                  : isValid
+                    ? `Submit order — keyboard shortcut: Ctrl+Enter`
+                    : "Fill in all required fields to submit"
           }
           aria-label={
             isValid
               ? isOptions
                 ? `Submit ${activeSide} option for ${qty} ${optionType.value === "call" ? "CALL" : "PUT"} on ${symbol} strike ${optionStrikeNum}`
-                : `Submit ${activeSide} order for ${qty} shares of ${symbol} at $${lx}`
+                : isBond
+                  ? `Submit ${activeSide} bond order for ${qty}× ${bondSymbol.value}`
+                  : `Submit ${activeSide} order for ${qty} shares of ${symbol} at $${lx}`
               : "Submit order (form incomplete)"
           }
           className={`w-full py-2.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${
@@ -986,7 +1260,9 @@ export function OrderTicket() {
             ? "Submitting…"
             : isOptions
               ? `${activeSide} ${qty}× ${symbol} ${optionStrikeNum > 0 ? `$${optionStrikeNum}` : ""}${optionType.value.toUpperCase()}${optionQuote.value ? ` · $${(qty * 100 * optionQuote.value.price).toFixed(0)}` : ""}`
-              : `${activeSide} ${symbol}${qty > 0 && lx > 0 ? ` · $${(qty * lx).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : ""}`}
+              : isBond
+                ? `${activeSide} ${qty}× ${bondSymbol.value}${bondQuote.value ? ` · $${(qty * bondQuote.value.price).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : ""}`
+                : `${activeSide} ${symbol}${qty > 0 && lx > 0 ? ` · $${(qty * lx).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : ""}`}
         </button>
 
         <p

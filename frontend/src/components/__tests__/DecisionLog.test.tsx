@@ -30,6 +30,7 @@ function makeStore(events: ObsEvent[] = [], channelAsset?: string) {
         showShortcuts: false,
         selectedAsset: null,
         updateAvailable: false,
+        optionPrefill: null,
       },
       channels: {
         data: {

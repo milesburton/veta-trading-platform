@@ -2837,6 +2837,8 @@
         "npm:@vitejs/plugin-react@^4.3.1",
         "npm:@vitest/coverage-v8@^4.0.18",
         "npm:autoprefixer@^10.4.19",
+        "npm:electron-builder@^25.1.8",
+        "npm:electron@^33.4.11",
         "npm:flexlayout-react@~0.8.18",
         "npm:husky@^9.1.7",
         "npm:jsdom@^22.1.0",
@@ -2855,6 +2857,8 @@
         "npm:tailwindcss@^3.4.6",
         "npm:typescript@^5.5.3",
         "npm:uuid@10",
+        "npm:vite-plugin-electron-renderer@~0.14.6",
+        "npm:vite-plugin-electron@~0.28.8",
         "npm:vite@^7.3.1",
         "npm:vitest@^4.0.18"
       ]
