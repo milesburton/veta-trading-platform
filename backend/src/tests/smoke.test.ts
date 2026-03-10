@@ -579,7 +579,7 @@ Deno.test("[orders/settled] VWAP order reaches filled or expired within 90s", as
 });
 
 Deno.test("[orders/settled] ICEBERG order is accepted and reaches journal within 30s", async () => {
-  const token = await loginAs("bob");
+  const token = await loginAs("alice");
   const price = await livePrice(token, "MSFT");
   const { clientOrderId } = await submitOrderViaWs(token, {
     asset: "MSFT", side: "BUY", quantity: 200,
@@ -630,7 +630,7 @@ Deno.test("[orders/settled] SNIPER order reaches filled or expired within 60s", 
 });
 
 Deno.test("[orders/settled] ARRIVAL_PRICE order is accepted and reaches journal within 30s", async () => {
-  const token = await loginAs("bob");
+  const token = await loginAs("alice");
   const price = await livePrice(token, "MSFT");
   const { clientOrderId } = await submitOrderViaWs(token, {
     asset: "MSFT", side: "BUY", quantity: 40,
