@@ -49,6 +49,47 @@ services:
       - "traefik.http.services.redpanda-console.loadbalancer.server.port=8080"
       - "traefik.http.routers.redpanda-console.priority=15"
 
+  # ── PostgreSQL ────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    restart: unless-stopped
+    networks:
+      - trading-net
+    environment:
+      POSTGRES_USER: veta
+      POSTGRES_PASSWORD: veta
+      POSTGRES_DB: veta
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "veta"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+
+  # ── Postgres migrations (one-shot on startup) ─────────────────────────────────
+  postgres-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/db/migrate.ts
+    networks:
+      - trading-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+    restart: "no"
+    labels:
+      - "traefik.enable=false"
+
   # ── OpenSearch (single-node, security disabled for dev) ──────────────────────
   opensearch:
     image: opensearchproject/opensearch:2.13.0
@@ -470,7 +511,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: deno run --allow-all backend/src/observability/observability-server.ts
+    command: deno run --allow-all observability/kafka-relay.ts
     restart: unless-stopped
     networks:
       - trading-net
@@ -479,12 +520,8 @@ services:
         condition: service_healthy
     environment:
       OBSERVABILITY_PORT: 5007
-      OBS_DB_PATH: /app/backend/data/observability.db
-      OBS_RETENTION_MS: ${OBS_RETENTION_MS:-86400000}
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-dev}
-    volumes:
-      - observability-data:/app/backend/data
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:5007/health"]
       interval: 10s
@@ -513,13 +550,13 @@ services:
     depends_on:
       redpanda:
         condition: service_healthy
+      postgres-migrate:
+        condition: service_completed_successfully
     environment:
       USER_SERVICE_PORT: 5008
-      USER_DB_PATH: /app/backend/data/users.db
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-dev}
-    volumes:
-      - observability-data:/app/backend/data
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:5008/health"]
       interval: 10s
@@ -546,14 +583,14 @@ services:
     depends_on:
       redpanda:
         condition: service_healthy
+      postgres-migrate:
+        condition: service_completed_successfully
     environment:
       JOURNAL_PORT: 5009
-      JOURNAL_DB_PATH: /app/backend/data/journal.db
       JOURNAL_RETENTION_DAYS: ${JOURNAL_RETENTION_DAYS:-90}
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-dev}
-    volumes:
-      - observability-data:/app/backend/data
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:5009/health"]
       interval: 10s
@@ -568,39 +605,6 @@ services:
       - "traefik.http.middlewares.journal-strip.stripprefix.prefixes=/api/journal"
       - "traefik.http.services.journal.loadbalancer.server.port=5009"
 
-  # ── Candle Store ──────────────────────────────────────────────────────────────
-  candle-store:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: deno run --allow-all backend/src/candle-store/candle-store.ts
-    restart: unless-stopped
-    networks:
-      - trading-net
-    depends_on:
-      redpanda:
-        condition: service_healthy
-    environment:
-      CANDLE_STORE_PORT: 5010
-      CANDLE_STORE_DB_PATH: /app/backend/data/candle-store.db
-      REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
-    volumes:
-      - observability-data:/app/backend/data
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:5010/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.candle-store.rule=PathPrefix(`/api/candle-store`)"
-      - "traefik.http.routers.candle-store.entrypoints=web"
-      - "traefik.http.routers.candle-store.middlewares=candle-store-strip"
-      - "traefik.http.middlewares.candle-store-strip.stripprefix.prefixes=/api/candle-store"
-      - "traefik.http.services.candle-store.loadbalancer.server.port=5010"
-
   # ── FIX Archive (persists fix.execution events from bus) ─────────────────────
   fix-archive:
     build:
@@ -613,13 +617,13 @@ services:
     depends_on:
       redpanda:
         condition: service_healthy
+      postgres-migrate:
+        condition: service_completed_successfully
     environment:
       FIX_ARCHIVE_PORT: 5012
-      FIX_ARCHIVE_DB_PATH: /app/backend/data/fix-archive.db
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-dev}
-    volumes:
-      - observability-data:/app/backend/data
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:5012/health"]
       interval: 10s
@@ -648,14 +652,11 @@ services:
         condition: service_healthy
       market-sim:
         condition: service_healthy
-      candle-store:
-        condition: service_healthy
       journal:
         condition: service_healthy
     environment:
       GATEWAY_PORT: 5011
       MARKET_SIM_URL: http://market-sim:5000
-      CANDLE_STORE_URL: http://candle-store:5010
       JOURNAL_URL: http://journal:5009
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-dev}
@@ -814,5 +815,5 @@ services:
       - "traefik.http.services.frontend.loadbalancer.server.port=8080"
 
 volumes:
-  observability-data:
+  postgres-data:
   opensearch-data:

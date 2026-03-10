@@ -26,9 +26,10 @@ RUN npm run build
 FROM denoland/deno:2.7.1 AS runtime
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install supervisord, bash, libstdc++ (required by Redpanda), ca-certificates for curl HTTPS
+# Install supervisord, bash, libstdc++ (required by Redpanda), postgresql, ca-certificates
 RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor curl bash libstdc++6 ca-certificates \
+    postgresql-16 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Redpanda runtime assets and place real executables on PATH.
@@ -42,7 +43,8 @@ RUN chmod +x /usr/local/bin/redpanda /usr/local/bin/rpk /usr/local/bin/redpanda-
 # Install the Redpanda wrapper script. This launches the broker via its own
 # bundled ld.so to avoid glibc 2.41 conflicts with denoland/deno:2.x base.
 COPY redpanda-start.sh /usr/local/bin/redpanda-start.sh
-RUN chmod +x /usr/local/bin/redpanda-start.sh
+COPY postgres-start.sh /usr/local/bin/postgres-start.sh
+RUN chmod +x /usr/local/bin/redpanda-start.sh /usr/local/bin/postgres-start.sh
 
 # Download Traefik v3 binary
 ARG TRAEFIK_VERSION=3.3.3
