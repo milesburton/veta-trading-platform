@@ -139,10 +139,10 @@ jobs:
           COMMIT_SHA=$SHA deno run --allow-all backend/src/news/news-aggregator.ts &
           COMMIT_SHA=$SHA ANALYTICS_PORT=5014 deno run --allow-all backend/src/analytics/analytics-server.ts &
           COMMIT_SHA=$SHA MARKET_DATA_PORT=5015 deno run --allow-all backend/src/market-data/market-data-service.ts &
-          COMMIT_SHA=$SHA MARKET_DATA_ADAPTERS_PORT=5019 deno run --allow-all backend/src/market-data-adapters/adapter-server.ts &
           COMMIT_SHA=$SHA FEATURE_ENGINE_PORT=5017 deno run --allow-all backend/src/feature-engine/feature-engine.ts &
           COMMIT_SHA=$SHA SIGNAL_ENGINE_PORT=5018 deno run --allow-all backend/src/signal-engine/signal-engine.ts &
-          COMMIT_SHA=$SHA RECOMMENDATION_ENGINE_PORT=5020 deno run --allow-all backend/src/recommendation-engine/recommendation-server.ts &
+          COMMIT_SHA=$SHA RECOMMENDATION_ENGINE_PORT=5019 deno run --allow-all backend/src/recommendation-engine/recommendation-server.ts &
+          COMMIT_SHA=$SHA SCENARIO_ENGINE_PORT=5020 deno run --allow-all backend/src/scenario-engine/scenario-server.ts &
           COMMIT_SHA=$SHA LLM_ADVISORY_PORT=5024 LLM_ENABLED=false deno run --allow-all backend/src/llm-advisory/orchestrator.ts &
           COMMIT_SHA=$SHA MOMENTUM_ALGO_PORT=5025 deno run --allow-all backend/src/algo/momentum-strategy.ts &
           COMMIT_SHA=$SHA IS_ALGO_PORT=5026 deno run --allow-all backend/src/algo/is-strategy.ts &
