@@ -230,6 +230,38 @@ services:
     labels:
       - "traefik.enable=true"
 
+  # ── Local LLM (Ollama) ───────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    networks:
+      - trading-net
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    labels:
+      - "traefik.enable=false"
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: ollama-pull
+    networks:
+      - trading-net
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "qwen2.5:3b"]
+    labels:
+      - "traefik.enable=false"
+
   # ── Market Simulation ────────────────────────────────────────────────────────
   market-sim:
     build:
@@ -780,6 +812,76 @@ services:
       - "traefik.http.middlewares.fix-gw-strip.stripprefix.prefixes=/api/fix-gateway"
       - "traefik.http.routers.fix-gateway.service=fix-gateway"
 
+  # ── LLM Advisory Orchestrator ────────────────────────────────────────────────
+  llm-advisory:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/llm-advisory/orchestrator.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
+    environment:
+      LLM_ADVISORY_PORT: 5024
+      LLM_ENABLED: "true"
+      LLM_WORKER_ENABLED: "true"
+      LLM_PROVIDER: ollama
+      LLM_MODEL_ID: qwen2.5:3b
+      LLM_OLLAMA_BASE_URL: http://ollama:11434
+      LLM_TRIGGER_MODE: on-demand-ui
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5024/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.llm-advisory.rule=PathPrefix(`/api/llm-advisory`)"
+      - "traefik.http.routers.llm-advisory.entrypoints=web"
+      - "traefik.http.routers.llm-advisory.middlewares=llm-advisory-strip"
+      - "traefik.http.middlewares.llm-advisory-strip.stripprefix.prefixes=/api/llm-advisory"
+      - "traefik.http.services.llm-advisory.loadbalancer.server.port=5024"
+
+  # ── LLM Worker (batch, exits when idle — restarted by orchestrator via supervisorctl) ──
+  llm-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/llm-advisory/worker.ts
+    restart: "no"
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      llm-advisory:
+        condition: service_healthy
+    environment:
+      LLM_WORKER_PORT: 5025
+      LLM_ENABLED: "true"
+      LLM_WORKER_ENABLED: "true"
+      LLM_PROVIDER: ollama
+      LLM_MODEL_ID: qwen2.5:3b
+      LLM_OLLAMA_BASE_URL: http://ollama:11434
+      LLM_TRIGGER_MODE: on-demand-ui
+      LLM_ADVISORY_DB_PATH: /data/llm-advisory.db
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    labels:
+      - "traefik.enable=false"
+
   # ── Frontend ──────────────────────────────────────────────────────────────────
   frontend:
     build:
@@ -817,3 +919,4 @@ services:
 volumes:
   postgres-data:
   opensearch-data:
+  ollama-data:

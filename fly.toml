@@ -46,8 +46,12 @@ primary_region = "iad"
   RECOMMENDATION_ENGINE_HOST = "localhost"
   SCENARIO_ENGINE_HOST = "localhost"
   LLM_ADVISORY_HOST = "localhost"
-  LLM_ADVISORY_ENABLED = "false"
-  LLM_PROVIDER = "mock"
+  LLM_ENABLED = "true"
+  LLM_WORKER_ENABLED = "true"
+  LLM_PROVIDER = "ollama"
+  LLM_MODEL_ID = "qwen2.5:3b"
+  LLM_OLLAMA_BASE_URL = "http://localhost:11434"
+  LLM_TRIGGER_MODE = "on-demand-ui"
 
 [http_service]
   internal_port = 8080
@@ -67,7 +71,7 @@ primary_region = "iad"
 [mounts]
   source = "data"
   destination = "/app/backend/data"
-  initial_size = "2gb"
+  initial_size = "10gb"
 
 [[vm]]
   memory = "4gb"

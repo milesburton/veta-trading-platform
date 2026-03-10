@@ -59,6 +59,9 @@ RUN curl -fsSL "https://github.com/traefik/traefik/releases/download/v${TRAEFIK_
     | tar -xz -C /usr/local/bin traefik \
     && chmod +x /usr/local/bin/traefik
 
+# Install Ollama (local LLM inference — no external API required)
+RUN curl -fsSL https://ollama.com/install.sh | sh
+
 # Pre-cache the file-server and crypto modules used by the frontend server
 RUN deno cache jsr:@std/http/file-server jsr:@std/crypto jsr:@std/encoding/hex
 
