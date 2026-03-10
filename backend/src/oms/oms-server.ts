@@ -440,6 +440,7 @@ async function expireOrphanedOrders() {
 }
 
 setTimeout(() => { expireOrphanedOrders().catch(() => {}); }, 3_000);
+setInterval(() => { expireOrphanedOrders().catch(() => {}); }, 15_000);
 
 // ── Health endpoint ───────────────────────────────────────────────────────────
 
