@@ -112,6 +112,11 @@ jobs:
             echo "Waiting for Redpanda ($i/30)..."
           done
 
+      - name: Run database migrations
+        run: deno run --allow-all backend/db/migrate.ts
+        env:
+          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
+
       - name: Start backend services
         env:
           DATABASE_URL: postgres://veta:veta@localhost:5432/veta
