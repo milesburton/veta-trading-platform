@@ -1,7 +1,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import type { FeatureVector, Signal } from "../types/intelligence.ts";
-import { WeightStore } from "./weight-store.ts";
+import { createWeightStore } from "./weight-store.ts";
 import { scoreFeatureVector } from "./scorer.ts";
 import { runReplay } from "./replay-server.ts";
 
@@ -15,7 +15,7 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-const weightStore = new WeightStore(DB_PATH);
+const weightStore = createWeightStore(DB_PATH);
 const latestSignals = new Map<string, Signal>();
 
 const producer = await createProducer("signal-engine").catch((err) => {

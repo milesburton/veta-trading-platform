@@ -12,7 +12,7 @@
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { serve } from "https://deno.land/std@0.210.0/http/server.ts";
-import { MarketSimClient } from "../lib/marketSimClient.ts";
+import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -27,7 +27,7 @@ const COMMISSION_PER_SHARE = 0.005;
 const SEC_FEE_RATE = 0.000008;
 const FINRA_TAF_PER_SHARE = 0.000119;
 
-const marketClient = new MarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
+const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const VENUES = [

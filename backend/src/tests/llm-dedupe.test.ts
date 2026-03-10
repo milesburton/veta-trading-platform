@@ -3,7 +3,7 @@ import {
   assertEquals,
   assertExists,
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
-import { JobStore } from "../llm-advisory/job-store.ts";
+import { createJobStore, type JobStore } from "../llm-advisory/job-store.ts";
 import { computeContextHash, shouldEnqueueJob } from "../llm-advisory/dedupe.ts";
 import { AdvisoryTriggerReason } from "../types/llm-advisory.ts";
 import type { LlmPolicy } from "../types/llm-advisory.ts";
@@ -30,7 +30,7 @@ const ENABLED_POLICY: LlmPolicy = {
 const DISABLED_POLICY: LlmPolicy = { ...ENABLED_POLICY, enabled: false };
 
 function makeStore(): JobStore {
-  return new JobStore(":memory:");
+  return createJobStore(":memory:");
 }
 
 function makeJob(overrides: Partial<{ symbol: string; contextHash: string; priority: number; status: string; createdAt: number }> = {}) {

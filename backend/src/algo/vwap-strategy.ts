@@ -8,7 +8,7 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { MarketSimClient, type MarketTick } from "../lib/marketSimClient.ts";
+import { createMarketSimClient, type MarketTick } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("VWAP_ALGO_PORT")) || 5_006;
@@ -19,7 +19,7 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 console.log(`[vwap-algo] Starting, window=${VWAP_WINDOW} ticks`);
 
-const marketClient = new MarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
+const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("vwap-algo").catch((err) => {

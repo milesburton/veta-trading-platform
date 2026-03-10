@@ -22,7 +22,7 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { MarketSimClient } from "../lib/marketSimClient.ts";
+import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("MOMENTUM_ALGO_PORT")) || 5_025;
@@ -34,7 +34,7 @@ const ALGO = "MOMENTUM" as const;
 
 console.log(`[momentum-algo] Starting on port ${PORT}`);
 
-const marketClient = new MarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
+const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("momentum-algo").catch((err) => {

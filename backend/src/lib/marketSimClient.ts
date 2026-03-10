@@ -15,93 +15,94 @@ export interface MarketTick {
 
 type TickCallback = (tick: MarketTick) => void;
 
-export class MarketSimClient {
-  private ws: WebSocket | null = null;
-  private latest: MarketTick = { prices: {}, volumes: {}, marketMinute: 0 };
-  private callbacks: TickCallback[] = [];
-  private reconnectDelay = 1_000;
-  private stopped = false;
+export interface MarketSimClient {
+  start(): void;
+  stop(): void;
+  onTick(cb: TickCallback): void;
+  getLatest(): MarketTick;
+}
 
-  constructor(
-    private readonly host: string,
-    private readonly port: number,
-  ) {}
-
-  start(): void {
-    if (this.ws && this.ws.readyState <= WebSocket.OPEN) return;
-    this.connect();
+function parseTick(data: unknown): MarketTick {
+  if (
+    data !== null &&
+    typeof data === "object" &&
+    "prices" in (data as object) &&
+    "volumes" in (data as object)
+  ) {
+    const d = data as {
+      prices: Record<string, number>;
+      volumes: Record<string, number>;
+      marketMinute: number;
+      venueBooks?: Record<string, Record<string, OrderBookSnapshot>>;
+    };
+    return {
+      prices: d.prices,
+      volumes: d.volumes,
+      marketMinute: d.marketMinute ?? 0,
+      venueBooks: d.venueBooks,
+    };
   }
+  return { prices: data as Record<string, number>, volumes: {}, marketMinute: 0 };
+}
 
-  stop(): void {
-    this.stopped = true;
-    this.ws?.close();
-  }
+export function createMarketSimClient(host: string, port: number): MarketSimClient {
+  let ws: WebSocket | null = null;
+  let latest: MarketTick = { prices: {}, volumes: {}, marketMinute: 0 };
+  const callbacks: TickCallback[] = [];
+  let reconnectDelay = 1_000;
+  let stopped = false;
 
-  onTick(cb: TickCallback): void {
-    this.callbacks.push(cb);
-  }
-
-  getLatest(): MarketTick {
-    return this.latest;
-  }
-
-  private connect(): void {
-    if (this.stopped) return;
-    const url = `ws://${this.host}:${this.port}`;
+  function connect(): void {
+    if (stopped) return;
+    const url = `ws://${host}:${port}`;
     console.log(`[MarketSimClient] Connecting to ${url}...`);
-    const ws = new WebSocket(url);
-    this.ws = ws;
+    const socket = new WebSocket(url);
+    ws = socket;
 
-    ws.onopen = () => {
+    socket.onopen = () => {
       console.log("[MarketSimClient] Connected to market-sim");
-      this.reconnectDelay = 1_000;
+      reconnectDelay = 1_000;
     };
 
-    ws.onmessage = (event) => {
+    socket.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
         if (msg.event === "marketData" || msg.event === "marketUpdate") {
-          this.latest = this.parseTick(msg.data);
-          for (const cb of this.callbacks) cb(this.latest);
+          latest = parseTick(msg.data);
+          for (const cb of callbacks) cb(latest);
         }
       } catch {
         // malformed message — ignore
       }
     };
 
-    ws.onerror = () => {
+    socket.onerror = () => {
       console.error("[MarketSimClient] WebSocket error");
     };
 
-    ws.onclose = () => {
-      console.warn(`[MarketSimClient] Disconnected. Reconnecting in ${this.reconnectDelay}ms...`);
-      if (!this.stopped) {
-        setTimeout(() => this.connect(), this.reconnectDelay);
-        this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30_000);
+    socket.onclose = () => {
+      console.warn(`[MarketSimClient] Disconnected. Reconnecting in ${reconnectDelay}ms...`);
+      if (!stopped) {
+        setTimeout(connect, reconnectDelay);
+        reconnectDelay = Math.min(reconnectDelay * 2, 30_000);
       }
     };
   }
 
-  private parseTick(data: unknown): MarketTick {
-    if (
-      data !== null &&
-      typeof data === "object" &&
-      "prices" in (data as object) &&
-      "volumes" in (data as object)
-    ) {
-      const d = data as {
-        prices: Record<string, number>;
-        volumes: Record<string, number>;
-        marketMinute: number;
-        venueBooks?: Record<string, Record<string, OrderBookSnapshot>>;
-      };
-      return {
-        prices: d.prices,
-        volumes: d.volumes,
-        marketMinute: d.marketMinute ?? 0,
-        venueBooks: d.venueBooks,
-      };
-    }
-    return { prices: data as Record<string, number>, volumes: {}, marketMinute: 0 };
-  }
+  return {
+    start(): void {
+      if (ws && ws.readyState <= WebSocket.OPEN) return;
+      connect();
+    },
+    stop(): void {
+      stopped = true;
+      ws?.close();
+    },
+    onTick(cb: TickCallback): void {
+      callbacks.push(cb);
+    },
+    getLatest(): MarketTick {
+      return latest;
+    },
+  };
 }

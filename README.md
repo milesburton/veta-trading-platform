@@ -1,8 +1,8 @@
 # VETA Trading Platform
 
-**Virtual Equities Trading Application** — **Live demo:** https://virtual-equities-trading.fly.dev/
+**Live demo:** https://veta-trading.fly.dev/
 
-A simulated equities trading environment comprising 30 microservices: a market price engine, execution and order management systems, seven algorithmic trading strategies, a market intelligence pipeline with LLM advisory, FIX 4.4 protocol support, and a React frontend. All services run in a single Fly.io machine on 4 GB RAM with Redpanda as the message bus.
+A simulated equities trading environment built with Deno microservices and a React frontend. Includes a market price engine, execution and order management systems, seven algorithmic trading strategies, a market intelligence pipeline, FIX 4.4 protocol support, and an optional LLM advisory subsystem. All services run on a single Fly.io machine with Redpanda as the message bus.
 
 ## Documentation
 
@@ -13,56 +13,43 @@ A simulated equities trading environment comprising 30 microservices: a market p
 ## Project Structure
 
 ```
-backend/
-  src/
-    market-sim/             Price engine and WebSocket feed
-    ems/                    Execution Management System
-    oms/                    Order Management System
-    algo/                   Limit, TWAP, POV, VWAP, Iceberg, Sniper, Arrival Price strategies
-    analytics/              Black-Scholes, Monte Carlo, rule-based recommendations
-    feature-engine/         7-feature FeatureVector computation per symbol
-    signal-engine/          Weighted signal scoring and backtest replay
-    recommendation-engine/  Trade recommendations from high-confidence signals
-    scenario-engine/        Factor-shock scenario analysis
-    llm-advisory/           LLM advisory orchestrator + worker (opt-in, local-only)
-    market-data/            Per-symbol source overrides (synthetic vs Alpha Vantage)
-    market-data-adapters/   Earnings, dividend, and macro event seeding
-    news/                   News aggregator with sentiment scoring
-    user-service/           Session tokens, user accounts, trading limits
-    journal/                Audit trail + candle store (SQLite)
-    observability/          Event ingestion and SSE streaming
-    fix/                    FIX 4.4 protocol engine and archive
-    gateway/                API Gateway / BFF (single browser entry point)
-    lib/                    Shared utilities (messaging, time scale)
-    types/                  Shared type definitions
-    tests/                  Unit, integration, algo, and smoke tests
-  .env.template             Environment variable reference
+backend/src/
+  market-sim/             Price engine and WebSocket feed
+  ems/                    Execution Management System
+  oms/                    Order Management System
+  algo/                   Limit, TWAP, POV, VWAP, Iceberg, Sniper, Arrival Price strategies
+  analytics/              Black-Scholes, Monte Carlo, rule-based recommendations
+  feature-engine/         7-feature vector computation per symbol
+  signal-engine/          Weighted signal scoring and backtest replay
+  recommendation-engine/  Trade recommendations from high-confidence signals
+  scenario-engine/        Factor-shock scenario analysis
+  llm-advisory/           LLM advisory orchestrator + worker (opt-in)
+  market-data/            Per-symbol source overrides (synthetic vs Alpha Vantage)
+  market-data-adapters/   Earnings, dividend, and macro event seeding
+  news/                   News aggregator with sentiment scoring
+  user-service/           Session tokens, user accounts, trading limits
+  journal/                Audit trail and candle store
+  observability/          Event ingestion and SSE streaming
+  fix/                    FIX 4.4 protocol engine and archive
+  gateway/                API gateway / BFF (single browser entry point)
 
-frontend/                   React + Vite + TypeScript trading UI
-  src/
-    components/             UI panels (OrderTicket, MarketLadder, OrderBlotter, etc.)
-    store/                  Redux Toolkit slices, RTK Query APIs, and middleware
-    hooks/                  useChannelOut, useChannelIn
-    context/                TradingContext (DOM focus), ChannelContext
-    tests/                  Playwright E2E tests
-
-docs/
-  architecture.md
-  deployment.md
-  api/
-
-.devcontainer/              Dev Container definition
+frontend/src/
+  components/             UI panels (OrderTicket, MarketLadder, OrderBlotter, etc.)
+  store/                  Redux Toolkit slices, RTK Query APIs, middleware
+  hooks/                  useChannelOut, useChannelIn
+  context/                TradingContext, ChannelContext
+  tests/                  Playwright E2E tests
 ```
 
 ## Getting Started
 
-The project is designed to run inside a [Dev Container](https://containers.dev/). Opening it in VS Code with the Dev Containers extension will provision all dependencies and start all services automatically.
+The project runs inside a [Dev Container](https://containers.dev/). Open in VS Code with the Dev Containers extension to provision dependencies and start all services automatically.
 
 ```
 Ctrl+Shift+P → Dev Containers: Rebuild and Reopen in Container
 ```
 
-To configure ports or tuning parameters, copy the template before the container starts:
+Copy the env template before the container starts if you want to customise ports or tuning parameters:
 
 ```sh
 cp .env.template .env
@@ -70,56 +57,32 @@ cp .env.template .env
 
 ## Backend
 
-All backend services are written in Deno. Tasks are defined in `deno.json` at the repository root.
+All backend services are written in Deno. Tasks are defined in `deno.json`.
 
 ```sh
 deno task lint          # Lint backend source
 deno task check         # Type-check backend source
 deno task test          # Run unit tests
 deno task test:smoke    # Run smoke tests (requires running services)
-deno task all           # lint → check → test → test:smoke
 ```
 
 ## Frontend
 
-The frontend is a React + Vite application in `frontend/`.
-
 ```sh
 cd frontend
 npm run dev           # Start dev server on port 8080
-npm run build         # Type-check and build for production
+npm run build         # Production build
 npm run typecheck     # Type-check without emitting
-npm run lint          # Run Biome linter
-npm run test:unit     # Run Vitest unit tests
-```
-
-### Playwright UI tests
-
-```sh
-npm run test:ui           # Headless
-npm run test:ui:headed    # With visible browser
+npm run test:unit     # Vitest unit tests
+npm run test:ui       # Playwright E2E (headless)
+npm run test:ui:headed  # Playwright E2E (headed)
 ```
 
 ## Deployment
 
-See [docs/deployment.md](docs/deployment.md) for Fly.io deployment instructions.
+See [docs/deployment.md](docs/deployment.md) for full instructions.
 
-The live deployment runs on a single Fly.io machine (`performance-2x`, 2 shared CPUs, 4 GB RAM) in `iad` (Northern Virginia). 30 services share this machine via supervisord, with Redpanda as the message bus.
-
-**Memory breakdown (approximate):**
-- Redpanda broker: ~800 MB
-- Traefik reverse proxy: ~30 MB
-- 28 Deno microservices: ~30–80 MB each (~1.4 GB total)
-- OS + overhead: ~200 MB
-- **Typical usage: 2.5–3.5 GB.** 4 GB is sufficient for normal load; upgrade to `8gb` in `fly.toml` if OOM errors appear under sustained burst traffic.
-
-**Fly.io app name:** The app is deployed as `virtual-equities-trading` (determines the `.fly.dev` subdomain and cannot be renamed). To rebrand to a new name, create a fresh app: `flyctl apps create <new-name> && flyctl deploy --app <new-name>`.
-
-## Built with
-
-[![Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-orange?logo=anthropic&logoColor=white)](https://claude.ai/claude-code)
-
-This project was developed with [Claude Code](https://claude.ai/claude-code), Anthropic's AI coding assistant.
+The live deployment runs on a single Fly.io machine (2 vCPUs, 4 GB RAM) in `iad`. All 30 services share the machine via supervisord.
 
 ## Licence
 

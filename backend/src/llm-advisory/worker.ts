@@ -1,11 +1,11 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createProducer } from "../lib/messaging.ts";
-import { JobStore } from "./job-store.ts";
+import { createJobStore } from "./job-store.ts";
 import { loadPolicy, isWorkerAllowed } from "./policy.ts";
-import { RuntimeConfigStore, resolveEffectivePolicy } from "./runtime-config-store.ts";
+import { createRuntimeConfigStore, resolveEffectivePolicy } from "./runtime-config-store.ts";
 import { buildPrompt, computeSystemPromptHash, SYSTEM_PROMPT } from "./prompt-builder.ts";
-import { MockProvider } from "./providers/mock.ts";
-import { OllamaProvider } from "./providers/ollama.ts";
+import { createMockProvider } from "./providers/mock.ts";
+import { createOllamaProvider } from "./providers/ollama.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
 
 const PORT = Number(Deno.env.get("LLM_WORKER_PORT")) || 5_025;
@@ -17,8 +17,8 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MAX_RETRIES = 3;
 
 const basePolicy = loadPolicy();
-const store = new JobStore(DB_PATH);
-const runtimeConfig = new RuntimeConfigStore(DB_PATH);
+const store = createJobStore(DB_PATH);
+const runtimeConfig = createRuntimeConfigStore(DB_PATH);
 
 const effectivePolicy = resolveEffectivePolicy(basePolicy, runtimeConfig.getConfig());
 
@@ -32,9 +32,9 @@ const MAX_JOBS_PER_SESSION = effectivePolicy.workerMaxJobsPerSession;
 
 function buildProvider(): ILlmProvider {
   if (effectivePolicy.provider === "ollama") {
-    return new OllamaProvider(effectivePolicy.modelId, effectivePolicy.ollamaBaseUrl);
+    return createOllamaProvider(effectivePolicy.modelId, effectivePolicy.ollamaBaseUrl);
   }
-  return new MockProvider();
+  return createMockProvider();
 }
 
 const provider = buildProvider();

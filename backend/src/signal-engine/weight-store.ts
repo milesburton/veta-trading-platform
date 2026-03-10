@@ -13,46 +13,39 @@ export const DEFAULT_WEIGHTS: WeightMap = {
   sentimentDelta: 0.10,
 };
 
-export class WeightStore {
-  private db: DB;
-  private cached: WeightMap | null = null;
+export interface WeightStore {
+  getWeights(): WeightMap;
+  saveWeights(weights: WeightMap): void;
+  close(): void;
+}
 
-  constructor(dbPath: string) {
-    const dir = dbPath.substring(0, dbPath.lastIndexOf("/"));
-    if (dir) Deno.mkdirSync(dir, { recursive: true });
-    this.db = new DB(dbPath);
-    this.db.query("PRAGMA journal_mode=WAL");
-    this.db.query("PRAGMA synchronous=NORMAL");
-    this.db.query(`
-      CREATE TABLE IF NOT EXISTS signal_weights (
-        id                    INTEGER PRIMARY KEY CHECK(id = 1),
-        momentum              REAL NOT NULL,
-        relative_volume       REAL NOT NULL,
-        realised_vol          REAL NOT NULL,
-        sector_rs             REAL NOT NULL,
-        event_score           REAL NOT NULL,
-        news_velocity         REAL NOT NULL,
-        sentiment_delta       REAL NOT NULL,
-        updated_at            INTEGER NOT NULL
-      )
-    `);
-    const count = [...this.db.query("SELECT COUNT(*) FROM signal_weights")][0][0] as number;
-    if (count === 0) this.saveWeights(DEFAULT_WEIGHTS);
-  }
+export function createWeightStore(dbPath: string): WeightStore {
+  const dir = dbPath.substring(0, dbPath.lastIndexOf("/"));
+  if (dir) Deno.mkdirSync(dir, { recursive: true });
 
-  getWeights(): WeightMap {
-    if (this.cached) return this.cached;
-    const rows = [...this.db.query(
-      "SELECT momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta FROM signal_weights WHERE id = 1",
-    )];
-    if (rows.length === 0) return { ...DEFAULT_WEIGHTS };
-    const [momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta] = rows[0] as number[];
-    this.cached = { momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta };
-    return this.cached;
-  }
+  const db = new DB(dbPath);
+  db.query("PRAGMA journal_mode=WAL");
+  db.query("PRAGMA synchronous=NORMAL");
+  db.query(`
+    CREATE TABLE IF NOT EXISTS signal_weights (
+      id                    INTEGER PRIMARY KEY CHECK(id = 1),
+      momentum              REAL NOT NULL,
+      relative_volume       REAL NOT NULL,
+      realised_vol          REAL NOT NULL,
+      sector_rs             REAL NOT NULL,
+      event_score           REAL NOT NULL,
+      news_velocity         REAL NOT NULL,
+      sentiment_delta       REAL NOT NULL,
+      updated_at            INTEGER NOT NULL
+    )
+  `);
 
-  saveWeights(weights: WeightMap): void {
-    this.db.query(
+  const count = [...db.query("SELECT COUNT(*) FROM signal_weights")][0][0] as number;
+
+  let cached: WeightMap | null = null;
+
+  function saveWeights(weights: WeightMap): void {
+    db.query(
       `INSERT OR REPLACE INTO signal_weights
         (id, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta, updated_at)
        VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -62,10 +55,27 @@ export class WeightStore {
         weights.sentimentDelta, Date.now(),
       ],
     );
-    this.cached = null;
+    cached = null;
   }
 
-  close(): void {
-    this.db.close();
-  }
+  if (count === 0) saveWeights(DEFAULT_WEIGHTS);
+
+  return {
+    getWeights(): WeightMap {
+      if (cached) return cached;
+      const rows = [...db.query(
+        "SELECT momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta FROM signal_weights WHERE id = 1",
+      )];
+      if (rows.length === 0) return { ...DEFAULT_WEIGHTS };
+      const [momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta] = rows[0] as number[];
+      cached = { momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta };
+      return cached;
+    },
+
+    saveWeights,
+
+    close(): void {
+      db.close();
+    },
+  };
 }

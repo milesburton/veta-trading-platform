@@ -2,9 +2,9 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import type { FeatureVector, Signal, TradeRecommendation } from "../types/intelligence.ts";
 import type { LlmJob, LlmSubsystemStatus } from "../types/llm-advisory.ts";
-import { JobStore } from "./job-store.ts";
+import { createJobStore } from "./job-store.ts";
 import { loadPolicy, isPolicyEnabled, canAutoTrigger, canTriggerFromUi, isWithinAllowedHours } from "./policy.ts";
-import { RuntimeConfigStore, resolveEffectivePolicy, deriveSubsystemState } from "./runtime-config-store.ts";
+import { createRuntimeConfigStore, resolveEffectivePolicy, deriveSubsystemState } from "./runtime-config-store.ts";
 import { shouldEnqueueJob } from "./dedupe.ts";
 import {
   evaluateSignalTrigger,
@@ -27,8 +27,8 @@ const CORS_HEADERS = {
 };
 
 const basePolicy = loadPolicy();
-const store = new JobStore(DB_PATH);
-const runtimeConfig = new RuntimeConfigStore(RUNTIME_DB_PATH);
+const store = createJobStore(DB_PATH);
+const runtimeConfig = createRuntimeConfigStore(RUNTIME_DB_PATH);
 
 store.sweepStuckJobs(10 * 60 * 1000);
 

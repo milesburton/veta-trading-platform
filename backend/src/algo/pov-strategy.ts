@@ -7,7 +7,7 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { MarketSimClient, type MarketTick } from "../lib/marketSimClient.ts";
+import { createMarketSimClient, type MarketTick } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("POV_ALGO_PORT")) || 5_005;
@@ -20,7 +20,7 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 console.log(`[pov-algo] Starting, rate=${(POV_RATE * 100).toFixed(0)}%`);
 
-const marketClient = new MarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
+const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("pov-algo").catch((err) => {

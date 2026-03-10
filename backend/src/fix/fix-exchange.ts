@@ -6,7 +6,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { ExecType, MsgType, OrdStatus, OrdType, Side, Tag } from "./fix-dictionary.ts";
 import { utcTimestamp } from "./fix-parser.ts";
 import { FixSession } from "./fix-session.ts";
-import { MarketSimClient } from "../lib/marketSimClient.ts";
+import { createMarketSimClient } from "../lib/marketSimClient.ts";
 
 const FIX_EXCHANGE_PORT = Number(Deno.env.get("FIX_EXCHANGE_PORT")) || 9_880;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
@@ -17,7 +17,7 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 // ─── Market data client ──────────────────────────────────────────────────────
 
-const marketClient = new MarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
+const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 // ─── Fill simulation (same logic as EMS) ────────────────────────────────────

@@ -8,7 +8,7 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { MarketSimClient } from "../lib/marketSimClient.ts";
+import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -16,7 +16,7 @@ const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const PORT = Number(Deno.env.get("ALGO_TRADER_PORT")) || 5_003;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
-const marketClient = new MarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
+const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("limit-algo").catch((err) => {

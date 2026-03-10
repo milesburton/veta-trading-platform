@@ -7,7 +7,7 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { MarketSimClient } from "../lib/marketSimClient.ts";
+import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("TWAP_ALGO_PORT")) || 5_004;
@@ -18,7 +18,7 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 console.log(`[twap-algo] Starting, interval=${INTERVAL_MS}ms`);
 
-const marketClient = new MarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
+const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("twap-algo").catch((err) => {

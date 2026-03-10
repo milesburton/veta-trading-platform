@@ -1,7 +1,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "../types/intelligence.ts";
-import { FeatureStore } from "./feature-store.ts";
+import { createFeatureStore } from "./feature-store.ts";
 import {
   computeEventScore,
   computeMomentum,
@@ -38,7 +38,7 @@ const upcomingEvents: MarketAdapterEvent[] = [];
 
 const latestFeatures = new Map<string, FeatureVector>();
 
-const store = new FeatureStore(DB_PATH);
+const store = createFeatureStore(DB_PATH);
 
 function pushHistory(map: Map<string, number[]>, symbol: string, value: number, maxLen: number): void {
   const arr = map.get(symbol) ?? [];

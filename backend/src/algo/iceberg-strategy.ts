@@ -12,7 +12,7 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { MarketSimClient } from "../lib/marketSimClient.ts";
+import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("ICEBERG_ALGO_PORT")) || 5_021;
@@ -22,7 +22,7 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 console.log(`[iceberg-algo] Starting on port ${PORT}`);
 
-const marketClient = new MarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
+const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("iceberg-algo").catch((err) => {
