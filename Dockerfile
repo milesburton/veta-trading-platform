@@ -26,10 +26,17 @@ RUN npm run build
 FROM denoland/deno:2.7.1 AS runtime
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install supervisord, bash, libstdc++ (required by Redpanda), postgresql, ca-certificates
+# Install supervisord, bash, libstdc++ (required by Redpanda), ca-certificates
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    supervisor curl bash libstdc++6 ca-certificates \
-    postgresql-16 \
+    supervisor curl bash libstdc++6 ca-certificates gnupg lsb-release \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add PostgreSQL PGDG apt repo and install postgresql-16
+RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+    > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update && apt-get install -y --no-install-recommends postgresql-16 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Redpanda runtime assets and place real executables on PATH.
