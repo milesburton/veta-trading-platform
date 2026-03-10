@@ -349,9 +349,10 @@ Deno.test("[shared-workspaces] GET /:id returns model JSON", async () => {
   assertExists(detail.model);
 
   // Cleanup
-  await fetch(`${GATEWAY_URL}/shared-workspaces/${id}`, {
+  const cleanupRes = await fetch(`${GATEWAY_URL}/shared-workspaces/${id}`, {
     method: "DELETE",
     headers: { cookie: aliceCookie },
     signal: t(),
   });
+  await cleanupRes.body?.cancel();
 });
