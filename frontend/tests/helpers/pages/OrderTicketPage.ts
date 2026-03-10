@@ -162,6 +162,42 @@ export class OrderTicketPage {
     );
   }
 
+  // ── Bond mode helpers ──────────────────────────────────────────────────────
+
+  async switchToBond() {
+    await this.root.getByRole("button", { name: "Bond" }).click();
+  }
+
+  async selectBond(symbol: string) {
+    await this.root.locator("#bondSymbol").selectOption(symbol);
+  }
+
+  async enterBondYield(yld: number) {
+    const input = this.root.locator("#bondYield");
+    await input.fill(String(yld));
+    await input.dispatchEvent("input");
+  }
+
+  async waitForBondQuote(timeoutMs = 5_000) {
+    await expect(this.root.getByLabel("Bond price")).toBeVisible({ timeout: timeoutMs });
+  }
+
+  async expectBondQuoteCard(timeoutMs = 3_000) {
+    await expect(this.root.getByLabel("Bond price")).toBeVisible({ timeout: timeoutMs });
+  }
+
+  async expectBondSubmitEnabled(timeoutMs = 5_000) {
+    await expect(this.root.getByTestId("submit-order-btn")).toBeEnabled({ timeout: timeoutMs });
+  }
+
+  async submitBond() {
+    await this.root.getByTestId("submit-order-btn").click({ force: true });
+  }
+
+  async expectBondOrderSubmitted() {
+    await expect(this.root.getByText(/Bond order submitted/i)).toBeVisible({ timeout: 6_000 });
+  }
+
   /** Expose root locator for assertions not covered by helpers. */
   get locator() {
     return this.root;

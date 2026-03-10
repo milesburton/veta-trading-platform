@@ -18,12 +18,10 @@ const MONEYNESS_LABELS: Record<number, string> = {
 
 const EXPIRY_LABELS = ["7d", "14d", "30d", "60d", "90d"];
 
-// ── Color interpolation: low vol → blue, high vol → red ──────────────────────
 function volToColor(vol: number, minVol: number, maxVol: number): string {
   const range = Math.max(0.001, maxVol - minVol);
   const t = Math.max(0, Math.min(1, (vol - minVol) / range));
 
-  // blue (#3b82f6) → grey (#9ca3af) → red (#ef4444)
   if (t < 0.5) {
     const s = t * 2;
     const r = Math.round(59 + s * (156 - 59));
@@ -57,7 +55,6 @@ export function VolSurfacePanel() {
   const dispatch = useAppDispatch();
   const selectedAsset = useAppSelector((s) => s.ui.selectedAsset);
 
-  // Auto-select from channel if available
   useEffect(() => {
     if (selectedAsset && DEFAULT_SYMBOLS.includes(selectedAsset)) {
       setSymbol(selectedAsset);
@@ -76,7 +73,6 @@ export function VolSurfacePanel() {
   const minVol = vols.length ? Math.min(...vols) : 0;
   const maxVol = vols.length ? Math.max(...vols) : 1;
 
-  // Build a 2D lookup: surfaceMap[expiryLabel][moneyness] = VolSurfacePoint
   const surfaceMap = new Map<string, Map<number, VolSurfacePoint>>();
   for (const point of data?.surface ?? []) {
     if (!surfaceMap.has(point.expiryLabel)) {
@@ -108,7 +104,6 @@ export function VolSurfacePanel() {
       ref={containerRef}
       className="relative flex h-full flex-col gap-2 overflow-hidden p-3 text-xs text-gray-100"
     >
-      {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <span className="font-semibold text-gray-200">Vol Surface · Smile + Term Structure</span>
         <div className="flex items-center gap-2">
@@ -127,7 +122,6 @@ export function VolSurfacePanel() {
         </div>
       </div>
 
-      {/* ATM vol summary */}
       {data && (
         <div className="flex items-center gap-3 text-[10px] text-gray-400">
           <span>
@@ -152,12 +146,9 @@ export function VolSurfacePanel() {
         <p className="py-4 text-center text-gray-500">Loading…</p>
       )}
 
-      {/* Heatmap grid */}
       {data && moneynesses.length > 0 && (
         <div className="flex-1 overflow-auto">
-          {/* CSS grid: 1 label col + 5 expiry cols */}
           <div className="min-w-[340px]">
-            {/* Column headers */}
             <div className="mb-1 grid grid-cols-[56px_repeat(5,1fr)] gap-0.5">
               <div />
               {EXPIRY_LABELS.map((exp) => (
@@ -167,14 +158,11 @@ export function VolSurfacePanel() {
               ))}
             </div>
 
-            {/* Rows: one per moneyness level (from high to low for natural orientation) */}
             {[...moneynesses].reverse().map((mn) => (
               <div key={mn} className="mb-0.5 grid grid-cols-[56px_repeat(5,1fr)] gap-0.5">
-                {/* Row label */}
                 <div className="flex items-center justify-end pr-1 text-[9px] text-gray-400">
                   {MONEYNESS_LABELS[mn] ?? `${(mn * 100).toFixed(1)}%`}
                 </div>
-                {/* Cells */}
                 {EXPIRY_LABELS.map((exp) => {
                   const point = surfaceMap.get(exp)?.get(mn);
                   if (!point) {
@@ -202,7 +190,6 @@ export function VolSurfacePanel() {
         </div>
       )}
 
-      {/* Vol scale legend */}
       {data && (
         <div className="flex items-center gap-2 text-[9px] text-gray-500">
           <span>{(minVol * 100).toFixed(1)}%</span>
@@ -217,7 +204,6 @@ export function VolSurfacePanel() {
         </div>
       )}
 
-      {/* Hover tooltip */}
       {tooltip && (
         <div
           className="pointer-events-none absolute z-50 rounded border border-gray-600 bg-gray-900 p-2 text-[10px] shadow-xl"

@@ -21,17 +21,17 @@ interface PositionRow {
 }
 
 const DEFAULT_POSITIONS: PositionRow[] = [
-  { faceValue: "1000", couponRate: "4.75", totalPeriods: "4", yieldAnnual: "4.88", quantity: "10" }, // 2Y
-  { faceValue: "1000", couponRate: "4.25", totalPeriods: "10", yieldAnnual: "4.35", quantity: "5" }, // 5Y
-  { faceValue: "1000", couponRate: "4.38", totalPeriods: "20", yieldAnnual: "4.45", quantity: "8" }, // 10Y
+  { faceValue: "1000", couponRate: "4.75", totalPeriods: "4", yieldAnnual: "4.88", quantity: "10" },
+  { faceValue: "1000", couponRate: "4.25", totalPeriods: "10", yieldAnnual: "4.35", quantity: "5" },
+  { faceValue: "1000", couponRate: "4.38", totalPeriods: "20", yieldAnnual: "4.45", quantity: "8" },
   {
     faceValue: "1000",
     couponRate: "5.40",
     totalPeriods: "20",
     yieldAnnual: "5.55",
     quantity: "-3",
-  }, // 10Y short (JPM10Y hedge)
-  { faceValue: "1000", couponRate: "4.63", totalPeriods: "60", yieldAnnual: "4.68", quantity: "2" }, // 30Y
+  },
+  { faceValue: "1000", couponRate: "4.63", totalPeriods: "60", yieldAnnual: "4.68", quantity: "2" },
 ];
 
 const BAR_COLORS = ["#3b82f6", "#22c55e", "#eab308", "#ef4444", "#a855f7"];
@@ -57,7 +57,6 @@ export function DurationLadderPanel() {
     compute({ positions: bondPositions });
   }
 
-  // Build Recharts data: one entry per tenor bucket
   const chartData = data
     ? TENOR_LABELS.map((tenorLabel) => {
         const bucket = data.buckets.find((b) => b.tenorLabel === tenorLabel);
@@ -66,7 +65,6 @@ export function DurationLadderPanel() {
           const contrib = pos.contributions.find((c) => c.tenorLabel === tenorLabel);
           entry[`bond${i}`] = contrib ? Number(contrib.dv01Contribution.toFixed(4)) : 0;
         });
-        // Override with net bucket for reference
         entry._netDv01 = bucket ? bucket.netDv01 : 0;
         return entry;
       })
@@ -77,7 +75,6 @@ export function DurationLadderPanel() {
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 text-xs text-gray-100">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <span className="font-semibold text-gray-200">Duration Ladder · DV01 by Tenor</span>
         <span className="rounded bg-purple-900/40 px-2 py-0.5 text-[10px] text-purple-300">
@@ -85,7 +82,6 @@ export function DurationLadderPanel() {
         </span>
       </div>
 
-      {/* Portfolio editor */}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-[10px]">
           <thead>
@@ -137,7 +133,6 @@ export function DurationLadderPanel() {
 
       {data && (
         <>
-          {/* Portfolio DV01 summary */}
           <div className="flex items-center justify-between rounded bg-gray-800 p-2">
             <span className="text-gray-400">Portfolio DV01</span>
             <span className={`text-lg font-bold ${dv01Color}`}>
@@ -148,7 +143,6 @@ export function DurationLadderPanel() {
             </span>
           </div>
 
-          {/* Stacked bar chart */}
           <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 4 }}>
@@ -193,7 +187,6 @@ export function DurationLadderPanel() {
             </ResponsiveContainer>
           </div>
 
-          {/* Bucket table */}
           <div className="overflow-x-auto rounded bg-gray-800">
             <table className="w-full text-[10px]">
               <thead>

@@ -42,7 +42,6 @@ export function SpreadAnalysisPanel() {
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 text-xs text-gray-100">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <span className="font-semibold text-gray-200">Spread Analysis · Z / G / OAS</span>
         <span className="rounded bg-blue-900/40 px-2 py-0.5 text-[10px] text-blue-300">
@@ -50,7 +49,6 @@ export function SpreadAnalysisPanel() {
         </span>
       </div>
 
-      {/* Input form */}
       <div className="grid grid-cols-5 gap-2">
         <label className="flex flex-col gap-1">
           <span className="text-gray-400">Coupon %</span>
@@ -128,7 +126,6 @@ export function SpreadAnalysisPanel() {
 
       {data && (
         <>
-          {/* Summary chips */}
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded bg-gray-800 p-2">
               <p className="text-gray-400">Tenor</p>
@@ -160,7 +157,6 @@ export function SpreadAnalysisPanel() {
             </div>
           </div>
 
-          {/* OAS chip — full width */}
           <div
             className={`rounded p-2 ${data.oas < 50 ? "bg-emerald-900/30" : data.oas < 150 ? "bg-amber-900/30" : "bg-red-900/30"}`}
           >
@@ -174,7 +170,6 @@ export function SpreadAnalysisPanel() {
             </p>
           </div>
 
-          {/* Spread comparison bar chart */}
           <div className="space-y-2 rounded bg-gray-800 p-3">
             <p className="text-gray-400">Spread Comparison</p>
             {[
@@ -197,7 +192,6 @@ export function SpreadAnalysisPanel() {
             ))}
           </div>
 
-          {/* Guidance */}
           <div className="rounded border border-gray-700 p-2 text-[10px] text-gray-500">
             Typical IG corp spread: 50–150bp · HY: 200–600bp · UST benchmark: 0bp
           </div>

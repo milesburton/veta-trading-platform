@@ -8,7 +8,17 @@
 
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
-import { GatewayMock, DEFAULT_ADMIN, DEFAULT_TRADER } from "../GatewayMock.ts";
+import {
+  GatewayMock,
+  DEFAULT_ADMIN,
+  DEFAULT_TRADER,
+  ALGO_TRADER,
+  ALGO_TRADER_LIMITS,
+  FI_TRADER,
+  FI_TRADER_LIMITS,
+  RESEARCH_ANALYST,
+  ANALYST_LIMITS,
+} from "../GatewayMock.ts";
 import type { AuthUser, AssetDef } from "../GatewayMock.ts";
 import { MarketLadderPage } from "./MarketLadderPage.ts";
 import { OrderTicketPage } from "./OrderTicketPage.ts";
@@ -28,9 +38,9 @@ export class AppPage {
    * Full test setup: attach gateway mock, navigate, wait for dashboard.
    * Returns `this` for chaining.
    */
-  async goto(opts: { user?: AuthUser; assets?: AssetDef[] } = {}): Promise<this> {
+  async goto(opts: { user?: AuthUser; assets?: AssetDef[]; url?: string } = {}): Promise<this> {
     this.gateway = await GatewayMock.attach(this.page, opts);
-    await this.page.goto("/");
+    await this.page.goto(opts.url ?? "/");
     return this;
   }
 
@@ -47,6 +57,28 @@ export class AppPage {
     await this.goto({ user: DEFAULT_ADMIN });
     await this.waitForDashboard();
     this.gateway.sendAuthIdentity({ user: DEFAULT_ADMIN });
+    return this;
+  }
+
+  async gotoAsAlgoTrader(assets?: AssetDef[]): Promise<this> {
+    await this.goto({ user: ALGO_TRADER, assets });
+    await this.waitForDashboard();
+    this.gateway.sendAuthIdentity({ user: ALGO_TRADER, limits: ALGO_TRADER_LIMITS });
+    return this;
+  }
+
+  async gotoAsFiTrader(assets?: AssetDef[], workspace?: string): Promise<this> {
+    const url = workspace ? `/?ws=${workspace}` : "/";
+    await this.goto({ user: FI_TRADER, assets, url });
+    await this.waitForDashboard();
+    this.gateway.sendAuthIdentity({ user: FI_TRADER, limits: FI_TRADER_LIMITS });
+    return this;
+  }
+
+  async gotoAsAnalyst(assets?: AssetDef[]): Promise<this> {
+    await this.goto({ user: RESEARCH_ANALYST, assets });
+    await this.waitForDashboard();
+    this.gateway.sendAuthIdentity({ user: RESEARCH_ANALYST, limits: ANALYST_LIMITS });
     return this;
   }
 
@@ -79,6 +111,9 @@ export class AppPage {
    */
   async panelByTitle(tabTitle: string | RegExp): Promise<ReturnType<Page["locator"]>> {
     const btn = this.page.locator(".flexlayout__tab_button", { hasText: tabTitle }).first();
+    await btn.waitFor({ state: "attached", timeout: 10_000 });
+    await btn.click();
+    await this.page.waitForTimeout(100);
     const btnPath = await btn.getAttribute("data-layout-path");
     if (!btnPath) throw new Error(`No tab button found with title matching ${tabTitle}`);
     const contentPath = btnPath.replace(/tb(\d+)$/, "t$1");

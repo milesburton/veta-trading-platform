@@ -62,11 +62,52 @@ interface GatewayOutbound {
 
 // ── Defaults ──────────────────────────────────────────────────────────────────
 
+/**
+ * Alice Chen — high-touch equity trader.
+ * Full strategy access, lower qty/notional limits. Focuses on single-stock
+ * discretionary trades with LIMIT and TWAP execution.
+ */
 export const DEFAULT_TRADER: AuthUser = {
   id: "trader-1",
   name: "Alice Chen",
   role: "trader",
   avatar_emoji: "AL",
+};
+
+/**
+ * Bob Martinez — low-touch / algorithmic trader.
+ * All algo strategies enabled (LIMIT, TWAP, POV, VWAP, ICEBERG, SNIPER,
+ * ARRIVAL_PRICE). Higher qty/notional caps — routes via systematic algos.
+ */
+export const ALGO_TRADER: AuthUser = {
+  id: "trader-2",
+  name: "Bob Martinez",
+  role: "trader",
+  avatar_emoji: "BM",
+};
+
+/**
+ * Carol Davis — fixed income trader.
+ * Limited to LIMIT strategy only (bonds always execute at quoted price).
+ * Accesses yield-curve, spread-analysis, duration-ladder, vol-surface panels.
+ */
+export const FI_TRADER: AuthUser = {
+  id: "trader-3",
+  name: "Carol Davis",
+  role: "trader",
+  avatar_emoji: "CD",
+};
+
+/**
+ * David Kim — research analyst (read-only).
+ * No trading permissions. Accesses intelligence, signal-explainability,
+ * research-radar, and analytics panels only.
+ */
+export const RESEARCH_ANALYST: AuthUser = {
+  id: "trader-4",
+  name: "David Kim",
+  role: "trader",
+  avatar_emoji: "DK",
 };
 
 export const DEFAULT_ADMIN: AuthUser = {
@@ -76,10 +117,32 @@ export const DEFAULT_ADMIN: AuthUser = {
   avatar_emoji: "AD",
 };
 
+/** Trading limits for high-touch equity trader (Alice). */
 export const DEFAULT_LIMITS: TradingLimits = {
   max_order_qty: 10_000,
   max_daily_notional: 1_000_000,
   allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+};
+
+/** Trading limits for low-touch algorithmic trader (Bob) — all strategies, higher caps. */
+export const ALGO_TRADER_LIMITS: TradingLimits = {
+  max_order_qty: 100_000,
+  max_daily_notional: 50_000_000,
+  allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE"],
+};
+
+/** Trading limits for FI trader (Carol) — LIMIT only, high notional for bond size. */
+export const FI_TRADER_LIMITS: TradingLimits = {
+  max_order_qty: 1_000,
+  max_daily_notional: 100_000_000,
+  allowed_strategies: ["LIMIT"],
+};
+
+/** Trading limits for research analyst (David) — no trading permitted. */
+export const ANALYST_LIMITS: TradingLimits = {
+  max_order_qty: 0,
+  max_daily_notional: 0,
+  allowed_strategies: [],
 };
 
 export const DEFAULT_ASSETS: AssetDef[] = [
@@ -87,6 +150,89 @@ export const DEFAULT_ASSETS: AssetDef[] = [
   { symbol: "MSFT", name: "Microsoft Corp.", sector: "Technology", exchange: "NASDAQ", marketCapB: 2800, beta: 0.9 },
   { symbol: "GOOGL", name: "Alphabet Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 1800, beta: 1.1 },
 ];
+
+// ── FI mock responses ─────────────────────────────────────────────────────────
+
+export const MOCK_BOND_PRICE_RESPONSE = {
+  price: 987.43,
+  yieldAnnual: 0.0488,
+  modifiedDuration: 8.72,
+  convexity: 92.4,
+  dv01: 0.8618,
+  cashFlows: [],
+  computedAt: Date.now(),
+};
+
+export const MOCK_SPREAD_ANALYSIS_RESPONSE = {
+  bondYield: 0.0488,
+  tenorYears: 10,
+  govSpotRate: 0.0445,
+  gSpread: 43.0,
+  zSpread: 44.2,
+  oas: 44.2,
+  computedAt: Date.now(),
+};
+
+export const MOCK_DURATION_LADDER_RESPONSE = {
+  positions: [
+    {
+      bondIndex: 0,
+      totalDv01: 0.8618,
+      modifiedDuration: 8.72,
+      contributions: [
+        { bondIndex: 0, tenorLabel: "2y", dv01Contribution: 0.12 },
+        { bondIndex: 0, tenorLabel: "5y", dv01Contribution: 0.31 },
+        { bondIndex: 0, tenorLabel: "10y", dv01Contribution: 0.43 },
+      ],
+    },
+  ],
+  buckets: [
+    { tenorLabel: "3m", tenorYears: 0.25, netDv01: 0 },
+    { tenorLabel: "1y", tenorYears: 1, netDv01: 0 },
+    { tenorLabel: "2y", tenorYears: 2, netDv01: 0.12 },
+    { tenorLabel: "5y", tenorYears: 5, netDv01: 0.31 },
+    { tenorLabel: "10y", tenorYears: 10, netDv01: 0.43 },
+    { tenorLabel: "30y", tenorYears: 30, netDv01: 0 },
+  ],
+  totalPortfolioDv01: 0.8618,
+  computedAt: Date.now(),
+};
+
+export const MOCK_VOL_SURFACE_RESPONSE = {
+  symbol: "AAPL",
+  spotPrice: 189.30,
+  atTheMoneyVol: 0.25,
+  expiries: [7 * 86400, 14 * 86400, 30 * 86400, 60 * 86400, 90 * 86400],
+  moneynesses: [0.70, 0.80, 0.90, 0.95, 1.0, 1.05, 1.10, 1.20, 1.30],
+  surface: (() => {
+    const expiries = [
+      { secs: 7 * 86400, label: "7d" },
+      { secs: 14 * 86400, label: "14d" },
+      { secs: 30 * 86400, label: "30d" },
+      { secs: 60 * 86400, label: "60d" },
+      { secs: 90 * 86400, label: "90d" },
+    ];
+    const moneynesses = [0.70, 0.80, 0.90, 0.95, 1.0, 1.05, 1.10, 1.20, 1.30];
+    const spot = 189.30;
+    const atm = 0.25;
+    const skew = -0.10;
+    const curvature = 0.05;
+    return expiries.flatMap(({ secs, label }) =>
+      moneynesses.map((m) => {
+        const lnM = Math.log(m);
+        const iv = Math.max(0.01, atm * (1 + skew * lnM + curvature * lnM * lnM));
+        return {
+          expirySecs: secs,
+          expiryLabel: label,
+          moneyness: m,
+          strike: Math.round(spot * m * 100) / 100,
+          impliedVol: iv,
+        };
+      })
+    );
+  })(),
+  computedAt: Date.now(),
+};
 
 // ── Mock order record (matches OrderRecord shape used in blotter) ─────────────
 
@@ -133,11 +279,32 @@ export class GatewayMock {
     // Playwright matches routes in reverse-registration order (last registered wins).
     // Register the catch-all FIRST so specific routes registered after take precedence.
 
-    // Catch-all: stub remaining /api/** (GET → null, other methods → fallback)
     await page.route("/api/**", (route) => {
       if (route.request().method() !== "GET") return route.fallback();
       return route.fulfill({ status: 200, contentType: "application/json", body: "null" });
     });
+
+    await page.route("/api/gateway/ready", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ready: true,
+          services: {
+            bus: true,
+            marketSim: true,
+            userService: true,
+            journal: true,
+            ems: true,
+            oms: true,
+            analytics: true,
+            featureEngine: true,
+            signalEngine: true,
+            llmAdvisory: true,
+          },
+        }),
+      })
+    );
 
     // Grid query endpoint — serve mock order store (registered after catch-all = higher priority)
     await page.route("/api/gateway/grid/query", async (route) => {
@@ -178,7 +345,41 @@ export class GatewayMock {
       route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(assets) })
     );
 
-    // Stub auth session (registered last = highest priority)
+    await page.route("/api/gateway/analytics/bond-price", (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(MOCK_BOND_PRICE_RESPONSE),
+      });
+    });
+
+    await page.route("/api/gateway/analytics/spread-analysis", (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(MOCK_SPREAD_ANALYSIS_RESPONSE),
+      });
+    });
+
+    await page.route("/api/gateway/analytics/duration-ladder", (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(MOCK_DURATION_LADDER_RESPONSE),
+      });
+    });
+
+    await page.route("/api/gateway/analytics/vol-surface/**", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(MOCK_VOL_SURFACE_RESPONSE),
+      })
+    );
+
     await page.route("/api/user-service/sessions", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(user) })
     );

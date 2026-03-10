@@ -7,6 +7,9 @@ import {
   makeAlgoModel,
   makeAnalysisModel,
   makeDefaultModel,
+  makeFiAnalysisModel,
+  makeFiResearchModel,
+  makeFiTradingModel,
   makeOverviewModel,
 } from "./DashboardLayout.tsx";
 import { SharedWorkspaceBrowser } from "./SharedWorkspaceBrowser.tsx";
@@ -30,6 +33,9 @@ const TRADER_PRESET_WORKSPACES: {
   { id: "ws-analysis", name: "Analysis", locked: true, makeModel: makeAnalysisModel },
   { id: "ws-algo", name: "Algo", locked: true, makeModel: makeAlgoModel },
   { id: "ws-overview", name: "Overview", locked: true, makeModel: makeOverviewModel },
+  { id: "ws-fi-analysis", name: "FI Analysis", locked: true, makeModel: makeFiAnalysisModel },
+  { id: "ws-fi-trading", name: "FI Trading", locked: true, makeModel: makeFiTradingModel },
+  { id: "ws-fi-research", name: "FI Research", locked: true, makeModel: makeFiResearchModel },
 ];
 
 const ADMIN_PRESET_WORKSPACES: {

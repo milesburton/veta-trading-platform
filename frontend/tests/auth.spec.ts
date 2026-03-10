@@ -17,9 +17,11 @@ test.describe("Authentication", () => {
   // ── Unauthenticated ────────────────────────────────────────────────────────
 
   test.describe("unauthenticated", () => {
+    const READY_BODY = JSON.stringify({ ready: true, services: { bus: true, marketSim: true, userService: true, journal: true, ems: true, oms: true } });
+
     test("shows login page when session check returns 401", async ({ page }) => {
-      // Catch-all first, specific route last — Playwright matches in reverse registration order
       await page.route("/api/**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "null" }));
+      await page.route("/api/gateway/ready", (route) => route.fulfill({ status: 200, contentType: "application/json", body: READY_BODY }));
       await page.route("/api/user-service/sessions/me", (route) =>
         route.fulfill({ status: 401, body: "" })
       );
@@ -36,6 +38,7 @@ test.describe("Authentication", () => {
 
     test("shows login page when session fetch fails (network error)", async ({ page }) => {
       await page.route("/api/**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "null" }));
+      await page.route("/api/gateway/ready", (route) => route.fulfill({ status: 200, contentType: "application/json", body: READY_BODY }));
       await page.route("/api/user-service/sessions/me", (route) => route.abort("failed"));
 
       await page.goto("/");

@@ -5,14 +5,17 @@ import { reconcilePresetWorkspaces, seedWorkspaces } from "../WorkspaceBar";
 // ── seedWorkspaces ────────────────────────────────────────────────────────────
 
 describe("seedWorkspaces", () => {
-  test("returns four locked trader workspaces by default", () => {
+  test("returns seven locked trader workspaces by default", () => {
     const { workspaces } = seedWorkspaces();
-    expect(workspaces).toHaveLength(4);
+    expect(workspaces).toHaveLength(7);
     expect(workspaces.map((w) => w.id)).toEqual([
       "ws-trading",
       "ws-analysis",
       "ws-algo",
       "ws-overview",
+      "ws-fi-analysis",
+      "ws-fi-trading",
+      "ws-fi-research",
     ]);
     for (const w of workspaces) expect(w.locked).toBe(true);
   });
@@ -93,8 +96,23 @@ describe("reconcilePresetWorkspaces", () => {
 
     const { workspaces: out, restored } = reconcilePresetWorkspaces(saved, savedLayouts);
 
-    expect(restored).toEqual(["Analysis", "Algo", "Overview"]);
-    expect(out.map((w) => w.id)).toEqual(["ws-trading", "ws-analysis", "ws-algo", "ws-overview"]);
+    expect(restored).toEqual([
+      "Analysis",
+      "Algo",
+      "Overview",
+      "FI Analysis",
+      "FI Trading",
+      "FI Research",
+    ]);
+    expect(out.map((w) => w.id)).toEqual([
+      "ws-trading",
+      "ws-analysis",
+      "ws-algo",
+      "ws-overview",
+      "ws-fi-analysis",
+      "ws-fi-trading",
+      "ws-fi-research",
+    ]);
   });
 
   test("preserves custom (non-preset) workspaces", () => {
@@ -134,8 +152,16 @@ describe("reconcilePresetWorkspaces", () => {
   test("inserting first preset when list is empty", () => {
     const { workspaces: out, restored } = reconcilePresetWorkspaces([], {});
 
-    expect(restored).toEqual(["Trading", "Analysis", "Algo", "Overview"]);
-    expect(out).toHaveLength(4);
+    expect(restored).toEqual([
+      "Trading",
+      "Analysis",
+      "Algo",
+      "Overview",
+      "FI Analysis",
+      "FI Trading",
+      "FI Research",
+    ]);
+    expect(out).toHaveLength(7);
   });
 });
 
