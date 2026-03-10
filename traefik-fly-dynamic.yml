@@ -88,6 +88,20 @@ http:
       service: fix-gateway
       priority: 10
 
+    fix-archive:
+      rule: "PathPrefix(`/api/fix-archive`)"
+      entryPoints: [web]
+      middlewares: [fix-archive-strip]
+      service: fix-archive
+      priority: 10
+
+    kafka-relay:
+      rule: "PathPrefix(`/api/kafka-relay`)"
+      entryPoints: [web]
+      middlewares: [kafka-relay-strip]
+      service: kafka-relay
+      priority: 10
+
     user-service:
       rule: "PathPrefix(`/api/user-service`)"
       entryPoints: [web]
@@ -211,6 +225,12 @@ http:
     fix-gw-ws-strip:
       stripPrefix:
         prefixes: ["/ws/fix"]
+    fix-archive-strip:
+      stripPrefix:
+        prefixes: ["/api/fix-archive"]
+    kafka-relay-strip:
+      stripPrefix:
+        prefixes: ["/api/kafka-relay"]
     redpanda-strip:
       stripPrefix:
         prefixes: ["/admin/redpanda"]
@@ -285,6 +305,14 @@ http:
       loadBalancer:
         servers:
           - url: "http://localhost:9881"
+    fix-archive:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:5012"
+    kafka-relay:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:5007"
     redpanda-console:
       loadBalancer:
         servers:

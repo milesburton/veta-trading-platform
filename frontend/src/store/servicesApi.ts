@@ -171,7 +171,6 @@ const SERVICES: {
     category: "infra",
     description: "WebSocket bridge to FIX exchange (port 9880)",
     port: 9881,
-    optional: true,
   },
   {
     name: "FIX Archive",
@@ -180,7 +179,6 @@ const SERVICES: {
     category: "infra",
     description: "SQLite persistence for FIX execution reports",
     port: 5012,
-    optional: true,
   },
   {
     name: "Traefik",
@@ -200,7 +198,6 @@ const SERVICES: {
     category: "observability",
     description: "Kafka → stdout relay feeding Grafana Alloy / Loki",
     port: 5007,
-    optional: true,
   },
   {
     name: "Grafana",

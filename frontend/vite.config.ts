@@ -104,6 +104,10 @@ export default defineConfig({
         target: "http://localhost:9881",
         rewrite: (path) => path.replace(/^\/api\/fix-gateway/, ""),
       },
+      "/api/kafka-relay": {
+        target: "http://localhost:5007",
+        rewrite: (path) => path.replace(/^\/api\/kafka-relay/, ""),
+      },
     },
   },
 });
