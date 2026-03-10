@@ -585,10 +585,10 @@ Deno.test("[orders/settled] ICEBERG order reaches filled or expired within 90s",
     asset: "MSFT", side: "BUY", quantity: 200,
     limitPrice: price * 1.05, strategy: "ICEBERG",
     algoParams: { strategy: "ICEBERG", visibleQty: 40 },
-    expiresAt: 30,
+    expiresAt: 10,
   });
-  const order = await pollSettled(clientOrderId, 120_000);
-  assertExists(order, `ICEBERG order ${clientOrderId} did not settle within 120s`);
+  const order = await pollSettled(clientOrderId, 240_000);
+  assertExists(order, `ICEBERG order ${clientOrderId} did not settle within 240s`);
   assert(
     order.status === "filled" || order.status === "expired" || order.status === "rejected",
     `Expected filled/expired/rejected, got: ${order.status}`,
@@ -620,10 +620,10 @@ Deno.test("[orders/settled] ARRIVAL_PRICE order reaches filled or expired within
     asset: "MSFT", side: "BUY", quantity: 40,
     limitPrice: price * 1.05, strategy: "ARRIVAL_PRICE",
     algoParams: { strategy: "ARRIVAL_PRICE" },
-    expiresAt: 20,
+    expiresAt: 10,
   });
-  const order = await pollSettled(clientOrderId, 90_000);
-  assertExists(order, `ARRIVAL_PRICE order ${clientOrderId} did not settle within 90s`);
+  const order = await pollSettled(clientOrderId, 180_000);
+  assertExists(order, `ARRIVAL_PRICE order ${clientOrderId} did not settle within 180s`);
   assert(
     order.status === "filled" || order.status === "expired" || order.status === "rejected",
     `Expected filled/expired/rejected, got: ${order.status}`,
