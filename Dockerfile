@@ -28,7 +28,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install supervisord, bash, libstdc++ (required by Redpanda), ca-certificates
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    supervisor curl bash libstdc++6 ca-certificates gnupg lsb-release \
+    supervisor curl bash libstdc++6 ca-certificates gnupg lsb-release zstd \
     && rm -rf /var/lib/apt/lists/*
 
 # Add PostgreSQL PGDG apt repo and install postgresql-16
