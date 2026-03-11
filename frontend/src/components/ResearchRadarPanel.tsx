@@ -216,15 +216,31 @@ export function ResearchRadarPanel() {
               data={filtered}
               onClick={(d: Entry) => broadcast({ selectedAsset: d.symbol })}
               style={{ cursor: "pointer" }}
+              shape={(props: unknown) => {
+                const p = props as {
+                  cx?: number;
+                  cy?: number;
+                  r?: number;
+                  fill?: string;
+                  payload?: Entry;
+                };
+                const { cx = 0, cy = 0, r = 6, fill = "#9ca3af", payload } = p;
+                return (
+                  <circle
+                    data-symbol={payload?.symbol}
+                    cx={cx}
+                    cy={cy}
+                    r={r}
+                    fill={fill}
+                    fillOpacity={0.75}
+                    stroke="#1f2937"
+                    strokeWidth={0.5}
+                  />
+                );
+              }}
             >
               {filtered.map((entry) => (
-                <Cell
-                  key={entry.symbol}
-                  fill={DIR_COLOUR[entry.direction] ?? "#9ca3af"}
-                  fillOpacity={0.75}
-                  stroke="#1f2937"
-                  strokeWidth={0.5}
-                />
+                <Cell key={entry.symbol} fill={DIR_COLOUR[entry.direction] ?? "#9ca3af"} />
               ))}
             </Scatter>
           </ScatterChart>

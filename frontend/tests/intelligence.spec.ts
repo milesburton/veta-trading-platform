@@ -54,8 +54,15 @@ const AAPL_FEATURE = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function openResearchLayout(app: AppPage) {
-  await app.page.getByTitle("Switch layout template").click();
-  await app.page.getByRole("button", { name: /^Research/ }).click();
+  const trigger = app.page.getByTitle("Switch layout template");
+  await trigger.click();
+  // Wait for the dropdown to appear, then scope button search inside it to avoid
+  // accidentally clicking the "FI Research" workspace sidebar tab.
+  // The dropdown is the absolute-positioned sibling div inside the same relative container.
+  const dropdown = app.page.locator("div.absolute").filter({ hasText: /Layout Templates/ });
+  await dropdown.waitFor({ state: "visible", timeout: 5_000 });
+  // Use the unique description text to identify the correct Research template button
+  await dropdown.getByRole("button", { name: /factor explainability/i }).click();
   await app.page.waitForSelector(".flexlayout__tab_button", { timeout: 10_000 });
 }
 

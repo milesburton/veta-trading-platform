@@ -20,9 +20,23 @@ async function mockAuth(page: Page) {
 
 /** Stub backend so panels don't error out. */
 async function stubBackend(page: Page) {
-  await page.route("/api/**", (route) => {
-    if (route.request().method() !== "GET") return route.fallback();
-    route.fulfill({ status: 200, contentType: "application/json", body: "null" });
+  // Catch-all: fulfill all API requests (any method) with null to prevent ECONNREFUSED
+  await page.route("/api/**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "null" })
+  );
+
+  // gateway/ready must return { ready: true } so StartupOverlay dismisses immediately
+  await page.route("/api/gateway/ready", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ready: true, services: {} }),
+    })
+  );
+
+  // Stub WS so the app doesn't hang waiting for a gateway connection
+  await page.routeWebSocket("/ws/gateway", (ws) => {
+    ws.onMessage(() => {});
   });
 }
 

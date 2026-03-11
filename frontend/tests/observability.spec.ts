@@ -84,7 +84,7 @@ test.describe("Observability layout", () => {
     ).toBeVisible({ timeout: 8_000 });
 
     await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Decision Log/i }).first()
+      page.locator(".flexlayout__tab_button", { hasText: /algo audit trail/i }).first()
     ).toBeVisible({ timeout: 5_000 });
   });
 });
@@ -101,7 +101,7 @@ test.describe("Pipeline Monitor layout", () => {
     await switchLayout(app, "Pipeline Monitor");
 
     await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Algo Monitor/i }).first()
+      page.locator(".flexlayout__tab_button", { hasText: /strategy status/i }).first()
     ).toBeVisible({ timeout: 8_000 });
 
     await expect(
@@ -120,11 +120,11 @@ test.describe("Pipeline Monitor layout", () => {
     ).toBeVisible({ timeout: 8_000 });
 
     await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Executions/i }).first()
+      page.locator(".flexlayout__tab_button", { hasText: /trade fills/i }).first()
     ).toBeVisible({ timeout: 5_000 });
 
     await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Decision Log/i }).first()
+      page.locator(".flexlayout__tab_button", { hasText: /algo audit trail/i }).first()
     ).toBeVisible({ timeout: 5_000 });
   });
 
@@ -147,10 +147,19 @@ test.describe("Pipeline Monitor layout", () => {
 
 test.describe("LoginPage — PlatformStatus service grid", () => {
   async function gotoLoginPage(page: AppPage["page"]) {
-    // Stub all API calls — 401 on session check → login page shown
+    // Stub all API calls with null (catch-all, lowest priority)
     await page.route("/api/**", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: "null" })
     );
+    // gateway/ready must return { ready: true } so StartupOverlay dismisses
+    await page.route("/api/gateway/ready", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ready: true, services: {} }),
+      })
+    );
+    // 401 on session check → AuthGate shows LoginPage
     await page.route("/api/user-service/sessions/me", (route) =>
       route.fulfill({ status: 401, body: "" })
     );
@@ -188,7 +197,8 @@ test.describe("LoginPage — PlatformStatus service grid", () => {
 
     // Observability
     await expect(status.getByText(/Kafka Relay/i).first()).toBeVisible();
-    await expect(status.getByText(/Grafana/i).first()).toBeVisible();
+    // Use span selector to avoid matching the hidden SVG <title>Grafana</title> in the header button
+    await expect(status.locator("span", { hasText: /^Grafana$/ }).first()).toBeVisible();
   });
 
   test("summary label shows 'Checking platform…' while services are loading", async ({ page }) => {

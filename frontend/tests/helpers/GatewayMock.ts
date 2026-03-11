@@ -280,7 +280,6 @@ export class GatewayMock {
     // Register the catch-all FIRST so specific routes registered after take precedence.
 
     await page.route("/api/**", (route) => {
-      if (route.request().method() !== "GET") return route.fallback();
       return route.fulfill({ status: 200, contentType: "application/json", body: "null" });
     });
 

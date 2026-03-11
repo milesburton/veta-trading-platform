@@ -67,7 +67,7 @@ export const submitOrderThunk = createAsyncThunk(
       _gatewayWs.send(
         JSON.stringify({
           type: "submitOrder",
-          payload: { ...trade, clientOrderId },
+          payload: { ...trade, strategy: trade.algoParams.strategy, clientOrderId },
         })
       );
     } else {
