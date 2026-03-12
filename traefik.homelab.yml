@@ -5,6 +5,8 @@ api:
   dashboard: true
   insecure: true   # Dashboard at http://veta.home:8888/dashboard/
 
+ping: {}
+
 entryPoints:
   web:
     address: ":80"

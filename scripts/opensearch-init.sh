@@ -5,7 +5,7 @@ set -e
 
 OPENSEARCH_URL="http://opensearch:9200"
 CONNECT_URL="http://kafka-connect:8083"
-DASHBOARDS_URL="http://opensearch-dashboards:5601"
+DASHBOARDS_URL="http://opensearch-dashboards:5601/admin/opensearch"
 
 # ── Wait for OpenSearch ────────────────────────────────────────────────────────
 echo "[init] Waiting for OpenSearch at ${OPENSEARCH_URL}..."
