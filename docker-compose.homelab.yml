@@ -1,0 +1,1053 @@
+# VETA Trading Platform — Homelab deployment
+# Image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+# Built by CI on push to main, auto-updated by Watchtower.
+#
+# Setup:
+#   sudo mkdir -p /opt/stacks/veta
+#   sudo cp docker-compose.homelab.yml /opt/stacks/veta/compose.yml
+#   sudo cp traefik.homelab.yml /opt/stacks/veta/traefik.yml
+#   Add to /etc/hosts on clients: 192.168.1.245 veta.home
+#   cd /opt/stacks/veta && docker compose pull && docker compose up -d
+
+networks:
+  trading-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  opensearch-data:
+  veta-data:
+
+services:
+
+  # ── Message Bus (Redpanda – Kafka-compatible) ─────────────────────────────
+  redpanda:
+    image: redpandadata/redpanda:v24.3.6
+    container_name: veta-redpanda
+    restart: unless-stopped
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=2
+      - --memory=512M
+      - --default-log-level=warn
+      - --kafka-addr=0.0.0.0:9092
+      - --advertise-kafka-addr=redpanda:9092
+    networks:
+      - trading-net
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  # Redpanda Console (UI)
+  redpanda-console:
+    image: redpandadata/console:v2.7.2
+    container_name: veta-redpanda-console
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.redpanda-console.rule=Host(`veta.home`) && PathPrefix(`/admin/redpanda`)"
+      - "traefik.http.routers.redpanda-console.entrypoints=web"
+      - "traefik.http.routers.redpanda-console.middlewares=redpanda-strip"
+      - "traefik.http.middlewares.redpanda-strip.stripprefix.prefixes=/admin/redpanda"
+      - "traefik.http.services.redpanda-console.loadbalancer.server.port=8080"
+      - "traefik.http.routers.redpanda-console.priority=15"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: veta-postgres
+    restart: unless-stopped
+    networks:
+      - trading-net
+    environment:
+      POSTGRES_USER: veta
+      POSTGRES_PASSWORD: veta
+      POSTGRES_DB: veta
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "veta"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  # ── Postgres migrations (one-shot on startup) ─────────────────────────────────
+  postgres-migrate:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    command: deno run --allow-all backend/db/migrate.ts
+    networks:
+      - trading-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+    restart: "no"
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  # ── OpenSearch (single-node, security disabled) ──────────────────────────────
+  opensearch:
+    image: opensearchproject/opensearch:2.13.0
+    container_name: veta-opensearch
+    restart: unless-stopped
+    networks:
+      - trading-net
+    environment:
+      - cluster.name=trading-cluster
+      - node.name=opensearch-node1
+      - discovery.type=single-node
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  # ── OpenSearch Dashboards ─────────────────────────────────────────────────────
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.13.0
+    container_name: veta-opensearch-dashboards
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+      - SERVER_BASEPATH=/admin/opensearch
+      - SERVER_REWRITEBASEPATH=true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5601/api/status | grep -qE '\"state\":\"(green|yellow)\"'"]
+      interval: 20s
+      timeout: 10s
+      retries: 15
+      start_period: 90s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.opensearch-dashboards.rule=Host(`veta.home`) && PathPrefix(`/admin/opensearch`)"
+      - "traefik.http.routers.opensearch-dashboards.entrypoints=web"
+      - "traefik.http.routers.opensearch-dashboards.priority=15"
+      - "traefik.http.services.opensearch-dashboards.loadbalancer.server.port=5601"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  # ── Kafka Connect ───────────────────────────────────────────────────────────
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:7.6.1
+    container_name: veta-kafka-connect
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: redpanda:9092
+      CONNECT_REST_PORT: 8083
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_GROUP_ID: trading-connect-group
+      CONNECT_CONFIG_STORAGE_TOPIC: connect-configs
+      CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: connect-status
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.converters.ByteArrayConverter
+      CONNECT_PLUGIN_PATH: /usr/share/java,/usr/share/confluent-hub-components
+      CONNECT_LOG4J_ROOT_LOGLEVEL: WARN
+      CONNECT_LOG4J_LOGGERS: "org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR"
+    command:
+      - bash
+      - -c
+      - |
+        confluent-hub install --no-prompt opensearch-project/kafka-connect-opensearch:2.0.2
+        /etc/confluent/docker/run
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8083/connectors"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 120s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  # ── OpenSearch Init ───────────────────────────────────────────────────────────
+  opensearch-init:
+    image: python:3.12-alpine
+    container_name: veta-opensearch-init
+    networks:
+      - trading-net
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      kafka-connect:
+        condition: service_healthy
+      opensearch-dashboards:
+        condition: service_healthy
+    volumes:
+      - ./scripts:/scripts:ro
+    command: ["sh", "/scripts/opensearch-init.sh"]
+    restart: "no"
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  # ── Ingress ──────────────────────────────────────────────────────────────────
+  traefik:
+    image: traefik:v3.1
+    container_name: veta-traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8888:8080"   # Traefik dashboard → http://veta.home:8888/dashboard/
+    volumes:
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - trading-net
+    labels:
+      - "traefik.enable=true"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  # ── Local LLM (Ollama) ──────────────────────────────────────────────────────
+  ollama:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-ollama
+    restart: unless-stopped
+    entrypoint: ["ollama", "serve"]
+    networks:
+      - trading-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Market Simulation ─────────────────────────────────────────────────────
+  market-sim:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-market-sim
+    command: deno run --allow-all backend/src/market-sim/market-sim.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      MARKET_SIM_PORT: 5000
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Execution Management System ──────────────────────────────────────────
+  ems:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-ems
+    command: deno run --allow-all backend/src/ems/ems-server.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      market-sim:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      EMS_PORT: 5001
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: 5000
+      EMS_PARTICIPATION_CAP: ${EMS_PARTICIPATION_CAP:-0.20}
+      EMS_IMPACT_PER_1000_BPS: ${EMS_IMPACT_PER_1000_BPS:-1.0}
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Order Management System ──────────────────────────────────────────────
+  oms:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-oms
+    command: deno run --allow-all backend/src/oms/oms-server.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      OMS_PORT: 5002
+      ALGO_TRADER_PORT: 5003
+      TWAP_ALGO_PORT: 5004
+      POV_ALGO_PORT: 5005
+      VWAP_ALGO_PORT: 5006
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Algo Strategies ──────────────────────────────────────────────────────
+  limit-algo:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-limit-algo
+    command: deno run --allow-all backend/src/algo/limit-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      ALGO_TRADER_PORT: 5003
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: 5000
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5003/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  twap-algo:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-twap-algo
+    command: deno run --allow-all backend/src/algo/twap-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      TWAP_ALGO_PORT: 5004
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: 5000
+      TWAP_INTERVAL_MS: ${TWAP_INTERVAL_MS:-5000}
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5004/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  pov-algo:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-pov-algo
+    command: deno run --allow-all backend/src/algo/pov-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      POV_ALGO_PORT: 5005
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: 5000
+      POV_PERCENTAGE: ${POV_PERCENTAGE:-10}
+      POV_MIN_SLICE: ${POV_MIN_SLICE:-10}
+      POV_MAX_SLICE: ${POV_MAX_SLICE:-5000}
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5005/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  vwap-algo:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-vwap-algo
+    command: deno run --allow-all backend/src/algo/vwap-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      VWAP_ALGO_PORT: 5006
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: 5000
+      VWAP_WINDOW_TICKS: ${VWAP_WINDOW_TICKS:-20}
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5006/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  iceberg-algo:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-iceberg-algo
+    command: deno run --allow-all backend/src/algo/iceberg-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      ICEBERG_ALGO_PORT: 5021
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5021/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  sniper-algo:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-sniper-algo
+    command: deno run --allow-all backend/src/algo/sniper-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      SNIPER_ALGO_PORT: 5022
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5022/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  arrival-price-algo:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-arrival-price-algo
+    command: deno run --allow-all backend/src/algo/arrival-price-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      ARRIVAL_PRICE_ALGO_PORT: 5023
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5023/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Observability ─────────────────────────────────────────────────────────
+  observability:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-observability
+    command: deno run --allow-all observability/kafka-relay.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5007/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── User Service ─────────────────────────────────────────────────────────
+  user-service:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-user-service
+    command: deno run --allow-all backend/src/user-service/user-service.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      postgres-migrate:
+        condition: service_completed_successfully
+    environment:
+      USER_SERVICE_PORT: 5008
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5008/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Journal ───────────────────────────────────────────────────────────────
+  journal:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-journal
+    command: deno run --allow-all backend/src/journal/journal-server.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      postgres-migrate:
+        condition: service_completed_successfully
+    environment:
+      JOURNAL_PORT: 5009
+      JOURNAL_RETENTION_DAYS: ${JOURNAL_RETENTION_DAYS:-90}
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5009/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── FIX Archive ───────────────────────────────────────────────────────────
+  fix-archive:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-fix-archive
+    command: deno run --allow-all backend/src/fix/fix-archive.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      postgres-migrate:
+        condition: service_completed_successfully
+    environment:
+      FIX_ARCHIVE_PORT: 5012
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5012/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Analytics ─────────────────────────────────────────────────────────────
+  analytics:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-analytics
+    command: deno run --allow-all backend/src/analytics/analytics-server.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      journal:
+        condition: service_healthy
+    environment:
+      ANALYTICS_PORT: 5014
+      JOURNAL_HOST: journal
+      JOURNAL_PORT: 5009
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5014/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Market Data ───────────────────────────────────────────────────────────
+  market-data:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-market-data
+    command: deno run --allow-all backend/src/market-data/market-data-service.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      MARKET_DATA_PORT: 5015
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5015/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Feature Engine ────────────────────────────────────────────────────────
+  feature-engine:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-feature-engine
+    command: deno run --allow-all backend/src/feature-engine/feature-engine.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      FEATURE_ENGINE_PORT: 5017
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5017/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Signal Engine ─────────────────────────────────────────────────────────
+  signal-engine:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-signal-engine
+    command: deno run --allow-all backend/src/signal-engine/signal-engine.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      feature-engine:
+        condition: service_healthy
+    environment:
+      SIGNAL_ENGINE_PORT: 5018
+      FEATURE_ENGINE_HOST: feature-engine
+      FEATURE_ENGINE_PORT: 5017
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5018/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Recommendation Engine ─────────────────────────────────────────────────
+  recommendation-engine:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-recommendation-engine
+    command: deno run --allow-all backend/src/recommendation-engine/recommendation-server.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      signal-engine:
+        condition: service_healthy
+    environment:
+      RECOMMENDATION_ENGINE_PORT: 5019
+      SIGNAL_ENGINE_HOST: signal-engine
+      SIGNAL_ENGINE_PORT: 5018
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5019/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Scenario Engine ───────────────────────────────────────────────────────
+  scenario-engine:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-scenario-engine
+    command: deno run --allow-all backend/src/scenario-engine/scenario-server.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      SCENARIO_ENGINE_PORT: 5020
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5020/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── News Aggregator ───────────────────────────────────────────────────────
+  news-aggregator:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-news-aggregator
+    command: deno run --allow-all backend/src/news/news-aggregator.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+    environment:
+      NEWS_AGGREGATOR_PORT: 5013
+      NEWS_POLL_INTERVAL_MS: ${NEWS_POLL_INTERVAL_MS:-120000}
+      MARKET_SIM_URL: http://market-sim:5000
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5013/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── FIX Exchange ──────────────────────────────────────────────────────────
+  fix-exchange:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-fix-exchange
+    command: deno run --allow-all backend/src/fix/fix-exchange.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      market-sim:
+        condition: service_healthy
+    environment:
+      FIX_EXCHANGE_PORT: 9880
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: 5000
+      EMS_PARTICIPATION_CAP: ${EMS_PARTICIPATION_CAP:-0.20}
+      EMS_IMPACT_PER_1000_BPS: ${EMS_IMPACT_PER_1000_BPS:-1.0}
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9879/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── FIX Gateway ───────────────────────────────────────────────────────────
+  fix-gateway:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-fix-gateway
+    command: deno run --allow-all backend/src/fix/fix-gateway.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      fix-exchange:
+        condition: service_healthy
+    environment:
+      FIX_GATEWAY_PORT: 9881
+      FIX_EXCHANGE_HOST: fix-exchange
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9881/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── LLM Advisory ─────────────────────────────────────────────────────────
+  llm-advisory:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-llm-advisory
+    command: deno run --allow-all backend/src/llm-advisory/orchestrator.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    environment:
+      LLM_ADVISORY_PORT: 5024
+      LLM_ENABLED: "true"
+      LLM_WORKER_ENABLED: "true"
+      LLM_PROVIDER: ollama
+      LLM_MODEL_ID: qwen2.5:3b
+      LLM_OLLAMA_BASE_URL: http://ollama:11434
+      LLM_TRIGGER_MODE: on-demand-ui
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5024/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Gateway (BFF — single entry point for GUI) ────────────────────────────
+  gateway:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-gateway
+    command: deno run --allow-all backend/src/gateway/gateway.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      journal:
+        condition: service_healthy
+    environment:
+      GATEWAY_PORT: 5011
+      MARKET_SIM_URL: http://market-sim:5000
+      JOURNAL_URL: http://journal:5009
+      USER_SERVICE_HOST: user-service
+      USER_SERVICE_PORT: 5008
+      ANALYTICS_HOST: analytics
+      ANALYTICS_PORT: 5014
+      MARKET_DATA_HOST: market-data
+      MARKET_DATA_PORT: 5015
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5011/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway-ws.rule=Host(`veta.home`) && PathPrefix(`/ws/gateway`)"
+      - "traefik.http.routers.gateway-ws.entrypoints=web"
+      - "traefik.http.routers.gateway-ws.middlewares=gateway-ws-strip"
+      - "traefik.http.middlewares.gateway-ws-strip.stripprefix.prefixes=/ws/gateway"
+      - "traefik.http.routers.gateway-ws.service=gateway"
+      - "traefik.http.routers.gateway-api.rule=Host(`veta.home`) && PathPrefix(`/api/gateway`)"
+      - "traefik.http.routers.gateway-api.entrypoints=web"
+      - "traefik.http.routers.gateway-api.middlewares=gateway-api-strip"
+      - "traefik.http.middlewares.gateway-api-strip.stripprefix.prefixes=/api/gateway"
+      - "traefik.http.routers.gateway-api.service=gateway"
+      - "traefik.http.services.gateway.loadbalancer.server.port=5011"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Frontend ──────────────────────────────────────────────────────────────
+  frontend:
+    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    container_name: veta-frontend
+    command: deno run --allow-all frontend-server.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      gateway:
+        condition: service_healthy
+    environment:
+      FRONTEND_PORT: 3000
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3000"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`veta.home`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+      - "com.centurylinklabs.watchtower.enable=true"

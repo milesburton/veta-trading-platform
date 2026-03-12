@@ -264,5 +264,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
+          build-args: |
+            VITE_DEPLOYMENT=homelab
+            VITE_COMMIT_SHA=${{ github.sha }}
+            VITE_BUILD_DATE=${{ github.run_started_at }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

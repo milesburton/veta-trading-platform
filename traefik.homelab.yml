@@ -1,0 +1,29 @@
+# Traefik v3 static configuration — homelab
+# Routes by Host: veta.home — add to /etc/hosts: 192.168.1.245 veta.home
+
+api:
+  dashboard: true
+  insecure: true   # Dashboard at http://veta.home:8888/dashboard/
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: trading-net
+
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addServicesLabels: true
+    addRoutersLabels: true
+
+accessLog:
+  format: json
+
+log:
+  level: INFO
+  format: json
