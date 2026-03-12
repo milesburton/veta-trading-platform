@@ -154,7 +154,7 @@ services:
       - SERVER_BASEPATH=/admin/opensearch
       - SERVER_REWRITEBASEPATH=true
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:5601/api/status | grep -qE '\"state\":\"(green|yellow)\"'"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:5601/admin/opensearch/api/status | grep -qE '\"state\":\"(green|yellow)\"'"]
       interval: 20s
       timeout: 10s
       retries: 15
@@ -221,8 +221,6 @@ services:
       opensearch:
         condition: service_healthy
       kafka-connect:
-        condition: service_healthy
-      opensearch-dashboards:
         condition: service_healthy
     volumes:
       - ./scripts:/scripts:ro
@@ -342,6 +340,11 @@ services:
       TWAP_ALGO_PORT: 5004
       POV_ALGO_PORT: 5005
       VWAP_ALGO_PORT: 5006
+      ICEBERG_ALGO_PORT: 5021
+      SNIPER_ALGO_PORT: 5022
+      ARRIVAL_PRICE_ALGO_PORT: 5023
+      MOMENTUM_ALGO_PORT: 5025
+      IS_ALGO_PORT: 5026
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-latest}
     healthcheck:
@@ -578,6 +581,66 @@ services:
       COMMIT_SHA: ${COMMIT_SHA:-latest}
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:5023/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  momentum-algo:
+    image: ghcr.io/milesburton/veta-trading-platform:latest
+    container_name: veta-momentum-algo
+    command: deno run --allow-all backend/src/algo/momentum-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      MOMENTUM_ALGO_PORT: 5025
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5025/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  is-algo:
+    image: ghcr.io/milesburton/veta-trading-platform:latest
+    container_name: veta-is-algo
+    command: deno run --allow-all backend/src/algo/is-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      IS_ALGO_PORT: 5026
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5026/health"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -990,14 +1053,30 @@ services:
         condition: service_healthy
     environment:
       GATEWAY_PORT: 5011
-      MARKET_SIM_URL: http://market-sim:5000
-      JOURNAL_URL: http://journal:5009
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: 5000
+      JOURNAL_HOST: journal
+      JOURNAL_PORT: 5009
       USER_SERVICE_HOST: user-service
       USER_SERVICE_PORT: 5008
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      OMS_HOST: oms
+      OMS_PORT: 5002
       ANALYTICS_HOST: analytics
       ANALYTICS_PORT: 5014
       MARKET_DATA_HOST: market-data
       MARKET_DATA_PORT: 5015
+      FEATURE_ENGINE_HOST: feature-engine
+      FEATURE_ENGINE_PORT: 5017
+      SIGNAL_ENGINE_HOST: signal-engine
+      SIGNAL_ENGINE_PORT: 5018
+      RECOMMENDATION_ENGINE_HOST: recommendation-engine
+      RECOMMENDATION_ENGINE_PORT: 5019
+      SCENARIO_ENGINE_HOST: scenario-engine
+      SCENARIO_ENGINE_PORT: 5020
+      LLM_ADVISORY_HOST: llm-advisory
+      LLM_ADVISORY_PORT: 5024
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-latest}
     healthcheck:
@@ -1008,16 +1087,18 @@ services:
       start_period: 10s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.gateway-ws.rule=Host(`veta.home`) && PathPrefix(`/ws/gateway`)"
+      - "traefik.http.routers.gateway-ws.rule=PathPrefix(`/ws/gateway`)"
       - "traefik.http.routers.gateway-ws.entrypoints=web"
       - "traefik.http.routers.gateway-ws.middlewares=gateway-ws-strip"
       - "traefik.http.middlewares.gateway-ws-strip.stripprefix.prefixes=/ws/gateway"
       - "traefik.http.routers.gateway-ws.service=gateway"
-      - "traefik.http.routers.gateway-api.rule=Host(`veta.home`) && PathPrefix(`/api/gateway`)"
+      - "traefik.http.routers.gateway-ws.priority=20"
+      - "traefik.http.routers.gateway-api.rule=PathPrefix(`/api/gateway`)"
       - "traefik.http.routers.gateway-api.entrypoints=web"
       - "traefik.http.routers.gateway-api.middlewares=gateway-api-strip"
       - "traefik.http.middlewares.gateway-api-strip.stripprefix.prefixes=/api/gateway"
       - "traefik.http.routers.gateway-api.service=gateway"
+      - "traefik.http.routers.gateway-api.priority=20"
       - "traefik.http.services.gateway.loadbalancer.server.port=5011"
       - "com.centurylinklabs.watchtower.enable=true"
 
@@ -1043,7 +1124,7 @@ services:
       start_period: 10s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`veta.home`)"
+      - "traefik.http.routers.frontend.rule=Host(`veta.home`) || PathPrefix(`/`)"
       - "traefik.http.routers.frontend.entrypoints=web"
       - "traefik.http.routers.frontend.priority=1"
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"

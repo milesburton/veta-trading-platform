@@ -352,8 +352,8 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   if (path === "/ready" && req.method === "GET") {
-    const emsUrl = `http://localhost:${Deno.env.get("EMS_PORT") ?? "5001"}`;
-    const omsUrl = `http://localhost:${Deno.env.get("OMS_PORT") ?? "5002"}`;
+    const emsUrl = `http://${Deno.env.get("EMS_HOST") ?? "localhost"}:${Deno.env.get("EMS_PORT") ?? "5001"}`;
+    const omsUrl = `http://${Deno.env.get("OMS_HOST") ?? "localhost"}:${Deno.env.get("OMS_PORT") ?? "5002"}`;
     const checks = await Promise.all([
       fetch(`${MARKET_SIM_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
       fetch(`${JOURNAL_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
