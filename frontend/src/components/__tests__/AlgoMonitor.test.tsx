@@ -43,7 +43,7 @@ function makeStore(orders: OrderRecord[] = [], prices: MarketPrices = {}) {
       gridPrefs: gridPrefsSlice.reducer,
     },
     preloadedState: {
-      orders: { orders },
+      orders: { orders, lastSubmittedOrderId: null },
       market: {
         assets: [],
         prices,

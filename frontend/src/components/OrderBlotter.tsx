@@ -85,6 +85,7 @@ function totalCommission(children: ChildOrder[]): string {
 
 export function OrderBlotter() {
   const { cfRules } = useAppSelector((s) => s.gridPrefs.orderBlotter);
+  const lastSubmittedOrderId = useAppSelector((s) => s.orders.lastSubmittedOrderId);
   const { containerRef, limit } = useContainerLimit();
   const {
     rows: displayOrders,
@@ -127,6 +128,14 @@ export function OrderBlotter() {
       broadcast({ selectedOrderId: topOrderId });
     }
   }, [topOrderId, broadcast, selectedOrderId, userPinnedId]);
+
+  // Force-select newly submitted order, overriding any previous pin
+  useEffect(() => {
+    if (!lastSubmittedOrderId) return;
+    selectedOrderId.value = lastSubmittedOrderId;
+    userPinnedId.value = null;
+    broadcast({ selectedOrderId: lastSubmittedOrderId });
+  }, [lastSubmittedOrderId, broadcast, selectedOrderId, userPinnedId]);
 
   function selectOrder(id: string) {
     const next = selectedOrderId.value === id ? null : id;

@@ -9,7 +9,7 @@ import {
 } from "../ordersSlice";
 
 const { reducer } = ordersSlice;
-const initial = { orders: [] };
+const initial = { orders: [], lastSubmittedOrderId: null };
 
 function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
   return {

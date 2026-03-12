@@ -41,7 +41,7 @@ function makeStore(orders: OrderRecord[] = [], selectedOrderId: string | null = 
       windows: windowSlice.reducer,
     },
     preloadedState: {
-      orders: { orders },
+      orders: { orders, lastSubmittedOrderId: null },
       channels: {
         data: {
           1: { selectedAsset: null, selectedOrderId: null },

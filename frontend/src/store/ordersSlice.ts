@@ -98,11 +98,12 @@ export const resumeOrdersThunk = createAsyncThunk(
 
 interface OrdersState {
   orders: OrderRecord[];
+  lastSubmittedOrderId: string | null;
 }
 
 const MAX_ORDERS = 500;
 
-const initialState: OrdersState = { orders: [] };
+const initialState: OrdersState = { orders: [], lastSubmittedOrderId: null };
 
 export const ordersSlice = createSlice({
   name: "orders",
@@ -161,6 +162,11 @@ export const ordersSlice = createSlice({
       const idx = state.orders.findIndex((o) => o.id === clientOrderId);
       if (idx !== -1) state.orders[idx].status = "cancelled";
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(submitOrderThunk.fulfilled, (state, action) => {
+      state.lastSubmittedOrderId = action.payload;
+    });
   },
 });
 
