@@ -736,3 +736,39 @@ Deno.test("[llm-advisory] GET /admin/state returns valid subsystem state and pol
   assertEquals(typeof body.policy.enabled, "boolean");
   assertExists(body.runtimeConfig);
 });
+
+// ── Gateway /ready ─────────────────────────────────────────────────────────────
+// These tests ensure the /ready endpoint correctly reflects all downstream
+// services. Regressions here (e.g. hardcoded localhost, missing services) will
+// cause the startup overlay to hang indefinitely in production.
+
+Deno.test("[gateway/ready] returns JSON with ready field and correct HTTP status", async () => {
+  const res = await fetch(`${GATEWAY_URL}/ready`, { signal: timeout(10_000) });
+  const body = await res.json() as { ready: boolean; services: Record<string, boolean> };
+  assertEquals(typeof body.ready, "boolean");
+  // HTTP status must match ready flag: 200 when ready, 503 when not
+  assertEquals(res.status, body.ready ? 200 : 503, "HTTP status must be 200 when ready, 503 when not");
+});
+
+Deno.test("[gateway/ready] response includes all expected service keys", async () => {
+  const res = await fetch(`${GATEWAY_URL}/ready`, { signal: timeout(10_000) });
+  const body = await res.json() as { ready: boolean; services: Record<string, boolean> };
+  const expected = [
+    "marketSim", "journal", "userService", "bus",
+    "ems", "oms",
+    "analytics", "marketData",
+    "featureEngine", "signalEngine", "recommendationEngine", "scenarioEngine",
+    "llmAdvisory",
+  ];
+  for (const key of expected) {
+    assert(key in body.services, `Missing service key in /ready response: ${key}`);
+    assertEquals(typeof body.services[key], "boolean", `Service key ${key} must be boolean`);
+  }
+});
+
+Deno.test("[gateway/ready] ems and oms report true (env-var routing works)", async () => {
+  const res = await fetch(`${GATEWAY_URL}/ready`, { signal: timeout(10_000) });
+  const body = await res.json() as { services: Record<string, boolean> };
+  assertEquals(body.services.ems, true, "ems must be true — check EMS_HOST/EMS_PORT env vars in gateway");
+  assertEquals(body.services.oms, true, "oms must be true — check OMS_HOST/OMS_PORT env vars in gateway");
+});
