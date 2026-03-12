@@ -121,17 +121,14 @@ register_connector() {
   echo "[init] Registering connector: ${NAME}"
   STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "${CONNECT_URL}/connectors/${NAME}" 2>/dev/null || echo "000")
   if [ "$STATUS" = "200" ]; then
-    # Already exists — update its config
-    curl -sf -X PUT "${CONNECT_URL}/connectors/${NAME}/config" \
-      -H "Content-Type: application/json" \
-      -d "$(cat "${FILE}" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps(d["config"]))')"
-    echo "[init] Updated connector: ${NAME}"
-  else
-    curl -sf -X POST "${CONNECT_URL}/connectors" \
-      -H "Content-Type: application/json" \
-      -d @"${FILE}"
-    echo "[init] Created connector: ${NAME}"
+    # Already exists — delete and recreate for idempotency
+    curl -sf -X DELETE "${CONNECT_URL}/connectors/${NAME}" > /dev/null || true
+    sleep 2
   fi
+  curl -sf -X POST "${CONNECT_URL}/connectors" \
+    -H "Content-Type: application/json" \
+    -d @"${FILE}" || echo "[init] WARNING: connector ${NAME} registration failed (plugin may not be installed) — skipping"
+  echo "[init] Done: ${NAME}"
 }
 
 register_connector "opensearch-sink-orders"   "/scripts/connectors/connector-orders.json"
