@@ -103,7 +103,8 @@ RUN deno cache \
     backend/src/scenario-engine/scenario-server.ts \
     backend/src/gateway/gateway.ts \
     backend/src/llm-advisory/orchestrator.ts \
-    backend/src/llm-advisory/worker.ts
+    backend/src/llm-advisory/worker.ts \
+    backend/db/migrate.ts
 
 EXPOSE 8080
 CMD ["supervisord", "-c", "/app/supervisord-fly.conf"]

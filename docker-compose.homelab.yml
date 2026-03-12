@@ -299,7 +299,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.market-sim.rule=PathPrefix(`/api/market-sim`)"
+      - "traefik.http.routers.market-sim.entrypoints=web"
+      - "traefik.http.routers.market-sim.priority=10"
+      - "traefik.http.routers.market-sim.middlewares=market-sim-strip"
+      - "traefik.http.middlewares.market-sim-strip.stripprefix.prefixes=/api/market-sim"
+      - "traefik.http.services.market-sim.loadbalancer.server.port=5000"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── Execution Management System ──────────────────────────────────────────
@@ -330,7 +336,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.ems.rule=PathPrefix(`/api/ems`)"
+      - "traefik.http.routers.ems.entrypoints=web"
+      - "traefik.http.routers.ems.priority=10"
+      - "traefik.http.routers.ems.middlewares=ems-strip"
+      - "traefik.http.middlewares.ems-strip.stripprefix.prefixes=/api/ems"
+      - "traefik.http.services.ems.loadbalancer.server.port=5001"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── Order Management System ──────────────────────────────────────────────
@@ -366,7 +378,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.oms.rule=PathPrefix(`/api/oms`)"
+      - "traefik.http.routers.oms.entrypoints=web"
+      - "traefik.http.routers.oms.priority=10"
+      - "traefik.http.routers.oms.middlewares=oms-strip"
+      - "traefik.http.middlewares.oms-strip.stripprefix.prefixes=/api/oms"
+      - "traefik.http.services.oms.loadbalancer.server.port=5002"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── Algo Strategies ──────────────────────────────────────────────────────
@@ -401,7 +419,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.limit-algo.rule=PathPrefix(`/api/limit-algo`)"
+      - "traefik.http.routers.limit-algo.entrypoints=web"
+      - "traefik.http.routers.limit-algo.priority=10"
+      - "traefik.http.routers.limit-algo.middlewares=limit-algo-strip"
+      - "traefik.http.middlewares.limit-algo-strip.stripprefix.prefixes=/api/limit-algo"
+      - "traefik.http.services.limit-algo.loadbalancer.server.port=5003"
       - "com.centurylinklabs.watchtower.enable=true"
 
   twap-algo:
@@ -436,7 +460,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.twap-algo.rule=PathPrefix(`/api/twap-algo`)"
+      - "traefik.http.routers.twap-algo.entrypoints=web"
+      - "traefik.http.routers.twap-algo.priority=10"
+      - "traefik.http.routers.twap-algo.middlewares=twap-algo-strip"
+      - "traefik.http.middlewares.twap-algo-strip.stripprefix.prefixes=/api/twap-algo"
+      - "traefik.http.services.twap-algo.loadbalancer.server.port=5004"
       - "com.centurylinklabs.watchtower.enable=true"
 
   pov-algo:
@@ -473,7 +503,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.pov-algo.rule=PathPrefix(`/api/pov-algo`)"
+      - "traefik.http.routers.pov-algo.entrypoints=web"
+      - "traefik.http.routers.pov-algo.priority=10"
+      - "traefik.http.routers.pov-algo.middlewares=pov-algo-strip"
+      - "traefik.http.middlewares.pov-algo-strip.stripprefix.prefixes=/api/pov-algo"
+      - "traefik.http.services.pov-algo.loadbalancer.server.port=5005"
       - "com.centurylinklabs.watchtower.enable=true"
 
   vwap-algo:
@@ -508,7 +544,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.vwap-algo.rule=PathPrefix(`/api/vwap-algo`)"
+      - "traefik.http.routers.vwap-algo.entrypoints=web"
+      - "traefik.http.routers.vwap-algo.priority=10"
+      - "traefik.http.routers.vwap-algo.middlewares=vwap-algo-strip"
+      - "traefik.http.middlewares.vwap-algo-strip.stripprefix.prefixes=/api/vwap-algo"
+      - "traefik.http.services.vwap-algo.loadbalancer.server.port=5006"
       - "com.centurylinklabs.watchtower.enable=true"
 
   iceberg-algo:
@@ -538,7 +580,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.iceberg-algo.rule=PathPrefix(`/api/iceberg-algo`)"
+      - "traefik.http.routers.iceberg-algo.entrypoints=web"
+      - "traefik.http.routers.iceberg-algo.priority=10"
+      - "traefik.http.routers.iceberg-algo.middlewares=iceberg-algo-strip"
+      - "traefik.http.middlewares.iceberg-algo-strip.stripprefix.prefixes=/api/iceberg-algo"
+      - "traefik.http.services.iceberg-algo.loadbalancer.server.port=5021"
       - "com.centurylinklabs.watchtower.enable=true"
 
   sniper-algo:
@@ -568,7 +616,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.sniper-algo.rule=PathPrefix(`/api/sniper-algo`)"
+      - "traefik.http.routers.sniper-algo.entrypoints=web"
+      - "traefik.http.routers.sniper-algo.priority=10"
+      - "traefik.http.routers.sniper-algo.middlewares=sniper-algo-strip"
+      - "traefik.http.middlewares.sniper-algo-strip.stripprefix.prefixes=/api/sniper-algo"
+      - "traefik.http.services.sniper-algo.loadbalancer.server.port=5022"
       - "com.centurylinklabs.watchtower.enable=true"
 
   arrival-price-algo:
@@ -598,7 +652,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.arrival-price-algo.rule=PathPrefix(`/api/arrival-price-algo`)"
+      - "traefik.http.routers.arrival-price-algo.entrypoints=web"
+      - "traefik.http.routers.arrival-price-algo.priority=10"
+      - "traefik.http.routers.arrival-price-algo.middlewares=arrival-price-algo-strip"
+      - "traefik.http.middlewares.arrival-price-algo-strip.stripprefix.prefixes=/api/arrival-price-algo"
+      - "traefik.http.services.arrival-price-algo.loadbalancer.server.port=5023"
       - "com.centurylinklabs.watchtower.enable=true"
 
   momentum-algo:
@@ -628,7 +688,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.momentum-algo.rule=PathPrefix(`/api/momentum-algo`)"
+      - "traefik.http.routers.momentum-algo.entrypoints=web"
+      - "traefik.http.routers.momentum-algo.priority=10"
+      - "traefik.http.routers.momentum-algo.middlewares=momentum-algo-strip"
+      - "traefik.http.middlewares.momentum-algo-strip.stripprefix.prefixes=/api/momentum-algo"
+      - "traefik.http.services.momentum-algo.loadbalancer.server.port=5025"
       - "com.centurylinklabs.watchtower.enable=true"
 
   is-algo:
@@ -658,7 +724,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.is-algo.rule=PathPrefix(`/api/is-algo`)"
+      - "traefik.http.routers.is-algo.entrypoints=web"
+      - "traefik.http.routers.is-algo.priority=10"
+      - "traefik.http.routers.is-algo.middlewares=is-algo-strip"
+      - "traefik.http.middlewares.is-algo-strip.stripprefix.prefixes=/api/is-algo"
+      - "traefik.http.services.is-algo.loadbalancer.server.port=5026"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── Observability ─────────────────────────────────────────────────────────
@@ -683,7 +755,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.kafka-relay.rule=PathPrefix(`/api/kafka-relay`)"
+      - "traefik.http.routers.kafka-relay.entrypoints=web"
+      - "traefik.http.routers.kafka-relay.priority=10"
+      - "traefik.http.routers.kafka-relay.middlewares=kafka-relay-strip"
+      - "traefik.http.middlewares.kafka-relay-strip.stripprefix.prefixes=/api/kafka-relay"
+      - "traefik.http.services.kafka-relay.loadbalancer.server.port=5007"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── User Service ─────────────────────────────────────────────────────────
@@ -711,7 +789,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-service.rule=PathPrefix(`/api/user-service`)"
+      - "traefik.http.routers.user-service.entrypoints=web"
+      - "traefik.http.routers.user-service.priority=10"
+      - "traefik.http.routers.user-service.middlewares=user-service-strip"
+      - "traefik.http.middlewares.user-service-strip.stripprefix.prefixes=/api/user-service"
+      - "traefik.http.services.user-service.loadbalancer.server.port=5008"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── Journal ───────────────────────────────────────────────────────────────
@@ -740,7 +824,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.journal.rule=PathPrefix(`/api/journal`)"
+      - "traefik.http.routers.journal.entrypoints=web"
+      - "traefik.http.routers.journal.priority=10"
+      - "traefik.http.routers.journal.middlewares=journal-strip"
+      - "traefik.http.middlewares.journal-strip.stripprefix.prefixes=/api/journal"
+      - "traefik.http.services.journal.loadbalancer.server.port=5009"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── FIX Archive ───────────────────────────────────────────────────────────
@@ -768,7 +858,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.fix-archive.rule=PathPrefix(`/api/fix-archive`)"
+      - "traefik.http.routers.fix-archive.entrypoints=web"
+      - "traefik.http.routers.fix-archive.priority=10"
+      - "traefik.http.routers.fix-archive.middlewares=fix-archive-strip"
+      - "traefik.http.middlewares.fix-archive-strip.stripprefix.prefixes=/api/fix-archive"
+      - "traefik.http.services.fix-archive.loadbalancer.server.port=5012"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── Analytics ─────────────────────────────────────────────────────────────
@@ -797,7 +893,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.analytics.rule=PathPrefix(`/api/analytics`)"
+      - "traefik.http.routers.analytics.entrypoints=web"
+      - "traefik.http.routers.analytics.priority=10"
+      - "traefik.http.routers.analytics.middlewares=analytics-strip"
+      - "traefik.http.middlewares.analytics-strip.stripprefix.prefixes=/api/analytics"
+      - "traefik.http.services.analytics.loadbalancer.server.port=5014"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── Market Data ───────────────────────────────────────────────────────────
@@ -822,7 +924,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.market-data.rule=PathPrefix(`/api/market-data`)"
+      - "traefik.http.routers.market-data.entrypoints=web"
+      - "traefik.http.routers.market-data.priority=10"
+      - "traefik.http.routers.market-data.middlewares=market-data-strip"
+      - "traefik.http.middlewares.market-data-strip.stripprefix.prefixes=/api/market-data"
+      - "traefik.http.services.market-data.loadbalancer.server.port=5015"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── Feature Engine ────────────────────────────────────────────────────────
@@ -847,7 +955,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.feature-engine.rule=PathPrefix(`/api/feature-engine`)"
+      - "traefik.http.routers.feature-engine.entrypoints=web"
+      - "traefik.http.routers.feature-engine.priority=10"
+      - "traefik.http.routers.feature-engine.middlewares=feature-engine-strip"
+      - "traefik.http.middlewares.feature-engine-strip.stripprefix.prefixes=/api/feature-engine"
+      - "traefik.http.services.feature-engine.loadbalancer.server.port=5017"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── Signal Engine ─────────────────────────────────────────────────────────
@@ -876,7 +990,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.signal-engine.rule=PathPrefix(`/api/signal-engine`)"
+      - "traefik.http.routers.signal-engine.entrypoints=web"
+      - "traefik.http.routers.signal-engine.priority=10"
+      - "traefik.http.routers.signal-engine.middlewares=signal-engine-strip"
+      - "traefik.http.middlewares.signal-engine-strip.stripprefix.prefixes=/api/signal-engine"
+      - "traefik.http.services.signal-engine.loadbalancer.server.port=5018"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── Recommendation Engine ─────────────────────────────────────────────────
@@ -905,7 +1025,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.recommendation-engine.rule=PathPrefix(`/api/recommendation-engine`)"
+      - "traefik.http.routers.recommendation-engine.entrypoints=web"
+      - "traefik.http.routers.recommendation-engine.priority=10"
+      - "traefik.http.routers.recommendation-engine.middlewares=recommendation-engine-strip"
+      - "traefik.http.middlewares.recommendation-engine-strip.stripprefix.prefixes=/api/recommendation-engine"
+      - "traefik.http.services.recommendation-engine.loadbalancer.server.port=5019"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── Scenario Engine ───────────────────────────────────────────────────────
@@ -930,7 +1056,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.scenario-engine.rule=PathPrefix(`/api/scenario-engine`)"
+      - "traefik.http.routers.scenario-engine.entrypoints=web"
+      - "traefik.http.routers.scenario-engine.priority=10"
+      - "traefik.http.routers.scenario-engine.middlewares=scenario-engine-strip"
+      - "traefik.http.middlewares.scenario-engine-strip.stripprefix.prefixes=/api/scenario-engine"
+      - "traefik.http.services.scenario-engine.loadbalancer.server.port=5020"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── News Aggregator ───────────────────────────────────────────────────────
@@ -959,7 +1091,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.news-aggregator.rule=PathPrefix(`/api/news-aggregator`)"
+      - "traefik.http.routers.news-aggregator.entrypoints=web"
+      - "traefik.http.routers.news-aggregator.priority=10"
+      - "traefik.http.routers.news-aggregator.middlewares=news-aggregator-strip"
+      - "traefik.http.middlewares.news-aggregator-strip.stripprefix.prefixes=/api/news-aggregator"
+      - "traefik.http.services.news-aggregator.loadbalancer.server.port=5013"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── FIX Exchange ──────────────────────────────────────────────────────────
@@ -1012,7 +1150,13 @@ services:
       retries: 3
       start_period: 5s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.fix-gateway.rule=PathPrefix(`/api/fix-gateway`)"
+      - "traefik.http.routers.fix-gateway.entrypoints=web"
+      - "traefik.http.routers.fix-gateway.priority=10"
+      - "traefik.http.routers.fix-gateway.middlewares=fix-gateway-strip"
+      - "traefik.http.middlewares.fix-gateway-strip.stripprefix.prefixes=/api/fix-gateway"
+      - "traefik.http.services.fix-gateway.loadbalancer.server.port=9881"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── LLM Advisory ─────────────────────────────────────────────────────────
@@ -1045,7 +1189,13 @@ services:
       retries: 3
       start_period: 15s
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.http.routers.llm-advisory.rule=PathPrefix(`/api/llm-advisory`)"
+      - "traefik.http.routers.llm-advisory.entrypoints=web"
+      - "traefik.http.routers.llm-advisory.priority=10"
+      - "traefik.http.routers.llm-advisory.middlewares=llm-advisory-strip"
+      - "traefik.http.middlewares.llm-advisory-strip.stripprefix.prefixes=/api/llm-advisory"
+      - "traefik.http.services.llm-advisory.loadbalancer.server.port=5024"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # ── Gateway (BFF — single entry point for GUI) ────────────────────────────
