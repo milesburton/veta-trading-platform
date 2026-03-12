@@ -1,5 +1,5 @@
 # VETA Trading Platform — Homelab deployment
-# Image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+# Image: ghcr.io/milesburton/veta-trading-platform:latest
 # Built by CI on push to main, auto-updated by Watchtower.
 #
 # Setup:
@@ -93,7 +93,7 @@ services:
 
   # ── Postgres migrations (one-shot on startup) ─────────────────────────────────
   postgres-migrate:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     command: deno run --allow-all backend/db/migrate.ts
     networks:
       - trading-net
@@ -121,11 +121,8 @@ services:
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
       - DISABLE_SECURITY_PLUGIN=true
       - DISABLE_INSTALL_DEMO_CONFIG=true
-      - bootstrap.memory_lock=true
+      - bootstrap.memory_lock=false
     ulimits:
-      memlock:
-        soft: -1
-        hard: -1
       nofile:
         soft: 65536
         hard: 65536
@@ -254,7 +251,7 @@ services:
 
   # ── Local LLM (Ollama) ──────────────────────────────────────────────────────
   ollama:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-ollama
     restart: unless-stopped
     entrypoint: ["ollama", "serve"]
@@ -272,7 +269,7 @@ services:
 
   # ── Market Simulation ─────────────────────────────────────────────────────
   market-sim:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-market-sim
     command: deno run --allow-all backend/src/market-sim/market-sim.ts
     restart: unless-stopped
@@ -297,7 +294,7 @@ services:
 
   # ── Execution Management System ──────────────────────────────────────────
   ems:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-ems
     command: deno run --allow-all backend/src/ems/ems-server.ts
     restart: unless-stopped
@@ -328,7 +325,7 @@ services:
 
   # ── Order Management System ──────────────────────────────────────────────
   oms:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-oms
     command: deno run --allow-all backend/src/oms/oms-server.ts
     restart: unless-stopped
@@ -359,7 +356,7 @@ services:
 
   # ── Algo Strategies ──────────────────────────────────────────────────────
   limit-algo:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-limit-algo
     command: deno run --allow-all backend/src/algo/limit-strategy.ts
     restart: unless-stopped
@@ -393,7 +390,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   twap-algo:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-twap-algo
     command: deno run --allow-all backend/src/algo/twap-strategy.ts
     restart: unless-stopped
@@ -428,7 +425,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   pov-algo:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-pov-algo
     command: deno run --allow-all backend/src/algo/pov-strategy.ts
     restart: unless-stopped
@@ -465,7 +462,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   vwap-algo:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-vwap-algo
     command: deno run --allow-all backend/src/algo/vwap-strategy.ts
     restart: unless-stopped
@@ -500,7 +497,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   iceberg-algo:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-iceberg-algo
     command: deno run --allow-all backend/src/algo/iceberg-strategy.ts
     restart: unless-stopped
@@ -530,7 +527,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   sniper-algo:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-sniper-algo
     command: deno run --allow-all backend/src/algo/sniper-strategy.ts
     restart: unless-stopped
@@ -560,7 +557,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   arrival-price-algo:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-arrival-price-algo
     command: deno run --allow-all backend/src/algo/arrival-price-strategy.ts
     restart: unless-stopped
@@ -591,7 +588,7 @@ services:
 
   # ── Observability ─────────────────────────────────────────────────────────
   observability:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-observability
     command: deno run --allow-all observability/kafka-relay.ts
     restart: unless-stopped
@@ -616,7 +613,7 @@ services:
 
   # ── User Service ─────────────────────────────────────────────────────────
   user-service:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-user-service
     command: deno run --allow-all backend/src/user-service/user-service.ts
     restart: unless-stopped
@@ -644,7 +641,7 @@ services:
 
   # ── Journal ───────────────────────────────────────────────────────────────
   journal:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-journal
     command: deno run --allow-all backend/src/journal/journal-server.ts
     restart: unless-stopped
@@ -673,7 +670,7 @@ services:
 
   # ── FIX Archive ───────────────────────────────────────────────────────────
   fix-archive:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-fix-archive
     command: deno run --allow-all backend/src/fix/fix-archive.ts
     restart: unless-stopped
@@ -701,7 +698,7 @@ services:
 
   # ── Analytics ─────────────────────────────────────────────────────────────
   analytics:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-analytics
     command: deno run --allow-all backend/src/analytics/analytics-server.ts
     restart: unless-stopped
@@ -730,7 +727,7 @@ services:
 
   # ── Market Data ───────────────────────────────────────────────────────────
   market-data:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-market-data
     command: deno run --allow-all backend/src/market-data/market-data-service.ts
     restart: unless-stopped
@@ -755,7 +752,7 @@ services:
 
   # ── Feature Engine ────────────────────────────────────────────────────────
   feature-engine:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-feature-engine
     command: deno run --allow-all backend/src/feature-engine/feature-engine.ts
     restart: unless-stopped
@@ -780,7 +777,7 @@ services:
 
   # ── Signal Engine ─────────────────────────────────────────────────────────
   signal-engine:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-signal-engine
     command: deno run --allow-all backend/src/signal-engine/signal-engine.ts
     restart: unless-stopped
@@ -809,7 +806,7 @@ services:
 
   # ── Recommendation Engine ─────────────────────────────────────────────────
   recommendation-engine:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-recommendation-engine
     command: deno run --allow-all backend/src/recommendation-engine/recommendation-server.ts
     restart: unless-stopped
@@ -838,7 +835,7 @@ services:
 
   # ── Scenario Engine ───────────────────────────────────────────────────────
   scenario-engine:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-scenario-engine
     command: deno run --allow-all backend/src/scenario-engine/scenario-server.ts
     restart: unless-stopped
@@ -863,7 +860,7 @@ services:
 
   # ── News Aggregator ───────────────────────────────────────────────────────
   news-aggregator:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-news-aggregator
     command: deno run --allow-all backend/src/news/news-aggregator.ts
     restart: unless-stopped
@@ -892,7 +889,7 @@ services:
 
   # ── FIX Exchange ──────────────────────────────────────────────────────────
   fix-exchange:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-fix-exchange
     command: deno run --allow-all backend/src/fix/fix-exchange.ts
     restart: unless-stopped
@@ -920,7 +917,7 @@ services:
 
   # ── FIX Gateway ───────────────────────────────────────────────────────────
   fix-gateway:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-fix-gateway
     command: deno run --allow-all backend/src/fix/fix-gateway.ts
     restart: unless-stopped
@@ -945,7 +942,7 @@ services:
 
   # ── LLM Advisory ─────────────────────────────────────────────────────────
   llm-advisory:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-llm-advisory
     command: deno run --allow-all backend/src/llm-advisory/orchestrator.ts
     restart: unless-stopped
@@ -978,7 +975,7 @@ services:
 
   # ── Gateway (BFF — single entry point for GUI) ────────────────────────────
   gateway:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-gateway
     command: deno run --allow-all backend/src/gateway/gateway.ts
     restart: unless-stopped
@@ -1026,7 +1023,7 @@ services:
 
   # ── Frontend ──────────────────────────────────────────────────────────────
   frontend:
-    image: ghcr.io/milesburton/virtual-equities-trading-application:latest
+    image: ghcr.io/milesburton/veta-trading-platform:latest
     container_name: veta-frontend
     command: deno run --allow-all frontend-server.ts
     restart: unless-stopped

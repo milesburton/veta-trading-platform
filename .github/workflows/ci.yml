@@ -268,5 +268,5 @@ jobs:
             VITE_DEPLOYMENT=homelab
             VITE_COMMIT_SHA=${{ github.sha }}
             VITE_BUILD_DATE=${{ github.run_started_at }}
-          no-cache: true
+          cache-from: type=gha
           cache-to: type=gha,mode=max
