@@ -1251,8 +1251,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.gateway-ws.rule=PathPrefix(`/ws/gateway`)"
       - "traefik.http.routers.gateway-ws.entrypoints=web"
-      - "traefik.http.routers.gateway-ws.middlewares=gateway-ws-strip"
-      - "traefik.http.middlewares.gateway-ws-strip.stripprefix.prefixes=/ws/gateway"
       - "traefik.http.routers.gateway-ws.service=gateway"
       - "traefik.http.routers.gateway-ws.priority=20"
       - "traefik.http.routers.gateway-api.rule=PathPrefix(`/api/gateway`)"
