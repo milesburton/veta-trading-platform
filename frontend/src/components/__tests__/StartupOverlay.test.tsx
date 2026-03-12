@@ -25,10 +25,20 @@ describe("StartupOverlay", () => {
 
     expect(screen.getByTestId("brand-title")).toHaveTextContent("VETA");
     expect(screen.getByTestId("startup-status")).toHaveTextContent("Starting up");
-    expect(screen.getByTestId("service-indicator-marketSim")).toBeInTheDocument();
-    expect(screen.getByTestId("service-indicator-journal")).toBeInTheDocument();
-    expect(screen.getByTestId("service-indicator-userService")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-gateway")).toBeInTheDocument();
     expect(screen.getByTestId("service-indicator-bus")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-marketSim")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-userService")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-journal")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-ems")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-oms")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-analytics")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-marketData")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-featureEngine")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-signalEngine")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-recommendationEngine")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-scenarioEngine")).toBeInTheDocument();
+    expect(screen.getByTestId("service-indicator-llmAdvisory")).toBeInTheDocument();
   });
 
   test("shows elapsed time counter ticking up", async () => {

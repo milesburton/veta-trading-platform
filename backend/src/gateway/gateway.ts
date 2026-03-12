@@ -361,17 +361,20 @@ serve(async (req: Request): Promise<Response> => {
       fetch(`${emsUrl}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
       fetch(`${omsUrl}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
       fetch(`${ANALYTICS_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${MARKET_DATA_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
       fetch(`${FEATURE_ENGINE_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
       fetch(`${SIGNAL_ENGINE_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${RECOMMENDATION_ENGINE_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
+      fetch(`${SCENARIO_ENGINE_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
       fetch(`${LLM_ADVISORY_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
     ]);
-    const [marketSim, journal, userService, ems, oms, analytics, featureEngine, signalEngine, llmAdvisory] = checks;
+    const [marketSim, journal, userService, ems, oms, analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, llmAdvisory] = checks;
     const bus = producer !== null;
     const ready = marketSim && journal && userService && bus && ems && oms;
     return new Response(
       JSON.stringify({
         ready,
-        services: { marketSim, journal, userService, bus, ems, oms, analytics, featureEngine, signalEngine, llmAdvisory },
+        services: { marketSim, journal, userService, bus, ems, oms, analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, llmAdvisory },
       }),
       {
         status: ready ? 200 : 503,

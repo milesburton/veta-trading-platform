@@ -8,8 +8,11 @@ interface ReadyServices {
   ems?: boolean;
   oms?: boolean;
   analytics?: boolean;
+  marketData?: boolean;
   featureEngine?: boolean;
   signalEngine?: boolean;
+  recommendationEngine?: boolean;
+  scenarioEngine?: boolean;
   llmAdvisory?: boolean;
   gateway?: boolean;
 }
@@ -28,12 +31,14 @@ const SERVICE_LABELS: Record<keyof ReadyServices, string> = {
   ems: "Execution Engine",
   oms: "Order Manager",
   analytics: "Analytics",
+  marketData: "Market Data",
   featureEngine: "Feature Engine",
   signalEngine: "Signal Engine",
+  recommendationEngine: "Recommendation Engine",
+  scenarioEngine: "Scenario Engine",
   llmAdvisory: "LLM Advisory",
 };
 
-// Display order — gateway + bus first (infrastructure), then trading services, then intelligence
 const SERVICE_ORDER: (keyof ReadyServices)[] = [
   "gateway",
   "bus",
@@ -43,8 +48,11 @@ const SERVICE_ORDER: (keyof ReadyServices)[] = [
   "ems",
   "oms",
   "analytics",
+  "marketData",
   "featureEngine",
   "signalEngine",
+  "recommendationEngine",
+  "scenarioEngine",
   "llmAdvisory",
 ];
 
