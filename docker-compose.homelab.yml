@@ -1306,3 +1306,30 @@ services:
     labels:
       - "traefik.enable=false"
       - "com.centurylinklabs.watchtower.enable=false"
+
+  # ── Disk Monitor ─────────────────────────────────────────────────────────
+  # Exposes GET /health → 200 OK (disk < 85%) or 503 Critical (disk >= 85%)
+  # Auto-prunes dangling Docker images when disk >= 90% on each poll
+  # Add to Uptime Kuma: HTTP monitor → http://192.168.1.245:8099/health
+  disk-monitor:
+    image: python:3.12-alpine
+    container_name: veta-disk-monitor
+    restart: unless-stopped
+    command: python3 /scripts/disk-monitor.py
+    ports:
+      - "8099:8099"
+    volumes:
+      - /:/host:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /opt/stacks/veta/scripts/disk-monitor.py:/scripts/disk-monitor.py:ro
+    environment:
+      WARN_PCT: "85"
+      PRUNE_PCT: "90"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8099/health | grep -q status"]
+      interval: 60s
+      timeout: 5s
+      retries: 2
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"
