@@ -55,16 +55,60 @@ export interface NewsItem {
   relatedSymbols: string[];
 }
 
-const POSITIVE_WORDS = [
-  "surge", "rally", "gain", "rise", "beat", "record", "profit", "growth",
-  "jump", "soar", "boost", "strong", "upgrade", "bullish", "up", "high",
-  "outperform", "exceed", "positive", "optimistic", "buy",
-];
-const NEGATIVE_WORDS = [
-  "fall", "drop", "decline", "loss", "miss", "cut", "slump", "crash",
-  "plunge", "warn", "fear", "risk", "bearish", "down", "low", "downgrade",
-  "underperform", "negative", "pessimistic", "sell", "sell-off",
-];
+// Loughran-McDonald financial sentiment lexicon (condensed — financial-domain specific)
+// Source: Loughran & McDonald (2011), "When Is a Liability Not a Liability?"
+// Positive terms (LM Positive word list — key financial-domain subset)
+const LM_POSITIVE = new Set([
+  "able","abundance","abundant","acclaimed","accolade","accolades","accommodative",
+  "accomplish","accomplished","achievement","acumen","adaptable","adequate","admirable",
+  "advance","advanced","advantage","advantageous","affirm","affordable","agile",
+  "agree","ahead","aligned","allay","alleviate","allot","ample","apparent","appreciate",
+  "appropriate","approval","approve","aptly","assurance","assure","attain","attractive",
+  "augment","balance","beat","beats","best","better","beneficent","beneficial","benefit",
+  "benefits","bolster","boom","booming","boost","breakthrough","bright","build","bullish",
+  "buy","capability","capable","captivate","cash-generative","celebrated","certainty",
+  "champion","clean","clear","comfortable","commitment","competitive","confidence","confident",
+  "constructive","continue","contribute","control","core","cost-effective","create","credit",
+  "cultivate","cutting-edge","deal","decisive","deliver","demand","dependable","desirable",
+  "differentiated","disciplined","discover","durable","dynamic","earn","earnings","effective",
+  "efficient","efficiency","empower","endorse","energize","enhance","excellent","exceed",
+  "exceptional","expand","expansion","expedient","extraordinary","favorable","feasible",
+  "flexible","flourish","focus","forerunner","forthcoming","foundation","fulfil","fulfill",
+  "gain","gains","generative","good","growth","guarantee","healthy","improve","improved",
+  "improvement","innovate","innovation","innovative","integrity","invest","investment",
+  "lead","leader","leadership","leverage","liquid","loyal","lucrative","milestone",
+  "momentous","motivated","optimism","optimistic","organic","outperform","outstanding",
+  "overachieve","overdeliver","pioneer","positive","potential","premium","productive",
+  "profitability","profitable","profit","progress","progressive","promising","prospect",
+  "prosperous","proven","quality","raise","rally","rebound","recovery","record","reliable",
+  "renew","resilient","resolve","revenue","reward","rise","robust","safe","secure","soar",
+  "solid","solution","stable","strength","strong","successful","superior","support",
+  "surge","sustainable","thriving","top","transformative","transparency","trend","upgrade",
+  "uplift","value","vibrant","viable","win","yield",
+]);
+
+// Negative terms (LM Negative word list — financial-domain subset)
+const LM_NEGATIVE = new Set([
+  "abandon","abuse","accusation","adversarial","adversity","allegation","alleges",
+  "annul","arrears","bad","bailout","bankrupt","bankruptcy","barrier","bearish",
+  "below","breach","burden","caution","challenge","close","concern","conflict",
+  "contraction","conviction","corrupt","crash","crisis","critical","cut","damage",
+  "decline","decrease","default","deficit","delay","delinquent","deny","deteriorate",
+  "difficult","difficulty","diminish","disappoint","disappointing","disappointment",
+  "dispute","disruption","distress","diverge","doubtful","down","downgrade","downturn",
+  "drop","fail","failure","fall","falling","fault","fear","fine","force","foreclosure",
+  "fraud","halt","harm","headwind","impair","impairment","inadequate","incur","inferior",
+  "inflate","instability","insufficient","investigation","issue","lag","late","layoff",
+  "liability","liquidate","litigate","litigation","loss","losses","miss","missed",
+  "misstep","negative","non-compliant","obsolete","obstacle","penalty","pessimistic",
+  "plunge","poor","problem","probe","reduce","redundancy","regulatory","reject","retreat",
+  "risk","sale","sanction","scandal","sell","shortfall","shrink","slump","struggle",
+  "substandard","suffer","surplus","suspect","suspend","trouble","turbulence",
+  "uncertain","uncertainty","undermine","underperform","unfavourable","unfavorable",
+  "unprofitable","unreliable","unsustainable","violate","violation","volatile",
+  "vulnerability","warn","warning","weak","weakness","withdraw","worse","worsen",
+  "writedown","writeoff",
+]);
 const IGNORE_TICKERS = new Set([
   "CEO", "CFO", "COO", "CTO", "IPO", "ETF", "GDP", "USD", "EUR", "GBP",
   "UK", "US", "EU", "AI", "IT", "FY", "Q1", "Q2", "Q3", "Q4", "SEC",
@@ -73,10 +117,12 @@ const IGNORE_TICKERS = new Set([
 ]);
 
 function scoreSentiment(text: string): { sentiment: "positive" | "negative" | "neutral"; score: number } {
-  const lower = text.toLowerCase();
+  const words = text.toLowerCase().match(/\b[a-z][a-z-]*[a-z]\b|\b[a-z]{2,}\b/g) ?? [];
   let score = 0;
-  for (const w of POSITIVE_WORDS) if (lower.includes(w)) score++;
-  for (const w of NEGATIVE_WORDS) if (lower.includes(w)) score--;
+  for (const w of words) {
+    if (LM_POSITIVE.has(w)) score++;
+    else if (LM_NEGATIVE.has(w)) score--;
+  }
   const sentiment = score > 0 ? "positive" : score < 0 ? "negative" : "neutral";
   return { sentiment, score };
 }

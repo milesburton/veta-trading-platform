@@ -68,10 +68,6 @@ export function computeYieldCurve(params?: Partial<NelsonSiegelParams>): YieldCu
 }
 
 /**
- * Derive implied forward rates from a spot curve.
- * Uses continuous compounding: f(t₁,t₂) = (R(t₂)×t₂ - R(t₁)×t₁) / (t₂ - t₁)
- */
-/**
  * Linearly interpolate a spot rate from the curve at tenor t (years).
  * Exported for use by spread-analysis and other modules.
  */
@@ -107,4 +103,101 @@ export function buildYieldCurveResponse(params?: Partial<NelsonSiegelParams>): Y
     forwardRates: forwardRates(curve),
     computedAt: Date.now(),
   };
+}
+
+// ── FRED Treasury yield integration ──────────────────────────────────────────
+// Fetches real US Treasury rates and fits Nelson-Siegel parameters.
+// Falls back to DEFAULT_PARAMS if FRED_KEY is not set or the API is unavailable.
+
+const FRED_SERIES: { id: string; tenor: number }[] = [
+  { id: "DGS3MO", tenor: 0.25 },
+  { id: "DGS6MO", tenor: 0.5 },
+  { id: "DGS1",   tenor: 1 },
+  { id: "DGS2",   tenor: 2 },
+  { id: "DGS5",   tenor: 5 },
+  { id: "DGS10",  tenor: 10 },
+  { id: "DGS30",  tenor: 30 },
+];
+
+let cachedFredParams: NelsonSiegelParams | null = null;
+let fredCacheExpiry = 0;
+const FRED_CACHE_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+async function fetchOneFredSeries(apiKey: string, seriesId: string): Promise<number | null> {
+  try {
+    const url =
+      `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&sort_order=desc&limit=1&api_key=${apiKey}&file_type=json`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5_000) });
+    if (!res.ok) return null;
+    const data = await res.json() as { observations?: { value: string }[] };
+    const raw = data.observations?.[0]?.value;
+    if (!raw || raw === ".") return null;
+    return parseFloat(raw) / 100; // FRED returns percent, convert to decimal
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fit Nelson-Siegel params to observed (tenor, rate) pairs via grid search MSE.
+ */
+function fitNelsonSiegel(points: { tenor: number; rate: number }[]): NelsonSiegelParams {
+  const beta0Vals = [0.03, 0.035, 0.04, 0.045, 0.05, 0.055];
+  const beta1Vals = [-0.03, -0.02, -0.01, 0.0, 0.01, 0.02];
+  const beta2Vals = [-0.02, -0.01, 0.0, 0.01, 0.02, 0.03];
+  const lambdaVals = [1.5, 2.0, 2.5, 3.0, 3.5];
+
+  let best = DEFAULT_PARAMS;
+  let bestMse = Infinity;
+
+  for (const beta0 of beta0Vals) {
+    for (const beta1 of beta1Vals) {
+      for (const beta2 of beta2Vals) {
+        for (const lambda of lambdaVals) {
+          const p = { beta0, beta1, beta2, lambda };
+          let mse = 0;
+          for (const { tenor, rate } of points) {
+            const pred = nelsonSiegel(tenor, p);
+            mse += (pred - rate) ** 2;
+          }
+          mse /= points.length;
+          if (mse < bestMse) {
+            bestMse = mse;
+            best = p;
+          }
+        }
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * Fetch real US Treasury rates from FRED and fit Nelson-Siegel parameters.
+ * Returns cached params (6-hour TTL) or DEFAULT_PARAMS if unavailable.
+ */
+export async function fetchFredParams(): Promise<NelsonSiegelParams> {
+  if (cachedFredParams && Date.now() < fredCacheExpiry) return cachedFredParams;
+
+  const apiKey = Deno.env.get("FRED_KEY");
+  if (!apiKey) return DEFAULT_PARAMS;
+
+  const results = await Promise.all(
+    FRED_SERIES.map(async ({ id, tenor }) => {
+      const rate = await fetchOneFredSeries(apiKey, id);
+      return rate !== null ? { tenor, rate } : null;
+    }),
+  );
+
+  const points = results.filter((p): p is { tenor: number; rate: number } => p !== null);
+  if (points.length < 3) {
+    console.warn("[yield-curve] Insufficient FRED data points, using default params");
+    return DEFAULT_PARAMS;
+  }
+
+  const params = fitNelsonSiegel(points);
+  cachedFredParams = params;
+  fredCacheExpiry = Date.now() + FRED_CACHE_MS;
+  console.log(`[yield-curve] FRED params fitted from ${points.length} Treasury observations`);
+  return params;
 }

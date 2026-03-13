@@ -51,8 +51,8 @@ async function seedEvents(): Promise<void> {
   await loadSymbols();
   if (knownSymbols.length === 0) return;
 
-  const earningsEvents = seedEarningsEvents(knownSymbols);
-  const economicEvents = seedEconomicEvents();
+  const earningsEvents = await seedEarningsEvents(knownSymbols);
+  const economicEvents = await seedEconomicEvents();
 
   console.log(`[market-data-adapters] Seeding ${earningsEvents.length} earnings + ${economicEvents.length} economic events`);
 

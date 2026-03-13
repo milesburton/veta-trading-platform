@@ -45,7 +45,7 @@ import type {
   YieldCurveResponse,
 } from "./types.ts";
 import { estimateVol, estimateVolProfile, fetchSpotPrice } from "./volatility-estimator.ts";
-import { buildYieldCurveResponse } from "./yield-curve.ts";
+import { buildYieldCurveResponse, fetchFredParams } from "./yield-curve.ts";
 import { computeSpreadAnalysis } from "./spread-analysis.ts";
 import type { SpreadAnalysisRequest } from "./spread-analysis.ts";
 import { computeDurationLadder } from "./duration-ladder.ts";
@@ -325,7 +325,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       body = await req.json() as YieldCurveRequest;
     } catch { /* empty body is fine */ }
 
-    const response: YieldCurveResponse = buildYieldCurveResponse(body.params);
+    // Use real FRED Treasury rates when available; caller params override
+    const fredParams = await fetchFredParams();
+    const response: YieldCurveResponse = buildYieldCurveResponse({ ...fredParams, ...body.params });
     return json(response);
   }
 

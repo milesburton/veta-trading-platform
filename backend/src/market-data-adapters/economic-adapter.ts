@@ -27,7 +27,73 @@ const MACRO_CALENDAR: MacroTemplate[] = [
   { headline: "US Treasury 10yr Note Auction", impact: "low", weekOffset: 1 },
 ];
 
-export function seedEconomicEvents(): MarketAdapterEvent[] {
+interface FinnhubEconomicEvent {
+  event: string;
+  time: string; // ISO datetime or date
+  country: string;
+  impact: string | null; // "1" | "2" | "3" or null
+  unit: string | null;
+  actual: string | null;
+  estimate: string | null;
+}
+
+function mapFinnhubImpact(raw: string | null): "high" | "medium" | "low" {
+  if (raw === "3") return "high";
+  if (raw === "2") return "medium";
+  return "low";
+}
+
+async function fetchFinnhubEconomic(apiKey: string): Promise<MarketAdapterEvent[]> {
+  const now = new Date();
+  const from = now.toISOString().slice(0, 10);
+  const to = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  try {
+    const url =
+      `https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${apiKey}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) {
+      console.warn(`[economic-adapter] Finnhub returned ${res.status}`);
+      return [];
+    }
+    const data = await res.json() as { economicCalendar?: FinnhubEconomicEvent[] };
+    const list = data.economicCalendar ?? [];
+    const ts = Date.now();
+    const events: MarketAdapterEvent[] = [];
+
+    for (let i = 0; i < list.length; i++) {
+      const item = list[i];
+      if (!item.event || !item.time) continue;
+      const scheduledAt = new Date(item.time).getTime();
+      if (isNaN(scheduledAt)) continue;
+      events.push({
+        id: `finnhub-economic-${i}-${item.time}`,
+        type: "economic",
+        headline: `${item.event}${item.country ? ` (${item.country})` : ""}`,
+        scheduledAt,
+        impact: mapFinnhubImpact(item.impact ?? null),
+        ts,
+      });
+    }
+    return events;
+  } catch (err) {
+    console.warn("[economic-adapter] Finnhub fetch failed:", (err as Error).message);
+    return [];
+  }
+}
+
+export async function seedEconomicEvents(): Promise<MarketAdapterEvent[]> {
+  const apiKey = Deno.env.get("FINNHUB_KEY");
+
+  if (apiKey) {
+    const events = await fetchFinnhubEconomic(apiKey);
+    if (events.length > 0) {
+      console.log(`[economic-adapter] Loaded ${events.length} real economic events from Finnhub`);
+      return events;
+    }
+  }
+
+  console.log("[economic-adapter] Using synthetic economic calendar (no FINNHUB_KEY or no data)");
   const now = Date.now();
   const weekMs = 7 * 24 * 60 * 60 * 1000;
 
