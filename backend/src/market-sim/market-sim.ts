@@ -104,13 +104,12 @@ const CORS_HEADERS = {
 
 function computeTickVolumes(minute: number): Record<string, number> {
   const factor = intradayVolumeFactor(minute);
-  const result: Record<string, number> = {};
-  for (const asset of SP500_ASSETS) {
+  return SP500_ASSETS.reduce<Record<string, number>>((acc, asset) => {
     const basePerMinute = asset.dailyVolume / 390;
     const jitter = 0.7 + Math.random() * 0.6;
-    result[asset.symbol] = Math.round(basePerMinute * factor * jitter);
-  }
-  return result;
+    acc[asset.symbol] = Math.round(basePerMinute * factor * jitter);
+    return acc;
+  }, {});
 }
 
 const SOR_VENUES = [

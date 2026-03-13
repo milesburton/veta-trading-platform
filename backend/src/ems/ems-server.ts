@@ -50,8 +50,8 @@ const COUNTERPARTIES = ["GSCO","MSCO","JPMS","BAML","CITI","UBSS","DBSI","BARX",
 
 function pickWeightedVenue(): VenueMIC {
   const total = VENUES.reduce((s, v) => s + v.weight, 0);
-  let r = Math.random() * total;
-  for (const v of VENUES) { r -= v.weight; if (r <= 0) return v.mic; }
+  let cumulativeWeight = Math.random() * total;
+  for (const v of VENUES) { cumulativeWeight -= v.weight; if (cumulativeWeight <= 0) return v.mic; }
   return VENUES[0].mic;
 }
 function pickCounterparty(): string {

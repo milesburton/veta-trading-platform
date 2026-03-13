@@ -145,9 +145,7 @@ function storeItem(item: NewsItem): void {
 }
 
 function totalItems(): number {
-  let n = 0;
-  for (const v of newsBySymbol.values()) n += v.length;
-  return n;
+  return [...newsBySymbol.values()].reduce((sum, v) => sum + v.length, 0);
 }
 
 interface RssItem {

@@ -59,23 +59,17 @@ async function fetchFinnhubEconomic(apiKey: string): Promise<MarketAdapterEvent[
     const data = await res.json() as { economicCalendar?: FinnhubEconomicEvent[] };
     const list = data.economicCalendar ?? [];
     const ts = Date.now();
-    const events: MarketAdapterEvent[] = [];
 
-    for (let i = 0; i < list.length; i++) {
-      const item = list[i];
-      if (!item.event || !item.time) continue;
-      const scheduledAt = new Date(item.time).getTime();
-      if (isNaN(scheduledAt)) continue;
-      events.push({
+    return list
+      .filter((item) => item.event && item.time && !isNaN(new Date(item.time).getTime()))
+      .map((item) => ({
         id: `finnhub-economic-${item.event.replace(/\s+/g, "-").toLowerCase()}-${item.time}`,
-        type: "economic",
+        type: "economic" as const,
         headline: `${item.event}${item.country ? ` (${item.country})` : ""}`,
-        scheduledAt,
+        scheduledAt: new Date(item.time).getTime(),
         impact: mapFinnhubImpact(item.impact ?? null),
         ts,
-      });
-    }
-    return events;
+      }));
   } catch (err) {
     console.warn("[economic-adapter] Finnhub fetch failed:", (err as Error).message);
     return [];

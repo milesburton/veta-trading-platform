@@ -75,15 +75,14 @@ export function rateAt(curve: YieldCurvePoint[], t: number): number {
   const sorted = [...curve].sort((a, b) => a.tenorYears - b.tenorYears);
   if (t <= sorted[0].tenorYears) return sorted[0].spotRate;
   if (t >= sorted[sorted.length - 1].tenorYears) return sorted[sorted.length - 1].spotRate;
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const lo = sorted[i];
+  const pair = sorted.slice(0, -1).find((lo, i) => {
     const hi = sorted[i + 1];
-    if (t >= lo.tenorYears && t <= hi.tenorYears) {
-      const w = (t - lo.tenorYears) / (hi.tenorYears - lo.tenorYears);
-      return lo.spotRate + w * (hi.spotRate - lo.spotRate);
-    }
-  }
-  return sorted[sorted.length - 1].spotRate;
+    return t >= lo.tenorYears && t <= hi.tenorYears;
+  });
+  if (!pair) return sorted[sorted.length - 1].spotRate;
+  const hi = sorted[sorted.indexOf(pair) + 1];
+  const w = (t - pair.tenorYears) / (hi.tenorYears - pair.tenorYears);
+  return pair.spotRate + w * (hi.spotRate - pair.spotRate);
 }
 
 export function forwardRates(curve: YieldCurvePoint[]): ForwardRate[] {

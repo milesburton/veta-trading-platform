@@ -50,18 +50,15 @@ function pushHistory(map: Map<string, number[]>, symbol: string, value: number, 
 
 function trimOldNews(): void {
   const cutoff = Date.now() - NEWS_WINDOW_MS;
-  let i = 0;
-  while (i < recentNews.length && recentNews[i].ts < cutoff) i++;
-  if (i > 0) recentNews.splice(0, i);
+  const firstValid = recentNews.findIndex((e) => e.ts >= cutoff);
+  if (firstValid > 0) recentNews.splice(0, firstValid);
+  else if (firstValid === -1) recentNews.length = 0;
 }
 
 function trimOldEvents(): void {
-  const now = Date.now();
-  for (let i = upcomingEvents.length - 1; i >= 0; i--) {
-    if (upcomingEvents[i].scheduledAt < now - 24 * 60 * 60 * 1000) {
-      upcomingEvents.splice(i, 1);
-    }
-  }
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const kept = upcomingEvents.filter((e) => e.scheduledAt >= cutoff);
+  upcomingEvents.splice(0, upcomingEvents.length, ...kept);
 }
 
 async function refreshRealisedVol(symbol: string): Promise<void> {

@@ -27,9 +27,9 @@ export interface JobStore {
   pruneOldData(retentionMs: number): Promise<void>;
 }
 
-function rowToJob(r: unknown[]): LlmJob {
+function rowToJob(row: unknown[]): LlmJob {
   const [id, symbol, triggerReason, status, contextHash, priority, requestedBy,
-    createdAt, claimedAt, completedAt, workerSessionId, errorMessage, retryCount] = r as
+    createdAt, claimedAt, completedAt, workerSessionId, errorMessage, retryCount] = row as
     [string, string, string, string, string, number, string | null, bigint | number, bigint | number | null, bigint | number | null, string | null, string | null, number];
   return {
     id, symbol,
@@ -46,10 +46,10 @@ function rowToJob(r: unknown[]): LlmJob {
   };
 }
 
-function rowToNote(r: unknown[]): AdvisoryNote {
+function rowToNote(row: unknown[]): AdvisoryNote {
   const [id, jobId, symbol, content, provider, modelId,
     promptTokens, completionTokens, latencyMs,
-    signalSnapshot, recommendationSnapshot, createdAt] = r as
+    signalSnapshot, recommendationSnapshot, createdAt] = row as
     [string, string, string, string, string, string, number, number, number, string, string | null, bigint | number];
   return {
     id, jobId, symbol, content, provider, modelId,

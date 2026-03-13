@@ -7,13 +7,12 @@ export interface FeatureStore {
   insert(fv: FeatureVector): Promise<void>;
   getLatest(symbol: string): Promise<FeatureVector | null>;
   getHistory(symbol: string, limit: number): Promise<FeatureVector[]>;
-  /** Start a background cleanup interval. Returns the interval ID. */
   startCleanup(intervalMs?: number): ReturnType<typeof setInterval>;
 }
 
-function rowToFv(r: unknown[]): FeatureVector {
+function rowToFv(row: unknown[]): FeatureVector {
   const [symbol, ts, momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta] =
-    r as [string, bigint | number, number, number, number, number, number, number, number];
+    row as [string, bigint | number, number, number, number, number, number, number, number];
   return {
     symbol,
     ts: Number(ts),

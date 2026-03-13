@@ -289,8 +289,7 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-// deno-lint-ignore no-explicit-any
-function rowToEntry(row: any[]) {
+function rowToEntry(row: unknown[]) {
   const [id, event_id, event_type, ts, user_id, algo, instrument, side, order_id, child_id,
     quantity, limit_price, fill_price, filled_qty, market_price, market_impact_bps,
     algo_params, raw] = row;
