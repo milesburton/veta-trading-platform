@@ -1239,6 +1239,32 @@ services:
       SCENARIO_ENGINE_PORT: 5020
       LLM_ADVISORY_HOST: llm-advisory
       LLM_ADVISORY_PORT: 5024
+      LIMIT_ALGO_HOST: limit-algo
+      LIMIT_ALGO_PORT: 5003
+      TWAP_ALGO_HOST: twap-algo
+      TWAP_ALGO_PORT: 5004
+      POV_ALGO_HOST: pov-algo
+      POV_ALGO_PORT: 5005
+      VWAP_ALGO_HOST: vwap-algo
+      VWAP_ALGO_PORT: 5006
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      FIX_ARCHIVE_HOST: fix-archive
+      FIX_ARCHIVE_PORT: 5012
+      ICEBERG_ALGO_HOST: iceberg-algo
+      ICEBERG_ALGO_PORT: 5021
+      SNIPER_ALGO_HOST: sniper-algo
+      SNIPER_ALGO_PORT: 5022
+      ARRIVAL_PRICE_ALGO_HOST: arrival-price-algo
+      ARRIVAL_PRICE_ALGO_PORT: 5023
+      MOMENTUM_ALGO_HOST: momentum-algo
+      MOMENTUM_ALGO_PORT: 5025
+      IS_ALGO_HOST: is-algo
+      IS_ALGO_PORT: 5026
+      NEWS_AGGREGATOR_HOST: news-aggregator
+      NEWS_AGGREGATOR_PORT: 5013
+      FIX_GATEWAY_HOST: fix-gateway
+      FIX_GATEWAY_PORT: 9881
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-latest}
     healthcheck:

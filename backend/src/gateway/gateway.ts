@@ -17,6 +17,19 @@ const SCENARIO_ENGINE_URL = `http://${Deno.env.get("SCENARIO_ENGINE_HOST") ?? "l
 const LLM_ADVISORY_URL = `http://${Deno.env.get("LLM_ADVISORY_HOST") ?? "localhost"}:${Deno.env.get("LLM_ADVISORY_PORT") ?? "5024"}`;
 const EMS_URL = `http://${Deno.env.get("EMS_HOST") ?? "localhost"}:${Deno.env.get("EMS_PORT") ?? "5001"}`;
 const OMS_URL = `http://${Deno.env.get("OMS_HOST") ?? "localhost"}:${Deno.env.get("OMS_PORT") ?? "5002"}`;
+const LIMIT_ALGO_URL = `http://${Deno.env.get("LIMIT_ALGO_HOST") ?? "localhost"}:${Deno.env.get("LIMIT_ALGO_PORT") ?? "5003"}`;
+const TWAP_ALGO_URL = `http://${Deno.env.get("TWAP_ALGO_HOST") ?? "localhost"}:${Deno.env.get("TWAP_ALGO_PORT") ?? "5004"}`;
+const POV_ALGO_URL = `http://${Deno.env.get("POV_ALGO_HOST") ?? "localhost"}:${Deno.env.get("POV_ALGO_PORT") ?? "5005"}`;
+const VWAP_ALGO_URL = `http://${Deno.env.get("VWAP_ALGO_HOST") ?? "localhost"}:${Deno.env.get("VWAP_ALGO_PORT") ?? "5006"}`;
+const OBSERVABILITY_URL = `http://${Deno.env.get("OBSERVABILITY_HOST") ?? "localhost"}:${Deno.env.get("OBSERVABILITY_PORT") ?? "5007"}`;
+const FIX_ARCHIVE_URL = `http://${Deno.env.get("FIX_ARCHIVE_HOST") ?? "localhost"}:${Deno.env.get("FIX_ARCHIVE_PORT") ?? "5012"}`;
+const ICEBERG_ALGO_URL = `http://${Deno.env.get("ICEBERG_ALGO_HOST") ?? "localhost"}:${Deno.env.get("ICEBERG_ALGO_PORT") ?? "5021"}`;
+const SNIPER_ALGO_URL = `http://${Deno.env.get("SNIPER_ALGO_HOST") ?? "localhost"}:${Deno.env.get("SNIPER_ALGO_PORT") ?? "5022"}`;
+const ARRIVAL_PRICE_ALGO_URL = `http://${Deno.env.get("ARRIVAL_PRICE_ALGO_HOST") ?? "localhost"}:${Deno.env.get("ARRIVAL_PRICE_ALGO_PORT") ?? "5023"}`;
+const MOMENTUM_ALGO_URL = `http://${Deno.env.get("MOMENTUM_ALGO_HOST") ?? "localhost"}:${Deno.env.get("MOMENTUM_ALGO_PORT") ?? "5025"}`;
+const IS_ALGO_URL = `http://${Deno.env.get("IS_ALGO_HOST") ?? "localhost"}:${Deno.env.get("IS_ALGO_PORT") ?? "5026"}`;
+const NEWS_AGGREGATOR_URL = `http://${Deno.env.get("NEWS_AGGREGATOR_HOST") ?? "localhost"}:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`;
+const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost"}:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -354,27 +367,34 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   if (path === "/ready" && req.method === "GET") {
-    const checks = await Promise.all([
-      fetch(`${MARKET_SIM_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${JOURNAL_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${USER_SERVICE_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${EMS_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${OMS_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${ANALYTICS_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${MARKET_DATA_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${FEATURE_ENGINE_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${SIGNAL_ENGINE_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${RECOMMENDATION_ENGINE_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${SCENARIO_ENGINE_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
-      fetch(`${LLM_ADVISORY_URL}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false),
+    const chk = (url: string) =>
+      fetch(`${url}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false);
+    const [
+      marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
+      limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
+      analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
+    ] = await Promise.all([
+      chk(MARKET_SIM_URL), chk(EMS_URL), chk(OMS_URL), chk(JOURNAL_URL), chk(USER_SERVICE_URL),
+      chk(FIX_ARCHIVE_URL), chk(FIX_GATEWAY_URL), chk(OBSERVABILITY_URL),
+      chk(LIMIT_ALGO_URL), chk(TWAP_ALGO_URL), chk(POV_ALGO_URL), chk(VWAP_ALGO_URL),
+      chk(ICEBERG_ALGO_URL), chk(SNIPER_ALGO_URL), chk(ARRIVAL_PRICE_ALGO_URL), chk(MOMENTUM_ALGO_URL), chk(IS_ALGO_URL),
+      chk(ANALYTICS_URL), chk(MARKET_DATA_URL), chk(FEATURE_ENGINE_URL), chk(SIGNAL_ENGINE_URL),
+      chk(RECOMMENDATION_ENGINE_URL), chk(SCENARIO_ENGINE_URL), chk(NEWS_AGGREGATOR_URL), chk(LLM_ADVISORY_URL),
     ]);
-    const [marketSim, journal, userService, ems, oms, analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, llmAdvisory] = checks;
     const bus = producer !== null;
-    const ready = marketSim && journal && userService && bus && ems && oms;
+    // Core services required for order flow
+    const ready = marketSim && ems && oms && journal && userService && bus;
     return new Response(
       JSON.stringify({
         ready,
-        services: { marketSim, journal, userService, bus, ems, oms, analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, llmAdvisory },
+        services: {
+          // Core order flow
+          marketSim, ems, oms, journal, userService, bus, fixArchive, fixGateway, observability,
+          // Algo engines
+          limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
+          // Data & intelligence
+          analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
+        },
       }),
       {
         status: ready ? 200 : 503,

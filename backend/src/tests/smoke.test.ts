@@ -754,11 +754,12 @@ Deno.test("[gateway/ready] response includes all expected service keys", async (
   const res = await fetch(`${GATEWAY_URL}/ready`, { signal: timeout(10_000) });
   const body = await res.json() as { ready: boolean; services: Record<string, boolean> };
   const expected = [
-    "marketSim", "journal", "userService", "bus",
-    "ems", "oms",
-    "analytics", "marketData",
-    "featureEngine", "signalEngine", "recommendationEngine", "scenarioEngine",
-    "llmAdvisory",
+    // Core order flow
+    "marketSim", "ems", "oms", "journal", "userService", "bus", "fixArchive", "fixGateway", "observability",
+    // Algo engines
+    "limitAlgo", "twapAlgo", "povAlgo", "vwapAlgo", "icebergAlgo", "sniperAlgo", "arrivalPriceAlgo", "momentumAlgo", "isAlgo",
+    // Data & intelligence
+    "analytics", "marketData", "featureEngine", "signalEngine", "recommendationEngine", "scenarioEngine", "newsAggregator", "llmAdvisory",
   ];
   for (const key of expected) {
     assert(key in body.services, `Missing service key in /ready response: ${key}`);
