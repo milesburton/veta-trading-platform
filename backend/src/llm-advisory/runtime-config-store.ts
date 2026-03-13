@@ -1,63 +1,52 @@
-import { DB } from "https://deno.land/x/sqlite@v3.9.1/mod.ts";
+import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 import type { LlmPolicy, LlmRuntimeConfig, LlmSubsystemState, LlmTriggerMode } from "../types/llm-advisory.ts";
 
 export interface RuntimeConfigStore {
-  getConfig(): LlmRuntimeConfig;
-  updateConfig(patch: Partial<Omit<LlmRuntimeConfig, "updatedAt">>, updatedBy: string): LlmRuntimeConfig;
-  close(): void;
+  getConfig(): Promise<LlmRuntimeConfig>;
+  updateConfig(patch: Partial<Omit<LlmRuntimeConfig, "updatedAt">>, updatedBy: string): Promise<LlmRuntimeConfig>;
 }
 
-export function createRuntimeConfigStore(dbPath: string): RuntimeConfigStore {
-  const dir = dbPath.substring(0, dbPath.lastIndexOf("/"));
-  if (dir) Deno.mkdirSync(dir, { recursive: true });
-
-  const db = new DB(dbPath);
-  db.query("PRAGMA journal_mode=WAL");
-  db.query("PRAGMA synchronous=NORMAL");
-  db.query("PRAGMA busy_timeout=10000");
-  db.query(`
-    CREATE TABLE IF NOT EXISTS llm_runtime_config (
-      id           INTEGER PRIMARY KEY CHECK(id = 1),
-      enabled      INTEGER NOT NULL DEFAULT 0,
-      worker_enabled INTEGER NOT NULL DEFAULT 0,
-      trigger_mode TEXT NOT NULL DEFAULT 'manual',
-      updated_at   INTEGER NOT NULL,
-      updated_by   TEXT NOT NULL DEFAULT 'system'
-    )
-  `);
-
-  const existing = [...db.query("SELECT id FROM llm_runtime_config WHERE id = 1")];
-  if (existing.length === 0) {
-    db.query(
-      "INSERT INTO llm_runtime_config (id, enabled, worker_enabled, trigger_mode, updated_at, updated_by) VALUES (1, 0, 0, 'manual', ?, 'system')",
+export async function createRuntimeConfigStore(pool: Pool): Promise<RuntimeConfigStore> {
+  // Ensure default row exists
+  const client = await pool.connect();
+  try {
+    await client.queryArray(
+      `INSERT INTO llm_advisory.runtime_config (id, enabled, worker_enabled, trigger_mode, updated_at, updated_by)
+       VALUES (1, FALSE, FALSE, 'manual', $1, 'system')
+       ON CONFLICT (id) DO NOTHING`,
       [Date.now()],
     );
+  } finally {
+    client.release();
   }
 
-  function getConfig(): LlmRuntimeConfig {
-    const rows = [
-      ...db.query<[number, number, string, number, string]>(
-        "SELECT enabled, worker_enabled, trigger_mode, updated_at, updated_by FROM llm_runtime_config WHERE id = 1",
-      ),
-    ];
-    if (rows.length === 0) {
-      return { enabled: false, workerEnabled: false, triggerMode: "manual", updatedAt: Date.now(), updatedBy: "system" };
+  async function getConfig(): Promise<LlmRuntimeConfig> {
+    const c = await pool.connect();
+    try {
+      const { rows } = await c.queryArray<[boolean, boolean, string, bigint | number, string]>(
+        "SELECT enabled, worker_enabled, trigger_mode, updated_at, updated_by FROM llm_advisory.runtime_config WHERE id = 1",
+      );
+      if (rows.length === 0) {
+        return { enabled: false, workerEnabled: false, triggerMode: "manual", updatedAt: Date.now(), updatedBy: "system" };
+      }
+      const [enabled, workerEnabled, triggerMode, updatedAt, updatedBy] = rows[0];
+      return {
+        enabled: Boolean(enabled),
+        workerEnabled: Boolean(workerEnabled),
+        triggerMode: triggerMode as LlmTriggerMode,
+        updatedAt: Number(updatedAt),
+        updatedBy,
+      };
+    } finally {
+      c.release();
     }
-    const [enabled, workerEnabled, triggerMode, updatedAt, updatedBy] = rows[0];
-    return {
-      enabled: enabled === 1,
-      workerEnabled: workerEnabled === 1,
-      triggerMode: triggerMode as LlmTriggerMode,
-      updatedAt,
-      updatedBy,
-    };
   }
 
   return {
     getConfig,
 
-    updateConfig(patch: Partial<Omit<LlmRuntimeConfig, "updatedAt">>, updatedBy: string): LlmRuntimeConfig {
-      const current = getConfig();
+    async updateConfig(patch: Partial<Omit<LlmRuntimeConfig, "updatedAt">>, updatedBy: string): Promise<LlmRuntimeConfig> {
+      const current = await getConfig();
       const next: LlmRuntimeConfig = {
         enabled: patch.enabled ?? current.enabled,
         workerEnabled: patch.workerEnabled ?? current.workerEnabled,
@@ -65,15 +54,18 @@ export function createRuntimeConfigStore(dbPath: string): RuntimeConfigStore {
         updatedAt: Date.now(),
         updatedBy,
       };
-      db.query(
-        "UPDATE llm_runtime_config SET enabled=?, worker_enabled=?, trigger_mode=?, updated_at=?, updated_by=? WHERE id=1",
-        [next.enabled ? 1 : 0, next.workerEnabled ? 1 : 0, next.triggerMode, next.updatedAt, next.updatedBy],
-      );
+      const c = await pool.connect();
+      try {
+        await c.queryArray(
+          `UPDATE llm_advisory.runtime_config
+           SET enabled=$1, worker_enabled=$2, trigger_mode=$3, updated_at=$4, updated_by=$5
+           WHERE id=1`,
+          [next.enabled, next.workerEnabled, next.triggerMode, next.updatedAt, next.updatedBy],
+        );
+      } finally {
+        c.release();
+      }
       return next;
-    },
-
-    close(): void {
-      db.close();
     },
   };
 }

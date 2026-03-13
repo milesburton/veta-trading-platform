@@ -11,9 +11,9 @@ import {
   computeSectorRelativeStrength,
   computeSentimentDelta,
 } from "./feature-computers.ts";
+import { intelligencePool } from "../lib/db.ts";
 
 const PORT = Number(Deno.env.get("FEATURE_ENGINE_PORT")) || 5_017;
-const DB_PATH = Deno.env.get("FEATURE_ENGINE_DB_PATH") || "./backend/data/feature-vectors.db";
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
@@ -38,7 +38,7 @@ const upcomingEvents: MarketAdapterEvent[] = [];
 
 const latestFeatures = new Map<string, FeatureVector>();
 
-const store = createFeatureStore(DB_PATH);
+const store = createFeatureStore(intelligencePool);
 
 function pushHistory(map: Map<string, number[]>, symbol: string, value: number, maxLen: number): void {
   const arr = map.get(symbol) ?? [];
@@ -130,7 +130,7 @@ async function flushFeatures(): Promise<void> {
 
   for (const fv of batch) {
     latestFeatures.set(fv.symbol, fv);
-    store.insert(fv);
+    await store.insert(fv).catch((err) => console.warn("[feature-engine] DB insert error:", err.message));
     if (producer) {
       await producer.send("market.features", fv).catch(() => {});
     }
@@ -205,7 +205,7 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-Deno.serve({ port: PORT }, (req: Request): Response => {
+Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
@@ -227,14 +227,14 @@ Deno.serve({ port: PORT }, (req: Request): Response => {
   if (histMatch && req.method === "GET") {
     const symbol = decodeURIComponent(histMatch[1]);
     const limit = Math.min(Number(url.searchParams.get("limit") ?? 100), 500);
-    const history = store.getHistory(symbol, limit);
+    const history = await store.getHistory(symbol, limit);
     return json(history);
   }
 
   const fvMatch = path.match(/^\/features\/([^/]+)$/);
   if (fvMatch && req.method === "GET") {
     const symbol = decodeURIComponent(fvMatch[1]);
-    const fv = latestFeatures.get(symbol) ?? store.getLatest(symbol);
+    const fv = latestFeatures.get(symbol) ?? await store.getLatest(symbol);
     if (!fv) return json({ error: "No feature data for symbol" }, 404);
     return json(fv);
   }

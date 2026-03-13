@@ -1,4 +1,4 @@
-import { DB } from "https://deno.land/x/sqlite@v3.9.1/mod.ts";
+import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 import type {
   AdvisoryNote,
   LlmJob,
@@ -9,269 +9,333 @@ import type {
 } from "../types/llm-advisory.ts";
 
 export interface JobStore {
-  insertJob(job: Omit<LlmJob, "id">): string;
-  claimNextJob(workerSessionId: string): LlmJob | null;
-  updateJobStatus(jobId: string, status: LlmJobStatus, fields?: { completedAt?: number; errorMessage?: string; retryCount?: number }): void;
-  getJob(jobId: string): LlmJob | null;
-  getJobsBySymbol(symbol: string, limit?: number): LlmJob[];
-  getPendingJobCount(): number;
-  hasRecentJob(contextHash: string, windowMs: number): boolean;
-  cancelJobsForSymbol(symbol: string): number;
-  insertNote(note: Omit<AdvisoryNote, "id">): string;
-  getLatestNote(symbol: string): AdvisoryNote | null;
-  insertPromptAudit(audit: Omit<LlmPromptAudit, "id">): void;
-  insertResponseAudit(audit: Omit<LlmResponseAudit, "id">): void;
-  insertWorkerSession(session: Omit<LlmWorkerSession, "id">): string;
-  updateWorkerSession(sessionId: string, fields: { endedAt?: number; jobsProcessed?: number; jobsFailed?: number; exitReason?: string }): void;
-  sweepStuckJobs(maxRunningAgeMs: number): number;
-  pruneOldData(retentionMs: number): void;
-  close(): void;
+  insertJob(job: Omit<LlmJob, "id">): Promise<string>;
+  claimNextJob(workerSessionId: string): Promise<LlmJob | null>;
+  updateJobStatus(jobId: string, status: LlmJobStatus, fields?: { completedAt?: number; errorMessage?: string; retryCount?: number }): Promise<void>;
+  getJob(jobId: string): Promise<LlmJob | null>;
+  getJobsBySymbol(symbol: string, limit?: number): Promise<LlmJob[]>;
+  getPendingJobCount(): Promise<number>;
+  hasRecentJob(contextHash: string, windowMs: number): Promise<boolean>;
+  cancelJobsForSymbol(symbol: string): Promise<number>;
+  insertNote(note: Omit<AdvisoryNote, "id">): Promise<string>;
+  getLatestNote(symbol: string): Promise<AdvisoryNote | null>;
+  insertPromptAudit(audit: Omit<LlmPromptAudit, "id">): Promise<void>;
+  insertResponseAudit(audit: Omit<LlmResponseAudit, "id">): Promise<void>;
+  insertWorkerSession(session: Omit<LlmWorkerSession, "id">): Promise<string>;
+  updateWorkerSession(sessionId: string, fields: { endedAt?: number; jobsProcessed?: number; jobsFailed?: number; exitReason?: string }): Promise<void>;
+  sweepStuckJobs(maxRunningAgeMs: number): Promise<number>;
+  pruneOldData(retentionMs: number): Promise<void>;
 }
 
-type JobRow = [string, string, string, string, string, number, string | null, number, number | null, number | null, string | null, string | null, number];
-type NoteRow = [string, string, string, string, string, string, number, number, number, string, string | null, number];
-
-function rowToJob(r: JobRow): LlmJob {
+function rowToJob(r: unknown[]): LlmJob {
   const [id, symbol, triggerReason, status, contextHash, priority, requestedBy,
-    createdAt, claimedAt, completedAt, workerSessionId, errorMessage, retryCount] = r;
+    createdAt, claimedAt, completedAt, workerSessionId, errorMessage, retryCount] = r as
+    [string, string, string, string, string, number, string | null, bigint | number, bigint | number | null, bigint | number | null, string | null, string | null, number];
   return {
     id, symbol,
     triggerReason: triggerReason as LlmJob["triggerReason"],
     status: status as LlmJobStatus,
-    contextHash, priority, requestedBy,
-    createdAt, claimedAt, completedAt, workerSessionId, errorMessage, retryCount,
+    contextHash, priority,
+    requestedBy,
+    createdAt: Number(createdAt),
+    claimedAt: claimedAt !== null ? Number(claimedAt) : null,
+    completedAt: completedAt !== null ? Number(completedAt) : null,
+    workerSessionId,
+    errorMessage,
+    retryCount: Number(retryCount),
   };
 }
 
-function rowToNote(r: NoteRow): AdvisoryNote {
+function rowToNote(r: unknown[]): AdvisoryNote {
   const [id, jobId, symbol, content, provider, modelId,
     promptTokens, completionTokens, latencyMs,
-    signalSnapshot, recommendationSnapshot, createdAt] = r;
-  return { id, jobId, symbol, content, provider, modelId,
-    promptTokens, completionTokens, latencyMs,
-    signalSnapshot, recommendationSnapshot, createdAt };
+    signalSnapshot, recommendationSnapshot, createdAt] = r as
+    [string, string, string, string, string, string, number, number, number, string, string | null, bigint | number];
+  return {
+    id, jobId, symbol, content, provider, modelId,
+    promptTokens: Number(promptTokens),
+    completionTokens: Number(completionTokens),
+    latencyMs: Number(latencyMs),
+    signalSnapshot, recommendationSnapshot,
+    createdAt: Number(createdAt),
+  };
 }
 
-export function createJobStore(dbPath: string): JobStore {
-  const dir = dbPath.substring(0, dbPath.lastIndexOf("/"));
-  if (dir) Deno.mkdirSync(dir, { recursive: true });
-
-  const db = new DB(dbPath);
-  db.query("PRAGMA journal_mode=WAL");
-  db.query("PRAGMA synchronous=NORMAL");
-  db.query("PRAGMA busy_timeout=3000");
-
-  db.query(`
-    CREATE TABLE IF NOT EXISTS llm_jobs (
-      id TEXT PRIMARY KEY, symbol TEXT NOT NULL, trigger_reason TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'queued', context_hash TEXT NOT NULL,
-      priority INTEGER NOT NULL DEFAULT 0, requested_by TEXT,
-      created_at INTEGER NOT NULL, claimed_at INTEGER, completed_at INTEGER,
-      worker_session_id TEXT, error_message TEXT, retry_count INTEGER NOT NULL DEFAULT 0
-    )
-  `);
-  db.query("CREATE INDEX IF NOT EXISTS idx_llm_jobs_symbol_status ON llm_jobs(symbol, status)");
-  db.query("CREATE INDEX IF NOT EXISTS idx_llm_jobs_status_priority ON llm_jobs(status, priority DESC, created_at ASC)");
-  db.query("CREATE INDEX IF NOT EXISTS idx_llm_jobs_context_hash ON llm_jobs(context_hash, created_at DESC)");
-
-  db.query(`
-    CREATE TABLE IF NOT EXISTS advisory_notes (
-      id TEXT PRIMARY KEY, job_id TEXT NOT NULL, symbol TEXT NOT NULL,
-      content TEXT NOT NULL, provider TEXT NOT NULL, model_id TEXT NOT NULL,
-      prompt_tokens INTEGER NOT NULL DEFAULT 0, completion_tokens INTEGER NOT NULL DEFAULT 0,
-      latency_ms INTEGER NOT NULL DEFAULT 0, signal_snapshot TEXT NOT NULL,
-      recommendation_snapshot TEXT, created_at INTEGER NOT NULL
-    )
-  `);
-  db.query("CREATE INDEX IF NOT EXISTS idx_advisory_notes_symbol_ts ON advisory_notes(symbol, created_at DESC)");
-
-  db.query(`
-    CREATE TABLE IF NOT EXISTS llm_prompt_audit (
-      id TEXT PRIMARY KEY, job_id TEXT NOT NULL, prompt_text TEXT NOT NULL,
-      system_prompt_hash TEXT NOT NULL, context_size_chars INTEGER NOT NULL, ts INTEGER NOT NULL
-    )
-  `);
-
-  db.query(`
-    CREATE TABLE IF NOT EXISTS llm_response_audit (
-      id TEXT PRIMARY KEY, job_id TEXT NOT NULL, raw_response TEXT NOT NULL,
-      parsed_successfully INTEGER NOT NULL DEFAULT 1, parse_error_message TEXT, ts INTEGER NOT NULL
-    )
-  `);
-
-  db.query(`
-    CREATE TABLE IF NOT EXISTS llm_worker_sessions (
-      id TEXT PRIMARY KEY, started_at INTEGER NOT NULL, ended_at INTEGER,
-      provider TEXT NOT NULL, model_id TEXT NOT NULL,
-      jobs_processed INTEGER NOT NULL DEFAULT 0, jobs_failed INTEGER NOT NULL DEFAULT 0,
-      pid INTEGER NOT NULL, exit_reason TEXT
-    )
-  `);
-
-  function getJob(jobId: string): LlmJob | null {
-    const rows = [
-      ...db.query<JobRow>(
+export function createJobStore(pool: Pool): JobStore {
+  async function getJob(jobId: string): Promise<LlmJob | null> {
+    const client = await pool.connect();
+    try {
+      const { rows } = await client.queryArray(
         `SELECT id, symbol, trigger_reason, status, context_hash, priority, requested_by,
                 created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count
-         FROM llm_jobs WHERE id = ?`,
+         FROM llm_advisory.jobs WHERE id = $1`,
         [jobId],
-      ),
-    ];
-    return rows.length === 0 ? null : rowToJob(rows[0]);
+      );
+      return rows.length === 0 ? null : rowToJob(rows[0]);
+    } finally {
+      client.release();
+    }
   }
 
   return {
-    insertJob(job: Omit<LlmJob, "id">): string {
+    async insertJob(job: Omit<LlmJob, "id">): Promise<string> {
       const id = crypto.randomUUID();
-      db.query(
-        `INSERT INTO llm_jobs
-          (id, symbol, trigger_reason, status, context_hash, priority, requested_by,
-           created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-        [id, job.symbol, job.triggerReason, job.status, job.contextHash, job.priority,
-          job.requestedBy, job.createdAt, job.claimedAt, job.completedAt,
-          job.workerSessionId, job.errorMessage, job.retryCount],
-      );
+      const client = await pool.connect();
+      try {
+        await client.queryArray(
+          `INSERT INTO llm_advisory.jobs
+            (id, symbol, trigger_reason, status, context_hash, priority, requested_by,
+             created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+          [id, job.symbol, job.triggerReason, job.status, job.contextHash, job.priority,
+            job.requestedBy ?? null, job.createdAt, job.claimedAt ?? null, job.completedAt ?? null,
+            job.workerSessionId ?? null, job.errorMessage ?? null, job.retryCount],
+        );
+      } finally {
+        client.release();
+      }
       return id;
     },
 
-    claimNextJob(workerSessionId: string): LlmJob | null {
-      let claimed: LlmJob | null = null;
-      db.transaction(() => {
-        const rows = [...db.query<[string]>(
-          `SELECT id FROM llm_jobs WHERE status = 'queued' ORDER BY priority DESC, created_at ASC LIMIT 1`,
-        )];
-        if (rows.length === 0) return;
+    async claimNextJob(workerSessionId: string): Promise<LlmJob | null> {
+      const client = await pool.connect();
+      try {
+        await client.queryArray("BEGIN");
+        // FOR UPDATE SKIP LOCKED is the Postgres-native way to implement a job queue
+        const { rows } = await client.queryArray<[string]>(
+          `SELECT id FROM llm_advisory.jobs
+           WHERE status = 'queued'
+           ORDER BY priority DESC, created_at ASC
+           LIMIT 1
+           FOR UPDATE SKIP LOCKED`,
+        );
+        if (rows.length === 0) {
+          await client.queryArray("ROLLBACK");
+          return null;
+        }
         const [jobId] = rows[0];
-        db.query(
-          `UPDATE llm_jobs SET status = 'running', claimed_at = ?, worker_session_id = ? WHERE id = ? AND status = 'queued'`,
+        await client.queryArray(
+          `UPDATE llm_advisory.jobs
+           SET status = 'running', claimed_at = $1, worker_session_id = $2
+           WHERE id = $3 AND status = 'queued'`,
           [Date.now(), workerSessionId, jobId],
         );
-        claimed = getJob(jobId);
-      });
-      return claimed;
+        await client.queryArray("COMMIT");
+        return getJob(jobId);
+      } catch (err) {
+        await client.queryArray("ROLLBACK").catch(() => {});
+        throw err;
+      } finally {
+        client.release();
+      }
     },
 
-    updateJobStatus(jobId: string, status: LlmJobStatus, fields?: { completedAt?: number; errorMessage?: string; retryCount?: number }): void {
-      db.query(
-        `UPDATE llm_jobs
-         SET status = ?,
-             completed_at = COALESCE(?, completed_at),
-             error_message = COALESCE(?, error_message),
-             retry_count = COALESCE(?, retry_count)
-         WHERE id = ?`,
-        [status, fields?.completedAt ?? null, fields?.errorMessage ?? null, fields?.retryCount ?? null, jobId],
-      );
+    async updateJobStatus(jobId: string, status: LlmJobStatus, fields?: { completedAt?: number; errorMessage?: string; retryCount?: number }): Promise<void> {
+      const client = await pool.connect();
+      try {
+        await client.queryArray(
+          `UPDATE llm_advisory.jobs
+           SET status = $1,
+               completed_at = COALESCE($2, completed_at),
+               error_message = COALESCE($3, error_message),
+               retry_count = COALESCE($4, retry_count)
+           WHERE id = $5`,
+          [status, fields?.completedAt ?? null, fields?.errorMessage ?? null, fields?.retryCount ?? null, jobId],
+        );
+      } finally {
+        client.release();
+      }
     },
 
     getJob,
 
-    getJobsBySymbol(symbol: string, limit = 20): LlmJob[] {
-      const rows = [...db.query<JobRow>(
-        `SELECT id, symbol, trigger_reason, status, context_hash, priority, requested_by,
-                created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count
-         FROM llm_jobs WHERE symbol = ? ORDER BY created_at DESC LIMIT ?`,
-        [symbol, limit],
-      )];
-      return rows.map(rowToJob);
+    async getJobsBySymbol(symbol: string, limit = 20): Promise<LlmJob[]> {
+      const client = await pool.connect();
+      try {
+        const { rows } = await client.queryArray(
+          `SELECT id, symbol, trigger_reason, status, context_hash, priority, requested_by,
+                  created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count
+           FROM llm_advisory.jobs WHERE symbol = $1 ORDER BY created_at DESC LIMIT $2`,
+          [symbol, limit],
+        );
+        return rows.map(rowToJob);
+      } finally {
+        client.release();
+      }
     },
 
-    getPendingJobCount(): number {
-      const rows = [...db.query<[number]>(`SELECT COUNT(*) FROM llm_jobs WHERE status IN ('queued', 'running')`)];
-      return rows[0]?.[0] ?? 0;
+    async getPendingJobCount(): Promise<number> {
+      const client = await pool.connect();
+      try {
+        const { rows } = await client.queryArray<[bigint | number]>(
+          `SELECT COUNT(*) FROM llm_advisory.jobs WHERE status IN ('queued', 'running')`,
+        );
+        return Number(rows[0]?.[0] ?? 0);
+      } finally {
+        client.release();
+      }
     },
 
-    hasRecentJob(contextHash: string, windowMs: number): boolean {
-      const rows = [...db.query<[number]>(
-        `SELECT COUNT(*) FROM llm_jobs WHERE context_hash = ? AND created_at > ? AND status != 'cancelled'`,
-        [contextHash, Date.now() - windowMs],
-      )];
-      return (rows[0]?.[0] ?? 0) > 0;
+    async hasRecentJob(contextHash: string, windowMs: number): Promise<boolean> {
+      const client = await pool.connect();
+      try {
+        const { rows } = await client.queryArray<[bigint | number]>(
+          `SELECT COUNT(*) FROM llm_advisory.jobs
+           WHERE context_hash = $1 AND created_at > $2 AND status != 'cancelled'`,
+          [contextHash, Date.now() - windowMs],
+        );
+        return Number(rows[0]?.[0] ?? 0) > 0;
+      } finally {
+        client.release();
+      }
     },
 
-    cancelJobsForSymbol(symbol: string): number {
-      db.query(`UPDATE llm_jobs SET status = 'cancelled' WHERE symbol = ? AND status = 'queued'`, [symbol]);
-      return db.changes;
+    async cancelJobsForSymbol(symbol: string): Promise<number> {
+      const client = await pool.connect();
+      try {
+        const { rows } = await client.queryArray<[bigint | number]>(
+          `WITH updated AS (
+             UPDATE llm_advisory.jobs SET status = 'cancelled'
+             WHERE symbol = $1 AND status = 'queued'
+             RETURNING id
+           ) SELECT COUNT(*) FROM updated`,
+          [symbol],
+        );
+        return Number(rows[0]?.[0] ?? 0);
+      } finally {
+        client.release();
+      }
     },
 
-    insertNote(note: Omit<AdvisoryNote, "id">): string {
+    async insertNote(note: Omit<AdvisoryNote, "id">): Promise<string> {
       const id = crypto.randomUUID();
-      db.query(
-        `INSERT INTO advisory_notes
-          (id, job_id, symbol, content, provider, model_id, prompt_tokens, completion_tokens,
-           latency_ms, signal_snapshot, recommendation_snapshot, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-        [id, note.jobId, note.symbol, note.content, note.provider, note.modelId,
-          note.promptTokens, note.completionTokens, note.latencyMs,
-          note.signalSnapshot, note.recommendationSnapshot, note.createdAt],
-      );
+      const client = await pool.connect();
+      try {
+        await client.queryArray(
+          `INSERT INTO llm_advisory.advisory_notes
+            (id, job_id, symbol, content, provider, model_id, prompt_tokens, completion_tokens,
+             latency_ms, signal_snapshot, recommendation_snapshot, created_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+          [id, note.jobId, note.symbol, note.content, note.provider, note.modelId,
+            note.promptTokens, note.completionTokens, note.latencyMs,
+            note.signalSnapshot, note.recommendationSnapshot ?? null, note.createdAt],
+        );
+      } finally {
+        client.release();
+      }
       return id;
     },
 
-    getLatestNote(symbol: string): AdvisoryNote | null {
-      const rows = [...db.query<NoteRow>(
-        `SELECT id, job_id, symbol, content, provider, model_id, prompt_tokens,
-                completion_tokens, latency_ms, signal_snapshot, recommendation_snapshot, created_at
-         FROM advisory_notes WHERE symbol = ? ORDER BY created_at DESC LIMIT 1`,
-        [symbol],
-      )];
-      return rows.length === 0 ? null : rowToNote(rows[0]);
+    async getLatestNote(symbol: string): Promise<AdvisoryNote | null> {
+      const client = await pool.connect();
+      try {
+        const { rows } = await client.queryArray(
+          `SELECT id, job_id, symbol, content, provider, model_id, prompt_tokens,
+                  completion_tokens, latency_ms, signal_snapshot, recommendation_snapshot, created_at
+           FROM llm_advisory.advisory_notes WHERE symbol = $1 ORDER BY created_at DESC LIMIT 1`,
+          [symbol],
+        );
+        return rows.length === 0 ? null : rowToNote(rows[0]);
+      } finally {
+        client.release();
+      }
     },
 
-    insertPromptAudit(audit: Omit<LlmPromptAudit, "id">): void {
-      db.query(
-        `INSERT INTO llm_prompt_audit (id, job_id, prompt_text, system_prompt_hash, context_size_chars, ts) VALUES (?,?,?,?,?,?)`,
-        [crypto.randomUUID(), audit.jobId, audit.promptText, audit.systemPromptHash, audit.contextSizeChars, audit.ts],
-      );
+    async insertPromptAudit(audit: Omit<LlmPromptAudit, "id">): Promise<void> {
+      const client = await pool.connect();
+      try {
+        await client.queryArray(
+          `INSERT INTO llm_advisory.prompt_audit
+            (id, job_id, prompt_text, system_prompt_hash, context_size_chars, ts)
+           VALUES ($1,$2,$3,$4,$5,$6)`,
+          [crypto.randomUUID(), audit.jobId, audit.promptText, audit.systemPromptHash, audit.contextSizeChars, audit.ts],
+        );
+      } finally {
+        client.release();
+      }
     },
 
-    insertResponseAudit(audit: Omit<LlmResponseAudit, "id">): void {
-      db.query(
-        `INSERT INTO llm_response_audit (id, job_id, raw_response, parsed_successfully, parse_error_message, ts) VALUES (?,?,?,?,?,?)`,
-        [crypto.randomUUID(), audit.jobId, audit.rawResponse, audit.parsedSuccessfully ? 1 : 0, audit.parseErrorMessage, audit.ts],
-      );
+    async insertResponseAudit(audit: Omit<LlmResponseAudit, "id">): Promise<void> {
+      const client = await pool.connect();
+      try {
+        await client.queryArray(
+          `INSERT INTO llm_advisory.response_audit
+            (id, job_id, raw_response, parsed_successfully, parse_error_message, ts)
+           VALUES ($1,$2,$3,$4,$5,$6)`,
+          [crypto.randomUUID(), audit.jobId, audit.rawResponse, audit.parsedSuccessfully, audit.parseErrorMessage ?? null, audit.ts],
+        );
+      } finally {
+        client.release();
+      }
     },
 
-    insertWorkerSession(session: Omit<LlmWorkerSession, "id">): string {
+    async insertWorkerSession(session: Omit<LlmWorkerSession, "id">): Promise<string> {
       const id = crypto.randomUUID();
-      db.query(
-        `INSERT INTO llm_worker_sessions
-          (id, started_at, ended_at, provider, model_id, jobs_processed, jobs_failed, pid, exit_reason)
-         VALUES (?,?,?,?,?,?,?,?,?)`,
-        [id, session.startedAt, session.endedAt, session.provider, session.modelId,
-          session.jobsProcessed, session.jobsFailed, session.pid, session.exitReason ?? null],
-      );
+      const client = await pool.connect();
+      try {
+        await client.queryArray(
+          `INSERT INTO llm_advisory.worker_sessions
+            (id, started_at, ended_at, provider, model_id, jobs_processed, jobs_failed, pid, exit_reason)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+          [id, session.startedAt, session.endedAt ?? null, session.provider, session.modelId,
+            session.jobsProcessed, session.jobsFailed, session.pid, session.exitReason ?? null],
+        );
+      } finally {
+        client.release();
+      }
       return id;
     },
 
-    updateWorkerSession(sessionId: string, fields: { endedAt?: number; jobsProcessed?: number; jobsFailed?: number; exitReason?: string }): void {
-      db.query(
-        `UPDATE llm_worker_sessions
-         SET ended_at = COALESCE(?, ended_at),
-             jobs_processed = COALESCE(?, jobs_processed),
-             jobs_failed = COALESCE(?, jobs_failed),
-             exit_reason = COALESCE(?, exit_reason)
-         WHERE id = ?`,
-        [fields.endedAt ?? null, fields.jobsProcessed ?? null, fields.jobsFailed ?? null, fields.exitReason ?? null, sessionId],
-      );
+    async updateWorkerSession(sessionId: string, fields: { endedAt?: number; jobsProcessed?: number; jobsFailed?: number; exitReason?: string }): Promise<void> {
+      const client = await pool.connect();
+      try {
+        await client.queryArray(
+          `UPDATE llm_advisory.worker_sessions
+           SET ended_at = COALESCE($1, ended_at),
+               jobs_processed = COALESCE($2, jobs_processed),
+               jobs_failed = COALESCE($3, jobs_failed),
+               exit_reason = COALESCE($4, exit_reason)
+           WHERE id = $5`,
+          [fields.endedAt ?? null, fields.jobsProcessed ?? null, fields.jobsFailed ?? null, fields.exitReason ?? null, sessionId],
+        );
+      } finally {
+        client.release();
+      }
     },
 
-    sweepStuckJobs(maxRunningAgeMs: number): number {
-      db.query(
-        `UPDATE llm_jobs SET status = 'queued', claimed_at = NULL, worker_session_id = NULL WHERE status = 'running' AND claimed_at < ?`,
-        [Date.now() - maxRunningAgeMs],
-      );
-      return db.changes;
+    async sweepStuckJobs(maxRunningAgeMs: number): Promise<number> {
+      const client = await pool.connect();
+      try {
+        const { rows } = await client.queryArray<[bigint | number]>(
+          `WITH updated AS (
+             UPDATE llm_advisory.jobs
+             SET status = 'queued', claimed_at = NULL, worker_session_id = NULL
+             WHERE status = 'running' AND claimed_at < $1
+             RETURNING id
+           ) SELECT COUNT(*) FROM updated`,
+          [Date.now() - maxRunningAgeMs],
+        );
+        return Number(rows[0]?.[0] ?? 0);
+      } finally {
+        client.release();
+      }
     },
 
-    pruneOldData(retentionMs: number): void {
+    async pruneOldData(retentionMs: number): Promise<void> {
       const cutoff = Date.now() - retentionMs;
-      db.query(`DELETE FROM llm_jobs WHERE status IN ('done', 'failed', 'cancelled') AND created_at < ?`, [cutoff]);
-      db.query(`DELETE FROM advisory_notes WHERE created_at < ?`, [cutoff]);
-    },
-
-    close(): void {
-      db.close();
+      const client = await pool.connect();
+      try {
+        await client.queryArray(
+          `DELETE FROM llm_advisory.jobs WHERE status IN ('done', 'failed', 'cancelled') AND created_at < $1`,
+          [cutoff],
+        );
+        await client.queryArray(
+          `DELETE FROM llm_advisory.advisory_notes WHERE created_at < $1`,
+          [cutoff],
+        );
+      } finally {
+        client.release();
+      }
     },
   };
 }

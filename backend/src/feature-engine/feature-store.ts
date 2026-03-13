@@ -1,88 +1,81 @@
-import { DB } from "https://deno.land/x/sqlite@v3.9.1/mod.ts";
+import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 import type { FeatureVector } from "../types/intelligence.ts";
 
 const MAX_PER_SYMBOL = 500;
 
 export interface FeatureStore {
-  insert(fv: FeatureVector): void;
-  getLatest(symbol: string): FeatureVector | null;
-  getHistory(symbol: string, limit: number): FeatureVector[];
-  close(): void;
+  insert(fv: FeatureVector): Promise<void>;
+  getLatest(symbol: string): Promise<FeatureVector | null>;
+  getHistory(symbol: string, limit: number): Promise<FeatureVector[]>;
 }
 
 function rowToFv(r: unknown[]): FeatureVector {
   const [symbol, ts, momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta] =
-    r as [string, number, number, number, number, number, number, number, number];
-  return { symbol, ts, momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta };
+    r as [string, bigint | number, number, number, number, number, number, number, number];
+  return {
+    symbol,
+    ts: Number(ts),
+    momentum: Number(momentum),
+    relativeVolume: Number(relativeVolume),
+    realisedVol: Number(realisedVol),
+    sectorRelativeStrength: Number(sectorRelativeStrength),
+    eventScore: Number(eventScore),
+    newsVelocity: Number(newsVelocity),
+    sentimentDelta: Number(sentimentDelta),
+  };
 }
 
-export function createFeatureStore(dbPath: string): FeatureStore {
-  const dir = dbPath.substring(0, dbPath.lastIndexOf("/"));
-  if (dir) Deno.mkdirSync(dir, { recursive: true });
-
-  const db = new DB(dbPath);
-  db.query("PRAGMA journal_mode=WAL");
-  db.query("PRAGMA synchronous=NORMAL");
-  db.query("PRAGMA cache_size=-8000");
-  db.query("PRAGMA busy_timeout=3000");
-  db.query(`
-    CREATE TABLE IF NOT EXISTS feature_vectors (
-      id             INTEGER PRIMARY KEY AUTOINCREMENT,
-      symbol         TEXT NOT NULL,
-      ts             INTEGER NOT NULL,
-      momentum       REAL NOT NULL DEFAULT 0,
-      relative_volume REAL NOT NULL DEFAULT 0,
-      realised_vol   REAL NOT NULL DEFAULT 0,
-      sector_rs      REAL NOT NULL DEFAULT 0,
-      event_score    REAL NOT NULL DEFAULT 0,
-      news_velocity  REAL NOT NULL DEFAULT 0,
-      sentiment_delta REAL NOT NULL DEFAULT 0
-    )
-  `);
-  db.query("CREATE INDEX IF NOT EXISTS idx_fv_symbol_ts ON feature_vectors(symbol, ts DESC)");
-
+export function createFeatureStore(pool: Pool): FeatureStore {
   return {
-    insert(fv: FeatureVector): void {
-      db.query(
-        `INSERT INTO feature_vectors
-          (symbol, ts, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta)
-         VALUES (?,?,?,?,?,?,?,?,?)`,
-        [fv.symbol, fv.ts, fv.momentum, fv.relativeVolume, fv.realisedVol,
-          fv.sectorRelativeStrength, fv.eventScore, fv.newsVelocity, fv.sentimentDelta],
-      );
-      db.query(
-        `DELETE FROM feature_vectors
-         WHERE symbol = ? AND id NOT IN (
-           SELECT id FROM feature_vectors WHERE symbol = ? ORDER BY ts DESC LIMIT ?
-         )`,
-        [fv.symbol, fv.symbol, MAX_PER_SYMBOL],
-      );
+    async insert(fv: FeatureVector): Promise<void> {
+      const client = await pool.connect();
+      try {
+        await client.queryArray(
+          `INSERT INTO intelligence.feature_vectors
+            (symbol, ts, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+          [fv.symbol, fv.ts, fv.momentum, fv.relativeVolume, fv.realisedVol,
+            fv.sectorRelativeStrength, fv.eventScore, fv.newsVelocity, fv.sentimentDelta],
+        );
+        // Keep only the most recent MAX_PER_SYMBOL rows per symbol
+        await client.queryArray(
+          `DELETE FROM intelligence.feature_vectors
+           WHERE symbol = $1 AND id NOT IN (
+             SELECT id FROM intelligence.feature_vectors WHERE symbol = $1 ORDER BY ts DESC LIMIT $2
+           )`,
+          [fv.symbol, MAX_PER_SYMBOL],
+        );
+      } finally {
+        client.release();
+      }
     },
 
-    getLatest(symbol: string): FeatureVector | null {
-      const rows = [
-        ...db.query(
+    async getLatest(symbol: string): Promise<FeatureVector | null> {
+      const client = await pool.connect();
+      try {
+        const { rows } = await client.queryArray(
           `SELECT symbol, ts, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta
-           FROM feature_vectors WHERE symbol = ? ORDER BY ts DESC LIMIT 1`,
+           FROM intelligence.feature_vectors WHERE symbol = $1 ORDER BY ts DESC LIMIT 1`,
           [symbol],
-        ),
-      ];
-      return rows.length === 0 ? null : rowToFv(rows[0]);
+        );
+        return rows.length === 0 ? null : rowToFv(rows[0]);
+      } finally {
+        client.release();
+      }
     },
 
-    getHistory(symbol: string, limit: number): FeatureVector[] {
-      const rows = [
-        ...db.query(
+    async getHistory(symbol: string, limit: number): Promise<FeatureVector[]> {
+      const client = await pool.connect();
+      try {
+        const { rows } = await client.queryArray(
           `SELECT symbol, ts, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta
-           FROM feature_vectors WHERE symbol = ? ORDER BY ts DESC LIMIT ?`,
+           FROM intelligence.feature_vectors WHERE symbol = $1 ORDER BY ts DESC LIMIT $2`,
           [symbol, limit],
-        ),
-      ];
-      return rows.map(rowToFv);
-    },
-
-    close(): void {
-      db.close();
+        );
+        return rows.map(rowToFv);
+      } finally {
+        client.release();
+      }
     },
   };
 }

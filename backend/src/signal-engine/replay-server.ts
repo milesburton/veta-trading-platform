@@ -52,7 +52,7 @@ export async function runReplay(
 
   candles.sort((a, b) => a.time - b.time);
 
-  const weights = weightStore.getWeights();
+  const weights = await weightStore.getWeights();
   const frames: ReplayFrame[] = [];
   const priceWindow: number[] = [];
   const volWindow: number[] = [];

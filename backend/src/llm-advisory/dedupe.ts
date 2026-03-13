@@ -9,11 +9,11 @@ export async function computeContextHash(parts: string[]): Promise<string> {
   return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
 }
 
-export function shouldEnqueueJob(
+export async function shouldEnqueueJob(
   store: JobStore,
   contextHash: string,
   policy: LlmPolicy,
-): boolean {
+): Promise<boolean> {
   if (!policy.enabled) return false;
-  return !store.hasRecentJob(contextHash, policy.dedupeWindowMs);
+  return !(await store.hasRecentJob(contextHash, policy.dedupeWindowMs));
 }

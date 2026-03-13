@@ -4,9 +4,9 @@ import type { FeatureVector, Signal } from "../types/intelligence.ts";
 import { createWeightStore } from "./weight-store.ts";
 import { scoreFeatureVector } from "./scorer.ts";
 import { runReplay } from "./replay-server.ts";
+import { intelligencePool } from "../lib/db.ts";
 
 const PORT = Number(Deno.env.get("SIGNAL_ENGINE_PORT")) || 5_018;
-const DB_PATH = Deno.env.get("SIGNAL_ENGINE_DB_PATH") || "./backend/data/signal-weights.db";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 const CORS_HEADERS = {
@@ -15,7 +15,7 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-const weightStore = createWeightStore(DB_PATH);
+const weightStore = await createWeightStore(intelligencePool);
 const latestSignals = new Map<string, Signal>();
 
 const producer = await createProducer("signal-engine").catch((err) => {
@@ -33,7 +33,7 @@ if (consumer) {
     const fv = raw as FeatureVector;
     if (!fv.symbol) return;
 
-    const weights = weightStore.getWeights();
+    const weights = await weightStore.getWeights();
     const signal = scoreFeatureVector(fv, weights);
 
     latestSignals.set(signal.symbol, signal);
@@ -62,20 +62,20 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/weights" && req.method === "GET") {
-    return json(weightStore.getWeights());
+    return json(await weightStore.getWeights());
   }
 
   if (path === "/weights" && req.method === "PUT") {
     try {
       const body = await req.json() as Record<string, number>;
-      const current = weightStore.getWeights();
+      const current = await weightStore.getWeights();
       const updated = { ...current };
       for (const [k, v] of Object.entries(body)) {
         if (k in current && typeof v === "number" && isFinite(v)) {
           (updated as Record<string, number>)[k] = v;
         }
       }
-      weightStore.saveWeights(updated);
+      await weightStore.saveWeights(updated);
       console.log("[signal-engine] Weights updated:", updated);
       return json(updated);
     } catch {

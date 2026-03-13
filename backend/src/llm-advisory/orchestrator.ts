@@ -14,10 +14,9 @@ import {
   evaluateStalenessRefreshTrigger,
   type TriggerCandidate,
 } from "./trigger-rules.ts";
+import { llmAdvisoryPool } from "../lib/db.ts";
 
 const PORT = Number(Deno.env.get("LLM_ADVISORY_PORT")) || 5_024;
-const DB_PATH = Deno.env.get("LLM_ADVISORY_DB_PATH") || "./backend/data/llm-advisory.db";
-const RUNTIME_DB_PATH = DB_PATH.replace(/\.db$/, "-runtime.db");
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 const CORS_HEADERS = {
@@ -27,10 +26,10 @@ const CORS_HEADERS = {
 };
 
 const basePolicy = loadPolicy();
-const store = createJobStore(DB_PATH);
-const runtimeConfig = createRuntimeConfigStore(RUNTIME_DB_PATH);
+const store = createJobStore(llmAdvisoryPool);
+const runtimeConfig = await createRuntimeConfigStore(llmAdvisoryPool);
 
-store.sweepStuckJobs(10 * 60 * 1000);
+await store.sweepStuckJobs(10 * 60 * 1000);
 
 const latestSignals = new Map<string, Signal>();
 const latestFeatures = new Map<string, FeatureVector>();
@@ -48,17 +47,17 @@ const producer = await Promise.race([
   return null;
 });
 
-function getEffectivePolicy() {
-  return resolveEffectivePolicy(basePolicy, runtimeConfig.getConfig());
+async function getEffectivePolicy() {
+  return resolveEffectivePolicy(basePolicy, await runtimeConfig.getConfig());
 }
 
-function broadcastStateUpdate() {
-  const ep = getEffectivePolicy();
-  const pending = store.getPendingJobCount();
+async function broadcastStateUpdate() {
+  const ep = await getEffectivePolicy();
+  const pending = await store.getPendingJobCount();
   const status: LlmSubsystemStatus = {
     state: deriveSubsystemState(ep, pending, lastErrorMs, lastActivityMs),
     policy: ep,
-    runtimeConfig: runtimeConfig.getConfig(),
+    runtimeConfig: await runtimeConfig.getConfig(),
     pendingJobs: pending,
     trackedSymbols: latestSignals.size,
     lastWorkerSession: null,
@@ -67,15 +66,15 @@ function broadcastStateUpdate() {
   producer?.send("llm.state.update", status).catch(() => {});
 }
 
-function enqueueIfAllowed(candidate: TriggerCandidate): string | null {
-  const ep = getEffectivePolicy();
+async function enqueueIfAllowed(candidate: TriggerCandidate): Promise<string | null> {
+  const ep = await getEffectivePolicy();
   if (!isPolicyEnabled(ep)) return null;
   if (!isWithinAllowedHours(ep)) return null;
 
-  const allowed = shouldEnqueueJob(store, candidate.contextHash, ep);
+  const allowed = await shouldEnqueueJob(store, candidate.contextHash, ep);
   if (!allowed) return null;
 
-  const jobId = store.insertJob({
+  const jobId = await store.insertJob({
     symbol: candidate.symbol,
     triggerReason: candidate.triggerReason,
     status: "queued",
@@ -100,7 +99,7 @@ function enqueueIfAllowed(candidate: TriggerCandidate): string | null {
     ts: Date.now(),
   }).catch(() => {});
 
-  broadcastStateUpdate();
+  broadcastStateUpdate().catch(() => {});
   return jobId;
 }
 
@@ -109,10 +108,10 @@ createConsumer("orchestrator-signals", ["market.signals"]).then((c) => {
     const signal = raw as Signal;
     if (!signal.symbol) return;
     latestSignals.set(signal.symbol, signal);
-    const ep = getEffectivePolicy();
+    const ep = await getEffectivePolicy();
     if (!canAutoTrigger(ep)) return;
     const candidate = await evaluateSignalTrigger(ep, signal);
-    if (candidate) enqueueIfAllowed(candidate);
+    if (candidate) await enqueueIfAllowed(candidate);
   });
 }).catch(() => {});
 
@@ -123,10 +122,10 @@ createConsumer("orchestrator-recommendations", ["market.recommendations"]).then(
     const prev = latestRecs.get(rec.symbol);
     prevRecs.set(rec.symbol, prev ?? rec);
     latestRecs.set(rec.symbol, rec);
-    const ep = getEffectivePolicy();
+    const ep = await getEffectivePolicy();
     if (!canAutoTrigger(ep)) return;
     const candidate = await evaluateRecommendationTrigger(ep, rec, prev);
-    if (candidate) enqueueIfAllowed(candidate);
+    if (candidate) await enqueueIfAllowed(candidate);
   });
 }).catch(() => {});
 
@@ -142,30 +141,29 @@ createConsumer("orchestrator-worker-status", ["llm.worker.status"]).then((c) => 
     const msg = raw as { event: string; symbol?: string; error?: string };
     if (msg.event === "error") lastErrorMs = Date.now();
     if (msg.event === "completed") lastActivityMs = Date.now();
-    broadcastStateUpdate();
+    broadcastStateUpdate().catch(() => {});
   });
 }).catch(() => {});
 
 setInterval(async () => {
-  const ep = getEffectivePolicy();
+  const ep = await getEffectivePolicy();
   if (!canAutoTrigger(ep)) return;
   for (const [symbol] of latestSignals) {
-    const hasPending = store.getJobsBySymbol(symbol, 5).some(
-      (j) => j.status === "queued" || j.status === "running",
-    );
+    const jobs = await store.getJobsBySymbol(symbol, 5);
+    const hasPending = jobs.some((j) => j.status === "queued" || j.status === "running");
     if (hasPending) continue;
-    const latest = store.getLatestNote(symbol);
+    const latest = await store.getLatestNote(symbol);
     const candidate = await evaluateStalenessRefreshTrigger(
       ep,
       symbol,
       latest?.createdAt ?? null,
     );
-    if (candidate) enqueueIfAllowed(candidate);
+    if (candidate) await enqueueIfAllowed(candidate);
   }
 }, 60_000);
 
-setInterval(() => {
-  store.pruneOldData(7 * 24 * 60 * 60 * 1000);
+setInterval(async () => {
+  await store.pruneOldData(7 * 24 * 60 * 60 * 1000);
 }, 24 * 60 * 60 * 1000);
 
 function json(data: unknown, status = 200): Response {
@@ -182,8 +180,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
 
   if (path === "/health" && req.method === "GET") {
-    const ep = getEffectivePolicy();
-    const pending = store.getPendingJobCount();
+    const ep = await getEffectivePolicy();
+    const pending = await store.getPendingJobCount();
     return json({
       service: "llm-advisory-orchestrator",
       version: VERSION,
@@ -198,12 +196,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/admin/state" && req.method === "GET") {
-    const ep = getEffectivePolicy();
-    const pending = store.getPendingJobCount();
+    const ep = await getEffectivePolicy();
+    const pending = await store.getPendingJobCount();
     const status: LlmSubsystemStatus = {
       state: deriveSubsystemState(ep, pending, lastErrorMs, lastActivityMs),
       policy: ep,
-      runtimeConfig: runtimeConfig.getConfig(),
+      runtimeConfig: await runtimeConfig.getConfig(),
       pendingJobs: pending,
       trackedSymbols: latestSignals.size,
       lastWorkerSession: null,
@@ -220,17 +218,17 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       updatedBy: string;
     }>;
     const updatedBy = body.updatedBy ?? "api";
-    const updated = runtimeConfig.updateConfig({
+    const updated = await runtimeConfig.updateConfig({
       enabled: body.enabled,
       workerEnabled: body.workerEnabled,
-      triggerMode: body.triggerMode as ReturnType<typeof getEffectivePolicy>["triggerMode"] | undefined,
+      triggerMode: body.triggerMode as import("../types/llm-advisory.ts").LlmTriggerMode | undefined,
     }, updatedBy);
-    broadcastStateUpdate();
+    broadcastStateUpdate().catch(() => {});
     return json({ status: "updated", runtimeConfig: updated });
   }
 
   if (path === "/admin/watchlist-brief" && req.method === "POST") {
-    const ep = getEffectivePolicy();
+    const ep = await getEffectivePolicy();
     if (!canTriggerFromUi(ep)) {
       return json({ error: "LLM advisory is not enabled or trigger mode prevents UI requests" }, 503);
     }
@@ -241,7 +239,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     for (const symbol of symbols) {
       const candidate = await evaluateUiRequestTrigger(ep, symbol, requestedBy);
       if (candidate) {
-        const jobId = enqueueIfAllowed(candidate);
+        const jobId = await enqueueIfAllowed(candidate);
         if (jobId) jobIds.push(jobId);
       }
     }
@@ -249,7 +247,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/admin/trigger-worker" && req.method === "POST") {
-    const ep = getEffectivePolicy();
+    const ep = await getEffectivePolicy();
     if (!ep.workerEnabled) {
       return json({ error: "LLM_WORKER_ENABLED is false — enable the worker before triggering" }, 503);
     }
@@ -275,16 +273,15 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const advisoryMatch = path.match(/^\/advisory\/([^/]+)$/);
   if (advisoryMatch && req.method === "GET") {
     const symbol = decodeURIComponent(advisoryMatch[1]);
-    const note = store.getLatestNote(symbol);
+    const note = await store.getLatestNote(symbol);
     if (!note) return json({ status: "no-advisory", symbol });
-    const pendingJob = store.getJobsBySymbol(symbol, 5).find(
-      (j) => j.status === "queued" || j.status === "running",
-    );
+    const jobs = await store.getJobsBySymbol(symbol, 5);
+    const pendingJob = jobs.find((j) => j.status === "queued" || j.status === "running");
     return json({ ...note, hasPendingJob: !!pendingJob });
   }
 
   if (path === "/advisory/request" && req.method === "POST") {
-    const ep = getEffectivePolicy();
+    const ep = await getEffectivePolicy();
     if (!canTriggerFromUi(ep)) {
       return json({ error: "LLM advisory is not enabled or trigger mode prevents UI requests" }, 503);
     }
@@ -292,11 +289,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     if (!body.symbol) return json({ error: "symbol is required" }, 400);
     const candidate = await evaluateUiRequestTrigger(ep, body.symbol, body.requestedBy ?? "unknown");
     if (!candidate) return json({ error: "Could not create trigger candidate" }, 422);
-    const jobId = enqueueIfAllowed(candidate);
+    const jobId = await enqueueIfAllowed(candidate);
     if (!jobId) {
-      const existingJob = store.getJobsBySymbol(body.symbol, 5).find(
-        (j) => j.status === "queued" || j.status === "running",
-      );
+      const jobs = await store.getJobsBySymbol(body.symbol, 5);
+      const existingJob = jobs.find((j) => j.status === "queued" || j.status === "running");
       return json({
         status: "deduplicated",
         message: "A recent job already exists for this symbol",
@@ -307,25 +303,25 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/advisory/scenario-context" && req.method === "POST") {
-    const ep = getEffectivePolicy();
+    const ep = await getEffectivePolicy();
     if (!isPolicyEnabled(ep)) return json({ status: "disabled" }, 200);
     const body = await req.json() as { symbol?: string; shocks?: Array<{ factor: string }> };
     if (!body.symbol) return json({ error: "symbol is required" }, 400);
     const shockFactors = (body.shocks ?? []).map((s) => s.factor);
     const candidate = await evaluateScenarioTrigger(ep, body.symbol, shockFactors);
     if (!candidate) return json({ status: "skipped" }, 200);
-    const jobId = enqueueIfAllowed(candidate);
+    const jobId = await enqueueIfAllowed(candidate);
     return json({ status: jobId ? "queued" : "deduplicated", jobId }, jobId ? 202 : 200);
   }
 
   if (path === "/jobs" && req.method === "GET") {
     const symbol = url.searchParams.get("symbol");
     if (symbol) {
-      return json(store.getJobsBySymbol(symbol, 50));
+      return json(await store.getJobsBySymbol(symbol, 50));
     }
     const jobs: LlmJob[] = [];
     for (const [sym] of latestSignals) {
-      const symJobs = store.getJobsBySymbol(sym, 10);
+      const symJobs = await store.getJobsBySymbol(sym, 10);
       jobs.push(...symJobs);
       if (jobs.length >= 50) break;
     }
@@ -334,17 +330,17 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   const jobMatch = path.match(/^\/jobs\/([^/]+)$/);
   if (jobMatch && req.method === "GET") {
-    const job = store.getJob(jobMatch[1]);
+    const job = await store.getJob(jobMatch[1]);
     if (!job) return json({ error: "Job not found" }, 404);
     return json(job);
   }
 
   const jobCancelMatch = path.match(/^\/jobs\/([^/]+)\/cancel$/);
   if (jobCancelMatch && req.method === "PUT") {
-    const job = store.getJob(jobCancelMatch[1]);
+    const job = await store.getJob(jobCancelMatch[1]);
     if (!job) return json({ error: "Job not found" }, 404);
     if (job.status !== "queued") return json({ error: "Only queued jobs may be cancelled" }, 409);
-    store.updateJobStatus(job.id, "cancelled");
+    await store.updateJobStatus(job.id, "cancelled");
     return json({ status: "cancelled", jobId: job.id });
   }
 

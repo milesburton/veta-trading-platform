@@ -7,9 +7,9 @@ import { buildPrompt, computeSystemPromptHash, SYSTEM_PROMPT } from "./prompt-bu
 import { createMockProvider } from "./providers/mock.ts";
 import { createOllamaProvider } from "./providers/ollama.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
+import { llmAdvisoryPool } from "../lib/db.ts";
 
 const PORT = Number(Deno.env.get("LLM_WORKER_PORT")) || 5_025;
-const DB_PATH = Deno.env.get("LLM_ADVISORY_DB_PATH") || "./backend/data/llm-advisory.db";
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
 const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") || "http://localhost:5017";
 const SIGNAL_ENGINE_URL = Deno.env.get("SIGNAL_ENGINE_URL") || "http://localhost:5018";
@@ -17,10 +17,10 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MAX_RETRIES = 3;
 
 const basePolicy = loadPolicy();
-const store = createJobStore(DB_PATH);
-const runtimeConfig = createRuntimeConfigStore(DB_PATH);
+const store = createJobStore(llmAdvisoryPool);
+const runtimeConfig = await createRuntimeConfigStore(llmAdvisoryPool);
 
-const effectivePolicy = resolveEffectivePolicy(basePolicy, runtimeConfig.getConfig());
+const effectivePolicy = resolveEffectivePolicy(basePolicy, await runtimeConfig.getConfig());
 
 if (!isWorkerAllowed(effectivePolicy)) {
   console.log("[llm-worker] LLM_ENABLED or LLM_WORKER_ENABLED is false — exiting");
@@ -50,7 +50,7 @@ const producer = await createProducer("llm-worker").catch((err) => {
   return null;
 });
 
-const sessionId = store.insertWorkerSession({
+const sessionId = await store.insertWorkerSession({
   startedAt: Date.now(),
   endedAt: null,
   provider: provider.providerId,
@@ -111,7 +111,7 @@ async function fetchFeatureVector(symbol: string) {
 const systemPromptHash = await computeSystemPromptHash();
 
 async function processJob(jobId: string): Promise<boolean> {
-  const job = store.getJob(jobId);
+  const job = await store.getJob(jobId);
   if (!job) return false;
 
   try {
@@ -134,7 +134,7 @@ async function processJob(jobId: string): Promise<boolean> {
     const prompt = buildPrompt(job.symbol, resolvedSignal, fv, null, closes);
     const contextSizeChars = prompt.length;
 
-    store.insertPromptAudit({
+    await store.insertPromptAudit({
       jobId: job.id,
       promptText: prompt,
       systemPromptHash,
@@ -144,7 +144,7 @@ async function processJob(jobId: string): Promise<boolean> {
 
     const response = await provider.generate(prompt, SYSTEM_PROMPT);
 
-    store.insertResponseAudit({
+    await store.insertResponseAudit({
       jobId: job.id,
       rawResponse: response.rawResponse,
       parsedSuccessfully: true,
@@ -152,7 +152,7 @@ async function processJob(jobId: string): Promise<boolean> {
       ts: Date.now(),
     });
 
-    const noteId = store.insertNote({
+    const noteId = await store.insertNote({
       jobId: job.id,
       symbol: job.symbol,
       content: response.text,
@@ -166,7 +166,7 @@ async function processJob(jobId: string): Promise<boolean> {
       createdAt: Date.now(),
     });
 
-    store.updateJobStatus(job.id, "done", { completedAt: Date.now() });
+    await store.updateJobStatus(job.id, "done", { completedAt: Date.now() });
 
     producer?.send("llm.advisory.ready", {
       jobId: job.id,
@@ -188,7 +188,7 @@ async function processJob(jobId: string): Promise<boolean> {
     }).catch(() => {});
 
     jobsProcessed++;
-    store.updateWorkerSession(sessionId, { jobsProcessed });
+    await store.updateWorkerSession(sessionId, { jobsProcessed });
     return true;
   } catch (err) {
     const errMsg = (err as Error).message;
@@ -205,15 +205,15 @@ async function processJob(jobId: string): Promise<boolean> {
 
     const newRetryCount = job.retryCount + 1;
     if (newRetryCount >= MAX_RETRIES) {
-      store.updateJobStatus(job.id, "failed", {
+      await store.updateJobStatus(job.id, "failed", {
         completedAt: Date.now(),
         errorMessage: errMsg,
         retryCount: newRetryCount,
       });
       jobsFailed++;
-      store.updateWorkerSession(sessionId, { jobsFailed });
+      await store.updateWorkerSession(sessionId, { jobsFailed });
     } else {
-      store.updateJobStatus(job.id, "queued", { retryCount: newRetryCount });
+      await store.updateJobStatus(job.id, "queued", { retryCount: newRetryCount });
     }
     return false;
   }
@@ -244,16 +244,16 @@ outer: while (true) {
     break;
   }
 
-  const job = store.claimNextJob(sessionId);
+  const job = await store.claimNextJob(sessionId);
   if (!job) {
     console.log(`[llm-worker] Queue empty — waiting up to ${IDLE_TIMEOUT_MS}ms for new jobs`);
     const deadline = Date.now() + IDLE_TIMEOUT_MS;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 2_000));
-      const next = store.claimNextJob(sessionId);
+      const next = await store.claimNextJob(sessionId);
       if (next) {
         if (jobsProcessed >= MAX_JOBS_PER_SESSION) {
-          store.updateJobStatus(next.id, "queued");
+          await store.updateJobStatus(next.id, "queued");
           exitReason = "max-jobs-per-session";
           break outer;
         }
@@ -271,7 +271,7 @@ outer: while (true) {
   await processJob(job.id);
 }
 
-store.updateWorkerSession(sessionId, { endedAt: Date.now(), exitReason });
+await store.updateWorkerSession(sessionId, { endedAt: Date.now(), exitReason });
 
 producer?.send("llm.worker.status", {
   event: "stopped",
@@ -285,5 +285,4 @@ producer?.send("llm.worker.status", {
 
 console.log(`[llm-worker] Session ended. Reason: ${exitReason}. Processed: ${jobsProcessed}, failed: ${jobsFailed}`);
 server.shutdown();
-store.close();
 Deno.exit(0);

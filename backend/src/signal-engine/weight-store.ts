@@ -1,4 +1,4 @@
-import { DB } from "https://deno.land/x/sqlite@v3.9.1/mod.ts";
+import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 import type { FeatureName } from "../types/intelligence.ts";
 
 export type WeightMap = Record<FeatureName, number>;
@@ -14,68 +14,78 @@ export const DEFAULT_WEIGHTS: WeightMap = {
 };
 
 export interface WeightStore {
-  getWeights(): WeightMap;
-  saveWeights(weights: WeightMap): void;
-  close(): void;
+  getWeights(): Promise<WeightMap>;
+  saveWeights(weights: WeightMap): Promise<void>;
 }
 
-export function createWeightStore(dbPath: string): WeightStore {
-  const dir = dbPath.substring(0, dbPath.lastIndexOf("/"));
-  if (dir) Deno.mkdirSync(dir, { recursive: true });
-
-  const db = new DB(dbPath);
-  db.query("PRAGMA journal_mode=WAL");
-  db.query("PRAGMA synchronous=NORMAL");
-  db.query(`
-    CREATE TABLE IF NOT EXISTS signal_weights (
-      id                    INTEGER PRIMARY KEY CHECK(id = 1),
-      momentum              REAL NOT NULL,
-      relative_volume       REAL NOT NULL,
-      realised_vol          REAL NOT NULL,
-      sector_rs             REAL NOT NULL,
-      event_score           REAL NOT NULL,
-      news_velocity         REAL NOT NULL,
-      sentiment_delta       REAL NOT NULL,
-      updated_at            INTEGER NOT NULL
-    )
-  `);
-
-  const count = [...db.query("SELECT COUNT(*) FROM signal_weights")][0][0] as number;
+export async function createWeightStore(pool: Pool): Promise<WeightStore> {
+  // Ensure a default row exists
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.queryArray(
+      "SELECT id FROM intelligence.signal_weights WHERE id = 1",
+    );
+    if (rows.length === 0) {
+      await client.queryArray(
+        `INSERT INTO intelligence.signal_weights
+          (id, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta, updated_at)
+         VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          DEFAULT_WEIGHTS.momentum, DEFAULT_WEIGHTS.relativeVolume, DEFAULT_WEIGHTS.realisedVol,
+          DEFAULT_WEIGHTS.sectorRelativeStrength, DEFAULT_WEIGHTS.eventScore,
+          DEFAULT_WEIGHTS.newsVelocity, DEFAULT_WEIGHTS.sentimentDelta, Date.now(),
+        ],
+      );
+    }
+  } finally {
+    client.release();
+  }
 
   let cached: WeightMap | null = null;
 
-  function saveWeights(weights: WeightMap): void {
-    db.query(
-      `INSERT OR REPLACE INTO signal_weights
-        (id, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta, updated_at)
-       VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        weights.momentum, weights.relativeVolume, weights.realisedVol,
-        weights.sectorRelativeStrength, weights.eventScore, weights.newsVelocity,
-        weights.sentimentDelta, Date.now(),
-      ],
-    );
-    cached = null;
-  }
-
-  if (count === 0) saveWeights(DEFAULT_WEIGHTS);
-
   return {
-    getWeights(): WeightMap {
+    async getWeights(): Promise<WeightMap> {
       if (cached) return cached;
-      const rows = [...db.query(
-        "SELECT momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta FROM signal_weights WHERE id = 1",
-      )];
-      if (rows.length === 0) return { ...DEFAULT_WEIGHTS };
-      const [momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta] = rows[0] as number[];
-      cached = { momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta };
-      return cached;
+      const c = await pool.connect();
+      try {
+        const { rows } = await c.queryArray<[number, number, number, number, number, number, number]>(
+          "SELECT momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta FROM intelligence.signal_weights WHERE id = 1",
+        );
+        if (rows.length === 0) return { ...DEFAULT_WEIGHTS };
+        const [momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta] = rows[0].map(Number) as [number,number,number,number,number,number,number];
+        cached = { momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta };
+        return cached;
+      } finally {
+        c.release();
+      }
     },
 
-    saveWeights,
-
-    close(): void {
-      db.close();
+    async saveWeights(weights: WeightMap): Promise<void> {
+      const c = await pool.connect();
+      try {
+        await c.queryArray(
+          `INSERT INTO intelligence.signal_weights
+            (id, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta, updated_at)
+           VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT (id) DO UPDATE SET
+             momentum = EXCLUDED.momentum,
+             relative_volume = EXCLUDED.relative_volume,
+             realised_vol = EXCLUDED.realised_vol,
+             sector_rs = EXCLUDED.sector_rs,
+             event_score = EXCLUDED.event_score,
+             news_velocity = EXCLUDED.news_velocity,
+             sentiment_delta = EXCLUDED.sentiment_delta,
+             updated_at = EXCLUDED.updated_at`,
+          [
+            weights.momentum, weights.relativeVolume, weights.realisedVol,
+            weights.sectorRelativeStrength, weights.eventScore,
+            weights.newsVelocity, weights.sentimentDelta, Date.now(),
+          ],
+        );
+        cached = null;
+      } finally {
+        c.release();
+      }
     },
   };
 }
