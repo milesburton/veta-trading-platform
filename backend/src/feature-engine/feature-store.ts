@@ -7,6 +7,8 @@ export interface FeatureStore {
   insert(fv: FeatureVector): Promise<void>;
   getLatest(symbol: string): Promise<FeatureVector | null>;
   getHistory(symbol: string, limit: number): Promise<FeatureVector[]>;
+  /** Start a background cleanup interval. Returns the interval ID. */
+  startCleanup(intervalMs?: number): ReturnType<typeof setInterval>;
 }
 
 function rowToFv(r: unknown[]): FeatureVector {
@@ -36,14 +38,6 @@ export function createFeatureStore(pool: Pool): FeatureStore {
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
           [fv.symbol, fv.ts, fv.momentum, fv.relativeVolume, fv.realisedVol,
             fv.sectorRelativeStrength, fv.eventScore, fv.newsVelocity, fv.sentimentDelta],
-        );
-        // Keep only the most recent MAX_PER_SYMBOL rows per symbol
-        await client.queryArray(
-          `DELETE FROM intelligence.feature_vectors
-           WHERE symbol = $1 AND id NOT IN (
-             SELECT id FROM intelligence.feature_vectors WHERE symbol = $1 ORDER BY ts DESC LIMIT $2
-           )`,
-          [fv.symbol, MAX_PER_SYMBOL],
         );
       } finally {
         client.release();
@@ -76,6 +70,28 @@ export function createFeatureStore(pool: Pool): FeatureStore {
       } finally {
         client.release();
       }
+    },
+
+    startCleanup(intervalMs = 5 * 60 * 1000): ReturnType<typeof setInterval> {
+      return setInterval(async () => {
+        const client = await pool.connect();
+        try {
+          await client.queryArray(
+            `DELETE FROM intelligence.feature_vectors
+             WHERE id NOT IN (
+               SELECT id FROM (
+                 SELECT id, ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY ts DESC) AS rn
+                 FROM intelligence.feature_vectors
+               ) ranked WHERE rn <= $1
+             )`,
+            [MAX_PER_SYMBOL],
+          );
+        } catch (err) {
+          console.warn("[feature-store] cleanup error:", (err as Error).message);
+        } finally {
+          client.release();
+        }
+      }, intervalMs);
     },
   };
 }

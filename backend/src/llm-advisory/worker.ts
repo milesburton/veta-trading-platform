@@ -284,5 +284,5 @@ producer?.send("llm.worker.status", {
 }).catch(() => {});
 
 console.log(`[llm-worker] Session ended. Reason: ${exitReason}. Processed: ${jobsProcessed}, failed: ${jobsFailed}`);
-server.shutdown();
+await server.shutdown();
 Deno.exit(0);

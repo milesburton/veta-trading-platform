@@ -1,5 +1,4 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { serve } from "https://deno.land/std@0.210.0/http/server.ts";
 import { advanceRegime, generatePrice, marketData, seedPrice, refreshSectorShocks } from "./priceEngine.ts";
 import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
 import { intradayVolumeFactor } from "../lib/timeScale.ts";
@@ -214,7 +213,7 @@ setInterval(() => {
 
 console.log(`Market Simulator running on ws://localhost:${PORT}`);
 
-serve((req) => {
+Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
 
   if (url.pathname === "/health" && req.method === "GET") {
@@ -256,4 +255,4 @@ serve((req) => {
   };
 
   return response;
-}, { port: PORT });
+});

@@ -67,7 +67,7 @@ async function fetchFinnhubEconomic(apiKey: string): Promise<MarketAdapterEvent[
       const scheduledAt = new Date(item.time).getTime();
       if (isNaN(scheduledAt)) continue;
       events.push({
-        id: `finnhub-economic-${i}-${item.time}`,
+        id: `finnhub-economic-${item.event.replace(/\s+/g, "-").toLowerCase()}-${item.time}`,
         type: "economic",
         headline: `${item.event}${item.country ? ` (${item.country})` : ""}`,
         scheduledAt,
@@ -97,8 +97,8 @@ export async function seedEconomicEvents(): Promise<MarketAdapterEvent[]> {
   const now = Date.now();
   const weekMs = 7 * 24 * 60 * 60 * 1000;
 
-  return MACRO_CALENDAR.map((tmpl, i) => ({
-    id: `economic-${i}-${tmpl.weekOffset}`,
+  return MACRO_CALENDAR.map((tmpl) => ({
+    id: `synthetic-economic-${tmpl.headline.replace(/\s+/g, "-").toLowerCase()}`,
     type: "economic" as const,
     headline: tmpl.headline,
     scheduledAt: now + tmpl.weekOffset * weekMs,

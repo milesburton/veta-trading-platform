@@ -263,7 +263,6 @@ services:
     environment:
       MARKET_SIM_PORT: 5000
       REDPANDA_BROKERS: redpanda:9092
-      CANDLE_STORE_URL: http://candle-store:5010
       COMMIT_SHA: ${COMMIT_SHA:-dev}
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:5000/health"]
@@ -812,6 +811,8 @@ services:
         condition: service_healthy
       ollama:
         condition: service_healthy
+      postgres-migrate:
+        condition: service_completed_successfully
     environment:
       LLM_ADVISORY_PORT: 5024
       LLM_ENABLED: "true"
@@ -820,6 +821,7 @@ services:
       LLM_MODEL_ID: qwen2.5:3b
       LLM_OLLAMA_BASE_URL: http://ollama:11434
       LLM_TRIGGER_MODE: on-demand-ui
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-dev}
     healthcheck:
@@ -852,6 +854,8 @@ services:
         condition: service_healthy
       llm-advisory:
         condition: service_healthy
+      postgres-migrate:
+        condition: service_completed_successfully
     environment:
       LLM_WORKER_PORT: 5025
       LLM_ENABLED: "true"
@@ -860,9 +864,422 @@ services:
       LLM_MODEL_ID: qwen2.5:3b
       LLM_OLLAMA_BASE_URL: http://ollama:11434
       LLM_TRIGGER_MODE: on-demand-ui
-      LLM_ADVISORY_DB_PATH: /data/llm-advisory.db
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-dev}
+    labels:
+      - "traefik.enable=false"
+
+  # ── Analytics Service ─────────────────────────────────────────────────────────
+  analytics-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/analytics/analytics-server.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      journal:
+        condition: service_healthy
+      postgres-migrate:
+        condition: service_completed_successfully
+    environment:
+      ANALYTICS_PORT: 5014
+      JOURNAL_URL: http://journal:5009
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      FRED_KEY: ${FRED_KEY:-}
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5014/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.analytics-service.rule=PathPrefix(`/api/analytics`)"
+      - "traefik.http.routers.analytics-service.entrypoints=web"
+      - "traefik.http.routers.analytics-service.middlewares=analytics-strip"
+      - "traefik.http.middlewares.analytics-strip.stripprefix.prefixes=/api/analytics"
+      - "traefik.http.services.analytics-service.loadbalancer.server.port=5014"
+
+  # ── Market Data Service ───────────────────────────────────────────────────────
+  market-data-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/market-data/market-data-service.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      market-sim:
+        condition: service_healthy
+    environment:
+      MARKET_DATA_PORT: 5015
+      MARKET_SIM_URL: http://market-sim:5000
+      JOURNAL_URL: http://journal:5009
+      ALPHA_VANTAGE_KEY: ${ALPHA_VANTAGE_KEY:-}
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5015/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.market-data-service.rule=PathPrefix(`/api/market-data`)"
+      - "traefik.http.routers.market-data-service.entrypoints=web"
+      - "traefik.http.routers.market-data-service.middlewares=market-data-strip"
+      - "traefik.http.middlewares.market-data-strip.stripprefix.prefixes=/api/market-data"
+      - "traefik.http.services.market-data-service.loadbalancer.server.port=5015"
+
+  # ── Market Data Adapters ──────────────────────────────────────────────────────
+  market-data-adapters:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/market-data-adapters/adapter-server.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      postgres-migrate:
+        condition: service_completed_successfully
+    environment:
+      MARKET_DATA_ADAPTERS_PORT: 5016
+      MARKET_SIM_URL: http://market-sim:5000
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      FINNHUB_KEY: ${FINNHUB_KEY:-}
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5016/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.market-data-adapters.rule=PathPrefix(`/api/market-data-adapters`)"
+      - "traefik.http.routers.market-data-adapters.entrypoints=web"
+      - "traefik.http.routers.market-data-adapters.middlewares=market-data-adapters-strip"
+      - "traefik.http.middlewares.market-data-adapters-strip.stripprefix.prefixes=/api/market-data-adapters"
+      - "traefik.http.services.market-data-adapters.loadbalancer.server.port=5016"
+
+  # ── Feature Engine ────────────────────────────────────────────────────────────
+  feature-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/feature-engine/feature-engine.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      postgres-migrate:
+        condition: service_completed_successfully
+    environment:
+      FEATURE_ENGINE_PORT: 5017
+      MARKET_SIM_URL: http://market-sim:5000
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5017/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feature-engine.rule=PathPrefix(`/api/feature-engine`)"
+      - "traefik.http.routers.feature-engine.entrypoints=web"
+      - "traefik.http.routers.feature-engine.middlewares=feature-engine-strip"
+      - "traefik.http.middlewares.feature-engine-strip.stripprefix.prefixes=/api/feature-engine"
+      - "traefik.http.services.feature-engine.loadbalancer.server.port=5017"
+
+  # ── Signal Engine ─────────────────────────────────────────────────────────────
+  signal-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/signal-engine/signal-engine.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      feature-engine:
+        condition: service_healthy
+      postgres-migrate:
+        condition: service_completed_successfully
+    environment:
+      SIGNAL_ENGINE_PORT: 5018
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5018/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.signal-engine.rule=PathPrefix(`/api/signal-engine`)"
+      - "traefik.http.routers.signal-engine.entrypoints=web"
+      - "traefik.http.routers.signal-engine.middlewares=signal-engine-strip"
+      - "traefik.http.middlewares.signal-engine-strip.stripprefix.prefixes=/api/signal-engine"
+      - "traefik.http.services.signal-engine.loadbalancer.server.port=5018"
+
+  # ── Recommendation Engine ─────────────────────────────────────────────────────
+  recommendation-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/recommendation-engine/recommendation-server.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      signal-engine:
+        condition: service_healthy
+    environment:
+      RECOMMENDATION_ENGINE_PORT: 5019
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5019/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.recommendation-engine.rule=PathPrefix(`/api/recommendation-engine`)"
+      - "traefik.http.routers.recommendation-engine.entrypoints=web"
+      - "traefik.http.routers.recommendation-engine.middlewares=recommendation-engine-strip"
+      - "traefik.http.middlewares.recommendation-engine-strip.stripprefix.prefixes=/api/recommendation-engine"
+      - "traefik.http.services.recommendation-engine.loadbalancer.server.port=5019"
+
+  # ── Scenario Engine ───────────────────────────────────────────────────────────
+  scenario-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/scenario-engine/scenario-server.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      signal-engine:
+        condition: service_healthy
+    environment:
+      SCENARIO_ENGINE_PORT: 5020
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5020/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.scenario-engine.rule=PathPrefix(`/api/scenario-engine`)"
+      - "traefik.http.routers.scenario-engine.entrypoints=web"
+      - "traefik.http.routers.scenario-engine.middlewares=scenario-engine-strip"
+      - "traefik.http.middlewares.scenario-engine-strip.stripprefix.prefixes=/api/scenario-engine"
+      - "traefik.http.services.scenario-engine.loadbalancer.server.port=5020"
+
+  # ── Iceberg Strategy ──────────────────────────────────────────────────────────
+  iceberg-algo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/algo/iceberg-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      ICEBERG_ALGO_PORT: 5021
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: 5000
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5021/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "traefik.enable=false"
+
+  # ── Sniper Strategy ───────────────────────────────────────────────────────────
+  sniper-algo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/algo/sniper-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      SNIPER_ALGO_PORT: 5022
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: 5000
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5022/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "traefik.enable=false"
+
+  # ── Arrival Price Strategy ────────────────────────────────────────────────────
+  arrival-price-algo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/algo/arrival-price-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      ARRIVAL_PRICE_ALGO_PORT: 5023
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: 5000
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5023/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "traefik.enable=false"
+
+  # ── Momentum Strategy ─────────────────────────────────────────────────────────
+  momentum-algo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/algo/momentum-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      MOMENTUM_ALGO_PORT: 5025
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: 5000
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5025/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "traefik.enable=false"
+
+  # ── Implementation Shortfall Strategy ────────────────────────────────────────
+  is-algo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: deno run --allow-all backend/src/algo/is-strategy.ts
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      ems:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      IS_ALGO_PORT: 5026
+      EMS_HOST: ems
+      EMS_PORT: 5001
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: 5000
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: 5007
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5026/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     labels:
       - "traefik.enable=false"
 

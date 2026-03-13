@@ -7,7 +7,6 @@
 //   GET /health   → JSON health check
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { serve } from "https://deno.land/std@0.210.0/http/server.ts";
 
 const FIX_GATEWAY_PORT = Number(Deno.env.get("FIX_GATEWAY_PORT")) || 9_881;
 const FIX_EXCHANGE_HOST = Deno.env.get("FIX_EXCHANGE_HOST") || "localhost";
@@ -91,7 +90,7 @@ async function bridgeConnection(ws: WebSocket): Promise<void> {
 
 // ─── HTTP/WS request handler ──────────────────────────────────────────────────
 
-serve((req) => {
+Deno.serve({ port: FIX_GATEWAY_PORT }, (req) => {
   const url = new URL(req.url);
 
   if (req.method === "OPTIONS") {
@@ -119,7 +118,7 @@ serve((req) => {
   }
 
   return new Response("Not found", { status: 404, headers: CORS_HEADERS });
-}, { port: FIX_GATEWAY_PORT });
+});
 
 console.log(`[FIX Gateway] Listening on port ${FIX_GATEWAY_PORT}`);
 console.log(`[FIX Gateway] Bridging to exchange at ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}`);

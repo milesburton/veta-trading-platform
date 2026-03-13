@@ -101,27 +101,26 @@ export function createJobStore(pool: Pool): JobStore {
       const client = await pool.connect();
       try {
         await client.queryArray("BEGIN");
-        // FOR UPDATE SKIP LOCKED is the Postgres-native way to implement a job queue
-        const { rows } = await client.queryArray<[string]>(
-          `SELECT id FROM llm_advisory.jobs
-           WHERE status = 'queued'
-           ORDER BY priority DESC, created_at ASC
-           LIMIT 1
-           FOR UPDATE SKIP LOCKED`,
+        const { rows } = await client.queryArray(
+          `UPDATE llm_advisory.jobs
+           SET status = 'running', claimed_at = $1, worker_session_id = $2
+           WHERE id = (
+             SELECT id FROM llm_advisory.jobs
+             WHERE status = 'queued'
+             ORDER BY priority DESC, created_at ASC
+             LIMIT 1
+             FOR UPDATE SKIP LOCKED
+           )
+           RETURNING id, symbol, trigger_reason, status, context_hash, priority, requested_by,
+                     created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count`,
+          [Date.now(), workerSessionId],
         );
         if (rows.length === 0) {
           await client.queryArray("ROLLBACK");
           return null;
         }
-        const [jobId] = rows[0];
-        await client.queryArray(
-          `UPDATE llm_advisory.jobs
-           SET status = 'running', claimed_at = $1, worker_session_id = $2
-           WHERE id = $3 AND status = 'queued'`,
-          [Date.now(), workerSessionId, jobId],
-        );
         await client.queryArray("COMMIT");
-        return getJob(jobId);
+        return rowToJob(rows[0]);
       } catch (err) {
         await client.queryArray("ROLLBACK").catch(() => {});
         throw err;
@@ -331,6 +330,14 @@ export function createJobStore(pool: Pool): JobStore {
         );
         await client.queryArray(
           `DELETE FROM llm_advisory.advisory_notes WHERE created_at < $1`,
+          [cutoff],
+        );
+        await client.queryArray(
+          `DELETE FROM llm_advisory.prompt_audit WHERE ts < $1`,
+          [cutoff],
+        );
+        await client.queryArray(
+          `DELETE FROM llm_advisory.response_audit WHERE ts < $1`,
           [cutoff],
         );
       } finally {

@@ -52,12 +52,15 @@ async function getEffectivePolicy() {
 }
 
 async function broadcastStateUpdate() {
-  const ep = await getEffectivePolicy();
-  const pending = await store.getPendingJobCount();
+  const [ep, pending, cfg] = await Promise.all([
+    getEffectivePolicy(),
+    store.getPendingJobCount(),
+    runtimeConfig.getConfig(),
+  ]);
   const status: LlmSubsystemStatus = {
     state: deriveSubsystemState(ep, pending, lastErrorMs, lastActivityMs),
     policy: ep,
-    runtimeConfig: await runtimeConfig.getConfig(),
+    runtimeConfig: cfg,
     pendingJobs: pending,
     trackedSymbols: latestSignals.size,
     lastWorkerSession: null,
@@ -148,16 +151,19 @@ createConsumer("orchestrator-worker-status", ["llm.worker.status"]).then((c) => 
 setInterval(async () => {
   const ep = await getEffectivePolicy();
   if (!canAutoTrigger(ep)) return;
-  for (const [symbol] of latestSignals) {
-    const jobs = await store.getJobsBySymbol(symbol, 5);
-    const hasPending = jobs.some((j) => j.status === "queued" || j.status === "running");
-    if (hasPending) continue;
-    const latest = await store.getLatestNote(symbol);
-    const candidate = await evaluateStalenessRefreshTrigger(
-      ep,
-      symbol,
-      latest?.createdAt ?? null,
-    );
+  const symbols = [...latestSignals.keys()];
+  if (symbols.length === 0) return;
+  const [pendingJobs, latestNotes] = await Promise.all([
+    Promise.all(symbols.map((s) => store.getJobsBySymbol(s, 5).then((jobs) => ({ s, jobs })))),
+    Promise.all(symbols.map((s) => store.getLatestNote(s).then((note) => ({ s, note })))),
+  ]);
+  const pendingMap = new Map(pendingJobs.map(({ s, jobs }) => [s, jobs]));
+  const noteMap = new Map(latestNotes.map(({ s, note }) => [s, note]));
+  for (const symbol of symbols) {
+    const jobs = pendingMap.get(symbol) ?? [];
+    if (jobs.some((j) => j.status === "queued" || j.status === "running")) continue;
+    const latest = noteMap.get(symbol) ?? null;
+    const candidate = await evaluateStalenessRefreshTrigger(ep, symbol, latest?.createdAt ?? null);
     if (candidate) await enqueueIfAllowed(candidate);
   }
 }, 60_000);
@@ -217,6 +223,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       triggerMode: string;
       updatedBy: string;
     }>;
+    const VALID_TRIGGER_MODES: import("../types/llm-advisory.ts").LlmTriggerMode[] = [
+      "disabled", "manual", "on-demand-ui", "scheduled-batch", "event-driven",
+    ];
+    if (body.triggerMode !== undefined && !VALID_TRIGGER_MODES.includes(body.triggerMode as import("../types/llm-advisory.ts").LlmTriggerMode)) {
+      return json({ error: `Invalid triggerMode. Must be one of: ${VALID_TRIGGER_MODES.join(", ")}` }, 400);
+    }
     const updatedBy = body.updatedBy ?? "api";
     const updated = await runtimeConfig.updateConfig({
       enabled: body.enabled,

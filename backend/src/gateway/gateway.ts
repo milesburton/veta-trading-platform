@@ -1,5 +1,4 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { serve } from "https://deno.land/std@0.210.0/http/server.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("GATEWAY_PORT")) || 5_011;
@@ -57,6 +56,12 @@ function getCookieToken(req: Request): string | null {
 }
 
 const authCache = new Map<string, { result: { user: AuthenticatedUser; limits: UserLimits }; expiresAt: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, entry] of authCache) {
+    if (entry.expiresAt <= now) authCache.delete(token);
+  }
+}, 30_000);
 
 async function validateToken(token: string): Promise<{ user: AuthenticatedUser; limits: UserLimits } | null> {
   const now = Date.now();
@@ -351,7 +356,7 @@ function makeWave(
   return orders;
 }
 
-serve(async (req: Request): Promise<Response> => {
+Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
@@ -1227,6 +1232,6 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
-}, { port: PORT });
+});
 
 console.log(`[gateway] API Gateway running on port ${PORT}`);

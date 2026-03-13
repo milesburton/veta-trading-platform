@@ -39,6 +39,7 @@ const upcomingEvents: MarketAdapterEvent[] = [];
 const latestFeatures = new Map<string, FeatureVector>();
 
 const store = createFeatureStore(intelligencePool);
+store.startCleanup();
 
 function pushHistory(map: Map<string, number[]>, symbol: string, value: number, maxLen: number): void {
   const arr = map.get(symbol) ?? [];

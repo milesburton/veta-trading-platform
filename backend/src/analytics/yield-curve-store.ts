@@ -11,6 +11,7 @@ export function createYieldCurveStore(pool: Pool): YieldCurveStore {
     async insertSnapshot(params: NelsonSiegelParams, source: string): Promise<void> {
       const client = await pool.connect();
       try {
+        await client.queryArray("BEGIN");
         await client.queryArray(
           `INSERT INTO intelligence.yield_curve_snapshots (beta0, beta1, beta2, lambda, source, fetched_at)
            VALUES ($1,$2,$3,$4,$5,$6)`,
@@ -23,6 +24,10 @@ export function createYieldCurveStore(pool: Pool): YieldCurveStore {
              SELECT id FROM intelligence.yield_curve_snapshots ORDER BY fetched_at DESC LIMIT 365
            )`,
         );
+        await client.queryArray("COMMIT");
+      } catch (err) {
+        await client.queryArray("ROLLBACK").catch(() => {});
+        throw err;
       } finally {
         client.release();
       }

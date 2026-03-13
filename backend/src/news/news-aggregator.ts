@@ -134,6 +134,7 @@ function extractTickers(text: string): string[] {
 
 const newsBySymbol = new Map<string, NewsItem[]>();
 const seenIds = new Set<string>();
+const SEEN_IDS_MAX = 50_000;
 let knownSymbols: string[] = [];
 
 function storeItem(item: NewsItem): void {
@@ -222,6 +223,9 @@ async function pollSourceForSymbol(source: NewsSource, symbol: string): Promise<
     const id = raw.guid ?? raw.link ?? headline;
     const itemKey = `${source.id}:${id}`;
     if (seenIds.has(itemKey)) continue;
+    if (seenIds.size >= SEEN_IDS_MAX) {
+      [...seenIds].slice(0, Math.floor(SEEN_IDS_MAX / 4)).forEach((k) => seenIds.delete(k));
+    }
     seenIds.add(itemKey);
 
     const { sentiment, score } = scoreSentiment(headline);

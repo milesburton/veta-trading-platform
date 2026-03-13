@@ -37,18 +37,14 @@ async function maybePruneCandles(now: number) {
     for (const { key } of INTERVALS) {
       await client.queryArray(
         `DELETE FROM journal.candles
-         WHERE interval = $1
-           AND (instrument, time) IN (
-             SELECT instrument, time FROM journal.candles c
-             WHERE c.interval = $1
-               AND c.time < (
-                 SELECT time FROM journal.candles c2
-                 WHERE c2.instrument = c.instrument AND c2.interval = $1
-                 ORDER BY time DESC
-                 LIMIT 1 OFFSET $2
-               )
-           )`,
-        [key, MAX_CANDLES - 1],
+         WHERE (interval, instrument, time) IN (
+           SELECT interval, instrument, time FROM (
+             SELECT interval, instrument, time,
+                    ROW_NUMBER() OVER (PARTITION BY instrument ORDER BY time DESC) AS rn
+             FROM journal.candles WHERE interval = $1
+           ) ranked WHERE rn > $2
+         )`,
+        [key, MAX_CANDLES],
       );
     }
   } finally {
@@ -221,15 +217,18 @@ async function reconcileFillsFromArchive(): Promise<void> {
       commission: number; ts: number;
     }>;
 
+    const incomingIds = executions.map((ex) => ex.clOrdId);
     const client = await journalPool.connect();
     let reconciled = 0;
     try {
+      const { rows } = await client.queryArray(
+        `SELECT DISTINCT child_id FROM journal.events
+         WHERE event_type = 'orders.filled' AND child_id = ANY($1)`,
+        [incomingIds],
+      );
+      const alreadyFilled = new Set(rows.map((r) => r[0] as string));
       for (const ex of executions) {
-        const { rows } = await client.queryArray(
-          "SELECT id FROM journal.events WHERE event_type = 'orders.filled' AND child_id = $1 LIMIT 1",
-          [ex.clOrdId],
-        );
-        if (rows.length > 0) continue;
+        if (alreadyFilled.has(ex.clOrdId)) continue;
         ingest("orders.filled", {
           execId: ex.execId, childId: ex.clOrdId, parentOrderId: ex.origClOrdId,
           asset: ex.symbol, side: ex.side === "1" ? "BUY" : "SELL",

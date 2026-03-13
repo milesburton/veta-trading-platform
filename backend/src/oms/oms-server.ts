@@ -10,7 +10,6 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { serve } from "https://deno.land/std@0.210.0/http/server.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("OMS_PORT")) || 5_002;
@@ -444,7 +443,7 @@ setInterval(() => { expireOrphanedOrders().catch(() => {}); }, 15_000);
 
 // ── Health endpoint ───────────────────────────────────────────────────────────
 
-serve((req) => {
+Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
   if (url.pathname === "/health" && req.method === "GET") {
@@ -454,4 +453,4 @@ serve((req) => {
     );
   }
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
-}, { port: PORT });
+});

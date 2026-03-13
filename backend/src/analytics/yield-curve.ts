@@ -119,9 +119,9 @@ const FRED_SERIES: { id: string; tenor: number }[] = [
   { id: "DGS30",  tenor: 30 },
 ];
 
-let cachedFredParams: NelsonSiegelParams | null = null;
+let cachedFredParams: NelsonSiegelParams | Promise<NelsonSiegelParams> | null = null;
 let fredCacheExpiry = 0;
-const FRED_CACHE_MS = 6 * 60 * 60 * 1000; // 6 hours
+const FRED_CACHE_MS = 6 * 60 * 60 * 1000;
 
 async function fetchOneFredSeries(apiKey: string, seriesId: string): Promise<number | null> {
   try {
@@ -179,35 +179,38 @@ import type { YieldCurveStore } from "./yield-curve-store.ts";
  * Returns cached params (6-hour TTL) or DEFAULT_PARAMS if unavailable.
  * Optionally persists the fitted snapshot to a YieldCurveStore for backtesting.
  */
-export async function fetchFredParams(store?: YieldCurveStore): Promise<NelsonSiegelParams> {
-  if (cachedFredParams && Date.now() < fredCacheExpiry) return cachedFredParams;
+export function fetchFredParams(store?: YieldCurveStore): Promise<NelsonSiegelParams> {
+  if (cachedFredParams instanceof Promise) return cachedFredParams;
+  if (cachedFredParams !== null && Date.now() < fredCacheExpiry) return Promise.resolve(cachedFredParams);
 
   const apiKey = Deno.env.get("FRED_KEY");
-  if (!apiKey) return DEFAULT_PARAMS;
+  if (!apiKey) return Promise.resolve(DEFAULT_PARAMS);
 
-  const results = await Promise.all(
-    FRED_SERIES.map(async ({ id, tenor }) => {
-      const rate = await fetchOneFredSeries(apiKey, id);
-      return rate !== null ? { tenor, rate } : null;
-    }),
-  );
-
-  const points = results.filter((p): p is { tenor: number; rate: number } => p !== null);
-  if (points.length < 3) {
-    console.warn("[yield-curve] Insufficient FRED data points, using default params");
-    return DEFAULT_PARAMS;
-  }
-
-  const params = fitNelsonSiegel(points);
-  cachedFredParams = params;
-  fredCacheExpiry = Date.now() + FRED_CACHE_MS;
-  console.log(`[yield-curve] FRED params fitted from ${points.length} Treasury observations`);
-
-  if (store) {
-    store.insertSnapshot(params, "fred").catch((err) =>
-      console.warn("[yield-curve] Failed to persist snapshot:", (err as Error).message)
+  const fetchPromise = (async (): Promise<NelsonSiegelParams> => {
+    const results = await Promise.all(
+      FRED_SERIES.map(async ({ id, tenor }) => {
+        const rate = await fetchOneFredSeries(apiKey, id);
+        return rate !== null ? { tenor, rate } : null;
+      }),
     );
-  }
 
-  return params;
+    const points = results.filter((p): p is { tenor: number; rate: number } => p !== null);
+    if (points.length < 3) return DEFAULT_PARAMS;
+
+    const params = fitNelsonSiegel(points);
+    cachedFredParams = params;
+    fredCacheExpiry = Date.now() + FRED_CACHE_MS;
+
+    if (store) {
+      store.insertSnapshot(params, "fred").catch(() => {});
+    }
+
+    return params;
+  })();
+
+  cachedFredParams = fetchPromise;
+  return fetchPromise.catch((err) => {
+    cachedFredParams = null;
+    throw err;
+  });
 }
