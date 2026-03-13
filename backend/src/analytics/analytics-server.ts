@@ -46,6 +46,8 @@ import type {
 } from "./types.ts";
 import { estimateVol, estimateVolProfile, fetchSpotPrice } from "./volatility-estimator.ts";
 import { buildYieldCurveResponse, fetchFredParams } from "./yield-curve.ts";
+import { createYieldCurveStore } from "./yield-curve-store.ts";
+import { intelligencePool } from "../lib/db.ts";
 import { computeSpreadAnalysis } from "./spread-analysis.ts";
 import type { SpreadAnalysisRequest } from "./spread-analysis.ts";
 import { computeDurationLadder } from "./duration-ladder.ts";
@@ -56,6 +58,8 @@ const PORT = Number(Deno.env.get("ANALYTICS_PORT")) || 5_014;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
 const MARKET_SIM_URL = `http://${Deno.env.get("MARKET_SIM_HOST") ?? "localhost"}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
+
+const yieldCurveStore = createYieldCurveStore(intelligencePool);
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -326,7 +330,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     } catch { /* empty body is fine */ }
 
     // Use real FRED Treasury rates when available; caller params override
-    const fredParams = await fetchFredParams();
+    const fredParams = await fetchFredParams(yieldCurveStore);
     const response: YieldCurveResponse = buildYieldCurveResponse({ ...fredParams, ...body.params });
     return json(response);
   }

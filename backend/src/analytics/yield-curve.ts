@@ -172,11 +172,14 @@ function fitNelsonSiegel(points: { tenor: number; rate: number }[]): NelsonSiege
   return best;
 }
 
+import type { YieldCurveStore } from "./yield-curve-store.ts";
+
 /**
  * Fetch real US Treasury rates from FRED and fit Nelson-Siegel parameters.
  * Returns cached params (6-hour TTL) or DEFAULT_PARAMS if unavailable.
+ * Optionally persists the fitted snapshot to a YieldCurveStore for backtesting.
  */
-export async function fetchFredParams(): Promise<NelsonSiegelParams> {
+export async function fetchFredParams(store?: YieldCurveStore): Promise<NelsonSiegelParams> {
   if (cachedFredParams && Date.now() < fredCacheExpiry) return cachedFredParams;
 
   const apiKey = Deno.env.get("FRED_KEY");
@@ -199,5 +202,12 @@ export async function fetchFredParams(): Promise<NelsonSiegelParams> {
   cachedFredParams = params;
   fredCacheExpiry = Date.now() + FRED_CACHE_MS;
   console.log(`[yield-curve] FRED params fitted from ${points.length} Treasury observations`);
+
+  if (store) {
+    store.insertSnapshot(params, "fred").catch((err) =>
+      console.warn("[yield-curve] Failed to persist snapshot:", (err as Error).message)
+    );
+  }
+
   return params;
 }

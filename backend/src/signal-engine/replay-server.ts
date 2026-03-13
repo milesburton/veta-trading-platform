@@ -2,12 +2,20 @@ import type { FeatureVector, Signal } from "../types/intelligence.ts";
 import { scoreFeatureVector } from "./scorer.ts";
 import type { WeightStore } from "./weight-store.ts";
 import {
+  computeEventScore,
   computeMomentum,
   computeRealisedVol,
   computeRelativeVolume,
 } from "../feature-engine/feature-computers.ts";
+import { createMarketEventStore } from "../market-data-adapters/market-event-store.ts";
+import { createYieldCurveStore } from "../analytics/yield-curve-store.ts";
+import { computeYieldCurve } from "../analytics/yield-curve.ts";
+import { intelligencePool } from "../lib/db.ts";
 
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
+
+const marketEventStore = createMarketEventStore(intelligencePool);
+const yieldCurveStore = createYieldCurveStore(intelligencePool);
 
 export interface ReplayFrame {
   ts: number;
@@ -52,7 +60,23 @@ export async function runReplay(
 
   candles.sort((a, b) => a.time - b.time);
 
-  const weights = await weightStore.getWeights();
+  // Load historical context for the replay window
+  const eventWindowFrom = from - 7 * 24 * 60 * 60 * 1000;
+  const eventWindowTo = to + 90 * 24 * 60 * 60 * 1000;
+  const [historicalEvents, yieldSnapshot, weights] = await Promise.all([
+    marketEventStore.getEvents(eventWindowFrom, eventWindowTo).catch(() => []),
+    yieldCurveStore.getClosestSnapshot(from).catch(() => null),
+    weightStore.getWeights(),
+  ]);
+
+  // Build yield curve from the closest historical snapshot (or default)
+  const yieldCurve = yieldSnapshot
+    ? computeYieldCurve(yieldSnapshot.params)
+    : computeYieldCurve();
+
+  // Suppress unused variable warning — yieldCurve available for future spread analysis
+  void yieldCurve;
+
   const frames: ReplayFrame[] = [];
   const priceWindow: number[] = [];
   const volWindow: number[] = [];
@@ -74,7 +98,7 @@ export async function runReplay(
       relativeVolume: computeRelativeVolume(volWindow),
       realisedVol: priceWindow.length >= 20 ? computeRealisedVol(priceWindow) : 0,
       sectorRelativeStrength: 0,
-      eventScore: 0,
+      eventScore: computeEventScore(symbol, historicalEvents),
       newsVelocity: 0,
       sentimentDelta: 0,
     };
