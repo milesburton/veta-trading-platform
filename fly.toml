@@ -1,52 +1,67 @@
-# Fly.io configuration for VETA Trading Platform
-# Deploy with: flyctl deploy
-# Live: https://veta-trading.fly.dev/
-
 app = "veta-trading"
 primary_region = "iad"
 
 [build]
   dockerfile = "Dockerfile"
-  # VITE_COMMIT_SHA and VITE_BUILD_DATE are injected at deploy time via:
-  #   flyctl deploy --build-arg VITE_COMMIT_SHA=$(git rev-parse --short HEAD) --build-arg VITE_BUILD_DATE=$(date -u +%Y-%m-%d)
   args = { VITE_DEPLOYMENT = "fly" }
 
 [env]
-  MARKET_SIM_PORT = "5000"
-  EMS_PORT = "5001"
-  OMS_PORT = "5002"
-  ALGO_TRADER_PORT = "5003"
-  TWAP_ALGO_PORT = "5004"
-  POV_ALGO_PORT = "5005"
-  VWAP_ALGO_PORT = "5006"
-  OBSERVABILITY_PORT = "5007"
-  USER_SERVICE_PORT = "5008"
-  JOURNAL_PORT = "5009"
-  JOURNAL_RETENTION_DAYS = "90"
-  FIX_ARCHIVE_PORT = "5012"
-  ANALYTICS_PORT = "5014"
-  MARKET_DATA_PORT = "5015"
-  MARKET_DATA_ADAPTERS_PORT = "5016"
-  FEATURE_ENGINE_PORT = "5017"
-  SIGNAL_ENGINE_PORT = "5018"
-  RECOMMENDATION_ENGINE_PORT = "5019"
-  SCENARIO_ENGINE_PORT = "5020"
-  ICEBERG_ALGO_PORT = "5021"
-  SNIPER_ALGO_PORT = "5022"
-  ARRIVAL_PRICE_ALGO_PORT = "5023"
-  LLM_ADVISORY_PORT = "5024"
   GATEWAY_PORT = "5011"
   FRONTEND_PORT = "3000"
+
   MARKET_SIM_HOST = "localhost"
-  JOURNAL_HOST = "localhost"
+  MARKET_SIM_PORT = "5000"
+  EMS_HOST = "localhost"
+  EMS_PORT = "5001"
+  OMS_HOST = "localhost"
+  OMS_PORT = "5002"
+  LIMIT_ALGO_HOST = "localhost"
+  LIMIT_ALGO_PORT = "5003"
+  TWAP_ALGO_HOST = "localhost"
+  TWAP_ALGO_PORT = "5004"
+  POV_ALGO_HOST = "localhost"
+  POV_ALGO_PORT = "5005"
+  VWAP_ALGO_HOST = "localhost"
+  VWAP_ALGO_PORT = "5006"
+  OBSERVABILITY_HOST = "localhost"
+  OBSERVABILITY_PORT = "5007"
   USER_SERVICE_HOST = "localhost"
+  USER_SERVICE_PORT = "5008"
+  JOURNAL_HOST = "localhost"
+  JOURNAL_PORT = "5009"
+  JOURNAL_RETENTION_DAYS = "90"
+  FIX_ARCHIVE_HOST = "localhost"
+  FIX_ARCHIVE_PORT = "5012"
+  NEWS_AGGREGATOR_HOST = "localhost"
+  NEWS_AGGREGATOR_PORT = "5013"
   ANALYTICS_HOST = "localhost"
+  ANALYTICS_PORT = "5014"
   MARKET_DATA_HOST = "localhost"
+  MARKET_DATA_PORT = "5015"
+  MARKET_DATA_ADAPTERS_PORT = "5016"
   FEATURE_ENGINE_HOST = "localhost"
+  FEATURE_ENGINE_PORT = "5017"
   SIGNAL_ENGINE_HOST = "localhost"
+  SIGNAL_ENGINE_PORT = "5018"
   RECOMMENDATION_ENGINE_HOST = "localhost"
+  RECOMMENDATION_ENGINE_PORT = "5019"
   SCENARIO_ENGINE_HOST = "localhost"
+  SCENARIO_ENGINE_PORT = "5020"
+  ICEBERG_ALGO_HOST = "localhost"
+  ICEBERG_ALGO_PORT = "5021"
+  SNIPER_ALGO_HOST = "localhost"
+  SNIPER_ALGO_PORT = "5022"
+  ARRIVAL_PRICE_ALGO_HOST = "localhost"
+  ARRIVAL_PRICE_ALGO_PORT = "5023"
   LLM_ADVISORY_HOST = "localhost"
+  LLM_ADVISORY_PORT = "5024"
+  MOMENTUM_ALGO_HOST = "localhost"
+  MOMENTUM_ALGO_PORT = "5025"
+  IS_ALGO_HOST = "localhost"
+  IS_ALGO_PORT = "5026"
+  FIX_GATEWAY_HOST = "localhost"
+  FIX_GATEWAY_PORT = "9881"
+
   LLM_ENABLED = "true"
   LLM_WORKER_ENABLED = "true"
   LLM_PROVIDER = "ollama"
@@ -74,10 +89,6 @@ primary_region = "iad"
   destination = "/app/backend/data"
   initial_size = "10gb"
 
-# Redpanda HA: requires 3 machines for quorum. Scale with:
-#   flyctl scale count 3 --app veta-trading
-# Each machine advertises its private IP in redpanda.yaml.
-# For single-machine deployments, min_machines_running=1 prevents state loss.
 [[vm]]
   memory = "4gb"
   cpus = 2
