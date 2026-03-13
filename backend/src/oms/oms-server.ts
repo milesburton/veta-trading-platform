@@ -24,7 +24,7 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-const KNOWN_STRATEGIES = new Set(["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE"]);
+const KNOWN_STRATEGIES = new Set(["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE", "IS", "MOMENTUM"]);
 
 // ── Trading limits cache ──────────────────────────────────────────────────────
 
@@ -38,7 +38,7 @@ interface TradingLimits {
 const DEFAULT_LIMITS: TradingLimits = {
   max_order_qty: 10_000,
   max_daily_notional: 1_000_000,
-  allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE"],
+  allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE", "IS", "MOMENTUM"],
 };
 
 const limitsCache = new Map<string, { limits: TradingLimits; expiresAt: number }>();

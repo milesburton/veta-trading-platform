@@ -28,6 +28,24 @@ interface Props {
   setApUrgency: (v: string) => void;
   apMaxSlippageBps: string;
   setApMaxSlippageBps: (v: string) => void;
+  isUrgency: string;
+  setIsUrgency: (v: string) => void;
+  isMaxSlippageBps: string;
+  setIsMaxSlippageBps: (v: string) => void;
+  isMinSlices: string;
+  setIsMinSlices: (v: string) => void;
+  isMaxSlices: string;
+  setIsMaxSlices: (v: string) => void;
+  momentumThreshold: string;
+  setMomentumThreshold: (v: string) => void;
+  momentumMaxTranches: string;
+  setMomentumMaxTranches: (v: string) => void;
+  momentumShortEma: string;
+  setMomentumShortEma: (v: string) => void;
+  momentumLongEma: string;
+  setMomentumLongEma: (v: string) => void;
+  momentumCooldown: string;
+  setMomentumCooldown: (v: string) => void;
 }
 
 export function StrategyParams({
@@ -58,6 +76,24 @@ export function StrategyParams({
   setApUrgency,
   apMaxSlippageBps,
   setApMaxSlippageBps,
+  isUrgency,
+  setIsUrgency,
+  isMaxSlippageBps,
+  setIsMaxSlippageBps,
+  isMinSlices,
+  setIsMinSlices,
+  isMaxSlices,
+  setIsMaxSlices,
+  momentumThreshold,
+  setMomentumThreshold,
+  momentumMaxTranches,
+  setMomentumMaxTranches,
+  momentumShortEma,
+  setMomentumShortEma,
+  momentumLongEma,
+  setMomentumLongEma,
+  momentumCooldown,
+  setMomentumCooldown,
 }: Props) {
   if (activeStrategy === "TWAP") {
     return (
@@ -299,6 +335,155 @@ export function StrategyParams({
               value={apMaxSlippageBps}
               onChange={(e) => setApMaxSlippageBps(e.target.value)}
               data-testid="param-max-slippage-bps"
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeStrategy === "IS") {
+    return (
+      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
+        <div className="text-[10px] text-gray-600 uppercase tracking-wider">
+          Implementation Shortfall Params
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label htmlFor="isUrgency" className="block text-xs text-gray-500 mb-1">
+              Urgency
+            </label>
+            <input
+              id="isUrgency"
+              type="number"
+              min="1"
+              max="100"
+              value={isUrgency}
+              onChange={(e) => setIsUrgency(e.target.value)}
+              data-testid="param-is-urgency"
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
+          <div>
+            <label htmlFor="isMaxSlippageBps" className="block text-xs text-gray-500 mb-1">
+              Max Slippage Bps
+            </label>
+            <input
+              id="isMaxSlippageBps"
+              type="number"
+              min="1"
+              value={isMaxSlippageBps}
+              onChange={(e) => setIsMaxSlippageBps(e.target.value)}
+              data-testid="param-is-max-slippage-bps"
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
+          <div>
+            <label htmlFor="isMinSlices" className="block text-xs text-gray-500 mb-1">
+              Min Slices
+            </label>
+            <input
+              id="isMinSlices"
+              type="number"
+              min="1"
+              value={isMinSlices}
+              onChange={(e) => setIsMinSlices(e.target.value)}
+              data-testid="param-is-min-slices"
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
+          <div>
+            <label htmlFor="isMaxSlices" className="block text-xs text-gray-500 mb-1">
+              Max Slices
+            </label>
+            <input
+              id="isMaxSlices"
+              type="number"
+              min="1"
+              value={isMaxSlices}
+              onChange={(e) => setIsMaxSlices(e.target.value)}
+              data-testid="param-is-max-slices"
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeStrategy === "MOMENTUM") {
+    return (
+      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
+        <div className="text-[10px] text-gray-600 uppercase tracking-wider">Momentum Params</div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label htmlFor="momentumThreshold" className="block text-xs text-gray-500 mb-1">
+              Entry Threshold Bps
+            </label>
+            <input
+              id="momentumThreshold"
+              type="number"
+              min="1"
+              value={momentumThreshold}
+              onChange={(e) => setMomentumThreshold(e.target.value)}
+              data-testid="param-momentum-threshold"
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
+          <div>
+            <label htmlFor="momentumMaxTranches" className="block text-xs text-gray-500 mb-1">
+              Max Tranches
+            </label>
+            <input
+              id="momentumMaxTranches"
+              type="number"
+              min="1"
+              value={momentumMaxTranches}
+              onChange={(e) => setMomentumMaxTranches(e.target.value)}
+              data-testid="param-momentum-max-tranches"
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
+          <div>
+            <label htmlFor="momentumShortEma" className="block text-xs text-gray-500 mb-1">
+              Short EMA Period
+            </label>
+            <input
+              id="momentumShortEma"
+              type="number"
+              min="1"
+              value={momentumShortEma}
+              onChange={(e) => setMomentumShortEma(e.target.value)}
+              data-testid="param-momentum-short-ema"
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
+          <div>
+            <label htmlFor="momentumLongEma" className="block text-xs text-gray-500 mb-1">
+              Long EMA Period
+            </label>
+            <input
+              id="momentumLongEma"
+              type="number"
+              min="1"
+              value={momentumLongEma}
+              onChange={(e) => setMomentumLongEma(e.target.value)}
+              data-testid="param-momentum-long-ema"
+              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            />
+          </div>
+          <div className="col-span-2">
+            <label htmlFor="momentumCooldown" className="block text-xs text-gray-500 mb-1">
+              Cooldown Ticks
+            </label>
+            <input
+              id="momentumCooldown"
+              type="number"
+              min="1"
+              value={momentumCooldown}
+              onChange={(e) => setMomentumCooldown(e.target.value)}
+              data-testid="param-momentum-cooldown"
               className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>

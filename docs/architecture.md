@@ -2,60 +2,61 @@
 
 ## Overview
 
-The VETA Trading Platform is a multi-service backend connected by a **Redpanda message bus** (Kafka-compatible). The React + Vite frontend connects to a single **API Gateway** — the only service reachable from the browser. All inter-service communication flows through bus topics; no service calls another service directly over HTTP (except the gateway→user-service for auth validation and the scenario-engine→feature-engine for feature lookups).
+VETA is a multi-service trading platform connected by a **Redpanda message bus** (Kafka-compatible). The React frontend talks to a single **API Gateway** — the only service the browser can reach. Everything else communicates via bus topics. The only exceptions are direct HTTP calls the gateway makes to the user-service for auth validation, and the scenario-engine fetching feature vectors from the feature-engine.
 
 ## Service Map
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                    React Frontend  :8080                          │
-│                 (Vite dev server / Nginx in prod)                 │
+│                    React Frontend  (port 3000 dev / 8080 prod)   │
+│                    Vite dev server or Nginx in production         │
 └──────────────────────────────┬───────────────────────────────────┘
-                               │  WebSocket + HTTP  (single connection)
+                               │  WebSocket + HTTP
                                ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                 API Gateway / BFF  :5011                          │
-│  • WebSocket hub — pushes market, order, signal, feature events   │
-│  • Proxies all data endpoints (auth-gated)                        │
-│  • Publishes orders.new to bus on submitOrder WS message          │
-│  • Validates veta_user session cookie via user-service            │
-│  • Admin-only POST /load-test for bulk order injection            │
+│                   API Gateway / BFF  :5011                        │
+│  • WebSocket hub — pushes market prices, order events, signals   │
+│  • Proxies all data API endpoints (auth-gated)                   │
+│  • Publishes orders.new to the bus when a user submits an order  │
+│  • Validates the veta_user session cookie via the user-service   │
+│  • Admin-only POST /load-test for bulk order injection           │
 └───────────┬──────────────────┬───────────────────────────────────┘
-            │ pub: orders.new  │ sub: market.ticks, orders.*, algo.heartbeat,
-            ▼                  │     news.feed, market.signals, market.features,
+            │ pub: orders.new  │ sub: market.ticks, orders.*,
+            ▼                  │     algo.heartbeat, news.feed,
+                               │     market.signals, market.features,
                                │     market.recommendations
                                ▼
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                        Redpanda Message Bus  :9092                                   │
-│                                                                                      │
-│  Core:      market.ticks · orders.new · orders.submitted · orders.routed             │
-│             orders.child · orders.filled · orders.expired · orders.rejected          │
-│             algo.heartbeat · user.session · user.access · fix.execution              │
-│  News:      news.feed · news.signal · news.events.normalised                         │
-│  Intel:     market.external.events · market.features · market.signals                │
-│             market.recommendations                                                   │
-└──┬───────┬──────────┬──────────────────┬────────────────┬───────────┬───────────────┘
-   │       │          │                  │                │           │
-   ▼       ▼          ▼                  ▼                ▼           ▼
-Market   OMS      Algo Strategies    Journal :5009   Observability  Intelligence
-Sim      :5002    Limit  :5003       (audit trail     :5007          Pipeline
-:5000    (route   TWAP   :5004        + candle store)  (events SSE)  :5019–5023
-         →        POV    :5005
-         orders.  VWAP   :5006
-         routed)  Iceberg:5016
-                  Sniper :5017
-                  ArrPx  :5018
-                  → EMS :5001
-                  → orders.filled
+┌──────────────────────────────────────────────────────────────────┐
+│                  Redpanda Message Bus  :9092                      │
+│                                                                  │
+│  Trading:   market.ticks · orders.new · orders.submitted         │
+│             orders.routed · orders.child · orders.filled         │
+│             orders.expired · orders.rejected · orders.cancelled  │
+│             algo.heartbeat · fix.execution                       │
+│  Auth:      user.session · user.access                           │
+│  News:      news.feed · news.signal · news.events.normalised     │
+│  Intel:     market.external.events · market.features             │
+│             market.signals · market.recommendations              │
+└──┬───────┬──────┬────────────────────┬──────────┬───────────────┘
+   │       │      │                    │          │
+   ▼       ▼      ▼                    ▼          ▼
+Market   OMS    Algo Strategies    Journal    Intelligence
+Sim      :5002  :5003–5006         :5009      Pipeline
+:5000           :5021–5026         (orders,   :5016–5023
+                                   candles,
+                     │             audit)
+                     ▼
+                   EMS :5001
+                (fills + FIX reports)
 ```
 
 ## Service Ports
 
-| Port | Service | Supervisord name |
+| Port | Service | Process name |
 |---|---|---|
 | 5000 | Market Simulator | `market-sim` |
-| 5001 | EMS | `ems` |
-| 5002 | OMS | `oms` |
+| 5001 | EMS (Execution Management System) | `ems` |
+| 5002 | OMS (Order Management System) | `oms` |
 | 5003 | Limit Algo | `algo-trader` |
 | 5004 | TWAP Algo | `twap-algo` |
 | 5005 | POV Algo | `pov-algo` |
@@ -63,82 +64,110 @@ Sim      :5002    Limit  :5003       (audit trail     :5007          Pipeline
 | 5007 | Observability | `observability` |
 | 5008 | User Service | `user-service` |
 | 5009 | Journal | `journal` |
-| 5010 | Candle Store | `candle-store` |
 | 5011 | Gateway | `gateway` |
 | 5012 | FIX Archive | `fix-archive` |
 | 5013 | News Aggregator | `news-aggregator` |
 | 5014 | Analytics Service | `analytics-service` |
 | 5015 | Market Data Service | `market-data-service` |
-| 5016 | Iceberg Algo | `iceberg-algo` |
-| 5017 | Sniper Algo | `sniper-algo` |
-| 5018 | Arrival Price Algo | `arrival-price-algo` |
-| 5019 | Market Data Adapters | `market-data-adapters` |
-| 5020 | Feature Engine | `feature-engine` |
-| 5021 | Signal Engine | `signal-engine` |
-| 5022 | Recommendation Engine | `recommendation-engine` |
-| 5023 | Scenario Engine | `scenario-engine` |
-| 5024 | LLM Orchestrator | `llm-advisory` |
+| 5016 | Market Data Adapters | `market-data-adapters` |
+| 5017 | Feature Engine | `feature-engine` |
+| 5018 | Signal Engine | `signal-engine` |
+| 5019 | Recommendation Engine | `recommendation-engine` |
+| 5020 | Scenario Engine | `scenario-engine` |
+| 5021 | Iceberg Algo | `iceberg-algo` |
+| 5022 | Sniper Algo | `sniper-algo` |
+| 5023 | Arrival Price Algo | `arrival-price-algo` |
+| 5024 | LLM Advisory Orchestrator | `llm-advisory` |
+| 5025 | Momentum Algo | `momentum-algo` |
+| 5026 | IS (Implementation Shortfall) Algo | `is-algo` |
+| 9880 | FIX Exchange (TCP) | `fix-exchange` |
+| 9881 | FIX Gateway (WebSocket bridge) | `fix-gateway` |
+
+> Port 5010 (candle-store) was removed — candle aggregation is now handled inside the journal service.
 
 ## Order Flow
 
 ```
-GUI (OrderTicket)
-  → WS submitOrder → Gateway
-  → orders.new (bus)
-  → OMS: validates limits, assigns orderId, routes by strategy
-  → orders.submitted + orders.routed (bus)
-  → Algo (LIMIT / TWAP / POV / VWAP / ICEBERG / SNIPER / ARRIVAL_PRICE)
-  → orders.child per slice (bus)
-  → EMS: fills against market price, computes fees, publishes FIX report
-  → orders.filled (bus)
-  → Gateway: forwards to GUI as orderEvent
-  → GUI Redux: fillReceived → order blotter + executions panel
+User submits order in the OrderTicket
+  → WebSocket submitOrder → Gateway
+  → orders.new published to bus
+  → OMS validates: user limits (qty, notional, allowed strategies), rejects admins
+  → orders.submitted + orders.routed published
+  → Algo strategy picks up orders.routed (matched by strategy tag)
+      Supported: LIMIT · TWAP · POV · VWAP · ICEBERG · SNIPER
+                 ARRIVAL_PRICE · IS · MOMENTUM
+  → orders.child published per execution slice
+  → EMS fills the slice against simulated market price
+      Picks venue, counterparty, liquidity flag; computes fees and commission
+  → orders.filled + fix.execution published
+  → Gateway forwards to all connected GUI clients as orderEvent
+  → Redux: blotter and executions panel update in real time
 ```
 
-Rejected orders (limit violation, expired session, admin role) publish `orders.rejected`. The OMS and Gateway both emit rejections.
+Orders that fail validation publish `orders.rejected`. Kill-switch commands publish `orders.cancelled`. Expired orders (time-in-force elapsed) publish `orders.expired`.
+
+## Algo Strategies
+
+| Strategy | Port | Description |
+|---|---|---|
+| Limit | 5003 | Fires when market price crosses the limit price |
+| TWAP | 5004 | Splits into equal slices spread evenly over the order lifetime |
+| POV | 5005 | Executes a configurable percentage of simulated market volume |
+| VWAP | 5006 | Weights slices by volume profile to track the rolling VWAP |
+| Iceberg | 5021 | Shows only `visibleQty` at a time; refills until fully executed |
+| Sniper | 5022 | Aggressive single-or-few-slice execution targeting best available price |
+| Arrival Price | 5023 | Targets the price at order arrival; minimises slippage vs decision price |
+| IS (Implementation Shortfall) | 5026 | Geometric decay schedule — front-loads volume to minimise opportunity cost |
+| Momentum | 5025 | EMA crossover signal triggers tranches; cooldown prevents overtrading |
+
+All algos subscribe to `orders.routed`, filter by their strategy tag, and publish `orders.child` when it's time to execute a slice.
 
 ## Intelligence Pipeline
 
+The intelligence pipeline enriches market data into actionable trade recommendations. It runs independently of the order flow — it can only suggest, not act.
+
 ```
-market.ticks ──────────────────────────────────┐
-news.events.normalised (from news-aggregator) ──┤→ Feature Engine :5020
-market.external.events (from mkt-data-adapters)─┘  (7-feature FeatureVector per symbol)
-                                                        │ market.features
-                                                        ▼
-                                                Signal Engine :5021
-                                                (weighted scoring → Signal)
-                                                        │ market.signals
-                                                        ▼
-                                               Recommendation Engine :5022
-                                               (confidence > 0.6 → TradeRecommendation)
-                                                        │ market.recommendations
-                                                        ▼
-                                                    Gateway → GUI
+market.ticks ────────────────────────────────────┐
+news.events.normalised (news-aggregator) ─────────┤→ Feature Engine :5017
+market.external.events (market-data-adapters) ────┘  Computes 7 features per symbol
+                                                         per tick; stores in SQLite
+                                                              │ market.features
+                                                              ▼
+                                                     Signal Engine :5018
+                                                     Weighted scoring → Signal
+                                                     Configurable weights per factor
+                                                              │ market.signals
+                                                              ▼
+                                                  Recommendation Engine :5019
+                                                  confidence > 0.6 → TradeRecommendation
+                                                              │ market.recommendations
+                                                              ▼
+                                                       Gateway → GUI panels
 ```
 
-**Scenario Engine** (:5023): REST-only. Accepts `POST /scenario` with factor shocks, fetches the current FeatureVector from the Feature Engine, re-runs the signal scorer, returns `{ baseline, shocked, delta }`.
+**Scenario Engine** (:5020): REST-only. Accepts `POST /scenario` with factor shocks, fetches the current FeatureVector from the Feature Engine, re-runs the signal scorer, and returns `{ baseline, shocked, delta }`.
 
-**Signal Engine backtest** (:5021): `POST /replay` accepts `{ symbol, from, to }`, reconstructs approximate FeatureVectors from historical candles, and returns a `ReplayFrame[]` array for signal history overlays.
+**Signal Engine backtest** (:5018): `POST /replay` reconstructs approximate FeatureVectors from historical candles and returns a `ReplayFrame[]` array for the signal history overlay.
 
 ### Feature Vectors (7 features per symbol, ~4/s)
 
 | Feature | Description |
 |---|---|
-| `momentum` | (currentPrice − price20TicksAgo) / price20TicksAgo |
-| `relativeVolume` | currentVol / rolling-20-tick average volume |
-| `realisedVol` | Annualised std dev from last 120 1-min candles |
-| `sectorRelativeStrength` | Symbol return vs sector average over 20 ticks |
-| `eventScore` | Sum of upcoming-event impact weights (next 7 days) |
-| `newsVelocity` | News event count for symbol in last 60 s |
-| `sentimentDelta` | sentimentScore[now] − sentimentScore[60 s ago] |
+| `momentum` | Price change over the last 20 ticks, normalised |
+| `relativeVolume` | Current tick volume vs rolling 20-tick average |
+| `realisedVol` | Annualised volatility from the last 120 one-minute candles |
+| `sectorRelativeStrength` | Symbol return vs its sector average over 20 ticks |
+| `eventScore` | Weighted sum of upcoming corporate events in the next 7 days |
+| `newsVelocity` | News event count for the symbol in the last 60 seconds |
+| `sentimentDelta` | Sentiment score now minus sentiment score 60 seconds ago |
 
-### Signal Weights (configurable via `PUT /intelligence/weights`, admin only)
+### Signal Weights (admin-configurable via `PUT /intelligence/weights`)
 
 | Factor | Default weight |
 |---|---|
 | momentum | 0.25 |
 | sectorRelativeStrength | 0.20 |
-| realisedVol | −0.15 |
+| realisedVol | −0.15 (negative — high vol is penalised) |
 | relativeVolume | 0.10 |
 | eventScore | 0.10 |
 | newsVelocity | 0.10 |
@@ -147,72 +176,52 @@ market.external.events (from mkt-data-adapters)─┘  (7-feature FeatureVector 
 ## Services
 
 ### API Gateway / BFF (port 5011)
-The only service the browser talks to. Maintains a WebSocket hub and fans out all bus events to every connected GUI client. Enforces authentication on all routes via `veta_user` cookie validated against the User Service (10 s cache). Injects `userId` and `userRole` into every order before it reaches the bus. Debounces `market.signals` and `market.features` broadcasts at 500 ms to avoid flooding connected clients.
+The only service the browser talks to. Maintains a WebSocket hub and fans out all bus events to every connected GUI client in real time. Enforces authentication on all routes by validating the `veta_user` cookie against the User Service (cached for 10 seconds). Injects `userId` and `userRole` into every order before it reaches the bus. Debounces `market.signals` and `market.features` broadcasts at 500 ms.
 
 Source: [backend/src/gateway/gateway.ts](../backend/src/gateway/gateway.ts)
 
 ### Market Simulator (port 5000)
-Generates simulated prices for ~80 S&P 500 assets using a Geometric Brownian Motion engine. Publishes `market.ticks` to the bus at 4 ticks/second with current prices, volumes, and order book snapshots. Consults market-data-service every 30 s for per-symbol source overrides (synthetic vs Alpha Vantage).
+Generates simulated prices for ~80 S&P 500 assets using Geometric Brownian Motion. Publishes `market.ticks` at 4 ticks/second with current prices, volumes, and order book snapshots. Consults the market-data-service every 30 seconds for per-symbol source overrides (synthetic vs Alpha Vantage).
 
 Source: [backend/src/market-sim/market-sim.ts](../backend/src/market-sim/market-sim.ts)
 
-### Order Management System — OMS (port 5002)
-Subscribes to `orders.new`. Validates each order against the submitting user's trading limits (max qty, max daily notional, allowed strategies). Rejects admin users from trading. Routes accepted orders to the appropriate algo strategy by publishing `orders.submitted` and `orders.routed`.
+### OMS — Order Management System (port 5002)
+Subscribes to `orders.new`. Validates each order against the user's trading limits (max quantity, max daily notional, allowed strategies). Admin users are blocked from trading entirely. Accepted orders are enriched with an `orderId`, time-in-force, and routing metadata, then published as `orders.submitted` + `orders.routed`. On startup (and every 15 seconds) it sweeps the journal for any orders that expired while the OMS was offline and publishes `orders.expired` for them.
 
 Source: [backend/src/oms/oms-server.ts](../backend/src/oms/oms-server.ts)
 
-### Algo Strategies (ports 5003–5006, 5016–5018)
-Each strategy subscribes to `orders.routed` and handles orders matching its strategy tag. When it's time to execute a slice it publishes `orders.child` for the EMS to fill.
-
-| Strategy | Port | Logic |
-|---|---|---|
-| Limit | 5003 | Watches market price; fires when price crosses limit |
-| TWAP | 5004 | Equal-sized slices spread evenly over order lifetime |
-| POV | 5005 | Executes a % of simulated market volume per interval |
-| VWAP | 5006 | Tracks rolling VWAP; slices weighted by volume profile |
-| Iceberg | 5016 | Shows only `visibleQty` at a time; re-slices until filled |
-| Sniper | 5017 | Aggressive single-or-few slice execution at best price |
-| Arrival Price | 5018 | Targets the arrival (decision) price; minimises slippage |
-
-Sources: [backend/src/algo/](../backend/src/algo/)
-
-### Execution Management System — EMS (port 5001)
-Subscribes to `orders.child`. Simulates market microstructure: picks a venue (XNAS, XNYS, ARCX, …), counterparty, and liquidity flag (MAKER/TAKER/CROSS). Computes fill price with market impact, SEC fee, FINRA TAF, and commission. Publishes `orders.filled` and `fix.execution`.
+### EMS — Execution Management System (port 5001)
+Subscribes to `orders.child`. Simulates real market microstructure: selects a venue (XNAS, XNYS, ARCX, …), a counterparty MPID, and a liquidity flag (MAKER/TAKER/CROSS). Computes fill price with market impact, SEC Section 31 fee, FINRA TAF, and commission. Publishes `orders.filled` and `fix.execution`.
 
 Source: [backend/src/ems/ems-server.ts](../backend/src/ems/ems-server.ts)
 
 ### Journal (port 5009)
-Dual-purpose SQLite service:
-- **Audit trail**: Subscribes to all order, user, and access topics; persists every event with 90-day retention. Exposes `POST /grid/query` for filtered, sorted, paginated queries.
-- **Candle store**: Subscribes to `market.ticks`; aggregates OHLCV candles at 1-minute and 5-minute intervals (capped at 120 per instrument). Exposes `GET /candles`.
+Dual-purpose SQLite service. As an **audit trail** it subscribes to all order and user topics and persists every event with 90-day retention, exposing `POST /grid/query` for filtered, sorted, paginated queries. As a **candle store** it subscribes to `market.ticks` and aggregates OHLCV candles at 1-minute and 5-minute intervals (capped at 120 per symbol), exposing `GET /candles`.
 
 Source: [backend/src/journal/journal-server.ts](../backend/src/journal/journal-server.ts)
 
 ### Observability (port 5007)
-Subscribes to all bus topics (excluding high-frequency market ticks). Persists events to SQLite with 24-hour retention. Streams events to the frontend Observability panel via SSE (`GET /stream`). Also accepts `POST /events/batch` for client-side events.
+Subscribes to all bus topics except high-frequency market ticks. Persists events to SQLite with 24-hour retention. Streams events to the frontend via SSE (`GET /stream`). Also accepts `POST /events/batch` for client-side events (login, logout, order attempts).
 
 Source: [backend/src/observability/observability-server.ts](../backend/src/observability/observability-server.ts)
 
 ### User Service (port 5008)
-Manages user accounts, session tokens (`veta_user` cookie), and per-user trading limits. Used internally by the Gateway (token validation) and OMS (limit lookup). Not directly reachable from the browser.
+Manages user accounts, session tokens, and per-user trading limits. Used internally by the Gateway (token validation) and OMS (limit lookup). Not reachable from the browser — all access is proxied through the Gateway.
 
 Source: [backend/src/user-service/user-service.ts](../backend/src/user-service/user-service.ts)
 
 ### News Aggregator (port 5013)
-Polls configured news sources, extracts ticker mentions, scores sentiment (positive/negative/neutral), and publishes to three bus topics:
-- `news.feed` — forwarded by gateway to GUI as `newsUpdate` WS events
-- `news.signal` — scored signal for algo consumption
-- `news.events.normalised` — typed `NewsEvent` objects consumed by the Feature Engine
+Polls configured news sources, extracts ticker mentions, scores sentiment, and publishes to three bus topics: `news.feed` (forwarded to the GUI), `news.signal` (for algo consumption), and `news.events.normalised` (typed events consumed by the Feature Engine).
 
 Source: [backend/src/news/news-aggregator.ts](../backend/src/news/news-aggregator.ts)
 
 ### FIX Archive (port 5012)
-Subscribes to `fix.execution` events and persists them to SQLite in FIX 4.4 format. Exposes `GET /executions` for historical execution report queries.
+Subscribes to `fix.execution` and persists execution reports to SQLite in FIX 4.4 format. Exposes `GET /executions` for historical execution report queries.
 
 Source: [backend/src/fix-archive/fix-archive.ts](../backend/src/fix-archive/fix-archive.ts)
 
 ### Analytics Service (port 5014)
-REST-only service for quantitative analysis:
+REST-only quantitative analysis service:
 - `POST /quote` — Black-Scholes option pricing
 - `POST /scenario` — Monte Carlo scenario grid (vol/price shocks)
 - `POST /recommend` — Rule-based trade recommendations
@@ -224,28 +233,28 @@ Manages per-symbol data source overrides (synthetic GBM vs Alpha Vantage). Polls
 
 Source: [backend/src/market-data-service/market-data-service.ts](../backend/src/market-data-service/market-data-service.ts)
 
-### Market Data Adapters (port 5019)
-Seeds earnings calendar, dividend, and macro economic events for ~80 S&P 500 symbols. Publishes `market.external.events` consumed by the Feature Engine. Events are staggered over a 90-day window to provide realistic scheduling.
+### Market Data Adapters (port 5016)
+Seeds earnings calendar, dividend, and macro economic events for ~80 S&P 500 symbols. Publishes `market.external.events` consumed by the Feature Engine. Events are spread across a 90-day window for realistic scheduling.
 
 Source: [backend/src/market-data-adapters/adapter-server.ts](../backend/src/market-data-adapters/adapter-server.ts)
 
-### Feature Engine (port 5020)
-Subscribes to `market.ticks`, `news.events.normalised`, and `market.external.events`. Computes a 7-feature `FeatureVector` per symbol on every tick and publishes to `market.features` (batched at 250 ms). Stores last 500 vectors per symbol in SQLite. Exposes `GET /features/:symbol` and `GET /features/:symbol/history`.
+### Feature Engine (port 5017)
+Subscribes to `market.ticks`, `news.events.normalised`, and `market.external.events`. Computes the 7-feature `FeatureVector` per symbol on every tick and publishes to `market.features` (batched at 250 ms). Stores the last 500 vectors per symbol in SQLite. Exposes `GET /features/:symbol` and `GET /features/:symbol/history`.
 
 Source: [backend/src/feature-engine/feature-engine.ts](../backend/src/feature-engine/feature-engine.ts)
 
-### Signal Engine (port 5021)
-Subscribes to `market.features`. Applies a configurable weighted score across all 7 features (weights stored in SQLite, configurable via `PUT /weights` admin API). Publishes `Signal` objects to `market.signals`. Also exposes `POST /replay` for backtest signal replay against historical candle data.
+### Signal Engine (port 5018)
+Subscribes to `market.features`. Applies configurable weighted scoring across all 7 features (weights stored in SQLite, admin-configurable via `PUT /weights`). Publishes `Signal` objects to `market.signals`. Exposes `POST /replay` for backtest signal replay against historical candle data.
 
 Source: [backend/src/signal-engine/signal-engine.ts](../backend/src/signal-engine/signal-engine.ts)
 
-### Recommendation Engine (port 5022)
-Subscribes to `market.signals`. Generates `TradeRecommendation` objects for signals with confidence > 0.6, including suggested quantity, direction, and rationale from the top two factor contributions. Publishes to `market.recommendations`.
+### Recommendation Engine (port 5019)
+Subscribes to `market.signals`. Generates `TradeRecommendation` objects for signals with confidence > 0.6, including suggested quantity, direction, and the top two contributing factors as rationale. Publishes to `market.recommendations`.
 
 Source: [backend/src/recommendation-engine/recommendation-server.ts](../backend/src/recommendation-engine/recommendation-server.ts)
 
-### Scenario Engine (port 5023)
-REST-only. Accepts `POST /scenario` with a symbol and a list of factor shocks (`{ factor, delta }`). Fetches the current FeatureVector from the Feature Engine, applies shocks, re-runs the signal scorer, and returns `{ baseline, shocked, delta }`.
+### Scenario Engine (port 5020)
+REST-only. Accepts `POST /scenario` with a symbol and a list of factor shocks. Fetches the current FeatureVector from the Feature Engine, applies the shocks, re-runs the signal scorer, and returns `{ baseline, shocked, delta }`.
 
 Source: [backend/src/scenario-engine/scenario-server.ts](../backend/src/scenario-engine/scenario-server.ts)
 
@@ -253,122 +262,33 @@ Source: [backend/src/scenario-engine/scenario-server.ts](../backend/src/scenario
 
 ## LLM Advisory Subsystem
 
-The LLM Advisory Subsystem is a **strictly advisory layer** — it reads deterministic signal and recommendation data and produces natural-language commentary. It has **no write path** to the order bus and cannot submit, modify, or cancel orders. The deterministic engines remain the source of truth.
+An **advisory-only** layer that reads signal and recommendation data and produces natural-language commentary. It has no write path to the order bus — it cannot submit, modify, or cancel orders. The deterministic engines are always the source of truth.
 
-### Design Principles
+Key principles:
+- The LLM worker runs **locally within the container** using Ollama (default model: `qwen2.5:3b`). No external inference APIs are called by default.
+- **Fully isolated from execution** — the worker only reads from the intelligence pipeline and writes to its own SQLite store.
+- Safe defaults: `LLM_ENABLED=false`, `LLM_WORKER_ENABLED=false`.
+- The worker **never auto-restarts** — it is launched on-demand and exits after hitting its job limit or idle timeout.
 
-- The LLM worker runs **locally within the container** (no external inference APIs are called unless the operator explicitly configures an external provider key).
-- The subsystem is **fully isolated** from execution: the worker only reads from the intelligence pipeline and writes to its own SQLite advisory store.
-- Safe defaults: `LLM_ENABLED=false`, `LLM_WORKER_ENABLED=false`, `LLM_TRIGGER_MODE=manual`.
-- The worker must **never autostart** or restart indefinitely — it is launched on-demand and exits after completing its job queue or hitting an idle timeout.
-
-### Service: LLM Orchestrator (port 5024)
-
-Manages job scheduling, runtime configuration, and subsystem state. Subscribes to several bus topics to decide when to enqueue advisory jobs.
-
-**Bus subscriptions:**
-- `market.signals` — queues a job when a new high-confidence signal arrives (if trigger mode permits)
-- `llm.worker.status` — tracks worker lifecycle events to update last-error and last-activity timestamps
-
-**Bus publications:**
-- `llm.state.update` — broadcasts the current `LlmSubsystemStatus` payload (consumed by the gateway and forwarded to all WebSocket clients as `llmStateUpdate` events)
-- `llm.job.queued` — emitted when a new job is enqueued
-- `llm.advisory.ready` — emitted when an advisory note is written to the store
-
-**Admin REST endpoints (all require admin role via gateway):**
+### LLM Advisory Orchestrator (port 5024)
+Manages job scheduling, runtime configuration, and worker lifecycle. Admin REST endpoints (all require admin role):
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/admin/state` | Returns the full `LlmSubsystemStatus` (state, effective policy, pending jobs, etc.) |
-| `PUT` | `/admin/state` | Patches the runtime config (enable/disable advisory, enable/disable worker, change trigger mode) |
-| `POST` | `/admin/watchlist-brief` | Enqueues a one-shot advisory job for every tracked symbol |
-| `POST` | `/admin/trigger-worker` | Starts the LLM worker process (requires `workerEnabled = true`) |
+| `GET` | `/admin/state` | Current subsystem status, pending jobs, effective policy |
+| `PUT` | `/admin/state` | Patch runtime config (enable/disable, change trigger mode) |
+| `POST` | `/admin/watchlist-brief` | Queue one advisory job for every tracked symbol |
+| `POST` | `/admin/trigger-worker` | Start the LLM worker process |
 
-Source: [backend/src/llm-advisory/orchestrator.ts](../backend/src/llm-advisory/orchestrator.ts)
+### Subsystem States
 
-### Subsystem State Machine
-
-The subsystem state is derived deterministically from the effective policy, pending job count, and timestamps — it is never stored directly.
-
-```
-disabled  ←  enabled = false (env or runtime config)
-   │
-armed     ←  enabled + no pending jobs + cooldown window elapsed
-   │
-active    ←  enabled + pendingJobs > 0
-   │
-cooldown  ←  enabled + no pending jobs + last activity < minRefreshMinutes ago
-   │
-error     ←  enabled + last error < 30 s ago
-```
-
-The `deriveSubsystemState()` function in `runtime-config-store.ts` implements this state machine.
-
-### Runtime Config (SQLite)
-
-Operator controls persist to `llm_runtime_config` (SQLite, single row `id=1`). Environment variables define the **base policy**; the SQLite row provides **runtime overrides** that survive service restarts.
-
-| Setting | Env Var | Default | Description |
-|---|---|---|---|
-| Advisory enabled | `LLM_ENABLED` | `false` | Master switch; `disabled` state when false |
-| Worker enabled | `LLM_WORKER_ENABLED` | `false` | Whether the worker process may be started |
-| Trigger mode | `LLM_TRIGGER_MODE` | `manual` | `manual` \| `on-demand-ui` \| `scheduled-batch` \| `event-driven` |
-| Min refresh | `LLM_MIN_REFRESH_MINUTES` | `15` | Minimum minutes between jobs per symbol (cooldown window) |
-| Worker idle timeout | `LLM_WORKER_IDLE_TIMEOUT_SECONDS` | `60` | Worker exits if no new jobs arrive within this window |
-| Max jobs per session | `LLM_WORKER_MAX_JOBS_PER_SESSION` | `20` | Worker exits after processing this many jobs |
-| Max concurrent jobs | `LLM_MAX_CONCURRENT_JOBS` | `2` | Maximum jobs running simultaneously |
-| Allowed hours | `LLM_ALLOWED_HOURS` | *(unrestricted)* | UTC hour range, e.g. `"08-18"` |
-
-`resolveEffectivePolicy()` merges these two sources; the runtime config values take precedence over the env-var base policy.
-
-### Worker Lifecycle
-
-```
-operator: PUT /admin/state { workerEnabled: true }
-operator: POST /admin/trigger-worker
-                │
-         orchestrator forks worker subprocess
-                │
-         worker checks isWorkerAllowed() — exits immediately if false
-                │
-         worker registers session in llm_worker_sessions
-                │
-         loop:
-           if jobsProcessed >= maxJobsPerSession → exit "max-jobs-per-session"
-           claimNextJob()
-             found → processJob() → write advisory note → publish llm.advisory.ready
-             not found → idle-wait loop (poll every 2 s)
-               if idle > workerIdleTimeoutSeconds → exit "idle-timeout"
-                │
-         worker updates session with exitReason, publishes llm.worker.status "stopped"
-```
-
-The worker never restarts itself. Supervisord is configured with `autostart=false` and `autorestart=false` for the `llm-worker` program.
-
-### Provider Abstraction
-
-The `LlmProvider` interface abstracts the inference backend. Two implementations are shipped:
-
-| Provider | Description |
+| State | Condition |
 |---|---|
-| `MockProvider` | Returns canned responses instantly — used in tests and when no model is configured |
-| `OllamaProvider` | Calls a local Ollama server (`OLLAMA_BASE_URL`, default `http://localhost:11434`) |
-
-The active provider is selected at startup via `LLM_PROVIDER` env var (`mock` \| `ollama`).
-
-### Job Store (SQLite)
-
-`JobStore` persists to `llm_advisory.db` and maintains four tables:
-
-| Table | Description |
-|---|---|
-| `llm_jobs` | Job queue with status, priority, context hash, and retry count |
-| `advisory_notes` | Completed advisory notes with token counts and signal snapshot |
-| `llm_prompt_audit` | Full prompt text for every job (compliance/audit trail) |
-| `llm_response_audit` | Raw LLM response for every job |
-| `llm_worker_sessions` | Session records with `exitReason` |
-
-Deduplication: `hasRecentJob(contextHash, windowMs)` prevents re-running identical context within the cooldown window.
+| `disabled` | `LLM_ENABLED = false` |
+| `armed` | Enabled, no pending jobs, cooldown elapsed |
+| `active` | Enabled, jobs in queue |
+| `cooldown` | Enabled, no jobs, last activity too recent |
+| `error` | Enabled, last error within 30 s |
 
 Source: [backend/src/llm-advisory/](../backend/src/llm-advisory/)
 
@@ -376,93 +296,148 @@ Source: [backend/src/llm-advisory/](../backend/src/llm-advisory/)
 
 ## Frontend Architecture
 
-The React frontend (Vite + Redux Toolkit) uses a single `gatewayMiddleware` for all backend communication. On start it opens a WebSocket to the gateway and keeps it alive with exponential-backoff reconnection.
-
-Key middleware:
-- **gatewayMiddleware** — WS connection, dispatches all inbound events, sends orders
-- **observabilityMiddleware** — intercepts Redux actions (login, logout, order attempt) and POSTs them to the observability service
-- **simulationMiddleware** — local fill simulation for disconnected / demo mode only (gated on `market.connected`)
-- **versionWatchMiddleware** — detects backend version changes and notifies the user
+The React frontend (Vite + Redux Toolkit) uses a single `gatewayMiddleware` for all backend communication. On startup it opens a WebSocket to the gateway and keeps it alive with exponential-backoff reconnection.
 
 ### Redux Slices
 
-| Slice | State |
+| Slice | What it holds |
 |---|---|
-| `authSlice` | `{ user, limits }` — set via `authIdentity` WS event |
-| `ordersSlice` | Order tree with children; updated by all `orderEvent` WS messages |
-| `marketSlice` | Latest price per symbol; updated by `marketUpdate` WS events |
-| `observabilitySlice` | `{ events: ObsEvent[] }` — updated by SSE stream |
-| `newsSlice` | Latest news per symbol; updated by `newsUpdate` WS events |
-| `intelligenceSlice` | `{ signals, features, recommendations }` keyed by symbol |
-| `llmSubsystemSlice` | `{ status: LlmSubsystemStatus \| null }` — updated by `llmStateUpdate` WS events |
+| `authSlice` | Logged-in user + trading limits (set by `authIdentity` WS event) |
+| `ordersSlice` | Full order tree with children; updated by every `orderEvent` |
+| `marketSlice` | Latest price per symbol; updated by `marketUpdate` events |
+| `observabilitySlice` | Bus event log; updated by SSE stream |
+| `newsSlice` | Latest news per symbol; updated by `newsUpdate` events |
+| `intelligenceSlice` | Signals, features, recommendations keyed by symbol |
+| `llmSubsystemSlice` | LLM Advisory Subsystem status; updated by `llmStateUpdate` events |
+| `killSwitchSlice` | Active kill-switch state; blocks order submission when held |
+| `alertsSlice` | In-app alert feed (service down, fill rate degraded, order flood) |
 
 ### Dashboard Panels
 
-The FlexLayout-based dashboard supports 20+ panel types registered in `panelRegistry.ts`. Layout templates are defined in `layoutModels.ts` (current storage key: `v9`).
+The FlexLayout-based dashboard supports 20+ panel types registered in `panelRegistry.ts`. Layout templates are defined in `layoutModels.ts`.
 
-| Panel ID | Description | Singleton |
+| Panel | Description | Singleton |
 |---|---|---|
 | `market-ladder` | Live bid/ask/price table for all symbols | ✓ |
-| `order-ticket` | Order entry form (per-symbol channel) | — |
-| `order-blotter` | Order & fill history grid | ✓ |
+| `order-ticket` | Order entry form — equities, options, and bonds | — |
+| `order-blotter` | Order and fill history grid | ✓ |
 | `candle-chart` | OHLCV candlestick chart | — |
 | `executions` | FIX execution report viewer | ✓ |
 | `algo-monitor` | Algo heartbeat and strategy status | ✓ |
 | `observability` | Bus event stream viewer | ✓ |
-| `decision-log` | Rejected / expired order log | ✓ |
+| `decision-log` | Rejected and expired order log | ✓ |
 | `news-feed` | News feed with sentiment indicators | ✓ |
 | `market-depth` | Level-2 order book depth chart | — |
-| `market-data-sources` | Alpha Vantage source override (admin) | ✓ |
+| `market-data-sources` | Alpha Vantage source override (admin only) | ✓ |
 | `option-pricing` | Black-Scholes option pricer | ✓ |
 | `scenario-matrix` | Monte Carlo vol/price scenario grid | ✓ |
 | `trade-recommendation` | Rule-based trade suggestions | ✓ |
 | `research-radar` | Signal score × confidence bubble chart | ✓ |
-| `instrument-analysis` | Per-symbol feature bars + signal gauge + backtest | — |
+| `instrument-analysis` | Per-symbol feature bars, signal gauge, and backtest | — |
 | `signal-explainability` | Factor contribution waterfall chart | ✓ |
 | `service-health` | Service health grid with version polling | ✓ |
 | `throughput-gauges` | Orders/min, fills/min, fill rate, bus events (last 60 s) | ✓ |
-| `algo-leaderboard` | Fill rate and slippage by strategy | ✓ |
+| `algo-leaderboard` | Fill rate and slippage comparison by strategy | ✓ |
 | `load-test` | Admin-only bulk order injection form | ✓ |
-| `llm-subsystem` | LLM Advisory Subsystem operator controls (admin) | ✓ |
+| `llm-subsystem` | LLM Advisory operator controls (admin only) | ✓ |
+| `demo-day` | Pre-built demo scenarios for presentations | ✓ |
+| `estate-overview` | Service health + throughput gauges + alert feed | ✓ |
 
 ### Layout Templates
 
 | Template | Description |
 |---|---|
-| Default | 4-column trading workstation |
+| Default (Trading) | 4-column workstation — market ladder, order ticket, blotter, chart |
 | Analysis | Market ladder + candle chart + analytics panels |
 | Research | Signal radar + instrument analysis + explainability |
 | Market Overview | 3-column price-focused layout |
-| Admin / Mission Control | Service health + throughput + algo leaderboard + load test + LLM subsystem |
+| Mission Control (Admin) | Service health + throughput + algo leaderboard + load test + LLM subsystem |
 | AI Advisory | Signal radar → instrument analysis + price chart + order entry |
-| Intelligence Hub | Signal radar + heatmap → feature deep-dive + recommendations → news + alerts |
+| Intelligence Hub | Signal radar + heatmap → feature deep-dive + recommendations → news |
+| FI Analysis | Fixed income panels — spread analysis, duration ladder, vol surface |
 
 ## Authentication
 
-Session tokens are stored as `veta_user` HTTP-only cookies set by the User Service on login. The Gateway validates the token on every WS connection and every HTTP proxy request. Token lookups are cached for 10 seconds. Admin users can view all panels but are blocked from submitting orders at both the OMS level (bus) and the UI level (OrderTicket hidden for admin role).
+Sessions are stored as `veta_user` HTTP-only cookies set by the User Service at login. The Gateway validates this cookie on every WebSocket connection and every HTTP proxy request (cached 10 seconds). Admin users can view all panels but cannot submit orders — blocked at both the OMS (bus) and UI (OrderTicket hidden) levels.
+
+Four built-in personas:
+
+| User | Role | Default strategies |
+|---|---|---|
+| alice | trader (high-touch) | All strategies |
+| bob | trader (algo) | TWAP, POV, VWAP, ICEBERG, SNIPER, ARRIVAL_PRICE, IS, MOMENTUM |
+| carol | trader (fixed income) | LIMIT |
+| david | read-only analyst | None (no order submission) |
 
 ## Testing
 
-| Suite | Command | Coverage |
+| Suite | Command | What it covers |
 |---|---|---|
-| Backend smoke | `deno test --allow-all backend/src/tests/smoke.test.ts` | Health checks, WS pipeline, BUY/SELL order ack, journal, news |
+| Backend smoke | `deno test --allow-all backend/src/tests/smoke.test.ts` | Health checks, WS pipeline, order submission, journal, news |
 | Backend integration | `deno test --allow-all backend/src/tests/integration.test.ts` | End-to-end order fill, algo slice counts, fill rates |
-| Algo integration | `deno test --allow-all backend/src/tests/algo.integration.test.ts` | LIMIT/TWAP/ICEBERG/SNIPER fill + performance assertions |
+| Algo integration | `deno test --allow-all backend/src/tests/algo.integration.test.ts` | LIMIT/TWAP/ICEBERG/SNIPER/ARRIVAL_PRICE fill + performance assertions |
 | Load test | `deno test --allow-all backend/src/tests/load.test.ts` | Bulk injection, pipeline throughput, fill rate under load |
-| Frontend unit | `cd frontend && npm run test:unit` | Slices, components, panel registry, layout models (570+ tests) |
-| Frontend E2E | `cd frontend && npx playwright test` | Auth, market data, order placement (34 tests, mocked gateway) |
-
-**Algo coverage gap**: POV, VWAP, and Arrival Price algos have health-check coverage only — no order-placement integration tests yet.
+| Frontend unit | `cd frontend && npm run test:unit` | Redux slices, components, panel registry, layout models (570+ tests) |
+| Frontend E2E | `cd frontend && npx playwright test` | Auth, market data, order placement, fixed income (34 tests, mocked gateway) |
 
 ## Process Management
 
-All services are managed by **supervisord**. In the Dev Container they start automatically on launch.
+All services run under **supervisord**. In the Dev Container they start automatically on launch.
 
 ```bash
-supervisorctl -c /home/deno/supervisord.conf status        # check all
-supervisorctl -c /home/deno/supervisord.conf restart <svc> # restart one
+# Check all services
+supervisorctl -c /home/deno/supervisord.conf status
+
+# Restart a single service
+supervisorctl -c /home/deno/supervisord.conf restart <name>
 ```
 
-Service names: `market-sim`, `ems`, `oms`, `algo-trader`, `twap-algo`, `pov-algo`, `vwap-algo`, `iceberg-algo`, `sniper-algo`, `arrival-price-algo`, `observability`, `user-service`, `journal`, `candle-store`, `news-aggregator`, `fix-archive`, `analytics-service`, `market-data-service`, `market-data-adapters`, `feature-engine`, `signal-engine`, `recommendation-engine`, `scenario-engine`, `llm-advisory`, `gateway`
+Service names: `market-sim`, `ems`, `oms`, `algo-trader`, `twap-algo`, `pov-algo`, `vwap-algo`, `iceberg-algo`, `sniper-algo`, `arrival-price-algo`, `is-algo`, `momentum-algo`, `observability`, `user-service`, `journal`, `fix-archive`, `news-aggregator`, `analytics-service`, `market-data-service`, `market-data-adapters`, `feature-engine`, `signal-engine`, `recommendation-engine`, `scenario-engine`, `llm-advisory`, `gateway`
 
-The `llm-worker` program is registered separately in supervisord with `autostart=false` and `autorestart=false` — it is launched on-demand by the orchestrator via `POST /admin/trigger-worker`.
+The `llm-worker` is registered separately with `autostart=false` and `autorestart=false`. It is started on-demand via `POST /admin/trigger-worker` and exits after hitting its job or idle-timeout limit.
+
+## Deployment
+
+### Fly.io (cloud demo)
+
+The entire platform runs as a **single VM** on Fly.io. All services start under supervisord inside one container. The Fly.io load balancer exposes a single HTTPS endpoint on port 443 (internally 8080) — this is where Nginx serves the built frontend and the gateway runs behind it.
+
+There is no Traefik on Fly.io — it isn't needed because there's only one public endpoint. Fly's built-in layer-7 proxy handles HTTPS termination.
+
+```
+fly.toml
+  internal_port = 8080   → Fly load balancer → HTTPS on veta-trading.fly.dev
+  force_https = true
+  auto_stop_machines = "suspend"   (suspends when idle, resumes on first request)
+  min_machines_running = 1
+```
+
+Data is persisted to a 10 GB Fly volume mounted at `/app/backend/data`.
+
+Deploy command:
+```bash
+flyctl deploy --remote-only \
+  --build-arg VITE_COMMIT_SHA=$(git rev-parse --short HEAD) \
+  --build-arg VITE_BUILD_DATE=$(date -u +%Y-%m-%d)
+```
+
+### Homelab (self-hosted)
+
+The homelab runs the same Docker image pulled from GHCR, orchestrated by Docker Compose with **Traefik** as the reverse proxy.
+
+```
+docker-compose.homelab.yml
+  veta-traefik     :8888 (dashboard) + :80/:443 (routing)
+  veta-app         the main container (all services inside)
+  veta-disk-monitor :8099 (disk health endpoint for Uptime Kuma)
+```
+
+Traefik routes by path prefix:
+- `/ws/gateway` → gateway WebSocket (port 5011)
+- `/api/gateway` → gateway HTTP (port 5011, strips prefix)
+
+Watchtower watches for new images tagged `:latest` on GHCR and automatically restarts the stack. When a new commit lands on `main` and CI passes, the updated image is live within ~5 minutes.
+
+The disk monitor (`scripts/disk-monitor.py`) runs on port 8099, returns 200 when disk < 85%, 503 when critical, and auto-prunes dangling Docker images when disk exceeds 90%.
+
+URL: `http://veta.home` (add `192.168.1.245 veta.home` to `/etc/hosts`)

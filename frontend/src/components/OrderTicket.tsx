@@ -16,7 +16,9 @@ import type {
   BondSpec,
   IcebergParams,
   InstrumentType,
+  IsParams,
   LimitParams,
+  MomentumParams,
   PovParams,
   SniperParams,
   Trade,
@@ -232,6 +234,15 @@ export function OrderTicket() {
   const sniperMaxVenues = useSignal("2");
   const apUrgency = useSignal("50");
   const apMaxSlippageBps = useSignal("30");
+  const isUrgency = useSignal("50");
+  const isMaxSlippageBps = useSignal("30");
+  const isMinSlices = useSignal("3");
+  const isMaxSlices = useSignal("10");
+  const momentumThreshold = useSignal("20");
+  const momentumMaxTranches = useSignal("5");
+  const momentumShortEma = useSignal("5");
+  const momentumLongEma = useSignal("20");
+  const momentumCooldown = useSignal("3");
 
   // ── Options-mode signals ───────────────────────────────────────────────────
   const optionType = useSignal<"call" | "put">("call");
@@ -442,6 +453,27 @@ export function OrderTicket() {
         strategy: "ARRIVAL_PRICE",
         urgency: Number(apUrgency.value),
         maxSlippageBps: Number(apMaxSlippageBps.value),
+      };
+      return p;
+    }
+    if (activeStrategy === "IS") {
+      const p: IsParams = {
+        strategy: "IS",
+        urgency: Number(isUrgency.value),
+        maxSlippageBps: Number(isMaxSlippageBps.value),
+        minSlices: Number(isMinSlices.value),
+        maxSlices: Number(isMaxSlices.value),
+      };
+      return p;
+    }
+    if (activeStrategy === "MOMENTUM") {
+      const p: MomentumParams = {
+        strategy: "MOMENTUM",
+        entryThresholdBps: Number(momentumThreshold.value),
+        maxTranches: Number(momentumMaxTranches.value),
+        shortEmaPeriod: Number(momentumShortEma.value),
+        longEmaPeriod: Number(momentumLongEma.value),
+        cooldownTicks: Number(momentumCooldown.value),
       };
       return p;
     }
@@ -662,6 +694,14 @@ export function OrderTicket() {
               >
                 ARRIVAL PRICE — Minimise arrival slippage
                 {!limits.allowed_strategies.includes("ARRIVAL_PRICE") ? " (not permitted)" : ""}
+              </option>
+              <option value="IS" disabled={!limits.allowed_strategies.includes("IS")}>
+                IS — Implementation Shortfall
+                {!limits.allowed_strategies.includes("IS") ? " (not permitted)" : ""}
+              </option>
+              <option value="MOMENTUM" disabled={!limits.allowed_strategies.includes("MOMENTUM")}>
+                MOMENTUM — EMA crossover entry
+                {!limits.allowed_strategies.includes("MOMENTUM") ? " (not permitted)" : ""}
               </option>
             </select>
           </div>
@@ -1208,6 +1248,42 @@ export function OrderTicket() {
               apMaxSlippageBps={apMaxSlippageBps.value}
               setApMaxSlippageBps={(v) => {
                 apMaxSlippageBps.value = v;
+              }}
+              isUrgency={isUrgency.value}
+              setIsUrgency={(v) => {
+                isUrgency.value = v;
+              }}
+              isMaxSlippageBps={isMaxSlippageBps.value}
+              setIsMaxSlippageBps={(v) => {
+                isMaxSlippageBps.value = v;
+              }}
+              isMinSlices={isMinSlices.value}
+              setIsMinSlices={(v) => {
+                isMinSlices.value = v;
+              }}
+              isMaxSlices={isMaxSlices.value}
+              setIsMaxSlices={(v) => {
+                isMaxSlices.value = v;
+              }}
+              momentumThreshold={momentumThreshold.value}
+              setMomentumThreshold={(v) => {
+                momentumThreshold.value = v;
+              }}
+              momentumMaxTranches={momentumMaxTranches.value}
+              setMomentumMaxTranches={(v) => {
+                momentumMaxTranches.value = v;
+              }}
+              momentumShortEma={momentumShortEma.value}
+              setMomentumShortEma={(v) => {
+                momentumShortEma.value = v;
+              }}
+              momentumLongEma={momentumLongEma.value}
+              setMomentumLongEma={(v) => {
+                momentumLongEma.value = v;
+              }}
+              momentumCooldown={momentumCooldown.value}
+              setMomentumCooldown={(v) => {
+                momentumCooldown.value = v;
               }}
             />
           </>

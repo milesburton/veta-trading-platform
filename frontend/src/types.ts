@@ -67,7 +67,16 @@ export const ORDER_STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
   held: "Blocked by an active kill switch — submit disabled",
 };
 
-export type Strategy = "LIMIT" | "TWAP" | "POV" | "VWAP" | "ICEBERG" | "SNIPER" | "ARRIVAL_PRICE";
+export type Strategy =
+  | "LIMIT"
+  | "TWAP"
+  | "POV"
+  | "VWAP"
+  | "ICEBERG"
+  | "SNIPER"
+  | "ARRIVAL_PRICE"
+  | "IS"
+  | "MOMENTUM";
 
 /** FIX Time In Force (tag 59). */
 export type TimeInForce = "DAY" | "GTC" | "IOC" | "FOK" | "GTD";
@@ -142,6 +151,23 @@ export interface ArrivalPriceParams {
   maxSlippageBps: number;
 }
 
+export interface IsParams {
+  strategy: "IS";
+  urgency: number;
+  maxSlippageBps: number;
+  minSlices: number;
+  maxSlices: number;
+}
+
+export interface MomentumParams {
+  strategy: "MOMENTUM";
+  entryThresholdBps: number;
+  maxTranches: number;
+  shortEmaPeriod: number;
+  longEmaPeriod: number;
+  cooldownTicks: number;
+}
+
 export type AlgoParams =
   | LimitParams
   | TwapParams
@@ -149,7 +175,9 @@ export type AlgoParams =
   | VwapParams
   | IcebergParams
   | SniperParams
-  | ArrivalPriceParams;
+  | ArrivalPriceParams
+  | IsParams
+  | MomentumParams;
 
 export interface BondSpec {
   isin: string;
