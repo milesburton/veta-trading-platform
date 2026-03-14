@@ -65,8 +65,19 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: Verify deployment
+      - name: Verify deployment — staleness check
         run: |
-          echo "✅ Deployment successful!"
-          echo "App URL: https://virtual-equities-trading.fly.dev"
-          echo "Monitor: flyctl status"
+          EXPECTED=$(git rev-parse --short HEAD)
+          echo "Expecting version: $EXPECTED"
+          # Retry for up to 60s while the instance is booting
+          for i in $(seq 1 12); do
+            DEPLOYED=$(curl -sf https://veta-trading.fly.dev/api/gateway/health | python3 -c "import sys,json; print(json.load(sys.stdin).get('version',''))" 2>/dev/null || echo "")
+            if [ "$DEPLOYED" = "$EXPECTED" ]; then
+              echo "✅ Live version matches: $DEPLOYED"
+              exit 0
+            fi
+            echo "  attempt $i: got '$DEPLOYED', retrying in 5s..."
+            sleep 5
+          done
+          echo "❌ Stale deployment — expected $EXPECTED but got $DEPLOYED"
+          exit 1

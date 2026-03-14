@@ -270,3 +270,20 @@ jobs:
             VITE_BUILD_DATE=${{ github.run_started_at }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify Fly.io deployment is not stale
+        if: github.ref == 'refs/heads/main'
+        run: |
+          EXPECTED=$(git rev-parse --short HEAD)
+          echo "Expecting version: $EXPECTED"
+          for i in $(seq 1 12); do
+            DEPLOYED=$(curl -sf https://veta-trading.fly.dev/api/gateway/health | python3 -c "import sys,json; print(json.load(sys.stdin).get('version',''))" 2>/dev/null || echo "")
+            if [ "$DEPLOYED" = "$EXPECTED" ]; then
+              echo "✅ Live version matches: $DEPLOYED"
+              exit 0
+            fi
+            echo "  attempt $i: got '$DEPLOYED', retrying in 5s..."
+            sleep 5
+          done
+          echo "❌ Stale deployment — expected $EXPECTED but got $DEPLOYED"
+          exit 1

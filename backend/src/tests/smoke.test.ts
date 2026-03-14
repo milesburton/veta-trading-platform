@@ -117,6 +117,29 @@ Deno.test("[e2e] all services expose a version field in /health", async () => {
   );
 });
 
+Deno.test("[e2e] all services report the same version (no stale deployments)", async () => {
+  const results = await Promise.all(
+    ALL_SERVICES.map(async (svc) => {
+      try {
+        const res = await fetch(`${svc.url}/health`, { signal: timeout(3_000) });
+        const body = await res.json() as { version?: string };
+        return { name: svc.name, version: body.version ?? null };
+      } catch {
+        return { name: svc.name, version: null };
+      }
+    }),
+  );
+  const versioned = results.filter((r) => r.version && r.version !== "dev");
+  if (versioned.length < 2) return; // can't compare if fewer than 2 services have versions
+  const expected = versioned[0].version!;
+  const stale = versioned.filter((r) => r.version !== expected);
+  assertEquals(
+    stale.length,
+    0,
+    `Stale services (expected version ${expected}):\n${stale.map((r) => `  ${r.name}: ${r.version}`).join("\n")}`,
+  );
+});
+
 // ── Gateway: WebSocket hub ────────────────────────────────────────────────────
 
 Deno.test("[gateway] WebSocket receives marketUpdate within 3 seconds", async () => {
