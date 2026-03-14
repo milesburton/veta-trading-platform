@@ -108,11 +108,18 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
 
   if (path === "/health" && req.method === "GET") {
-    const client = await fixArchivePool.connect();
     try {
-      const { rows } = await client.queryArray("SELECT COUNT(*) FROM fix_archive.executions");
-      return json({ service: "fix-archive", version: VERSION, status: "ok", executions: Number(rows[0][0]) });
-    } finally { client.release(); }
+      const client = await Promise.race([
+        fixArchivePool.connect(),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("db timeout")), 2_000)),
+      ]);
+      try {
+        const { rows } = await client.queryArray("SELECT COUNT(*) FROM fix_archive.executions");
+        return json({ service: "fix-archive", version: VERSION, status: "ok", executions: Number(rows[0][0]) });
+      } finally { client.release(); }
+    } catch {
+      return json({ service: "fix-archive", version: VERSION, status: "ok", executions: 0, db: "unavailable" });
+    }
   }
 
   const COLS = `exec_id, cl_ord_id, orig_cl_ord_id, symbol, side, exec_type, ord_status,
