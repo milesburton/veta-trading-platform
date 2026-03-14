@@ -29,6 +29,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ssh \
     sudo \
     supervisor \
+    postgresql \
+    postgresql-client \
     ca-certificates \
     fonts-liberation \
     libnss3 \
@@ -73,6 +75,12 @@ RUN chmod +x /usr/local/bin/redpanda /usr/local/bin/rpk && \
 # Do NOT set LD_LIBRARY_PATH globally — Redpanda ships its own libc.so.6 which
 # breaks any shell that loads it at startup. The /opt/redpanda/lib symlink
 # satisfies the binary's PT_INTERP without needing LD_LIBRARY_PATH at all.
+
+# Initialise PostgreSQL and create the veta database + user
+RUN service postgresql start && \
+    su postgres -c "psql -c \"CREATE USER veta WITH PASSWORD 'veta';\"" && \
+    su postgres -c "psql -c \"CREATE DATABASE veta OWNER veta;\"" && \
+    service postgresql stop
 
 # Create the 'deno' user with Fish as default shell, and pre-create bind mount targets
 RUN useradd -m -s /usr/bin/fish deno && \

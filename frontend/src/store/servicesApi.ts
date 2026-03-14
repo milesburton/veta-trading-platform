@@ -177,7 +177,7 @@ const SERVICES: {
     url: `${_origin}/api/fix-archive/health`,
     link: `${_origin}/api/fix-archive/health`,
     category: "infra",
-    description: "SQLite persistence for FIX execution reports",
+    description: "Postgres persistence for FIX execution reports",
     port: 5012,
   },
   {

@@ -145,6 +145,14 @@ export default defineConfig(async () => {
                 target: "http://localhost:5007",
                 rewrite: (path) => path.replace(/^\/api\/kafka-relay/, ""),
               },
+              "/api/analytics": {
+                target: "http://localhost:5014",
+                rewrite: (path) => path.replace(/^\/api\/analytics/, ""),
+              },
+              "/api/market-data": {
+                target: "http://localhost:5015",
+                rewrite: (path) => path.replace(/^\/api\/market-data/, ""),
+              },
             },
           },
         }),

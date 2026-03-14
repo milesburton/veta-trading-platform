@@ -38,10 +38,10 @@ echo "  [6/7] Frontend unit tests..."
 
 echo "  [7/7] Smoke tests (skipped if services offline)..."
 cd "$REPO_ROOT"
-if curl -sf http://localhost:5000/health >/dev/null 2>&1; then
+if curl -sf http://localhost:5000/health >/dev/null 2>&1 && curl -sf http://localhost:5018/health >/dev/null 2>&1; then
   deno task test:smoke
 else
-  echo "       Services not running — skipping smoke tests."
+  echo "       Services not fully running — skipping smoke tests."
 fi
 
 echo "Pre-commit checks passed."
