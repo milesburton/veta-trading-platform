@@ -1,6 +1,6 @@
 # =============================================================================
 # Dockerfile.base
-# Published to ghcr.io/milesburton/virtual-equities-trading-application/devcontainer-base
+# Published to ghcr.io/milesburton/veta-trading-platform-base
 # Contains all heavy tooling that rarely changes (OS packages, runtimes, Playwright browsers).
 # Rebuild via GitHub Actions (build-base-image.yml) when this file changes.
 # The app .devcontainer/Dockerfile inherits FROM this image.
