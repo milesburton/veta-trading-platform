@@ -134,7 +134,6 @@ const SERVICES: {
     category: "data",
     description: "Trade lifecycle store — orders, fills & OHLCV grid",
     port: 5009,
-    optional: true,
   },
   {
     name: "Analytics",
@@ -143,7 +142,6 @@ const SERVICES: {
     category: "data",
     description: "Black-Scholes pricing, Monte Carlo scenarios & recommendations",
     port: 5014,
-    optional: true,
   },
   {
     name: "Market Data",
@@ -152,7 +150,6 @@ const SERVICES: {
     category: "data",
     description: "Alpha Vantage polling & per-symbol source overrides",
     port: 5015,
-    optional: true,
   },
   // ── Infra ─────────────────────────────────────────────────────────────────
   {
@@ -162,7 +159,6 @@ const SERVICES: {
     category: "infra",
     description: "Session management, RBAC token validation & trading limits",
     port: 5008,
-    optional: true,
   },
   {
     name: "FIX Gateway",
@@ -187,7 +183,6 @@ const SERVICES: {
     category: "infra",
     description: "Reverse proxy & load balancer dashboard",
     port: 8888,
-    optional: true,
     alertOnDeployments: ["fly"],
   },
   // ── Observability ─────────────────────────────────────────────────────────
@@ -206,7 +201,6 @@ const SERVICES: {
     category: "observability",
     description: "LGTM dashboards — metrics, logs & traces",
     port: 3000,
-    optional: true,
   },
 ];
 
