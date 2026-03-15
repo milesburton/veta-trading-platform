@@ -16,7 +16,6 @@ WORKDIR /app
 
 # Copy dependency manifests first for layer caching
 COPY deno.json deno.lock* ./
-COPY backend/deno.json backend/deno.json
 # Copy package.json for npm: imports (kafkajs etc.)
 COPY package.json package-lock.json* ./
 
