@@ -36,7 +36,7 @@ jobs:
 
       - name: Build Electron app
         working-directory: frontend
-        run: npm run electron:dist
+        run: npm run electron:dist -- --publish never
         env:
           ELECTRON_BUILD: "1"
           VITE_COMMIT_SHA: ${{ github.ref_name }}
