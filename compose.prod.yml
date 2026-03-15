@@ -1,0 +1,525 @@
+# Production override — homelab & Fly.io
+# Usage: docker compose -f compose.yml -f compose.prod.yml up -d
+#
+# Required environment variables (set in .env or shell):
+#   COMMIT_SHA      — git SHA for version tracking
+#   ACME_EMAIL      — email for Let's Encrypt certificates
+#   DOMAIN          — primary domain (e.g. veta.home or veta-trading.fly.dev)
+
+x-prod-image: &prod-defaults
+  restart: unless-stopped
+
+x-prod-labels: &tls-labels
+  - "traefik.http.routers.${SERVICE_NAME}.tls=true"
+  - "traefik.http.routers.${SERVICE_NAME}.tls.certresolver=letsencrypt"
+
+services:
+
+  # Infrastructure — persistent, no Watchtower
+  redpanda:
+    <<: *prod-defaults
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=2
+      - --memory=512M
+      - --default-log-level=warn
+      - --kafka-addr=0.0.0.0:9092
+      - --advertise-kafka-addr=redpanda:9092
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  postgres:
+    <<: *prod-defaults
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  # Application services — use GHCR images + Watchtower
+  frontend:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/frontend:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=web,websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+      - "traefik.http.routers.frontend.priority=1"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  market-sim:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/market-sim:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.market-sim.rule=PathPrefix(`/api/market-sim`) || PathPrefix(`/ws/market-sim`)"
+      - "traefik.http.routers.market-sim.entrypoints=web,websecure"
+      - "traefik.http.routers.market-sim.tls=true"
+      - "traefik.http.routers.market-sim.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.market-sim.middlewares=market-sim-strip"
+      - "traefik.http.services.market-sim.loadbalancer.server.port=5000"
+      - "traefik.http.routers.market-sim.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  ems:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/ems:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ems.rule=PathPrefix(`/api/ems`)"
+      - "traefik.http.routers.ems.entrypoints=web,websecure"
+      - "traefik.http.routers.ems.tls=true"
+      - "traefik.http.routers.ems.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ems.middlewares=ems-strip"
+      - "traefik.http.services.ems.loadbalancer.server.port=5001"
+      - "traefik.http.routers.ems.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  oms:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/oms:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.oms.rule=PathPrefix(`/api/oms`)"
+      - "traefik.http.routers.oms.entrypoints=web,websecure"
+      - "traefik.http.routers.oms.tls=true"
+      - "traefik.http.routers.oms.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.oms.middlewares=oms-strip"
+      - "traefik.http.services.oms.loadbalancer.server.port=5002"
+      - "traefik.http.routers.oms.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  limit-algo:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/limit-algo:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.limit-algo.rule=PathPrefix(`/api/limit-algo`)"
+      - "traefik.http.routers.limit-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.limit-algo.tls=true"
+      - "traefik.http.routers.limit-algo.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.limit-algo.middlewares=limit-algo-strip"
+      - "traefik.http.services.limit-algo.loadbalancer.server.port=5003"
+      - "traefik.http.routers.limit-algo.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  twap-algo:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/twap-algo:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.twap-algo.rule=PathPrefix(`/api/twap-algo`)"
+      - "traefik.http.routers.twap-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.twap-algo.tls=true"
+      - "traefik.http.routers.twap-algo.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.twap-algo.middlewares=twap-algo-strip"
+      - "traefik.http.services.twap-algo.loadbalancer.server.port=5004"
+      - "traefik.http.routers.twap-algo.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  pov-algo:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/pov-algo:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pov-algo.rule=PathPrefix(`/api/pov-algo`)"
+      - "traefik.http.routers.pov-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.pov-algo.tls=true"
+      - "traefik.http.routers.pov-algo.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.pov-algo.middlewares=pov-algo-strip"
+      - "traefik.http.services.pov-algo.loadbalancer.server.port=5005"
+      - "traefik.http.routers.pov-algo.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  vwap-algo:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/vwap-algo:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vwap-algo.rule=PathPrefix(`/api/vwap-algo`)"
+      - "traefik.http.routers.vwap-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.vwap-algo.tls=true"
+      - "traefik.http.routers.vwap-algo.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.vwap-algo.middlewares=vwap-algo-strip"
+      - "traefik.http.services.vwap-algo.loadbalancer.server.port=5006"
+      - "traefik.http.routers.vwap-algo.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  iceberg-algo:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/iceberg-algo:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.iceberg-algo.rule=PathPrefix(`/api/iceberg-algo`)"
+      - "traefik.http.routers.iceberg-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.iceberg-algo.tls=true"
+      - "traefik.http.routers.iceberg-algo.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.iceberg-algo.middlewares=iceberg-algo-strip"
+      - "traefik.http.services.iceberg-algo.loadbalancer.server.port=5021"
+      - "traefik.http.routers.iceberg-algo.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  sniper-algo:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/sniper-algo:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sniper-algo.rule=PathPrefix(`/api/sniper-algo`)"
+      - "traefik.http.routers.sniper-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.sniper-algo.tls=true"
+      - "traefik.http.routers.sniper-algo.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.sniper-algo.middlewares=sniper-algo-strip"
+      - "traefik.http.services.sniper-algo.loadbalancer.server.port=5022"
+      - "traefik.http.routers.sniper-algo.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  arrival-price-algo:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/arrival-price-algo:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.arrival-price-algo.rule=PathPrefix(`/api/arrival-price-algo`)"
+      - "traefik.http.routers.arrival-price-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.arrival-price-algo.tls=true"
+      - "traefik.http.routers.arrival-price-algo.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.arrival-price-algo.middlewares=arrival-price-algo-strip"
+      - "traefik.http.services.arrival-price-algo.loadbalancer.server.port=5023"
+      - "traefik.http.routers.arrival-price-algo.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  momentum-algo:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/momentum-algo:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.momentum-algo.rule=PathPrefix(`/api/momentum-algo`)"
+      - "traefik.http.routers.momentum-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.momentum-algo.tls=true"
+      - "traefik.http.routers.momentum-algo.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.momentum-algo.middlewares=momentum-algo-strip"
+      - "traefik.http.services.momentum-algo.loadbalancer.server.port=5025"
+      - "traefik.http.routers.momentum-algo.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  is-algo:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/is-algo:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.is-algo.rule=PathPrefix(`/api/is-algo`)"
+      - "traefik.http.routers.is-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.is-algo.tls=true"
+      - "traefik.http.routers.is-algo.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.is-algo.middlewares=is-algo-strip"
+      - "traefik.http.services.is-algo.loadbalancer.server.port=5026"
+      - "traefik.http.routers.is-algo.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  observability:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/observability:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.observability.rule=PathPrefix(`/api/kafka-relay`) || PathPrefix(`/api/observability`)"
+      - "traefik.http.routers.observability.entrypoints=web,websecure"
+      - "traefik.http.routers.observability.tls=true"
+      - "traefik.http.routers.observability.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.observability.middlewares=observability-strip"
+      - "traefik.http.services.observability.loadbalancer.server.port=5007"
+      - "traefik.http.routers.observability.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  user-service:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/user-service:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-service.rule=PathPrefix(`/api/user-service`)"
+      - "traefik.http.routers.user-service.entrypoints=web,websecure"
+      - "traefik.http.routers.user-service.tls=true"
+      - "traefik.http.routers.user-service.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.user-service.middlewares=user-service-strip"
+      - "traefik.http.services.user-service.loadbalancer.server.port=5008"
+      - "traefik.http.routers.user-service.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  journal:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/journal:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.journal.rule=PathPrefix(`/api/journal`)"
+      - "traefik.http.routers.journal.entrypoints=web,websecure"
+      - "traefik.http.routers.journal.tls=true"
+      - "traefik.http.routers.journal.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.journal.middlewares=journal-strip"
+      - "traefik.http.services.journal.loadbalancer.server.port=5009"
+      - "traefik.http.routers.journal.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  fix-exchange:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/fix-exchange:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fix-exchange.rule=PathPrefix(`/api/fix-exchange`)"
+      - "traefik.http.routers.fix-exchange.entrypoints=web,websecure"
+      - "traefik.http.routers.fix-exchange.tls=true"
+      - "traefik.http.routers.fix-exchange.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.fix-exchange.middlewares=fix-exchange-strip"
+      - "traefik.http.services.fix-exchange.loadbalancer.server.port=9880"
+      - "traefik.http.routers.fix-exchange.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  fix-gateway:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/fix-gateway:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fix-gateway.rule=PathPrefix(`/api/fix-gateway`) || PathPrefix(`/ws/fix`)"
+      - "traefik.http.routers.fix-gateway.entrypoints=web,websecure"
+      - "traefik.http.routers.fix-gateway.tls=true"
+      - "traefik.http.routers.fix-gateway.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.fix-gateway.middlewares=fix-gateway-strip"
+      - "traefik.http.services.fix-gateway.loadbalancer.server.port=9881"
+      - "traefik.http.routers.fix-gateway.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  fix-archive:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/fix-archive:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fix-archive.rule=PathPrefix(`/api/fix-archive`)"
+      - "traefik.http.routers.fix-archive.entrypoints=web,websecure"
+      - "traefik.http.routers.fix-archive.tls=true"
+      - "traefik.http.routers.fix-archive.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.fix-archive.middlewares=fix-archive-strip"
+      - "traefik.http.services.fix-archive.loadbalancer.server.port=5012"
+      - "traefik.http.routers.fix-archive.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  analytics:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/analytics:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.analytics.rule=PathPrefix(`/api/analytics`)"
+      - "traefik.http.routers.analytics.entrypoints=web,websecure"
+      - "traefik.http.routers.analytics.tls=true"
+      - "traefik.http.routers.analytics.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.analytics.middlewares=analytics-strip"
+      - "traefik.http.services.analytics.loadbalancer.server.port=5014"
+      - "traefik.http.routers.analytics.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  market-data:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/market-data:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.market-data.rule=PathPrefix(`/api/market-data`)"
+      - "traefik.http.routers.market-data.entrypoints=web,websecure"
+      - "traefik.http.routers.market-data.tls=true"
+      - "traefik.http.routers.market-data.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.market-data.middlewares=market-data-strip"
+      - "traefik.http.services.market-data.loadbalancer.server.port=5015"
+      - "traefik.http.routers.market-data.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  market-data-adapters:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/market-data-adapters:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.market-data-adapters.rule=PathPrefix(`/api/market-data-adapters`)"
+      - "traefik.http.routers.market-data-adapters.entrypoints=web,websecure"
+      - "traefik.http.routers.market-data-adapters.tls=true"
+      - "traefik.http.routers.market-data-adapters.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.market-data-adapters.middlewares=market-data-adapters-strip"
+      - "traefik.http.services.market-data-adapters.loadbalancer.server.port=5016"
+      - "traefik.http.routers.market-data-adapters.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  feature-engine:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/feature-engine:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feature-engine.rule=PathPrefix(`/api/feature-engine`)"
+      - "traefik.http.routers.feature-engine.entrypoints=web,websecure"
+      - "traefik.http.routers.feature-engine.tls=true"
+      - "traefik.http.routers.feature-engine.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.feature-engine.middlewares=feature-engine-strip"
+      - "traefik.http.services.feature-engine.loadbalancer.server.port=5017"
+      - "traefik.http.routers.feature-engine.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  signal-engine:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/signal-engine:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.signal-engine.rule=PathPrefix(`/api/signal-engine`)"
+      - "traefik.http.routers.signal-engine.entrypoints=web,websecure"
+      - "traefik.http.routers.signal-engine.tls=true"
+      - "traefik.http.routers.signal-engine.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.signal-engine.middlewares=signal-engine-strip"
+      - "traefik.http.services.signal-engine.loadbalancer.server.port=5018"
+      - "traefik.http.routers.signal-engine.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  recommendation-engine:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/recommendation-engine:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.recommendation-engine.rule=PathPrefix(`/api/recommendation-engine`)"
+      - "traefik.http.routers.recommendation-engine.entrypoints=web,websecure"
+      - "traefik.http.routers.recommendation-engine.tls=true"
+      - "traefik.http.routers.recommendation-engine.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.recommendation-engine.middlewares=recommendation-engine-strip"
+      - "traefik.http.services.recommendation-engine.loadbalancer.server.port=5019"
+      - "traefik.http.routers.recommendation-engine.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  scenario-engine:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/scenario-engine:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.scenario-engine.rule=PathPrefix(`/api/scenario-engine`)"
+      - "traefik.http.routers.scenario-engine.entrypoints=web,websecure"
+      - "traefik.http.routers.scenario-engine.tls=true"
+      - "traefik.http.routers.scenario-engine.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.scenario-engine.middlewares=scenario-engine-strip"
+      - "traefik.http.services.scenario-engine.loadbalancer.server.port=5020"
+      - "traefik.http.routers.scenario-engine.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  llm-advisory:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/llm-advisory:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.llm-advisory.rule=PathPrefix(`/api/llm-advisory`)"
+      - "traefik.http.routers.llm-advisory.entrypoints=web,websecure"
+      - "traefik.http.routers.llm-advisory.tls=true"
+      - "traefik.http.routers.llm-advisory.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.llm-advisory.middlewares=llm-advisory-strip"
+      - "traefik.http.services.llm-advisory.loadbalancer.server.port=5024"
+      - "traefik.http.routers.llm-advisory.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  llm-worker:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/llm-worker:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  news-aggregator:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/news-aggregator:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  gateway:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/gateway:latest
+    build: !reset null
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=PathPrefix(`/api/gateway`)"
+      - "traefik.http.routers.gateway.entrypoints=web,websecure"
+      - "traefik.http.routers.gateway.tls=true"
+      - "traefik.http.routers.gateway.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.gateway.middlewares=gateway-strip"
+      - "traefik.http.services.gateway.loadbalancer.server.port=5011"
+      - "traefik.http.routers.gateway.priority=20"
+      - "traefik.http.routers.gateway-ws.rule=PathPrefix(`/ws/gateway`)"
+      - "traefik.http.routers.gateway-ws.entrypoints=web,websecure"
+      - "traefik.http.routers.gateway-ws.tls=true"
+      - "traefik.http.routers.gateway-ws.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.gateway-ws.middlewares=gateway-ws-strip"
+      - "traefik.http.routers.gateway-ws.service=gateway"
+      - "traefik.http.routers.gateway-ws.priority=20"
+      - "traefik.http.routers.health.rule=Path(`/health`)"
+      - "traefik.http.routers.health.entrypoints=web,websecure"
+      - "traefik.http.routers.health.tls=true"
+      - "traefik.http.routers.health.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.health.service=gateway"
+      - "traefik.http.routers.health.priority=25"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  db-migrate:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/base:latest
+    build: !reset null
+    restart: "no"
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  redpanda-console:
+    <<: *prod-defaults
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.redpanda-console.rule=PathPrefix(`/admin/redpanda`)"
+      - "traefik.http.routers.redpanda-console.entrypoints=web,websecure"
+      - "traefik.http.routers.redpanda-console.tls=true"
+      - "traefik.http.routers.redpanda-console.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.redpanda-console.middlewares=redpanda-strip"
+      - "traefik.http.services.redpanda-console.loadbalancer.server.port=8081"
+      - "traefik.http.routers.redpanda-console.priority=15"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  # Watchtower — auto-updates services labelled with watchtower.enable=true
+  watchtower:
+    image: containrrr/watchtower:latest
+    restart: unless-stopped
+    networks:
+      - trading-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      WATCHTOWER_LABEL_ENABLE: "true"
+      WATCHTOWER_POLL_INTERVAL: "300"
+      WATCHTOWER_CLEANUP: "true"
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"

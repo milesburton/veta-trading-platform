@@ -1,0 +1,1114 @@
+networks:
+  trading-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  market-data-state:
+  feature-engine-data:
+  signal-engine-data:
+  llm-advisory-data:
+  letsencrypt:
+
+x-deno-service: &deno-service
+  build:
+    context: .
+    dockerfile: docker/base/Dockerfile
+  networks:
+    - trading-net
+
+x-algo-healthcheck: &algo-healthcheck
+  healthcheck:
+    test: ["CMD-SHELL", "curl -sf http://localhost:$${PORT}/health || exit 1"]
+    interval: 15s
+    timeout: 5s
+    retries: 10
+    start_period: 20s
+
+services:
+
+  # ── Message Bus ───────────────────────────────────────────────────────────
+  redpanda:
+    image: redpandadata/redpanda:v24.3.6
+    container_name: redpanda
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=200M
+      - --default-log-level=warn
+      - --kafka-addr=0.0.0.0:9092
+      - --advertise-kafka-addr=redpanda:9092
+    networks:
+      - trading-net
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    labels:
+      - "traefik.enable=false"
+
+  redpanda-console:
+    image: redpandadata/console:v2.7.2
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      SERVER_LISTENPORT: "8081"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.redpanda-console.rule=PathPrefix(`/admin/redpanda`)"
+      - "traefik.http.routers.redpanda-console.entrypoints=web,websecure"
+      - "traefik.http.routers.redpanda-console.middlewares=redpanda-strip"
+      - "traefik.http.middlewares.redpanda-strip.stripprefix.prefixes=/admin/redpanda"
+      - "traefik.http.services.redpanda-console.loadbalancer.server.port=8081"
+      - "traefik.http.routers.redpanda-console.priority=15"
+
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    networks:
+      - trading-net
+    environment:
+      POSTGRES_USER: veta
+      POSTGRES_PASSWORD: veta
+      POSTGRES_DB: veta
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "veta"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+
+  db-migrate:
+    build:
+      context: .
+      dockerfile: docker/db-migrate/Dockerfile
+    networks:
+      - trading-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+    restart: "no"
+    labels:
+      - "traefik.enable=false"
+
+  # ── Traefik ────────────────────────────────────────────────────────────────
+  traefik:
+    image: traefik:v3.3
+    networks:
+      - trading-net
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8888:8888"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/traefik.yml:ro
+      - letsencrypt:/letsencrypt
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-dashboard.rule=PathPrefix(`/admin/traefik`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=web,websecure"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-strip"
+      - "traefik.http.middlewares.traefik-strip.stripprefix.prefixes=/admin/traefik"
+
+  # ── Ollama (local LLM) ─────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    networks:
+      - trading-net
+    volumes:
+      - llm-advisory-data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    labels:
+      - "traefik.enable=false"
+
+  ollama-model-pull:
+    image: ollama/ollama:latest
+    networks:
+      - trading-net
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - llm-advisory-data:/root/.ollama
+    entrypoint: ["ollama", "pull", "qwen2.5:3b"]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    restart: "no"
+    labels:
+      - "traefik.enable=false"
+
+  # ── Frontend ───────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      args:
+        VITE_DEPLOYMENT: ${VITE_DEPLOYMENT:-homelab}
+        VITE_COMMIT_SHA: ${COMMIT_SHA:-dev}
+        VITE_BUILD_DATE: ${BUILD_DATE:-dev}
+    networks:
+      - trading-net
+    environment:
+      FRONTEND_PORT: "3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=web,websecure"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+      - "traefik.http.routers.frontend.priority=1"
+
+  # ── Market Sim ─────────────────────────────────────────────────────────────
+  market-sim:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/market-sim/market-sim.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      MARKET_SIM_PORT: "5000"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.market-sim.rule=PathPrefix(`/api/market-sim`) || PathPrefix(`/ws/market-sim`)"
+      - "traefik.http.routers.market-sim.entrypoints=web,websecure"
+      - "traefik.http.routers.market-sim.middlewares=market-sim-strip"
+      - "traefik.http.middlewares.market-sim-strip.stripprefix.prefixes=/api/market-sim,/ws/market-sim"
+      - "traefik.http.services.market-sim.loadbalancer.server.port=5000"
+      - "traefik.http.routers.market-sim.priority=10"
+
+  # ── EMS ────────────────────────────────────────────────────────────────────
+  ems:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/ems/ems-server.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+    environment:
+      EMS_PORT: "5001"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      EMS_PARTICIPATION_CAP: "0.20"
+      EMS_IMPACT_PER_1000_BPS: "1.0"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ems.rule=PathPrefix(`/api/ems`)"
+      - "traefik.http.routers.ems.entrypoints=web,websecure"
+      - "traefik.http.routers.ems.middlewares=ems-strip"
+      - "traefik.http.middlewares.ems-strip.stripprefix.prefixes=/api/ems"
+      - "traefik.http.services.ems.loadbalancer.server.port=5001"
+      - "traefik.http.routers.ems.priority=10"
+
+  # ── OMS ────────────────────────────────────────────────────────────────────
+  oms:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/oms/oms-server.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    environment:
+      OMS_PORT: "5002"
+      ALGO_HOST: limit-algo
+      ALGO_TRADER_PORT: "5003"
+      TWAP_ALGO_PORT: "5004"
+      POV_ALGO_PORT: "5005"
+      VWAP_ALGO_PORT: "5006"
+      ICEBERG_ALGO_PORT: "5021"
+      SNIPER_ALGO_PORT: "5022"
+      ARRIVAL_PRICE_ALGO_PORT: "5023"
+      MOMENTUM_ALGO_PORT: "5025"
+      IS_ALGO_PORT: "5026"
+      USER_SERVICE_HOST: user-service
+      USER_SERVICE_PORT: "5008"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5002/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.oms.rule=PathPrefix(`/api/oms`)"
+      - "traefik.http.routers.oms.entrypoints=web,websecure"
+      - "traefik.http.routers.oms.middlewares=oms-strip"
+      - "traefik.http.middlewares.oms-strip.stripprefix.prefixes=/api/oms"
+      - "traefik.http.services.oms.loadbalancer.server.port=5002"
+      - "traefik.http.routers.oms.priority=10"
+
+  # ── Algo strategies ────────────────────────────────────────────────────────
+  limit-algo:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/algo/limit-strategy.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ems:
+        condition: service_healthy
+    environment:
+      ALGO_TRADER_PORT: "5003"
+      EMS_HOST: ems
+      EMS_PORT: "5001"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: "5007"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5003/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.limit-algo.rule=PathPrefix(`/api/limit-algo`)"
+      - "traefik.http.routers.limit-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.limit-algo.middlewares=limit-algo-strip"
+      - "traefik.http.middlewares.limit-algo-strip.stripprefix.prefixes=/api/limit-algo"
+      - "traefik.http.services.limit-algo.loadbalancer.server.port=5003"
+      - "traefik.http.routers.limit-algo.priority=10"
+
+  twap-algo:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/algo/twap-strategy.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ems:
+        condition: service_healthy
+    environment:
+      TWAP_ALGO_PORT: "5004"
+      EMS_HOST: ems
+      EMS_PORT: "5001"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      TWAP_INTERVAL_MS: "5000"
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: "5007"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5004/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.twap-algo.rule=PathPrefix(`/api/twap-algo`)"
+      - "traefik.http.routers.twap-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.twap-algo.middlewares=twap-algo-strip"
+      - "traefik.http.middlewares.twap-algo-strip.stripprefix.prefixes=/api/twap-algo"
+      - "traefik.http.services.twap-algo.loadbalancer.server.port=5004"
+      - "traefik.http.routers.twap-algo.priority=10"
+
+  pov-algo:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/algo/pov-strategy.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ems:
+        condition: service_healthy
+    environment:
+      POV_ALGO_PORT: "5005"
+      EMS_HOST: ems
+      EMS_PORT: "5001"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      POV_PERCENTAGE: "10"
+      POV_MIN_SLICE: "10"
+      POV_MAX_SLICE: "5000"
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: "5007"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5005/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pov-algo.rule=PathPrefix(`/api/pov-algo`)"
+      - "traefik.http.routers.pov-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.pov-algo.middlewares=pov-algo-strip"
+      - "traefik.http.middlewares.pov-algo-strip.stripprefix.prefixes=/api/pov-algo"
+      - "traefik.http.services.pov-algo.loadbalancer.server.port=5005"
+      - "traefik.http.routers.pov-algo.priority=10"
+
+  vwap-algo:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/algo/vwap-strategy.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ems:
+        condition: service_healthy
+    environment:
+      VWAP_ALGO_PORT: "5006"
+      EMS_HOST: ems
+      EMS_PORT: "5001"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      VWAP_WINDOW_TICKS: "20"
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: "5007"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5006/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vwap-algo.rule=PathPrefix(`/api/vwap-algo`)"
+      - "traefik.http.routers.vwap-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.vwap-algo.middlewares=vwap-algo-strip"
+      - "traefik.http.middlewares.vwap-algo-strip.stripprefix.prefixes=/api/vwap-algo"
+      - "traefik.http.services.vwap-algo.loadbalancer.server.port=5006"
+      - "traefik.http.routers.vwap-algo.priority=10"
+
+  iceberg-algo:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/algo/iceberg-strategy.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ems:
+        condition: service_healthy
+    environment:
+      ICEBERG_ALGO_PORT: "5021"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      EMS_HOST: ems
+      EMS_PORT: "5001"
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: "5007"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5021/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.iceberg-algo.rule=PathPrefix(`/api/iceberg-algo`)"
+      - "traefik.http.routers.iceberg-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.iceberg-algo.middlewares=iceberg-algo-strip"
+      - "traefik.http.middlewares.iceberg-algo-strip.stripprefix.prefixes=/api/iceberg-algo"
+      - "traefik.http.services.iceberg-algo.loadbalancer.server.port=5021"
+      - "traefik.http.routers.iceberg-algo.priority=10"
+
+  sniper-algo:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/algo/sniper-strategy.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ems:
+        condition: service_healthy
+    environment:
+      SNIPER_ALGO_PORT: "5022"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      EMS_HOST: ems
+      EMS_PORT: "5001"
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: "5007"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5022/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sniper-algo.rule=PathPrefix(`/api/sniper-algo`)"
+      - "traefik.http.routers.sniper-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.sniper-algo.middlewares=sniper-algo-strip"
+      - "traefik.http.middlewares.sniper-algo-strip.stripprefix.prefixes=/api/sniper-algo"
+      - "traefik.http.services.sniper-algo.loadbalancer.server.port=5022"
+      - "traefik.http.routers.sniper-algo.priority=10"
+
+  arrival-price-algo:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/algo/arrival-price-strategy.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ems:
+        condition: service_healthy
+    environment:
+      ARRIVAL_PRICE_ALGO_PORT: "5023"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      EMS_HOST: ems
+      EMS_PORT: "5001"
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: "5007"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5023/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.arrival-price-algo.rule=PathPrefix(`/api/arrival-price-algo`)"
+      - "traefik.http.routers.arrival-price-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.arrival-price-algo.middlewares=arrival-price-algo-strip"
+      - "traefik.http.middlewares.arrival-price-algo-strip.stripprefix.prefixes=/api/arrival-price-algo"
+      - "traefik.http.services.arrival-price-algo.loadbalancer.server.port=5023"
+      - "traefik.http.routers.arrival-price-algo.priority=10"
+
+  momentum-algo:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/algo/momentum-strategy.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ems:
+        condition: service_healthy
+    environment:
+      MOMENTUM_ALGO_PORT: "5025"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      EMS_HOST: ems
+      EMS_PORT: "5001"
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: "5007"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5025/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.momentum-algo.rule=PathPrefix(`/api/momentum-algo`)"
+      - "traefik.http.routers.momentum-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.momentum-algo.middlewares=momentum-algo-strip"
+      - "traefik.http.middlewares.momentum-algo-strip.stripprefix.prefixes=/api/momentum-algo"
+      - "traefik.http.services.momentum-algo.loadbalancer.server.port=5025"
+      - "traefik.http.routers.momentum-algo.priority=10"
+
+  is-algo:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/algo/is-strategy.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ems:
+        condition: service_healthy
+    environment:
+      IS_ALGO_PORT: "5026"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      EMS_HOST: ems
+      EMS_PORT: "5001"
+      OBSERVABILITY_HOST: observability
+      OBSERVABILITY_PORT: "5007"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5026/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.is-algo.rule=PathPrefix(`/api/is-algo`)"
+      - "traefik.http.routers.is-algo.entrypoints=web,websecure"
+      - "traefik.http.routers.is-algo.middlewares=is-algo-strip"
+      - "traefik.http.middlewares.is-algo-strip.stripprefix.prefixes=/api/is-algo"
+      - "traefik.http.services.is-algo.loadbalancer.server.port=5026"
+      - "traefik.http.routers.is-algo.priority=10"
+
+  # ── Observability / Kafka Relay ────────────────────────────────────────────
+  observability:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/observability/kafka-relay.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      OBSERVABILITY_PORT: "5007"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5007/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.observability.rule=PathPrefix(`/api/kafka-relay`) || PathPrefix(`/api/observability`)"
+      - "traefik.http.routers.observability.entrypoints=web,websecure"
+      - "traefik.http.routers.observability.middlewares=observability-strip"
+      - "traefik.http.middlewares.observability-strip.stripprefix.prefixes=/api/kafka-relay,/api/observability"
+      - "traefik.http.services.observability.loadbalancer.server.port=5007"
+      - "traefik.http.routers.observability.priority=10"
+
+  # ── User Service ───────────────────────────────────────────────────────────
+  user-service:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/user-service/user-service.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    environment:
+      USER_SERVICE_PORT: "5008"
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5008/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-service.rule=PathPrefix(`/api/user-service`)"
+      - "traefik.http.routers.user-service.entrypoints=web,websecure"
+      - "traefik.http.routers.user-service.middlewares=user-service-strip"
+      - "traefik.http.middlewares.user-service-strip.stripprefix.prefixes=/api/user-service"
+      - "traefik.http.services.user-service.loadbalancer.server.port=5008"
+      - "traefik.http.routers.user-service.priority=10"
+
+  # ── Journal ────────────────────────────────────────────────────────────────
+  journal:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/journal/journal-server.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    environment:
+      JOURNAL_PORT: "5009"
+      JOURNAL_RETENTION_DAYS: "90"
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5009/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.journal.rule=PathPrefix(`/api/journal`)"
+      - "traefik.http.routers.journal.entrypoints=web,websecure"
+      - "traefik.http.routers.journal.middlewares=journal-strip"
+      - "traefik.http.middlewares.journal-strip.stripprefix.prefixes=/api/journal"
+      - "traefik.http.services.journal.loadbalancer.server.port=5009"
+      - "traefik.http.routers.journal.priority=10"
+
+  # ── FIX Services ───────────────────────────────────────────────────────────
+  fix-exchange:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/fix/fix-exchange.ts"]
+    depends_on:
+      market-sim:
+        condition: service_healthy
+    environment:
+      FIX_EXCHANGE_PORT: "9880"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      EMS_PARTICIPATION_CAP: "0.20"
+      EMS_IMPACT_PER_1000_BPS: "1.0"
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9880/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fix-exchange.rule=PathPrefix(`/api/fix-exchange`)"
+      - "traefik.http.routers.fix-exchange.entrypoints=web,websecure"
+      - "traefik.http.routers.fix-exchange.middlewares=fix-exchange-strip"
+      - "traefik.http.middlewares.fix-exchange-strip.stripprefix.prefixes=/api/fix-exchange"
+      - "traefik.http.services.fix-exchange.loadbalancer.server.port=9880"
+      - "traefik.http.routers.fix-exchange.priority=10"
+
+  fix-gateway:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/fix/fix-gateway.ts"]
+    depends_on:
+      fix-exchange:
+        condition: service_healthy
+    environment:
+      FIX_GATEWAY_PORT: "9881"
+      FIX_EXCHANGE_HOST: fix-exchange
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9881/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fix-gateway.rule=PathPrefix(`/api/fix-gateway`) || PathPrefix(`/ws/fix`)"
+      - "traefik.http.routers.fix-gateway.entrypoints=web,websecure"
+      - "traefik.http.routers.fix-gateway.middlewares=fix-gateway-strip"
+      - "traefik.http.middlewares.fix-gateway-strip.stripprefix.prefixes=/api/fix-gateway,/ws/fix"
+      - "traefik.http.services.fix-gateway.loadbalancer.server.port=9881"
+      - "traefik.http.routers.fix-gateway.priority=10"
+
+  fix-archive:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/fix/fix-archive.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    environment:
+      FIX_ARCHIVE_PORT: "5012"
+      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5012/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fix-archive.rule=PathPrefix(`/api/fix-archive`)"
+      - "traefik.http.routers.fix-archive.entrypoints=web,websecure"
+      - "traefik.http.routers.fix-archive.middlewares=fix-archive-strip"
+      - "traefik.http.middlewares.fix-archive-strip.stripprefix.prefixes=/api/fix-archive"
+      - "traefik.http.services.fix-archive.loadbalancer.server.port=5012"
+      - "traefik.http.routers.fix-archive.priority=10"
+
+  # ── Analytics ──────────────────────────────────────────────────────────────
+  analytics:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/analytics/analytics-server.ts"]
+    depends_on:
+      journal:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+    environment:
+      ANALYTICS_PORT: "5014"
+      JOURNAL_HOST: journal
+      JOURNAL_PORT: "5009"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5014/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.analytics.rule=PathPrefix(`/api/analytics`)"
+      - "traefik.http.routers.analytics.entrypoints=web,websecure"
+      - "traefik.http.routers.analytics.middlewares=analytics-strip"
+      - "traefik.http.middlewares.analytics-strip.stripprefix.prefixes=/api/analytics"
+      - "traefik.http.services.analytics.loadbalancer.server.port=5014"
+      - "traefik.http.routers.analytics.priority=10"
+
+  # ── Market Data ────────────────────────────────────────────────────────────
+  market-data:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/market-data/market-data-service.ts"]
+    working_dir: /app/data
+    depends_on:
+      journal:
+        condition: service_healthy
+    environment:
+      MARKET_DATA_PORT: "5015"
+      JOURNAL_HOST: journal
+      JOURNAL_PORT: "5009"
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    volumes:
+      - market-data-state:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5015/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.market-data.rule=PathPrefix(`/api/market-data`)"
+      - "traefik.http.routers.market-data.entrypoints=web,websecure"
+      - "traefik.http.routers.market-data.middlewares=market-data-strip"
+      - "traefik.http.middlewares.market-data-strip.stripprefix.prefixes=/api/market-data"
+      - "traefik.http.services.market-data.loadbalancer.server.port=5015"
+      - "traefik.http.routers.market-data.priority=10"
+
+  market-data-adapters:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/market-data-adapters/adapter-server.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+    environment:
+      MARKET_DATA_ADAPTERS_PORT: "5016"
+      MARKET_SIM_URL: http://market-sim:5000
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5016/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.market-data-adapters.rule=PathPrefix(`/api/market-data-adapters`)"
+      - "traefik.http.routers.market-data-adapters.entrypoints=web,websecure"
+      - "traefik.http.routers.market-data-adapters.middlewares=market-data-adapters-strip"
+      - "traefik.http.middlewares.market-data-adapters-strip.stripprefix.prefixes=/api/market-data-adapters"
+      - "traefik.http.services.market-data-adapters.loadbalancer.server.port=5016"
+      - "traefik.http.routers.market-data-adapters.priority=10"
+
+  # ── Intelligence Engines ───────────────────────────────────────────────────
+  feature-engine:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/feature-engine/feature-engine.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      journal:
+        condition: service_healthy
+    environment:
+      FEATURE_ENGINE_PORT: "5017"
+      FEATURE_ENGINE_DB_PATH: /app/data/feature-vectors.db
+      JOURNAL_URL: http://journal:5009
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    volumes:
+      - feature-engine-data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5017/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feature-engine.rule=PathPrefix(`/api/feature-engine`)"
+      - "traefik.http.routers.feature-engine.entrypoints=web,websecure"
+      - "traefik.http.routers.feature-engine.middlewares=feature-engine-strip"
+      - "traefik.http.middlewares.feature-engine-strip.stripprefix.prefixes=/api/feature-engine"
+      - "traefik.http.services.feature-engine.loadbalancer.server.port=5017"
+      - "traefik.http.routers.feature-engine.priority=10"
+
+  signal-engine:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/signal-engine/signal-engine.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    environment:
+      SIGNAL_ENGINE_PORT: "5018"
+      SIGNAL_ENGINE_DB_PATH: /app/data/signal-weights.db
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    volumes:
+      - signal-engine-data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5018/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.signal-engine.rule=PathPrefix(`/api/signal-engine`)"
+      - "traefik.http.routers.signal-engine.entrypoints=web,websecure"
+      - "traefik.http.routers.signal-engine.middlewares=signal-engine-strip"
+      - "traefik.http.middlewares.signal-engine-strip.stripprefix.prefixes=/api/signal-engine"
+      - "traefik.http.services.signal-engine.loadbalancer.server.port=5018"
+      - "traefik.http.routers.signal-engine.priority=10"
+
+  recommendation-engine:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/recommendation-engine/recommendation-server.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      RECOMMENDATION_ENGINE_PORT: "5019"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5019/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.recommendation-engine.rule=PathPrefix(`/api/recommendation-engine`)"
+      - "traefik.http.routers.recommendation-engine.entrypoints=web,websecure"
+      - "traefik.http.routers.recommendation-engine.middlewares=recommendation-engine-strip"
+      - "traefik.http.middlewares.recommendation-engine-strip.stripprefix.prefixes=/api/recommendation-engine"
+      - "traefik.http.services.recommendation-engine.loadbalancer.server.port=5019"
+      - "traefik.http.routers.recommendation-engine.priority=10"
+
+  scenario-engine:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/scenario-engine/scenario-server.ts"]
+    depends_on:
+      feature-engine:
+        condition: service_healthy
+      signal-engine:
+        condition: service_healthy
+    environment:
+      SCENARIO_ENGINE_PORT: "5020"
+      FEATURE_ENGINE_URL: http://feature-engine:5017
+      SIGNAL_ENGINE_URL: http://signal-engine:5018
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5020/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.scenario-engine.rule=PathPrefix(`/api/scenario-engine`)"
+      - "traefik.http.routers.scenario-engine.entrypoints=web,websecure"
+      - "traefik.http.routers.scenario-engine.middlewares=scenario-engine-strip"
+      - "traefik.http.middlewares.scenario-engine-strip.stripprefix.prefixes=/api/scenario-engine"
+      - "traefik.http.services.scenario-engine.loadbalancer.server.port=5020"
+      - "traefik.http.routers.scenario-engine.priority=10"
+
+  # ── News Aggregator ────────────────────────────────────────────────────────
+  news-aggregator:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/news/news-aggregator.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    labels:
+      - "traefik.enable=false"
+
+  # ── LLM Advisory ──────────────────────────────────────────────────────────
+  llm-advisory:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/llm-advisory/orchestrator.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      feature-engine:
+        condition: service_healthy
+      signal-engine:
+        condition: service_healthy
+    environment:
+      LLM_ADVISORY_PORT: "5024"
+      LLM_ADVISORY_DB_PATH: /app/data/llm-advisory.db
+      LLM_ENABLED: "true"
+      LLM_WORKER_ENABLED: "true"
+      LLM_PROVIDER: ollama
+      LLM_MODEL_ID: qwen2.5:3b
+      LLM_OLLAMA_BASE_URL: http://ollama:11434
+      LLM_TRIGGER_MODE: on-demand-ui
+      FEATURE_ENGINE_URL: http://feature-engine:5017
+      SIGNAL_ENGINE_URL: http://signal-engine:5018
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    volumes:
+      - llm-advisory-data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5024/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.llm-advisory.rule=PathPrefix(`/api/llm-advisory`)"
+      - "traefik.http.routers.llm-advisory.entrypoints=web,websecure"
+      - "traefik.http.routers.llm-advisory.middlewares=llm-advisory-strip"
+      - "traefik.http.middlewares.llm-advisory-strip.stripprefix.prefixes=/api/llm-advisory"
+      - "traefik.http.services.llm-advisory.loadbalancer.server.port=5024"
+      - "traefik.http.routers.llm-advisory.priority=10"
+
+  llm-worker:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/llm-advisory/worker.ts"]
+    depends_on:
+      llm-advisory:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    environment:
+      LLM_ADVISORY_DB_PATH: /app/data/llm-advisory.db
+      LLM_ENABLED: "true"
+      LLM_WORKER_ENABLED: "true"
+      LLM_PROVIDER: ollama
+      LLM_MODEL_ID: qwen2.5:3b
+      LLM_OLLAMA_BASE_URL: http://ollama:11434
+      LLM_TRIGGER_MODE: on-demand-ui
+      FEATURE_ENGINE_URL: http://feature-engine:5017
+      SIGNAL_ENGINE_URL: http://signal-engine:5018
+      JOURNAL_URL: http://journal:5009
+      REDPANDA_BROKERS: redpanda:9092
+    volumes:
+      - llm-advisory-data:/app/data
+    labels:
+      - "traefik.enable=false"
+
+  # ── Gateway (BFF) ──────────────────────────────────────────────────────────
+  gateway:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/gateway/gateway.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      journal:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+      market-data:
+        condition: service_healthy
+      feature-engine:
+        condition: service_healthy
+      signal-engine:
+        condition: service_healthy
+      recommendation-engine:
+        condition: service_healthy
+      scenario-engine:
+        condition: service_healthy
+      llm-advisory:
+        condition: service_healthy
+    environment:
+      GATEWAY_PORT: "5011"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      JOURNAL_HOST: journal
+      JOURNAL_PORT: "5009"
+      USER_SERVICE_HOST: user-service
+      USER_SERVICE_PORT: "5008"
+      ANALYTICS_HOST: analytics
+      ANALYTICS_PORT: "5014"
+      MARKET_DATA_HOST: market-data
+      MARKET_DATA_PORT: "5015"
+      FEATURE_ENGINE_HOST: feature-engine
+      FEATURE_ENGINE_PORT: "5017"
+      SIGNAL_ENGINE_HOST: signal-engine
+      SIGNAL_ENGINE_PORT: "5018"
+      RECOMMENDATION_ENGINE_HOST: recommendation-engine
+      RECOMMENDATION_ENGINE_PORT: "5019"
+      SCENARIO_ENGINE_HOST: scenario-engine
+      SCENARIO_ENGINE_PORT: "5020"
+      LLM_ADVISORY_HOST: llm-advisory
+      LLM_ADVISORY_PORT: "5024"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5011/health || exit 1"]
+      interval: 10s
+      timeout: 8s
+      retries: 15
+      start_period: 60s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=PathPrefix(`/api/gateway`)"
+      - "traefik.http.routers.gateway.entrypoints=web,websecure"
+      - "traefik.http.routers.gateway.middlewares=gateway-strip"
+      - "traefik.http.middlewares.gateway-strip.stripprefix.prefixes=/api/gateway"
+      - "traefik.http.services.gateway.loadbalancer.server.port=5011"
+      - "traefik.http.routers.gateway.priority=20"
+      - "traefik.http.routers.gateway-ws.rule=PathPrefix(`/ws/gateway`)"
+      - "traefik.http.routers.gateway-ws.entrypoints=web,websecure"
+      - "traefik.http.routers.gateway-ws.middlewares=gateway-ws-strip"
+      - "traefik.http.middlewares.gateway-ws-strip.stripprefix.prefixes=/ws/gateway"
+      - "traefik.http.routers.gateway-ws.service=gateway"
+      - "traefik.http.routers.gateway-ws.priority=20"
+      - "traefik.http.routers.health.rule=Path(`/health`)"
+      - "traefik.http.routers.health.entrypoints=web,websecure"
+      - "traefik.http.routers.health.service=gateway"
+      - "traefik.http.routers.health.priority=25"

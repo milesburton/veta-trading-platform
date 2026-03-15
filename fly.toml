@@ -1,76 +1,17 @@
 app = "veta-trading"
 primary_region = "iad"
 
-[build]
-  dockerfile = "Dockerfile"
-  args = { VITE_DEPLOYMENT = "fly" }
+# Deployed via: flyctl deploy --compose compose.yml --compose compose.prod.yml
+# Fly.io terminates TLS at the edge (force_https=true) before traffic reaches
+# Traefik. Internal routing uses HTTP only — no ACME config needed inside the VM.
 
-[env]
-  GATEWAY_PORT = "5011"
-  FRONTEND_PORT = "3000"
+[deploy]
+  strategy = "immediate"
 
-  MARKET_SIM_HOST = "localhost"
-  MARKET_SIM_PORT = "5000"
-  EMS_HOST = "localhost"
-  EMS_PORT = "5001"
-  OMS_HOST = "localhost"
-  OMS_PORT = "5002"
-  LIMIT_ALGO_HOST = "localhost"
-  LIMIT_ALGO_PORT = "5003"
-  TWAP_ALGO_HOST = "localhost"
-  TWAP_ALGO_PORT = "5004"
-  POV_ALGO_HOST = "localhost"
-  POV_ALGO_PORT = "5005"
-  VWAP_ALGO_HOST = "localhost"
-  VWAP_ALGO_PORT = "5006"
-  OBSERVABILITY_HOST = "localhost"
-  OBSERVABILITY_PORT = "5007"
-  USER_SERVICE_HOST = "localhost"
-  USER_SERVICE_PORT = "5008"
-  JOURNAL_HOST = "localhost"
-  JOURNAL_PORT = "5009"
-  JOURNAL_RETENTION_DAYS = "90"
-  FIX_ARCHIVE_HOST = "localhost"
-  FIX_ARCHIVE_PORT = "5012"
-  NEWS_AGGREGATOR_HOST = "localhost"
-  NEWS_AGGREGATOR_PORT = "5013"
-  ANALYTICS_HOST = "localhost"
-  ANALYTICS_PORT = "5014"
-  MARKET_DATA_HOST = "localhost"
-  MARKET_DATA_PORT = "5015"
-  MARKET_DATA_ADAPTERS_PORT = "5016"
-  FEATURE_ENGINE_HOST = "localhost"
-  FEATURE_ENGINE_PORT = "5017"
-  SIGNAL_ENGINE_HOST = "localhost"
-  SIGNAL_ENGINE_PORT = "5018"
-  RECOMMENDATION_ENGINE_HOST = "localhost"
-  RECOMMENDATION_ENGINE_PORT = "5019"
-  SCENARIO_ENGINE_HOST = "localhost"
-  SCENARIO_ENGINE_PORT = "5020"
-  ICEBERG_ALGO_HOST = "localhost"
-  ICEBERG_ALGO_PORT = "5021"
-  SNIPER_ALGO_HOST = "localhost"
-  SNIPER_ALGO_PORT = "5022"
-  ARRIVAL_PRICE_ALGO_HOST = "localhost"
-  ARRIVAL_PRICE_ALGO_PORT = "5023"
-  LLM_ADVISORY_HOST = "localhost"
-  LLM_ADVISORY_PORT = "5024"
-  MOMENTUM_ALGO_HOST = "localhost"
-  MOMENTUM_ALGO_PORT = "5025"
-  IS_ALGO_HOST = "localhost"
-  IS_ALGO_PORT = "5026"
-  FIX_GATEWAY_HOST = "localhost"
-  FIX_GATEWAY_PORT = "9881"
-
-  LLM_ENABLED = "true"
-  LLM_WORKER_ENABLED = "true"
-  LLM_PROVIDER = "ollama"
-  LLM_MODEL_ID = "qwen2.5:3b"
-  LLM_OLLAMA_BASE_URL = "http://localhost:11434"
-  LLM_TRIGGER_MODE = "on-demand-ui"
-
+# Traefik is the only service that binds a public port.
+# All other containers are on the internal trading-net and reached via Traefik labels.
 [http_service]
-  internal_port = 8080
+  internal_port = 80
   force_https = true
   auto_start_machines = true
   auto_stop_machines = "suspend"
@@ -84,11 +25,39 @@ primary_region = "iad"
     method = "GET"
     path = "/health"
 
-[mounts]
-  source = "data"
-  destination = "/app/backend/data"
-  initial_size = "10gb"
+# Persistent volumes — one per stateful service
+# Provision with: flyctl volumes create <name> --region iad --size 10
+[[mounts]]
+  source = "postgres_data"
+  destination = "/var/lib/postgresql/data"
+  processes = ["postgres"]
 
-[[vm]]
-  memory = "4gb"
-  cpus = 2
+[[mounts]]
+  source = "redpanda_data"
+  destination = "/var/lib/redpanda/data"
+  processes = ["redpanda"]
+
+[[mounts]]
+  source = "llm_data"
+  destination = "/root/.ollama"
+  processes = ["ollama"]
+
+[[mounts]]
+  source = "market_data_state"
+  destination = "/app/data"
+  processes = ["market-data"]
+
+[[mounts]]
+  source = "feature_engine_data"
+  destination = "/app/data"
+  processes = ["feature-engine"]
+
+[[mounts]]
+  source = "signal_engine_data"
+  destination = "/app/data"
+  processes = ["signal-engine"]
+
+[[mounts]]
+  source = "llm_advisory_data"
+  destination = "/app/data"
+  processes = ["llm-advisory", "llm-worker"]
