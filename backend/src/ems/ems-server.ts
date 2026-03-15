@@ -99,7 +99,6 @@ interface ChildOrder {
   ts: number;
 }
 
-// Subscribe to orders.child — published by algo services
 const consumer = await createConsumer("ems-child-orders", ["orders.child"]).catch((err) => {
   console.warn("[ems] Cannot subscribe to orders.child:", err.message);
   return null;
@@ -178,7 +177,6 @@ consumer?.onMessage(async (_topic, raw) => {
 
     await producer?.send("orders.filled", fillPayload).catch(() => {});
 
-    // Publish FIX-format execution report for the archive service
     await producer?.send("fix.execution", {
       execId,
       clOrdId: child.childId,
@@ -205,7 +203,6 @@ consumer?.onMessage(async (_topic, raw) => {
 
 console.log(`[ems] Listening for orders.child on message bus`);
 
-// ── Health endpoint ───────────────────────────────────────────────────────────
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",

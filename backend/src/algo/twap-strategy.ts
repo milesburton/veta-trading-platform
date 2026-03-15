@@ -93,7 +93,6 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
       `[twap-algo] Slice ${i + 1}/${numSlices}: ${sliceQty} ${order.asset} @ mkt ${marketPrice}`,
     );
 
-    // Publish heartbeat so GUI can track progress
     await producer?.send("algo.heartbeat", {
       algo: "TWAP",
       orderId: order.orderId,
@@ -117,7 +116,6 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
   console.log(`[twap-algo] Complete ${order.orderId}: filled=${filledQty}/${order.quantity} avg=${avgFill}`);
 }
 
-// Subscribe to orders.routed — filter for TWAP
 const consumer = await createConsumer("twap-algo-routed", ["orders.routed"]).catch((err) => {
   console.warn("[twap-algo] Cannot subscribe to orders.routed:", err.message);
   return null;
@@ -129,7 +127,6 @@ consumer?.onMessage((_topic, raw) => {
   executeTWAP(order); // fire-and-forget; errors are caught internally
 });
 
-// ── Health endpoint ───────────────────────────────────────────────────────────
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -148,7 +145,6 @@ Deno.serve({ port: PORT }, (req) => {
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 });
 
-// News signals — log only; future: adjust slice timing or participation
 createConsumer("twap-algo-news", ["news.signal"]).then((consumer) => {
   consumer.onMessage((_topic, raw) => {
     const sig = raw as { symbol: string; sentiment: string; score: number };

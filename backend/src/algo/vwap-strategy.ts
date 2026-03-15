@@ -101,7 +101,6 @@ async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<
   }).catch(() => {});
 }
 
-// Subscribe to orders.routed — filter for VWAP
 const consumer = await createConsumer("vwap-algo-routed", ["orders.routed"]).catch((err) => {
   console.warn("[vwap-algo] Cannot subscribe to orders.routed:", err.message);
   return null;
@@ -161,8 +160,6 @@ marketClient.onTick(async (tick) => {
   }).catch(() => {});
 });
 
-// ── Independent expiry sweep (fires even when market ticks are sparse) ────────
-
 setInterval(async () => {
   const now = Date.now();
   for (const [id, order] of [...activeOrders.entries()]) {
@@ -182,7 +179,6 @@ setInterval(async () => {
   }
 }, 5_000);
 
-// ── Health endpoint ───────────────────────────────────────────────────────────
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -201,7 +197,6 @@ Deno.serve({ port: PORT }, (req) => {
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 });
 
-// News signals — log only; future: widen/narrow deviation tolerance
 createConsumer("vwap-algo-news", ["news.signal"]).then((consumer) => {
   consumer.onMessage((_topic, raw) => {
     const sig = raw as { symbol: string; sentiment: string; score: number };

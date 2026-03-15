@@ -25,8 +25,6 @@ const CORS_HEADERS = {
 
 const KNOWN_STRATEGIES = new Set(["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE", "IS", "MOMENTUM"]);
 
-// ── Trading limits cache ──────────────────────────────────────────────────────
-
 interface TradingLimits {
   max_order_qty: number;
   max_daily_notional: number;
@@ -68,27 +66,22 @@ async function getUserLimits(userId: string): Promise<TradingLimits> {
   }
 }
 
-// Monotonically increasing sequence number for this session
 let seqNum = 1;
 
 function nextOrderId(): string {
   return `oms-${Date.now()}-${seqNum++}`;
 }
 
-// ── Bus connections ───────────────────────────────────────────────────────────
-
 const producer = await createProducer("oms").catch((err) => {
   console.warn("[oms] Redpanda unavailable — orders will not be published to bus:", err.message);
   return null;
 });
 
-// Subscribe to orders.new — published by gateway when GUI submits
 const consumer = await createConsumer("oms-new-orders", ["orders.new"]).catch((err) => {
   console.warn("[oms] Cannot subscribe to orders.new:", err.message);
   return null;
 });
 
-// Subscribe to kill/resume commands — published by gateway from GUI killswitch
 const killConsumer = await createConsumer("oms-kill-orders", ["orders.kill", "orders.resume"]).catch((err) => {
   console.warn("[oms] Cannot subscribe to orders.kill/orders.resume:", err.message);
   return null;
@@ -380,8 +373,7 @@ killConsumer?.onMessage(async (topic, raw) => {
         ts: Date.now(),
       }).catch(() => {});
 
-      // Regulatory audit log
-      await producer?.send("orders.resume.audit", {
+        await producer?.send("orders.resume.audit", {
         scope,
         scopeValue,
         targetUserId,
@@ -403,12 +395,9 @@ killConsumer?.onMessage(async (topic, raw) => {
 
 console.log(`[oms] Listening for orders.new on message bus`);
 
-// ── Startup expiry sweep ──────────────────────────────────────────────────────
-// On restart the OMS loses its in-memory activeOrders map. Query the journal
-// for any orders still pending/working past their expiresAt and publish
-// orders.expired so the journal records a real event rather than inferring
-// status at read time.
-
+// On restart the OMS loses its in-memory activeOrders map. Query the journal for any orders
+// still pending/working past their expiresAt and publish orders.expired so the journal records
+// a real event rather than inferring status at read time.
 async function expireOrphanedOrders() {
   try {
     const res = await fetch(`${JOURNAL_URL}/orders?limit=500`);
@@ -440,8 +429,6 @@ async function expireOrphanedOrders() {
 
 setTimeout(() => { expireOrphanedOrders().catch(() => {}); }, 3_000);
 setInterval(() => { expireOrphanedOrders().catch(() => {}); }, 15_000);
-
-// ── Health endpoint ───────────────────────────────────────────────────────────
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);

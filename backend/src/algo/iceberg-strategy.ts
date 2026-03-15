@@ -30,8 +30,6 @@ const producer = await createProducer("iceberg-algo").catch((err) => {
   return null;
 });
 
-// ── Order state ───────────────────────────────────────────────────────────────
-
 interface RoutedOrder {
   orderId: string;
   clientOrderId?: string;
@@ -69,10 +67,7 @@ interface ActiveIceberg {
   sliceCount: number; // total slices sent (for unique childId)
 }
 
-/** Active iceberg orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveIceberg>();
-
-// ── Consume orders.routed ─────────────────────────────────────────────────────
 
 const routedConsumer = await createConsumer("iceberg-algo-routed", ["orders.routed"]).catch(
   (err) => {
@@ -122,8 +117,6 @@ routedConsumer?.onMessage((_topic, raw) => {
   }).catch(() => {});
 });
 
-// ── Consume orders.filled — refill after each slice completes ─────────────────
-
 const fillsConsumer = await createConsumer("iceberg-algo-fills", ["orders.filled"]).catch(
   (err) => {
     console.warn("[iceberg-algo] Cannot subscribe to orders.filled:", err.message);
@@ -150,7 +143,6 @@ fillsConsumer?.onMessage((_topic, raw) => {
   );
 
   if (order.totalRemaining <= 0) {
-    // Fully filled
     const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
     console.log(
       `[iceberg-algo] Complete ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`,
@@ -168,11 +160,8 @@ fillsConsumer?.onMessage((_topic, raw) => {
     return;
   }
 
-  // Reveal the next slice
   order.currentSliceQty = Math.min(order.visibleQty, order.totalRemaining);
 });
-
-// ── Market tick: send slices when price triggers ──────────────────────────────
 
 marketClient.onTick(async (tick) => {
   const now = Date.now();
@@ -181,7 +170,6 @@ marketClient.onTick(async (tick) => {
     const marketPrice = tick.prices[order.asset];
     if (!marketPrice) continue;
 
-    // Expiry check
     if (now >= order.expiresAt) {
       const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
       console.log(
@@ -199,7 +187,6 @@ marketClient.onTick(async (tick) => {
       continue;
     }
 
-    // Price trigger (same as LIMIT)
     const triggered =
       (order.side === "BUY" && marketPrice <= order.limitPrice) ||
       (order.side === "SELL" && marketPrice >= order.limitPrice);
@@ -243,8 +230,6 @@ marketClient.onTick(async (tick) => {
   }
 });
 
-// ── Independent expiry sweep (fires even when market ticks are sparse) ────────
-
 setInterval(async () => {
   const now = Date.now();
   for (const order of [...activeOrders.values()]) {
@@ -263,8 +248,6 @@ setInterval(async () => {
     }
   }
 }, 5_000);
-
-// ── Health endpoint ───────────────────────────────────────────────────────────
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -289,7 +272,6 @@ Deno.serve({ port: PORT }, (req) => {
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 });
 
-// News signals — log only; future: pause slicing on negative sentiment
 createConsumer("iceberg-algo-news", ["news.signal"]).then((consumer) => {
   consumer.onMessage((_topic, raw) => {
     const sig = raw as { symbol: string; sentiment: string; score: number };
