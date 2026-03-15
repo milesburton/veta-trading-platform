@@ -28,6 +28,7 @@
   "build": {
     "appId": "com.veta.trading-platform",
     "productName": "VETA Trading Platform",
+    "publish": "never",
     "directories": {
       "output": "dist-app"
     },
