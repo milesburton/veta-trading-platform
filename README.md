@@ -2,7 +2,7 @@
 
 **Live demo:** https://veta-trading.fly.dev/
 
-A simulated equities trading environment built with Deno microservices and a React/TypeScript frontend. Includes a market price engine, execution and order management systems, seven algorithmic trading strategies, a market intelligence pipeline, FIX 4.4 protocol support, and an LLM advisory subsystem powered by a local Ollama instance.
+A simulated equities trading environment built with Deno microservices and a React/TypeScript frontend. Includes a market price engine, execution and order management systems, nine algorithmic trading strategies, a market intelligence pipeline, FIX 4.4 protocol support, and an LLM advisory subsystem powered by a local Ollama instance.
 
 ## Quick Start
 
@@ -12,7 +12,7 @@ The project runs inside a [Dev Container](https://containers.dev/). Open in VS C
 Ctrl+Shift+P → Dev Containers: Rebuild and Reopen in Container
 ```
 
-All services start automatically. Open http://localhost:8080.
+All services start automatically via supervisord. Open http://localhost:8080.
 
 Default accounts:
 
@@ -24,7 +24,7 @@ Default accounts:
 ## Running
 
 ```sh
-# Browser
+# Browser (dev server)
 cd frontend && npm run dev
 
 # Electron (desktop, hot reload)
@@ -57,10 +57,14 @@ git tag v1.x.x && git push origin v1.x.x
 
 ## Deployment
 
+The platform uses a single Docker Compose stack across all environments. See [docs/deployment.md](docs/deployment.md) for full instructions.
+
 ```sh
-flyctl deploy --remote-only \
-  --build-arg VITE_COMMIT_SHA=$(git rev-parse --short HEAD) \
-  --build-arg VITE_BUILD_DATE=$(date -u +%Y-%m-%d)
+# Homelab / self-hosted
+docker compose -f compose.yml -f compose.prod.yml up -d
+
+# Fly.io (manual)
+flyctl deploy --compose compose.yml --compose compose.prod.yml
 ```
 
 See [docs/architecture.md](docs/architecture.md) for the full service map and design notes.

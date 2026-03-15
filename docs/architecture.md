@@ -210,7 +210,7 @@ Manages user accounts, session tokens, and per-user trading limits. Used interna
 
 Source: [backend/src/user-service/user-service.ts](../backend/src/user-service/user-service.ts)
 
-### News Aggregator (port 5013)
+### News Aggregator
 Polls configured news sources, extracts ticker mentions, scores sentiment, and publishes to three bus topics: `news.feed` (forwarded to the GUI), `news.signal` (for algo consumption), and `news.events.normalised` (typed events consumed by the Feature Engine).
 
 Source: [backend/src/news/news-aggregator.ts](../backend/src/news/news-aggregator.ts)
@@ -218,7 +218,7 @@ Source: [backend/src/news/news-aggregator.ts](../backend/src/news/news-aggregato
 ### FIX Archive (port 5012)
 Subscribes to `fix.execution` and persists execution reports to SQLite in FIX 4.4 format. Exposes `GET /executions` for historical execution report queries.
 
-Source: [backend/src/fix-archive/fix-archive.ts](../backend/src/fix-archive/fix-archive.ts)
+Source: [backend/src/fix/fix-archive.ts](../backend/src/fix/fix-archive.ts)
 
 ### Analytics Service (port 5014)
 REST-only quantitative analysis service:
@@ -226,12 +226,12 @@ REST-only quantitative analysis service:
 - `POST /scenario` — Monte Carlo scenario grid (vol/price shocks)
 - `POST /recommend` — Rule-based trade recommendations
 
-Source: [backend/src/analytics/analytics-service.ts](../backend/src/analytics/analytics-service.ts)
+Source: [backend/src/analytics/analytics-server.ts](../backend/src/analytics/analytics-server.ts)
 
 ### Market Data Service (port 5015)
 Manages per-symbol data source overrides (synthetic GBM vs Alpha Vantage). Polls Alpha Vantage GLOBAL_QUOTE round-robin every 5 minutes and seeds intraday time series to the journal on startup.
 
-Source: [backend/src/market-data-service/market-data-service.ts](../backend/src/market-data-service/market-data-service.ts)
+Source: [backend/src/market-data/market-data-service.ts](../backend/src/market-data/market-data-service.ts)
 
 ### Market Data Adapters (port 5016)
 Seeds earnings calendar, dividend, and macro economic events for ~80 S&P 500 symbols. Publishes `market.external.events` consumed by the Feature Engine. Events are spread across a 90-day window for realistic scheduling.
@@ -382,7 +382,9 @@ Four built-in personas:
 
 ## Process Management
 
-All services run under **supervisord**. In the Dev Container they start automatically on launch.
+### Dev Container (local development)
+
+All services run under **supervisord** in the Dev Container and start automatically on launch.
 
 ```bash
 # Check all services
@@ -396,48 +398,64 @@ Service names: `market-sim`, `ems`, `oms`, `algo-trader`, `twap-algo`, `pov-algo
 
 The `llm-worker` is registered separately with `autostart=false` and `autorestart=false`. It is started on-demand via `POST /admin/trigger-worker` and exits after hitting its job or idle-timeout limit.
 
+### Deployed environments (Docker Compose)
+
+All deployed environments use the same Docker Compose stack:
+
+```bash
+docker compose -f compose.yml -f compose.prod.yml <command>
+```
+
+Each service runs in its own container. Traefik handles routing and TLS for all environments. See [docs/deployment.md](deployment.md) for full setup instructions.
+
 ## Deployment
+
+The platform uses a **single Docker Compose stack** across all environments. Each Deno service has its own image built from a shared base (`docker/base/Dockerfile`). All routing goes through **Traefik** as the single reverse proxy.
+
+```
+docker/
+  base/Dockerfile          shared Deno runtime + pre-cached modules
+  frontend/Dockerfile      Node build → Deno file-server
+  <service>/Dockerfile     per-service entrypoint (3 lines each, FROM base)
+
+compose.yml                base stack — local builds, all services + Traefik labels
+compose.prod.yml           prod override — GHCR images, TLS, restart, Watchtower
+traefik.yml                unified Traefik config — HTTP→HTTPS redirect, ACME, Docker provider
+```
 
 ### Fly.io (cloud demo)
 
-The entire platform runs as a **single VM** on Fly.io. All services start under supervisord inside one container. The Fly.io load balancer exposes a single HTTPS endpoint on port 443 (internally 8080) — this is where Nginx serves the built frontend and the gateway runs behind it.
-
-There is no Traefik on Fly.io — it isn't needed because there's only one public endpoint. Fly's built-in layer-7 proxy handles HTTPS termination.
+Traefik handles internal routing; Fly.io's edge terminates TLS before traffic reaches the container.
 
 ```
 fly.toml
-  internal_port = 8080   → Fly load balancer → HTTPS on veta-trading.fly.dev
+  internal_port = 80    → Fly edge → HTTPS on veta-trading.fly.dev
   force_https = true
-  auto_stop_machines = "suspend"   (suspends when idle, resumes on first request)
+  auto_stop_machines = "suspend"
   min_machines_running = 1
 ```
 
-Data is persisted to a 10 GB Fly volume mounted at `/app/backend/data`.
-
 Deploy command:
 ```bash
-flyctl deploy --remote-only \
-  --build-arg VITE_COMMIT_SHA=$(git rev-parse --short HEAD) \
-  --build-arg VITE_BUILD_DATE=$(date -u +%Y-%m-%d)
+flyctl deploy --compose compose.yml --compose compose.prod.yml
 ```
 
 ### Homelab (self-hosted)
 
-The homelab runs the same Docker image pulled from GHCR, orchestrated by Docker Compose with **Traefik** as the reverse proxy.
+Runs on `192.168.1.245` (Proxmox VM, 8 vCPU / 20 GB RAM). URL: `http://veta.home`
 
+```bash
+# First deploy
+docker compose -f compose.yml -f compose.prod.yml up -d
+
+# Required environment variables (set in .env on the host)
+ACME_EMAIL=miles@mnetcs.com   # Let's Encrypt registration
+DOMAIN=veta.home               # used by Traefik Host() matchers
+COMMIT_SHA=<git-sha>           # set automatically by CI
 ```
-docker-compose.homelab.yml
-  veta-traefik     :8888 (dashboard) + :80/:443 (routing)
-  veta-app         the main container (all services inside)
-  veta-disk-monitor :8099 (disk health endpoint for Uptime Kuma)
-```
 
-Traefik routes by path prefix:
-- `/ws/gateway` → gateway WebSocket (port 5011)
-- `/api/gateway` → gateway HTTP (port 5011, strips prefix)
+Traefik routes all `/api/*` and `/ws/*` paths to the appropriate service container via Docker labels. TLS certificates are issued automatically by Let's Encrypt via HTTP challenge.
 
-Watchtower watches for new images tagged `:latest` on GHCR and automatically restarts the stack. When a new commit lands on `main` and CI passes, the updated image is live within ~5 minutes.
+Watchtower polls GHCR every 5 minutes for updated `:latest` images and restarts affected containers automatically. New commits on `main` are live within ~5 minutes of CI completing.
 
 The disk monitor (`scripts/disk-monitor.py`) runs on port 8099, returns 200 when disk < 85%, 503 when critical, and auto-prunes dangling Docker images when disk exceeds 90%.
-
-URL: `http://veta.home` (add `192.168.1.245 veta.home` to `/etc/hosts`)

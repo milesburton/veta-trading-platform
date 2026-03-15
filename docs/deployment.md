@@ -1,6 +1,22 @@
 # Deployment
 
-## Fly.io (cloud)
+## Overview
+
+The platform uses a single Docker Compose stack across all deployed environments:
+
+```bash
+# Base stack (local builds)
+docker compose -f compose.yml up -d
+
+# Production (GHCR images, TLS, Watchtower)
+docker compose -f compose.yml -f compose.prod.yml up -d
+```
+
+Each service runs in its own container built from a shared base image. **Traefik** is the single reverse proxy for all environments.
+
+---
+
+## Fly.io (cloud demo)
 
 The live demo runs at https://veta-trading.fly.dev/. Deployments are triggered manually via GitHub Actions (`workflow_dispatch`). Navigate to **Actions → Deploy to Fly.io → Run workflow** to deploy.
 
@@ -14,10 +30,10 @@ The `fly.toml` and `.github/workflows/deploy.yml` are already configured.
 ### Manual deploy
 
 ```sh
-flyctl deploy --remote-only \
-  --build-arg VITE_COMMIT_SHA=$(git rev-parse --short HEAD) \
-  --build-arg VITE_BUILD_DATE=$(date -u +%Y-%m-%d)
+flyctl deploy --compose compose.yml --compose compose.prod.yml
 ```
+
+Fly.io terminates TLS at the edge (`force_https = true` in `fly.toml`). Traefik inside the VM uses HTTP only — no ACME configuration is needed for Fly.io deployments.
 
 ### Scaling (Redpanda HA)
 
@@ -27,19 +43,27 @@ The default deployment runs a single machine. Redpanda requires 3 machines for a
 flyctl scale count 3 --app veta-trading
 ```
 
-Each machine advertises its private IP in `redpanda.yaml`. For single-machine deployments `min_machines_running = 1` prevents state loss — the machine suspends rather than terminates between requests.
-
 ### Persistent storage
 
-A 10 GB volume is mounted at `/app/backend/data` for:
+Fly volumes are declared in `fly.toml` and provisioned with:
 
-- Journal and observability SQLite databases
-- FIX archive SQLite database
-- Ollama model weights (`/app/backend/data/ollama/models`)
+```sh
+flyctl volumes create <name> --region iad --size 10
+```
+
+| Volume | Service | Contents |
+|---|---|---|
+| `postgres_data` | postgres | Trade database |
+| `redpanda_data` | redpanda | Kafka topic data |
+| `llm_data` | ollama | Model weights |
+| `market_data_state` | market-data | Source override state |
+| `feature_engine_data` | feature-engine | Feature vector store |
+| `signal_engine_data` | signal-engine | Signal weights |
+| `llm_advisory_data` | llm-advisory, llm-worker | Advisory job store |
 
 ### LLM Advisory on Fly.io
 
-Ollama is installed in the Docker image and started by supervisord on boot. The `qwen2.5:3b` model (~2 GB) is pulled automatically by the `ollama-model-pull` program on first run. Model weights persist across deployments in the mounted volume.
+The `ollama` service starts automatically and pulls `qwen2.5:3b` (~2 GB) on first boot via the `ollama-model-pull` one-shot container. Model weights persist across deployments in the `llm_data` volume.
 
 ### Debugging
 
@@ -48,6 +72,80 @@ flyctl logs --follow
 flyctl ssh console
 flyctl status
 ```
+
+---
+
+## Homelab (self-hosted)
+
+Runs on `192.168.1.245` (Proxmox VM, 8 vCPU / 20 GB RAM).
+URL: `http://veta.home` (add `192.168.1.245 veta.home` to `/etc/hosts`)
+
+### Stack
+
+```
+ghcr.io/milesburton/veta-trading-platform/<service>:latest   (per-service images)
+Traefik v3 — HTTP→HTTPS redirect, Let's Encrypt ACME, Docker provider
+Watchtower — polls GHCR every 5 min, auto-restarts updated containers
+```
+
+Managed via [Dockge](https://github.com/louislam/dockge) at `http://192.168.1.245:5001`.
+
+### First-time setup
+
+```sh
+# On the homelab VM
+mkdir -p /opt/stacks/veta
+cd /opt/stacks/veta
+
+# Create .env
+cat > .env <<EOF
+ACME_EMAIL=miles@mnetcs.com
+DOMAIN=veta.home
+COMMIT_SHA=latest
+EOF
+
+# Pull and start
+docker compose -f compose.yml -f compose.prod.yml pull
+docker compose -f compose.yml -f compose.prod.yml up -d
+```
+
+### Required environment variables
+
+| Variable | Description | Example |
+|---|---|---|
+| `ACME_EMAIL` | Let's Encrypt registration email | `miles@mnetcs.com` |
+| `DOMAIN` | Primary domain for Traefik Host() matchers | `veta.home` |
+| `COMMIT_SHA` | Git SHA for version tracking (set by CI) | `abc1234` |
+
+### TLS / HTTPS
+
+Traefik issues certificates automatically via Let's Encrypt HTTP challenge. Certificates are stored in the `letsencrypt` named volume (`/letsencrypt/acme.json`).
+
+For local `.home` domains without public DNS, use a self-signed cert or skip TLS by removing the `tls=true` labels from `compose.prod.yml`.
+
+### Traefik dashboard
+
+Available at `http://veta.home:8888/dashboard/`
+
+### Updates
+
+Watchtower polls GHCR every 5 minutes. When a new commit lands on `main` and CI passes (building and pushing `:latest` images), containers are updated automatically within ~5 minutes.
+
+To force an immediate update:
+
+```sh
+docker compose -f compose.yml -f compose.prod.yml pull
+docker compose -f compose.yml -f compose.prod.yml up -d
+```
+
+### Disk monitor
+
+`scripts/disk-monitor.py` runs on port 8099 via a sidecar container in `compose.prod.yml`:
+- Returns `200 {"status":"ok"}` when disk usage < 85%
+- Returns `503` when critical
+- Auto-prunes dangling Docker images when disk exceeds 90%
+
+Poll with Uptime Kuma: `http://192.168.1.245:8099/health` (keyword: `ok`)
 
 ---
 
@@ -78,7 +176,7 @@ npm run electron:build
 # Output: frontend/dist-app/
 ```
 
-The Electron app connects to the gateway at `http://localhost:5011` by default (same as browser dev mode). All backend services must be running locally — start them via the Dev Container or `supervisorctl`.
+The Electron app connects to the gateway at `http://localhost:5011` by default. All backend services must be running locally — start them via the Dev Container or `supervisorctl`.
 
 ### Creating a release
 
