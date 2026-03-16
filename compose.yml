@@ -1124,8 +1124,10 @@ services:
     volumes:
       - ./scripts/disk-monitor.py:/scripts/disk-monitor.py:ro
       - /var/run/docker.sock:/var/run/docker.sock
+      - /:/host:ro
     environment:
-      DISK_MONITOR_PORT: "8099"
+      WARN_PCT: "85"
+      PRUNE_PCT: "90"
     ports:
       - "8099:8099"
     healthcheck:

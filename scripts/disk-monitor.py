@@ -5,7 +5,7 @@ disk-monitor: HTTP health endpoint for host disk usage.
 Returns 200 when disk < WARN_PCT, 503 when >= WARN_PCT.
 Auto-prunes dangling Docker images when disk >= PRUNE_PCT.
 
-Deploy: mounted into veta-disk-monitor container via compose.prod.yml
+Deploy: mounted into veta-disk-monitor container via compose.yml
 Poll:   Uptime Kuma → http://192.168.1.245:8099/health  (keyword: "ok")
 """
 import http.server
