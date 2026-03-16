@@ -1112,3 +1112,28 @@ services:
       - "traefik.http.routers.health.entrypoints=web,websecure"
       - "traefik.http.routers.health.service=gateway"
       - "traefik.http.routers.health.priority=25"
+
+  # ── Disk Monitor ───────────────────────────────────────────────────────────
+  disk-monitor:
+    image: python:3.12-alpine
+    container_name: veta-disk-monitor
+    restart: unless-stopped
+    command: python3 /scripts/disk-monitor.py
+    networks:
+      - trading-net
+    volumes:
+      - ./scripts/disk-monitor.py:/scripts/disk-monitor.py:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      DISK_MONITOR_PORT: "8099"
+    ports:
+      - "8099:8099"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8099/ > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"

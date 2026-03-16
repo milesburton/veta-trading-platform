@@ -140,7 +140,7 @@ docker compose -f compose.yml -f compose.prod.yml up -d
 
 ### Disk monitor
 
-`scripts/disk-monitor.py` runs on port 8099 via a sidecar container in `compose.prod.yml`:
+`scripts/disk-monitor.py` runs on port 8099 via the `disk-monitor` service in `compose.yml`:
 - Returns `200 {"status":"ok"}` when disk usage < 85%
 - Returns `503` when critical
 - Auto-prunes dangling Docker images when disk exceeds 90%
