@@ -47,14 +47,6 @@ npm run test:unit         # Vitest
 npm run test:ui           # Playwright E2E (headless)
 ```
 
-## Desktop Releases
-
-Pre-built installers (macOS, Windows, Linux) are published on the [Releases](../../releases) page. To cut a release:
-
-```sh
-git tag v1.x.x && git push origin v1.x.x
-```
-
 ## Deployment
 
 The platform uses a single Docker Compose stack across all environments. See [docs/deployment.md](docs/deployment.md) for full instructions.
