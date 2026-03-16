@@ -5,6 +5,9 @@ primary_region = "iad"
 # Fly.io terminates TLS at the edge (force_https=true) before traffic reaches
 # Traefik. Internal routing uses HTTP only — no ACME config needed inside the VM.
 
+[vm]
+  size = "performance-4x"   # 4 CPU, 8 GB RAM — needed for Redpanda + Ollama + ~47 services
+
 [deploy]
   strategy = "immediate"
 
@@ -15,7 +18,7 @@ primary_region = "iad"
   force_https = true
   auto_start_machines = true
   auto_stop_machines = "suspend"
-  min_machines_running = 1
+  min_machines_running = 0
 
   [[http_service.checks]]
     grace_period = "120s"
