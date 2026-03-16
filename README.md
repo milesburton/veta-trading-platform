@@ -52,10 +52,10 @@ npm run test:ui           # Playwright E2E (headless)
 The platform uses a single Docker Compose stack across all environments. See [docs/deployment.md](docs/deployment.md) for full instructions.
 
 ```sh
-# Homelab / self-hosted
+# Deployment to the local home lab
 docker compose -f compose.yml -f compose.prod.yml up -d
 
-# Fly.io (manual)
+# Deployment to the Fly.io cloud platform
 flyctl deploy --compose compose.yml --compose compose.prod.yml
 ```
 
@@ -63,4 +63,4 @@ See [docs/architecture.md](docs/architecture.md) for the full service map and de
 
 ## Licence
 
-MIT Licence &copy; 2025 Miles Burton
+MIT Licence &copy; 2026 Miles Burton
