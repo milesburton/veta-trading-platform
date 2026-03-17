@@ -111,7 +111,7 @@ CREATE INDEX IF NOT EXISTS idx_exec_orig_cl_ord_id
 CREATE TABLE IF NOT EXISTS users.users (
   id           TEXT PRIMARY KEY,
   name         TEXT NOT NULL,
-  role         TEXT NOT NULL CHECK (role IN ('trader','admin')),
+  role         TEXT NOT NULL CHECK (role IN ('trader','admin','compliance')),
   avatar_emoji TEXT NOT NULL
 );
 
@@ -119,7 +119,9 @@ CREATE TABLE IF NOT EXISTS users.trading_limits (
   user_id            TEXT             PRIMARY KEY REFERENCES users.users(id),
   max_order_qty      INTEGER          NOT NULL DEFAULT 10000,
   max_daily_notional DOUBLE PRECISION NOT NULL DEFAULT 1000000.0,
-  allowed_strategies TEXT             NOT NULL DEFAULT 'LIMIT,TWAP,POV,VWAP'
+  allowed_strategies TEXT             NOT NULL DEFAULT 'LIMIT,TWAP,POV,VWAP',
+  allowed_desks      TEXT             NOT NULL DEFAULT 'equity',
+  dark_pool_access   BOOLEAN          NOT NULL DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS users.sessions (

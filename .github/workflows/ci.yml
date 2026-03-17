@@ -146,11 +146,14 @@ jobs:
           COMMIT_SHA=$SHA LLM_ADVISORY_PORT=5024 LLM_ENABLED=false deno run --allow-all backend/src/llm-advisory/orchestrator.ts &
           COMMIT_SHA=$SHA MOMENTUM_ALGO_PORT=5025 deno run --allow-all backend/src/algo/momentum-strategy.ts &
           COMMIT_SHA=$SHA IS_ALGO_PORT=5026 deno run --allow-all backend/src/algo/is-strategy.ts &
-          COMMIT_SHA=$SHA GATEWAY_PORT=5011 JOURNAL_HOST=localhost JOURNAL_PORT=5009 USER_SERVICE_HOST=localhost USER_SERVICE_PORT=5008 deno run --allow-all backend/src/gateway/gateway.ts &
+          COMMIT_SHA=$SHA DARK_POOL_PORT=5027 deno run --allow-all backend/src/dark-pool/dark-pool-server.ts &
+          COMMIT_SHA=$SHA CCP_SERVICE_PORT=5028 deno run --allow-all backend/src/ccp/ccp-service.ts &
+          COMMIT_SHA=$SHA RFQ_SERVICE_PORT=5029 deno run --allow-all backend/src/rfq/rfq-service.ts &
+          COMMIT_SHA=$SHA GATEWAY_PORT=5011 JOURNAL_HOST=localhost JOURNAL_PORT=5009 USER_SERVICE_HOST=localhost USER_SERVICE_PORT=5008 DARK_POOL_HOST=localhost DARK_POOL_PORT=5027 CCP_SERVICE_HOST=localhost CCP_SERVICE_PORT=5028 RFQ_SERVICE_HOST=localhost RFQ_SERVICE_PORT=5029 deno run --allow-all backend/src/gateway/gateway.ts &
 
       - name: Wait for services to be ready
         run: |
-          for port in 5000 5001 5002 5003 5004 5005 5006 5007 5008 5009 5011 5012 5014 5015 5017 5018 5019 5020 5021 5022 5023 5024 5025 5026; do
+          for port in 5000 5001 5002 5003 5004 5005 5006 5007 5008 5009 5011 5012 5014 5015 5017 5018 5019 5020 5021 5022 5023 5024 5025 5026 5027 5028 5029; do
             for i in $(seq 1 30); do
               curl -sf http://localhost:$port/health && break || sleep 1
             done
@@ -349,6 +352,12 @@ jobs:
             file: docker/news-aggregator/Dockerfile
           - service: gateway
             file: docker/gateway/Dockerfile
+          - service: dark-pool
+            file: docker/dark-pool/Dockerfile
+          - service: ccp-service
+            file: docker/ccp-service/Dockerfile
+          - service: rfq-service
+            file: docker/rfq-service/Dockerfile
           - service: db-migrate
             file: docker/db-migrate/Dockerfile
     steps:
