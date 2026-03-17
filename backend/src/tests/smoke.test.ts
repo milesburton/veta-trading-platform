@@ -47,6 +47,7 @@ const AP_URL        = "http://localhost:5023";
 const LLM_URL       = "http://localhost:5024";
 const MOMENTUM_URL  = "http://localhost:5025";
 const IS_URL        = "http://localhost:5026";
+const DARK_POOL_URL = "http://localhost:5027";
 
 // ── All services expected to be healthy ───────────────────────────────────────
 
@@ -65,6 +66,8 @@ const ALL_SERVICES = [
   { name: "arrival-price-algo",        url: AP_URL        },
   { name: "momentum-algo",             url: MOMENTUM_URL  },
   { name: "is-algo",                   url: IS_URL        },
+  // Alternative trading systems
+  { name: "dark-pool",                 url: DARK_POOL_URL },
   // Platform services
   { name: "user-service",              url: USER_SVC_URL  },
   { name: "observability",             url: OBS_URL       },
@@ -781,6 +784,8 @@ Deno.test("[gateway/ready] response includes all expected service keys", async (
     "marketSim", "ems", "oms", "journal", "userService", "bus", "fixArchive", "fixGateway", "observability",
     // Algo engines
     "limitAlgo", "twapAlgo", "povAlgo", "vwapAlgo", "icebergAlgo", "sniperAlgo", "arrivalPriceAlgo", "momentumAlgo", "isAlgo",
+    // Alternative trading systems
+    "darkPool",
     // Data & intelligence
     "analytics", "marketData", "featureEngine", "signalEngine", "recommendationEngine", "scenarioEngine", "newsAggregator", "llmAdvisory",
   ];
@@ -795,4 +800,19 @@ Deno.test("[gateway/ready] ems and oms report true (env-var routing works)", asy
   const body = await res.json() as { services: Record<string, boolean> };
   assertEquals(body.services.ems, true, "ems must be true — check EMS_HOST/EMS_PORT env vars in gateway");
   assertEquals(body.services.oms, true, "oms must be true — check OMS_HOST/OMS_PORT env vars in gateway");
+});
+
+Deno.test("[dark-pool] GET /pool/stats returns valid structure", async () => {
+  const res = await fetch(`${DARK_POOL_URL}/pool/stats`, { signal: timeout(5_000) });
+  assertEquals(res.status, 200);
+  const body = await res.json() as {
+    service: string;
+    currentDepth: Record<string, unknown>;
+    totalMatchedToday: number;
+    totalMatchedAllTime: number;
+  };
+  assertEquals(body.service, "dark-pool");
+  assertExists(body.currentDepth);
+  assertEquals(typeof body.totalMatchedToday, "number");
+  assertEquals(typeof body.totalMatchedAllTime, "number");
 });

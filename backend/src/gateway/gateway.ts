@@ -27,6 +27,7 @@ const SNIPER_ALGO_URL = `http://${Deno.env.get("SNIPER_ALGO_HOST") ?? "localhost
 const ARRIVAL_PRICE_ALGO_URL = `http://${Deno.env.get("ARRIVAL_PRICE_ALGO_HOST") ?? "localhost"}:${Deno.env.get("ARRIVAL_PRICE_ALGO_PORT") ?? "5023"}`;
 const MOMENTUM_ALGO_URL = `http://${Deno.env.get("MOMENTUM_ALGO_HOST") ?? "localhost"}:${Deno.env.get("MOMENTUM_ALGO_PORT") ?? "5025"}`;
 const IS_ALGO_URL = `http://${Deno.env.get("IS_ALGO_HOST") ?? "localhost"}:${Deno.env.get("IS_ALGO_PORT") ?? "5026"}`;
+const DARK_POOL_URL = `http://${Deno.env.get("DARK_POOL_HOST") ?? "localhost"}:${Deno.env.get("DARK_POOL_PORT") ?? "5027"}`;
 const NEWS_AGGREGATOR_URL = `http://${Deno.env.get("NEWS_AGGREGATOR_HOST") ?? "localhost"}:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`;
 const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost"}:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`;
 
@@ -294,6 +295,17 @@ function startConsumers(): void {
       broadcastAll({ event: "llmStateUpdate", data: value });
     });
   }).catch(() => {});
+
+  // Dark pool execution reports — broadcast only to the two matched users (information barrier)
+  createConsumer("gateway-dark", ["dark.execution"]).then((c) => {
+    c.onMessage((_topic, value) => {
+      const v = value as { buyUserId?: string; sellUserId?: string };
+      if (v.buyUserId) broadcastToUser(v.buyUserId, { event: "orderEvent", topic: "dark.execution", data: value });
+      if (v.sellUserId && v.sellUserId !== v.buyUserId) {
+        broadcastToUser(v.sellUserId, { event: "orderEvent", topic: "dark.execution", data: value });
+      }
+    });
+  }).catch(() => {});
 }
 
 await startConsumers();
@@ -436,12 +448,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const [
       marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
       limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
+      darkPool,
       analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
     ] = await Promise.all([
       chk(MARKET_SIM_URL), chk(EMS_URL), chk(OMS_URL), chk(JOURNAL_URL), chk(USER_SERVICE_URL),
       chk(FIX_ARCHIVE_URL), chk(FIX_GATEWAY_URL), chk(OBSERVABILITY_URL),
       chk(LIMIT_ALGO_URL), chk(TWAP_ALGO_URL), chk(POV_ALGO_URL), chk(VWAP_ALGO_URL),
       chk(ICEBERG_ALGO_URL), chk(SNIPER_ALGO_URL), chk(ARRIVAL_PRICE_ALGO_URL), chk(MOMENTUM_ALGO_URL), chk(IS_ALGO_URL),
+      chk(DARK_POOL_URL),
       chk(ANALYTICS_URL), chk(MARKET_DATA_URL), chk(FEATURE_ENGINE_URL), chk(SIGNAL_ENGINE_URL),
       chk(RECOMMENDATION_ENGINE_URL), chk(SCENARIO_ENGINE_URL), chk(NEWS_AGGREGATOR_URL), chk(LLM_ADVISORY_URL),
     ]);
@@ -456,6 +470,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           marketSim, ems, oms, journal, userService, bus, fixArchive, fixGateway, observability,
           // Algo engines
           limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
+          // Alternative trading systems
+          darkPool,
           // Data & intelligence
           analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
         },
@@ -639,6 +655,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
     return proxyGet(`${JOURNAL_URL}/orders`, req);
+  }
+
+  if (path === "/pool/stats" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${DARK_POOL_URL}/pool/stats`, req);
   }
 
   if (path === "/grid/query" && req.method === "POST") {

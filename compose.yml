@@ -585,6 +585,40 @@ services:
       - "traefik.http.services.is-algo.loadbalancer.server.port=5026"
       - "traefik.http.routers.is-algo.priority=10"
 
+  # ── Alternative Trading Systems ────────────────────────────────────────────
+  dark-pool:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/dark-pool/dark-pool-server.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+    environment:
+      DARK_POOL_PORT: "5027"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      DARK_POOL_MIN_BLOCK: "10000"
+      MATCH_CYCLE_MS: "500"
+      ORDER_TIMEOUT_MS: "30000"
+      RESIDUAL_ACTION: reroute
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5027/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dark-pool.rule=PathPrefix(`/api/dark-pool`)"
+      - "traefik.http.routers.dark-pool.entrypoints=web,websecure"
+      - "traefik.http.routers.dark-pool.middlewares=dark-pool-strip"
+      - "traefik.http.middlewares.dark-pool-strip.stripprefix.prefixes=/api/dark-pool"
+      - "traefik.http.services.dark-pool.loadbalancer.server.port=5027"
+      - "traefik.http.routers.dark-pool.priority=10"
+
   # ── Observability / Kafka Relay ────────────────────────────────────────────
   observability:
     <<: *deno-service
@@ -1064,6 +1098,8 @@ services:
         condition: service_healthy
       llm-advisory:
         condition: service_healthy
+      dark-pool:
+        condition: service_healthy
     environment:
       GATEWAY_PORT: "5011"
       MARKET_SIM_HOST: market-sim
@@ -1086,6 +1122,8 @@ services:
       SCENARIO_ENGINE_PORT: "5020"
       LLM_ADVISORY_HOST: llm-advisory
       LLM_ADVISORY_PORT: "5024"
+      DARK_POOL_HOST: dark-pool
+      DARK_POOL_PORT: "5027"
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-dev}
     healthcheck:
