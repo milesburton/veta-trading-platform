@@ -122,6 +122,8 @@ export const DEFAULT_LIMITS: TradingLimits = {
   max_order_qty: 10_000,
   max_daily_notional: 1_000_000,
   allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+  allowed_desks: ["equity"],
+  dark_pool_access: false,
 };
 
 /** Trading limits for low-touch algorithmic trader (Bob) — all strategies, higher caps. */
@@ -129,6 +131,8 @@ export const ALGO_TRADER_LIMITS: TradingLimits = {
   max_order_qty: 100_000,
   max_daily_notional: 50_000_000,
   allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE"],
+  allowed_desks: ["equity"],
+  dark_pool_access: true,
 };
 
 /** Trading limits for FI trader (Carol) — LIMIT only, high notional for bond size. */
@@ -136,6 +140,8 @@ export const FI_TRADER_LIMITS: TradingLimits = {
   max_order_qty: 1_000,
   max_daily_notional: 100_000_000,
   allowed_strategies: ["LIMIT"],
+  allowed_desks: ["fi"],
+  dark_pool_access: false,
 };
 
 /** Trading limits for research analyst (David) — no trading permitted. */
@@ -143,6 +149,8 @@ export const ANALYST_LIMITS: TradingLimits = {
   max_order_qty: 0,
   max_daily_notional: 0,
   allowed_strategies: [],
+  allowed_desks: [],
+  dark_pool_access: false,
 };
 
 export const DEFAULT_ASSETS: AssetDef[] = [
