@@ -13,6 +13,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { settlementDate, type Desk } from "../lib/settlement.ts";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
@@ -62,15 +63,10 @@ function pickLiquidityFlag(venue: string): "MAKER" | "TAKER" | "CROSS" {
   const makerBias = (venue === "BATS" || venue === "EDGX") ? 0.65 : 0.40;
   return r < makerBias ? "MAKER" : r < 0.95 ? "TAKER" : "CROSS";
 }
-function settlementDate(fromMs = Date.now()): string {
-  const d = new Date(fromMs);
-  let added = 0;
-  while (added < 2) {
-    d.setDate(d.getDate() + 1);
-    const dow = d.getDay();
-    if (dow !== 0 && dow !== 6) added++;
-  }
-  return d.toISOString().slice(0, 10);
+function deskFromOrder(order: ChildOrder): Desk {
+  if (order.instrumentType === "bond") return "fi";
+  if (order.instrumentType === "option") return "derivatives";
+  return "equity";
 }
 
 const producer = await createProducer("ems").catch((err) => {
@@ -96,6 +92,10 @@ interface ChildOrder {
   deviation?: number;
   tickVolume?: number;
   algoParams?: Record<string, unknown>;
+  instrumentType?: string;
+  desk?: string;
+  marketType?: string;
+  userId?: string;
   ts: number;
 }
 
@@ -134,7 +134,7 @@ consumer?.onMessage(async (_topic, raw) => {
 
   const counterparty = pickCounterparty();
   const liquidityFlag = pickLiquidityFlag(venue);
-  const sd = settlementDate();
+  const sd = settlementDate(deskFromOrder(child));
   const commissionPerShare = liquidityFlag === "MAKER" ? -0.002 : COMMISSION_PER_SHARE;
   const commissionUSD = parseFloat((filledQty * commissionPerShare).toFixed(2));
   const notional = filledQty * avgFillPrice;
@@ -155,6 +155,7 @@ consumer?.onMessage(async (_topic, raw) => {
       childId: child.childId,
       parentOrderId: child.parentOrderId,
       clientOrderId: child.clientOrderId,
+      userId: child.userId,
       algo: child.algo,
       asset: child.asset,
       side: child.side,
@@ -172,6 +173,8 @@ consumer?.onMessage(async (_topic, raw) => {
       finraTafUSD,
       totalFeeUSD,
       settlementDate: sd,
+      desk: child.desk ?? deskFromOrder(child),
+      marketType: child.marketType ?? "lit",
       ts: Date.now(),
     };
 

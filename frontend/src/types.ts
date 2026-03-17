@@ -267,6 +267,8 @@ export interface OrderRecord {
   instrumentType?: InstrumentType;
   optionSpec?: OptionSpec;
   bondSpec?: BondSpec;
+  desk?: "equity" | "fi" | "derivatives" | "otc";
+  marketType?: "lit" | "dark" | "otc";
 }
 
 export interface ObsEvent {

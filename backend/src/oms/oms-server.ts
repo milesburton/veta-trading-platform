@@ -2,9 +2,17 @@
  * Order Management System (OMS)
  *
  * Subscribes to: orders.new, orders.kill, orders.resume
- * Publishes to:  orders.submitted, orders.routed, orders.rejected,
+ * Publishes to:  orders.submitted, orders.routed, orders.fi.rfq, orders.rejected,
  *                orders.cancelled, orders.resumed, orders.kill.audit, orders.resume.audit
  *
+ * Routing logic:
+ *   equity  + lit          → orders.routed (→ algo strategies → EMS)
+ *   equity  + dark pool    → orders.routed with destinationVenue=DARK1 (→ dark-pool service)
+ *   fi      (bond)         → orders.fi.rfq (→ rfq-service)
+ *   derivatives + listed   → orders.routed with destinationVenue=XNAS (→ EMS)
+ *   derivatives + otc      → orders.routed with destinationVenue=OTC-OPTIONS (→ otc-options service)
+ *
+ * Information barriers: desk access validated per user before routing.
  * Kill/resume events are captured by observability for regulatory audit.
  * HTTP surface: GET /health
  */
@@ -17,25 +25,36 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const USER_SERVICE_URL = `http://${Deno.env.get("USER_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("USER_SERVICE_PORT") ?? "5008"}`;
 const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
 
+/** Minimum block size for dark pool routing (shares). */
+const DARK_POOL_MIN_BLOCK = Number(Deno.env.get("DARK_POOL_MIN_BLOCK") ?? "10000");
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-const KNOWN_STRATEGIES = new Set(["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE", "IS", "MOMENTUM"]);
+const KNOWN_STRATEGIES = new Set([
+  "LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE", "IS", "MOMENTUM",
+]);
+
+type Desk = "equity" | "fi" | "derivatives";
+type MarketType = "lit" | "dark" | "otc";
 
 interface TradingLimits {
   max_order_qty: number;
   max_daily_notional: number;
   allowed_strategies: string[];
+  allowed_desks: string[];
+  dark_pool_access: boolean;
 }
 
-/** Default permissive limits used when user-service is unavailable. */
 const DEFAULT_LIMITS: TradingLimits = {
   max_order_qty: 10_000,
   max_daily_notional: 1_000_000,
   allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE", "IS", "MOMENTUM"],
+  allowed_desks: ["equity"],
+  dark_pool_access: false,
 };
 
 const limitsCache = new Map<string, { limits: TradingLimits; expiresAt: number }>();
@@ -43,49 +62,67 @@ const limitsCache = new Map<string, { limits: TradingLimits; expiresAt: number }
 async function getUserLimits(userId: string): Promise<TradingLimits> {
   const now = Date.now();
   const cached = limitsCache.get(userId);
-  if (cached) {
-    if (cached.expiresAt > now) return cached.limits;
-    limitsCache.delete(userId); // evict expired entry
-  }
+  if (cached && cached.expiresAt > now) return cached.limits;
+  limitsCache.delete(userId);
 
   try {
     const res = await fetch(`${USER_SERVICE_URL}/users/${encodeURIComponent(userId)}/limits`, {
       signal: AbortSignal.timeout(3_000),
     });
     if (!res.ok) return DEFAULT_LIMITS;
-    const data = await res.json() as { max_order_qty: number; max_daily_notional: number; allowed_strategies: string[] };
+    const data = await res.json() as {
+      max_order_qty: number;
+      max_daily_notional: number;
+      allowed_strategies: string[];
+      allowed_desks?: string[];
+      dark_pool_access?: boolean;
+    };
     const limits: TradingLimits = {
       max_order_qty: data.max_order_qty,
       max_daily_notional: data.max_daily_notional,
       allowed_strategies: data.allowed_strategies,
+      allowed_desks: data.allowed_desks ?? ["equity"],
+      dark_pool_access: data.dark_pool_access ?? false,
     };
-    limitsCache.set(userId, { limits, expiresAt: now + 30_000 }); // cache for 30s
+    limitsCache.set(userId, { limits, expiresAt: now + 30_000 });
     return limits;
   } catch {
     return DEFAULT_LIMITS;
   }
 }
 
-let seqNum = 1;
+// ── Desk / routing derivation ─────────────────────────────────────────────────
 
-function nextOrderId(): string {
-  return `oms-${Date.now()}-${seqNum++}`;
+function deriveDesk(instrumentType?: string): Desk {
+  if (instrumentType === "bond") return "fi";
+  if (instrumentType === "option") return "derivatives";
+  return "equity";
 }
 
-const producer = await createProducer("oms").catch((err) => {
-  console.warn("[oms] Redpanda unavailable — orders will not be published to bus:", err.message);
-  return null;
-});
+function deriveMarketType(
+  desk: Desk,
+  order: NewOrder,
+  limits: TradingLimits,
+): MarketType {
+  if (desk === "fi") return "otc";
+  if (desk === "derivatives" && order.optionSpec?.isOtc) return "otc";
+  // Route equity block orders to dark pool when user has access
+  if (
+    desk === "equity" &&
+    limits.dark_pool_access &&
+    order.quantity >= DARK_POOL_MIN_BLOCK
+  ) return "dark";
+  return "lit";
+}
 
-const consumer = await createConsumer("oms-new-orders", ["orders.new"]).catch((err) => {
-  console.warn("[oms] Cannot subscribe to orders.new:", err.message);
-  return null;
-});
+function deriveDestinationVenue(desk: Desk, marketType: MarketType): string {
+  if (desk === "fi") return "RFQ";
+  if (marketType === "dark") return "DARK1";
+  if (marketType === "otc") return "OTC-OPTIONS";
+  return "XNAS";
+}
 
-const killConsumer = await createConsumer("oms-kill-orders", ["orders.kill", "orders.resume"]).catch((err) => {
-  console.warn("[oms] Cannot subscribe to orders.kill/orders.resume:", err.message);
-  return null;
-});
+// ── Interfaces ────────────────────────────────────────────────────────────────
 
 interface BondSpec {
   isin: string;
@@ -98,6 +135,13 @@ interface BondSpec {
   faceValue: number;
   yieldAtOrder: number;
   creditRating: string;
+}
+
+interface OptionSpec {
+  optionType: "call" | "put";
+  strike: number;
+  expirySecs: number;
+  isOtc?: boolean;
 }
 
 interface NewOrder {
@@ -113,6 +157,7 @@ interface NewOrder {
   userRole?: string;
   instrumentType?: string;
   bondSpec?: BondSpec;
+  optionSpec?: OptionSpec;
 }
 
 type KillScope = "all" | "user" | "algo" | "market" | "symbol";
@@ -142,13 +187,40 @@ interface ActiveOrder {
   userId?: string;
   asset: string;
   strategy: string;
+  desk: Desk;
   status: "pending" | "working";
 }
 
+// ── Kafka ─────────────────────────────────────────────────────────────────────
+
+let seqNum = 1;
+function nextOrderId(): string {
+  return `oms-${Date.now()}-${seqNum++}`;
+}
+
+const producer = await createProducer("oms").catch((err) => {
+  console.warn("[oms] Redpanda unavailable — orders will not be published to bus:", err.message);
+  return null;
+});
+
+const consumer = await createConsumer("oms-new-orders", ["orders.new"]).catch((err) => {
+  console.warn("[oms] Cannot subscribe to orders.new:", err.message);
+  return null;
+});
+
+const killConsumer = await createConsumer("oms-kill-orders", ["orders.kill", "orders.resume"]).catch((err) => {
+  console.warn("[oms] Cannot subscribe to orders.kill/orders.resume:", err.message);
+  return null;
+});
+
 const activeOrders = new Map<string, ActiveOrder>();
+
+// ── Order handler ─────────────────────────────────────────────────────────────
 
 consumer?.onMessage(async (_topic, raw) => {
   const order = raw as NewOrder;
+
+  // ── Basic validation ──────────────────────────────────────────────────────
 
   if (!order.asset || !order.side || !order.quantity) {
     console.warn("[oms] Malformed order — missing required fields");
@@ -161,21 +233,40 @@ consumer?.onMessage(async (_topic, raw) => {
     return;
   }
 
-  if (order.instrumentType === "option") {
-    console.warn(`[oms] Option order rejected — options not supported (user=${order.userId})`);
+  if (order.userRole === "admin" || order.userRole === "compliance") {
+    console.warn(`[oms] Order rejected — ${order.userRole} user ${order.userId} attempted to submit an order`);
     await producer?.send("orders.rejected", {
       clientOrderId: order.clientOrderId,
       userId: order.userId,
-      reason: "Options trading is not supported in this simulation",
+      reason: `${order.userRole === "admin" ? "Admin" : "Compliance"} accounts are not permitted to submit orders`,
       ts: Date.now(),
     }).catch(() => {});
     return;
   }
 
-  // Bond orders: validate bondSpec is present, force LIMIT strategy
-  if (order.instrumentType === "bond") {
+  // ── Derive desk, market type, venue ──────────────────────────────────────
+
+  const desk = deriveDesk(order.instrumentType);
+
+  // ── User limits + desk access check ──────────────────────────────────────
+
+  const limits = order.userId ? await getUserLimits(order.userId) : DEFAULT_LIMITS;
+
+  if (!limits.allowed_desks.includes(desk)) {
+    console.warn(`[oms] Order rejected — user ${order.userId} does not have access to ${desk} desk`);
+    await producer?.send("orders.rejected", {
+      clientOrderId: order.clientOrderId,
+      userId: order.userId,
+      reason: `Your account does not have access to the ${desk} desk`,
+      ts: Date.now(),
+    }).catch(() => {});
+    return;
+  }
+
+  // ── Instrument-specific validation ───────────────────────────────────────
+
+  if (desk === "fi") {
     if (!order.bondSpec) {
-      console.warn(`[oms] Bond order missing bondSpec (user=${order.userId})`);
       await producer?.send("orders.rejected", {
         clientOrderId: order.clientOrderId,
         userId: order.userId,
@@ -184,50 +275,39 @@ consumer?.onMessage(async (_topic, raw) => {
       }).catch(() => {});
       return;
     }
-    // Force LIMIT strategy for bond orders — algo strategies don't apply
-    order.strategy = "LIMIT";
-    console.log(`[oms] Bond order accepted: ${order.bondSpec.symbol} qty=${order.quantity} yield=${(order.bondSpec.yieldAtOrder * 100).toFixed(3)}% (user=${order.userId})`);
   }
 
-  const strategy = (order.strategy ?? "LIMIT").toUpperCase();
-  if (!KNOWN_STRATEGIES.has(strategy)) {
-    console.warn(`[oms] Unknown strategy "${strategy}" — rejecting order`);
-    await producer?.send("orders.rejected", {
-      clientOrderId: order.clientOrderId,
-      userId: order.userId,
-      reason: `Unknown strategy: ${strategy}`,
-      ts: Date.now(),
-    }).catch(() => {});
-    return;
-  }
-
-  if (order.userRole === "admin") {
-    console.warn(`[oms] Order rejected — admin user ${order.userId} attempted to submit an order`);
-    await producer?.send("orders.rejected", {
-      clientOrderId: order.clientOrderId,
-      userId: order.userId,
-      reason: "Admin accounts are not permitted to submit orders",
-      ts: Date.now(),
-    }).catch(() => {});
-    return;
-  }
-
-  if (order.userId) {
-    const limits = await getUserLimits(order.userId);
-
-    if (order.quantity > limits.max_order_qty) {
-      console.warn(`[oms] Order rejected — quantity ${order.quantity} exceeds limit ${limits.max_order_qty} for user ${order.userId}`);
+  if (desk === "derivatives") {
+    if (!order.optionSpec?.optionType || order.optionSpec?.strike === undefined || order.optionSpec?.expirySecs === undefined) {
       await producer?.send("orders.rejected", {
         clientOrderId: order.clientOrderId,
         userId: order.userId,
-        reason: `Order quantity ${order.quantity} exceeds your limit of ${limits.max_order_qty}`,
+        reason: "Option orders require optionSpec (optionType, strike, expirySecs)",
         ts: Date.now(),
       }).catch(() => {});
       return;
     }
+  }
 
+  // ── Strategy validation (equity + listed derivatives only) ───────────────
+
+  // FI uses RFQ — no algo strategy applies. OTC options use bilateral flow.
+  const needsStrategyCheck = desk === "equity" || (desk === "derivatives" && !order.optionSpec?.isOtc);
+
+  let strategy = (order.strategy ?? "LIMIT").toUpperCase();
+  if (desk === "fi") strategy = "LIMIT"; // bonds always LIMIT internally
+
+  if (needsStrategyCheck) {
+    if (!KNOWN_STRATEGIES.has(strategy)) {
+      await producer?.send("orders.rejected", {
+        clientOrderId: order.clientOrderId,
+        userId: order.userId,
+        reason: `Unknown strategy: ${strategy}`,
+        ts: Date.now(),
+      }).catch(() => {});
+      return;
+    }
     if (!limits.allowed_strategies.includes(strategy)) {
-      console.warn(`[oms] Order rejected — strategy ${strategy} not permitted for user ${order.userId}`);
       await producer?.send("orders.rejected", {
         clientOrderId: order.clientOrderId,
         userId: order.userId,
@@ -236,26 +316,39 @@ consumer?.onMessage(async (_topic, raw) => {
       }).catch(() => {});
       return;
     }
-
-    const notional = order.quantity * (order.limitPrice ?? 0);
-    if (notional > limits.max_daily_notional) {
-      console.warn(`[oms] Order rejected — notional ${notional} exceeds daily limit ${limits.max_daily_notional} for user ${order.userId}`);
-      await producer?.send("orders.rejected", {
-        clientOrderId: order.clientOrderId,
-        userId: order.userId,
-        reason: `Order notional $${notional.toLocaleString()} exceeds your daily limit of $${limits.max_daily_notional.toLocaleString()}`,
-        ts: Date.now(),
-      }).catch(() => {});
-      return;
-    }
   }
 
+  // ── Qty / notional limits ─────────────────────────────────────────────────
+
+  if (order.quantity > limits.max_order_qty) {
+    await producer?.send("orders.rejected", {
+      clientOrderId: order.clientOrderId,
+      userId: order.userId,
+      reason: `Order quantity ${order.quantity} exceeds your limit of ${limits.max_order_qty}`,
+      ts: Date.now(),
+    }).catch(() => {});
+    return;
+  }
+
+  const notional = order.quantity * (order.limitPrice ?? 0);
+  if (notional > limits.max_daily_notional) {
+    await producer?.send("orders.rejected", {
+      clientOrderId: order.clientOrderId,
+      userId: order.userId,
+      reason: `Order notional $${notional.toLocaleString()} exceeds your daily limit of $${limits.max_daily_notional.toLocaleString()}`,
+      ts: Date.now(),
+    }).catch(() => {});
+    return;
+  }
+
+  // ── Build enriched order ──────────────────────────────────────────────────
+
+  const marketType = deriveMarketType(desk, order, limits);
+  const destinationVenue = deriveDestinationVenue(desk, marketType);
   const orderId = nextOrderId();
   const ts = Date.now();
   const expiresInSecs = Number(order.expiresAt ?? 0);
   const timeInForce = expiresInSecs <= 0 ? "GTC" : expiresInSecs <= 60 ? "IOC" : "DAY";
-  const destinationVenue = "XNAS";
-  const accountId = "ACC-001";
 
   const enriched = {
     orderId,
@@ -264,7 +357,7 @@ consumer?.onMessage(async (_topic, raw) => {
     ts,
     timeInForce,
     destinationVenue,
-    accountId,
+    accountId: "ACC-001",
     asset: order.asset,
     side: order.side,
     quantity: order.quantity,
@@ -272,9 +365,17 @@ consumer?.onMessage(async (_topic, raw) => {
     expiresAt: order.expiresAt,
     strategy,
     algoParams: order.algoParams ?? {},
+    instrumentType: order.instrumentType ?? "equity",
+    desk,
+    marketType,
+    bondSpec: order.bondSpec,
+    optionSpec: order.optionSpec,
   };
 
-  console.log(`[oms] Accepted ${strategy} order ${orderId}: ${order.side} ${order.quantity} ${order.asset} (user=${order.userId ?? "unknown"})`);
+  console.log(
+    `[oms] Accepted ${strategy} order ${orderId}: ${order.side} ${order.quantity} ${order.asset} ` +
+    `desk=${desk} marketType=${marketType} venue=${destinationVenue} (user=${order.userId ?? "unknown"})`,
+  );
 
   if (order.clientOrderId) {
     activeOrders.set(order.clientOrderId, {
@@ -283,13 +384,26 @@ consumer?.onMessage(async (_topic, raw) => {
       userId: order.userId,
       asset: order.asset,
       strategy,
+      desk,
       status: "pending",
     });
   }
 
   await producer?.send("orders.submitted", enriched).catch(() => {});
-  await producer?.send("orders.routed", { ...enriched, routedAt: Date.now() }).catch(() => {});
+
+  // ── Route to the appropriate downstream topic ─────────────────────────────
+
+  if (desk === "fi") {
+    // FI orders go to RFQ service — not via algo strategies
+    await producer?.send("orders.fi.rfq", { ...enriched, routedAt: Date.now() }).catch(() => {});
+    console.log(`[oms] Bond order ${orderId} routed to RFQ service (${order.bondSpec?.symbol})`);
+  } else {
+    // Equity (lit + dark) and listed derivatives go via orders.routed → algos → EMS
+    await producer?.send("orders.routed", { ...enriched, routedAt: Date.now() }).catch(() => {});
+  }
 });
+
+// ── Kill / Resume handler ─────────────────────────────────────────────────────
 
 killConsumer?.onMessage(async (topic, raw) => {
   const ts = Date.now();
@@ -326,7 +440,7 @@ killConsumer?.onMessage(async (topic, raw) => {
       return;
     }
 
-    console.log(`[oms] Kill command from ${issuedBy} (role=${issuedByRole}): cancelling ${toCancel.length} orders (scope=${scope} scopeValue=${scopeValue ?? "—"})`);
+    console.log(`[oms] Kill command from ${issuedBy} (role=${issuedByRole}): cancelling ${toCancel.length} orders`);
 
     for (const order of toCancel) {
       activeOrders.delete(order.clientOrderId);
@@ -336,6 +450,7 @@ killConsumer?.onMessage(async (topic, raw) => {
         userId: order.userId,
         asset: order.asset,
         strategy: order.strategy,
+        desk: order.desk,
         reason: `Killswitch: ${scope}${scopeValue ? `=${scopeValue}` : ""}`,
         issuedBy,
         issuedByRole,
@@ -344,11 +459,7 @@ killConsumer?.onMessage(async (topic, raw) => {
     }
 
     await producer?.send("orders.kill.audit", {
-      scope,
-      scopeValue,
-      targetUserId,
-      issuedBy,
-      issuedByRole,
+      scope, scopeValue, targetUserId, issuedBy, issuedByRole,
       cancelledCount: toCancel.length,
       cancelledIds: toCancel.map((o) => o.clientOrderId),
       ts,
@@ -358,34 +469,17 @@ killConsumer?.onMessage(async (topic, raw) => {
   if (topic === "orders.resume") {
     const cmd = raw as ResumeCommand;
     const { scope, scopeValue, targetUserId, resumeAt, issuedBy, issuedByRole } = cmd;
-
     const effectiveAt = resumeAt && resumeAt > ts ? resumeAt : ts;
     const delayMs = effectiveAt - ts;
 
     const doResume = async () => {
       console.log(`[oms] Resume command from ${issuedBy} (role=${issuedByRole}): scope=${scope} scopeValue=${scopeValue ?? "—"}`);
-      await producer?.send("orders.resumed", {
-        scope,
-        scopeValue,
-        targetUserId,
-        issuedBy,
-        issuedByRole,
-        ts: Date.now(),
-      }).catch(() => {});
-
-        await producer?.send("orders.resume.audit", {
-        scope,
-        scopeValue,
-        targetUserId,
-        issuedBy,
-        issuedByRole,
-        resumeAt: effectiveAt,
-        ts: Date.now(),
-      }).catch(() => {});
+      await producer?.send("orders.resumed", { scope, scopeValue, targetUserId, issuedBy, issuedByRole, ts: Date.now() }).catch(() => {});
+      await producer?.send("orders.resume.audit", { scope, scopeValue, targetUserId, issuedBy, issuedByRole, resumeAt: effectiveAt, ts: Date.now() }).catch(() => {});
     };
 
     if (delayMs > 0) {
-      console.log(`[oms] Resume scheduled in ${delayMs}ms (at ${new Date(effectiveAt).toISOString()})`);
+      console.log(`[oms] Resume scheduled in ${delayMs}ms`);
       setTimeout(() => { doResume().catch(() => {}); }, delayMs);
     } else {
       await doResume();
@@ -395,19 +489,14 @@ killConsumer?.onMessage(async (topic, raw) => {
 
 console.log(`[oms] Listening for orders.new on message bus`);
 
-// On restart the OMS loses its in-memory activeOrders map. Query the journal for any orders
-// still pending/working past their expiresAt and publish orders.expired so the journal records
-// a real event rather than inferring status at read time.
+// ── Orphaned order expiry ─────────────────────────────────────────────────────
+
 async function expireOrphanedOrders() {
   try {
     const res = await fetch(`${JOURNAL_URL}/orders?limit=500`);
     if (!res.ok) return;
     const orders = await res.json() as Array<{
-      id: string;
-      clientOrderId?: string;
-      status: string;
-      expiresAt: number;
-      userId?: string;
+      id: string; clientOrderId?: string; status: string; expiresAt: number; userId?: string;
     }>;
     const now = Date.now();
     for (const order of orders) {
@@ -419,16 +508,16 @@ async function expireOrphanedOrders() {
           ts: now,
           reason: "expired_on_oms_restart",
         }).catch(() => {});
-        console.log(`[oms] Expired orphaned order ${order.id} (status was ${order.status})`);
+        console.log(`[oms] Expired orphaned order ${order.id}`);
       }
     }
-  } catch {
-    // journal may not be up yet — best effort
-  }
+  } catch { /* journal may not be up yet */ }
 }
 
 setTimeout(() => { expireOrphanedOrders().catch(() => {}); }, 3_000);
 setInterval(() => { expireOrphanedOrders().catch(() => {}); }, 15_000);
+
+// ── HTTP ──────────────────────────────────────────────────────────────────────
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);

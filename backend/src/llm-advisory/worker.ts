@@ -9,7 +9,7 @@ import { createOllamaProvider } from "./providers/ollama.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
 import { llmAdvisoryPool } from "../lib/db.ts";
 
-const PORT = Number(Deno.env.get("LLM_WORKER_PORT")) || 5_025;
+const PORT = Number(Deno.env.get("LLM_WORKER_PORT")) || 5_033;
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
 const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") || "http://localhost:5017";
 const SIGNAL_ENGINE_URL = Deno.env.get("SIGNAL_ENGINE_URL") || "http://localhost:5018";

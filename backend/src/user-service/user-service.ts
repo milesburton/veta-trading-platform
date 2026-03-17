@@ -134,7 +134,7 @@ async function handle(req: Request): Promise<Response> {
     const client = await usersPool.connect();
     try {
       const { rows } = await client.queryArray(
-        "SELECT max_order_qty, max_daily_notional, allowed_strategies FROM users.trading_limits WHERE user_id = $1",
+        "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access FROM users.trading_limits WHERE user_id = $1",
         [user.id],
       );
       const limits = rows.length > 0
@@ -142,8 +142,10 @@ async function handle(req: Request): Promise<Response> {
             max_order_qty: rows[0][0] as number,
             max_daily_notional: rows[0][1] as number,
             allowed_strategies: (rows[0][2] as string).split(","),
+            allowed_desks: (rows[0][3] as string).split(","),
+            dark_pool_access: rows[0][4] as boolean,
           }
-        : { max_order_qty: 10000, max_daily_notional: 1_000_000, allowed_strategies: ["LIMIT","TWAP","POV","VWAP"] };
+        : { max_order_qty: 10000, max_daily_notional: 1_000_000, allowed_strategies: ["LIMIT","TWAP","POV","VWAP"], allowed_desks: ["equity"], dark_pool_access: false };
       return json({ user, limits });
     } finally { client.release(); }
   }
@@ -155,35 +157,44 @@ async function handle(req: Request): Promise<Response> {
       const client = await usersPool.connect();
       try {
         const { rows } = await client.queryArray(
-          "SELECT max_order_qty, max_daily_notional, allowed_strategies FROM users.trading_limits WHERE user_id = $1",
+          "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access FROM users.trading_limits WHERE user_id = $1",
           [userId],
         );
         if (rows.length === 0) return json({ error: "user not found" }, 404);
-        const [max_order_qty, max_daily_notional, allowed_strategies] = rows[0];
-        return json({ userId, max_order_qty, max_daily_notional, allowed_strategies: (allowed_strategies as string).split(",") });
+        const [max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access] = rows[0];
+        return json({
+          userId,
+          max_order_qty,
+          max_daily_notional,
+          allowed_strategies: (allowed_strategies as string).split(","),
+          allowed_desks: (allowed_desks as string).split(","),
+          dark_pool_access: dark_pool_access as boolean,
+        });
       } finally { client.release(); }
     }
     if (req.method === "PUT") {
       const caller = await getUserFromToken(getCookieToken(req));
       if (!caller) return json({ error: "unauthenticated" }, 401);
       if (caller.role !== "admin") return json({ error: "forbidden — admin only" }, 403);
-      let body: { max_order_qty?: number; max_daily_notional?: number; allowed_strategies?: string[] };
+      let body: { max_order_qty?: number; max_daily_notional?: number; allowed_strategies?: string[]; allowed_desks?: string[]; dark_pool_access?: boolean };
       try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
 
       const client = await usersPool.connect();
       try {
         const { rows } = await client.queryArray(
-          "SELECT max_order_qty, max_daily_notional, allowed_strategies FROM users.trading_limits WHERE user_id = $1",
+          "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access FROM users.trading_limits WHERE user_id = $1",
           [userId],
         );
         if (rows.length === 0) return json({ error: "user not found" }, 404);
-        const [cur_qty, cur_notional, cur_strategies] = rows[0];
+        const [cur_qty, cur_notional, cur_strategies, cur_desks, cur_dark_pool] = rows[0];
         await client.queryArray(
-          "UPDATE users.trading_limits SET max_order_qty=$1, max_daily_notional=$2, allowed_strategies=$3 WHERE user_id=$4",
+          "UPDATE users.trading_limits SET max_order_qty=$1, max_daily_notional=$2, allowed_strategies=$3, allowed_desks=$4, dark_pool_access=$5 WHERE user_id=$6",
           [
             body.max_order_qty ?? cur_qty,
             body.max_daily_notional ?? cur_notional,
             body.allowed_strategies ? body.allowed_strategies.join(",") : cur_strategies,
+            body.allowed_desks ? body.allowed_desks.join(",") : cur_desks,
+            body.dark_pool_access ?? cur_dark_pool,
             userId,
           ],
         );

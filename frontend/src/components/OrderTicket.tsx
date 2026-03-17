@@ -589,19 +589,29 @@ export function OrderTicket() {
 
   const symbol = selectedAsset?.symbol ?? "";
 
-  if (userRole === "admin") {
+  if (userRole === "admin" || userRole === "compliance") {
+    const isCompliance = userRole === "compliance";
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
         <span className="text-2xl" aria-hidden="true">
-          ⚙
+          {isCompliance ? "🔍" : "⚙"}
         </span>
-        <p className="text-sm font-semibold text-gray-300">Admin account</p>
+        <p className="text-sm font-semibold text-gray-300">
+          {isCompliance ? "Compliance account" : "Admin account"}
+        </p>
         <p className="text-xs text-gray-500 leading-relaxed">
-          Administrators cannot submit orders. This panel is reserved for trader accounts.
+          {isCompliance
+            ? "Compliance officers have read-only access. Order submission is disabled."
+            : "Administrators cannot submit orders. This panel is reserved for trader accounts."}
         </p>
       </div>
     );
   }
+
+  const allowedDesks = limits.allowed_desks ?? ["equity"];
+  const canTradeEquity = allowedDesks.includes("equity");
+  const canTradeDerivatives = allowedDesks.includes("derivatives");
+  const canTradeFi = allowedDesks.includes("fi");
 
   return (
     <div className="flex flex-col h-full" data-testid="order-ticket-panel">
@@ -610,44 +620,50 @@ export function OrderTicket() {
         onSubmit={handleSubmit}
         className="flex flex-col gap-2.5 p-3 overflow-auto flex-1"
       >
-        {/* Instrument type toggle */}
+        {/* Instrument type toggle — gated by allowed_desks */}
         <div className="flex gap-1">
-          <button
-            type="button"
-            aria-pressed={!isOptions && !isBond}
-            onClick={handleSwitchToEquity}
-            className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
-              !isOptions && !isBond
-                ? "bg-gray-700 border-gray-500 text-gray-100"
-                : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
-            }`}
-          >
-            Equity
-          </button>
-          <button
-            type="button"
-            aria-pressed={isOptions}
-            onClick={handleSwitchToOptions}
-            className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
-              isOptions
-                ? "bg-gray-700 border-gray-500 text-gray-100"
-                : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
-            }`}
-          >
-            Options
-          </button>
-          <button
-            type="button"
-            aria-pressed={isBond}
-            onClick={handleSwitchToBond}
-            className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
-              isBond
-                ? "bg-gray-700 border-gray-500 text-gray-100"
-                : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
-            }`}
-          >
-            Bond
-          </button>
+          {canTradeEquity && (
+            <button
+              type="button"
+              aria-pressed={!isOptions && !isBond}
+              onClick={handleSwitchToEquity}
+              className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
+                !isOptions && !isBond
+                  ? "bg-gray-700 border-gray-500 text-gray-100"
+                  : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+              }`}
+            >
+              Equity
+            </button>
+          )}
+          {canTradeDerivatives && (
+            <button
+              type="button"
+              aria-pressed={isOptions}
+              onClick={handleSwitchToOptions}
+              className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
+                isOptions
+                  ? "bg-gray-700 border-gray-500 text-gray-100"
+                  : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+              }`}
+            >
+              Options
+            </button>
+          )}
+          {canTradeFi && (
+            <button
+              type="button"
+              aria-pressed={isBond}
+              onClick={handleSwitchToBond}
+              className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
+                isBond
+                  ? "bg-gray-700 border-gray-500 text-gray-100"
+                  : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+              }`}
+            >
+              Bond
+            </button>
+          )}
         </div>
 
         {/* Strategy — equity only */}

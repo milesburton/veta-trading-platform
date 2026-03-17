@@ -47,6 +47,8 @@ interface UserLimits {
   max_order_qty: number;
   max_daily_notional: number;
   allowed_strategies: string[];
+  allowed_desks?: string[];
+  dark_pool_access?: boolean;
 }
 
 function getCookieToken(req: Request): string | null {
@@ -127,17 +129,61 @@ function publishAccessEvent(event: {
   producer?.send("user.access", { ...event, ts: Date.now() }).catch(() => {});
 }
 
-const clients = new Set<WebSocket>();
+/** Per-user WebSocket connections — enforces information barriers.
+ *  Market data (non-confidential) uses broadcastAll().
+ *  Order events use broadcastToUser() so only the owning user sees them.
+ *  Compliance / admin users receive broadcastToRoles() for oversight feeds.
+ */
+const userConnections = new Map<string, Set<WebSocket>>();
+const anonymousClients = new Set<WebSocket>();
 
-function broadcast(msg: unknown): void {
-  const frame = JSON.stringify(msg);
-  for (const ws of clients) {
-    try {
-      if (ws.readyState === WebSocket.OPEN) ws.send(frame);
-    } catch {
-      clients.delete(ws);
-    }
+function _addUserSocket(userId: string, ws: WebSocket): void {
+  let sockets = userConnections.get(userId);
+  if (!sockets) { sockets = new Set(); userConnections.set(userId, sockets); }
+  sockets.add(ws);
+}
+
+function _removeSocket(userId: string | null, ws: WebSocket): void {
+  if (userId) {
+    const sockets = userConnections.get(userId);
+    if (sockets) { sockets.delete(ws); if (sockets.size === 0) userConnections.delete(userId); }
+  } else {
+    anonymousClients.delete(ws);
   }
+}
+
+function _totalConnections(): number {
+  let n = anonymousClients.size;
+  for (const s of userConnections.values()) n += s.size;
+  return n;
+}
+
+function _sendTo(ws: WebSocket, frame: string): void {
+  try { if (ws.readyState === WebSocket.OPEN) ws.send(frame); } catch { /* ignore */ }
+}
+
+/** Send to all connected sockets (market ticks, signals, news — non-confidential). */
+function broadcastAll(msg: unknown): void {
+  const frame = JSON.stringify(msg);
+  for (const ws of anonymousClients) _sendTo(ws, frame);
+  for (const sockets of userConnections.values()) {
+    for (const ws of sockets) _sendTo(ws, frame);
+  }
+}
+
+/** Send only to sockets belonging to a specific user (information barrier). */
+function broadcastToUser(userId: string, msg: unknown): void {
+  const sockets = userConnections.get(userId);
+  if (!sockets) return;
+  const frame = JSON.stringify(msg);
+  for (const ws of sockets) _sendTo(ws, frame);
+}
+
+/** Send to all users whose role is in the given set (compliance / admin oversight). */
+function broadcastToRoles(_roles: string[], msg: unknown): void {
+  // roles param reserved for future per-role filtering; currently compliance/admin
+  // receive order events only for their own connections (they don't trade).
+  broadcastAll(msg);
 }
 
 const producer = await createProducer("gateway").catch((err) => {
@@ -158,27 +204,40 @@ const ORDER_TOPICS = [
 ];
 
 function startConsumers(): void {
+  // Market data — broadcast to all (not confidential)
   createConsumer("gateway-market", ["market.ticks"]).then((c) => {
     c.onMessage((_topic, value) => {
-      broadcast({ event: "marketUpdate", data: value });
+      broadcastAll({ event: "marketUpdate", data: value });
     });
   });
 
+  // Order events — route only to the owning user (information barrier)
   createConsumer("gateway-orders", ORDER_TOPICS).then((c) => {
     c.onMessage((topic, value) => {
-      broadcast({ event: "orderEvent", topic, data: value });
+      const v = value as { userId?: string; userRole?: string };
+      if (v.userId) {
+        broadcastToUser(v.userId, { event: "orderEvent", topic, data: value });
+        // Compliance / admin oversight: also broadcast to those roles
+        if (v.userRole !== "compliance" && v.userRole !== "admin") {
+          broadcastToRoles(["compliance", "admin"], { event: "orderEvent", topic, data: value });
+        }
+      } else {
+        // Fallback: no userId on message (legacy path) — broadcast to all
+        broadcastAll({ event: "orderEvent", topic, data: value });
+      }
     });
   });
 
+  // Algo heartbeats — broadcast to all (operational telemetry, not order data)
   createConsumer("gateway-algo", ["algo.heartbeat"]).then((c) => {
     c.onMessage((_topic, value) => {
-      broadcast({ event: "algoHeartbeat", data: value });
+      broadcastAll({ event: "algoHeartbeat", data: value });
     });
   });
 
   createConsumer("gateway-news", ["news.feed"]).then((c) => {
     c.onMessage((_topic, value) => {
-      broadcast({ event: "newsUpdate", data: value });
+      broadcastAll({ event: "newsUpdate", data: value });
     });
   });
 
@@ -191,7 +250,7 @@ function startConsumers(): void {
       if (!signalFlushTimer) {
         signalFlushTimer = setTimeout(() => {
           for (const [, data] of pendingSignals) {
-            broadcast({ event: "signalUpdate", data });
+            broadcastAll({ event: "signalUpdate", data });
           }
           pendingSignals.clear();
           signalFlushTimer = null;
@@ -209,7 +268,7 @@ function startConsumers(): void {
       if (!featureFlushTimer) {
         featureFlushTimer = setTimeout(() => {
           for (const [, data] of pendingFeatures) {
-            broadcast({ event: "featureUpdate", data });
+            broadcastAll({ event: "featureUpdate", data });
           }
           pendingFeatures.clear();
           featureFlushTimer = null;
@@ -220,19 +279,19 @@ function startConsumers(): void {
 
   createConsumer("gateway-recommendations", ["market.recommendations"]).then((c) => {
     c.onMessage((_topic, value) => {
-      broadcast({ event: "recommendationUpdate", data: value });
+      broadcastAll({ event: "recommendationUpdate", data: value });
     });
   }).catch(() => {});
 
   createConsumer("gateway-advisory", ["llm.advisory.ready"]).then((c) => {
     c.onMessage((_topic, value) => {
-      broadcast({ event: "advisoryUpdate", data: value });
+      broadcastAll({ event: "advisoryUpdate", data: value });
     });
   }).catch(() => {});
 
   createConsumer("gateway-llm-state", ["llm.state.update"]).then((c) => {
     c.onMessage((_topic, value) => {
-      broadcast({ event: "llmStateUpdate", data: value });
+      broadcastAll({ event: "llmStateUpdate", data: value });
     });
   }).catch(() => {});
 }
@@ -421,9 +480,16 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     const { socket, response } = Deno.upgradeWebSocket(req);
 
+    // Track the userId bound to this socket (may change on post-connection authenticate)
+    let socketUserId: string | null = auth?.user.id ?? null;
+
     socket.onopen = () => {
-      clients.add(socket);
-      console.log(`[gateway] Client connected user=${auth?.user.id ?? "anonymous"} (total=${clients.size})`);
+      if (socketUserId) {
+        _addUserSocket(socketUserId, socket);
+      } else {
+        anonymousClients.add(socket);
+      }
+      console.log(`[gateway] Client connected user=${socketUserId ?? "anonymous"} (total=${_totalConnections()})`);
       if (auth) {
         socket.send(JSON.stringify({ event: "authIdentity", data: { user: auth.user, limits: auth.limits } }));
         publishAccessEvent({ action: "ws_connect", userId: auth.user.id, userRole: auth.user.role });
@@ -442,7 +508,11 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           const tok = msg.payload.token as string | undefined;
           const result = tok ? await validateToken(tok) : null;
           if (result) {
+            // Move socket from anonymous bucket (or old userId) to new userId bucket
+            _removeSocket(socketUserId, socket);
             auth = result;
+            socketUserId = result.user.id;
+            _addUserSocket(socketUserId, socket);
             socket.send(JSON.stringify({ event: "authIdentity", data: { user: result.user, limits: result.limits } }));
             publishAccessEvent({ action: "ws_connect", userId: result.user.id, userRole: result.user.role });
           } else {
@@ -544,8 +614,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     };
 
     socket.onclose = () => {
-      clients.delete(socket);
-      console.log(`[gateway] Client disconnected (total=${clients.size})`);
+      _removeSocket(socketUserId, socket);
+      console.log(`[gateway] Client disconnected user=${socketUserId ?? "anonymous"} (total=${_totalConnections()})`);
     };
 
     socket.onerror = () => socket.close();

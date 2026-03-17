@@ -53,6 +53,17 @@ function makeStore() {
       killSwitch: killSwitchSlice.reducer,
     },
     preloadedState: {
+      auth: {
+        user: { id: "alice", name: "Alice Chen", role: "trader" as const, avatar_emoji: "👩‍💼" },
+        limits: {
+          max_order_qty: 10_000,
+          max_daily_notional: 1_000_000,
+          allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+          allowed_desks: ["equity", "fi", "derivatives"],
+          dark_pool_access: false,
+        },
+        status: "authenticated" as const,
+      },
       market: {
         assets,
         prices,

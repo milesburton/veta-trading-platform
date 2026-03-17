@@ -4,7 +4,7 @@ import { createSlice } from "@reduxjs/toolkit";
 export interface AuthUser {
   id: string;
   name: string;
-  role: "trader" | "admin";
+  role: "trader" | "admin" | "compliance";
   avatar_emoji: string;
 }
 
@@ -12,12 +12,16 @@ export interface TradingLimits {
   max_order_qty: number;
   max_daily_notional: number;
   allowed_strategies: string[];
+  allowed_desks: string[];
+  dark_pool_access: boolean;
 }
 
 const DEFAULT_LIMITS: TradingLimits = {
   max_order_qty: 10_000,
   max_daily_notional: 1_000_000,
   allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+  allowed_desks: ["equity"],
+  dark_pool_access: false,
 };
 
 interface AuthState {
