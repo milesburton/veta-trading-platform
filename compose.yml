@@ -26,6 +26,18 @@ x-algo-healthcheck: &algo-healthcheck
     start_period: 20s
 
 services:
+  # ── Service profiles ─────────────────────────────────────────────────────
+  # No profile (always-on): redpanda, postgres, market-sim, journal,
+  #   user-service, ems, oms, gateway, frontend, db-migrate, traefik, disk-monitor
+  #
+  # profile=trading (idle-safe — start/stop together):
+  #   algos, microstructure (dark-pool/ccp/rfq/fix-*), analytics pipeline,
+  #   feature/signal/recommendation/scenario engines, llm-advisory, news-aggregator,
+  #   observability (kafka-relay), ollama
+  #
+  # Start idle-safe services:  docker compose --profile trading up -d
+  # Stop  idle-safe services:  docker compose --profile trading stop
+  # Full  status:              docker compose --profile trading ps
 
   # ── Message Bus ───────────────────────────────────────────────────────────
   redpanda:
@@ -129,6 +141,7 @@ services:
   # ── Ollama (local LLM) ─────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
+    profiles: [trading]
     networks:
       - trading-net
     volumes:
@@ -144,6 +157,7 @@ services:
 
   ollama-model-pull:
     image: ollama/ollama:latest
+    profiles: [trading]
     networks:
       - trading-net
     depends_on:
@@ -285,6 +299,7 @@ services:
   # ── Algo strategies ────────────────────────────────────────────────────────
   limit-algo:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/algo/limit-strategy.ts"]
     depends_on:
       redpanda:
@@ -318,6 +333,7 @@ services:
 
   twap-algo:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/algo/twap-strategy.ts"]
     depends_on:
       redpanda:
@@ -352,6 +368,7 @@ services:
 
   pov-algo:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/algo/pov-strategy.ts"]
     depends_on:
       redpanda:
@@ -388,6 +405,7 @@ services:
 
   vwap-algo:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/algo/vwap-strategy.ts"]
     depends_on:
       redpanda:
@@ -422,6 +440,7 @@ services:
 
   iceberg-algo:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/algo/iceberg-strategy.ts"]
     depends_on:
       redpanda:
@@ -455,6 +474,7 @@ services:
 
   sniper-algo:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/algo/sniper-strategy.ts"]
     depends_on:
       redpanda:
@@ -488,6 +508,7 @@ services:
 
   arrival-price-algo:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/algo/arrival-price-strategy.ts"]
     depends_on:
       redpanda:
@@ -521,6 +542,7 @@ services:
 
   momentum-algo:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/algo/momentum-strategy.ts"]
     depends_on:
       redpanda:
@@ -554,6 +576,7 @@ services:
 
   is-algo:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/algo/is-strategy.ts"]
     depends_on:
       redpanda:
@@ -588,6 +611,7 @@ services:
   # ── Alternative Trading Systems & Fixed Income ─────────────────────────────
   rfq-service:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/rfq/rfq-service.ts"]
     depends_on:
       redpanda:
@@ -614,6 +638,7 @@ services:
 
   ccp-service:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/ccp/ccp-service.ts"]
     depends_on:
       redpanda:
@@ -645,6 +670,7 @@ services:
 
   dark-pool:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/dark-pool/dark-pool-server.ts"]
     depends_on:
       redpanda:
@@ -679,6 +705,7 @@ services:
   # ── Observability / Kafka Relay ────────────────────────────────────────────
   observability:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/observability/kafka-relay.ts"]
     depends_on:
       redpanda:
@@ -764,6 +791,7 @@ services:
   # ── FIX Services ───────────────────────────────────────────────────────────
   fix-exchange:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/fix/fix-exchange.ts"]
     depends_on:
       market-sim:
@@ -792,6 +820,7 @@ services:
 
   fix-gateway:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/fix/fix-gateway.ts"]
     depends_on:
       fix-exchange:
@@ -817,6 +846,7 @@ services:
 
   fix-archive:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/fix/fix-archive.ts"]
     depends_on:
       redpanda:
@@ -846,6 +876,7 @@ services:
   # ── Analytics ──────────────────────────────────────────────────────────────
   analytics:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/analytics/analytics-server.ts"]
     depends_on:
       journal:
@@ -877,6 +908,7 @@ services:
   # ── Market Data ────────────────────────────────────────────────────────────
   market-data:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/market-data/market-data-service.ts"]
     working_dir: /app/data
     depends_on:
@@ -906,6 +938,7 @@ services:
 
   market-data-adapters:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/market-data-adapters/adapter-server.ts"]
     depends_on:
       redpanda:
@@ -935,6 +968,7 @@ services:
   # ── Intelligence Engines ───────────────────────────────────────────────────
   feature-engine:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/feature-engine/feature-engine.ts"]
     depends_on:
       redpanda:
@@ -966,6 +1000,7 @@ services:
 
   signal-engine:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/signal-engine/signal-engine.ts"]
     depends_on:
       redpanda:
@@ -996,6 +1031,7 @@ services:
 
   recommendation-engine:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/recommendation-engine/recommendation-server.ts"]
     depends_on:
       redpanda:
@@ -1021,6 +1057,7 @@ services:
 
   scenario-engine:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/scenario-engine/scenario-server.ts"]
     depends_on:
       feature-engine:
@@ -1050,6 +1087,7 @@ services:
   # ── News Aggregator ────────────────────────────────────────────────────────
   news-aggregator:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/news/news-aggregator.ts"]
     depends_on:
       redpanda:
@@ -1063,6 +1101,7 @@ services:
   # ── LLM Advisory ──────────────────────────────────────────────────────────
   llm-advisory:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/llm-advisory/orchestrator.ts"]
     depends_on:
       redpanda:
@@ -1105,6 +1144,7 @@ services:
 
   llm-worker:
     <<: *deno-service
+    profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/llm-advisory/worker.ts"]
     depends_on:
       llm-advisory:
@@ -1140,26 +1180,6 @@ services:
       user-service:
         condition: service_healthy
       market-sim:
-        condition: service_healthy
-      analytics:
-        condition: service_healthy
-      market-data:
-        condition: service_healthy
-      feature-engine:
-        condition: service_healthy
-      signal-engine:
-        condition: service_healthy
-      recommendation-engine:
-        condition: service_healthy
-      scenario-engine:
-        condition: service_healthy
-      llm-advisory:
-        condition: service_healthy
-      dark-pool:
-        condition: service_healthy
-      ccp-service:
-        condition: service_healthy
-      rfq-service:
         condition: service_healthy
     environment:
       GATEWAY_PORT: "5011"
