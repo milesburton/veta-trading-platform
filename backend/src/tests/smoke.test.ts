@@ -48,6 +48,7 @@ const LLM_URL       = "http://localhost:5024";
 const MOMENTUM_URL  = "http://localhost:5025";
 const IS_URL        = "http://localhost:5026";
 const DARK_POOL_URL = "http://localhost:5027";
+const CCP_URL       = "http://localhost:5028";
 const RFQ_URL       = "http://localhost:5029";
 
 // ── All services expected to be healthy ───────────────────────────────────────
@@ -67,8 +68,9 @@ const ALL_SERVICES = [
   { name: "arrival-price-algo",        url: AP_URL        },
   { name: "momentum-algo",             url: MOMENTUM_URL  },
   { name: "is-algo",                   url: IS_URL        },
-  // Alternative trading systems & fixed income
+  // Alternative trading systems, clearing & fixed income
   { name: "dark-pool",                 url: DARK_POOL_URL },
+  { name: "ccp-service",               url: CCP_URL       },
   { name: "rfq-service",               url: RFQ_URL       },
   // Platform services
   { name: "user-service",              url: USER_SVC_URL  },
@@ -786,8 +788,8 @@ Deno.test("[gateway/ready] response includes all expected service keys", async (
     "marketSim", "ems", "oms", "journal", "userService", "bus", "fixArchive", "fixGateway", "observability",
     // Algo engines
     "limitAlgo", "twapAlgo", "povAlgo", "vwapAlgo", "icebergAlgo", "sniperAlgo", "arrivalPriceAlgo", "momentumAlgo", "isAlgo",
-    // Alternative trading systems & fixed income
-    "darkPool", "rfqService",
+    // Alternative trading systems, clearing & fixed income
+    "darkPool", "ccpService", "rfqService",
     // Data & intelligence
     "analytics", "marketData", "featureEngine", "signalEngine", "recommendationEngine", "scenarioEngine", "newsAggregator", "llmAdvisory",
   ];
@@ -832,4 +834,19 @@ Deno.test("[dark-pool] GET /pool/stats returns valid structure", async () => {
   assertExists(body.currentDepth);
   assertEquals(typeof body.totalMatchedToday, "number");
   assertEquals(typeof body.totalMatchedAllTime, "number");
+});
+
+Deno.test("[ccp-service] GET /ccp/stats returns valid structure", async () => {
+  const res = await fetch(`${CCP_URL}/ccp/stats`, { signal: timeout(5_000) });
+  assertEquals(res.status, 200);
+  const body = await res.json() as {
+    service: string;
+    novations: number;
+    pendingSettlements: number;
+    marginAccounts: number;
+  };
+  assertEquals(body.service, "ccp-service");
+  assertEquals(typeof body.novations, "number");
+  assertEquals(typeof body.pendingSettlements, "number");
+  assertEquals(typeof body.marginAccounts, "number");
 });

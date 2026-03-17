@@ -28,6 +28,7 @@ const ARRIVAL_PRICE_ALGO_URL = `http://${Deno.env.get("ARRIVAL_PRICE_ALGO_HOST")
 const MOMENTUM_ALGO_URL = `http://${Deno.env.get("MOMENTUM_ALGO_HOST") ?? "localhost"}:${Deno.env.get("MOMENTUM_ALGO_PORT") ?? "5025"}`;
 const IS_ALGO_URL = `http://${Deno.env.get("IS_ALGO_HOST") ?? "localhost"}:${Deno.env.get("IS_ALGO_PORT") ?? "5026"}`;
 const DARK_POOL_URL = `http://${Deno.env.get("DARK_POOL_HOST") ?? "localhost"}:${Deno.env.get("DARK_POOL_PORT") ?? "5027"}`;
+const CCP_SERVICE_URL = `http://${Deno.env.get("CCP_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("CCP_SERVICE_PORT") ?? "5028"}`;
 const RFQ_SERVICE_URL = `http://${Deno.env.get("RFQ_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("RFQ_SERVICE_PORT") ?? "5029"}`;
 const NEWS_AGGREGATOR_URL = `http://${Deno.env.get("NEWS_AGGREGATOR_HOST") ?? "localhost"}:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`;
 const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost"}:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`;
@@ -317,6 +318,21 @@ function startConsumers(): void {
       }
     });
   }).catch(() => {});
+
+  // CCP events — novation/margin/settlement broadcast to the affected user
+  createConsumer("gateway-ccp", [
+    "ccp.novation", "ccp.margin", "ccp.settlement.queued", "ccp.settlement.complete",
+  ]).then((c) => {
+    c.onMessage((topic, value) => {
+      const v = value as { userId?: string };
+      if (v.userId) {
+        broadcastToUser(v.userId, { event: "ccpEvent", topic, data: value });
+      } else {
+        // Settlement complete messages may not have userId — broadcast to compliance/admin
+        broadcastToRoles(["compliance", "admin"], { event: "ccpEvent", topic, data: value });
+      }
+    });
+  }).catch(() => {});
 }
 
 await startConsumers();
@@ -459,14 +475,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const [
       marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
       limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
-      darkPool, rfqService,
+      darkPool, ccpService, rfqService,
       analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
     ] = await Promise.all([
       chk(MARKET_SIM_URL), chk(EMS_URL), chk(OMS_URL), chk(JOURNAL_URL), chk(USER_SERVICE_URL),
       chk(FIX_ARCHIVE_URL), chk(FIX_GATEWAY_URL), chk(OBSERVABILITY_URL),
       chk(LIMIT_ALGO_URL), chk(TWAP_ALGO_URL), chk(POV_ALGO_URL), chk(VWAP_ALGO_URL),
       chk(ICEBERG_ALGO_URL), chk(SNIPER_ALGO_URL), chk(ARRIVAL_PRICE_ALGO_URL), chk(MOMENTUM_ALGO_URL), chk(IS_ALGO_URL),
-      chk(DARK_POOL_URL), chk(RFQ_SERVICE_URL),
+      chk(DARK_POOL_URL), chk(CCP_SERVICE_URL), chk(RFQ_SERVICE_URL),
       chk(ANALYTICS_URL), chk(MARKET_DATA_URL), chk(FEATURE_ENGINE_URL), chk(SIGNAL_ENGINE_URL),
       chk(RECOMMENDATION_ENGINE_URL), chk(SCENARIO_ENGINE_URL), chk(NEWS_AGGREGATOR_URL), chk(LLM_ADVISORY_URL),
     ]);
@@ -481,8 +497,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           marketSim, ems, oms, journal, userService, bus, fixArchive, fixGateway, observability,
           // Algo engines
           limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
-          // Alternative trading systems
-          darkPool, rfqService,
+          // Alternative trading systems & clearing
+          darkPool, ccpService, rfqService,
           // Data & intelligence
           analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
         },
@@ -672,6 +688,41 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
     return proxyGet(`${DARK_POOL_URL}/pool/stats`, req);
+  }
+
+  // ── CCP routes ─────────────────────────────────────────────────────────────
+  if (path === "/ccp/stats" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${CCP_SERVICE_URL}/ccp/stats`, req);
+  }
+
+  if (path === "/ccp/settlements" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${CCP_SERVICE_URL}/ccp/settlements`, req);
+  }
+
+  const ccpSettlementDateMatch = path.match(/^\/ccp\/settlements\/([^/]+)$/);
+  if (ccpSettlementDateMatch && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${CCP_SERVICE_URL}/ccp/settlements/${ccpSettlementDateMatch[1]}`, req);
+  }
+
+  const ccpMarginMatch = path.match(/^\/ccp\/margin\/([^/]+)$/);
+  if (ccpMarginMatch && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    // Only allow users to see their own margin, or admin/compliance to see any
+    const targetUserId = ccpMarginMatch[1];
+    if (auth.user.id !== targetUserId && auth.user.role !== "admin" && auth.user.role !== "compliance") {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+    return proxyGet(`${CCP_SERVICE_URL}/ccp/margin/${targetUserId}`, req);
   }
 
   // ── RFQ routes ─────────────────────────────────────────────────────────────

@@ -612,6 +612,37 @@ services:
       - "traefik.http.services.rfq-service.loadbalancer.server.port=5029"
       - "traefik.http.routers.rfq-service.priority=10"
 
+  ccp-service:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/ccp/ccp-service.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      market-sim:
+        condition: service_healthy
+    environment:
+      CCP_SERVICE_PORT: "5028"
+      MARKET_SIM_HOST: market-sim
+      MARKET_SIM_PORT: "5000"
+      CCP_SETTLEMENT_SWEEP_MS: "30000"
+      CCP_MARGIN_MTM_MS: "10000"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5028/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ccp-service.rule=PathPrefix(`/api/ccp-service`)"
+      - "traefik.http.routers.ccp-service.entrypoints=web,websecure"
+      - "traefik.http.routers.ccp-service.middlewares=ccp-service-strip"
+      - "traefik.http.middlewares.ccp-service-strip.stripprefix.prefixes=/api/ccp-service"
+      - "traefik.http.services.ccp-service.loadbalancer.server.port=5028"
+      - "traefik.http.routers.ccp-service.priority=10"
+
   dark-pool:
     <<: *deno-service
     command: ["deno", "run", "--allow-all", "/app/backend/src/dark-pool/dark-pool-server.ts"]
@@ -1126,6 +1157,8 @@ services:
         condition: service_healthy
       dark-pool:
         condition: service_healthy
+      ccp-service:
+        condition: service_healthy
       rfq-service:
         condition: service_healthy
     environment:
@@ -1152,6 +1185,8 @@ services:
       LLM_ADVISORY_PORT: "5024"
       DARK_POOL_HOST: dark-pool
       DARK_POOL_PORT: "5027"
+      CCP_SERVICE_HOST: ccp-service
+      CCP_SERVICE_PORT: "5028"
       RFQ_SERVICE_HOST: rfq-service
       RFQ_SERVICE_PORT: "5029"
       REDPANDA_BROKERS: redpanda:9092
