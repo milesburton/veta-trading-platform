@@ -48,6 +48,7 @@ const LLM_URL       = "http://localhost:5024";
 const MOMENTUM_URL  = "http://localhost:5025";
 const IS_URL        = "http://localhost:5026";
 const DARK_POOL_URL = "http://localhost:5027";
+const RFQ_URL       = "http://localhost:5029";
 
 // ── All services expected to be healthy ───────────────────────────────────────
 
@@ -66,8 +67,9 @@ const ALL_SERVICES = [
   { name: "arrival-price-algo",        url: AP_URL        },
   { name: "momentum-algo",             url: MOMENTUM_URL  },
   { name: "is-algo",                   url: IS_URL        },
-  // Alternative trading systems
+  // Alternative trading systems & fixed income
   { name: "dark-pool",                 url: DARK_POOL_URL },
+  { name: "rfq-service",               url: RFQ_URL       },
   // Platform services
   { name: "user-service",              url: USER_SVC_URL  },
   { name: "observability",             url: OBS_URL       },
@@ -784,8 +786,8 @@ Deno.test("[gateway/ready] response includes all expected service keys", async (
     "marketSim", "ems", "oms", "journal", "userService", "bus", "fixArchive", "fixGateway", "observability",
     // Algo engines
     "limitAlgo", "twapAlgo", "povAlgo", "vwapAlgo", "icebergAlgo", "sniperAlgo", "arrivalPriceAlgo", "momentumAlgo", "isAlgo",
-    // Alternative trading systems
-    "darkPool",
+    // Alternative trading systems & fixed income
+    "darkPool", "rfqService",
     // Data & intelligence
     "analytics", "marketData", "featureEngine", "signalEngine", "recommendationEngine", "scenarioEngine", "newsAggregator", "llmAdvisory",
   ];
@@ -800,6 +802,21 @@ Deno.test("[gateway/ready] ems and oms report true (env-var routing works)", asy
   const body = await res.json() as { services: Record<string, boolean> };
   assertEquals(body.services.ems, true, "ems must be true — check EMS_HOST/EMS_PORT env vars in gateway");
   assertEquals(body.services.oms, true, "oms must be true — check OMS_HOST/OMS_PORT env vars in gateway");
+});
+
+Deno.test("[rfq-service] GET /rfq/stats returns valid structure", async () => {
+  const res = await fetch(`${RFQ_URL}/rfq/stats`, { signal: timeout(5_000) });
+  assertEquals(res.status, 200);
+  const body = await res.json() as {
+    service: string;
+    total: number;
+    byState: Record<string, number>;
+    quoteWindowMs: number;
+  };
+  assertEquals(body.service, "rfq-service");
+  assertEquals(typeof body.total, "number");
+  assertExists(body.byState);
+  assertEquals(typeof body.quoteWindowMs, "number");
 });
 
 Deno.test("[dark-pool] GET /pool/stats returns valid structure", async () => {

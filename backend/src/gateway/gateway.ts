@@ -28,6 +28,7 @@ const ARRIVAL_PRICE_ALGO_URL = `http://${Deno.env.get("ARRIVAL_PRICE_ALGO_HOST")
 const MOMENTUM_ALGO_URL = `http://${Deno.env.get("MOMENTUM_ALGO_HOST") ?? "localhost"}:${Deno.env.get("MOMENTUM_ALGO_PORT") ?? "5025"}`;
 const IS_ALGO_URL = `http://${Deno.env.get("IS_ALGO_HOST") ?? "localhost"}:${Deno.env.get("IS_ALGO_PORT") ?? "5026"}`;
 const DARK_POOL_URL = `http://${Deno.env.get("DARK_POOL_HOST") ?? "localhost"}:${Deno.env.get("DARK_POOL_PORT") ?? "5027"}`;
+const RFQ_SERVICE_URL = `http://${Deno.env.get("RFQ_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("RFQ_SERVICE_PORT") ?? "5029"}`;
 const NEWS_AGGREGATOR_URL = `http://${Deno.env.get("NEWS_AGGREGATOR_HOST") ?? "localhost"}:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`;
 const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost"}:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`;
 
@@ -296,6 +297,16 @@ function startConsumers(): void {
     });
   }).catch(() => {});
 
+  // RFQ quote updates — broadcast only to the requesting user (information barrier)
+  createConsumer("gateway-rfq", ["rfq.quote.update", "rfq.executed"]).then((c) => {
+    c.onMessage((topic, value) => {
+      const v = value as { userId?: string };
+      if (v.userId) {
+        broadcastToUser(v.userId, { event: "rfqUpdate", topic, data: value });
+      }
+    });
+  }).catch(() => {});
+
   // Dark pool execution reports — broadcast only to the two matched users (information barrier)
   createConsumer("gateway-dark", ["dark.execution"]).then((c) => {
     c.onMessage((_topic, value) => {
@@ -448,14 +459,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const [
       marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
       limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
-      darkPool,
+      darkPool, rfqService,
       analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
     ] = await Promise.all([
       chk(MARKET_SIM_URL), chk(EMS_URL), chk(OMS_URL), chk(JOURNAL_URL), chk(USER_SERVICE_URL),
       chk(FIX_ARCHIVE_URL), chk(FIX_GATEWAY_URL), chk(OBSERVABILITY_URL),
       chk(LIMIT_ALGO_URL), chk(TWAP_ALGO_URL), chk(POV_ALGO_URL), chk(VWAP_ALGO_URL),
       chk(ICEBERG_ALGO_URL), chk(SNIPER_ALGO_URL), chk(ARRIVAL_PRICE_ALGO_URL), chk(MOMENTUM_ALGO_URL), chk(IS_ALGO_URL),
-      chk(DARK_POOL_URL),
+      chk(DARK_POOL_URL), chk(RFQ_SERVICE_URL),
       chk(ANALYTICS_URL), chk(MARKET_DATA_URL), chk(FEATURE_ENGINE_URL), chk(SIGNAL_ENGINE_URL),
       chk(RECOMMENDATION_ENGINE_URL), chk(SCENARIO_ENGINE_URL), chk(NEWS_AGGREGATOR_URL), chk(LLM_ADVISORY_URL),
     ]);
@@ -471,7 +482,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           // Algo engines
           limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
           // Alternative trading systems
-          darkPool,
+          darkPool, rfqService,
           // Data & intelligence
           analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
         },
@@ -661,6 +672,48 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
     return proxyGet(`${DARK_POOL_URL}/pool/stats`, req);
+  }
+
+  // ── RFQ routes ─────────────────────────────────────────────────────────────
+  if (path === "/rfq/stats" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${RFQ_SERVICE_URL}/rfq/stats`, req);
+  }
+
+  if (path === "/rfq" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    // Inject userId as query param so RFQ service can filter to the caller's RFQs
+    const target = new URL(`${RFQ_SERVICE_URL}/rfq`);
+    target.search = new URL(req.url).search;
+    if (!target.searchParams.has("userId")) target.searchParams.set("userId", auth.user.id);
+    try {
+      const res = await fetch(target.toString(), { signal: AbortSignal.timeout(8_000) });
+      const body = await res.arrayBuffer();
+      return new Response(body, {
+        status: res.status,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: (err as Error).message }), {
+        status: 502, headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+  }
+
+  const rfqIdMatch = path.match(/^\/rfq\/([^/]+)(\/execute)?$/);
+  if (rfqIdMatch) {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    const rfqId = rfqIdMatch[1];
+    const isExecute = rfqIdMatch[2] === "/execute";
+    if (isExecute && req.method === "POST") {
+      return proxyPost(`${RFQ_SERVICE_URL}/rfq/${rfqId}/execute`, req);
+    }
+    if (!isExecute && req.method === "GET") {
+      return proxyGet(`${RFQ_SERVICE_URL}/rfq/${rfqId}`, req);
+    }
   }
 
   if (path === "/grid/query" && req.method === "POST") {

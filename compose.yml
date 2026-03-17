@@ -585,7 +585,33 @@ services:
       - "traefik.http.services.is-algo.loadbalancer.server.port=5026"
       - "traefik.http.routers.is-algo.priority=10"
 
-  # ── Alternative Trading Systems ────────────────────────────────────────────
+  # ── Alternative Trading Systems & Fixed Income ─────────────────────────────
+  rfq-service:
+    <<: *deno-service
+    command: ["deno", "run", "--allow-all", "/app/backend/src/rfq/rfq-service.ts"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      RFQ_SERVICE_PORT: "5029"
+      RFQ_QUOTE_WINDOW_MS: "3000"
+      REDPANDA_BROKERS: redpanda:9092
+      COMMIT_SHA: ${COMMIT_SHA:-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5029/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rfq-service.rule=PathPrefix(`/api/rfq-service`)"
+      - "traefik.http.routers.rfq-service.entrypoints=web,websecure"
+      - "traefik.http.routers.rfq-service.middlewares=rfq-service-strip"
+      - "traefik.http.middlewares.rfq-service-strip.stripprefix.prefixes=/api/rfq-service"
+      - "traefik.http.services.rfq-service.loadbalancer.server.port=5029"
+      - "traefik.http.routers.rfq-service.priority=10"
+
   dark-pool:
     <<: *deno-service
     command: ["deno", "run", "--allow-all", "/app/backend/src/dark-pool/dark-pool-server.ts"]
@@ -1100,6 +1126,8 @@ services:
         condition: service_healthy
       dark-pool:
         condition: service_healthy
+      rfq-service:
+        condition: service_healthy
     environment:
       GATEWAY_PORT: "5011"
       MARKET_SIM_HOST: market-sim
@@ -1124,6 +1152,8 @@ services:
       LLM_ADVISORY_PORT: "5024"
       DARK_POOL_HOST: dark-pool
       DARK_POOL_PORT: "5027"
+      RFQ_SERVICE_HOST: rfq-service
+      RFQ_SERVICE_PORT: "5029"
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-dev}
     healthcheck:
