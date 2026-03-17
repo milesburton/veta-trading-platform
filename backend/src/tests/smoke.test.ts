@@ -841,12 +841,12 @@ Deno.test("[ccp-service] GET /ccp/stats returns valid structure", async () => {
   assertEquals(res.status, 200);
   const body = await res.json() as {
     service: string;
-    novations: number;
-    pendingSettlements: number;
-    marginAccounts: number;
+    totalNovated: number;
+    pendingObligations: number;
+    marginAccountCount: number;
   };
   assertEquals(body.service, "ccp-service");
-  assertEquals(typeof body.novations, "number");
-  assertEquals(typeof body.pendingSettlements, "number");
-  assertEquals(typeof body.marginAccounts, "number");
+  assertEquals(typeof body.totalNovated, "number");
+  assertEquals(typeof body.pendingObligations, "number");
+  assertEquals(typeof body.marginAccountCount, "number");
 });

@@ -522,6 +522,26 @@ Deno.serve({ port: PORT }, async (req) => {
     );
   }
 
+  // GET /rfq/stats — must be checked before /rfq/:id to avoid "stats" being treated as an id
+  if (path === "/rfq/stats" && req.method === "GET") {
+    const all = [...rfqStore.values()];
+    const byState = all.reduce<Record<string, number>>((acc, r) => {
+      acc[r.state] = (acc[r.state] ?? 0) + 1;
+      return acc;
+    }, {});
+    return new Response(
+      JSON.stringify({
+        service: "rfq-service",
+        version: VERSION,
+        total: all.length,
+        byState,
+        quoteWindowMs: QUOTE_WINDOW_MS,
+        ts: Date.now(),
+      }),
+      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+    );
+  }
+
   // GET /rfq/:id — fetch a single RFQ
   const matchGet = path.match(/^\/rfq\/([^/]+)$/);
   if (matchGet && req.method === "GET") {
@@ -564,26 +584,6 @@ Deno.serve({ port: PORT }, async (req) => {
     return new Response(JSON.stringify({ execId: rfq.execId, executedQuote: rfq.executedQuote }), {
       headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
-  }
-
-  // GET /rfq/stats
-  if (path === "/rfq/stats" && req.method === "GET") {
-    const all = [...rfqStore.values()];
-    const byState = all.reduce<Record<string, number>>((acc, r) => {
-      acc[r.state] = (acc[r.state] ?? 0) + 1;
-      return acc;
-    }, {});
-    return new Response(
-      JSON.stringify({
-        service: "rfq-service",
-        version: VERSION,
-        total: all.length,
-        byState,
-        quoteWindowMs: QUOTE_WINDOW_MS,
-        ts: Date.now(),
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
