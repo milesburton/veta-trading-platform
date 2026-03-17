@@ -122,7 +122,7 @@ export const DEFAULT_LIMITS: TradingLimits = {
   max_order_qty: 10_000,
   max_daily_notional: 1_000_000,
   allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
-  allowed_desks: ["equity"],
+  allowed_desks: ["equity", "derivatives"],
   dark_pool_access: false,
 };
 
