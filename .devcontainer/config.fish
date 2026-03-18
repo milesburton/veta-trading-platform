@@ -7,49 +7,24 @@ fish_add_path $FLYCTL_INSTALL/bin
 if status is-interactive
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" | lolcat
-  echo "  VETA Trading Platform" | lolcat
+  echo "  VETA Trading Platform — dev container" | lolcat
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" | lolcat
-  echo "  All 32 services start automatically via supervisord."
-  echo "  Frontend UI → http://localhost:8080"
+  echo "  Frontend UI  →  http://localhost:8080"
   echo ""
-  echo "  Service quick-start aliases:" | lolcat
-  echo "    run-frontend           Vite dev server   :5173 → proxied :8080"
-  echo "    run-market-sim         GBM price engine            :5000"
-  echo "    run-gateway            BFF / WebSocket hub         :5011"
-  echo "    run-ems                Execution Mgmt System       :5001"
-  echo "    run-oms                Order Mgmt System           :5002"
-  echo "    run-journal            Trade journal / grid        :5009"
-  echo "    run-user-service       Auth & session service      :5008"
-  echo ""
-  echo "  Algo strategies:" | lolcat
-  echo "    run-limit-algo         LIMIT                       :5003"
-  echo "    run-twap-algo          TWAP                        :5004"
-  echo "    run-pov-algo           POV                         :5005"
-  echo "    run-vwap-algo          VWAP                        :5006"
-  echo "    run-iceberg-algo       ICEBERG                     :5021"
-  echo "    run-sniper-algo        SNIPER                      :5022"
-  echo "    run-arrival-price-algo ARRIVAL_PRICE               :5023"
-  echo "    run-momentum-algo      MOMENTUM                    :5025"
-  echo "    run-is-algo            IS (Impl. Shortfall)        :5026"
-  echo ""
-  echo "  Platform services:" | lolcat
-  echo "    run-observability      Event store / Kafka relay   :5007"
-  echo "    run-analytics          Black-Scholes / MC          :5014"
-  echo "    run-market-data        Alpha Vantage adapter       :5015"
-  echo "    run-news               News aggregator             :5013"
-  echo "    run-feature-engine     ML feature pipeline         :5017"
-  echo "    run-signal-engine      Signal scoring              :5018"
-  echo "    run-recommendation     Trade recommendations       :5019"
-  echo "    run-scenario-engine    Scenario analysis           :5020"
-  echo "    run-llm-advisory       LLM advisory orchestrator   :5024"
-  echo "    run-fix-archive        FIX execution archive       :5012"
-  echo ""
-  echo "  Supervisord:" | lolcat
-  echo "    svc-status             Show all service statuses"
+  echo "  Service management:" | lolcat
+  echo "    svc-ui                 Live status dashboard (all groups)"
+  echo "    start-trading          Start all idle-safe service groups"
+  echo "    stop-idle              Stop idle-safe groups (keep core)"
+  echo "    svc-status             Raw supervisorctl status"
   echo "    svc-restart <name>     Restart a named service"
-  echo "    svc-restart-all        Restart every service"
   echo "    svc-logs <name>        Tail stdout log for a service"
+  echo ""
+  echo "  Core (always-on): market-sim  journal  gateway  oms  ems" | lolcat
+  echo "  Idle groups: algos  microstructure  analytics  aux" | lolcat
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" | lolcat
+  echo ""
+  # Show a one-shot status snapshot on login (no live loop)
+  deno run --allow-run --allow-env /workspaces/virtual-equities-trading-application/scripts/status.ts --once 2>/dev/null; or true
 end
 
 # ── Supervisord shortcuts ──────────────────────────────────────────────────────
@@ -58,6 +33,13 @@ alias svc-status="supervisorctl -c /home/deno/supervisord.conf status"
 alias svc-restart="supervisorctl -c /home/deno/supervisord.conf restart"
 alias svc-restart-all="supervisorctl -c /home/deno/supervisord.conf restart all && supervisorctl -c /home/deno/supervisord.conf status"
 alias svc-logs="supervisorctl -c /home/deno/supervisord.conf tail -f"
+
+# Live service status dashboard (press q to quit)
+alias svc-ui="deno run --allow-run --allow-env /workspaces/virtual-equities-trading-application/scripts/status.ts"
+
+# Idle-safe service group control
+alias start-trading="/workspaces/virtual-equities-trading-application/scripts/start-trading.sh"
+alias stop-idle="/workspaces/virtual-equities-trading-application/scripts/stop-idle.sh"
 
 # Legacy alias kept for muscle memory
 alias restart-services="svc-restart-all"
