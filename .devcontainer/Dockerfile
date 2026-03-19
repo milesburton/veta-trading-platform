@@ -91,8 +91,11 @@ RUN curl -L https://fly.io/install.sh | sh
 # Copy the supervisord configuration
 COPY supervisord.conf /home/deno/supervisord.conf
 
-# Copy Fish shell config (banner + aliases) — source of truth is .devcontainer/config.fish
-COPY .devcontainer/config.fish /home/deno/.config/fish/config.fish
+# Bootstrap Fish config: source the live workspace file so changes take effect
+# without rebuilding the container. The workspace is mounted at runtime at
+# /workspaces/virtual-equities-trading-application by the devcontainer.
+RUN echo 'source /workspaces/virtual-equities-trading-application/.devcontainer/config.fish' \
+    > /home/deno/.config/fish/config.fish
 
 # Ensure supervisord runs
 CMD ["/usr/bin/supervisord", "-c", "/home/deno/supervisord.conf"]
