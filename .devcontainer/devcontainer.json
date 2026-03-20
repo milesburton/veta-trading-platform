@@ -75,5 +75,5 @@
     "source=${localEnv:HOME}/.fly,target=/home/deno/.fly,type=bind,consistency=cached"
   ],
   "postCreateCommand": "cd /workspaces/virtual-equities-trading-application/frontend && npm ci --ignore-scripts && cd /workspaces/virtual-equities-trading-application && ./frontend/node_modules/.bin/husky install .husky",
-  "postStartCommand": "chmod 700 /home/deno/.ssh && chmod 600 /home/deno/.ssh/* || true && rm -f /var/lib/redpanda/data/pid.lock && cd /workspaces/virtual-equities-trading-application/frontend && deno install --allow-scripts && cd /workspaces/virtual-equities-trading-application && supervisord -c /home/deno/supervisord.conf"
+  "postStartCommand": "chmod 700 /home/deno/.ssh && chmod 600 /home/deno/.ssh/* || true && rm -f /var/lib/redpanda/data/pid.lock && cd /workspaces/virtual-equities-trading-application/frontend && deno install --allow-scripts && cd /workspaces/virtual-equities-trading-application && supervisord -c /workspaces/virtual-equities-trading-application/supervisord.conf"
 }
