@@ -56,24 +56,31 @@ async function ingestTick(msg: { prices?: Record<string, number>; volumes?: Reco
   if (!msg.prices) return;
   const ts = Date.now();
   const volumes = msg.volumes ?? {};
+  const entries = Object.entries(msg.prices);
+  if (entries.length === 0) return;
+
+  const instruments = entries.map(([sym]) => sym);
+  const prices = entries.map(([, p]) => p);
+  const vols = entries.map(([sym]) => (volumes[sym] ?? 0) / TICKS_PER_MINUTE);
+
   const client = await journalPool.connect();
   try {
     await client.queryArray("BEGIN");
-    for (const [instrument, price] of Object.entries(msg.prices)) {
-      const tickVolume = (volumes[instrument] ?? 0) / TICKS_PER_MINUTE;
-      for (const { key, ms } of INTERVALS) {
-        const bucket = new Date(bucketStart(ts, ms));
-        await client.queryArray(
-          `INSERT INTO journal.candles (instrument, interval, time, open, high, low, close, volume)
-           VALUES ($1, $2, $3, $4, $4, $4, $4, $5)
-           ON CONFLICT (instrument, interval, time) DO UPDATE SET
-             high   = GREATEST(journal.candles.high,  EXCLUDED.high),
-             low    = LEAST(journal.candles.low,    EXCLUDED.low),
-             close  = EXCLUDED.close,
-             volume = journal.candles.volume + EXCLUDED.volume`,
-          [instrument, key, bucket, price, tickVolume],
-        );
-      }
+    for (const { key, ms } of INTERVALS) {
+      const bucket = new Date(bucketStart(ts, ms));
+      await client.queryArray(
+        `INSERT INTO journal.candles (instrument, interval, time, open, high, low, close, volume)
+         SELECT unnest($1::text[]), $2, $3,
+                unnest($4::numeric[]), unnest($4::numeric[]),
+                unnest($4::numeric[]), unnest($4::numeric[]),
+                unnest($5::numeric[])
+         ON CONFLICT (instrument, interval, time) DO UPDATE SET
+           high   = GREATEST(journal.candles.high,  EXCLUDED.high),
+           low    = LEAST(journal.candles.low,    EXCLUDED.low),
+           close  = EXCLUDED.close,
+           volume = journal.candles.volume + EXCLUDED.volume`,
+        [instruments, key, bucket, prices, vols],
+      );
     }
     await client.queryArray("COMMIT");
   } catch (err) {

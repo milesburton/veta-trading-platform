@@ -19,6 +19,7 @@ interface ReadyServices {
 
 interface ReadyResponse {
   ready: boolean;
+  startedAt?: number;
   services: ReadyServices;
 }
 
@@ -67,7 +68,12 @@ interface Props {
 export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
   const [elapsed, setElapsed] = useState(0);
   const [services, setServices] = useState<ReadyServices | null>(null);
+  // startRef anchors the timer. Starts at page-load time; updated to the
+  // gateway's own startedAt timestamp on the first successful poll so the
+  // counter reflects how long the backend has actually been starting, not
+  // just how long the browser tab has been open.
   const startRef = useRef(Date.now());
+  const anchoredRef = useRef(false);
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
 
@@ -87,6 +93,14 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
           const res = await fetch("/api/gateway/ready");
           if (!cancelled && res.ok) {
             const data: ReadyResponse = await res.json();
+            // On the first successful response, anchor the timer to the
+            // gateway's own start time so the elapsed counter shows how
+            // long the backend has been starting, regardless of when the
+            // browser was opened.
+            if (!anchoredRef.current && data.startedAt) {
+              startRef.current = data.startedAt;
+              anchoredRef.current = true;
+            }
             // Merge gateway itself as "up" since we got a response
             setServices({ gateway: true, ...data.services });
             if (data.ready) {

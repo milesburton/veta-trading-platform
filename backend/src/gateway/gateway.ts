@@ -3,6 +3,7 @@ import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("GATEWAY_PORT")) || 5_011;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const STARTED_AT = Date.now();
 
 const MARKET_SIM_URL = `http://${Deno.env.get("MARKET_SIM_HOST") ?? "localhost"}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
 const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
@@ -492,6 +493,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({
         ready,
+        startedAt: STARTED_AT,
         services: {
           // Core order flow
           marketSim, ems, oms, journal, userService, bus, fixArchive, fixGateway, observability,

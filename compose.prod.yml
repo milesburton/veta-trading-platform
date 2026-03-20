@@ -27,6 +27,7 @@ services:
       - --default-log-level=warn
       - --kafka-addr=0.0.0.0:9092
       - --advertise-kafka-addr=redpanda:9092
+    mem_limit: 768m
     labels:
       - "traefik.enable=false"
       - "com.centurylinklabs.watchtower.enable=false"

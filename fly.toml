@@ -6,7 +6,7 @@ primary_region = "iad"
 # Traefik. Internal routing uses HTTP only — no ACME config needed inside the VM.
 
 [vm]
-  size = "performance-4x"   # 4 CPU, 8 GB RAM — needed for Redpanda + Ollama + ~47 services
+  size = "performance-8x"
 
 [deploy]
   strategy = "immediate"

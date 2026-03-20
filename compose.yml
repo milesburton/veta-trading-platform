@@ -16,6 +16,15 @@ x-deno-service: &deno-service
     dockerfile: docker/base/Dockerfile
   networks:
     - trading-net
+  mem_limit: 256m
+
+x-deno-medium: &deno-medium
+  build:
+    context: .
+    dockerfile: docker/base/Dockerfile
+  networks:
+    - trading-net
+  mem_limit: 384m
 
 x-algo-healthcheck: &algo-healthcheck
   healthcheck:
@@ -67,6 +76,7 @@ services:
     image: redpandadata/console:v2.7.2
     networks:
       - trading-net
+    mem_limit: 128m
     depends_on:
       redpanda:
         condition: service_healthy
@@ -88,13 +98,22 @@ services:
     networks:
       - trading-net
     environment:
-      POSTGRES_USER: veta
-      POSTGRES_PASSWORD: veta
-      POSTGRES_DB: veta
+      POSTGRES_USER: ${POSTGRES_USER:-veta}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-veta}
+      POSTGRES_DB: ${POSTGRES_DB:-veta}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c effective_cache_size=256MB
+      -c work_mem=4MB
+      -c maintenance_work_mem=32MB
+      -c max_connections=50
+    mem_limit: 384m
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "veta"]
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-veta}"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -112,7 +131,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
     restart: "no"
     labels:
       - "traefik.enable=false"
@@ -122,6 +141,7 @@ services:
     image: traefik:v3.3
     networks:
       - trading-net
+    mem_limit: 128m
     ports:
       - "80:80"
       - "443:443"
@@ -146,6 +166,9 @@ services:
       - trading-net
     volumes:
       - llm-advisory-data:/root/.ollama
+    environment:
+      OLLAMA_KEEP_ALIVE: 5m
+    mem_limit: 3g
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
       interval: 15s
@@ -181,6 +204,7 @@ services:
         VITE_DEPLOYMENT: ${VITE_DEPLOYMENT:-homelab}
         VITE_COMMIT_SHA: ${COMMIT_SHA:-dev}
         VITE_BUILD_DATE: ${BUILD_DATE:-dev}
+    mem_limit: 128m
     networks:
       - trading-net
     environment:
@@ -200,7 +224,7 @@ services:
 
   # ── Market Sim ─────────────────────────────────────────────────────────────
   market-sim:
-    <<: *deno-service
+    <<: *deno-medium
     command: ["deno", "run", "--allow-all", "/app/backend/src/market-sim/market-sim.ts"]
     depends_on:
       redpanda:
@@ -226,7 +250,7 @@ services:
 
   # ── EMS ────────────────────────────────────────────────────────────────────
   ems:
-    <<: *deno-service
+    <<: *deno-medium
     command: ["deno", "run", "--allow-all", "/app/backend/src/ems/ems-server.ts"]
     depends_on:
       redpanda:
@@ -258,7 +282,7 @@ services:
 
   # ── OMS ────────────────────────────────────────────────────────────────────
   oms:
-    <<: *deno-service
+    <<: *deno-medium
     command: ["deno", "run", "--allow-all", "/app/backend/src/oms/oms-server.ts"]
     depends_on:
       redpanda:
@@ -731,7 +755,7 @@ services:
 
   # ── User Service ───────────────────────────────────────────────────────────
   user-service:
-    <<: *deno-service
+    <<: *deno-medium
     command: ["deno", "run", "--allow-all", "/app/backend/src/user-service/user-service.ts"]
     depends_on:
       redpanda:
@@ -740,7 +764,7 @@ services:
         condition: service_completed_successfully
     environment:
       USER_SERVICE_PORT: "5008"
-      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-dev}
     healthcheck:
@@ -760,7 +784,8 @@ services:
 
   # ── Journal ────────────────────────────────────────────────────────────────
   journal:
-    <<: *deno-service
+    <<: *deno-medium
+    mem_limit: 512m
     command: ["deno", "run", "--allow-all", "/app/backend/src/journal/journal-server.ts"]
     depends_on:
       redpanda:
@@ -770,7 +795,7 @@ services:
     environment:
       JOURNAL_PORT: "5009"
       JOURNAL_RETENTION_DAYS: "90"
-      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-dev}
     healthcheck:
@@ -855,7 +880,7 @@ services:
         condition: service_completed_successfully
     environment:
       FIX_ARCHIVE_PORT: "5012"
-      DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
       REDPANDA_BROKERS: redpanda:9092
       COMMIT_SHA: ${COMMIT_SHA:-dev}
     healthcheck:
@@ -875,7 +900,7 @@ services:
 
   # ── Analytics ──────────────────────────────────────────────────────────────
   analytics:
-    <<: *deno-service
+    <<: *deno-medium
     profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/analytics/analytics-server.ts"]
     depends_on:
@@ -907,7 +932,7 @@ services:
 
   # ── Market Data ────────────────────────────────────────────────────────────
   market-data:
-    <<: *deno-service
+    <<: *deno-medium
     profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/market-data/market-data-service.ts"]
     working_dir: /app/data
@@ -937,7 +962,7 @@ services:
       - "traefik.http.routers.market-data.priority=10"
 
   market-data-adapters:
-    <<: *deno-service
+    <<: *deno-medium
     profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/market-data-adapters/adapter-server.ts"]
     depends_on:
@@ -967,7 +992,7 @@ services:
 
   # ── Intelligence Engines ───────────────────────────────────────────────────
   feature-engine:
-    <<: *deno-service
+    <<: *deno-medium
     profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/feature-engine/feature-engine.ts"]
     depends_on:
@@ -999,7 +1024,7 @@ services:
       - "traefik.http.routers.feature-engine.priority=10"
 
   signal-engine:
-    <<: *deno-service
+    <<: *deno-medium
     profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/signal-engine/signal-engine.ts"]
     depends_on:
@@ -1100,7 +1125,7 @@ services:
 
   # ── LLM Advisory ──────────────────────────────────────────────────────────
   llm-advisory:
-    <<: *deno-service
+    <<: *deno-medium
     profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/llm-advisory/orchestrator.ts"]
     depends_on:
@@ -1143,7 +1168,7 @@ services:
       - "traefik.http.routers.llm-advisory.priority=10"
 
   llm-worker:
-    <<: *deno-service
+    <<: *deno-medium
     profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/backend/src/llm-advisory/worker.ts"]
     depends_on:
@@ -1170,7 +1195,7 @@ services:
 
   # ── Gateway (BFF) ──────────────────────────────────────────────────────────
   gateway:
-    <<: *deno-service
+    <<: *deno-medium
     command: ["deno", "run", "--allow-all", "/app/backend/src/gateway/gateway.ts"]
     depends_on:
       redpanda:
