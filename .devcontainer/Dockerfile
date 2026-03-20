@@ -1,10 +1,11 @@
-# Dev container image — inherits the pre-built base (all heavy tooling, Postgres,
-# Redpanda, Playwright, Deno, Node, etc.) and adds only dev-container-specific config.
+# Dev container image — inherits the pre-built base (all heavy tooling,
+# Redpanda, Playwright, Deno, Node, Docker CLI, etc.) and adds only
+# dev-container-specific config.
 #
 # Dockerfile.base is published to:
 #   ghcr.io/milesburton/veta-trading-platform-base:latest
 # Rebuild it via GitHub Actions (build-base-image.yml) when base tooling changes.
-# Rebuild THIS image (Rebuild Container in VS Code) when supervisord.conf changes.
+# Services are managed by docker compose via the host Docker socket — no supervisord.
 FROM ghcr.io/milesburton/veta-trading-platform-base:latest
 
 # Bootstrap Fish config: source the live workspace file so changes take effect
