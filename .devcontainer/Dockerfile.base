@@ -29,7 +29,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ssh \
     sudo \
     supervisor \
-    postgresql \
     postgresql-client \
     ca-certificates \
     fonts-liberation \
@@ -63,6 +62,14 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
     apt-get update && apt-get install -y gh && rm -rf /var/lib/apt/lists/* || true
 
+# Install Docker CLI + Compose plugin (socket passthrough — no daemon needed)
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
+      | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy Redpanda runtime assets and place real executables on PATH.
 # The redpanda binary was compiled with PT_INTERP=/opt/redpanda/lib/ld.so so we
 # create that symlink to point at the actual lib directory.
@@ -76,14 +83,10 @@ RUN chmod +x /usr/local/bin/redpanda /usr/local/bin/rpk && \
 # breaks any shell that loads it at startup. The /opt/redpanda/lib symlink
 # satisfies the binary's PT_INTERP without needing LD_LIBRARY_PATH at all.
 
-# Initialise PostgreSQL and create the veta database + user
-RUN service postgresql start && \
-    su postgres -c "psql -c \"CREATE USER veta WITH PASSWORD 'veta';\"" && \
-    su postgres -c "psql -c \"CREATE DATABASE veta OWNER veta;\"" && \
-    service postgresql stop
-
-# Create the 'deno' user with Fish as default shell, and pre-create bind mount targets
+# Create the 'deno' user with Fish as default shell, and pre-create bind mount targets.
+# Add deno to the docker group so it can use the host Docker socket without sudo.
 RUN useradd -m -s /usr/bin/fish deno && \
+    usermod -aG docker deno && \
     chown -R deno:deno /var/lib/redpanda /etc/redpanda && \
     mkdir -p /home/deno/.ssh /home/deno/.claude && \
     chown -R deno:deno /home/deno/.ssh /home/deno/.claude && \

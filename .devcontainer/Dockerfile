@@ -7,18 +7,11 @@
 # Rebuild THIS image (Rebuild Container in VS Code) when supervisord.conf changes.
 FROM ghcr.io/milesburton/veta-trading-platform-base:latest
 
-# Copy the supervisord configuration
-COPY supervisord.conf /home/deno/supervisord.conf
-
 # Bootstrap Fish config: source the live workspace file so changes take effect
 # without rebuilding the container. The workspace is mounted at runtime at
 # /workspaces/virtual-equities-trading-application by the devcontainer.
 RUN echo 'source /workspaces/virtual-equities-trading-application/.devcontainer/config.fish' \
     > /home/deno/.config/fish/config.fish
 
-# supervisord must run as root so it can setuid to postgres for the DB program.
-# VS Code connects as remoteUser=deno (devcontainer.json) so the terminal still
-# drops to deno — only the init process runs as root.
-USER root
-
-CMD ["/usr/bin/supervisord", "-c", "/home/deno/supervisord.conf"]
+# Services are started by postStartCommand in devcontainer.json via docker compose
+# using the host Docker socket. No supervisord needed.
