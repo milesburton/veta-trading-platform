@@ -16,5 +16,9 @@ COPY supervisord.conf /home/deno/supervisord.conf
 RUN echo 'source /workspaces/virtual-equities-trading-application/.devcontainer/config.fish' \
     > /home/deno/.config/fish/config.fish
 
-# Ensure supervisord runs
+# supervisord must run as root so it can setuid to postgres for the DB program.
+# VS Code connects as remoteUser=deno (devcontainer.json) so the terminal still
+# drops to deno — only the init process runs as root.
+USER root
+
 CMD ["/usr/bin/supervisord", "-c", "/home/deno/supervisord.conf"]
