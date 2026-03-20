@@ -63,24 +63,44 @@ jobs:
       - name: Set up Fly.io
         uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: Deploy to Fly.io
-        run: flyctl deploy --compose compose.yml --compose compose.prod.yml
+      - name: Ensure VM is performance-8x
+        run: |
+          MACHINES=$(flyctl machine list --app veta-trading --json)
+          MACHINE_ID=$(echo "$MACHINES" | python3 -c "import sys,json; ms=json.load(sys.stdin); print(ms[0]['id']) if ms else exit(1)")
+          CURRENT=$(echo "$MACHINES" | python3 -c "import sys,json; ms=json.load(sys.stdin); print(ms[0].get('config',{}).get('guest',{}).get('preset','unknown')) if ms else print('unknown')" 2>/dev/null || echo "unknown")
+          echo "Current VM size: $CURRENT"
+          if [ "$CURRENT" != "performance-8x" ]; then
+            echo "Resizing to performance-8x..."
+            flyctl machine update "$MACHINE_ID" --vm-size performance-8x --app veta-trading --yes
+          fi
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: Verify deployment — staleness check
+      - name: Copy compose files to VM
+        run: |
+          flyctl ssh sftp put --app veta-trading compose.yml /root/compose.yml
+          flyctl ssh sftp put --app veta-trading compose.prod.yml /root/compose.prod.yml
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Pull latest images and restart services
+        run: |
+          flyctl ssh console --app veta-trading --command "cd /root && docker compose -f compose.yml -f compose.prod.yml pull --quiet && docker compose -f compose.yml -f compose.prod.yml up -d --remove-orphans"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Verify deployment
         run: |
           EXPECTED=$(git rev-parse --short HEAD)
           echo "Expecting version: $EXPECTED"
-          # Retry for up to 60s while the instance is booting
-          for i in $(seq 1 12); do
+          for i in $(seq 1 24); do
             DEPLOYED=$(curl -sf https://veta-trading.fly.dev/api/gateway/health | python3 -c "import sys,json; print(json.load(sys.stdin).get('version',''))" 2>/dev/null || echo "")
             if [ "$DEPLOYED" = "$EXPECTED" ]; then
               echo "✅ Live version matches: $DEPLOYED"
               exit 0
             fi
-            echo "  attempt $i: got '$DEPLOYED', retrying in 5s..."
-            sleep 5
+            echo "  attempt $i/24: got '$DEPLOYED', retrying in 10s..."
+            sleep 10
           done
-          echo "❌ Stale deployment — expected $EXPECTED but got $DEPLOYED"
+          echo "❌ Stale deployment — expected $EXPECTED, got $DEPLOYED"
           exit 1
