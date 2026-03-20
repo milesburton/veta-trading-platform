@@ -84,8 +84,10 @@ RUN chmod +x /usr/local/bin/redpanda /usr/local/bin/rpk && \
 # satisfies the binary's PT_INTERP without needing LD_LIBRARY_PATH at all.
 
 # Create the 'deno' user with Fish as default shell, and pre-create bind mount targets.
-# Add deno to the docker group so it can use the host Docker socket without sudo.
-RUN useradd -m -s /usr/bin/fish deno && \
+# Create the docker group (docker-ce-cli doesn't create it) and add deno to it so
+# the host Docker socket is accessible without sudo.
+RUN groupadd -f docker && \
+    useradd -m -s /usr/bin/fish deno && \
     usermod -aG docker deno && \
     chown -R deno:deno /var/lib/redpanda /etc/redpanda && \
     mkdir -p /home/deno/.ssh /home/deno/.claude && \

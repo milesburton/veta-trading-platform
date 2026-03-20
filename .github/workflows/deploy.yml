@@ -85,7 +85,7 @@ jobs:
 
       - name: Pull latest images and restart services
         run: |
-          flyctl ssh console --app veta-trading --command "cd /root && docker compose -f compose.yml -f compose.prod.yml pull --quiet && docker compose -f compose.yml -f compose.prod.yml up -d --remove-orphans"
+          flyctl ssh console --app veta-trading --command "/bin/sh -c 'cd /root && docker compose -f compose.yml -f compose.prod.yml pull --quiet && docker compose -f compose.yml -f compose.prod.yml up -d --remove-orphans'"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
