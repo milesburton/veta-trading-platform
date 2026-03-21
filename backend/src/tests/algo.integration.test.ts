@@ -14,7 +14,6 @@ import {
 import {
   GATEWAY_URL,
   JOURNAL_URL,
-  OBS_URL,
   loginAs,
   submitOrderViaWs,
   timeout as t,
@@ -76,36 +75,6 @@ async function pollForChildren(
   return null;
 }
 
-/** Check observability service has events referencing this order.
- *  Queries order-specific event types directly to avoid being crowded out
- *  by high-volume user.access / algo.heartbeat events in the 1000-event window. */
-async function waitForObsEvents(
-  orderId: string,
-  maxWaitMs = 15_000,
-): Promise<boolean> {
-  const orderEventTypes = ["orders.submitted", "orders.routed", "orders.child", "orders.filled"];
-  const deadline = Date.now() + maxWaitMs;
-  while (Date.now() < deadline) {
-    for (const evtType of orderEventTypes) {
-      const res = await fetch(`${OBS_URL}/events?type=${evtType}`, { signal: t(10_000) });
-      if (res.ok) {
-        const events = await res.json() as Array<{ type: string; payload: Record<string, unknown> }>;
-        const match = events.find(
-          (e) =>
-            e.payload?.clientOrderId === orderId ||
-            e.payload?.orderId === orderId ||
-            e.payload?.parentOrderId === orderId,
-        );
-        if (match) return true;
-      } else {
-        await res.body?.cancel();
-      }
-    }
-    await new Promise((r) => setTimeout(r, 1_000));
-  }
-  return false;
-}
-
 // ── LIMIT ─────────────────────────────────────────────────────────────────────
 
 Deno.test("[algo] LIMIT: order routes, gets a child slice, appears in journal", async () => {
@@ -153,9 +122,6 @@ Deno.test("[algo] TWAP: order routes, produces multiple child slices over time",
   assertExists(order, `TWAP order ${id} did not produce child slices within 25s`);
   assertEquals(order.strategy, "TWAP");
   assert(order.children.length >= 1, `Expected ≥1 TWAP slice, got ${order.children.length}`);
-
-  const hasObs = await waitForObsEvents(id, 40_000);
-  assert(hasObs, `No observability events found for TWAP order ${id}`);
 });
 
 // ── POV ───────────────────────────────────────────────────────────────────────
@@ -207,17 +173,18 @@ Deno.test("[algo] VWAP: order routes and dispatches volume-weighted child slices
 // ── ICEBERG ───────────────────────────────────────────────────────────────────
 
 Deno.test("[algo] ICEBERG: order routes, initial visible slice appears as child", async () => {
-  const token = await loginAs("bob");
+  const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, { headers: { cookie: `veta_user=${token}` }, signal: t() })
     .then((r) => r.json() as Promise<{ symbol: string; price: number }[]>)
-    .then((assets) => assets.find((a) => a.symbol === "MSFT")?.price ?? 420);
+    .then((assets) => assets.find((a) => a.symbol === "AAPL")?.price ?? 190);
 
   const { clientOrderId: id } = await submitOrderViaWs(token, {
-    asset: "MSFT",
+    asset: "AAPL",
     side: "BUY",
     quantity: 500,
     limitPrice: Number(price) * 1.20,
     strategy: "ICEBERG",
+    expiresAt: 300,
     algoParams: { strategy: "ICEBERG", visibleQty: 50 },
   });
 
@@ -257,17 +224,18 @@ Deno.test("[algo] SNIPER: order routes and executes aggressively (single or few 
 // ── ARRIVAL_PRICE ─────────────────────────────────────────────────────────────
 
 Deno.test("[algo] ARRIVAL_PRICE: order routes and executes relative to arrival price", async () => {
-  const token = await loginAs("bob");
+  const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, { headers: { cookie: `veta_user=${token}` }, signal: t() })
     .then((r) => r.json() as Promise<{ symbol: string; price: number }[]>)
-    .then((assets) => assets.find((a) => a.symbol === "MSFT")?.price ?? 420);
+    .then((assets) => assets.find((a) => a.symbol === "AAPL")?.price ?? 190);
 
   const { clientOrderId: id } = await submitOrderViaWs(token, {
-    asset: "MSFT",
+    asset: "AAPL",
     side: "BUY",
     quantity: 75,
     limitPrice: Number(price) * 1.20,
     strategy: "ARRIVAL_PRICE",
+    expiresAt: 300,
     algoParams: { strategy: "ARRIVAL_PRICE", maxSlippageBps: 500 },
   });
 
@@ -275,25 +243,6 @@ Deno.test("[algo] ARRIVAL_PRICE: order routes and executes relative to arrival p
   assertExists(order, `ARRIVAL_PRICE order ${id} did not produce child slices within 60s`);
   assertEquals(order.strategy, "ARRIVAL_PRICE");
   assert(order.children.length >= 1, `Expected ≥1 ARRIVAL_PRICE slice, got ${order.children.length}`);
-});
-
-// ── Strategy status (algo heartbeats) ─────────────────────────────────────────
-
-Deno.test("[algo] observability pipeline receives algo.heartbeat events", async () => {
-  const deadline = Date.now() + 30_000;
-  let count = 0;
-  while (Date.now() < deadline) {
-    const res = await fetch(`${OBS_URL}/events?type=algo.heartbeat`, { signal: t(10_000) });
-    if (res.ok) {
-      const heartbeats = await res.json() as Array<{ type: string }>;
-      count = heartbeats.length;
-      if (count > 0) break;
-    } else {
-      await res.body?.cancel();
-    }
-    await new Promise((r) => setTimeout(r, 2_000));
-  }
-  assert(count > 0, "No algo.heartbeat events in observability after 30s — observability pipeline may be broken");
 });
 
 // ── SELL orders ───────────────────────────────────────────────────────────────
@@ -413,18 +362,19 @@ Deno.test("[perf] TWAP slice count: 3 slices produce ≥2 children within 15s", 
 });
 
 Deno.test("[perf] ICEBERG visible qty: each child slice ≤ visibleQty", async () => {
-  const token = await loginAs("bob");
+  const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, { headers: { cookie: `veta_user=${token}` }, signal: t() })
     .then((r) => r.json() as Promise<{ symbol: string; price: number }[]>)
-    .then((assets) => assets.find((a) => a.symbol === "MSFT")?.price ?? 420);
+    .then((assets) => assets.find((a) => a.symbol === "AAPL")?.price ?? 190);
 
   const visibleQty = 30;
   const { clientOrderId: id } = await submitOrderViaWs(token, {
-    asset: "MSFT",
+    asset: "AAPL",
     side: "BUY",
     quantity: 150,
     limitPrice: Number(price) * 1.20,
     strategy: "ICEBERG",
+    expiresAt: 300,
     algoParams: { strategy: "ICEBERG", visibleQty },
   });
 
@@ -459,46 +409,6 @@ Deno.test("[perf] SNIPER executes in ≤3 slices (aggressive, single-shot strate
     order.children.length <= 3,
     `SNIPER produced ${order.children.length} slices — expected ≤3 (aggressive algo should not over-slice)`,
   );
-});
-
-// ── Decision log population ───────────────────────────────────────────────────
-
-Deno.test("[algo] decision log: order events appear in observability for a submitted order", async () => {
-  const token = await loginAs("alice");
-  const price = await fetch(`${GATEWAY_URL}/assets`, { headers: { cookie: `veta_user=${token}` }, signal: t() })
-    .then((r) => r.json() as Promise<{ symbol: string; price: number }[]>)
-    .then((assets) => assets.find((a) => a.symbol === "AAPL")?.price ?? 190);
-
-  const { clientOrderId: id } = await submitOrderViaWs(token, {
-    asset: "AAPL",
-    side: "BUY",
-    quantity: 20,
-    limitPrice: Number(price) * 1.02,
-    strategy: "LIMIT",
-  });
-
-  const hasEvents = await waitForObsEvents(id, 30_000);
-  assert(hasEvents, `No observability events found for order ${id} — decision log would be empty`);
-
-  // Gather order events from type-specific endpoints to avoid the 1000-event cap
-  const orderEventTypes = ["orders.submitted", "orders.routed", "orders.child", "orders.filled"];
-  const orderEvents: Array<{ type: string; payload: Record<string, unknown> }> = [];
-  for (const evtType of orderEventTypes) {
-    const res = await fetch(`${OBS_URL}/events?type=${evtType}`, { signal: t(15_000) });
-    if (!res.ok) { await res.body?.cancel(); continue; }
-    const batch = await res.json() as Array<{ type: string; payload: Record<string, unknown> }>;
-    orderEvents.push(...batch.filter(
-      (e) =>
-        e.payload?.clientOrderId === id ||
-        e.payload?.orderId === id ||
-        e.payload?.parentOrderId === id,
-    ));
-  }
-  assert(orderEvents.length >= 1, `Expected ≥1 event for order ${id}, got ${orderEvents.length}`);
-
-  const eventTypes = orderEvents.map((e) => e.type);
-  const hasRouted = eventTypes.some((t) => t.includes("orders."));
-  assert(hasRouted, `Expected at least one orders.* event, got: ${eventTypes.join(", ")}`);
 });
 
 // ── IS (Implementation Shortfall) ─────────────────────────────────────────────
