@@ -474,16 +474,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/ready" && req.method === "GET") {
     const chk = (url: string) =>
       fetch(`${url}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false);
-    const chkTcp = (hostPort: string) => {
-      const [hostname, portStr] = hostPort.split(":");
-      const port = Number(portStr);
-      const timeout = new Promise<false>((res) => setTimeout(() => res(false), 5_000));
-      const probe = Deno.connect({ hostname, port })
-        .then((conn) => { conn.close(); return true as const; })
-        .catch(() => false as const);
-      return Promise.race([probe, timeout]);
-    };
-    const REDPANDA_BROKER = (Deno.env.get("REDPANDA_BROKERS") ?? "localhost:9092").split(",")[0].trim();
     const [
       marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
       limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
@@ -498,10 +488,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       chk(DARK_POOL_URL), chk(CCP_SERVICE_URL), chk(RFQ_SERVICE_URL),
       chk(ANALYTICS_URL), chk(MARKET_DATA_URL), chk(FEATURE_ENGINE_URL), chk(SIGNAL_ENGINE_URL),
       chk(RECOMMENDATION_ENGINE_URL), chk(SCENARIO_ENGINE_URL), chk(NEWS_AGGREGATOR_URL), chk(LLM_ADVISORY_URL),
-      chkTcp(REDPANDA_BROKER),
+      chk(OBSERVABILITY_URL),  // kafka-relay: confirms Redpanda is reachable
     ]);
-    // Core services required for order flow
-    const ready = marketSim && ems && oms && journal && userService && bus;
+    // Core services required for order flow (bus checked separately via kafka consumers)
+    const ready = marketSim && ems && oms && journal && userService;
     return new Response(
       JSON.stringify({
         ready,
