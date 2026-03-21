@@ -145,20 +145,24 @@ Deno.test("[gateway] WebSocket receives marketUpdate within 8 seconds", async ()
   const ws = new WebSocket(GATEWAY_WS_URL);
   const closed = new Promise<void>((r) => { ws.onclose = () => r(); });
 
-  const msg = await new Promise<{ event: string; data: { prices: Record<string, number> } }>((resolve, reject) => {
-    const t = setTimeout(() => { ws.close(); reject(new Error("timeout")); }, 8_000);
-    ws.onmessage = (ev) => {
-      const parsed = JSON.parse(ev.data as string) as { event: string; data: { prices: Record<string, number> } };
-      if (parsed.event === "marketUpdate") {
-        clearTimeout(t);
-        ws.close();
-        resolve(parsed);
-      }
-    };
-    ws.onerror = () => { clearTimeout(t); reject(new Error("WS error")); };
-  });
-
-  await closed;
+  let msg: { event: string; data: { prices: Record<string, number> } } | null = null;
+  try {
+    msg = await new Promise<{ event: string; data: { prices: Record<string, number> } }>((resolve, reject) => {
+      const t = setTimeout(() => { ws.close(); reject(new Error("timeout")); }, 8_000);
+      ws.onmessage = (ev) => {
+        const parsed = JSON.parse(ev.data as string) as { event: string; data: { prices: Record<string, number> } };
+        if (parsed.event === "marketUpdate") {
+          clearTimeout(t);
+          ws.close();
+          resolve(parsed);
+        }
+      };
+      ws.onerror = () => { clearTimeout(t); ws.close(); reject(new Error("WS error")); };
+    });
+  } finally {
+    await closed;
+  }
+  assert(msg !== null);
   assert(msg.event === "marketUpdate");
   assert(typeof msg.data.prices === "object");
   assert(Object.keys(msg.data.prices).length > 0);
@@ -168,31 +172,35 @@ Deno.test("[gateway] unauthenticated submitOrder is acknowledged or rejected", a
   const ws = new WebSocket(GATEWAY_WS_URL);
   const closed = new Promise<void>((r) => { ws.onclose = () => r(); });
 
-  const ack = await new Promise<{ event: string }>((resolve, reject) => {
-    const t = setTimeout(() => { ws.close(); reject(new Error("timeout")); }, 5_000);
-    ws.onopen = () => {
-      ws.send(JSON.stringify({
-        type: "submitOrder",
-        payload: {
-          clientOrderId: `smoke-${Date.now()}`,
-          asset: "AAPL", side: "BUY", quantity: 100,
-          limitPrice: 200.0, expiresAt: 60, strategy: "LIMIT",
-          algoParams: { strategy: "LIMIT" },
-        },
-      }));
-    };
-    ws.onmessage = (ev) => {
-      const parsed = JSON.parse(ev.data as string) as { event: string };
-      if (["orderAck", "orderRejected", "error"].includes(parsed.event)) {
-        clearTimeout(t);
-        ws.close();
-        resolve(parsed);
-      }
-    };
-    ws.onerror = () => { clearTimeout(t); reject(new Error("WS error")); };
-  });
-
-  await closed;
+  let ack: { event: string } | null = null;
+  try {
+    ack = await new Promise<{ event: string }>((resolve, reject) => {
+      const t = setTimeout(() => { ws.close(); reject(new Error("timeout")); }, 5_000);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          type: "submitOrder",
+          payload: {
+            clientOrderId: `smoke-${Date.now()}`,
+            asset: "AAPL", side: "BUY", quantity: 100,
+            limitPrice: 200.0, expiresAt: 60, strategy: "LIMIT",
+            algoParams: { strategy: "LIMIT" },
+          },
+        }));
+      };
+      ws.onmessage = (ev) => {
+        const parsed = JSON.parse(ev.data as string) as { event: string };
+        if (["orderAck", "orderRejected", "error"].includes(parsed.event)) {
+          clearTimeout(t);
+          ws.close();
+          resolve(parsed);
+        }
+      };
+      ws.onerror = () => { clearTimeout(t); ws.close(); reject(new Error("WS error")); };
+    });
+  } finally {
+    await closed;
+  }
+  assert(ack !== null);
   assert(
     ["orderAck", "orderRejected", "error"].includes(ack.event),
     `Expected orderAck/orderRejected/error, got: ${ack.event}`,
@@ -204,21 +212,23 @@ Deno.test("[gateway] authenticated WS receives algoHeartbeat within 10s", async 
   const ws = new WebSocket(GATEWAY_WS_URL);
   const closed = new Promise<void>((r) => { ws.onclose = () => r(); });
 
-  await new Promise<void>((resolve, reject) => {
-    const t = setTimeout(() => { ws.close(); reject(new Error("No algoHeartbeat received")); }, 10_000);
-    ws.onopen = () => ws.send(JSON.stringify({ type: "authenticate", payload: { token } }));
-    ws.onmessage = (ev) => {
-      const msg = JSON.parse(ev.data as string) as { event: string };
-      if (msg.event === "algoHeartbeat") {
-        clearTimeout(t);
-        ws.close();
-        resolve();
-      }
-    };
-    ws.onerror = () => { clearTimeout(t); reject(new Error("WS error")); };
-  });
-
-  await closed;
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const t = setTimeout(() => { ws.close(); reject(new Error("No algoHeartbeat received")); }, 10_000);
+      ws.onopen = () => ws.send(JSON.stringify({ type: "authenticate", payload: { token } }));
+      ws.onmessage = (ev) => {
+        const msg = JSON.parse(ev.data as string) as { event: string };
+        if (msg.event === "algoHeartbeat") {
+          clearTimeout(t);
+          ws.close();
+          resolve();
+        }
+      };
+      ws.onerror = () => { clearTimeout(t); ws.close(); reject(new Error("WS error")); };
+    });
+  } finally {
+    await closed;
+  }
 });
 
 
