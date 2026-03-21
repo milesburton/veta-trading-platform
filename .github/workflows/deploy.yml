@@ -134,6 +134,21 @@ jobs:
             sleep 10
           done
 
+      - name: Wait for intelligence pipeline services
+        run: |
+          for svc in signal-engine feature-engine analytics; do
+            echo "Waiting for $svc..."
+            for i in $(seq 1 20); do
+              STATUS=$(curl -sf "https://veta-trading.fly.dev/api/$svc/health" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status',''))" 2>/dev/null || echo "")
+              if [ "$STATUS" = "ok" ]; then
+                echo "  ✅ $svc is ready"
+                break
+              fi
+              echo "    attempt $i/20: $svc not ready, retrying in 5s..."
+              sleep 5
+            done
+          done
+
       - name: Run smoke tests against Fly.io
         run: deno task test:smoke
         env:

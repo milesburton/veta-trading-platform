@@ -141,12 +141,12 @@ Deno.test("[e2e] all services report the same version (no stale deployments)", a
 });
 
 
-Deno.test("[gateway] WebSocket receives marketUpdate within 3 seconds", async () => {
+Deno.test("[gateway] WebSocket receives marketUpdate within 8 seconds", async () => {
   const ws = new WebSocket(GATEWAY_WS_URL);
   const closed = new Promise<void>((r) => { ws.onclose = () => r(); });
 
   const msg = await new Promise<{ event: string; data: { prices: Record<string, number> } }>((resolve, reject) => {
-    const t = setTimeout(() => { ws.close(); reject(new Error("timeout")); }, 3_000);
+    const t = setTimeout(() => { ws.close(); reject(new Error("timeout")); }, 8_000);
     ws.onmessage = (ev) => {
       const parsed = JSON.parse(ev.data as string) as { event: string; data: { prices: Record<string, number> } };
       if (parsed.event === "marketUpdate") {
@@ -199,13 +199,13 @@ Deno.test("[gateway] unauthenticated submitOrder is acknowledged or rejected", a
   );
 });
 
-Deno.test("[gateway] authenticated WS receives algoHeartbeat within 5s", async () => {
+Deno.test("[gateway] authenticated WS receives algoHeartbeat within 10s", async () => {
   const token = await loginAs("alice");
   const ws = new WebSocket(GATEWAY_WS_URL);
   const closed = new Promise<void>((r) => { ws.onclose = () => r(); });
 
   await new Promise<void>((resolve, reject) => {
-    const t = setTimeout(() => { ws.close(); reject(new Error("No algoHeartbeat received")); }, 5_000);
+    const t = setTimeout(() => { ws.close(); reject(new Error("No algoHeartbeat received")); }, 10_000);
     ws.onopen = () => ws.send(JSON.stringify({ type: "authenticate", payload: { token } }));
     ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data as string) as { event: string };

@@ -349,13 +349,13 @@ async function proxyPost(internalUrl: string, req: Request): Promise<Response> {
       signal: AbortSignal.timeout(15_000),
     });
     const resBody = await res.arrayBuffer();
-    return new Response(resBody, {
-      status: res.status,
-      headers: {
-        "Content-Type": res.headers.get("Content-Type") ?? "application/json",
-        ...CORS_HEADERS,
-      },
-    });
+    const headers: Record<string, string> = {
+      "Content-Type": res.headers.get("Content-Type") ?? "application/json",
+      ...CORS_HEADERS,
+    };
+    const setCookie = res.headers.get("set-cookie");
+    if (setCookie) headers["Set-Cookie"] = setCookie;
+    return new Response(resBody, { status: res.status, headers });
   } catch (err) {
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 502,
@@ -522,6 +522,22 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
       },
     );
+  }
+
+  // WebSocket proxy for market-sim (Fly.io monolith — only port 5011 exposed)
+  if (path === "/ws/market-sim") {
+    if (req.headers.get("upgrade") !== "websocket") {
+      return new Response("Expected WebSocket upgrade", { status: 426 });
+    }
+    const { socket: client, response } = Deno.upgradeWebSocket(req);
+    const upstream = new WebSocket(`ws://localhost:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`);
+    upstream.onmessage = (ev) => { try { if (client.readyState === WebSocket.OPEN) client.send(ev.data); } catch { /* ignore */ } };
+    upstream.onclose = () => { try { client.close(); } catch { /* ignore */ } };
+    upstream.onerror = () => { try { client.close(); } catch { /* ignore */ } };
+    client.onmessage = (ev) => { try { if (upstream.readyState === WebSocket.OPEN) upstream.send(ev.data); } catch { /* ignore */ } };
+    client.onclose = () => { try { upstream.close(); } catch { /* ignore */ } };
+    client.onerror = () => { try { upstream.close(); } catch { /* ignore */ } };
+    return response;
   }
 
   if (path === "/ws" || path === "/ws/gateway") {
@@ -1447,19 +1463,33 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     );
   }
 
-  // Self-alias: /api/gateway/* → strip prefix so gateway serves its own routes.
-  // Allows smoke tests using svcUrl(5011, "/api/gateway") to reach /health, /ready, etc.
-  if (path.startsWith("/api/gateway/") && req.method === "GET") {
+  // Self-alias: /api/gateway/* → strip prefix and re-issue to gateway's own routes.
+  // Allows smoke tests using svcUrl(5011, "/api/gateway") to reach any gateway endpoint.
+  // Must forward Cookie so auth-protected routes work correctly.
+  if (path.startsWith("/api/gateway/")) {
     const stripped = path.slice("/api/gateway".length);
-    if (stripped === "/health") {
-      return new Response(
-        JSON.stringify({ service: "gateway", version: VERSION, status: "ok" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-      );
-    }
-    if (stripped === "/ready") {
-      // re-use existing ready path by redirecting
-      return proxyGet(`http://localhost:${PORT}/ready`, req);
+    const targetUrl = `http://localhost:${PORT}${stripped}${url.search}`;
+    try {
+      const fwdHeaders: Record<string, string> = {};
+      const cookie = req.headers.get("cookie");
+      if (cookie) fwdHeaders["cookie"] = cookie;
+      const ct = req.headers.get("content-type");
+      if (ct) fwdHeaders["content-type"] = ct;
+      const fetchInit: RequestInit = { method: req.method, headers: fwdHeaders, signal: AbortSignal.timeout(15_000) };
+      if (req.method !== "GET" && req.method !== "HEAD") fetchInit.body = await req.text();
+      const res = await fetch(targetUrl, fetchInit);
+      const resBody = await res.arrayBuffer();
+      const resHeaders: Record<string, string> = {
+        "Content-Type": res.headers.get("Content-Type") ?? "application/json",
+        ...CORS_HEADERS,
+      };
+      const setCookie = res.headers.get("set-cookie");
+      if (setCookie) resHeaders["Set-Cookie"] = setCookie;
+      return new Response(resBody, { status: res.status, headers: resHeaders });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: (err as Error).message }), {
+        status: 502, headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
     }
   }
 
