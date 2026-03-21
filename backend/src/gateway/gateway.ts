@@ -85,11 +85,16 @@ async function validateToken(token: string): Promise<{ user: AuthenticatedUser; 
       body: JSON.stringify({ token }),
       signal: AbortSignal.timeout(8_000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.warn(`[gateway] validateToken: user-service returned ${res.status} for token ${token.slice(0, 8)}...: ${body}`);
+      return null;
+    }
     const result = await res.json() as { user: AuthenticatedUser; limits: UserLimits };
     authCache.set(token, { result, expiresAt: now + 10_000 });
     return result;
-  } catch {
+  } catch (err) {
+    console.warn(`[gateway] validateToken: fetch error for token ${token.slice(0, 8)}...:`, (err as Error).message);
     return null;
   }
 }
