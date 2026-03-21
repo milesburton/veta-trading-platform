@@ -709,6 +709,15 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return response;
   }
 
+  // Lightweight auth probe — warms authCache without downstream proxy latency.
+  if (path === "/me" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return new Response(JSON.stringify({ user: auth.user, limits: auth.limits }), {
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  }
+
   if (path === "/assets" && req.method === "GET") {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;

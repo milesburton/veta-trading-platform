@@ -55,8 +55,9 @@ export async function loginAsVerified(userId: string, maxAttempts = 3): Promise<
     } catch { continue; /* transient network error — retry */ }
     lastToken = token;
     // Quick probe: can gateway validate this token via HTTP?
+    // Uses /me (no downstream proxy) to warm the authCache reliably.
     try {
-      const res = await fetch(`${GATEWAY_URL}/assets`, {
+      const res = await fetch(`${GATEWAY_URL}/me`, {
         headers: { Cookie: `veta_user=${token}` },
         signal: timeout(8_000),
       });
