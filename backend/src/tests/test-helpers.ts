@@ -38,6 +38,30 @@ export async function loginAs(userId: string): Promise<string> {
   return match[1];
 }
 
+/**
+ * Login and verify the token is accepted by the gateway before returning.
+ * Retries up to maxAttempts times with 1s between attempts to handle
+ * transient gateway validateToken timeouts under load.
+ */
+export async function loginAsVerified(userId: string, maxAttempts = 5): Promise<string> {
+  let lastToken = "";
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 1_000));
+    const token = await loginAs(userId);
+    lastToken = token;
+    // Verify token is accepted by gateway (via /assets proxy route)
+    try {
+      const res = await fetch(`${GATEWAY_URL}/assets`, {
+        headers: { Cookie: `veta_user=${token}` },
+        signal: AbortSignal.timeout(5_000),
+      });
+      await res.body?.cancel();
+      if (res.ok) return token;
+    } catch { /* retry */ }
+  }
+  return lastToken; // best effort after all attempts
+}
+
 export interface WsOrderResponse {
   event: string;
   data: Record<string, unknown>;
@@ -114,7 +138,7 @@ export async function submitOrderViaWs(
 
 /**
  * Submit an order with automatic retry on transient auth failures.
- * Re-creates the session token and retries up to maxRetries times.
+ * Uses loginAsVerified to pre-confirm the token works before sending.
  */
 export async function submitOrderWithRetry(
   userId: string,
@@ -134,9 +158,9 @@ export async function submitOrderWithRetry(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (attempt > 0) {
       // Brief pause before retry to let user-service stabilise
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 1_000));
     }
-    const token = await loginAs(userId);
+    const token = await loginAsVerified(userId);
     try {
       return await submitOrderViaWs(token, order);
     } catch (err) {

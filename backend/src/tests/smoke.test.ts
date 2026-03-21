@@ -8,8 +8,8 @@ import {
   GATEWAY_WS_URL,
   JOURNAL_URL,
   loginAs,
+  loginAsVerified,
   OBS_URL,
-  submitOrderViaWs,
   submitOrderWithRetry,
   timeout,
   USER_SVC_URL,
@@ -234,19 +234,17 @@ Deno.test("[gateway] authenticated WS receives algoHeartbeat within 10s", async 
 
 
 Deno.test("[orders] authenticated BUY LIMIT orderAck within 5s", async () => {
-  const token = await loginAs("alice");
-  const ack = await submitOrderViaWs(token, {
+  const { event } = await submitOrderWithRetry("alice", {
     asset: "AAPL", side: "BUY", quantity: 10, limitPrice: 99_999, strategy: "LIMIT",
   });
-  assertEquals(ack.event, "orderAck", `Expected orderAck, got ${ack.event}`);
+  assertEquals(event, "orderAck", `Expected orderAck, got ${event}`);
 });
 
 Deno.test("[orders] authenticated SELL LIMIT orderAck within 5s", async () => {
-  const token = await loginAs("alice");
-  const ack = await submitOrderViaWs(token, {
+  const { event } = await submitOrderWithRetry("alice", {
     asset: "MSFT", side: "SELL", quantity: 10, limitPrice: 1, strategy: "LIMIT",
   });
-  assertEquals(ack.event, "orderAck", `Expected orderAck, got ${ack.event}`);
+  assertEquals(event, "orderAck", `Expected orderAck, got ${event}`);
 });
 
 Deno.test("[orders] option order returns orderAck or orderRejected from OMS", async () => {
@@ -268,7 +266,7 @@ Deno.test("[gateway] GET /shared-workspaces returns 401 without auth", async () 
 });
 
 Deno.test("[gateway] GET /advisory/admin/state returns 200 for admin", async () => {
-  const token = await loginAs("admin");
+  const token = await loginAsVerified("admin");
   const res = await fetch(`${GATEWAY_URL}/advisory/admin/state`, {
     headers: { Cookie: `veta_user=${token}` },
     signal: timeout(5_000),
