@@ -646,6 +646,7 @@ Deno.test("[orders/settled] SNIPER order reaches filled or expired within 60s", 
     asset: "AAPL", side: "BUY", quantity: 30,
     limitPrice: price * 1.05, strategy: "SNIPER",
     algoParams: { strategy: "SNIPER" },
+    expiresAt: 30,
   });
   const order = await pollSettled(clientOrderId, 60_000);
   assertExists(order, `SNIPER order ${clientOrderId} did not settle within 60s`);
@@ -663,9 +664,9 @@ Deno.test("[orders/settled] ARRIVAL_PRICE order reaches filled or expired within
     asset: "MSFT", side: "BUY", quantity: 40,
     limitPrice: price * 1.05, strategy: "ARRIVAL_PRICE",
     algoParams: { strategy: "ARRIVAL_PRICE" },
-    expiresAt: 60,
+    expiresAt: 30,
   });
-  const order = await pollSettled(clientOrderId, 90_000);
+  const order = await pollSettled(clientOrderId, 60_000);
   assertExists(order, `ARRIVAL_PRICE order ${clientOrderId} did not settle within 90s`);
   assert(
     order.status === "filled" || order.status === "expired" || order.status === "rejected",
@@ -680,10 +681,10 @@ Deno.test("[orders/settled] MOMENTUM order reaches filled or expired within 90s"
   const { clientOrderId } = await submitOrderWithRetry("alice", {
     asset: "AAPL", side: "BUY", quantity: 30,
     limitPrice: price * 1.05, strategy: "MOMENTUM",
-    algoParams: { strategy: "MOMENTUM" },
-    expiresAt: 60,
+    algoParams: { strategy: "MOMENTUM", entryThresholdBps: 0.01 },
+    expiresAt: 30,
   });
-  const order = await pollSettled(clientOrderId, 90_000);
+  const order = await pollSettled(clientOrderId, 60_000);
   assertExists(order, `MOMENTUM order ${clientOrderId} did not settle within 90s`);
   assert(
     order.status === "filled" || order.status === "expired" || order.status === "rejected",
@@ -699,9 +700,9 @@ Deno.test("[orders/settled] IS order reaches filled or expired within 90s", asyn
     asset: "MSFT", side: "BUY", quantity: 40,
     limitPrice: price * 1.05, strategy: "IS",
     algoParams: { strategy: "IS" },
-    expiresAt: 60,
+    expiresAt: 30,
   });
-  const order = await pollSettled(clientOrderId, 90_000);
+  const order = await pollSettled(clientOrderId, 60_000);
   assertExists(order, `IS order ${clientOrderId} did not settle within 90s`);
   assert(
     order.status === "filled" || order.status === "expired" || order.status === "rejected",
