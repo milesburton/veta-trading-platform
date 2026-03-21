@@ -109,7 +109,7 @@ COPY supervisord.fly.conf /etc/supervisor/conf.d/veta.conf
 # Create log directory for supervisord programs
 RUN mkdir -p /var/log/supervisor
 
-# Initialise PostgreSQL (data dir will be overridden by Fly.io volume mount)
+# Create postgres user home (data dir /var/lib/postgresql/data will be mounted from Fly.io volume)
 RUN mkdir -p /var/lib/postgresql && chown -R postgres:postgres /var/lib/postgresql
 
 # Gateway serves API + static frontend on port 5011

@@ -37,7 +37,7 @@ primary_region = "iad"
 # Persistent volumes for stateful services
 [[mounts]]
   source = "postgres_data"
-  destination = "/var/lib/postgresql"
+  destination = "/var/lib/postgresql/data"
 
 [[mounts]]
   source = "redpanda_data"
