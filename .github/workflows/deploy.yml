@@ -63,6 +63,17 @@ jobs:
       - name: Set up Fly.io
         uses: superfly/flyctl-actions/setup-flyctl@master
 
+      - name: Destroy old machine to clear stale volume attachments
+        run: |
+          MACHINES=$(flyctl machine list --app veta-trading --json 2>/dev/null || echo "[]")
+          MACHINE_ID=$(echo "$MACHINES" | python3 -c "import sys,json; ms=json.load(sys.stdin); print(ms[0]['id']) if ms else print('')" 2>/dev/null || echo "")
+          if [ -n "$MACHINE_ID" ]; then
+            echo "Destroying old machine $MACHINE_ID to clear stale volume mounts..."
+            flyctl machine destroy "$MACHINE_ID" --app veta-trading --force || true
+          fi
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
       - name: Deploy monolith image to Fly.io
         run: |
           flyctl deploy \
@@ -70,8 +81,7 @@ jobs:
             --remote-only \
             --build-arg VITE_COMMIT_SHA=$(git rev-parse --short HEAD) \
             --build-arg VITE_BUILD_DATE=$(date -u +%Y-%m-%d) \
-            --wait-timeout 300 \
-            --yes
+            --wait-timeout 300
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
