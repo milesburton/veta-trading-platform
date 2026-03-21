@@ -48,8 +48,11 @@ export async function loginAs(userId: string): Promise<string> {
 export async function loginAsVerified(userId: string, maxAttempts = 3): Promise<string> {
   let lastToken = "";
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    if (attempt > 0) await new Promise((r) => setTimeout(r, 300));
-    const token = await loginAs(userId);
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 500));
+    let token: string;
+    try {
+      token = await loginAs(userId);
+    } catch { continue; /* transient network error — retry */ }
     lastToken = token;
     // Quick probe: can gateway validate this token via HTTP?
     try {
