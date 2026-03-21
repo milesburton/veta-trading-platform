@@ -1,9 +1,15 @@
 app = "veta-trading"
 primary_region = "iad"
 
-# Deployed via: flyctl deploy --compose compose.yml --compose compose.prod.yml
-# Fly.io terminates TLS at the edge (force_https=true) before traffic reaches
-# Traefik. Internal routing uses HTTP only — no ACME config needed inside the VM.
+# Deployed as a single supervisord monolith via:
+#   flyctl deploy --dockerfile Dockerfile.fly --remote-only
+
+[build]
+  dockerfile = "Dockerfile.fly"
+
+[env]
+  DATABASE_URL = "postgres://veta:veta@localhost:5432/veta"
+  LLM_ENABLED = "false"
 
 [vm]
   size = "performance-8x"
@@ -11,14 +17,14 @@ primary_region = "iad"
 [deploy]
   strategy = "immediate"
 
-# Traefik is the only service that binds a public port.
-# All other containers are on the internal trading-net and reached via Traefik labels.
+# Gateway is the HTTP entry point — all traffic hits port 5011.
+# Frontend static files served from gateway's / catch-all.
 [http_service]
-  internal_port = 80
+  internal_port = 5011
   force_https = true
   auto_start_machines = true
   auto_stop_machines = "suspend"
-  min_machines_running = 0
+  min_machines_running = 1
 
   [[http_service.checks]]
     grace_period = "120s"
@@ -28,39 +34,11 @@ primary_region = "iad"
     method = "GET"
     path = "/health"
 
-# Persistent volumes — one per stateful service
-# Provision with: flyctl volumes create <name> --region iad --size 10
+# Persistent volumes for stateful services
 [[mounts]]
   source = "postgres_data"
-  destination = "/var/lib/postgresql/data"
-  processes = ["postgres"]
+  destination = "/var/lib/postgresql"
 
 [[mounts]]
   source = "redpanda_data"
   destination = "/var/lib/redpanda/data"
-  processes = ["redpanda"]
-
-[[mounts]]
-  source = "llm_data"
-  destination = "/root/.ollama"
-  processes = ["ollama"]
-
-[[mounts]]
-  source = "market_data_state"
-  destination = "/app/data"
-  processes = ["market-data"]
-
-[[mounts]]
-  source = "feature_engine_data"
-  destination = "/app/data"
-  processes = ["feature-engine"]
-
-[[mounts]]
-  source = "signal_engine_data"
-  destination = "/app/data"
-  processes = ["signal-engine"]
-
-[[mounts]]
-  source = "llm_advisory_data"
-  destination = "/app/data"
-  processes = ["llm-advisory", "llm-worker"]

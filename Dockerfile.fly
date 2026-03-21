@@ -1,0 +1,118 @@
+# ── Fly.io monolith — single image with supervisord ───────────────────────────
+# Runs all VETA services (Postgres, Redpanda, all backends, frontend) under
+# supervisord in one Fly.io machine (performance-8x).
+#
+# Deployed via:
+#   flyctl deploy --dockerfile Dockerfile.fly --remote-only \
+#     --build-arg VITE_COMMIT_SHA=$(git rev-parse --short HEAD) \
+#     --build-arg VITE_BUILD_DATE=$(date -u +%Y-%m-%d)
+
+# ── Stage 1: Redpanda binaries ─────────────────────────────────────────────────
+FROM redpandadata/redpanda:v24.3.6 AS redpanda-src
+
+# ── Stage 2: Build frontend ────────────────────────────────────────────────────
+FROM node:24-alpine AS frontend-builder
+
+ARG VITE_DEPLOYMENT=fly
+ARG VITE_COMMIT_SHA=dev
+ARG VITE_BUILD_DATE=dev
+ENV VITE_DEPLOYMENT=$VITE_DEPLOYMENT
+ENV VITE_COMMIT_SHA=$VITE_COMMIT_SHA
+ENV VITE_BUILD_DATE=$VITE_BUILD_DATE
+
+WORKDIR /src/frontend
+COPY frontend/package.json frontend/package-lock.json* ./
+COPY frontend/ ./
+RUN npm ci --silent && npm run build
+
+# ── Stage 3: Runtime monolith ─────────────────────────────────────────────────
+FROM denoland/deno:2.7.1
+
+ARG VITE_COMMIT_SHA=dev
+ENV COMMIT_SHA=$VITE_COMMIT_SHA
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DENO_DIR=/deno-cache
+
+# System packages: supervisord, PostgreSQL, curl
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    supervisor \
+    postgresql \
+    postgresql-client \
+    curl \
+    ca-certificates \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Redpanda binaries from its image (avoids glibc conflict on Debian 13)
+COPY --from=redpanda-src /opt/redpanda/lib /usr/local/lib/redpanda
+COPY --from=redpanda-src /opt/redpanda/libexec/redpanda /usr/local/bin/redpanda
+COPY --from=redpanda-src /opt/redpanda/libexec/rpk /usr/local/bin/rpk
+RUN chmod +x /usr/local/bin/redpanda /usr/local/bin/rpk && \
+    mkdir -p /var/lib/redpanda/data /etc/redpanda /opt/redpanda && \
+    ln -s /usr/local/lib/redpanda /opt/redpanda/lib
+
+WORKDIR /app
+
+# Copy dependency manifests first for layer caching
+COPY deno.json deno.lock* package.json package-lock.json* ./
+
+# Install npm deps
+RUN deno install
+
+# Copy full source tree
+COPY . .
+
+# Pre-cache all service entrypoints
+RUN deno cache \
+    backend/db/migrate.ts \
+    backend/src/lib/messaging.ts \
+    backend/src/market-sim/market-sim.ts \
+    backend/src/ems/ems-server.ts \
+    backend/src/oms/oms-server.ts \
+    backend/src/algo/limit-strategy.ts \
+    backend/src/algo/twap-strategy.ts \
+    backend/src/algo/pov-strategy.ts \
+    backend/src/algo/vwap-strategy.ts \
+    backend/src/algo/iceberg-strategy.ts \
+    backend/src/algo/sniper-strategy.ts \
+    backend/src/algo/arrival-price-strategy.ts \
+    backend/src/algo/momentum-strategy.ts \
+    backend/src/algo/is-strategy.ts \
+    backend/src/user-service/user-service.ts \
+    backend/src/journal/journal-server.ts \
+    backend/src/fix/fix-exchange.ts \
+    backend/src/fix/fix-gateway.ts \
+    backend/src/fix/fix-archive.ts \
+    backend/src/analytics/analytics-server.ts \
+    backend/src/market-data/market-data-service.ts \
+    backend/src/market-data-adapters/adapter-server.ts \
+    backend/src/news/news-aggregator.ts \
+    backend/src/feature-engine/feature-engine.ts \
+    backend/src/signal-engine/signal-engine.ts \
+    backend/src/recommendation-engine/recommendation-server.ts \
+    backend/src/scenario-engine/scenario-server.ts \
+    backend/src/llm-advisory/orchestrator.ts \
+    backend/src/llm-advisory/worker.ts \
+    backend/src/dark-pool/dark-pool-server.ts \
+    backend/src/ccp/ccp-service.ts \
+    backend/src/rfq/rfq-service.ts \
+    backend/src/gateway/gateway.ts \
+    observability/kafka-relay.ts \
+    jsr:@std/http/file-server jsr:@std/crypto jsr:@std/encoding/hex
+
+# Copy built frontend assets
+COPY --from=frontend-builder /src/frontend/dist /app/frontend/dist
+
+# Copy Fly.io supervisord config
+COPY supervisord.fly.conf /etc/supervisor/conf.d/veta.conf
+
+# Create log directory for supervisord programs
+RUN mkdir -p /var/log/supervisor
+
+# Initialise PostgreSQL (data dir will be overridden by Fly.io volume mount)
+RUN mkdir -p /var/lib/postgresql && chown -R postgres:postgres /var/lib/postgresql
+
+# Gateway serves API + static frontend on port 5011
+EXPOSE 5011
+
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]

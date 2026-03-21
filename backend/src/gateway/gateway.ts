@@ -1,5 +1,6 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { serveDir } from "jsr:@std/http@1.0.25/file-server";
 
 const PORT = Number(Deno.env.get("GATEWAY_PORT")) || 5_011;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -1444,6 +1445,19 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       JSON.stringify({ jobId, submitted: total, scenario: scenarioLabel }),
       { status: 202, headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
     );
+  }
+
+  // Static frontend fallback — when FRONTEND_DIST is set (e.g. Fly.io monolith),
+  // serve built assets from that directory with SPA fallback to index.html.
+  const frontendDist = Deno.env.get("FRONTEND_DIST");
+  if (frontendDist && req.method === "GET") {
+    const res = await serveDir(req, { fsRoot: frontendDist, quiet: true });
+    if (res.status !== 404) return res;
+    // SPA fallback
+    if (!path.startsWith("/assets/")) {
+      return serveDir(new Request(new URL("/index.html", req.url)), { fsRoot: frontendDist, quiet: true });
+    }
+    return res;
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
