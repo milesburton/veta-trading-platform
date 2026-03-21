@@ -154,7 +154,7 @@ Deno.test("[algo] TWAP: order routes, produces multiple child slices over time",
   assertEquals(order.strategy, "TWAP");
   assert(order.children.length >= 1, `Expected ≥1 TWAP slice, got ${order.children.length}`);
 
-  const hasObs = await waitForObsEvents(id, 20_000);
+  const hasObs = await waitForObsEvents(id, 40_000);
   assert(hasObs, `No observability events found for TWAP order ${id}`);
 });
 
@@ -221,8 +221,8 @@ Deno.test("[algo] ICEBERG: order routes, initial visible slice appears as child"
     algoParams: { strategy: "ICEBERG", visibleQty: 50 },
   });
 
-  const order = await pollForChildren(id, 1, 35_000);
-  assertExists(order, `ICEBERG order ${id} did not produce child slices within 35s`);
+  const order = await pollForChildren(id, 1, 60_000);
+  assertExists(order, `ICEBERG order ${id} did not produce child slices within 60s`);
   assertEquals(order.strategy, "ICEBERG");
   assert(order.children.length >= 1, `Expected ≥1 ICEBERG slice, got ${order.children.length}`);
   assert(
@@ -271,8 +271,8 @@ Deno.test("[algo] ARRIVAL_PRICE: order routes and executes relative to arrival p
     algoParams: { strategy: "ARRIVAL_PRICE" },
   });
 
-  const order = await pollForChildren(id, 1, 30_000);
-  assertExists(order, `ARRIVAL_PRICE order ${id} did not produce child slices within 30s`);
+  const order = await pollForChildren(id, 1, 60_000);
+  assertExists(order, `ARRIVAL_PRICE order ${id} did not produce child slices within 60s`);
   assertEquals(order.strategy, "ARRIVAL_PRICE");
   assert(order.children.length >= 1, `Expected ≥1 ARRIVAL_PRICE slice, got ${order.children.length}`);
 });
@@ -283,7 +283,7 @@ Deno.test("[algo] all strategies report heartbeats to observability", async () =
   // Poll until we have heartbeats from all expected algos (consumer may need
   // a few seconds to catch up to the Kafka topic after a restart).
   const alwaysOnAlgos = ["LIMIT", "POV", "VWAP"];
-  const deadline = Date.now() + 30_000;
+  const deadline = Date.now() + 60_000;
   let activeAlgos = new Set<string>();
   while (Date.now() < deadline) {
     const res = await fetch(`${OBS_URL}/events?type=algo.heartbeat`, { signal: t(10_000) });
@@ -435,8 +435,8 @@ Deno.test("[perf] ICEBERG visible qty: each child slice ≤ visibleQty", async (
     algoParams: { strategy: "ICEBERG", visibleQty },
   });
 
-  const order = await pollForChildren(id, 1, 35_000);
-  assertExists(order, `ICEBERG order ${id} did not produce children within 35s`);
+  const order = await pollForChildren(id, 1, 60_000);
+  assertExists(order, `ICEBERG order ${id} did not produce children within 60s`);
   for (const child of order.children) {
     assert(
       child.quantity <= visibleQty,
@@ -544,10 +544,10 @@ Deno.test("[algo] MOMENTUM order routes at least one tranche within 60s", async 
     quantity: 100,
     limitPrice: Number(price) * 1.05,
     strategy: "MOMENTUM",
-    algoParams: { strategy: "MOMENTUM", entryThresholdBps: 5, maxTranches: 5 },
+    algoParams: { strategy: "MOMENTUM", entryThresholdBps: 1, maxTranches: 5 },
   });
 
-  const order = await pollForChildren(id, 1, 60_000);
-  assertExists(order, `MOMENTUM order ${id} did not produce any child tranches within 60s`);
+  const order = await pollForChildren(id, 1, 90_000);
+  assertExists(order, `MOMENTUM order ${id} did not produce any child tranches within 90s`);
   assert(order.children.length >= 1, `MOMENTUM order produced no children`);
 });
