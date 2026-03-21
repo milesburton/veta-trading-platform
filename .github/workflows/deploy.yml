@@ -134,17 +134,17 @@ jobs:
             sleep 10
           done
 
-      - name: Wait for intelligence pipeline services
+      - name: Wait for all services to be ready
         run: |
-          for svc in signal-engine feature-engine analytics; do
+          for svc in signal-engine feature-engine analytics limit-algo twap-algo pov-algo vwap-algo iceberg-algo sniper-algo arrival-price-algo momentum-algo is-algo dark-pool ccp-service rfq-service news-aggregator llm-advisory; do
             echo "Waiting for $svc..."
-            for i in $(seq 1 20); do
+            for i in $(seq 1 30); do
               STATUS=$(curl -sf "https://veta-trading.fly.dev/api/$svc/health" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status',''))" 2>/dev/null || echo "")
               if [ "$STATUS" = "ok" ]; then
                 echo "  ✅ $svc is ready"
                 break
               fi
-              echo "    attempt $i/20: $svc not ready, retrying in 5s..."
+              echo "    attempt $i/30: $svc not ready, retrying in 5s..."
               sleep 5
             done
           done
