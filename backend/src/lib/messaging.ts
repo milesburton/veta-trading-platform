@@ -23,11 +23,11 @@ function makeKafka(clientId: string): Kafka {
     clientId,
     brokers: BROKERS,
     // Redpanda is typically local — short timeouts are fine and make startup faster
-    connectionTimeout: 3_000,
-    requestTimeout: 10_000,
+    connectionTimeout: 5_000,
+    requestTimeout: 15_000,
     retry: {
-      initialRetryTime: 300,
-      retries: 0, // no internal retries — our own loops handle backoff
+      initialRetryTime: 500,
+      retries: 1, // one internal retry for transient network blips
     },
   });
 }

@@ -207,11 +207,31 @@ const ORDER_TOPICS = [
 
 function startConsumers(): void {
   // Market data — broadcast to all (not confidential)
+  // Also start WS fallback so market ticks flow even when Kafka is unavailable.
+  let lastKafkaTick = 0;
   createConsumer("gateway-market", ["market.ticks"]).then((c) => {
     c.onMessage((_topic, value) => {
+      lastKafkaTick = Date.now();
       broadcastAll({ event: "marketUpdate", data: value });
     });
   });
+  // WS fallback: relay market-sim ticks directly when Kafka hasn't delivered recently
+  const MARKET_SIM_WS = `ws://${Deno.env.get("MARKET_SIM_HOST") ?? "localhost"}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
+  const connectWsFallback = () => {
+    const ws = new WebSocket(MARKET_SIM_WS);
+    ws.onmessage = (ev) => {
+      if (Date.now() - lastKafkaTick < 3_000) return; // Kafka flowing — skip
+      try {
+        const msg = JSON.parse(ev.data as string) as { event?: string; data?: unknown };
+        if (msg.event === "marketData" || msg.event === "marketUpdate") {
+          broadcastAll({ event: "marketUpdate", data: msg.data });
+        }
+      } catch { /* ignore */ }
+    };
+    ws.onclose = () => { setTimeout(connectWsFallback, 5_000); };
+    ws.onerror = () => ws.close();
+  };
+  connectWsFallback();
 
   // Order events — route only to the owning user (information barrier)
   createConsumer("gateway-orders", ORDER_TOPICS).then((c) => {
