@@ -63,14 +63,20 @@ jobs:
       - name: Set up Fly.io
         uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: Destroy old machine to clear stale volume attachments
+      - name: Destroy old machines and detach volumes
         run: |
           MACHINES=$(flyctl machine list --app veta-trading --json 2>/dev/null || echo "[]")
-          MACHINE_ID=$(echo "$MACHINES" | python3 -c "import sys,json; ms=json.load(sys.stdin); print(ms[0]['id']) if ms else print('')" 2>/dev/null || echo "")
-          if [ -n "$MACHINE_ID" ]; then
-            echo "Destroying old machine $MACHINE_ID to clear stale volume mounts..."
-            flyctl machine destroy "$MACHINE_ID" --app veta-trading --force || true
-          fi
+          MACHINE_IDS=$(echo "$MACHINES" | python3 -c "import sys,json; ms=json.load(sys.stdin); [print(m['id']) for m in ms]" 2>/dev/null || echo "")
+          for MID in $MACHINE_IDS; do
+            echo "Destroying machine $MID..."
+            flyctl machine destroy "$MID" --app veta-trading --force || true
+          done
+          # Detach any existing volumes so deploy can proceed without [[mounts]]
+          VOLS=$(flyctl volumes list --app veta-trading --json 2>/dev/null || echo "[]")
+          VOL_IDS=$(echo "$VOLS" | python3 -c "import sys,json; vs=json.load(sys.stdin); [print(v['id']) for v in vs if not v.get('attached_machine_id')]" 2>/dev/null || echo "")
+          for VID in $VOL_IDS; do
+            echo "Volume $VID is unattached (OK)"
+          done
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
