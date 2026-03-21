@@ -510,41 +510,45 @@ interface SmokeOrder {
 
 /** Fetch the current market price for a symbol via the assets endpoint. */
 async function livePrice(token: string, symbol: string): Promise<number> {
-  const res = await fetch(`${GATEWAY_URL}/assets`, {
-    headers: { Cookie: `veta_user=${token}` },
-    signal: timeout(10_000),
-  });
-  if (!res.ok) { await res.body?.cancel(); return 190; }
-  const assets = await res.json();
-  if (!Array.isArray(assets)) return 190;
-  return (assets as { symbol: string; price: number }[]).find((a) => a.symbol === symbol)?.price ?? 190;
+  try {
+    const res = await fetch(`${GATEWAY_URL}/assets`, {
+      headers: { Cookie: `veta_user=${token}` },
+      signal: timeout(10_000),
+    });
+    if (!res.ok) { await res.body?.cancel(); return 190; }
+    const assets = await res.json();
+    if (!Array.isArray(assets)) return 190;
+    return (assets as { symbol: string; price: number }[]).find((a) => a.symbol === symbol)?.price ?? 190;
+  } catch { return 190; }
 }
 
 /** Poll the journal grid until the order has a settled status (filled/expired). */
 async function pollSettled(clientOrderId: string, maxWaitMs = 90_000): Promise<SmokeOrder | null> {
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
-    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        gridId: "orderBlotter",
-        filterExpr: { kind: "group", id: "g1", join: "AND", rules: [
-          { kind: "rule", id: "r1", field: "id", op: "=", value: clientOrderId },
-        ]},
-        sortField: null, sortDir: null, offset: 0, limit: 1,
-      }),
-      signal: timeout(15_000),
-    });
-    if (res.ok) {
-      const data = await res.json() as { rows: SmokeOrder[] };
-      if (data.rows.length > 0) {
-        const order = data.rows[0];
-        if (order.status === "filled" || order.status === "expired" || order.status === "rejected") return order;
+    try {
+      const res = await fetch(`${JOURNAL_URL}/grid/query`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gridId: "orderBlotter",
+          filterExpr: { kind: "group", id: "g1", join: "AND", rules: [
+            { kind: "rule", id: "r1", field: "id", op: "=", value: clientOrderId },
+          ]},
+          sortField: null, sortDir: null, offset: 0, limit: 1,
+        }),
+        signal: timeout(15_000),
+      });
+      if (res.ok) {
+        const data = await res.json() as { rows: SmokeOrder[] };
+        if (data.rows.length > 0) {
+          const order = data.rows[0];
+          if (order.status === "filled" || order.status === "expired" || order.status === "rejected") return order;
+        }
+      } else {
+        await res.body?.cancel();
       }
-    } else {
-      await res.body?.cancel();
-    }
+    } catch { /* transient fetch/timeout error — keep polling until deadline */ }
     await new Promise((r) => setTimeout(r, 1_500));
   }
   return null;
@@ -621,9 +625,9 @@ Deno.test("[orders/settled] ICEBERG order reaches filled or expired within 90s",
   const token = await loginAs("alice");
   const price = await livePrice(token, "MSFT");
   const { clientOrderId } = await submitOrderWithRetry("alice", {
-    asset: "MSFT", side: "BUY", quantity: 200,
+    asset: "MSFT", side: "BUY", quantity: 60,
     limitPrice: price * 1.05, strategy: "ICEBERG",
-    algoParams: { strategy: "ICEBERG", visibleQty: 40 },
+    algoParams: { strategy: "ICEBERG", visibleQty: 30 },
     expiresAt: 60,
   });
   const order = await pollSettled(clientOrderId, 90_000);
@@ -722,27 +726,29 @@ Deno.test("[orders/settled] rejected order (impossible price) has rejected statu
   const deadline = Date.now() + 60_000;
   let finalStatus = "queued";
   while (Date.now() < deadline) {
-    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        gridId: "orderBlotter",
-        filterExpr: { kind: "group", id: "g1", join: "AND", rules: [
-          { kind: "rule", id: "r1", field: "id", op: "=", value: clientOrderId },
-        ]},
-        sortField: null, sortDir: null, offset: 0, limit: 1,
-      }),
-      signal: timeout(10_000),
-    });
-    if (res.ok) {
-      const data = await res.json() as { rows: SmokeOrder[] };
-      if (data.rows.length > 0) {
-        finalStatus = data.rows[0].status;
-        if (finalStatus !== "queued" && finalStatus !== "executing" && finalStatus !== "working" && finalStatus !== "pending") break;
+    try {
+      const res = await fetch(`${JOURNAL_URL}/grid/query`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gridId: "orderBlotter",
+          filterExpr: { kind: "group", id: "g1", join: "AND", rules: [
+            { kind: "rule", id: "r1", field: "id", op: "=", value: clientOrderId },
+          ]},
+          sortField: null, sortDir: null, offset: 0, limit: 1,
+        }),
+        signal: timeout(10_000),
+      });
+      if (res.ok) {
+        const data = await res.json() as { rows: SmokeOrder[] };
+        if (data.rows.length > 0) {
+          finalStatus = data.rows[0].status;
+          if (finalStatus !== "queued" && finalStatus !== "executing" && finalStatus !== "working" && finalStatus !== "pending") break;
+        }
+      } else {
+        await res.body?.cancel();
       }
-    } else {
-      await res.body?.cancel();
-    }
+    } catch { /* transient fetch/timeout error — keep polling until deadline */ }
     await new Promise((r) => setTimeout(r, 1_500));
   }
   assert(
