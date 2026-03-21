@@ -39,23 +39,25 @@ export async function loginAs(userId: string): Promise<string> {
 }
 
 /**
- * Login and verify the token is accepted by the gateway before returning.
- * Retries up to maxAttempts times with 1s between attempts to handle
- * transient gateway validateToken timeouts under load.
+ * Login and verify the token is accepted by the gateway HTTP layer before
+ * returning. Retries up to maxAttempts times (with increasing delays) to
+ * handle transient gateway→user-service latency spikes on shared VMs.
  */
 export async function loginAsVerified(userId: string, maxAttempts = 5): Promise<string> {
   let lastToken = "";
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    if (attempt > 0) await new Promise((r) => setTimeout(r, 1_000));
+    if (attempt > 0) await new Promise((r) => setTimeout(r, attempt * 500));
     const token = await loginAs(userId);
     lastToken = token;
-    // Verify token is accepted by gateway (via /assets proxy route)
-    // No AbortSignal to avoid Deno resource leak warnings — gateway is expected to respond
-    const res = await fetch(`${GATEWAY_URL}/assets`, {
-      headers: { Cookie: `veta_user=${token}` },
-    }).catch(() => null);
-    await res?.body?.cancel();
-    if (res?.ok) return token;
+    // Quick probe: can gateway validate this token via HTTP?
+    try {
+      const res = await fetch(`${GATEWAY_URL}/assets`, {
+        headers: { Cookie: `veta_user=${token}` },
+        signal: timeout(8_000),
+      });
+      await res.body?.cancel();
+      if (res.ok) return token;
+    } catch { /* retry */ }
   }
   return lastToken; // best effort after all attempts
 }
@@ -136,7 +138,7 @@ export async function submitOrderViaWs(
 
 /**
  * Submit an order with automatic retry on transient auth failures.
- * Uses loginAsVerified to pre-confirm the token works before sending.
+ * Re-creates the session token and retries up to maxRetries times.
  */
 export async function submitOrderWithRetry(
   userId: string,
@@ -150,13 +152,13 @@ export async function submitOrderWithRetry(
     algoParams?: Record<string, unknown>;
     expiresAt?: number;
   },
-  maxRetries = 3,
+  maxRetries = 5,
 ): Promise<WsOrderResponse & { clientOrderId: string }> {
   let lastErr: Error | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (attempt > 0) {
-      // Brief pause before retry to let user-service stabilise
-      await new Promise((r) => setTimeout(r, 1_000));
+      // Exponential backoff: 1s, 2s, 4s, 8s
+      await new Promise((r) => setTimeout(r, Math.min(1_000 * (2 ** (attempt - 1)), 8_000)));
     }
     const token = await loginAsVerified(userId);
     try {
