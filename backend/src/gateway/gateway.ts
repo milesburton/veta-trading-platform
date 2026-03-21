@@ -1447,6 +1447,69 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     );
   }
 
+  // Self-alias: /api/gateway/* → strip prefix so gateway serves its own routes.
+  // Allows smoke tests using svcUrl(5011, "/api/gateway") to reach /health, /ready, etc.
+  if (path.startsWith("/api/gateway/") && req.method === "GET") {
+    const stripped = path.slice("/api/gateway".length);
+    if (stripped === "/health") {
+      return new Response(
+        JSON.stringify({ service: "gateway", version: VERSION, status: "ok" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+      );
+    }
+    if (stripped === "/ready") {
+      // re-use existing ready path by redirecting
+      return proxyGet(`http://localhost:${PORT}/ready`, req);
+    }
+  }
+
+  // Generic service proxy — /api/<service>/* → localhost:<port>/*
+  // Used by the Fly.io monolith where all services run on localhost but only
+  // the gateway port (5011) is publicly accessible.
+  const SVC_PROXY: Record<string, string> = {
+    "market-sim":           `http://localhost:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`,
+    "ems":                  `http://localhost:${Deno.env.get("EMS_PORT") ?? "5001"}`,
+    "oms":                  `http://localhost:${Deno.env.get("OMS_PORT") ?? "5002"}`,
+    "limit-algo":           `http://localhost:${Deno.env.get("ALGO_TRADER_PORT") ?? "5003"}`,
+    "twap-algo":            `http://localhost:${Deno.env.get("TWAP_ALGO_PORT") ?? "5004"}`,
+    "pov-algo":             `http://localhost:${Deno.env.get("POV_ALGO_PORT") ?? "5005"}`,
+    "vwap-algo":            `http://localhost:${Deno.env.get("VWAP_ALGO_PORT") ?? "5006"}`,
+    "observability":        `http://localhost:${Deno.env.get("OBSERVABILITY_PORT") ?? "5007"}`,
+    "journal":              JOURNAL_URL,
+    "fix-archive":          `http://localhost:${Deno.env.get("FIX_ARCHIVE_PORT") ?? "5012"}`,
+    "user-service":         USER_SERVICE_URL,
+    "news-aggregator":      `http://localhost:${Deno.env.get("NEWS_PORT") ?? "5013"}`,
+    "analytics":            ANALYTICS_URL,
+    "market-data":          MARKET_DATA_URL,
+    "market-data-adapters": `http://localhost:${Deno.env.get("MARKET_DATA_ADAPTERS_PORT") ?? "5016"}`,
+    "feature-engine":       FEATURE_ENGINE_URL,
+    "signal-engine":        SIGNAL_ENGINE_URL,
+    "recommendation-engine": RECOMMENDATION_ENGINE_URL,
+    "scenario-engine":      SCENARIO_ENGINE_URL,
+    "iceberg-algo":         `http://localhost:${Deno.env.get("ICEBERG_ALGO_PORT") ?? "5021"}`,
+    "sniper-algo":          `http://localhost:${Deno.env.get("SNIPER_ALGO_PORT") ?? "5022"}`,
+    "arrival-price-algo":   `http://localhost:${Deno.env.get("ARRIVAL_PRICE_ALGO_PORT") ?? "5023"}`,
+    "llm-advisory":         LLM_ADVISORY_URL,
+    "momentum-algo":        `http://localhost:${Deno.env.get("MOMENTUM_ALGO_PORT") ?? "5025"}`,
+    "is-algo":              `http://localhost:${Deno.env.get("IS_ALGO_PORT") ?? "5026"}`,
+    "dark-pool":            DARK_POOL_URL,
+    "ccp-service":          CCP_SERVICE_URL,
+    "rfq-service":          RFQ_SERVICE_URL,
+  };
+
+  const svcMatch = path.match(/^\/api\/([^/]+)(\/.*)?$/);
+  if (svcMatch) {
+    const svcName = svcMatch[1];
+    const svcPath = svcMatch[2] ?? "/";
+    const target = SVC_PROXY[svcName];
+    if (target) {
+      const targetUrl = `${target}${svcPath}${url.search}`;
+      if (req.method === "GET" || req.method === "DELETE") return proxyGet(targetUrl, req);
+      if (req.method === "POST") return proxyPost(targetUrl, req);
+      if (req.method === "PUT") return proxyPut(targetUrl, req);
+    }
+  }
+
   // Static frontend fallback — when FRONTEND_DIST is set (e.g. Fly.io monolith),
   // serve built assets from that directory with SPA fallback to index.html.
   const frontendDist = Deno.env.get("FRONTEND_DIST");
