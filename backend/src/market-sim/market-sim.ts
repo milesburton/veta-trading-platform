@@ -55,10 +55,27 @@ setInterval(() => {
 // Initial load
 refreshOverrides().catch(() => {});
 
-const producer = await createProducer("market-sim").catch((err) => {
+let producer = await createProducer("market-sim").catch((err) => {
   console.warn("[market-sim] Redpanda unavailable, ticks will not be published to bus:", err.message);
   return null;
 });
+
+// Retry producer connection in background if Kafka was not ready at startup
+if (!producer) {
+  (async () => {
+    let delay = 5_000;
+    while (!producer) {
+      await new Promise((r) => setTimeout(r, delay));
+      delay = Math.min(delay * 2, 60_000);
+      try {
+        producer = await createProducer("market-sim");
+        console.log("[market-sim] Kafka producer connected after retry");
+      } catch {
+        // continue retrying
+      }
+    }
+  })();
+}
 
 // ── Seed prices from candle-store history ──────────────────────────────────────
 // Fetch the last known 1m close for each asset so that prices are continuous

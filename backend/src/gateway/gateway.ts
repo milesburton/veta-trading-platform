@@ -191,10 +191,27 @@ function broadcastToRoles(_roles: string[], msg: unknown): void {
   broadcastAll(msg);
 }
 
-const producer = await createProducer("gateway").catch((err) => {
+let producer = await createProducer("gateway").catch((err) => {
   console.warn("[gateway] Redpanda unavailable for publishing:", err.message);
   return null;
 });
+
+// If Kafka was not ready at startup, retry in background (Redpanda may still be initialising)
+if (!producer) {
+  (async () => {
+    let delay = 5_000;
+    while (!producer) {
+      await new Promise((r) => setTimeout(r, delay));
+      delay = Math.min(delay * 2, 60_000);
+      try {
+        producer = await createProducer("gateway");
+        console.log("[gateway] Kafka producer connected after retry");
+      } catch {
+        // continue retrying
+      }
+    }
+  })();
+}
 
 const ORDER_TOPICS = [
   "orders.new",
