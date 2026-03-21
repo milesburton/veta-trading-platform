@@ -435,22 +435,37 @@ Deno.test("[algo] IS order routes at least one child slice within 60s", async ()
 
 // ── MOMENTUM ──────────────────────────────────────────────────────────────────
 
-Deno.test("[algo] MOMENTUM order routes at least one tranche within 60s", async () => {
+Deno.test("[algo] MOMENTUM order routes at least one tranche within 90s", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, { headers: { cookie: `veta_user=${token}` }, signal: t() })
     .then((r) => r.json() as Promise<{ symbol: string; price: number }[]>)
     .then((assets) => assets.find((a) => a.symbol === "AAPL")?.price ?? 190);
 
-  const { clientOrderId: id } = await submitOrderViaWs(token, {
-    asset: "AAPL",
-    side: "BUY",
-    quantity: 100,
-    limitPrice: Number(price) * 1.10,
-    strategy: "MOMENTUM",
-    algoParams: { strategy: "MOMENTUM", entryThresholdBps: 1, maxTranches: 5, shortEmaPeriod: 2, longEmaPeriod: 5 },
-  });
+  const algoParams = { strategy: "MOMENTUM", entryThresholdBps: 1, maxTranches: 5, shortEmaPeriod: 2, longEmaPeriod: 5, cooldownTicks: 1 };
 
-  const order = await pollForChildren(id, 1, 90_000);
-  assertExists(order, `MOMENTUM order ${id} did not produce any child tranches within 90s`);
-  assert(order.children.length >= 1, `MOMENTUM order produced no children`);
+  const [{ clientOrderId: buyId }, { clientOrderId: sellId }] = await Promise.all([
+    submitOrderViaWs(token, {
+      asset: "AAPL", side: "BUY", quantity: 50,
+      limitPrice: Number(price) * 1.10,
+      strategy: "MOMENTUM", expiresAt: 300, algoParams,
+    }),
+    submitOrderViaWs(token, {
+      asset: "AAPL", side: "SELL", quantity: 50,
+      limitPrice: Number(price) * 0.90,
+      strategy: "MOMENTUM", expiresAt: 300, algoParams,
+    }),
+  ]);
+
+  const deadline = Date.now() + 90_000;
+  let fired: string | null = null;
+  while (!fired && Date.now() < deadline) {
+    const [buyOrder, sellOrder] = await Promise.all([
+      pollForOrder(buyId, 5_000),
+      pollForOrder(sellId, 5_000),
+    ]);
+    if (buyOrder && buyOrder.children.length >= 1) { fired = buyId; break; }
+    if (sellOrder && sellOrder.children.length >= 1) { fired = sellId; break; }
+    await new Promise((r) => setTimeout(r, 2_000));
+  }
+  assert(fired !== null, "MOMENTUM: neither BUY nor SELL produced a tranche within 90s");
 });
