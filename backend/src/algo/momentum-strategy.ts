@@ -122,7 +122,7 @@ routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
 
-  const entryThresholdBps = Math.max(1, Number(order.algoParams?.entryThresholdBps ?? 10));
+  const entryThresholdBps = Math.max(0.1, Number(order.algoParams?.entryThresholdBps ?? 10));
   const maxTranches = Math.max(1, Number(order.algoParams?.maxTranches ?? 5));
   const shortEmaPeriod = Math.max(2, Number(order.algoParams?.shortEmaPeriod ?? 3));
   const longEmaPeriod = Math.max(shortEmaPeriod + 1, Number(order.algoParams?.longEmaPeriod ?? 8));

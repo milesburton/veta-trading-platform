@@ -441,7 +441,7 @@ Deno.test("[algo] MOMENTUM order routes at least one tranche within 120s", async
     .then((r) => r.json() as Promise<{ symbol: string; price: number }[]>)
     .then((assets) => assets.find((a) => a.symbol === "AAPL")?.price ?? 190);
 
-  const algoParams = { strategy: "MOMENTUM", entryThresholdBps: 1, maxTranches: 5, shortEmaPeriod: 2, longEmaPeriod: 5, cooldownTicks: 1 };
+  const algoParams = { strategy: "MOMENTUM", entryThresholdBps: 0.5, maxTranches: 5, shortEmaPeriod: 2, longEmaPeriod: 3, cooldownTicks: 1 };
 
   const [{ clientOrderId: buyId }, { clientOrderId: sellId }] = await Promise.all([
     submitOrderViaWs(token, {
