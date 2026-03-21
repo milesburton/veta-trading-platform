@@ -49,6 +49,7 @@ export interface MsgProducer {
 export function createProducer(clientId = "veta-producer"): Promise<MsgProducer> {
   let activeProducer: Producer | null = null;
   let stopped = false;
+  let reconnecting = false;
 
   const MAX_DELAY_MS = 30_000;
 
@@ -60,6 +61,7 @@ export function createProducer(clientId = "veta-producer"): Promise<MsgProducer>
         const p: Producer = kafka.producer();
         await p.connect();
         activeProducer = p;
+        reconnecting = false;
         console.log(`[messaging] producer(${clientId}) connected`);
         return; // connected — exit loop
       } catch (err) {
@@ -84,10 +86,21 @@ export function createProducer(clientId = "veta-producer"): Promise<MsgProducer>
         // Broker not yet ready — drop silently (caller can retry or ignore)
         return;
       }
-      await activeProducer.send({
-        topic,
-        messages: [{ value: JSON.stringify(value) }],
-      });
+      try {
+        await activeProducer.send({
+          topic,
+          messages: [{ value: JSON.stringify(value) }],
+        });
+      } catch (err) {
+        // Producer disconnected — clear and reconnect in background
+        console.warn(`[messaging] producer(${clientId}) send failed, reconnecting:`, (err as Error).message);
+        activeProducer = null;
+        if (!reconnecting) {
+          reconnecting = true;
+          connectLoop();
+        }
+        throw err; // re-throw so callers know the send failed
+      }
     },
     async disconnect(): Promise<void> {
       stopped = true;

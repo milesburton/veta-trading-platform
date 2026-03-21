@@ -443,7 +443,7 @@ Deno.test("[algo] MOMENTUM order routes at least one tranche within 120s", async
 
   const algoParams = { strategy: "MOMENTUM", entryThresholdBps: 0.5, maxTranches: 5, shortEmaPeriod: 2, longEmaPeriod: 3, cooldownTicks: 1 };
 
-  const [{ clientOrderId: buyId }, { clientOrderId: sellId }] = await Promise.all([
+  const [buyResult, sellResult] = await Promise.all([
     submitOrderViaWs(token, {
       asset: "AAPL", side: "BUY", quantity: 50,
       limitPrice: Number(price) * 1.10,
@@ -455,6 +455,10 @@ Deno.test("[algo] MOMENTUM order routes at least one tranche within 120s", async
       strategy: "MOMENTUM", expiresAt: 300, algoParams,
     }),
   ]);
+  assertEquals(buyResult.event, "orderAck", `MOMENTUM BUY order not accepted: ${JSON.stringify(buyResult)}`);
+  assertEquals(sellResult.event, "orderAck", `MOMENTUM SELL order not accepted: ${JSON.stringify(sellResult)}`);
+  const buyId = buyResult.clientOrderId;
+  const sellId = sellResult.clientOrderId;
 
   const deadline = Date.now() + 120_000;
   let fired: string | null = null;
