@@ -91,7 +91,7 @@ async function validateToken(token: string): Promise<{ user: AuthenticatedUser; 
       return null;
     }
     const result = await res.json() as { user: AuthenticatedUser; limits: UserLimits };
-    authCache.set(token, { result, expiresAt: now + 10_000 });
+    authCache.set(token, { result, expiresAt: now + 60_000 });
     return result;
   } catch (err) {
     console.warn(`[gateway] validateToken: fetch error for token ${token.slice(0, 8)}...:`, (err as Error).message);

@@ -40,13 +40,15 @@ export async function loginAs(userId: string): Promise<string> {
 
 /**
  * Login and verify the token is accepted by the gateway HTTP layer before
- * returning. Retries up to maxAttempts times (with increasing delays) to
- * handle transient gateway→user-service latency spikes on shared VMs.
+ * returning. Retries up to maxAttempts times (with short delays) to handle
+ * transient gateway→user-service latency spikes on shared VMs.
+ * A successful HTTP probe also warms the gateway's authCache (60s TTL),
+ * ensuring subsequent WS authenticate messages get a fast cache hit.
  */
-export async function loginAsVerified(userId: string, maxAttempts = 5): Promise<string> {
+export async function loginAsVerified(userId: string, maxAttempts = 3): Promise<string> {
   let lastToken = "";
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    if (attempt > 0) await new Promise((r) => setTimeout(r, attempt * 500));
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 300));
     const token = await loginAs(userId);
     lastToken = token;
     // Quick probe: can gateway validate this token via HTTP?
@@ -152,14 +154,11 @@ export async function submitOrderWithRetry(
     algoParams?: Record<string, unknown>;
     expiresAt?: number;
   },
-  maxRetries = 5,
+  maxRetries = 3,
 ): Promise<WsOrderResponse & { clientOrderId: string }> {
   let lastErr: Error | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    if (attempt > 0) {
-      // Exponential backoff: 1s, 2s, 4s, 8s
-      await new Promise((r) => setTimeout(r, Math.min(1_000 * (2 ** (attempt - 1)), 8_000)));
-    }
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 500));
     const token = await loginAsVerified(userId);
     try {
       return await submitOrderViaWs(token, order);
