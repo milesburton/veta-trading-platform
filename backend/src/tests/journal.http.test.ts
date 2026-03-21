@@ -19,7 +19,6 @@ Deno.test("[journal/http] GET /candles requires instrument param", async () => {
   assertEquals(res.status, 400);
   const body = await res.json() as { error: string };
   assert(body.error.includes("instrument"));
-  res.body?.cancel();
 });
 
 Deno.test("[journal/http] GET /candles?instrument=AAPL&interval=1m returns array", async () => {
