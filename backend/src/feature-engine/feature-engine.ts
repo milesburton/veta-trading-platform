@@ -144,19 +144,21 @@ const tickConsumer = await createConsumer("feature-engine-ticks", ["market.ticks
 
 if (tickConsumer) {
   tickConsumer.onMessage((_topic, raw) => {
-    const tick = raw as { symbol: string; price: number; volume?: number; sector?: string };
-    if (!tick.symbol || !tick.price) return;
+    const tick = raw as { prices?: Record<string, number>; volumes?: Record<string, number> };
+    if (!tick.prices || typeof tick.prices !== "object") return;
 
-    pushHistory(priceHistory, tick.symbol, tick.price, TICK_WINDOW);
-    if (tick.volume != null) pushHistory(volumeHistory, tick.symbol, tick.volume, TICK_WINDOW);
-    if (tick.sector && !symbolSectors.has(tick.symbol)) {
-      symbolSectors.set(tick.symbol, tick.sector);
-      if (!volRefreshSymbols.includes(tick.symbol)) volRefreshSymbols.push(tick.symbol);
-      refreshRealisedVol(tick.symbol).catch(() => {});
+    for (const [symbol, price] of Object.entries(tick.prices)) {
+      if (!price) continue;
+      pushHistory(priceHistory, symbol, price, TICK_WINDOW);
+      const vol = tick.volumes?.[symbol];
+      if (vol != null) pushHistory(volumeHistory, symbol, vol, TICK_WINDOW);
+      if (!symbolSectors.has(symbol)) {
+        if (!volRefreshSymbols.includes(symbol)) volRefreshSymbols.push(symbol);
+        refreshRealisedVol(symbol).catch(() => {});
+      }
+      const fv = computeFeatureVector(symbol);
+      if (fv) pendingFeatures.set(fv.symbol, fv);
     }
-
-    const fv = computeFeatureVector(tick.symbol);
-    if (fv) pendingFeatures.set(fv.symbol, fv);
   });
 }
 
