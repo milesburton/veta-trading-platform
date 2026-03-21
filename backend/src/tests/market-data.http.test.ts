@@ -110,22 +110,23 @@ Deno.test("[market-data/http] PUT /overrides synthetic override is idempotent", 
 
 Deno.test("[market-data/http] POST /sources/alpha-vantage/toggle returns updated sources", async () => {
   const before = await fetch(`${MDS_URL}/sources`, { signal: t() })
-    .then((r) => r.json() as Promise<{ id: string; enabled: boolean }[]>)
-    .then((s) => s.find((src) => src.id === "alpha-vantage")?.enabled);
+    .then((r) => r.json() as Promise<{ id: string; active: boolean }[]>)
+    .then((s) => s.find((src) => src.id === "alpha-vantage")?.active);
 
   const toggleRes = await fetch(`${MDS_URL}/sources/alpha-vantage/toggle`, {
     method: "POST",
     signal: t(),
   });
   assertEquals(toggleRes.status, 200);
-  const toggled = await toggleRes.json() as { id: string; enabled: boolean }[];
-  const after = toggled.find((s) => s.id === "alpha-vantage")?.enabled;
+  const toggled = await toggleRes.json() as { id: string; active: boolean }[];
+  const after = toggled.find((s) => s.id === "alpha-vantage")?.active;
 
   if (before !== undefined && after !== undefined) {
-    assertEquals(after, !before, "toggle should flip enabled state");
+    assertEquals(after, !before, "toggle should flip active state");
   }
 
-  await fetch(`${MDS_URL}/sources/alpha-vantage/toggle`, { method: "POST", signal: t() });
+  const restoreRes = await fetch(`${MDS_URL}/sources/alpha-vantage/toggle`, { method: "POST", signal: t() });
+  await restoreRes.body?.cancel();
 });
 
 Deno.test("[market-data/http] POST /sources/unknown-source/toggle returns 400", async () => {
