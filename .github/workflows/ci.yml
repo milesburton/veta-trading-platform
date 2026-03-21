@@ -124,7 +124,7 @@ jobs:
           SHA=$(git rev-parse --short HEAD)
           COMMIT_SHA=$SHA MARKET_SIM_PORT=5000 deno run --allow-all backend/src/market-sim/market-sim.ts &
           COMMIT_SHA=$SHA EMS_PORT=5001 deno run --allow-all backend/src/ems/ems-server.ts &
-          COMMIT_SHA=$SHA OMS_PORT=5002 ALGO_TRADER_PORT=5003 TWAP_ALGO_PORT=5004 POV_ALGO_PORT=5005 VWAP_ALGO_PORT=5006 ICEBERG_ALGO_PORT=5021 SNIPER_ALGO_PORT=5022 ARRIVAL_PRICE_ALGO_PORT=5023 deno run --allow-all backend/src/oms/oms-server.ts &
+          COMMIT_SHA=$SHA OMS_PORT=5002 ALGO_TRADER_PORT=5003 TWAP_ALGO_PORT=5004 POV_ALGO_PORT=5005 VWAP_ALGO_PORT=5006 ICEBERG_ALGO_PORT=5021 SNIPER_ALGO_PORT=5022 ARRIVAL_PRICE_ALGO_PORT=5023 MOMENTUM_ALGO_PORT=5025 IS_ALGO_PORT=5026 deno run --allow-all backend/src/oms/oms-server.ts &
           COMMIT_SHA=$SHA ALGO_TRADER_PORT=5003 deno run --allow-all backend/src/algo/limit-strategy.ts &
           COMMIT_SHA=$SHA TWAP_ALGO_PORT=5004 deno run --allow-all backend/src/algo/twap-strategy.ts &
           COMMIT_SHA=$SHA POV_ALGO_PORT=5005 deno run --allow-all backend/src/algo/pov-strategy.ts &
@@ -139,6 +139,7 @@ jobs:
           COMMIT_SHA=$SHA deno run --allow-all backend/src/news/news-aggregator.ts &
           COMMIT_SHA=$SHA ANALYTICS_PORT=5014 deno run --allow-all backend/src/analytics/analytics-server.ts &
           COMMIT_SHA=$SHA MARKET_DATA_PORT=5015 deno run --allow-all backend/src/market-data/market-data-service.ts &
+          COMMIT_SHA=$SHA MARKET_DATA_ADAPTERS_PORT=5016 deno run --allow-all backend/src/market-data-adapters/adapter-server.ts &
           COMMIT_SHA=$SHA FEATURE_ENGINE_PORT=5017 deno run --allow-all backend/src/feature-engine/feature-engine.ts &
           COMMIT_SHA=$SHA SIGNAL_ENGINE_PORT=5018 deno run --allow-all backend/src/signal-engine/signal-engine.ts &
           COMMIT_SHA=$SHA RECOMMENDATION_ENGINE_PORT=5019 deno run --allow-all backend/src/recommendation-engine/recommendation-server.ts &
@@ -153,7 +154,7 @@ jobs:
 
       - name: Wait for services to be ready
         run: |
-          for port in 5000 5001 5002 5003 5004 5005 5006 5007 5008 5009 5011 5012 5014 5015 5017 5018 5019 5020 5021 5022 5023 5024 5025 5026 5027 5028 5029; do
+          for port in 5000 5001 5002 5003 5004 5005 5006 5007 5008 5009 5011 5012 5014 5015 5016 5017 5018 5019 5020 5021 5022 5023 5024 5025 5026 5027 5028 5029; do
             for i in $(seq 1 30); do
               curl -sf http://localhost:$port/health && break || sleep 1
             done
@@ -176,12 +177,32 @@ jobs:
           echo "Allowing 20s for all algo Kafka consumers to subscribe to their topics..."
           sleep 20
 
-      - name: Integration tests
-        run: deno task test:integration
+      - name: Integration tests (service contracts + order flow)
+        run: deno test --allow-all backend/src/tests/integration.test.ts
         env:
           DATABASE_URL: postgres://veta:veta@localhost:5432/veta
 
-      - name: Smoke tests
+      - name: Integration tests (algo strategies)
+        run: deno test --allow-all backend/src/tests/algo.integration.test.ts
+        env:
+          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
+
+      - name: Integration tests (intelligence pipeline)
+        run: deno test --allow-all backend/src/tests/intelligence.integration.test.ts
+        env:
+          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
+
+      - name: Integration tests (journal HTTP contracts)
+        run: deno test --allow-all backend/src/tests/journal.http.test.ts
+        env:
+          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
+
+      - name: Integration tests (market-data-service HTTP contracts)
+        run: deno test --allow-all backend/src/tests/market-data.http.test.ts
+        env:
+          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
+
+      - name: Smoke tests (all service health + contracts)
         run: deno task test:smoke
         env:
           DATABASE_URL: postgres://veta:veta@localhost:5432/veta

@@ -1,8 +1,3 @@
-/**
- * Unit tests for backend/src/fix/fix-parser.ts
- * Covers: encode, decode, validateChecksum, utcTimestamp
- */
-
 import {
   assert,
   assertEquals,
@@ -10,7 +5,6 @@ import {
 
 import { decode, encode, SOH, validateChecksum, utcTimestamp } from "../fix/fix-parser.ts";
 
-// ─── encode ───────────────────────────────────────────────────────────────────
 
 Deno.test("[fix-parser] encode starts with 8=FIX.4.4", () => {
   const msg = encode([[35, "A"]]);
@@ -82,7 +76,6 @@ Deno.test("[fix-parser] encode BodyLength matches byte count of body", () => {
   assertEquals(actual, claimed);
 });
 
-// ─── decode ───────────────────────────────────────────────────────────────────
 
 Deno.test("[fix-parser] decode round-trips a Logon message", () => {
   const msg = encode([[35, "A"], [98, 0], [108, 30]]);
@@ -114,7 +107,6 @@ Deno.test("[fix-parser] decode skips malformed fields without crashing", () => {
   assertEquals(tags.get(35), "0");
 });
 
-// ─── validateChecksum ─────────────────────────────────────────────────────────
 
 Deno.test("[fix-parser] validateChecksum returns true for a valid encoded message", () => {
   const msg = encode([[35, "A"], [98, 0], [108, 30]]);
@@ -123,7 +115,6 @@ Deno.test("[fix-parser] validateChecksum returns true for a valid encoded messag
 
 Deno.test("[fix-parser] validateChecksum returns false when checksum is tampered", () => {
   const msg = encode([[35, "A"]]);
-  // Flip one digit in the checksum
   const tamperedPattern = new RegExp(`10=(\\d{3})${SOH}$`);
   const tampered = msg.replace(tamperedPattern, (_m, cs) => {
     const bad = String((Number(cs) + 1) % 256).padStart(3, "0");
@@ -141,7 +132,6 @@ Deno.test("[fix-parser] validateChecksum returns false for message without check
   assert(!validateChecksum(noChecksum), "message without 10= should fail");
 });
 
-// ─── utcTimestamp ─────────────────────────────────────────────────────────────
 
 Deno.test("[fix-parser] utcTimestamp returns correct format for a known date", () => {
   const d = new Date("2025-01-15T14:30:45.123Z");
@@ -157,7 +147,6 @@ Deno.test("[fix-parser] utcTimestamp zero-pads single-digit components", () => {
 
 Deno.test("[fix-parser] utcTimestamp has correct total length", () => {
   const ts = utcTimestamp(new Date("2025-06-15T10:20:30.456Z"));
-  // YYYYMMDD-HH:MM:SS.sss = 8+1+2+1+2+1+2+1+3 = 21 chars
   assertEquals(ts.length, 21);
 });
 

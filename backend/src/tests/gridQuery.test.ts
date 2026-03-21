@@ -1,11 +1,3 @@
-/**
- * Unit tests for backend/src/lib/gridQuery.ts
- *
- * Mirrors the frontend gridFilter tests to ensure the server-side evaluator
- * behaves identically for all 13 operators, AND/OR nesting, sort, and edge cases.
- * No running services required.
- */
-
 import {
   assert,
   assertEquals,
@@ -14,7 +6,6 @@ import {
 import { applyExprGroup, applySort, evalExprGroup, evalOp } from "../lib/gridQuery.ts";
 import type { ExprGroup } from "../types/gridQuery.ts";
 
-// ── Test fixtures ─────────────────────────────────────────────────────────────
 
 const rows = [
   { id: "1", asset: "AAPL", side: "BUY", quantity: 10000, status: "filled", userId: "alice" },
@@ -23,7 +14,6 @@ const rows = [
   { id: "4", asset: "TSLA", side: "SELL", quantity: 100000, status: "expired", userId: "" },
 ];
 
-// ── evalOp — all 13 operators ─────────────────────────────────────────────────
 
 Deno.test("[gridQuery/evalOp] = string match (case-insensitive)", () => {
   assert(evalOp("BUY", "=", "buy"));
@@ -105,7 +95,6 @@ Deno.test("[gridQuery/evalOp] is_not_null", () => {
   assert(!evalOp("", "is_not_null", ""));
 });
 
-// ── evalExprGroup — AND / OR / nesting ────────────────────────────────────────
 
 Deno.test("[gridQuery/evalExprGroup] empty group passes every row", () => {
   const g: ExprGroup = { kind: "group", id: "root", join: "AND", rules: [] };
@@ -152,8 +141,6 @@ Deno.test("[gridQuery/evalExprGroup] nested AND containing OR sub-group", () => 
       },
     ],
   };
-  // qty > 5000: rows 1 (10000), 2 (50000), 4 (100000)
-  // AND (BUY or expired): row 1 (BUY), row 4 (expired)
   const result = applyExprGroup(rows, g);
   assertEquals(result.map((r) => r.id).sort(), ["1", "4"]);
 });
@@ -172,7 +159,6 @@ Deno.test("[gridQuery/evalExprGroup] nested OR containing AND sub-group", () => 
       },
     ],
   };
-  // GOOG (row 3) OR (SELL AND qty>=100000) (row 4)
   const result = applyExprGroup(rows, g);
   assertEquals(result.map((r) => r.id).sort(), ["3", "4"]);
 });
@@ -183,7 +169,6 @@ Deno.test("[gridQuery/evalExprGroup] is_null on null and empty-string userId", (
     rules: [{ kind: "rule", id: "r1", field: "userId", op: "is_null", value: "" }],
   };
   const result = applyExprGroup(rows, g);
-  // row 2 userId=null, row 4 userId=""
   assertEquals(result.map((r) => r.id).sort(), ["2", "4"]);
 });
 
@@ -214,7 +199,6 @@ Deno.test("[gridQuery/evalExprGroup] starts_with on asset", () => {
   assertEquals(result.map((r) => r.id), ["1"]); // AAPL
 });
 
-// ── applySort ─────────────────────────────────────────────────────────────────
 
 Deno.test("[gridQuery/applySort] ascending by quantity", () => {
   const sorted = applySort([...rows], "quantity", "asc");
@@ -249,7 +233,6 @@ Deno.test("[gridQuery/applySort] does not mutate input array", () => {
   assertEquals(original[0].id, "1"); // input order unchanged
 });
 
-// ── applyExprGroup — empty group pass-through ─────────────────────────────────
 
 Deno.test("[gridQuery/applyExprGroup] empty group returns all rows", () => {
   const g: ExprGroup = { kind: "group", id: "root", join: "AND", rules: [] };

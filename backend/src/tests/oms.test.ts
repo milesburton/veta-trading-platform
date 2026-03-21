@@ -1,17 +1,7 @@
-/**
- * Unit tests for OMS order validation logic.
- *
- * These tests exercise the validation rules in isolation without starting
- * a Redpanda connection or HTTP server.
- */
-
 import {
   assertEquals,
   assertMatch,
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
-
-// ── Replicate the pure validation logic from oms-server.ts ───────────────────
-// These are the rules that run before any bus interaction.
 
 interface TradingLimits {
   max_order_qty: number;
@@ -84,7 +74,6 @@ const VALID_ORDER: Order = {
   userRole: "trader",
 };
 
-// ── Missing field validation ──────────────────────────────────────────────────
 
 Deno.test("[oms] rejects order missing asset", () => {
   const result = validateOrder({ ...VALID_ORDER, asset: undefined }, DEFAULT_LIMITS);
@@ -102,7 +91,6 @@ Deno.test("[oms] rejects order missing quantity", () => {
   assertEquals(result.ok, false);
 });
 
-// ── Strategy validation ───────────────────────────────────────────────────────
 
 Deno.test("[oms] accepts known strategies", () => {
   for (const strategy of ["LIMIT", "TWAP", "POV", "VWAP"]) {
@@ -129,7 +117,6 @@ Deno.test("[oms] defaults missing strategy to LIMIT", () => {
   if (result.ok) assertEquals(result.strategy, "LIMIT");
 });
 
-// ── Role enforcement ──────────────────────────────────────────────────────────
 
 Deno.test("[oms] rejects orders from admin role", () => {
   const result = validateOrder({ ...VALID_ORDER, userRole: "admin" }, DEFAULT_LIMITS);
@@ -142,7 +129,6 @@ Deno.test("[oms] accepts orders from trader role", () => {
   assertEquals(result.ok, true);
 });
 
-// ── Trading limit enforcement ─────────────────────────────────────────────────
 
 Deno.test("[oms] rejects quantity exceeding max_order_qty", () => {
   const limits = { ...DEFAULT_LIMITS, max_order_qty: 50 };
@@ -172,7 +158,6 @@ Deno.test("[oms] accepts strategy in allowed_strategies", () => {
 
 Deno.test("[oms] rejects order where notional exceeds max_daily_notional", () => {
   const limits = { ...DEFAULT_LIMITS, max_daily_notional: 1_000 };
-  // 100 qty * 190 price = 19_000 notional > 1_000 limit
   const result = validateOrder({ ...VALID_ORDER, quantity: 100, limitPrice: 190 }, limits);
   assertEquals(result.ok, false);
   if (!result.ok) assertMatch(result.reason, /exceeds your daily limit/);
@@ -186,7 +171,6 @@ Deno.test("[oms] accepts order where notional equals max_daily_notional", () => 
 
 Deno.test("[oms] skips limit checks when userId is absent (anonymous)", () => {
   const limits = { ...DEFAULT_LIMITS, max_order_qty: 1 };
-  // quantity 100 > limit 1, but no userId → limits not checked
   const result = validateOrder({ ...VALID_ORDER, userId: undefined }, limits);
   assertEquals(result.ok, true);
 });

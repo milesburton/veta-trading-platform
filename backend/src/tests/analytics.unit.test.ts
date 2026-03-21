@@ -1,13 +1,3 @@
-/**
- * Unit tests for the new analytics modules:
- *   - spread-analysis.ts  (G-spread, Z-spread, OAS)
- *   - duration-ladder.ts  (key-rate DV01 attribution)
- *   - vol-surface.ts      (SABR-inspired smile surface)
- *
- * These tests are pure (no running services).
- * Run: deno test --allow-all backend/src/tests/analytics.unit.test.ts
- */
-
 import { assertEquals, assertAlmostEquals, assert } from "https://deno.land/std@0.210.0/assert/mod.ts";
 import { computeSpreadAnalysis } from "../analytics/spread-analysis.ts";
 import { computeDurationLadder } from "../analytics/duration-ladder.ts";
@@ -17,7 +7,6 @@ import { priceBond } from "../analytics/bond-pricing.ts";
 import { computeYieldCurve } from "../analytics/yield-curve.ts";
 import { rateAt } from "../analytics/spread-analysis.ts";
 
-// ── Spread Analysis ───────────────────────────────────────────────────────────
 
 Deno.test("[spread-analysis] G-spread is bondYield minus govSpotRate in bps", () => {
   const result = computeSpreadAnalysis({
@@ -26,15 +15,12 @@ Deno.test("[spread-analysis] G-spread is bondYield minus govSpotRate in bps", ()
     yieldAnnual: 0.055,
     periodsPerYear: 2,
   });
-  // tenorYears = 20/2 = 10y
   assertEquals(result.tenorYears, 10);
-  // G-spread = (bondYield - govSpotRate) × 10000
   const expected = (result.bondYield - result.govSpotRate) * 10_000;
   assertAlmostEquals(result.gSpread, expected, 1e-6);
 });
 
 Deno.test("[spread-analysis] bond at gov yield has near-zero G-spread", () => {
-  // Put bond yield exactly at the gov spot rate for 10y tenor
   const curve = computeYieldCurve();
   const govRate10y = rateAt(curve, 10);
   const result = computeSpreadAnalysis({
@@ -42,7 +28,6 @@ Deno.test("[spread-analysis] bond at gov yield has near-zero G-spread", () => {
     totalPeriods: 20,
     yieldAnnual: govRate10y,
   });
-  // G-spread should be essentially zero (< 0.1bp)
   assert(Math.abs(result.gSpread) < 0.1, `G-spread ${result.gSpread} should be near 0`);
 });
 
@@ -70,7 +55,6 @@ Deno.test("[spread-analysis] Z-spread converges: PV at curve+z equals bond price
     face,
   });
 
-  // Verify: sum of cash flows discounted at (curve rate + zSpread/10000) ≈ bond price
   const bondPrice = priceBond({ couponRate, totalPeriods, periodsPerYear, yieldAnnual, face }).price;
   const curve = computeYieldCurve();
   const zDecimal = result.zSpread / 10_000;
@@ -111,7 +95,6 @@ Deno.test("[spread-analysis] returns computedAt timestamp", () => {
   assert(result.computedAt >= before && result.computedAt <= after);
 });
 
-// ── Duration Ladder ───────────────────────────────────────────────────────────
 
 const TEN_YEAR_BOND: BondPosition = {
   faceValue: 1000,
@@ -135,7 +118,6 @@ Deno.test("[duration-ladder] single bond: bucket DV01s sum to total DV01", () =>
   const result = computeDurationLadder([TEN_YEAR_BOND]);
   const pos = result.positions[0];
 
-  // Expected total DV01 from priceBond
   const bp = priceBond({
     face: TEN_YEAR_BOND.faceValue,
     couponRate: TEN_YEAR_BOND.couponRate,
@@ -145,7 +127,6 @@ Deno.test("[duration-ladder] single bond: bucket DV01s sum to total DV01", () =>
   });
   assertAlmostEquals(pos.totalDv01, bp.dv01, 1e-6, "totalDv01 should match priceBond dv01");
 
-  // Bucket contributions should sum to totalDv01
   const bucketSum = pos.contributions.reduce((s, c) => s + c.dv01Contribution, 0);
   assertAlmostEquals(bucketSum, pos.totalDv01, 1e-6, "bucket contributions should sum to totalDv01");
 });
@@ -194,7 +175,6 @@ Deno.test("[duration-ladder] quantity scaling: 10 bonds have 10× DV01 of 1 bond
   assertAlmostEquals(ten.totalPortfolioDv01, single.totalPortfolioDv01 * 10, 1e-8);
 });
 
-// ── Vol Surface ───────────────────────────────────────────────────────────────
 
 Deno.test("[vol-surface] surface has exactly 45 points (5 expiries × 9 strikes)", () => {
   const result = buildVolSurface("AAPL", 189.30, 0.25);
@@ -204,7 +184,6 @@ Deno.test("[vol-surface] surface has exactly 45 points (5 expiries × 9 strikes)
 Deno.test("[vol-surface] ATM vol (moneyness=1.0) equals atTheMoneyVol", () => {
   const atmVol = 0.25;
   const result = buildVolSurface("AAPL", 189.30, atmVol);
-  // At ln(K/F) = 0, skew and curvature terms vanish → impliedVol = atTheMoneyVol
   const atmPoints = result.surface.filter((p) => p.moneyness === 1.0);
   assertEquals(atmPoints.length, 5); // one per expiry
   for (const p of atmPoints) {
@@ -245,12 +224,8 @@ Deno.test("[vol-surface] expiry labels match expected values", () => {
 
 Deno.test("[vol-surface] OTM call (moneyness=1.30) has higher IV than ATM", () => {
   const result = buildVolSurface("AAPL", 189.30, 0.25);
-  // With skew=-0.10 and curvature=0.05, ln(1.30) ≈ 0.262
-  // σ = 0.25 × (1 + (-0.10)(0.262) + 0.05×0.262²) = 0.25 × (1 - 0.0262 + 0.00343) ≈ 0.244
-  // But actually with curvature > |skew×ln(1.30)|, the curvature term lifts OTM calls above ATM
   const otmCall = result.surface.find((p) => p.moneyness === 1.30 && p.expiryLabel === "30d")!;
   const atm = result.surface.find((p) => p.moneyness === 1.0 && p.expiryLabel === "30d")!;
-  // Check at minimum that OTM call vol is reasonable (within [0.5×ATM, 2×ATM])
   assert(otmCall.impliedVol > 0.5 * atm.impliedVol, "OTM call should have reasonable IV");
   assert(otmCall.impliedVol < 2.0 * atm.impliedVol, "OTM call IV should not explode");
 });

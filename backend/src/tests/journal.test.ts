@@ -1,15 +1,7 @@
-/**
- * Unit tests for journal order reconstruction logic.
- *
- * Tests the pure logic that rebuilds OrderRecord objects from a sequence of
- * journal events — the same logic used by the GET /orders endpoint.
- */
-
 import {
   assertEquals,
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
 
-// ── Replicate the reconstruction logic from journal-server.ts ─────────────────
 
 interface OrderRecord {
   id: string;
@@ -94,7 +86,6 @@ function reconstructOrders(events: JournalEvent[]): OrderRecord[] {
   return [...orderMap.values()];
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
 
 const BASE_ORDER = {
   orderId: "ord-1",
@@ -211,6 +202,5 @@ Deno.test("[journal] ignores events for unknown orderId", () => {
   const orders = reconstructOrders([
     { orderId: "ord-1", eventType: "orders.filled", ts: 1000, raw: { filledQty: 50 } },
   ]);
-  // No orders.submitted → no entry in map → ignored
   assertEquals(orders.length, 0);
 });

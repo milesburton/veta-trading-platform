@@ -1,13 +1,3 @@
-/**
- * Smoke tests — require all backend services to be running.
- *
- * Covers every service the GUI depends on: health checks, key API contracts,
- * and the gateway WebSocket pipeline. Tests requiring auth use loginAs /
- * submitOrderViaWs from test-helpers to obtain a valid session token.
- *
- * Run:  deno task test:smoke
- */
-
 import {
   assert,
   assertEquals,
@@ -21,37 +11,41 @@ import {
   OBS_URL,
   submitOrderViaWs,
   timeout,
+  USER_SVC_URL,
 } from "./test-helpers.ts";
 
-// ── Service URLs ──────────────────────────────────────────────────────────────
+const BASE = Deno.env.get("VETA_BASE_URL") ?? "http://localhost";
 
-const MARKET_URL    = "http://localhost:5000";
-const EMS_URL       = "http://localhost:5001";
-const OMS_URL       = "http://localhost:5002";
-const LIMIT_URL     = "http://localhost:5003";
-const TWAP_URL      = "http://localhost:5004";
-const POV_URL       = "http://localhost:5005";
-const VWAP_URL      = "http://localhost:5006";
-const USER_SVC_URL  = "http://localhost:5008";
-const NEWS_URL      = "http://localhost:5013";
-const ANALYTICS_URL = "http://localhost:5014";
-const MDS_URL       = "http://localhost:5015";
-// 5016 market-data-adapters — requires external API key; excluded from smoke
-const FEATURE_URL   = "http://localhost:5017";
-const SIGNAL_URL    = "http://localhost:5018";
-const REC_URL       = "http://localhost:5019";
-const SCENARIO_URL  = "http://localhost:5020";
-const ICEBERG_URL   = "http://localhost:5021";
-const SNIPER_URL    = "http://localhost:5022";
-const AP_URL        = "http://localhost:5023";
-const LLM_URL       = "http://localhost:5024";
-const MOMENTUM_URL  = "http://localhost:5025";
-const IS_URL        = "http://localhost:5026";
-const DARK_POOL_URL = "http://localhost:5027";
-const CCP_URL       = "http://localhost:5028";
-const RFQ_URL       = "http://localhost:5029";
+function svcUrl(localPort: number, prodPath: string): string {
+  if (BASE === "http://localhost") return `${BASE}:${localPort}`;
+  return `${BASE}${prodPath}`;
+}
 
-// ── All services expected to be healthy ───────────────────────────────────────
+const MARKET_URL    = svcUrl(5000, "/api/market-sim");
+const EMS_URL       = svcUrl(5001, "/api/ems");
+const OMS_URL       = svcUrl(5002, "/api/oms");
+const LIMIT_URL     = svcUrl(5003, "/api/limit-algo");
+const TWAP_URL      = svcUrl(5004, "/api/twap-algo");
+const POV_URL       = svcUrl(5005, "/api/pov-algo");
+const VWAP_URL      = svcUrl(5006, "/api/vwap-algo");
+const NEWS_URL      = svcUrl(5013, "/api/news-aggregator");
+const ANALYTICS_URL = svcUrl(5014, "/api/analytics");
+const MDS_URL       = svcUrl(5015, "/api/market-data");
+const FEATURE_URL   = svcUrl(5017, "/api/feature-engine");
+const SIGNAL_URL    = svcUrl(5018, "/api/signal-engine");
+const REC_URL       = svcUrl(5019, "/api/recommendation-engine");
+const SCENARIO_URL  = svcUrl(5020, "/api/scenario-engine");
+const ICEBERG_URL   = svcUrl(5021, "/api/iceberg-algo");
+const SNIPER_URL    = svcUrl(5022, "/api/sniper-algo");
+const AP_URL        = svcUrl(5023, "/api/arrival-price-algo");
+const LLM_URL       = svcUrl(5024, "/api/llm-advisory");
+const MOMENTUM_URL  = svcUrl(5025, "/api/momentum-algo");
+const IS_URL        = svcUrl(5026, "/api/is-algo");
+const DARK_POOL_URL = svcUrl(5027, "/api/dark-pool");
+const CCP_URL       = svcUrl(5028, "/api/ccp-service");
+const RFQ_URL       = svcUrl(5029, "/api/rfq-service");
+const MDA_URL       = svcUrl(5016, "/api/market-data-adapters");
+
 
 const ALL_SERVICES = [
   // Core trading pipeline
@@ -77,11 +71,12 @@ const ALL_SERVICES = [
   { name: "observability",             url: OBS_URL       },
   { name: "journal",                   url: JOURNAL_URL   },
   { name: "news-aggregator",           url: NEWS_URL      },
-  { name: "fix-archive",               url: "http://localhost:5012" },
+  { name: "fix-archive",               url: svcUrl(5012, "/api/fix-archive") },
   { name: "gateway",                   url: GATEWAY_URL   },
   // Analytics & market data
   { name: "analytics",                 url: ANALYTICS_URL },
   { name: "market-data-service",       url: MDS_URL       },
+  { name: "market-data-adapters",      url: MDA_URL       },
   // Intelligence pipeline
   { name: "feature-engine",            url: FEATURE_URL   },
   { name: "signal-engine",             url: SIGNAL_URL    },
@@ -91,7 +86,6 @@ const ALL_SERVICES = [
   { name: "llm-advisory-orchestrator", url: LLM_URL       },
 ] as const;
 
-// ── Health checks ─────────────────────────────────────────────────────────────
 
 for (const svc of ALL_SERVICES) {
   Deno.test(`[health] ${svc.name} is online and reports ok`, async () => {
@@ -102,7 +96,6 @@ for (const svc of ALL_SERVICES) {
   });
 }
 
-// ── Version consistency ───────────────────────────────────────────────────────
 
 Deno.test("[e2e] all services expose a version field in /health", async () => {
   const results = await Promise.all(
@@ -147,7 +140,6 @@ Deno.test("[e2e] all services report the same version (no stale deployments)", a
   );
 });
 
-// ── Gateway: WebSocket hub ────────────────────────────────────────────────────
 
 Deno.test("[gateway] WebSocket receives marketUpdate within 3 seconds", async () => {
   const ws = new WebSocket(GATEWAY_WS_URL);
@@ -229,7 +221,6 @@ Deno.test("[gateway] authenticated WS receives algoHeartbeat within 5s", async (
   await closed;
 });
 
-// ── Gateway: authenticated order pipeline ────────────────────────────────────
 
 Deno.test("[orders] authenticated BUY LIMIT orderAck within 5s", async () => {
   const token = await loginAs("alice");
@@ -259,7 +250,6 @@ Deno.test("[orders] option order returns orderAck or orderRejected from OMS", as
   );
 });
 
-// ── Gateway: auth-required endpoints ─────────────────────────────────────────
 
 Deno.test("[gateway] GET /shared-workspaces returns 401 without auth", async () => {
   const res = await fetch(`${GATEWAY_URL}/shared-workspaces`, { signal: timeout(5_000) });
@@ -283,10 +273,10 @@ Deno.test("[gateway] GET /advisory/admin/state returns 200 for admin", async () 
   assertExists(body.policy);
 });
 
-// ── Market-sim ────────────────────────────────────────────────────────────────
 
 Deno.test("[market-sim] WebSocket emits tick data within 3s", async () => {
-  const ws = new WebSocket(`ws://localhost:5000`);
+  const wsUrl = BASE === "http://localhost" ? "ws://localhost:5000" : BASE.replace(/^http/, "ws") + "/ws/market-sim";
+  const ws = new WebSocket(wsUrl);
   const closed = new Promise<void>((r) => { ws.onclose = () => r(); });
 
   const msg = await new Promise<string>((resolve, reject) => {
@@ -300,11 +290,12 @@ Deno.test("[market-sim] WebSocket emits tick data within 3s", async () => {
   });
 
   await closed;
-  const parsed = JSON.parse(msg);
+  const parsed = JSON.parse(msg) as { prices?: Record<string, number>; volumes?: Record<string, number> };
   assert(typeof parsed === "object" && parsed !== null);
+  assert(typeof parsed.prices === "object" && Object.keys(parsed.prices!).length > 0, "tick must have prices");
+  assert(typeof parsed.volumes === "object", "tick must have volumes");
 });
 
-// ── User service ──────────────────────────────────────────────────────────────
 
 Deno.test("[user-service] POST /sessions sets veta_user cookie for alice", async () => {
   const res = await fetch(`${USER_SVC_URL}/sessions`, {
@@ -336,7 +327,6 @@ Deno.test("[user-service] POST /sessions/validate returns user + limits for alic
   assertExists(body.limits);
 });
 
-// ── Journal ───────────────────────────────────────────────────────────────────
 
 Deno.test("[journal] GET /candles?instrument=AAPL&interval=1m returns array", async () => {
   const res = await fetch(
@@ -371,23 +361,27 @@ Deno.test("[journal] POST /grid/query orderBlotter returns rows + total + evalMs
   assert(typeof body.evalMs === "number" && body.evalMs >= 0);
 });
 
-// ── FIX archive ───────────────────────────────────────────────────────────────
 
 Deno.test("[fix-archive] /health includes executions count", async () => {
-  const res = await fetch("http://localhost:5012/health", { signal: timeout(5_000) });
+  const res = await fetch(`${svcUrl(5012, "/api/fix-archive")}/health`, { signal: timeout(5_000) });
   assertEquals(res.status, 200);
   const body = await res.json() as { status: string; executions: number };
   assertEquals(body.status, "ok");
   assertEquals(typeof body.executions, "number");
 });
 
-Deno.test("[fix-archive] GET /executions returns array", async () => {
-  const res = await fetch("http://localhost:5012/executions?limit=10", { signal: timeout(5_000) });
+Deno.test("[fix-archive] GET /executions returns array with expected fields", async () => {
+  const res = await fetch(`${svcUrl(5012, "/api/fix-archive")}/executions?limit=10`, { signal: timeout(5_000) });
   assertEquals(res.status, 200);
-  assert(Array.isArray(await res.json()), "executions must be an array");
+  const body = await res.json() as Record<string, unknown>[];
+  assert(Array.isArray(body), "executions must be an array");
+  if (body.length > 0) {
+    for (const field of ["execId", "orderId", "asset", "side", "filledQty", "avgFillPrice"]) {
+      assertExists(body[0][field], `execution missing field: ${field}`);
+    }
+  }
 });
 
-// ── News aggregator ───────────────────────────────────────────────────────────
 
 Deno.test("[news] GET /news?symbol=AAPL returns array", async () => {
   const res = await fetch(`${NEWS_URL}/news?symbol=AAPL&limit=5`, { signal: timeout(5_000) });
@@ -405,7 +399,6 @@ Deno.test("[news] GET /sources returns non-empty list with id, label, enabled fi
   assertEquals(typeof body[0].enabled, "boolean");
 });
 
-// ── Observability ─────────────────────────────────────────────────────────────
 
 Deno.test("[observability] POST /events/batch accepts array and returns count", async () => {
   const res = await fetch(`${OBS_URL}/events/batch`, {
@@ -423,7 +416,6 @@ Deno.test("[observability] POST /events/batch accepts array and returns count", 
   assertEquals(body.count, 2);
 });
 
-// ── Analytics service ─────────────────────────────────────────────────────────
 
 Deno.test("[analytics] POST /quote returns Black-Scholes price + greeks for AAPL call", async () => {
   const res = await fetch(`${ANALYTICS_URL}/quote`, {
@@ -440,7 +432,6 @@ Deno.test("[analytics] POST /quote returns Black-Scholes price + greeks for AAPL
   assertEquals(typeof body.greeks.gamma, "number");
 });
 
-// ── Market-data service ───────────────────────────────────────────────────────
 
 Deno.test("[market-data-service] GET /sources returns array", async () => {
   const res = await fetch(`${MDS_URL}/sources`, { signal: timeout(5_000) });
@@ -448,7 +439,6 @@ Deno.test("[market-data-service] GET /sources returns array", async () => {
   assert(Array.isArray(await res.json()), "/sources must return an array");
 });
 
-// ── Intelligence pipeline ─────────────────────────────────────────────────────
 
 Deno.test("[feature-engine] /health includes trackedSymbols", async () => {
   const res = await fetch(`${FEATURE_URL}/health`, { signal: timeout(5_000) });
@@ -486,10 +476,6 @@ Deno.test("[scenario-engine] /health is ok", async () => {
   assertEquals((await res.json() as { status: string }).status, "ok");
 });
 
-// ── Algo order settled-state checks ───────────────────────────────────────────
-// For each strategy: submit an order with a favourable limit price and poll the
-// journal until the order reaches "filled" or "expired" (never just routed).
-// This verifies the full pipeline: OMS → algo → EMS → fill/expire → journal.
 
 interface SmokeOrder {
   id: string;
@@ -608,38 +594,22 @@ Deno.test("[orders/settled] VWAP order reaches filled or expired within 90s", as
   assertEquals(order.strategy, "VWAP");
 });
 
-Deno.test("[orders/settled] ICEBERG order is accepted and reaches journal within 30s", async () => {
+Deno.test("[orders/settled] ICEBERG order reaches filled or expired within 90s", async () => {
   const token = await loginAs("alice");
   const price = await livePrice(token, "MSFT");
   const { clientOrderId } = await submitOrderViaWs(token, {
     asset: "MSFT", side: "BUY", quantity: 200,
     limitPrice: price * 1.05, strategy: "ICEBERG",
     algoParams: { strategy: "ICEBERG", visibleQty: 40 },
-    expiresAt: 10,
+    expiresAt: 60,
   });
-  // Verify the order appears in the journal (any status) — proves OMS → journal pipeline
-  const deadline = Date.now() + 30_000;
-  let found = false;
-  while (Date.now() < deadline) {
-    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        gridId: "orderBlotter",
-        filterExpr: { kind: "group", id: "g1", join: "AND", rules: [
-          { kind: "rule", id: "r1", field: "id", op: "=", value: clientOrderId },
-        ]},
-        sortField: null, sortDir: null, offset: 0, limit: 1,
-      }),
-      signal: timeout(10_000),
-    });
-    if (res.ok) {
-      const data = await res.json() as { rows: SmokeOrder[] };
-      if (data.rows.length > 0 && data.rows[0].strategy === "ICEBERG") { found = true; break; }
-    } else { await res.body?.cancel(); }
-    await new Promise((r) => setTimeout(r, 1_500));
-  }
-  assert(found, `ICEBERG order ${clientOrderId} did not appear in journal within 30s`);
+  const order = await pollSettled(clientOrderId, 90_000);
+  assertExists(order, `ICEBERG order ${clientOrderId} did not settle within 90s`);
+  assert(
+    order.status === "filled" || order.status === "expired" || order.status === "rejected",
+    `Expected filled/expired/rejected, got: ${order.status}`,
+  );
+  assertEquals(order.strategy, "ICEBERG");
 });
 
 Deno.test("[orders/settled] SNIPER order reaches filled or expired within 60s", async () => {
@@ -659,37 +629,58 @@ Deno.test("[orders/settled] SNIPER order reaches filled or expired within 60s", 
   assertEquals(order.strategy, "SNIPER");
 });
 
-Deno.test("[orders/settled] ARRIVAL_PRICE order is accepted and reaches journal within 30s", async () => {
+Deno.test("[orders/settled] ARRIVAL_PRICE order reaches filled or expired within 90s", async () => {
   const token = await loginAs("alice");
   const price = await livePrice(token, "MSFT");
   const { clientOrderId } = await submitOrderViaWs(token, {
     asset: "MSFT", side: "BUY", quantity: 40,
     limitPrice: price * 1.05, strategy: "ARRIVAL_PRICE",
     algoParams: { strategy: "ARRIVAL_PRICE" },
-    expiresAt: 10,
+    expiresAt: 60,
   });
-  const deadline = Date.now() + 30_000;
-  let found = false;
-  while (Date.now() < deadline) {
-    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        gridId: "orderBlotter",
-        filterExpr: { kind: "group", id: "g1", join: "AND", rules: [
-          { kind: "rule", id: "r1", field: "id", op: "=", value: clientOrderId },
-        ]},
-        sortField: null, sortDir: null, offset: 0, limit: 1,
-      }),
-      signal: timeout(10_000),
-    });
-    if (res.ok) {
-      const data = await res.json() as { rows: SmokeOrder[] };
-      if (data.rows.length > 0 && data.rows[0].strategy === "ARRIVAL_PRICE") { found = true; break; }
-    } else { await res.body?.cancel(); }
-    await new Promise((r) => setTimeout(r, 1_500));
-  }
-  assert(found, `ARRIVAL_PRICE order ${clientOrderId} did not appear in journal within 30s`);
+  const order = await pollSettled(clientOrderId, 90_000);
+  assertExists(order, `ARRIVAL_PRICE order ${clientOrderId} did not settle within 90s`);
+  assert(
+    order.status === "filled" || order.status === "expired" || order.status === "rejected",
+    `Expected filled/expired/rejected, got: ${order.status}`,
+  );
+  assertEquals(order.strategy, "ARRIVAL_PRICE");
+});
+
+Deno.test("[orders/settled] MOMENTUM order reaches filled or expired within 90s", async () => {
+  const token = await loginAs("alice");
+  const price = await livePrice(token, "AAPL");
+  const { clientOrderId } = await submitOrderViaWs(token, {
+    asset: "AAPL", side: "BUY", quantity: 30,
+    limitPrice: price * 1.05, strategy: "MOMENTUM",
+    algoParams: { strategy: "MOMENTUM" },
+    expiresAt: 60,
+  });
+  const order = await pollSettled(clientOrderId, 90_000);
+  assertExists(order, `MOMENTUM order ${clientOrderId} did not settle within 90s`);
+  assert(
+    order.status === "filled" || order.status === "expired" || order.status === "rejected",
+    `Expected filled/expired/rejected, got: ${order.status}`,
+  );
+  assertEquals(order.strategy, "MOMENTUM");
+});
+
+Deno.test("[orders/settled] IS order reaches filled or expired within 90s", async () => {
+  const token = await loginAs("alice");
+  const price = await livePrice(token, "MSFT");
+  const { clientOrderId } = await submitOrderViaWs(token, {
+    asset: "MSFT", side: "BUY", quantity: 40,
+    limitPrice: price * 1.05, strategy: "IS",
+    algoParams: { strategy: "IS" },
+    expiresAt: 60,
+  });
+  const order = await pollSettled(clientOrderId, 90_000);
+  assertExists(order, `IS order ${clientOrderId} did not settle within 90s`);
+  assert(
+    order.status === "filled" || order.status === "expired" || order.status === "rejected",
+    `Expected filled/expired/rejected, got: ${order.status}`,
+  );
+  assertEquals(order.strategy, "IS");
 });
 
 Deno.test("[orders/settled] rejected order (impossible price) has rejected status", async () => {
@@ -738,7 +729,6 @@ Deno.test("[orders/settled] rejected order (impossible price) has rejected statu
   );
 });
 
-// ── LLM advisory orchestrator ─────────────────────────────────────────────────
 
 Deno.test("[llm-advisory] /health reports policyEnabled + pendingJobs", async () => {
   const res = await fetch(`${LLM_URL}/health`, { signal: timeout(5_000) });
@@ -767,10 +757,6 @@ Deno.test("[llm-advisory] GET /admin/state returns valid subsystem state and pol
   assertExists(body.runtimeConfig);
 });
 
-// ── Gateway /ready ─────────────────────────────────────────────────────────────
-// These tests ensure the /ready endpoint correctly reflects all downstream
-// services. Regressions here (e.g. hardcoded localhost, missing services) will
-// cause the startup overlay to hang indefinitely in production.
 
 Deno.test("[gateway/ready] returns JSON with ready field and correct HTTP status", async () => {
   const res = await fetch(`${GATEWAY_URL}/ready`, { signal: timeout(10_000) });
@@ -849,4 +835,41 @@ Deno.test("[ccp-service] GET /ccp/stats returns valid structure", async () => {
   assertEquals(typeof body.totalNovated, "number");
   assertEquals(typeof body.pendingObligations, "number");
   assertEquals(typeof body.marginAccountCount, "number");
+});
+
+Deno.test("[observability] GET /events?type=smoke.test returns array", async () => {
+  const res = await fetch(`${OBS_URL}/events?type=smoke.test`, { signal: timeout(5_000) });
+  assertEquals(res.status, 200);
+  const body = await res.json() as unknown[];
+  assert(Array.isArray(body), "GET /events must return an array");
+});
+
+Deno.test("[user-service] POST /sessions with unknown userId returns 401 or 404", async () => {
+  const res = await fetch(`${USER_SVC_URL}/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: "does-not-exist-xyz" }),
+    signal: timeout(5_000),
+  });
+  assert(res.status === 401 || res.status === 404, `Expected 401 or 404, got ${res.status}`);
+  await res.body?.cancel();
+});
+
+Deno.test("[gateway] trader role cannot access admin-only endpoint", async () => {
+  const token = await loginAs("alice");
+  const res = await fetch(`${GATEWAY_URL}/advisory/admin/state`, {
+    headers: { Cookie: `veta_user=${token}` },
+    signal: timeout(5_000),
+  });
+  assert(res.status === 401 || res.status === 403, `trader should be denied admin endpoint, got ${res.status}`);
+  await res.body?.cancel();
+});
+
+Deno.test("[gateway] request with invalid token returns 401", async () => {
+  const res = await fetch(`${GATEWAY_URL}/shared-workspaces`, {
+    headers: { Cookie: "veta_user=invalid-token-xyz" },
+    signal: timeout(5_000),
+  });
+  assertEquals(res.status, 401);
+  await res.body?.cancel();
 });

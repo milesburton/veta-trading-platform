@@ -42,7 +42,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
@@ -104,3 +104,35 @@ jobs:
           done
           echo "❌ Stale deployment — expected $EXPECTED, got $DEPLOYED"
           exit 1
+
+  smoke:
+    needs: deploy
+    runs-on: ubuntu-latest
+    name: Smoke tests against Fly.io
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.7.x
+
+      - name: Install backend dependencies
+        run: deno install
+
+      - name: Wait for /ready (all Tier-1 services up)
+        run: |
+          for i in $(seq 1 30); do
+            STATUS=$(curl -sf https://veta-trading.fly.dev/api/gateway/ready | python3 -c "import sys,json; d=json.load(sys.stdin); print('ok' if d.get('ready') else 'wait')" 2>/dev/null || echo "wait")
+            if [ "$STATUS" = "ok" ]; then
+              echo "✅ /ready returned true"
+              break
+            fi
+            echo "  attempt $i/30: not ready yet, retrying in 10s..."
+            sleep 10
+          done
+
+      - name: Run smoke tests against Fly.io
+        run: deno task test:smoke
+        env:
+          VETA_BASE_URL: https://veta-trading.fly.dev

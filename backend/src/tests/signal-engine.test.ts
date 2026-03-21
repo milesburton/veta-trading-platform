@@ -1,7 +1,3 @@
-/**
- * Unit tests for the signal-engine scorer and weight-store.
- */
-
 import {
   assertEquals,
   assertAlmostEquals,
@@ -24,7 +20,6 @@ function makeNeutralFv(symbol = "TEST"): FeatureVector {
   };
 }
 
-// ── DEFAULT_WEIGHTS ───────────────────────────────────────────────────────────
 
 Deno.test("default weights: all 7 features present, realisedVol is negative, abs-sum = 1.0", () => {
   const keys = Object.keys(DEFAULT_WEIGHTS);
@@ -37,7 +32,6 @@ Deno.test("default weights: all 7 features present, realisedVol is negative, abs
   assertAlmostEquals(absSum, 1.0, 0.001);
 });
 
-// ── scoreFeatureVector ────────────────────────────────────────────────────────
 
 Deno.test("scorer: neutral FeatureVector → neutral direction with 7 factors", () => {
   const sig = scoreFeatureVector(makeNeutralFv(), DEFAULT_WEIGHTS);

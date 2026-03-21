@@ -1,19 +1,24 @@
-/**
- * Shared test helpers for backend integration and smoke tests.
- * Requires all backend services to be running.
- */
-
 import {
   assert,
   assertEquals,
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
 
-export const GATEWAY_URL    = "http://localhost:5011";
-export const GATEWAY_WS_URL = "ws://localhost:5011/ws";
-export const JOURNAL_URL    = "http://localhost:5009";
-export const OBS_URL        = "http://localhost:5007";
-export const USER_SVC_URL   = "http://localhost:5008";
-export const ARCHIVE_URL    = "http://localhost:5012";
+const BASE = Deno.env.get("VETA_BASE_URL") ?? "http://localhost";
+
+function svcUrl(localPort: number, prodPath: string): string {
+  if (BASE === "http://localhost") return `${BASE}:${localPort}`;
+  return `${BASE}${prodPath}`;
+}
+
+export const GATEWAY_URL    = svcUrl(5011, "/api/gateway");
+export const JOURNAL_URL    = svcUrl(5009, "/api/journal");
+export const OBS_URL        = svcUrl(5007, "/api/observability");
+export const USER_SVC_URL   = svcUrl(5008, "/api/user-service");
+export const ARCHIVE_URL    = svcUrl(5012, "/api/fix-archive");
+
+export const GATEWAY_WS_URL = BASE === "http://localhost"
+  ? "ws://localhost:5011/ws"
+  : BASE.replace(/^http/, "ws") + "/ws/gateway";
 
 export function timeout(ms = 10_000) { return AbortSignal.timeout(ms); }
 

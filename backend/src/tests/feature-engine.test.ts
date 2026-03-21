@@ -1,7 +1,3 @@
-/**
- * Unit tests for feature-engine pure computation functions.
- */
-
 import {
   assertEquals,
   assertAlmostEquals,
@@ -17,7 +13,6 @@ import {
 } from "../feature-engine/feature-computers.ts";
 import type { MarketAdapterEvent, NewsEvent } from "../types/intelligence.ts";
 
-// ── computeMomentum ───────────────────────────────────────────────────────────
 
 Deno.test("computeMomentum: insufficient history → 0", () => {
   assertEquals(computeMomentum([]), 0);
@@ -36,7 +31,6 @@ Deno.test("computeMomentum: positive, negative, and flat movement", () => {
   assertAlmostEquals(computeMomentum(base), 0, 1e-6, "no movement");
 });
 
-// ── computeRelativeVolume ─────────────────────────────────────────────────────
 
 Deno.test("computeRelativeVolume: insufficient history → 1 (neutral)", () => {
   assertEquals(computeRelativeVolume([]), 1);
@@ -53,7 +47,6 @@ Deno.test("computeRelativeVolume: 2× and 0.5× average", () => {
   assertAlmostEquals(computeRelativeVolume(low), 0.5, 0.01, "0.5× volume");
 });
 
-// ── computeRealisedVol ────────────────────────────────────────────────────────
 
 Deno.test("computeRealisedVol: insufficient history → 0", () => {
   assertEquals(computeRealisedVol([]), 0);
@@ -70,7 +63,6 @@ Deno.test("computeRealisedVol: flat price → 0; varying prices → positive ann
   assertEquals(vol < 50, true, "plausible (<5000% annualised)");
 });
 
-// ── computeSectorRelativeStrength ─────────────────────────────────────────────
 
 Deno.test("computeSectorRelativeStrength: insufficient symbol history → 0", () => {
   assertEquals(computeSectorRelativeStrength([100, 101], []), 0);
@@ -86,7 +78,6 @@ Deno.test("computeSectorRelativeStrength: outperform, underperform, match sector
   assertAlmostEquals(computeSectorRelativeStrength(symbolUp10, [symbolUp10]), 0, 1e-6, "matches sector");
 });
 
-// ── computeEventScore ─────────────────────────────────────────────────────────
 
 function makeEvent(overrides: Partial<MarketAdapterEvent>): MarketAdapterEvent {
   return {
@@ -138,7 +129,6 @@ Deno.test("computeEventScore: multiple events accumulate correctly", () => {
   assertAlmostEquals(computeEventScore("AAPL", events), 2.0, 1e-6);
 });
 
-// ── computeNewsVelocity ───────────────────────────────────────────────────────
 
 function makeNews(overrides: Partial<NewsEvent>): NewsEvent {
   return {
@@ -162,7 +152,6 @@ Deno.test("computeNewsVelocity: no news → 0; counts only recent items for this
   assertEquals(computeNewsVelocity("AAPL", news), 2);
 });
 
-// ── computeSentimentDelta ─────────────────────────────────────────────────────
 
 Deno.test("computeSentimentDelta: no news or single item → 0", () => {
   assertEquals(computeSentimentDelta("AAPL", []), 0);
@@ -171,12 +160,10 @@ Deno.test("computeSentimentDelta: no news or single item → 0", () => {
 
 Deno.test("computeSentimentDelta: improving sentiment → positive; worsening → negative", () => {
   const now = Date.now();
-  // Improving: old = negative, recent = positive
   const negOld   = makeNews({ id: "o1", sentimentScore: -0.8, ts: now - 55_000, publishedAt: now - 55_000 });
   const posFresh = makeNews({ id: "n1", sentimentScore: 0.8,  ts: now - 5_000,  publishedAt: now - 5_000 });
   assertEquals(computeSentimentDelta("AAPL", [negOld, posFresh]) > 0, true, "improving");
 
-  // Worsening: old = positive, recent = negative
   const posOld   = makeNews({ id: "o2", sentimentScore: 0.8,  ts: now - 55_000, publishedAt: now - 55_000 });
   const negFresh = makeNews({ id: "n2", sentimentScore: -0.8, ts: now - 5_000,  publishedAt: now - 5_000 });
   assertEquals(computeSentimentDelta("AAPL", [posOld, negFresh]) < 0, true, "worsening");
