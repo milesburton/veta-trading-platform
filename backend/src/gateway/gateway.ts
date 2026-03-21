@@ -513,6 +513,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       JSON.stringify({
         ready,
         startedAt: STARTED_AT,
+        producerReady: producer.isReady(),
         services: {
           // Core order flow
           marketSim, ems, oms, journal, userService, bus, fixArchive, fixGateway, observability,

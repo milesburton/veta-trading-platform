@@ -134,6 +134,20 @@ jobs:
             sleep 10
           done
 
+      - name: Wait for Kafka producer to connect (max 60s)
+        run: |
+          for i in $(seq 1 20); do
+            READY_JSON=$(curl -sf https://veta-trading.fly.dev/api/gateway/ready 2>/dev/null || echo "{}")
+            PRODUCER=$(echo "$READY_JSON" | python3 -c "import sys,json; d=json.load(sys.stdin); print('true' if d.get('producerReady') else 'false')" 2>/dev/null || echo "false")
+            echo "  attempt $i/20: producerReady=$PRODUCER"
+            if [ "$PRODUCER" = "true" ]; then
+              echo "✅ Kafka producer connected"
+              break
+            fi
+            sleep 3
+          done
+          echo "ℹ️ Kafka producer status: $PRODUCER (smoke tests may use WS fallback for market data)"
+
       - name: Wait for all services to be ready
         run: |
           for svc in signal-engine feature-engine analytics limit-algo twap-algo pov-algo vwap-algo iceberg-algo sniper-algo arrival-price-algo momentum-algo is-algo dark-pool ccp-service rfq-service news-aggregator llm-advisory; do

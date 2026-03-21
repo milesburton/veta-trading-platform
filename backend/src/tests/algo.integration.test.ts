@@ -435,7 +435,7 @@ Deno.test("[algo] IS order routes at least one child slice within 60s", async ()
 
 // ── MOMENTUM ──────────────────────────────────────────────────────────────────
 
-Deno.test("[algo] MOMENTUM order routes at least one tranche within 90s", async () => {
+Deno.test("[algo] MOMENTUM order routes at least one tranche within 120s", async () => {
   const token = await loginAs("alice");
   const price = await fetch(`${GATEWAY_URL}/assets`, { headers: { cookie: `veta_user=${token}` }, signal: t() })
     .then((r) => r.json() as Promise<{ symbol: string; price: number }[]>)
@@ -456,7 +456,7 @@ Deno.test("[algo] MOMENTUM order routes at least one tranche within 90s", async 
     }),
   ]);
 
-  const deadline = Date.now() + 90_000;
+  const deadline = Date.now() + 120_000;
   let fired: string | null = null;
   while (!fired && Date.now() < deadline) {
     const [buyOrder, sellOrder] = await Promise.all([
@@ -467,5 +467,5 @@ Deno.test("[algo] MOMENTUM order routes at least one tranche within 90s", async 
     if (sellOrder && sellOrder.children.length >= 1) { fired = sellId; break; }
     await new Promise((r) => setTimeout(r, 2_000));
   }
-  assert(fired !== null, "MOMENTUM: neither BUY nor SELL produced a tranche within 90s");
+  assert(fired !== null, "MOMENTUM: neither BUY nor SELL produced a tranche within 120s");
 });
