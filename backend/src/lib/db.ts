@@ -10,6 +10,6 @@ function resolveUrl(serviceKey?: string): string {
 
 export const journalPool        = new Pool(resolveUrl("JOURNAL"),         5, true);
 export const fixArchivePool     = new Pool(resolveUrl("FIX_ARCHIVE"),     3, true);
-export const usersPool          = new Pool(resolveUrl("USERS"),           4, true);
+export const usersPool          = new Pool(resolveUrl("USERS"),          12, true);
 export const intelligencePool   = new Pool(resolveUrl("INTELLIGENCE"),    3, true);
 export const llmAdvisoryPool    = new Pool(resolveUrl("LLM_ADVISORY"),   3, true);

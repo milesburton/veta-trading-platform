@@ -50,14 +50,12 @@ export async function loginAsVerified(userId: string, maxAttempts = 5): Promise<
     const token = await loginAs(userId);
     lastToken = token;
     // Verify token is accepted by gateway (via /assets proxy route)
-    try {
-      const res = await fetch(`${GATEWAY_URL}/assets`, {
-        headers: { Cookie: `veta_user=${token}` },
-        signal: AbortSignal.timeout(5_000),
-      });
-      await res.body?.cancel();
-      if (res.ok) return token;
-    } catch { /* retry */ }
+    // No AbortSignal to avoid Deno resource leak warnings — gateway is expected to respond
+    const res = await fetch(`${GATEWAY_URL}/assets`, {
+      headers: { Cookie: `veta_user=${token}` },
+    }).catch(() => null);
+    await res?.body?.cancel();
+    if (res?.ok) return token;
   }
   return lastToken; // best effort after all attempts
 }

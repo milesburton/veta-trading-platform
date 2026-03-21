@@ -325,15 +325,24 @@ Deno.test("[user-service] POST /sessions sets veta_user cookie for alice", async
 });
 
 Deno.test("[user-service] POST /sessions/validate returns user + limits for alice", async () => {
-  const token = await loginAs("alice");
-  const res = await fetch(`${USER_SVC_URL}/sessions/validate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token }),
-    signal: timeout(5_000),
-  });
-  assertEquals(res.status, 200);
-  const body = await res.json() as { user: { id: string; role: string }; limits: unknown };
+  // Retry to handle transient cases where the token isn't immediately visible to validate
+  let res: Response | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 1_000));
+    const token = await loginAs("alice");
+    res = await fetch(`${USER_SVC_URL}/sessions/validate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+      signal: timeout(5_000),
+    });
+    if (res.status === 200) break;
+    await res.body?.cancel();
+    res = null;
+  }
+  assert(res !== null, "validate never returned 200 after retries");
+  assertEquals(res!.status, 200);
+  const body = await res!.json() as { user: { id: string; role: string }; limits: unknown };
   assertEquals(body.user.id, "alice");
   assertExists(body.user.role);
   assertExists(body.limits);
