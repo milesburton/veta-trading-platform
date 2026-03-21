@@ -34,11 +34,7 @@ primary_region = "iad"
     method = "GET"
     path = "/health"
 
-# Persistent volumes for stateful services
-[[mounts]]
-  source = "postgres_data"
-  destination = "/var/lib/postgresql/data"
-
-[[mounts]]
-  source = "redpanda_data"
-  destination = "/var/lib/redpanda/data"
+# Note: for persistent volumes, provision with:
+#   flyctl volumes create postgres_data --region iad --size 10
+#   flyctl volumes create redpanda_data --region iad --size 10
+# Then add [[mounts]] sections back.
