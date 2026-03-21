@@ -10,6 +10,7 @@ import {
   loginAs,
   OBS_URL,
   submitOrderViaWs,
+  submitOrderWithRetry,
   timeout,
   USER_SVC_URL,
 } from "./test-helpers.ts";
@@ -249,8 +250,7 @@ Deno.test("[orders] authenticated SELL LIMIT orderAck within 5s", async () => {
 });
 
 Deno.test("[orders] option order returns orderAck or orderRejected from OMS", async () => {
-  const token = await loginAs("alice");
-  const response = await submitOrderViaWs(token, {
+  const response = await submitOrderWithRetry("alice", {
     asset: "AAPL", side: "BUY", quantity: 10, limitPrice: 200,
     strategy: "LIMIT", instrumentType: "option",
   });
@@ -546,7 +546,7 @@ async function pollSettled(clientOrderId: string, maxWaitMs = 90_000): Promise<S
 Deno.test("[orders/settled] LIMIT order reaches filled or expired within 90s", async () => {
   const token = await loginAs("alice");
   const price = await livePrice(token, "AAPL");
-  const { clientOrderId } = await submitOrderViaWs(token, {
+  const { clientOrderId } = await submitOrderWithRetry("alice", {
     asset: "AAPL", side: "BUY", quantity: 10,
     limitPrice: price * 1.05, strategy: "LIMIT",
   });
@@ -561,7 +561,7 @@ Deno.test("[orders/settled] LIMIT order reaches filled or expired within 90s", a
 Deno.test("[orders/settled] TWAP order reaches filled or expired within 90s", async () => {
   const token = await loginAs("alice");
   const price = await livePrice(token, "AAPL");
-  const { clientOrderId } = await submitOrderViaWs(token, {
+  const { clientOrderId } = await submitOrderWithRetry("alice", {
     asset: "AAPL", side: "BUY", quantity: 60,
     limitPrice: price * 1.05, strategy: "TWAP",
     algoParams: { strategy: "TWAP", slices: 3, intervalSeconds: 3 },
@@ -579,7 +579,7 @@ Deno.test("[orders/settled] TWAP order reaches filled or expired within 90s", as
 Deno.test("[orders/settled] POV order reaches filled or expired within 90s", async () => {
   const token = await loginAs("bob");
   const price = await livePrice(token, "MSFT");
-  const { clientOrderId } = await submitOrderViaWs(token, {
+  const { clientOrderId } = await submitOrderWithRetry("bob", {
     asset: "MSFT", side: "BUY", quantity: 80,
     limitPrice: price * 1.05, strategy: "POV",
     algoParams: { strategy: "POV", povRate: 0.15 },
@@ -596,7 +596,7 @@ Deno.test("[orders/settled] POV order reaches filled or expired within 90s", asy
 Deno.test("[orders/settled] VWAP order reaches filled or expired within 90s", async () => {
   const token = await loginAs("alice");
   const price = await livePrice(token, "AAPL");
-  const { clientOrderId } = await submitOrderViaWs(token, {
+  const { clientOrderId } = await submitOrderWithRetry("alice", {
     asset: "AAPL", side: "SELL", quantity: 60,
     limitPrice: price * 0.95, strategy: "VWAP",
     algoParams: { strategy: "VWAP", intervalSeconds: 3 },
@@ -613,7 +613,7 @@ Deno.test("[orders/settled] VWAP order reaches filled or expired within 90s", as
 Deno.test("[orders/settled] ICEBERG order reaches filled or expired within 90s", async () => {
   const token = await loginAs("alice");
   const price = await livePrice(token, "MSFT");
-  const { clientOrderId } = await submitOrderViaWs(token, {
+  const { clientOrderId } = await submitOrderWithRetry("alice", {
     asset: "MSFT", side: "BUY", quantity: 200,
     limitPrice: price * 1.05, strategy: "ICEBERG",
     algoParams: { strategy: "ICEBERG", visibleQty: 40 },
@@ -631,7 +631,7 @@ Deno.test("[orders/settled] ICEBERG order reaches filled or expired within 90s",
 Deno.test("[orders/settled] SNIPER order reaches filled or expired within 60s", async () => {
   const token = await loginAs("alice");
   const price = await livePrice(token, "AAPL");
-  const { clientOrderId } = await submitOrderViaWs(token, {
+  const { clientOrderId } = await submitOrderWithRetry("alice", {
     asset: "AAPL", side: "BUY", quantity: 30,
     limitPrice: price * 1.05, strategy: "SNIPER",
     algoParams: { strategy: "SNIPER" },
@@ -648,7 +648,7 @@ Deno.test("[orders/settled] SNIPER order reaches filled or expired within 60s", 
 Deno.test("[orders/settled] ARRIVAL_PRICE order reaches filled or expired within 90s", async () => {
   const token = await loginAs("alice");
   const price = await livePrice(token, "MSFT");
-  const { clientOrderId } = await submitOrderViaWs(token, {
+  const { clientOrderId } = await submitOrderWithRetry("alice", {
     asset: "MSFT", side: "BUY", quantity: 40,
     limitPrice: price * 1.05, strategy: "ARRIVAL_PRICE",
     algoParams: { strategy: "ARRIVAL_PRICE" },
@@ -666,7 +666,7 @@ Deno.test("[orders/settled] ARRIVAL_PRICE order reaches filled or expired within
 Deno.test("[orders/settled] MOMENTUM order reaches filled or expired within 90s", async () => {
   const token = await loginAs("alice");
   const price = await livePrice(token, "AAPL");
-  const { clientOrderId } = await submitOrderViaWs(token, {
+  const { clientOrderId } = await submitOrderWithRetry("alice", {
     asset: "AAPL", side: "BUY", quantity: 30,
     limitPrice: price * 1.05, strategy: "MOMENTUM",
     algoParams: { strategy: "MOMENTUM" },
@@ -684,7 +684,7 @@ Deno.test("[orders/settled] MOMENTUM order reaches filled or expired within 90s"
 Deno.test("[orders/settled] IS order reaches filled or expired within 90s", async () => {
   const token = await loginAs("alice");
   const price = await livePrice(token, "MSFT");
-  const { clientOrderId } = await submitOrderViaWs(token, {
+  const { clientOrderId } = await submitOrderWithRetry("alice", {
     asset: "MSFT", side: "BUY", quantity: 40,
     limitPrice: price * 1.05, strategy: "IS",
     algoParams: { strategy: "IS" },
@@ -700,11 +700,10 @@ Deno.test("[orders/settled] IS order reaches filled or expired within 90s", asyn
 });
 
 Deno.test("[orders/settled] rejected order (impossible price) has rejected status", async () => {
-  const token = await loginAs("alice");
   // Submit with a limit price of $0.01 — well below market, so EMS/algo cannot fill.
   // OMS should reject at validation (qty/notional check) or the order expires immediately.
   // Either way it must NOT show as "queued" indefinitely.
-  const { clientOrderId, event } = await submitOrderViaWs(token, {
+  const { clientOrderId, event } = await submitOrderWithRetry("alice", {
     asset: "AAPL", side: "BUY", quantity: 1,
     limitPrice: 0.01, strategy: "LIMIT",
     expiresAt: 20,

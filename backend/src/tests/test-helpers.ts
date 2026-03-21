@@ -101,7 +101,7 @@ export async function submitOrderViaWs(
         if (msg.event === "authError") {
           clearTimeout(timer);
           ws.close();
-          reject(new Error(`Auth failed: ${JSON.stringify((msg as unknown as Record<string, unknown>).data ?? msg)}`));
+          reject(new Error(`authError:${JSON.stringify((msg as unknown as Record<string, unknown>).data ?? msg)}`));
         }
       };
       ws.onerror = () => { clearTimeout(timer); ws.close(); reject(new Error("WS error")); };
@@ -110,4 +110,41 @@ export async function submitOrderViaWs(
     await closed;
   }
   return { ...response!, clientOrderId };
+}
+
+/**
+ * Submit an order with automatic retry on transient auth failures.
+ * Re-creates the session token and retries up to maxRetries times.
+ */
+export async function submitOrderWithRetry(
+  userId: string,
+  order: {
+    asset: string;
+    side: "BUY" | "SELL";
+    quantity: number;
+    limitPrice: number;
+    strategy?: string;
+    instrumentType?: string;
+    algoParams?: Record<string, unknown>;
+    expiresAt?: number;
+  },
+  maxRetries = 3,
+): Promise<WsOrderResponse & { clientOrderId: string }> {
+  let lastErr: Error | null = null;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      // Brief pause before retry to let user-service stabilise
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    const token = await loginAs(userId);
+    try {
+      return await submitOrderViaWs(token, order);
+    } catch (err) {
+      lastErr = err as Error;
+      const msg = (err as Error).message;
+      // Only retry on auth failure or WS timeout — not on WS error (connection refused)
+      if (!msg.startsWith("authError:") && msg !== "WS timeout") throw err;
+    }
+  }
+  throw lastErr ?? new Error("submitOrderWithRetry: exhausted retries");
 }
