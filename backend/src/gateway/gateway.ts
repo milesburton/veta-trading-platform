@@ -83,7 +83,7 @@ async function validateToken(token: string): Promise<{ user: AuthenticatedUser; 
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
-      signal: AbortSignal.timeout(3_000),
+      signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok) return null;
     const result = await res.json() as { user: AuthenticatedUser; limits: UserLimits };

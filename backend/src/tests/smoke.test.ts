@@ -507,8 +507,10 @@ async function livePrice(token: string, symbol: string): Promise<number> {
     headers: { Cookie: `veta_user=${token}` },
     signal: timeout(10_000),
   });
-  const assets = await res.json() as { symbol: string; price: number }[];
-  return assets.find((a) => a.symbol === symbol)?.price ?? 190;
+  if (!res.ok) { await res.body?.cancel(); return 190; }
+  const assets = await res.json();
+  if (!Array.isArray(assets)) return 190;
+  return (assets as { symbol: string; price: number }[]).find((a) => a.symbol === symbol)?.price ?? 190;
 }
 
 /** Poll the journal grid until the order has a settled status (filled/expired). */

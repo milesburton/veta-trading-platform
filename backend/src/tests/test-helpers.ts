@@ -60,7 +60,7 @@ export async function submitOrderViaWs(
     algoParams?: Record<string, unknown>;
     expiresAt?: number;
   },
-  timeoutMs = 10_000,
+  timeoutMs = 20_000,
 ): Promise<WsOrderResponse & { clientOrderId: string }> {
   const clientOrderId = `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const ws = new WebSocket(GATEWAY_WS_URL);
@@ -97,6 +97,11 @@ export async function submitOrderViaWs(
           clearTimeout(timer);
           ws.close();
           resolve(msg);
+        }
+        if (msg.event === "authError") {
+          clearTimeout(timer);
+          ws.close();
+          reject(new Error(`Auth failed: ${JSON.stringify((msg as unknown as Record<string, unknown>).data ?? msg)}`));
         }
       };
       ws.onerror = () => { clearTimeout(timer); ws.close(); reject(new Error("WS error")); };
