@@ -93,7 +93,7 @@ export async function submitOrderViaWs(
             },
           }));
         }
-        if (msg.event === "orderAck" || msg.event === "orderRejected") {
+        if (msg.event === "orderAck" || msg.event === "orderRejected" || msg.event === "error") {
           clearTimeout(timer);
           ws.close();
           resolve(msg);

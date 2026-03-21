@@ -289,17 +289,20 @@ Deno.test("[market-sim] WebSocket emits tick data within 3s", async () => {
   const ws = new WebSocket(wsUrl);
   const closed = new Promise<void>((r) => { ws.onclose = () => r(); });
 
-  const msg = await new Promise<string>((resolve, reject) => {
-    const t = setTimeout(() => { ws.close(); reject(new Error("timeout")); }, 3_000);
-    ws.onmessage = (ev) => {
-      clearTimeout(t);
-      ws.close();
-      resolve(ev.data as string);
-    };
-    ws.onerror = () => { clearTimeout(t); reject(new Error("WS error")); };
-  });
-
-  await closed;
+  let msg = "";
+  try {
+    msg = await new Promise<string>((resolve, reject) => {
+      const t = setTimeout(() => { ws.close(); reject(new Error("timeout")); }, 3_000);
+      ws.onmessage = (ev) => {
+        clearTimeout(t);
+        ws.close();
+        resolve(ev.data as string);
+      };
+      ws.onerror = () => { clearTimeout(t); ws.close(); reject(new Error("WS error")); };
+    });
+  } finally {
+    await closed;
+  }
   const parsed = JSON.parse(msg) as { event?: string; data?: { prices?: Record<string, number>; volumes?: Record<string, number> } };
   assert(typeof parsed === "object" && parsed !== null);
   const tick = parsed.data ?? (parsed as unknown as { prices?: Record<string, number>; volumes?: Record<string, number> });

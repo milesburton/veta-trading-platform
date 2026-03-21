@@ -191,27 +191,7 @@ function broadcastToRoles(_roles: string[], msg: unknown): void {
   broadcastAll(msg);
 }
 
-let producer = await createProducer("gateway").catch((err) => {
-  console.warn("[gateway] Redpanda unavailable for publishing:", err.message);
-  return null;
-});
-
-// If Kafka was not ready at startup, retry in background (Redpanda may still be initialising)
-if (!producer) {
-  (async () => {
-    let delay = 5_000;
-    while (!producer) {
-      await new Promise((r) => setTimeout(r, delay));
-      delay = Math.min(delay * 2, 60_000);
-      try {
-        producer = await createProducer("gateway");
-        console.log("[gateway] Kafka producer connected after retry");
-      } catch {
-        // continue retrying
-      }
-    }
-  })();
-}
+const producer = await createProducer("gateway");
 
 const ORDER_TOPICS = [
   "orders.new",
@@ -614,7 +594,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             }));
             return;
           }
-          if (!producer) {
+          if (!producer.isReady()) {
             socket.send(JSON.stringify({ event: "error", message: "Bus unavailable — order not submitted" }));
             return;
           }
@@ -640,7 +620,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             socket.send(JSON.stringify({ event: "error", data: { message: "Unauthenticated — please log in again" } }));
             return;
           }
-          if (!producer) {
+          if (!producer.isReady()) {
             socket.send(JSON.stringify({ event: "error", data: { message: "Bus unavailable" } }));
             return;
           }
@@ -668,7 +648,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             socket.send(JSON.stringify({ event: "error", data: { message: "Unauthenticated — please log in again" } }));
             return;
           }
-          if (!producer) {
+          if (!producer.isReady()) {
             socket.send(JSON.stringify({ event: "error", data: { message: "Bus unavailable" } }));
             return;
           }
@@ -1247,7 +1227,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
       });
     }
-    if (!producer) {
+    if (!producer.isReady()) {
       return new Response(JSON.stringify({ error: "Bus unavailable" }), {
         status: 503,
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
@@ -1273,7 +1253,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       Array.from({ length: orderCount }, (_, i) => {
         const symbol = symbols[i % symbols.length];
         const side = i % 2 === 0 ? "BUY" : "SELL";
-        return producer!.send("orders.new", {
+        return producer.send("orders.new", {
           clientOrderId: `${jobId}-${i}`,
           asset: symbol,
           side,
@@ -1310,7 +1290,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/demo-day" && req.method === "POST") {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
-    if (!producer) {
+    if (!producer.isReady()) {
       return new Response(JSON.stringify({ error: "Bus unavailable" }), {
         status: 503,
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
@@ -1452,7 +1432,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         await producer.send("orders.new", order);
       } else {
         setTimeout(() => {
-          producer!.send("orders.new", order).catch(() => {});
+          producer.send("orders.new", order).catch(() => {});
         }, spec.delayMs);
       }
     }

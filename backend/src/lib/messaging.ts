@@ -23,11 +23,11 @@ function makeKafka(clientId: string): Kafka {
     clientId,
     brokers: BROKERS,
     // Redpanda is typically local — short timeouts are fine and make startup faster
-    connectionTimeout: 5_000,
+    connectionTimeout: 3_000,
     requestTimeout: 10_000,
     retry: {
       initialRetryTime: 300,
-      retries: 8,
+      retries: 0, // no internal retries — our own loops handle backoff
     },
   });
 }
@@ -37,24 +37,63 @@ function makeKafka(clientId: string): Kafka {
 export interface MsgProducer {
   send(topic: string, value: unknown): Promise<void>;
   disconnect(): Promise<void>;
+  isReady(): boolean;
 }
 
-export async function createProducer(clientId = "veta-producer"): Promise<MsgProducer> {
-  const kafka = makeKafka(clientId);
-  const producer: Producer = kafka.producer();
-  await producer.connect();
+/**
+ * Returns a producer immediately. Internally retries the Redpanda connection
+ * with exponential backoff (2 s → 30 s). Messages sent before the broker is
+ * ready are silently dropped (fire-and-forget services) or should be retried
+ * by the caller. Once connected, the producer is reused for all sends.
+ */
+export function createProducer(clientId = "veta-producer"): Promise<MsgProducer> {
+  let activeProducer: Producer | null = null;
+  let stopped = false;
 
-  return {
+  const MAX_DELAY_MS = 30_000;
+
+  async function connectLoop() {
+    let delay = 2_000;
+    while (!stopped) {
+      try {
+        const kafka = makeKafka(clientId);
+        const p: Producer = kafka.producer();
+        await p.connect();
+        activeProducer = p;
+        console.log(`[messaging] producer(${clientId}) connected`);
+        return; // connected — exit loop
+      } catch (err) {
+        console.warn(
+          `[messaging] producer(${clientId}) failed, retrying in ${delay / 1000}s:`,
+          (err as Error).message,
+        );
+        await new Promise((r) => setTimeout(r, delay));
+        delay = Math.min(delay * 2, MAX_DELAY_MS);
+      }
+    }
+  }
+
+  connectLoop(); // fire-and-forget
+
+  return Promise.resolve({
+    isReady(): boolean {
+      return activeProducer !== null;
+    },
     async send(topic: string, value: unknown): Promise<void> {
-      await producer.send({
+      if (!activeProducer) {
+        // Broker not yet ready — drop silently (caller can retry or ignore)
+        return;
+      }
+      await activeProducer.send({
         topic,
         messages: [{ value: JSON.stringify(value) }],
       });
     },
     async disconnect(): Promise<void> {
-      await producer.disconnect();
+      stopped = true;
+      await activeProducer?.disconnect();
     },
-  };
+  });
 }
 
 // ── Consumer ──────────────────────────────────────────────────────────────────
