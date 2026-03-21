@@ -34,32 +34,6 @@ cd frontend && npm run electron:dev
 cd frontend && npm run electron:build
 ```
 
-## Tests
-
-```sh
-# Backend
-deno task test
-deno task test:smoke      # requires running services
-
-# Frontend
-cd frontend
-npm run test:unit         # Vitest
-npm run test:ui           # Playwright E2E (headless)
-```
-
-## Deployment
-
-The platform uses a single Docker Compose stack across all environments. See [docs/deployment.md](docs/deployment.md) for full instructions.
-
-```sh
-# Deployment to the local home lab
-docker compose -f compose.yml -f compose.prod.yml up -d
-
-# Deployment to the Fly.io cloud platform
-flyctl deploy --compose compose.yml --compose compose.prod.yml
-```
-
-See [docs/architecture.md](docs/architecture.md) for the full service map and design notes.
 
 ## Licence
 
