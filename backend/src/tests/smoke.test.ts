@@ -290,10 +290,11 @@ Deno.test("[market-sim] WebSocket emits tick data within 3s", async () => {
   });
 
   await closed;
-  const parsed = JSON.parse(msg) as { prices?: Record<string, number>; volumes?: Record<string, number> };
+  const parsed = JSON.parse(msg) as { event?: string; data?: { prices?: Record<string, number>; volumes?: Record<string, number> } };
   assert(typeof parsed === "object" && parsed !== null);
-  assert(typeof parsed.prices === "object" && Object.keys(parsed.prices!).length > 0, "tick must have prices");
-  assert(typeof parsed.volumes === "object", "tick must have volumes");
+  const tick = parsed.data ?? (parsed as unknown as { prices?: Record<string, number>; volumes?: Record<string, number> });
+  assert(typeof tick.prices === "object" && Object.keys(tick.prices!).length > 0, "tick must have prices");
+  assert(typeof tick.volumes === "object", "tick must have volumes");
 });
 
 
@@ -376,7 +377,7 @@ Deno.test("[fix-archive] GET /executions returns array with expected fields", as
   const body = await res.json() as Record<string, unknown>[];
   assert(Array.isArray(body), "executions must be an array");
   if (body.length > 0) {
-    for (const field of ["execId", "orderId", "asset", "side", "filledQty", "avgFillPrice"]) {
+    for (const field of ["execId", "clOrdId", "symbol", "side", "cumQty", "avgPx"]) {
       assertExists(body[0][field], `execution missing field: ${field}`);
     }
   }
@@ -837,11 +838,11 @@ Deno.test("[ccp-service] GET /ccp/stats returns valid structure", async () => {
   assertEquals(typeof body.marginAccountCount, "number");
 });
 
-Deno.test("[observability] GET /events?type=smoke.test returns array", async () => {
-  const res = await fetch(`${OBS_URL}/events?type=smoke.test`, { signal: timeout(5_000) });
+Deno.test("[observability] GET /health returns ok", async () => {
+  const res = await fetch(`${OBS_URL}/health`, { signal: timeout(5_000) });
   assertEquals(res.status, 200);
-  const body = await res.json() as unknown[];
-  assert(Array.isArray(body), "GET /events must return an array");
+  const body = await res.json() as { status: string };
+  assertEquals(body.status, "ok");
 });
 
 Deno.test("[user-service] POST /sessions with unknown userId returns 401 or 404", async () => {

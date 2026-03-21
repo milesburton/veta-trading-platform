@@ -1163,6 +1163,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/advisory/admin/state" && req.method === "GET") {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
+    if (auth.user.role !== "admin") {
+      return new Response(JSON.stringify({ error: "Admin role required" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
     return proxyGet(`${LLM_ADVISORY_URL}/admin/state`, req);
   }
 
