@@ -947,6 +947,7 @@ services:
       MARKET_DATA_ADAPTERS_PORT: "5016"
       MARKET_SIM_URL: http://market-sim:5000
       REDPANDA_BROKERS: redpanda:9092
+      DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5016/health || exit 1"]
       interval: 10s
@@ -1118,6 +1119,7 @@ services:
       FEATURE_ENGINE_URL: http://feature-engine:5017
       SIGNAL_ENGINE_URL: http://signal-engine:5018
       REDPANDA_BROKERS: redpanda:9092
+      DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
     volumes:
       - llm-advisory-data:/app/data
     healthcheck:
@@ -1155,6 +1157,7 @@ services:
       FEATURE_ENGINE_URL: http://feature-engine:5017
       SIGNAL_ENGINE_URL: http://signal-engine:5018
       JOURNAL_URL: http://journal:5009
+      DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
       REDPANDA_BROKERS: redpanda:9092
     volumes:
       - llm-advisory-data:/app/data
