@@ -478,6 +478,55 @@ function makeWave(
   return orders;
 }
 
+// ─── Cached /ready health state ───────────────────────────────────────────────
+// Fires 29 concurrent fetches — do it on a background interval, not per-request.
+const HEALTH_REFRESH_MS = 5_000;
+
+type ServiceHealth = {
+  marketSim: boolean; ems: boolean; oms: boolean; journal: boolean; userService: boolean;
+  fixArchive: boolean; fixGateway: boolean; observability: boolean;
+  limitAlgo: boolean; twapAlgo: boolean; povAlgo: boolean; vwapAlgo: boolean;
+  icebergAlgo: boolean; sniperAlgo: boolean; arrivalPriceAlgo: boolean; momentumAlgo: boolean; isAlgo: boolean;
+  darkPool: boolean; ccpService: boolean; rfqService: boolean;
+  analytics: boolean; marketData: boolean; featureEngine: boolean; signalEngine: boolean;
+  recommendationEngine: boolean; scenarioEngine: boolean; newsAggregator: boolean; llmAdvisory: boolean;
+  bus: boolean;
+};
+
+let cachedHealth: ServiceHealth | null = null;
+
+async function refreshHealth(): Promise<void> {
+  const chk = (url: string) =>
+    fetch(`${url}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false);
+  const [
+    marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
+    limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
+    darkPool, ccpService, rfqService,
+    analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
+    bus,
+  ] = await Promise.all([
+    chk(MARKET_SIM_URL), chk(EMS_URL), chk(OMS_URL), chk(JOURNAL_URL), chk(USER_SERVICE_URL),
+    chk(FIX_ARCHIVE_URL), chk(FIX_GATEWAY_URL), chk(OBSERVABILITY_URL),
+    chk(LIMIT_ALGO_URL), chk(TWAP_ALGO_URL), chk(POV_ALGO_URL), chk(VWAP_ALGO_URL),
+    chk(ICEBERG_ALGO_URL), chk(SNIPER_ALGO_URL), chk(ARRIVAL_PRICE_ALGO_URL), chk(MOMENTUM_ALGO_URL), chk(IS_ALGO_URL),
+    chk(DARK_POOL_URL), chk(CCP_SERVICE_URL), chk(RFQ_SERVICE_URL),
+    chk(ANALYTICS_URL), chk(MARKET_DATA_URL), chk(FEATURE_ENGINE_URL), chk(SIGNAL_ENGINE_URL),
+    chk(RECOMMENDATION_ENGINE_URL), chk(SCENARIO_ENGINE_URL), chk(NEWS_AGGREGATOR_URL), chk(LLM_ADVISORY_URL),
+    chk(OBSERVABILITY_URL),
+  ]);
+  cachedHealth = {
+    marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
+    limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
+    darkPool, ccpService, rfqService,
+    analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
+    bus,
+  };
+}
+
+// Kick off immediately then refresh on interval
+refreshHealth();
+setInterval(refreshHealth, HEALTH_REFRESH_MS);
+
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
@@ -494,40 +543,31 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/ready" && req.method === "GET") {
-    const chk = (url: string) =>
-      fetch(`${url}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false);
-    const [
-      marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
-      limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
-      darkPool, ccpService, rfqService,
-      analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
-      bus,
-    ] = await Promise.all([
-      chk(MARKET_SIM_URL), chk(EMS_URL), chk(OMS_URL), chk(JOURNAL_URL), chk(USER_SERVICE_URL),
-      chk(FIX_ARCHIVE_URL), chk(FIX_GATEWAY_URL), chk(OBSERVABILITY_URL),
-      chk(LIMIT_ALGO_URL), chk(TWAP_ALGO_URL), chk(POV_ALGO_URL), chk(VWAP_ALGO_URL),
-      chk(ICEBERG_ALGO_URL), chk(SNIPER_ALGO_URL), chk(ARRIVAL_PRICE_ALGO_URL), chk(MOMENTUM_ALGO_URL), chk(IS_ALGO_URL),
-      chk(DARK_POOL_URL), chk(CCP_SERVICE_URL), chk(RFQ_SERVICE_URL),
-      chk(ANALYTICS_URL), chk(MARKET_DATA_URL), chk(FEATURE_ENGINE_URL), chk(SIGNAL_ENGINE_URL),
-      chk(RECOMMENDATION_ENGINE_URL), chk(SCENARIO_ENGINE_URL), chk(NEWS_AGGREGATOR_URL), chk(LLM_ADVISORY_URL),
-      chk(OBSERVABILITY_URL),  // kafka-relay: confirms Redpanda is reachable
-    ]);
-    // Core services required for order flow (bus checked separately via kafka consumers)
-    const ready = marketSim && ems && oms && journal && userService;
+    // Serve from background-refreshed cache — avoids 29 concurrent fetches per poll
+    const h = cachedHealth;
+    if (!h) {
+      return new Response(JSON.stringify({ ready: false, startedAt: STARTED_AT }), {
+        status: 503,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+    const ready = h.marketSim && h.ems && h.oms && h.journal && h.userService;
     return new Response(
       JSON.stringify({
         ready,
         startedAt: STARTED_AT,
         producerReady: producer.isReady(),
         services: {
-          // Core order flow
-          marketSim, ems, oms, journal, userService, bus, fixArchive, fixGateway, observability,
-          // Algo engines
-          limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
-          // Alternative trading systems & clearing
-          darkPool, ccpService, rfqService,
-          // Data & intelligence
-          analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
+          marketSim: h.marketSim, ems: h.ems, oms: h.oms, journal: h.journal,
+          userService: h.userService, bus: h.bus, fixArchive: h.fixArchive,
+          fixGateway: h.fixGateway, observability: h.observability,
+          limitAlgo: h.limitAlgo, twapAlgo: h.twapAlgo, povAlgo: h.povAlgo,
+          vwapAlgo: h.vwapAlgo, icebergAlgo: h.icebergAlgo, sniperAlgo: h.sniperAlgo,
+          arrivalPriceAlgo: h.arrivalPriceAlgo, momentumAlgo: h.momentumAlgo, isAlgo: h.isAlgo,
+          darkPool: h.darkPool, ccpService: h.ccpService, rfqService: h.rfqService,
+          analytics: h.analytics, marketData: h.marketData, featureEngine: h.featureEngine,
+          signalEngine: h.signalEngine, recommendationEngine: h.recommendationEngine,
+          scenarioEngine: h.scenarioEngine, newsAggregator: h.newsAggregator, llmAdvisory: h.llmAdvisory,
         },
       }),
       {
