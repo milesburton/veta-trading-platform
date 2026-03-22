@@ -398,6 +398,17 @@ services:
     image: ghcr.io/milesburton/veta-trading-platform/llm-advisory:latest
     build: !reset null
     profiles: !reset []
+    depends_on: !reset
+      redpanda:
+        condition: service_healthy
+      feature-engine:
+        condition: service_healthy
+      signal-engine:
+        condition: service_healthy
+    environment:
+      LLM_ENABLED: "false"
+      LLM_WORKER_ENABLED: "false"
+      DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.llm-advisory.rule=PathPrefix(`/api/llm-advisory`)"
@@ -412,6 +423,11 @@ services:
     image: ghcr.io/milesburton/veta-trading-platform/llm-worker:latest
     build: !reset null
     profiles: !reset []
+    depends_on: !reset
+      redpanda:
+        condition: service_healthy
+    environment:
+      LLM_ENABLED: "false"
     labels:
       - "traefik.enable=false"
       - "com.centurylinklabs.watchtower.enable=true"
