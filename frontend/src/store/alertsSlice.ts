@@ -30,7 +30,7 @@ export const alertsSlice = createSlice({
     alertAdded(state, action: PayloadAction<Omit<Alert, "id" | "dismissed">>) {
       const alert: Alert = {
         ...action.payload,
-        id: crypto.randomUUID(),
+        id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         dismissed: false,
       };
       state.alerts.unshift(alert);
