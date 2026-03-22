@@ -18,7 +18,7 @@ RUN npm run build
 FROM denoland/deno:2.7.1
 ENV DENO_DIR=/deno-cache
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
