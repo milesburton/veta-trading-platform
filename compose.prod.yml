@@ -34,6 +34,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/frontend:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
@@ -46,6 +47,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/market-sim:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.market-sim.rule=PathPrefix(`/api/market-sim`) || PathPrefix(`/ws/market-sim`)"
@@ -59,6 +61,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/ems:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.ems.rule=PathPrefix(`/api/ems`)"
@@ -72,6 +75,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/oms:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.oms.rule=PathPrefix(`/api/oms`)"
@@ -85,6 +89,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/limit-algo:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.limit-algo.rule=PathPrefix(`/api/limit-algo`)"
@@ -98,6 +103,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/twap-algo:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.twap-algo.rule=PathPrefix(`/api/twap-algo`)"
@@ -111,6 +117,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/pov-algo:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.pov-algo.rule=PathPrefix(`/api/pov-algo`)"
@@ -124,6 +131,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/vwap-algo:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.vwap-algo.rule=PathPrefix(`/api/vwap-algo`)"
@@ -137,6 +145,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/iceberg-algo:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.iceberg-algo.rule=PathPrefix(`/api/iceberg-algo`)"
@@ -150,6 +159,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/sniper-algo:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sniper-algo.rule=PathPrefix(`/api/sniper-algo`)"
@@ -163,6 +173,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/arrival-price-algo:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.arrival-price-algo.rule=PathPrefix(`/api/arrival-price-algo`)"
@@ -176,6 +187,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/momentum-algo:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.momentum-algo.rule=PathPrefix(`/api/momentum-algo`)"
@@ -189,6 +201,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/is-algo:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.is-algo.rule=PathPrefix(`/api/is-algo`)"
@@ -202,6 +215,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/observability:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.observability.rule=PathPrefix(`/api/kafka-relay`) || PathPrefix(`/api/observability`)"
@@ -215,6 +229,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/user-service:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.user-service.rule=PathPrefix(`/api/user-service`)"
@@ -228,6 +243,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/journal:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.journal.rule=PathPrefix(`/api/journal`)"
@@ -241,6 +257,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/fix-exchange:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.fix-exchange.rule=PathPrefix(`/api/fix-exchange`)"
@@ -254,6 +271,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/fix-gateway:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.fix-gateway.rule=PathPrefix(`/api/fix-gateway`) || PathPrefix(`/ws/fix`)"
@@ -267,6 +285,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/fix-archive:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.fix-archive.rule=PathPrefix(`/api/fix-archive`)"
@@ -280,6 +299,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/analytics:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.analytics.rule=PathPrefix(`/api/analytics`)"
@@ -293,6 +313,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/market-data:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.market-data.rule=PathPrefix(`/api/market-data`)"
@@ -306,6 +327,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/market-data-adapters:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.market-data-adapters.rule=PathPrefix(`/api/market-data-adapters`)"
@@ -319,6 +341,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/feature-engine:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.feature-engine.rule=PathPrefix(`/api/feature-engine`)"
@@ -332,6 +355,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/signal-engine:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.signal-engine.rule=PathPrefix(`/api/signal-engine`)"
@@ -345,6 +369,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/recommendation-engine:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.recommendation-engine.rule=PathPrefix(`/api/recommendation-engine`)"
@@ -358,6 +383,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/scenario-engine:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.scenario-engine.rule=PathPrefix(`/api/scenario-engine`)"
@@ -371,6 +397,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/llm-advisory:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.llm-advisory.rule=PathPrefix(`/api/llm-advisory`)"
@@ -384,6 +411,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/llm-worker:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=false"
       - "com.centurylinklabs.watchtower.enable=true"
@@ -392,6 +420,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/news-aggregator:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=false"
       - "com.centurylinklabs.watchtower.enable=true"
@@ -442,6 +471,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/gateway:latest
     build: !reset null
+    profiles: !reset []
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.gateway.rule=PathPrefix(`/api/gateway`)"
@@ -464,6 +494,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/base:latest
     build: !reset null
+    profiles: !reset []
     restart: "no"
     labels:
       - "traefik.enable=false"
