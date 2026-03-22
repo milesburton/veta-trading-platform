@@ -414,7 +414,7 @@ function CandleChartPanel({ incoming }: { incoming: ChannelNumber | null }) {
       : legacySelectedAsset;
   const candles = useAppSelector((s) => (symbol ? s.market.candleHistory[symbol] : undefined));
   const ready = useAppSelector((s) => (symbol ? s.market.candlesReady[symbol] : false));
-  const hasEnoughBars = candles && (candles["1m"].length >= 2 || candles["5m"].length >= 2);
+  const hasEnoughBars = candles && (candles["1m"]?.length >= 2 || candles["5m"]?.length >= 2);
 
   if (symbol && ready && hasEnoughBars) {
     return <CandlestickChart key={symbol} symbol={symbol} candles={candles} />;
@@ -787,7 +787,9 @@ export function DashboardLayout() {
         if (symbol) {
           const inCh = incoming !== null ? CHANNEL_COLOURS[incoming] : null;
           const desc = panelType ? PANEL_DESCRIPTIONS[panelType] : undefined;
-          const bracketMatch = panelType ? PANEL_TITLES[panelType].match(/(\(.*\))$/) : null;
+          const bracketMatch = panelType
+            ? (PANEL_TITLES[panelType as PanelId] ?? "").match(/(\(.*\))$/)
+            : null;
           const bracket = bracketMatch?.[1];
           renderValues.content = (
             <span title={desc} className="flex items-center gap-1">
