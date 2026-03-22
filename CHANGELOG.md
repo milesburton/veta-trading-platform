@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.3.0...veta-trading-platform-v1.3.1) (2026-03-22)
+
+
+### Bug Fixes
+
+* **compose:** correct fix-exchange health check port (9879 not 9880) ([645b91e](https://github.com/milesburton/veta-trading-platform/commit/645b91ee4c9c25d8ecf4d0d057208755e70d55f4))
+* **compose:** raise Redpanda memory to 1G and service limits to 512m/768m ([1f29eb9](https://github.com/milesburton/veta-trading-platform/commit/1f29eb9ffadcf010b2e42abaaec55c9a4a6d6fdb))
+
+
+### Performance Improvements
+
+* **gateway:** cache /ready health checks — refresh every 5s in background ([56ddedb](https://github.com/milesburton/veta-trading-platform/commit/56ddedbd1241280ac114fe9c14eb52e4843ef905))
+
 ## [1.3.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.2.0...veta-trading-platform-v1.3.0) (2026-03-22)
 
 
