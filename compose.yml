@@ -202,7 +202,7 @@ services:
       dockerfile: docker/frontend/Dockerfile
       args:
         VITE_DEPLOYMENT: ${VITE_DEPLOYMENT:-homelab}
-        VITE_COMMIT_SHA: ${COMMIT_SHA:-dev}
+        VITE_COMMIT_SHA: ${COMMIT_SHA}
         VITE_BUILD_DATE: ${BUILD_DATE:-dev}
     mem_limit: 128m
     networks:
@@ -232,7 +232,7 @@ services:
     environment:
       MARKET_SIM_PORT: "5000"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5000/health || exit 1"]
       interval: 10s
@@ -264,7 +264,7 @@ services:
       EMS_PARTICIPATION_CAP: "0.20"
       EMS_IMPACT_PER_1000_BPS: "1.0"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5001/health || exit 1"]
       interval: 10s
@@ -304,7 +304,7 @@ services:
       USER_SERVICE_HOST: user-service
       USER_SERVICE_PORT: "5008"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5002/health || exit 1"]
       interval: 10s
@@ -339,7 +339,7 @@ services:
       OBSERVABILITY_HOST: observability
       OBSERVABILITY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5003/health || exit 1"]
       interval: 15s
@@ -374,7 +374,7 @@ services:
       OBSERVABILITY_HOST: observability
       OBSERVABILITY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5004/health || exit 1"]
       interval: 15s
@@ -411,7 +411,7 @@ services:
       OBSERVABILITY_HOST: observability
       OBSERVABILITY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5005/health || exit 1"]
       interval: 15s
@@ -446,7 +446,7 @@ services:
       OBSERVABILITY_HOST: observability
       OBSERVABILITY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5006/health || exit 1"]
       interval: 15s
@@ -480,7 +480,7 @@ services:
       OBSERVABILITY_HOST: observability
       OBSERVABILITY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5021/health || exit 1"]
       interval: 15s
@@ -514,7 +514,7 @@ services:
       OBSERVABILITY_HOST: observability
       OBSERVABILITY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5022/health || exit 1"]
       interval: 15s
@@ -548,7 +548,7 @@ services:
       OBSERVABILITY_HOST: observability
       OBSERVABILITY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5023/health || exit 1"]
       interval: 15s
@@ -582,7 +582,7 @@ services:
       OBSERVABILITY_HOST: observability
       OBSERVABILITY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5025/health || exit 1"]
       interval: 15s
@@ -616,7 +616,7 @@ services:
       OBSERVABILITY_HOST: observability
       OBSERVABILITY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5026/health || exit 1"]
       interval: 15s
@@ -644,7 +644,7 @@ services:
       RFQ_SERVICE_PORT: "5029"
       RFQ_QUOTE_WINDOW_MS: "3000"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5029/health || exit 1"]
       interval: 15s
@@ -676,7 +676,7 @@ services:
       CCP_SETTLEMENT_SWEEP_MS: "30000"
       CCP_MARGIN_MTM_MS: "10000"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5028/health || exit 1"]
       interval: 15s
@@ -710,7 +710,7 @@ services:
       ORDER_TIMEOUT_MS: "30000"
       RESIDUAL_ACTION: reroute
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5027/health || exit 1"]
       interval: 15s
@@ -737,7 +737,7 @@ services:
     environment:
       OBSERVABILITY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5007/health || exit 1"]
       interval: 10s
@@ -766,7 +766,7 @@ services:
       USER_SERVICE_PORT: "5008"
       DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5008/health || exit 1"]
       interval: 10s
@@ -797,7 +797,7 @@ services:
       JOURNAL_RETENTION_DAYS: "90"
       DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5009/health || exit 1"]
       interval: 10s
@@ -827,7 +827,7 @@ services:
       MARKET_SIM_PORT: "5000"
       EMS_PARTICIPATION_CAP: "0.20"
       EMS_IMPACT_PER_1000_BPS: "1.0"
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9880/health || exit 1"]
       interval: 10s
@@ -853,7 +853,7 @@ services:
     environment:
       FIX_GATEWAY_PORT: "9881"
       FIX_EXCHANGE_HOST: fix-exchange
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9881/health || exit 1"]
       interval: 10s
@@ -882,7 +882,7 @@ services:
       FIX_ARCHIVE_PORT: "5012"
       DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5012/health || exit 1"]
       interval: 10s
@@ -914,7 +914,7 @@ services:
       JOURNAL_PORT: "5009"
       MARKET_SIM_HOST: market-sim
       MARKET_SIM_PORT: "5000"
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5014/health || exit 1"]
       interval: 10s
@@ -943,7 +943,7 @@ services:
       MARKET_DATA_PORT: "5015"
       JOURNAL_HOST: journal
       JOURNAL_PORT: "5009"
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     volumes:
       - market-data-state:/app/data
     healthcheck:
@@ -974,7 +974,7 @@ services:
       MARKET_DATA_ADAPTERS_PORT: "5016"
       MARKET_SIM_URL: http://market-sim:5000
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5016/health || exit 1"]
       interval: 10s
@@ -1005,7 +1005,7 @@ services:
       FEATURE_ENGINE_DB_PATH: /app/data/feature-vectors.db
       JOURNAL_URL: http://journal:5009
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     volumes:
       - feature-engine-data:/app/data
     healthcheck:
@@ -1036,7 +1036,7 @@ services:
       SIGNAL_ENGINE_PORT: "5018"
       SIGNAL_ENGINE_DB_PATH: /app/data/signal-weights.db
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     volumes:
       - signal-engine-data:/app/data
     healthcheck:
@@ -1064,7 +1064,7 @@ services:
     environment:
       RECOMMENDATION_ENGINE_PORT: "5019"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5019/health || exit 1"]
       interval: 10s
@@ -1093,7 +1093,7 @@ services:
       SCENARIO_ENGINE_PORT: "5020"
       FEATURE_ENGINE_URL: http://feature-engine:5017
       SIGNAL_ENGINE_URL: http://signal-engine:5018
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5020/health || exit 1"]
       interval: 10s
@@ -1119,7 +1119,7 @@ services:
         condition: service_healthy
     environment:
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     labels:
       - "traefik.enable=false"
 
@@ -1149,7 +1149,7 @@ services:
       FEATURE_ENGINE_URL: http://feature-engine:5017
       SIGNAL_ENGINE_URL: http://signal-engine:5018
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     volumes:
       - llm-advisory-data:/app/data
     healthcheck:
@@ -1235,7 +1235,7 @@ services:
       RFQ_SERVICE_HOST: rfq-service
       RFQ_SERVICE_PORT: "5029"
       REDPANDA_BROKERS: redpanda:9092
-      COMMIT_SHA: ${COMMIT_SHA:-dev}
+      COMMIT_SHA: ${COMMIT_SHA}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5011/health || exit 1"]
       interval: 10s

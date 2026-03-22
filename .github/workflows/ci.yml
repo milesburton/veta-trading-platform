@@ -413,6 +413,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
             BASE_TAG=${{ needs.docker-base.outputs.base-tag }}
+            COMMIT_SHA=${{ github.sha }}
             VITE_DEPLOYMENT=homelab
             VITE_COMMIT_SHA=${{ github.sha }}
             VITE_BUILD_DATE=${{ github.run_started_at }}
