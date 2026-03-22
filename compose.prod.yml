@@ -396,6 +396,48 @@ services:
       - "traefik.enable=false"
       - "com.centurylinklabs.watchtower.enable=true"
 
+  dark-pool:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/dark-pool:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dark-pool.rule=PathPrefix(`/api/dark-pool`)"
+      - "traefik.http.routers.dark-pool.entrypoints=web"
+      - "traefik.http.routers.dark-pool.middlewares=dark-pool-strip"
+      - "traefik.http.services.dark-pool.loadbalancer.server.port=5027"
+      - "traefik.http.routers.dark-pool.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  ccp-service:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/ccp-service:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ccp-service.rule=PathPrefix(`/api/ccp-service`)"
+      - "traefik.http.routers.ccp-service.entrypoints=web"
+      - "traefik.http.routers.ccp-service.middlewares=ccp-service-strip"
+      - "traefik.http.services.ccp-service.loadbalancer.server.port=5028"
+      - "traefik.http.routers.ccp-service.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  rfq-service:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/rfq-service:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rfq-service.rule=PathPrefix(`/api/rfq-service`)"
+      - "traefik.http.routers.rfq-service.entrypoints=web"
+      - "traefik.http.routers.rfq-service.middlewares=rfq-service-strip"
+      - "traefik.http.services.rfq-service.loadbalancer.server.port=5029"
+      - "traefik.http.routers.rfq-service.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
   gateway:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/gateway:latest
