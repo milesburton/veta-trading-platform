@@ -163,6 +163,25 @@ jobs:
             done
           done
 
+      - name: Wait for auth to be ready (DB migration complete)
+        run: |
+          for i in $(seq 1 30); do
+            RESULT=$(curl -sf -X POST https://veta-trading.fly.dev/api/user-service/sessions \
+              -H 'Content-Type: application/json' \
+              -d '{"userId":"alice"}' \
+              -c /tmp/smoke-cookies.txt 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print('ok' if 'id' in d else 'fail')" 2>/dev/null || echo "fail")
+            if [ "$RESULT" = "ok" ]; then
+              COOKIE=$(grep veta_user /tmp/smoke-cookies.txt | awk '{print $7}')
+              GW=$(curl -sf https://veta-trading.fly.dev/api/gateway/me -H "Cookie: veta_user=$COOKIE" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print('ok' if 'user' in d else 'fail')" 2>/dev/null || echo "fail")
+              if [ "$GW" = "ok" ]; then
+                echo "✅ Auth pipeline working (user-service + gateway)"
+                break
+              fi
+            fi
+            echo "  attempt $i/30: auth not ready yet, retrying in 5s..."
+            sleep 5
+          done
+
       - name: Run smoke tests against Fly.io
         run: deno task test:smoke
         env:
