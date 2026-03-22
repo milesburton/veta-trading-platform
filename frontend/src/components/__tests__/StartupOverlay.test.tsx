@@ -24,7 +24,9 @@ describe("StartupOverlay", () => {
     render(<StartupOverlay onReady={vi.fn()} />);
 
     expect(screen.getByTestId("brand-title")).toHaveTextContent("VETA");
-    expect(screen.getByTestId("startup-status")).toHaveTextContent("Starting up");
+    expect(screen.getByTestId("startup-status")).toHaveTextContent(
+      /starting up|waiting for services/i
+    );
     expect(screen.getByTestId("service-indicator-gateway")).toBeInTheDocument();
     expect(screen.getByTestId("service-indicator-bus")).toBeInTheDocument();
     expect(screen.getByTestId("service-indicator-marketSim")).toBeInTheDocument();

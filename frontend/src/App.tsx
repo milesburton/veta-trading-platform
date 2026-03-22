@@ -440,19 +440,53 @@ function TradingApp() {
   );
 }
 
+const BOOTING_WINDOW_MS = 120_000;
+
 export default function App() {
-  const [platformReady, setPlatformReady] = useState(false);
+  // "unknown" = haven't checked yet; "overlay" = show startup overlay; "ready" = go straight in
+  const [platformState, setPlatformState] = useState<"unknown" | "overlay" | "ready">("unknown");
+
+  useEffect(() => {
+    // Do a single rapid check: if the platform is already up and has been
+    // running for >2 minutes, skip the startup overlay entirely.
+    let cancelled = false;
+    fetch("/api/gateway/ready")
+      .then(async (res) => {
+        if (cancelled) return;
+        if (res.ok) {
+          const data = (await res.json()) as { ready: boolean; startedAt?: number };
+          if (data.ready && data.startedAt && Date.now() - data.startedAt > BOOTING_WINDOW_MS) {
+            setPlatformState("ready");
+          } else {
+            setPlatformState("overlay");
+          }
+        } else {
+          setPlatformState("overlay");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPlatformState("overlay");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (platformState === "unknown") {
+    // Brief blank screen while we do the initial check (~100ms)
+    return <div className="min-h-screen bg-gray-950" />;
+  }
 
   return (
     <ErrorBoundary>
-      {!platformReady && (
+      {platformState === "overlay" && (
         <StartupOverlay
-          onReady={() => setPlatformReady(true)}
+          onReady={() => setPlatformState("ready")}
           buildDate={import.meta.env.VITE_BUILD_DATE}
           commitSha={import.meta.env.VITE_COMMIT_SHA}
         />
       )}
-      {platformReady && (
+      {platformState === "ready" && (
         <AuthGate>
           <TradingApp />
         </AuthGate>

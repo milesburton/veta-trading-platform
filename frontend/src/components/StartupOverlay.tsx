@@ -23,7 +23,10 @@ interface ReadyResponse {
   services: ReadyServices;
 }
 
-const SERVICE_LABELS: Record<keyof ReadyServices, string> = {
+// How long after gateway startedAt we consider the platform to still be "booting"
+const BOOTING_WINDOW_MS = 120_000;
+
+export const SERVICE_LABELS: Record<keyof ReadyServices, string> = {
   gateway: "Gateway (BFF)",
   bus: "Message Bus",
   marketSim: "Market Simulator",
@@ -38,6 +41,23 @@ const SERVICE_LABELS: Record<keyof ReadyServices, string> = {
   recommendationEngine: "Recommendation Engine",
   scenarioEngine: "Scenario Engine",
   llmAdvisory: "LLM Advisory",
+};
+
+export const SERVICE_DESCRIPTIONS: Record<keyof ReadyServices, string> = {
+  gateway: "Single entry point for the UI — proxies HTTP and WebSocket to all backend services",
+  bus: "Redpanda message bus — event streaming backbone for all inter-service communication",
+  marketSim: "Simulates live equity prices using Geometric Brownian Motion",
+  userService: "Session management, authentication and per-user trading limits",
+  journal: "Persistent store for orders, fills and OHLCV candlestick data",
+  ems: "Routes child orders to the exchange and records execution fills",
+  oms: "Validates orders against RBAC limits and routes to the correct strategy",
+  analytics: "Black-Scholes option pricing, Monte Carlo scenario grid and trade recommendations",
+  marketData: "Polls Alpha Vantage for real prices and applies per-symbol source overrides",
+  featureEngine: "Computes technical indicators (RSI, Bollinger, MACD) from market data streams",
+  signalEngine: "Generates directional buy/sell signals from feature vectors",
+  recommendationEngine: "Combines signals into ranked trade recommendations for the UI",
+  scenarioEngine: "Runs what-if simulations against the current portfolio and market state",
+  llmAdvisory: "LLM-powered trade commentary and natural-language market insights",
 };
 
 const SERVICE_ORDER: (keyof ReadyServices)[] = [
@@ -65,13 +85,15 @@ interface Props {
   commitSha?: string;
 }
 
+type OverlayMode = "booting" | "waiting";
+
 export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
   const [elapsed, setElapsed] = useState(0);
   const [services, setServices] = useState<ReadyServices | null>(null);
-  // startRef anchors the timer. Starts at page-load time; updated to the
-  // gateway's own startedAt timestamp on the first successful poll so the
-  // counter reflects how long the backend has actually been starting, not
-  // just how long the browser tab has been open.
+  const [mode, setMode] = useState<OverlayMode>("booting");
+  const [hoveredService, setHoveredService] = useState<keyof ReadyServices | null>(null);
+
+  // startRef anchors the timer. Updated to gateway's startedAt on first poll.
   const startRef = useRef(Date.now());
   const anchoredRef = useRef(false);
   const onReadyRef = useRef(onReady);
@@ -93,23 +115,24 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
           const res = await fetch("/api/gateway/ready");
           if (!cancelled && res.ok) {
             const data: ReadyResponse = await res.json();
-            // On the first successful response, anchor the timer to the
-            // gateway's own start time so the elapsed counter shows how
-            // long the backend has been starting, regardless of when the
-            // browser was opened.
+
             if (!anchoredRef.current && data.startedAt) {
               startRef.current = data.startedAt;
               anchoredRef.current = true;
+              // If the gateway has been running for more than BOOTING_WINDOW_MS,
+              // this is a refresh on an already-running platform — show "waiting" mode.
+              const age = Date.now() - data.startedAt;
+              setMode(age > BOOTING_WINDOW_MS ? "waiting" : "booting");
             }
-            // Merge gateway itself as "up" since we got a response
+
             setServices({ gateway: true, ...data.services });
+
             if (data.ready) {
               onReadyRef.current();
               return;
             }
           }
         } catch {
-          // gateway not yet reachable — keep polling; mark gateway as down
           if (!cancelled) {
             setServices((prev) => ({ ...prev, gateway: false }) as ReadyServices);
           }
@@ -128,10 +151,11 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
   const secs = elapsed % 60;
   const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
-  // Count how many known services are up
   const knownKeys = SERVICE_ORDER.filter((k) => services !== null && k in services);
   const upCount = knownKeys.filter((k) => services?.[k]).length;
   const totalCount = knownKeys.length;
+
+  const isBooting = mode === "booting";
 
   return (
     <div
@@ -153,35 +177,49 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
         <div className="w-px h-6 bg-gray-800" />
         <div className="flex flex-col items-center gap-1">
           <div data-testid="startup-status" className="text-sm font-medium text-gray-300">
-            Starting up
+            {isBooting ? "Starting up" : "Waiting for services to respond"}
           </div>
           <div className="text-xs text-gray-600">
-            Initialising trading services — usually takes 30–60 seconds
+            {isBooting
+              ? "Initialising trading services — usually takes 30–60 seconds"
+              : "Platform is running — some services are not yet responding"}
           </div>
         </div>
       </div>
 
       {/* Service checklist */}
-      <div className="flex flex-col gap-1.5 min-w-64">
+      <ul className="flex flex-col gap-1 min-w-72 list-none">
         {SERVICE_ORDER.map((key) => {
           const up = services?.[key];
+          const isHovered = hoveredService === key;
           return (
-            <div
+            <li
               key={key}
               data-testid={`service-indicator-${key}`}
-              className="flex items-center gap-3 text-sm"
+              className="flex flex-col gap-0.5 cursor-default"
+              onMouseEnter={() => setHoveredService(key)}
+              onMouseLeave={() => setHoveredService(null)}
             >
-              <span
-                className={`w-2 h-2 rounded-full shrink-0 ${
-                  up ? "bg-emerald-400" : "bg-gray-600 animate-pulse"
-                }`}
-              />
-              <span className={up ? "text-gray-300" : "text-gray-500"}>{SERVICE_LABELS[key]}</span>
-              {up && <span className="ml-auto text-[10px] text-gray-600">ready</span>}
-            </div>
+              <div className="flex items-center gap-3 text-sm">
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${
+                    up ? "bg-emerald-400" : "bg-gray-600 animate-pulse"
+                  }`}
+                />
+                <span className={up ? "text-gray-300" : "text-gray-500"}>
+                  {SERVICE_LABELS[key]}
+                </span>
+                {up && <span className="ml-auto text-[10px] text-gray-600">ready</span>}
+              </div>
+              {isHovered && (
+                <div className="ml-5 text-[11px] text-gray-500 leading-tight">
+                  {SERVICE_DESCRIPTIONS[key]}
+                </div>
+              )}
+            </li>
           );
         })}
-      </div>
+      </ul>
 
       {/* Progress summary */}
       {services !== null && totalCount > 0 && (
