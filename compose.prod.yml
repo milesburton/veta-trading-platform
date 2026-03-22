@@ -508,7 +508,7 @@ services:
 
   db-migrate:
     <<: *prod-defaults
-    image: ghcr.io/milesburton/veta-trading-platform/base:latest
+    image: ghcr.io/milesburton/veta-trading-platform/db-migrate:latest
     build: !reset null
     profiles: !reset []
     restart: "no"
