@@ -423,6 +423,7 @@ services:
     image: ghcr.io/milesburton/veta-trading-platform/llm-worker:latest
     build: !reset null
     profiles: !reset []
+    restart: "no"
     depends_on: !reset
       redpanda:
         condition: service_healthy
@@ -430,7 +431,7 @@ services:
       LLM_ENABLED: "false"
     labels:
       - "traefik.enable=false"
-      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.enable=false"
 
   news-aggregator:
     <<: *prod-defaults
