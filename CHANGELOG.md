@@ -1,5 +1,54 @@
 # Changelog
 
+## [1.3.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.2.0...veta-trading-platform-v1.3.0) (2026-03-22)
+
+
+### Features
+
+* **docker:** bake COMMIT_SHA into service images at build time ([65d7f7a](https://github.com/milesburton/veta-trading-platform/commit/65d7f7ab8b172f8ff5ffa865918ed43487b307ee))
+* **ui:** smarter startup overlay — skip on refresh, waiting mode, hover descriptions ([c6386c2](https://github.com/milesburton/veta-trading-platform/commit/c6386c27a773d956b07707e74a1ebe286e45b89f))
+
+
+### Bug Fixes
+
+* **algo-test:** lower MOMENTUM entryThresholdBps to 0.01 for reliable triggering ([650b294](https://github.com/milesburton/veta-trading-platform/commit/650b2944f59ce00031f31ca1d6d11da1eb55342f))
+* **algo:** lower MOMENTUM threshold minimum to 0.1bps; reduce test warmup period ([0217e78](https://github.com/milesburton/veta-trading-platform/commit/0217e78c869ab19376f0c4e0bade1e45cf796a0f))
+* **ci:** wait for auth pipeline ready before running Fly.io smoke tests ([bf5b571](https://github.com/milesburton/veta-trading-platform/commit/bf5b571e0c03704ae0483dc6de0679752b1874ca))
+* **ci:** wait for market-sim before smoke tests ([b9aa8ee](https://github.com/milesburton/veta-trading-platform/commit/b9aa8ee1dfa707b758ddbba3252adb037d7b52e6))
+* **compose:** add dark-pool/ccp/rfq to prod compose; add missing gateway host env vars ([e843ec0](https://github.com/milesburton/veta-trading-platform/commit/e843ec09488785466439c630423de570ac343b0d))
+* **compose:** add DATABASE_URL to all remaining db.ts-importing services ([cf6c409](https://github.com/milesburton/veta-trading-platform/commit/cf6c409abe70a142ede815ac2b8dcad1c012c733))
+* **compose:** add DATABASE_URL to analytics/feature/signal-engine; disable LLM ollama dep in prod ([f2518d4](https://github.com/milesburton/veta-trading-platform/commit/f2518d4dba592d5df262f324ebf2d80e6fc8f2a1))
+* **compose:** add missing host env vars to gateway service ([292de19](https://github.com/milesburton/veta-trading-platform/commit/292de196670c006a7f8ca7bcb66276834cb5d616))
+* **compose:** add profiles: !reset [] to all services in compose.prod.yml ([bd62825](https://github.com/milesburton/veta-trading-platform/commit/bd628257bd90a835e66fdc650be87a124e9eaa0c))
+* **compose:** disable frontend healthcheck until new image with curl ships; fix Traefik dashboard port ([fc2b705](https://github.com/milesburton/veta-trading-platform/commit/fc2b70563acf7e51dd6223fc18f3e2d2606727aa))
+* **compose:** remove COMMIT_SHA env override — now baked into images ([9181384](https://github.com/milesburton/veta-trading-platform/commit/918138415be427d28c74933f67d98e47d5db51ab))
+* **compose:** set llm-worker restart=no in prod (LLM disabled without ollama) ([d476cb8](https://github.com/milesburton/veta-trading-platform/commit/d476cb8d09e01d92890ec349b8e5f54c7da0d5d4))
+* **compose:** use db-migrate image (not base) for prod db-migrate service ([b56146b](https://github.com/milesburton/veta-trading-platform/commit/b56146be4f98f34695b156d3d197f3d05cf6ceb5))
+* **compose:** use wget for frontend healthcheck (no curl in deno image) ([feaa72b](https://github.com/milesburton/veta-trading-platform/commit/feaa72bd69224331a55c8e10b37be4b89f3caf6d))
+* **deploy:** wait for all services (algos, analytics, aux) before smoke tests ([1a3f090](https://github.com/milesburton/veta-trading-platform/commit/1a3f0909d6049f0dfafeda371d63ffdcc219a2d5))
+* **fly,ci:** use ld.so for rpk; add producerReady to /ready; bump MOMENTUM timeout ([c1569c0](https://github.com/milesburton/veta-trading-platform/commit/c1569c0f49afaea2fda8dc92e2f25a2cdd2ac6cc))
+* **fly:** start Redpanda directly via ld.so without rpk wrapper ([8cbb601](https://github.com/milesburton/veta-trading-platform/commit/8cbb601deb53c0c178ccdb4b3ff012c95f24863e))
+* **gateway,fly:** WS fallback for market ticks + Redpanda config dir fix ([e581af2](https://github.com/milesburton/veta-trading-platform/commit/e581af2ddb59e4adb6248a0bf5279985a14493d4))
+* **gateway,market-sim:** retry Kafka producer in background if not ready at startup ([08488fb](https://github.com/milesburton/veta-trading-platform/commit/08488fb83e58334043352f5482745331814d7b93))
+* **gateway,tests:** increase authCache TTL to 60s; reduce smoke test retry aggressiveness ([48d8f82](https://github.com/milesburton/veta-trading-platform/commit/48d8f825005dabbc0fb02fa6647505a8581b6430))
+* **gateway:** replace chkTcp Redpanda check with HTTP health; remove bus from ready gate ([0270a47](https://github.com/milesburton/veta-trading-platform/commit/0270a47f69df8ae5184ed5755a0c7959adeb4c6f))
+* **homelab:** remove TLS labels from compose.prod.yml; add curl to frontend image ([345939e](https://github.com/milesburton/veta-trading-platform/commit/345939edd470e60ac9b45edb6ed4d7aadc73c7d3))
+* **messaging,test:** reconnect producer on send error; assert MOMENTUM orderAck ([35ad652](https://github.com/milesburton/veta-trading-platform/commit/35ad6521a490cd423d67ee426f1b874b40415fb4))
+* **messaging:** make createProducer fire-and-forget with internal retry ([c35035c](https://github.com/milesburton/veta-trading-platform/commit/c35035c85a2e16a00d3594e827f16a8fa6b4e091))
+* **smoke,fly:** fix WS test resource leaks; gate market-sim+gateway on Redpanda readiness ([32d047c](https://github.com/milesburton/veta-trading-platform/commit/32d047cf08f2ee3289fac3e1322e85bb40c6e53a))
+* **smoke:** add /me probe endpoint; switch loginAsVerified from /assets to /me ([037434c](https://github.com/milesburton/veta-trading-platform/commit/037434cd351de8e034b2cc1ba7861220dcde82f3))
+* **smoke:** add loginAsVerified to eliminate transient auth failures ([6972491](https://github.com/milesburton/veta-trading-platform/commit/6972491741c86f8149698754c92a3e746972b16e))
+* **smoke:** add submitOrderWithRetry to handle transient auth failures ([0833db8](https://github.com/milesburton/veta-trading-platform/commit/0833db8137d60938b5861c451f22c70ad484e996))
+* **smoke:** catch transient fetch errors in polling loops; reduce ICEBERG load ([fd95a13](https://github.com/milesburton/veta-trading-platform/commit/fd95a13fdf9d138cfd634b001bb152ee5857d6a4))
+* **smoke:** exponential backoff in submitOrderWithRetry, 5 max retries ([a96cc24](https://github.com/milesburton/veta-trading-platform/commit/a96cc24b4930525770467975d11435e255fad6a5))
+* **smoke:** increase usersPool, retry validate test, fix loginAsVerified leak ([9af7ee8](https://github.com/milesburton/veta-trading-platform/commit/9af7ee81045950444b2e92e6dfa05884414c2160))
+* **smoke:** increase WS timeout to 20s; handle authError; fix livePrice for 401 responses ([8e57e3d](https://github.com/milesburton/veta-trading-platform/commit/8e57e3d64aada274be523435bc3b1ea9d2151ac4))
+* **smoke:** reduce expiresAt for slow algos; add MOMENTUM threshold ([7524b37](https://github.com/milesburton/veta-trading-platform/commit/7524b379ced57f7705d9e9f59055171e246ad8af))
+* **smoke:** retry advisory test on 401; replace ICEBERG settled test ([b2b6ac9](https://github.com/milesburton/veta-trading-platform/commit/b2b6ac9c46cbea00bd6e7d62df8454f462edd2d5))
+* **tests:** catch loginAs network errors in loginAsVerified; increase retry delay ([baf5928](https://github.com/milesburton/veta-trading-platform/commit/baf592847646256e8c5c148e472af0cbfb16e92b))
+* **ui:** guard against undefined PANEL_TITLES entry in onRenderTab ([9f97c89](https://github.com/milesburton/veta-trading-platform/commit/9f97c89fc72a8f75993a81bc40ece5edf7cd82fc))
+* **ui:** polyfill crypto.randomUUID for non-secure HTTP contexts ([6849a54](https://github.com/milesburton/veta-trading-platform/commit/6849a541818a1bee6a2e1012fbc8b4291c8d1434))
+
 ## [1.2.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.1.0...veta-trading-platform-v1.2.0) (2026-03-21)
 
 
