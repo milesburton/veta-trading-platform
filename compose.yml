@@ -16,7 +16,7 @@ x-deno-service: &deno-service
     dockerfile: docker/base/Dockerfile
   networks:
     - trading-net
-  mem_limit: 256m
+  mem_limit: 512m
 
 x-deno-medium: &deno-medium
   build:
@@ -24,7 +24,7 @@ x-deno-medium: &deno-medium
     dockerfile: docker/base/Dockerfile
   networks:
     - trading-net
-  mem_limit: 384m
+  mem_limit: 768m
 
 x-algo-healthcheck: &algo-healthcheck
   healthcheck:
@@ -57,7 +57,7 @@ services:
       - start
       - --mode=dev-container
       - --smp=1
-      - --memory=200M
+      - --memory=1G
       - --default-log-level=warn
       - --kafka-addr=0.0.0.0:9092
       - --advertise-kafka-addr=redpanda:9092
