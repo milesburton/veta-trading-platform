@@ -805,7 +805,7 @@ services:
       EMS_PARTICIPATION_CAP: "0.20"
       EMS_IMPACT_PER_1000_BPS: "1.0"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:9880/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:9879/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
