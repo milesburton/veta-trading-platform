@@ -196,15 +196,6 @@ const SERVICES: {
     description: "Kafka → stdout relay feeding Grafana Alloy / Loki",
     port: 5007,
   },
-  {
-    name: "Grafana",
-    url: `${import.meta.env.VITE_GRAFANA_URL ?? "http://localhost:3000"}/api/health`,
-    link: import.meta.env.VITE_GRAFANA_URL ?? "http://localhost:3000",
-    optional: true,
-    category: "observability",
-    description: "LGTM dashboards — metrics, logs & traces",
-    port: 3000,
-  },
 ];
 
 export { SERVICES };

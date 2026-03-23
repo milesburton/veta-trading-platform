@@ -13,6 +13,7 @@ export { DashboardLayout } from "./dashboard/DashboardLayout.tsx";
 
 export {
   LAYOUT_TEMPLATES,
+  makeAdministrationModel,
   makeAdminModel,
   makeAlgoModel,
   makeAnalysisModel,
@@ -22,7 +23,9 @@ export {
   makeFiAnalysisModel,
   makeFiResearchModel,
   makeFiTradingModel,
+  makeMarketFeedsModel,
   makeOverviewModel,
+  makeSystemStatusModel,
   STORAGE_KEY,
   STORAGE_KEY_PREFIX,
 } from "./dashboard/layoutModels.ts";

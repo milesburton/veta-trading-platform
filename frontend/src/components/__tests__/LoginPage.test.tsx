@@ -154,17 +154,10 @@ describe("LoginPage", () => {
     expect(status).toHaveTextContent("Momentum Algo");
   });
 
-  test("shows observability services including Kafka Relay and Grafana", () => {
+  test("shows observability services including Kafka Relay", () => {
     renderLogin();
     const status = screen.getByTestId("platform-status");
     expect(status).toHaveTextContent("Kafka Relay");
-    expect(status).toHaveTextContent("Grafana");
-  });
-
-  test("renders Grafana Dashboards button in platform status header", () => {
-    renderLogin();
-    const status = screen.getByTestId("platform-status");
-    expect(status).toHaveTextContent("Grafana Dashboards");
   });
 
   test("services show their description text", () => {

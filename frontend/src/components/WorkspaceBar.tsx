@@ -3,6 +3,7 @@ import type { IJsonModel, Model } from "flexlayout-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { publishSharedWorkspace } from "../hooks/useWorkspaceSync.ts";
 import {
+  makeAdministrationModel,
   makeAdminModel,
   makeAlgoModel,
   makeAnalysisModel,
@@ -10,7 +11,9 @@ import {
   makeFiAnalysisModel,
   makeFiResearchModel,
   makeFiTradingModel,
+  makeMarketFeedsModel,
   makeOverviewModel,
+  makeSystemStatusModel,
 } from "./DashboardLayout.tsx";
 import { SharedWorkspaceBrowser } from "./SharedWorkspaceBrowser.tsx";
 
@@ -44,8 +47,21 @@ const ADMIN_PRESET_WORKSPACES: {
   locked: true;
   makeModel: () => IJsonModel;
 }[] = [
-  { id: "ws-mission-control", name: "Mission Control", locked: true, makeModel: makeAdminModel },
+  { id: "ws-market-feeds", name: "Market Feeds", locked: true, makeModel: makeMarketFeedsModel },
+  {
+    id: "ws-system-status",
+    name: "System Status",
+    locked: true,
+    makeModel: makeSystemStatusModel,
+  },
+  {
+    id: "ws-administration",
+    name: "Administration",
+    locked: true,
+    makeModel: makeAdministrationModel,
+  },
   { id: "ws-overview", name: "Overview", locked: true, makeModel: makeOverviewModel },
+  { id: "ws-mission-control", name: "Mission Control", locked: true, makeModel: makeAdminModel },
 ];
 
 export function seedWorkspaces(role?: string): {

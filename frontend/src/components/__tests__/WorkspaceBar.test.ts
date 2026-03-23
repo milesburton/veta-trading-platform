@@ -20,10 +20,16 @@ describe("seedWorkspaces", () => {
     for (const w of workspaces) expect(w.locked).toBe(true);
   });
 
-  test("returns two locked admin workspaces for role=admin", () => {
+  test("returns five locked admin workspaces for role=admin", () => {
     const { workspaces } = seedWorkspaces("admin");
-    expect(workspaces).toHaveLength(2);
-    expect(workspaces.map((w) => w.id)).toEqual(["ws-mission-control", "ws-overview"]);
+    expect(workspaces).toHaveLength(5);
+    expect(workspaces.map((w) => w.id)).toEqual([
+      "ws-market-feeds",
+      "ws-system-status",
+      "ws-administration",
+      "ws-overview",
+      "ws-mission-control",
+    ]);
     for (const w of workspaces) expect(w.locked).toBe(true);
   });
 

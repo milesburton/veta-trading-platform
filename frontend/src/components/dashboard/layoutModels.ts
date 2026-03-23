@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v14`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v15`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -740,6 +740,221 @@ export function makeAdminModel(): IJsonModel {
                   name: PANEL_TITLES["algo-monitor"],
                   component: "algo-monitor",
                   config: { panelType: "algo-monitor", incoming: 1 } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+// ── Admin split workspaces ────────────────────────────────────────────────────
+
+export function makeMarketFeedsModel(): IJsonModel {
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        {
+          type: "row",
+          weight: 55,
+          children: [
+            {
+              type: "tabset",
+              weight: 100,
+              children: [
+                {
+                  type: "tab",
+                  id: "market-heatmap",
+                  name: PANEL_TITLES["market-heatmap"],
+                  component: "market-heatmap",
+                  config: { panelType: "market-heatmap" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "row",
+          weight: 45,
+          children: [
+            {
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "market-data-sources",
+                  name: PANEL_TITLES["market-data-sources"],
+                  component: "market-data-sources",
+                  config: { panelType: "market-data-sources" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "market-feed-control",
+                  name: PANEL_TITLES["market-feed-control"],
+                  component: "market-feed-control",
+                  config: { panelType: "market-feed-control" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "news-sources",
+                  name: PANEL_TITLES["news-sources"],
+                  component: "news-sources",
+                  config: { panelType: "news-sources" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+export function makeSystemStatusModel(): IJsonModel {
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        {
+          type: "row",
+          weight: 35,
+          children: [
+            {
+              type: "tabset",
+              weight: 55,
+              children: [
+                {
+                  type: "tab",
+                  id: "estate-overview",
+                  name: PANEL_TITLES["estate-overview"],
+                  component: "estate-overview",
+                  config: { panelType: "estate-overview" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 45,
+              children: [
+                {
+                  type: "tab",
+                  id: "service-health",
+                  name: PANEL_TITLES["service-health"],
+                  component: "service-health",
+                  config: { panelType: "service-health" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "throughput-gauges",
+                  name: PANEL_TITLES["throughput-gauges"],
+                  component: "throughput-gauges",
+                  config: { panelType: "throughput-gauges" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "row",
+          weight: 65,
+          children: [
+            {
+              type: "tabset",
+              weight: 60,
+              children: [
+                {
+                  type: "tab",
+                  id: "observability",
+                  name: PANEL_TITLES.observability,
+                  component: "observability",
+                  config: { panelType: "observability" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 40,
+              children: [
+                {
+                  type: "tab",
+                  id: "candle-chart",
+                  name: PANEL_TITLES["candle-chart"],
+                  component: "candle-chart",
+                  config: { panelType: "candle-chart", incoming: 1 } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+export function makeAdministrationModel(): IJsonModel {
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        {
+          type: "row",
+          weight: 50,
+          children: [
+            {
+              type: "tabset",
+              weight: 100,
+              children: [
+                {
+                  type: "tab",
+                  id: "admin",
+                  name: PANEL_TITLES.admin,
+                  component: "admin",
+                  config: { panelType: "admin" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "row",
+          weight: 50,
+          children: [
+            {
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "load-test",
+                  name: PANEL_TITLES["load-test"],
+                  component: "load-test",
+                  config: { panelType: "load-test" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "llm-subsystem",
+                  name: PANEL_TITLES["llm-subsystem"],
+                  component: "llm-subsystem",
+                  config: { panelType: "llm-subsystem" } satisfies TabChannelConfig,
                 },
               ],
             },
@@ -1734,6 +1949,27 @@ export const LAYOUT_TEMPLATES: {
     model: makeAdminModel(),
   },
   {
+    id: "market-feeds",
+    locked: true,
+    label: "Market Feeds",
+    description: "Live heatmap, data source overrides, feed controls, and news sources",
+    model: makeMarketFeedsModel(),
+  },
+  {
+    id: "system-status",
+    locked: true,
+    label: "System Status",
+    description: "Service health, throughput gauges, estate overview, and native observability",
+    model: makeSystemStatusModel(),
+  },
+  {
+    id: "administration",
+    locked: true,
+    label: "Administration",
+    description: "Desk limits and RBAC, load testing, and LLM subsystem controls",
+    model: makeAdministrationModel(),
+  },
+  {
     id: "overview",
     locked: true,
     label: "Market Overview",
@@ -1791,7 +2027,7 @@ export const LAYOUT_TEMPLATES: {
     locked: true,
     label: "Observability",
     description:
-      "System health command centre — service status, throughput gauges, Grafana embed, algo leaderboard, and order audit trail",
+      "System health command centre — service status, throughput gauges, observability panel, algo leaderboard, and order audit trail",
     model: makeObservabilityModel(),
   },
   {
