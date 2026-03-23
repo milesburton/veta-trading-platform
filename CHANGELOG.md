@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.3.1...veta-trading-platform-v1.3.2) (2026-03-23)
+
+
+### Bug Fixes
+
+* **services:** mark observability services optional; allow Fly.io idle suspend ([0d62f2e](https://github.com/milesburton/veta-trading-platform/commit/0d62f2e7a2a6084bc23380f24bc288a6472c8ea6))
+
 ## [1.3.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.3.0...veta-trading-platform-v1.3.1) (2026-03-22)
 
 
