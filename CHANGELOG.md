@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.3.2...veta-trading-platform-v1.4.0) (2026-03-23)
+
+
+### Features
+
+* **dashboard:** split Mission Control into feature workspaces; remove Grafana ([21c60d4](https://github.com/milesburton/veta-trading-platform/commit/21c60d4a82fb205d5381613c02faa1d52a89dbbe))
+
 ## [1.3.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.3.1...veta-trading-platform-v1.3.2) (2026-03-23)
 
 
