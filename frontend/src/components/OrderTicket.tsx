@@ -272,11 +272,11 @@ export function OrderTicket() {
   const selectedAsset = assets.find((a) => a.symbol === assetSearch.value) ?? assets[0];
   const currentPrice = selectedAsset ? prices[selectedAsset.symbol] : undefined;
 
-  const _priceInitialised = useRef(false);
-  if (!_priceInitialised.current && currentPrice && instrumentType.value === "equity") {
-    _priceInitialised.current = true;
-    limitPrice.value = formatPrice(selectedAsset?.symbol ?? "", currentPrice);
-  }
+  useEffect(() => {
+    if (currentPrice && instrumentType.value === "equity" && !limitPrice.value) {
+      limitPrice.value = formatPrice(selectedAsset?.symbol ?? "", currentPrice);
+    }
+  }, [currentPrice, selectedAsset, instrumentType, limitPrice]);
 
   function selectAsset(symbol: string) {
     assetSearch.value = symbol;
