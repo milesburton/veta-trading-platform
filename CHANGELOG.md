@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.4.0...veta-trading-platform-v1.4.1) (2026-03-23)
+
+
+### Bug Fixes
+
+* **tests,dashboard:** update E2E specs for Grafana removal and new admin templates ([e80c474](https://github.com/milesburton/veta-trading-platform/commit/e80c474d8e4622b2fa13e26a54ca5fee0b7b3f28))
+
 ## [1.4.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.3.2...veta-trading-platform-v1.4.0) (2026-03-23)
 
 
