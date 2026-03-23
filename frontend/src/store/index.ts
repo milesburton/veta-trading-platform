@@ -6,6 +6,7 @@ import { analyticsApi } from "./analyticsApi.ts";
 import { authSlice } from "./authSlice.ts";
 import { createBroadcastChannelMiddleware } from "./channel.ts";
 import { channelsSlice } from "./channelsSlice.ts";
+import { feedSlice } from "./feedSlice.ts";
 import { gatewayApi } from "./gatewayApi.ts";
 import { gridApi } from "./gridApi.ts";
 import { gridPrefsSlice } from "./gridPrefsSlice.ts";
@@ -31,6 +32,7 @@ import { windowSlice } from "./windowSlice.ts";
 export const store = configureStore({
   reducer: {
     auth: authSlice.reducer,
+    feed: feedSlice.reducer,
     market: marketSlice.reducer,
     orders: ordersSlice.reducer,
     news: newsSlice.reducer,

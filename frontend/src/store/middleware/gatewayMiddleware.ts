@@ -25,6 +25,7 @@ import { advisoryNoteReceived } from "../advisorySlice.ts";
 import { alertAdded } from "../alertsSlice.ts";
 import type { AuthUser, TradingLimits } from "../authSlice.ts";
 import { setUserWithLimits } from "../authSlice.ts";
+import { feedReceived } from "../feedSlice.ts";
 import { gridApi } from "../gridApi.ts";
 import { loadGridPrefs } from "../gridPrefsSlice.ts";
 import {
@@ -283,9 +284,11 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
         switch (msg.event) {
           case "marketUpdate":
             handleMarketUpdate(msg.data as MarketUpdateData);
+            storeAPI.dispatch(feedReceived("market"));
             break;
           case "orderEvent":
             handleOrderEvent(msg.topic ?? "", msg.data as OrderEventData);
+            storeAPI.dispatch(feedReceived("orders"));
             break;
           case "orderAck": {
             // Gateway confirmed order on bus — invalidate grid cache so blotter refetches
@@ -311,6 +314,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             // Gateway sends user identity + limits after WS connection is established
             const identityData = msg.data as { user: AuthUser; limits: TradingLimits };
             storeAPI.dispatch(setUserWithLimits(identityData));
+            // biome-ignore lint/suspicious/noExplicitAny: loadGridPrefs is an AsyncThunk; AppDispatch not available in middleware scope
             (storeAPI.dispatch as any)(loadGridPrefs());
             break;
           }
@@ -346,6 +350,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             const now = Date.now();
             const prev = algoLastSeen[hb.algo];
             algoLastSeen[hb.algo] = now;
+            storeAPI.dispatch(feedReceived("algo"));
             if (prev && now - prev > ALGO_HEARTBEAT_TIMEOUT_MS) {
               storeAPI.dispatch(
                 alertAdded({
@@ -360,6 +365,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           }
           case "newsUpdate":
             storeAPI.dispatch(newsItemReceived(msg.data as NewsItem));
+            storeAPI.dispatch(feedReceived("news"));
             break;
           case "signalUpdate":
             storeAPI.dispatch(signalReceived(msg.data as Signal));

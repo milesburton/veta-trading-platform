@@ -14,7 +14,7 @@ import {
 
 const { reducer } = marketSlice;
 
-const initialState = {
+const initialState: MarketState = {
   assets: [],
   prices: {},
   priceHistory: {},

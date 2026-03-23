@@ -282,6 +282,76 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
   );
 }
 
+const FEED_STALE_MS = 5_000;
+const FEED_DEAD_MS = 15_000;
+const FEED_LABELS: Record<string, string> = {
+  market: "Market",
+  orders: "Orders",
+  algo: "Algo",
+  news: "News",
+};
+
+function feedAgeLabel(ms: number | null): string {
+  if (ms === null) return "–";
+  const s = Math.floor(ms / 1000);
+  return s === 0 ? "live" : `${s}s`;
+}
+
+function DataFreshness() {
+  const connected = useAppSelector((s) => s.market.connected);
+  const lastSeenAt = useAppSelector((s) => s.feed.lastSeenAt);
+  const now = useSignal(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      now.value = Date.now();
+    }, 1000);
+    return () => clearInterval(id);
+  }, [now]);
+
+  if (!connected) {
+    return (
+      <span
+        data-testid="feed-status"
+        title="Gateway disconnected — all data sources offline"
+        className="flex items-center gap-1 text-[10px] text-red-400 tabular-nums"
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+        disconnected
+      </span>
+    );
+  }
+
+  const sources = Object.entries(lastSeenAt) as [string, number | null][];
+  const ages = sources.map(([, ts]) => (ts === null ? null : now.value - ts));
+  const anyDead = ages.some((a) => a === null || a > FEED_DEAD_MS);
+  const anyStale = ages.some((a) => a !== null && a > FEED_STALE_MS);
+  const allLive = !anyDead && !anyStale;
+
+  const dotClass = anyDead ? "bg-red-500" : anyStale ? "bg-amber-400" : "bg-emerald-500";
+  const textClass = anyDead ? "text-red-400" : anyStale ? "text-amber-400" : "text-emerald-400";
+
+  const tooltip = sources
+    .map(([key, ts]) => {
+      const age = ts === null ? null : now.value - ts;
+      return `${FEED_LABELS[key] ?? key}: ${feedAgeLabel(age)}`;
+    })
+    .join("  |  ");
+
+  return (
+    <span
+      data-testid="feed-status"
+      title={`Data sources — ${tooltip}`}
+      className={`flex items-center gap-1 text-[10px] tabular-nums ${textClass}`}
+    >
+      <span
+        className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass} ${allLive ? "animate-pulse" : ""}`}
+      />
+      {anyDead ? "stale" : anyStale ? "slow" : "live"}
+    </span>
+  );
+}
+
 // ─── AppHeader: brand + feed + services + clock + user ───────────────────────
 
 export function AppHeader() {
@@ -333,6 +403,7 @@ export function AppHeader() {
         </div>
 
         <div className="flex items-center gap-4">
+          <DataFreshness />
           <div data-testid="service-health-cluster">
             <ServiceStatus services={services} />
           </div>

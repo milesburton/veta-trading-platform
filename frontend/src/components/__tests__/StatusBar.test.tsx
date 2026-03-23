@@ -5,6 +5,7 @@ import { Provider } from "react-redux";
 import { vi } from "vitest";
 import { alertsSlice } from "../../store/alertsSlice";
 import { authSlice } from "../../store/authSlice";
+import { feedSlice } from "../../store/feedSlice";
 import { killSwitchSlice } from "../../store/killSwitchSlice";
 import { marketSlice } from "../../store/marketSlice";
 import { ordersSlice } from "../../store/ordersSlice";
@@ -31,6 +32,7 @@ function makeStore(connected: boolean) {
   return configureStore({
     reducer: {
       auth: authSlice.reducer,
+      feed: feedSlice.reducer,
       market: marketSlice.reducer,
       orders: ordersSlice.reducer,
       ui: uiSlice.reducer,

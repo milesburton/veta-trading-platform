@@ -124,8 +124,12 @@ export function CandlestickChart({ symbol, candles }: Props) {
     };
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: theme is a trigger; getChartTheme reads CSS vars from the DOM
   useEffect(() => {
-    chartRef.current?.applyOptions(getChartTheme());
+    const raf = requestAnimationFrame(() => {
+      chartRef.current?.applyOptions(getChartTheme());
+    });
+    return () => cancelAnimationFrame(raf);
   }, [theme]);
 
   // Update data when interval or candles change
