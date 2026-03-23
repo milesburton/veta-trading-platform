@@ -6,7 +6,6 @@
  *   - Service Health and Throughput panels render within the layout
  *   - Switching to the Pipeline Monitor layout shows algo + execution panels
  *   - LoginPage shows all service categories in PlatformStatus
- *   - LoginPage shows Grafana link when Grafana is healthy
  */
 
 import { expect, test } from "@playwright/test";
@@ -15,10 +14,16 @@ import { AppPage } from "./helpers/pages/AppPage.ts";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Click the Layout button and then a template by its label text. */
+/** Click the Layout button and then a template by its label text (exact label span match). */
 async function switchLayout(app: AppPage, label: string) {
   await app.page.getByTitle("Switch layout template").click();
-  await app.page.getByRole("button", { name: label, exact: false }).click();
+  // Match on the label <span> within the button, not the full accessible name
+  // (descriptions may contain words that overlap with other template names)
+  await app.page
+    .locator("button")
+    .filter({ has: app.page.locator("span.font-medium", { hasText: new RegExp(`^[🔒\\s]*${label}$`) }) })
+    .first()
+    .click();
   // Wait for flexlayout to settle after model reset
   await app.page.waitForTimeout(400);
 }
@@ -197,8 +202,6 @@ test.describe("LoginPage — PlatformStatus service grid", () => {
 
     // Observability
     await expect(status.getByText(/Kafka Relay/i).first()).toBeVisible();
-    // Use span selector to avoid matching the hidden SVG <title>Grafana</title> in the header button
-    await expect(status.locator("span", { hasText: /^Grafana$/ }).first()).toBeVisible();
   });
 
   test("summary label shows 'Checking platform…' while services are loading", async ({ page }) => {
@@ -209,12 +212,11 @@ test.describe("LoginPage — PlatformStatus service grid", () => {
     await expect(page.getByTestId("platform-status-label")).toHaveText(/Checking platform|Platform/);
   });
 
-  test("Grafana button is present in the platform status header", async ({ page }) => {
+  test("Grafana is not shown in the platform status (removed from services)", async ({ page }) => {
     await gotoLoginPage(page);
 
     const status = page.getByTestId("platform-status");
-    // The Grafana Dashboards link should exist (disabled state when Grafana is unreachable)
-    await expect(status.getByText(/Grafana Dashboards/i)).toBeVisible();
+    await expect(status.getByText(/Grafana Dashboards/i)).not.toBeVisible();
   });
 });
 
@@ -229,12 +231,12 @@ test.describe("Layout template picker", () => {
 
     await page.getByTitle("Switch layout template").click();
 
-    await expect(page.getByRole("button", { name: /Observability/i })).toBeVisible({
-      timeout: 5_000,
-    });
-    await expect(page.getByRole("button", { name: /Pipeline Monitor/i })).toBeVisible({
-      timeout: 5_000,
-    });
+    await expect(
+      page.locator("button").filter({ has: page.locator("span.font-medium", { hasText: /^[🔒\s]*Observability$/ }) }).first()
+    ).toBeVisible({ timeout: 5_000 });
+    await expect(
+      page.locator("button").filter({ has: page.locator("span.font-medium", { hasText: /^[🔒\s]*Pipeline Monitor$/ }) }).first()
+    ).toBeVisible({ timeout: 5_000 });
 
     // Close picker
     await page.keyboard.press("Escape");
