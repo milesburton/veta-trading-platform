@@ -26,9 +26,9 @@ describe("seedWorkspaces", () => {
     expect(workspaces.map((w) => w.id)).toEqual([
       "ws-market-feeds",
       "ws-system-status",
+      "ws-pipeline-ops",
       "ws-administration",
       "ws-overview",
-      "ws-mission-control",
     ]);
     for (const w of workspaces) expect(w.locked).toBe(true);
   });

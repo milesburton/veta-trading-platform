@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { publishSharedWorkspace } from "../hooks/useWorkspaceSync.ts";
 import {
   makeAdministrationModel,
-  makeAdminModel,
   makeAlgoModel,
   makeAnalysisModel,
   makeDefaultModel,
@@ -13,6 +12,7 @@ import {
   makeFiTradingModel,
   makeMarketFeedsModel,
   makeOverviewModel,
+  makePipelineOpsModel,
   makeSystemStatusModel,
 } from "./DashboardLayout.tsx";
 import { SharedWorkspaceBrowser } from "./SharedWorkspaceBrowser.tsx";
@@ -55,13 +55,18 @@ const ADMIN_PRESET_WORKSPACES: {
     makeModel: makeSystemStatusModel,
   },
   {
+    id: "ws-pipeline-ops",
+    name: "Pipeline Ops",
+    locked: true,
+    makeModel: makePipelineOpsModel,
+  },
+  {
     id: "ws-administration",
     name: "Administration",
     locked: true,
     makeModel: makeAdministrationModel,
   },
   { id: "ws-overview", name: "Overview", locked: true, makeModel: makeOverviewModel },
-  { id: "ws-mission-control", name: "Mission Control", locked: true, makeModel: makeAdminModel },
 ];
 
 export function seedWorkspaces(role?: string): {

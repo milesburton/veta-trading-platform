@@ -3,7 +3,13 @@ import { useAppSelector } from "../store/hooks.ts";
 import { LAYOUT_TEMPLATES, useDashboard } from "./DashboardLayout.tsx";
 
 // Templates only available to admins
-const ADMIN_ONLY_TEMPLATES = new Set(["admin", "market-feeds", "system-status", "administration"]);
+const ADMIN_ONLY_TEMPLATES = new Set([
+  "admin",
+  "market-feeds",
+  "system-status",
+  "pipeline-ops",
+  "administration",
+]);
 
 export function TemplatePicker() {
   const [open, setOpen] = useState(false);

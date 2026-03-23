@@ -7,8 +7,24 @@ const NEWS_AGGREGATOR_BASE =
 export interface NewsSource {
   id: string;
   label: string;
+  rssTemplate?: string;
   enabled: boolean;
   symbolSpecific: boolean;
+}
+
+export interface CreateNewsSourcePayload {
+  label: string;
+  rssTemplate: string;
+  symbolSpecific: boolean;
+  enabled: boolean;
+}
+
+export interface UpdateNewsSourcePayload {
+  id: string;
+  label?: string;
+  rssTemplate?: string;
+  symbolSpecific?: boolean;
+  enabled?: boolean;
 }
 
 export const newsApi = createApi({
@@ -31,8 +47,37 @@ export const newsApi = createApi({
       }),
       invalidatesTags: ["NewsSources"],
     }),
+    createNewsSource: builder.mutation<NewsSource, CreateNewsSourcePayload>({
+      query: (body) => ({
+        url: "/sources",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["NewsSources"],
+    }),
+    updateNewsSource: builder.mutation<NewsSource, UpdateNewsSourcePayload>({
+      query: ({ id, ...body }) => ({
+        url: `/sources/${encodeURIComponent(id)}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["NewsSources"],
+    }),
+    deleteNewsSource: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/sources/${encodeURIComponent(id)}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["NewsSources"],
+    }),
   }),
 });
 
-export const { useGetNewsBySymbolQuery, useGetNewsSourcesQuery, useToggleNewsSourceMutation } =
-  newsApi;
+export const {
+  useGetNewsBySymbolQuery,
+  useGetNewsSourcesQuery,
+  useToggleNewsSourceMutation,
+  useCreateNewsSourceMutation,
+  useUpdateNewsSourceMutation,
+  useDeleteNewsSourceMutation,
+} = newsApi;

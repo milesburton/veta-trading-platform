@@ -37,7 +37,7 @@ const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
@@ -1570,7 +1570,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "journal":              JOURNAL_URL,
     "fix-archive":          `http://localhost:${Deno.env.get("FIX_ARCHIVE_PORT") ?? "5012"}`,
     "user-service":         USER_SERVICE_URL,
-    "news-aggregator":      `http://localhost:${Deno.env.get("NEWS_PORT") ?? "5013"}`,
+    "news-aggregator":      `http://localhost:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`,
     "analytics":            ANALYTICS_URL,
     "market-data":          MARKET_DATA_URL,
     "market-data-adapters": `http://localhost:${Deno.env.get("MARKET_DATA_ADAPTERS_PORT") ?? "5016"}`,

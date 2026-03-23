@@ -7,6 +7,7 @@ const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") || "http://localhost:5000"
 const POLL_INTERVAL_MS = Number(Deno.env.get("NEWS_POLL_INTERVAL_MS")) || 120_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MAX_ITEMS_PER_SYMBOL = 100;
+const SOURCES_FILE = Deno.env.get("NEWS_SOURCES_FILE") ?? "./news_sources.json";
 
 console.log(`[news-aggregator] Starting, poll=${POLL_INTERVAL_MS}ms`);
 
@@ -18,7 +19,7 @@ interface NewsSource {
   symbolSpecific: boolean;
 }
 
-const SOURCES: NewsSource[] = [
+const DEFAULT_SOURCES: NewsSource[] = [
   {
     id: "yahoo-finance",
     label: "Yahoo Finance",
@@ -42,6 +43,29 @@ const SOURCES: NewsSource[] = [
     symbolSpecific: false,
   },
 ];
+
+function loadSources(): NewsSource[] {
+  try {
+    const raw = Deno.readTextFileSync(SOURCES_FILE);
+    return JSON.parse(raw) as NewsSource[];
+  } catch {
+    return DEFAULT_SOURCES.map((s) => ({ ...s }));
+  }
+}
+
+function saveSources(): void {
+  try {
+    Deno.writeTextFileSync(SOURCES_FILE, JSON.stringify(SOURCES, null, 2));
+  } catch (e) {
+    console.warn(`[news-aggregator] Could not persist sources: ${e}`);
+  }
+}
+
+function slugify(label: string): string {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+const SOURCES: NewsSource[] = loadSources();
 
 export interface NewsItem {
   id: string;
@@ -309,7 +333,7 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-Deno.serve({ port: PORT }, (req) => {
+Deno.serve({ port: PORT }, async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
 
   const url = new URL(req.url);
@@ -348,8 +372,60 @@ Deno.serve({ port: PORT }, (req) => {
     if (action === "enable") source.enabled = true;
     else if (action === "disable") source.enabled = false;
     else source.enabled = !source.enabled;
+    saveSources();
     console.log(`[news-aggregator] Source ${id} → enabled=${source.enabled}`);
     return json({ id: source.id, label: source.label, enabled: source.enabled, symbolSpecific: source.symbolSpecific });
+  }
+
+  // POST /sources — create a new source
+  if (req.method === "POST" && path === "/sources") {
+    let body: Partial<NewsSource>;
+    try {
+      body = await req.json() as Partial<NewsSource>;
+    } catch {
+      return json({ error: "invalid JSON" }, 400);
+    }
+    const { label, rssTemplate, symbolSpecific = false, enabled = true } = body;
+    if (!label || !rssTemplate) return json({ error: "label and rssTemplate are required" }, 400);
+    const id = slugify(label) || `source-${Date.now()}`;
+    if (SOURCES.some((s) => s.id === id)) return json({ error: "source with this id already exists" }, 409);
+    const newSource: NewsSource = { id, label, rssTemplate, enabled, symbolSpecific };
+    SOURCES.push(newSource);
+    saveSources();
+    console.log(`[news-aggregator] Source created: ${id}`);
+    return json(newSource, 201);
+  }
+
+  // PUT /sources/:id — update label, rssTemplate, symbolSpecific
+  const putMatch = path.match(/^\/sources\/([^/]+)$/);
+  if (req.method === "PUT" && putMatch) {
+    const [, id] = putMatch;
+    const source = SOURCES.find((s) => s.id === id);
+    if (!source) return json({ error: "source not found" }, 404);
+    let body: Partial<NewsSource>;
+    try {
+      body = await req.json() as Partial<NewsSource>;
+    } catch {
+      return json({ error: "invalid JSON" }, 400);
+    }
+    if (body.label !== undefined) source.label = body.label;
+    if (body.rssTemplate !== undefined) source.rssTemplate = body.rssTemplate;
+    if (body.symbolSpecific !== undefined) source.symbolSpecific = body.symbolSpecific;
+    if (body.enabled !== undefined) source.enabled = body.enabled;
+    saveSources();
+    console.log(`[news-aggregator] Source updated: ${id}`);
+    return json(source);
+  }
+
+  // DELETE /sources/:id — remove a source
+  if (req.method === "DELETE" && putMatch) {
+    const [, id] = putMatch;
+    const idx = SOURCES.findIndex((s) => s.id === id);
+    if (idx === -1) return json({ error: "source not found" }, 404);
+    SOURCES.splice(idx, 1);
+    saveSources();
+    console.log(`[news-aggregator] Source deleted: ${id}`);
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });

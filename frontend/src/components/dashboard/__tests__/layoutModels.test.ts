@@ -210,8 +210,8 @@ describe("makeAlgoPipelineModel", () => {
 });
 
 describe("LAYOUT_TEMPLATES", () => {
-  it("has 18 templates", () => {
-    expect(LAYOUT_TEMPLATES).toHaveLength(18);
+  it("has 19 templates", () => {
+    expect(LAYOUT_TEMPLATES).toHaveLength(19);
   });
 
   it("every template has id, label, description, and a valid model", () => {
