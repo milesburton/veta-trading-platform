@@ -1,13 +1,3 @@
-/**
- * Estate Overview Panel — unified command centre
- *
- * Four zones:
- *  1. Service health bar (compact chips per service)
- *  2. Throughput gauges + sparkline  (left column)
- *  3. Event timeline chart           (right column)
- *  4. Unified alert feed             (bottom)
- */
-
 import { useEffect, useRef, useState } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import {
@@ -18,14 +8,11 @@ import {
 } from "../store/alertsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
+import type { ObsEvent } from "../types.ts";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const WINDOW_MS = 60_000;
-
-const GRAFANA_TIMELINE_URL =
-  (import.meta.env.VITE_GRAFANA_URL ?? "http://localhost:3000") +
-  "/d-solo/trading/trading-overview?orgId=1&panelId=2&theme=dark&refresh=10s";
 
 const REQUIRED_SERVICES = new Set([
   "Market Sim",
@@ -281,21 +268,72 @@ function ThroughputZone({ metrics, sparkline }: { metrics: Metrics; sparkline: S
   );
 }
 
-// ── Event timeline zone ────────────────────────────────────────────────────────
+// ── Event timeline zone ───────────────────────────────────────────────────────
+
+const EVENT_TYPE_STYLES: Record<string, { dot: string; label: string }> = {
+  "order.new": { dot: "bg-sky-400", label: "text-sky-400" },
+  "order.routed": { dot: "bg-blue-400", label: "text-blue-400" },
+  "order.filled": { dot: "bg-emerald-400", label: "text-emerald-400" },
+  "order.expired": { dot: "bg-gray-500", label: "text-gray-500" },
+  "order.rejected": { dot: "bg-red-500", label: "text-red-400" },
+  "order.child": { dot: "bg-violet-400", label: "text-violet-400" },
+  "algo.started": { dot: "bg-amber-400", label: "text-amber-400" },
+  "algo.completed": { dot: "bg-emerald-400", label: "text-emerald-400" },
+  "client.error": { dot: "bg-red-500", label: "text-red-400" },
+};
+
+function eventStyle(type: string) {
+  return EVENT_TYPE_STYLES[type] ?? { dot: "bg-gray-600", label: "text-gray-500" };
+}
+
+function formatTs(ts: number | undefined): string {
+  if (!ts) return "";
+  return new Date(ts).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function EventRow({ ev }: { ev: ObsEvent }) {
+  const { dot, label } = eventStyle(ev.type);
+  const symbol = ev.payload?.symbol as string | undefined;
+  const status = ev.payload?.status as string | undefined;
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-0.5 hover:bg-gray-900/50">
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+      <span className={`text-[10px] font-mono ${label} shrink-0`}>{ev.type}</span>
+      {symbol && <span className="text-[10px] text-gray-400 shrink-0">{symbol}</span>}
+      {status && <span className="text-[10px] text-gray-600 shrink-0">{status}</span>}
+      <span className="ml-auto text-[9px] text-gray-700 tabular-nums shrink-0">
+        {formatTs(ev.ts)}
+      </span>
+    </div>
+  );
+}
 
 function TimelineZone() {
+  const events = useAppSelector((s) => s.observability.events);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0;
+  }, []);
+
   return (
-    <div className="flex flex-col gap-1 p-2 overflow-hidden h-full">
-      <div className="text-[9px] text-gray-600 uppercase tracking-wider">
-        Event Timeline · Grafana
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="text-[9px] text-gray-600 uppercase tracking-wider px-2 pt-2 pb-1 shrink-0">
+        Event Timeline
       </div>
-      <div className="flex-1 min-h-0 rounded overflow-hidden">
-        <iframe
-          src={GRAFANA_TIMELINE_URL}
-          className="w-full h-full border-0"
-          title="Order Timeline"
-          allow="fullscreen"
-        />
+      <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto">
+        {events.length === 0 ? (
+          <div className="px-2 py-3 text-[10px] text-gray-700">No events yet…</div>
+        ) : (
+          events.slice(0, 200).map((ev, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: events have no stable id; key includes ts+type for stability
+            <EventRow key={`${ev.ts ?? 0}-${ev.type}-${i}`} ev={ev} />
+          ))
+        )}
       </div>
     </div>
   );
