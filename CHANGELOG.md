@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.6.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.5.0...veta-trading-platform-v1.6.0) (2026-03-25)
+
+
+### Features
+
+* **screenshots:** add heatmap, kill switch, column formatting; fix service offline note ([10fd6ff](https://github.com/milesburton/veta-trading-platform/commit/10fd6ffcfbc920ef223e132d52b940605dd7a3fd))
+* **screenshots:** automated UI screenshots captured by Playwright on every main push ([e515d11](https://github.com/milesburton/veta-trading-platform/commit/e515d11e94850584cc2613da5663ad0822505f83))
+* **system-status:** host resource gauges with disk/memory alerts ([bc1c3f0](https://github.com/milesburton/veta-trading-platform/commit/bc1c3f04ed8aea2b2d9df79bbf964d89aa2596af))
+
+
+### Bug Fixes
+
+* **alerts:** suppress service-health toast flood; reorder README sections ([2069cb1](https://github.com/milesburton/veta-trading-platform/commit/2069cb119409dbdbeff51c9605b2a6dfee5bae82))
+* **compose:** use wget for Ollama healthcheck; remove unused anchor ([99fe9af](https://github.com/milesburton/veta-trading-platform/commit/99fe9af9b479633e77243f250658c200b39ac687))
+
 ## [1.5.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.4.1...veta-trading-platform-v1.5.0) (2026-03-25)
 
 
