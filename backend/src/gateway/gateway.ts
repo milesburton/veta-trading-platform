@@ -34,6 +34,7 @@ const CCP_SERVICE_URL = `http://${Deno.env.get("CCP_SERVICE_HOST") ?? "localhost
 const RFQ_SERVICE_URL = `http://${Deno.env.get("RFQ_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("RFQ_SERVICE_PORT") ?? "5029"}`;
 const NEWS_AGGREGATOR_URL = `http://${Deno.env.get("NEWS_AGGREGATOR_HOST") ?? "localhost"}:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`;
 const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost"}:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`;
+const DISK_MONITOR_URL = `http://${Deno.env.get("DISK_MONITOR_HOST") ?? "localhost"}:${Deno.env.get("DISK_MONITOR_PORT") ?? "8099"}`;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -575,6 +576,33 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
       },
     );
+  }
+
+  if (path === "/system" && req.method === "GET") {
+    try {
+      const res = await fetch(`${DISK_MONITOR_URL}/health`, { signal: AbortSignal.timeout(3_000) });
+      const disk = res.ok ? await res.json() : null;
+      const mem = Deno.memoryUsage();
+      return new Response(
+        JSON.stringify({
+          disk: disk?.disk ?? null,
+          diskStatus: disk?.status ?? "unavailable",
+          diskWarnPct: disk?.warn_pct ?? 85,
+          memory: {
+            rss_mb: Math.round(mem.rss / 1_048_576),
+            heap_used_mb: Math.round(mem.heapUsed / 1_048_576),
+            heap_total_mb: Math.round(mem.heapTotal / 1_048_576),
+            external_mb: Math.round(mem.external / 1_048_576),
+          },
+        }),
+        { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+      );
+    } catch {
+      return new Response(JSON.stringify({ disk: null, diskStatus: "unavailable", memory: null }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
   }
 
   // WebSocket proxy for market-sim (Fly.io monolith — only port 5011 exposed)

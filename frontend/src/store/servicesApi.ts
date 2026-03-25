@@ -1,6 +1,27 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { ServiceHealth } from "../types.ts";
 
+export interface DiskMetrics {
+  total_gb: number;
+  used_gb: number;
+  free_gb: number;
+  used_pct: number;
+}
+
+export interface MemoryMetrics {
+  rss_mb: number;
+  heap_used_mb: number;
+  heap_total_mb: number;
+  external_mb: number;
+}
+
+export interface SystemMetrics {
+  disk: DiskMetrics | null;
+  diskStatus: "ok" | "critical" | "unavailable";
+  diskWarnPct: number;
+  memory: MemoryMetrics | null;
+}
+
 const _origin = typeof window !== "undefined" ? window.location.origin : "";
 
 const _traefik =
@@ -242,7 +263,10 @@ export const servicesApi = createApi({
         lastChecked: Date.now(),
       }),
     }),
+    getSystemMetrics: builder.query<SystemMetrics, void>({
+      query: () => ({ url: "/api/gateway/system" }),
+    }),
   }),
 });
 
-export const { useGetServiceHealthQuery } = servicesApi;
+export const { useGetServiceHealthQuery, useGetSystemMetricsQuery } = servicesApi;

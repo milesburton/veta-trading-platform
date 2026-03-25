@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { alertAdded, purgeServiceAlerts } from "../store/alertsSlice.ts";
 import { useAppDispatch } from "../store/hooks.ts";
 import type { AppDispatch } from "../store/index.ts";
-import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
+import {
+  SERVICES,
+  useGetServiceHealthQuery,
+  useGetSystemMetricsQuery,
+} from "../store/servicesApi.ts";
 import type { ServiceHealth } from "../types.ts";
 
 const REQUIRED_SERVICES = new Set([
@@ -129,6 +133,85 @@ function RowDisplay({ health, index, now }: RowDisplayProps) {
   );
 }
 
+function gaugeColour(pct: number): string {
+  if (pct >= 85) return "bg-red-500";
+  if (pct >= 70) return "bg-amber-400";
+  return "bg-green-500";
+}
+
+function GaugeRow({ label, pct }: { label: string; pct: number | null }) {
+  if (pct == null) {
+    return (
+      <div className="flex items-center gap-2 py-1">
+        <span className="w-20 text-xs font-mono text-gray-400 flex-shrink-0">{label}</span>
+        <span className="text-xs font-mono text-gray-600">unavailable</span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2 py-1">
+      <span className="w-20 text-xs font-mono text-gray-400 flex-shrink-0">{label}</span>
+      <div className="flex-1 h-2 bg-gray-800 rounded overflow-hidden">
+        <div
+          className={`h-full rounded ${gaugeColour(pct)}`}
+          style={{ width: `${Math.min(pct, 100)}%` }}
+        />
+      </div>
+      <span className="w-10 text-right text-xs font-mono text-gray-300">{pct.toFixed(1)}%</span>
+    </div>
+  );
+}
+
+function HostResourcesSection() {
+  const dispatch = useAppDispatch();
+  const { data } = useGetSystemMetricsQuery(undefined, { pollingInterval: 30_000 });
+  const lastAlertLevelRef = useRef<"none" | "warn" | "critical">("none");
+
+  useEffect(() => {
+    if (!data?.disk) return;
+    const pct = data.disk.used_pct;
+    const current = pct >= 90 ? "critical" : pct >= 80 ? "warn" : "none";
+    if (current === lastAlertLevelRef.current) return;
+    lastAlertLevelRef.current = current;
+    if (current === "critical") {
+      dispatch(
+        alertAdded({
+          severity: "CRITICAL",
+          source: "service",
+          message: `Host disk usage critical: ${pct.toFixed(1)}%`,
+          ts: Date.now(),
+        })
+      );
+    } else if (current === "warn") {
+      dispatch(
+        alertAdded({
+          severity: "WARNING",
+          source: "service",
+          message: `Host disk usage high: ${pct.toFixed(1)}%`,
+          ts: Date.now(),
+        })
+      );
+    }
+  }, [data, dispatch]);
+
+  const disk = data?.disk ?? null;
+  const mem = data?.memory ?? null;
+  const diskPct = disk ? disk.used_pct : null;
+  const memDisplayPct = mem
+    ? Math.min(Math.round((mem.rss_mb / Math.max(mem.heap_total_mb, 1)) * 100), 100)
+    : null;
+
+  return (
+    <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0">
+      <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+        Host Resources
+      </div>
+      <GaugeRow label="Disk" pct={diskPct} />
+      <GaugeRow label="Memory (RSS)" pct={memDisplayPct} />
+    </div>
+  );
+}
+
 export function ServiceHealthPanel() {
   const dispatch = useAppDispatch();
   const [healthMap, setHealthMap] = useState<Map<string, ServiceHealth>>(new Map());
@@ -176,6 +259,8 @@ export function ServiceHealthPanel() {
           </span>
         </div>
       </div>
+
+      <HostResourcesSection />
 
       <div className="overflow-auto flex-1">
         <table className="w-full border-collapse">
