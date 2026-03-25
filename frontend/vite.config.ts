@@ -3,7 +3,8 @@ import react from "@vitejs/plugin-react";
 
 const isElectron = process.env.ELECTRON_BUILD === "1";
 
-export default defineConfig(async () => {
+export default defineConfig(async ({ mode }) => {
+  const isElectronMode = isElectron || mode === "electron";
   const extraPlugins = isElectron
     ? await import("vite-plugin-electron").then(({ default: electron }) => [
         electron([
@@ -33,6 +34,8 @@ export default defineConfig(async () => {
     : [];
 
   return {
+    // Relative base required for file:// protocol in packaged Electron builds
+    base: isElectronMode ? "./" : "/",
     define: {
       "import.meta.env.VITE_BUILD_DATE": JSON.stringify(
         process.env.VITE_BUILD_DATE ?? new Date().toISOString().slice(0, 10)
@@ -45,7 +48,7 @@ export default defineConfig(async () => {
       react({ babel: { plugins: [["module:@preact/signals-react-transform"]] } }),
       ...extraPlugins,
     ],
-    ...(isElectron
+    ...(isElectronMode
       ? {}
       : {
           server: {

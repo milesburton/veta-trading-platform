@@ -7,8 +7,10 @@ interface ElectronAPI {
   minimize(): void;
   maximize(): void;
   close(): void;
+  quit(): void;
   isMaximized(): Promise<boolean>;
   onMaximizeChange(cb: (maximized: boolean) => void): () => void;
+  onDeepLink(cb: (url: string) => void): () => void;
   openExternal(url: string): void;
   showSaveDialog(options: {
     defaultPath?: string;

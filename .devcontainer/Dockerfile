@@ -8,6 +8,15 @@
 # Services are managed by docker compose via the host Docker socket — no supervisord.
 FROM ghcr.io/milesburton/veta-trading-platform-base:latest
 
+# xvfb provides a headless X display for running Electron E2E tests locally.
+# Usage: xvfb-run --auto-servernum npm run test:electron
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       xvfb libgtk-3-0 libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth libgbm-dev \
+    && rm -rf /var/lib/apt/lists/*
+USER deno
+
 # Bootstrap Fish config: source the live workspace file so changes take effect
 # without rebuilding the container. The workspace is mounted at runtime at
 # /workspaces/virtual-equities-trading-application by the devcontainer.

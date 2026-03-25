@@ -316,6 +316,65 @@ jobs:
             git push
           fi
 
+  electron:
+    name: Electron build & E2E tests
+    runs-on: ubuntu-latest
+    needs: [frontend]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.npm
+          key: npm-${{ runner.os }}-frontend-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-frontend-
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install xvfb and Electron native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb libgtk-3-0 libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth libgbm-dev
+
+      - name: Install Playwright for Electron tests
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Electron app
+        working-directory: frontend
+        run: npm run electron:build
+        env:
+          ELECTRON_BUILD: "1"
+
+      - name: Run Electron E2E tests (headless via xvfb)
+        working-directory: frontend
+        run: xvfb-run --auto-servernum npm run test:electron
+        env:
+          CI: true
+
+      - name: Upload Electron test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-test-results
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7
+
   docker-base:
     name: Build base image
     runs-on: ubuntu-latest

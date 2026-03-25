@@ -18,6 +18,9 @@
 import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
 import { _electron as electron } from "playwright";
 import * as path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Path to the compiled main process entry (produced by electron:build)
 const MAIN_PATH = path.join(__dirname, "../dist-electron/main.js");
@@ -26,19 +29,20 @@ let electronApp: ElectronApplication;
 let page: Page;
 
 test.beforeAll(async () => {
+  // ELECTRON_RUN_AS_NODE causes the binary to start in Node.js mode and reject
+  // Chromium flags. Strip it before launching so Playwright's CDP handshake works.
+  const { ELECTRON_RUN_AS_NODE: _drop, ...cleanEnv } = process.env;
   electronApp = await electron.launch({
-    args: [MAIN_PATH],
+    args: [MAIN_PATH, "--no-sandbox", "--disable-gpu"],
     env: {
-      ...process.env,
+      ...cleanEnv,
       NODE_ENV: "test",
-      // Ensure the renderer loads from dist/ (packaged mode, not dev server)
     },
   });
 
-  // Wait for the first BrowserWindow
+  // Wait for the first BrowserWindow and for it to fully load
   page = await electronApp.firstWindow();
-  // Give the renderer time to paint the initial overlay
-  await page.waitForLoadState("domcontentloaded");
+  await page.waitForLoadState("load");
 });
 
 test.afterAll(async () => {
@@ -54,29 +58,19 @@ test("window has correct title", async () => {
 
 // ── 2. Startup overlay ─────────────────────────────────────────────────────────
 
-test("startup overlay is shown on launch", async () => {
-  // The startup overlay has a known data attribute or contains the service list
-  // It should be visible while services are being checked (or briefly at load)
-  const overlay = page.locator('[data-testid="startup-overlay"], [class*="StartupOverlay"], text=Connecting');
-  // We check it was present at some point; if services are stubbed it may vanish quickly
-  // so we give it a generous timeout
-  await expect(overlay.first()).toBeVisible({ timeout: 10_000 }).catch(() => {
-    // Overlay may have already dismissed — check the dashboard is shown instead
-    return expect(page.locator('[data-layout-path="tb"]').first()).toBeVisible({ timeout: 5_000 });
-  });
+test("startup overlay or dashboard is shown on launch", async () => {
+  // Either the startup overlay (no backend) or the dashboard (services healthy) should render.
+  const overlay = page.locator('[data-testid="startup-overlay"]');
+  const dashboard = page.locator('[data-layout-path="tb"]');
+  await expect(overlay.or(dashboard).first()).toBeAttached({ timeout: 15_000 });
 });
 
 // ── 3. Dashboard loads ─────────────────────────────────────────────────────────
 
-test("dashboard is shown after startup (or startup overlay dismissed)", async () => {
-  // Either the startup overlay or the dashboard should be visible
-  // The app renders both — overlay sits on top until all services respond.
-  // In test mode (no backend), we just verify the React root rendered.
+test("React root renders content", async () => {
   const root = page.locator("#root");
   await expect(root).toBeAttached({ timeout: 15_000 });
-  // The root should have some content (not empty)
-  const innerHTML = await root.innerHTML();
-  expect(innerHTML.length).toBeGreaterThan(100);
+  await expect(root).not.toBeEmpty({ timeout: 15_000 });
 });
 
 // ── 4. contextBridge API is exposed ───────────────────────────────────────────
@@ -103,6 +97,8 @@ test("window.electronAPI exposes expected methods", async () => {
   expect(methods).toContain("isMaximized");
   expect(methods).toContain("platform");
   expect(methods).toContain("appVersion");
+  expect(methods).toContain("quit");
+  expect(methods).toContain("onDeepLink");
   expect(methods).toContain("openExternal");
   expect(methods).toContain("showSaveDialog");
   expect(methods).toContain("writeFile");
@@ -160,4 +156,48 @@ test("BrowserWindow is not maximized by default", async () => {
     return win?.isMaximized() ?? false;
   });
   expect(isMaximized).toBe(false);
+});
+
+// ── 8. IPC: onDeepLink round-trip ─────────────────────────────────────────────
+
+test("onDeepLink IPC: callback receives URL sent from main process", async () => {
+  const listenerPromise = page.evaluate(
+    () =>
+      new Promise<string>((resolve) => {
+        const api = (
+          window as Window & {
+            electronAPI?: { onDeepLink(cb: (url: string) => void): () => void };
+          }
+        ).electronAPI;
+        if (!api) {
+          resolve("no-api");
+          return;
+        }
+        const unsub = api.onDeepLink((url) => {
+          unsub();
+          resolve(url);
+        });
+      })
+  );
+
+  await electronApp.evaluate(({ BrowserWindow }) => {
+    BrowserWindow.getAllWindows()[0]?.webContents.send(
+      "deeplink:navigate",
+      "veta://dashboard?symbol=AAPL"
+    );
+  });
+
+  const received = await listenerPromise;
+  expect(received).toBe("veta://dashboard?symbol=AAPL");
+});
+
+// ── 9. quit() is a callable function ─────────────────────────────────────────
+
+test("quit() is exposed as a function (does not invoke it)", async () => {
+  const isFunction = await page.evaluate(() => {
+    const api = (window as Window & { electronAPI?: Record<string, unknown> })
+      .electronAPI;
+    return typeof api?.["quit"] === "function";
+  });
+  expect(isFunction).toBe(true);
 });

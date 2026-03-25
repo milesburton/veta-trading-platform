@@ -14,8 +14,8 @@
     "test:ui": "npx playwright test",
     "test:ui:headed": "npx playwright test --headed",
     "electron:dev": "ELECTRON_BUILD=1 vite --mode electron",
-    "electron:build": "tsc && ELECTRON_BUILD=1 vite build --mode electron && electron-builder --dir",
-    "electron:dist": "tsc && vite build --mode electron && electron-builder",
+    "electron:build": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron && electron-builder --dir",
+    "electron:dist": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron && electron-builder",
     "test:electron": "npx playwright test --config=playwright.electron.config.ts",
     "prepare": "node -e \"if (!process.env.CI) { require('child_process').execSync('node frontend/node_modules/.bin/husky', {stdio:'inherit', cwd:'..'}) }\""
   },
