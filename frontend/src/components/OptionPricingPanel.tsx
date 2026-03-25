@@ -112,7 +112,7 @@ export function OptionPricingPanel() {
     if (currentPrice && currentPrice > 0) {
       setStrike(currentPrice.toFixed(2));
     }
-  }, [symbol, currentPrice]);
+  }, [currentPrice]);
 
   // Consume prefill dispatched by VolSurfacePanel (strike + expirySecs)
   const optionPrefill = useAppSelector((s) => s.ui.optionPrefill);

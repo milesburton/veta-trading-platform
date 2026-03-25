@@ -161,7 +161,7 @@ export const gridPrefsSlice = createSlice({
       ];
       for (const id of ids) {
         if (action.payload[id]) {
-          state[id] = migratePrefs(action.payload[id]!);
+          state[id] = migratePrefs(action.payload[id]);
         }
       }
     },
@@ -184,7 +184,7 @@ export const gridPrefsSlice = createSlice({
         ];
         for (const id of ids) {
           if (action.payload[id]) {
-            state[id] = migratePrefs(action.payload[id]!);
+            state[id] = migratePrefs(action.payload[id]);
           }
         }
       })

@@ -442,7 +442,7 @@ flyctl deploy --compose compose.yml --compose compose.prod.yml
 
 ### Homelab (self-hosted)
 
-Runs on `192.168.1.245` (Proxmox VM, 8 vCPU / 20 GB RAM). URL: `http://veta.home`
+Runs on a self-hosted Proxmox VM (8 vCPU / 20 GB RAM). URL: `http://veta.home`
 
 ```bash
 # First deploy

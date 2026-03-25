@@ -123,10 +123,12 @@ function collapseSmallTiles(items: TileData[], bounds: Rect, sector: string): Ti
   const visible: TileData[] = [];
   const collapsed: TileData[] = [];
   for (const lt of layout) {
+    const item = items.find((it) => it.symbol === lt.symbol);
+    if (!item) continue;
     if (lt.w - 2 >= MIN_PX && lt.h - 2 >= MIN_PX) {
-      visible.push(items.find((it) => it.symbol === lt.symbol)!);
+      visible.push(item);
     } else {
-      collapsed.push(items.find((it) => it.symbol === lt.symbol)!);
+      collapsed.push(item);
     }
   }
   if (collapsed.length === 0) return items;
@@ -248,7 +250,7 @@ export function MarketHeatmap() {
   const sectorBlocks = isDrilled
     ? null
     : sectors.map((s, i) => {
-        const sRect = sectorLayout![i];
+        const sRect = sectorLayout?.[i];
         if (!sRect)
           return {
             ...s,
@@ -504,7 +506,7 @@ export function MarketHeatmap() {
           {isDrilled && drilledLayout
             ? drilledLayout.map((tile) => renderTile(tile))
             : sectorBlocks?.map((block, si) => {
-                const sRect = sectorLayout![si];
+                const sRect = sectorLayout?.[si];
                 if (!sRect || sRect.w < 8 || sRect.h < 8) return null;
                 return (
                   <g key={block.sector}>
@@ -558,7 +560,7 @@ export function MarketHeatmap() {
 
         {tooltip.value &&
           (() => {
-            const { mouseX, mouseY, symbol } = tooltip.value!;
+            const { mouseX, mouseY, symbol } = tooltip.value;
 
             if (symbol.includes(":OTHER")) {
               const sector = symbol.split(":")[0];

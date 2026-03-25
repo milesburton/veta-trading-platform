@@ -77,8 +77,8 @@ flyctl status
 
 ## Homelab (self-hosted)
 
-Runs on `192.168.1.245` (Proxmox VM, 8 vCPU / 20 GB RAM).
-URL: `http://veta.home` (add `192.168.1.245 veta.home` to `/etc/hosts`)
+Runs on a self-hosted VM (Proxmox, 8 vCPU / 20 GB RAM).
+URL: accessible via your local DNS or hosts file entry for `veta.home`.
 
 ### Stack
 
@@ -88,7 +88,7 @@ Traefik v3 — HTTP→HTTPS redirect, Let's Encrypt ACME, Docker provider
 Watchtower — polls GHCR every 5 min, auto-restarts updated containers
 ```
 
-Managed via [Dockge](https://github.com/louislam/dockge) at `http://192.168.1.245:5001`.
+Managed via [Dockge](https://github.com/louislam/dockge) at `http://veta.home:5001`.
 
 ### First-time setup
 
@@ -145,7 +145,7 @@ docker compose -f compose.yml -f compose.prod.yml up -d
 - Returns `503` when critical
 - Auto-prunes dangling Docker images when disk exceeds 90%
 
-Poll with Uptime Kuma: `http://192.168.1.245:8099/health` (keyword: `ok`)
+Poll with Uptime Kuma: `http://veta.home:8099/health` (keyword: `ok`)
 
 ---
 

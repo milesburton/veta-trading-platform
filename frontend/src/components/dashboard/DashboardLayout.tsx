@@ -879,7 +879,13 @@ export function DashboardLayout() {
         </button>
       );
     },
-    [dispatch, storageKey]
+    [
+      dispatch,
+      storageKey, // Remove the tab from the host layout so it leaves no gap.
+      // The panel lives entirely in the new window; the user re-adds it
+      // from the component picker when they want it back on this screen.
+      model.doAction,
+    ]
   );
 
   const onContextMenu = useCallback(
