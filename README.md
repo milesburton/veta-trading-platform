@@ -8,7 +8,6 @@
 [![Integration tests](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=integration%20tests&logo=postgresql)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 [![E2E tests](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=e2e%20%28playwright%29&logo=playwright)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 [![Docker build](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=docker%20build&logo=docker)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Homelab deploy](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=homelab%20deploy&logo=homeassistant)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 
 **Live demo:** https://veta-trading.fly.dev/ (Note this will be transiently online as the project matures)
 
