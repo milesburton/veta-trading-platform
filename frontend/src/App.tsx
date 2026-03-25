@@ -45,9 +45,6 @@ function ToastHost() {
   const dispatch = useAppDispatch();
   const [shown, setShown] = useState<Set<string>>(new Set());
 
-  // Only toast alerts that arrived after this session started (not loaded from history).
-  // Service health alerts are already surfaced in the CRITICAL banner and Estate Overview —
-  // exclude them here to prevent a flood of toasts when services are down.
   const toastable = alerts.filter(
     (a) =>
       (a.severity === "WARNING" || a.severity === "INFO") &&
