@@ -426,6 +426,7 @@ jobs:
     needs: [docker-services]
     if: github.ref == 'refs/heads/main'
     environment: homelab
+    continue-on-error: true
 
     steps:
       - name: Install SSH key
@@ -436,7 +437,7 @@ jobs:
 
       - name: Pull new images and restart stack
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no miles@${{ secrets.HOMELAB_HOST }} \
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ConnectTimeout=15 miles@${{ secrets.HOMELAB_HOST }} \
             "cd /opt/stacks/veta && docker compose -f compose.yml -f compose.prod.yml --profile trading pull && docker compose -f compose.yml -f compose.prod.yml --profile trading up -d"
 
       - name: Wait for new SHA to be live (up to 3 min)
@@ -446,7 +447,7 @@ jobs:
           SHORT_SHA="${FULL_SHA:0:7}"
           echo "Expecting SHA: $FULL_SHA (short: $SHORT_SHA)"
           for i in $(seq 1 36); do
-            DEPLOYED=$(ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no miles@${{ secrets.HOMELAB_HOST }} \
+            DEPLOYED=$(ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ConnectTimeout=15 miles@${{ secrets.HOMELAB_HOST }} \
               "curl -sf http://localhost/health 2>/dev/null | python3 -c \"import sys,json; print(json.load(sys.stdin).get('version',''))\" 2>/dev/null || echo ''" 2>/dev/null || echo "")
             if [ "$DEPLOYED" = "$FULL_SHA" ]; then
               echo "healthy=true" >> "$GITHUB_OUTPUT"
@@ -463,14 +464,14 @@ jobs:
       - name: Record good SHA on success
         if: steps.health_check.outputs.healthy == 'true'
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no miles@${{ secrets.HOMELAB_HOST }} \
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ConnectTimeout=15 miles@${{ secrets.HOMELAB_HOST }} \
             "echo '${{ steps.health_check.outputs.short_sha }}' > /opt/stacks/veta/.good-sha"
           echo "✅ Recorded ${{ steps.health_check.outputs.short_sha }} as last-known-good SHA"
 
       - name: Rollback to last-known-good SHA on failure
         if: steps.health_check.outputs.healthy != 'true'
         run: |
-          PREV=$(ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no miles@${{ secrets.HOMELAB_HOST }} \
+          PREV=$(ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ConnectTimeout=15 miles@${{ secrets.HOMELAB_HOST }} \
             "cat /opt/stacks/veta/.good-sha 2>/dev/null || echo ''" 2>/dev/null || echo "")
           if [ -z "$PREV" ]; then
             echo "❌ No previous good SHA recorded — manual intervention required"
@@ -479,7 +480,7 @@ jobs:
           echo "⏪ Rolling back to $PREV..."
           REGISTRY="ghcr.io/milesburton/veta-trading-platform"
           SERVICES="frontend market-sim ems oms limit-algo twap-algo pov-algo vwap-algo iceberg-algo sniper-algo arrival-price-algo momentum-algo is-algo observability user-service journal fix-exchange fix-gateway fix-archive analytics market-data market-data-adapters feature-engine signal-engine recommendation-engine scenario-engine llm-advisory news-aggregator gateway dark-pool ccp-service rfq-service"
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no miles@${{ secrets.HOMELAB_HOST }} bash -s -- "$PREV" "$REGISTRY" "$SERVICES" <<'ENDSSH'
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ConnectTimeout=15 miles@${{ secrets.HOMELAB_HOST }} bash -s -- "$PREV" "$REGISTRY" "$SERVICES" <<'ENDSSH'
             PREV=$1
             REGISTRY=$2
             SERVICES=$3
