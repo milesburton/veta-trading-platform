@@ -91,7 +91,6 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
   const [elapsed, setElapsed] = useState(0);
   const [services, setServices] = useState<ReadyServices | null>(null);
   const [mode, setMode] = useState<OverlayMode>("booting");
-  const [hoveredService, setHoveredService] = useState<keyof ReadyServices | null>(null);
 
   // startRef anchors the timer. Updated to gateway's startedAt on first poll.
   const startRef = useRef(Date.now());
@@ -151,9 +150,8 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
   const secs = elapsed % 60;
   const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
-  const knownKeys = SERVICE_ORDER.filter((k) => services !== null && k in services);
-  const upCount = knownKeys.filter((k) => services?.[k]).length;
-  const totalCount = knownKeys.length;
+  const upCount = SERVICE_ORDER.filter((k) => services?.[k]).length;
+  const totalCount = SERVICE_ORDER.length;
 
   const isBooting = mode === "booting";
 
@@ -188,45 +186,40 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
       </div>
 
       {/* Service checklist */}
-      <ul className="flex flex-col gap-1 min-w-72 list-none">
-        {SERVICE_ORDER.map((key) => {
-          const up = services?.[key];
-          const isHovered = hoveredService === key;
-          return (
-            <li
-              key={key}
-              data-testid={`service-indicator-${key}`}
-              className="flex flex-col gap-0.5 cursor-default"
-              onMouseEnter={() => setHoveredService(key)}
-              onMouseLeave={() => setHoveredService(null)}
-            >
-              <div className="flex items-center gap-3 text-sm">
-                <span
-                  className={`w-2 h-2 rounded-full shrink-0 ${
-                    up ? "bg-emerald-400" : "bg-gray-600 animate-pulse"
-                  }`}
-                />
-                <span className={up ? "text-gray-300" : "text-gray-500"}>
+      <table className="border-collapse text-sm">
+        <tbody>
+          {SERVICE_ORDER.map((key) => {
+            const up = services?.[key];
+            return (
+              <tr key={key} data-testid={`service-indicator-${key}`}>
+                <td className="pr-3 py-0.5 align-middle">
+                  <span
+                    className={`inline-block w-2 h-2 rounded-full ${
+                      up ? "bg-emerald-400" : "bg-gray-600 animate-pulse"
+                    }`}
+                  />
+                </td>
+                <td
+                  className={`pr-6 py-0.5 align-middle whitespace-nowrap ${up ? "text-gray-300" : "text-gray-500"}`}
+                >
                   {SERVICE_LABELS[key]}
-                </span>
-                {up && <span className="ml-auto text-[10px] text-gray-600">ready</span>}
-              </div>
-              {isHovered && (
-                <div className="ml-5 text-[11px] text-gray-500 leading-tight">
+                </td>
+                <td className="py-0.5 align-middle text-[11px] text-gray-600 max-w-sm">
                   {SERVICE_DESCRIPTIONS[key]}
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+                </td>
+                <td className="pl-4 py-0.5 align-middle text-[10px] text-gray-600 whitespace-nowrap">
+                  {up ? "ready" : ""}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
 
       {/* Progress summary */}
-      {services !== null && totalCount > 0 && (
-        <div className="text-xs text-gray-600">
-          {upCount} / {totalCount} services ready
-        </div>
-      )}
+      <div className="text-xs text-gray-600">
+        {upCount} / {totalCount} services ready
+      </div>
 
       <div data-testid="startup-elapsed" className="text-xs text-gray-600 tabular-nums">
         {timeStr} elapsed
