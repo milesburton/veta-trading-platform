@@ -89,6 +89,14 @@ export class AppPage {
     await this.page.waitForSelector(".flexlayout__tab", { timeout: 15_000 });
   }
 
+  /** Wait for the startup overlay to be fully dismissed. */
+  async waitForOverlayGone() {
+    await this.page.waitForSelector('[data-testid="startup-overlay"]', {
+      state: "detached",
+      timeout: 15_000,
+    });
+  }
+
   /** Wait for the login page to be shown (unauthenticated state). */
   async waitForLoginPage() {
     await expect(this.page.getByRole("heading", { name: /select your profile/i })).toBeVisible({

@@ -297,6 +297,7 @@ export class GatewayMock {
         contentType: "application/json",
         body: JSON.stringify({
           ready: true,
+          startedAt: Date.now() - 300_000,
           services: {
             bus: true,
             marketSim: true,

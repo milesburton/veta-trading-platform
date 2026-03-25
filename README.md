@@ -11,6 +11,24 @@
 
 **Live demo:** https://veta-trading.fly.dev/ (Note this will be transiently online as the project matures)
 
+## Screenshots
+
+> Auto-generated from the live UI on every commit to `main`.
+
+| Trading Dashboard | Order Ticket |
+|---|---|
+| ![Trading Dashboard](docs/screenshots/01-trading-dashboard.png) | ![Order Ticket](docs/screenshots/02-order-ticket.png) |
+
+| Order Blotter | Algo Workspace |
+|---|---|
+| ![Order Blotter](docs/screenshots/03-order-blotter.png) | ![Algo Workspace](docs/screenshots/04-algo-workspace.png) |
+
+| Fixed Income | Option Pricing |
+|---|---|
+| ![Fixed Income](docs/screenshots/05-fixed-income.png) | ![Option Pricing](docs/screenshots/06-option-pricing.png) |
+
+---
+
 VETA is a near real world equities and fixed income trading platform. It will enable you to "paper trade" using a one of the algo services which is intended to help you learn market dynamics. 
 
 This platform consists of:

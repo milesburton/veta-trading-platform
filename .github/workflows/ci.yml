@@ -258,6 +258,64 @@ jobs:
             frontend/test-results/
           retention-days: 7
 
+  screenshots:
+    name: Capture UI screenshots
+    runs-on: ubuntu-latest
+    needs: [frontend, integration]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Cache npm and Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.npm
+            ~/.cache/ms-playwright
+          key: npm-playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
+          restore-keys: |
+            npm-playwright-${{ runner.os }}-
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Capture screenshots
+        working-directory: frontend
+        run: npx playwright test tests/screenshots.spec.ts --reporter=list
+        env:
+          CI: true
+
+      - name: Commit updated screenshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots/
+          if git diff --staged --quiet; then
+            echo "No screenshot changes"
+          else
+            git commit -m "chore(screenshots): update UI screenshots [skip ci]"
+            git push
+          fi
+
   docker-base:
     name: Build base image
     runs-on: ubuntu-latest
