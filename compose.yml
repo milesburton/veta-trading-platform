@@ -26,13 +26,6 @@ x-deno-medium: &deno-medium
     - trading-net
   mem_limit: 768m
 
-x-algo-healthcheck: &algo-healthcheck
-  healthcheck:
-    test: ["CMD-SHELL", "curl -sf http://localhost:$${PORT}/health || exit 1"]
-    interval: 15s
-    timeout: 5s
-    retries: 10
-    start_period: 20s
 
 services:
   # ── Service profiles ─────────────────────────────────────────────────────
@@ -195,7 +188,7 @@ services:
       OLLAMA_KEEP_ALIVE: 5m
     mem_limit: 3g
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:11434/api/tags > /dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 20
