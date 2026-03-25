@@ -17,6 +17,7 @@ const { reducer } = marketSlice;
 const initialState: MarketState = {
   assets: [],
   prices: {},
+  sessionOpen: {},
   priceHistory: {},
   candleHistory: {},
   candlesReady: {},
@@ -512,5 +513,28 @@ describe("orderBookUpdated", () => {
     const state = reducer(stateWithBook, orderBookUpdated(second));
     expect(state.orderBook.MSFT).toBeUndefined();
     expect(state.orderBook.AAPL.mid).toBe(151);
+  });
+});
+
+describe("tickReceived — sessionOpen", () => {
+  const tick = (prices: Record<string, number>, state = initialState) =>
+    reducer(state, tickReceived({ prices, ts: Date.now() }));
+
+  it("records the first price as sessionOpen", () => {
+    const state = tick({ AAPL: 189.5 });
+    expect(state.sessionOpen.AAPL).toBe(189.5);
+  });
+
+  it("does not overwrite sessionOpen on subsequent ticks", () => {
+    const s1 = tick({ AAPL: 189.5 });
+    const s2 = tick({ AAPL: 192.0 }, s1);
+    const s3 = tick({ AAPL: 185.0 }, s2);
+    expect(s3.sessionOpen.AAPL).toBe(189.5);
+  });
+
+  it("sets sessionOpen independently per symbol", () => {
+    const s1 = tick({ AAPL: 189.5, MSFT: 421.0 });
+    expect(s1.sessionOpen.AAPL).toBe(189.5);
+    expect(s1.sessionOpen.MSFT).toBe(421.0);
   });
 });

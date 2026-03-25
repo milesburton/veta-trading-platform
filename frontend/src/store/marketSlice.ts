@@ -84,6 +84,7 @@ export function applyTickMut(
 export interface MarketState {
   assets: AssetDef[];
   prices: MarketPrices;
+  sessionOpen: Record<string, number>;
   priceHistory: PriceHistory;
   candleHistory: CandleHistory;
   candlesReady: Record<string, boolean>;
@@ -94,6 +95,7 @@ export interface MarketState {
 const initialState: MarketState = {
   assets: [],
   prices: {},
+  sessionOpen: {},
   priceHistory: {},
   candleHistory: {},
   candlesReady: {},
@@ -124,6 +126,7 @@ export const marketSlice = createSlice({
       state.prices = prices;
       for (const asset of Object.keys(prices)) {
         const price = prices[asset];
+        if (state.sessionOpen[asset] === undefined) state.sessionOpen[asset] = price;
         const tickVolume = (volumes[asset] ?? 0) / TICKS_PER_MINUTE;
 
         const hist = state.priceHistory[asset] ?? [];

@@ -43,6 +43,7 @@ function makeStore(
         assets: overrides.assets ?? assets,
         prices: overrides.prices ?? prices,
         priceHistory: overrides.priceHistory ?? priceHistory,
+        sessionOpen: {},
         candleHistory: {},
         candlesReady: {},
         connected: true,

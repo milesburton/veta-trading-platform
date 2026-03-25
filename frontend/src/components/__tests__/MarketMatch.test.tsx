@@ -30,6 +30,7 @@ function makeStore(events: ObsEvent[] = [], channelAsset?: string) {
         assets: [],
         prices: {},
         priceHistory: {},
+        sessionOpen: {},
         candleHistory: {},
         candlesReady: {},
         orderBook: {},

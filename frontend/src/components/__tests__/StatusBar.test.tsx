@@ -48,6 +48,7 @@ function makeStore(connected: boolean) {
         assets: [],
         prices: {},
         priceHistory: {},
+        sessionOpen: {},
         candleHistory: {},
         candlesReady: {},
         connected,

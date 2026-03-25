@@ -46,6 +46,7 @@ function makeStore(orderBook: Record<string, OrderBookSnapshot> = {}) {
         assets: [],
         prices: {},
         priceHistory: {},
+        sessionOpen: {},
         candleHistory: {},
         candlesReady: {},
         orderBook,

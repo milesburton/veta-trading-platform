@@ -159,7 +159,7 @@ interface TooltipState {
 export function MarketHeatmap() {
   const assets = useAppSelector((s) => s.market.assets);
   const prices = useAppSelector((s) => s.market.prices);
-  const priceHistory = useAppSelector((s) => s.market.priceHistory);
+  const sessionOpen = useAppSelector((s) => s.market.sessionOpen);
   const broadcast = useChannelOut();
 
   const tooltip = useSignal<TooltipState | null>(null);
@@ -188,14 +188,13 @@ export function MarketHeatmap() {
   const tiles = useMemo<TileData[]>(() => {
     return assets.map((a: AssetDef) => {
       const price = prices[a.symbol] ?? a.initialPrice;
-      const history = priceHistory[a.symbol] ?? [];
-      const open = history[0] ?? a.initialPrice;
+      const open = sessionOpen[a.symbol] ?? a.initialPrice;
       const pct = open > 0 ? ((price - open) / open) * 100 : 0;
       const size = sortBy.value === "cap" ? (a.marketCapB ?? 1) : Math.max(Math.abs(pct), 0.1);
       return { symbol: a.symbol, sector: a.sector, pct, size };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assets, prices, priceHistory, sortBy.value]);
+  }, [assets, prices, sessionOpen, sortBy.value]);
 
   const sectors = useMemo(() => {
     const map = new Map<string, TileData[]>();
