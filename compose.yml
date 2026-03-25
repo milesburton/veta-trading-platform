@@ -72,6 +72,31 @@ services:
     labels:
       - "traefik.enable=false"
 
+  redpanda-init:
+    image: redpandadata/redpanda:v24.3.6
+    container_name: redpanda-init
+    networks:
+      - trading-net
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        TOPICS="market.ticks algo.heartbeat orders.new orders.routed orders.child orders.filled fix.execution news.feed intelligence.features intelligence.signals intelligence.recommendations"
+        for TOPIC in $TOPICS; do
+          rpk topic create "$TOPIC" --brokers redpanda:9092 2>/dev/null || true
+        done
+        rpk topic alter-config market.ticks   --set retention.bytes=524288000  --brokers redpanda:9092
+        rpk topic alter-config market.ticks   --set retention.ms=3600000       --brokers redpanda:9092
+        rpk topic alter-config algo.heartbeat --set retention.bytes=52428800   --brokers redpanda:9092
+        rpk topic alter-config algo.heartbeat --set retention.ms=1800000       --brokers redpanda:9092
+        echo "Retention limits applied"
+    labels:
+      - "traefik.enable=false"
+
   redpanda-console:
     image: redpandadata/console:v2.7.2
     networks:
