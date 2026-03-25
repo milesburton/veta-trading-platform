@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.5.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.4.1...veta-trading-platform-v1.5.0) (2026-03-25)
+
+
+### Features
+
+* **dashboard,news:** admin workspace split, news CRUD, fix gateway news proxy ([d63f7f5](https://github.com/milesburton/veta-trading-platform/commit/d63f7f517012f1a52bb88105bf96f3d9f64bd179))
+* **status:** feed heartbeat indicator + candle chart theme fix ([d07afad](https://github.com/milesburton/veta-trading-platform/commit/d07afadf04f8f251a9d0ac2927f2e4e6c38f72a8))
+
+
+### Bug Fixes
+
+* **estate-overview:** replace Grafana iframe with native event feed ([aa61671](https://github.com/milesburton/veta-trading-platform/commit/aa6167144da8b0acf10f937f6734f790d7118a20))
+* **order-ticket:** default price from live feed once available ([bcb99e4](https://github.com/milesburton/veta-trading-platform/commit/bcb99e477d6b8969e02fcad9d71b95d633619bac))
+* **redpanda:** add init service to enforce topic retention limits ([c8120b6](https://github.com/milesburton/veta-trading-platform/commit/c8120b65481dded670e87ca07c426297c8ca0fb7))
+* **startup-overlay:** table layout for service list; fix 0/N count ([253909b](https://github.com/milesburton/veta-trading-platform/commit/253909b33f48daebcf45a52c34b217e34fe94d33))
+
 ## [1.4.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.4.0...veta-trading-platform-v1.4.1) (2026-03-23)
 
 
