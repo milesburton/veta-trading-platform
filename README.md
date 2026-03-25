@@ -58,3 +58,11 @@ cd frontend && npm run electron:build
 | Fixed Income | Option Pricing |
 |---|---|
 | ![Fixed Income](docs/screenshots/05-fixed-income.png) | ![Option Pricing](docs/screenshots/06-option-pricing.png) |
+
+| Market Heatmap | Kill Switch |
+|---|---|
+| ![Market Heatmap](docs/screenshots/07-market-heatmap.png) | ![Kill Switch](docs/screenshots/08-kill-switch.png) |
+
+| Column Formatting | |
+|---|---|
+| ![Column Formatting](docs/screenshots/09-column-formatting.png) | |

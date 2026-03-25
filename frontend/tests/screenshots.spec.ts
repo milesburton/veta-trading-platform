@@ -13,6 +13,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "@playwright/test";
 import {
+  type AssetDef,
   DEFAULT_ASSETS,
   MOCK_BOND_PRICE_RESPONSE,
   MOCK_DURATION_LADDER_RESPONSE,
@@ -25,6 +26,35 @@ const OUT_DIR = path.resolve(fileURLToPath(import.meta.url), "../../../docs/scre
 
 const PRICES = { AAPL: 189.5, MSFT: 421.0, GOOGL: 175.25, AMZN: 224.8, NVDA: 876.4 };
 const VOLUMES = { AAPL: 1_200_000, MSFT: 980_000, GOOGL: 760_000, AMZN: 540_000, NVDA: 1_450_000 };
+
+const HEATMAP_ASSETS: AssetDef[] = [
+  { symbol: "AAPL", name: "Apple Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 3000, beta: 1.2 },
+  { symbol: "MSFT", name: "Microsoft Corp.", sector: "Technology", exchange: "NASDAQ", marketCapB: 2800, beta: 0.9 },
+  { symbol: "NVDA", name: "NVIDIA Corp.", sector: "Technology", exchange: "NASDAQ", marketCapB: 2200, beta: 1.8 },
+  { symbol: "GOOGL", name: "Alphabet Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 1800, beta: 1.1 },
+  { symbol: "META", name: "Meta Platforms", sector: "Technology", exchange: "NASDAQ", marketCapB: 1200, beta: 1.3 },
+  { symbol: "JPM", name: "JPMorgan Chase", sector: "Financials", exchange: "NYSE", marketCapB: 580, beta: 1.1 },
+  { symbol: "BAC", name: "Bank of America", sector: "Financials", exchange: "NYSE", marketCapB: 290, beta: 1.4 },
+  { symbol: "GS", name: "Goldman Sachs", sector: "Financials", exchange: "NYSE", marketCapB: 140, beta: 1.5 },
+  { symbol: "JNJ", name: "Johnson & Johnson", sector: "Healthcare", exchange: "NYSE", marketCapB: 420, beta: 0.6 },
+  { symbol: "UNH", name: "UnitedHealth Group", sector: "Healthcare", exchange: "NYSE", marketCapB: 470, beta: 0.7 },
+  { symbol: "XOM", name: "ExxonMobil", sector: "Energy", exchange: "NYSE", marketCapB: 480, beta: 1.1 },
+  { symbol: "CVX", name: "Chevron Corp.", sector: "Energy", exchange: "NYSE", marketCapB: 290, beta: 1.0 },
+];
+
+const HEATMAP_PRICES: Record<string, number> = {
+  AAPL: 189.5, MSFT: 421.0, NVDA: 876.4, GOOGL: 175.25, META: 512.3,
+  JPM: 198.4, BAC: 38.9, GS: 452.1,
+  JNJ: 162.3, UNH: 528.7,
+  XOM: 112.4, CVX: 158.9,
+};
+
+const HEATMAP_PREV: Record<string, number> = {
+  AAPL: 185.2, MSFT: 415.0, NVDA: 845.0, GOOGL: 178.5, META: 498.0,
+  JPM: 201.0, BAC: 40.1, GS: 448.0,
+  JNJ: 160.0, UNH: 535.0,
+  XOM: 115.0, CVX: 155.0,
+};
 
 const MOCK_QUOTE = {
   symbol: "AAPL",
@@ -209,4 +239,48 @@ test("screenshot: option pricing (Black-Scholes)", async ({ page }) => {
   await page.waitForTimeout(400);
 
   await page.screenshot({ path: path.join(OUT_DIR, "06-option-pricing.png") });
+});
+
+test("screenshot: market heatmap", async ({ page }) => {
+  const app = new AppPage(page);
+  await app.goto({ assets: HEATMAP_ASSETS, url: "/?ws=ws-overview" });
+  await app.waitForDashboard();
+  app.gateway.sendAuthIdentity({});
+  await app.waitForOverlayGone();
+
+  app.gateway.sendMarketUpdate(HEATMAP_PRICES);
+  await page.waitForTimeout(800);
+
+  await page.screenshot({ path: path.join(OUT_DIR, "07-market-heatmap.png") });
+});
+
+test("screenshot: kill switch dialog", async ({ page }) => {
+  const app = new AppPage(page);
+  await app.gotoAsTrader(DEFAULT_ASSETS);
+  await app.waitForOverlayGone();
+
+  app.gateway.sendMarketUpdate(PRICES, VOLUMES);
+  await page.waitForTimeout(400);
+
+  await page.getByRole("button", { name: /Kill Switch/i }).click();
+  await page.waitForSelector('[data-testid="kill-switch-dialog"]', { timeout: 5_000 });
+  await page.waitForTimeout(200);
+
+  await page.screenshot({ path: path.join(OUT_DIR, "08-kill-switch.png") });
+});
+
+test("screenshot: column formatting (CF rules)", async ({ page }) => {
+  const app = new AppPage(page);
+  await app.gotoAsTrader(DEFAULT_ASSETS);
+  await app.waitForOverlayGone();
+
+  app.gateway.sendMarketUpdate(PRICES, VOLUMES);
+  await page.waitForTimeout(400);
+
+  const blotterPanel = await app.panelByTitle(/Orders.*active/i);
+  await blotterPanel.getByRole("button", { name: /Format/i }).click();
+  await page.getByText("Conditional Formatting").waitFor({ timeout: 5_000 });
+  await page.waitForTimeout(200);
+
+  await page.screenshot({ path: path.join(OUT_DIR, "09-column-formatting.png") });
 });

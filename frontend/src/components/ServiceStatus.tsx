@@ -96,6 +96,13 @@ export function ServiceStatus({ services }: Props) {
               </div>
             </div>
 
+            {okCount === 0 && (
+              <div className="px-3 py-2 border-b border-gray-800 bg-gray-950 text-gray-500 text-[11px]">
+                No services responding. Start the backend:{" "}
+                <span className="font-mono text-gray-400">supervisorctl start all</span>
+              </div>
+            )}
+
             <table className="w-full table-fixed">
               <thead>
                 <tr className="text-gray-500 border-b border-gray-800">
