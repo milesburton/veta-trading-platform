@@ -277,6 +277,33 @@ test("screenshot: column formatting (CF rules)", async ({ page }) => {
   app.gateway.sendMarketUpdate(PRICES, VOLUMES);
   await page.waitForTimeout(400);
 
+  const ticket = await app.getOrderTicket();
+
+  const order1Promise = app.gateway.nextOutbound("submitOrder");
+  await ticket.fillOrder({ asset: "AAPL", side: "BUY", quantity: 500, strategy: "TWAP" });
+  await ticket.submit();
+  const msg1 = await order1Promise;
+  const id1 = (msg1.payload as { clientOrderId: string }).clientOrderId;
+  app.gateway.sendOrderLifecycle(id1, { asset: "AAPL", quantity: 500, limitPrice: PRICES.AAPL, stages: ["submitted", "routed", "filled"] });
+
+  const order2Promise = app.gateway.nextOutbound("submitOrder");
+  await ticket.fillOrder({ asset: "MSFT", side: "SELL", quantity: 200, strategy: "LIMIT" });
+  await ticket.submit();
+  const msg2 = await order2Promise;
+  const id2 = (msg2.payload as { clientOrderId: string }).clientOrderId;
+  app.gateway.sendOrderLifecycle(id2, { asset: "MSFT", quantity: 200, limitPrice: PRICES.MSFT, stages: ["submitted", "routed"] });
+
+  const order3Promise = app.gateway.nextOutbound("submitOrder");
+  await ticket.fillOrder({ asset: "NVDA", side: "BUY", quantity: 100, strategy: "LIMIT" });
+  await ticket.submit();
+  const msg3 = await order3Promise;
+  const id3 = (msg3.payload as { clientOrderId: string }).clientOrderId;
+  app.gateway.sendOrderLifecycle(id3, { asset: "NVDA", quantity: 100, limitPrice: PRICES.NVDA, stages: ["submitted", "expired"] });
+
+  const blotter = await app.getOrderBlotter();
+  await blotter.waitForStatus("filled", 8_000);
+  await page.waitForTimeout(300);
+
   const blotterPanel = await app.panelByTitle(/Orders.*active/i);
   await blotterPanel.getByRole("button", { name: /Format/i }).click();
   await page.getByText("Conditional Formatting").waitFor({ timeout: 5_000 });
