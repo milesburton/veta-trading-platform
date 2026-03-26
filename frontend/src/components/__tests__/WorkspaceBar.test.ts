@@ -5,18 +5,21 @@ import { reconcilePresetWorkspaces, seedWorkspaces } from "../WorkspaceBar";
 // ── seedWorkspaces ────────────────────────────────────────────────────────────
 
 describe("seedWorkspaces", () => {
-  test("returns eight locked trader workspaces by default", () => {
+  test("returns eleven locked trader workspaces by default", () => {
     const { workspaces } = seedWorkspaces();
-    expect(workspaces).toHaveLength(8);
+    expect(workspaces).toHaveLength(11);
     expect(workspaces.map((w) => w.id)).toEqual([
       "ws-trading",
       "ws-algo",
+      "ws-options",
       "ws-analysis",
       "ws-research",
-      "ws-overview",
+      "ws-commodities",
+      "ws-commodities-analysis",
       "ws-fi-trading",
       "ws-fi-analysis",
       "ws-fi-research",
+      "ws-overview",
     ]);
     for (const w of workspaces) expect(w.locked).toBe(true);
   });
@@ -82,7 +85,7 @@ describe("reconcilePresetWorkspaces", () => {
     const ids = out.map((w) => w.id);
 
     expect(ids.indexOf("ws-algo")).toBeGreaterThan(ids.indexOf("ws-trading"));
-    expect(ids.indexOf("ws-algo")).toBeLessThan(ids.indexOf("ws-analysis"));
+    expect(ids.indexOf("ws-algo")).toBeLessThan(ids.indexOf("ws-options"));
   });
 
   test("restored preset is marked locked", () => {
@@ -105,22 +108,28 @@ describe("reconcilePresetWorkspaces", () => {
 
     expect(restored).toEqual([
       "Algo",
+      "Options",
       "Analysis",
       "Research",
-      "Overview",
+      "Commodities",
+      "Cmdty Analysis",
       "FI Trading",
       "FI Analysis",
       "FI Research",
+      "Overview",
     ]);
     expect(out.map((w) => w.id)).toEqual([
       "ws-trading",
       "ws-algo",
+      "ws-options",
       "ws-analysis",
       "ws-research",
-      "ws-overview",
+      "ws-commodities",
+      "ws-commodities-analysis",
       "ws-fi-trading",
       "ws-fi-analysis",
       "ws-fi-research",
+      "ws-overview",
     ]);
   });
 
@@ -164,14 +173,17 @@ describe("reconcilePresetWorkspaces", () => {
     expect(restored).toEqual([
       "Trading",
       "Algo",
+      "Options",
       "Analysis",
       "Research",
-      "Overview",
+      "Commodities",
+      "Cmdty Analysis",
       "FI Trading",
       "FI Analysis",
       "FI Research",
+      "Overview",
     ]);
-    expect(out).toHaveLength(8);
+    expect(out).toHaveLength(11);
   });
 });
 

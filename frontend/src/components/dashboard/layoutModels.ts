@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v18`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v19`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -301,6 +301,8 @@ export function makeAlgoModel(): IJsonModel {
 }
 
 export function makeAnalysisModel(): IJsonModel {
+  // Pure equities analysis — price chart, depth, news, forward projections.
+  // Options risk panels live in makeOptionsModel; FI panels in makeFi*Model.
   return {
     global: makeDefaultModel().global,
     layout: {
@@ -308,7 +310,7 @@ export function makeAnalysisModel(): IJsonModel {
       children: [
         {
           type: "tabset",
-          weight: 25,
+          weight: 22,
           children: [
             {
               type: "tab",
@@ -321,11 +323,11 @@ export function makeAnalysisModel(): IJsonModel {
         },
         {
           type: "row",
-          weight: 45,
+          weight: 48,
           children: [
             {
               type: "tabset",
-              weight: 62,
+              weight: 60,
               children: [
                 {
                   type: "tab",
@@ -338,7 +340,7 @@ export function makeAnalysisModel(): IJsonModel {
             },
             {
               type: "tabset",
-              weight: 38,
+              weight: 40,
               children: [
                 {
                   type: "tab",
@@ -346,6 +348,13 @@ export function makeAnalysisModel(): IJsonModel {
                   name: PANEL_TITLES["market-depth"],
                   component: "market-depth",
                   config: { panelType: "market-depth", incoming: 1 } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "price-fan",
+                  name: PANEL_TITLES["price-fan"],
+                  component: "price-fan",
+                  config: { panelType: "price-fan" } satisfies TabChannelConfig,
                 },
               ],
             },
@@ -364,52 +373,95 @@ export function makeAnalysisModel(): IJsonModel {
             },
             {
               type: "tab",
+              id: "trade-recommendation",
+              name: PANEL_TITLES["trade-recommendation"],
+              component: "trade-recommendation",
+              config: { panelType: "trade-recommendation" } satisfies TabChannelConfig,
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+export function makeOptionsModel(): IJsonModel {
+  // Derivatives / options workspace — Black-Scholes pricing, vol surface,
+  // scenario matrix, Greeks surface, and trade recommendations.
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        {
+          type: "tabset",
+          weight: 35,
+          children: [
+            {
+              type: "tab",
               id: "option-pricing",
               name: PANEL_TITLES["option-pricing"],
               component: "option-pricing",
               config: { panelType: "option-pricing" } satisfies TabChannelConfig,
             },
+          ],
+        },
+        {
+          type: "row",
+          weight: 40,
+          children: [
             {
-              type: "tab",
-              id: "scenario-matrix",
-              name: PANEL_TITLES["scenario-matrix"],
-              component: "scenario-matrix",
-              config: { panelType: "scenario-matrix" } satisfies TabChannelConfig,
+              type: "tabset",
+              weight: 55,
+              children: [
+                {
+                  type: "tab",
+                  id: "vol-surface",
+                  name: PANEL_TITLES["vol-surface"],
+                  component: "vol-surface",
+                  config: { panelType: "vol-surface" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "greeks-surface",
+                  name: PANEL_TITLES["greeks-surface"],
+                  component: "greeks-surface",
+                  config: { panelType: "greeks-surface" } satisfies TabChannelConfig,
+                },
+              ],
             },
+            {
+              type: "tabset",
+              weight: 45,
+              children: [
+                {
+                  type: "tab",
+                  id: "scenario-matrix",
+                  name: PANEL_TITLES["scenario-matrix"],
+                  component: "scenario-matrix",
+                  config: { panelType: "scenario-matrix" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "vol-profile",
+                  name: PANEL_TITLES["vol-profile"],
+                  component: "vol-profile",
+                  config: { panelType: "vol-profile" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "tabset",
+          weight: 25,
+          children: [
             {
               type: "tab",
               id: "trade-recommendation",
               name: PANEL_TITLES["trade-recommendation"],
               component: "trade-recommendation",
               config: { panelType: "trade-recommendation" } satisfies TabChannelConfig,
-            },
-            {
-              type: "tab",
-              id: "greeks-surface",
-              name: PANEL_TITLES["greeks-surface"],
-              component: "greeks-surface",
-              config: { panelType: "greeks-surface" } satisfies TabChannelConfig,
-            },
-            {
-              type: "tab",
-              id: "vol-profile",
-              name: PANEL_TITLES["vol-profile"],
-              component: "vol-profile",
-              config: { panelType: "vol-profile" } satisfies TabChannelConfig,
-            },
-            {
-              type: "tab",
-              id: "yield-curve",
-              name: PANEL_TITLES["yield-curve"],
-              component: "yield-curve",
-              config: { panelType: "yield-curve" } satisfies TabChannelConfig,
-            },
-            {
-              type: "tab",
-              id: "price-fan",
-              name: PANEL_TITLES["price-fan"],
-              component: "price-fan",
-              config: { panelType: "price-fan" } satisfies TabChannelConfig,
             },
           ],
         },
@@ -492,6 +544,150 @@ export function makeResearchModel(): IJsonModel {
               name: PANEL_TITLES.news,
               component: "news",
               config: { panelType: "news" } satisfies TabChannelConfig,
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+export function makeCommoditiesTradingModel(): IJsonModel {
+  // Commodities trading workspace — ladder + chart focused on commodity assets.
+  // Forward projections (price-fan) and news in the right column.
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        {
+          type: "tabset",
+          weight: 35,
+          children: [
+            {
+              type: "tab",
+              id: "market-ladder",
+              name: PANEL_TITLES["market-ladder"],
+              component: "market-ladder",
+              config: { panelType: "market-ladder", outgoing: 1 } satisfies TabChannelConfig,
+            },
+          ],
+        },
+        {
+          type: "tabset",
+          weight: 40,
+          children: [
+            {
+              type: "tab",
+              id: "candle-chart",
+              name: PANEL_TITLES["candle-chart"],
+              component: "candle-chart",
+              config: { panelType: "candle-chart", incoming: 1 } satisfies TabChannelConfig,
+            },
+            {
+              type: "tab",
+              id: "market-depth",
+              name: PANEL_TITLES["market-depth"],
+              component: "market-depth",
+              config: { panelType: "market-depth", incoming: 1 } satisfies TabChannelConfig,
+            },
+          ],
+        },
+        {
+          type: "tabset",
+          weight: 25,
+          children: [
+            {
+              type: "tab",
+              id: "order-blotter",
+              name: PANEL_TITLES["order-blotter"],
+              component: "order-blotter",
+              config: { panelType: "order-blotter" } satisfies TabChannelConfig,
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+export function makeCommoditiesAnalysisModel(): IJsonModel {
+  // Commodities analysis workspace — chart, forward projections, scenario
+  // matrix, news, and recommendations. No equities-specific panels.
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        {
+          type: "tabset",
+          weight: 28,
+          children: [
+            {
+              type: "tab",
+              id: "market-heatmap",
+              name: PANEL_TITLES["market-heatmap"],
+              component: "market-heatmap",
+              config: { panelType: "market-heatmap", outgoing: 1 } satisfies TabChannelConfig,
+            },
+          ],
+        },
+        {
+          type: "row",
+          weight: 45,
+          children: [
+            {
+              type: "tabset",
+              weight: 60,
+              children: [
+                {
+                  type: "tab",
+                  id: "candle-chart",
+                  name: PANEL_TITLES["candle-chart"],
+                  component: "candle-chart",
+                  config: { panelType: "candle-chart", incoming: 1 } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 40,
+              children: [
+                {
+                  type: "tab",
+                  id: "price-fan",
+                  name: PANEL_TITLES["price-fan"],
+                  component: "price-fan",
+                  config: { panelType: "price-fan" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "scenario-matrix",
+                  name: PANEL_TITLES["scenario-matrix"],
+                  component: "scenario-matrix",
+                  config: { panelType: "scenario-matrix" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "tabset",
+          weight: 27,
+          children: [
+            {
+              type: "tab",
+              id: "news",
+              name: PANEL_TITLES.news,
+              component: "news",
+              config: { panelType: "news" } satisfies TabChannelConfig,
+            },
+            {
+              type: "tab",
+              id: "trade-recommendation",
+              name: PANEL_TITLES["trade-recommendation"],
+              component: "trade-recommendation",
+              config: { panelType: "trade-recommendation" } satisfies TabChannelConfig,
             },
           ],
         },
@@ -2006,9 +2202,32 @@ export const LAYOUT_TEMPLATES: {
   {
     id: "analysis",
     locked: true,
-    label: "Market Analysis",
-    description: "Chart, depth, ladder, and options analytics — no order entry",
+    label: "Equities Analysis",
+    description:
+      "Equities chart, depth, ladder, news, and forward projections — no options or FI panels",
     model: makeAnalysisModel(),
+  },
+  {
+    id: "options",
+    locked: true,
+    label: "Options",
+    description:
+      "Black-Scholes pricing, vol surface, Greeks surface, scenario matrix, and recommendations",
+    model: makeOptionsModel(),
+  },
+  {
+    id: "commodities-trading",
+    locked: true,
+    label: "Commodities Trading",
+    description: "Commodities ladder, price chart, market depth, and order blotter",
+    model: makeCommoditiesTradingModel(),
+  },
+  {
+    id: "commodities-analysis",
+    locked: true,
+    label: "Commodities Analysis",
+    description: "Heatmap, forward projections, scenario shocks, news, and signal recommendations",
+    model: makeCommoditiesAnalysisModel(),
   },
   {
     id: "admin",

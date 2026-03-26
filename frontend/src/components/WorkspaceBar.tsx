@@ -6,11 +6,14 @@ import {
   makeAdministrationModel,
   makeAlgoModel,
   makeAnalysisModel,
+  makeCommoditiesAnalysisModel,
+  makeCommoditiesTradingModel,
   makeExecutionModel,
   makeFiAnalysisModel,
   makeFiResearchModel,
   makeFiTradingModel,
   makeMarketFeedsModel,
+  makeOptionsModel,
   makeOverviewModel,
   makePipelineOpsModel,
   makeResearchModel,
@@ -33,14 +36,31 @@ const TRADER_PRESET_WORKSPACES: {
   locked: true;
   makeModel: () => IJsonModel;
 }[] = [
+  // ── Equities ────────────────────────────────────────────────────────────────
   { id: "ws-trading", name: "Trading", locked: true, makeModel: makeExecutionModel },
   { id: "ws-algo", name: "Algo", locked: true, makeModel: makeAlgoModel },
+  { id: "ws-options", name: "Options", locked: true, makeModel: makeOptionsModel },
   { id: "ws-analysis", name: "Analysis", locked: true, makeModel: makeAnalysisModel },
   { id: "ws-research", name: "Research", locked: true, makeModel: makeResearchModel },
-  { id: "ws-overview", name: "Overview", locked: true, makeModel: makeOverviewModel },
+  // ── Commodities ──────────────────────────────────────────────────────────────
+  {
+    id: "ws-commodities",
+    name: "Commodities",
+    locked: true,
+    makeModel: makeCommoditiesTradingModel,
+  },
+  {
+    id: "ws-commodities-analysis",
+    name: "Cmdty Analysis",
+    locked: true,
+    makeModel: makeCommoditiesAnalysisModel,
+  },
+  // ── Fixed Income ─────────────────────────────────────────────────────────────
   { id: "ws-fi-trading", name: "FI Trading", locked: true, makeModel: makeFiTradingModel },
   { id: "ws-fi-analysis", name: "FI Analysis", locked: true, makeModel: makeFiAnalysisModel },
   { id: "ws-fi-research", name: "FI Research", locked: true, makeModel: makeFiResearchModel },
+  // ── Shared ───────────────────────────────────────────────────────────────────
+  { id: "ws-overview", name: "Overview", locked: true, makeModel: makeOverviewModel },
 ];
 
 const ADMIN_PRESET_WORKSPACES: {
