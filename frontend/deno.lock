@@ -4425,6 +4425,7 @@
         "npm:@types/react-window@2",
         "npm:@types/react@^18.3.3",
         "npm:@types/uuid@10",
+        "npm:@types/ws@^8.18.1",
         "npm:@vitejs/plugin-react@^4.3.1",
         "npm:@vitest/coverage-v8@^4.0.18",
         "npm:autoprefixer@^10.4.19",
@@ -4451,7 +4452,8 @@
         "npm:vite-plugin-electron-renderer@~0.14.6",
         "npm:vite-plugin-electron@~0.28.8",
         "npm:vite@^7.3.1",
-        "npm:vitest@^4.0.18"
+        "npm:vitest@^4.0.18",
+        "npm:ws@^8.20.0"
       ]
     }
   }

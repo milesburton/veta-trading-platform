@@ -9,6 +9,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import {
   hideShortcuts,
+  openOrderTicket,
   setActiveSide,
   setActiveStrategy,
   toggleShortcuts,
@@ -18,6 +19,7 @@ import type { Strategy } from "../types.ts";
 interface TradingContextValue {
   focusTicket: () => void;
   registerTicketRef: (ref: HTMLElement | null) => void;
+  openOrderTicket: () => void;
 }
 
 const TradingContext = createContext<TradingContextValue | null>(null);
@@ -37,9 +39,13 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     ticketRef.current = ref;
   }, []);
 
+  const openTicket = useCallback(() => {
+    dispatch(openOrderTicket());
+  }, [dispatch]);
+
   const activeStrategy = useAppSelector((s) => s.ui.activeStrategy);
 
-  useHotkeys("f,n", focusTicket, { preventDefault: true });
+  useHotkeys("f,n", openTicket, { preventDefault: true });
   useHotkeys("b", () => dispatch(setActiveSide("BUY")), { preventDefault: true });
   useHotkeys("s", () => dispatch(setActiveSide("SELL")), { preventDefault: true });
   useHotkeys(
@@ -54,7 +60,9 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
   useHotkeys("escape", () => dispatch(hideShortcuts()), { preventDefault: false });
 
   return (
-    <TradingContext.Provider value={{ focusTicket, registerTicketRef }}>
+    <TradingContext.Provider
+      value={{ focusTicket, registerTicketRef, openOrderTicket: openTicket }}
+    >
       {children}
       {showShortcuts && <ShortcutOverlay onClose={() => dispatch(hideShortcuts())} />}
     </TradingContext.Provider>

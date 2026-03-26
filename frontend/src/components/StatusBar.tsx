@@ -9,6 +9,7 @@ import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { DEPLOYMENT, SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
 import type { Theme } from "../store/themeSlice.ts";
 import { saveTheme, setTheme } from "../store/themeSlice.ts";
+import { openOrderTicket } from "../store/uiSlice.ts";
 import { useDeleteSessionMutation } from "../store/userApi.ts";
 import type { ServiceHealth } from "../types.ts";
 import { AlertDrawer } from "./AlertDrawer.tsx";
@@ -400,6 +401,16 @@ export function AppHeader() {
           <span className="text-emerald-400 font-bold tracking-widest uppercase text-[11px]">
             VETA Trading Platform
           </span>
+          {user?.role === "trader" && (
+            <button
+              type="button"
+              data-testid="new-order-btn"
+              onClick={() => dispatch(openOrderTicket())}
+              className="px-3 py-1 text-[11px] font-semibold rounded bg-emerald-700 hover:bg-emerald-600 text-white transition-colors uppercase tracking-wide"
+            >
+              + New Order
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-4">

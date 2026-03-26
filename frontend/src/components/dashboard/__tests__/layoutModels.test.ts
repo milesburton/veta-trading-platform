@@ -64,14 +64,14 @@ describe("makeDefaultModel", () => {
 });
 
 describe("makeExecutionModel", () => {
-  it("contains order-ticket, market-ladder, order-blotter", () => {
+  it("contains market-ladder and order-blotter (order ticket is now a dialog)", () => {
     const ids = new Set<string>();
     Model.fromJson(makeExecutionModel()).visitNodes((node) => {
       if (node.getType() === "tab") ids.add(node.getId());
     });
-    expect(ids.has("order-ticket")).toBe(true);
     expect(ids.has("market-ladder")).toBe(true);
     expect(ids.has("order-blotter")).toBe(true);
+    expect(ids.has("order-ticket")).toBe(false);
   });
 });
 

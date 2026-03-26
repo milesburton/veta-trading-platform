@@ -132,10 +132,18 @@ export class AppPage {
     return new MarketLadderPage(await this.panelByTitle(/Market Ladder/i));
   }
 
+  /**
+   * Open the Order Ticket dialog (via the "New Order" header button) and return
+   * a page object scoped to the dialog content.
+   */
   async getOrderTicket(): Promise<OrderTicketPage> {
-    // Order Ticket tab dynamically shows the selected symbol: "AAPL(place trades)"
-    // Match by the invariant bracket suffix rather than the panel type label.
-    return new OrderTicketPage(await this.panelByTitle(/\(place trades\)/i));
+    const dialog = this.page.locator('[data-testid="order-ticket-dialog"]');
+    const isOpen = await dialog.isVisible().catch(() => false);
+    if (!isOpen) {
+      await this.page.getByTestId("new-order-btn").click();
+      await dialog.waitFor({ state: "visible", timeout: 5_000 });
+    }
+    return new OrderTicketPage(dialog);
   }
 
   async getOrderBlotter(): Promise<OrderBlotterPage> {

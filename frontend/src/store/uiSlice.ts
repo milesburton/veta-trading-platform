@@ -15,6 +15,8 @@ interface UiState {
   updateAvailable: boolean;
   /** Set by VolSurfacePanel when a cell is clicked — consumed by OptionPricingPanel. */
   optionPrefill: OptionPrefill | null;
+  /** Controls the Order Ticket modal dialog (fat-finger protection). */
+  orderTicketOpen: boolean;
 }
 
 const initialState: UiState = {
@@ -24,6 +26,7 @@ const initialState: UiState = {
   selectedAsset: null,
   updateAvailable: false,
   optionPrefill: null,
+  orderTicketOpen: false,
 };
 
 export const uiSlice = createSlice({
@@ -51,6 +54,12 @@ export const uiSlice = createSlice({
     setOptionPrefill(state, action: PayloadAction<OptionPrefill | null>) {
       state.optionPrefill = action.payload;
     },
+    openOrderTicket(state) {
+      state.orderTicketOpen = true;
+    },
+    closeOrderTicket(state) {
+      state.orderTicketOpen = false;
+    },
   },
 });
 
@@ -62,4 +71,6 @@ export const {
   setSelectedAsset,
   setUpdateAvailable,
   setOptionPrefill,
+  openOrderTicket,
+  closeOrderTicket,
 } = uiSlice.actions;

@@ -9,6 +9,7 @@ import {
   makeClearModel,
 } from "./components/DashboardLayout.tsx";
 import { LoginPage } from "./components/LoginPage.tsx";
+import { OrderTicket } from "./components/OrderTicket.tsx";
 import { StartupOverlay } from "./components/StartupOverlay.tsx";
 import { AppHeader, WorkspaceToolbar } from "./components/StatusBar.tsx";
 import {
@@ -37,6 +38,7 @@ import { useAppDispatch, useAppSelector } from "./store/hooks.ts";
 import { store } from "./store/index.ts";
 import { reportError } from "./store/observabilitySlice.ts";
 import { loadTheme } from "./store/themeSlice.ts";
+import { closeOrderTicket } from "./store/uiSlice.ts";
 
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway";
 const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL ?? "/api/user-service";
@@ -172,6 +174,7 @@ function TradingApp() {
   const latestCritical = criticalAlerts[0] ?? null;
   const authStatus = useAppSelector((s) => s.auth.status);
   const theme = useAppSelector((s) => s.theme.theme);
+  const orderTicketOpen = useAppSelector((s) => s.ui.orderTicketOpen);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -440,6 +443,39 @@ function TradingApp() {
             </div>
           </DashboardProvider>
         </div>
+
+        {orderTicketOpen && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="New Order"
+            data-testid="order-ticket-dialog"
+            className="fixed inset-0 z-50 flex items-center justify-center"
+          >
+            <button
+              type="button"
+              aria-label="Close order ticket"
+              className="absolute inset-0 bg-black/70"
+              onClick={() => dispatch(closeOrderTicket())}
+            />
+            <div className="relative z-10 w-[420px] max-h-[90vh] overflow-auto bg-gray-950 border border-gray-700 rounded-lg shadow-2xl">
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800">
+                <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                  New Order
+                </span>
+                <button
+                  type="button"
+                  onClick={() => dispatch(closeOrderTicket())}
+                  aria-label="Close order ticket dialog"
+                  className="text-gray-500 hover:text-gray-300 text-lg leading-none transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+              <OrderTicket />
+            </div>
+          </div>
+        )}
       </div>
     </TradingProvider>
   );
