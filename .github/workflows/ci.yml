@@ -351,7 +351,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            xvfb libgtk-3-0 libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth libgbm-dev
+            xvfb libgtk-3-0 libnotify-dev libnss3 libxss1 libasound2t64 libxtst6 xauth libgbm-dev
 
       - name: Install Playwright for Electron tests
         working-directory: frontend
