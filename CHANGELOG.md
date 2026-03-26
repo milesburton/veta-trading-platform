@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.7.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.6.0...veta-trading-platform-v1.7.0) (2026-03-26)
+
+
+### Features
+
+* **dashboard:** redesign workspaces for single-function focus ([#4](https://github.com/milesburton/veta-trading-platform/issues/4)+[#6](https://github.com/milesburton/veta-trading-platform/issues/6)) ([dacb06a](https://github.com/milesburton/veta-trading-platform/commit/dacb06a4e902fa410046f08ffba5d9102dc40f33))
+* **electron:** add desktop screenshots to README; update CI to capture them ([f704c0a](https://github.com/milesburton/veta-trading-platform/commit/f704c0a6912f41c4f0f7a35f391a57d330566d89))
+* **electron:** add sanity tests, fix build chain, and enable CI ([8a96356](https://github.com/milesburton/veta-trading-platform/commit/8a96356438ff5f33f56da6707901e6392c1230c8))
+* **electron:** mock backend for screenshots; fix bare fetch URLs for Electron builds ([c5836b8](https://github.com/milesburton/veta-trading-platform/commit/c5836b8e6ce866a2ffcbca484150be47ccc47724))
+* **order-ticket:** convert to modal dialog for fat-finger protection ([#5](https://github.com/milesburton/veta-trading-platform/issues/5)) ([bca53ed](https://github.com/milesburton/veta-trading-platform/commit/bca53edb22e68ba6c25eedc7019e3f4860d0e35d))
+
+
+### Bug Fixes
+
+* **heatmap:** use session-open price for % change instead of 60-tick rolling window ([7b078b0](https://github.com/milesburton/veta-trading-platform/commit/7b078b0f7d427ac24b7ba59f15eaf0343ba4f34a))
+* **screenshots:** populate blotter before opening CF dialog in screenshot 09 ([e58711b](https://github.com/milesburton/veta-trading-platform/commit/e58711b259d70eef3f9b2962e69fbc731fe3b102))
+* **screenshots:** suppress service-health CRITICAL banners; fix qty param ([ea4282e](https://github.com/milesburton/veta-trading-platform/commit/ea4282ebacf411cc13fcd22006511bdfc2280857))
+
 ## [1.6.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.5.0...veta-trading-platform-v1.6.0) (2026-03-25)
 
 
