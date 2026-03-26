@@ -103,7 +103,7 @@ test("screenshot: order ticket with filled order", async ({ page }) => {
   await page.waitForTimeout(600);
 
   const ticket = await app.getOrderTicket();
-  await ticket.fillOrder({ asset: "AAPL", side: "BUY", qty: "500", strategy: "TWAP" });
+  await ticket.fillOrder({ asset: "AAPL", side: "BUY", quantity: 500, strategy: "TWAP" });
 
   await page.screenshot({ path: path.join(OUT_DIR, "02-order-ticket.png") });
 });
@@ -118,7 +118,7 @@ test("screenshot: order blotter with lifecycle", async ({ page }) => {
 
   const ticket = await app.getOrderTicket();
   const outboundPromise = app.gateway.nextOutbound("submitOrder");
-  await ticket.fillOrder({ asset: "AAPL", side: "BUY", qty: "500", strategy: "TWAP" });
+  await ticket.fillOrder({ asset: "AAPL", side: "BUY", quantity: 500, strategy: "TWAP" });
   await ticket.submit();
   const msg = await outboundPromise;
   const clientOrderId: string = (msg.payload as { clientOrderId: string }).clientOrderId;

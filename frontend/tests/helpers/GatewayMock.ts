@@ -291,6 +291,16 @@ export class GatewayMock {
       return route.fulfill({ status: 200, contentType: "application/json", body: "null" });
     });
 
+    // Stub all service health endpoints — prevents CRITICAL alert banners in screenshots.
+    // The transformResponse in servicesApi.ts needs a truthy response with a `version` field.
+    await page.route("**/health", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ status: "ok", version: "mock" }),
+      })
+    );
+
     await page.route("/api/gateway/ready", (route) =>
       route.fulfill({
         status: 200,
