@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v16`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v17`;
 
 export function makeDefaultModel(): IJsonModel {
   return {

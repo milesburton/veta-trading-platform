@@ -5,16 +5,17 @@ import { reconcilePresetWorkspaces, seedWorkspaces } from "../WorkspaceBar";
 // ── seedWorkspaces ────────────────────────────────────────────────────────────
 
 describe("seedWorkspaces", () => {
-  test("returns seven locked trader workspaces by default", () => {
+  test("returns eight locked trader workspaces by default", () => {
     const { workspaces } = seedWorkspaces();
-    expect(workspaces).toHaveLength(7);
+    expect(workspaces).toHaveLength(8);
     expect(workspaces.map((w) => w.id)).toEqual([
       "ws-trading",
-      "ws-analysis",
       "ws-algo",
+      "ws-analysis",
+      "ws-research",
       "ws-overview",
-      "ws-fi-analysis",
       "ws-fi-trading",
+      "ws-fi-analysis",
       "ws-fi-research",
     ]);
     for (const w of workspaces) expect(w.locked).toBe(true);
@@ -80,8 +81,8 @@ describe("reconcilePresetWorkspaces", () => {
     const { workspaces: out } = reconcilePresetWorkspaces(withoutAlgo, withoutAlgoLayouts);
     const ids = out.map((w) => w.id);
 
-    expect(ids.indexOf("ws-algo")).toBeGreaterThan(ids.indexOf("ws-analysis"));
-    expect(ids.indexOf("ws-algo")).toBeLessThan(ids.indexOf("ws-overview"));
+    expect(ids.indexOf("ws-algo")).toBeGreaterThan(ids.indexOf("ws-trading"));
+    expect(ids.indexOf("ws-algo")).toBeLessThan(ids.indexOf("ws-analysis"));
   });
 
   test("restored preset is marked locked", () => {
@@ -103,20 +104,22 @@ describe("reconcilePresetWorkspaces", () => {
     const { workspaces: out, restored } = reconcilePresetWorkspaces(saved, savedLayouts);
 
     expect(restored).toEqual([
-      "Analysis",
       "Algo",
+      "Analysis",
+      "Research",
       "Overview",
-      "FI Analysis",
       "FI Trading",
+      "FI Analysis",
       "FI Research",
     ]);
     expect(out.map((w) => w.id)).toEqual([
       "ws-trading",
-      "ws-analysis",
       "ws-algo",
+      "ws-analysis",
+      "ws-research",
       "ws-overview",
-      "ws-fi-analysis",
       "ws-fi-trading",
+      "ws-fi-analysis",
       "ws-fi-research",
     ]);
   });
@@ -160,14 +163,15 @@ describe("reconcilePresetWorkspaces", () => {
 
     expect(restored).toEqual([
       "Trading",
-      "Analysis",
       "Algo",
+      "Analysis",
+      "Research",
       "Overview",
-      "FI Analysis",
       "FI Trading",
+      "FI Analysis",
       "FI Research",
     ]);
-    expect(out).toHaveLength(7);
+    expect(out).toHaveLength(8);
   });
 });
 

@@ -26,6 +26,7 @@ export {
   makeMarketFeedsModel,
   makeOverviewModel,
   makePipelineOpsModel,
+  makeResearchModel,
   makeSystemStatusModel,
   STORAGE_KEY,
   STORAGE_KEY_PREFIX,
