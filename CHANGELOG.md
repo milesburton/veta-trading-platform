@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.8.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.7.0...veta-trading-platform-v1.8.0) (2026-03-26)
+
+
+### Features
+
+* **dashboard:** separate equities/FI/commodities into clean domain workspaces ([3373082](https://github.com/milesburton/veta-trading-platform/commit/3373082c3d72a83f0ac66cf95066b92ff6c13961))
+* **estate-overview:** table layout for service health; hide Traefik on non-fly deployments ([28dbef4](https://github.com/milesburton/veta-trading-platform/commit/28dbef43a6d4d9323545e494058fdd5021fc9334))
+
+
+### Bug Fixes
+
+* **ci:** add continue-on-error to Electron job ([e518410](https://github.com/milesburton/veta-trading-platform/commit/e5184104e17e3a5936856563db2668334bada583))
+* **ci:** replace libasound2 with libasound2t64 for Ubuntu 24.04 ([922c505](https://github.com/milesburton/veta-trading-platform/commit/922c505cc2ffba6503d16f396c52f4240ed1b88a))
+* **e2e:** bypass order ticket dialog backdrop via JS click in panelByTitle ([62f7b18](https://github.com/milesburton/veta-trading-platform/commit/62f7b18b9c3aef8a8a73e8e0c17357a07544bd72))
+* **e2e:** close order ticket dialog before clicking FlexLayout tab buttons ([bc5fa4b](https://github.com/milesburton/veta-trading-platform/commit/bc5fa4b56c9e2c4d24316a2b6bacdf0531b11ee4))
+* **e2e:** robust dialog/panel interop — close-then-reopen pattern ([cb44b80](https://github.com/milesburton/veta-trading-platform/commit/cb44b801b34e84e458f8fd0cf307741ed5058786))
+* **electron-ci:** fix crash flags and increase beforeAll timeout to 90s ([cba6abd](https://github.com/milesburton/veta-trading-platform/commit/cba6abd72ed9a29abc09882e4cf8dc31c564649d))
+* **electron-ci:** increase firstWindow timeout to 60s, add --disable-software-rasterizer ([bd0bac2](https://github.com/milesburton/veta-trading-platform/commit/bd0bac2ddf84730fd08ec857fe5584d327ee2180))
+* **electron-ci:** show window immediately in test mode (NODE_ENV=test) ([db07276](https://github.com/milesburton/veta-trading-platform/commit/db072765798518dd0d71b6b832f8d5f8304a684b))
+
 ## [1.7.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.6.0...veta-trading-platform-v1.7.0) (2026-03-26)
 
 
