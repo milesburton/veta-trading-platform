@@ -40,11 +40,12 @@ test.beforeAll(async () => {
 
   const { ELECTRON_RUN_AS_NODE: _drop, ...cleanEnv } = process.env;
   electronApp = await electron.launch({
-    args: [MAIN_PATH, "--no-sandbox", "--disable-gpu"],
+    args: [MAIN_PATH, "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer"],
     env: { ...cleanEnv, NODE_ENV: "test" },
+    timeout: 60_000,
   });
 
-  mainPage = await electronApp.firstWindow();
+  mainPage = await electronApp.firstWindow({ timeout: 60_000 });
   await mainPage.waitForLoadState("load");
 });
 

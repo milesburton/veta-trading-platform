@@ -33,15 +33,16 @@ test.beforeAll(async () => {
   // Chromium flags. Strip it before launching so Playwright's CDP handshake works.
   const { ELECTRON_RUN_AS_NODE: _drop, ...cleanEnv } = process.env;
   electronApp = await electron.launch({
-    args: [MAIN_PATH, "--no-sandbox", "--disable-gpu"],
+    args: [MAIN_PATH, "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer"],
     env: {
       ...cleanEnv,
       NODE_ENV: "test",
     },
+    timeout: 60_000,
   });
 
   // Wait for the first BrowserWindow and for it to fully load
-  page = await electronApp.firstWindow();
+  page = await electronApp.firstWindow({ timeout: 60_000 });
   await page.waitForLoadState("load");
 });
 
