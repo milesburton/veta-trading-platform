@@ -118,20 +118,16 @@ export class AppPage {
    * locator scoped to the matched content pane.
    */
   async panelByTitle(tabTitle: string | RegExp): Promise<ReturnType<Page["locator"]>> {
+    // Close the order ticket dialog if open — its inset-0 backdrop intercepts all clicks.
+    // Callers that hold an OrderTicketPage reference can call fillOrder() which will reopen it.
+    const dialog = this.page.locator('[data-testid="order-ticket-dialog"]');
+    if (await dialog.isVisible().catch(() => false)) {
+      await dialog.getByRole("button", { name: "Close order ticket dialog" }).click();
+      await dialog.waitFor({ state: "hidden", timeout: 3_000 });
+    }
     const btn = this.page.locator(".flexlayout__tab_button", { hasText: tabTitle }).first();
     await btn.waitFor({ state: "attached", timeout: 10_000 });
-    // If the order ticket dialog is open its inset-0 backdrop intercepts pointer events.
-    // Use a JS click to bypass the overlay without closing the dialog (so callers that
-    // hold a ticket reference can keep using it).
-    const dialogOpen = await this.page
-      .locator('[data-testid="order-ticket-dialog"]')
-      .isVisible()
-      .catch(() => false);
-    if (dialogOpen) {
-      await btn.evaluate((el) => (el as HTMLElement).click());
-    } else {
-      await btn.click();
-    }
+    await btn.click();
     await this.page.waitForTimeout(100);
     const btnPath = await btn.getAttribute("data-layout-path");
     if (!btnPath) throw new Error(`No tab button found with title matching ${tabTitle}`);
@@ -154,7 +150,7 @@ export class AppPage {
       await this.page.getByTestId("new-order-btn").click();
       await dialog.waitFor({ state: "visible", timeout: 5_000 });
     }
-    return new OrderTicketPage(dialog);
+    return new OrderTicketPage(dialog, this.page);
   }
 
   async getOrderBlotter(): Promise<OrderBlotterPage> {

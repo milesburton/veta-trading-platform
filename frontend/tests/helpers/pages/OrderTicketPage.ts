@@ -2,7 +2,7 @@
  * OrderTicketPage — selectors and actions for the Order Ticket panel.
  */
 
-import type { Locator } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
 export type Side = "BUY" | "SELL";
@@ -17,7 +17,10 @@ export interface OrderParams {
 }
 
 export class OrderTicketPage {
-  constructor(private readonly root: Locator) {}
+  constructor(
+    private readonly root: Locator,
+    private readonly page?: Page
+  ) {}
 
   private get form() { return this.root.locator("form").first(); }
   private get strategySelect() { return this.root.getByLabel("Execution strategy"); }
@@ -27,8 +30,19 @@ export class OrderTicketPage {
   private get sellButton() { return this.root.getByRole("button", { name: /^SELL$/i }); }
   private get submitButton() { return this.root.getByRole("button", { name: /submit|place order/i }); }
 
+  /** Ensure the dialog is open, reopening it via the header button if closed. */
+  private async ensureOpen() {
+    if (!this.page) return;
+    const isVisible = await this.root.isVisible().catch(() => false);
+    if (!isVisible) {
+      await this.page.getByTestId("new-order-btn").click();
+      await this.root.waitFor({ state: "visible", timeout: 5_000 });
+    }
+  }
+
   /** Fill and submit an order. Only overrides the fields you specify. */
   async fillOrder({ asset, side = "BUY", quantity, limitPrice, strategy = "LIMIT" }: OrderParams) {
+    await this.ensureOpen();
     // Strategy
     await this.strategySelect.selectOption(strategy);
 
