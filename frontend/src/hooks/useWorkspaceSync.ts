@@ -6,11 +6,13 @@ export interface WorkspacePrefs {
   layouts: Record<string, IJsonModel>;
 }
 
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway";
+
 let cachedOtherPrefs: Record<string, unknown> = {};
 
 export async function loadWorkspacePrefs(): Promise<WorkspacePrefs | null> {
   try {
-    const res = await fetch("/api/gateway/preferences");
+    const res = await fetch(`${GATEWAY_URL}/preferences`);
     if (!res.ok) return null;
     const blob = await res.json();
     const { workspaces, layouts, ...rest } = blob ?? {};
@@ -24,7 +26,7 @@ export async function loadWorkspacePrefs(): Promise<WorkspacePrefs | null> {
 
 export async function saveWorkspacePrefs(prefs: WorkspacePrefs): Promise<void> {
   try {
-    const res = await fetch("/api/gateway/preferences", {
+    const res = await fetch(`${GATEWAY_URL}/preferences`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       keepalive: true,
@@ -65,14 +67,14 @@ export interface SharedWorkspaceDetail extends SharedWorkspaceEntry {
 }
 
 export async function listSharedWorkspaces(): Promise<SharedWorkspaceEntry[]> {
-  const res = await fetch("/api/gateway/shared-workspaces");
+  const res = await fetch(`${GATEWAY_URL}/shared-workspaces`);
   if (!res.ok) return [];
   return res.json();
 }
 
 export async function fetchSharedWorkspace(id: string): Promise<SharedWorkspaceDetail | null> {
   try {
-    const res = await fetch(`/api/gateway/shared-workspaces/${id}`);
+    const res = await fetch(`${GATEWAY_URL}/shared-workspaces/${id}`);
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -86,7 +88,7 @@ export async function publishSharedWorkspace(
   model: IJsonModel
 ): Promise<string | null> {
   try {
-    const res = await fetch("/api/gateway/shared-workspaces", {
+    const res = await fetch(`${GATEWAY_URL}/shared-workspaces`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, description, model }),
@@ -101,7 +103,7 @@ export async function publishSharedWorkspace(
 
 export async function deleteSharedWorkspace(id: string): Promise<boolean> {
   try {
-    const res = await fetch(`/api/gateway/shared-workspaces/${id}`, { method: "DELETE" });
+    const res = await fetch(`${GATEWAY_URL}/shared-workspaces/${id}`, { method: "DELETE" });
     return res.ok;
   } catch {
     return false;

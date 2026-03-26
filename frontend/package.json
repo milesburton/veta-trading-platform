@@ -15,6 +15,7 @@
     "test:ui:headed": "npx playwright test --headed",
     "electron:dev": "ELECTRON_BUILD=1 vite --mode electron",
     "electron:build": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron && electron-builder --dir",
+    "electron:build-test": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron-test && electron-builder --dir",
     "electron:dist": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron && electron-builder",
     "test:electron": "npx playwright test --config=playwright.electron.config.ts",
     "prepare": "node -e \"if (!process.env.CI) { require('child_process').execSync('node frontend/node_modules/.bin/husky', {stdio:'inherit', cwd:'..'}) }\""
@@ -37,17 +38,43 @@
       "dist-electron/**/*"
     ],
     "protocols": [
-      { "name": "VETA Trading Platform", "schemes": ["veta"] }
+      {
+        "name": "VETA Trading Platform",
+        "schemes": [
+          "veta"
+        ]
+      }
     ],
     "mac": {
       "category": "public.app-category.finance",
-      "target": [{ "target": "dmg", "arch": ["universal"] }]
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ]
     },
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }]
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
     },
     "linux": {
-      "target": [{ "target": "AppImage", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "category": "Finance"
     }
   },
@@ -78,6 +105,7 @@
     "@types/react-grid-layout": "^1.3.6",
     "@types/react-window": "^2.0.0",
     "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.4.19",
@@ -93,6 +121,7 @@
     "vite": "^7.3.1",
     "vite-plugin-electron": "^0.28.8",
     "vite-plugin-electron-renderer": "^0.14.6",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "ws": "^8.20.0"
   }
 }

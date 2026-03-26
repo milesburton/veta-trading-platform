@@ -38,6 +38,9 @@ import { store } from "./store/index.ts";
 import { reportError } from "./store/observabilitySlice.ts";
 import { loadTheme } from "./store/themeSlice.ts";
 
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway";
+const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL ?? "/api/user-service";
+
 const TOAST_EPOCH = Date.now();
 
 function ToastHost() {
@@ -126,7 +129,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const status = useAppSelector((s) => s.auth.status);
 
   useEffect(() => {
-    fetch("/api/user-service/sessions/me", { credentials: "include" })
+    fetch(`${USER_SERVICE_URL}/sessions/me`, { credentials: "include" })
       .then(async (res) => {
         if (res.ok) {
           const user: AuthUser = await res.json();
@@ -257,7 +260,7 @@ function TradingApp() {
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;
-    fetch("/api/gateway/alerts", { credentials: "include" })
+    fetch(`${GATEWAY_URL}/alerts`, { credentials: "include" })
       .then(async (res) => {
         if (!res.ok) return;
         const data = (await res.json()) as Alert[];
@@ -452,7 +455,7 @@ export default function App() {
     // Do a single rapid check: if the platform is already up and has been
     // running for >2 minutes, skip the startup overlay entirely.
     let cancelled = false;
-    fetch("/api/gateway/ready")
+    fetch(`${GATEWAY_URL}/ready`)
       .then(async (res) => {
         if (cancelled) return;
         if (res.ok) {

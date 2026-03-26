@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 const isElectron = process.env.ELECTRON_BUILD === "1";
 
 export default defineConfig(async ({ mode }) => {
-  const isElectronMode = isElectron || mode === "electron";
+  const isElectronMode = isElectron || mode === "electron" || mode === "electron-test";
   const extraPlugins = isElectron
     ? await import("vite-plugin-electron").then(({ default: electron }) => [
         electron([

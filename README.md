@@ -71,6 +71,10 @@ cd frontend && npm run electron:build
 
 > Auto-generated from the packaged Electron build on every commit to `main`.
 
-| Startup | Main Window |
+| Trading Dashboard | Main Window (with pop-out open) |
 |---|---|
-| ![Electron Startup](docs/screenshots/electron-01-startup.png) | ![Electron Main Window](docs/screenshots/electron-02-main-window.png) |
+| ![Electron Dashboard](docs/screenshots/electron-01-dashboard.png) | ![Electron Main Window](docs/screenshots/electron-02-main-window.png) |
+
+| Linked Pop-out Panel | |
+|---|---|
+| ![Electron Pop-out](docs/screenshots/electron-03-linked-popout.png) | |

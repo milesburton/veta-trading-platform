@@ -1,84 +1,128 @@
 /**
  * Electron screenshot capture spec — generates docs/screenshots/electron-*.png for the README.
  *
- * Launches the packaged Electron app (dist-electron/main.js + dist/) and captures
- * representative screenshots showing the desktop application chrome and UI.
+ * Launches the packaged Electron app (built with electron:build-test, which bakes
+ * VITE_GATEWAY_URL/VITE_GATEWAY_WS_URL pointing at localhost:7777) and captures
+ * representative screenshots showing the desktop application in action.
  *
- * Run:          xvfb-run --auto-servernum npx playwright test --config=playwright.electron.config.ts tests-electron/screenshots.spec.ts
- * Prerequisite: npm run electron:build
- * Output:       ../docs/screenshots/electron-*.png  (relative to frontend/)
+ * Screenshots:
+ *   electron-01-dashboard.png  — main dashboard with live market data
+ *   electron-02-main-window.png — main window after pop-out is opened (channel linked)
+ *   electron-03-linked-popout.png — the linked pop-out panel window
+ *
+ * Run:
+ *   npm run electron:build-test
+ *   xvfb-run --auto-servernum npx playwright test --config=playwright.electron.config.ts tests-electron/screenshots.spec.ts
  */
 
-import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
+import { test, type ElectronApplication, type Page } from "@playwright/test";
 import { _electron as electron } from "playwright";
 import * as path from "path";
 import * as fs from "fs";
 import { fileURLToPath } from "url";
+import { ElectronMockServer } from "./helpers/ElectronMockServer.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 const MAIN_PATH = path.join(__dirname, "../dist-electron/main.js");
 const OUT_DIR = path.resolve(__dirname, "../../docs/screenshots");
 
+const PRICES = { AAPL: 189.5, MSFT: 421.0, GOOGL: 175.25, NVDA: 876.4, AMZN: 224.8 };
+const VOLUMES = { AAPL: 1_200_000, MSFT: 980_000, GOOGL: 760_000, NVDA: 1_450_000, AMZN: 540_000 };
+
+let mockServer: ElectronMockServer;
 let electronApp: ElectronApplication;
-let page: Page;
+let mainPage: Page;
 
 test.beforeAll(async () => {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
+  mockServer = await ElectronMockServer.start(7777);
+
   const { ELECTRON_RUN_AS_NODE: _drop, ...cleanEnv } = process.env;
   electronApp = await electron.launch({
     args: [MAIN_PATH, "--no-sandbox", "--disable-gpu"],
-    env: {
-      ...cleanEnv,
-      NODE_ENV: "test",
-    },
+    env: { ...cleanEnv, NODE_ENV: "test" },
   });
 
-  page = await electronApp.firstWindow();
-  await page.waitForLoadState("load");
+  mainPage = await electronApp.firstWindow();
+  await mainPage.waitForLoadState("load");
 });
 
 test.afterAll(async () => {
   await electronApp?.close();
+  await mockServer?.stop();
 });
 
-// ── 1. Startup overlay (no backend — shows service status screen) ──────────────
+// ── Helper: wait for dashboard panels to render ───────────────────────────────
 
-test("electron screenshot: startup overlay", async () => {
-  // The app launches without a backend so the startup overlay should appear
-  const overlay = page.locator('[data-testid="startup-overlay"]');
-  const dashboard = page.locator('[data-layout-path="tb"]');
+async function waitForDashboard(page: Page) {
+  await page.waitForSelector(".flexlayout__tab", { timeout: 20_000 });
+}
 
-  // Wait for either the overlay or dashboard — whichever renders first
-  await expect(overlay.or(dashboard).first()).toBeAttached({ timeout: 15_000 });
+// ── 1. Main dashboard with live market data ───────────────────────────────────
 
-  // Brief settle time for animations
-  await page.waitForTimeout(800);
+test("electron screenshot: main dashboard", async () => {
+  await waitForDashboard(mainPage);
 
-  await page.screenshot({
-    path: path.join(OUT_DIR, "electron-01-startup.png"),
+  mockServer.sendMarketUpdate(PRICES, VOLUMES);
+  await mainPage.waitForTimeout(800);
+
+  await mainPage.screenshot({
+    path: path.join(OUT_DIR, "electron-01-dashboard.png"),
     fullPage: false,
   });
 });
 
-// ── 2. Full window — React root populated ────────────────────────────────────
+// ── 2 & 3. Main window + channel-linked pop-out ────────────────────────────────
 
-test("electron screenshot: main window", async () => {
-  const root = page.locator("#root");
-  await expect(root).toBeAttached({ timeout: 15_000 });
-  await expect(root).not.toBeEmpty({ timeout: 15_000 });
+test("electron screenshot: linked pop-out window", async () => {
+  await waitForDashboard(mainPage);
+  mockServer.sendMarketUpdate(PRICES, VOLUMES);
+  await mainPage.waitForTimeout(400);
 
-  await page.waitForTimeout(500);
+  // Open a pop-out panel via window.open — mirrors what usePopOut() does.
+  // Must use the same file:// origin so setWindowOpenHandler allows it.
+  const popOutPromise = electronApp.waitForEvent("window");
 
-  // Maximise to show the full UI surface
-  await electronApp.evaluate(({ BrowserWindow }) => {
-    BrowserWindow.getAllWindows()[0]?.setSize(1440, 900);
+  await mainPage.evaluate(() => {
+    const params = new URLSearchParams({
+      panel: "order-blotter",
+      type: "order-blotter",
+      layout: "veta-layout-v5",
+    });
+    const url = `${window.location.origin}${window.location.pathname}?${params}`;
+    window.open(url, "panel-order-blotter", "width=700,height=600,resizable=yes");
   });
-  await page.waitForTimeout(300);
 
-  await page.screenshot({
+  const popOutPage = await popOutPromise;
+  await popOutPage.waitForLoadState("load");
+  // Wait for React to mount — pop-out renders PopOutHost directly (no AuthGate/StartupOverlay)
+  await popOutPage.waitForSelector("#root > *", { timeout: 15_000 });
+  await popOutPage.waitForTimeout(1_000);
+
+  // Push a fresh tick so both windows show updated prices
+  mockServer.sendMarketUpdate(
+    { AAPL: 191.2, MSFT: 423.5, GOOGL: 174.8, NVDA: 882.1, AMZN: 226.3 },
+    VOLUMES
+  );
+  await mainPage.waitForTimeout(600);
+
+  // Position windows side-by-side for visual clarity
+  await electronApp.evaluate(({ BrowserWindow }) => {
+    const wins = BrowserWindow.getAllWindows();
+    if (wins[0]) wins[0].setBounds({ x: 0, y: 0, width: 1000, height: 800 });
+    if (wins[1]) wins[1].setBounds({ x: 1000, y: 0, width: 600, height: 800 });
+  });
+  await mainPage.waitForTimeout(300);
+
+  // Capture both windows separately
+  await mainPage.screenshot({
     path: path.join(OUT_DIR, "electron-02-main-window.png"),
+    fullPage: false,
+  });
+
+  await popOutPage.screenshot({
+    path: path.join(OUT_DIR, "electron-03-linked-popout.png"),
     fullPage: false,
   });
 });

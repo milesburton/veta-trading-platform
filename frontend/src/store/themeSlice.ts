@@ -9,18 +9,20 @@ interface ThemeState {
 
 const initialState: ThemeState = { theme: "dark" };
 
+const GATEWAY_PREFS_URL = `${import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway"}/preferences`;
+
 export const loadTheme = createAsyncThunk("theme/load", async () => {
-  const res = await fetch("/api/gateway/preferences");
+  const res = await fetch(GATEWAY_PREFS_URL);
   if (!res.ok) return null;
   const blob = (await res.json()) as Record<string, unknown>;
   return (blob?.theme ?? null) as Theme | null;
 });
 
 export const saveTheme = createAsyncThunk("theme/save", async (theme: Theme) => {
-  const existing = await fetch("/api/gateway/preferences")
+  const existing = await fetch(GATEWAY_PREFS_URL)
     .then((r) => (r.ok ? r.json() : {}))
     .catch(() => ({}));
-  await fetch("/api/gateway/preferences", {
+  await fetch(GATEWAY_PREFS_URL, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...existing, theme }),

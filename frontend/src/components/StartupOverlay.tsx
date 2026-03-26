@@ -111,7 +111,8 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
     async function poll() {
       while (!cancelled) {
         try {
-          const res = await fetch("/api/gateway/ready");
+          const gatewayBase = import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway";
+          const res = await fetch(`${gatewayBase}/ready`);
           if (!cancelled && res.ok) {
             const data: ReadyResponse = await res.json();
 

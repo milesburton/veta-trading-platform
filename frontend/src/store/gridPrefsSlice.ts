@@ -82,8 +82,10 @@ function migratePrefs(raw: GridPrefs): GridPrefs {
   };
 }
 
+const GATEWAY_PREFS_URL = `${import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway"}/preferences`;
+
 export const loadGridPrefs = createAsyncThunk("gridPrefs/load", async () => {
-  const res = await fetch("/api/gateway/preferences");
+  const res = await fetch(GATEWAY_PREFS_URL);
   if (!res.ok) return null;
   const blob = await res.json();
   return (blob?.gridPrefs ?? null) as AllGridPrefs | null;
@@ -91,7 +93,7 @@ export const loadGridPrefs = createAsyncThunk("gridPrefs/load", async () => {
 
 export const saveGridPrefs = createAsyncThunk("gridPrefs/save", async (_, { getState }) => {
   const state = getState() as RootState;
-  const existing = await fetch("/api/gateway/preferences")
+  const existing = await fetch(GATEWAY_PREFS_URL)
     .then((r) => (r.ok ? r.json() : {}))
     .catch(() => ({}));
 
@@ -107,7 +109,7 @@ export const saveGridPrefs = createAsyncThunk("gridPrefs/save", async (_, { getS
     } satisfies AllGridPrefs,
   };
 
-  await fetch("/api/gateway/preferences", {
+  await fetch(GATEWAY_PREFS_URL, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(merged),
