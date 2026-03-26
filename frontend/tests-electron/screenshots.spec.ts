@@ -34,14 +34,25 @@ let electronApp: ElectronApplication;
 let mainPage: Page;
 
 test.beforeAll(async () => {
+  test.setTimeout(90_000);
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
   mockServer = await ElectronMockServer.start(7777);
 
   const { ELECTRON_RUN_AS_NODE: _drop, ...cleanEnv } = process.env;
   electronApp = await electron.launch({
-    args: [MAIN_PATH, "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer"],
-    env: { ...cleanEnv, NODE_ENV: "test" },
+    args: [
+      MAIN_PATH,
+      "--no-sandbox",
+      "--disable-gpu",
+      "--disable-dev-shm-usage",
+      "--disable-setuid-sandbox",
+    ],
+    env: {
+      ...cleanEnv,
+      NODE_ENV: "test",
+      DISPLAY: process.env.DISPLAY ?? ":99",
+    },
     timeout: 60_000,
   });
 

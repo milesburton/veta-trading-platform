@@ -29,14 +29,24 @@ let electronApp: ElectronApplication;
 let page: Page;
 
 test.beforeAll(async () => {
+  // Give the entire beforeAll hook 90s — Electron under xvfb in CI can be slow to start
+  test.setTimeout(90_000);
+
   // ELECTRON_RUN_AS_NODE causes the binary to start in Node.js mode and reject
   // Chromium flags. Strip it before launching so Playwright's CDP handshake works.
   const { ELECTRON_RUN_AS_NODE: _drop, ...cleanEnv } = process.env;
   electronApp = await electron.launch({
-    args: [MAIN_PATH, "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer"],
+    args: [
+      MAIN_PATH,
+      "--no-sandbox",
+      "--disable-gpu",
+      "--disable-dev-shm-usage",
+      "--disable-setuid-sandbox",
+    ],
     env: {
       ...cleanEnv,
       NODE_ENV: "test",
+      DISPLAY: process.env.DISPLAY ?? ":99",
     },
     timeout: 60_000,
   });
