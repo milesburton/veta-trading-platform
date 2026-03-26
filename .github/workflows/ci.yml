@@ -321,8 +321,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [frontend]
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -364,6 +368,24 @@ jobs:
         run: xvfb-run --auto-servernum npm run test:electron
         env:
           CI: true
+
+      - name: Capture Electron screenshots (headless via xvfb)
+        working-directory: frontend
+        run: xvfb-run --auto-servernum npx playwright test --config=playwright.electron.config.ts tests-electron/screenshots.spec.ts --reporter=list
+        env:
+          CI: true
+
+      - name: Commit updated Electron screenshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots/electron-*.png
+          if git diff --staged --quiet; then
+            echo "No Electron screenshot changes"
+          else
+            git commit -m "chore(screenshots): update Electron desktop screenshots [skip ci]"
+            git push
+          fi
 
       - name: Upload Electron test report on failure
         if: failure()

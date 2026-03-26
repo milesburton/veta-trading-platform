@@ -66,3 +66,11 @@ cd frontend && npm run electron:build
 | Column Formatting | |
 |---|---|
 | ![Column Formatting](docs/screenshots/09-column-formatting.png) | |
+
+## Desktop (Electron)
+
+> Auto-generated from the packaged Electron build on every commit to `main`.
+
+| Startup | Main Window |
+|---|---|
+| ![Electron Startup](docs/screenshots/electron-01-startup.png) | ![Electron Main Window](docs/screenshots/electron-02-main-window.png) |
