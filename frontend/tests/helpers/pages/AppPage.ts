@@ -118,6 +118,13 @@ export class AppPage {
    * locator scoped to the matched content pane.
    */
   async panelByTitle(tabTitle: string | RegExp): Promise<ReturnType<Page["locator"]>> {
+    // Close the order ticket dialog if it's open — its backdrop intercepts tab button clicks
+    const dialog = this.page.locator('[data-testid="order-ticket-dialog"]');
+    if (await dialog.isVisible().catch(() => false)) {
+      // Click the × button in the dialog header (not the backdrop) to close
+      await dialog.getByRole("button", { name: "Close order ticket dialog" }).click();
+      await dialog.waitFor({ state: "hidden", timeout: 3_000 });
+    }
     const btn = this.page.locator(".flexlayout__tab_button", { hasText: tabTitle }).first();
     await btn.waitFor({ state: "attached", timeout: 10_000 });
     await btn.click();
