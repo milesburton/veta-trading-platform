@@ -13,7 +13,7 @@
     "test:unit": "NODE_OPTIONS=--max-old-space-size=4096 vitest",
     "test:ui": "npx playwright test",
     "test:ui:headed": "npx playwright test --headed",
-    "electron:dev": "ELECTRON_BUILD=1 vite --mode electron",
+    "electron:dev": "node_modules/.bin/tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && node scripts/electron-dev.mjs",
     "electron:build": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron && electron-builder --dir",
     "electron:build-test": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron-test && electron-builder --dir",
     "electron:dist": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron && electron-builder",

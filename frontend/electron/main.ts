@@ -9,9 +9,10 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 
 function createWindow(): void {
-  // In test mode (NODE_ENV=test), show the window immediately so Playwright's
-  // firstWindow() doesn't wait for ready-to-show which requires GPU rendering.
+  // In test mode or when GPU is disabled (dev container / CI), show the window
+  // immediately — ready-to-show requires GPU rendering to fire.
   const isTest = process.env.NODE_ENV === "test";
+  const noGpu = app.commandLine.hasSwitch("disable-gpu");
 
   mainWindow = new BrowserWindow({
     width: 1440,
@@ -20,7 +21,7 @@ function createWindow(): void {
     minHeight: 600,
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     frame: process.platform !== "darwin",
-    show: isTest,
+    show: isTest || noGpu,
     backgroundColor: "#030712",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
