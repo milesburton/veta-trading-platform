@@ -31,7 +31,7 @@ export const DEPLOYMENT = (import.meta.env.VITE_DEPLOYMENT as string | undefined
 
 export type ServiceCategory = "core" | "algo" | "data" | "infra" | "observability";
 
-const SERVICES: {
+const SERVICES_ALL: {
   name: string;
   url: string;
   link?: string;
@@ -40,6 +40,7 @@ const SERVICES: {
   description: string;
   port: number;
   alertOnDeployments?: string[];
+  showOnDeployments?: string[];
 }[] = [
   // ── Core order management ──────────────────────────────────────────────────
   {
@@ -206,6 +207,7 @@ const SERVICES: {
     description: "Reverse proxy & load balancer dashboard",
     port: 8888,
     alertOnDeployments: ["fly"],
+    showOnDeployments: ["fly"],
   },
   // ── Observability ─────────────────────────────────────────────────────────
   {
@@ -219,7 +221,10 @@ const SERVICES: {
   },
 ];
 
-export { SERVICES };
+// Filter out services that are restricted to specific deployments
+export const SERVICES = SERVICES_ALL.filter(
+  (s) => !s.showOnDeployments || s.showOnDeployments.includes(DEPLOYMENT)
+);
 
 export const servicesApi = createApi({
   reducerPath: "servicesApi",
@@ -233,6 +238,7 @@ export const servicesApi = createApi({
         link?: string;
         optional?: boolean;
         alertOnDeployments?: string[];
+        showOnDeployments?: string[];
       }
     >({
       query: ({ url }) => ({ url }),

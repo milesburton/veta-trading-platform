@@ -32,12 +32,20 @@ const ORDER_OK = 150;
 
 // ── Service health zone ───────────────────────────────────────────────────────
 
-interface ServiceChipProps {
+const CATEGORY_LABEL: Record<string, string> = {
+  core: "Core",
+  algo: "Algo",
+  data: "Data",
+  infra: "Infra",
+  observability: "Obs",
+};
+
+interface ServiceRowProps {
   svc: (typeof SERVICES)[number];
   dispatch: ReturnType<typeof useAppDispatch>;
 }
 
-function ServiceChip({ svc, dispatch }: ServiceChipProps) {
+function ServiceRow({ svc, dispatch }: ServiceRowProps) {
   const { data, isError } = useGetServiceHealthQuery(svc, { pollingInterval: 10_000 });
   const prevRef = useRef<"ok" | "error" | null>(null);
 
@@ -71,30 +79,75 @@ function ServiceChip({ svc, dispatch }: ServiceChipProps) {
     }
   }, [state, svc, dispatch]);
 
-  const dot = state === "ok" ? "bg-green-400" : state === "error" ? "bg-red-400" : "bg-gray-600";
-  const text =
+  const dotClass =
+    state === "ok" ? "bg-green-400" : state === "error" ? "bg-red-400" : "bg-gray-600";
+  const nameClass =
+    state === "error"
+      ? "text-red-400 font-semibold"
+      : state === "ok"
+        ? "text-gray-200"
+        : "text-gray-600";
+  const statusText = state === "ok" ? "OK" : state === "error" ? "DOWN" : "—";
+  const statusClass =
     state === "ok"
-      ? "text-gray-300"
+      ? "text-green-400"
       : state === "error"
         ? "text-red-400 font-semibold"
         : "text-gray-600";
 
   return (
-    <span className={`flex items-center gap-1 text-[10px] font-mono whitespace-nowrap ${text}`}>
-      <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
-      {svc.name}
-    </span>
+    <tr className="border-b border-gray-800/50 hover:bg-gray-900/40">
+      <td className="py-1 pl-3 pr-2 w-3">
+        <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
+      </td>
+      <td className={`py-1 pr-3 text-[10px] font-mono whitespace-nowrap ${nameClass}`}>
+        {svc.link ? (
+          <a href={svc.link} target="_blank" rel="noreferrer" className="hover:underline">
+            {svc.name}
+          </a>
+        ) : (
+          svc.name
+        )}
+      </td>
+      <td className="py-1 pr-3 text-[9px] text-gray-600 whitespace-nowrap">
+        {CATEGORY_LABEL[svc.category] ?? svc.category}
+      </td>
+      <td className={`py-1 pr-3 text-[9px] font-mono tabular-nums ${statusClass}`}>{statusText}</td>
+      <td className="py-1 pr-3 text-[9px] text-gray-600 font-mono tabular-nums">
+        {data?.version ?? "—"}
+      </td>
+    </tr>
   );
 }
 
-function ServiceHealthBar() {
+function ServiceHealthTable() {
   const dispatch = useAppDispatch();
   return (
-    <div className="flex items-center gap-3 px-3 py-1.5 border-b border-gray-800 bg-gray-900/60 flex-wrap shrink-0">
-      <span className="text-[9px] text-gray-600 uppercase tracking-widest mr-1">Services</span>
-      {SERVICES.map((svc) => (
-        <ServiceChip key={svc.name} svc={svc} dispatch={dispatch} />
-      ))}
+    <div className="overflow-auto shrink-0 border-b border-gray-800 max-h-[45%]">
+      <table className="w-full text-left border-collapse">
+        <thead className="sticky top-0 bg-gray-950 z-10">
+          <tr className="border-b border-gray-800">
+            <th className="py-1 pl-3 pr-2 w-3" />
+            <th className="py-1 pr-3 text-[9px] font-semibold text-gray-600 uppercase tracking-wider">
+              Service
+            </th>
+            <th className="py-1 pr-3 text-[9px] font-semibold text-gray-600 uppercase tracking-wider">
+              Type
+            </th>
+            <th className="py-1 pr-3 text-[9px] font-semibold text-gray-600 uppercase tracking-wider">
+              Status
+            </th>
+            <th className="py-1 pr-3 text-[9px] font-semibold text-gray-600 uppercase tracking-wider">
+              Version
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {SERVICES.map((svc) => (
+            <ServiceRow key={svc.name} svc={svc} dispatch={dispatch} />
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -495,8 +548,8 @@ export function EstateOverviewPanel() {
         </span>
       </div>
 
-      {/* Zone 1: Service health bar */}
-      <ServiceHealthBar />
+      {/* Zone 1: Service health table */}
+      <ServiceHealthTable />
 
       {/* Zones 2+3: Throughput left, Timeline right */}
       <div className="flex flex-1 min-h-0 divide-x divide-gray-800">
