@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.8.0...veta-trading-platform-v1.9.0) (2026-03-27)
+
+
+### Features
+
+* **electron:** fix dev mode launch in Dev Container + add system manual ([4cc91d1](https://github.com/milesburton/veta-trading-platform/commit/4cc91d1f1d6ace52def627475ac69c1c87b9f81b))
+* **trading:** add lot sizes and basket order panel ([ecd5487](https://github.com/milesburton/veta-trading-platform/commit/ecd54878b080144b4156416953e8e12b56c619b7))
+
 ## [1.8.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.7.0...veta-trading-platform-v1.8.0) (2026-03-26)
 
 
