@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.9.0...veta-trading-platform-v1.9.1) (2026-03-27)
+
+
+### Bug Fixes
+
+* **order-ticket:** use lotSize=1 fallback so tests aren't blocked ([5f0efe4](https://github.com/milesburton/veta-trading-platform/commit/5f0efe42c3b5cc8f605b98c1faa12f003e609d5d))
+
 ## [1.9.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.8.0...veta-trading-platform-v1.9.0) (2026-03-27)
 
 
