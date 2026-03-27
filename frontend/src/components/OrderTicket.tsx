@@ -271,7 +271,7 @@ export function OrderTicket() {
 
   const selectedAsset = assets.find((a) => a.symbol === assetSearch.value) ?? assets[0];
   const currentPrice = selectedAsset ? prices[selectedAsset.symbol] : undefined;
-  const lotSize = selectedAsset?.lotSize ?? 100;
+  const lotSize = selectedAsset?.lotSize ?? 1;
 
   useEffect(() => {
     if (currentPrice && instrumentType.value === "equity" && !limitPrice.value) {

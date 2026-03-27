@@ -40,6 +40,7 @@ export interface AssetDef {
   beta?: number;
   dividendYield?: number;
   peRatio?: number;
+  lotSize?: number;
 }
 
 // Inbound message shapes (gateway → client)
