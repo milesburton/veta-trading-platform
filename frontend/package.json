@@ -18,7 +18,9 @@
     "electron:build-test": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron-test && electron-builder --dir",
     "electron:dist": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron && electron-builder",
     "test:electron": "npx playwright test --config=playwright.electron.config.ts",
-    "prepare": "node -e \"if (!process.env.CI) { require('child_process').execSync('node frontend/node_modules/.bin/husky', {stdio:'inherit', cwd:'..'}) }\""
+    "prepare": "node -e \"if (!process.env.CI) { require('child_process').execSync('node frontend/node_modules/.bin/husky', {stdio:'inherit', cwd:'..'}) }\"",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
@@ -97,6 +99,10 @@
     "@biomejs/biome": "^2.4.4",
     "@playwright/test": "^1.58.2",
     "@preact/signals-react-transform": "^0.8.1",
+    "@storybook/addon-essentials": "^8.6.14",
+    "@storybook/addon-interactions": "^8.6.14",
+    "@storybook/react-vite": "^8.6.18",
+    "@storybook/test": "^8.6.15",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.0.0",
@@ -114,8 +120,11 @@
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
     "lint-staged": "^15.2.10",
+    "msw": "^2.12.14",
+    "msw-storybook-addon": "^2.0.6",
     "playwright": "^1.40.0",
     "postcss": "^8.4.39",
+    "storybook": "^8.6.18",
     "tailwindcss": "^3.4.6",
     "typescript": "^5.5.3",
     "vite": "^7.3.1",
@@ -123,5 +132,10 @@
     "vite-plugin-electron-renderer": "^0.14.6",
     "vitest": "^4.0.18",
     "ws": "^8.20.0"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }
