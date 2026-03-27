@@ -32,6 +32,7 @@ const IS_ALGO_URL = `http://${Deno.env.get("IS_ALGO_HOST") ?? "localhost"}:${Den
 const DARK_POOL_URL = `http://${Deno.env.get("DARK_POOL_HOST") ?? "localhost"}:${Deno.env.get("DARK_POOL_PORT") ?? "5027"}`;
 const CCP_SERVICE_URL = `http://${Deno.env.get("CCP_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("CCP_SERVICE_PORT") ?? "5028"}`;
 const RFQ_SERVICE_URL = `http://${Deno.env.get("RFQ_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("RFQ_SERVICE_PORT") ?? "5029"}`;
+const PRODUCT_SERVICE_URL = `http://${Deno.env.get("PRODUCT_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("PRODUCT_SERVICE_PORT") ?? "5030"}`;
 const NEWS_AGGREGATOR_URL = `http://${Deno.env.get("NEWS_AGGREGATOR_HOST") ?? "localhost"}:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`;
 const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost"}:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`;
 const DISK_MONITOR_URL = `http://${Deno.env.get("DISK_MONITOR_HOST") ?? "localhost"}:${Deno.env.get("DISK_MONITOR_PORT") ?? "8099"}`;
@@ -324,12 +325,16 @@ function startConsumers(): void {
   }).catch(() => {});
 
   // RFQ quote updates — broadcast only to the requesting user (information barrier)
-  createConsumer("gateway-rfq", ["rfq.quote.update", "rfq.executed"]).then((c) => {
+  createConsumer("gateway-rfq", ["rfq.quote.update", "rfq.executed", "rfq.sellside.update"]).then((c) => {
     c.onMessage((topic, value) => {
       const v = value as { userId?: string };
       if (v.userId) {
         broadcastToUser(v.userId, { event: "rfqUpdate", topic, data: value });
       }
+      // Sell-side RFQ updates: broadcast to both client and sales user
+      const sv = value as { clientUserId?: string; salesUserId?: string };
+      if (sv.clientUserId) broadcastToUser(sv.clientUserId, { event: "rfqSellSideUpdate", data: value });
+      if (sv.salesUserId) broadcastToUser(sv.salesUserId, { event: "rfqSellSideUpdate", data: value });
     });
   }).catch(() => {});
 
@@ -488,7 +493,7 @@ type ServiceHealth = {
   fixArchive: boolean; fixGateway: boolean; observability: boolean;
   limitAlgo: boolean; twapAlgo: boolean; povAlgo: boolean; vwapAlgo: boolean;
   icebergAlgo: boolean; sniperAlgo: boolean; arrivalPriceAlgo: boolean; momentumAlgo: boolean; isAlgo: boolean;
-  darkPool: boolean; ccpService: boolean; rfqService: boolean;
+  darkPool: boolean; ccpService: boolean; rfqService: boolean; productService: boolean;
   analytics: boolean; marketData: boolean; featureEngine: boolean; signalEngine: boolean;
   recommendationEngine: boolean; scenarioEngine: boolean; newsAggregator: boolean; llmAdvisory: boolean;
   bus: boolean;
@@ -502,7 +507,7 @@ async function refreshHealth(): Promise<void> {
   const [
     marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
     limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
-    darkPool, ccpService, rfqService,
+    darkPool, ccpService, rfqService, productService,
     analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
     bus,
   ] = await Promise.all([
@@ -510,7 +515,7 @@ async function refreshHealth(): Promise<void> {
     chk(FIX_ARCHIVE_URL), chk(FIX_GATEWAY_URL), chk(OBSERVABILITY_URL),
     chk(LIMIT_ALGO_URL), chk(TWAP_ALGO_URL), chk(POV_ALGO_URL), chk(VWAP_ALGO_URL),
     chk(ICEBERG_ALGO_URL), chk(SNIPER_ALGO_URL), chk(ARRIVAL_PRICE_ALGO_URL), chk(MOMENTUM_ALGO_URL), chk(IS_ALGO_URL),
-    chk(DARK_POOL_URL), chk(CCP_SERVICE_URL), chk(RFQ_SERVICE_URL),
+    chk(DARK_POOL_URL), chk(CCP_SERVICE_URL), chk(RFQ_SERVICE_URL), chk(PRODUCT_SERVICE_URL),
     chk(ANALYTICS_URL), chk(MARKET_DATA_URL), chk(FEATURE_ENGINE_URL), chk(SIGNAL_ENGINE_URL),
     chk(RECOMMENDATION_ENGINE_URL), chk(SCENARIO_ENGINE_URL), chk(NEWS_AGGREGATOR_URL), chk(LLM_ADVISORY_URL),
     chk(OBSERVABILITY_URL),
@@ -518,7 +523,7 @@ async function refreshHealth(): Promise<void> {
   cachedHealth = {
     marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
     limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
-    darkPool, ccpService, rfqService,
+    darkPool, ccpService, rfqService, productService,
     analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
     bus,
   };
@@ -565,7 +570,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           limitAlgo: h.limitAlgo, twapAlgo: h.twapAlgo, povAlgo: h.povAlgo,
           vwapAlgo: h.vwapAlgo, icebergAlgo: h.icebergAlgo, sniperAlgo: h.sniperAlgo,
           arrivalPriceAlgo: h.arrivalPriceAlgo, momentumAlgo: h.momentumAlgo, isAlgo: h.isAlgo,
-          darkPool: h.darkPool, ccpService: h.ccpService, rfqService: h.rfqService,
+          darkPool: h.darkPool, ccpService: h.ccpService, rfqService: h.rfqService, productService: h.productService,
           analytics: h.analytics, marketData: h.marketData, featureEngine: h.featureEngine,
           signalEngine: h.signalEngine, recommendationEngine: h.recommendationEngine,
           scenarioEngine: h.scenarioEngine, newsAggregator: h.newsAggregator, llmAdvisory: h.llmAdvisory,
@@ -885,6 +890,69 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     if (!isExecute && req.method === "GET") {
       return proxyGet(`${RFQ_SERVICE_URL}/rfq/${rfqId}`, req);
     }
+  }
+
+  // ── Sell-side RFQ routes ────────────────────────────────────────────────────
+  if (path === "/rfq/sellside" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyPost(`${RFQ_SERVICE_URL}/rfq/sellside`, req);
+  }
+  if (path === "/rfq/sellside" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${RFQ_SERVICE_URL}/rfq/sellside${new URL(req.url).search}`, req);
+  }
+  if (path === "/rfq/sellside/stats" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${RFQ_SERVICE_URL}/rfq/sellside/stats`, req);
+  }
+  const matchSsRfq = path.match(/^\/rfq\/sellside\/([^/]+)$/);
+  if (matchSsRfq && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${RFQ_SERVICE_URL}/rfq/sellside/${matchSsRfq[1]}`, req);
+  }
+  const matchSsRoute = path.match(/^\/rfq\/sellside\/([^/]+)\/(route|markup|confirm|reject)$/);
+  if (matchSsRoute && req.method === "PUT") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyPut(`${RFQ_SERVICE_URL}/rfq/sellside/${matchSsRoute[1]}/${matchSsRoute[2]}`, req);
+  }
+
+  // ── Product service routes ──────────────────────────────────────────────────
+  if (path === "/products" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    const qs = new URLSearchParams(url.search);
+    if (auth.user.role === "external-client") {
+      qs.set("userId", auth.user.id);
+      qs.set("userRole", "external-client");
+    }
+    return proxyGet(`${PRODUCT_SERVICE_URL}/products?${qs.toString()}`, req);
+  }
+  if (path === "/products/stats" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${PRODUCT_SERVICE_URL}/products/stats`, req);
+  }
+  if (path === "/products" && req.method === "POST") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyPost(`${PRODUCT_SERVICE_URL}/products`, req);
+  }
+  const matchProductId = path.match(/^\/products\/([^/]+)$/);
+  if (matchProductId && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${PRODUCT_SERVICE_URL}/products/${matchProductId[1]}`, req);
+  }
+  const matchProductAction = path.match(/^\/products\/([^/]+)\/(legs|structure|issue|sell|unwind)$/);
+  if (matchProductAction && req.method === "PUT") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyPut(`${PRODUCT_SERVICE_URL}/products/${matchProductAction[1]}/${matchProductAction[2]}`, req);
   }
 
   if (path === "/grid/query" && req.method === "POST") {

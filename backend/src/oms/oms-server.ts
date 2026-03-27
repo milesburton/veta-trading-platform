@@ -256,12 +256,22 @@ consumer?.onMessage(async (_topic, raw) => {
     return;
   }
 
-  if (order.userRole === "admin" || order.userRole === "compliance") {
+  if (
+    order.userRole === "admin" ||
+    order.userRole === "compliance" ||
+    order.userRole === "sales" ||
+    order.userRole === "external-client"
+  ) {
+    const roleLabel =
+      order.userRole === "admin" ? "Admin" :
+      order.userRole === "compliance" ? "Compliance" :
+      order.userRole === "sales" ? "Sales" :
+      "External-client";
     console.warn(`[oms] Order rejected — ${order.userRole} user ${order.userId} attempted to submit an order`);
     await producer?.send("orders.rejected", {
       clientOrderId: order.clientOrderId,
       userId: order.userId,
-      reason: `${order.userRole === "admin" ? "Admin" : "Compliance"} accounts are not permitted to submit orders`,
+      reason: `${roleLabel} accounts are not permitted to submit orders`,
       ts: Date.now(),
     }).catch(() => {});
     return;

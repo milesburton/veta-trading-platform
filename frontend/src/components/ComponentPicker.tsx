@@ -49,6 +49,10 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "vol-surface": "Implied vol heatmap (5 expiries × 9 strikes) — click to prefill Option Pricing",
   "basket-order":
     "Multi-leg basket order builder — set target notional, assign weights, and submit all legs at once",
+  "client-rfq": "Submit RFQs and track quotes from the sales desk",
+  "sales-workbench": "Review client RFQs, route to pricing, apply markup, confirm to client",
+  "product-builder": "Build multi-leg structured products with equity, bond, and option legs",
+  "product-book": "Browse issued products and initiate client sales via RFQ",
 };
 
 export function ComponentPicker() {
@@ -67,10 +71,31 @@ export function ComponentPicker() {
   ]);
   // Panels hidden from admins (trading capability — admins must not interfere with the market)
   const TRADER_ONLY_PANELS: ReadonlySet<PanelId> = new Set(["order-ticket"]);
+  const SALES_ONLY_PANELS: ReadonlySet<PanelId> = new Set<PanelId>(["sales-workbench"]);
+  const CLIENT_ONLY_PANELS: ReadonlySet<PanelId> = new Set<PanelId>(["client-rfq"]);
 
   const visiblePanelIds = PANEL_IDS.filter((id) => {
     if (ADMIN_ONLY_PANELS.has(id)) return user?.role === "admin";
-    if (TRADER_ONLY_PANELS.has(id)) return user?.role !== "admin";
+    if (TRADER_ONLY_PANELS.has(id)) {
+      return (
+        user?.role !== "admin" &&
+        user?.role !== "compliance" &&
+        user?.role !== "sales" &&
+        user?.role !== "external-client"
+      );
+    }
+    if (SALES_ONLY_PANELS.has(id)) {
+      return user?.role === "sales";
+    }
+    if (CLIENT_ONLY_PANELS.has(id)) {
+      return user?.role === "external-client";
+    }
+    if (
+      id === "product-builder" &&
+      (user?.role === "external-client" || user?.role === "compliance")
+    )
+      return false;
+    if (id === "product-book" && user?.role === "compliance") return false;
     return true;
   });
 

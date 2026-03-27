@@ -18,6 +18,7 @@ import { AnalysisPanel } from "../AnalysisPanel.tsx";
 import { BasketOrderPanel } from "../BasketOrderPanel.tsx";
 import { CandlestickChart } from "../CandlestickChart.tsx";
 import { ChildOrdersPanel } from "../ChildOrdersPanel.tsx";
+import { ClientRfqPanel } from "../ClientRfqPanel.tsx";
 import type { ContextMenuEntry } from "../ContextMenu.tsx";
 import { ContextMenu } from "../ContextMenu.tsx";
 import { DecisionLog } from "../DecisionLog.tsx";
@@ -42,8 +43,11 @@ import { OrderBlotter } from "../OrderBlotter.tsx";
 import { OrderProgressPanel } from "../OrderProgressPanel.tsx";
 import { OrderTicket } from "../OrderTicket.tsx";
 import { PriceFanPanel } from "../PriceFanPanel.tsx";
+import { ProductBookPanel } from "../ProductBookPanel.tsx";
+import { ProductBuilderPanel } from "../ProductBuilderPanel.tsx";
 import { clearDraggedPanelId, draggedPanelId } from "../panelDragState.ts";
 import { ResearchRadarPanel } from "../ResearchRadarPanel.tsx";
+import { SalesWorkbenchPanel } from "../SalesWorkbenchPanel.tsx";
 import { ScenarioMatrixPanel } from "../ScenarioMatrixPanel.tsx";
 import { ServiceHealthPanel } from "../ServiceHealthPanel.tsx";
 import { SignalExplainabilityPanel } from "../SignalExplainabilityPanel.tsx";
@@ -701,6 +705,14 @@ export function DashboardLayout() {
           return wrap(<VolSurfacePanel />);
         case "basket-order":
           return wrap(<BasketOrderPanel />);
+        case "client-rfq":
+          return wrap(<ClientRfqPanel />);
+        case "sales-workbench":
+          return wrap(<SalesWorkbenchPanel />);
+        case "product-builder":
+          return wrap(<ProductBuilderPanel />);
+        case "product-book":
+          return wrap(<ProductBookPanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }

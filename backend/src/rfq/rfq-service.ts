@@ -27,6 +27,52 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import { settlementDate } from "../lib/settlement.ts";
 
+// ── Sell-side RFQ types ────────────────────────────────────────────────────────
+
+type SellSideRfqState =
+  | "CLIENT_REQUEST"      // client submitted
+  | "SALES_REVIEW"        // waiting for sales to route
+  | "DEALER_QUOTE"        // dealer simulation running (for FI) or just pricing (for equity)
+  | "SALES_MARKUP"        // sales applies markup before sending to client
+  | "CLIENT_CONFIRMATION" // sent to client, awaiting accept/reject
+  | "CONFIRMED"           // client accepted, order placed
+  | "REJECTED";           // rejected at any stage
+
+interface SellSideRfq {
+  rfqId: string;
+  state: SellSideRfqState;
+  clientUserId: string;
+  salesUserId?: string;
+  asset: string;
+  side: "BUY" | "SELL";
+  quantity: number;
+  limitPrice?: number;
+  // Dealer/pricing layer
+  dealerBestPrice?: number;      // best price from dealer sim or live price
+  dealerBestYield?: number;      // for bonds
+  dealerSpreadBps?: number;
+  // Sales markup
+  salesMarkupBps?: number;
+  clientQuotedPrice?: number;    // price shown to client after markup
+  // Rejection
+  rejectedBy?: string;
+  rejectionReason?: string;
+  // Timestamps
+  createdAt: number;
+  salesRoutedAt?: number;
+  salesMarkupAppliedAt?: number;
+  clientConfirmedAt?: number;
+  ts: number;
+}
+
+// ── Sell-side RFQ state ────────────────────────────────────────────────────────
+
+const sellSideRfqStore = new Map<string, SellSideRfq>();
+let ssRfqSeq = 1;
+function nextSsRfqId(): string {
+  return `SSRFQ${String(ssRfqSeq++).padStart(6, "0")}`;
+}
+
 const PORT = Number(Deno.env.get("RFQ_SERVICE_PORT")) || 5_029;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
@@ -496,6 +542,12 @@ setInterval(() => {
   }
 }, 60_000);
 
+// ── Sell-side RFQ helpers ─────────────────────────────────────────────────────
+
+async function publishSsRfqUpdate(rfq: SellSideRfq): Promise<void> {
+  await producer?.send("rfq.sellside.update", { ...rfq, ts: Date.now() }).catch(() => {});
+}
+
 // ── HTTP server ───────────────────────────────────────────────────────────────
 
 Deno.serve({ port: PORT }, async (req) => {
@@ -584,6 +636,157 @@ Deno.serve({ port: PORT }, async (req) => {
     return new Response(JSON.stringify({ execId: rfq.execId, executedQuote: rfq.executedQuote }), {
       headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
+  }
+
+  // ── Sell-side RFQ routes ──────────────────────────────────────────────────
+
+  // POST /rfq/sellside — client submits a sell-side RFQ
+  if (path === "/rfq/sellside" && req.method === "POST") {
+    let body: { clientUserId: string; asset: string; side: "BUY" | "SELL"; quantity: number; limitPrice?: number };
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    }
+    const { clientUserId, asset, side, quantity, limitPrice } = body;
+    if (!clientUserId || !asset || !side || !quantity) {
+      return new Response(JSON.stringify({ error: "Missing required fields: clientUserId, asset, side, quantity" }), { status: 400, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    }
+    const now = Date.now();
+    const rfqId = nextSsRfqId();
+    const rfq: SellSideRfq = {
+      rfqId,
+      state: "CLIENT_REQUEST",
+      clientUserId,
+      asset,
+      side,
+      quantity,
+      limitPrice,
+      createdAt: now,
+      ts: now,
+    };
+    sellSideRfqStore.set(rfqId, rfq);
+    await publishSsRfqUpdate(rfq);
+    console.log(`[rfq] New sell-side RFQ ${rfqId}: ${side} ${quantity} ${asset} from ${clientUserId}`);
+    return new Response(JSON.stringify({ rfqId, state: rfq.state }), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+  }
+
+  // GET /rfq/sellside/stats — must be before /rfq/sellside/:id
+  if (path === "/rfq/sellside/stats" && req.method === "GET") {
+    const byState = [...sellSideRfqStore.values()].reduce<Record<string, number>>((acc, r) => { acc[r.state] = (acc[r.state] ?? 0) + 1; return acc; }, {});
+    return new Response(JSON.stringify({ total: sellSideRfqStore.size, byState }), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+  }
+
+  // GET /rfq/sellside — list sell-side RFQs
+  if (path === "/rfq/sellside" && req.method === "GET") {
+    const userId = url.searchParams.get("userId");
+    const stateFilter = url.searchParams.get("state");
+    let records = [...sellSideRfqStore.values()].sort((a, b) => b.createdAt - a.createdAt);
+    if (userId) records = records.filter((r) => r.clientUserId === userId || r.salesUserId === userId);
+    if (stateFilter) records = records.filter((r) => r.state === stateFilter);
+    return new Response(JSON.stringify({ rfqs: records, total: records.length }), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+  }
+
+  // Action routes: /rfq/sellside/:id/(route|markup|confirm|reject)
+  const ssActionMatch = path.match(/^\/rfq\/sellside\/([^/]+)\/(route|markup|confirm|reject)$/);
+  if (ssActionMatch && req.method === "PUT") {
+    const rfq = sellSideRfqStore.get(ssActionMatch[1]);
+    if (!rfq) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    const action = ssActionMatch[2];
+    let actionBody: Record<string, unknown> = {};
+    try {
+      actionBody = await req.json();
+    } catch { /* empty body ok for some actions */ }
+
+    if (action === "route") {
+      if (rfq.state !== "CLIENT_REQUEST") {
+        return new Response(JSON.stringify({ error: `Cannot route from state ${rfq.state}` }), { status: 409, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      }
+      const salesUserId = actionBody.salesUserId as string | undefined;
+      if (!salesUserId) {
+        return new Response(JSON.stringify({ error: "Missing salesUserId" }), { status: 400, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      }
+      const basePrice = rfq.limitPrice ?? 0;
+      const jitter = basePrice * (1 + (Math.random() - 0.5) * 0.01);
+      rfq.salesUserId = salesUserId;
+      rfq.dealerBestPrice = parseFloat(jitter.toFixed(4));
+      rfq.state = "SALES_MARKUP";
+      rfq.salesRoutedAt = Date.now();
+      rfq.ts = Date.now();
+      await publishSsRfqUpdate(rfq);
+      return new Response(JSON.stringify(rfq), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    }
+
+    if (action === "markup") {
+      if (rfq.state !== "SALES_MARKUP") {
+        return new Response(JSON.stringify({ error: `Cannot apply markup from state ${rfq.state}` }), { status: 409, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      }
+      const salesUserId = actionBody.salesUserId as string | undefined;
+      const markupBps = Number(actionBody.markupBps ?? 0);
+      if (!salesUserId || salesUserId !== rfq.salesUserId) {
+        return new Response(JSON.stringify({ error: "salesUserId does not match" }), { status: 403, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      }
+      const dealerPrice = rfq.dealerBestPrice ?? 0;
+      const clientPrice = rfq.side === "BUY"
+        ? dealerPrice * (1 + markupBps / 10000)
+        : dealerPrice * (1 - markupBps / 10000);
+      rfq.salesMarkupBps = markupBps;
+      rfq.clientQuotedPrice = parseFloat(clientPrice.toFixed(4));
+      rfq.state = "CLIENT_CONFIRMATION";
+      rfq.salesMarkupAppliedAt = Date.now();
+      rfq.ts = Date.now();
+      await publishSsRfqUpdate(rfq);
+      return new Response(JSON.stringify(rfq), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    }
+
+    if (action === "confirm") {
+      if (rfq.state !== "CLIENT_CONFIRMATION") {
+        return new Response(JSON.stringify({ error: `Cannot confirm from state ${rfq.state}` }), { status: 409, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      }
+      const clientUserId = actionBody.clientUserId as string | undefined;
+      if (!clientUserId || clientUserId !== rfq.clientUserId) {
+        return new Response(JSON.stringify({ error: "clientUserId does not match" }), { status: 403, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      }
+      rfq.state = "CONFIRMED";
+      rfq.clientConfirmedAt = Date.now();
+      rfq.ts = Date.now();
+      await publishSsRfqUpdate(rfq);
+      // Publish to orders.new so the order enters the main pipeline
+      await producer?.send("orders.new", {
+        orderId: `${rfq.rfqId}-ord`,
+        clientOrderId: rfq.rfqId,
+        userId: rfq.clientUserId,
+        userRole: "external-client",
+        asset: rfq.asset,
+        side: rfq.side,
+        quantity: rfq.quantity,
+        limitPrice: rfq.clientQuotedPrice,
+        strategy: "LIMIT",
+        desk: "rfq",
+        ts: Date.now(),
+      }).catch(() => {});
+      return new Response(JSON.stringify(rfq), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    }
+
+    if (action === "reject") {
+      if (rfq.state === "CONFIRMED" || rfq.state === "REJECTED") {
+        return new Response(JSON.stringify({ error: `Cannot reject from state ${rfq.state}` }), { status: 409, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      }
+      rfq.rejectedBy = actionBody.rejectedBy as string | undefined;
+      rfq.rejectionReason = actionBody.reason as string | undefined;
+      rfq.state = "REJECTED";
+      rfq.ts = Date.now();
+      await publishSsRfqUpdate(rfq);
+      return new Response(JSON.stringify(rfq), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    }
+  }
+
+  // GET /rfq/sellside/:id — get one sell-side RFQ
+  const ssIdMatch = path.match(/^\/rfq\/sellside\/([^/]+)$/);
+  if (ssIdMatch && req.method === "GET") {
+    const rfq = sellSideRfqStore.get(ssIdMatch[1]);
+    if (!rfq) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    return new Response(JSON.stringify(rfq), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });

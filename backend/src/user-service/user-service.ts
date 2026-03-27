@@ -40,14 +40,14 @@ async function getUserFromToken(token: string | null) {
   const client = await usersPool.connect();
   try {
     const { rows } = await client.queryArray(
-      `SELECT u.id, u.name, u.role, u.avatar_emoji
+      `SELECT u.id, u.name, u.role, u.avatar_emoji, u.firm
        FROM users.sessions s JOIN users.users u ON u.id = s.user_id
        WHERE s.token = $1 AND s.expires_at > now()`,
       [token],
     );
     if (rows.length === 0) return null;
-    const [id, name, role, avatar_emoji] = rows[0];
-    return { id, name, role, avatar_emoji } as { id: string; name: string; role: string; avatar_emoji: string };
+    const [id, name, role, avatar_emoji, firm] = rows[0];
+    return { id, name, role, avatar_emoji, firm: firm ?? null } as { id: string; name: string; role: string; avatar_emoji: string; firm: string | null };
   } finally { client.release(); }
 }
 
@@ -67,9 +67,9 @@ async function handle(req: Request): Promise<Response> {
     const client = await usersPool.connect();
     try {
       const { rows } = await client.queryArray(
-        "SELECT id, name, role, avatar_emoji FROM users.users ORDER BY role DESC, name",
+        "SELECT id, name, role, avatar_emoji, firm FROM users.users ORDER BY role DESC, name",
       );
-      return json(rows.map(([id, name, role, avatar_emoji]) => ({ id, name, role, avatar_emoji })));
+      return json(rows.map(([id, name, role, avatar_emoji, firm]) => ({ id, name, role, avatar_emoji, firm: firm ?? null })));
     } finally { client.release(); }
   }
 

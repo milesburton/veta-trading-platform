@@ -52,6 +52,10 @@ export const PANEL_IDS = [
   "duration-ladder",
   "vol-surface",
   "basket-order",
+  "client-rfq",
+  "sales-workbench",
+  "product-builder",
+  "product-book",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -97,6 +101,10 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "duration-ladder": "Duration Ladder (DV01 by tenor)",
   "vol-surface": "Vol Surface (implied vol smile)",
   "basket-order": "Basket Order (multi-leg)",
+  "client-rfq": "Client RFQ (request for quote)",
+  "sales-workbench": "Sales Workbench (RFQ routing)",
+  "product-builder": "Product Builder (structured products)",
+  "product-book": "Product Book (issued products)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -171,6 +179,14 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Implied volatility surface heatmap — SABR-inspired smile across 5 expiries and 9 strikes; click a cell to prefill the Option Pricing panel",
   "basket-order":
     "Multi-leg basket order builder — set target notional, assign weights per symbol, snap quantities to lot size, and submit all legs as individual orders in one click",
+  "client-rfq":
+    "Submit and track requests for quote — view indicative prices, confirm or reject dealer quotes",
+  "sales-workbench":
+    "Review incoming client RFQs, route to pricing, apply markup, and send quotes to clients",
+  "product-builder":
+    "Build structured products — add equity, bond, and option legs with weights, structure, and issue to the client catalogue",
+  "product-book":
+    "Browse and manage structured products — view all products by state, request quotes, and track sales",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -189,6 +205,10 @@ export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
   "load-test",
   "llm-subsystem",
   "demo-day",
+  "client-rfq",
+  "sales-workbench",
+  "product-builder",
+  "product-book",
 ]);
 
 export interface TabChannelConfig {
@@ -239,4 +259,8 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "duration-ladder": { out: false, in: false },
   "vol-surface": { out: false, in: false },
   "basket-order": { out: false, in: false },
+  "client-rfq": { out: false, in: false },
+  "sales-workbench": { out: false, in: false },
+  "product-builder": { out: false, in: false },
+  "product-book": { out: false, in: false },
 };
