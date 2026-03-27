@@ -36,8 +36,8 @@ export function MarketDataSourcesPanel() {
   }, [overridesData]);
 
   const serverOverrides = overridesData?.overrides ?? {};
-  const alphaVantageSource = sources.find((s) => s.id === "alpha-vantage");
-  const alphaVantageAvailable = alphaVantageSource?.enabled ?? false;
+  // Any external (non-synthetic) source that is enabled
+  const anyExternalAvailable = sources.some((s) => s.id !== "synthetic" && s.enabled);
 
   function getSymbolSource(symbol: string): string {
     if (symbol in pending) return pending[symbol];
@@ -86,7 +86,7 @@ export function MarketDataSourcesPanel() {
     setSaveError(null);
   }
 
-  const alphaVantageCount = symbols.filter((s) => getSymbolSource(s) === "alpha-vantage").length;
+  const externalCount = symbols.filter((s) => getSymbolSource(s) !== "synthetic").length;
 
   const filteredSymbols = symbols.filter((sym) => {
     if (search && !sym.toLowerCase().includes(search.toLowerCase())) return false;
@@ -190,7 +190,7 @@ export function MarketDataSourcesPanel() {
                         <select
                           value={currentSource}
                           onChange={(e) => handleSourceChange(sym, e.target.value)}
-                          disabled={!alphaVantageAvailable && currentSource === "synthetic"}
+                          disabled={!anyExternalAvailable && currentSource === "synthetic"}
                           className={`bg-gray-800 border rounded px-2 py-0.5 text-[10px] ${
                             isDirty
                               ? "border-amber-700 text-amber-300"
@@ -198,13 +198,20 @@ export function MarketDataSourcesPanel() {
                           } disabled:opacity-50`}
                         >
                           <option value="synthetic">Synthetic</option>
-                          <option value="alpha-vantage" disabled={!alphaVantageAvailable}>
-                            Alpha Vantage{!alphaVantageAvailable ? " (no key)" : ""}
-                          </option>
+                          {sources
+                            .filter((s) => s.id !== "synthetic" && s.id !== "fred")
+                            .map((s) => (
+                              <option key={s.id} value={s.id} disabled={!s.enabled}>
+                                {s.label}
+                                {!s.enabled ? " (no key)" : ""}
+                              </option>
+                            ))}
                         </select>
                       ) : (
                         <span className="text-[10px] text-gray-500">
-                          {currentSource === "alpha-vantage" ? "Alpha Vantage" : "Synthetic"}
+                          {currentSource === "synthetic"
+                            ? "Synthetic"
+                            : (sources.find((s) => s.id === currentSource)?.label ?? currentSource)}
                         </span>
                       )}
                     </td>
@@ -249,8 +256,10 @@ export function MarketDataSourcesPanel() {
 
       {/* Footer */}
       <div className="px-4 py-1.5 border-t border-gray-800 shrink-0 text-[9px] text-gray-700">
-        Alpha Vantage: 5-min polling · {alphaVantageCount} symbol
-        {alphaVantageCount !== 1 ? "s" : ""} configured · Free tier: 25 calls/day
+        {externalCount} symbol{externalCount !== 1 ? "s" : ""} on external sources ·{" "}
+        {sources.filter((s) => s.id !== "synthetic" && s.enabled).length} provider
+        {sources.filter((s) => s.id !== "synthetic" && s.enabled).length !== 1 ? "s" : ""}{" "}
+        configured
       </div>
     </div>
   );

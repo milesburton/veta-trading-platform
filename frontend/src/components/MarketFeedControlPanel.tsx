@@ -100,22 +100,27 @@ export function MarketFeedControlPanel() {
   const [search, setSearch] = useState("");
 
   const serverOverrides = overridesData?.overrides ?? {};
-  const alphaVantageSource = sources.find((s) => s.id === "alpha-vantage");
-  const feedIsPaused = alphaVantageSource ? !alphaVantageSource.active : false;
+  // Consider feed paused if any togglable external source is paused
+  const anySourcePaused = sources.some((s) => s.id !== "synthetic" && !s.active && s.enabled);
 
   const symbolRows = useMemo(() => {
     return assets
       .filter((a) => !search || a.symbol.toLowerCase().includes(search.toLowerCase()))
-      .map((a) => ({
-        symbol: a.symbol,
-        exchange: a.exchange ?? "—",
-        source: serverOverrides[a.symbol] ?? "synthetic",
-        paused: serverOverrides[a.symbol] === "alpha-vantage" && feedIsPaused,
-      }))
+      .map((a) => {
+        const src = serverOverrides[a.symbol] ?? "synthetic";
+        const srcDef = sources.find((s) => s.id === src);
+        return {
+          symbol: a.symbol,
+          exchange: a.exchange ?? "—",
+          source: src,
+          sourceLabel: srcDef?.label ?? src,
+          paused: src !== "synthetic" && srcDef ? !srcDef.active : false,
+        };
+      })
       .sort((a, b) => a.symbol.localeCompare(b.symbol));
-  }, [assets, serverOverrides, feedIsPaused, search]);
+  }, [assets, serverOverrides, sources, search]);
 
-  const alphaVantageCount = symbolRows.filter((r) => r.source === "alpha-vantage").length;
+  const externalCount = symbolRows.filter((r) => r.source !== "synthetic").length;
   const badge = sessionBadge(session);
 
   return (
@@ -138,8 +143,7 @@ export function MarketFeedControlPanel() {
           ) : (
             <div className="flex gap-2">
               {sources.map((src) => {
-                const isAlphaVantage = src.id === "alpha-vantage";
-                const isPaused = isAlphaVantage && !src.active;
+                const isPaused = !src.active && src.enabled;
                 const dotColor =
                   src.enabled && src.active
                     ? "bg-emerald-500"
@@ -180,10 +184,10 @@ export function MarketFeedControlPanel() {
                         {src.apiKeyConfigured ? "API key configured" : "API key not set"}
                       </div>
                     )}
-                    {isAdmin && isAlphaVantage && src.apiKeyConfigured && (
+                    {isAdmin && src.id !== "synthetic" && src.apiKeyConfigured && (
                       <button
                         type="button"
-                        onClick={() => toggleFeed("alpha-vantage")}
+                        onClick={() => toggleFeed(src.id)}
                         disabled={toggling}
                         className={`mt-2 w-full px-2 py-1 rounded text-[10px] font-semibold border transition-colors disabled:opacity-40 ${
                           isPaused
@@ -261,9 +265,7 @@ export function MarketFeedControlPanel() {
               <tr key={row.symbol} className="border-b border-gray-900">
                 <td className="px-4 py-1.5 font-mono text-[11px] text-gray-300">{row.symbol}</td>
                 <td className="px-4 py-1.5 text-[10px] font-mono text-gray-500">{row.exchange}</td>
-                <td className="px-4 py-1.5 text-[10px] text-gray-500">
-                  {row.source === "alpha-vantage" ? "Alpha Vantage" : "Synthetic"}
-                </td>
+                <td className="px-4 py-1.5 text-[10px] text-gray-500">{row.sourceLabel}</td>
                 <td className="px-4 py-1.5 text-right">
                   {row.paused ? (
                     <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border bg-amber-900/20 text-amber-400 border-amber-700/40">
@@ -290,8 +292,8 @@ export function MarketFeedControlPanel() {
 
       {/* Footer */}
       <div className="px-4 py-1.5 border-t border-gray-800 shrink-0 text-[9px] text-gray-700">
-        {symbolRows.length} symbol{symbolRows.length !== 1 ? "s" : ""} · {alphaVantageCount} on
-        Alpha Vantage · feed {feedIsPaused ? "paused" : "active"}
+        {symbolRows.length} symbol{symbolRows.length !== 1 ? "s" : ""} · {externalCount} on external
+        feeds · {anySourcePaused ? "some feeds paused" : "all active"}
       </div>
     </div>
   );

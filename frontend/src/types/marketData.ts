@@ -3,7 +3,7 @@
  */
 
 export interface DataSource {
-  id: "synthetic" | "alpha-vantage";
+  id: string;
   label: string;
   description: string;
   enabled: boolean;
@@ -11,6 +11,8 @@ export interface DataSource {
   apiKeyConfigured: boolean;
   /** false when the feed has been globally paused by an admin */
   active: boolean;
+  mode?: "polling" | "streaming";
+  pollIntervalMs?: number;
 }
 
 export interface CachedQuote {
