@@ -271,6 +271,7 @@ export function OrderTicket() {
 
   const selectedAsset = assets.find((a) => a.symbol === assetSearch.value) ?? assets[0];
   const currentPrice = selectedAsset ? prices[selectedAsset.symbol] : undefined;
+  const lotSize = selectedAsset?.lotSize ?? 100;
 
   useEffect(() => {
     if (currentPrice && instrumentType.value === "equity" && !limitPrice.value) {
@@ -371,6 +372,11 @@ export function OrderTicket() {
   // ── Validation ─────────────────────────────────────────────────────────────
   const limitWarnings: string[] = [];
   if (!isOptions && !isBond) {
+    if (qty > 0 && lotSize > 1 && qty % lotSize !== 0) {
+      limitWarnings.push(
+        `Quantity must be a multiple of the lot size (${lotSize}). Nearest: ${Math.round(qty / lotSize) * lotSize}`
+      );
+    }
     if (qty > 0 && limits.max_order_qty > 0 && qty > limits.max_order_qty) {
       limitWarnings.push(
         `Quantity ${qty.toLocaleString()} exceeds your limit of ${limits.max_order_qty.toLocaleString()} shares`

@@ -13,6 +13,8 @@ export interface AssetDef {
   exchange?: string;
   currency?: string;
   isin?: string;
+  /** Round lot size (1, 10, or 100). Minimum tradeable quantity increment. */
+  lotSize?: number;
 }
 
 export interface MarketPrices {

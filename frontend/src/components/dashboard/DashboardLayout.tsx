@@ -15,6 +15,7 @@ import { AlertsPanel } from "../AlertsPanel.tsx";
 import { AlgoLeaderboardPanel } from "../AlgoLeaderboardPanel.tsx";
 import { AlgoMonitor } from "../AlgoMonitor.tsx";
 import { AnalysisPanel } from "../AnalysisPanel.tsx";
+import { BasketOrderPanel } from "../BasketOrderPanel.tsx";
 import { CandlestickChart } from "../CandlestickChart.tsx";
 import { ChildOrdersPanel } from "../ChildOrdersPanel.tsx";
 import type { ContextMenuEntry } from "../ContextMenu.tsx";
@@ -698,6 +699,8 @@ export function DashboardLayout() {
           return wrap(<DurationLadderPanel />);
         case "vol-surface":
           return wrap(<VolSurfacePanel />);
+        case "basket-order":
+          return wrap(<BasketOrderPanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }

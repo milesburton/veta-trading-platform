@@ -22,9 +22,12 @@ export interface AssetDef {
   currency: "USD";
   /** Simulated ISIN (format: US + 9 uppercase alphanum + 1 check digit). */
   isin: string;
+  /** Round lot size — minimum tradeable quantity increment. 1 for high-price stocks (>$500),
+   *  10 for mid-price ($100–500), 100 for standard equities (<$100). ETFs always 1. */
+  lotSize: number;
 }
 
-type RawAsset = Omit<AssetDef, "marketCapB" | "beta" | "dividendYield" | "peRatio" | "float" | "exchange" | "currency" | "isin">;
+type RawAsset = Omit<AssetDef, "marketCapB" | "beta" | "dividendYield" | "peRatio" | "float" | "exchange" | "currency" | "isin" | "lotSize">;
 
 const _RAW_ASSETS: RawAsset[] = [
   // dailyVolume = realistic ADV (average daily shares traded)
@@ -296,6 +299,7 @@ interface RawMeta {
   peRatio: number;
   float: number;
   exchange: "XNAS" | "XNYS" | "XCHI" | "ARCX";
+  lotSize?: number;  // override; auto-derived from price if omitted
 }
 
 const CURATED_META: Record<string, RawMeta> = {
@@ -399,6 +403,21 @@ function deriveExchange(sector: string): "XNAS" | "XNYS" | "XCHI" | "ARCX" {
   }
 }
 
+const ETF_SYMBOLS = new Set([
+  "SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "XLV", "XLI", "XLU",
+  "XLB", "XLRE", "XLP", "XLY", "GLD", "SLV", "USO", "TLT", "HYG", "LQD",
+  "EEM", "EFA", "VXX", "SQQQ", "TQQQ",
+]);
+
+/** Derive round lot size from initial price. ETFs always 1; high-price stocks 1;
+ *  mid-price stocks 10; standard equities 100. */
+function deriveLotSize(symbol: string, initialPrice: number): number {
+  if (ETF_SYMBOLS.has(symbol)) return 1;
+  if (initialPrice >= 500) return 1;
+  if (initialPrice >= 100) return 10;
+  return 100;
+}
+
 /** Simulated ISIN: US + 9 uppercase alphanum derived from symbol + check digit 0. */
 function deriveIsin(symbol: string): string {
   const padded = symbol.replace(/[^A-Z0-9]/g, "").padEnd(9, "0").slice(0, 9);
@@ -457,7 +476,7 @@ function derivePeRatio(sector: string, volatility: number): number {
   return base[sector] ?? 20;
 }
 
-function enrichAsset(raw: Omit<AssetDef, "marketCapB" | "beta" | "dividendYield" | "peRatio" | "float" | "exchange" | "currency" | "isin">): AssetDef {
+function enrichAsset(raw: Omit<AssetDef, "marketCapB" | "beta" | "dividendYield" | "peRatio" | "float" | "exchange" | "currency" | "isin" | "lotSize">): AssetDef {
   const curated = CURATED_META[raw.symbol];
   return {
     ...raw,
@@ -469,6 +488,7 @@ function enrichAsset(raw: Omit<AssetDef, "marketCapB" | "beta" | "dividendYield"
     exchange:      curated?.exchange      ?? deriveExchange(raw.sector),
     currency: "USD",
     isin: deriveIsin(raw.symbol),
+    lotSize: curated?.lotSize ?? deriveLotSize(raw.symbol, raw.initialPrice),
   };
 }
 

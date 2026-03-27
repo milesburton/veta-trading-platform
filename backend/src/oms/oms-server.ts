@@ -57,6 +57,8 @@ const DEFAULT_LIMITS: TradingLimits = {
   dark_pool_access: false,
 };
 
+const MARKET_SIM_URL = `http://${Deno.env.get("MARKET_SIM_HOST") ?? "localhost"}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
+
 const limitsCache = new Map<string, { limits: TradingLimits; expiresAt: number }>();
 
 async function getUserLimits(userId: string): Promise<TradingLimits> {
@@ -89,6 +91,27 @@ async function getUserLimits(userId: string): Promise<TradingLimits> {
   } catch {
     return DEFAULT_LIMITS;
   }
+}
+
+const lotSizeCache = new Map<string, number>();
+let lotSizeCacheExpiry = 0;
+
+async function getAssetLotSize(symbol: string): Promise<number> {
+  const now = Date.now();
+  if (now < lotSizeCacheExpiry && lotSizeCache.has(symbol)) {
+    return lotSizeCache.get(symbol)!;
+  }
+  try {
+    const res = await fetch(`${MARKET_SIM_URL}/assets`, { signal: AbortSignal.timeout(2_000) });
+    if (!res.ok) return 100;
+    const assets = await res.json() as { symbol: string; lotSize?: number }[];
+    lotSizeCache.clear();
+    for (const a of assets) lotSizeCache.set(a.symbol, a.lotSize ?? 100);
+    lotSizeCacheExpiry = now + 60_000;
+  } catch {
+    return 100;
+  }
+  return lotSizeCache.get(symbol) ?? 100;
 }
 
 // ── Desk / routing derivation ─────────────────────────────────────────────────
@@ -339,6 +362,13 @@ consumer?.onMessage(async (_topic, raw) => {
       ts: Date.now(),
     }).catch(() => {});
     return;
+  }
+
+  // Lot size validation — warn but don't hard-reject (algos may work in fractional lots)
+  const lotSize = await getAssetLotSize(order.asset);
+  if (lotSize > 1 && order.quantity % lotSize !== 0) {
+    console.warn(`[oms] Order qty ${order.quantity} is not a multiple of lot size ${lotSize} for ${order.asset}`);
+    // Attach note to the order but do not reject
   }
 
   // ── Build enriched order ──────────────────────────────────────────────────

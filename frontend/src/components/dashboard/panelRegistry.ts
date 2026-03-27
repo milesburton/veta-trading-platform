@@ -51,6 +51,7 @@ export const PANEL_IDS = [
   "spread-analysis",
   "duration-ladder",
   "vol-surface",
+  "basket-order",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -95,6 +96,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "spread-analysis": "Spread Analysis (G/Z/OAS)",
   "duration-ladder": "Duration Ladder (DV01 by tenor)",
   "vol-surface": "Vol Surface (implied vol smile)",
+  "basket-order": "Basket Order (multi-leg)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -167,6 +169,8 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Portfolio DV01 attribution ladder — key-rate duration contribution by tenor bucket for a multi-bond fixed income portfolio",
   "vol-surface":
     "Implied volatility surface heatmap — SABR-inspired smile across 5 expiries and 9 strikes; click a cell to prefill the Option Pricing panel",
+  "basket-order":
+    "Multi-leg basket order builder — set target notional, assign weights per symbol, snap quantities to lot size, and submit all legs as individual orders in one click",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -234,4 +238,5 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "spread-analysis": { out: false, in: false },
   "duration-ladder": { out: false, in: false },
   "vol-surface": { out: false, in: false },
+  "basket-order": { out: false, in: false },
 };
