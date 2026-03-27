@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.10.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.9.1...veta-trading-platform-v1.10.0) (2026-03-27)
+
+
+### Features
+
+* **market-data:** add multi-provider architecture with Alpha Vantage FX, Tiingo, Polygon, and FRED ([5668d9b](https://github.com/milesburton/veta-trading-platform/commit/5668d9ba3e10815a99a83c8597e756f0f174217e))
+* **market-sim:** add FX and commodity futures to the trading universe ([c718d95](https://github.com/milesburton/veta-trading-platform/commit/c718d95aefee7ff249326494ba95eafed1322133))
+* **sell-side:** add external-client, sales roles and full RFQ+product workflow ([2613146](https://github.com/milesburton/veta-trading-platform/commit/26131460a3aeb97dcf623bee5ee8e1d63df99bee))
+* **storybook:** add Storybook 8 with MSW and stories for 5 key panels ([c0ff9d9](https://github.com/milesburton/veta-trading-platform/commit/c0ff9d99c877488b0e8a4d48dabe915419c7d4f8))
+* **users:** add 8 new trader personas across equity, FX, options, and commodities desks ([08c6a95](https://github.com/milesburton/veta-trading-platform/commit/08c6a959fc10dcdc1d23d9e9aa067ad9878a5ddb))
+
 ## [1.9.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.9.0...veta-trading-platform-v1.9.1) (2026-03-27)
 
 
