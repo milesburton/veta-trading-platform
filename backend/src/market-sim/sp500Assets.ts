@@ -17,9 +17,11 @@ export interface AssetDef {
   /** Public float as a fraction of shares outstanding (e.g. 0.95 = 95 % tradeable). */
   float: number;
   /** Primary listing exchange MIC code. */
-  exchange: "XNAS" | "XNYS" | "XCHI" | "ARCX";
+  exchange: "XNAS" | "XNYS" | "XCHI" | "ARCX" | "XCME" | "XNYM" | "XCBT";
   /** ISO 4217 settlement currency. */
-  currency: "USD";
+  currency: "USD" | "JPY" | "GBP" | "CAD" | "CHF";
+  /** Asset class — equity (default), fx, or commodity. */
+  assetClass?: "equity" | "fx" | "commodity";
   /** Simulated ISIN (format: US + 9 uppercase alphanum + 1 check digit). */
   isin: string;
   /** Round lot size — minimum tradeable quantity increment. 1 for high-price stocks (>$500),
@@ -27,7 +29,7 @@ export interface AssetDef {
   lotSize: number;
 }
 
-type RawAsset = Omit<AssetDef, "marketCapB" | "beta" | "dividendYield" | "peRatio" | "float" | "exchange" | "currency" | "isin" | "lotSize">;
+type RawAsset = Omit<AssetDef, "marketCapB" | "beta" | "dividendYield" | "peRatio" | "float" | "exchange" | "currency" | "isin" | "lotSize" | "assetClass">;
 
 const _RAW_ASSETS: RawAsset[] = [
   // dailyVolume = realistic ADV (average daily shares traded)
@@ -476,7 +478,7 @@ function derivePeRatio(sector: string, volatility: number): number {
   return base[sector] ?? 20;
 }
 
-function enrichAsset(raw: Omit<AssetDef, "marketCapB" | "beta" | "dividendYield" | "peRatio" | "float" | "exchange" | "currency" | "isin" | "lotSize">): AssetDef {
+function enrichAsset(raw: Omit<AssetDef, "marketCapB" | "beta" | "dividendYield" | "peRatio" | "float" | "exchange" | "currency" | "isin" | "lotSize" | "assetClass">): AssetDef {
   const curated = CURATED_META[raw.symbol];
   return {
     ...raw,

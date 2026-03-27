@@ -38,7 +38,7 @@ const KNOWN_STRATEGIES = new Set([
   "LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE", "IS", "MOMENTUM",
 ]);
 
-type Desk = "equity" | "fi" | "derivatives";
+type Desk = "equity" | "fi" | "derivatives" | "fx" | "commodities";
 type MarketType = "lit" | "dark" | "otc";
 
 interface TradingLimits {
@@ -119,6 +119,8 @@ async function getAssetLotSize(symbol: string): Promise<number> {
 function deriveDesk(instrumentType?: string): Desk {
   if (instrumentType === "bond") return "fi";
   if (instrumentType === "option") return "derivatives";
+  if (instrumentType === "fx") return "fx";
+  if (instrumentType === "commodity") return "commodities";
   return "equity";
 }
 
@@ -129,6 +131,8 @@ function deriveMarketType(
 ): MarketType {
   if (desk === "fi") return "otc";
   if (desk === "derivatives" && order.optionSpec?.isOtc) return "otc";
+  // FX and commodities route to lit (EBS/CME)
+  if (desk === "fx" || desk === "commodities") return "lit";
   // Route equity block orders to dark pool when user has access
   if (
     desk === "equity" &&
@@ -140,6 +144,8 @@ function deriveMarketType(
 
 function deriveDestinationVenue(desk: Desk, marketType: MarketType): string {
   if (desk === "fi") return "RFQ";
+  if (desk === "fx") return "EBS";
+  if (desk === "commodities") return "XCME";
   if (marketType === "dark") return "DARK1";
   if (marketType === "otc") return "OTC-OPTIONS";
   return "XNAS";
@@ -325,7 +331,8 @@ consumer?.onMessage(async (_topic, raw) => {
   // ── Strategy validation (equity + listed derivatives only) ───────────────
 
   // FI uses RFQ — no algo strategy applies. OTC options use bilateral flow.
-  const needsStrategyCheck = desk === "equity" || (desk === "derivatives" && !order.optionSpec?.isOtc);
+  // FX and commodities use standard algo strategies (same pool as equity).
+  const needsStrategyCheck = desk === "equity" || desk === "fx" || desk === "commodities" || (desk === "derivatives" && !order.optionSpec?.isOtc);
 
   let strategy = (order.strategy ?? "LIMIT").toUpperCase();
   if (desk === "fi") strategy = "LIMIT"; // bonds always LIMIT internally

@@ -15,6 +15,8 @@ export interface AssetDef {
   isin?: string;
   /** Round lot size (1, 10, or 100). Minimum tradeable quantity increment. */
   lotSize?: number;
+  /** Asset class — equity (default when absent), fx, or commodity. */
+  assetClass?: "equity" | "fx" | "commodity";
 }
 
 export interface MarketPrices {
@@ -103,7 +105,7 @@ export type VenueMIC =
   | "XPAR"
   | "XFRA";
 
-export type InstrumentType = "equity" | "option" | "bond";
+export type InstrumentType = "equity" | "option" | "bond" | "fx" | "commodity";
 
 export interface OptionSpec {
   optionType: "call" | "put";

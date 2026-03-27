@@ -1,6 +1,8 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { advanceRegime, generatePrice, marketData, seedPrice, refreshSectorShocks } from "./priceEngine.ts";
 import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
+import { FX_ASSETS, FX_ASSET_MAP } from "./fxAssets.ts";
+import { COMMODITY_ASSETS, COMMODITY_ASSET_MAP } from "./commodityAssets.ts";
 import { intradayVolumeFactor } from "../lib/timeScale.ts";
 import { createProducer } from "../lib/messaging.ts";
 import type { OrderBookLevel, OrderBookSnapshot } from "../lib/marketSimClient.ts";
@@ -57,11 +59,15 @@ refreshOverrides().catch(() => {});
 
 const producer = await createProducer("market-sim");
 
+// ── Merged asset universe (equity + FX + commodity) ────────────────────────────
+const ALL_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS];
+const ALL_ASSET_MAP = new Map([...ASSET_MAP, ...FX_ASSET_MAP, ...COMMODITY_ASSET_MAP]);
+
 // ── Seed prices from candle-store history ──────────────────────────────────────
 // Fetch the last known 1m close for each asset so that prices are continuous
 // across restarts rather than resetting to hard-coded initialPrice values.
 async function seedFromJournal(): Promise<void> {
-  const symbols = SP500_ASSETS.map((a) => a.symbol);
+  const symbols = ALL_ASSETS.map((a) => a.symbol);
   let seeded = 0;
   await Promise.allSettled(
     symbols.map(async (symbol) => {
@@ -108,7 +114,7 @@ const CORS_HEADERS = {
 
 function computeTickVolumes(minute: number): Record<string, number> {
   const factor = intradayVolumeFactor(minute);
-  return SP500_ASSETS.reduce<Record<string, number>>((acc, asset) => {
+  return ALL_ASSETS.reduce<Record<string, number>>((acc, asset) => {
     const basePerMinute = asset.dailyVolume / 390;
     const jitter = 0.7 + Math.random() * 0.6;
     acc[asset.symbol] = Math.round(basePerMinute * factor * jitter);
@@ -163,7 +169,7 @@ function computeOrderBook(
   const book: Record<string, OrderBookSnapshot> = {};
   const now = Date.now();
   for (const [symbol, mid] of Object.entries(prices)) {
-    const asset = ASSET_MAP.get(symbol);
+    const asset = ALL_ASSET_MAP.get(symbol);
     book[symbol] = buildBookForVenue(mid, asset?.volatility ?? 0.02, asset?.dailyVolume ?? 1_000_000, 1.0, 1.0, now);
   }
   return book;
@@ -175,7 +181,7 @@ function computeVenueBooks(prices: Record<string, number>): Record<SorVenueMIC, 
   for (const venue of SOR_VENUES) {
     const book: Record<string, OrderBookSnapshot> = {};
     for (const [symbol, mid] of Object.entries(prices)) {
-      const asset = ASSET_MAP.get(symbol);
+      const asset = ALL_ASSET_MAP.get(symbol);
       book[symbol] = buildBookForVenue(mid, asset?.volatility ?? 0.02, asset?.dailyVolume ?? 1_000_000, venue.spreadMult, venue.depthMult, now);
     }
     result[venue.mic] = book;
@@ -227,7 +233,7 @@ Deno.serve({ port: PORT }, (req) => {
   }
 
   if (url.pathname === "/assets" && req.method === "GET") {
-    return new Response(JSON.stringify(SP500_ASSETS), {
+    return new Response(JSON.stringify(ALL_ASSETS), {
       headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
   }

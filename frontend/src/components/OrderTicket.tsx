@@ -282,7 +282,24 @@ export function OrderTicket() {
   function selectAsset(symbol: string) {
     assetSearch.value = symbol;
     const price = prices[symbol];
-    if (instrumentType.value === "equity") {
+    const asset = assets.find((a) => a.symbol === symbol);
+    // Auto-switch instrument type based on asset class
+    const assetClass = asset?.assetClass;
+    if (assetClass === "fx" && instrumentType.value !== "fx") {
+      instrumentType.value = "fx";
+    } else if (assetClass === "commodity" && instrumentType.value !== "commodity") {
+      instrumentType.value = "commodity";
+    } else if (
+      (!assetClass || assetClass === "equity") &&
+      (instrumentType.value === "fx" || instrumentType.value === "commodity")
+    ) {
+      instrumentType.value = "equity";
+    }
+    if (
+      instrumentType.value === "equity" ||
+      instrumentType.value === "fx" ||
+      instrumentType.value === "commodity"
+    ) {
       limitPrice.value = price ? formatPrice(symbol, price) : "";
     }
     optionQuote.value = null;
@@ -539,6 +556,12 @@ export function OrderTicket() {
         bondSpec,
       };
     } else {
+      const itype =
+        instrumentType.value === "fx"
+          ? ("fx" as const)
+          : instrumentType.value === "commodity"
+            ? ("commodity" as const)
+            : undefined;
       trade = {
         asset: selectedAsset.symbol,
         side: activeSide,
@@ -546,6 +569,7 @@ export function OrderTicket() {
         limitPrice: lx,
         expiresAt: Number(expiresAt.value),
         algoParams: buildAlgoParams(),
+        ...(itype ? { instrumentType: itype } : {}),
       };
     }
 
@@ -618,6 +642,11 @@ export function OrderTicket() {
   const canTradeEquity = allowedDesks.includes("equity");
   const canTradeDerivatives = allowedDesks.includes("derivatives");
   const canTradeFi = allowedDesks.includes("fi");
+  const canTradeFx = allowedDesks.includes("fx");
+  const canTradeCommodities = allowedDesks.includes("commodities");
+  const isFx = instrumentType.value === "fx";
+  const isCommodity = instrumentType.value === "commodity";
+  const isEquityLike = !isOptions && !isBond && !isFx && !isCommodity;
 
   return (
     <div className="flex flex-col h-full" data-testid="order-ticket-panel">
@@ -631,10 +660,10 @@ export function OrderTicket() {
           {canTradeEquity && (
             <button
               type="button"
-              aria-pressed={!isOptions && !isBond}
+              aria-pressed={isEquityLike}
               onClick={handleSwitchToEquity}
               className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
-                !isOptions && !isBond
+                isEquityLike
                   ? "bg-gray-700 border-gray-500 text-gray-100"
                   : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
               }`}
@@ -668,6 +697,40 @@ export function OrderTicket() {
               }`}
             >
               Bond
+            </button>
+          )}
+          {canTradeFx && (
+            <button
+              type="button"
+              aria-pressed={isFx}
+              onClick={() => {
+                instrumentType.value = "fx";
+                optionQuote.value = null;
+              }}
+              className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
+                isFx
+                  ? "bg-gray-700 border-gray-500 text-gray-100"
+                  : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+              }`}
+            >
+              FX
+            </button>
+          )}
+          {canTradeCommodities && (
+            <button
+              type="button"
+              aria-pressed={isCommodity}
+              onClick={() => {
+                instrumentType.value = "commodity";
+                optionQuote.value = null;
+              }}
+              className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
+                isCommodity
+                  ? "bg-gray-700 border-gray-500 text-gray-100"
+                  : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+              }`}
+            >
+              Futures
             </button>
           )}
         </div>

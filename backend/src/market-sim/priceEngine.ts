@@ -1,4 +1,6 @@
-import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
+import { ASSET_MAP as EQUITY_ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
+import { FX_ASSETS, FX_ASSET_MAP } from "./fxAssets.ts";
+import { COMMODITY_ASSETS, COMMODITY_ASSET_MAP } from "./commodityAssets.ts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -34,14 +36,17 @@ const SECTOR_CORRELATION = 0.35;
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
+const ALL_SEEDED_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS];
+const ALL_ASSET_MAP = new Map([...EQUITY_ASSET_MAP, ...FX_ASSET_MAP, ...COMMODITY_ASSET_MAP]);
+
 /** Current mid-prices for every asset. */
 export const marketData: Record<string, number> = Object.fromEntries(
-  SP500_ASSETS.map((a) => [a.symbol, a.initialPrice]),
+  ALL_SEEDED_ASSETS.map((a) => [a.symbol, a.initialPrice]),
 );
 
 /** Anchor prices used for mean reversion (updated when seeded from candle-store). */
 const anchorPrices: Record<string, number> = Object.fromEntries(
-  SP500_ASSETS.map((a) => [a.symbol, a.initialPrice]),
+  ALL_SEEDED_ASSETS.map((a) => [a.symbol, a.initialPrice]),
 );
 
 /**
@@ -107,7 +112,7 @@ export function advanceRegime() {
  * Refresh per-sector correlated shocks; call once per tick before generatePrice.
  */
 export function refreshSectorShocks() {
-  const sectors = new Set(SP500_ASSETS.map((a) => a.sector));
+  const sectors = new Set(ALL_SEEDED_ASSETS.map((a) => a.sector));
   for (const sector of sectors) {
     sectorShocks[sector] = randn();
   }
@@ -123,7 +128,7 @@ export function refreshSectorShocks() {
  *   - Hard price floor at 10 % of initial price
  */
 export function generatePrice(asset: string): number {
-  const def = ASSET_MAP.get(asset);
+  const def = ALL_ASSET_MAP.get(asset);
   const dailyVol = def?.volatility ?? 0.02;
   const sector = def?.sector ?? "Unknown";
   const anchor = anchorPrices[asset];
