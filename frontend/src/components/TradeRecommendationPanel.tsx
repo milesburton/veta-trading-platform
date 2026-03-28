@@ -172,7 +172,6 @@ export function TradeRecommendationPanel() {
   const [result, setResult] = useState<RecommendationResponse | null>(null);
   const [filterStrength, setFilterStrength] = useState<SignalStrength | "ALL">("ALL");
 
-  // Read live intelligence signal for this symbol
   const signal = useAppSelector((s) => s.intelligence.signals[symbol]);
 
   const [getRecommendations, { isLoading, error }] = useGetRecommendationsMutation();

@@ -132,8 +132,6 @@ function useAllServiceHealth(): ServiceHealth[] {
   });
 }
 
-// ─── ThemeSwitcher ────────────────────────────────────────────────────────────
-
 const THEME_OPTIONS: { id: Theme; label: string }[] = [
   { id: "dark", label: "Dark" },
   { id: "darker", label: "OLED" },
@@ -195,8 +193,6 @@ function ThemeSwitcher() {
     </div>
   );
 }
-
-// ─── AlertCentreButton ────────────────────────────────────────────────────────
 
 function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
   const dispatch = useAppDispatch();
@@ -353,8 +349,6 @@ function DataFreshness() {
   );
 }
 
-// ─── AppHeader: brand + feed + services + clock + user ───────────────────────
-
 export function AppHeader() {
   const updateAvailable = useAppSelector((s) => s.ui.updateAvailable);
   const user = useAppSelector((s) => s.auth.user);
@@ -478,8 +472,6 @@ export function AppHeader() {
   );
 }
 
-// ─── WorkspaceToolbar: layout controls scoped to the active workspace ─────────
-
 export function WorkspaceToolbar() {
   return (
     <div
@@ -492,8 +484,6 @@ export function WorkspaceToolbar() {
     </div>
   );
 }
-
-// ─── StatusBar: kept for backwards-compat imports in tests ────────────────────
 
 export function StatusBar() {
   return (

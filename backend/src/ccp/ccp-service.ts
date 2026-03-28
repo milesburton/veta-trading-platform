@@ -54,8 +54,6 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-// ── Margin rates by desk ──────────────────────────────────────────────────────
-
 const INITIAL_MARGIN_RATE: Record<string, number> = {
   equity:      0.10,  // 10% of notional
   fi:          0.02,  //  2% of notional (bonds are lower risk)
@@ -68,8 +66,6 @@ const _MAINTENANCE_MARGIN_RATE: Record<string, number> = {
   derivatives: 0.10,
   otc:         0.035,
 };
-
-// ── Interfaces ────────────────────────────────────────────────────────────────
 
 interface Fill {
   execId: string;
@@ -155,8 +151,6 @@ interface SettlementObligation {
   settledAt?: number;
 }
 
-// ── State ─────────────────────────────────────────────────────────────────────
-
 const novationLegs = new Map<string, NovationLeg>();
 const marginAccounts = new Map<string, MarginAccount>();
 const settlementQueue = new Map<string, SettlementObligation>();
@@ -179,12 +173,8 @@ function nextObligationId(): string {
   return `CCP-O${String(obligationSeq++).padStart(8, "0")}`;
 }
 
-// ── Market data ───────────────────────────────────────────────────────────────
-
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
-
-// ── Messaging ─────────────────────────────────────────────────────────────────
 
 const producer = await createProducer("ccp-service").catch((err) => {
   console.warn("[ccp] Redpanda unavailable:", err.message);
@@ -200,8 +190,6 @@ const rfqConsumer = await createConsumer("ccp-rfq", ["rfq.executed"]).catch((err
   console.warn("[ccp] Cannot subscribe to rfq.executed:", err.message);
   return null;
 });
-
-// ── Margin account helpers ────────────────────────────────────────────────────
 
 function getOrCreateMarginAccount(userId: string): MarginAccount {
   let acct = marginAccounts.get(userId);
@@ -228,16 +216,13 @@ function updatePosition(acct: MarginAccount, asset: string, side: "BUY" | "SELL"
   const newQty = currentQty + sign * qty;
 
   if (Math.abs(newQty) < 0.0001) {
-    // Position closed — realised P&L has been captured, reset cost basis
     delete acct.positions[asset];
     delete acct.costBasis[asset];
   } else if (sign > 0) {
-    // Adding to long (or opening short): update weighted average cost
     const totalCost = Math.abs(currentQty) * currentCost + qty * price;
     acct.positions[asset] = newQty;
     acct.costBasis[asset] = totalCost / Math.abs(newQty);
   } else {
-    // Reducing position: cost basis unchanged for remaining qty
     acct.positions[asset] = newQty;
     acct.costBasis[asset] = currentCost;
   }
@@ -277,8 +262,6 @@ async function postInitialMargin(
 
   totalMarginCalls++;
 }
-
-// ── Novation ──────────────────────────────────────────────────────────────────
 
 async function novate(
   execId: string,
@@ -376,8 +359,6 @@ async function novate(
   await postInitialMargin(userId, desk, notional, asset, side, quantity, price, execId);
 }
 
-// ── Consume fills ─────────────────────────────────────────────────────────────
-
 fillsConsumer?.onMessage((_topic, raw) => {
   const fill = raw as Fill;
   if (!fill.execId || !fill.userId || !fill.asset || !fill.filledQty || !fill.avgFillPrice) return;
@@ -407,8 +388,6 @@ rfqConsumer?.onMessage((_topic, raw) => {
     exec.price, exec.notional, desk, "otc", exec.dealerId, settlDate)
     .catch(console.error);
 });
-
-// ── Settlement sweep ──────────────────────────────────────────────────────────
 
 async function runSettlementSweep(): Promise<void> {
   const today = new Date().toISOString().slice(0, 10);
@@ -468,8 +447,6 @@ async function runSettlementSweep(): Promise<void> {
   }
 }
 
-// ── Mark-to-market margin ─────────────────────────────────────────────────────
-
 async function runMarginMtM(): Promise<void> {
   const tick = marketClient.getLatest();
   const now = Date.now();
@@ -512,15 +489,11 @@ async function runMarginMtM(): Promise<void> {
   }
 }
 
-// ── Timers ────────────────────────────────────────────────────────────────────
-
 setInterval(() => { runSettlementSweep().catch(console.error); }, SETTLEMENT_SWEEP_MS);
 setInterval(() => { runMarginMtM().catch(console.error); }, MARGIN_MTM_MS);
 
 console.log(`[ccp] Listening for orders.filled and rfq.executed`);
 console.log(`[ccp] Settlement sweep=${SETTLEMENT_SWEEP_MS}ms  MtM=${MARGIN_MTM_MS}ms`);
-
-// ── HTTP server ───────────────────────────────────────────────────────────────
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);

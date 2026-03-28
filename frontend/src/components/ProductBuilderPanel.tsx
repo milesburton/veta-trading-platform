@@ -8,7 +8,7 @@ interface DraftLeg {
   _key: string;
   type: LegType;
   symbol: string;
-  weight: number; // 0–100 %
+  weight: number;
   isin?: string;
   optionStrike?: string;
   optionExpiry?: string;
@@ -36,23 +36,18 @@ const STATE_COLOURS: Record<ProductState, string> = {
 export function ProductBuilderPanel() {
   const user = useAppSelector((s) => s.auth.user);
 
-  // Header fields
   const name = useSignal("");
   const description = useSignal("");
   const targetNotional = useSignal("1000000");
 
-  // Legs
   const legs = useSignal<DraftLeg[]>([]);
 
-  // Add-leg form
   const addType = useSignal<LegType>("equity");
   const addSymbol = useSignal("");
   const addWeight = useSignal("0");
 
-  // Saved product state (after first POST)
   const savedProduct = useSignal<SavedProduct | null>(null);
 
-  // Feedback
   const feedback = useSignal<{ ok: boolean; msg: string } | null>(null);
   const busy = useSignal(false);
 
@@ -80,7 +75,7 @@ export function ProductBuilderPanel() {
       const base: Record<string, unknown> = {
         type: l.type,
         symbol: l.symbol,
-        weight: l.weight / 100, // convert % to fraction
+        weight: l.weight / 100,
       };
       if (l.isin) base.isin = l.isin;
       if (l.type === "option" && l.optionStrike && l.optionExpiry) {
@@ -118,7 +113,6 @@ export function ProductBuilderPanel() {
       const existing = savedProduct.value;
 
       if (existing) {
-        // Update legs only (state must be draft for legs update)
         const res = await fetch(`/api/gateway/products/${existing.productId}/legs`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -136,7 +130,6 @@ export function ProductBuilderPanel() {
         savedProduct.value = { productId: data.productId!, state: data.state! };
         showFeedback(true, "Legs updated.");
       } else {
-        // Create new draft product
         const res = await fetch("/api/gateway/products", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -228,7 +221,6 @@ export function ProductBuilderPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden" data-testid="product-builder-panel">
-      {/* Header */}
       <div className="px-3 py-2 border-b border-gray-800 flex items-center gap-3 flex-shrink-0">
         <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
           Product Builder
@@ -248,7 +240,6 @@ export function ProductBuilderPanel() {
       </div>
 
       <div className="flex flex-col gap-3 p-3 overflow-auto flex-1">
-        {/* Product header fields */}
         <div className="grid grid-cols-2 gap-2">
           <div className="col-span-2">
             <label htmlFor="pb-name" className="block text-xs text-gray-500 mb-1">
@@ -304,7 +295,6 @@ export function ProductBuilderPanel() {
           </div>
         </div>
 
-        {/* Add leg form */}
         <div className="border border-gray-700/60 rounded p-2 flex flex-col gap-2">
           <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
             Add Leg
@@ -375,7 +365,6 @@ export function ProductBuilderPanel() {
           </button>
         </div>
 
-        {/* Legs table */}
         {legs.value.length > 0 && (
           <div className="rounded border border-gray-700/60 overflow-hidden">
             <table className="w-full text-[10px] border-collapse">
@@ -424,7 +413,6 @@ export function ProductBuilderPanel() {
           </div>
         )}
 
-        {/* Weight summary */}
         {legs.value.length > 0 && (
           <div className="flex items-center justify-between text-[10px]">
             <span
@@ -441,7 +429,6 @@ export function ProductBuilderPanel() {
           </div>
         )}
 
-        {/* Action buttons */}
         <div className="flex gap-2 flex-wrap">
           <button
             type="button"
@@ -469,7 +456,6 @@ export function ProductBuilderPanel() {
           </button>
         </div>
 
-        {/* Feedback */}
         {feedback.value && (
           <div
             className={`rounded border px-2.5 py-1.5 text-[10px] ${

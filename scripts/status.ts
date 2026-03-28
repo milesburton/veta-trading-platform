@@ -8,11 +8,10 @@
  *   or    svc-ui  (fish alias)
  */
 
-const CONF = "/home/deno/supervisord.conf";
+const CONF = "/workspaces/virtual-equities-trading-application/supervisord.conf";
 const CTL = ["supervisorctl", "-c", CONF];
 const REFRESH_MS = 2000;
 
-// ── Service groups ──────────────────────────────────────────────────────────
 const GROUPS: Array<{ label: string; idle: boolean; programs: string[] }> = [
   {
     label: "Core",
@@ -52,6 +51,7 @@ const GROUPS: Array<{ label: string; idle: boolean; programs: string[] }> = [
       "dark-pool",
       "ccp-service",
       "rfq-service",
+      "product-service",
       "fix-archive",
       "fix-exchange",
       "fix-gateway",
@@ -82,7 +82,6 @@ const GROUPS: Array<{ label: string; idle: boolean; programs: string[] }> = [
   },
 ];
 
-// ── ANSI helpers ────────────────────────────────────────────────────────────
 const ESC = "\x1b[";
 const A = {
   clear: `${ESC}2J${ESC}H`,
@@ -106,7 +105,6 @@ function col(text: string, ...codes: string[]): string {
   return codes.join("") + text + A.reset;
 }
 
-// ── supervisorctl parsing ───────────────────────────────────────────────────
 interface SvcInfo {
   name: string;
   state: string;
@@ -134,7 +132,6 @@ async function fetchStatus(): Promise<Map<string, SvcInfo>> {
       );
       if (!m) continue;
       let name = m[1];
-      // Strip group prefix (e.g. "algos:algo-trader" → "algo-trader")
       const colonIdx = name.indexOf(":");
       if (colonIdx !== -1) name = name.slice(colonIdx + 1);
       map.set(name, {
@@ -151,7 +148,6 @@ async function fetchStatus(): Promise<Map<string, SvcInfo>> {
   return map;
 }
 
-// ── Rendering ───────────────────────────────────────────────────────────────
 const FRIENDLY: Record<string, string> = {
   "algo-trader": "limit-algo",
   "llm-advisory-orchestrator": "llm-advisory",
@@ -267,7 +263,6 @@ function renderRow(name: string, info: SvcInfo | undefined): string {
   );
 }
 
-// ── Count totals for header bar ─────────────────────────────────────────────
 function countTotals(
   status: Map<string, SvcInfo>,
 ): { running: number; total: number; stopped: number; error: number } {
@@ -292,7 +287,6 @@ function render(status: Map<string, SvcInfo>, tick: number): string {
 
   const now = new Date().toLocaleTimeString("en-GB");
 
-  // Header
   lines.push("");
   lines.push(
     col(
@@ -313,7 +307,6 @@ function render(status: Map<string, SvcInfo>, tick: number): string {
     ),
   );
 
-  // Summary bar
   const runStr = col(`${running} running`, A.green, A.bold);
   const stpStr = col(`${stopped} stopped`, A.dim);
   const errStr =
@@ -326,7 +319,6 @@ function render(status: Map<string, SvcInfo>, tick: number): string {
   );
   lines.push("");
 
-  // Groups
   for (const group of GROUPS) {
     const { running: gr, total: gt } = groupSummary(group.programs, status);
     lines.push(renderGroupHeader(group.label, group.idle, gr, gt));
@@ -337,7 +329,6 @@ function render(status: Map<string, SvcInfo>, tick: number): string {
     lines.push("");
   }
 
-  // Footer hints
   lines.push(
     col(
       "  Commands: ",
@@ -355,14 +346,12 @@ function render(status: Map<string, SvcInfo>, tick: number): string {
   return A.clear + lines.join("\n");
 }
 
-// ── Main loop ────────────────────────────────────────────────────────────────
 async function main() {
   const once = Deno.args.includes("--once");
 
   // One-shot snapshot mode (used in login banner, no raw mode, no clear)
   if (once) {
     const status = await fetchStatus();
-    // Print without the full clear-screen header — just the grouped table
     const lines: string[] = [];
     for (const group of GROUPS) {
       const { running: gr, total: gt } = groupSummary(group.programs, status);
@@ -376,24 +365,19 @@ async function main() {
     return;
   }
 
-  // Raw mode for keypress detection
   let running = true;
 
-  // Hide cursor
   await Deno.stdout.write(new TextEncoder().encode(A.hide));
 
-  // Restore on exit
   const restore = () => {
     Deno.stdout.writeSync(new TextEncoder().encode(A.show + A.reset + "\n"));
   };
 
-  // Handle Ctrl-C
   Deno.addSignalListener("SIGINT", () => {
     restore();
     Deno.exit(0);
   });
 
-  // Non-blocking stdin for 'q' key
   try {
     Deno.stdin.setRaw(true);
   } catch {
@@ -408,17 +392,14 @@ async function main() {
 
   let tick = 0;
 
-  // Initial render immediately
   let status = await fetchStatus();
   await Deno.stdout.write(new TextEncoder().encode(render(status, tick)));
 
-  // Key reader (non-blocking via racing)
   const readKey = async (): Promise<boolean> => {
     try {
       const { value } = await stdinReader.read();
       if (!value) return false;
       const ch = value[0];
-      // q, Q, ESC, or Ctrl-C
       if (ch === 113 || ch === 81 || ch === 27 || ch === 3) {
         return false;
       }
@@ -428,7 +409,6 @@ async function main() {
     return true;
   };
 
-  // Poll loop
   while (running) {
     tick++;
     const refreshDelay = new Promise<"timeout">((r) =>

@@ -11,13 +11,9 @@
 
 import type { ExprGroup, ExprNode, ExprOp, ExprRule } from "../types/gridQuery.ts";
 
-// ── Field accessor ────────────────────────────────────────────────────────────
-
 function getField(row: Record<string, unknown>, field: string): unknown {
   return row[field];
 }
-
-// ── Operator evaluation ────────────────────────────────────────────────────────
 
 export function evalOp(
   rowVal: unknown,
@@ -50,7 +46,6 @@ export function evalOp(
     return String(rowVal).toLowerCase().endsWith(String(filterVal).toLowerCase());
   }
 
-  // Numeric-aware comparisons
   const rv = Number(rowVal);
   const fv = Number(filterVal);
   const numericOk = !Number.isNaN(rv) && !Number.isNaN(fv);
@@ -76,8 +71,6 @@ export function evalOp(
       return true;
   }
 }
-
-// ── Expression tree evaluation ─────────────────────────────────────────────────
 
 function evalExprRule(row: Record<string, unknown>, rule: ExprRule): boolean {
   return evalOp(getField(row, rule.field), rule.op, rule.value);

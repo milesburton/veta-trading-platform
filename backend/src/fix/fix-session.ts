@@ -31,8 +31,6 @@ export class FixSession {
     };
   }
 
-  // ─── Public API ─────────────────────────────────────────────────────────────
-
   get sessionState(): SessionState {
     return this.state;
   }
@@ -115,8 +113,6 @@ export class FixSession {
     this.setState("DISCONNECTED");
   }
 
-  // ─── Private Handlers ───────────────────────────────────────────────────────
-
   private onLogon(tags: Map<number, string>): void {
     const heartBtInt = Number(tags.get(Tag.HeartBtInt) ?? this.config.heartBtInt);
     if (this.state === "LOGON_SENT") {
@@ -194,8 +190,6 @@ export class FixSession {
     this.config.onSend(req);
   }
 
-  // ─── Heartbeat Management ───────────────────────────────────────────────────
-
   private startHeartbeat(intervalSecs: number): void {
     this.stopHeartbeat();
     this.heartbeatTimer = setInterval(() => {
@@ -221,8 +215,6 @@ export class FixSession {
       this.heartbeatTimer = null;
     }
   }
-
-  // ─── Message Builder ────────────────────────────────────────────────────────
 
   private buildMessage(bodyTags: [number, string | number][]): string {
     const seq = this.outSeq++;

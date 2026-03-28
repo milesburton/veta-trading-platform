@@ -6,8 +6,6 @@
  * imported across the service boundary so each side can evolve independently.
  */
 
-// ── Expression tree (mirrors frontend ExprGroup / ExprRule) ────────────────────
-
 export type ExprJoin = "AND" | "OR";
 
 export type ExprOp =
@@ -41,8 +39,6 @@ export interface ExprGroup {
 }
 
 export type ExprNode = ExprRule | ExprGroup;
-
-// ── Query request / response ───────────────────────────────────────────────────
 
 export type GridId = "orderBlotter" | "executions";
 

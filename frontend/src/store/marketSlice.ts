@@ -130,7 +130,7 @@ export const marketSlice = createSlice({
         const tickVolume = (volumes[asset] ?? 0) / TICKS_PER_MINUTE;
 
         const hist = state.priceHistory[asset] ?? [];
-        state.priceHistory[asset] = hist; // ensure initialised
+        state.priceHistory[asset] = hist;
         hist.push(price);
         if (hist.length > HISTORY_LENGTH) hist.splice(0, hist.length - HISTORY_LENGTH);
 

@@ -355,7 +355,6 @@ export function MarketLadder() {
     ctxMenu.value = { x: e.clientX, y: e.clientY, items };
   }
 
-  // Auto-select the first asset once data arrives
   // biome-ignore lint/correctness/useExhaustiveDependencies: localSelected and broadcast are stable signal/callback refs
   useEffect(() => {
     if (localSelected.value !== null) return;

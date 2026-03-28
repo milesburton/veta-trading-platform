@@ -61,8 +61,6 @@ const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? `${_origin}/api/gateway`
 const UI_TICK_INTERVAL_MS = 250;
 const ALGO_HEARTBEAT_TIMEOUT_MS = 10_000;
 
-// ── Inbound message shapes ────────────────────────────────────────────────────
-
 interface MarketUpdateData {
   prices: Record<string, number>;
   volumes: Record<string, number>;
@@ -70,7 +68,6 @@ interface MarketUpdateData {
 }
 
 interface OrderEventData {
-  // orders.filled fields
   childId?: string;
   parentOrderId?: string;
   clientOrderId?: string;
@@ -87,7 +84,6 @@ interface OrderEventData {
   finraTafUSD?: number;
   totalFeeUSD?: number;
   settlementDate?: string;
-  // orders.submitted / orders.routed / orders.new fields
   orderId?: string;
   asset?: string;
   side?: "BUY" | "SELL";
@@ -109,7 +105,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
 
   const algoLastSeen: Record<string, number> = {};
 
-  // Tick batching
   let pendingPrices: Record<string, number> | null = null;
   let pendingVolumes: Record<string, number> = {};
   let pendingOrderBook: Record<string, OrderBookSnapshot> | null = null;
@@ -144,8 +139,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     switch (topic) {
       case "orders.submitted":
       case "orders.new": {
-        // Order acknowledged by OMS — add to blotter if not already there
-        // (GUI may have added optimistically via orderAck; patch if needed)
         if (data.orderId) {
           storeAPI.dispatch(
             orderPatched({
@@ -198,7 +191,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
               leavesQty: data.remainingQty ?? 0,
             })
           );
-          // Update child order if present
           if (data.childId) {
             storeAPI.dispatch(
               childAdded({
@@ -255,7 +247,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
         break;
       }
     }
-    // Invalidate server-side grid query cache so blotters refetch with updated data
     storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
   }
 
@@ -291,12 +282,10 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             storeAPI.dispatch(feedReceived("orders"));
             break;
           case "orderAck": {
-            // Gateway confirmed order on bus — invalidate grid cache so blotter refetches
             storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
             break;
           }
           case "orderRejected": {
-            // Gateway-level rejection (auth failed for this order)
             const rejData = msg.data as { reason?: string; clientOrderId?: string };
             console.warn("[gateway] Order rejected by gateway:", rejData.reason);
             if (rejData.clientOrderId) {
@@ -311,7 +300,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             break;
           }
           case "authIdentity": {
-            // Gateway sends user identity + limits after WS connection is established
             const identityData = msg.data as { user: AuthUser; limits: TradingLimits };
             storeAPI.dispatch(setUserWithLimits(identityData));
             // biome-ignore lint/suspicious/noExplicitAny: loadGridPrefs is an AsyncThunk; AppDispatch not available in middleware scope
@@ -468,7 +456,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   if (!started) {
     started = true;
     fetchAssetsAndSeedCandles().then(() => {
-      // Hydrate news for first selected asset after assets are loaded
       const state = storeAPI.getState() as { ui: { selectedAsset: string | null } };
       if (state.ui.selectedAsset) hydrateNewsForSymbol(state.ui.selectedAsset);
     });
@@ -478,7 +465,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   return (next) => (action: unknown) => {
     const result = next(action);
 
-    // Hydrate news when selected symbol changes
     if (setSelectedAsset.match(action as Parameters<typeof setSelectedAsset.match>[0])) {
       const symbol = (action as ReturnType<typeof setSelectedAsset>).payload;
       if (symbol) hydrateNewsForSymbol(symbol);

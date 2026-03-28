@@ -5,6 +5,7 @@ import * as path from "path";
 const isDev = !app.isPackaged;
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 
+
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 
@@ -14,11 +15,15 @@ function createWindow(): void {
   const isTest = process.env.NODE_ENV === "test";
   const noGpu = app.commandLine.hasSwitch("disable-gpu");
 
+  const iconFile = process.platform === "win32" ? "icon.ico" : "icon.png";
+  const iconPath = path.join(__dirname, "assets", iconFile);
+
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1024,
     minHeight: 600,
+    icon: iconPath,
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     frame: process.platform !== "darwin",
     show: isTest || noGpu,
@@ -33,6 +38,10 @@ function createWindow(): void {
   });
 
   mainWindow.once("ready-to-show", () => {
+    // Reset zoom to 1.0 — on Windows with display scaling > 100 % Chromium
+    // can inherit the OS text-size setting and render the page zoomed in,
+    // making the layout look stretched / warped.
+    mainWindow?.webContents.setZoomFactor(1.0);
     mainWindow?.show();
     mainWindow?.setTitle(`VETA Trading Platform v${app.getVersion()}`);
   });

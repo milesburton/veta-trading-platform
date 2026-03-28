@@ -33,7 +33,6 @@ function maturityFromPeriods(totalPeriods: number): string {
 }
 
 export const BOND_UNIVERSE: BondDef[] = [
-  // ── US Treasuries ─────────────────────────────────────────────────────────
   {
     isin: "US912796ZR07",
     symbol: "US3M",
@@ -165,7 +164,6 @@ export const BOND_UNIVERSE: BondDef[] = [
     faceValue: 1000,
   },
 
-  // ── Investment-Grade Corporates ────────────────────────────────────────────
   {
     isin: "US037833EQ73",
     symbol: "AAPL5Y",

@@ -41,8 +41,6 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-// ── Interfaces ────────────────────────────────────────────────────────────────
-
 interface RoutedOrder {
   orderId: string;
   clientOrderId?: string;
@@ -98,8 +96,6 @@ interface DarkFill {
   ts: number;
 }
 
-// ── State ─────────────────────────────────────────────────────────────────────
-
 const orderBook = new Map<string, SymbolPool>();
 let darkExecSeq = 1;
 let totalMatchedToday = 0;
@@ -119,12 +115,8 @@ function getOrCreatePool(asset: string): SymbolPool {
   return pool;
 }
 
-// ── Market data ───────────────────────────────────────────────────────────────
-
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
-
-// ── Messaging ─────────────────────────────────────────────────────────────────
 
 const producer = await createProducer("dark-pool").catch((err) => {
   console.warn("[dark-pool] Redpanda unavailable — executions will not be published:", err.message);
@@ -135,8 +127,6 @@ const consumer = await createConsumer("dark-pool-routed", ["orders.routed"]).cat
   console.warn("[dark-pool] Cannot subscribe to orders.routed:", err.message);
   return null;
 });
-
-// ── Order admission ────────────────────────────────────────────────────────────
 
 consumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
@@ -181,10 +171,8 @@ consumer?.onMessage((_topic, raw) => {
   console.log(`[dark-pool] Admitted ${order.side} ${order.quantity} ${order.asset} @ limit=${order.limitPrice} orderId=${order.orderId}`);
 });
 
-// ── Matching engine ────────────────────────────────────────────────────────────
-
 function matchSymbol(pool: SymbolPool, asset: string, midPrice: number): DarkFill[] {
-  // FIFO order — sort by admittedAt ascending (price not used for priority)
+  // FIFO order — price not used for priority (dark pool matching semantics)
   pool.buys.sort((a, b) => a.admittedAt - b.admittedAt);
   pool.sells.sort((a, b) => a.admittedAt - b.admittedAt);
 
@@ -198,11 +186,9 @@ function matchSymbol(pool: SymbolPool, asset: string, midPrice: number): DarkFil
     const buy = pool.buys[bi];
     const sell = pool.sells[si];
 
-    // Skip expired orders — they'll be swept separately
     if (now >= buy.deadlineAt) { bi++; continue; }
     if (now >= sell.deadlineAt) { si++; continue; }
 
-    // Both sides must be willing to trade at mid
     const buyEligible = buy.limitPrice >= midPrice;
     const sellEligible = sell.limitPrice <= midPrice;
 
@@ -244,7 +230,6 @@ function matchSymbol(pool: SymbolPool, asset: string, midPrice: number): DarkFil
     if (sell.remainingQty <= 0) si++;
   }
 
-  // Remove fully-filled orders
   pool.buys = pool.buys.filter((o) => o.remainingQty > 0);
   pool.sells = pool.sells.filter((o) => o.remainingQty > 0);
 
@@ -328,7 +313,6 @@ async function runMatchCycle(): Promise<void> {
       continue;
     }
 
-    // Look up current order objects before matching (remainingQty mutated in-place)
     const buyMap = new Map(pool.buys.map((o) => [o.orderId, o]));
     const sellMap = new Map(pool.sells.map((o) => [o.orderId, o]));
 
@@ -341,31 +325,22 @@ async function runMatchCycle(): Promise<void> {
       totalMatchedToday++;
       totalMatchedAllTime++;
 
-      // 1. dark.execution — paired audit record
       await producer?.send("dark.execution", fill).catch(() => {});
-
-      // 2. orders.filled — one per side (information barrier: each user sees only their own)
       await producer?.send("orders.filled", buildOrdersFilled(fill, "BUY", buyOrder)).catch(() => {});
       await producer?.send("orders.filled", buildOrdersFilled(fill, "SELL", sellOrder)).catch(() => {});
-
-      // 3. fix.execution — one per side for fix-archive
       await producer?.send("fix.execution", buildFixExecution(fill, "BUY", buyOrder)).catch(() => {});
       await producer?.send("fix.execution", buildFixExecution(fill, "SELL", sellOrder)).catch(() => {});
     }
 
-    // Clean up empty pools
     if (pool.buys.length === 0 && pool.sells.length === 0) {
       orderBook.delete(asset);
     }
   }
 }
 
-// ── Expiry sweep ──────────────────────────────────────────────────────────────
-
 async function sweepExpiredOrders(): Promise<void> {
   const now = Date.now();
 
-  // Reset daily counter at midnight UTC
   const todayUtc = new Date().toISOString().slice(0, 10);
   if (todayUtc !== todayDateUtc) {
     totalMatchedToday = 0;
@@ -387,7 +362,6 @@ async function sweepExpiredOrders(): Promise<void> {
       );
 
       if (RESIDUAL_ACTION === "reroute") {
-        // Re-route remaining quantity to lit market
         const reroutedOrder = {
           orderId: order.orderId,
           clientOrderId: order.clientOrderId,
@@ -406,7 +380,6 @@ async function sweepExpiredOrders(): Promise<void> {
         };
         await producer?.send("orders.routed", reroutedOrder).catch(() => {});
       } else {
-        // Expire the order
         await producer?.send("orders.expired", {
           orderId: order.orderId,
           clientOrderId: order.clientOrderId,
@@ -426,15 +399,11 @@ async function sweepExpiredOrders(): Promise<void> {
   }
 }
 
-// ── Periodic timers ───────────────────────────────────────────────────────────
-
 setInterval(() => { runMatchCycle().catch(console.error); }, MATCH_CYCLE_MS);
 setInterval(() => { sweepExpiredOrders().catch(console.error); }, EXPIRY_SWEEP_MS);
 
 console.log(`[dark-pool] Listening for orders.routed (DARK1) on message bus`);
 console.log(`[dark-pool] Match cycle=${MATCH_CYCLE_MS}ms timeout=${ORDER_TIMEOUT_MS}ms residual=${RESIDUAL_ACTION}`);
-
-// ── HTTP server ───────────────────────────────────────────────────────────────
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);

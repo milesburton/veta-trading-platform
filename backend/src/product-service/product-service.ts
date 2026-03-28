@@ -19,8 +19,6 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 type ProductState = "draft" | "structured" | "issued" | "sold" | "unwound";
 
 interface ProductLeg {
@@ -50,8 +48,6 @@ interface Product {
   updatedAt: number;
 }
 
-// ── In-memory store ───────────────────────────────────────────────────────────
-
 const productStore = new Map<string, Product>();
 
 let productSeq = 1;
@@ -63,8 +59,6 @@ let legSeq = 1;
 function nextLegId(): string {
   return `LEG${String(legSeq++).padStart(4, "0")}`;
 }
-
-// ── Kafka producer ────────────────────────────────────────────────────────────
 
 const producer = await createProducer("product-service").catch((err: unknown) => {
   console.warn("[product-service] Kafka producer unavailable:", (err as Error).message);
@@ -85,8 +79,6 @@ function jsonOk(body: unknown, status = 200): Response {
   });
 }
 
-// ── HTTP server ───────────────────────────────────────────────────────────────
-
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
@@ -96,7 +88,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  // GET /health
   if (path === "/health" && method === "GET") {
     return jsonOk({ service: "product-service", version: VERSION, status: "ok" });
   }
@@ -112,7 +103,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return jsonOk({ counts, total: productStore.size });
   }
 
-  // POST /products — create draft product
   if (path === "/products" && method === "POST") {
     let body: {
       name?: string;
@@ -170,7 +160,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return jsonOk(product, 201);
   }
 
-  // GET /products — list products
   if (path === "/products" && method === "GET") {
     const stateFilter = url.searchParams.get("state") as ProductState | null;
     const userIdParam = url.searchParams.get("userId");
@@ -178,23 +167,19 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     let products = Array.from(productStore.values());
 
-    // external-client only sees issued or sold products
     if (userRoleParam === "external-client" && userIdParam) {
       products = products.filter((p) => p.state === "issued" || p.state === "sold");
     }
 
-    // optional state filter
     if (stateFilter) {
       products = products.filter((p) => p.state === stateFilter);
     }
 
-    // sort by createdAt DESC
     products.sort((a, b) => b.createdAt - a.createdAt);
 
     return jsonOk(products);
   }
 
-  // GET /products/:id
   const matchProduct = path.match(/^\/products\/([^/]+)$/);
   if (matchProduct && method === "GET") {
     const product = productStore.get(matchProduct[1]);
@@ -202,7 +187,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return jsonOk(product);
   }
 
-  // PUT /products/:id/legs
   const matchLegs = path.match(/^\/products\/([^/]+)\/legs$/);
   if (matchLegs && method === "PUT") {
     const product = productStore.get(matchLegs[1]);
@@ -243,7 +227,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return jsonOk(product);
   }
 
-  // PUT /products/:id/structure — draft → structured
   const matchStructure = path.match(/^\/products\/([^/]+)\/structure$/);
   if (matchStructure && method === "PUT") {
     const product = productStore.get(matchStructure[1]);
@@ -271,7 +254,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return jsonOk(product);
   }
 
-  // PUT /products/:id/issue — structured → issued
   const matchIssue = path.match(/^\/products\/([^/]+)\/issue$/);
   if (matchIssue && method === "PUT") {
     const product = productStore.get(matchIssue[1]);
@@ -289,7 +271,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return jsonOk(product);
   }
 
-  // PUT /products/:id/sell — issued → sold
   const matchSell = path.match(/^\/products\/([^/]+)\/sell$/);
   if (matchSell && method === "PUT") {
     const product = productStore.get(matchSell[1]);
@@ -315,7 +296,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return jsonOk(product);
   }
 
-  // PUT /products/:id/unwind — sold → unwound
   const matchUnwind = path.match(/^\/products\/([^/]+)\/unwind$/);
   if (matchUnwind && method === "PUT") {
     const product = productStore.get(matchUnwind[1]);

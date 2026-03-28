@@ -14,8 +14,6 @@ import type {
 } from "../../types/gridPrefs.ts";
 import { EMPTY_EXPR_GROUP } from "../../types/gridPrefs.ts";
 
-// ── Operator config ────────────────────────────────────────────────────────────
-
 const OPS_BY_TYPE: Record<FieldDef["type"], ExprOp[]> = {
   string: ["=", "!=", "contains", "starts_with", "ends_with", "is_null", "is_not_null"],
   number: ["=", "!=", ">", "<", ">=", "<=", "between", "is_null", "is_not_null"],
@@ -39,8 +37,6 @@ const OP_LABELS: Record<ExprOp, string> = {
 };
 
 const NO_VALUE_OPS: ExprOp[] = ["is_null", "is_not_null"];
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeRule(fields: FieldDef[]): ExprRule {
   const field = fields[0]?.key ?? "";
@@ -77,8 +73,6 @@ function removeNode(group: ExprGroup, id: string): ExprGroup {
       .map((n) => (n.kind === "group" ? removeNode(n, id) : n)),
   };
 }
-
-// ── RuleNode ──────────────────────────────────────────────────────────────────
 
 interface RuleNodeProps {
   rule: ExprRule;
@@ -210,8 +204,6 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
   );
 }
 
-// ── GroupNode ─────────────────────────────────────────────────────────────────
-
 interface GroupNodeProps {
   group: ExprGroup;
   fields: FieldDef[];
@@ -320,8 +312,6 @@ function GroupNode({ group, fields, onChange, onDelete, depth }: GroupNodeProps)
   );
 }
 
-// ── Inline mode (for CfRuleEditor — no dialog wrapper) ────────────────────────
-
 interface InlineProps {
   fields: FieldDef[];
   value: ExprGroup;
@@ -335,8 +325,6 @@ export function ExpressionBuilderInline({ fields, value, onChange }: InlineProps
     </div>
   );
 }
-
-// ── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
   gridId: GridId;

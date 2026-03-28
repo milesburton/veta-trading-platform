@@ -27,8 +27,6 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import { settlementDate } from "../lib/settlement.ts";
 
-// ── Sell-side RFQ types ────────────────────────────────────────────────────────
-
 type SellSideRfqState =
   | "CLIENT_REQUEST"      // client submitted
   | "SALES_REVIEW"        // waiting for sales to route
@@ -65,8 +63,6 @@ interface SellSideRfq {
   ts: number;
 }
 
-// ── Sell-side RFQ state ────────────────────────────────────────────────────────
-
 const sellSideRfqStore = new Map<string, SellSideRfq>();
 let ssRfqSeq = 1;
 function nextSsRfqId(): string {
@@ -87,8 +83,6 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
-
-// ── Simulated dealers ─────────────────────────────────────────────────────────
 
 interface DealerProfile {
   id: string;
@@ -112,8 +106,6 @@ const DEALERS: DealerProfile[] = [
   { id: "BARX", name: "Barclays",           baseSpreadBps: 3.8, responseRate: 0.88, latencyMs: [150, 800], specialisation: "UST"  },
   { id: "DBSI", name: "Deutsche Bank",      baseSpreadBps: 4.0, responseRate: 0.82, latencyMs: [200, 800], specialisation: "Corp" },
 ];
-
-// ── Interfaces ────────────────────────────────────────────────────────────────
 
 interface BondSpec {
   isin: string;
@@ -181,8 +173,6 @@ interface RfqRecord {
   settlementDate: string;
 }
 
-// ── State ─────────────────────────────────────────────────────────────────────
-
 const rfqStore = new Map<string, RfqRecord>();
 let rfqSeq = 1;
 let execSeq = 1;
@@ -194,8 +184,6 @@ function nextExecId(): string {
   return `FI${String(execSeq++).padStart(8, "0")}`;
 }
 
-// ── Messaging ─────────────────────────────────────────────────────────────────
-
 const producer = await createProducer("rfq-service").catch((err) => {
   console.warn("[rfq] Redpanda unavailable — executions will not be published:", err.message);
   return null;
@@ -205,8 +193,6 @@ const consumer = await createConsumer("rfq-service-fi", ["orders.fi.rfq"]).catch
   console.warn("[rfq] Cannot subscribe to orders.fi.rfq:", err.message);
   return null;
 });
-
-// ── Bond pricing utility ──────────────────────────────────────────────────────
 
 /**
  * Price a bond using the standard present-value formula.
@@ -224,8 +210,6 @@ function priceBond(spec: BondSpec, yieldAnnual: number): number {
   return parseFloat((pv / faceValue).toFixed(6));
 }
 
-// ── Dealer simulation ─────────────────────────────────────────────────────────
-
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -242,27 +226,21 @@ async function simulateDealerQuote(
   const latency = minMs + Math.random() * (maxMs - minMs);
   await sleep(latency);
 
-  // Dealers that have already been timed out shouldn't respond
   if (Date.now() >= rfq.expiresAt) return null;
-
-  // Response rate — some dealers pass on some RFQs
   if (Math.random() > dealer.responseRate) return null;
 
   const spec = rfq.bondSpec;
   const baseYield = spec.yieldAtOrder;
 
-  // Specialisation bonus: tighter spreads for preferred instruments
   const isUST = spec.creditRating === "AAA" && spec.isin.startsWith("US9128");
   const specialisationBonus =
     (dealer.specialisation === "UST" && isUST) ? 0.5 :
     (dealer.specialisation === "Corp" && !isUST) ? 0.5 : 0;
 
-  // Add randomness ±30% of base spread
   const jitter = (Math.random() * 0.6 - 0.3) * dealer.baseSpreadBps;
   const spreadBps = Math.max(0.5, dealer.baseSpreadBps - specialisationBonus + jitter);
 
-  // BUY: dealer offers at ask (higher yield = lower price for buyer)
-  // SELL: dealer bids at bid (lower yield = higher price for seller)
+  // BUY: dealer offers at ask (higher yield); SELL: dealer bids (lower yield = higher price)
   const spreadFactor = rfq.side === "BUY" ? 1 : -1;
   const dealerYield = baseYield + (spreadFactor * spreadBps / 10_000);
 
@@ -292,8 +270,6 @@ function selectBestQuote(quotes: DealerQuote[], side: "BUY" | "SELL"): DealerQuo
       : (q.yield > best.yield ? q : best)
   );
 }
-
-// ── RFQ execution ─────────────────────────────────────────────────────────────
 
 async function executeRfq(rfq: RfqRecord, quote: DealerQuote): Promise<void> {
   if (rfq.state !== "PENDING" && rfq.state !== "QUOTED") return;
@@ -334,7 +310,6 @@ async function executeRfq(rfq: RfqRecord, quote: DealerQuote): Promise<void> {
     ts: now,
   }).catch(() => {});
 
-  // 2. orders.filled — mirrors EMS shape so journal/gateway handle it identically
   await producer?.send("orders.filled", {
     execId,
     childId: `${rfq.orderId}-rfq-${now}`,
@@ -367,7 +342,6 @@ async function executeRfq(rfq: RfqRecord, quote: DealerQuote): Promise<void> {
     ts: now,
   }).catch(() => {});
 
-  // 3. fix.execution — consumed by fix-archive
   await producer?.send("fix.execution", {
     execId,
     clOrdId: `${rfq.orderId}-rfq-${now}`,
@@ -390,7 +364,6 @@ async function executeRfq(rfq: RfqRecord, quote: DealerQuote): Promise<void> {
     ts: now,
   }).catch(() => {});
 
-  // 4. rfq.quote.update — real-time state push to frontend
   await producer?.send("rfq.quote.update", {
     rfqId: rfq.rfqId,
     orderId: rfq.orderId,
@@ -428,8 +401,6 @@ async function expireRfq(rfq: RfqRecord): Promise<void> {
     ts: Date.now(),
   }).catch(() => {});
 }
-
-// ── RFQ lifecycle ─────────────────────────────────────────────────────────────
 
 async function processRfq(req: RfqRequest): Promise<void> {
   const now = Date.now();
@@ -520,8 +491,6 @@ async function processRfq(req: RfqRequest): Promise<void> {
   }
 }
 
-// ── Consumer ──────────────────────────────────────────────────────────────────
-
 consumer?.onMessage((_topic, raw) => {
   const req = raw as RfqRequest;
   if (!req.bondSpec) {
@@ -533,8 +502,6 @@ consumer?.onMessage((_topic, raw) => {
 
 console.log(`[rfq] Listening for orders.fi.rfq on message bus (window=${QUOTE_WINDOW_MS}ms)`);
 
-// ── Periodic cleanup ──────────────────────────────────────────────────────────
-
 setInterval(() => {
   const cutoff = Date.now() - RFQ_RETENTION_MS;
   for (const [id, rfq] of rfqStore) {
@@ -542,13 +509,9 @@ setInterval(() => {
   }
 }, 60_000);
 
-// ── Sell-side RFQ helpers ─────────────────────────────────────────────────────
-
 async function publishSsRfqUpdate(rfq: SellSideRfq): Promise<void> {
   await producer?.send("rfq.sellside.update", { ...rfq, ts: Date.now() }).catch(() => {});
 }
-
-// ── HTTP server ───────────────────────────────────────────────────────────────
 
 Deno.serve({ port: PORT }, async (req) => {
   const url = new URL(req.url);
@@ -637,8 +600,6 @@ Deno.serve({ port: PORT }, async (req) => {
       headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
   }
-
-  // ── Sell-side RFQ routes ──────────────────────────────────────────────────
 
   // POST /rfq/sellside — client submits a sell-side RFQ
   if (path === "/rfq/sellside" && req.method === "POST") {

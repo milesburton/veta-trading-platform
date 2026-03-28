@@ -6,21 +6,39 @@ fish_add_path $FLYCTL_INSTALL/bin
 
 # ── Login banner — live service status snapshot ───────────────────────────────
 if status is-interactive
+  echo "" | lolcat
+  echo "  ╔═══════════════════════════════════════════════════════════╗" | lolcat
+  echo "  ║   VETA  ·  Virtual Equities Trading Application          ║" | lolcat
+  echo "  ╚═══════════════════════════════════════════════════════════╝" | lolcat
   echo ""
-  echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" | lolcat
-  echo "  VETA Trading Platform  •  http://localhost:8080" | lolcat
-  echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" | lolcat
+  echo "  Platform"
+  echo "    Web UI     →  http://localhost:8080  (Vite + React)"  | lolcat
+  echo "    Gateway    →  ws://localhost:5011    (BFF WebSocket)"  | lolcat
+  echo "    Redpanda   →  localhost:19092        (Kafka API)"  | lolcat
+  echo ""
+  echo "  Quick start" | lolcat
+  echo "    start-trading          start all core services"
+  echo "    stop-idle              stop algos / microstructure / analytics"
+  echo "    svc-ui                 live service dashboard (press q to quit)"
+  echo "    svc-restart <name>     restart a specific service"
+  echo "    svc-logs <name>        tail logs for a service"
+  echo ""
+  echo "  Electron (desktop app)" | lolcat
+  echo "    cd /workspaces/virtual-equities-trading-application/electron"
+  echo "    npm install && npm start"
+  echo "    (requires the web services to be running first)"
+  echo ""
+  echo "  Service status" | lolcat
   deno run --allow-run --allow-env /workspaces/virtual-equities-trading-application/scripts/status.ts --once 2>/dev/null; or true
-  echo ""
-  echo "  svc-ui · start-trading · stop-idle · svc-restart <name> · svc-logs <name>"
   echo ""
 end
 
 # ── Supervisord shortcuts ─────────────────────────────────────────────────────
-alias svc-status="supervisorctl -c /home/deno/supervisord.conf status"
-alias svc-restart="supervisorctl -c /home/deno/supervisord.conf restart"
-alias svc-restart-all="supervisorctl -c /home/deno/supervisord.conf restart all"
-alias svc-logs="supervisorctl -c /home/deno/supervisord.conf tail -f"
+set -l _SCONF "/workspaces/virtual-equities-trading-application/supervisord.conf"
+alias svc-status="supervisorctl -c $_SCONF status"
+alias svc-restart="supervisorctl -c $_SCONF restart"
+alias svc-restart-all="supervisorctl -c $_SCONF restart all"
+alias svc-logs="supervisorctl -c $_SCONF tail -f"
 alias svc-ui="deno run --allow-run --allow-env /workspaces/virtual-equities-trading-application/scripts/status.ts"
 alias start-trading="/workspaces/virtual-equities-trading-application/scripts/start-trading.sh"
 alias stop-idle="/workspaces/virtual-equities-trading-application/scripts/stop-idle.sh"

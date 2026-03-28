@@ -13,10 +13,10 @@
     "test:unit": "NODE_OPTIONS=--max-old-space-size=4096 vitest",
     "test:ui": "npx playwright test",
     "test:ui:headed": "npx playwright test --headed",
-    "electron:dev": "node_modules/.bin/tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && node scripts/electron-dev.mjs",
-    "electron:build": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron && electron-builder --dir",
-    "electron:build-test": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron-test && electron-builder --dir",
-    "electron:dist": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && vite build --mode electron && electron-builder",
+    "electron:dev": "node_modules/.bin/tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && node -e \"require('fs').cpSync('electron/assets','dist-electron/assets',{recursive:true})\" && node scripts/electron-dev.mjs",
+    "electron:build": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && node -e \"require('fs').cpSync('electron/assets','dist-electron/assets',{recursive:true})\" && vite build --mode electron && electron-builder --dir",
+    "electron:build-test": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && node -e \"require('fs').cpSync('electron/assets','dist-electron/assets',{recursive:true})\" && vite build --mode electron-test && electron-builder --dir",
+    "electron:dist": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && node -e \"require('fs').cpSync('electron/assets','dist-electron/assets',{recursive:true})\" && vite build --mode electron && electron-builder",
     "test:electron": "npx playwright test --config=playwright.electron.config.ts",
     "prepare": "node -e \"if (!process.env.CI) { require('child_process').execSync('node frontend/node_modules/.bin/husky', {stdio:'inherit', cwd:'..'}) }\"",
     "storybook": "storybook dev -p 6006",
@@ -49,6 +49,7 @@
     ],
     "mac": {
       "category": "public.app-category.finance",
+      "icon": "electron/assets/icon.png",
       "target": [
         {
           "target": "dmg",
@@ -59,6 +60,7 @@
       ]
     },
     "win": {
+      "icon": "electron/assets/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -69,6 +71,7 @@
       ]
     },
     "linux": {
+      "icon": "electron/assets/icon.png",
       "target": [
         {
           "target": "AppImage",

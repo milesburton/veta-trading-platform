@@ -213,8 +213,7 @@ const ORDER_TOPICS = [
 ];
 
 function startConsumers(): void {
-  // Market data — broadcast to all (not confidential)
-  // Also start WS fallback so market ticks flow even when Kafka is unavailable.
+  // WS fallback so market ticks flow even when Kafka is unavailable.
   let lastKafkaTick = 0;
   createConsumer("gateway-market", ["market.ticks"]).then((c) => {
     c.onMessage((_topic, value) => {
@@ -240,7 +239,6 @@ function startConsumers(): void {
   };
   connectWsFallback();
 
-  // Order events — route only to the owning user (information barrier)
   createConsumer("gateway-orders", ORDER_TOPICS).then((c) => {
     c.onMessage((topic, value) => {
       const v = value as { userId?: string; userRole?: string };
@@ -257,7 +255,6 @@ function startConsumers(): void {
     });
   });
 
-  // Algo heartbeats — broadcast to all (operational telemetry, not order data)
   createConsumer("gateway-algo", ["algo.heartbeat"]).then((c) => {
     c.onMessage((_topic, value) => {
       broadcastAll({ event: "algoHeartbeat", data: value });
@@ -324,7 +321,6 @@ function startConsumers(): void {
     });
   }).catch(() => {});
 
-  // RFQ quote updates — broadcast only to the requesting user (information barrier)
   createConsumer("gateway-rfq", ["rfq.quote.update", "rfq.executed", "rfq.sellside.update"]).then((c) => {
     c.onMessage((topic, value) => {
       const v = value as { userId?: string };
@@ -338,7 +334,6 @@ function startConsumers(): void {
     });
   }).catch(() => {});
 
-  // Dark pool execution reports — broadcast only to the two matched users (information barrier)
   createConsumer("gateway-dark", ["dark.execution"]).then((c) => {
     c.onMessage((_topic, value) => {
       const v = value as { buyUserId?: string; sellUserId?: string };
@@ -349,7 +344,6 @@ function startConsumers(): void {
     });
   }).catch(() => {});
 
-  // CCP events — novation/margin/settlement broadcast to the affected user
   createConsumer("gateway-ccp", [
     "ccp.novation", "ccp.margin", "ccp.settlement.queued", "ccp.settlement.complete",
   ]).then((c) => {
@@ -358,7 +352,6 @@ function startConsumers(): void {
       if (v.userId) {
         broadcastToUser(v.userId, { event: "ccpEvent", topic, data: value });
       } else {
-        // Settlement complete messages may not have userId — broadcast to compliance/admin
         broadcastToRoles(["compliance", "admin"], { event: "ccpEvent", topic, data: value });
       }
     });
@@ -441,7 +434,6 @@ async function proxyGet(internalUrl: string, req: Request): Promise<Response> {
   }
 }
 
-// ── Demo Day helpers (module-scope to satisfy no-inner-declarations lint) ──────
 type OrderSpec = {
   asset: string; side: "BUY" | "SELL"; quantity: number;
   limitPriceFactor: number; strategy: string;
@@ -484,7 +476,6 @@ function makeWave(
   return orders;
 }
 
-// ─── Cached /ready health state ───────────────────────────────────────────────
 // Fires 29 concurrent fetches — do it on a background interval, not per-request.
 const HEALTH_REFRESH_MS = 5_000;
 
@@ -529,7 +520,6 @@ async function refreshHealth(): Promise<void> {
   };
 }
 
-// Kick off immediately then refresh on interval
 refreshHealth();
 setInterval(refreshHealth, HEALTH_REFRESH_MS);
 
@@ -549,7 +539,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/ready" && req.method === "GET") {
-    // Serve from background-refreshed cache — avoids 29 concurrent fetches per poll
     const h = cachedHealth;
     if (!h) {
       return new Response(JSON.stringify({ ready: false, startedAt: STARTED_AT }), {
@@ -610,7 +599,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
   }
 
-  // WebSocket proxy for market-sim (Fly.io monolith — only port 5011 exposed)
   if (path === "/ws/market-sim") {
     if (req.headers.get("upgrade") !== "websocket") {
       return new Response("Expected WebSocket upgrade", { status: 426 });
@@ -639,7 +627,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     const { socket, response } = Deno.upgradeWebSocket(req);
 
-    // Track the userId bound to this socket (may change on post-connection authenticate)
     let socketUserId: string | null = auth?.user.id ?? null;
 
     socket.onopen = () => {
@@ -667,7 +654,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           const tok = msg.payload.token as string | undefined;
           const result = tok ? await validateToken(tok) : null;
           if (result) {
-            // Move socket from anonymous bucket (or old userId) to new userId bucket
             _removeSocket(socketUserId, socket);
             auth = result;
             socketUserId = result.user.id;
@@ -782,7 +768,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return response;
   }
 
-  // Lightweight auth probe — warms authCache without downstream proxy latency.
   if (path === "/me" && req.method === "GET") {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
@@ -815,7 +800,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return proxyGet(`${DARK_POOL_URL}/pool/stats`, req);
   }
 
-  // ── CCP routes ─────────────────────────────────────────────────────────────
   if (path === "/ccp/stats" && req.method === "GET") {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
@@ -839,7 +823,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (ccpMarginMatch && req.method === "GET") {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
-    // Only allow users to see their own margin, or admin/compliance to see any
     const targetUserId = ccpMarginMatch[1];
     if (auth.user.id !== targetUserId && auth.user.role !== "admin" && auth.user.role !== "compliance") {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
@@ -850,7 +833,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return proxyGet(`${CCP_SERVICE_URL}/ccp/margin/${targetUserId}`, req);
   }
 
-  // ── RFQ routes ─────────────────────────────────────────────────────────────
   if (path === "/rfq/stats" && req.method === "GET") {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
@@ -860,7 +842,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/rfq" && req.method === "GET") {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
-    // Inject userId as query param so RFQ service can filter to the caller's RFQs
     const target = new URL(`${RFQ_SERVICE_URL}/rfq`);
     target.search = new URL(req.url).search;
     if (!target.searchParams.has("userId")) target.searchParams.set("userId", auth.user.id);
@@ -892,7 +873,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
   }
 
-  // ── Sell-side RFQ routes ────────────────────────────────────────────────────
   if (path === "/rfq/sellside" && req.method === "POST") {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
@@ -921,7 +901,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return proxyPut(`${RFQ_SERVICE_URL}/rfq/sellside/${matchSsRoute[1]}/${matchSsRoute[2]}`, req);
   }
 
-  // ── Product service routes ──────────────────────────────────────────────────
   if (path === "/products" && req.method === "GET") {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
@@ -964,7 +943,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Inject userId so journal can tag observability events
           "x-user-id": auth.user.id,
         },
         body,
@@ -1453,11 +1431,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     );
   }
 
-  // ── Demo Day ──────────────────────────────────────────────────────────────
-  // Simulate a realistic trading day: mixed strategies, varied quantities,
-  // prices anchored to live market data, staggered in natural wave patterns.
-  // Available to all authenticated users (not admin-only).
-
   if (path === "/demo-day" && req.method === "POST") {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
@@ -1477,7 +1450,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     const scenario = body.scenario ?? "standard";
 
-    // Fetch live prices from market-sim so limit prices are anchored to market
     const livePrices: Record<string, number> = {};
     try {
       const priceRes = await fetch(`${MARKET_SIM_URL}/assets`);
@@ -1487,7 +1459,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       }
     } catch { /* fall back to reasonable defaults */ }
 
-    // Fallback prices if market-sim is unavailable
     const defaultPrices: Record<string, number> = {
       AAPL: 189, MSFT: 421, GOOGL: 175, AMZN: 185, TSLA: 172,
       NVDA: 870, META: 510, JPM: 195, GS: 460, V: 275,
@@ -1527,7 +1498,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     switch (scenario) {
       case "market-open": {
-        // Frenzied open: large burst of LIMIT + SNIPER, then calmer TWAP/VWAP
         scenarioLabel = "Market Open";
         waves = [
           ...makeWave(ALL_ASSETS, 60, [
@@ -1540,7 +1510,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         break;
       }
       case "volatile": {
-        // Volatile session: many SNIPER/ICEBERG, high BUY pressure, large quantities
         scenarioLabel = "Volatile Session";
         waves = [
           ...makeWave(ALL_ASSETS, 40, volatilityMix, 0.7, 0, 5_000),
@@ -1550,7 +1519,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         break;
       }
       case "institutional": {
-        // Institutional flow: large TWAP/VWAP/ICEBERG block trades
         scenarioLabel = "Institutional Flow";
         waves = [
           ...makeWave(LARGE_CAP, 30, [
@@ -1567,7 +1535,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         break;
       }
       default: {
-        // standard: balanced mix across all strategies, representative of a normal day
         scenarioLabel = "Standard Trading Day";
         waves = [
           ...makeWave(ALL_ASSETS, 30, limitMix, 0.55, 0, 6_000),
@@ -1583,7 +1550,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const jobId = `demo-${Date.now()}`;
     const total = waves.length;
 
-    // Fire each order after its scheduled delay (non-blocking — returns 202 immediately)
     for (const [i, spec] of waves.entries()) {
       const price = priceFor(spec.asset) * spec.limitPriceFactor;
       const order = {
@@ -1622,7 +1588,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   // Self-alias: /api/gateway/* → strip prefix and re-issue to gateway's own routes.
-  // Allows smoke tests using svcUrl(5011, "/api/gateway") to reach any gateway endpoint.
   // Must forward Cookie so auth-protected routes work correctly.
   if (path.startsWith("/api/gateway/")) {
     const stripped = path.slice("/api/gateway".length);
@@ -1652,8 +1617,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   // Generic service proxy — /api/<service>/* → localhost:<port>/*
-  // Used by the Fly.io monolith where all services run on localhost but only
-  // the gateway port (5011) is publicly accessible.
+  // Used by the Fly.io monolith where all services run on localhost but only port 5011 is publicly accessible.
   const SVC_PROXY: Record<string, string> = {
     "market-sim":           `http://localhost:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`,
     "ems":                  `http://localhost:${Deno.env.get("EMS_PORT") ?? "5001"}`,
@@ -1698,13 +1662,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
   }
 
-  // Static frontend fallback — when FRONTEND_DIST is set (e.g. Fly.io monolith),
-  // serve built assets from that directory with SPA fallback to index.html.
   const frontendDist = Deno.env.get("FRONTEND_DIST");
   if (frontendDist && req.method === "GET") {
     const res = await serveDir(req, { fsRoot: frontendDist, quiet: true });
     if (res.status !== 404) return res;
-    // SPA fallback
     if (!path.startsWith("/assets/")) {
       return serveDir(new Request(new URL("/index.html", req.url)), { fsRoot: frontendDist, quiet: true });
     }

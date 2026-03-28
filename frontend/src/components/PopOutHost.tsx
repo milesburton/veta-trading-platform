@@ -86,7 +86,6 @@ function loadChannelContext(
     if (raw) {
       const parsed = JSON.parse(raw);
 
-      // New flexlayout format
       if (parsed._v === 4 && parsed.flex) {
         const model = Model.fromJson(parsed.flex as IJsonModel);
         const items = modelToLayoutItems(model);
@@ -101,7 +100,6 @@ function loadChannelContext(
         }
       }
 
-      // Legacy grid format (_v:3)
       if (parsed._v === 3 && Array.isArray(parsed.items)) {
         const items: LayoutItem[] = parsed.items;
         const item = items.find((it) => it.i === instanceId);

@@ -2,8 +2,6 @@
  * Shared TypeScript types for the Analytics service.
  */
 
-// ── Option Pricing ────────────────────────────────────────────────────────────
-
 export type OptionType = "call" | "put";
 
 export interface Greeks {
@@ -33,8 +31,6 @@ export interface OptionQuoteResponse {
   greeks: Greeks;
   computedAt: number;      // unix ms
 }
-
-// ── Scenario Analysis ─────────────────────────────────────────────────────────
 
 export interface ScenarioShock {
   spotPct: number;    // e.g. -0.10 = -10%
@@ -81,8 +77,6 @@ export interface ScenarioResponse {
   cells: ScenarioCell[][];   // [spotShockIndex][volShockIndex]
   computedAt: number;
 }
-
-// ── Trade Recommendations ─────────────────────────────────────────────────────
 
 export type SignalStrength = "STRONG_BUY" | "BUY" | "NEUTRAL" | "SELL" | "STRONG_SELL";
 
@@ -142,8 +136,6 @@ export interface RecommendationResponse {
   computedAt: number;
 }
 
-// ── Volatility Profile ────────────────────────────────────────────────────────
-
 export interface VolProfileSample {
   ts: number;   // unix ms (candle timestamp)
   vol: number;  // annualised EWMA vol at this bar
@@ -157,8 +149,6 @@ export interface VolProfileResponse {
   series: VolProfileSample[];
   computedAt: number;
 }
-
-// ── Bond Pricing ──────────────────────────────────────────────────────────────
 
 export interface BondPriceRequest {
   face?: number;           // face value, default 1000
@@ -177,8 +167,6 @@ export interface BondPriceResponse {
   cashFlows: { t: number; cf: number; pv: number }[];
   computedAt: number;
 }
-
-// ── Yield Curve ───────────────────────────────────────────────────────────────
 
 export interface NelsonSiegelParams {
   beta0: number;   // long-run level
@@ -210,8 +198,6 @@ export interface YieldCurveResponse {
   computedAt: number;
 }
 
-// ── Price Fan ─────────────────────────────────────────────────────────────────
-
 export interface PriceFanStep {
   step: number;
   tSecs: number;
@@ -230,8 +216,6 @@ export interface PriceFanResponse {
   steps: PriceFanStep[];
   computedAt: number;
 }
-
-// ── Greeks Surface ────────────────────────────────────────────────────────────
 
 export interface GreeksSurfacePoint {
   strike: number;

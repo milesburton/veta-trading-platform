@@ -8,8 +8,6 @@
 
 import type { OptionType } from "./types.ts";
 
-// ── Seeded LCG PRNG ───────────────────────────────────────────────────────────
-
 /** Linear congruential generator — Park-Miller parameters. */
 export function makeLcg(seed: number): () => number {
   let s = seed >>> 0;
@@ -31,14 +29,10 @@ export function hashSeed(key: string): number {
   return h || 1;
 }
 
-// ── Box-Muller transform ──────────────────────────────────────────────────────
-
 /** Generate a standard normal sample from two uniform(0,1) samples. */
 export function boxMuller(u1: number, u2: number): number {
   return Math.sqrt(-2 * Math.log(u1 + 1e-15)) * Math.cos(2 * Math.PI * u2);
 }
-
-// ── Percentiles ───────────────────────────────────────────────────────────────
 
 function percentile(sorted: Float64Array, p: number): number {
   const idx = (p / 100) * (sorted.length - 1);
@@ -47,8 +41,6 @@ function percentile(sorted: Float64Array, p: number): number {
   if (lo === hi) return sorted[lo];
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
-
-// ── Public API ────────────────────────────────────────────────────────────────
 
 export interface MonteCarloResult {
   p5: number;

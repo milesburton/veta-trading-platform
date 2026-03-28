@@ -24,8 +24,6 @@ interface JournalEntry {
 
 const ALL_STRATEGIES = ["LIMIT", "TWAP", "POV", "VWAP"];
 
-// ── Per-user limits row with local edit state ─────────────────────────────────
-
 interface UserLimitsRowProps {
   user: UserRow;
   isAdmin: boolean;
@@ -164,8 +162,6 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
     </>
   );
 }
-
-// ── AdminPanel ────────────────────────────────────────────────────────────────
 
 export function AdminPanel() {
   const currentUser = useAppSelector((s) => s.auth.user);

@@ -42,8 +42,6 @@ const producer = await createProducer("is-algo").catch((err) => {
   return null;
 });
 
-// ── Order state ───────────────────────────────────────────────────────────────
-
 interface RoutedOrder {
   orderId: string;
   clientOrderId?: string;
@@ -100,8 +98,6 @@ interface ActiveIS {
 /** Active IS orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveIS>();
 
-// ── Geometric slice schedule builder ─────────────────────────────────────────
-
 /**
  * Build a front-loaded slice schedule using geometric decay.
  *
@@ -155,8 +151,6 @@ function buildSliceSchedule(
 
   return { sliceQtys, numSlices, sliceIntervalMs };
 }
-
-// ── Consume orders.routed ─────────────────────────────────────────────────────
 
 const routedConsumer = await createConsumer("is-algo-routed", ["orders.routed"]).catch((err) => {
   console.warn("[is-algo] Cannot subscribe to orders.routed:", err.message);
@@ -231,8 +225,6 @@ routedConsumer?.onMessage((_topic, raw) => {
   }).catch(() => {});
 });
 
-// ── Consume orders.filled ─────────────────────────────────────────────────────
-
 const fillsConsumer = await createConsumer("is-algo-fills", ["orders.filled"]).catch((err) => {
   console.warn("[is-algo] Cannot subscribe to orders.filled:", err.message);
   return null;
@@ -281,8 +273,6 @@ fillsConsumer?.onMessage((_topic, raw) => {
   }
 });
 
-// ── Market tick: IS execution loop ───────────────────────────────────────────
-
 marketClient.onTick(async (tick) => {
   const now = Date.now();
 
@@ -290,7 +280,6 @@ marketClient.onTick(async (tick) => {
     const marketPrice = tick.prices[order.asset];
     if (!marketPrice) continue;
 
-    // ── Expiry check ────────────────────────────────────────────────────────
     if (now >= order.expiresAt) {
       const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
       console.log(
@@ -308,7 +297,6 @@ marketClient.onTick(async (tick) => {
       continue;
     }
 
-    // ── Drift calculation ───────────────────────────────────────────────────
     // Raw drift: positive = price rose since arrival
     const rawDriftBps = ((marketPrice - order.arrivalPrice) / order.arrivalPrice) * 10_000;
     // Adverse drift: positive = market moved against us
@@ -316,7 +304,6 @@ marketClient.onTick(async (tick) => {
     //   SELL → price falling is adverse (we receive less than arrival)
     const adverseDriftBps = order.side === "BUY" ? rawDriftBps : -rawDriftBps;
 
-    // ── Pause / resume on slippage ──────────────────────────────────────────
     if (adverseDriftBps > order.maxSlippageBps) {
       if (!order.paused) {
         order.paused = true;
@@ -357,10 +344,8 @@ marketClient.onTick(async (tick) => {
       }).catch(() => {});
     }
 
-    // ── All scheduled slices sent? ──────────────────────────────────────────
     if (order.sliceCount >= order.numSlices) continue;
 
-    // ── Slice timing: adjust interval for price favourability ───────────────
     // When the market is moving in our favour (adverse drift negative), accelerate
     // by 20% to capture the opportunity before it reverses.
     let effectiveIntervalMs = order.sliceIntervalMs;
@@ -370,13 +355,11 @@ marketClient.onTick(async (tick) => {
 
     if (now - order.lastSliceAt < effectiveIntervalMs) continue;
 
-    // ── Determine slice quantity from pre-computed geometric schedule ────────
     const nextSliceIndex = order.sliceCount + 1; // 1-indexed into sliceQtys
     const scheduledQty = order.sliceQtys[nextSliceIndex] ?? 0;
     const sliceQty = Math.min(scheduledQty, order.totalRemaining);
     if (sliceQty <= 0) continue;
 
-    // ── Aggression: limitPrice = market ± tolerance ─────────────────────────
     // Use a small tolerance (0.5 bps of market price) above/below current market
     // to get passive-ish fills that still have a high chance of execution.
     const aggressionTolerance = marketPrice * 0.0005;
@@ -427,8 +410,6 @@ marketClient.onTick(async (tick) => {
   }
 });
 
-// ── Independent expiry sweep (fires even when market ticks are sparse) ────────
-
 setInterval(async () => {
   const now = Date.now();
   for (const order of [...activeOrders.values()]) {
@@ -447,8 +428,6 @@ setInterval(async () => {
     }
   }
 }, 5_000);
-
-// ── Health endpoint ───────────────────────────────────────────────────────────
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",

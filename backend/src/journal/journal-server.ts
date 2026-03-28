@@ -15,8 +15,6 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-// ── Candle constants ───────────────────────────────────────────────────────────
-
 const TICKS_PER_MINUTE = 240;
 const MAX_CANDLES = 120;
 const INTERVALS: { key: "1m" | "5m"; ms: number }[] = [
@@ -92,8 +90,6 @@ async function ingestTick(msg: { prices?: Record<string, number>; volumes?: Reco
   maybePruneCandles(ts).catch(() => {});
 }
 
-// ── Ingest order events ────────────────────────────────────────────────────────
-
 const CONSUME_TOPICS = [
   "orders.submitted", "orders.routed", "orders.child",
   "orders.filled", "orders.expired", "orders.rejected",
@@ -119,8 +115,6 @@ function extractFields(topic: string, value: any) {
     algo_params: value.algoParams ?? null,
   };
 }
-
-// ── Batched write queue ────────────────────────────────────────────────────────
 
 type PendingRow = [
   string | null, string, Date,
@@ -210,8 +204,6 @@ function ingest(topic: string, value: any) {
   ]);
 }
 
-// ── Reconcile fills from fix-archive on startup ───────────────────────────────
-
 const FIX_ARCHIVE_URL = Deno.env.get("FIX_ARCHIVE_URL") || "http://localhost:5012";
 
 async function reconcileFillsFromArchive(): Promise<void> {
@@ -254,11 +246,9 @@ async function reconcileFillsFromArchive(): Promise<void> {
 
 setTimeout(() => reconcileFillsFromArchive(), 5_000);
 
-// ── Observability producer ─────────────────────────────────────────────────────
-
 const obsProducer = await createProducer("journal-obs").catch(() => null);
 
-// Per-instance consumer group IDs when DB is fresh — avoids Kafka backlog replay
+// Per-instance consumer group IDs — avoids Kafka backlog replay on fresh DB
 let journalRowCount = 0;
 {
   const client = await journalPool.connect().catch(() => null);
@@ -286,8 +276,6 @@ createConsumer(marketGroupId, ["market.ticks"]).then((consumer) => {
   );
   console.log("[journal] Subscribed to: market.ticks");
 });
-
-// ── HTTP handlers ──────────────────────────────────────────────────────────────
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -444,8 +432,6 @@ async function handle(req: Request): Promise<Response> {
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 }
-
-// ── Order reconstruction ───────────────────────────────────────────────────────
 
 const GRID_LOOKBACK_MS = 24 * 60 * 60 * 1_000;
 const CACHE_TTL_MS = 300;

@@ -15,8 +15,6 @@ import type {
   SignalStrength,
 } from "./types.ts";
 
-// ── Score → signal band ───────────────────────────────────────────────────────
-
 function scoreToStrength(score: number): SignalStrength {
   if (score >= 60) return "STRONG_BUY";
   if (score >= 20) return "BUY";
@@ -24,8 +22,6 @@ function scoreToStrength(score: number): SignalStrength {
   if (score > -60) return "SELL";
   return "STRONG_SELL";
 }
-
-// ── Structural rules ──────────────────────────────────────────────────────────
 
 interface RuleResult {
   reason: string;
@@ -95,8 +91,6 @@ function evaluateRules(
 
   return results;
 }
-
-// ── Public API ────────────────────────────────────────────────────────────────
 
 /**
  * Score an option using structural rules only (rule-based mode).

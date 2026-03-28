@@ -210,14 +210,12 @@ export function OrderTicket() {
 
   const [getQuote] = useGetQuoteMutation();
 
-  // ── Shared signals ─────────────────────────────────────────────────────────
   const instrumentType = useSignal<InstrumentType>("equity");
   const assetSearch = useSignal("AAPL");
   const quantity = useSignal("100");
   const submitting = useSignal(false);
   const feedback = useSignal<{ ok: boolean; msg: string } | null>(null);
 
-  // ── Equity-mode signals ────────────────────────────────────────────────────
   const limitPrice = useSignal("");
   const expiresAt = useSignal("300");
   const tif = useSignal<TifValue>("DAY");
@@ -244,15 +242,13 @@ export function OrderTicket() {
   const momentumLongEma = useSignal("20");
   const momentumCooldown = useSignal("3");
 
-  // ── Options-mode signals ───────────────────────────────────────────────────
   const optionType = useSignal<"call" | "put">("call");
   const optionStrike = useSignal("");
   const optionExpiry = useSignal(String(30 * 86400));
   const optionQuote = useSignal<OptionQuoteResponse | null>(null);
   const quoteFetching = useSignal(false);
 
-  // ── Bond-mode signals ──────────────────────────────────────────────────────
-  const bondSymbol = useSignal(BOND_UNIVERSE[4]?.symbol ?? "US10Y"); // default to US10Y
+  const bondSymbol = useSignal(BOND_UNIVERSE[4]?.symbol ?? "US10Y");
   const bondYield = useSignal("");
   const bondQuote = useSignal<BondPriceResponse | null>(null);
   const bondFetching = useSignal(false);
@@ -283,7 +279,6 @@ export function OrderTicket() {
     assetSearch.value = symbol;
     const price = prices[symbol];
     const asset = assets.find((a) => a.symbol === symbol);
-    // Auto-switch instrument type based on asset class
     const assetClass = asset?.assetClass;
     if (assetClass === "fx" && instrumentType.value !== "fx") {
       instrumentType.value = "fx";
@@ -373,7 +368,7 @@ export function OrderTicket() {
         });
         if ("data" in result && result.data) {
           bondQuote.value = result.data;
-          limitPrice.value = (result.data.price / def.faceValue).toFixed(6); // price as fraction
+          limitPrice.value = (result.data.price / def.faceValue).toFixed(6);
         }
       } finally {
         bondFetching.value = false;
@@ -386,7 +381,6 @@ export function OrderTicket() {
   const isOptions = instrumentType.value === "option";
   const isBond = instrumentType.value === "bond";
 
-  // ── Validation ─────────────────────────────────────────────────────────────
   const limitWarnings: string[] = [];
   if (!isOptions && !isBond) {
     if (qty > 0 && lotSize > 1 && qty % lotSize !== 0) {
@@ -655,7 +649,6 @@ export function OrderTicket() {
         onSubmit={handleSubmit}
         className="flex flex-col gap-2.5 p-3 overflow-auto flex-1"
       >
-        {/* Instrument type toggle — gated by allowed_desks */}
         <div className="flex gap-1">
           {canTradeEquity && (
             <button
@@ -735,7 +728,6 @@ export function OrderTicket() {
           )}
         </div>
 
-        {/* Strategy — equity only */}
         {!isOptions && !isBond && (
           <div>
             <label htmlFor="strategy" className="block text-xs text-gray-500 mb-1">
@@ -805,10 +797,8 @@ export function OrderTicket() {
           />
         )}
 
-        {/* Equity: asset info bar */}
         {!isOptions && !isBond && symbol && <AssetInfoBar symbol={symbol} />}
 
-        {/* Bond: ISIN selector + bond info + yield input */}
         {isBond && (
           <>
             <div>
@@ -979,7 +969,6 @@ export function OrderTicket() {
           </>
         )}
 
-        {/* Options: option type + strike + expiry */}
         {isOptions && (
           <>
             <fieldset>
@@ -1064,7 +1053,6 @@ export function OrderTicket() {
               </select>
             </div>
 
-            {/* Premium card */}
             {quoteFetching.value && (
               <div className="text-[10px] text-gray-600 text-center py-1">Pricing…</div>
             )}
@@ -1112,7 +1100,6 @@ export function OrderTicket() {
           </>
         )}
 
-        {/* Side */}
         <fieldset>
           <legend className="block text-xs text-gray-500 mb-1">
             Side <span className="text-gray-700">(B / S)</span>
@@ -1185,7 +1172,6 @@ export function OrderTicket() {
           />
         </div>
 
-        {/* Equity: limit price */}
         {!isOptions && !isBond && (
           <div>
             <div className="flex items-center justify-between mb-1">
@@ -1228,7 +1214,6 @@ export function OrderTicket() {
           </div>
         )}
 
-        {/* Previews */}
         {!isOptions && !isBond && qty > 0 && lx > 0 && (
           <OrderPreview symbol={symbol} qty={qty} limitPx={lx} side={activeSide} />
         )}
@@ -1236,7 +1221,6 @@ export function OrderTicket() {
           <OptionPreview qty={qty} premium={optionQuote.value.price} />
         )}
 
-        {/* Equity: TIF + duration + strategy params */}
         {!isOptions && !isBond && (
           <>
             <div>

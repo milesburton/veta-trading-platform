@@ -6,8 +6,6 @@ import {
   useToggleFeedMutation,
 } from "../store/marketDataApi.ts";
 
-// ── Market hours ───────────────────────────────────────────────────────────────
-
 type MarketSession = "pre-market" | "open" | "after-hours" | "closed";
 
 interface ExchangeInfo {
@@ -78,8 +76,6 @@ function sessionBadge(session: MarketSession): { label: string; cls: string } {
       };
   }
 }
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export function MarketFeedControlPanel() {
   const userRole = useAppSelector((s) => s.auth.user?.role);

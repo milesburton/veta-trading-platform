@@ -10,8 +10,6 @@ import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
 import type { ObsEvent } from "../types.ts";
 
-// ── Constants ────────────────────────────────────────────────────────────────
-
 const WINDOW_MS = 60_000;
 
 const REQUIRED_SERVICES = new Set([
@@ -29,8 +27,6 @@ const FILL_RATE_CRIT = 30;
 const FILL_RATE_OK = 60;
 const ORDER_FLOOD = 200;
 const ORDER_OK = 150;
-
-// ── Service health zone ───────────────────────────────────────────────────────
 
 const CATEGORY_LABEL: Record<string, string> = {
   core: "Core",
@@ -151,8 +147,6 @@ function ServiceHealthTable() {
     </div>
   );
 }
-
-// ── Throughput gauges zone ────────────────────────────────────────────────────
 
 interface SlimChild {
   status: string;
@@ -321,8 +315,6 @@ function ThroughputZone({ metrics, sparkline }: { metrics: Metrics; sparkline: S
   );
 }
 
-// ── Event timeline zone ───────────────────────────────────────────────────────
-
 const EVENT_TYPE_STYLES: Record<string, { dot: string; label: string }> = {
   "order.new": { dot: "bg-sky-400", label: "text-sky-400" },
   "order.routed": { dot: "bg-blue-400", label: "text-blue-400" },
@@ -392,8 +384,6 @@ function TimelineZone() {
   );
 }
 
-// ── Alert feed zone ───────────────────────────────────────────────────────────
-
 const SEVERITY_STYLES = {
   CRITICAL: { border: "border-l-red-500", badge: "bg-red-900/50 text-red-400", label: "CRIT" },
   WARNING: {
@@ -462,8 +452,6 @@ function AlertFeedZone() {
     </div>
   );
 }
-
-// ── Main panel ────────────────────────────────────────────────────────────────
 
 export function EstateOverviewPanel() {
   const dispatch = useAppDispatch();

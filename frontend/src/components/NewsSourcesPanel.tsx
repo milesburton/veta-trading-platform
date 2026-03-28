@@ -8,8 +8,6 @@ import {
   useUpdateNewsSourceMutation,
 } from "../store/newsApi.ts";
 
-// ─── Add / Edit form ──────────────────────────────────────────────────────────
-
 interface SourceFormProps {
   initial?: NewsSource;
   onCancel: () => void;
@@ -80,8 +78,6 @@ function SourceForm({ initial, onCancel, onSave, saving }: SourceFormProps) {
     </form>
   );
 }
-
-// ─── Main panel ───────────────────────────────────────────────────────────────
 
 export function NewsSourcesPanel() {
   const { data: sources = [], isLoading, isError, refetch } = useGetNewsSourcesQuery();

@@ -19,8 +19,6 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-// ─── Per-connection bridge ────────────────────────────────────────────────────
-
 async function bridgeConnection(ws: WebSocket): Promise<void> {
   let tcpConn: Deno.TcpConn | null = null;
   let closed = false;
@@ -87,8 +85,6 @@ async function bridgeConnection(ws: WebSocket): Promise<void> {
     closeBoth();
   }
 }
-
-// ─── HTTP/WS request handler ──────────────────────────────────────────────────
 
 Deno.serve({ port: FIX_GATEWAY_PORT }, (req) => {
   const url = new URL(req.url);

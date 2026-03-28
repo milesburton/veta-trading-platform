@@ -39,8 +39,6 @@ const producer = await createProducer("arrival-price-algo").catch((err) => {
   return null;
 });
 
-// ── Order state ───────────────────────────────────────────────────────────────
-
 interface RoutedOrder {
   orderId: string;
   clientOrderId?: string;
@@ -83,8 +81,6 @@ interface ActiveAP {
 
 /** Active AP orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveAP>();
-
-// ── Consume orders.routed ─────────────────────────────────────────────────────
 
 const routedConsumer = await createConsumer("ap-algo-routed", ["orders.routed"]).catch((err) => {
   console.warn("[arrival-price-algo] Cannot subscribe to orders.routed:", err.message);
@@ -139,8 +135,6 @@ routedConsumer?.onMessage((_topic, raw) => {
   }).catch(() => {});
 });
 
-// ── Consume orders.filled ─────────────────────────────────────────────────────
-
 const fillsConsumer = await createConsumer("ap-algo-fills", ["orders.filled"]).catch((err) => {
   console.warn("[arrival-price-algo] Cannot subscribe to orders.filled:", err.message);
   return null;
@@ -183,8 +177,6 @@ fillsConsumer?.onMessage((_topic, raw) => {
     }).catch(() => {});
   }
 });
-
-// ── Market tick: slice on schedule ────────────────────────────────────────────
 
 marketClient.onTick(async (tick) => {
   const now = Date.now();
@@ -288,8 +280,6 @@ marketClient.onTick(async (tick) => {
   }
 });
 
-// ── Independent expiry sweep (fires even when market ticks are sparse) ────────
-
 setInterval(async () => {
   const now = Date.now();
   for (const order of [...activeOrders.values()]) {
@@ -308,8 +298,6 @@ setInterval(async () => {
     }
   }
 }, 5_000);
-
-// ── Health endpoint ───────────────────────────────────────────────────────────
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",

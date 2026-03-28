@@ -3,7 +3,6 @@ export interface AssetDef {
   initialPrice: number;
   volatility: number;
   sector: string;
-  // ── Enriched reference data (populated by market-sim /assets endpoint) ──────
   dailyVolume?: number;
   marketCapB?: number;
   beta?: number;
@@ -218,7 +217,6 @@ export interface ChildOrder {
   status: OrderStatus;
   filled: number;
   submittedAt: number;
-  // ── Execution enrichment ─────────────────────────────────────────────────────
   /** Average fill price for filled child orders. */
   avgFillPrice?: number;
   /** Market impact in basis points for this child execution. */
@@ -248,7 +246,6 @@ export interface OrderRecord {
   filled: number;
   algoParams: AlgoParams;
   children: ChildOrder[];
-  // ── Enriched order metadata ──────────────────────────────────────────────────
   /** FIX Time In Force for this order. Derived from expiresAt duration. */
   timeInForce?: TimeInForce;
   /** Destination venue (may differ from execution venue after smart routing). */

@@ -17,17 +17,14 @@ export function MarketDataSourcesPanel() {
   const { data: overridesData, isLoading: overridesLoading } = useGetOverridesQuery();
   const [setOverrides, { isLoading: saving }] = useSetOverridesMutation();
 
-  // Local pending state — maps symbol → sourceId
   const [pending, setPending] = useState<Record<string, string>>({});
   const [hasPending, setHasPending] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Symbol filter state
   const [search, setSearch] = useState("");
   const [showOverridesOnly, setShowOverridesOnly] = useState(false);
 
-  // Reset pending when server data arrives
   useEffect(() => {
     if (overridesData) {
       setPending({});
@@ -36,7 +33,6 @@ export function MarketDataSourcesPanel() {
   }, [overridesData]);
 
   const serverOverrides = overridesData?.overrides ?? {};
-  // Any external (non-synthetic) source that is enabled
   const anyExternalAvailable = sources.some((s) => s.id !== "synthetic" && s.enabled);
 
   function getSymbolSource(symbol: string): string {
@@ -55,7 +51,6 @@ export function MarketDataSourcesPanel() {
   }
 
   async function handleSave() {
-    // Build merged overrides map
     const merged: Record<string, string> = { ...serverOverrides };
     for (const [sym, src] of Object.entries(pending)) {
       if (src === "synthetic") {
@@ -103,7 +98,6 @@ export function MarketDataSourcesPanel() {
         </span>
       </div>
 
-      {/* Source status cards */}
       <div className="flex gap-3 px-4 py-3 border-b border-gray-800 shrink-0">
         {sources.map((src) => (
           <div key={src.id} className="flex-1 bg-gray-900 rounded p-2.5 border border-gray-800">
@@ -129,7 +123,6 @@ export function MarketDataSourcesPanel() {
         ))}
       </div>
 
-      {/* Filter bar */}
       <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-800 shrink-0">
         <input
           type="text"
@@ -151,7 +144,6 @@ export function MarketDataSourcesPanel() {
         </button>
       </div>
 
-      {/* Symbol table */}
       <div className="flex-1 overflow-y-auto">
         {overridesLoading ? (
           <div className="flex items-center justify-center h-24 text-gray-600 text-[11px]">
@@ -230,7 +222,6 @@ export function MarketDataSourcesPanel() {
         )}
       </div>
 
-      {/* Action bar */}
       {isAdmin && (
         <div className="px-4 py-2.5 border-t border-gray-800 shrink-0 flex items-center gap-2">
           <button

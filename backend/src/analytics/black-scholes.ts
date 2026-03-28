@@ -7,8 +7,6 @@
 
 import type { Greeks, OptionType } from "./types.ts";
 
-// ── Normal CDF ────────────────────────────────────────────────────────────────
-
 const A1 = 0.254829592;
 const A2 = -0.284496736;
 const A3 = 1.421413741;
@@ -29,8 +27,6 @@ export function normPdf(x: number): number {
   return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
 }
 
-// ── d1 / d2 helpers ───────────────────────────────────────────────────────────
-
 function d1(S: number, K: number, r: number, sigma: number, T: number): number {
   return (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
 }
@@ -38,8 +34,6 @@ function d1(S: number, K: number, r: number, sigma: number, T: number): number {
 function d2(S: number, K: number, r: number, sigma: number, T: number): number {
   return d1(S, K, r, sigma, T) - sigma * Math.sqrt(T);
 }
-
-// ── Public API ────────────────────────────────────────────────────────────────
 
 export interface BSResult {
   price: number;

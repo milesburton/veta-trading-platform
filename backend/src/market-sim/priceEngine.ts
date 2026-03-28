@@ -2,8 +2,6 @@ import { ASSET_MAP as EQUITY_ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
 import { FX_ASSETS, FX_ASSET_MAP } from "./fxAssets.ts";
 import { COMMODITY_ASSETS, COMMODITY_ASSET_MAP } from "./commodityAssets.ts";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 /**
  * Ticks per simulated trading day.
  *
@@ -34,8 +32,6 @@ const PRICE_FLOOR_RATIO = 0.10;
  */
 const SECTOR_CORRELATION = 0.35;
 
-// ─── State ───────────────────────────────────────────────────────────────────
-
 const ALL_SEEDED_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS];
 const ALL_ASSET_MAP = new Map([...EQUITY_ASSET_MAP, ...FX_ASSET_MAP, ...COMMODITY_ASSET_MAP]);
 
@@ -61,10 +57,7 @@ export function seedPrice(symbol: string, price: number): void {
   }
 }
 
-/** Current sector drift shocks (refreshed each tick for all assets in a sector). */
 const sectorShocks: Record<string, number> = {};
-
-// ─── Market regime ────────────────────────────────────────────────────────────
 
 /**
  * Global sentiment drift added to every asset's return each tick.
@@ -90,16 +83,11 @@ function refreshRegime() {
   }
 }
 
-// ─── Box-Muller normal sampler ────────────────────────────────────────────────
-
 function randn(): number {
-  // Box–Muller transform — gives standard normal N(0,1)
   const u1 = Math.random();
   const u2 = Math.random();
   return Math.sqrt(-2 * Math.log(u1 + 1e-12)) * Math.cos(2 * Math.PI * u2);
 }
-
-// ─── Tick ─────────────────────────────────────────────────────────────────────
 
 /**
  * Advance the market regime counter; call once per tick before generatePrice.
@@ -163,5 +151,4 @@ export function generatePrice(asset: string): number {
   return marketData[asset];
 }
 
-// Initialise regime on startup
 refreshRegime();

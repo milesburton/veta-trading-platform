@@ -130,8 +130,6 @@ marketClient.onTick(async (tick) => {
   }).catch(() => {});
 });
 
-// ── Independent expiry sweep (fires even when market ticks are sparse) ────────
-
 setInterval(async () => {
   const now = Date.now();
   for (let i = pendingOrders.length - 1; i >= 0; i--) {
@@ -151,7 +149,6 @@ setInterval(async () => {
   }
 }, 5_000);
 
-// ── Health endpoint (internal — not exposed to GUI) ───────────────────────────
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",

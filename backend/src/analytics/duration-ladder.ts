@@ -16,8 +16,6 @@
 
 import { priceBond } from "./bond-pricing.ts";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 export interface BondPosition {
   faceValue: number;        // face value (e.g. 1000)
   couponRate: number;       // annual coupon rate, e.g. 0.05
@@ -47,8 +45,6 @@ export interface DurationLadderResponse {
   computedAt: number;
 }
 
-// ── Key-rate tenor buckets ─────────────────────────────────────────────────────
-
 const KEY_RATE_BUCKETS: { tenorYears: number; tenorLabel: string }[] = [
   { tenorYears: 0.25, tenorLabel: "3m" },
   { tenorYears: 1.0,  tenorLabel: "1y" },
@@ -57,8 +53,6 @@ const KEY_RATE_BUCKETS: { tenorYears: number; tenorLabel: string }[] = [
   { tenorYears: 10.0, tenorLabel: "10y" },
   { tenorYears: 30.0, tenorLabel: "30y" },
 ];
-
-// ── Attribution helper ────────────────────────────────────────────────────────
 
 /**
  * Attribute a present-value amount to key-rate buckets.
@@ -99,8 +93,6 @@ function attributeToBuckets(t: number, pv: number): Map<string, number> {
 
   return result;
 }
-
-// ── Main function ─────────────────────────────────────────────────────────────
 
 export function computeDurationLadder(positions: BondPosition[]): DurationLadderResponse {
   // Accumulate net DV01 per bucket across all positions

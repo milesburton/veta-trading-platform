@@ -12,10 +12,7 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
 const MARKET_DATA_URL = `http://${Deno.env.get("MARKET_DATA_HOST") ?? "localhost"}:${Deno.env.get("MARKET_DATA_PORT") ?? "5015"}`;
 
-// ── Real price overlay ─────────────────────────────────────────────────────────
-// Asynchronously fetches real prices for overridden symbols from market-data-service.
 // Never blocks the tick loop — updates happen in the background.
-
 const realPriceCache = new Map<string, number>(); // symbol → latest real price
 let overriddenSymbols = new Set<string>();
 
@@ -46,24 +43,19 @@ async function fetchRealPrice(symbol: string): Promise<void> {
   }
 }
 
-// Refresh overrides every 30s
 setInterval(() => refreshOverrides().catch(() => {}), 30_000);
-// Refresh real prices for overridden symbols every 5 min
 setInterval(() => {
   for (const sym of overriddenSymbols) {
     fetchRealPrice(sym).catch(() => {});
   }
 }, 5 * 60 * 1_000);
-// Initial load
 refreshOverrides().catch(() => {});
 
 const producer = await createProducer("market-sim");
 
-// ── Merged asset universe (equity + FX + commodity) ────────────────────────────
 const ALL_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS];
 const ALL_ASSET_MAP = new Map([...ASSET_MAP, ...FX_ASSET_MAP, ...COMMODITY_ASSET_MAP]);
 
-// ── Seed prices from candle-store history ──────────────────────────────────────
 // Fetch the last known 1m close for each asset so that prices are continuous
 // across restarts rather than resetting to hard-coded initialPrice values.
 async function seedFromJournal(): Promise<void> {
@@ -189,17 +181,13 @@ function computeVenueBooks(prices: Record<string, number>): Record<SorVenueMIC, 
   return result;
 }
 
-// Track active WebSocket clients for broadcast
 const clients = new Set<WebSocket>();
 
-// Global tick loop — advances market and broadcasts to all WS clients + Redpanda
 setInterval(() => {
   tickCount++;
   if (tickCount % TICKS_PER_MINUTE === 0) marketMinute = (marketMinute + 1) % 390;
-  // Advance shared state before generating individual prices
   advanceRegime();
   refreshSectorShocks();
-  // Seed real prices for overridden symbols before GBM step
   for (const sym of overriddenSymbols) {
     const real = realPriceCache.get(sym);
     if (real) seedPrice(sym, real);

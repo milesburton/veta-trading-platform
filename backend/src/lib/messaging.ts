@@ -27,12 +27,10 @@ function makeKafka(clientId: string): Kafka {
     requestTimeout: 15_000,
     retry: {
       initialRetryTime: 500,
-      retries: 1, // one internal retry for transient network blips
+      retries: 1,
     },
   });
 }
-
-// ── Producer ─────────────────────────────────────────────────────────────────
 
 export interface MsgProducer {
   send(topic: string, value: unknown): Promise<void>;
@@ -63,7 +61,7 @@ export function createProducer(clientId = "veta-producer"): Promise<MsgProducer>
         activeProducer = p;
         reconnecting = false;
         console.log(`[messaging] producer(${clientId}) connected`);
-        return; // connected — exit loop
+        return;
       } catch (err) {
         console.warn(
           `[messaging] producer(${clientId}) failed, retrying in ${delay / 1000}s:`,
@@ -83,7 +81,6 @@ export function createProducer(clientId = "veta-producer"): Promise<MsgProducer>
     },
     async send(topic: string, value: unknown): Promise<void> {
       if (!activeProducer) {
-        // Broker not yet ready — drop silently (caller can retry or ignore)
         return;
       }
       try {
@@ -92,7 +89,6 @@ export function createProducer(clientId = "veta-producer"): Promise<MsgProducer>
           messages: [{ value: JSON.stringify(value) }],
         });
       } catch (err) {
-        // Producer disconnected — clear and reconnect in background
         console.warn(`[messaging] producer(${clientId}) send failed, reconnecting:`, (err as Error).message);
         activeProducer = null;
         if (!reconnecting) {
@@ -108,8 +104,6 @@ export function createProducer(clientId = "veta-producer"): Promise<MsgProducer>
     },
   });
 }
-
-// ── Consumer ──────────────────────────────────────────────────────────────────
 
 type MessageHandler = (topic: string, value: unknown) => Promise<void> | void;
 
@@ -127,9 +121,7 @@ export function createConsumer(
   let activeConsumer: Consumer | null = null;
   let stopped = false;
 
-  // Connect in the background so callers get an immediate handle.
-  // Services bind their HTTP port before Kafka is ready; message delivery
-  // begins once the broker accepts the subscription.
+  // Connect in the background — services bind their HTTP port before Kafka is ready.
   async function connectLoop() {
     const MAX_DELAY_MS = 30_000;
     let delay = 2_000;
@@ -150,8 +142,8 @@ export function createConsumer(
           },
         });
         activeConsumer = consumer;
-        delay = 2_000; // reset backoff on success
-        return; // connected — exit retry loop
+        delay = 2_000;
+        return;
       } catch (err) {
         console.warn(
           `[messaging] createConsumer(${groupId}) failed, retrying in ${delay / 1000}s:`,

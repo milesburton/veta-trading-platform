@@ -40,8 +40,6 @@ const producer = await createProducer("sniper-algo").catch((err) => {
   return null;
 });
 
-// ── Venue price lookup ────────────────────────────────────────────────────────
-
 function bestVenuePrice(
   tick: MarketTick,
   asset: string,
@@ -53,8 +51,6 @@ function bestVenuePrice(
   const level = side === "BUY" ? book?.asks[0] : book?.bids[0];
   return level?.price ?? fallback;
 }
-
-// ── Order state ───────────────────────────────────────────────────────────────
 
 interface RoutedOrder {
   orderId: string;
@@ -96,8 +92,6 @@ interface ActiveSniper {
 
 /** Active sniper orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveSniper>();
-
-// ── Consume orders.routed ─────────────────────────────────────────────────────
 
 const routedConsumer = await createConsumer("sniper-algo-routed", ["orders.routed"]).catch(
   (err) => {
@@ -148,8 +142,6 @@ routedConsumer?.onMessage((_topic, raw) => {
   }).catch(() => {});
 });
 
-// ── Consume orders.filled ─────────────────────────────────────────────────────
-
 const fillsConsumer = await createConsumer("sniper-algo-fills", ["orders.filled"]).catch(
   (err) => {
     console.warn("[sniper-algo] Cannot subscribe to orders.filled:", err.message);
@@ -191,8 +183,6 @@ fillsConsumer?.onMessage((_topic, raw) => {
     }).catch(() => {});
   }
 });
-
-// ── Market tick: route when triggered ────────────────────────────────────────
 
 marketClient.onTick(async (tick) => {
   const now = Date.now();
@@ -286,8 +276,6 @@ marketClient.onTick(async (tick) => {
   }
 });
 
-// ── Independent expiry sweep (fires even when market ticks are sparse) ────────
-
 setInterval(async () => {
   const now = Date.now();
   for (const order of [...activeOrders.values()]) {
@@ -306,8 +294,6 @@ setInterval(async () => {
     }
   }
 }, 5_000);
-
-// ── Health endpoint ───────────────────────────────────────────────────────────
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",

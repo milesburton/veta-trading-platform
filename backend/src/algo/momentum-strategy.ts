@@ -45,14 +45,10 @@ const producer = await createProducer("momentum-algo").catch((err) => {
   return null;
 });
 
-// ── EMA helper ────────────────────────────────────────────────────────────────
-
 function nextEma(price: number, prevEma: number, period: number): number {
   const k = 2 / (period + 1);
   return price * k + prevEma * (1 - k);
 }
-
-// ── Order state ───────────────────────────────────────────────────────────────
 
 interface RoutedOrder {
   orderId: string;
@@ -108,8 +104,6 @@ interface ActiveMomentum {
 
 /** Active momentum orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveMomentum>();
-
-// ── Consume orders.routed ─────────────────────────────────────────────────────
 
 const routedConsumer = await createConsumer("momentum-algo-routed", ["orders.routed"]).catch(
   (err) => {
@@ -179,8 +173,6 @@ routedConsumer?.onMessage((_topic, raw) => {
   }).catch(() => {});
 });
 
-// ── Consume orders.filled ─────────────────────────────────────────────────────
-
 const fillsConsumer = await createConsumer("momentum-algo-fills", ["orders.filled"]).catch(
   (err) => {
     console.warn("[momentum-algo] Cannot subscribe to orders.filled:", err.message);
@@ -223,8 +215,6 @@ fillsConsumer?.onMessage((_topic, raw) => {
   }
 });
 
-// ── Market tick: EMA crossover signal check ───────────────────────────────────
-
 marketClient.onTick(async (tick) => {
   const now = Date.now();
 
@@ -232,7 +222,6 @@ marketClient.onTick(async (tick) => {
     const marketPrice = tick.prices[order.asset];
     if (!marketPrice) continue;
 
-    // Expiry check
     if (now >= order.expiresAt) {
       const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
       console.log(
@@ -250,28 +239,22 @@ marketClient.onTick(async (tick) => {
       continue;
     }
 
-    // Update EMAs with the latest price tick
     order.ticksSeen += 1;
     order.shortEma = nextEma(marketPrice, order.shortEma, order.shortEmaPeriod);
     order.longEma = nextEma(marketPrice, order.longEma, order.longEmaPeriod);
 
-    // Compute momentum signal in basis points
     const signal = ((order.shortEma - order.longEma) / order.longEma) * 10_000;
 
-    // Tick down cooldown counter
     if (order.cooldownRemaining > 0) {
       order.cooldownRemaining -= 1;
     }
 
-    // Check whether we have enough ticks for the slow EMA to be meaningful
     const warmedUp = order.ticksSeen >= order.longEmaPeriod;
 
-    // Determine if momentum is favourable for the order side
     const signalFavourable =
       (order.side === "BUY" && signal > order.entryThresholdBps) ||
       (order.side === "SELL" && signal < -order.entryThresholdBps);
 
-    // Emit heartbeat on each signal check
     await producer?.send("algo.heartbeat", {
       algo: ALGO,
       orderId: order.orderId,
@@ -289,7 +272,6 @@ marketClient.onTick(async (tick) => {
       ts: now,
     }).catch(() => {});
 
-    // Only route when warmed up, signal is favourable, not in cooldown, and quota remains
     if (
       !warmedUp ||
       !signalFavourable ||
@@ -300,7 +282,6 @@ marketClient.onTick(async (tick) => {
       continue;
     }
 
-    // Route one tranche
     const qty = Math.min(order.trancheSize, order.remainingQty);
     if (qty <= 0) continue;
 
@@ -344,8 +325,6 @@ marketClient.onTick(async (tick) => {
   }
 });
 
-// ── Independent expiry sweep (fires even when market ticks are sparse) ────────
-
 setInterval(async () => {
   const now = Date.now();
   for (const order of [...activeOrders.values()]) {
@@ -364,8 +343,6 @@ setInterval(async () => {
     }
   }
 }, 5_000);
-
-// ── Health endpoint ───────────────────────────────────────────────────────────
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",

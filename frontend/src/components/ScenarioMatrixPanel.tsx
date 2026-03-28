@@ -26,7 +26,6 @@ function pctLabel(n: number): string {
 }
 
 function buildShocks(rangePercent: number): number[] {
-  // 7 evenly-spaced shocks from -range to +range
   const r = rangePercent / 100;
   return [-r, -(r * 0.5), -(r * 0.25), 0, r * 0.25, r * 0.5, r];
 }
@@ -36,21 +35,16 @@ function buildVolShocks(rangePercent: number): number[] {
   return [-r, -(r * 0.5), 0, r * 0.5, r];
 }
 
-// ── Diverging colour scale ────────────────────────────────────────────────────
-
 function divergingColor(val: number, min: number, max: number): string {
   if (max === min) return "#374151";
-  // Clamp val to [min, max] then normalise to [0, 1]
   const t = Math.max(0, Math.min(1, (val - min) / (max - min)));
   if (t < 0.5) {
-    // Red (#ef4444) → neutral (#374151)
     const p = t / 0.5;
     const r = Math.round(239 + (55 - 239) * p);
     const g = Math.round(68 + (65 - 68) * p);
     const b = Math.round(68 + (81 - 68) * p);
     return `rgb(${r},${g},${b})`;
   }
-  // Neutral → Green (#22c55e)
   const p = (t - 0.5) / 0.5;
   const r = Math.round(55 + (34 - 55) * p);
   const g = Math.round(65 + (197 - 65) * p);
@@ -59,7 +53,7 @@ function divergingColor(val: number, min: number, max: number): string {
 }
 
 function priceColor(): string {
-  return "#1e3a5f"; // flat blue for non-P&L metrics
+  return "#1e3a5f";
 }
 
 function cellValue(cell: ScenarioCell, metric: CellMetric): number {
@@ -71,8 +65,6 @@ function fmtCell(val: number, metric: CellMetric): string {
   if (metric === "pnl") return `${val >= 0 ? "+" : ""}${val.toFixed(2)}`;
   return val.toFixed(2);
 }
-
-// ── Tooltip ───────────────────────────────────────────────────────────────────
 
 interface CellTooltipProps {
   cell: ScenarioCell | null;
@@ -104,8 +96,6 @@ function CellTooltip({ cell, x, y }: CellTooltipProps) {
   );
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export function ScenarioMatrixPanel() {
   const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
   const currentPrice = useAppSelector((s) =>
@@ -127,7 +117,6 @@ export function ScenarioMatrixPanel() {
   const spotShocks = useMemo(() => buildShocks(spotRange), [spotRange]);
   const volShocks = useMemo(() => buildVolShocks(volRange), [volRange]);
 
-  // Compute min/max for diverging colour scale
   const [minVal, maxVal] = useMemo(() => {
     if (!result) return [0, 0];
     const vals = result.cells.flatMap((row) => row.map((c) => cellValue(c, metric)));
@@ -267,7 +256,6 @@ export function ScenarioMatrixPanel() {
         )}
       </form>
 
-      {/* Custom shock range sliders */}
       {showRanges && (
         <div className="flex gap-4 px-4 py-2 border-b border-gray-800 shrink-0">
           <div className="flex flex-col gap-1 flex-1">

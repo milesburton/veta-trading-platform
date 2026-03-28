@@ -19,8 +19,6 @@ import {
 } from "recharts";
 import { useGetPriceFanQuery } from "../store/analyticsApi.ts";
 
-// ── Horizon presets ──────────────────────────────────────────────────────────
-
 interface HorizonPreset {
   label: string;
   steps: number;
@@ -41,12 +39,10 @@ function formatStepLabel(tSecs: number, stepSecs: number): string {
   return `+${Math.round(total / 60)}m`;
 }
 
-// ── Main panel ───────────────────────────────────────────────────────────────
-
 export function PriceFanPanel() {
   const [symbol, setSymbol] = useState("AAPL");
   const [inputValue, setInputValue] = useState("AAPL");
-  const [horizonIdx, setHorizonIdx] = useState(2); // default "1d"
+  const [horizonIdx, setHorizonIdx] = useState(2);
 
   const horizon = HORIZONS[horizonIdx];
 
@@ -103,7 +99,6 @@ export function PriceFanPanel() {
 
   return (
     <div className="h-full flex flex-col bg-gray-950 text-gray-200 overflow-hidden text-xs">
-      {/* Header */}
       <div className="px-3 py-2 border-b border-gray-800 shrink-0 flex items-center gap-2 flex-wrap">
         <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide shrink-0">
           Price Fan · GBM Projection
@@ -141,7 +136,6 @@ export function PriceFanPanel() {
         </div>
       </div>
 
-      {/* Chart */}
       <div className="flex-1 min-h-0 px-2 py-2">
         {isError ? (
           <div className="flex items-center justify-center h-full text-red-400 text-[10px]">
@@ -210,7 +204,6 @@ export function PriceFanPanel() {
                 isAnimationActive={false}
                 legendType="none"
               />
-              {/* Median line */}
               <Line
                 type="monotone"
                 dataKey="p50"
@@ -219,7 +212,6 @@ export function PriceFanPanel() {
                 dot={false}
                 isAnimationActive={false}
               />
-              {/* Current price reference */}
               {spotPrice > 0 && (
                 <ReferenceLine
                   y={spotPrice}
@@ -233,7 +225,6 @@ export function PriceFanPanel() {
         )}
       </div>
 
-      {/* Footer */}
       <div className="px-3 py-1 border-t border-gray-800 shrink-0 flex items-center gap-3 text-[9px] text-gray-600">
         {data && (
           <>

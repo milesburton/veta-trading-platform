@@ -5,8 +5,6 @@
 export const SOH = "\x01";
 export const BEGIN_STRING = "FIX.4.4";
 
-// ─── Decoder ──────────────────────────────────────────────────────────────────
-
 /**
  * Decode a raw FIX string into a Map of tag → value.
  * Tag 8 (BeginString), 9 (BodyLength), and 10 (CheckSum) are included.
@@ -24,8 +22,6 @@ export function decode(raw: string): Map<number, string> {
   }
   return map;
 }
-
-// ─── Encoder ──────────────────────────────────────────────────────────────────
 
 /**
  * Encode a FIX message from body tag-value pairs.
@@ -57,8 +53,6 @@ export function encode(tags: [number, string | number][]): string {
   return `${rawNoChecksum}10=${checksum}${SOH}`;
 }
 
-// ─── Validation ───────────────────────────────────────────────────────────────
-
 export function validateChecksum(raw: string): boolean {
   // Find last 10= field
   // deno-lint-ignore no-control-regex
@@ -76,8 +70,6 @@ export function validateChecksum(raw: string): boolean {
   }
   return sum === expected;
 }
-
-// ─── Utilities ────────────────────────────────────────────────────────────────
 
 /** Format a timestamp in FIX UTCTimestamp format: YYYYMMDD-HH:MM:SS.sss */
 export function utcTimestamp(d = new Date()): string {

@@ -74,7 +74,6 @@ export function CandlestickChart({ symbol, candles }: Props) {
   // Pending candles to load once the chart has been sized
   const pendingLoadRef = useRef<(() => void) | null>(null);
 
-  // Create chart once on mount; watch for first non-zero width before loading data
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -132,7 +131,6 @@ export function CandlestickChart({ symbol, candles }: Props) {
     return () => cancelAnimationFrame(raf);
   }, [theme]);
 
-  // Update data when interval or candles change
   useEffect(() => {
     const cs = candleSeriesRef.current;
     const vs = volumeSeriesRef.current;

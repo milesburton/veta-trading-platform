@@ -36,7 +36,6 @@ export function FilterBar({ gridId, fields, openFieldSignal }: Props) {
     if (openFieldSignal) openFieldSignal.value = null;
   }
 
-  // When the parent sets openFieldSignal, auto-open the builder
   const pendingField = openFieldSignal?.value ?? null;
   if (pendingField && !showBuilder.value) {
     showBuilder.value = true;

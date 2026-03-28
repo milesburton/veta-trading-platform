@@ -104,7 +104,6 @@ export function buildYieldCurveResponse(params?: Partial<NelsonSiegelParams>): Y
   };
 }
 
-// ── FRED Treasury yield integration ──────────────────────────────────────────
 // Fetches real US Treasury rates and fits Nelson-Siegel parameters.
 // Falls back to DEFAULT_PARAMS if FRED_KEY is not set or the API is unavailable.
 

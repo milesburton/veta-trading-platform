@@ -14,8 +14,6 @@ import type { NelsonSiegelParams } from "./types.ts";
 import { computeYieldCurve } from "./yield-curve.ts";
 import type { YieldCurvePoint } from "./types.ts";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 export interface SpreadAnalysisRequest {
   couponRate: number;           // annual coupon rate, e.g. 0.05
   totalPeriods: number;         // total coupon periods
@@ -35,8 +33,6 @@ export interface SpreadAnalysisResponse {
   computedAt: number;
 }
 
-// ── Interpolation ─────────────────────────────────────────────────────────────
-
 /**
  * Linearly interpolate a rate from a spot curve at tenor t (years).
  * Exported for use by duration-ladder and other modules.
@@ -55,8 +51,6 @@ export function rateAt(curve: YieldCurvePoint[], t: number): number {
   }
   return sorted[sorted.length - 1].spotRate;
 }
-
-// ── Z-spread solver ───────────────────────────────────────────────────────────
 
 /**
  * Compute Z-spread via bisection search.
@@ -96,8 +90,6 @@ function computeZSpread(
 
   return (lo + hi) / 2;
 }
-
-// ── Main function ─────────────────────────────────────────────────────────────
 
 export function computeSpreadAnalysis(req: SpreadAnalysisRequest): SpreadAnalysisResponse {
   const {

@@ -79,9 +79,8 @@ export interface NewsItem {
   relatedSymbols: string[];
 }
 
-// Loughran-McDonald financial sentiment lexicon (condensed — financial-domain specific)
+// Loughran-McDonald financial sentiment lexicon (condensed).
 // Source: Loughran & McDonald (2011), "When Is a Liability Not a Liability?"
-// Positive terms (LM Positive word list — key financial-domain subset)
 const LM_POSITIVE = new Set([
   "able","abundance","abundant","acclaimed","accolade","accolades","accommodative",
   "accomplish","accomplished","achievement","acumen","adaptable","adequate","admirable",

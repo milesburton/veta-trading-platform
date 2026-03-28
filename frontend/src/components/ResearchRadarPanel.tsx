@@ -141,7 +141,6 @@ export function ResearchRadarPanel() {
 
   return (
     <div className="h-full flex flex-col bg-gray-950 text-gray-100">
-      {/* Header + legend */}
       <div className="flex items-center gap-3 px-3 py-2 border-b border-gray-800 text-xs text-gray-400 shrink-0 flex-wrap">
         <span className="text-gray-300 font-medium">Signal Radar</span>
         <div className="flex gap-1 ml-auto">
@@ -175,7 +174,6 @@ export function ResearchRadarPanel() {
         </div>
       </div>
 
-      {/* Scatter chart */}
       <div className="flex-1 min-h-0 px-2 py-1">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: -8 }}>
@@ -247,7 +245,6 @@ export function ResearchRadarPanel() {
         </ResponsiveContainer>
       </div>
 
-      {/* Table */}
       <div className="shrink-0 border-t border-gray-800 overflow-auto" style={{ maxHeight: "35%" }}>
         <table className="w-full text-[10px] font-mono">
           <thead>

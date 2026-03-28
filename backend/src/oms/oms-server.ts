@@ -114,8 +114,6 @@ async function getAssetLotSize(symbol: string): Promise<number> {
   return lotSizeCache.get(symbol) ?? 100;
 }
 
-// ── Desk / routing derivation ─────────────────────────────────────────────────
-
 function deriveDesk(instrumentType?: string): Desk {
   if (instrumentType === "bond") return "fi";
   if (instrumentType === "option") return "derivatives";
@@ -131,7 +129,6 @@ function deriveMarketType(
 ): MarketType {
   if (desk === "fi") return "otc";
   if (desk === "derivatives" && order.optionSpec?.isOtc) return "otc";
-  // FX and commodities route to lit (EBS/CME)
   if (desk === "fx" || desk === "commodities") return "lit";
   // Route equity block orders to dark pool when user has access
   if (
@@ -150,8 +147,6 @@ function deriveDestinationVenue(desk: Desk, marketType: MarketType): string {
   if (marketType === "otc") return "OTC-OPTIONS";
   return "XNAS";
 }
-
-// ── Interfaces ────────────────────────────────────────────────────────────────
 
 interface BondSpec {
   isin: string;
@@ -220,8 +215,6 @@ interface ActiveOrder {
   status: "pending" | "working";
 }
 
-// ── Kafka ─────────────────────────────────────────────────────────────────────
-
 let seqNum = 1;
 function nextOrderId(): string {
   return `oms-${Date.now()}-${seqNum++}`;
@@ -244,12 +237,8 @@ const killConsumer = await createConsumer("oms-kill-orders", ["orders.kill", "or
 
 const activeOrders = new Map<string, ActiveOrder>();
 
-// ── Order handler ─────────────────────────────────────────────────────────────
-
 consumer?.onMessage(async (_topic, raw) => {
   const order = raw as NewOrder;
-
-  // ── Basic validation ──────────────────────────────────────────────────────
 
   if (!order.asset || !order.side || !order.quantity) {
     console.warn("[oms] Malformed order — missing required fields");
@@ -283,11 +272,7 @@ consumer?.onMessage(async (_topic, raw) => {
     return;
   }
 
-  // ── Derive desk, market type, venue ──────────────────────────────────────
-
   const desk = deriveDesk(order.instrumentType);
-
-  // ── User limits + desk access check ──────────────────────────────────────
 
   const limits = order.userId ? await getUserLimits(order.userId) : DEFAULT_LIMITS;
 
@@ -301,8 +286,6 @@ consumer?.onMessage(async (_topic, raw) => {
     }).catch(() => {});
     return;
   }
-
-  // ── Instrument-specific validation ───────────────────────────────────────
 
   if (desk === "fi") {
     if (!order.bondSpec) {
@@ -327,8 +310,6 @@ consumer?.onMessage(async (_topic, raw) => {
       return;
     }
   }
-
-  // ── Strategy validation (equity + listed derivatives only) ───────────────
 
   // FI uses RFQ — no algo strategy applies. OTC options use bilateral flow.
   // FX and commodities use standard algo strategies (same pool as equity).
@@ -358,8 +339,6 @@ consumer?.onMessage(async (_topic, raw) => {
     }
   }
 
-  // ── Qty / notional limits ─────────────────────────────────────────────────
-
   if (order.quantity > limits.max_order_qty) {
     await producer?.send("orders.rejected", {
       clientOrderId: order.clientOrderId,
@@ -387,8 +366,6 @@ consumer?.onMessage(async (_topic, raw) => {
     console.warn(`[oms] Order qty ${order.quantity} is not a multiple of lot size ${lotSize} for ${order.asset}`);
     // Attach note to the order but do not reject
   }
-
-  // ── Build enriched order ──────────────────────────────────────────────────
 
   const marketType = deriveMarketType(desk, order, limits);
   const destinationVenue = deriveDestinationVenue(desk, marketType);
@@ -438,19 +415,14 @@ consumer?.onMessage(async (_topic, raw) => {
 
   await producer?.send("orders.submitted", enriched).catch(() => {});
 
-  // ── Route to the appropriate downstream topic ─────────────────────────────
-
   if (desk === "fi") {
     // FI orders go to RFQ service — not via algo strategies
     await producer?.send("orders.fi.rfq", { ...enriched, routedAt: Date.now() }).catch(() => {});
     console.log(`[oms] Bond order ${orderId} routed to RFQ service (${order.bondSpec?.symbol})`);
   } else {
-    // Equity (lit + dark) and listed derivatives go via orders.routed → algos → EMS
     await producer?.send("orders.routed", { ...enriched, routedAt: Date.now() }).catch(() => {});
   }
 });
-
-// ── Kill / Resume handler ─────────────────────────────────────────────────────
 
 killConsumer?.onMessage(async (topic, raw) => {
   const ts = Date.now();
@@ -536,8 +508,6 @@ killConsumer?.onMessage(async (topic, raw) => {
 
 console.log(`[oms] Listening for orders.new on message bus`);
 
-// ── Orphaned order expiry ─────────────────────────────────────────────────────
-
 async function expireOrphanedOrders() {
   try {
     const res = await fetch(`${JOURNAL_URL}/orders?limit=500`);
@@ -563,8 +533,6 @@ async function expireOrphanedOrders() {
 
 setTimeout(() => { expireOrphanedOrders().catch(() => {}); }, 3_000);
 setInterval(() => { expireOrphanedOrders().catch(() => {}); }, 15_000);
-
-// ── HTTP ──────────────────────────────────────────────────────────────────────
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);

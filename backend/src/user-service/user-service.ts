@@ -16,8 +16,6 @@ const producer = await createProducer("user-service").catch((err) => {
   return null;
 });
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
 function randomToken(): string {
   return crypto.randomUUID().replace(/-/g, "");
 }
@@ -50,8 +48,6 @@ async function getUserFromToken(token: string | null) {
     return { id, name, role, avatar_emoji, firm: firm ?? null } as { id: string; name: string; role: string; avatar_emoji: string; firm: string | null };
   } finally { client.release(); }
 }
-
-// ── Request handler ────────────────────────────────────────────────────────────
 
 async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });

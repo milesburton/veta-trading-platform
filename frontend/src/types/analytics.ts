@@ -113,8 +113,6 @@ export interface RecommendationResponse {
   computedAt: number;
 }
 
-// ── Volatility Profile ────────────────────────────────────────────────────────
-
 export interface VolProfileSample {
   ts: number;
   vol: number;
@@ -128,8 +126,6 @@ export interface VolProfileResponse {
   series: VolProfileSample[];
   computedAt: number;
 }
-
-// ── Bond Pricing ──────────────────────────────────────────────────────────────
 
 export interface BondPriceRequest {
   face?: number;
@@ -148,8 +144,6 @@ export interface BondPriceResponse {
   cashFlows: { t: number; cf: number; pv: number }[];
   computedAt: number;
 }
-
-// ── Yield Curve ───────────────────────────────────────────────────────────────
 
 export interface NelsonSiegelParams {
   beta0: number;
@@ -181,8 +175,6 @@ export interface YieldCurveResponse {
   computedAt: number;
 }
 
-// ── Price Fan ─────────────────────────────────────────────────────────────────
-
 export interface PriceFanStep {
   step: number;
   tSecs: number;
@@ -201,8 +193,6 @@ export interface PriceFanResponse {
   steps: PriceFanStep[];
   computedAt: number;
 }
-
-// ── Greeks Surface ────────────────────────────────────────────────────────────
 
 export interface GreeksSurfacePoint {
   strike: number;
@@ -223,8 +213,6 @@ export interface GreeksSurfaceResponse {
   computedAt: number;
 }
 
-// ── Spread Analysis ───────────────────────────────────────────────────────────
-
 export interface SpreadAnalysisRequest {
   couponRate: number;
   totalPeriods: number;
@@ -243,8 +231,6 @@ export interface SpreadAnalysisResponse {
   oas: number; // basis points
   computedAt: number;
 }
-
-// ── Duration Ladder ───────────────────────────────────────────────────────────
 
 export interface BondPosition {
   faceValue: number;
@@ -274,8 +260,6 @@ export interface DurationLadderResponse {
   totalPortfolioDv01: number;
   computedAt: number;
 }
-
-// ── Vol Surface ───────────────────────────────────────────────────────────────
 
 export interface VolSurfacePoint {
   expirySecs: number;

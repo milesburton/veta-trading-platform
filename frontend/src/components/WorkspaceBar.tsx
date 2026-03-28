@@ -21,8 +21,6 @@ import {
 } from "./DashboardLayout.tsx";
 import { SharedWorkspaceBrowser } from "./SharedWorkspaceBrowser.tsx";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export interface Workspace {
   id: string;
   name: string;
@@ -36,13 +34,11 @@ const TRADER_PRESET_WORKSPACES: {
   locked: true;
   makeModel: () => IJsonModel;
 }[] = [
-  // ── Equities ────────────────────────────────────────────────────────────────
   { id: "ws-trading", name: "Trading", locked: true, makeModel: makeExecutionModel },
   { id: "ws-algo", name: "Algo", locked: true, makeModel: makeAlgoModel },
   { id: "ws-options", name: "Options", locked: true, makeModel: makeOptionsModel },
   { id: "ws-analysis", name: "Analysis", locked: true, makeModel: makeAnalysisModel },
   { id: "ws-research", name: "Research", locked: true, makeModel: makeResearchModel },
-  // ── Commodities ──────────────────────────────────────────────────────────────
   {
     id: "ws-commodities",
     name: "Commodities",
@@ -55,11 +51,9 @@ const TRADER_PRESET_WORKSPACES: {
     locked: true,
     makeModel: makeCommoditiesAnalysisModel,
   },
-  // ── Fixed Income ─────────────────────────────────────────────────────────────
   { id: "ws-fi-trading", name: "FI Trading", locked: true, makeModel: makeFiTradingModel },
   { id: "ws-fi-analysis", name: "FI Analysis", locked: true, makeModel: makeFiAnalysisModel },
   { id: "ws-fi-research", name: "FI Research", locked: true, makeModel: makeFiResearchModel },
-  // ── Shared ───────────────────────────────────────────────────────────────────
   { id: "ws-overview", name: "Overview", locked: true, makeModel: makeOverviewModel },
 ];
 
@@ -149,13 +143,9 @@ export function reconcilePresetWorkspaces(
   };
 }
 
-// ─── Storage key (exported for backwards compat, no longer used for layouts) ──
-
 export function workspaceStorageKey(_userId: string, _workspaceId: string): string {
   return "";
 }
-
-// ─── Pin state ────────────────────────────────────────────────────────────────
 
 function loadPinned(): boolean {
   return localStorage.getItem("sidebar-pinned") !== "false";
@@ -164,8 +154,6 @@ function loadPinned(): boolean {
 function savePinned(pinned: boolean) {
   localStorage.setItem("sidebar-pinned", String(pinned));
 }
-
-// ─── History helpers ──────────────────────────────────────────────────────────
 
 const WORKSPACE_PARAM = "ws";
 
@@ -178,8 +166,6 @@ function pushWorkspaceHistory(workspaceId: string, workspaceName: string) {
   url.searchParams.set(WORKSPACE_PARAM, workspaceId);
   history.pushState({ workspaceId }, workspaceName, url.toString());
 }
-
-// ─── Vertical workspace sidebar ───────────────────────────────────────────────
 
 interface Props {
   activeId: string;
@@ -716,8 +702,6 @@ export function WorkspaceSidebar({
     </>
   );
 }
-
-// ─── Hook: manages workspace list state and history ───────────────────────────
 
 export function useWorkspaces(_userId: string) {
   const seed = seedWorkspaces();

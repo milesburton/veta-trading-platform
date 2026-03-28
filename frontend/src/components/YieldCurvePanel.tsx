@@ -20,8 +20,6 @@ import {
 import { useGetBondPriceMutation, useGetYieldCurveMutation } from "../store/analyticsApi.ts";
 import type { BondPriceResponse, ForwardRate, YieldCurvePoint } from "../types/analytics.ts";
 
-// ── Forward rate chip ────────────────────────────────────────────────────────
-
 function ForwardChip({ fwd, prevRate }: { fwd: ForwardRate; prevRate?: number }) {
   const isInverted = prevRate !== undefined && fwd.rate < prevRate;
   const textClass = isInverted ? "text-red-400" : "text-green-400";
@@ -39,8 +37,6 @@ function ForwardChip({ fwd, prevRate }: { fwd: ForwardRate; prevRate?: number })
     </div>
   );
 }
-
-// ── Bond pricing result card ──────────────────────────────────────────────────
 
 function BondMetric({
   label,
@@ -60,8 +56,6 @@ function BondMetric({
     </div>
   );
 }
-
-// ── Main panel ───────────────────────────────────────────────────────────────
 
 export function YieldCurvePanel() {
   const [fetchCurve, { data: curveData, isLoading: curveLoading }] = useGetYieldCurveMutation();

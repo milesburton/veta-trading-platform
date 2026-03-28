@@ -58,8 +58,6 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-// ── Data source definitions ───────────────────────────────────────────────────
-
 export interface DataSource {
   id: string;
   label: string;
@@ -73,7 +71,6 @@ export interface DataSource {
   pollIntervalMs?: number;
 }
 
-/** All registered providers (synthetic handled separately) */
 const PROVIDERS: ProviderDef[] = [
   alphaVantageEquityProvider,
   alphaVantageFxProvider,
@@ -82,15 +79,13 @@ const PROVIDERS: ProviderDef[] = [
   fredProvider,
 ];
 
-/** Providers eligible for per-symbol overrides (excludes fred, synthetic) */
+/** Providers eligible for per-symbol overrides (excludes fred and polygon) */
 const POLL_PROVIDERS: ProviderDef[] = PROVIDERS.filter(
   (p) => p.id !== "fred" && p.id !== "polygon",
 );
 
-/** Set of source IDs whose feeds are currently paused by an admin */
 let pausedSources: Set<string> = new Set();
 
-/** Returns the full sources array with runtime active state. */
 function getSources(): DataSource[] {
   const synthetic: DataSource = {
     id: "synthetic",
@@ -121,8 +116,6 @@ function getSources(): DataSource[] {
 
   return [synthetic, ...providerSources];
 }
-
-// ── Override store ─────────────────────────────────────────────────────────────
 
 /** symbol → sourceId */
 let overrides: Map<string, string> = new Map();
@@ -156,7 +149,6 @@ async function loadFeedState(): Promise<void> {
   try {
     const text = await Deno.readTextFile(FEED_STATE_FILE);
     const data = JSON.parse(text) as FeedStateFile;
-    // Migrate old format: { feedPaused: true } → { pausedSources: ["alpha-vantage"] }
     if (Array.isArray(data.pausedSources)) {
       pausedSources = new Set(data.pausedSources);
     } else if (data.feedPaused === true) {
@@ -177,11 +169,7 @@ async function saveFeedState(): Promise<void> {
   }
 }
 
-// ── Quote cache ────────────────────────────────────────────────────────────────
-
 const quoteCache = new Map<string, CachedQuote>();
-
-// ── Polygon streaming ──────────────────────────────────────────────────────────
 
 let polygonTeardown: (() => void) | null = null;
 
@@ -192,7 +180,6 @@ function polygonSymbols(): string[] {
 }
 
 function restartPolygonStream(): void {
-  // Tear down existing stream
   if (polygonTeardown) {
     polygonTeardown();
     polygonTeardown = null;
@@ -212,9 +199,6 @@ function restartPolygonStream(): void {
   );
 }
 
-// ── Poll loop ─────────────────────────────────────────────────────────────────
-
-/** Returns symbols currently overridden to alpha-vantage */
 function symbolsForProvider(providerId: string): string[] {
   return Array.from(overrides.entries())
     .filter(([_, src]) => src === providerId)
@@ -241,7 +225,6 @@ function startPollLoop(): void {
         if (quote) {
           quoteCache.set(sym, quote);
         } else {
-          // Mark stale if cached
           const cached = quoteCache.get(sym);
           if (cached) quoteCache.set(sym, { ...cached, stale: true });
         }
@@ -253,7 +236,6 @@ function startPollLoop(): void {
   }, POLL_INTERVAL_MS);
 }
 
-/** Mark cached quotes as stale if older than TTL */
 function startStalenessChecker(): void {
   setInterval(() => {
     const now = Date.now();
@@ -264,8 +246,6 @@ function startStalenessChecker(): void {
     }
   }, 30_000);
 }
-
-// ── Startup ───────────────────────────────────────────────────────────────────
 
 await loadOverrides();
 await loadFeedState();
@@ -294,7 +274,6 @@ restartPolygonStream();
 startPollLoop();
 startStalenessChecker();
 
-// ── HTTP Handler ──────────────────────────────────────────────────────────────
 
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);

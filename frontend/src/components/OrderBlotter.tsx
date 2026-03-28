@@ -131,7 +131,6 @@ export function OrderBlotter() {
 
   const topOrderId = displayOrders[0]?.id ?? null;
 
-  // Auto-select the newest order when it arrives, unless the user has pinned a different one
   useEffect(() => {
     if (topOrderId === null) return;
     if (
@@ -143,7 +142,6 @@ export function OrderBlotter() {
     }
   }, [topOrderId, broadcast, selectedOrderId, userPinnedId]);
 
-  // Force-select newly submitted order, overriding any previous pin
   useEffect(() => {
     if (!lastSubmittedOrderId) return;
     selectedOrderId.value = lastSubmittedOrderId;
@@ -154,7 +152,7 @@ export function OrderBlotter() {
   function selectOrder(id: string) {
     const next = selectedOrderId.value === id ? null : id;
     selectedOrderId.value = next;
-    userPinnedId.value = next; // user explicitly chose this row
+    userPinnedId.value = next;
     broadcast({ selectedOrderId: next });
   }
 

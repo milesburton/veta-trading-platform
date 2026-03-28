@@ -14,8 +14,6 @@ import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { setOptionPrefill } from "../store/uiSlice.ts";
 import type { OptionQuoteResponse, OptionType } from "../types/analytics.ts";
 
-// ── Inline Black-Scholes Greeks for client-side sensitivity chart ─────────────
-
 function normCdf(x: number): number {
   const sign = x < 0 ? -1 : 1;
   const t = 1.0 / (1.0 + 0.3275911 * Math.abs(x));
@@ -55,8 +53,6 @@ function bsGreeks(
   return { delta, gamma, theta, vega };
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 const EXPIRY_OPTIONS = [
   { label: "7d", secs: 7 * 86400 },
   { label: "14d", secs: 14 * 86400 },
@@ -92,8 +88,6 @@ const CHART_TOOLTIP_STYLE = {
   padding: "4px 8px",
 };
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export function OptionPricingPanel() {
   const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
   const [symbol, setSymbol] = useState(symbols[0] ?? "AAPL");
@@ -106,7 +100,6 @@ export function OptionPricingPanel() {
   const [getQuote, { isLoading, error }] = useGetQuoteMutation();
   const dispatch = useAppDispatch();
 
-  // Auto-populate strike from live market price when symbol changes
   const currentPrice = useAppSelector((s) => s.market.prices[symbol]);
   useEffect(() => {
     if (currentPrice && currentPrice > 0) {
@@ -114,7 +107,6 @@ export function OptionPricingPanel() {
     }
   }, [currentPrice]);
 
-  // Consume prefill dispatched by VolSurfacePanel (strike + expirySecs)
   const optionPrefill = useAppSelector((s) => s.ui.optionPrefill);
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional — consume once and clear
   useEffect(() => {
@@ -145,7 +137,6 @@ export function OptionPricingPanel() {
     }
   }
 
-  // Build 25-point sensitivity series client-side (no extra network round-trip)
   const sensitivityData = useMemo(() => {
     if (!result) return [];
     const T = result.expirySecs / (365 * 86400);
@@ -186,7 +177,6 @@ export function OptionPricingPanel() {
         className="flex flex-col gap-3 px-4 py-3 border-b border-gray-800 shrink-0"
       >
         <div className="grid grid-cols-2 gap-2">
-          {/* Symbol */}
           <div className="flex flex-col gap-1">
             <label
               htmlFor="op-symbol"
@@ -208,7 +198,6 @@ export function OptionPricingPanel() {
             </select>
           </div>
 
-          {/* Option type */}
           <div className="flex flex-col gap-1">
             <span className="text-[10px] text-gray-500 uppercase tracking-wide">Type</span>
             <div className="flex gap-1">
@@ -232,7 +221,6 @@ export function OptionPricingPanel() {
             </div>
           </div>
 
-          {/* Strike — auto-populated from live price */}
           <div className="flex flex-col gap-1">
             <label
               htmlFor="op-strike"
@@ -256,7 +244,6 @@ export function OptionPricingPanel() {
             />
           </div>
 
-          {/* Expiry — presets + custom date */}
           <div className="flex flex-col gap-1">
             <label
               htmlFor="op-expiry-date"
@@ -314,7 +301,6 @@ export function OptionPricingPanel() {
 
       {result && (
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4" data-testid="quote-result">
-          {/* Summary */}
           <div className="bg-gray-900 rounded p-3">
             <div className="flex justify-between mb-2">
               <span className="text-[10px] text-gray-500">Theoretical Price</span>
@@ -340,7 +326,6 @@ export function OptionPricingPanel() {
             </div>
           </div>
 
-          {/* Greeks */}
           <div>
             <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-2">Greeks</div>
             <div className="bg-gray-900 rounded p-3">
@@ -372,7 +357,6 @@ export function OptionPricingPanel() {
             </div>
           </div>
 
-          {/* Greeks sensitivity chart */}
           {sensitivityData.length > 0 && (
             <div>
               <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">

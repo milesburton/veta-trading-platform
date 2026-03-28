@@ -4,8 +4,6 @@ import { useAppDispatch } from "../store/hooks.ts";
 import { SERVICES, type ServiceCategory, useGetServiceHealthQuery } from "../store/servicesApi.ts";
 import { useCreateSessionMutation } from "../store/userApi.ts";
 
-// ── Service catalogue ─────────────────────────────────────────────────────────
-
 const CATEGORY_LABELS: Record<ServiceCategory, string> = {
   core: "Order Flow",
   algo: "Algo Engines",
@@ -287,8 +285,6 @@ function PlatformStatus() {
   );
 }
 
-// ── Seed users ────────────────────────────────────────────────────────────────
-
 interface SeedUser {
   id: string;
   name: string;
@@ -303,8 +299,6 @@ const SEED_USERS: SeedUser[] = [
   { id: "dave", name: "Dave Okafor", role: "trader", avatar_emoji: "DO" },
   { id: "admin", name: "Mission Control", role: "admin", avatar_emoji: "MC" },
 ];
-
-// ── LoginPage ─────────────────────────────────────────────────────────────────
 
 interface LoginPageProps {
   buildDate?: string;
@@ -380,8 +374,6 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
     </div>
   );
 }
-
-// ── LoginCards ────────────────────────────────────────────────────────────────
 
 interface LoginCardsProps {
   users: SeedUser[];

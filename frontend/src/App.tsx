@@ -488,8 +488,6 @@ export default function App() {
   const [platformState, setPlatformState] = useState<"unknown" | "overlay" | "ready">("unknown");
 
   useEffect(() => {
-    // Do a single rapid check: if the platform is already up and has been
-    // running for >2 minutes, skip the startup overlay entirely.
     let cancelled = false;
     fetch(`${GATEWAY_URL}/ready`)
       .then(async (res) => {
@@ -514,7 +512,6 @@ export default function App() {
   }, []);
 
   if (platformState === "unknown") {
-    // Brief blank screen while we do the initial check (~100ms)
     return <div className="min-h-screen bg-gray-950" />;
   }
 

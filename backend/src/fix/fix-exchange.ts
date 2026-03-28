@@ -15,12 +15,8 @@ const PARTICIPATION_CAP = Number(Deno.env.get("EMS_PARTICIPATION_CAP")) || 0.20;
 const IMPACT_PER_1000 = Number(Deno.env.get("EMS_IMPACT_PER_1000_BPS")) || 1.0;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
-// ─── Market data client ──────────────────────────────────────────────────────
-
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
-
-// ─── Fill simulation (same logic as EMS) ────────────────────────────────────
 
 interface FillResult {
   filledQty: number;
@@ -43,8 +39,6 @@ function computeFill(
   const avgFillPrice = parseFloat((midPrice * impactFactor).toFixed(4));
   return { filledQty, remainingQty, avgFillPrice, marketImpactBps: impactBps };
 }
-
-// ─── Connection handler ──────────────────────────────────────────────────────
 
 const SOH = "\x01";
 
@@ -202,7 +196,6 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
   }
 }
 
-// ─── Health endpoint (HTTP on same port prefix) ──────────────────────────────
 // The exchange exposes a plain HTTP GET /health on port 9880 + 1 = 9879
 // (keep TCP clean; health check on a separate port)
 
@@ -217,8 +210,6 @@ Deno.serve({ port: HEALTH_PORT }, (req) => {
   }
   return new Response("Not found", { status: 404 });
 });
-
-// ─── TCP listener ─────────────────────────────────────────────────────────────
 
 const listener = Deno.listen({ port: FIX_EXCHANGE_PORT });
 console.log(`[FIX Exchange] Listening on TCP port ${FIX_EXCHANGE_PORT} (health: ${HEALTH_PORT})`);

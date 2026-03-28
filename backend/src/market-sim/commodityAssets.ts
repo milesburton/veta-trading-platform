@@ -14,15 +14,12 @@ function commodityIsin(symbol: string): string {
 // exchange = CME/NYMEX/CBOT venues mapped to a single MIC per commodity.
 
 const _RAW_COMMODITY: Omit<AssetDef, "marketCapB" | "beta" | "dividendYield" | "peRatio" | "float" | "isin" | "assetClass">[] = [
-  // Energy
   { symbol: "CL1!",  initialPrice: 78.50,   volatility: 0.0220, sector: "Commodities/Energy",     dailyVolume: 450_000, exchange: "XNYM", currency: "USD", lotSize: 1 },
   { symbol: "NG1!",  initialPrice: 3.05,    volatility: 0.0350, sector: "Commodities/Energy",     dailyVolume: 200_000, exchange: "XNYM", currency: "USD", lotSize: 1 },
   { symbol: "RB1!",  initialPrice: 2.48,    volatility: 0.0250, sector: "Commodities/Energy",     dailyVolume: 80_000,  exchange: "XNYM", currency: "USD", lotSize: 1 },
-  // Metals
   { symbol: "GC1!",  initialPrice: 2420.00, volatility: 0.0100, sector: "Commodities/Metals",     dailyVolume: 200_000, exchange: "XCME", currency: "USD", lotSize: 1 },
   { symbol: "SI1!",  initialPrice: 31.20,   volatility: 0.0180, sector: "Commodities/Metals",     dailyVolume: 100_000, exchange: "XCME", currency: "USD", lotSize: 1 },
   { symbol: "HG1!",  initialPrice: 4.35,    volatility: 0.0160, sector: "Commodities/Metals",     dailyVolume: 60_000,  exchange: "XCME", currency: "USD", lotSize: 1 },
-  // Agriculture
   { symbol: "ZC1!",  initialPrice: 3.85,    volatility: 0.0180, sector: "Commodities/Agriculture", dailyVolume: 250_000, exchange: "XCBT", currency: "USD", lotSize: 1 },
   { symbol: "ZW1!",  initialPrice: 5.20,    volatility: 0.0200, sector: "Commodities/Agriculture", dailyVolume: 150_000, exchange: "XCBT", currency: "USD", lotSize: 1 },
   { symbol: "ZS1!",  initialPrice: 10.45,   volatility: 0.0160, sector: "Commodities/Agriculture", dailyVolume: 200_000, exchange: "XCBT", currency: "USD", lotSize: 1 },

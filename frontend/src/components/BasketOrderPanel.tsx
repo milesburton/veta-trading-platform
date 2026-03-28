@@ -6,10 +6,10 @@ import type { LimitParams, Trade } from "../types.ts";
 interface BasketLeg {
   id: string;
   symbol: string;
-  weight: number; // 0–100 %
+  weight: number;
   side: "BUY" | "SELL";
-  qty: number; // computed from weight × notional / price
-  price: number; // live mid
+  qty: number;
+  price: number;
   lotSize: number;
 }
 
@@ -36,7 +36,6 @@ export function BasketOrderPanel() {
   const feedback = useSignal<{ ok: boolean; msg: string } | null>(null);
   const searchInput = useSignal("");
 
-  // Build initial legs
   const initialLegs: BasketLeg[] = DEFAULT_SYMBOLS.map((sym, i) => {
     const asset = assets.find((a) => a.symbol === sym);
     const price = prices[sym] ?? 0;
@@ -54,7 +53,6 @@ export function BasketOrderPanel() {
 
   const legs = useSignal<BasketLeg[]>(initialLegs);
 
-  // Recompute quantities from weights + notional + live prices
   function recomputeQtys(currentLegs: BasketLeg[], targetNotional: number): BasketLeg[] {
     return currentLegs.map((leg) => {
       const price = prices[leg.symbol] ?? leg.price;
@@ -64,7 +62,6 @@ export function BasketOrderPanel() {
     });
   }
 
-  // Keep quantities in sync with price changes
   const targetNotional = Number(notional.value) || 0;
   const computedLegs = recomputeQtys(legs.value, targetNotional);
 
@@ -170,7 +167,6 @@ export function BasketOrderPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden" data-testid="basket-order-panel">
-      {/* Header */}
       <div className="px-3 py-2 border-b border-gray-800 flex items-center gap-3 flex-shrink-0">
         <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
           Basket Order
@@ -181,7 +177,6 @@ export function BasketOrderPanel() {
       </div>
 
       <div className="flex flex-col gap-2.5 p-3 overflow-auto flex-1">
-        {/* Target notional + duration row */}
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label htmlFor="basket-notional" className="block text-xs text-gray-500 mb-1">
@@ -217,7 +212,6 @@ export function BasketOrderPanel() {
           </div>
         </div>
 
-        {/* Symbol search */}
         <div className="relative">
           <label htmlFor="basket-search" className="block text-xs text-gray-500 mb-1">
             Add Symbol
@@ -255,7 +249,6 @@ export function BasketOrderPanel() {
           )}
         </div>
 
-        {/* Legs table */}
         {computedLegs.length > 0 && (
           <div className="rounded border border-gray-700/60 overflow-hidden">
             <table className="w-full text-[10px] border-collapse">
@@ -341,7 +334,6 @@ export function BasketOrderPanel() {
           </div>
         )}
 
-        {/* Weight summary */}
         {computedLegs.length > 0 && (
           <div className="flex items-center justify-between text-[10px]">
             <span
@@ -374,7 +366,6 @@ export function BasketOrderPanel() {
           </div>
         )}
 
-        {/* Submit */}
         <button
           type="button"
           disabled={!canSubmit}

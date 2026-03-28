@@ -42,7 +42,6 @@ const SERVICES_ALL: {
   alertOnDeployments?: string[];
   showOnDeployments?: string[];
 }[] = [
-  // ── Core order management ──────────────────────────────────────────────────
   {
     name: "Market Sim",
     url: `${import.meta.env.VITE_MARKET_HTTP_URL ?? `${_origin}/api/market-sim`}/health`,
@@ -75,7 +74,6 @@ const SERVICES_ALL: {
     description: "BFF — single WebSocket + HTTP entry point for the UI",
     port: 5011,
   },
-  // ── Algo engines ──────────────────────────────────────────────────────────
   {
     name: "Limit Algo",
     url: `${import.meta.env.VITE_LIMIT_URL ?? `${_origin}/api/limit-algo`}/health`,
@@ -148,7 +146,6 @@ const SERVICES_ALL: {
     description: "EMA crossover momentum — routes tranches on favourable price signals",
     port: 5025,
   },
-  // ── Data services ─────────────────────────────────────────────────────────
   {
     name: "Journal",
     url: `${_origin}/api/journal/health`,
@@ -173,7 +170,6 @@ const SERVICES_ALL: {
     description: "Alpha Vantage polling & per-symbol source overrides",
     port: 5015,
   },
-  // ── Infra ─────────────────────────────────────────────────────────────────
   {
     name: "User Service",
     url: `${_origin}/api/user-service/health`,
@@ -209,7 +205,6 @@ const SERVICES_ALL: {
     alertOnDeployments: ["fly"],
     showOnDeployments: ["fly"],
   },
-  // ── Observability ─────────────────────────────────────────────────────────
   {
     name: "Kafka Relay",
     url: `${_origin}/api/kafka-relay/health`,

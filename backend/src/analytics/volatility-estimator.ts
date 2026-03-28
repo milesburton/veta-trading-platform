@@ -26,8 +26,6 @@ interface VolCacheEntry {
 // Cache volatility estimates for 60 seconds to avoid hammering the journal
 const volCache = new Map<string, VolCacheEntry>();
 
-// ── Core computation ──────────────────────────────────────────────────────────
-
 interface VolResult {
   ewmaVol: number;
   rollingVol: number;
@@ -43,7 +41,6 @@ function computeVol(closes: number[], timestamps: number[]): VolResult {
 
   const n = logReturns.length;
 
-  // ── EWMA variance ────────────────────────────────────────────────────────
   // Seed with first squared return; iterate forward applying λ decay
   let ewmaVar = logReturns[0] * logReturns[0];
   const ewmaSeries: VolProfileSample[] = [];
@@ -54,15 +51,12 @@ function computeVol(closes: number[], timestamps: number[]): VolResult {
   }
   const ewmaVol = ewmaSeries[ewmaSeries.length - 1].vol;
 
-  // ── Rolling (sample) std-dev ─────────────────────────────────────────────
   const mean = logReturns.reduce((a, b) => a + b, 0) / n;
   const variance = logReturns.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1);
   const rollingVol = Math.min(5.0, Math.max(0.01, Math.sqrt(variance) * ANNUAL_FACTOR));
 
   return { ewmaVol, rollingVol, ewmaSeries };
 }
-
-// ── Fetch candles helper ──────────────────────────────────────────────────────
 
 async function fetchCandles(
   journalUrl: string,
@@ -77,8 +71,6 @@ async function fetchCandles(
     return null;
   }
 }
-
-// ── Public API ────────────────────────────────────────────────────────────────
 
 /**
  * Estimate annualised EWMA volatility for a symbol (scalar).

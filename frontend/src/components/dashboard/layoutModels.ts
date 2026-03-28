@@ -926,8 +926,6 @@ export function makeAdminModel(): IJsonModel {
   };
 }
 
-// ── Admin split workspaces ────────────────────────────────────────────────────
-
 export function makeMarketFeedsModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,

@@ -11,8 +11,6 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-// ── Batched write queue ────────────────────────────────────────────────────────
-
 interface ExecReport {
   execId: string; clOrdId: string; origClOrdId?: string;
   symbol: string; side: string; execType: string; ordStatus: string;
@@ -78,8 +76,6 @@ createConsumer("fix-archive", ["fix.execution"]).then((consumer) => {
     ]);
   });
 }).catch((err) => console.warn("[fix-archive] Cannot subscribe:", err.message));
-
-// ── HTTP API ───────────────────────────────────────────────────────────────────
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {

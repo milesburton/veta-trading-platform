@@ -78,17 +78,12 @@ function err(message: string, status = 400): Response {
   return json({ error: message }, status);
 }
 
-// ── Spot price resolution ─────────────────────────────────────────────────────
-
-/** Asset initial prices from market-sim — cached for the life of the process. */
 const assetPriceCache = new Map<string, number>();
 
 async function resolveSpot(symbol: string): Promise<number | null> {
-  // 1. Try journal (most recent traded price)
   const spot = await fetchSpotPrice(JOURNAL_URL, symbol);
   if (spot !== null) return spot;
 
-  // 2. Fallback to market-sim asset list (initialPrice)
   if (assetPriceCache.has(symbol)) return assetPriceCache.get(symbol)!;
   try {
     const res = await fetch(`${MARKET_SIM_URL}/assets`, { signal: AbortSignal.timeout(5_000) });
@@ -102,8 +97,6 @@ async function resolveSpot(symbol: string): Promise<number | null> {
   return null;
 }
 
-// ── Request handler ───────────────────────────────────────────────────────────
-
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
@@ -114,7 +107,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json({ service: "analytics", version: VERSION, status: "ok" });
   }
 
-  // ── POST /quote ─────────────────────────────────────────────────────────────
   if (path === "/quote" && req.method === "POST") {
     let body: OptionQuoteRequest;
     try {
@@ -149,7 +141,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(response);
   }
 
-  // ── POST /scenario ──────────────────────────────────────────────────────────
   if (path === "/scenario" && req.method === "POST") {
     let body: ScenarioRequest;
     try {
@@ -199,7 +190,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(response);
   }
 
-  // ── POST /recommend ─────────────────────────────────────────────────────────
   if (path === "/recommend" && req.method === "POST") {
     let body: RecommendationRequest;
     try {
@@ -243,7 +233,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(response);
   }
 
-  // ── GET /vol-profile/:symbol ─────────────────────────────────────────────────
   if (path.startsWith("/vol-profile/") && req.method === "GET") {
     const symbol = decodeURIComponent(path.slice("/vol-profile/".length));
     if (!symbol) return err("Missing symbol");
@@ -264,7 +253,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(response);
   }
 
-  // ── GET /greeks-surface/:symbol ──────────────────────────────────────────────
   if (path.startsWith("/greeks-surface/") && req.method === "GET") {
     const symbol = decodeURIComponent(path.slice("/greeks-surface/".length));
     if (!symbol) return err("Missing symbol");
@@ -278,7 +266,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const sigma = await estimateVol(JOURNAL_URL, symbol);
     const T = expirySecs / (365 * 86400);
 
-    // 25 strikes from 70% to 130% of spot
     const strikePoints: GreeksSurfacePoint[] = Array.from({ length: 25 }, (_, i) => {
       const K = spot * (0.70 + i * (0.60 / 24));
       const { price: callPrice, greeks } = blackScholes("call", spot, K, T, riskFreeRate, sigma);
@@ -304,7 +291,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(response);
   }
 
-  // ── POST /bond-price ──────────────────────────────────────────────────────────
   if (path === "/bond-price" && req.method === "POST") {
     let body: BondPriceRequest;
     try {
@@ -322,7 +308,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(response);
   }
 
-  // ── POST /yield-curve ─────────────────────────────────────────────────────────
   if (path === "/yield-curve" && req.method === "POST") {
     let body: YieldCurveRequest = {};
     try {
@@ -335,7 +320,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(response);
   }
 
-  // ── GET /price-fan/:symbol ────────────────────────────────────────────────────
   if (path.startsWith("/price-fan/") && req.method === "GET") {
     const symbol = decodeURIComponent(path.slice("/price-fan/".length));
     if (!symbol) return err("Missing symbol");
@@ -364,7 +348,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(response);
   }
 
-  // ── POST /spread-analysis ────────────────────────────────────────────────────
   if (path === "/spread-analysis" && req.method === "POST") {
     let body: SpreadAnalysisRequest;
     try {
@@ -379,7 +362,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(computeSpreadAnalysis(body));
   }
 
-  // ── POST /duration-ladder ─────────────────────────────────────────────────────
   if (path === "/duration-ladder" && req.method === "POST") {
     let body: { positions: BondPosition[] };
     try {
@@ -393,7 +375,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(computeDurationLadder(body.positions));
   }
 
-  // ── GET /vol-surface/:symbol ──────────────────────────────────────────────────
   if (path.startsWith("/vol-surface/") && req.method === "GET") {
     const symbol = decodeURIComponent(path.slice("/vol-surface/".length));
     if (!symbol) return err("Missing symbol");

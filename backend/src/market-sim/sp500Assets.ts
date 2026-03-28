@@ -5,7 +5,6 @@ export interface AssetDef {
   sector: string;
   /** Average daily volume in shares (realistic ADV for liquidity modelling). */
   dailyVolume: number;
-  // ── Enriched market reference data ──────────────────────────────────────────
   /** Market capitalisation in billions USD (approximated from price × float shares). */
   marketCapB: number;
   /** Beta vs S&P 500 (1.0 = market, >1 more volatile, <1 less volatile). */
@@ -32,7 +31,6 @@ export interface AssetDef {
 type RawAsset = Omit<AssetDef, "marketCapB" | "beta" | "dividendYield" | "peRatio" | "float" | "exchange" | "currency" | "isin" | "lotSize" | "assetClass">;
 
 const _RAW_ASSETS: RawAsset[] = [
-  // dailyVolume = realistic ADV (average daily shares traded)
   { symbol: "AAPL", initialPrice: 189.30, volatility: 0.018, sector: "Technology", dailyVolume: 55_000_000 },
   { symbol: "MSFT", initialPrice: 415.26, volatility: 0.016, sector: "Technology", dailyVolume: 20_000_000 },
   { symbol: "AMZN", initialPrice: 185.07, volatility: 0.021, sector: "Consumer Discretionary", dailyVolume: 35_000_000 },
@@ -290,7 +288,6 @@ const _RAW_ASSETS: RawAsset[] = [
   { symbol: "TQQQ", initialPrice: 52.40, volatility: 0.055, sector: "ETF", dailyVolume: 60_000_000 },
 ];
 
-// ─── Enrichment ────────────────────────────────────────────────────────────────
 // Curated metadata for the most-traded names.  Remaining assets are filled in
 // algorithmically from their sector/volatility profile so every field is present.
 
@@ -305,7 +302,6 @@ interface RawMeta {
 }
 
 const CURATED_META: Record<string, RawMeta> = {
-  // ── Mega-cap Technology (XNAS) ───────────────────────────────────────────────
   AAPL:  { marketCapB: 2950, beta: 1.24, dividendYield: 0.0052, peRatio: 30.2, float: 0.9985, exchange: "XNAS" },
   MSFT:  { marketCapB: 3100, beta: 0.90, dividendYield: 0.0072, peRatio: 37.4, float: 0.9978, exchange: "XNAS" },
   NVDA:  { marketCapB: 2150, beta: 1.68, dividendYield: 0.0004, peRatio: 62.8, float: 0.9991, exchange: "XNAS" },
@@ -323,7 +319,6 @@ const CURATED_META: Record<string, RawMeta> = {
   INTU:  { marketCapB:  180, beta: 1.17, dividendYield: 0.0065, peRatio: 58.3, float: 0.9982, exchange: "XNAS" },
   NOW:   { marketCapB:  170, beta: 1.25, dividendYield: 0.0000, peRatio: 72.4, float: 0.9985, exchange: "XNAS" },
   PANW:  { marketCapB:  108, beta: 1.33, dividendYield: 0.0000, peRatio: 60.8, float: 0.9980, exchange: "XNAS" },
-  // ── Financials (XNYS / XNAS) ────────────────────────────────────────────────
   JPM:   { marketCapB:  580, beta: 1.10, dividendYield: 0.0230, peRatio: 12.2, float: 0.9990, exchange: "XNYS" },
   BAC:   { marketCapB:  305, beta: 1.40, dividendYield: 0.0260, peRatio: 13.0, float: 0.9991, exchange: "XNYS" },
   WFC:   { marketCapB:  215, beta: 1.35, dividendYield: 0.0240, peRatio: 11.5, float: 0.9988, exchange: "XNYS" },
@@ -337,7 +332,6 @@ const CURATED_META: Record<string, RawMeta> = {
   AXP:   { marketCapB:  175, beta: 1.12, dividendYield: 0.0115, peRatio: 19.2, float: 0.9985, exchange: "XNYS" },
   PYPL:  { marketCapB:   70, beta: 1.38, dividendYield: 0.0000, peRatio: 18.6, float: 0.9985, exchange: "XNAS" },
   COIN:  { marketCapB:   48, beta: 2.65, dividendYield: 0.0000, peRatio:  0.0, float: 0.4820, exchange: "XNAS" },
-  // ── Health Care ─────────────────────────────────────────────────────────────
   LLY:   { marketCapB:  750, beta: 0.42, dividendYield: 0.0072, peRatio: 62.1, float: 0.9988, exchange: "XNYS" },
   UNH:   { marketCapB:  485, beta: 0.55, dividendYield: 0.0155, peRatio: 22.4, float: 0.9990, exchange: "XNYS" },
   JNJ:   { marketCapB:  365, beta: 0.55, dividendYield: 0.0310, peRatio: 16.8, float: 0.9990, exchange: "XNYS" },
@@ -347,31 +341,26 @@ const CURATED_META: Record<string, RawMeta> = {
   TMO:   { marketCapB:  210, beta: 0.62, dividendYield: 0.0032, peRatio: 30.8, float: 0.9988, exchange: "XNYS" },
   PFE:   { marketCapB:  160, beta: 0.60, dividendYield: 0.0580, peRatio:  0.0, float: 0.9992, exchange: "XNYS" },
   MRNA:  { marketCapB:   38, beta: 1.45, dividendYield: 0.0000, peRatio:  0.0, float: 0.9550, exchange: "XNAS" },
-  // ── Consumer ────────────────────────────────────────────────────────────────
   HD:    { marketCapB:  375, beta: 1.05, dividendYield: 0.0235, peRatio: 24.2, float: 0.9990, exchange: "XNYS" },
   MCD:   { marketCapB:  210, beta: 0.72, dividendYield: 0.0248, peRatio: 24.5, float: 0.9992, exchange: "XNYS" },
   COST:  { marketCapB:  345, beta: 0.78, dividendYield: 0.0055, peRatio: 52.8, float: 0.9988, exchange: "XNAS" },
   WMT:   { marketCapB:  520, beta: 0.52, dividendYield: 0.0125, peRatio: 32.8, float: 0.9972, exchange: "XNYS" },
   NKE:   { marketCapB:  142, beta: 1.02, dividendYield: 0.0158, peRatio: 22.6, float: 0.9965, exchange: "XNYS" },
-  // ── Energy ──────────────────────────────────────────────────────────────────
   XOM:   { marketCapB:  458, beta: 0.98, dividendYield: 0.0350, peRatio: 14.2, float: 0.9992, exchange: "XNYS" },
   CVX:   { marketCapB:  295, beta: 0.94, dividendYield: 0.0395, peRatio: 14.8, float: 0.9990, exchange: "XNYS" },
   COP:   { marketCapB:  148, beta: 1.12, dividendYield: 0.0180, peRatio: 13.8, float: 0.9988, exchange: "XNYS" },
   OXY:   { marketCapB:   55, beta: 1.85, dividendYield: 0.0126, peRatio: 12.5, float: 0.9280, exchange: "XNYS" },
-  // ── Industrials ──────────────────────────────────────────────────────────────
   BA:    { marketCapB:  115, beta: 1.45, dividendYield: 0.0000, peRatio:  0.0, float: 0.9990, exchange: "XNYS" },
   CAT:   { marketCapB:  178, beta: 1.18, dividendYield: 0.0175, peRatio: 16.4, float: 0.9990, exchange: "XNYS" },
   HON:   { marketCapB:  130, beta: 0.95, dividendYield: 0.0218, peRatio: 25.2, float: 0.9990, exchange: "XNAS" },
   UPS:   { marketCapB:  124, beta: 1.08, dividendYield: 0.0460, peRatio: 18.5, float: 0.9988, exchange: "XNYS" },
   FDX:   { marketCapB:   62, beta: 1.28, dividendYield: 0.0198, peRatio: 15.4, float: 0.9988, exchange: "XNYS" },
   GE:    { marketCapB:  161, beta: 1.30, dividendYield: 0.0025, peRatio: 32.4, float: 0.9992, exchange: "XNYS" },
-  // ── Communication Services ──────────────────────────────────────────────────
   T:     { marketCapB:  125, beta: 0.62, dividendYield: 0.0640, peRatio: 10.4, float: 0.9992, exchange: "XNYS" },
   VZ:    { marketCapB:  167, beta: 0.40, dividendYield: 0.0660, peRatio: 10.8, float: 0.9992, exchange: "XNYS" },
   CMCSA: { marketCapB:  172, beta: 1.05, dividendYield: 0.0308, peRatio: 11.2, float: 0.9985, exchange: "XNAS" },
   DIS:   { marketCapB:  198, beta: 1.25, dividendYield: 0.0000, peRatio: 42.5, float: 0.9988, exchange: "XNYS" },
   NFLX:  { marketCapB:  275, beta: 1.38, dividendYield: 0.0000, peRatio: 48.2, float: 0.9985, exchange: "XNAS" },
-  // ── ETFs ────────────────────────────────────────────────────────────────────
   SPY:   { marketCapB:  505, beta: 1.00, dividendYield: 0.0132, peRatio:  0.0, float: 1.0000, exchange: "ARCX" },
   QQQ:   { marketCapB:  225, beta: 1.10, dividendYield: 0.0058, peRatio:  0.0, float: 1.0000, exchange: "XNAS" },
   IWM:   { marketCapB:   72, beta: 1.15, dividendYield: 0.0150, peRatio:  0.0, float: 1.0000, exchange: "ARCX" },
@@ -380,12 +369,10 @@ const CURATED_META: Record<string, RawMeta> = {
   VXX:   { marketCapB:    1, beta: 4.50, dividendYield: 0.0000, peRatio:  0.0, float: 1.0000, exchange: "ARCX" },
   TQQQ:  { marketCapB:   22, beta: 3.50, dividendYield: 0.0000, peRatio:  0.0, float: 1.0000, exchange: "XNAS" },
   SQQQ:  { marketCapB:    5, beta:-3.30, dividendYield: 0.0000, peRatio:  0.0, float: 1.0000, exchange: "XNAS" },
-  // ── Consumer Staples ────────────────────────────────────────────────────────
   PG:    { marketCapB:  385, beta: 0.55, dividendYield: 0.0240, peRatio: 27.5, float: 0.9982, exchange: "XNYS" },
   KO:    { marketCapB:  260, beta: 0.55, dividendYield: 0.0305, peRatio: 22.8, float: 0.9992, exchange: "XNYS" },
   PEP:   { marketCapB:  238, beta: 0.58, dividendYield: 0.0295, peRatio: 23.5, float: 0.9990, exchange: "XNAS" },
   PM:    { marketCapB:  150, beta: 0.80, dividendYield: 0.0532, peRatio: 18.4, float: 0.9992, exchange: "XNYS" },
-  // ── Utilities ───────────────────────────────────────────────────────────────
   NEE:   { marketCapB:  126, beta: 0.50, dividendYield: 0.0295, peRatio: 20.8, float: 0.9990, exchange: "XNYS" },
   DUK:   { marketCapB:   75, beta: 0.42, dividendYield: 0.0385, peRatio: 19.5, float: 0.9992, exchange: "XNYS" },
   SO:    { marketCapB:   70, beta: 0.48, dividendYield: 0.0370, peRatio: 18.8, float: 0.9990, exchange: "XNYS" },
@@ -494,7 +481,6 @@ function enrichAsset(raw: Omit<AssetDef, "marketCapB" | "beta" | "dividendYield"
   };
 }
 
-// Re-export the array with all fields populated
 export const SP500_ASSETS: AssetDef[] = _RAW_ASSETS.map(enrichAsset);
 
 export const ASSET_MAP = new Map<string, AssetDef>(SP500_ASSETS.map((a) => [a.symbol, a]));

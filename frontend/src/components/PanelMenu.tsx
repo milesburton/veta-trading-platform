@@ -75,7 +75,6 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
 
   const isActive = isDialog;
 
-  // Calculate menu position from button
   const menuStyle = (): React.CSSProperties => {
     if (!btnRef.current) return { top: 0, right: 0 };
     const r = btnRef.current.getBoundingClientRect();

@@ -50,8 +50,6 @@ export const polygonProvider: ProviderDef = {
   },
 };
 
-// ── Polygon WebSocket streaming ───────────────────────────────────────────────
-
 type OnQuote = (quote: CachedQuote) => void;
 
 interface PolygonMsg {

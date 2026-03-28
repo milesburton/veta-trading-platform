@@ -73,8 +73,6 @@ import {
 
 export { DashboardContext, useDashboard };
 
-// ── ChannelPicker ────────────────────────────────────────────────────────────
-
 interface ChannelPickerProps {
   dir: "out" | "in";
   current: ChannelNumber | null;
@@ -224,8 +222,6 @@ function ChannelPicker({
   );
 }
 
-// ── tabChannelButtons ─────────────────────────────────────────────────────────
-
 interface TabChannelButtonsProps {
   node: TabNode;
   allItems: LayoutItem[];
@@ -287,8 +283,6 @@ function tabChannelButtons({
   ];
 }
 
-// ── patchTabConfig ────────────────────────────────────────────────────────────
-
 type AnyJsonNode = IJsonTabNode | IJsonModel["layout"] | { children?: AnyJsonNode[] };
 
 function patchTabConfig(
@@ -312,8 +306,6 @@ function patchTabConfig(
   }
   return false;
 }
-
-// ── PanelDialog ───────────────────────────────────────────────────────────────
 
 const DIALOG_PANEL_MAP: Record<string, React.ComponentType<{ instanceId: string }>> = {
   "market-ladder": MarketLadder,
@@ -408,8 +400,6 @@ function PanelDialog({
   );
 }
 
-// ── CandleChartPanel ──────────────────────────────────────────────────────────
-
 function CandleChartPanel({ incoming }: { incoming: ChannelNumber | null }) {
   const legacySelectedAsset = useAppSelector((s) => s.ui.selectedAsset);
   const channelsData = useAppSelector((s) => s.channels.data);
@@ -452,8 +442,6 @@ function CandleChartPanel({ incoming }: { incoming: ChannelNumber | null }) {
   );
 }
 
-// ── EmptyWorkspace ────────────────────────────────────────────────────────────
-
 const ADMIN_ONLY_TEMPLATE_IDS = new Set(["admin"]);
 
 function EmptyWorkspace() {
@@ -495,8 +483,6 @@ function EmptyWorkspace() {
   );
 }
 
-// ── DashboardLayout ───────────────────────────────────────────────────────────
-
 export function DashboardLayout() {
   const legacySelectedAsset = useAppSelector((s) => s.ui.selectedAsset);
   const channelsData = useAppSelector((s) => s.channels.data);
@@ -507,7 +493,6 @@ export function DashboardLayout() {
 
   const tabCtxMenu = useSignal<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
 
-  // ── Drag-to-new-window ─────────────────────────────────────────────────────
   const draggedTabIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -574,7 +559,6 @@ export function DashboardLayout() {
       document.removeEventListener("mouseleave", onMouseLeave);
     };
   }, [model]);
-  // ── End drag-to-new-window ─────────────────────────────────────────────────
 
   const handleChannelChange = useCallback(
     (instanceId: string, dir: "out" | "in", ch: ChannelNumber | null) => {
@@ -894,13 +878,7 @@ export function DashboardLayout() {
         </button>
       );
     },
-    [
-      dispatch,
-      storageKey, // Remove the tab from the host layout so it leaves no gap.
-      // The panel lives entirely in the new window; the user re-adds it
-      // from the component picker when they want it back on this screen.
-      model.doAction,
-    ]
+    [dispatch, storageKey, model.doAction]
   );
 
   const onContextMenu = useCallback(

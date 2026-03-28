@@ -16,8 +16,6 @@
  * Moneynesses: 0.70, 0.775, 0.85, 0.925, 1.00, 1.075, 1.15, 1.225, 1.30
  */
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 export interface VolSurfacePoint {
   expirySecs: number;
   expiryLabel: string;   // "7d", "14d", "30d", "60d", "90d"
@@ -36,8 +34,6 @@ export interface VolSurfaceResponse {
   computedAt: number;
 }
 
-// ── Surface parameters ────────────────────────────────────────────────────────
-
 const EXPIRY_DAYS = [7, 14, 30, 60, 90];
 const EXPIRY_SECS = EXPIRY_DAYS.map((d) => d * 86_400);
 const EXPIRY_LABELS = ["7d", "14d", "30d", "60d", "90d"];
@@ -47,8 +43,6 @@ const MONEYNESSES = [0.70, 0.775, 0.85, 0.925, 1.00, 1.075, 1.15, 1.225, 1.30];
 const SKEW = -0.10;
 // Smile curvature: both deep ITM and OTM trade at higher IV than ATM
 const CURVATURE = 0.05;
-
-// ── Builder ───────────────────────────────────────────────────────────────────
 
 /**
  * Build the implied volatility surface for a given symbol and ATM vol.
