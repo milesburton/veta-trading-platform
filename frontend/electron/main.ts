@@ -5,7 +5,6 @@ import * as path from "path";
 const isDev = !app.isPackaged;
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 
-
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 

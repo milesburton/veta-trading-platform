@@ -24,9 +24,9 @@ if status is-interactive
   echo "    svc-logs <name>        tail logs for a service"
   echo ""
   echo "  Electron (desktop app)" | lolcat
-  echo "    cd /workspaces/virtual-equities-trading-application/electron"
-  echo "    npm install && npm start"
-  echo "    (requires the web services to be running first)"
+  echo "    cd /workspaces/virtual-equities-trading-application/frontend"
+  echo "    npm run electron:dev"
+  echo "    (requires start-trading to be running first)"
   echo ""
   echo "  Service status" | lolcat
   deno run --allow-run --allow-env /workspaces/virtual-equities-trading-application/scripts/status.ts --once 2>/dev/null; or true
