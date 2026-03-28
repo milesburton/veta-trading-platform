@@ -128,6 +128,8 @@ services:
       -c maintenance_work_mem=32MB
       -c max_connections=50
     mem_limit: 384m
+    ports:
+      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:

@@ -17,7 +17,6 @@ const GROUPS: Array<{ label: string; idle: boolean; programs: string[] }> = [
     label: "Core",
     idle: false,
     programs: [
-      "postgres",
       "redpanda",
       "market-sim",
       "journal",
