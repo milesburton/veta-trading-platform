@@ -120,13 +120,25 @@ export const marketSlice = createSlice({
     },
     tickReceived(
       state,
-      action: PayloadAction<{ prices: MarketPrices; volumes?: Record<string, number>; ts: number }>
+      action: PayloadAction<{
+        prices: MarketPrices;
+        openPrices?: Record<string, number>;
+        volumes?: Record<string, number>;
+        ts: number;
+      }>
     ) {
-      const { prices, volumes = {}, ts } = action.payload;
+      const { prices, openPrices, volumes = {}, ts } = action.payload;
       state.prices = prices;
       for (const asset of Object.keys(prices)) {
         const price = prices[asset];
-        if (state.sessionOpen[asset] === undefined) state.sessionOpen[asset] = price;
+        // Prefer server-sent open prices (set once after pre-warm) over the
+        // "first tick seen" fallback so all clients share the same baseline.
+        const open = openPrices?.[asset];
+        if (open !== undefined) {
+          state.sessionOpen[asset] = open;
+        } else if (state.sessionOpen[asset] === undefined) {
+          state.sessionOpen[asset] = price;
+        }
         const tickVolume = (volumes[asset] ?? 0) / TICKS_PER_MINUTE;
 
         const hist = state.priceHistory[asset] ?? [];

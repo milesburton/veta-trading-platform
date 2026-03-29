@@ -40,6 +40,26 @@ export const marketData: Record<string, number> = Object.fromEntries(
   ALL_SEEDED_ASSETS.map((a) => [a.symbol, a.initialPrice]),
 );
 
+/**
+ * Session open prices — set once after seedFromJournal() + prewarmPrices()
+ * before the first live broadcast.  The frontend uses these as the baseline
+ * for intraday % change so that clients connecting at any time see the same
+ * day's move, not a near-zero "just started" delta.
+ */
+export const openPrices: Record<string, number> = Object.fromEntries(
+  ALL_SEEDED_ASSETS.map((a) => [a.symbol, a.initialPrice]),
+);
+
+/**
+ * Snapshot the current marketData into openPrices.  Call once after
+ * seedFromJournal() + prewarmPrices() and before the first live tick.
+ */
+export function snapshotOpenPrices(): void {
+  for (const sym of Object.keys(marketData)) {
+    openPrices[sym] = marketData[sym];
+  }
+}
+
 /** Anchor prices used for mean reversion (updated when seeded from candle-store). */
 const anchorPrices: Record<string, number> = Object.fromEntries(
   ALL_SEEDED_ASSETS.map((a) => [a.symbol, a.initialPrice]),
@@ -94,6 +114,25 @@ function randn(): number {
  */
 export function advanceRegime() {
   if (--regimeCountdown <= 0) refreshRegime();
+}
+
+/**
+ * Pre-warm the price engine by running `ticks` silent GBM steps across all
+ * assets.  Call once at startup (before the first live broadcast) so that
+ * prices have drifted a realistic intraday distance from their initial values,
+ * giving the heatmap meaningful colour variance from the first tick clients see.
+ *
+ * 93 600 ticks = 1 full trading day.  Defaulting to 28 080 (≈ 1.8 trading
+ * hours) produces ±0.5–3 % intraday moves for typical large-cap volatilities.
+ */
+export function prewarmPrices(ticks = 28_080): void {
+  for (let i = 0; i < ticks; i++) {
+    advanceRegime();
+    refreshSectorShocks();
+    for (const asset of Object.keys(marketData)) {
+      generatePrice(asset);
+    }
+  }
 }
 
 /**

@@ -1,9 +1,11 @@
 import type { IJsonModel } from "flexlayout-react";
 import { Model } from "flexlayout-react";
 import type React from "react";
+import { useEffect } from "react";
 import type { ChannelContextValue } from "../contexts/ChannelContext.tsx";
 import { ChannelContext, useChannelContext } from "../contexts/ChannelContext.tsx";
-import { useAppSelector } from "../store/hooks.ts";
+import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+import { saveOrderTicketWindowSize } from "../store/uiSlice.ts";
 import { AdminPanel } from "./AdminPanel.tsx";
 import { AlgoMonitor } from "./AlgoMonitor.tsx";
 import { AnalysisPanel } from "./AnalysisPanel.tsx";
@@ -129,7 +131,27 @@ export function PopOutHost({
   layoutKey: string;
 }) {
   const theme = useAppSelector((s) => s.theme.theme);
+  const dispatch = useAppDispatch();
   const PanelComponent = PANEL_MAP[panelType];
+
+  useEffect(() => {
+    if (panelType !== "order-ticket") return;
+    let timer: ReturnType<typeof setTimeout>;
+    function onResize() {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        // biome-ignore lint/suspicious/noExplicitAny: saveOrderTicketWindowSize is AsyncThunk; typed dispatch unavailable here
+        (dispatch as any)(
+          saveOrderTicketWindowSize({ w: window.outerWidth, h: window.outerHeight })
+        );
+      }, 300);
+    }
+    window.addEventListener("resize", onResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [panelType, dispatch]);
   if (!PanelComponent) {
     return (
       <div

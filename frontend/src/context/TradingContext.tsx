@@ -9,12 +9,13 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import {
   hideShortcuts,
-  openOrderTicket,
+  selectOrderTicketWindowSize,
   setActiveSide,
   setActiveStrategy,
   toggleShortcuts,
 } from "../store/uiSlice.ts";
 import type { Strategy } from "../types.ts";
+import { openOrderTicketWindow } from "../utils/orderTicketWindow.ts";
 
 interface TradingContextValue {
   focusTicket: () => void;
@@ -30,6 +31,7 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
   const ticketRef = useRef<HTMLElement | null>(null);
   const dispatch = useAppDispatch();
   const showShortcuts = useAppSelector((s) => s.ui.showShortcuts);
+  const orderTicketWindowSize = useAppSelector(selectOrderTicketWindowSize);
 
   const focusTicket = useCallback(() => {
     ticketRef.current?.focus();
@@ -40,8 +42,8 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const openTicket = useCallback(() => {
-    dispatch(openOrderTicket());
-  }, [dispatch]);
+    openOrderTicketWindow(orderTicketWindowSize);
+  }, [orderTicketWindowSize]);
 
   const activeStrategy = useAppSelector((s) => s.ui.activeStrategy);
 

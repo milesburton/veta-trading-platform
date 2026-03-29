@@ -9,9 +9,10 @@ import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { DEPLOYMENT, SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
 import type { Theme } from "../store/themeSlice.ts";
 import { saveTheme, setTheme } from "../store/themeSlice.ts";
-import { openOrderTicket } from "../store/uiSlice.ts";
+import { selectOrderTicketWindowSize } from "../store/uiSlice.ts";
 import { useDeleteSessionMutation } from "../store/userApi.ts";
 import type { ServiceHealth } from "../types.ts";
+import { openOrderTicketWindow } from "../utils/orderTicketWindow.ts";
 import { AlertDrawer } from "./AlertDrawer.tsx";
 import { ComponentPicker } from "./ComponentPicker.tsx";
 import { useDashboard } from "./dashboard/DashboardContext.tsx";
@@ -352,6 +353,7 @@ function DataFreshness() {
 export function AppHeader() {
   const updateAvailable = useAppSelector((s) => s.ui.updateAvailable);
   const user = useAppSelector((s) => s.auth.user);
+  const orderTicketWindowSize = useAppSelector(selectOrderTicketWindowSize);
   const services = useAllServiceHealth();
   const time = useSignal(new Date().toLocaleTimeString());
   const dispatch = useAppDispatch();
@@ -399,7 +401,7 @@ export function AppHeader() {
             <button
               type="button"
               data-testid="new-order-btn"
-              onClick={() => dispatch(openOrderTicket())}
+              onClick={() => openOrderTicketWindow(orderTicketWindowSize)}
               className="px-3 py-1 text-[11px] font-semibold rounded bg-emerald-700 hover:bg-emerald-600 text-white transition-colors uppercase tracking-wide"
             >
               + New Order

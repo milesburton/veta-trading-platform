@@ -20,8 +20,9 @@ function pctToColor(pct: number): string {
 }
 
 function tileTextColor(pct: number): string {
-  if (pct >= 0.25 && pct < 1) return COLOR.HEAT_TEXT_LIGHT_UP;
-  if (pct > -0.25 && pct < 0) return COLOR.HEAT_TEXT_LIGHT_DOWN;
+  // Faint tiles are dark olive/dark maroon — need light-coloured text for legibility.
+  if (pct > 0 && pct < 0.25) return COLOR.HEAT_TEXT_LIGHT_UP;
+  if (pct < 0 && pct > -0.25) return COLOR.HEAT_TEXT_LIGHT_DOWN;
   return COLOR.HEAT_TEXT_DEFAULT;
 }
 

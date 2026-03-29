@@ -1,5 +1,5 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { advanceRegime, generatePrice, marketData, seedPrice, refreshSectorShocks } from "./priceEngine.ts";
+import { advanceRegime, generatePrice, marketData, openPrices, seedPrice, refreshSectorShocks, prewarmPrices, snapshotOpenPrices } from "./priceEngine.ts";
 import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
 import { FX_ASSETS, FX_ASSET_MAP } from "./fxAssets.ts";
 import { COMMODITY_ASSETS, COMMODITY_ASSET_MAP } from "./commodityAssets.ts";
@@ -93,6 +93,9 @@ async function seedFromJournal(): Promise<void> {
 }
 
 await seedFromJournal();
+prewarmPrices();
+snapshotOpenPrices();
+console.log("[market-sim] Price engine pre-warmed — intraday moves seeded");
 
 let marketMinute = 0;
 let tickCount = 0;
@@ -196,7 +199,7 @@ setInterval(() => {
   const volumes = computeTickVolumes(marketMinute);
   const orderBook = computeOrderBook(marketData, volumes);
   const venueBooks = computeVenueBooks(marketData);
-  const tick = { prices: { ...marketData }, volumes, marketMinute, orderBook, venueBooks };
+  const tick = { prices: { ...marketData }, openPrices: { ...openPrices }, volumes, marketMinute, orderBook, venueBooks };
   const msg = JSON.stringify({ event: "marketUpdate", data: tick });
 
   for (const socket of clients) {
@@ -205,7 +208,7 @@ setInterval(() => {
 
   // Publish to Redpanda without venueBooks (too large for default message limits;
   // algo services consume venue data via the direct WebSocket connection instead)
-  producer?.send("market.ticks", { prices: tick.prices, volumes: tick.volumes, marketMinute: tick.marketMinute, orderBook: tick.orderBook }).catch(() => {});
+  producer?.send("market.ticks", { prices: tick.prices, openPrices: tick.openPrices, volumes: tick.volumes, marketMinute: tick.marketMinute, orderBook: tick.orderBook }).catch(() => {});
 }, 250);
 
 console.log(`Market Simulator running on ws://localhost:${PORT}`);

@@ -3,10 +3,11 @@ import { useEffect, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useTradingContext } from "../context/TradingContext.tsx";
 import { BOND_UNIVERSE } from "../data/bondUniverse.ts";
+import type { TicketContext } from "../domain/ticket/ticket-types.ts";
+import { useTicketResolution } from "../domain/ticket/useTicketResolution.ts";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useGetBondPriceMutation, useGetQuoteMutation } from "../store/analyticsApi.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { isOrderBlocked } from "../store/killSwitchSlice.ts";
 import { submitOrderThunk } from "../store/ordersSlice.ts";
 import { setActiveSide, setActiveStrategy } from "../store/uiSlice.ts";
 import type { BondPriceResponse, OptionQuoteResponse } from "../types/analytics.ts";
@@ -381,47 +382,55 @@ export function OrderTicket() {
   const isOptions = instrumentType.value === "option";
   const isBond = instrumentType.value === "bond";
 
-  const limitWarnings: string[] = [];
-  if (!isOptions && !isBond) {
-    if (qty > 0 && lotSize > 1 && qty % lotSize !== 0) {
-      limitWarnings.push(
-        `Quantity must be a multiple of the lot size (${lotSize}). Nearest: ${Math.round(qty / lotSize) * lotSize}`
-      );
-    }
-    if (qty > 0 && limits.max_order_qty > 0 && qty > limits.max_order_qty) {
-      limitWarnings.push(
-        `Quantity ${qty.toLocaleString()} exceeds your limit of ${limits.max_order_qty.toLocaleString()} shares`
-      );
-    }
-    if (qty > 0 && lx > 0) {
-      const notional = qty * lx;
-      if (notional > limits.max_daily_notional) {
-        limitWarnings.push(
-          `Notional $${notional.toLocaleString(undefined, { maximumFractionDigits: 0 })} exceeds your daily limit of $${limits.max_daily_notional.toLocaleString()}`
-        );
-      }
-    }
-    if (!limits.allowed_strategies.includes(activeStrategy)) {
-      limitWarnings.push(`Strategy ${activeStrategy} is not permitted for your account`);
-    }
-    if (
-      isOrderBlocked(blocks, { asset: selectedAsset?.symbol, strategy: activeStrategy, userId })
-    ) {
-      limitWarnings.push("⛔ Kill switch active — this order is currently blocked");
-    }
-  }
-
   const optionStrikeNum = Number(optionStrike.value);
   const selectedBondDef = BOND_UNIVERSE.find((b) => b.symbol === bondSymbol.value);
-  const isValid = isOptions
-    ? qty > 0 && optionStrikeNum > 0 && !!optionQuote.value && !quoteFetching.value
-    : isBond
-      ? qty > 0 && !!bondQuote.value && !bondFetching.value && !!selectedBondDef
-      : qty > 0 &&
-        lx > 0 &&
-        Number(expiresAt.value) > 0 &&
-        selectedAsset !== undefined &&
-        limitWarnings.length === 0;
+
+  // --- Rule engine: build context and resolve ticket state ---
+  const ticketCtx: TicketContext = {
+    userId,
+    userRole,
+    limits,
+    killBlocks: blocks,
+    instrument: {
+      instrumentType: instrumentType.value,
+      symbol: selectedAsset?.symbol ?? "",
+      lotSize,
+      currentPrice,
+      orderBookMid: undefined, // OrderPreview handles its own book lookup
+    },
+    draft: {
+      side: activeSide,
+      quantity: qty,
+      limitPrice: lx,
+      strategy: activeStrategy,
+      expiresAtSecs: Number(expiresAt.value),
+      tif: tif.value,
+    },
+    option: {
+      optionType: optionType.value,
+      strike: optionStrikeNum,
+      expirySecs: Number(optionExpiry.value),
+      hasQuote: !!optionQuote.value,
+      isFetching: quoteFetching.value,
+    },
+    bond: {
+      symbol: bondSymbol.value,
+      yieldPct: Number(bondYield.value),
+      hasQuote: !!bondQuote.value,
+      isFetching: bondFetching.value,
+      hasBondDef: !!selectedBondDef,
+    },
+    dirtyFields: new Set(),
+  };
+
+  const resolution = useTicketResolution(ticketCtx);
+
+  // Compatibility: map resolution back to the shapes the rest of the component uses
+  const limitWarnings = [
+    ...resolution.warnings.map((d) => d.message),
+    ...resolution.errors.map((d) => d.message),
+  ];
+  const isValid = resolution.canSubmit;
 
   function buildAlgoParams(): AlgoParams {
     if (activeStrategy === "TWAP") {
@@ -613,7 +622,7 @@ export function OrderTicket() {
 
   const symbol = selectedAsset?.symbol ?? "";
 
-  if (userRole === "admin" || userRole === "compliance") {
+  if (resolution.roleLocked) {
     const isCompliance = userRole === "compliance";
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
@@ -623,11 +632,7 @@ export function OrderTicket() {
         <p className="text-sm font-semibold text-gray-300">
           {isCompliance ? "Compliance account" : "Admin account"}
         </p>
-        <p className="text-xs text-gray-500 leading-relaxed">
-          {isCompliance
-            ? "Compliance officers have read-only access. Order submission is disabled."
-            : "Administrators cannot submit orders. This panel is reserved for trader accounts."}
-        </p>
+        <p className="text-xs text-gray-500 leading-relaxed">{resolution.roleLockedMessage}</p>
       </div>
     );
   }

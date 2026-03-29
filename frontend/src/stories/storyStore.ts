@@ -49,7 +49,7 @@ export type StoryPreloadedState = {
     selectedAsset?: string | null;
     updateAvailable?: boolean;
     optionPrefill?: null;
-    orderTicketOpen?: boolean;
+    orderTicketWindowSize?: { w: number; h: number };
   };
   killSwitch?: { blocks?: import("../store/killSwitchSlice.ts").KillBlock[] };
 };

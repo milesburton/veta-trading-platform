@@ -50,7 +50,7 @@ import {
   orderPatched,
   setGatewayWs,
 } from "../ordersSlice.ts";
-import { setSelectedAsset } from "../uiSlice.ts";
+import { loadUiPrefs, setSelectedAsset } from "../uiSlice.ts";
 
 const _origin = typeof window !== "undefined" ? window.location.origin : "";
 const _wsOrigin = _origin.replace(/^http/, "ws");
@@ -63,6 +63,7 @@ const ALGO_HEARTBEAT_TIMEOUT_MS = 10_000;
 
 interface MarketUpdateData {
   prices: Record<string, number>;
+  openPrices?: Record<string, number>;
   volumes: Record<string, number>;
   orderBook?: Record<string, OrderBookSnapshot>;
 }
@@ -106,6 +107,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   const algoLastSeen: Record<string, number> = {};
 
   let pendingPrices: Record<string, number> | null = null;
+  let pendingOpenPrices: Record<string, number> | null = null;
   let pendingVolumes: Record<string, number> = {};
   let pendingOrderBook: Record<string, OrderBookSnapshot> | null = null;
   let tickTimer: ReturnType<typeof setTimeout> | null = null;
@@ -116,18 +118,21 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     storeAPI.dispatch(
       marketSlice.actions.tickReceived({
         prices: pendingPrices,
+        openPrices: pendingOpenPrices ?? undefined,
         volumes: pendingVolumes,
         ts: Date.now(),
       })
     );
     if (pendingOrderBook) storeAPI.dispatch(orderBookUpdated(pendingOrderBook));
     pendingPrices = null;
+    pendingOpenPrices = null;
     pendingVolumes = {};
     pendingOrderBook = null;
   }
 
   function handleMarketUpdate(data: MarketUpdateData) {
     pendingPrices = data.prices;
+    if (data.openPrices) pendingOpenPrices = data.openPrices;
     for (const [sym, vol] of Object.entries(data.volumes ?? {})) {
       pendingVolumes[sym] = (pendingVolumes[sym] ?? 0) + vol;
     }
@@ -302,8 +307,9 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           case "authIdentity": {
             const identityData = msg.data as { user: AuthUser; limits: TradingLimits };
             storeAPI.dispatch(setUserWithLimits(identityData));
-            // biome-ignore lint/suspicious/noExplicitAny: loadGridPrefs is an AsyncThunk; AppDispatch not available in middleware scope
+            // biome-ignore lint/suspicious/noExplicitAny: AsyncThunks; AppDispatch not available in middleware scope
             (storeAPI.dispatch as any)(loadGridPrefs());
+            (storeAPI.dispatch as any)(loadUiPrefs());
             break;
           }
           case "killAck": {

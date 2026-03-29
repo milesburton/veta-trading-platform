@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   hideShortcuts,
+  loadUiPrefs,
+  saveOrderTicketWindowSize,
   setActiveSide,
   setActiveStrategy,
   setSelectedAsset,
@@ -102,5 +104,78 @@ describe("uiSlice – setSelectedAsset", () => {
     let state = reducer(initial, setSelectedAsset("AAPL"));
     state = reducer(state, setSelectedAsset(null));
     expect(state.selectedAsset).toBeNull();
+  });
+});
+
+describe("uiSlice – orderTicketWindowSize default", () => {
+  it("defaults to 480×780", () => {
+    expect(initial.orderTicketWindowSize).toEqual({ w: 480, h: 780 });
+  });
+});
+
+describe("uiSlice – loadUiPrefs.fulfilled", () => {
+  it("updates orderTicketWindowSize when payload is valid", () => {
+    const state = reducer(initial, loadUiPrefs.fulfilled({ w: 600, h: 900 }, "", undefined));
+    expect(state.orderTicketWindowSize).toEqual({ w: 600, h: 900 });
+  });
+
+  it("leaves orderTicketWindowSize unchanged when payload is null", () => {
+    const state = reducer(initial, loadUiPrefs.fulfilled(null, "", undefined));
+    expect(state.orderTicketWindowSize).toEqual({ w: 480, h: 780 });
+  });
+});
+
+describe("uiSlice – saveOrderTicketWindowSize.fulfilled", () => {
+  it("updates orderTicketWindowSize in state", () => {
+    const size = { w: 550, h: 850 };
+    const state = reducer(initial, saveOrderTicketWindowSize.fulfilled(size, "", size));
+    expect(state.orderTicketWindowSize).toEqual(size);
+  });
+});
+
+describe("uiSlice – loadUiPrefs thunk (integration)", () => {
+  it("fetches preferences and resolves valid size", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ orderTicketWindowSize: { w: 700, h: 950 } }),
+      })
+    );
+    const result = await loadUiPrefs()(
+      vi.fn(),
+      vi.fn(() => ({})),
+      undefined
+    );
+    expect(result.payload).toEqual({ w: 700, h: 950 });
+    vi.unstubAllGlobals();
+  });
+
+  it("returns null when fetch fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+    const result = await loadUiPrefs()(
+      vi.fn(),
+      vi.fn(() => ({})),
+      undefined
+    );
+    expect(result.payload).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it("returns null when preferences blob lacks orderTicketWindowSize", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ theme: "dark" }),
+      })
+    );
+    const result = await loadUiPrefs()(
+      vi.fn(),
+      vi.fn(() => ({})),
+      undefined
+    );
+    expect(result.payload).toBeNull();
+    vi.unstubAllGlobals();
   });
 });

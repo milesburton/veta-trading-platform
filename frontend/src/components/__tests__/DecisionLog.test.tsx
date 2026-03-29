@@ -31,7 +31,7 @@ function makeStore(events: ObsEvent[] = [], channelAsset?: string) {
         selectedAsset: null,
         updateAvailable: false,
         optionPrefill: null,
-        orderTicketOpen: false,
+        orderTicketWindowSize: { w: 480, h: 780 },
       },
       channels: {
         data: {
