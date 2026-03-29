@@ -1,3 +1,4 @@
+import { isStrategyAllowedInSession } from "../market/market-session";
 import { quantityLabel, quantitySubLabel, STRATEGY_OPTIONS } from "./field-definitions";
 import { checkDarkPoolEligible } from "./rules/dark-pool";
 import { availableInstrumentTypes, runDeskAccessCheck } from "./rules/desk-access";
@@ -5,7 +6,10 @@ import { runInstrumentSpecCheck } from "./rules/instrument-spec";
 import { runKillSwitchCheck } from "./rules/kill-switch";
 import { runLimitChecks } from "./rules/limit-checks";
 import { checkRoleLocked } from "./rules/role-check";
+import { runSessionRules } from "./rules/session-rules";
+import { runSpreadCheck } from "./rules/spread-check";
 import { runStaticValidation } from "./rules/static-validation";
+import { runVenueRules } from "./rules/venue-rules";
 import type { Diagnostic, StrategyOption, TicketContext, TicketResolution } from "./ticket-types";
 
 /**
@@ -33,11 +37,14 @@ export function resolveTicket(ctx: TicketContext): TicketResolution {
 
   // 2. Collect diagnostics from all rule functions
   const diagnostics: Diagnostic[] = [
+    ...runSessionRules(ctx),
     ...runStaticValidation(ctx),
     ...runLimitChecks(ctx),
     ...runKillSwitchCheck(ctx),
     ...runDeskAccessCheck(ctx),
     ...runInstrumentSpecCheck(ctx),
+    ...runVenueRules(ctx),
+    ...runSpreadCheck(ctx),
   ];
 
   const errors = diagnostics.filter((d) => d.severity === "error");
@@ -47,14 +54,21 @@ export function resolveTicket(ctx: TicketContext): TicketResolution {
   const canSubmit = errors.length === 0;
   const submitBlockReason = errors.length > 0 ? errors[0].message : null;
 
-  // 4. Strategy options
+  // 4. Strategy options — check both user permissions and session phase
   const strategyOptions: StrategyOption[] = STRATEGY_OPTIONS.map((s) => {
-    const enabled = limits.allowed_strategies.includes(s.value);
+    const permitted = limits.allowed_strategies.includes(s.value);
+    const sessionAllowed = isStrategyAllowedInSession(ctx.session, s.value);
+    const enabled = permitted && sessionAllowed;
+    const reason = !permitted
+      ? "Not permitted for your account"
+      : !sessionAllowed
+        ? `Not available during ${ctx.session.phaseLabel}`
+        : undefined;
     return {
       value: s.value,
-      label: enabled ? s.label : `${s.label} (not permitted)`,
+      label: reason ? `${s.label} (${reason.toLowerCase()})` : s.label,
       enabled,
-      disabledReason: enabled ? undefined : "Not permitted for your account",
+      disabledReason: reason,
     };
   });
 
@@ -85,6 +99,8 @@ export function resolveTicket(ctx: TicketContext): TicketResolution {
     quantityLabel: quantityLabel(instrument.instrumentType),
     quantitySubLabel: quantitySubLabel(instrument.instrumentType),
     darkPoolEligible,
+    marketPhaseLabel: ctx.session.phaseLabel,
+    sessionAllowsEntry: ctx.session.allowsOrderEntry,
     notional,
     arrivalSlippageBps,
     diagnostics,
@@ -108,6 +124,8 @@ function buildLockedResolution(ctx: TicketContext, message: string | null): Tick
     quantityLabel: "Quantity",
     quantitySubLabel: "(shares)",
     darkPoolEligible: false,
+    marketPhaseLabel: ctx.session.phaseLabel,
+    sessionAllowsEntry: ctx.session.allowsOrderEntry,
     notional: null,
     arrivalSlippageBps: null,
     diagnostics: [],

@@ -53,6 +53,7 @@ function makeStore(orders: OrderRecord[] = [], prices: MarketPrices = {}) {
         candlesReady: {},
         connected: false,
         orderBook: {},
+        sessionPhase: "CONTINUOUS" as const,
       },
     },
   });

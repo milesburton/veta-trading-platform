@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useTradingContext } from "../context/TradingContext.tsx";
 import { BOND_UNIVERSE } from "../data/bondUniverse.ts";
+import { resolveSession } from "../domain/market/market-session.ts";
 import type { TicketContext } from "../domain/ticket/ticket-types.ts";
 import { useTicketResolution } from "../domain/ticket/useTicketResolution.ts";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
@@ -208,6 +209,7 @@ export function OrderTicket() {
   const activeStrategy = useAppSelector((s) => s.ui.activeStrategy);
   const activeSide = useAppSelector((s) => s.ui.activeSide);
   const limits = useAppSelector((s) => s.auth.limits);
+  const sessionPhase = useAppSelector((s) => s.market.sessionPhase);
 
   const [getQuote] = useGetQuoteMutation();
 
@@ -421,6 +423,7 @@ export function OrderTicket() {
       hasBondDef: !!selectedBondDef,
     },
     dirtyFields: new Set(),
+    session: resolveSession(sessionPhase),
   };
 
   const resolution = useTicketResolution(ticketCtx);

@@ -81,6 +81,14 @@ export function applyTickMut(
   }
 }
 
+export type MarketPhase =
+  | "PRE_OPEN"
+  | "OPENING_AUCTION"
+  | "CONTINUOUS"
+  | "CLOSING_AUCTION"
+  | "HALTED"
+  | "CLOSED";
+
 export interface MarketState {
   assets: AssetDef[];
   prices: MarketPrices;
@@ -90,6 +98,8 @@ export interface MarketState {
   candlesReady: Record<string, boolean>;
   orderBook: Record<string, OrderBookSnapshot>;
   connected: boolean;
+  /** Current exchange session phase. */
+  sessionPhase: MarketPhase;
 }
 
 const initialState: MarketState = {
@@ -101,6 +111,7 @@ const initialState: MarketState = {
   candlesReady: {},
   orderBook: {},
   connected: false,
+  sessionPhase: "CONTINUOUS",
 };
 
 export const marketSlice = createSlice({
@@ -117,6 +128,9 @@ export const marketSlice = createSlice({
     },
     setConnected(state, action: PayloadAction<boolean>) {
       state.connected = action.payload;
+    },
+    setSessionPhase(state, action: PayloadAction<MarketPhase>) {
+      state.sessionPhase = action.payload;
     },
     tickReceived(
       state,
@@ -172,5 +186,11 @@ export const marketSlice = createSlice({
   },
 });
 
-export const { setAssets, setConnected, tickReceived, candlesSeeded, orderBookUpdated } =
-  marketSlice.actions;
+export const {
+  setAssets,
+  setConnected,
+  setSessionPhase,
+  tickReceived,
+  candlesSeeded,
+  orderBookUpdated,
+} = marketSlice.actions;

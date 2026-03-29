@@ -35,6 +35,7 @@ function makeStore(events: ObsEvent[] = [], channelAsset?: string) {
         candlesReady: {},
         orderBook: {},
         connected: true,
+        sessionPhase: "CONTINUOUS" as const,
       },
       ui: {
         activeStrategy: "TWAP" as Strategy,

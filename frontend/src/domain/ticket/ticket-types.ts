@@ -1,6 +1,8 @@
 import type { TradingLimits } from "../../store/authSlice";
 import type { KillBlock } from "../../store/killSwitchSlice";
 import type { InstrumentType, Strategy, TimeInForce } from "../../types";
+import type { SessionState } from "../market/market-session";
+import type { VenueMIC } from "../market/venue-capabilities";
 
 // ---------------------------------------------------------------------------
 // Ticket Context — everything the rule engine receives as input
@@ -55,6 +57,15 @@ export interface TicketContext {
   bond: BondDraft;
   /** Which fields the user has explicitly edited (not auto-filled). */
   dirtyFields: ReadonlySet<string>;
+
+  /** Current exchange session state (phase, allowed actions). */
+  session: SessionState;
+
+  /** Selected routing venue (if user has explicitly chosen one). */
+  selectedVenue?: VenueMIC;
+
+  /** Bid-ask spread in bps — used for spread-threshold validation. */
+  spreadBps?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -119,6 +130,12 @@ export interface TicketResolution {
 
   /** Dark pool eligibility for this order. */
   darkPoolEligible: boolean;
+
+  /** Current market phase label for UI display. */
+  marketPhaseLabel: string;
+
+  /** Whether order entry is allowed in the current session phase. */
+  sessionAllowsEntry: boolean;
 
   /** Computed notional value, or null if qty/price incomplete. */
   notional: number | null;

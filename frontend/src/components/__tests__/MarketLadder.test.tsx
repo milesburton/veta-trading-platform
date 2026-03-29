@@ -48,6 +48,7 @@ function makeStore(
         candlesReady: {},
         connected: true,
         orderBook: {},
+        sessionPhase: "CONTINUOUS" as const,
       },
     },
   });

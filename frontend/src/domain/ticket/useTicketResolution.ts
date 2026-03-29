@@ -38,9 +38,19 @@ export function useTicketResolution(ctx: TicketContext): TicketResolution {
  * rules read, at exactly the depth they read them.
  */
 function contextEqual(a: TicketContext, b: TicketContext): boolean {
-  // Identity — same session / user
+  // Identity — same user
   if (a.userId !== b.userId) return false;
   if (a.userRole !== b.userRole) return false;
+
+  // Session — phase is the primary driver; nextTransitionAt is cosmetic
+  if (a.session.phase !== b.session.phase) return false;
+  if (a.session.allowsOrderEntry !== b.session.allowsOrderEntry) return false;
+
+  // Venue
+  if (a.selectedVenue !== b.selectedVenue) return false;
+
+  // Spread
+  if (a.spreadBps !== b.spreadBps) return false;
 
   // Limits — shallow fields
   if (a.limits !== b.limits) {

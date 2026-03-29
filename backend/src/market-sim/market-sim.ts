@@ -184,6 +184,28 @@ function computeVenueBooks(prices: Record<string, number>): Record<SorVenueMIC, 
   return result;
 }
 
+/**
+ * Derive session phase from the current trading minute.
+ *
+ * 390-minute trading day:
+ *   0–4:     PRE_OPEN          (first 5 minutes)
+ *   5–9:     OPENING_AUCTION   (5 minutes)
+ *   10–379:  CONTINUOUS        (370 minutes)
+ *   380–384: CLOSING_AUCTION   (5 minutes)
+ *   385–389: CLOSED            (last 5 minutes before day rolls)
+ *
+ * HALTED is triggered externally (kill switch) — not part of the clock.
+ */
+type SessionPhase = "PRE_OPEN" | "OPENING_AUCTION" | "CONTINUOUS" | "CLOSING_AUCTION" | "HALTED" | "CLOSED";
+
+function deriveSessionPhase(minute: number): SessionPhase {
+  if (minute < 5) return "PRE_OPEN";
+  if (minute < 10) return "OPENING_AUCTION";
+  if (minute < 380) return "CONTINUOUS";
+  if (minute < 385) return "CLOSING_AUCTION";
+  return "CLOSED";
+}
+
 const clients = new Set<WebSocket>();
 
 setInterval(() => {
@@ -199,7 +221,8 @@ setInterval(() => {
   const volumes = computeTickVolumes(marketMinute);
   const orderBook = computeOrderBook(marketData, volumes);
   const venueBooks = computeVenueBooks(marketData);
-  const tick = { prices: { ...marketData }, openPrices: { ...openPrices }, volumes, marketMinute, orderBook, venueBooks };
+  const sessionPhase = deriveSessionPhase(marketMinute);
+  const tick = { prices: { ...marketData }, openPrices: { ...openPrices }, volumes, marketMinute, orderBook, venueBooks, sessionPhase };
   const msg = JSON.stringify({ event: "marketUpdate", data: tick });
 
   for (const socket of clients) {
@@ -208,7 +231,7 @@ setInterval(() => {
 
   // Publish to Redpanda without venueBooks (too large for default message limits;
   // algo services consume venue data via the direct WebSocket connection instead)
-  producer?.send("market.ticks", { prices: tick.prices, openPrices: tick.openPrices, volumes: tick.volumes, marketMinute: tick.marketMinute, orderBook: tick.orderBook }).catch(() => {});
+  producer?.send("market.ticks", { prices: tick.prices, openPrices: tick.openPrices, volumes: tick.volumes, marketMinute: tick.marketMinute, orderBook: tick.orderBook, sessionPhase: tick.sessionPhase }).catch(() => {});
 }, 250);
 
 console.log(`Market Simulator running on ws://localhost:${PORT}`);

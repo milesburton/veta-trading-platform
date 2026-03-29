@@ -39,7 +39,13 @@ import {
 import type { KillBlock } from "../killSwitchSlice.ts";
 import { allBlocksCleared, blockAdded } from "../killSwitchSlice.ts";
 import { type LlmSubsystemStatus, llmStateReceived } from "../llmSubsystemSlice.ts";
-import { candlesSeeded, marketSlice, orderBookUpdated } from "../marketSlice.ts";
+import {
+  candlesSeeded,
+  type MarketPhase,
+  marketSlice,
+  orderBookUpdated,
+  setSessionPhase,
+} from "../marketSlice.ts";
 import { newsApi } from "../newsApi.ts";
 import type { NewsItem } from "../newsSlice.ts";
 import { newsBatchReceived, newsItemReceived } from "../newsSlice.ts";
@@ -66,6 +72,7 @@ interface MarketUpdateData {
   openPrices?: Record<string, number>;
   volumes: Record<string, number>;
   orderBook?: Record<string, OrderBookSnapshot>;
+  sessionPhase?: string;
 }
 
 interface OrderEventData {
@@ -137,6 +144,9 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       pendingVolumes[sym] = (pendingVolumes[sym] ?? 0) + vol;
     }
     if (data.orderBook) pendingOrderBook = data.orderBook;
+    if (data.sessionPhase) {
+      storeAPI.dispatch(setSessionPhase(data.sessionPhase as MarketPhase));
+    }
     if (!tickTimer) tickTimer = setTimeout(flushTick, UI_TICK_INTERVAL_MS);
   }
 

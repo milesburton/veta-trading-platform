@@ -50,6 +50,24 @@ function makeCtx(overrides: Partial<TicketContext> = {}): TicketContext {
       isFetching: false,
       hasBondDef: false,
     },
+    session: {
+      phase: "CONTINUOUS" as const,
+      allowsOrderEntry: true,
+      allowsAmend: true,
+      allowsCancel: true,
+      supportedStrategies: [
+        "LIMIT",
+        "TWAP",
+        "POV",
+        "VWAP",
+        "ICEBERG",
+        "SNIPER",
+        "ARRIVAL_PRICE",
+        "IS",
+        "MOMENTUM",
+      ],
+      phaseLabel: "Continuous Trading",
+    },
     dirtyFields: new Set(),
     ...overrides,
   };
@@ -602,6 +620,308 @@ describe("resolveTicket", () => {
       expect(r.warnings.length).toBeGreaterThan(0);
       expect(r.errors).toHaveLength(0);
       expect(r.canSubmit).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Session-aware rules
+  // -------------------------------------------------------------------------
+
+  describe("session rules", () => {
+    it("blocks order entry when market is halted", () => {
+      const ctx = makeCtx({
+        session: {
+          phase: "HALTED",
+          allowsOrderEntry: false,
+          allowsAmend: false,
+          allowsCancel: true,
+          supportedStrategies: [],
+          phaseLabel: "Trading Halted",
+        },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.canSubmit).toBe(false);
+      expect(r.sessionAllowsEntry).toBe(false);
+      expect(r.errors.some((d) => d.ruleId === "session.entry-blocked")).toBe(true);
+    });
+
+    it("blocks order entry when market is closed", () => {
+      const ctx = makeCtx({
+        session: {
+          phase: "CLOSED",
+          allowsOrderEntry: false,
+          allowsAmend: false,
+          allowsCancel: false,
+          supportedStrategies: [],
+          phaseLabel: "Market Closed",
+        },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.canSubmit).toBe(false);
+      expect(r.errors.some((d) => d.ruleId === "session.entry-blocked")).toBe(true);
+    });
+
+    it("blocks algos during opening auction (only LIMIT allowed)", () => {
+      const ctx = makeCtx({
+        session: {
+          phase: "OPENING_AUCTION",
+          allowsOrderEntry: true,
+          allowsAmend: true,
+          allowsCancel: true,
+          supportedStrategies: ["LIMIT"],
+          phaseLabel: "Opening Auction",
+        },
+        draft: { ...makeCtx().draft, strategy: "TWAP" },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.canSubmit).toBe(false);
+      expect(r.errors.some((d) => d.ruleId === "session.strategy-not-supported")).toBe(true);
+    });
+
+    it("allows LIMIT orders during auction", () => {
+      const ctx = makeCtx({
+        session: {
+          phase: "OPENING_AUCTION",
+          allowsOrderEntry: true,
+          allowsAmend: true,
+          allowsCancel: true,
+          supportedStrategies: ["LIMIT"],
+          phaseLabel: "Opening Auction",
+        },
+        draft: { ...makeCtx().draft, strategy: "LIMIT" },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.errors.filter((d) => d.ruleId.startsWith("session."))).toHaveLength(0);
+    });
+
+    it("shows info diagnostic during auction", () => {
+      const ctx = makeCtx({
+        session: {
+          phase: "CLOSING_AUCTION",
+          allowsOrderEntry: true,
+          allowsAmend: false,
+          allowsCancel: true,
+          supportedStrategies: ["LIMIT"],
+          phaseLabel: "Closing Auction",
+        },
+        draft: { ...makeCtx().draft, strategy: "LIMIT" },
+      });
+      const r = resolveTicket(ctx);
+      const info = r.diagnostics.filter((d) => d.ruleId === "session.auction-info");
+      expect(info).toHaveLength(1);
+      expect(info[0].severity).toBe("info");
+    });
+
+    it("shows pre-open info diagnostic", () => {
+      const ctx = makeCtx({
+        session: {
+          phase: "PRE_OPEN",
+          allowsOrderEntry: true,
+          allowsAmend: true,
+          allowsCancel: true,
+          supportedStrategies: ["LIMIT"],
+          phaseLabel: "Pre-Open",
+        },
+        draft: { ...makeCtx().draft, strategy: "LIMIT" },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.diagnostics.some((d) => d.ruleId === "session.pre-open-info")).toBe(true);
+    });
+
+    it("disables non-LIMIT strategies in dropdown during auction", () => {
+      const ctx = makeCtx({
+        session: {
+          phase: "OPENING_AUCTION",
+          allowsOrderEntry: true,
+          allowsAmend: true,
+          allowsCancel: true,
+          supportedStrategies: ["LIMIT"],
+          phaseLabel: "Opening Auction",
+        },
+      });
+      const r = resolveTicket(ctx);
+      const twap = r.strategyOptions.find((s) => s.value === "TWAP");
+      expect(twap?.enabled).toBe(false);
+      expect(twap?.disabledReason).toContain("Opening Auction");
+      const limit = r.strategyOptions.find((s) => s.value === "LIMIT");
+      expect(limit?.enabled).toBe(true);
+    });
+
+    it("skips session rules for options/bonds", () => {
+      const ctx = makeCtx({
+        instrument: { ...makeCtx().instrument, instrumentType: "option" },
+        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
+        session: {
+          phase: "HALTED",
+          allowsOrderEntry: false,
+          allowsAmend: false,
+          allowsCancel: true,
+          supportedStrategies: [],
+          phaseLabel: "Trading Halted",
+        },
+        option: {
+          optionType: "call",
+          strike: 150,
+          expirySecs: 86400,
+          hasQuote: true,
+          isFetching: false,
+        },
+      });
+      const r = resolveTicket(ctx);
+      // No session.entry-blocked for options
+      expect(r.errors.some((d) => d.ruleId === "session.entry-blocked")).toBe(false);
+    });
+
+    it("exposes marketPhaseLabel from session", () => {
+      const r = resolveTicket(makeCtx());
+      expect(r.marketPhaseLabel).toBe("Continuous Trading");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Venue rules
+  // -------------------------------------------------------------------------
+
+  describe("venue rules", () => {
+    it("no venue-related errors when no venue selected (SOR routing)", () => {
+      const r = resolveTicket(makeCtx());
+      expect(r.errors.filter((d) => d.ruleId.startsWith("venue."))).toHaveLength(0);
+    });
+
+    it("blocks strategy not supported by selected venue", () => {
+      const ctx = makeCtx({
+        selectedVenue: "IEX",
+        draft: { ...makeCtx().draft, strategy: "ICEBERG" },
+        limits: {
+          ...DEFAULT_LIMITS,
+          allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG"],
+        },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.errors.some((d) => d.ruleId === "venue.strategy-unsupported")).toBe(true);
+    });
+
+    it("blocks dark pool routing during halt", () => {
+      const ctx = makeCtx({
+        selectedVenue: "DARK1",
+        session: {
+          phase: "HALTED",
+          allowsOrderEntry: false,
+          allowsAmend: false,
+          allowsCancel: true,
+          supportedStrategies: [],
+          phaseLabel: "Trading Halted",
+        },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.errors.some((d) => d.ruleId === "venue.dark-halted")).toBe(true);
+    });
+
+    it("blocks market orders on IEX (no market order support)", () => {
+      const ctx = makeCtx({
+        selectedVenue: "IEX",
+        draft: { ...makeCtx().draft, limitPrice: 0 },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.errors.some((d) => d.ruleId === "venue.no-market-orders")).toBe(true);
+    });
+
+    it("enforces dark pool minimum quantity", () => {
+      const ctx = makeCtx({
+        selectedVenue: "DARK1",
+        draft: { ...makeCtx().draft, quantity: 5000 },
+        limits: { ...DEFAULT_LIMITS, dark_pool_access: true },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.errors.some((d) => d.ruleId === "venue.min-quantity")).toBe(true);
+    });
+
+    it("allows dark pool when quantity meets minimum", () => {
+      const ctx = makeCtx({
+        selectedVenue: "DARK1",
+        draft: { ...makeCtx().draft, quantity: 10_000 },
+        limits: { ...DEFAULT_LIMITS, dark_pool_access: true },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.errors.filter((d) => d.ruleId === "venue.min-quantity")).toHaveLength(0);
+    });
+
+    it("warns about non-auction venue during auction phase", () => {
+      const ctx = makeCtx({
+        selectedVenue: "BATS",
+        session: {
+          phase: "OPENING_AUCTION",
+          allowsOrderEntry: true,
+          allowsAmend: true,
+          allowsCancel: true,
+          supportedStrategies: ["LIMIT"],
+          phaseLabel: "Opening Auction",
+        },
+        draft: { ...makeCtx().draft, strategy: "LIMIT" },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.warnings.some((d) => d.ruleId === "venue.no-auction-support")).toBe(true);
+    });
+
+    it("blocks iceberg on venues that don't support it", () => {
+      const ctx = makeCtx({
+        selectedVenue: "EDGX",
+        draft: { ...makeCtx().draft, strategy: "ICEBERG" },
+        limits: {
+          ...DEFAULT_LIMITS,
+          allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG"],
+        },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.errors.some((d) => d.ruleId === "venue.no-iceberg")).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Spread check
+  // -------------------------------------------------------------------------
+
+  describe("spread check", () => {
+    it("no spread diagnostics when spreadBps is undefined", () => {
+      const r = resolveTicket(makeCtx());
+      expect(r.diagnostics.filter((d) => d.ruleId.startsWith("spread."))).toHaveLength(0);
+    });
+
+    it("no spread diagnostics when spread is narrow", () => {
+      const ctx = makeCtx({ spreadBps: 10 });
+      const r = resolveTicket(ctx);
+      expect(r.diagnostics.filter((d) => d.ruleId.startsWith("spread."))).toHaveLength(0);
+    });
+
+    it("warns when spread is wide (50-199 bps)", () => {
+      const ctx = makeCtx({ spreadBps: 75 });
+      const r = resolveTicket(ctx);
+      expect(r.warnings.some((d) => d.ruleId === "spread.wide")).toBe(true);
+      expect(r.canSubmit).toBe(true);
+    });
+
+    it("blocks when spread exceeds max threshold (200+ bps)", () => {
+      const ctx = makeCtx({ spreadBps: 250 });
+      const r = resolveTicket(ctx);
+      expect(r.errors.some((d) => d.ruleId === "spread.exceeds-max")).toBe(true);
+      expect(r.canSubmit).toBe(false);
+    });
+
+    it("skips spread check for bonds", () => {
+      const ctx = makeCtx({
+        instrument: { ...makeCtx().instrument, instrumentType: "bond" },
+        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "fi"] },
+        spreadBps: 300,
+        bond: {
+          symbol: "US10Y",
+          yieldPct: 4.5,
+          hasQuote: true,
+          isFetching: false,
+          hasBondDef: true,
+        },
+      });
+      const r = resolveTicket(ctx);
+      expect(r.diagnostics.filter((d) => d.ruleId.startsWith("spread."))).toHaveLength(0);
     });
   });
 

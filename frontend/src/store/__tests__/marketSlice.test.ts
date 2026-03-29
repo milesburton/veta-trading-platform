@@ -23,6 +23,7 @@ const initialState: MarketState = {
   candlesReady: {},
   orderBook: {},
   connected: false,
+  sessionPhase: "CONTINUOUS" as const,
 };
 
 // ─── bucketStart ─────────────────────────────────────────────────────────────
