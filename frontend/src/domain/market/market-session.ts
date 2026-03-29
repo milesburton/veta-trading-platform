@@ -1,13 +1,5 @@
-// ---------------------------------------------------------------------------
-// Market Session Model
-// ---------------------------------------------------------------------------
-// Pure types and helpers describing exchange session phases and their
-// implications for order entry. No React or Redux dependencies.
-// ---------------------------------------------------------------------------
-
 import type { Strategy } from "../../types";
 
-/** Exchange session phases, in lifecycle order. */
 export type MarketPhase =
   | "PRE_OPEN"
   | "OPENING_AUCTION"
@@ -16,35 +8,16 @@ export type MarketPhase =
   | "HALTED"
   | "CLOSED";
 
-/**
- * Resolved session state — what the trading ticket needs to know about
- * the current exchange session. Produced by the backend (market-sim or
- * a real market-session-service) and consumed by the rule engine.
- */
 export interface SessionState {
   phase: MarketPhase;
-
-  /** Can new orders be entered in this phase? */
   allowsOrderEntry: boolean;
-
-  /** Can existing orders be amended? */
   allowsAmend: boolean;
-
-  /** Can existing orders be cancelled? */
   allowsCancel: boolean;
-
-  /** Which order types / strategies are accepted in this phase? */
   supportedStrategies: Strategy[];
-
-  /** Human-readable description for UI display. */
   phaseLabel: string;
-
-  /** Optional: when the next phase transition is expected (epoch ms). */
   nextTransitionAt?: number;
 }
 
-// ---------------------------------------------------------------------------
-// Phase definitions — explicit, testable TypeScript, not config JSON
 // ---------------------------------------------------------------------------
 
 const ALL_STRATEGIES: Strategy[] = [
@@ -61,12 +34,7 @@ const ALL_STRATEGIES: Strategy[] = [
 
 const AUCTION_STRATEGIES: Strategy[] = ["LIMIT"];
 
-/**
- * Resolve a MarketPhase into a full SessionState.
- *
- * This is the single source of truth for what each phase allows.
- * It can run on the backend (market-sim) or frontend (rule engine).
- */
+/** Resolve a MarketPhase into a full SessionState. */
 export function resolveSession(phase: MarketPhase, nextTransitionAt?: number): SessionState {
   switch (phase) {
     case "PRE_OPEN":
@@ -132,12 +100,10 @@ export function resolveSession(phase: MarketPhase, nextTransitionAt?: number): S
   }
 }
 
-/** Check if a given strategy is supported in the current session phase. */
 export function isStrategyAllowedInSession(session: SessionState, strategy: Strategy): boolean {
   return session.supportedStrategies.includes(strategy);
 }
 
-/** Is the market in an auction phase? */
 export function isAuction(phase: MarketPhase): boolean {
   return phase === "OPENING_AUCTION" || phase === "CLOSING_AUCTION";
 }

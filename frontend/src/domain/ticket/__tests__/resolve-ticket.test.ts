@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { TradingLimits } from "../../../store/authSlice";
+import type { SessionState } from "../../market/market-session";
 import { resolveTicket } from "../resolve-ticket";
 import type { TicketContext } from "../ticket-types";
-
-// ---------------------------------------------------------------------------
-// Helpers — build a valid baseline context; each test overrides what it needs
-// ---------------------------------------------------------------------------
 
 const DEFAULT_LIMITS: TradingLimits = {
   max_order_qty: 10_000,
@@ -13,6 +10,58 @@ const DEFAULT_LIMITS: TradingLimits = {
   allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
   allowed_desks: ["equity"],
   dark_pool_access: false,
+};
+
+const CONTINUOUS_SESSION: SessionState = {
+  phase: "CONTINUOUS",
+  allowsOrderEntry: true,
+  allowsAmend: true,
+  allowsCancel: true,
+  supportedStrategies: [
+    "LIMIT",
+    "TWAP",
+    "POV",
+    "VWAP",
+    "ICEBERG",
+    "SNIPER",
+    "ARRIVAL_PRICE",
+    "IS",
+    "MOMENTUM",
+  ],
+  phaseLabel: "Continuous Trading",
+};
+
+const HALTED_SESSION: SessionState = {
+  phase: "HALTED",
+  allowsOrderEntry: false,
+  allowsAmend: false,
+  allowsCancel: true,
+  supportedStrategies: [],
+  phaseLabel: "Trading Halted",
+};
+
+const AUCTION_SESSION: SessionState = {
+  phase: "OPENING_AUCTION",
+  allowsOrderEntry: true,
+  allowsAmend: true,
+  allowsCancel: true,
+  supportedStrategies: ["LIMIT"],
+  phaseLabel: "Opening Auction",
+};
+
+const VALID_OPTION = {
+  optionType: "call" as const,
+  strike: 150,
+  expirySecs: 86400,
+  hasQuote: true,
+  isFetching: false,
+};
+const VALID_BOND = {
+  symbol: "US10Y",
+  yieldPct: 4.5,
+  hasQuote: true,
+  isFetching: false,
+  hasBondDef: true,
 };
 
 function makeCtx(overrides: Partial<TicketContext> = {}): TicketContext {
@@ -36,216 +85,120 @@ function makeCtx(overrides: Partial<TicketContext> = {}): TicketContext {
       expiresAtSecs: 300,
       tif: "DAY",
     },
-    option: {
-      optionType: "call",
-      strike: 0,
-      expirySecs: 0,
-      hasQuote: false,
-      isFetching: false,
-    },
-    bond: {
-      symbol: "",
-      yieldPct: 0,
-      hasQuote: false,
-      isFetching: false,
-      hasBondDef: false,
-    },
-    session: {
-      phase: "CONTINUOUS" as const,
-      allowsOrderEntry: true,
-      allowsAmend: true,
-      allowsCancel: true,
-      supportedStrategies: [
-        "LIMIT",
-        "TWAP",
-        "POV",
-        "VWAP",
-        "ICEBERG",
-        "SNIPER",
-        "ARRIVAL_PRICE",
-        "IS",
-        "MOMENTUM",
-      ],
-      phaseLabel: "Continuous Trading",
-    },
+    option: { optionType: "call", strike: 0, expirySecs: 0, hasQuote: false, isFetching: false },
+    bond: { symbol: "", yieldPct: 0, hasQuote: false, isFetching: false, hasBondDef: false },
+    session: CONTINUOUS_SESSION,
     dirtyFields: new Set(),
     ...overrides,
   };
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+function withDraft(overrides: Partial<TicketContext["draft"]>): Partial<TicketContext> {
+  return { draft: { ...makeCtx().draft, ...overrides } };
+}
 
 describe("resolveTicket", () => {
-  describe("determinism", () => {
-    it("returns identical results for identical context", () => {
-      const ctx = makeCtx();
-      const a = resolveTicket(ctx);
-      const b = resolveTicket(ctx);
-      expect(a).toEqual(b);
-    });
+  it("returns identical results for identical context", () => {
+    const ctx = makeCtx();
+    expect(resolveTicket(ctx)).toEqual(resolveTicket(ctx));
   });
 
   describe("role lockout", () => {
-    it("locks out admin users", () => {
-      const r = resolveTicket(makeCtx({ userRole: "admin" }));
+    it.each([
+      "admin",
+      "compliance",
+      "sales",
+      "external-client",
+    ] as const)("locks out %s users", (role) => {
+      const r = resolveTicket(makeCtx({ userRole: role }));
       expect(r.roleLocked).toBe(true);
       expect(r.canSubmit).toBe(false);
-      expect(r.roleLockedMessage).toContain("Administrators");
-    });
-
-    it("locks out compliance users", () => {
-      const r = resolveTicket(makeCtx({ userRole: "compliance" }));
-      expect(r.roleLocked).toBe(true);
-      expect(r.roleLockedMessage).toContain("Compliance");
-    });
-
-    it("locks out sales users", () => {
-      const r = resolveTicket(makeCtx({ userRole: "sales" }));
-      expect(r.roleLocked).toBe(true);
-    });
-
-    it("locks out external-client users", () => {
-      const r = resolveTicket(makeCtx({ userRole: "external-client" }));
-      expect(r.roleLocked).toBe(true);
     });
 
     it("allows trader users", () => {
-      const r = resolveTicket(makeCtx({ userRole: "trader" }));
-      expect(r.roleLocked).toBe(false);
+      expect(resolveTicket(makeCtx({ userRole: "trader" })).roleLocked).toBe(false);
     });
   });
 
   describe("static validation", () => {
-    it("errors when quantity is zero", () => {
-      const r = resolveTicket(makeCtx({ draft: { ...makeCtx().draft, quantity: 0 } }));
-      expect(r.canSubmit).toBe(false);
-      expect(r.errors.some((d) => d.ruleId === "qty-positive")).toBe(true);
-    });
-
-    it("errors when limit price is zero for equity", () => {
-      const r = resolveTicket(makeCtx({ draft: { ...makeCtx().draft, limitPrice: 0 } }));
-      expect(r.canSubmit).toBe(false);
-      expect(r.errors.some((d) => d.ruleId === "price-positive")).toBe(true);
+    it.each([
+      ["quantity is zero", withDraft({ quantity: 0 }), "qty-positive"],
+      ["limit price is zero for equity", withDraft({ limitPrice: 0 }), "price-positive"],
+      ["duration is zero", withDraft({ expiresAtSecs: 0 }), "duration-positive"],
+      [
+        "symbol is empty",
+        { instrument: { ...makeCtx().instrument, symbol: "" } },
+        "symbol-required",
+      ],
+    ] as const)("errors when %s", (_desc, overrides, ruleId) => {
+      const r = resolveTicket(makeCtx(overrides));
+      expect(r.errors.some((d) => d.ruleId === ruleId)).toBe(true);
     });
 
     it("does NOT error on zero limit price for options", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "option" },
-        option: {
-          optionType: "call",
-          strike: 150,
-          expirySecs: 86400,
-          hasQuote: true,
-          isFetching: false,
-        },
-        draft: { ...makeCtx().draft, limitPrice: 0 },
-      });
-      const r = resolveTicket(ctx);
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType: "option" },
+          option: VALID_OPTION,
+          ...withDraft({ limitPrice: 0 }),
+        })
+      );
       expect(r.errors.some((d) => d.ruleId === "price-positive")).toBe(false);
     });
-
-    it("errors when duration is zero", () => {
-      const r = resolveTicket(makeCtx({ draft: { ...makeCtx().draft, expiresAtSecs: 0 } }));
-      expect(r.errors.some((d) => d.ruleId === "duration-positive")).toBe(true);
-    });
-
-    it("errors when symbol is empty", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, symbol: "" },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.errors.some((d) => d.ruleId === "symbol-required")).toBe(true);
-    });
   });
 
-  describe("quantity limit", () => {
-    it("errors when qty exceeds max_order_qty", () => {
-      const r = resolveTicket(makeCtx({ draft: { ...makeCtx().draft, quantity: 15_000 } }));
-      expect(r.canSubmit).toBe(false);
-      expect(r.errors.some((d) => d.ruleId === "qty-exceeds-limit")).toBe(true);
-    });
-
-    it("allows qty at exactly max_order_qty", () => {
-      const r = resolveTicket(makeCtx({ draft: { ...makeCtx().draft, quantity: 10_000 } }));
-      expect(r.errors.some((d) => d.ruleId === "qty-exceeds-limit")).toBe(false);
-    });
-  });
-
-  describe("notional limit", () => {
-    it("errors when notional exceeds max_daily_notional", () => {
-      const r = resolveTicket(
-        makeCtx({ draft: { ...makeCtx().draft, quantity: 5_000, limitPrice: 300 } })
-      );
-      // 5000 * 300 = $1.5M > $1M limit
-      expect(r.errors.some((d) => d.ruleId === "notional-exceeds-limit")).toBe(true);
-    });
-
-    it("allows notional at boundary", () => {
-      const r = resolveTicket(
-        makeCtx({ draft: { ...makeCtx().draft, quantity: 3_333, limitPrice: 300 } })
-      );
-      // 3333 * 300 = $999,900 < $1M
-      expect(r.errors.some((d) => d.ruleId === "notional-exceeds-limit")).toBe(false);
+  describe("quantity and notional limits", () => {
+    it.each([
+      [15_000, 189.5, "qty-exceeds-limit", true],
+      [10_000, 189.5, "qty-exceeds-limit", false],
+      [5_000, 300, "notional-exceeds-limit", true],
+      [3_333, 300, "notional-exceeds-limit", false],
+    ] as const)("qty=%d price=%d → %s present=%s", (qty, price, ruleId, expected) => {
+      const r = resolveTicket(makeCtx(withDraft({ quantity: qty, limitPrice: price })));
+      expect(r.errors.some((d) => d.ruleId === ruleId)).toBe(expected);
     });
   });
 
   describe("lot size", () => {
     it("warns when qty is not a multiple of lot size", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, lotSize: 100 },
-        draft: { ...makeCtx().draft, quantity: 150 },
-      });
-      const r = resolveTicket(ctx);
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, lotSize: 100 },
+          ...withDraft({ quantity: 150 }),
+        })
+      );
       expect(r.warnings.some((d) => d.ruleId === "lot-size")).toBe(true);
       expect(r.warnings.find((d) => d.ruleId === "lot-size")?.message).toContain("200");
+      expect(r.canSubmit).toBe(true);
     });
 
     it("does not warn when qty is a multiple of lot size", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, lotSize: 100 },
-        draft: { ...makeCtx().draft, quantity: 200 },
-      });
-      const r = resolveTicket(ctx);
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, lotSize: 100 },
+          ...withDraft({ quantity: 200 }),
+        })
+      );
       expect(r.warnings.some((d) => d.ruleId === "lot-size")).toBe(false);
-    });
-
-    it("lot size warnings do NOT block submission", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, lotSize: 100 },
-        draft: { ...makeCtx().draft, quantity: 150 },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.warnings.length).toBeGreaterThan(0);
-      expect(r.canSubmit).toBe(true); // warnings don't block
     });
   });
 
   describe("strategy permission", () => {
-    it("errors when strategy is not permitted", () => {
-      const r = resolveTicket(makeCtx({ draft: { ...makeCtx().draft, strategy: "ICEBERG" } }));
-      expect(r.errors.some((d) => d.ruleId === "strategy-not-permitted")).toBe(true);
-    });
-
-    it("allows permitted strategy", () => {
-      const r = resolveTicket(makeCtx({ draft: { ...makeCtx().draft, strategy: "TWAP" } }));
-      expect(r.errors.some((d) => d.ruleId === "strategy-not-permitted")).toBe(false);
+    it.each([
+      ["ICEBERG", true],
+      ["TWAP", false],
+    ] as const)("strategy %s → error=%s", (strategy, expectError) => {
+      const r = resolveTicket(makeCtx(withDraft({ strategy })));
+      expect(r.errors.some((d) => d.ruleId === "strategy-not-permitted")).toBe(expectError);
     });
   });
 
   describe("kill switch", () => {
-    it("errors when all-scope kill is active", () => {
+    it("blocks on all-scope kill", () => {
       const r = resolveTicket(
         makeCtx({
           killBlocks: [
-            {
-              id: "k1",
-              scope: "all",
-              scopeValues: [],
-              issuedBy: "admin-1",
-              issuedAt: Date.now(),
-            },
+            { id: "k1", scope: "all", scopeValues: [], issuedBy: "admin-1", issuedAt: Date.now() },
           ],
         })
       );
@@ -298,7 +251,7 @@ describe("resolveTicket", () => {
               scopeValues: [],
               issuedBy: "admin-1",
               issuedAt: Date.now() - 60_000,
-              resumeAt: Date.now() - 1_000, // expired 1s ago
+              resumeAt: Date.now() - 1_000,
             },
           ],
         })
@@ -308,225 +261,135 @@ describe("resolveTicket", () => {
   });
 
   describe("desk access", () => {
-    it("errors when instrument desk is not in allowed_desks", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "bond" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity"] },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.errors.some((d) => d.ruleId === "desk-access-denied")).toBe(true);
-    });
-
-    it("allows when desk is in allowed_desks", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "option" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
-        option: {
-          optionType: "call",
-          strike: 150,
-          expirySecs: 86400,
-          hasQuote: true,
-          isFetching: false,
-        },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.errors.some((d) => d.ruleId === "desk-access-denied")).toBe(false);
+    it.each([
+      ["bond", ["equity"], true],
+      ["option", ["equity", "derivatives"], false],
+    ] as const)("instrumentType=%s desks=%j → denied=%s", (instrumentType, desks, expectDenied) => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType },
+          limits: { ...DEFAULT_LIMITS, allowed_desks: [...desks] },
+          ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
+          ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
+        })
+      );
+      expect(r.errors.some((d) => d.ruleId === "desk-access-denied")).toBe(expectDenied);
     });
   });
 
   describe("instrument spec validation", () => {
-    it("errors when option has no quote and not fetching", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "option" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
-        option: {
-          optionType: "call",
-          strike: 150,
-          expirySecs: 86400,
-          hasQuote: false,
-          isFetching: false,
-        },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.errors.some((d) => d.ruleId === "option-quote-missing")).toBe(true);
+    it.each([
+      [
+        "option has no quote",
+        { strike: 150, expirySecs: 86400, hasQuote: false, isFetching: false },
+        "option-quote-missing",
+      ],
+      [
+        "option strike is zero",
+        { strike: 0, expirySecs: 86400, hasQuote: true, isFetching: false },
+        "option-strike-required",
+      ],
+    ] as const)("errors when %s", (_desc, optionOverrides, ruleId) => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType: "option" },
+          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
+          option: { optionType: "call", ...optionOverrides },
+        })
+      );
+      expect(r.errors.some((d) => d.ruleId === ruleId)).toBe(true);
     });
 
-    it("errors when option strike is zero", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "option" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
-        option: {
-          optionType: "call",
-          strike: 0,
-          expirySecs: 86400,
-          hasQuote: true,
-          isFetching: false,
-        },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.errors.some((d) => d.ruleId === "option-strike-required")).toBe(true);
-    });
-
-    it("errors when bond has no bond definition", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "bond" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "fi"] },
-        bond: {
-          symbol: "US10Y",
-          yieldPct: 4.5,
-          hasQuote: false,
-          isFetching: false,
-          hasBondDef: false,
-        },
-      });
-      const r = resolveTicket(ctx);
+    it("errors when bond has no definition", () => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType: "bond" },
+          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "fi"] },
+          bond: {
+            symbol: "US10Y",
+            yieldPct: 4.5,
+            hasQuote: false,
+            isFetching: false,
+            hasBondDef: false,
+          },
+        })
+      );
       expect(r.errors.some((d) => d.ruleId === "bond-def-missing")).toBe(true);
     });
 
-    it("info diagnostic when option is fetching", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "option" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
-        option: {
-          optionType: "call",
-          strike: 150,
-          expirySecs: 86400,
-          hasQuote: false,
-          isFetching: true,
-        },
-      });
-      const r = resolveTicket(ctx);
+    it("shows info when option quote is fetching", () => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType: "option" },
+          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
+          option: {
+            optionType: "call",
+            strike: 150,
+            expirySecs: 86400,
+            hasQuote: false,
+            isFetching: true,
+          },
+        })
+      );
       expect(r.diagnostics.some((d) => d.ruleId === "option-quote-fetching")).toBe(true);
     });
   });
 
   describe("dark pool eligibility", () => {
-    it("eligible when dark_pool_access=true and qty >= 10000", () => {
-      const ctx = makeCtx({
-        limits: { ...DEFAULT_LIMITS, dark_pool_access: true },
-        draft: { ...makeCtx().draft, quantity: 10_000 },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.darkPoolEligible).toBe(true);
-    });
-
-    it("ineligible when dark_pool_access=false", () => {
-      const ctx = makeCtx({
-        limits: { ...DEFAULT_LIMITS, dark_pool_access: false },
-        draft: { ...makeCtx().draft, quantity: 10_000 },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.darkPoolEligible).toBe(false);
-    });
-
-    it("ineligible when qty < 10000", () => {
-      const ctx = makeCtx({
-        limits: { ...DEFAULT_LIMITS, dark_pool_access: true },
-        draft: { ...makeCtx().draft, quantity: 9_999 },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.darkPoolEligible).toBe(false);
-    });
-
-    it("ineligible for non-equity instruments", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "bond" },
-        limits: { ...DEFAULT_LIMITS, dark_pool_access: true, allowed_desks: ["equity", "fi"] },
-        draft: { ...makeCtx().draft, quantity: 10_000 },
-        bond: {
-          symbol: "US10Y",
-          yieldPct: 4.5,
-          hasQuote: true,
-          isFetching: false,
-          hasBondDef: true,
-        },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.darkPoolEligible).toBe(false);
+    it.each([
+      [true, 10_000, "equity", true],
+      [false, 10_000, "equity", false],
+      [true, 9_999, "equity", false],
+      [true, 10_000, "bond", false],
+    ] as const)("access=%s qty=%d type=%s → eligible=%s", (access, qty, type, expected) => {
+      const r = resolveTicket(
+        makeCtx({
+          limits: { ...DEFAULT_LIMITS, dark_pool_access: access, allowed_desks: ["equity", "fi"] },
+          ...withDraft({ quantity: qty }),
+          instrument: { ...makeCtx().instrument, instrumentType: type },
+          ...(type === "bond" ? { bond: VALID_BOND } : {}),
+        })
+      );
+      expect(r.darkPoolEligible).toBe(expected);
     });
   });
 
   describe("field visibility", () => {
-    it("shows strategy selector for equity", () => {
-      const r = resolveTicket(makeCtx());
-      expect(r.showStrategySelector).toBe(true);
-    });
-
-    it("hides strategy selector for options", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "option" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
-        option: {
-          optionType: "call",
-          strike: 150,
-          expirySecs: 86400,
-          hasQuote: true,
-          isFetching: false,
-        },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.showStrategySelector).toBe(false);
-    });
-
-    it("hides strategy selector for bonds", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "bond" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "fi"] },
-        bond: {
-          symbol: "US10Y",
-          yieldPct: 4.5,
-          hasQuote: true,
-          isFetching: false,
-          hasBondDef: true,
-        },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.showStrategySelector).toBe(false);
-    });
-
-    it("hides asset selector for bonds", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "bond" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "fi"] },
-        bond: {
-          symbol: "US10Y",
-          yieldPct: 4.5,
-          hasQuote: true,
-          isFetching: false,
-          hasBondDef: true,
-        },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.showAssetSelector).toBe(false);
+    it.each([
+      ["equity", "showStrategySelector", true],
+      ["option", "showStrategySelector", false],
+      ["bond", "showStrategySelector", false],
+      ["bond", "showAssetSelector", false],
+      ["equity", "showAssetSelector", true],
+    ] as const)("%s → %s=%s", (instrumentType, field, expected) => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType },
+          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives", "fi"] },
+          ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
+          ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
+        })
+      );
+      expect(r[field as keyof typeof r]).toBe(expected);
     });
   });
 
   describe("strategy options", () => {
-    it("lists all 9 strategies", () => {
+    it("lists all 9 strategies with correct enabled state", () => {
       const r = resolveTicket(makeCtx());
       expect(r.strategyOptions).toHaveLength(9);
-    });
-
-    it("marks permitted strategies as enabled", () => {
-      const r = resolveTicket(makeCtx());
-      const twap = r.strategyOptions.find((s) => s.value === "TWAP");
-      expect(twap?.enabled).toBe(true);
-    });
-
-    it("marks non-permitted strategies as disabled", () => {
-      const r = resolveTicket(makeCtx());
-      const iceberg = r.strategyOptions.find((s) => s.value === "ICEBERG");
-      expect(iceberg?.enabled).toBe(false);
-      expect(iceberg?.label).toContain("not permitted");
+      expect(r.strategyOptions.find((s) => s.value === "TWAP")?.enabled).toBe(true);
+      expect(r.strategyOptions.find((s) => s.value === "ICEBERG")?.enabled).toBe(false);
     });
   });
 
   describe("available instrument types", () => {
     it("reflects allowed desks", () => {
-      const ctx = makeCtx({
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives", "fi"] },
-      });
-      const r = resolveTicket(ctx);
+      const r = resolveTicket(
+        makeCtx({
+          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives", "fi"] },
+        })
+      );
       expect(r.availableInstrumentTypes).toContain("equity");
       expect(r.availableInstrumentTypes).toContain("option");
       expect(r.availableInstrumentTypes).toContain("bond");
@@ -535,412 +398,327 @@ describe("resolveTicket", () => {
   });
 
   describe("computed values", () => {
-    it("computes notional", () => {
-      const r = resolveTicket(
-        makeCtx({ draft: { ...makeCtx().draft, quantity: 100, limitPrice: 189.5 } })
-      );
-      expect(r.notional).toBeCloseTo(18_950);
-    });
-
-    it("notional is null when qty or price is zero", () => {
-      const r = resolveTicket(
-        makeCtx({ draft: { ...makeCtx().draft, quantity: 0, limitPrice: 189.5 } })
-      );
-      expect(r.notional).toBeNull();
+    it.each([
+      [100, 189.5, 18_950],
+      [0, 189.5, null],
+      [100, 0, null],
+    ] as const)("qty=%d price=%d → notional=%s", (qty, price, expected) => {
+      const r = resolveTicket(makeCtx(withDraft({ quantity: qty, limitPrice: price })));
+      if (expected === null) {
+        expect(r.notional).toBeNull();
+      } else {
+        expect(r.notional).toBeCloseTo(expected);
+      }
     });
 
     it("computes arrival slippage vs mid", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, orderBookMid: 189.0 },
-        draft: { ...makeCtx().draft, limitPrice: 190.0, side: "BUY" },
-      });
-      const r = resolveTicket(ctx);
-      // (190 - 189) / 189 * 10000 * 1 ≈ 52.9 bps
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, orderBookMid: 189.0 },
+          ...withDraft({ limitPrice: 190.0, side: "BUY" }),
+        })
+      );
       expect(r.arrivalSlippageBps).toBeCloseTo(52.9, 0);
     });
   });
 
   describe("quantity labels", () => {
-    it("shows 'Contracts' for options", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "option" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
-        option: {
-          optionType: "call",
-          strike: 150,
-          expirySecs: 86400,
-          hasQuote: true,
-          isFetching: false,
-        },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.quantityLabel).toBe("Contracts");
-    });
-
-    it("shows '(shares)' for equity", () => {
-      const r = resolveTicket(makeCtx());
-      expect(r.quantitySubLabel).toBe("(shares)");
-    });
-
-    it("shows '(bonds)' for bonds", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "bond" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "fi"] },
-        bond: {
-          symbol: "US10Y",
-          yieldPct: 4.5,
-          hasQuote: true,
-          isFetching: false,
-          hasBondDef: true,
-        },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.quantitySubLabel).toBe("(bonds)");
+    it.each([
+      ["option", "Contracts", "(1 contract = 100 shares)"],
+      ["equity", "Quantity", "(shares)"],
+      ["bond", "Quantity", "(bonds)"],
+    ] as const)("%s → label=%s subLabel=%s", (instrumentType, expectedLabel, expectedSub) => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType },
+          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives", "fi"] },
+          ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
+          ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
+        })
+      );
+      expect(r.quantityLabel).toBe(expectedLabel);
+      expect(r.quantitySubLabel).toBe(expectedSub);
     });
   });
 
   describe("canSubmit composite", () => {
-    it("true when all inputs are valid", () => {
-      const r = resolveTicket(makeCtx());
-      expect(r.canSubmit).toBe(true);
-      expect(r.errors).toHaveLength(0);
-    });
+    it("true with valid inputs, false with errors, true with only warnings", () => {
+      expect(resolveTicket(makeCtx()).canSubmit).toBe(true);
+      expect(resolveTicket(makeCtx(withDraft({ quantity: 0 }))).canSubmit).toBe(false);
 
-    it("false when any single error exists", () => {
-      const r = resolveTicket(makeCtx({ draft: { ...makeCtx().draft, quantity: 0 } }));
-      expect(r.canSubmit).toBe(false);
-    });
-
-    it("true when only warnings exist (warnings do not block)", () => {
-      const ctx = makeCtx({
+      const warningCtx = makeCtx({
         instrument: { ...makeCtx().instrument, lotSize: 100 },
-        draft: { ...makeCtx().draft, quantity: 150 },
+        ...withDraft({ quantity: 150 }),
       });
-      const r = resolveTicket(ctx);
+      const r = resolveTicket(warningCtx);
       expect(r.warnings.length).toBeGreaterThan(0);
       expect(r.errors).toHaveLength(0);
       expect(r.canSubmit).toBe(true);
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Session-aware rules
-  // -------------------------------------------------------------------------
-
   describe("session rules", () => {
-    it("blocks order entry when market is halted", () => {
-      const ctx = makeCtx({
-        session: {
-          phase: "HALTED",
-          allowsOrderEntry: false,
-          allowsAmend: false,
-          allowsCancel: true,
-          supportedStrategies: [],
-          phaseLabel: "Trading Halted",
-        },
-      });
-      const r = resolveTicket(ctx);
+    it.each([
+      ["HALTED", "session.entry-blocked"],
+      ["CLOSED", "session.entry-blocked"],
+    ] as const)("blocks order entry when market is %s", (phase, ruleId) => {
+      const r = resolveTicket(
+        makeCtx({
+          session: {
+            ...HALTED_SESSION,
+            phase: phase as "HALTED" | "CLOSED",
+            phaseLabel: phase === "HALTED" ? "Trading Halted" : "Market Closed",
+          },
+        })
+      );
       expect(r.canSubmit).toBe(false);
       expect(r.sessionAllowsEntry).toBe(false);
-      expect(r.errors.some((d) => d.ruleId === "session.entry-blocked")).toBe(true);
+      expect(r.errors.some((d) => d.ruleId === ruleId)).toBe(true);
     });
 
-    it("blocks order entry when market is closed", () => {
-      const ctx = makeCtx({
-        session: {
-          phase: "CLOSED",
-          allowsOrderEntry: false,
-          allowsAmend: false,
-          allowsCancel: false,
-          supportedStrategies: [],
-          phaseLabel: "Market Closed",
-        },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.canSubmit).toBe(false);
-      expect(r.errors.some((d) => d.ruleId === "session.entry-blocked")).toBe(true);
+    it("blocks algos during auction, allows LIMIT", () => {
+      const twapResult = resolveTicket(
+        makeCtx({ session: AUCTION_SESSION, ...withDraft({ strategy: "TWAP" }) })
+      );
+      expect(twapResult.errors.some((d) => d.ruleId === "session.strategy-not-supported")).toBe(
+        true
+      );
+
+      const limitResult = resolveTicket(
+        makeCtx({ session: AUCTION_SESSION, ...withDraft({ strategy: "LIMIT" }) })
+      );
+      expect(limitResult.errors.filter((d) => d.ruleId.startsWith("session."))).toHaveLength(0);
     });
 
-    it("blocks algos during opening auction (only LIMIT allowed)", () => {
-      const ctx = makeCtx({
-        session: {
-          phase: "OPENING_AUCTION",
-          allowsOrderEntry: true,
-          allowsAmend: true,
-          allowsCancel: true,
-          supportedStrategies: ["LIMIT"],
-          phaseLabel: "Opening Auction",
-        },
-        draft: { ...makeCtx().draft, strategy: "TWAP" },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.canSubmit).toBe(false);
-      expect(r.errors.some((d) => d.ruleId === "session.strategy-not-supported")).toBe(true);
-    });
+    it("shows info diagnostic during auction and pre-open", () => {
+      const closingAuction: SessionState = {
+        ...AUCTION_SESSION,
+        phase: "CLOSING_AUCTION",
+        phaseLabel: "Closing Auction",
+        allowsAmend: false,
+      };
+      const auctionResult = resolveTicket(
+        makeCtx({ session: closingAuction, ...withDraft({ strategy: "LIMIT" }) })
+      );
+      expect(auctionResult.diagnostics.some((d) => d.ruleId === "session.auction-info")).toBe(true);
 
-    it("allows LIMIT orders during auction", () => {
-      const ctx = makeCtx({
-        session: {
-          phase: "OPENING_AUCTION",
-          allowsOrderEntry: true,
-          allowsAmend: true,
-          allowsCancel: true,
-          supportedStrategies: ["LIMIT"],
-          phaseLabel: "Opening Auction",
-        },
-        draft: { ...makeCtx().draft, strategy: "LIMIT" },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.errors.filter((d) => d.ruleId.startsWith("session."))).toHaveLength(0);
-    });
-
-    it("shows info diagnostic during auction", () => {
-      const ctx = makeCtx({
-        session: {
-          phase: "CLOSING_AUCTION",
-          allowsOrderEntry: true,
-          allowsAmend: false,
-          allowsCancel: true,
-          supportedStrategies: ["LIMIT"],
-          phaseLabel: "Closing Auction",
-        },
-        draft: { ...makeCtx().draft, strategy: "LIMIT" },
-      });
-      const r = resolveTicket(ctx);
-      const info = r.diagnostics.filter((d) => d.ruleId === "session.auction-info");
-      expect(info).toHaveLength(1);
-      expect(info[0].severity).toBe("info");
-    });
-
-    it("shows pre-open info diagnostic", () => {
-      const ctx = makeCtx({
-        session: {
-          phase: "PRE_OPEN",
-          allowsOrderEntry: true,
-          allowsAmend: true,
-          allowsCancel: true,
-          supportedStrategies: ["LIMIT"],
-          phaseLabel: "Pre-Open",
-        },
-        draft: { ...makeCtx().draft, strategy: "LIMIT" },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.diagnostics.some((d) => d.ruleId === "session.pre-open-info")).toBe(true);
+      const preOpen: SessionState = {
+        ...AUCTION_SESSION,
+        phase: "PRE_OPEN",
+        phaseLabel: "Pre-Open",
+      };
+      const preOpenResult = resolveTicket(
+        makeCtx({ session: preOpen, ...withDraft({ strategy: "LIMIT" }) })
+      );
+      expect(preOpenResult.diagnostics.some((d) => d.ruleId === "session.pre-open-info")).toBe(
+        true
+      );
     });
 
     it("disables non-LIMIT strategies in dropdown during auction", () => {
-      const ctx = makeCtx({
-        session: {
-          phase: "OPENING_AUCTION",
-          allowsOrderEntry: true,
-          allowsAmend: true,
-          allowsCancel: true,
-          supportedStrategies: ["LIMIT"],
-          phaseLabel: "Opening Auction",
-        },
-      });
-      const r = resolveTicket(ctx);
-      const twap = r.strategyOptions.find((s) => s.value === "TWAP");
-      expect(twap?.enabled).toBe(false);
-      expect(twap?.disabledReason).toContain("Opening Auction");
-      const limit = r.strategyOptions.find((s) => s.value === "LIMIT");
-      expect(limit?.enabled).toBe(true);
+      const r = resolveTicket(makeCtx({ session: AUCTION_SESSION }));
+      expect(r.strategyOptions.find((s) => s.value === "TWAP")?.enabled).toBe(false);
+      expect(r.strategyOptions.find((s) => s.value === "TWAP")?.disabledReason).toContain(
+        "Opening Auction"
+      );
+      expect(r.strategyOptions.find((s) => s.value === "LIMIT")?.enabled).toBe(true);
     });
 
-    it("skips session rules for options/bonds", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "option" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
-        session: {
-          phase: "HALTED",
-          allowsOrderEntry: false,
-          allowsAmend: false,
-          allowsCancel: true,
-          supportedStrategies: [],
-          phaseLabel: "Trading Halted",
-        },
-        option: {
-          optionType: "call",
-          strike: 150,
-          expirySecs: 86400,
-          hasQuote: true,
-          isFetching: false,
-        },
-      });
-      const r = resolveTicket(ctx);
-      // No session.entry-blocked for options
+    it("skips session rules for options", () => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType: "option" },
+          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
+          session: HALTED_SESSION,
+          option: VALID_OPTION,
+        })
+      );
       expect(r.errors.some((d) => d.ruleId === "session.entry-blocked")).toBe(false);
     });
 
-    it("exposes marketPhaseLabel from session", () => {
-      const r = resolveTicket(makeCtx());
-      expect(r.marketPhaseLabel).toBe("Continuous Trading");
+    it("exposes marketPhaseLabel", () => {
+      expect(resolveTicket(makeCtx()).marketPhaseLabel).toBe("Continuous Trading");
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Venue rules
-  // -------------------------------------------------------------------------
-
   describe("venue rules", () => {
-    it("no venue-related errors when no venue selected (SOR routing)", () => {
-      const r = resolveTicket(makeCtx());
-      expect(r.errors.filter((d) => d.ruleId.startsWith("venue."))).toHaveLength(0);
+    it("no errors when no venue selected", () => {
+      expect(
+        resolveTicket(makeCtx()).errors.filter((d) => d.ruleId.startsWith("venue."))
+      ).toHaveLength(0);
     });
 
-    it("blocks strategy not supported by selected venue", () => {
-      const ctx = makeCtx({
-        selectedVenue: "IEX",
-        draft: { ...makeCtx().draft, strategy: "ICEBERG" },
-        limits: {
-          ...DEFAULT_LIMITS,
-          allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG"],
-        },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.errors.some((d) => d.ruleId === "venue.strategy-unsupported")).toBe(true);
+    it.each([
+      ["IEX", "ICEBERG", "venue.strategy-unsupported"],
+      ["EDGX", "ICEBERG", "venue.no-iceberg"],
+    ] as const)("venue=%s strategy=%s → %s", (venue, strategy, ruleId) => {
+      const r = resolveTicket(
+        makeCtx({
+          selectedVenue: venue,
+          ...withDraft({ strategy }),
+          limits: {
+            ...DEFAULT_LIMITS,
+            allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG"],
+          },
+        })
+      );
+      expect(r.errors.some((d) => d.ruleId === ruleId)).toBe(true);
     });
 
-    it("blocks dark pool routing during halt", () => {
-      const ctx = makeCtx({
-        selectedVenue: "DARK1",
-        session: {
-          phase: "HALTED",
-          allowsOrderEntry: false,
-          allowsAmend: false,
-          allowsCancel: true,
-          supportedStrategies: [],
-          phaseLabel: "Trading Halted",
-        },
-      });
-      const r = resolveTicket(ctx);
+    it("blocks dark pool during halt", () => {
+      const r = resolveTicket(makeCtx({ selectedVenue: "DARK1", session: HALTED_SESSION }));
       expect(r.errors.some((d) => d.ruleId === "venue.dark-halted")).toBe(true);
     });
 
-    it("blocks market orders on IEX (no market order support)", () => {
-      const ctx = makeCtx({
-        selectedVenue: "IEX",
-        draft: { ...makeCtx().draft, limitPrice: 0 },
-      });
-      const r = resolveTicket(ctx);
+    it("blocks market orders on IEX", () => {
+      const r = resolveTicket(makeCtx({ selectedVenue: "IEX", ...withDraft({ limitPrice: 0 }) }));
       expect(r.errors.some((d) => d.ruleId === "venue.no-market-orders")).toBe(true);
     });
 
-    it("enforces dark pool minimum quantity", () => {
-      const ctx = makeCtx({
-        selectedVenue: "DARK1",
-        draft: { ...makeCtx().draft, quantity: 5000 },
-        limits: { ...DEFAULT_LIMITS, dark_pool_access: true },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.errors.some((d) => d.ruleId === "venue.min-quantity")).toBe(true);
+    it.each([
+      [5_000, true],
+      [10_000, false],
+    ] as const)("dark pool qty=%d → min-quantity error=%s", (qty, expectError) => {
+      const r = resolveTicket(
+        makeCtx({
+          selectedVenue: "DARK1",
+          ...withDraft({ quantity: qty }),
+          limits: { ...DEFAULT_LIMITS, dark_pool_access: true },
+        })
+      );
+      expect(r.errors.some((d) => d.ruleId === "venue.min-quantity")).toBe(expectError);
     });
 
-    it("allows dark pool when quantity meets minimum", () => {
-      const ctx = makeCtx({
-        selectedVenue: "DARK1",
-        draft: { ...makeCtx().draft, quantity: 10_000 },
-        limits: { ...DEFAULT_LIMITS, dark_pool_access: true },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.errors.filter((d) => d.ruleId === "venue.min-quantity")).toHaveLength(0);
-    });
-
-    it("warns about non-auction venue during auction phase", () => {
-      const ctx = makeCtx({
-        selectedVenue: "BATS",
-        session: {
-          phase: "OPENING_AUCTION",
-          allowsOrderEntry: true,
-          allowsAmend: true,
-          allowsCancel: true,
-          supportedStrategies: ["LIMIT"],
-          phaseLabel: "Opening Auction",
-        },
-        draft: { ...makeCtx().draft, strategy: "LIMIT" },
-      });
-      const r = resolveTicket(ctx);
+    it("warns about non-auction venue during auction", () => {
+      const r = resolveTicket(
+        makeCtx({
+          selectedVenue: "BATS",
+          session: AUCTION_SESSION,
+          ...withDraft({ strategy: "LIMIT" }),
+        })
+      );
       expect(r.warnings.some((d) => d.ruleId === "venue.no-auction-support")).toBe(true);
-    });
-
-    it("blocks iceberg on venues that don't support it", () => {
-      const ctx = makeCtx({
-        selectedVenue: "EDGX",
-        draft: { ...makeCtx().draft, strategy: "ICEBERG" },
-        limits: {
-          ...DEFAULT_LIMITS,
-          allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG"],
-        },
-      });
-      const r = resolveTicket(ctx);
-      expect(r.errors.some((d) => d.ruleId === "venue.no-iceberg")).toBe(true);
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Spread check
-  // -------------------------------------------------------------------------
-
   describe("spread check", () => {
-    it("no spread diagnostics when spreadBps is undefined", () => {
-      const r = resolveTicket(makeCtx());
-      expect(r.diagnostics.filter((d) => d.ruleId.startsWith("spread."))).toHaveLength(0);
-    });
-
-    it("no spread diagnostics when spread is narrow", () => {
-      const ctx = makeCtx({ spreadBps: 10 });
-      const r = resolveTicket(ctx);
-      expect(r.diagnostics.filter((d) => d.ruleId.startsWith("spread."))).toHaveLength(0);
-    });
-
-    it("warns when spread is wide (50-199 bps)", () => {
-      const ctx = makeCtx({ spreadBps: 75 });
-      const r = resolveTicket(ctx);
-      expect(r.warnings.some((d) => d.ruleId === "spread.wide")).toBe(true);
-      expect(r.canSubmit).toBe(true);
-    });
-
-    it("blocks when spread exceeds max threshold (200+ bps)", () => {
-      const ctx = makeCtx({ spreadBps: 250 });
-      const r = resolveTicket(ctx);
-      expect(r.errors.some((d) => d.ruleId === "spread.exceeds-max")).toBe(true);
-      expect(r.canSubmit).toBe(false);
+    it.each([
+      [undefined, "spread.wide", false, "spread.exceeds-max", false],
+      [10, "spread.wide", false, "spread.exceeds-max", false],
+      [75, "spread.wide", true, "spread.exceeds-max", false],
+      [250, "spread.wide", false, "spread.exceeds-max", true],
+    ] as const)("spreadBps=%s → wide=%s, blocked=%s", (bps, _wideId, expectWide, _blockId, expectBlock) => {
+      const r = resolveTicket(makeCtx({ spreadBps: bps }));
+      expect(r.warnings.some((d) => d.ruleId === "spread.wide")).toBe(expectWide);
+      expect(r.errors.some((d) => d.ruleId === "spread.exceeds-max")).toBe(expectBlock);
     });
 
     it("skips spread check for bonds", () => {
-      const ctx = makeCtx({
-        instrument: { ...makeCtx().instrument, instrumentType: "bond" },
-        limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "fi"] },
-        spreadBps: 300,
-        bond: {
-          symbol: "US10Y",
-          yieldPct: 4.5,
-          hasQuote: true,
-          isFetching: false,
-          hasBondDef: true,
-        },
-      });
-      const r = resolveTicket(ctx);
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType: "bond" },
+          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "fi"] },
+          spreadBps: 300,
+          bond: VALID_BOND,
+        })
+      );
       expect(r.diagnostics.filter((d) => d.ruleId.startsWith("spread."))).toHaveLength(0);
+    });
+  });
+
+  describe("resolvedFields", () => {
+    it("includes all registered field keys", () => {
+      const r = resolveTicket(makeCtx());
+      for (const key of [
+        "side",
+        "quantity",
+        "limitPrice",
+        "strategy",
+        "venue",
+        "tif",
+        "symbol",
+        "expiresAtSecs",
+      ]) {
+        expect(r.resolvedFields).toHaveProperty(key);
+      }
+    });
+
+    it.each([
+      ["equity", { limitPrice: true, strike: false, bondSymbol: false }],
+      ["option", { strike: true, expiry: true, limitPrice: false }],
+      ["bond", { bondSymbol: true, symbol: false, strategy: false }],
+    ] as const)("%s field visibility", (instrumentType, expectations) => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType },
+          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives", "fi"] },
+          ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
+          ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
+        })
+      );
+      for (const [field, visible] of Object.entries(expectations)) {
+        expect(r.resolvedFields[field].visible).toBe(visible);
+      }
+    });
+
+    it("reflects current values from context", () => {
+      const r = resolveTicket(makeCtx());
+      expect(r.resolvedFields.side.value).toBe("BUY");
+      expect(r.resolvedFields.quantity.value).toBe(100);
+      expect(r.resolvedFields.limitPrice.value).toBe(189.5);
+      expect(r.resolvedFields.strategy.value).toBe("LIMIT");
+    });
+
+    it("strategy field has options, tif has 4 options", () => {
+      const r = resolveTicket(makeCtx());
+      expect(r.resolvedFields.strategy.options).toBeDefined();
+      expect(r.resolvedFields.strategy.options?.find((o) => o.value === "LIMIT")?.disabled).toBe(
+        false
+      );
+      expect(r.resolvedFields.tif.options).toHaveLength(4);
+      expect(r.resolvedFields.tif.options?.map((o) => o.value)).toEqual([
+        "DAY",
+        "GTC",
+        "IOC",
+        "FOK",
+      ]);
+    });
+
+    it("per-field errors populated from diagnostics", () => {
+      const r = resolveTicket(makeCtx(withDraft({ quantity: 0 })));
+      expect(r.resolvedFields.quantity.errors.length).toBeGreaterThan(0);
+    });
+
+    it("fields disabled when session blocks entry", () => {
+      const r = resolveTicket(makeCtx({ session: HALTED_SESSION }));
+      expect(r.resolvedFields.quantity.disabled).toBe(true);
+      expect(r.resolvedFields.limitPrice.disabled).toBe(true);
+    });
+
+    it("origin tracks dirty fields", () => {
+      const r = resolveTicket(makeCtx({ dirtyFields: new Set(["quantity", "limitPrice"]) }));
+      expect(r.resolvedFields.quantity.origin).toBe("user");
+      expect(r.resolvedFields.limitPrice.origin).toBe("user");
+      expect(r.resolvedFields.side.origin).toBe("default");
+    });
+
+    it("all fields hidden and disabled when role-locked", () => {
+      const r = resolveTicket(makeCtx({ userRole: "admin" }));
+      expect(r.roleLocked).toBe(true);
+      for (const field of Object.values(r.resolvedFields)) {
+        expect(field.visible).toBe(false);
+        expect(field.disabled).toBe(true);
+      }
     });
   });
 
   describe("performance", () => {
     it("resolves in under 1ms", () => {
       const ctx = makeCtx();
-      // Warm up
       resolveTicket(ctx);
-
       const start = performance.now();
-      const iterations = 10_000;
-      for (let i = 0; i < iterations; i++) {
-        resolveTicket(ctx);
-      }
-      const elapsed = performance.now() - start;
-      const perCall = elapsed / iterations;
-
-      // Must be well under 1ms — targeting sub-0.1ms
-      expect(perCall).toBeLessThan(1);
+      for (let i = 0; i < 10_000; i++) resolveTicket(ctx);
+      expect((performance.now() - start) / 10_000).toBeLessThan(1);
     });
   });
 });

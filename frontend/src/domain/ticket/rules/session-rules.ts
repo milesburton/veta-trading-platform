@@ -1,23 +1,15 @@
 import { isAuction, isStrategyAllowedInSession } from "../../market/market-session";
 import type { Diagnostic, TicketContext } from "../ticket-types";
 
-/**
- * Session-aware validation rules.
- *
- * These rules check whether the current order is compatible with the
- * exchange's session phase (pre-open, auction, continuous, halt, closed).
- */
 export function runSessionRules(ctx: TicketContext): Diagnostic[] {
   const { session, draft, instrument } = ctx;
   const diagnostics: Diagnostic[] = [];
   const isEquityLike =
     instrument.instrumentType !== "option" && instrument.instrumentType !== "bond";
 
-  // Only apply session rules to equity-like instruments — options/bonds
-  // go through RFQ or separate venues with their own session logic.
+  // Options/bonds go through RFQ or separate venues with their own session logic.
   if (!isEquityLike) return diagnostics;
 
-  // 1. Order entry blocked entirely in this phase
   if (!session.allowsOrderEntry) {
     diagnostics.push({
       field: "*",
@@ -30,10 +22,9 @@ export function runSessionRules(ctx: TicketContext): Diagnostic[] {
             : `Order entry not available during ${session.phaseLabel}`,
       ruleId: "session.entry-blocked",
     });
-    return diagnostics; // No point checking further
+    return diagnostics;
   }
 
-  // 2. Strategy not supported in this phase (e.g. algos during auction)
   if (!isStrategyAllowedInSession(session, draft.strategy)) {
     const inAuction = isAuction(session.phase);
     diagnostics.push({
@@ -46,7 +37,6 @@ export function runSessionRules(ctx: TicketContext): Diagnostic[] {
     });
   }
 
-  // 3. Informational: we're in an auction phase
   if (isAuction(session.phase)) {
     diagnostics.push({
       field: "*",
@@ -56,7 +46,6 @@ export function runSessionRules(ctx: TicketContext): Diagnostic[] {
     });
   }
 
-  // 4. Pre-open informational
   if (session.phase === "PRE_OPEN") {
     diagnostics.push({
       field: "*",

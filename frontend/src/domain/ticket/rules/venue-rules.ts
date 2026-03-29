@@ -1,17 +1,10 @@
 import { getVenueCapabilities } from "../../market/venue-capabilities";
 import type { Diagnostic, TicketContext } from "../ticket-types";
 
-/**
- * Venue-constraint validation rules.
- *
- * When the user has explicitly selected a routing venue, these rules
- * verify the order is compatible with that venue's capabilities.
- */
 export function runVenueRules(ctx: TicketContext): Diagnostic[] {
   const { selectedVenue, draft, session } = ctx;
   const diagnostics: Diagnostic[] = [];
 
-  // No venue selected → SOR will route automatically, skip venue-specific checks
   if (!selectedVenue) return diagnostics;
 
   const venue = getVenueCapabilities(selectedVenue);
@@ -25,7 +18,6 @@ export function runVenueRules(ctx: TicketContext): Diagnostic[] {
     return diagnostics;
   }
 
-  // 1. Dark pool unavailable during halt
   if (venue.isDark && session.phase === "HALTED") {
     diagnostics.push({
       field: "venue",
@@ -35,7 +27,6 @@ export function runVenueRules(ctx: TicketContext): Diagnostic[] {
     });
   }
 
-  // 2. Strategy not supported by this venue
   if (!venue.supportedStrategies.includes(draft.strategy)) {
     diagnostics.push({
       field: "strategy",
@@ -45,7 +36,6 @@ export function runVenueRules(ctx: TicketContext): Diagnostic[] {
     });
   }
 
-  // 3. Limit price required if venue doesn't support market orders
   if (!venue.supportsMarketOrders && draft.limitPrice <= 0) {
     diagnostics.push({
       field: "limitPrice",
@@ -55,7 +45,6 @@ export function runVenueRules(ctx: TicketContext): Diagnostic[] {
     });
   }
 
-  // 4. Iceberg not supported
   if (draft.strategy === "ICEBERG" && !venue.supportsIceberg) {
     diagnostics.push({
       field: "strategy",
@@ -65,7 +54,6 @@ export function runVenueRules(ctx: TicketContext): Diagnostic[] {
     });
   }
 
-  // 5. Minimum quantity
   if (venue.minQuantity && draft.quantity > 0 && draft.quantity < venue.minQuantity) {
     diagnostics.push({
       field: "quantity",
@@ -75,7 +63,6 @@ export function runVenueRules(ctx: TicketContext): Diagnostic[] {
     });
   }
 
-  // 6. Minimum notional
   if (venue.minNotional && draft.quantity > 0 && draft.limitPrice > 0) {
     const notional = draft.quantity * draft.limitPrice;
     if (notional < venue.minNotional) {
@@ -88,13 +75,12 @@ export function runVenueRules(ctx: TicketContext): Diagnostic[] {
     }
   }
 
-  // 7. Auction venue selected but phase is not an auction
   if (
     venue.supportsAuction &&
     !venue.isDark &&
     (session.phase === "OPENING_AUCTION" || session.phase === "CLOSING_AUCTION")
   ) {
-    // This is fine — just informational
+    // Auction-capable venue during auction — no diagnostic needed
   } else if (
     !venue.supportsAuction &&
     (session.phase === "OPENING_AUCTION" || session.phase === "CLOSING_AUCTION")

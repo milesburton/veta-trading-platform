@@ -15,7 +15,6 @@ export function runStaticValidation(ctx: TicketContext): Diagnostic[] {
     });
   }
 
-  // Limit price required for equity-like instruments (not options/bonds where price comes from quote)
   if (!isOptions && !isBond && draft.limitPrice <= 0) {
     diagnostics.push({
       field: "limitPrice",
@@ -25,7 +24,6 @@ export function runStaticValidation(ctx: TicketContext): Diagnostic[] {
     });
   }
 
-  // Duration required for equity-like instruments
   if (!isOptions && !isBond && draft.expiresAtSecs <= 0) {
     diagnostics.push({
       field: "expiresAt",
@@ -35,7 +33,6 @@ export function runStaticValidation(ctx: TicketContext): Diagnostic[] {
     });
   }
 
-  // Symbol required
   if (!instrument.symbol) {
     diagnostics.push({
       field: "symbol",

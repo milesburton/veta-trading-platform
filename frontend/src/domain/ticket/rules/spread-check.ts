@@ -1,17 +1,8 @@
 import type { Diagnostic, TicketContext } from "../ticket-types";
 
-/** Maximum spread (in bps) before we warn the trader. */
 const SPREAD_WARNING_THRESHOLD_BPS = 50;
-
-/** Maximum spread (in bps) before we block submission. */
 const SPREAD_ERROR_THRESHOLD_BPS = 200;
 
-/**
- * Market-reactive spread validation.
- *
- * Warns or blocks when the bid-ask spread exceeds thresholds, which
- * may indicate low liquidity, a pending halt, or stale quotes.
- */
 export function runSpreadCheck(ctx: TicketContext): Diagnostic[] {
   const { spreadBps, instrument } = ctx;
   const diagnostics: Diagnostic[] = [];

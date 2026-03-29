@@ -1,7 +1,7 @@
 import type { Diagnostic, TicketContext } from "../ticket-types";
 
 export function runInstrumentSpecCheck(ctx: TicketContext): Diagnostic[] {
-  const { instrument, option, bond, draft } = ctx;
+  const { instrument, option, bond } = ctx;
   const diagnostics: Diagnostic[] = [];
 
   if (instrument.instrumentType === "option") {
@@ -63,9 +63,6 @@ export function runInstrumentSpecCheck(ctx: TicketContext): Diagnostic[] {
         message: "Pricing bond…",
         ruleId: "bond-quote-fetching",
       });
-    }
-    if (draft.quantity <= 0) {
-      // Already caught by static validation, but bond-specific message
     }
   }
 

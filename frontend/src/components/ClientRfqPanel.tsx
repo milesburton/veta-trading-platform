@@ -67,9 +67,9 @@ export function ClientRfqPanel() {
     }
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchRfqs is stable (no deps change)
   useEffect(() => {
     fetchRfqs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   async function handleSubmit(e: React.FormEvent) {

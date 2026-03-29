@@ -68,6 +68,7 @@ export function SalesWorkbenchPanel() {
     }
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchAll is stable (no deps change)
   useEffect(() => {
     fetchAll();
     intervalRef.current = setInterval(fetchAll, 3000);

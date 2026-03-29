@@ -3,7 +3,7 @@ import { getVenueCapabilities, LIT_EQUITY_VENUES, VENUE_REGISTRY } from "../venu
 
 describe("VENUE_REGISTRY", () => {
   it("has entries for all 11 venue MICs", () => {
-    const expected = [
+    for (const mic of [
       "XNAS",
       "XNYS",
       "ARCX",
@@ -15,24 +15,25 @@ describe("VENUE_REGISTRY", () => {
       "RFQ",
       "EBS",
       "XCME",
-    ];
-    for (const mic of expected) {
+    ]) {
       expect(VENUE_REGISTRY).toHaveProperty(mic);
     }
   });
 
-  it("DARK1 is marked as dark with minQuantity", () => {
-    const dark = VENUE_REGISTRY.DARK1;
-    expect(dark.isDark).toBe(true);
-    expect(dark.minQuantity).toBe(10_000);
-    expect(dark.supportsMarketOrders).toBe(false);
+  it.each([
+    ["DARK1", { isDark: true, minQuantity: 10_000, supportsMarketOrders: false }],
+    ["IEX", { supportsMarketOrders: false }],
+    ["BATS", { supportsAuction: false }],
+    ["EDGX", { supportsIceberg: false }],
+    ["RFQ", { supportedStrategies: ["LIMIT"] }],
+  ] as const)("%s capabilities", (mic, expected) => {
+    const venue = VENUE_REGISTRY[mic as keyof typeof VENUE_REGISTRY];
+    for (const [key, value] of Object.entries(expected)) {
+      expect(venue[key as keyof typeof venue]).toEqual(value);
+    }
   });
 
-  it("IEX does not support market orders", () => {
-    expect(VENUE_REGISTRY.IEX.supportsMarketOrders).toBe(false);
-  });
-
-  it("XNAS supports all strategies and order types", () => {
+  it("XNAS supports all order types and auctions", () => {
     const nasdaq = VENUE_REGISTRY.XNAS;
     expect(nasdaq.supportsMarketOrders).toBe(true);
     expect(nasdaq.supportsLimitOrders).toBe(true);
@@ -40,39 +41,22 @@ describe("VENUE_REGISTRY", () => {
     expect(nasdaq.supportsAuction).toBe(true);
     expect(nasdaq.supportedStrategies.length).toBeGreaterThan(5);
   });
-
-  it("BATS does not support auctions", () => {
-    expect(VENUE_REGISTRY.BATS.supportsAuction).toBe(false);
-  });
-
-  it("EDGX does not support iceberg", () => {
-    expect(VENUE_REGISTRY.EDGX.supportsIceberg).toBe(false);
-  });
-
-  it("RFQ only supports LIMIT", () => {
-    expect(VENUE_REGISTRY.RFQ.supportedStrategies).toEqual(["LIMIT"]);
-  });
 });
 
 describe("getVenueCapabilities", () => {
   it("returns capabilities for known venue", () => {
-    const caps = getVenueCapabilities("XNYS");
-    expect(caps?.name).toBe("NYSE");
+    expect(getVenueCapabilities("XNYS")?.name).toBe("NYSE");
   });
 
   it("returns undefined for unknown venue", () => {
-    // biome-ignore lint/suspicious/noExplicitAny: test for unknown MIC
-    const caps = getVenueCapabilities("UNKNOWN" as any);
-    expect(caps).toBeUndefined();
+    // biome-ignore lint/suspicious/noExplicitAny: testing unknown MIC
+    expect(getVenueCapabilities("UNKNOWN" as any)).toBeUndefined();
   });
 });
 
 describe("LIT_EQUITY_VENUES", () => {
-  it("contains 7 lit venues", () => {
+  it("contains 7 lit venues, excludes DARK1", () => {
     expect(LIT_EQUITY_VENUES).toHaveLength(7);
-  });
-
-  it("does not include DARK1", () => {
     expect(LIT_EQUITY_VENUES).not.toContain("DARK1");
   });
 });

@@ -5,10 +5,6 @@ export interface StrategyMeta {
   label: string;
 }
 
-/**
- * All strategies with their display labels, in dropdown order.
- * Whether each is _enabled_ for a specific user is determined at resolution time.
- */
 export const STRATEGY_OPTIONS: StrategyMeta[] = [
   { value: "LIMIT", label: "Limit Order" },
   { value: "TWAP", label: "TWAP — Time Weighted Avg Price" },
@@ -21,7 +17,6 @@ export const STRATEGY_OPTIONS: StrategyMeta[] = [
   { value: "MOMENTUM", label: "MOMENTUM — EMA crossover entry" },
 ];
 
-/** Quantity label text varies by instrument type. */
 export function quantityLabel(instrumentType: string): string {
   switch (instrumentType) {
     case "option":

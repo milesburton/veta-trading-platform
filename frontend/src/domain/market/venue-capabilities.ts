@@ -1,63 +1,32 @@
-// ---------------------------------------------------------------------------
-// Venue Capability Model
-// ---------------------------------------------------------------------------
-// Describes what each execution venue supports. The rule engine uses this
-// to constrain order types, routing, and quantity requirements.
-// ---------------------------------------------------------------------------
-
 import type { Strategy } from "../../types";
 
-/**
- * Market Identifier Code — the 7 SOR venues from our execution layer,
- * plus special routing destinations.
- */
 export type VenueMIC =
-  | "XNAS" // Nasdaq
-  | "XNYS" // NYSE
-  | "ARCX" // Cboe/ARCA
-  | "BATS" // Cboe/BZX
-  | "EDGX" // Cboe EDGX
-  | "IEX" // IEX
-  | "MEMX" // Members Exchange
-  | "DARK1" // Dark pool (internal)
-  | "RFQ" // Request for Quote (bonds)
-  | "EBS" // EBS (FX)
-  | "XCME"; // CME (commodities/futures)
+  | "XNAS"
+  | "XNYS"
+  | "ARCX"
+  | "BATS"
+  | "EDGX"
+  | "IEX"
+  | "MEMX"
+  | "DARK1"
+  | "RFQ"
+  | "EBS"
+  | "XCME";
 
 export interface VenueCapabilities {
   mic: VenueMIC;
   name: string;
-
-  /** Which strategies this venue accepts. */
   supportedStrategies: Strategy[];
-
-  /** Does this venue support market orders (price = 0)? */
   supportsMarketOrders: boolean;
-
-  /** Does this venue support limit orders? */
   supportsLimitOrders: boolean;
-
-  /** Does this venue support pegged orders? */
   supportsPegged: boolean;
-
-  /** Does this venue support iceberg orders? */
   supportsIceberg: boolean;
-
-  /** Is this a dark pool? */
   isDark: boolean;
-
-  /** Does this venue participate in auctions? */
   supportsAuction: boolean;
-
-  /** Minimum order quantity, if enforced by the venue. */
   minQuantity?: number;
-
-  /** Minimum notional value, if enforced by the venue. */
   minNotional?: number;
 }
 
-// ---------------------------------------------------------------------------
-// Static venue registry — explicit TypeScript, not JSON config
 // ---------------------------------------------------------------------------
 
 const ALL_LIT_STRATEGIES: Strategy[] = [
@@ -197,15 +166,10 @@ export const VENUE_REGISTRY: Record<VenueMIC, VenueCapabilities> = {
   },
 };
 
-/**
- * Look up a venue's capabilities. Returns undefined for unknown MICs
- * (defensive — the rule engine should handle gracefully).
- */
 export function getVenueCapabilities(mic: VenueMIC): VenueCapabilities | undefined {
   return VENUE_REGISTRY[mic];
 }
 
-/** All lit (non-dark) equity venues available for smart order routing. */
 export const LIT_EQUITY_VENUES: VenueMIC[] = [
   "XNAS",
   "XNYS",

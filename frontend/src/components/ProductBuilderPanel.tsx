@@ -57,7 +57,7 @@ export function ProductBuilderPanel() {
   function addLeg() {
     const sym = addSymbol.value.trim().toUpperCase();
     const w = parseFloat(addWeight.value);
-    if (!sym || isNaN(w) || w <= 0) return;
+    if (!sym || Number.isNaN(w) || w <= 0) return;
     legs.value = [
       ...legs.value,
       { _key: newLegKey(), type: addType.value, symbol: sym, weight: w },
@@ -103,7 +103,7 @@ export function ProductBuilderPanel() {
       return;
     }
     const notional = parseFloat(targetNotional.value);
-    if (isNaN(notional) || notional <= 0) {
+    if (Number.isNaN(notional) || notional <= 0) {
       showFeedback(false, "Target notional must be a positive number.");
       return;
     }
@@ -127,7 +127,10 @@ export function ProductBuilderPanel() {
           showFeedback(false, data.error ?? "Failed to update legs.");
           return;
         }
-        savedProduct.value = { productId: data.productId!, state: data.state! };
+        savedProduct.value = {
+          productId: data.productId as string,
+          state: data.state as ProductState,
+        };
         showFeedback(true, "Legs updated.");
       } else {
         const res = await fetch("/api/gateway/products", {
@@ -151,7 +154,10 @@ export function ProductBuilderPanel() {
           showFeedback(false, data.error ?? "Failed to create product.");
           return;
         }
-        savedProduct.value = { productId: data.productId!, state: data.state! };
+        savedProduct.value = {
+          productId: data.productId as string,
+          state: data.state as ProductState,
+        };
         showFeedback(true, `Draft product ${data.productId} created.`);
       }
     } catch (err) {
@@ -179,7 +185,10 @@ export function ProductBuilderPanel() {
         showFeedback(false, data.error ?? "Failed to structure product.");
         return;
       }
-      savedProduct.value = { productId: data.productId!, state: data.state! };
+      savedProduct.value = {
+        productId: data.productId as string,
+        state: data.state as ProductState,
+      };
       showFeedback(true, "Product structured.");
     } catch (err) {
       showFeedback(false, (err as Error).message);
@@ -206,7 +215,10 @@ export function ProductBuilderPanel() {
         showFeedback(false, data.error ?? "Failed to issue product.");
         return;
       }
-      savedProduct.value = { productId: data.productId!, state: data.state! };
+      savedProduct.value = {
+        productId: data.productId as string,
+        state: data.state as ProductState,
+      };
       showFeedback(true, "Product issued and visible to clients.");
     } catch (err) {
       showFeedback(false, (err as Error).message);

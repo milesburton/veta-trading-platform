@@ -1,7 +1,6 @@
 import type { InstrumentType } from "../../../types";
 import type { Diagnostic, TicketContext } from "../ticket-types";
 
-/** Map instrument type to the desk that handles it. */
 export function deriveDesk(
   instrumentType: InstrumentType
 ): "equity" | "fi" | "derivatives" | "fx" | "commodities" {
@@ -36,7 +35,6 @@ export function runDeskAccessCheck(ctx: TicketContext): Diagnostic[] {
   return [];
 }
 
-/** Compute which instrument type tabs the user can see. */
 export function availableInstrumentTypes(allowedDesks: string[]): InstrumentType[] {
   const types: InstrumentType[] = [];
   if (allowedDesks.includes("equity")) types.push("equity");

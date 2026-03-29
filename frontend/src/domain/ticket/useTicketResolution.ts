@@ -5,18 +5,9 @@ import type { TicketContext, TicketResolution } from "./ticket-types";
 /**
  * Structurally-memoized ticket resolution.
  *
- * Instead of relying on React's useMemo (which re-runs when any reference
- * in the deps array changes), this hook performs **shallow structural
- * comparison** of the TicketContext fields that matter to rule evaluation.
- *
- * This means:
- * - A market tick that doesn't change the selected symbol's price → no re-resolve
- * - A Redux dispatch that replaces the `limits` object with an identical copy → no re-resolve
- * - Only genuine value changes trigger resolveTicket()
- *
- * resolveTicket() itself runs in <0.1ms, but avoiding unnecessary calls also
- * avoids creating new object references, which prevents downstream React
- * re-renders of components consuming the resolution.
+ * Uses shallow structural comparison instead of reference equality so that
+ * replacing objects with identical values (common with Redux) does not
+ * trigger re-resolution or downstream re-renders.
  */
 export function useTicketResolution(ctx: TicketContext): TicketResolution {
   const prevCtxRef = useRef<TicketContext | null>(null);
@@ -32,27 +23,16 @@ export function useTicketResolution(ctx: TicketContext): TicketResolution {
   return resolution;
 }
 
-/**
- * Shallow structural equality check on the fields that influence rule output.
- * This is deliberately NOT a deep-equal — we check exactly the fields that
- * rules read, at exactly the depth they read them.
- */
 function contextEqual(a: TicketContext, b: TicketContext): boolean {
-  // Identity — same user
   if (a.userId !== b.userId) return false;
   if (a.userRole !== b.userRole) return false;
 
-  // Session — phase is the primary driver; nextTransitionAt is cosmetic
   if (a.session.phase !== b.session.phase) return false;
   if (a.session.allowsOrderEntry !== b.session.allowsOrderEntry) return false;
 
-  // Venue
   if (a.selectedVenue !== b.selectedVenue) return false;
-
-  // Spread
   if (a.spreadBps !== b.spreadBps) return false;
 
-  // Limits — shallow fields
   if (a.limits !== b.limits) {
     const al = a.limits;
     const bl = b.limits;
@@ -66,10 +46,8 @@ function contextEqual(a: TicketContext, b: TicketContext): boolean {
       return false;
   }
 
-  // Kill blocks — reference check is sufficient; Redux replaces array on change
   if (a.killBlocks !== b.killBlocks) return false;
 
-  // Instrument
   const ai = a.instrument;
   const bi = b.instrument;
   if (
@@ -81,7 +59,6 @@ function contextEqual(a: TicketContext, b: TicketContext): boolean {
   )
     return false;
 
-  // Draft order values
   const ad = a.draft;
   const bd = b.draft;
   if (
@@ -94,7 +71,6 @@ function contextEqual(a: TicketContext, b: TicketContext): boolean {
   )
     return false;
 
-  // Option draft
   const ao = a.option;
   const bo = b.option;
   if (
@@ -106,7 +82,6 @@ function contextEqual(a: TicketContext, b: TicketContext): boolean {
   )
     return false;
 
-  // Bond draft
   const ab = a.bond;
   const bb = b.bond;
   if (
