@@ -6,6 +6,7 @@ import { availableInstrumentTypes, runDeskAccessCheck } from "./rules/desk-acces
 import { runInstrumentSpecCheck } from "./rules/instrument-spec";
 import { runKillSwitchCheck } from "./rules/kill-switch";
 import { runLimitChecks } from "./rules/limit-checks";
+import { runPriceCollarCheck } from "./rules/price-collar";
 import { checkRoleLocked } from "./rules/role-check";
 import { runSessionRules } from "./rules/session-rules";
 import { runSpreadCheck } from "./rules/spread-check";
@@ -46,6 +47,7 @@ export function resolveTicket(ctx: TicketContext): TicketResolution {
     ...runInstrumentSpecCheck(ctx),
     ...runVenueRules(ctx),
     ...runSpreadCheck(ctx),
+    ...runPriceCollarCheck(ctx),
   ];
 
   const errors = diagnostics.filter((d) => d.severity === "error");

@@ -626,6 +626,48 @@ describe("resolveTicket", () => {
     });
   });
 
+  describe("price collar", () => {
+    it.each([
+      [189.5, undefined, false, false],
+      [189.5, 189.5, false, false],
+      [193.5, 189.5, true, false],
+      [185.0, 189.5, true, false],
+      [200.0, 189.5, false, true],
+      [179.0, 189.5, false, true],
+    ] as const)("limitPrice=%d market=%s → warning=%s error=%s", (limitPrice, currentPrice, expectWarning, expectError) => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, currentPrice },
+          ...withDraft({ limitPrice }),
+        })
+      );
+      expect(r.warnings.some((d) => d.ruleId === "price-collar.deviation")).toBe(expectWarning);
+      expect(r.errors.some((d) => d.ruleId === "price-collar.exceeds-max")).toBe(expectError);
+    });
+
+    it("skips for options", () => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType: "option", currentPrice: 100 },
+          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
+          option: VALID_OPTION,
+          ...withDraft({ limitPrice: 200 }),
+        })
+      );
+      expect(r.diagnostics.filter((d) => d.ruleId.startsWith("price-collar."))).toHaveLength(0);
+    });
+
+    it("skips when no market price", () => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, currentPrice: undefined },
+          ...withDraft({ limitPrice: 200 }),
+        })
+      );
+      expect(r.diagnostics.filter((d) => d.ruleId.startsWith("price-collar."))).toHaveLength(0);
+    });
+  });
+
   describe("resolvedFields", () => {
     it("includes all registered field keys", () => {
       const r = resolveTicket(makeCtx());
