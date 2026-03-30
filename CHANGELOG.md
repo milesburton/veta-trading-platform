@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.11.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.10.0...veta-trading-platform-v1.11.0) (2026-03-30)
+
+
+### Features
+
+* **market:** add trading calendar with session schedule, holidays, early closes ([b1d53f9](https://github.com/milesburton/veta-trading-platform/commit/b1d53f92cd547e8bfe1f175438a4692f3861e7e9))
+* **ticket:** add FieldDefinition registry, ResolvedField output, FK constants ([79319ec](https://github.com/milesburton/veta-trading-platform/commit/79319ecb287bebaaadccaa1c516d84c02aec1f86))
+* **ticket:** add price collar rule and async pre-trade risk validation ([9e597f7](https://github.com/milesburton/veta-trading-platform/commit/9e597f75414d7b3cd55375af7c8e6e03d97b47d5))
+* **ticket:** add session phase awareness and venue capability model ([9149569](https://github.com/milesburton/veta-trading-platform/commit/914956988f271f87d5ffb273db8c4092fbd991dc))
+* **ticket:** extract domain rule engine; add price pre-warm and open prices ([02e6c87](https://github.com/milesburton/veta-trading-platform/commit/02e6c87afb0e781c7b0ad8de3b55f4ec66c53ade))
+
+
+### Bug Fixes
+
+* **ci:** add .npmrc with legacy-peer-deps for storybook/vite7 compat ([320a6c0](https://github.com/milesburton/veta-trading-platform/commit/320a6c046fc7fb85b6558a7012127e8ce3f40beb))
+* **devcontainer:** wire postgres via Docker Compose; remove broken supervisord entry ([eb77f2f](https://github.com/milesburton/veta-trading-platform/commit/eb77f2f1c55a0bd9f45da43c089220f011d177b7))
+* **electron:** correct MOTD launch path; replace tray icon; fix blank line ([ff7fc85](https://github.com/milesburton/veta-trading-platform/commit/ff7fc8527f04b3cac254a67ca7e35f311d536f2c))
+
 ## [1.10.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.9.1...veta-trading-platform-v1.10.0) (2026-03-27)
 
 
