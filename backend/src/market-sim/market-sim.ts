@@ -12,8 +12,7 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
 const MARKET_DATA_URL = `http://${Deno.env.get("MARKET_DATA_HOST") ?? "localhost"}:${Deno.env.get("MARKET_DATA_PORT") ?? "5015"}`;
 
-// Never blocks the tick loop — updates happen in the background.
-const realPriceCache = new Map<string, number>(); // symbol → latest real price
+const realPriceCache = new Map<string, number>();
 let overriddenSymbols = new Set<string>();
 
 async function refreshOverrides(): Promise<void> {
@@ -22,9 +21,7 @@ async function refreshOverrides(): Promise<void> {
     if (!res.ok) return;
     const data = await res.json() as { overrides: Record<string, string> };
     overriddenSymbols = new Set(Object.keys(data.overrides));
-  } catch {
-    // market-data-service not yet available — keep current set
-  }
+  } catch { /* market-data-service unavailable */ }
 }
 
 async function fetchRealPrice(symbol: string): Promise<void> {
@@ -38,9 +35,7 @@ async function fetchRealPrice(symbol: string): Promise<void> {
       realPriceCache.set(symbol, data.price);
       console.log(`[market-sim] Seeding ${symbol} with real price: $${data.price.toFixed(4)}`);
     }
-  } catch {
-    // market-data-service unavailable — keep using cached/GBM price
-  }
+  } catch { /* keep cached/GBM price */ }
 }
 
 setInterval(() => refreshOverrides().catch(() => {}), 30_000);
@@ -56,8 +51,6 @@ const producer = await createProducer("market-sim");
 const ALL_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS];
 const ALL_ASSET_MAP = new Map([...ASSET_MAP, ...FX_ASSET_MAP, ...COMMODITY_ASSET_MAP]);
 
-// Fetch the last known 1m close for each asset so that prices are continuous
-// across restarts rather than resetting to hard-coded initialPrice values.
 async function seedFromJournal(): Promise<void> {
   const symbols = ALL_ASSETS.map((a) => a.symbol);
   let seeded = 0;
@@ -80,9 +73,7 @@ async function seedFromJournal(): Promise<void> {
         } finally {
           clearTimeout(timer);
         }
-      } catch {
-        // Journal not available or timed out — keep initialPrice
-      }
+      } catch { /* journal unavailable */ }
     }),
   );
   if (seeded > 0) {
@@ -99,7 +90,7 @@ console.log("[market-sim] Price engine pre-warmed — intraday moves seeded");
 
 let marketMinute = 0;
 let tickCount = 0;
-const TICKS_PER_MINUTE = 240; // 4 ticks/s × 60 s
+const TICKS_PER_MINUTE = 240;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -184,18 +175,6 @@ function computeVenueBooks(prices: Record<string, number>): Record<SorVenueMIC, 
   return result;
 }
 
-/**
- * Derive session phase from the current trading minute.
- *
- * 390-minute trading day:
- *   0–4:     PRE_OPEN          (first 5 minutes)
- *   5–9:     OPENING_AUCTION   (5 minutes)
- *   10–379:  CONTINUOUS        (370 minutes)
- *   380–384: CLOSING_AUCTION   (5 minutes)
- *   385–389: CLOSED            (last 5 minutes before day rolls)
- *
- * HALTED is triggered externally (kill switch) — not part of the clock.
- */
 type SessionPhase = "PRE_OPEN" | "OPENING_AUCTION" | "CONTINUOUS" | "CLOSING_AUCTION" | "HALTED" | "CLOSED";
 
 function deriveSessionPhase(minute: number): SessionPhase {

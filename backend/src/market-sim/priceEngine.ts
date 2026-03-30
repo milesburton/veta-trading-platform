@@ -2,74 +2,43 @@ import { ASSET_MAP as EQUITY_ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
 import { FX_ASSETS, FX_ASSET_MAP } from "./fxAssets.ts";
 import { COMMODITY_ASSETS, COMMODITY_ASSET_MAP } from "./commodityAssets.ts";
 
-/**
- * Ticks per simulated trading day.
- *
- * We run at 4 ticks/second (250 ms interval). Each tick represents
- * 1/93600 of a trading day (390 min × 60 s/min × 4 ticks/s).
- * Scaling daily volatility by 1/√93600 gives fine-grained price steps
- * that accumulate realistically over a 1-minute candle (240 ticks).
- * This produces visible wicks without coarse jumps between ticks.
- */
-const TICKS_PER_DAY = 93_600; // 4 ticks/s × 390 min × 60 s/min
+// 4 ticks/s × 390 min × 60 s/min — scaling daily vol by 1/√N gives
+// fine-grained steps that accumulate realistically over 1-min candles.
+const TICKS_PER_DAY = 93_600;
 
-/**
- * Mean-reversion strength (Ornstein–Uhlenbeck κ).
- * At 93600 ticks/day a value of 0.0002 reverts over ~5000 ticks ≈ 1.25 trading hours.
- */
+// Ornstein-Uhlenbeck κ: reverts over ~5000 ticks (≈1.25 trading hours).
 const MEAN_REVERSION_SPEED = 0.0002;
 
-/**
- * Hard floor as a fraction of the initial price.
- * Prices cannot fall below this fraction of their starting value.
- */
 const PRICE_FLOOR_RATIO = 0.10;
 
-/**
- * Sector correlation factor [0–1].
- * Fraction of each tick's random shock shared with the sector.
- * At 0.35 sector members move together ~35% of the time.
- */
+// Fraction of each tick's random shock shared with the sector.
 const SECTOR_CORRELATION = 0.35;
 
 const ALL_SEEDED_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS];
 const ALL_ASSET_MAP = new Map([...EQUITY_ASSET_MAP, ...FX_ASSET_MAP, ...COMMODITY_ASSET_MAP]);
 
-/** Current mid-prices for every asset. */
 export const marketData: Record<string, number> = Object.fromEntries(
   ALL_SEEDED_ASSETS.map((a) => [a.symbol, a.initialPrice]),
 );
 
 /**
- * Session open prices — set once after seedFromJournal() + prewarmPrices()
- * before the first live broadcast.  The frontend uses these as the baseline
- * for intraday % change so that clients connecting at any time see the same
- * day's move, not a near-zero "just started" delta.
+ * Session open prices — baseline for intraday % change. Set once before the
+ * first live broadcast so late-connecting clients see the same day's move.
  */
 export const openPrices: Record<string, number> = Object.fromEntries(
   ALL_SEEDED_ASSETS.map((a) => [a.symbol, a.initialPrice]),
 );
 
-/**
- * Snapshot the current marketData into openPrices.  Call once after
- * seedFromJournal() + prewarmPrices() and before the first live tick.
- */
 export function snapshotOpenPrices(): void {
   for (const sym of Object.keys(marketData)) {
     openPrices[sym] = marketData[sym];
   }
 }
 
-/** Anchor prices used for mean reversion (updated when seeded from candle-store). */
 const anchorPrices: Record<string, number> = Object.fromEntries(
   ALL_SEEDED_ASSETS.map((a) => [a.symbol, a.initialPrice]),
 );
 
-/**
- * Seed both the current price and the mean-reversion anchor for an asset.
- * Call this at startup when resuming from candle-store history so the price
- * is continuous with the previous session and the anchor follows the new level.
- */
 export function seedPrice(symbol: string, price: number): void {
   if (price > 0 && symbol in marketData) {
     marketData[symbol] = price;
@@ -79,28 +48,17 @@ export function seedPrice(symbol: string, price: number): void {
 
 const sectorShocks: Record<string, number> = {};
 
-/**
- * Global sentiment drift added to every asset's return each tick.
- * Switches randomly between a small bull/bear/neutral bias.
- */
 let marketDrift = 0;
 let regimeCountdown = 0;
 
 function refreshRegime() {
-  // Regime lasts between 30 s and 5 min
   regimeCountdown = 30 + Math.floor(Math.random() * 270);
   const r = Math.random();
-  if (r < 0.40) {
-    marketDrift = 0; // neutral (most common)
-  } else if (r < 0.65) {
-    marketDrift = 0.0000008; // mild bull (~0.01%/min)
-  } else if (r < 0.85) {
-    marketDrift = -0.0000008; // mild bear (~0.01%/min)
-  } else if (r < 0.93) {
-    marketDrift = 0.0000025; // strong bull (~0.036%/min)
-  } else {
-    marketDrift = -0.0000025; // strong bear (~0.036%/min)
-  }
+  if (r < 0.40) marketDrift = 0;
+  else if (r < 0.65) marketDrift = 0.0000008;
+  else if (r < 0.85) marketDrift = -0.0000008;
+  else if (r < 0.93) marketDrift = 0.0000025;
+  else marketDrift = -0.0000025;
 }
 
 function randn(): number {
@@ -109,22 +67,11 @@ function randn(): number {
   return Math.sqrt(-2 * Math.log(u1 + 1e-12)) * Math.cos(2 * Math.PI * u2);
 }
 
-/**
- * Advance the market regime counter; call once per tick before generatePrice.
- */
 export function advanceRegime() {
   if (--regimeCountdown <= 0) refreshRegime();
 }
 
-/**
- * Pre-warm the price engine by running `ticks` silent GBM steps across all
- * assets.  Call once at startup (before the first live broadcast) so that
- * prices have drifted a realistic intraday distance from their initial values,
- * giving the heatmap meaningful colour variance from the first tick clients see.
- *
- * 93 600 ticks = 1 full trading day.  Defaulting to 28 080 (≈ 1.8 trading
- * hours) produces ±0.5–3 % intraday moves for typical large-cap volatilities.
- */
+/** Run `ticks` silent GBM steps so prices start with realistic intraday drift. */
 export function prewarmPrices(ticks = 28_080): void {
   for (let i = 0; i < ticks; i++) {
     advanceRegime();
@@ -135,9 +82,6 @@ export function prewarmPrices(ticks = 28_080): void {
   }
 }
 
-/**
- * Refresh per-sector correlated shocks; call once per tick before generatePrice.
- */
 export function refreshSectorShocks() {
   const sectors = new Set(ALL_SEEDED_ASSETS.map((a) => a.sector));
   for (const sector of sectors) {
@@ -145,15 +89,7 @@ export function refreshSectorShocks() {
   }
 }
 
-/**
- * Generate the next mid-price for `asset` using:
- *   - Geometric Brownian Motion (log-normal returns)
- *   - Correctly scaled per-tick volatility (daily vol / √23400)
- *   - Mild mean reversion toward the anchor price
- *   - Partial sector correlation (shared shock component)
- *   - Market regime drift
- *   - Hard price floor at 10 % of initial price
- */
+/** GBM step with mean reversion, sector correlation, regime drift, and price floor. */
 export function generatePrice(asset: string): number {
   const def = ALL_ASSET_MAP.get(asset);
   const dailyVol = def?.volatility ?? 0.02;
@@ -161,31 +97,21 @@ export function generatePrice(asset: string): number {
   const anchor = anchorPrices[asset];
   const current = marketData[asset];
 
-  // Scale daily volatility to per-tick (σ_tick = σ_day / √N)
   const tickVol = dailyVol / Math.sqrt(TICKS_PER_DAY);
-
-  // Idiosyncratic (asset-specific) shock
   const idioShock = randn();
-
-  // Blend: sqrt(ρ)*sector + sqrt(1-ρ)*idiosyncratic
   const sectorShock = sectorShocks[sector] ?? 0;
   const combinedShock =
     Math.sqrt(SECTOR_CORRELATION) * sectorShock +
     Math.sqrt(1 - SECTOR_CORRELATION) * idioShock;
 
-  // Mean reversion (OU): pulls log-price back toward log-anchor
   const logReturn = marketDrift +
     MEAN_REVERSION_SPEED * Math.log(anchor / current) +
     tickVol * combinedShock;
 
-  // Geometric update (log-normal)
   let next = current * Math.exp(logReturn);
-
-  // Hard floor
   const floor = anchor * PRICE_FLOOR_RATIO;
   if (next < floor) next = floor;
 
-  // Round to 4 decimal places (matches existing behaviour)
   marketData[asset] = parseFloat(next.toFixed(4));
   return marketData[asset];
 }
