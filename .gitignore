@@ -9,3 +9,7 @@ coverage/
 backend/data/
 frontend/test-results/
 frontend/playwright-report/
+frontend/dist-app/
+frontend/dist-electron/
+frontend/storybook-static/
+.claude/worktrees/
