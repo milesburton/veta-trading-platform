@@ -20,7 +20,7 @@ export interface AssetDef {
   /** ISO 4217 settlement currency. */
   currency: "USD" | "JPY" | "GBP" | "CAD" | "CHF";
   /** Asset class — equity (default), fx, or commodity. */
-  assetClass?: "equity" | "fx" | "commodity";
+  assetClass?: "equity" | "fx" | "commodity" | "bond";
   /** Simulated ISIN (format: US + 9 uppercase alphanum + 1 check digit). */
   isin: string;
   /** Round lot size — minimum tradeable quantity increment. 1 for high-price stocks (>$500),

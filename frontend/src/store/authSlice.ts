@@ -4,7 +4,7 @@ import { createSlice } from "@reduxjs/toolkit";
 export interface AuthUser {
   id: string;
   name: string;
-  role: "trader" | "admin" | "compliance" | "sales" | "external-client";
+  role: "trader" | "admin" | "compliance" | "sales" | "external-client" | "viewer";
   avatar_emoji: string;
 }
 

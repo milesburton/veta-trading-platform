@@ -3,6 +3,7 @@ import { advanceRegime, generatePrice, marketData, openPrices, seedPrice, refres
 import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
 import { FX_ASSETS, FX_ASSET_MAP } from "./fxAssets.ts";
 import { COMMODITY_ASSETS, COMMODITY_ASSET_MAP } from "./commodityAssets.ts";
+import { BOND_ASSETS, BOND_ASSET_MAP } from "./bondAssets.ts";
 import { intradayVolumeFactor } from "../lib/timeScale.ts";
 import { createProducer } from "../lib/messaging.ts";
 import type { OrderBookLevel, OrderBookSnapshot } from "../lib/marketSimClient.ts";
@@ -48,8 +49,8 @@ refreshOverrides().catch(() => {});
 
 const producer = await createProducer("market-sim");
 
-const ALL_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS];
-const ALL_ASSET_MAP = new Map([...ASSET_MAP, ...FX_ASSET_MAP, ...COMMODITY_ASSET_MAP]);
+const ALL_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS, ...BOND_ASSETS];
+const ALL_ASSET_MAP = new Map([...ASSET_MAP, ...FX_ASSET_MAP, ...COMMODITY_ASSET_MAP, ...BOND_ASSET_MAP]);
 
 async function seedFromJournal(): Promise<void> {
   const symbols = ALL_ASSETS.map((a) => a.symbol);

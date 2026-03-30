@@ -60,6 +60,11 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (req.method === "GET" && path === "/users") {
+    const caller = await getUserFromToken(getCookieToken(req));
+    if (!caller) return json({ error: "unauthenticated" }, 401);
+    if (caller.role !== "admin" && caller.role !== "compliance") {
+      return json({ error: "forbidden — admin or compliance only" }, 403);
+    }
     const client = await usersPool.connect();
     try {
       const { rows } = await client.queryArray(
@@ -375,6 +380,98 @@ async function handle(req: Request): Promise<Response> {
       return json({ success: true });
     } finally { client.release(); }
   }
+
+  // ---------------------------------------------------------------------------
+  // Mock OAuth2 Provider
+  // ---------------------------------------------------------------------------
+
+  const authCodes = new Map<string, { userId: string; expiresAt: number }>();
+
+  if (req.method === "POST" && path === "/auth/authorize") {
+    let body: { userId?: string; password?: string; redirect_uri?: string };
+    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+    const userId = body.userId;
+    if (!userId) return json({ error: "userId required" }, 400);
+
+    const client = await usersPool.connect();
+    try {
+      const { rows } = await client.queryArray(
+        "SELECT id FROM users.users WHERE id = $1", [userId],
+      );
+      if (rows.length === 0) return json({ error: "user not found" }, 404);
+
+      const code = crypto.randomUUID();
+      authCodes.set(code, { userId, expiresAt: Date.now() + 60_000 });
+
+      return json({ code, redirect_uri: body.redirect_uri ?? "/auth/callback" });
+    } finally { client.release(); }
+  }
+
+  if (req.method === "POST" && path === "/auth/token") {
+    let body: { code?: string; grant_type?: string };
+    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+    if (body.grant_type !== "authorization_code") return json({ error: "unsupported grant_type" }, 400);
+    if (!body.code) return json({ error: "code required" }, 400);
+
+    const entry = authCodes.get(body.code);
+    if (!entry || entry.expiresAt < Date.now()) {
+      authCodes.delete(body.code);
+      return json({ error: "invalid_grant" }, 400);
+    }
+    authCodes.delete(body.code);
+
+    const client = await usersPool.connect();
+    try {
+      const { rows } = await client.queryArray(
+        "SELECT id, name, role, avatar_emoji FROM users.users WHERE id = $1", [entry.userId],
+      );
+      if (rows.length === 0) return json({ error: "user not found" }, 404);
+      const [id, name, role, avatar_emoji] = rows[0];
+
+      const token = randomToken();
+      await client.queryArray(
+        "INSERT INTO users.sessions (token, user_id, created_at, expires_at) VALUES ($1, $2, now(), now() + interval '8 hours')",
+        [token, id],
+      );
+      producer?.send("user.session", { event: "login", userId: id, ts: Date.now() }).catch(() => {});
+
+      return json(
+        { access_token: token, token_type: "bearer", expires_in: 28800, user: { id, name, role, avatar_emoji } },
+        200,
+        { "Set-Cookie": `veta_user=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800` },
+      );
+    } finally { client.release(); }
+  }
+
+  if (req.method === "POST" && path === "/auth/register") {
+    let body: { userId?: string; name?: string; password?: string };
+    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+    if (!body.userId || !body.name) return json({ error: "userId and name required" }, 400);
+
+    const userId = body.userId.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    if (userId.length < 2) return json({ error: "userId too short" }, 400);
+
+    const client = await usersPool.connect();
+    try {
+      const { rows: existing } = await client.queryArray(
+        "SELECT id FROM users.users WHERE id = $1", [userId],
+      );
+      if (existing.length > 0) return json({ error: "userId already exists" }, 409);
+
+      await client.queryArray(
+        "INSERT INTO users.users (id, name, role, avatar_emoji) VALUES ($1, $2, 'viewer', '👁')",
+        [userId, body.name],
+      );
+      await client.queryArray(
+        "INSERT INTO users.trading_limits (user_id, max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access) VALUES ($1, 0, 0, '', '', false)",
+        [userId],
+      );
+      producer?.send("user.session", { event: "register", userId, ts: Date.now() }).catch(() => {});
+      return json({ userId, name: body.name, role: "viewer" }, 201);
+    } finally { client.release(); }
+  }
+
+  // ---------------------------------------------------------------------------
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 }

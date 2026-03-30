@@ -705,6 +705,11 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             socket.send(JSON.stringify({ event: "error", data: { message: "Unauthenticated — please log in again" } }));
             return;
           }
+          if (currentAuth.user.role !== "admin" && currentAuth.user.role !== "trader") {
+            publishAccessEvent({ action: "auth_failure", reason: `killOrders — role ${currentAuth.user.role} not permitted`, userId: currentAuth.user.id });
+            socket.send(JSON.stringify({ event: "error", data: { message: "Kill switch requires admin or trader role" } }));
+            return;
+          }
           if (!producer.isReady()) {
             socket.send(JSON.stringify({ event: "error", data: { message: "Bus unavailable" } }));
             return;
@@ -731,6 +736,11 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           if (!currentAuth) {
             publishAccessEvent({ action: "auth_failure", reason: "resumeOrders — unauthenticated" });
             socket.send(JSON.stringify({ event: "error", data: { message: "Unauthenticated — please log in again" } }));
+            return;
+          }
+          if (currentAuth.user.role !== "admin") {
+            publishAccessEvent({ action: "auth_failure", reason: `resumeOrders — role ${currentAuth.user.role} not permitted`, userId: currentAuth.user.id });
+            socket.send(JSON.stringify({ event: "error", data: { message: "Resume requires admin role" } }));
             return;
           }
           if (!producer.isReady()) {

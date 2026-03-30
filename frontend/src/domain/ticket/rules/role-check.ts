@@ -1,12 +1,13 @@
 import type { TicketContext } from "../ticket-types";
 
-const NON_TRADING_ROLES = new Set(["admin", "compliance", "sales", "external-client"]);
+const NON_TRADING_ROLES = new Set(["admin", "compliance", "sales", "external-client", "viewer"]);
 
 const ROLE_MESSAGES: Record<string, string> = {
   admin: "Administrators cannot submit orders. This panel is reserved for trader accounts.",
   compliance: "Compliance officers have read-only access. Order submission is disabled.",
   sales: "Sales accounts cannot submit orders directly.",
   "external-client": "External client accounts cannot submit orders.",
+  viewer: "View-only access. Contact your administrator to request trading permissions.",
 };
 
 export function checkRoleLocked(ctx: TicketContext): {

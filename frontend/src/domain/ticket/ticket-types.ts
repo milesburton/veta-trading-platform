@@ -43,7 +43,7 @@ export interface BondDraft {
 
 export interface TicketContext {
   userId: string | undefined;
-  userRole: "trader" | "admin" | "compliance" | "sales" | "external-client" | undefined;
+  userRole: "trader" | "admin" | "compliance" | "sales" | "external-client" | "viewer" | undefined;
   limits: TradingLimits;
   killBlocks: KillBlock[];
   instrument: InstrumentContext;
