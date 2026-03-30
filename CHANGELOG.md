@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.11.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.11.0...veta-trading-platform-v1.11.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* **ci:** unblock Docker build from flaky Electron/Playwright E2E jobs ([01fc925](https://github.com/milesburton/veta-trading-platform/commit/01fc9256418096140fef3973d8ff5462e593379f))
+* **popout:** add contextual header with panel name, channel links, and status ([8693683](https://github.com/milesburton/veta-trading-platform/commit/869368389387e0c7e82e915390055b358fd585f4))
+
 ## [1.11.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.10.0...veta-trading-platform-v1.11.0) (2026-03-30)
 
 
