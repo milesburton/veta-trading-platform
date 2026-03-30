@@ -13,6 +13,7 @@ import { CandlestickChart } from "./CandlestickChart.tsx";
 import type { LayoutItem, PanelId } from "./DashboardLayout.tsx";
 import { modelToLayoutItems } from "./DashboardLayout.tsx";
 import { DecisionLog } from "./DecisionLog.tsx";
+import { CHANNEL_COLOURS, type ChannelNumber, PANEL_TITLES } from "./dashboard/panelRegistry.ts";
 import { ExecutionsPanel } from "./ExecutionsPanel.tsx";
 import { MarketDepth } from "./MarketDepth.tsx";
 import { MarketHeatmap } from "./MarketHeatmap.tsx";
@@ -24,7 +25,6 @@ import { OrderBlotter } from "./OrderBlotter.tsx";
 import { OrderProgressPanel } from "./OrderProgressPanel.tsx";
 import { OrderTicket } from "./OrderTicket.tsx";
 
-/** Candle chart wrapper — reads incoming channel from context to resolve symbol. */
 function CandleChartForPopOut() {
   const { incoming } = useChannelContext();
   const legacySelectedAsset = useAppSelector((s) => s.ui.selectedAsset);
@@ -46,7 +46,6 @@ function CandleChartForPopOut() {
   );
 }
 
-/** Market depth wrapper — reads symbol from channel context. */
 function MarketDepthForPopOut() {
   const { incoming } = useChannelContext();
   const legacySelectedAsset = useAppSelector((s) => s.ui.selectedAsset);
@@ -76,8 +75,6 @@ const PANEL_MAP: Record<string, React.ComponentType> = {
   "market-heatmap": MarketHeatmap,
 };
 
-/** Read channel assignments for a given instance from the persisted layout.
- *  Supports both the new flexlayout format (_v:4) and old grid format (_v:3). */
 function loadChannelContext(
   instanceId: string,
   panelType: PanelId,
@@ -121,6 +118,67 @@ function loadChannelContext(
   return { instanceId, panelType, outgoing: null, incoming: null };
 }
 
+function PopOutHeader({
+  panelType,
+  outgoing,
+  incoming,
+}: {
+  panelType: string;
+  outgoing: ChannelNumber | null;
+  incoming: ChannelNumber | null;
+}) {
+  const channelsData = useAppSelector((s) => s.channels.data);
+  const linkedSymbol = incoming !== null ? channelsData[incoming]?.selectedAsset : null;
+  const title = PANEL_TITLES[panelType as PanelId] ?? panelType;
+  const sessionPhase = useAppSelector((s) => s.market.sessionPhase);
+  const connected = useAppSelector((s) => s.market.connected);
+
+  return (
+    <div className="flex items-center justify-between h-8 px-3 border-b border-gray-800 bg-gray-950/80 shrink-0 select-none">
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
+          {title}
+        </span>
+        {linkedSymbol && (
+          <span className="text-xs font-mono text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">
+            {linkedSymbol}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        {incoming !== null && (
+          <span
+            className="flex items-center gap-1 text-[10px] text-gray-500"
+            title={`Receiving from ${CHANNEL_COLOURS[incoming].label} channel`}
+          >
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: CHANNEL_COLOURS[incoming].hex }}
+            />
+            IN
+          </span>
+        )}
+        {outgoing !== null && (
+          <span
+            className="flex items-center gap-1 text-[10px] text-gray-500"
+            title={`Broadcasting to ${CHANNEL_COLOURS[outgoing].label} channel`}
+          >
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: CHANNEL_COLOURS[outgoing].hex }}
+            />
+            OUT
+          </span>
+        )}
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-red-500"}`}
+          title={connected ? `Connected · ${sessionPhase}` : "Disconnected"}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function PopOutHost({
   instanceId,
   panelType,
@@ -133,6 +191,12 @@ export function PopOutHost({
   const theme = useAppSelector((s) => s.theme.theme);
   const dispatch = useAppDispatch();
   const PanelComponent = PANEL_MAP[panelType];
+  const channelCtx = loadChannelContext(instanceId, panelType as PanelId, layoutKey);
+
+  useEffect(() => {
+    const title = PANEL_TITLES[panelType as PanelId] ?? panelType;
+    document.title = `${title} — VETA`;
+  }, [panelType]);
 
   useEffect(() => {
     if (panelType !== "order-ticket") return;
@@ -152,6 +216,7 @@ export function PopOutHost({
       window.removeEventListener("resize", onResize);
     };
   }, [panelType, dispatch]);
+
   if (!PanelComponent) {
     return (
       <div
@@ -163,12 +228,20 @@ export function PopOutHost({
     );
   }
 
-  const channelCtx = loadChannelContext(instanceId, panelType as PanelId, layoutKey);
-
   return (
     <ChannelContext.Provider value={channelCtx}>
-      <div data-theme={theme} className="h-screen bg-gray-950 text-gray-100 overflow-hidden">
-        <PanelComponent />
+      <div
+        data-theme={theme}
+        className="flex flex-col h-screen bg-gray-950 text-gray-100 overflow-hidden"
+      >
+        <PopOutHeader
+          panelType={panelType}
+          outgoing={channelCtx.outgoing}
+          incoming={channelCtx.incoming}
+        />
+        <div className="flex-1 overflow-hidden">
+          <PanelComponent />
+        </div>
       </div>
     </ChannelContext.Provider>
   );
