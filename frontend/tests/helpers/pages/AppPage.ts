@@ -139,18 +139,9 @@ export class AppPage {
     return new MarketLadderPage(await this.panelByTitle(/Market Ladder/i));
   }
 
-  /**
-   * Open the Order Ticket dialog (via the "New Order" header button) and return
-   * a page object scoped to the dialog content.
-   */
   async getOrderTicket(): Promise<OrderTicketPage> {
-    const dialog = this.page.locator('[data-testid="order-ticket-dialog"]');
-    const isOpen = await dialog.isVisible().catch(() => false);
-    if (!isOpen) {
-      await this.page.getByTestId("new-order-btn").click();
-      await dialog.waitFor({ state: "visible", timeout: 5_000 });
-    }
-    return new OrderTicketPage(dialog, this.page);
+    const panel = await this.panelByTitle(/Order Ticket/i);
+    return new OrderTicketPage(panel, this.page);
   }
 
   async getOrderBlotter(): Promise<OrderBlotterPage> {

@@ -475,10 +475,14 @@ export class GatewayMock {
     });
   }
 
-  /** Send a market price update. Volumes default to 1000 per symbol. */
   sendMarketUpdate(prices: Record<string, number>, volumes?: Record<string, number>) {
     const vols = volumes ?? Object.fromEntries(Object.keys(prices).map((s) => [s, 1000]));
     this._send({ event: "marketUpdate", data: { prices, volumes: vols } });
+  }
+
+  sendMarketUpdateWithOpen(openPrices: Record<string, number>, prices: Record<string, number>, volumes?: Record<string, number>) {
+    const vols = volumes ?? Object.fromEntries(Object.keys(prices).map((s) => [s, 1000]));
+    this._send({ event: "marketUpdate", data: { prices, openPrices, volumes: vols } });
   }
 
   /** Send an order event on the given topic. */
@@ -551,6 +555,53 @@ export class GatewayMock {
   private _patchOrder(clientOrderId: string, patch: Partial<MockOrder>) {
     const order = this._orders.get(clientOrderId);
     if (order) Object.assign(order, patch);
+  }
+
+  injectOrder(opts: {
+    asset: string;
+    side: "BUY" | "SELL";
+    quantity: number;
+    limitPrice: number;
+    strategy?: string;
+    status: "queued" | "executing" | "filled" | "expired" | "rejected";
+  }) {
+    const clientOrderId = `inj-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const orderId = `ord-${clientOrderId}`;
+    const order: MockOrder = {
+      id: orderId,
+      clientOrderId,
+      submittedAt: Date.now() - Math.floor(Math.random() * 300_000),
+      asset: opts.asset,
+      side: opts.side,
+      quantity: opts.quantity,
+      limitPrice: opts.limitPrice,
+      expiresAt: Date.now() + 300_000,
+      strategy: opts.strategy ?? "LIMIT",
+      status: opts.status,
+      filled: opts.status === "filled" ? opts.quantity : 0,
+      algoParams: {},
+      children: [],
+    };
+    this._orders.set(clientOrderId, order);
+    this.sendOrderEvent("orders.submitted", { orderId, clientOrderId, asset: opts.asset, side: opts.side, quantity: opts.quantity, limitPrice: opts.limitPrice, status: "queued" });
+    if (opts.status === "executing" || opts.status === "filled") {
+      this.sendOrderEvent("orders.routed", { orderId, clientOrderId, strategy: opts.strategy ?? "LIMIT" });
+    }
+    if (opts.status === "filled") {
+      this.sendOrderEvent("orders.filled", {
+        parentOrderId: orderId, clientOrderId, childId: `child-${clientOrderId}`,
+        asset: opts.asset, side: opts.side, filledQty: opts.quantity, remainingQty: 0,
+        avgFillPrice: opts.limitPrice, venue: "XNAS", liquidityFlag: "MAKER",
+        commissionUSD: opts.quantity * 0.003, ts: Date.now(),
+      });
+    }
+    if (opts.status === "expired") {
+      this.sendOrderEvent("orders.expired", { orderId, clientOrderId });
+    }
+    if (opts.status === "rejected") {
+      this.sendOrderEvent("orders.rejected", { clientOrderId, reason: "Risk limit exceeded" });
+    }
+    return clientOrderId;
   }
 
   /** Send a gateway-level orderRejected (auth failure path). */
