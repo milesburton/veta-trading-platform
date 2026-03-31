@@ -168,8 +168,15 @@ export class AppPage {
   }
 
   async getOrderTicket(): Promise<OrderTicketPage> {
-    const panel = await this.panelByTitle(/Order Ticket/i);
-    return new OrderTicketPage(panel, this.page);
+    try {
+      const panel = await this.panelByTitle(/Order Ticket/i);
+      return new OrderTicketPage(panel, this.page);
+    } catch {
+      const strategySelect = this.page.locator('[data-testid="strategy-select"]').first();
+      await strategySelect.waitFor({ state: "attached", timeout: 10_000 });
+      const tab = strategySelect.locator("xpath=ancestor::div[contains(@class,'flexlayout__tab')]");
+      return new OrderTicketPage(tab, this.page);
+    }
   }
 
   async getOrderBlotter(): Promise<OrderBlotterPage> {
