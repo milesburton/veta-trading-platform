@@ -118,14 +118,42 @@ export class AppPage {
    * locator scoped to the matched content pane.
    */
   async panelByTitle(tabTitle: string | RegExp): Promise<ReturnType<Page["locator"]>> {
-    // Close the order ticket dialog if open — its inset-0 backdrop intercepts all clicks.
-    // Callers that hold an OrderTicketPage reference can call fillOrder() which will reopen it.
-    const dialog = this.page.locator('[data-testid="order-ticket-dialog"]');
-    if (await dialog.isVisible().catch(() => false)) {
-      await dialog.getByRole("button", { name: "Close order ticket dialog" }).click();
-      await dialog.waitFor({ state: "hidden", timeout: 3_000 });
-    }
     const btn = this.page.locator(".flexlayout__tab_button", { hasText: tabTitle }).first();
+    const visible = await btn.isVisible().catch(() => false);
+
+    if (visible) {
+      await btn.click();
+      await this.page.waitForTimeout(100);
+      const btnPath = await btn.getAttribute("data-layout-path");
+      if (btnPath) {
+        const contentPath = btnPath.replace(/tb(\d+)$/, "t$1");
+        return this.page.locator(`.flexlayout__tab[data-layout-path="${contentPath}"]`);
+      }
+    }
+
+    // Tab button not visible (overflow) — find the overflow button in the
+    // same tabset, click it, then click the menu item matching the title.
+    const overflowBtn = this.page.locator(".flexlayout__tab_button_overflow");
+    for (const overflow of await overflowBtn.all()) {
+      if (!(await overflow.isVisible())) continue;
+      await overflow.click();
+      await this.page.waitForTimeout(200);
+      const menuItem = this.page.locator(".flexlayout__popup_menu_item", { hasText: tabTitle }).first();
+      if (await menuItem.isVisible().catch(() => false)) {
+        await menuItem.click();
+        await this.page.waitForTimeout(200);
+        const activatedBtn = this.page.locator(".flexlayout__tab_button", { hasText: tabTitle }).first();
+        await activatedBtn.waitFor({ state: "attached", timeout: 5_000 });
+        const btnPath = await activatedBtn.getAttribute("data-layout-path");
+        if (btnPath) {
+          const contentPath = btnPath.replace(/tb(\d+)$/, "t$1");
+          return this.page.locator(`.flexlayout__tab[data-layout-path="${contentPath}"]`);
+        }
+      }
+      await this.page.keyboard.press("Escape");
+    }
+
+    // Fallback: try waiting for the tab button to appear (it may be loading)
     await btn.waitFor({ state: "attached", timeout: 10_000 });
     await btn.click();
     await this.page.waitForTimeout(100);
