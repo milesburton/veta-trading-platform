@@ -40,6 +40,13 @@ export class AppPage {
    */
   async goto(opts: { user?: AuthUser; assets?: AssetDef[]; url?: string } = {}): Promise<this> {
     this.gateway = await GatewayMock.attach(this.page, opts);
+    await this.page.addInitScript(() => {
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith("dashboard-layout") || key.startsWith("veta-layout")) {
+          localStorage.removeItem(key);
+        }
+      }
+    });
     await this.page.goto(opts.url ?? "/");
     return this;
   }
