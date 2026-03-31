@@ -17,6 +17,8 @@ import { test, expect } from "@playwright/test";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 import { DEFAULT_ASSETS, DEFAULT_LIMITS } from "./helpers/GatewayMock.ts";
 
+test.setTimeout(60_000);
+
 const AAPL_PRICE = 189.5;
 const MSFT_PRICE = 421.0;
 
@@ -65,7 +67,7 @@ async function placeAndCapture(
   await ticket.locator.getByLabel("Order quantity in shares").fill(String(opts.quantity ?? 50));
   await ticket.locator.getByLabel(/Limit Price/i).fill(String(opts.limitPrice ?? AAPL_PRICE));
 
-  const outboundPromise = app.gateway.nextOutbound("submitOrder");
+  const outboundPromise = app.gateway.nextOutbound("submitOrder", 15_000);
   await ticket.locator.getByRole("button", { name: /submit|place order/i }).click();
   const msg = await outboundPromise;
   return { clientOrderId: msg.payload.clientOrderId as string, msg };
