@@ -13,8 +13,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
 
   webServer: {
-    // `npm run preview` serves the pre-built dist/ — must `npm run build` first.
-    command: `npm run preview --silent -- --port ${PORT}`,
+    command: `npx vite --port ${PORT}`,
     port: PORT,
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',

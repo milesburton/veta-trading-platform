@@ -238,10 +238,6 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
       - name: Run Playwright UI tests (headless)
         working-directory: frontend
         run: npx playwright test --reporter=list
@@ -293,10 +289,6 @@ jobs:
       - name: Install Playwright browsers
         working-directory: frontend
         run: npx playwright install --with-deps chromium
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
 
       - name: Capture screenshots
         working-directory: frontend
