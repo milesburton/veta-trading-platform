@@ -23,7 +23,7 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     headless: true,
-    viewport: { width: 1280, height: 720 },
+    viewport: { width: 1920, height: 1080 },
     actionTimeout: 10_000,
     ignoreHTTPSErrors: true,
     // Capture trace on first retry so failures are diagnosable in CI.
