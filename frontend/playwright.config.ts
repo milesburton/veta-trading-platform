@@ -13,7 +13,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
 
   webServer: {
-    command: `npx vite --port ${PORT}`,
+    command: `npx vite --port ${PORT} --mode test`,
     port: PORT,
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',

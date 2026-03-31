@@ -52,10 +52,10 @@ export default defineConfig(async ({ mode }) => {
       ? {}
       : {
           server: {
-            port: 5173, // socat on 8080 proxies here
+            port: 5173,
             host: true,
             open: false,
-            proxy: {
+            proxy: mode === "test" ? {} : {
               // Single gateway WebSocket — replaces direct market-sim + FIX WebSocket connections
               "/ws/gateway": {
                 target: "ws://localhost:5011",
