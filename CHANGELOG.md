@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.12.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.12.0...veta-trading-platform-v1.12.1) (2026-03-31)
+
+
+### Bug Fixes
+
+* **ci:** disable vite proxy in Playwright test mode ([c6753aa](https://github.com/milesburton/veta-trading-platform/commit/c6753aaf484603f9faa3cdb449cc9a6270a2d9c9))
+* **screenshots:** realistic trading data, proper heatmap colours, more orders ([6e6ceea](https://github.com/milesburton/veta-trading-platform/commit/6e6ceea04a5a1dbf7b6366a32b63434a73a0cb4d))
+
 ## [1.12.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.11.1...veta-trading-platform-v1.12.0) (2026-03-31)
 
 
