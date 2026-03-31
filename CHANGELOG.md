@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.12.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.11.1...veta-trading-platform-v1.12.0) (2026-03-31)
+
+
+### Features
+
+* bond pricing, mock OAuth2, viewer role, RBAC hardening ([71b37bb](https://github.com/milesburton/veta-trading-platform/commit/71b37bb0518902ff7409049a7101515ccec263b8))
+* **ops:** add lightweight smoke runner Docker image ([5be5183](https://github.com/milesburton/veta-trading-platform/commit/5be51830310319c2c634826de3e05bc1f1eeb236))
+
+
+### Bug Fixes
+
+* **ci:** switch Playwright from vite preview to vite dev server ([111cfdc](https://github.com/milesburton/veta-trading-platform/commit/111cfdc8bd786a3af4180d5f6b62d578d787efda))
+* **e2e:** increase algo-orders timeouts for CI runners ([816cd33](https://github.com/milesburton/veta-trading-platform/commit/816cd33e16c548b8741acd54dc570f7173a6ed16))
+
 ## [1.11.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.11.0...veta-trading-platform-v1.11.1) (2026-03-30)
 
 
