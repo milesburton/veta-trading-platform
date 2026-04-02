@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v19`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v20`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -195,15 +195,34 @@ export function makeExecutionModel(): IJsonModel {
       type: "row",
       children: [
         {
-          type: "tabset",
+          type: "row",
           weight: 40,
           children: [
             {
-              type: "tab",
-              id: "market-ladder",
-              name: PANEL_TITLES["market-ladder"],
-              component: "market-ladder",
-              config: { panelType: "market-ladder", outgoing: 1 } satisfies TabChannelConfig,
+              type: "tabset",
+              weight: 55,
+              children: [
+                {
+                  type: "tab",
+                  id: "market-ladder",
+                  name: PANEL_TITLES["market-ladder"],
+                  component: "market-ladder",
+                  config: { panelType: "market-ladder", outgoing: 1 } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 45,
+              children: [
+                {
+                  type: "tab",
+                  id: "order-ticket",
+                  name: PANEL_TITLES["order-ticket"],
+                  component: "order-ticket",
+                  config: { panelType: "order-ticket", incoming: 1 } satisfies TabChannelConfig,
+                },
+              ],
             },
           ],
         },

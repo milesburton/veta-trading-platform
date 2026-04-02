@@ -175,15 +175,10 @@ export class AppPage {
   }
 
   async getOrderTicket(): Promise<OrderTicketPage> {
-    try {
-      const panel = await this.panelByTitle(/Order Ticket/i);
-      return new OrderTicketPage(panel, this.page);
-    } catch {
-      const strategySelect = this.page.locator('[data-testid="strategy-select"]').first();
-      await strategySelect.waitFor({ state: "attached", timeout: 10_000 });
-      const tab = strategySelect.locator("xpath=ancestor::div[contains(@class,'flexlayout__tab')]");
-      return new OrderTicketPage(tab, this.page);
-    }
+    // Tab title is dynamic: "AAPL(place trades)" when a symbol is selected,
+    // or "Order Ticket (place trades)" when no symbol is selected.
+    const panel = await this.panelByTitle(/(place trades)/i);
+    return new OrderTicketPage(panel, this.page);
   }
 
   async getOrderBlotter(): Promise<OrderBlotterPage> {
