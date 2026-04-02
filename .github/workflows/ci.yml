@@ -305,7 +305,11 @@ jobs:
             echo "No screenshot changes"
           else
             git commit -m "chore(screenshots): update UI screenshots [skip ci]"
-            git push
+            for i in 1 2 3; do
+              git pull --rebase origin main && git push && break
+              echo "Push attempt $i failed, retrying..."
+              sleep 2
+            done
           fi
 
   electron:
@@ -381,7 +385,11 @@ jobs:
             echo "No Electron screenshot changes"
           else
             git commit -m "chore(screenshots): update Electron desktop screenshots [skip ci]"
-            git push
+            for i in 1 2 3; do
+              git pull --rebase origin main && git push && break
+              echo "Push attempt $i failed, retrying..."
+              sleep 2
+            done
           fi
 
       - name: Upload Electron test report on failure
