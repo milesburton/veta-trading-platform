@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.12.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.12.1...veta-trading-platform-v1.12.2) (2026-04-02)
+
+
+### Bug Fixes
+
+* **e2e:** add order-ticket to execution model and fix tab title matching ([e3607c0](https://github.com/milesburton/veta-trading-platform/commit/e3607c026a0487277248442922f9c1f027a19d44))
+* **e2e:** clear saved layouts before each test navigation ([74a7ae9](https://github.com/milesburton/veta-trading-platform/commit/74a7ae9c087f36a7f184570f52df26e520b30c9c))
+* **e2e:** fallback to strategy-select when Order Ticket tab not found ([4492f55](https://github.com/milesburton/veta-trading-platform/commit/4492f550249d1123999ced6392f753e7c5232358))
+* **e2e:** handle FlexLayout tab overflow in panelByTitle ([7700d79](https://github.com/milesburton/veta-trading-platform/commit/7700d791d7592a67eb6e1cdf80e540d6879505c1))
+* **e2e:** override Desktop Chrome viewport to 1920x1080 ([d99df2b](https://github.com/milesburton/veta-trading-platform/commit/d99df2bd2a52d08dd2f46aa6647e15c447fc9699))
+* **e2e:** rewrite algo-orders to use injectOrder instead of Order Ticket UI ([3a53127](https://github.com/milesburton/veta-trading-platform/commit/3a53127b0ea01d006c9234f172a82b6f0d829840))
+* **e2e:** use 1920x1080 viewport for Playwright tests ([0e4a0c1](https://github.com/milesburton/veta-trading-platform/commit/0e4a0c1357458b1092ab293ab2c1ad2f2400fd17))
+
 ## [1.12.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.12.0...veta-trading-platform-v1.12.1) (2026-03-31)
 
 
