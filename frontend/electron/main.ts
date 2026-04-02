@@ -149,7 +149,11 @@ if (!gotLock) {
 app.whenReady().then(() => {
   buildMenu();
   createWindow();
-  createTray();
+  try {
+    createTray();
+  } catch {
+    // System tray unavailable (headless CI / xvfb) — non-fatal.
+  }
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
