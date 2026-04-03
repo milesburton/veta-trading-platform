@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v20`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v21`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -195,25 +195,25 @@ export function makeExecutionModel(): IJsonModel {
       type: "row",
       children: [
         {
-          type: "row",
+          type: "tabset",
           weight: 40,
           children: [
             {
-              type: "tabset",
-              weight: 55,
-              children: [
-                {
-                  type: "tab",
-                  id: "market-ladder",
-                  name: PANEL_TITLES["market-ladder"],
-                  component: "market-ladder",
-                  config: { panelType: "market-ladder", outgoing: 1 } satisfies TabChannelConfig,
-                },
-              ],
+              type: "tab",
+              id: "market-ladder",
+              name: PANEL_TITLES["market-ladder"],
+              component: "market-ladder",
+              config: { panelType: "market-ladder", outgoing: 1 } satisfies TabChannelConfig,
             },
+          ],
+        },
+        {
+          type: "row",
+          weight: 60,
+          children: [
             {
               type: "tabset",
-              weight: 45,
+              weight: 50,
               children: [
                 {
                   type: "tab",
@@ -224,18 +224,18 @@ export function makeExecutionModel(): IJsonModel {
                 },
               ],
             },
-          ],
-        },
-        {
-          type: "tabset",
-          weight: 60,
-          children: [
             {
-              type: "tab",
-              id: "order-blotter",
-              name: PANEL_TITLES["order-blotter"],
-              component: "order-blotter",
-              config: { panelType: "order-blotter" } satisfies TabChannelConfig,
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "order-blotter",
+                  name: PANEL_TITLES["order-blotter"],
+                  component: "order-blotter",
+                  config: { panelType: "order-blotter" } satisfies TabChannelConfig,
+                },
+              ],
             },
           ],
         },
