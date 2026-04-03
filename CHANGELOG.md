@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.12.3...veta-trading-platform-v1.12.4) (2026-04-03)
+
+
+### Bug Fixes
+
+* **layout:** reorganise execution model — ladder | ticket + blotter ([64d9f70](https://github.com/milesburton/veta-trading-platform/commit/64d9f70c05390c280f0672215bfb5049ce4ab57b))
+
 ## [1.12.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.12.2...veta-trading-platform-v1.12.3) (2026-04-02)
 
 
