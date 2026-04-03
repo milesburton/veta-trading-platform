@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.12.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.12.2...veta-trading-platform-v1.12.3) (2026-04-02)
+
+
+### Bug Fixes
+
+* **ci:** pull-rebase before pushing screenshot commits ([1225611](https://github.com/milesburton/veta-trading-platform/commit/1225611a2b651561d964afd7fedd4b8c39fdf8d6))
+* **electron:** catch tray creation failure in headless CI ([e409f94](https://github.com/milesburton/veta-trading-platform/commit/e409f9479fa6199df4d435fe0cb85eb219a561a8))
+
 ## [1.12.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.12.1...veta-trading-platform-v1.12.2) (2026-04-02)
 
 
