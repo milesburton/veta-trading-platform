@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.12.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.12.4...veta-trading-platform-v1.12.5) (2026-04-04)
+
+
+### Bug Fixes
+
+* **deploy:** use single machine on Fly.io to avoid auth cache split ([4c0d81d](https://github.com/milesburton/veta-trading-platform/commit/4c0d81d68c670fe3ae9dc26979d9e62d209edfde))
+* **smoke:** consume response bodies before assertions and add retry ([446cc2e](https://github.com/milesburton/veta-trading-platform/commit/446cc2e555da2201d59d569006f4f2c845b5bd77))
+* **smoke:** increase submitOrderWithRetry to 5 attempts with backoff ([7a2eced](https://github.com/milesburton/veta-trading-platform/commit/7a2eced5e63af4adfda9ff7545d15c9393e729f6))
+
 ## [1.12.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.12.3...veta-trading-platform-v1.12.4) (2026-04-03)
 
 
