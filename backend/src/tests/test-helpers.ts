@@ -158,11 +158,11 @@ export async function submitOrderWithRetry(
     algoParams?: Record<string, unknown>;
     expiresAt?: number;
   },
-  maxRetries = 3,
+  maxRetries = 5,
 ): Promise<WsOrderResponse & { clientOrderId: string }> {
   let lastErr: Error | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    if (attempt > 0) await new Promise((r) => setTimeout(r, 500));
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 1_000 + attempt * 500));
     const token = await loginAsVerified(userId);
     try {
       return await submitOrderViaWs(token, order);
