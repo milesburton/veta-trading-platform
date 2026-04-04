@@ -31,9 +31,14 @@ export async function createWeightStore(pool: Pool): Promise<WeightStore> {
           (id, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta, updated_at)
          VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8)`,
         [
-          DEFAULT_WEIGHTS.momentum, DEFAULT_WEIGHTS.relativeVolume, DEFAULT_WEIGHTS.realisedVol,
-          DEFAULT_WEIGHTS.sectorRelativeStrength, DEFAULT_WEIGHTS.eventScore,
-          DEFAULT_WEIGHTS.newsVelocity, DEFAULT_WEIGHTS.sentimentDelta, Date.now(),
+          DEFAULT_WEIGHTS.momentum,
+          DEFAULT_WEIGHTS.relativeVolume,
+          DEFAULT_WEIGHTS.realisedVol,
+          DEFAULT_WEIGHTS.sectorRelativeStrength,
+          DEFAULT_WEIGHTS.eventScore,
+          DEFAULT_WEIGHTS.newsVelocity,
+          DEFAULT_WEIGHTS.sentimentDelta,
+          Date.now(),
         ],
       );
     }
@@ -48,12 +53,38 @@ export async function createWeightStore(pool: Pool): Promise<WeightStore> {
       if (cached) return cached;
       const c = await pool.connect();
       try {
-        const { rows } = await c.queryArray<[number, number, number, number, number, number, number]>(
+        const { rows } = await c.queryArray<
+          [number, number, number, number, number, number, number]
+        >(
           "SELECT momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta FROM intelligence.signal_weights WHERE id = 1",
         );
         if (rows.length === 0) return { ...DEFAULT_WEIGHTS };
-        const [momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta] = rows[0].map(Number) as [number,number,number,number,number,number,number];
-        cached = { momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta };
+        const [
+          momentum,
+          relativeVolume,
+          realisedVol,
+          sectorRelativeStrength,
+          eventScore,
+          newsVelocity,
+          sentimentDelta,
+        ] = rows[0].map(Number) as [
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+        ];
+        cached = {
+          momentum,
+          relativeVolume,
+          realisedVol,
+          sectorRelativeStrength,
+          eventScore,
+          newsVelocity,
+          sentimentDelta,
+        };
         return cached;
       } finally {
         c.release();
@@ -77,9 +108,14 @@ export async function createWeightStore(pool: Pool): Promise<WeightStore> {
              sentiment_delta = EXCLUDED.sentiment_delta,
              updated_at = EXCLUDED.updated_at`,
           [
-            weights.momentum, weights.relativeVolume, weights.realisedVol,
-            weights.sectorRelativeStrength, weights.eventScore,
-            weights.newsVelocity, weights.sentimentDelta, Date.now(),
+            weights.momentum,
+            weights.relativeVolume,
+            weights.realisedVol,
+            weights.sectorRelativeStrength,
+            weights.eventScore,
+            weights.newsVelocity,
+            weights.sentimentDelta,
+            Date.now(),
           ],
         );
         cached = null;

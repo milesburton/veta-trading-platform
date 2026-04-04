@@ -13,7 +13,12 @@ import { MarketLadder } from "../MarketLadder";
 
 const assets: AssetDef[] = [
   { symbol: "AAPL", initialPrice: 150, volatility: 0.02, sector: "Technology" },
-  { symbol: "MSFT", initialPrice: 300, volatility: 0.015, sector: "Technology" },
+  {
+    symbol: "MSFT",
+    initialPrice: 300,
+    volatility: 0.015,
+    sector: "Technology",
+  },
   { symbol: "XOM", initialPrice: 80, volatility: 0.025, sector: "Energy" },
   { symbol: "JPM", initialPrice: 150, volatility: 0.02, sector: "Finance" },
 ];

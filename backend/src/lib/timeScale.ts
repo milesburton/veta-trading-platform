@@ -3,7 +3,8 @@ export const TIME_SCALE = Number(Deno.env.get("TIME_SCALE")) || 60;
 export const TRADING_DAY_MINUTES = 390;
 
 export function currentMarketMinute(): number {
-  const elapsedSecs = (Date.now() / 1_000) % (TRADING_DAY_MINUTES * (1_000 / TIME_SCALE) / 1_000);
+  const elapsedSecs = (Date.now() / 1_000) %
+    (TRADING_DAY_MINUTES * (1_000 / TIME_SCALE) / 1_000);
   return Math.floor(elapsedSecs * TIME_SCALE) % TRADING_DAY_MINUTES;
 }
 

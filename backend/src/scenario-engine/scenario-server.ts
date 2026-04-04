@@ -1,11 +1,17 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import type { FeatureVector, ScenarioShock, Signal } from "../types/intelligence.ts";
+import type {
+  FeatureVector,
+  ScenarioShock,
+  Signal,
+} from "../types/intelligence.ts";
 import { scoreFeatureVector } from "../signal-engine/scorer.ts";
 import { DEFAULT_WEIGHTS } from "../signal-engine/weight-store.ts";
 
 const PORT = Number(Deno.env.get("SCENARIO_ENGINE_PORT")) || 5_020;
-const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") || "http://localhost:5017";
-const SIGNAL_ENGINE_URL = Deno.env.get("SIGNAL_ENGINE_URL") || "http://localhost:5018";
+const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") ||
+  "http://localhost:5017";
+const SIGNAL_ENGINE_URL = Deno.env.get("SIGNAL_ENGINE_URL") ||
+  "http://localhost:5018";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 const CORS_HEADERS = {
@@ -38,7 +44,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
 
   if (path === "/health" && req.method === "GET") {
     return json({ service: "scenario-engine", version: VERSION, status: "ok" });
@@ -59,9 +67,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     let fv: FeatureVector | null = null;
     try {
-      const res = await fetch(`${FEATURE_ENGINE_URL}/features/${encodeURIComponent(symbol)}`, {
-        signal: AbortSignal.timeout(3_000),
-      });
+      const res = await fetch(
+        `${FEATURE_ENGINE_URL}/features/${encodeURIComponent(symbol)}`,
+        {
+          signal: AbortSignal.timeout(3_000),
+        },
+      );
       if (res.ok) fv = await res.json() as FeatureVector;
     } catch { /* ignored */ }
 
@@ -71,7 +82,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     let weights = { ...DEFAULT_WEIGHTS };
     try {
-      const res = await fetch(`${SIGNAL_ENGINE_URL}/weights`, { signal: AbortSignal.timeout(2_000) });
+      const res = await fetch(`${SIGNAL_ENGINE_URL}/weights`, {
+        signal: AbortSignal.timeout(2_000),
+      });
       if (res.ok) weights = await res.json() as typeof weights;
     } catch { /* use defaults */ }
 
@@ -81,7 +94,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     for (const shock of shocks) {
       if (shock.factor in shockedFv) {
         (shockedFv as unknown as Record<string, number>)[shock.factor] =
-          (shockedFv as unknown as Record<string, number>)[shock.factor] + shock.delta;
+          (shockedFv as unknown as Record<string, number>)[shock.factor] +
+          shock.delta;
       }
     }
 

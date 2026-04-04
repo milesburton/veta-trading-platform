@@ -5,12 +5,19 @@
 import type { Locator } from "@playwright/test";
 import { expect } from "@playwright/test";
 
-export type OrderStatus = "queued" | "executing" | "filled" | "expired" | "rejected";
+export type OrderStatus =
+  | "queued"
+  | "executing"
+  | "filled"
+  | "expired"
+  | "rejected";
 
 export class OrderBlotterPage {
   constructor(private readonly root: Locator) {}
 
-  private get table() { return this.root.locator("table"); }
+  private get table() {
+    return this.root.locator("table");
+  }
 
   /** All order rows (parent rows only, not child execution rows). */
   orderRows() {
@@ -20,7 +27,9 @@ export class OrderBlotterPage {
 
   /** Find an order row by its client order ID prefix (first 8 chars). */
   rowByIdPrefix(prefix: string) {
-    return this.table.locator("tbody tr[aria-selected]").filter({ hasText: prefix });
+    return this.table.locator("tbody tr[aria-selected]").filter({
+      hasText: prefix,
+    });
   }
 
   /**
@@ -29,7 +38,7 @@ export class OrderBlotterPage {
    */
   async waitForStatus(status: OrderStatus, timeoutMs = 8_000) {
     await expect(
-      this.root.locator(`span:has-text("${status}")`)
+      this.root.locator(`span:has-text("${status}")`),
     ).toBeVisible({ timeout: timeoutMs });
   }
 
@@ -61,7 +70,9 @@ export class OrderBlotterPage {
 
   /** Assert there are no orders yet (empty state message). */
   async expectEmpty() {
-    await expect(this.root.getByText(/No orders submitted yet/i)).toBeVisible({ timeout: 5_000 });
+    await expect(this.root.getByText(/No orders submitted yet/i)).toBeVisible({
+      timeout: 5_000,
+    });
   }
 
   /** Assert the most recent order has the given status. */
@@ -76,7 +87,7 @@ export class OrderBlotterPage {
   /** Assert that the blotter contains a row with the given asset name. */
   async expectAssetVisible(asset: string) {
     await expect(
-      this.table.locator("tbody td").filter({ hasText: asset }).first()
+      this.table.locator("tbody td").filter({ hasText: asset }).first(),
     ).toBeVisible({ timeout: 6_000 });
   }
 }

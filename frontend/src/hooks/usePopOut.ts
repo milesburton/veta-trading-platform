@@ -23,7 +23,11 @@ export function usePopOut(overrideId?: string): {
   const isPopOut = useAppSelector((s) => s.windows.popOuts[instanceId]?.open ?? false);
 
   function popOut() {
-    const params = new URLSearchParams({ panel: instanceId, type: panelType, layout: storageKey });
+    const params = new URLSearchParams({
+      panel: instanceId,
+      type: panelType,
+      layout: storageKey,
+    });
     const url = `${window.location.origin}${window.location.pathname}?${params}`;
     const w = window.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
     if (w) {

@@ -1,7 +1,7 @@
 import { ASSET_MAP as EQUITY_ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
-import { FX_ASSETS, FX_ASSET_MAP } from "./fxAssets.ts";
-import { COMMODITY_ASSETS, COMMODITY_ASSET_MAP } from "./commodityAssets.ts";
-import { BOND_ASSETS, BOND_ASSET_MAP } from "./bondAssets.ts";
+import { FX_ASSET_MAP, FX_ASSETS } from "./fxAssets.ts";
+import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodityAssets.ts";
+import { BOND_ASSET_MAP, BOND_ASSETS } from "./bondAssets.ts";
 
 // 4 ticks/s × 390 min × 60 s/min — scaling daily vol by 1/√N gives
 // fine-grained steps that accumulate realistically over 1-min candles.
@@ -15,8 +15,18 @@ const PRICE_FLOOR_RATIO = 0.10;
 // Fraction of each tick's random shock shared with the sector.
 const SECTOR_CORRELATION = 0.35;
 
-const ALL_SEEDED_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS, ...BOND_ASSETS];
-const ALL_ASSET_MAP = new Map([...EQUITY_ASSET_MAP, ...FX_ASSET_MAP, ...COMMODITY_ASSET_MAP, ...BOND_ASSET_MAP]);
+const ALL_SEEDED_ASSETS = [
+  ...SP500_ASSETS,
+  ...FX_ASSETS,
+  ...COMMODITY_ASSETS,
+  ...BOND_ASSETS,
+];
+const ALL_ASSET_MAP = new Map([
+  ...EQUITY_ASSET_MAP,
+  ...FX_ASSET_MAP,
+  ...COMMODITY_ASSET_MAP,
+  ...BOND_ASSET_MAP,
+]);
 
 export const marketData: Record<string, number> = Object.fromEntries(
   ALL_SEEDED_ASSETS.map((a) => [a.symbol, a.initialPrice]),
@@ -101,8 +111,7 @@ export function generatePrice(asset: string): number {
   const tickVol = dailyVol / Math.sqrt(TICKS_PER_DAY);
   const idioShock = randn();
   const sectorShock = sectorShocks[sector] ?? 0;
-  const combinedShock =
-    Math.sqrt(SECTOR_CORRELATION) * sectorShock +
+  const combinedShock = Math.sqrt(SECTOR_CORRELATION) * sectorShock +
     Math.sqrt(1 - SECTOR_CORRELATION) * idioShock;
 
   const logReturn = marketDrift +

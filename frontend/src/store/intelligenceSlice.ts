@@ -62,7 +62,9 @@ export const intelligenceSlice = createSlice({
     },
     recommendationReceived(state, action: PayloadAction<TradeRecommendation>) {
       state.recommendations.unshift(action.payload);
-      if (state.recommendations.length > 100) state.recommendations.length = 100;
+      if (state.recommendations.length > 100) {
+        state.recommendations.length = 100;
+      }
     },
     signalsBatchReceived(state, action: PayloadAction<Signal[]>) {
       for (const sig of action.payload) {

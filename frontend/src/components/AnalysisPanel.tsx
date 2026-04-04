@@ -35,7 +35,12 @@ export function AnalysisPanel() {
     data: fetchedNews,
     isFetching,
     refetch,
-  } = useGetNewsBySymbolQuery({ symbol: selectedAsset ?? "" }, { skip: !selectedAsset });
+  } = useGetNewsBySymbolQuery(
+    { symbol: selectedAsset ?? "" },
+    {
+      skip: !selectedAsset,
+    }
+  );
 
   // Seed Redux news slice when fresh data arrives
   useEffect(() => {

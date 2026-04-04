@@ -29,13 +29,15 @@ import {
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
 import { loginAs } from "./test-helpers.ts";
 
-const FEATURE_ENGINE_URL    = "http://localhost:5017";
-const SIGNAL_ENGINE_URL     = "http://localhost:5018";
-const MARKET_DATA_URL       = "http://localhost:5016";
-const SCENARIO_ENGINE_URL   = "http://localhost:5020";
-const GATEWAY_URL           = "http://localhost:5011";
+const FEATURE_ENGINE_URL = "http://localhost:5017";
+const SIGNAL_ENGINE_URL = "http://localhost:5018";
+const MARKET_DATA_URL = "http://localhost:5016";
+const SCENARIO_ENGINE_URL = "http://localhost:5020";
+const GATEWAY_URL = "http://localhost:5011";
 
-function t(ms = 10_000) { return AbortSignal.timeout(ms); }
+function t(ms = 10_000) {
+  return AbortSignal.timeout(ms);
+}
 
 async function getJson<T>(url: string, headers?: HeadersInit): Promise<T> {
   const res = await fetch(url, { headers, signal: t() });
@@ -46,26 +48,34 @@ async function getJson<T>(url: string, headers?: HeadersInit): Promise<T> {
 // ── Service health ────────────────────────────────────────────────────────────
 
 Deno.test("[intelligence] feature-engine is healthy", async () => {
-  const health = await getJson<{ status: string; service: string }>(`${FEATURE_ENGINE_URL}/health`);
+  const health = await getJson<{ status: string; service: string }>(
+    `${FEATURE_ENGINE_URL}/health`,
+  );
   assertEquals(health.status, "ok");
   assertEquals(health.service, "feature-engine");
 });
 
 Deno.test("[intelligence] signal-engine is healthy", async () => {
-  const health = await getJson<{ status: string; service: string }>(`${SIGNAL_ENGINE_URL}/health`);
+  const health = await getJson<{ status: string; service: string }>(
+    `${SIGNAL_ENGINE_URL}/health`,
+  );
   assertEquals(health.status, "ok");
   assertEquals(health.service, "signal-engine");
 });
 
 Deno.test("[intelligence] market-data-adapters is healthy", async () => {
-  const health = await getJson<{ status: string; service: string; eventCount: number }>(`${MARKET_DATA_URL}/health`);
+  const health = await getJson<
+    { status: string; service: string; eventCount: number }
+  >(`${MARKET_DATA_URL}/health`);
   assertEquals(health.status, "ok");
   assertEquals(health.service, "market-data-adapters");
   assert(health.eventCount >= 0, "eventCount should be non-negative");
 });
 
 Deno.test("[intelligence] scenario-engine is healthy", async () => {
-  const health = await getJson<{ status: string; service: string }>(`${SCENARIO_ENGINE_URL}/health`);
+  const health = await getJson<{ status: string; service: string }>(
+    `${SCENARIO_ENGINE_URL}/health`,
+  );
   assertEquals(health.status, "ok");
   assertEquals(health.service, "scenario-engine");
 });
@@ -73,24 +83,42 @@ Deno.test("[intelligence] scenario-engine is healthy", async () => {
 // ── Default weights invariants ────────────────────────────────────────────────
 
 Deno.test("[intelligence] signal-engine default weights: abs-sum=1.0, realisedVol<0, all 7 keys present", async () => {
-  const weights = await getJson<Record<string, number>>(`${SIGNAL_ENGINE_URL}/weights`);
+  const weights = await getJson<Record<string, number>>(
+    `${SIGNAL_ENGINE_URL}/weights`,
+  );
 
-  const expectedKeys = ["momentum", "relativeVolume", "realisedVol", "sectorRelativeStrength", "eventScore", "newsVelocity", "sentimentDelta"];
+  const expectedKeys = [
+    "momentum",
+    "relativeVolume",
+    "realisedVol",
+    "sectorRelativeStrength",
+    "eventScore",
+    "newsVelocity",
+    "sentimentDelta",
+  ];
   for (const k of expectedKeys) {
     assertExists(weights[k], `Missing weight key: ${k}`);
   }
   assertEquals(Object.keys(weights).length, 7);
 
-  assert(weights.realisedVol < 0, `realisedVol weight should be negative, got ${weights.realisedVol}`);
+  assert(
+    weights.realisedVol < 0,
+    `realisedVol weight should be negative, got ${weights.realisedVol}`,
+  );
 
   const absSum = Object.values(weights).reduce((a, b) => a + Math.abs(b), 0);
-  assert(Math.abs(absSum - 1.0) < 0.01, `abs-sum of weights should be ~1.0, got ${absSum}`);
+  assert(
+    Math.abs(absSum - 1.0) < 0.01,
+    `abs-sum of weights should be ~1.0, got ${absSum}`,
+  );
 });
 
 // ── Weight round-trip ─────────────────────────────────────────────────────────
 
 Deno.test("[intelligence] PUT /weights round-trips a single weight change", async () => {
-  const original = await getJson<Record<string, number>>(`${SIGNAL_ENGINE_URL}/weights`);
+  const original = await getJson<Record<string, number>>(
+    `${SIGNAL_ENGINE_URL}/weights`,
+  );
 
   const patched = { ...original, newsVelocity: original.newsVelocity + 0.01 };
   const putRes = await fetch(`${SIGNAL_ENGINE_URL}/weights`, {
@@ -118,12 +146,22 @@ Deno.test("[intelligence] PUT /weights round-trips a single weight change", asyn
 // ── Feature-engine data ───────────────────────────────────────────────────────
 
 Deno.test("[intelligence] feature-engine returns all 7 feature fields for a tracked symbol", async () => {
-  const expectedFields = ["momentum", "relativeVolume", "realisedVol", "sectorRelativeStrength", "eventScore", "newsVelocity", "sentimentDelta"];
+  const expectedFields = [
+    "momentum",
+    "relativeVolume",
+    "realisedVol",
+    "sectorRelativeStrength",
+    "eventScore",
+    "newsVelocity",
+    "sentimentDelta",
+  ];
   const deadline = Date.now() + 45_000;
   let fv: Record<string, unknown> | null = null;
 
   while (Date.now() < deadline) {
-    const res = await fetch(`${FEATURE_ENGINE_URL}/features/AAPL`, { signal: t() });
+    const res = await fetch(`${FEATURE_ENGINE_URL}/features/AAPL`, {
+      signal: t(),
+    });
     if (res.ok) {
       fv = await res.json() as Record<string, unknown>;
       break;
@@ -132,12 +170,22 @@ Deno.test("[intelligence] feature-engine returns all 7 feature fields for a trac
     await new Promise((r) => setTimeout(r, 2_000));
   }
 
-  assertExists(fv, "Feature-engine did not produce a FeatureVector for AAPL within 45s");
+  assertExists(
+    fv,
+    "Feature-engine did not produce a FeatureVector for AAPL within 45s",
+  );
   assertEquals((fv as Record<string, unknown>).symbol, "AAPL");
 
   for (const field of expectedFields) {
-    assertExists(fv[field] !== undefined ? fv[field] : null, `Missing field: ${field}`);
-    assertEquals(typeof fv[field], "number", `Field ${field} should be a number`);
+    assertExists(
+      fv[field] !== undefined ? fv[field] : null,
+      `Missing field: ${field}`,
+    );
+    assertEquals(
+      typeof fv[field],
+      "number",
+      `Field ${field} should be a number`,
+    );
   }
 });
 
@@ -148,7 +196,9 @@ Deno.test("[intelligence] signal-engine returns a well-formed Signal for a track
   let signal: Record<string, unknown> | null = null;
 
   while (Date.now() < deadline) {
-    const res = await fetch(`${SIGNAL_ENGINE_URL}/signals/AAPL`, { signal: t() });
+    const res = await fetch(`${SIGNAL_ENGINE_URL}/signals/AAPL`, {
+      signal: t(),
+    });
     if (res.ok) {
       signal = await res.json() as Record<string, unknown>;
       break;
@@ -157,12 +207,24 @@ Deno.test("[intelligence] signal-engine returns a well-formed Signal for a track
     await new Promise((r) => setTimeout(r, 2_000));
   }
 
-  assertExists(signal, "Signal-engine did not produce a Signal for AAPL within 45s");
+  assertExists(
+    signal,
+    "Signal-engine did not produce a Signal for AAPL within 45s",
+  );
   assertEquals(signal.symbol, "AAPL");
   assert(typeof signal.score === "number", "score should be a number");
-  assert((signal.score as number) >= -1 && (signal.score as number) <= 1, `score ${signal.score} out of [-1, 1]`);
-  assert(["long", "short", "neutral"].includes(signal.direction as string), `invalid direction: ${signal.direction}`);
-  assert(Array.isArray(signal.factors) && (signal.factors as unknown[]).length === 7, "factors should have 7 entries");
+  assert(
+    (signal.score as number) >= -1 && (signal.score as number) <= 1,
+    `score ${signal.score} out of [-1, 1]`,
+  );
+  assert(
+    ["long", "short", "neutral"].includes(signal.direction as string),
+    `invalid direction: ${signal.direction}`,
+  );
+  assert(
+    Array.isArray(signal.factors) && (signal.factors as unknown[]).length === 7,
+    "factors should have 7 entries",
+  );
 });
 
 Deno.test("[intelligence] signal direction is consistent with score", async () => {
@@ -170,7 +232,9 @@ Deno.test("[intelligence] signal direction is consistent with score", async () =
   let signal: { score: number; direction: string } | null = null;
 
   while (Date.now() < deadline) {
-    const res = await fetch(`${SIGNAL_ENGINE_URL}/signals/AAPL`, { signal: t() });
+    const res = await fetch(`${SIGNAL_ENGINE_URL}/signals/AAPL`, {
+      signal: t(),
+    });
     if (res.ok) {
       signal = await res.json() as { score: number; direction: string };
       break;
@@ -181,9 +245,11 @@ Deno.test("[intelligence] signal direction is consistent with score", async () =
 
   assertExists(signal, "No signal available after 45s");
   const { score, direction } = signal;
-  if (score > 0.2)       assertEquals(direction, "long",    `score=${score} should be long`);
-  else if (score < -0.2) assertEquals(direction, "short",   `score=${score} should be short`);
-  else                   assertEquals(direction, "neutral", `score=${score} should be neutral`);
+  if (score > 0.2) {
+    assertEquals(direction, "long", `score=${score} should be long`);
+  } else if (score < -0.2) {
+    assertEquals(direction, "short", `score=${score} should be short`);
+  } else assertEquals(direction, "neutral", `score=${score} should be neutral`);
 });
 
 // ── Scenario engine ───────────────────────────────────────────────────────────
@@ -216,7 +282,10 @@ Deno.test("[intelligence] scenario: positive momentum shock increases signal sco
   assertExists(result.baseline, "missing baseline");
   assertExists(result.shocked, "missing shocked");
   assert(typeof result.delta === "number", "delta should be a number");
-  assert(result.shocked.score >= result.baseline.score, `positive momentum shock should increase score: baseline=${result.baseline.score} shocked=${result.shocked.score}`);
+  assert(
+    result.shocked.score >= result.baseline.score,
+    `positive momentum shock should increase score: baseline=${result.baseline.score} shocked=${result.shocked.score}`,
+  );
 });
 
 Deno.test("[intelligence] scenario: negative sentiment shock decreases signal score", async () => {
@@ -244,16 +313,29 @@ Deno.test("[intelligence] scenario: negative sentiment shock decreases signal sc
     delta: number;
   };
 
-  assert(result.shocked.score <= result.baseline.score, `negative sentiment shock should reduce score: baseline=${result.baseline.score} shocked=${result.shocked.score}`);
-  assert(result.delta <= 0, `delta should be ≤0 for negative shock, got ${result.delta}`);
+  assert(
+    result.shocked.score <= result.baseline.score,
+    `negative sentiment shock should reduce score: baseline=${result.baseline.score} shocked=${result.shocked.score}`,
+  );
+  assert(
+    result.delta <= 0,
+    `delta should be ≤0 for negative shock, got ${result.delta}`,
+  );
 });
 
 // ── Market-data-adapters ──────────────────────────────────────────────────────
 
 Deno.test("[intelligence] market-data-adapters returns seeded events with valid structure", async () => {
-  const events = await getJson<Array<{
-    id: string; type: string; headline: string; scheduledAt: number; impact: string; ts: number;
-  }>>(`${MARKET_DATA_URL}/events?limit=20`);
+  const events = await getJson<
+    Array<{
+      id: string;
+      type: string;
+      headline: string;
+      scheduledAt: number;
+      impact: string;
+      ts: number;
+    }>
+  >(`${MARKET_DATA_URL}/events?limit=20`);
 
   assert(Array.isArray(events), "events should be an array");
   assert(events.length > 0, "should have at least one seeded event");
@@ -262,8 +344,14 @@ Deno.test("[intelligence] market-data-adapters returns seeded events with valid 
   assertExists(first.id, "event.id");
   assertExists(first.type, "event.type");
   assertExists(first.headline, "event.headline");
-  assert(typeof first.scheduledAt === "number", "scheduledAt should be a number");
-  assert(["high", "medium", "low"].includes(first.impact), `invalid impact: ${first.impact}`);
+  assert(
+    typeof first.scheduledAt === "number",
+    "scheduledAt should be a number",
+  );
+  assert(
+    ["high", "medium", "low"].includes(first.impact),
+    `invalid impact: ${first.impact}`,
+  );
 });
 
 // ── Gateway proxy routes ──────────────────────────────────────────────────────
@@ -285,6 +373,9 @@ Deno.test("[intelligence] gateway proxies GET /intelligence/signals with auth", 
     headers: { cookie: `veta_user=${token}` },
     signal: t(),
   });
-  assert(res.ok || res.status === 404, `GET /intelligence/signals → ${res.status}`);
+  assert(
+    res.ok || res.status === 404,
+    `GET /intelligence/signals → ${res.status}`,
+  );
   await res.body?.cancel();
 });

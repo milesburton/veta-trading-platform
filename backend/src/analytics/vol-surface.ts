@@ -18,19 +18,19 @@
 
 export interface VolSurfacePoint {
   expirySecs: number;
-  expiryLabel: string;   // "7d", "14d", "30d", "60d", "90d"
-  moneyness: number;     // K / F
-  strike: number;        // absolute strike price
-  impliedVol: number;    // annualised σ_impl(K, T)
+  expiryLabel: string; // "7d", "14d", "30d", "60d", "90d"
+  moneyness: number; // K / F
+  strike: number; // absolute strike price
+  impliedVol: number; // annualised σ_impl(K, T)
 }
 
 export interface VolSurfaceResponse {
   symbol: string;
   spotPrice: number;
-  atTheMoneyVol: number;  // EWMA vol used as ATM base
-  expiries: number[];     // [7d, 14d, 30d, 60d, 90d] in secs
-  moneynesses: number[];  // strike / spot levels
-  surface: VolSurfacePoint[];  // flat array, length = 45
+  atTheMoneyVol: number; // EWMA vol used as ATM base
+  expiries: number[]; // [7d, 14d, 30d, 60d, 90d] in secs
+  moneynesses: number[]; // strike / spot levels
+  surface: VolSurfacePoint[]; // flat array, length = 45
   computedAt: number;
 }
 
@@ -70,7 +70,8 @@ export function buildVolSurface(
       // SABR-inspired smile: skew term gives put skew, curvature adds smile bowl
       const impliedVol = Math.max(
         0.01, // floor at 1% to prevent degenerate pricing
-        atTheMoneyVol * (1 + SKEW * logMoneyness + CURVATURE * logMoneyness * logMoneyness),
+        atTheMoneyVol *
+          (1 + SKEW * logMoneyness + CURVATURE * logMoneyness * logMoneyness),
       );
 
       surface.push({

@@ -9,6 +9,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("TWAP_ALGO_PORT")) || 5_004;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -22,7 +23,10 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("twap-algo").catch((err) => {
-  console.warn("[twap-algo] Redpanda unavailable — orders will not be published:", err.message);
+  console.warn(
+    "[twap-algo] Redpanda unavailable — orders will not be published:",
+    err.message,
+  );
   return null;
 });
 
@@ -90,7 +94,9 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
     costBasis += sliceQty * marketPrice;
 
     console.log(
-      `[twap-algo] Slice ${i + 1}/${numSlices}: ${sliceQty} ${order.asset} @ mkt ${marketPrice}`,
+      `[twap-algo] Slice ${
+        i + 1
+      }/${numSlices}: ${sliceQty} ${order.asset} @ mkt ${marketPrice}`,
     );
 
     await producer?.send("algo.heartbeat", {
@@ -113,13 +119,16 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
     ts: Date.now(),
   }).catch(() => {});
 
-  console.log(`[twap-algo] Complete ${order.orderId}: filled=${filledQty}/${order.quantity} avg=${avgFill}`);
+  console.log(
+    `[twap-algo] Complete ${order.orderId}: filled=${filledQty}/${order.quantity} avg=${avgFill}`,
+  );
 }
 
-const consumer = await createConsumer("twap-algo-routed", ["orders.routed"]).catch((err) => {
-  console.warn("[twap-algo] Cannot subscribe to orders.routed:", err.message);
-  return null;
-});
+const consumer = await createConsumer("twap-algo-routed", ["orders.routed"])
+  .catch((err) => {
+    console.warn("[twap-algo] Cannot subscribe to orders.routed:", err.message);
+    return null;
+  });
 
 consumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
@@ -127,27 +136,6 @@ consumer?.onMessage((_topic, raw) => {
   executeTWAP(order); // fire-and-forget; errors are caught internally
 });
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+serveAlgoHealth(PORT, "twap", VERSION, () => 0);
 
-Deno.serve({ port: PORT }, (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
-  const url = new URL(req.url);
-  if (url.pathname === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({ service: "twap", version: VERSION, status: "ok" }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
-  }
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
-});
-
-createConsumer("twap-algo-news", ["news.signal"]).then((consumer) => {
-  consumer.onMessage((_topic, raw) => {
-    const sig = raw as { symbol: string; sentiment: string; score: number };
-    console.log(`[twap-algo] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`);
-  });
-}).catch(() => {}); // non-fatal
+subscribeNewsSignals("twap-algo-news", "twap-algo");

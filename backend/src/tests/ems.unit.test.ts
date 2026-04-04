@@ -1,26 +1,40 @@
 import {
   assert,
-  assertEquals,
   assertAlmostEquals,
+  assertEquals,
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
 
 // Pure logic extracted from ems-server.ts for unit testing.
 // The EMS service itself requires Redpanda; these tests cover the fill model math.
 
 const VENUES = [
-  { mic: "XNAS", weight: 30 }, { mic: "XNYS", weight: 25 }, { mic: "ARCX", weight: 15 },
-  { mic: "BATS", weight: 12 }, { mic: "EDGX", weight: 8  }, { mic: "IEX",  weight: 6  },
-  { mic: "MEMX", weight: 4  },
+  { mic: "XNAS", weight: 30 },
+  { mic: "XNYS", weight: 25 },
+  { mic: "ARCX", weight: 15 },
+  { mic: "BATS", weight: 12 },
+  { mic: "EDGX", weight: 8 },
+  { mic: "IEX", weight: 6 },
+  { mic: "MEMX", weight: 4 },
 ] as const;
 type VenueMIC = (typeof VENUES)[number]["mic"];
 
 const VENUE_SPREAD_MULT: Record<string, number> = {
-  XNAS: 1.00, ARCX: 1.08, BATS: 0.95,
-  EDGX: 0.98, IEX:  1.02, MEMX: 0.97, XNYS: 1.05,
+  XNAS: 1.00,
+  ARCX: 1.08,
+  BATS: 0.95,
+  EDGX: 0.98,
+  IEX: 1.02,
+  MEMX: 0.97,
+  XNYS: 1.05,
 };
 const VENUE_DEPTH_MULT: Record<string, number> = {
-  XNAS: 1.00, ARCX: 0.85, BATS: 0.90,
-  EDGX: 0.75, IEX:  0.95, MEMX: 0.65, XNYS: 1.20,
+  XNAS: 1.00,
+  ARCX: 0.85,
+  BATS: 0.90,
+  EDGX: 0.75,
+  IEX: 0.95,
+  MEMX: 0.65,
+  XNYS: 1.20,
 };
 
 const PARTICIPATION_CAP = 0.20;
@@ -40,10 +54,17 @@ function computeFill(
   return { filledQty, remainingQty: qty - filledQty };
 }
 
-function computeImpact(filledQty: number, venue: VenueMIC, side: "BUY" | "SELL", midPrice: number): number {
+function computeImpact(
+  filledQty: number,
+  venue: VenueMIC,
+  side: "BUY" | "SELL",
+  midPrice: number,
+): number {
   const spreadMult = VENUE_SPREAD_MULT[venue] ?? 1.0;
   const impactBps = (filledQty / 1_000) * IMPACT_PER_1000 * spreadMult;
-  const impactFactor = side === "BUY" ? 1 + impactBps / 10_000 : 1 - impactBps / 10_000;
+  const impactFactor = side === "BUY"
+    ? 1 + impactBps / 10_000
+    : 1 - impactBps / 10_000;
   return parseFloat((midPrice * impactFactor).toFixed(4));
 }
 
@@ -52,22 +73,36 @@ function computeFees(
   avgFillPrice: number,
   side: "BUY" | "SELL",
   liquidityFlag: "MAKER" | "TAKER" | "CROSS",
-): { commissionUSD: number; secFeeUSD: number; finraTafUSD: number; totalFeeUSD: number } {
-  const commissionPerShare = liquidityFlag === "MAKER" ? -0.002 : COMMISSION_PER_SHARE;
+): {
+  commissionUSD: number;
+  secFeeUSD: number;
+  finraTafUSD: number;
+  totalFeeUSD: number;
+} {
+  const commissionPerShare = liquidityFlag === "MAKER"
+    ? -0.002
+    : COMMISSION_PER_SHARE;
   const commissionUSD = parseFloat((filledQty * commissionPerShare).toFixed(2));
   const notional = filledQty * avgFillPrice;
-  const secFeeUSD  = side === "SELL" ? parseFloat((notional * SEC_FEE_RATE).toFixed(4)) : 0;
+  const secFeeUSD = side === "SELL"
+    ? parseFloat((notional * SEC_FEE_RATE).toFixed(4))
+    : 0;
   const finraTafUSD = side === "SELL"
     ? parseFloat(Math.min(filledQty * FINRA_TAF_PER_SHARE, 5.95).toFixed(4))
     : 0;
-  const totalFeeUSD = parseFloat((commissionUSD + secFeeUSD + finraTafUSD).toFixed(4));
+  const totalFeeUSD = parseFloat(
+    (commissionUSD + secFeeUSD + finraTafUSD).toFixed(4),
+  );
   return { commissionUSD, secFeeUSD, finraTafUSD, totalFeeUSD };
 }
 
 function pickWeightedVenue(rand: number): VenueMIC {
   const total = VENUES.reduce((s, v) => s + v.weight, 0);
   let cumulativeWeight = rand * total;
-  for (const v of VENUES) { cumulativeWeight -= v.weight; if (cumulativeWeight <= 0) return v.mic; }
+  for (const v of VENUES) {
+    cumulativeWeight -= v.weight;
+    if (cumulativeWeight <= 0) return v.mic;
+  }
   return VENUES[0].mic;
 }
 
@@ -75,7 +110,10 @@ function pickWeightedVenue(rand: number): VenueMIC {
 
 Deno.test("[ems/fill] filled qty capped at participation cap × tick volume", () => {
   const { filledQty } = computeFill(10_000, 1_000, "XNAS");
-  assertEquals(filledQty, Math.floor(1_000 * PARTICIPATION_CAP * VENUE_DEPTH_MULT["XNAS"]));
+  assertEquals(
+    filledQty,
+    Math.floor(1_000 * PARTICIPATION_CAP * VENUE_DEPTH_MULT["XNAS"]),
+  );
 });
 
 Deno.test("[ems/fill] filled qty never exceeds requested qty", () => {
@@ -93,7 +131,10 @@ Deno.test("[ems/fill] MEMX (depth=0.65) fills less than XNYS (depth=1.20) at sam
   const vol = 1_000;
   const { filledQty: memx } = computeFill(10_000, vol, "MEMX");
   const { filledQty: xnys } = computeFill(10_000, vol, "XNYS");
-  assert(xnys > memx, `XNYS (depth 1.20) should fill more than MEMX (depth 0.65)`);
+  assert(
+    xnys > memx,
+    `XNYS (depth 1.20) should fill more than MEMX (depth 0.65)`,
+  );
 });
 
 Deno.test("[ems/fill] zero tick volume → zero fill", () => {
@@ -162,7 +203,10 @@ Deno.test("[ems/fees] FINRA TAF capped at $5.95 for very large fills", () => {
 
 Deno.test("[ems/fees] MAKER liquidity flag earns rebate (negative commission)", () => {
   const fees = computeFees(100, 150, "BUY", "MAKER");
-  assert(fees.commissionUSD < 0, `MAKER should earn rebate, got ${fees.commissionUSD}`);
+  assert(
+    fees.commissionUSD < 0,
+    `MAKER should earn rebate, got ${fees.commissionUSD}`,
+  );
 });
 
 Deno.test("[ems/fees] TAKER commission is positive", () => {
@@ -199,7 +243,10 @@ Deno.test("[ems/venue] XNAS selected more often than MEMX (30 vs 4 weight)", () 
     if (v === "XNAS") xnas++;
     if (v === "MEMX") memx++;
   }
-  assert(xnas > memx * 3, `XNAS (${xnas}) should be selected far more than MEMX (${memx})`);
+  assert(
+    xnas > memx * 3,
+    `XNAS (${xnas}) should be selected far more than MEMX (${memx})`,
+  );
 });
 
 Deno.test("[ems/venue] deterministic at boundary: rand=0 selects first venue after weight depletion", () => {

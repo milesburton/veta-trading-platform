@@ -15,14 +15,28 @@ const initial = reducer(undefined, { type: "@@INIT" });
 
 describe("gridPrefsSlice – setFilters", () => {
   it("sets filters for orderBlotter", () => {
-    const filters = [{ id: "f1", field: "side", op: "=" as const, value: "BUY" }];
+    const filters = [
+      {
+        id: "f1",
+        field: "side",
+        op: "=" as const,
+        value: "BUY",
+      },
+    ];
     const state = reducer(initial, setFilters({ gridId: "orderBlotter", filters }));
     expect(state.orderBlotter.filters).toHaveLength(1);
     expect(state.executions.filters).toHaveLength(0);
   });
 
   it("sets filters for executions independently", () => {
-    const filters = [{ id: "f2", field: "asset", op: "=" as const, value: "AAPL" }];
+    const filters = [
+      {
+        id: "f2",
+        field: "asset",
+        op: "=" as const,
+        value: "AAPL",
+      },
+    ];
     const state = reducer(initial, setFilters({ gridId: "executions", filters }));
     expect(state.executions.filters).toHaveLength(1);
     expect(state.orderBlotter.filters).toHaveLength(0);

@@ -7,12 +7,15 @@ import type { CachedQuote, ProviderDef } from "./types.ts";
 
 const POLYGON_KEY = Deno.env.get("POLYGON_KEY") ?? "";
 
-async function fetchPolygonLastTrade(symbol: string): Promise<CachedQuote | null> {
+async function fetchPolygonLastTrade(
+  symbol: string,
+): Promise<CachedQuote | null> {
   if (!POLYGON_KEY) return null;
   try {
     console.log(`[polygon] Fetching last trade for ${symbol}`);
-    const url =
-      `https://api.polygon.io/v2/last/trade/${encodeURIComponent(symbol)}?apiKey=${POLYGON_KEY}`;
+    const url = `https://api.polygon.io/v2/last/trade/${
+      encodeURIComponent(symbol)
+    }?apiKey=${POLYGON_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json() as { results?: { p?: number; t?: number } };
@@ -27,9 +30,20 @@ async function fetchPolygonLastTrade(symbol: string): Promise<CachedQuote | null
       ? new Date(results.t).toISOString().slice(0, 10)
       : new Date().toISOString().slice(0, 10);
     if (price <= 0) return null;
-    return { symbol, price, volume: 0, latestTradingDay, fetchedAt: Date.now(), stale: false };
+    return {
+      symbol,
+      price,
+      volume: 0,
+      latestTradingDay,
+      fetchedAt: Date.now(),
+      stale: false,
+    };
   } catch (err) {
-    console.warn(`[polygon] Last trade fetch failed for ${symbol}: ${(err as Error).message}`);
+    console.warn(
+      `[polygon] Last trade fetch failed for ${symbol}: ${
+        (err as Error).message
+      }`,
+    );
     return null;
   }
 }
@@ -45,7 +59,10 @@ export const polygonProvider: ProviderDef = {
   supportsSymbol(symbol: string): boolean {
     return !symbol.includes("/");
   },
-  async fetchQuote(symbol: string, _journalUrl: string): Promise<CachedQuote | null> {
+  async fetchQuote(
+    symbol: string,
+    _journalUrl: string,
+  ): Promise<CachedQuote | null> {
     return await fetchPolygonLastTrade(symbol);
   },
 };
@@ -55,9 +72,9 @@ type OnQuote = (quote: CachedQuote) => void;
 interface PolygonMsg {
   ev?: string;
   sym?: string;
-  p?: number;   // price
-  s?: number;   // size/volume
-  t?: number;   // timestamp (ms)
+  p?: number; // price
+  s?: number; // size/volume
+  t?: number; // timestamp (ms)
 }
 
 /**
@@ -131,7 +148,9 @@ export function openPolygonStream(
     };
 
     ws.onerror = (err) => {
-      console.warn(`[polygon] WS error: ${(err as ErrorEvent).message ?? "unknown"}`);
+      console.warn(
+        `[polygon] WS error: ${(err as ErrorEvent).message ?? "unknown"}`,
+      );
     };
 
     ws.onclose = () => {

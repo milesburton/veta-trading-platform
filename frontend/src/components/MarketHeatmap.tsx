@@ -81,10 +81,22 @@ function squarify(items: TileData[], bounds: Rect): LayoutTile[] {
     for (const item of row) {
       const frac = item.size / rowSum;
       if (horiz) {
-        result.push({ ...item, x: x0, y: y0 + cursor, w: stripW, h: frac * h0 });
+        result.push({
+          ...item,
+          x: x0,
+          y: y0 + cursor,
+          w: stripW,
+          h: frac * h0,
+        });
         cursor += frac * h0;
       } else {
-        result.push({ ...item, x: x0 + cursor, y: y0, w: frac * w0, h: stripW });
+        result.push({
+          ...item,
+          x: x0 + cursor,
+          y: y0,
+          w: frac * w0,
+          h: stripW,
+        });
         cursor += frac * w0;
       }
     }
@@ -208,7 +220,12 @@ export function MarketHeatmap() {
         const totalSize = items.reduce((s, d) => s + d.size, 0);
         const sectorPct =
           totalSize > 0 ? items.reduce((s, d) => s + d.pct * d.size, 0) / totalSize : 0;
-        return { sector, items: [...items].sort((a, b) => b.size - a.size), totalSize, sectorPct };
+        return {
+          sector,
+          items: [...items].sort((a, b) => b.size - a.size),
+          totalSize,
+          sectorPct,
+        };
       })
       .sort((a, b) => b.totalSize - a.totalSize);
   }, [tiles]);
@@ -251,13 +268,14 @@ export function MarketHeatmap() {
     ? null
     : sectors.map((s, i) => {
         const sRect = sectorLayout?.[i];
-        if (!sRect)
+        if (!sRect) {
           return {
             ...s,
             sRect: { x: 0, y: 0, w: 0, h: 0 },
             hasLabel: false,
             layoutTiles: [] as LayoutTile[],
           };
+        }
         const hasLabel = sRect.w > 40 && sRect.h > LABEL_H + 8;
         const inner: Rect = {
           x: sRect.x + SECTOR_GAP,
@@ -372,7 +390,9 @@ export function MarketHeatmap() {
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") broadcast({ selectedAsset: tile.symbol });
+          if (e.key === "Enter" || e.key === " ") {
+            broadcast({ selectedAsset: tile.symbol });
+          }
         }}
         aria-label={`${tile.symbol}: ${tile.pct >= 0 ? "+" : ""}${tile.pct.toFixed(2)}%`}
       >
@@ -468,7 +488,11 @@ export function MarketHeatmap() {
                   sortBy.value = mode;
                 }}
                 aria-pressed={sortBy.value === mode}
-                className={`px-2 py-0.5 transition-colors ${sortBy.value === mode ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300"}`}
+                className={`px-2 py-0.5 transition-colors ${
+                  sortBy.value === mode
+                    ? "bg-gray-700 text-gray-200"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
               >
                 {mode === "cap" ? "By Cap" : "By Move"}
               </button>
@@ -586,7 +610,9 @@ export function MarketHeatmap() {
                     {otherTile.otherCount} stocks too small to display
                   </div>
                   <div
-                    className={`font-semibold text-[10px] ${otherTile.pct >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                    className={`font-semibold text-[10px] ${
+                      otherTile.pct >= 0 ? "text-emerald-400" : "text-red-400"
+                    }`}
                   >
                     Avg {otherTile.pct >= 0 ? "+" : ""}
                     {otherTile.pct.toFixed(2)}%
@@ -617,7 +643,9 @@ export function MarketHeatmap() {
                 <div className="flex items-baseline justify-between mb-1">
                   <span className="font-bold text-gray-100 text-sm">{tooltipAsset.symbol}</span>
                   <span
-                    className={`font-bold text-sm ${tooltipTile.pct >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                    className={`font-bold text-sm ${
+                      tooltipTile.pct >= 0 ? "text-emerald-400" : "text-red-400"
+                    }`}
                   >
                     {tooltipTile.pct >= 0 ? "+" : ""}
                     {tooltipTile.pct.toFixed(2)}%

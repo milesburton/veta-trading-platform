@@ -13,7 +13,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
-import { settlementDate, type Desk } from "../lib/settlement.ts";
+import { type Desk, settlementDate } from "../lib/settlement.ts";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
@@ -31,28 +31,61 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const VENUES = [
-  { mic: "XNAS", weight: 30 }, { mic: "XNYS", weight: 25 }, { mic: "ARCX", weight: 15 },
-  { mic: "BATS", weight: 12 }, { mic: "EDGX", weight: 8  }, { mic: "IEX",  weight: 6  },
-  { mic: "MEMX", weight: 4  },
+  { mic: "XNAS", weight: 30 },
+  { mic: "XNYS", weight: 25 },
+  { mic: "ARCX", weight: 15 },
+  { mic: "BATS", weight: 12 },
+  { mic: "EDGX", weight: 8 },
+  { mic: "IEX", weight: 6 },
+  { mic: "MEMX", weight: 4 },
 ] as const;
 type VenueMIC = (typeof VENUES)[number]["mic"];
 
 const VENUE_SPREAD_MULT: Record<string, number> = {
-  XNAS: 1.00, ARCX: 1.08, BATS: 0.95,
-  EDGX: 0.98, IEX:  1.02, MEMX: 0.97, XNYS: 1.05,
+  XNAS: 1.00,
+  ARCX: 1.08,
+  BATS: 0.95,
+  EDGX: 0.98,
+  IEX: 1.02,
+  MEMX: 0.97,
+  XNYS: 1.05,
 };
 const VENUE_DEPTH_MULT: Record<string, number> = {
-  XNAS: 1.00, ARCX: 0.85, BATS: 0.90,
-  EDGX: 0.75, IEX:  0.95, MEMX: 0.65, XNYS: 1.20,
+  XNAS: 1.00,
+  ARCX: 0.85,
+  BATS: 0.90,
+  EDGX: 0.75,
+  IEX: 0.95,
+  MEMX: 0.65,
+  XNYS: 1.20,
 };
 const VALID_VENUES = new Set(Object.keys(VENUE_SPREAD_MULT));
 
-const COUNTERPARTIES = ["GSCO","MSCO","JPMS","BAML","CITI","UBSS","DBSI","BARX","MKTX","VIRX","CITD","SUSG","GETC","JNST","TWOC"];
+const COUNTERPARTIES = [
+  "GSCO",
+  "MSCO",
+  "JPMS",
+  "BAML",
+  "CITI",
+  "UBSS",
+  "DBSI",
+  "BARX",
+  "MKTX",
+  "VIRX",
+  "CITD",
+  "SUSG",
+  "GETC",
+  "JNST",
+  "TWOC",
+];
 
 function pickWeightedVenue(): VenueMIC {
   const total = VENUES.reduce((s, v) => s + v.weight, 0);
   let cumulativeWeight = Math.random() * total;
-  for (const v of VENUES) { cumulativeWeight -= v.weight; if (cumulativeWeight <= 0) return v.mic; }
+  for (const v of VENUES) {
+    cumulativeWeight -= v.weight;
+    if (cumulativeWeight <= 0) return v.mic;
+  }
   return VENUES[0].mic;
 }
 function pickCounterparty(): string {
@@ -70,7 +103,10 @@ function deskFromOrder(order: ChildOrder): Desk {
 }
 
 const producer = await createProducer("ems").catch((err) => {
-  console.warn("[ems] Redpanda unavailable — fills will not be published to bus:", err.message);
+  console.warn(
+    "[ems] Redpanda unavailable — fills will not be published to bus:",
+    err.message,
+  );
   return null;
 });
 
@@ -99,10 +135,11 @@ interface ChildOrder {
   ts: number;
 }
 
-const consumer = await createConsumer("ems-child-orders", ["orders.child"]).catch((err) => {
-  console.warn("[ems] Cannot subscribe to orders.child:", err.message);
-  return null;
-});
+const consumer = await createConsumer("ems-child-orders", ["orders.child"])
+  .catch((err) => {
+    console.warn("[ems] Cannot subscribe to orders.child:", err.message);
+    return null;
+  });
 
 let fillSeq = 1;
 
@@ -112,7 +149,9 @@ consumer?.onMessage(async (_topic, raw) => {
   const midPrice = tick.prices[child.asset];
 
   if (!midPrice) {
-    console.warn(`[ems] Unknown asset ${child.asset} — cannot fill ${child.childId}`);
+    console.warn(
+      `[ems] Unknown asset ${child.asset} — cannot fill ${child.childId}`,
+    );
     return;
   }
 
@@ -127,7 +166,9 @@ consumer?.onMessage(async (_topic, raw) => {
   const filledQty = Math.min(child.quantity, maxFill);
   const remainingQty = child.quantity - filledQty;
   const impactBps = (filledQty / 1_000) * IMPACT_PER_1000 * spreadMult;
-  const impactFactor = child.side === "BUY" ? 1 + impactBps / 10_000 : 1 - impactBps / 10_000;
+  const impactFactor = child.side === "BUY"
+    ? 1 + impactBps / 10_000
+    : 1 - impactBps / 10_000;
   const avgFillPrice = parseFloat(
     (child.effectivePrice ?? midPrice * impactFactor).toFixed(4),
   );
@@ -135,18 +176,28 @@ consumer?.onMessage(async (_topic, raw) => {
   const counterparty = pickCounterparty();
   const liquidityFlag = pickLiquidityFlag(venue);
   const sd = settlementDate(deskFromOrder(child));
-  const commissionPerShare = liquidityFlag === "MAKER" ? -0.002 : COMMISSION_PER_SHARE;
+  const commissionPerShare = liquidityFlag === "MAKER"
+    ? -0.002
+    : COMMISSION_PER_SHARE;
   const commissionUSD = parseFloat((filledQty * commissionPerShare).toFixed(2));
   const notional = filledQty * avgFillPrice;
-  const secFeeUSD = child.side === "SELL" ? parseFloat((notional * SEC_FEE_RATE).toFixed(4)) : 0;
-  const finraTafUSD = child.side === "SELL" ? parseFloat(Math.min(filledQty * FINRA_TAF_PER_SHARE, 5.95).toFixed(4)) : 0;
-  const totalFeeUSD = parseFloat((commissionUSD + secFeeUSD + finraTafUSD).toFixed(4));
+  const secFeeUSD = child.side === "SELL"
+    ? parseFloat((notional * SEC_FEE_RATE).toFixed(4))
+    : 0;
+  const finraTafUSD = child.side === "SELL"
+    ? parseFloat(Math.min(filledQty * FINRA_TAF_PER_SHARE, 5.95).toFixed(4))
+    : 0;
+  const totalFeeUSD = parseFloat(
+    (commissionUSD + secFeeUSD + finraTafUSD).toFixed(4),
+  );
 
   const execId = `EX${String(fillSeq++).padStart(8, "0")}`;
 
   console.log(
     `[ems] Fill ${execId}: ${child.side} ${filledQty}/${child.quantity} ${child.asset} ` +
-    `@ ${avgFillPrice} via ${venue} (${liquidityFlag}) impact=${impactBps.toFixed(2)}bps`,
+      `@ ${avgFillPrice} via ${venue} (${liquidityFlag}) impact=${
+        impactBps.toFixed(2)
+      }bps`,
   );
 
   if (filledQty > 0) {
@@ -186,7 +237,7 @@ consumer?.onMessage(async (_topic, raw) => {
       origClOrdId: child.parentOrderId,
       symbol: child.asset,
       side: child.side === "BUY" ? "1" : "2",
-      ordType: "2",          // Limit
+      ordType: "2", // Limit
       execType: remainingQty === 0 ? "2" : "1", // 2=Fill, 1=PartialFill
       ordStatus: remainingQty === 0 ? "2" : "1",
       leavesQty: remainingQty,
@@ -214,7 +265,9 @@ const CORS_HEADERS = {
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
   if (url.pathname === "/health" && req.method === "GET") {
     return new Response(
       JSON.stringify({ service: "ems", version: VERSION, status: "ok" }),

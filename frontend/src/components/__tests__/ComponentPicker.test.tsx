@@ -38,7 +38,10 @@ function renderPicker(overrides?: {
           removeTabById: vi.fn(),
           resetLayout,
           storageKey: "dashboard-layout",
-          model: Model.fromJson({ global: {}, layout: { type: "row", children: [] } }),
+          model: Model.fromJson({
+            global: {},
+            layout: { type: "row", children: [] },
+          }),
           setModel: vi.fn(),
         }}
       >

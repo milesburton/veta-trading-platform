@@ -18,8 +18,12 @@ function evalOp(
   op: FilterCriteria["op"] | ExprOp,
   filterVal: FilterCriteria["value"]
 ): boolean {
-  if (op === "is_null") return rowVal === null || rowVal === undefined || rowVal === "";
-  if (op === "is_not_null") return rowVal !== null && rowVal !== undefined && rowVal !== "";
+  if (op === "is_null") {
+    return rowVal === null || rowVal === undefined || rowVal === "";
+  }
+  if (op === "is_not_null") {
+    return rowVal !== null && rowVal !== undefined && rowVal !== "";
+  }
 
   if (op === "between") {
     const [lo, hi] = filterVal as [number, number];
@@ -119,7 +123,9 @@ function evalExprNode<T>(row: T, node: ExprNode): boolean {
  */
 export function evalExprGroup<T>(row: T, group: ExprGroup): boolean {
   if (group.rules.length === 0) return true;
-  if (group.join === "AND") return group.rules.every((n) => evalExprNode(row, n));
+  if (group.join === "AND") {
+    return group.rules.every((n) => evalExprNode(row, n));
+  }
   return group.rules.some((n) => evalExprNode(row, n));
 }
 
@@ -150,7 +156,9 @@ const OP_DISPLAY: Record<ExprOp, string> = {
 function ruleToDisplay(rule: ExprRule, fields: FieldDef[]): string {
   const label = fields.find((f) => f.key === rule.field)?.label ?? rule.field;
   const opStr = OP_DISPLAY[rule.op] ?? rule.op;
-  if (rule.op === "is_null" || rule.op === "is_not_null") return `${label} ${opStr}`;
+  if (rule.op === "is_null" || rule.op === "is_not_null") {
+    return `${label} ${opStr}`;
+  }
   if (rule.op === "between") {
     const [lo, hi] = rule.value as [number, number];
     return `${label} ${lo}–${hi}`;

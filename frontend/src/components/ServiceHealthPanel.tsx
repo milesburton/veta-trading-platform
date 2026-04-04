@@ -26,7 +26,9 @@ interface ServiceRowProps {
 }
 
 function ServiceRow({ svc, onUpdate, dispatch }: ServiceRowProps) {
-  const { data, isError } = useGetServiceHealthQuery(svc, { pollingInterval: 10_000 });
+  const { data, isError } = useGetServiceHealthQuery(svc, {
+    pollingInterval: 10_000,
+  });
 
   const prevRef = useRef<ServiceHealth | null>(null);
 
@@ -164,7 +166,9 @@ function GaugeRow({ label, pct }: { label: string; pct: number | null }) {
 
 function HostResourcesSection() {
   const dispatch = useAppDispatch();
-  const { data } = useGetSystemMetricsQuery(undefined, { pollingInterval: 30_000 });
+  const { data } = useGetSystemMetricsQuery(undefined, {
+    pollingInterval: 30_000,
+  });
   const lastAlertLevelRef = useRef<"none" | "warn" | "critical">("none");
 
   useEffect(() => {

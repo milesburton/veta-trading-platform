@@ -366,7 +366,10 @@ describe("FIXSession – ExecutionReport", () => {
     const { session, execReports } = activatedSession();
     session.handleInbound(buildExecReport("1", 2));
     expect(execReports).toHaveLength(1);
-    expect(execReports[0]).toMatchObject({ clOrdId: "order-001", leavesQty: 50 });
+    expect(execReports[0]).toMatchObject({
+      clOrdId: "order-001",
+      leavesQty: 50,
+    });
   });
 
   it("does NOT fire onExecReport for ExecType=0 (New ack)", () => {

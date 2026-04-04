@@ -16,7 +16,9 @@ describe("resolveSession", () => {
     expect(s.allowsCancel).toBe(cancel);
     expect(s.phaseLabel).toBe(label);
     if (strategies) expect(s.supportedStrategies).toEqual(strategies);
-    if (phase === "CONTINUOUS") expect(s.supportedStrategies.length).toBeGreaterThan(5);
+    if (phase === "CONTINUOUS") {
+      expect(s.supportedStrategies.length).toBeGreaterThan(5);
+    }
   });
 
   it("passes through nextTransitionAt", () => {

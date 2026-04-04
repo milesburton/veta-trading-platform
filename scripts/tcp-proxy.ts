@@ -33,7 +33,11 @@ async function handleConn(inbound: Deno.TcpConn) {
   } catch {
     // connection closed or target unavailable — silently drop
   } finally {
-    try { inbound.close(); } catch { /* ignore */ }
-    try { outbound?.close(); } catch { /* ignore */ }
+    try {
+      inbound.close();
+    } catch { /* ignore */ }
+    try {
+      outbound?.close();
+    } catch { /* ignore */ }
   }
 }

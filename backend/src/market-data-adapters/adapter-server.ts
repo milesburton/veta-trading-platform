@@ -7,7 +7,8 @@ import { createMarketEventStore } from "./market-event-store.ts";
 import { intelligencePool } from "../lib/db.ts";
 
 const PORT = Number(Deno.env.get("MARKET_DATA_ADAPTERS_PORT")) || 5_016;
-const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") || "http://localhost:5000";
+const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") ||
+  "http://localhost:5000";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 const CORS_HEADERS = {
@@ -31,7 +32,10 @@ const producer = await createProducer("market-data-adapters").catch((err) => {
   return null;
 });
 
-export async function publishEvent(ev: MarketAdapterEvent, source = "synthetic"): Promise<void> {
+export async function publishEvent(
+  ev: MarketAdapterEvent,
+  source = "synthetic",
+): Promise<void> {
   storeEvent(ev);
   await eventStore.upsertEvent(ev, source).catch((err) =>
     console.warn("[market-data-adapters] DB upsert error:", err.message)
@@ -44,14 +48,29 @@ let knownSymbols: string[] = [];
 
 async function loadSymbols(): Promise<void> {
   try {
-    const res = await fetch(`${MARKET_SIM_URL}/assets`, { signal: AbortSignal.timeout(5_000) });
+    const res = await fetch(`${MARKET_SIM_URL}/assets`, {
+      signal: AbortSignal.timeout(5_000),
+    });
     if (!res.ok) return;
     const assets = await res.json() as { symbol: string }[];
     knownSymbols = assets.map((a) => a.symbol);
     console.log(`[market-data-adapters] Loaded ${knownSymbols.length} symbols`);
   } catch {
-    console.warn("[market-data-adapters] Could not load symbols from market-sim, using fallback list");
-    knownSymbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK", "JPM", "UNH"];
+    console.warn(
+      "[market-data-adapters] Could not load symbols from market-sim, using fallback list",
+    );
+    knownSymbols = [
+      "AAPL",
+      "MSFT",
+      "GOOGL",
+      "AMZN",
+      "NVDA",
+      "META",
+      "TSLA",
+      "BRK",
+      "JPM",
+      "UNH",
+    ];
   }
 }
 
@@ -64,8 +83,12 @@ async function seedEvents(): Promise<void> {
     seedEconomicEvents(),
   ]);
 
-  const earningsSource = earningsEvents.some((e) => e.id.startsWith("finnhub-")) ? "finnhub" : "synthetic";
-  const economicSource = economicEvents.some((e) => e.id.startsWith("finnhub-")) ? "finnhub" : "synthetic";
+  const earningsSource = earningsEvents.some((e) => e.id.startsWith("finnhub-"))
+    ? "finnhub"
+    : "synthetic";
+  const economicSource = economicEvents.some((e) => e.id.startsWith("finnhub-"))
+    ? "finnhub"
+    : "synthetic";
 
   console.log(
     `[market-data-adapters] Seeding ${earningsEvents.length} earnings (${earningsSource}) + ${economicEvents.length} economic (${economicSource}) events`,
@@ -91,10 +114,17 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
 
   if (path === "/health" && req.method === "GET") {
-    return json({ service: "market-data-adapters", version: VERSION, status: "ok", eventCount: events.length });
+    return json({
+      service: "market-data-adapters",
+      version: VERSION,
+      status: "ok",
+      eventCount: events.length,
+    });
   }
 
   if (path === "/events" && req.method === "GET") {
@@ -105,13 +135,19 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const toTs = now + 90 * 24 * 60 * 60 * 1000;
 
     // Serve from DB (survives restarts); fall back to in-memory on DB error
-    const dbEvents = await eventStore.getEvents(fromTs, toTs, ticker).catch(() => null);
+    const dbEvents = await eventStore.getEvents(fromTs, toTs, ticker).catch(
+      () => null,
+    );
     if (dbEvents !== null) {
       return json(dbEvents.slice(0, limit));
     }
 
-    let filtered = events.filter((e) => e.scheduledAt >= fromTs && e.scheduledAt <= toTs);
-    if (ticker) filtered = filtered.filter((e) => e.ticker === ticker || !e.ticker);
+    let filtered = events.filter((e) =>
+      e.scheduledAt >= fromTs && e.scheduledAt <= toTs
+    );
+    if (ticker) {
+      filtered = filtered.filter((e) => e.ticker === ticker || !e.ticker);
+    }
     filtered.sort((a, b) => a.scheduledAt - b.scheduledAt);
     return json(filtered.slice(0, limit));
   }

@@ -1,6 +1,5 @@
+import { NON_TRADING_ROLES } from "../../../auth/rbac.ts";
 import type { TicketContext } from "../ticket-types";
-
-const NON_TRADING_ROLES = new Set(["admin", "compliance", "sales", "external-client", "viewer"]);
 
 const ROLE_MESSAGES: Record<string, string> = {
   admin: "Administrators cannot submit orders. This panel is reserved for trader accounts.",

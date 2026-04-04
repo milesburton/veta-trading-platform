@@ -15,7 +15,12 @@
  * Prerequisite: npm run electron:build
  */
 
-import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
+import {
+  type ElectronApplication,
+  expect,
+  type Page,
+  test,
+} from "@playwright/test";
 import { _electron as electron } from "playwright";
 import * as path from "path";
 import { fileURLToPath } from "url";
@@ -89,7 +94,8 @@ test("React root renders content", async () => {
 test("window.electronAPI is exposed via contextBridge", async () => {
   const hasApi = await page.evaluate(() => {
     return (
-      typeof (window as Window & { electronAPI?: unknown }).electronAPI === "object" &&
+      typeof (window as Window & { electronAPI?: unknown }).electronAPI ===
+        "object" &&
       (window as Window & { electronAPI?: unknown }).electronAPI !== null
     );
   });
@@ -98,7 +104,8 @@ test("window.electronAPI is exposed via contextBridge", async () => {
 
 test("window.electronAPI exposes expected methods", async () => {
   const methods = await page.evaluate(() => {
-    const api = (window as Window & { electronAPI?: Record<string, unknown> }).electronAPI;
+    const api = (window as Window & { electronAPI?: Record<string, unknown> })
+      .electronAPI;
     if (!api) return [];
     return Object.keys(api);
   });
@@ -117,7 +124,8 @@ test("window.electronAPI exposes expected methods", async () => {
 
 test("platform is a valid value", async () => {
   const platform = await page.evaluate(() => {
-    return (window as Window & { electronAPI?: { platform: string } }).electronAPI?.platform;
+    return (window as Window & { electronAPI?: { platform: string } })
+      .electronAPI?.platform;
   });
   expect(["darwin", "win32", "linux"]).toContain(platform);
 });
@@ -126,7 +134,8 @@ test("platform is a valid value", async () => {
 
 test("Node.js require is not accessible in renderer (contextIsolation enforced)", async () => {
   const hasRequire = await page.evaluate(() => {
-    return typeof (globalThis as Record<string, unknown>)["require"] === "function";
+    return typeof (globalThis as Record<string, unknown>)["require"] ===
+      "function";
   });
   expect(hasRequire).toBe(false);
 });
@@ -134,7 +143,8 @@ test("Node.js require is not accessible in renderer (contextIsolation enforced)"
 test("Node.js process.versions is not accessible in renderer", async () => {
   const hasProcess = await page.evaluate(() => {
     // process.env is polyfilled by Vite, but process.versions is not
-    return typeof (globalThis as Record<string, unknown>)["process"] !== "undefined" &&
+    return typeof (globalThis as Record<string, unknown>)["process"] !==
+        "undefined" &&
       typeof (process as Record<string, unknown>)["versions"] !== "undefined";
   });
   // In a properly isolated renderer, process.versions should not be available
@@ -145,7 +155,9 @@ test("Node.js process.versions is not accessible in renderer", async () => {
 
 test("isMaximized IPC round-trip returns a boolean", async () => {
   const result = await page.evaluate(async () => {
-    const api = (window as Window & { electronAPI?: { isMaximized(): Promise<boolean> } }).electronAPI;
+    const api =
+      (window as Window & { electronAPI?: { isMaximized(): Promise<boolean> } })
+        .electronAPI;
     if (!api) return null;
     return api.isMaximized();
   });
@@ -188,13 +200,13 @@ test("onDeepLink IPC: callback receives URL sent from main process", async () =>
           unsub();
           resolve(url);
         });
-      })
+      }),
   );
 
   await electronApp.evaluate(({ BrowserWindow }) => {
     BrowserWindow.getAllWindows()[0]?.webContents.send(
       "deeplink:navigate",
-      "veta://dashboard?symbol=AAPL"
+      "veta://dashboard?symbol=AAPL",
     );
   });
 

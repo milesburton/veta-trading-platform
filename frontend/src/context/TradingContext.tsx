@@ -48,8 +48,12 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
   const activeStrategy = useAppSelector((s) => s.ui.activeStrategy);
 
   useHotkeys("f,n", openTicket, { preventDefault: true });
-  useHotkeys("b", () => dispatch(setActiveSide("BUY")), { preventDefault: true });
-  useHotkeys("s", () => dispatch(setActiveSide("SELL")), { preventDefault: true });
+  useHotkeys("b", () => dispatch(setActiveSide("BUY")), {
+    preventDefault: true,
+  });
+  useHotkeys("s", () => dispatch(setActiveSide("SELL")), {
+    preventDefault: true,
+  });
   useHotkeys(
     "tab",
     () => {
@@ -58,8 +62,12 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     },
     { preventDefault: true }
   );
-  useHotkeys("shift+?", () => dispatch(toggleShortcuts()), { preventDefault: true });
-  useHotkeys("escape", () => dispatch(hideShortcuts()), { preventDefault: false });
+  useHotkeys("shift+?", () => dispatch(toggleShortcuts()), {
+    preventDefault: true,
+  });
+  useHotkeys("escape", () => dispatch(hideShortcuts()), {
+    preventDefault: false,
+  });
 
   return (
     <TradingContext.Provider
@@ -73,7 +81,9 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
 
 export function useTradingContext() {
   const ctx = useContext(TradingContext);
-  if (!ctx) throw new Error("useTradingContext must be used inside TradingProvider");
+  if (!ctx) {
+    throw new Error("useTradingContext must be used inside TradingProvider");
+  }
   return ctx;
 }
 

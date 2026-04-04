@@ -22,7 +22,7 @@ datasources:
         - datasourceUid: tempo
           matcherRegex: '"traceID":"(\w+)"'
           name: TraceID
-          url: '$${__value.raw}'
+          url: "$${__value.raw}"
 
   - name: Tempo
     type: tempo
@@ -32,15 +32,15 @@ datasources:
     jsonData:
       tracesToLogsV2:
         datasourceUid: loki
-        spanStartTimeShift: '-5m'
-        spanEndTimeShift: '5m'
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
         filterByTraceID: true
         filterBySpanID: false
       tracesToMetrics:
         datasourceUid: prometheus
         queries:
           - name: Request rate
-            query: 'rate(traces_spanmetrics_calls_total{$__tags}[5m])'
+            query: "rate(traces_spanmetrics_calls_total{$__tags}[5m])"
       serviceMap:
         datasourceUid: prometheus
       nodeGraph:

@@ -42,7 +42,11 @@ export {
   wouldCreateCycleIn,
   wouldCreateCycleOut,
 } from "./dashboard/layoutUtils.ts";
-export type { ChannelNumber, PanelId, TabChannelConfig } from "./dashboard/panelRegistry.ts";
+export type {
+  ChannelNumber,
+  PanelId,
+  TabChannelConfig,
+} from "./dashboard/panelRegistry.ts";
 export {
   CHANNEL_COLOURS,
   PANEL_CHANNEL_CAPS,

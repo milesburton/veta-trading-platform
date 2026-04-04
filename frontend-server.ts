@@ -35,7 +35,10 @@ Deno.serve({ port: PORT, hostname: "0.0.0.0" }, async (req) => {
 
   if (url.pathname === "/__version") {
     return new Response(VERSION_BODY, {
-      headers: { "content-type": "application/json", "cache-control": "no-store" },
+      headers: {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+      },
     });
   }
 

@@ -6,12 +6,19 @@ import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { submitOrderThunk } from "../store/ordersSlice.ts";
 import type { ColDef } from "../types/gridPrefs.ts";
 import type { ChildOrder, LiquidityFlag, OrderRecord } from "../types.ts";
+import { formatBps } from "../utils/format.ts";
 import { ResizableHeader } from "./grid/ResizableHeader.tsx";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 const ALGO_COLS: ColDef[] = [
   { key: "asset", label: "Asset", type: "string", defaultWidth: 72 },
-  { key: "side", label: "Side", type: "enum", options: ["BUY", "SELL"], defaultWidth: 52 },
+  {
+    key: "side",
+    label: "Side",
+    type: "enum",
+    options: ["BUY", "SELL"],
+    defaultWidth: 52,
+  },
   {
     key: "strategy",
     label: "Strategy",
@@ -19,14 +26,56 @@ const ALGO_COLS: ColDef[] = [
     options: ["LIMIT", "TWAP", "POV", "VWAP"],
     defaultWidth: 72,
   },
-  { key: "filled", label: "Filled", type: "number", defaultWidth: 72, align: "right" },
-  { key: "unfilled", label: "Unfilled", type: "number", defaultWidth: 72, align: "right" },
-  { key: "total", label: "Total", type: "number", defaultWidth: 72, align: "right" },
+  {
+    key: "filled",
+    label: "Filled",
+    type: "number",
+    defaultWidth: 72,
+    align: "right",
+  },
+  {
+    key: "unfilled",
+    label: "Unfilled",
+    type: "number",
+    defaultWidth: 72,
+    align: "right",
+  },
+  {
+    key: "total",
+    label: "Total",
+    type: "number",
+    defaultWidth: 72,
+    align: "right",
+  },
   { key: "progress", label: "Progress", type: "number", defaultWidth: 112 },
-  { key: "limitPrice", label: "Limit", type: "number", defaultWidth: 64, align: "right" },
-  { key: "lastPrice", label: "Last", type: "number", defaultWidth: 64, align: "right" },
-  { key: "impact", label: "Impact", type: "number", defaultWidth: 64, align: "right" },
-  { key: "commission", label: "Comm", type: "number", defaultWidth: 64, align: "right" },
+  {
+    key: "limitPrice",
+    label: "Limit",
+    type: "number",
+    defaultWidth: 64,
+    align: "right",
+  },
+  {
+    key: "lastPrice",
+    label: "Last",
+    type: "number",
+    defaultWidth: 64,
+    align: "right",
+  },
+  {
+    key: "impact",
+    label: "Impact",
+    type: "number",
+    defaultWidth: 64,
+    align: "right",
+  },
+  {
+    key: "commission",
+    label: "Comm",
+    type: "number",
+    defaultWidth: 64,
+    align: "right",
+  },
 ];
 
 type ViewTab = "active" | "needs-action" | "history";
@@ -101,11 +150,6 @@ function formatQty(n: number) {
 
 function formatPrice(price: number) {
   return price.toFixed(2);
-}
-
-function formatBps(bps: number) {
-  const sign = bps > 0 ? "+" : "";
-  return `${sign}${bps.toFixed(1)}bp`;
 }
 
 const LIQ_STYLES: Record<LiquidityFlag, string> = {
@@ -192,7 +236,9 @@ function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
             })}
           </td>
           <td
-            className={`px-3 py-1 text-[10px] font-semibold ${c.side === "BUY" ? "text-emerald-600" : "text-red-600"}`}
+            className={`px-3 py-1 text-[10px] font-semibold ${
+              c.side === "BUY" ? "text-emerald-600" : "text-red-600"
+            }`}
           >
             {c.side}
           </td>
@@ -204,7 +250,9 @@ function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
             {(c.avgFillPrice ?? c.limitPrice).toFixed(4)}
           </td>
           <td
-            className={`px-3 py-1 text-[10px] font-semibold ${c.liquidityFlag ? LIQ_STYLES[c.liquidityFlag] : "text-gray-600"}`}
+            className={`px-3 py-1 text-[10px] font-semibold ${
+              c.liquidityFlag ? LIQ_STYLES[c.liquidityFlag] : "text-gray-600"
+            }`}
           >
             {c.liquidityFlag ?? "—"}
           </td>
@@ -261,7 +309,9 @@ function TradeAtLastButton({
       }}
       data-testid="trade-at-last-btn"
       className="px-2 py-0.5 text-[10px] font-semibold rounded border border-amber-600/60 text-amber-400 hover:bg-amber-900/30 transition-colors whitespace-nowrap"
-      title={`Submit LIMIT order for ${formatQty(remaining)} @ ${marketPrice ? formatPrice(marketPrice) : "—"}`}
+      title={`Submit LIMIT order for ${formatQty(remaining)} @ ${
+        marketPrice ? formatPrice(marketPrice) : "—"
+      }`}
     >
       Trade at Last
     </button>
@@ -328,7 +378,11 @@ export function AlgoMonitor() {
                 tab.value = "active";
               }}
               data-testid="active-tab"
-              className={`px-2.5 py-1 transition-colors ${tab.value === "active" ? "bg-sky-900/60 text-sky-300" : "text-gray-500 hover:text-gray-300"}`}
+              className={`px-2.5 py-1 transition-colors ${
+                tab.value === "active"
+                  ? "bg-sky-900/60 text-sky-300"
+                  : "text-gray-500 hover:text-gray-300"
+              }`}
             >
               Active
               {activeOrders.length > 0 && (
@@ -345,7 +399,11 @@ export function AlgoMonitor() {
                 tab.value = "needs-action";
               }}
               data-testid="needs-action-tab"
-              className={`px-2.5 py-1 transition-colors ${tab.value === "needs-action" ? "bg-amber-900/60 text-amber-300" : "text-gray-500 hover:text-gray-300"}`}
+              className={`px-2.5 py-1 transition-colors ${
+                tab.value === "needs-action"
+                  ? "bg-amber-900/60 text-amber-300"
+                  : "text-gray-500 hover:text-gray-300"
+              }`}
             >
               Needs Action
               {needsActionOrders.length > 0 && (
@@ -362,7 +420,11 @@ export function AlgoMonitor() {
                 tab.value = "history";
               }}
               data-testid="history-tab"
-              className={`px-2.5 py-1 transition-colors ${tab.value === "history" ? "bg-gray-700/80 text-gray-200" : "text-gray-500 hover:text-gray-300"}`}
+              className={`px-2.5 py-1 transition-colors ${
+                tab.value === "history"
+                  ? "bg-gray-700/80 text-gray-200"
+                  : "text-gray-500 hover:text-gray-300"
+              }`}
             >
               History
               {historyOrders.length > 0 && (
@@ -453,7 +515,9 @@ export function AlgoMonitor() {
                     >
                       <td className="px-3 py-2 font-semibold text-gray-200">{order.asset}</td>
                       <td
-                        className={`px-3 py-2 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"}`}
+                        className={`px-3 py-2 font-semibold ${
+                          order.side === "BUY" ? "text-emerald-400" : "text-red-400"
+                        }`}
                       >
                         {order.side}
                       </td>
@@ -574,7 +638,9 @@ export function AlgoMonitor() {
                             <span className="text-gray-500">
                               Expired —{" "}
                               {order.filled > 0
-                                ? `${formatQty(order.filled)} of ${formatQty(order.quantity)} filled`
+                                ? `${formatQty(order.filled)} of ${formatQty(
+                                    order.quantity
+                                  )} filled`
                                 : "no fills"}
                             </span>
                           ) : order.status === "filled" ? (

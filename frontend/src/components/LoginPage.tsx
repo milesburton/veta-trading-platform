@@ -1,8 +1,38 @@
-import type { AuthUser } from "../store/authSlice.ts";
+import { useState } from "react";
+import { type AuthRole, ROLE_LABELS } from "../auth/rbac.ts";
 import { setUser } from "../store/authSlice.ts";
 import { useAppDispatch } from "../store/hooks.ts";
 import { SERVICES, type ServiceCategory, useGetServiceHealthQuery } from "../store/servicesApi.ts";
-import { useCreateSessionMutation } from "../store/userApi.ts";
+import {
+  useAuthorizeOAuthMutation,
+  useExchangeOAuthCodeMutation,
+  useRegisterOAuthUserMutation,
+} from "../store/userApi.ts";
+
+const OAUTH_CLIENT_ID = import.meta.env.VITE_OAUTH_CLIENT_ID ?? "veta-web";
+const OAUTH_REDIRECT_URI = import.meta.env.VITE_OAUTH_REDIRECT_URI ?? "postmessage";
+const OAUTH_SCOPE = "openid profile";
+
+function base64UrlEncode(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function createCodeVerifier(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return base64UrlEncode(bytes);
+}
+
+async function createPkcePair(): Promise<{ verifier: string; challenge: string }> {
+  const verifier = createCodeVerifier();
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  return {
+    verifier,
+    challenge: base64UrlEncode(new Uint8Array(digest)),
+  };
+}
 
 const CATEGORY_LABELS: Record<ServiceCategory, string> = {
   core: "Order Flow",
@@ -285,21 +315,6 @@ function PlatformStatus() {
   );
 }
 
-interface SeedUser {
-  id: string;
-  name: string;
-  role: "trader" | "admin";
-  avatar_emoji: string;
-}
-
-const SEED_USERS: SeedUser[] = [
-  { id: "alice", name: "Alice Chen", role: "trader", avatar_emoji: "AC" },
-  { id: "bob", name: "Bob Martinez", role: "trader", avatar_emoji: "BM" },
-  { id: "carol", name: "Carol Singh", role: "trader", avatar_emoji: "CS" },
-  { id: "dave", name: "Dave Okafor", role: "trader", avatar_emoji: "DO" },
-  { id: "admin", name: "Mission Control", role: "admin", avatar_emoji: "MC" },
-];
-
 interface LoginPageProps {
   buildDate?: string;
   commitSha?: string;
@@ -307,20 +322,75 @@ interface LoginPageProps {
 
 export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
   const dispatch = useAppDispatch();
-  const [createSession, { isLoading: sessionLoading, error: sessionError, reset }] =
-    useCreateSessionMutation();
+  const [mode, setMode] = useState<"signin" | "register">("signin");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [authorizeOAuth, authorizeState] = useAuthorizeOAuthMutation();
+  const [exchangeOAuthCode, tokenState] = useExchangeOAuthCodeMutation();
+  const [registerOAuthUser, registerState] = useRegisterOAuthUserMutation();
 
-  async function handleSelect(user: SeedUser) {
-    reset();
-    const result = await createSession({ userId: user.id });
-    if ("data" in result) {
-      dispatch(setUser(result.data as AuthUser));
+  const isLoading = authorizeState.isLoading || tokenState.isLoading || registerState.isLoading;
+  const apiError = registerState.error ?? authorizeState.error ?? tokenState.error;
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalizedUsername = username.trim().toLowerCase();
+    const trimmedName = displayName.trim();
+    setLocalError(null);
+    authorizeState.reset();
+    tokenState.reset();
+    registerState.reset();
+
+    if (!normalizedUsername) {
+      setLocalError("Username is required.");
+      return;
+    }
+    if (!password.trim()) {
+      setLocalError("Passcode is required.");
+      return;
+    }
+    if (mode === "register" && !trimmedName) {
+      setLocalError("Display name is required to register a viewer account.");
+      return;
+    }
+
+    if (mode === "register") {
+      const registerResult = await registerOAuthUser({
+        username: normalizedUsername,
+        name: trimmedName,
+        password,
+      });
+      if (!("data" in registerResult)) return;
+    }
+
+    const pkce = await createPkcePair();
+    const authorizeResult = await authorizeOAuth({
+      client_id: OAUTH_CLIENT_ID,
+      username: normalizedUsername,
+      password,
+      redirect_uri: OAUTH_REDIRECT_URI,
+      response_type: "code",
+      scope: OAUTH_SCOPE,
+      code_challenge: pkce.challenge,
+      code_challenge_method: "S256",
+    });
+
+    if (!("data" in authorizeResult) || !authorizeResult.data) return;
+
+    const tokenResult = await exchangeOAuthCode({
+      client_id: OAUTH_CLIENT_ID,
+      code: authorizeResult.data.code,
+      grant_type: "authorization_code",
+      redirect_uri: OAUTH_REDIRECT_URI,
+      code_verifier: pkce.verifier,
+    });
+
+    if ("data" in tokenResult && tokenResult.data?.user) {
+      dispatch(setUser(tokenResult.data.user));
     }
   }
-
-  const loadingUserId = sessionLoading
-    ? ((document.activeElement as HTMLButtonElement | null)?.dataset?.userId ?? null)
-    : null;
 
   return (
     <div
@@ -340,25 +410,36 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
             Trading Platform
           </div>
           <h1 data-testid="login-heading" className="text-2xl font-semibold text-gray-100 mb-1">
-            Select your profile
+            Sign in with OAuth2
           </h1>
-          <p className="text-gray-500 text-sm">Choose a trader to begin your session</p>
+          <p className="text-gray-500 text-sm">
+            Use your VETA user ID and passcode, or register a new viewer account for read-only
+            access.
+          </p>
         </div>
 
-        {/* User cards */}
-        <LoginCards
-          users={SEED_USERS}
-          loading={sessionLoading}
-          loadingUserId={loadingUserId}
-          onSelect={handleSelect}
+        <AuthForm
+          mode={mode}
+          username={username}
+          password={password}
+          displayName={displayName}
+          loading={isLoading}
+          onModeChange={setMode}
+          onUsernameChange={setUsername}
+          onPasswordChange={setPassword}
+          onDisplayNameChange={setDisplayName}
+          onSubmit={handleSubmit}
         />
 
-        {sessionError && (
+        {(localError || apiError) && (
           <div
             data-testid="login-error"
             className="mt-6 text-center text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-lg px-4 py-2"
           >
-            {"status" in sessionError ? `Login failed (${sessionError.status})` : "Login failed"}
+            {localError ??
+              ("status" in apiError!
+                ? `OAuth2 request failed (${String(apiError.status)})`
+                : "OAuth2 request failed")}
           </div>
         )}
 
@@ -375,65 +456,138 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
   );
 }
 
-interface LoginCardsProps {
-  users: SeedUser[];
+interface AuthFormProps {
+  mode: "signin" | "register";
+  username: string;
+  password: string;
+  displayName: string;
   loading: boolean;
-  loadingUserId: string | null;
-  onSelect: (user: SeedUser) => void;
+  onModeChange: (mode: "signin" | "register") => void;
+  onUsernameChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  onDisplayNameChange: (value: string) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }
 
-function LoginCards({ users, loading, loadingUserId, onSelect }: LoginCardsProps) {
+function AuthForm({
+  mode,
+  username,
+  password,
+  displayName,
+  loading,
+  onModeChange,
+  onUsernameChange,
+  onPasswordChange,
+  onDisplayNameChange,
+  onSubmit,
+}: AuthFormProps) {
+  const rolePreview: AuthRole = mode === "register" ? "viewer" : "external-client";
+
   return (
-    <div className="grid grid-cols-5 gap-3">
-      {users.map((user) => {
-        const isLoading = loading && loadingUserId === user.id;
-        return (
+    <form
+      onSubmit={onSubmit}
+      className="rounded-2xl border border-gray-800 bg-gray-900/70 p-6 space-y-5"
+    >
+      <div className="flex gap-2 rounded-xl border border-gray-800 bg-gray-950 p-1">
+        {(["signin", "register"] as const).map((value) => (
           <button
-            key={user.id}
-            data-testid={`user-btn-${user.id}`}
-            data-user-id={user.id}
+            key={value}
+            data-testid={`oauth-mode-${value}`}
             type="button"
-            onClick={() => onSelect(user)}
+            onClick={() => onModeChange(value)}
             disabled={loading}
-            className={`group flex flex-col items-center gap-4 p-4 rounded-xl border transition-all duration-150 w-full ${
-              loading && !isLoading
-                ? "opacity-40 cursor-not-allowed border-gray-800 bg-gray-900/30"
-                : "cursor-pointer border-gray-700 bg-gray-900 hover:border-emerald-500 hover:bg-gray-800 hover:shadow-[0_0_20px_rgba(52,211,153,0.15)]"
-            } ${isLoading ? "border-emerald-500 bg-gray-800 shadow-[0_0_20px_rgba(52,211,153,0.15)]" : ""}`}
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              mode === value
+                ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30"
+                : "text-gray-400 hover:text-gray-200"
+            }`}
           >
-            <div className="flex flex-col items-center gap-2 w-full">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold tracking-wide select-none shrink-0 ${
-                  user.role === "admin"
-                    ? "bg-orange-500/20 text-orange-500 border border-orange-500/40"
-                    : "bg-gray-700/50 text-gray-300 border border-gray-600/50"
-                }`}
-              >
-                {user.avatar_emoji}
-              </div>
-              <div className="text-gray-200 font-medium text-xs leading-tight text-center min-h-[2.5em] flex items-center justify-center">
-                {user.name}
-              </div>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <div
-                className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                  user.role === "admin"
-                    ? "bg-orange-500/15 text-orange-500 ring-1 ring-orange-500/30"
-                    : "bg-blue-500/15 text-blue-500 ring-1 ring-blue-500/30"
-                }`}
-              >
-                {user.role}
-              </div>
-              <div className="h-3 flex items-center justify-center">
-                {isLoading && (
-                  <div className="w-3 h-3 border border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                )}
-              </div>
-            </div>
+            {value === "signin" ? "Sign In" : "Register Viewer"}
           </button>
-        );
-      })}
-    </div>
+        ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
+        <div className="space-y-4">
+          <label className="space-y-2 block">
+            <span className="block text-xs font-medium uppercase tracking-wider text-gray-400">
+              Username
+            </span>
+            <input
+              data-testid="oauth-username"
+              type="text"
+              value={username}
+              onChange={(event) => onUsernameChange(event.target.value)}
+              placeholder="alice"
+              autoComplete="username"
+              disabled={loading}
+              className="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2.5 text-sm text-gray-100 outline-none transition-colors focus:border-emerald-500"
+            />
+          </label>
+
+          <label className="space-y-2 block">
+            <span className="block text-xs font-medium uppercase tracking-wider text-gray-400">
+              Passcode
+            </span>
+            <input
+              data-testid="oauth-password"
+              type="password"
+              value={password}
+              onChange={(event) => onPasswordChange(event.target.value)}
+              placeholder="Enter access passcode"
+              autoComplete="current-password"
+              disabled={loading}
+              className="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2.5 text-sm text-gray-100 outline-none transition-colors focus:border-emerald-500"
+            />
+          </label>
+        </div>
+
+        <div className="rounded-xl border border-gray-800 bg-gray-950/60 px-4 py-3">
+          <div className="text-[10px] uppercase tracking-wider text-gray-500">Access outcome</div>
+          <div className="mt-2 text-sm font-medium text-gray-100">{ROLE_LABELS[rolePreview]}</div>
+          <div className="mt-1 text-xs text-gray-500">
+            {mode === "register"
+              ? "Self-registration provisions a read-only viewer account."
+              : "Existing users retain server-assigned permissions after passcode verification."}
+          </div>
+        </div>
+      </div>
+
+      {mode === "register" && (
+        <label className="space-y-2 block">
+          <span className="block text-xs font-medium uppercase tracking-wider text-gray-400">
+            Display Name
+          </span>
+          <input
+            data-testid="oauth-display-name"
+            type="text"
+            value={displayName}
+            onChange={(event) => onDisplayNameChange(event.target.value)}
+            placeholder="Jane Doe"
+            autoComplete="name"
+            disabled={loading}
+            className="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2.5 text-sm text-gray-100 outline-none transition-colors focus:border-emerald-500"
+          />
+        </label>
+      )}
+
+      <div className="flex items-center justify-between gap-4 pt-1">
+        <div className="text-xs text-gray-500">
+          Client <span className="font-mono text-gray-400">{OAUTH_CLIENT_ID}</span> uses PKCE with
+          the internal VETA identity service.
+        </div>
+        <button
+          data-testid="oauth-submit"
+          type="submit"
+          disabled={loading}
+          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-900/60"
+        >
+          {loading && (
+            <span className="h-3 w-3 rounded-full border border-white/60 border-t-transparent animate-spin" />
+          )}
+          {mode === "register" ? "Register and Continue" : "Continue"}
+        </button>
+      </div>
+    </form>
   );
 }

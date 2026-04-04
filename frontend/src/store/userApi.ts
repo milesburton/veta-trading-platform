@@ -1,6 +1,47 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { AuthUser, TradingLimits } from "./authSlice.ts";
 
+export interface OAuthAuthorizeRequest {
+  client_id: string;
+  username: string;
+  password: string;
+  redirect_uri: string;
+  response_type: "code";
+  scope: string;
+  code_challenge: string;
+  code_challenge_method: "S256";
+}
+
+export interface OAuthAuthorizeResponse {
+  code: string;
+  redirect_uri: string;
+  expires_in: number;
+  scope: string;
+  token_type: "none";
+}
+
+export interface OAuthTokenRequest {
+  client_id: string;
+  code: string;
+  grant_type: "authorization_code";
+  redirect_uri: string;
+  code_verifier: string;
+}
+
+export interface OAuthTokenResponse {
+  access_token: string;
+  token_type: "bearer";
+  expires_in: number;
+  scope: string;
+  user: AuthUser;
+}
+
+export interface OAuthRegisterRequest {
+  username: string;
+  name: string;
+  password: string;
+}
+
 export interface UserRow {
   id: string;
   name: string;
@@ -27,9 +68,26 @@ export const userApi = createApi({
   }),
   tagTypes: ["UserLimits"],
   endpoints: (builder) => ({
-    createSession: builder.mutation<AuthUser, { userId: string }>({
+    authorizeOAuth: builder.mutation<OAuthAuthorizeResponse, OAuthAuthorizeRequest>({
       query: (body) => ({
-        url: "/sessions",
+        url: "/oauth/authorize",
+        method: "POST",
+        body,
+      }),
+    }),
+    exchangeOAuthCode: builder.mutation<OAuthTokenResponse, OAuthTokenRequest>({
+      query: (body) => ({
+        url: "/oauth/token",
+        method: "POST",
+        body,
+      }),
+    }),
+    registerOAuthUser: builder.mutation<
+      { userId: string; name: string; role: string },
+      OAuthRegisterRequest
+    >({
+      query: (body) => ({
+        url: "/oauth/register",
         method: "POST",
         body,
       }),
@@ -59,7 +117,9 @@ export const userApi = createApi({
 });
 
 export const {
-  useCreateSessionMutation,
+  useAuthorizeOAuthMutation,
+  useExchangeOAuthCodeMutation,
+  useRegisterOAuthUserMutation,
   useDeleteSessionMutation,
   useGetUsersQuery,
   useGetUserLimitsQuery,

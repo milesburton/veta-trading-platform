@@ -21,7 +21,14 @@ describe("VENUE_REGISTRY", () => {
   });
 
   it.each([
-    ["DARK1", { isDark: true, minQuantity: 10_000, supportsMarketOrders: false }],
+    [
+      "DARK1",
+      {
+        isDark: true,
+        minQuantity: 10_000,
+        supportsMarketOrders: false,
+      },
+    ],
     ["IEX", { supportsMarketOrders: false }],
     ["BATS", { supportsAuction: false }],
     ["EDGX", { supportsIceberg: false }],

@@ -18,6 +18,7 @@ import { useAppSelector } from "../store/hooks.ts";
 import type { ColDef } from "../types/gridPrefs.ts";
 import type { LiquidityFlag, OrderRecord } from "../types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
+import { formatBps, formatTime } from "../utils/format.ts";
 import { applyCfRules } from "../utils/gridFilter.ts";
 import { CfRuleEditor } from "./grid/CfRuleEditor.tsx";
 import { FilterBar } from "./grid/FilterBar.tsx";
@@ -33,7 +34,13 @@ const LIQ_COLORS: Record<LiquidityFlag, string> = {
 const EXEC_COLS: ColDef[] = [
   { key: "submittedAt", label: "Time", type: "string", defaultWidth: 80 },
   { key: "asset", label: "Asset", type: "string", defaultWidth: 72 },
-  { key: "side", label: "Side", type: "enum", options: ["BUY", "SELL"], defaultWidth: 52 },
+  {
+    key: "side",
+    label: "Side",
+    type: "enum",
+    options: ["BUY", "SELL"],
+    defaultWidth: 52,
+  },
   {
     key: "strategy",
     label: "Strategy",
@@ -48,25 +55,36 @@ const EXEC_COLS: ColDef[] = [
     options: ["pending", "working", "filled", "expired", "rejected", "cancelled", "held"],
     defaultWidth: 72,
   },
-  { key: "fillPct", label: "Fill%", type: "number", defaultWidth: 56, align: "right" },
-  { key: "impact", label: "Impact", type: "number", defaultWidth: 56, align: "right" },
-  { key: "commission", label: "Comm", type: "number", defaultWidth: 64, align: "right" },
-  { key: "slices", label: "Slices", type: "number", defaultWidth: 52, align: "right" },
+  {
+    key: "fillPct",
+    label: "Fill%",
+    type: "number",
+    defaultWidth: 56,
+    align: "right",
+  },
+  {
+    key: "impact",
+    label: "Impact",
+    type: "number",
+    defaultWidth: 56,
+    align: "right",
+  },
+  {
+    key: "commission",
+    label: "Comm",
+    type: "number",
+    defaultWidth: 64,
+    align: "right",
+  },
+  {
+    key: "slices",
+    label: "Slices",
+    type: "number",
+    defaultWidth: 52,
+    align: "right",
+  },
   { key: "_expand", label: "", type: "string", defaultWidth: 24 },
 ];
-
-function formatTime(ms: number) {
-  return new Date(ms).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-function formatBps(bps: number) {
-  const sign = bps > 0 ? "+" : "";
-  return `${sign}${bps.toFixed(1)}bp`;
-}
 
 function buildFillTimeline(order: OrderRecord) {
   if (order.children.length === 0) return [];
@@ -178,7 +196,9 @@ function TradeRow({
                 <td
                   key={col.key}
                   style={{ width: w }}
-                  className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"} ${cellCls}`}
+                  className={`px-3 py-1.5 font-semibold ${
+                    order.side === "BUY" ? "text-emerald-400" : "text-red-400"
+                  } ${cellCls}`}
                 >
                   {order.side}
                 </td>

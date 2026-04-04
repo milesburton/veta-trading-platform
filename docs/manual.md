@@ -1,7 +1,8 @@
 # VETA Trading Platform — Operator & Developer Manual
 
-> **Version**: current `main` branch
-> **Last updated**: 2026-03-26
+> **Version**: current `main` branch  
+> **Last updated**: 2026-04-04  
+> **Authentication**: OAuth2 + PKCE with credential verification
 
 ---
 
@@ -329,16 +330,20 @@ Returns: ReplayFrame[] — reconstructed signals from historical candle data
 
 Sessions are stored as `veta_user` HTTP-only cookies set by the User Service at login. The Gateway validates this cookie on **every HTTP request and WebSocket connection** (results cached for 10 seconds). The OMS independently fetches limits from the User Service (cached for 30 seconds).
 
-### Built-in Personas
+### OAuth2 + RBAC
 
-| Username | Password | Role | Trading Limits |
-|----------|----------|------|----------------|
-| `alice` | `password123` | `trader` (high-touch) | All strategies; max qty 10,000; max daily notional $1M |
-| `bob` | `password123` | `trader` (algo) | TWAP, POV, VWAP, ICEBERG, SNIPER, ARRIVAL_PRICE, IS, MOMENTUM |
-| `carol` | `password123` | `trader` (fixed income) | LIMIT only; FI desk access |
-| `david` | `password123` | `analyst` (read-only) | No strategies — cannot submit orders |
+The User Service provides an OAuth2 authorization-code flow with PKCE:
 
-Admin accounts can view all panels but are blocked from submitting orders at both the OMS (bus-level) and UI (OrderTicket hidden) layers.
+1. `POST /oauth/authorize` with `{ client_id, username, password, redirect_uri, response_type: "code", code_challenge, code_challenge_method: "S256" }`
+2. `POST /oauth/token` with `{ client_id, code, grant_type: "authorization_code", redirect_uri, code_verifier }`
+
+For self-service viewer onboarding, first call `POST /oauth/register` with `{ username, name, password }`, then run the authorize/token exchange.
+
+Successful token exchange sets the `veta_user` cookie and returns the authenticated user.
+
+Runtime RBAC roles are: `trader`, `admin`, `compliance`, `sales`, `external-client`, `viewer`.
+
+Only `trader` accounts may submit orders. Non-trading roles remain read-only/administrative.
 
 ### Trading Limit Defaults (when no DB record exists)
 
@@ -353,7 +358,7 @@ dark_pool_access:    false
 ### Auth Flow
 
 ```
-1. POST /sessions (User Service) → sets veta_user cookie
+1. POST /oauth/authorize + POST /oauth/token (User Service) → sets veta_user cookie
 2. Browser connects to GET /ws (Gateway) → cookie validated → authIdentity WS event sent
 3. authSlice stores { user, limits } in Redux
 4. Every HTTP proxy request → cookie re-validated (10s cache)

@@ -60,10 +60,15 @@ function nextLegId(): string {
   return `LEG${String(legSeq++).padStart(4, "0")}`;
 }
 
-const producer = await createProducer("product-service").catch((err: unknown) => {
-  console.warn("[product-service] Kafka producer unavailable:", (err as Error).message);
-  return null;
-});
+const producer = await createProducer("product-service").catch(
+  (err: unknown) => {
+    console.warn(
+      "[product-service] Kafka producer unavailable:",
+      (err as Error).message,
+    );
+    return null;
+  },
+);
 
 function jsonErr(msg: string, status: number): Response {
   return new Response(JSON.stringify({ error: msg }), {
@@ -89,13 +94,21 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/health" && method === "GET") {
-    return jsonOk({ service: "product-service", version: VERSION, status: "ok" });
+    return jsonOk({
+      service: "product-service",
+      version: VERSION,
+      status: "ok",
+    });
   }
 
   // GET /products/stats — MUST be checked before /:id route
   if (path === "/products/stats" && method === "GET") {
     const counts: Record<ProductState, number> = {
-      draft: 0, structured: 0, issued: 0, sold: 0, unwound: 0,
+      draft: 0,
+      structured: 0,
+      issued: 0,
+      sold: 0,
+      unwound: 0,
     };
     for (const p of productStore.values()) {
       counts[p.state] = (counts[p.state] ?? 0) + 1;
@@ -115,7 +128,11 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         symbol: string;
         weight: number;
         isin?: string;
-        optionSpec?: { strike: number; expiry: string; putCall: "CALL" | "PUT" };
+        optionSpec?: {
+          strike: number;
+          expiry: string;
+          putCall: "CALL" | "PUT";
+        };
       }>;
     };
     try {
@@ -168,7 +185,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     let products = Array.from(productStore.values());
 
     if (userRoleParam === "external-client" && userIdParam) {
-      products = products.filter((p) => p.state === "issued" || p.state === "sold");
+      products = products.filter((p) =>
+        p.state === "issued" || p.state === "sold"
+      );
     }
 
     if (stateFilter) {
@@ -192,7 +211,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const product = productStore.get(matchLegs[1]);
     if (!product) return jsonErr("Product not found", 404);
     if (product.state !== "draft") {
-      return jsonErr(`Cannot update legs: product is in '${product.state}' state (must be 'draft')`, 400);
+      return jsonErr(
+        `Cannot update legs: product is in '${product.state}' state (must be 'draft')`,
+        400,
+      );
     }
 
     let body: {
@@ -201,7 +223,11 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         symbol: string;
         weight: number;
         isin?: string;
-        optionSpec?: { strike: number; expiry: string; putCall: "CALL" | "PUT" };
+        optionSpec?: {
+          strike: number;
+          expiry: string;
+          putCall: "CALL" | "PUT";
+        };
       }>;
     };
     try {
@@ -232,7 +258,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const product = productStore.get(matchStructure[1]);
     if (!product) return jsonErr("Product not found", 404);
     if (product.state !== "draft") {
-      return jsonErr(`Cannot structure: product is in '${product.state}' state (must be 'draft')`, 400);
+      return jsonErr(
+        `Cannot structure: product is in '${product.state}' state (must be 'draft')`,
+        400,
+      );
     }
     if (product.legs.length === 0) {
       return jsonErr("Cannot structure: product has no legs", 400);
@@ -259,7 +288,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const product = productStore.get(matchIssue[1]);
     if (!product) return jsonErr("Product not found", 404);
     if (product.state !== "structured") {
-      return jsonErr(`Cannot issue: product is in '${product.state}' state (must be 'structured')`, 400);
+      return jsonErr(
+        `Cannot issue: product is in '${product.state}' state (must be 'structured')`,
+        400,
+      );
     }
 
     product.state = "issued";
@@ -276,7 +308,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const product = productStore.get(matchSell[1]);
     if (!product) return jsonErr("Product not found", 404);
     if (product.state !== "issued") {
-      return jsonErr(`Cannot sell: product is in '${product.state}' state (must be 'issued')`, 400);
+      return jsonErr(
+        `Cannot sell: product is in '${product.state}' state (must be 'issued')`,
+        400,
+      );
     }
 
     let body: { soldTo?: string; rfqId?: string };
@@ -301,7 +336,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const product = productStore.get(matchUnwind[1]);
     if (!product) return jsonErr("Product not found", 404);
     if (product.state !== "sold") {
-      return jsonErr(`Cannot unwind: product is in '${product.state}' state (must be 'sold')`, 400);
+      return jsonErr(
+        `Cannot unwind: product is in '${product.state}' state (must be 'sold')`,
+        400,
+      );
     }
 
     product.state = "unwound";

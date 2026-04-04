@@ -1,23 +1,24 @@
 # Market Simulator
 
-**Port:** `5000` (env: `MARKET_SIM_PORT`)
-**Protocol:** WebSocket
-**Source:** [backend/src/market-sim/market-sim.ts](../../backend/src/market-sim/market-sim.ts)
+**Port:** `5000` (env: `MARKET_SIM_PORT`) **Protocol:** WebSocket **Source:**
+[backend/src/market-sim/market-sim.ts](../../backend/src/market-sim/market-sim.ts)
 
 ## Overview
 
-Streams simulated market price data for four assets in real time. Every connected client receives an initial snapshot then live updates once per second.
+Streams simulated market price data for four assets in real time. Every
+connected client receives an initial snapshot then live updates once per second.
 
 ## Assets Simulated
 
-| Asset     | Seed Price |
-|-----------|-----------|
-| AAPL      | 150.00    |
-| TSLA      | 850.00    |
-| GBP/USD   | 1.35      |
-| EUR/USD   | 1.12      |
+| Asset   | Seed Price |
+| ------- | ---------- |
+| AAPL    | 150.00     |
+| TSLA    | 850.00     |
+| GBP/USD | 1.35       |
+| EUR/USD | 1.12       |
 
-Price movements are random within ±2% of the current price per tick, implemented in [priceEngine.ts](../../backend/src/market-sim/priceEngine.ts).
+Price movements are random within ±2% of the current price per tick, implemented
+in [priceEngine.ts](../../backend/src/market-sim/priceEngine.ts).
 
 ## WebSocket Protocol
 
@@ -65,5 +66,6 @@ wscat -c ws://localhost:5000
 
 ## Notes
 
-- All clients share the same underlying price state — prices evolve globally, not per-connection.
+- All clients share the same underlying price state — prices evolve globally,
+  not per-connection.
 - Disconnecting a client clears its update interval to avoid memory leaks.

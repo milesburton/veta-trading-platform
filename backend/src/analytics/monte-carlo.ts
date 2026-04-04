@@ -73,8 +73,16 @@ export function monteCarlo(
   seedKey = "",
 ): MonteCarloResult {
   if (T <= 0 || sigma <= 0) {
-    const intrinsic = optionType === "call" ? Math.max(0, S - K) : Math.max(0, K - S);
-    return { p5: intrinsic, p25: intrinsic, mean: intrinsic, p75: intrinsic, p95: intrinsic };
+    const intrinsic = optionType === "call"
+      ? Math.max(0, S - K)
+      : Math.max(0, K - S);
+    return {
+      p5: intrinsic,
+      p25: intrinsic,
+      mean: intrinsic,
+      p75: intrinsic,
+      p95: intrinsic,
+    };
   }
 
   // Ensure paths is even for antithetic pairing
@@ -93,8 +101,12 @@ export function monteCarlo(
 
     const ST = S * Math.exp(drift + diffusion * z);
     const STa = S * Math.exp(drift + diffusion * zAnt);
-    prices[i] = (optionType === "call" ? Math.max(0, ST - K) : Math.max(0, K - ST)) * discount;
-    prices[i + 1] = (optionType === "call" ? Math.max(0, STa - K) : Math.max(0, K - STa)) * discount;
+    prices[i] =
+      (optionType === "call" ? Math.max(0, ST - K) : Math.max(0, K - ST)) *
+      discount;
+    prices[i + 1] =
+      (optionType === "call" ? Math.max(0, STa - K) : Math.max(0, K - STa)) *
+      discount;
   }
 
   prices.sort();

@@ -12,9 +12,18 @@ const SIGNAL_STYLES: Record<SignalStrength, { badge: string; dot: string }> = {
     badge: "bg-emerald-900/40 text-emerald-300 border border-emerald-800",
     dot: "bg-emerald-600",
   },
-  NEUTRAL: { badge: "bg-gray-800/60 text-gray-400 border border-gray-700", dot: "bg-gray-500" },
-  SELL: { badge: "bg-red-900/40 text-red-300 border border-red-800", dot: "bg-red-600" },
-  STRONG_SELL: { badge: "bg-red-800/60 text-red-200 border border-red-700", dot: "bg-red-400" },
+  NEUTRAL: {
+    badge: "bg-gray-800/60 text-gray-400 border border-gray-700",
+    dot: "bg-gray-500",
+  },
+  SELL: {
+    badge: "bg-red-900/40 text-red-300 border border-red-800",
+    dot: "bg-red-600",
+  },
+  STRONG_SELL: {
+    badge: "bg-red-800/60 text-red-200 border border-red-700",
+    dot: "bg-red-400",
+  },
 };
 
 const REASON_LABELS: Record<string, string> = {
@@ -62,7 +71,10 @@ function ScoreBar({ score }: { score: number }) {
       <div className="absolute top-0 left-1/2 w-px h-1.5 bg-gray-600" />
       <div
         className={`absolute top-0 h-1.5 rounded-full ${color}`}
-        style={{ left: `${Math.min(50, pct)}%`, width: `${Math.abs(pct - 50)}%` }}
+        style={{
+          left: `${Math.min(50, pct)}%`,
+          width: `${Math.abs(pct - 50)}%`,
+        }}
       />
     </div>
   );

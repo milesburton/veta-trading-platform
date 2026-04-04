@@ -167,10 +167,17 @@ jobs:
       - name: Wait for auth to be ready (DB migration complete)
         run: |
           for i in $(seq 1 30); do
-            RESULT=$(curl -sf -X POST https://veta-trading.fly.dev/api/user-service/sessions \
+            CODE=$(curl -sf -X POST https://veta-trading.fly.dev/api/user-service/oauth/authorize \
               -H 'Content-Type: application/json' \
-              -d '{"userId":"alice"}' \
-              -c /tmp/smoke-cookies.txt 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print('ok' if 'id' in d else 'fail')" 2>/dev/null || echo "fail")
+              -d '{"client_id":"veta-automation","username":"alice","password":"veta-dev-passcode","redirect_uri":"postmessage","response_type":"code","scope":"openid profile","code_challenge":"Az5MYuRvB8GvxBJen7MUERuvwcMQXfN8THdJE4ULky8","code_challenge_method":"S256"}' 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('code',''))" 2>/dev/null || true)
+            if [ -n "$CODE" ]; then
+              RESULT=$(curl -sf -X POST https://veta-trading.fly.dev/api/user-service/oauth/token \
+                -H 'Content-Type: application/json' \
+                -d "{\"client_id\":\"veta-automation\",\"code\":\"$CODE\",\"grant_type\":\"authorization_code\",\"redirect_uri\":\"postmessage\",\"code_verifier\":\"veta-smoke-challenge\"}" \
+                -c /tmp/smoke-cookies.txt 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print('ok' if 'user' in d else 'fail')" 2>/dev/null || echo "fail")
+            else
+              RESULT="fail"
+            fi
             if [ "$RESULT" = "ok" ]; then
               COOKIE=$(grep veta_user /tmp/smoke-cookies.txt | awk '{print $7}')
               GW=$(curl -sf https://veta-trading.fly.dev/api/gateway/me -H "Cookie: veta_user=$COOKIE" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print('ok' if 'user' in d else 'fail')" 2>/dev/null || echo "fail")

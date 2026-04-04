@@ -23,7 +23,11 @@ function SourceForm({ initial, onCancel, onSave, saving }: SourceFormProps) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!label.trim() || !rssTemplate.trim()) return;
-    onSave({ label: label.trim(), rssTemplate: rssTemplate.trim(), symbolSpecific });
+    onSave({
+      label: label.trim(),
+      rssTemplate: rssTemplate.trim(),
+      symbolSpecific,
+    });
   }
 
   return (

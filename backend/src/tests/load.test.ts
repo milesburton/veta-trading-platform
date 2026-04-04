@@ -14,17 +14,19 @@ import {
   assertExists,
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
 import {
+  ARCHIVE_URL,
   GATEWAY_URL,
   JOURNAL_URL,
-  OBS_URL,
-  ARCHIVE_URL,
   loginAs,
+  OBS_URL,
   timeout as t,
 } from "./test-helpers.ts";
 
 const SLA_INGESTION_ORDER_COUNT = 100;
 const SLA_INGESTION_THRESHOLD = 0.90;
-const SLA_INGESTION_MIN = Math.ceil(SLA_INGESTION_ORDER_COUNT * SLA_INGESTION_THRESHOLD);
+const SLA_INGESTION_MIN = Math.ceil(
+  SLA_INGESTION_ORDER_COUNT * SLA_INGESTION_THRESHOLD,
+);
 const SLA_INGESTION_WINDOW_MS = 30_000;
 
 const SLA_FILL_ORDER_COUNT = 50;
@@ -96,26 +98,43 @@ Deno.test("[load] /load-test requires admin role (trader is rejected)", async ()
 
 Deno.test("[load] admin can submit 50 orders and receives jobId", async () => {
   const token = await loginAsAdmin();
-  const result = await triggerLoadTest(token, { orderCount: 50, strategy: "LIMIT" });
+  const result = await triggerLoadTest(token, {
+    orderCount: 50,
+    strategy: "LIMIT",
+  });
 
   assertExists(result.jobId, "jobId must be present");
-  assertEquals(result.submitted, 50, `Expected 50 submitted, got ${result.submitted}`);
+  assertEquals(
+    result.submitted,
+    50,
+    `Expected 50 submitted, got ${result.submitted}`,
+  );
   assert(result.symbols.length > 0, "symbols array must be non-empty");
   assertEquals(result.strategy, "LIMIT");
 });
 
 Deno.test("[load] orderCount is capped at 500", async () => {
   const token = await loginAsAdmin();
-  const result = await triggerLoadTest(token, { orderCount: 9999, strategy: "LIMIT" });
+  const result = await triggerLoadTest(token, {
+    orderCount: 9999,
+    strategy: "LIMIT",
+  });
 
-  assertEquals(result.submitted, 500, `Expected submitted to be capped at 500, got ${result.submitted}`);
+  assertEquals(
+    result.submitted,
+    500,
+    `Expected submitted to be capped at 500, got ${result.submitted}`,
+  );
 });
 
 // ── Pipeline throughput ────────────────────────────────────────────────────────
 
 Deno.test("[load] 100-order burst: all orders appear in journal within 30s", async () => {
   const token = await loginAsAdmin();
-  const result = await triggerLoadTest(token, { orderCount: SLA_INGESTION_ORDER_COUNT, strategy: "LIMIT" });
+  const result = await triggerLoadTest(token, {
+    orderCount: SLA_INGESTION_ORDER_COUNT,
+    strategy: "LIMIT",
+  });
 
   const jobId = result.jobId;
   const deadline = Date.now() + SLA_INGESTION_WINDOW_MS;
@@ -128,13 +147,21 @@ Deno.test("[load] 100-order burst: all orders appear in journal within 30s", asy
       body: JSON.stringify({
         gridId: "orderBlotter",
         filterExpr: {
-          kind: "group", id: "root", join: "AND",
+          kind: "group",
+          id: "root",
+          join: "AND",
           rules: [{
-            kind: "rule", id: "r1", field: "clientOrderId",
-            op: "contains", value: jobId,
+            kind: "rule",
+            id: "r1",
+            field: "clientOrderId",
+            op: "contains",
+            value: jobId,
           }],
         },
-        sortField: null, sortDir: null, offset: 0, limit: 200,
+        sortField: null,
+        sortDir: null,
+        offset: 0,
+        limit: 200,
       }),
       signal: t(20_000),
     });
@@ -168,12 +195,17 @@ Deno.test("[load] 100-order burst: observability receives orders.submitted event
   const obsMin = Math.ceil(SLA_INGESTION_ORDER_COUNT * SLA_OBS_COVERAGE);
 
   while (Date.now() < deadline) {
-    const res = await fetch(`${OBS_URL}/events?type=orders.submitted`, { signal: t(10_000) });
+    const res = await fetch(`${OBS_URL}/events?type=orders.submitted`, {
+      signal: t(10_000),
+    });
     if (res.ok) {
-      const events = await res.json() as Array<{ payload: Record<string, unknown> }>;
+      const events = await res.json() as Array<
+        { payload: Record<string, unknown> }
+      >;
       matchCount = events.filter(
-        (e) => typeof e.payload?.clientOrderId === "string" &&
-               (e.payload.clientOrderId as string).startsWith(jobId),
+        (e) =>
+          typeof e.payload?.clientOrderId === "string" &&
+          (e.payload.clientOrderId as string).startsWith(jobId),
       ).length;
       if (matchCount >= obsMin) break;
     } else {
@@ -192,7 +224,10 @@ Deno.test("[load] 100-order burst: observability receives orders.submitted event
 
 Deno.test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
   const token = await loginAsAdmin();
-  const result = await triggerLoadTest(token, { orderCount: SLA_FILL_ORDER_COUNT, strategy: "LIMIT" });
+  const result = await triggerLoadTest(token, {
+    orderCount: SLA_FILL_ORDER_COUNT,
+    strategy: "LIMIT",
+  });
 
   const jobId = result.jobId;
   const deadline = Date.now() + SLA_FILL_WINDOW_MS;
@@ -205,13 +240,30 @@ Deno.test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
       body: JSON.stringify({
         gridId: "orderBlotter",
         filterExpr: {
-          kind: "group", id: "root", join: "AND",
+          kind: "group",
+          id: "root",
+          join: "AND",
           rules: [
-            { kind: "rule", id: "r1", field: "clientOrderId", op: "contains", value: jobId },
-            { kind: "rule", id: "r2", field: "status", op: "=", value: "filled" },
+            {
+              kind: "rule",
+              id: "r1",
+              field: "clientOrderId",
+              op: "contains",
+              value: jobId,
+            },
+            {
+              kind: "rule",
+              id: "r2",
+              field: "status",
+              op: "=",
+              value: "filled",
+            },
           ],
         },
-        sortField: null, sortDir: null, offset: 0, limit: 200,
+        sortField: null,
+        sortDir: null,
+        offset: 0,
+        limit: 200,
       }),
       signal: t(20_000),
     });
@@ -228,7 +280,9 @@ Deno.test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
   const fillRate = filledCount / SLA_FILL_ORDER_COUNT;
   assert(
     fillRate >= SLA_FILL_RATE,
-    `Fill rate ${(fillRate * 100).toFixed(1)}% below ${(SLA_FILL_RATE * 100).toFixed(0)}% SLA (${filledCount}/${SLA_FILL_ORDER_COUNT} filled within ${SLA_FILL_WINDOW_MS}ms)`,
+    `Fill rate ${(fillRate * 100).toFixed(1)}% below ${
+      (SLA_FILL_RATE * 100).toFixed(0)
+    }% SLA (${filledCount}/${SLA_FILL_ORDER_COUNT} filled within ${SLA_FILL_WINDOW_MS}ms)`,
   );
 });
 
@@ -251,7 +305,10 @@ Deno.test("[load] FIX archive grows after load injection", async () => {
     await new Promise((r) => setTimeout(r, 2_000));
   }
 
-  assert(after > before, `FIX archive execution count did not increase: before=${before}, after=${after}`);
+  assert(
+    after > before,
+    `FIX archive execution count did not increase: before=${before}, after=${after}`,
+  );
 });
 
 // ── System stability after load ───────────────────────────────────────────────
@@ -259,7 +316,10 @@ Deno.test("[load] FIX archive grows after load injection", async () => {
 Deno.test("[load] pipeline latency: 90% of orders visible in journal within SLA budget", async () => {
   const token = await loginAsAdmin();
   const t0 = Date.now();
-  const result = await triggerLoadTest(token, { orderCount: SLA_INGESTION_ORDER_COUNT, strategy: "LIMIT" });
+  const result = await triggerLoadTest(token, {
+    orderCount: SLA_INGESTION_ORDER_COUNT,
+    strategy: "LIMIT",
+  });
 
   const jobId = result.jobId;
   const deadline = t0 + SLA_PIPELINE_LATENCY_MS;
@@ -272,10 +332,21 @@ Deno.test("[load] pipeline latency: 90% of orders visible in journal within SLA 
       body: JSON.stringify({
         gridId: "orderBlotter",
         filterExpr: {
-          kind: "group", id: "root", join: "AND",
-          rules: [{ kind: "rule", id: "r1", field: "clientOrderId", op: "contains", value: jobId }],
+          kind: "group",
+          id: "root",
+          join: "AND",
+          rules: [{
+            kind: "rule",
+            id: "r1",
+            field: "clientOrderId",
+            op: "contains",
+            value: jobId,
+          }],
         },
-        sortField: null, sortDir: null, offset: 0, limit: 200,
+        sortField: null,
+        sortDir: null,
+        offset: 0,
+        limit: 200,
       }),
       signal: t(20_000),
     });
@@ -290,27 +361,44 @@ Deno.test("[load] pipeline latency: 90% of orders visible in journal within SLA 
   }
 
   const elapsed = Date.now() - t0;
-  assert(seenCount >= SLA_INGESTION_MIN, `Only ${seenCount}/${SLA_INGESTION_ORDER_COUNT} orders visible after ${elapsed}ms`);
-  assert(elapsed <= SLA_PIPELINE_LATENCY_MS, `Pipeline latency ${elapsed}ms exceeds SLA of ${SLA_PIPELINE_LATENCY_MS}ms`);
+  assert(
+    seenCount >= SLA_INGESTION_MIN,
+    `Only ${seenCount}/${SLA_INGESTION_ORDER_COUNT} orders visible after ${elapsed}ms`,
+  );
+  assert(
+    elapsed <= SLA_PIPELINE_LATENCY_MS,
+    `Pipeline latency ${elapsed}ms exceeds SLA of ${SLA_PIPELINE_LATENCY_MS}ms`,
+  );
 });
 
 Deno.test("[load] all services remain healthy after 100-order burst", async () => {
   const token = await loginAsAdmin();
-  await triggerLoadTest(token, { orderCount: SLA_INGESTION_ORDER_COUNT, strategy: "LIMIT" });
+  await triggerLoadTest(token, {
+    orderCount: SLA_INGESTION_ORDER_COUNT,
+    strategy: "LIMIT",
+  });
 
   await new Promise((r) => setTimeout(r, SLA_HEALTH_SETTLE_MS));
 
   const services = [
-    { name: "gateway",   url: GATEWAY_URL },
-    { name: "journal",   url: JOURNAL_URL },
-    { name: "obs",       url: OBS_URL     },
-    { name: "archive",   url: ARCHIVE_URL },
+    { name: "gateway", url: GATEWAY_URL },
+    { name: "journal", url: JOURNAL_URL },
+    { name: "obs", url: OBS_URL },
+    { name: "archive", url: ARCHIVE_URL },
   ];
 
   for (const svc of services) {
     const res = await fetch(`${svc.url}/health`, { signal: t() });
-    assertEquals(res.status, 200, `${svc.name} /health returned ${res.status} after load`);
+    assertEquals(
+      res.status,
+      200,
+      `${svc.name} /health returned ${res.status} after load`,
+    );
     const body = await res.json() as { status: string };
-    assertEquals(body.status, "ok", `${svc.name} reported non-ok status after load`);
+    assertEquals(
+      body.status,
+      "ok",
+      `${svc.name} reported non-ok status after load`,
+    );
   }
 });

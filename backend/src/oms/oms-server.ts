@@ -22,11 +22,17 @@ import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("OMS_PORT")) || 5_002;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const USER_SERVICE_URL = `http://${Deno.env.get("USER_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("USER_SERVICE_PORT") ?? "5008"}`;
-const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
+const USER_SERVICE_URL = `http://${
+  Deno.env.get("USER_SERVICE_HOST") ?? "localhost"
+}:${Deno.env.get("USER_SERVICE_PORT") ?? "5008"}`;
+const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${
+  Deno.env.get("JOURNAL_PORT") ?? "5009"
+}`;
 
 /** Minimum block size for dark pool routing (shares). */
-const DARK_POOL_MIN_BLOCK = Number(Deno.env.get("DARK_POOL_MIN_BLOCK") ?? "10000");
+const DARK_POOL_MIN_BLOCK = Number(
+  Deno.env.get("DARK_POOL_MIN_BLOCK") ?? "10000",
+);
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -35,7 +41,15 @@ const CORS_HEADERS = {
 };
 
 const KNOWN_STRATEGIES = new Set([
-  "LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE", "IS", "MOMENTUM",
+  "LIMIT",
+  "TWAP",
+  "POV",
+  "VWAP",
+  "ICEBERG",
+  "SNIPER",
+  "ARRIVAL_PRICE",
+  "IS",
+  "MOMENTUM",
 ]);
 
 type Desk = "equity" | "fi" | "derivatives" | "fx" | "commodities";
@@ -52,14 +66,29 @@ interface TradingLimits {
 const DEFAULT_LIMITS: TradingLimits = {
   max_order_qty: 10_000,
   max_daily_notional: 1_000_000,
-  allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE", "IS", "MOMENTUM"],
+  allowed_strategies: [
+    "LIMIT",
+    "TWAP",
+    "POV",
+    "VWAP",
+    "ICEBERG",
+    "SNIPER",
+    "ARRIVAL_PRICE",
+    "IS",
+    "MOMENTUM",
+  ],
   allowed_desks: ["equity"],
   dark_pool_access: false,
 };
 
-const MARKET_SIM_URL = `http://${Deno.env.get("MARKET_SIM_HOST") ?? "localhost"}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
+const MARKET_SIM_URL = `http://${
+  Deno.env.get("MARKET_SIM_HOST") ?? "localhost"
+}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
 
-const limitsCache = new Map<string, { limits: TradingLimits; expiresAt: number }>();
+const limitsCache = new Map<
+  string,
+  { limits: TradingLimits; expiresAt: number }
+>();
 
 async function getUserLimits(userId: string): Promise<TradingLimits> {
   const now = Date.now();
@@ -68,9 +97,12 @@ async function getUserLimits(userId: string): Promise<TradingLimits> {
   limitsCache.delete(userId);
 
   try {
-    const res = await fetch(`${USER_SERVICE_URL}/users/${encodeURIComponent(userId)}/limits`, {
-      signal: AbortSignal.timeout(3_000),
-    });
+    const res = await fetch(
+      `${USER_SERVICE_URL}/users/${encodeURIComponent(userId)}/limits`,
+      {
+        signal: AbortSignal.timeout(3_000),
+      },
+    );
     if (!res.ok) return DEFAULT_LIMITS;
     const data = await res.json() as {
       max_order_qty: number;
@@ -102,7 +134,9 @@ async function getAssetLotSize(symbol: string): Promise<number> {
     return lotSizeCache.get(symbol)!;
   }
   try {
-    const res = await fetch(`${MARKET_SIM_URL}/assets`, { signal: AbortSignal.timeout(2_000) });
+    const res = await fetch(`${MARKET_SIM_URL}/assets`, {
+      signal: AbortSignal.timeout(2_000),
+    });
     if (!res.ok) return 100;
     const assets = await res.json() as { symbol: string; lotSize?: number }[];
     lotSizeCache.clear();
@@ -221,17 +255,28 @@ function nextOrderId(): string {
 }
 
 const producer = await createProducer("oms").catch((err) => {
-  console.warn("[oms] Redpanda unavailable — orders will not be published to bus:", err.message);
+  console.warn(
+    "[oms] Redpanda unavailable — orders will not be published to bus:",
+    err.message,
+  );
   return null;
 });
 
-const consumer = await createConsumer("oms-new-orders", ["orders.new"]).catch((err) => {
-  console.warn("[oms] Cannot subscribe to orders.new:", err.message);
-  return null;
-});
+const consumer = await createConsumer("oms-new-orders", ["orders.new"]).catch(
+  (err) => {
+    console.warn("[oms] Cannot subscribe to orders.new:", err.message);
+    return null;
+  },
+);
 
-const killConsumer = await createConsumer("oms-kill-orders", ["orders.kill", "orders.resume"]).catch((err) => {
-  console.warn("[oms] Cannot subscribe to orders.kill/orders.resume:", err.message);
+const killConsumer = await createConsumer("oms-kill-orders", [
+  "orders.kill",
+  "orders.resume",
+]).catch((err) => {
+  console.warn(
+    "[oms] Cannot subscribe to orders.kill/orders.resume:",
+    err.message,
+  );
   return null;
 });
 
@@ -258,13 +303,18 @@ consumer?.onMessage(async (_topic, raw) => {
     order.userRole === "external-client" ||
     order.userRole === "viewer"
   ) {
-    const roleLabel =
-      order.userRole === "admin" ? "Admin" :
-      order.userRole === "compliance" ? "Compliance" :
-      order.userRole === "sales" ? "Sales" :
-      order.userRole === "viewer" ? "Viewer" :
-      "External-client";
-    console.warn(`[oms] Order rejected — ${order.userRole} user ${order.userId} attempted to submit an order`);
+    const roleLabel = order.userRole === "admin"
+      ? "Admin"
+      : order.userRole === "compliance"
+      ? "Compliance"
+      : order.userRole === "sales"
+      ? "Sales"
+      : order.userRole === "viewer"
+      ? "Viewer"
+      : "External-client";
+    console.warn(
+      `[oms] Order rejected — ${order.userRole} user ${order.userId} attempted to submit an order`,
+    );
     await producer?.send("orders.rejected", {
       clientOrderId: order.clientOrderId,
       userId: order.userId,
@@ -276,10 +326,14 @@ consumer?.onMessage(async (_topic, raw) => {
 
   const desk = deriveDesk(order.instrumentType);
 
-  const limits = order.userId ? await getUserLimits(order.userId) : DEFAULT_LIMITS;
+  const limits = order.userId
+    ? await getUserLimits(order.userId)
+    : DEFAULT_LIMITS;
 
   if (!limits.allowed_desks.includes(desk)) {
-    console.warn(`[oms] Order rejected — user ${order.userId} does not have access to ${desk} desk`);
+    console.warn(
+      `[oms] Order rejected — user ${order.userId} does not have access to ${desk} desk`,
+    );
     await producer?.send("orders.rejected", {
       clientOrderId: order.clientOrderId,
       userId: order.userId,
@@ -294,7 +348,8 @@ consumer?.onMessage(async (_topic, raw) => {
       await producer?.send("orders.rejected", {
         clientOrderId: order.clientOrderId,
         userId: order.userId,
-        reason: "Bond orders require bondSpec (isin, couponRate, totalPeriods, yieldAtOrder)",
+        reason:
+          "Bond orders require bondSpec (isin, couponRate, totalPeriods, yieldAtOrder)",
         ts: Date.now(),
       }).catch(() => {});
       return;
@@ -302,11 +357,15 @@ consumer?.onMessage(async (_topic, raw) => {
   }
 
   if (desk === "derivatives") {
-    if (!order.optionSpec?.optionType || order.optionSpec?.strike === undefined || order.optionSpec?.expirySecs === undefined) {
+    if (
+      !order.optionSpec?.optionType || order.optionSpec?.strike === undefined ||
+      order.optionSpec?.expirySecs === undefined
+    ) {
       await producer?.send("orders.rejected", {
         clientOrderId: order.clientOrderId,
         userId: order.userId,
-        reason: "Option orders require optionSpec (optionType, strike, expirySecs)",
+        reason:
+          "Option orders require optionSpec (optionType, strike, expirySecs)",
         ts: Date.now(),
       }).catch(() => {});
       return;
@@ -315,7 +374,9 @@ consumer?.onMessage(async (_topic, raw) => {
 
   // FI uses RFQ — no algo strategy applies. OTC options use bilateral flow.
   // FX and commodities use standard algo strategies (same pool as equity).
-  const needsStrategyCheck = desk === "equity" || desk === "fx" || desk === "commodities" || (desk === "derivatives" && !order.optionSpec?.isOtc);
+  const needsStrategyCheck = desk === "equity" || desk === "fx" ||
+    desk === "commodities" ||
+    (desk === "derivatives" && !order.optionSpec?.isOtc);
 
   let strategy = (order.strategy ?? "LIMIT").toUpperCase();
   if (desk === "fi") strategy = "LIMIT"; // bonds always LIMIT internally
@@ -345,7 +406,8 @@ consumer?.onMessage(async (_topic, raw) => {
     await producer?.send("orders.rejected", {
       clientOrderId: order.clientOrderId,
       userId: order.userId,
-      reason: `Order quantity ${order.quantity} exceeds your limit of ${limits.max_order_qty}`,
+      reason:
+        `Order quantity ${order.quantity} exceeds your limit of ${limits.max_order_qty}`,
       ts: Date.now(),
     }).catch(() => {});
     return;
@@ -356,7 +418,8 @@ consumer?.onMessage(async (_topic, raw) => {
     await producer?.send("orders.rejected", {
       clientOrderId: order.clientOrderId,
       userId: order.userId,
-      reason: `Order notional $${notional.toLocaleString()} exceeds your daily limit of $${limits.max_daily_notional.toLocaleString()}`,
+      reason:
+        `Order notional $${notional.toLocaleString()} exceeds your daily limit of $${limits.max_daily_notional.toLocaleString()}`,
       ts: Date.now(),
     }).catch(() => {});
     return;
@@ -365,7 +428,9 @@ consumer?.onMessage(async (_topic, raw) => {
   // Lot size validation — warn but don't hard-reject (algos may work in fractional lots)
   const lotSize = await getAssetLotSize(order.asset);
   if (lotSize > 1 && order.quantity % lotSize !== 0) {
-    console.warn(`[oms] Order qty ${order.quantity} is not a multiple of lot size ${lotSize} for ${order.asset}`);
+    console.warn(
+      `[oms] Order qty ${order.quantity} is not a multiple of lot size ${lotSize} for ${order.asset}`,
+    );
     // Attach note to the order but do not reject
   }
 
@@ -374,7 +439,11 @@ consumer?.onMessage(async (_topic, raw) => {
   const orderId = nextOrderId();
   const ts = Date.now();
   const expiresInSecs = Number(order.expiresAt ?? 0);
-  const timeInForce = expiresInSecs <= 0 ? "GTC" : expiresInSecs <= 60 ? "IOC" : "DAY";
+  const timeInForce = expiresInSecs <= 0
+    ? "GTC"
+    : expiresInSecs <= 60
+    ? "IOC"
+    : "DAY";
 
   const enriched = {
     orderId,
@@ -400,7 +469,9 @@ consumer?.onMessage(async (_topic, raw) => {
 
   console.log(
     `[oms] Accepted ${strategy} order ${orderId}: ${order.side} ${order.quantity} ${order.asset} ` +
-    `desk=${desk} marketType=${marketType} venue=${destinationVenue} (user=${order.userId ?? "unknown"})`,
+      `desk=${desk} marketType=${marketType} venue=${destinationVenue} (user=${
+        order.userId ?? "unknown"
+      })`,
   );
 
   if (order.clientOrderId) {
@@ -419,10 +490,14 @@ consumer?.onMessage(async (_topic, raw) => {
 
   if (desk === "fi") {
     // FI orders go to RFQ service — not via algo strategies
-    await producer?.send("orders.fi.rfq", { ...enriched, routedAt: Date.now() }).catch(() => {});
-    console.log(`[oms] Bond order ${orderId} routed to RFQ service (${order.bondSpec?.symbol})`);
+    await producer?.send("orders.fi.rfq", { ...enriched, routedAt: Date.now() })
+      .catch(() => {});
+    console.log(
+      `[oms] Bond order ${orderId} routed to RFQ service (${order.bondSpec?.symbol})`,
+    );
   } else {
-    await producer?.send("orders.routed", { ...enriched, routedAt: Date.now() }).catch(() => {});
+    await producer?.send("orders.routed", { ...enriched, routedAt: Date.now() })
+      .catch(() => {});
   }
 });
 
@@ -434,34 +509,50 @@ killConsumer?.onMessage(async (topic, raw) => {
     const { scope, scopeValue, targetUserId, issuedBy, issuedByRole } = cmd;
 
     if (issuedByRole !== "admin" && targetUserId && targetUserId !== issuedBy) {
-      console.warn(`[oms] Kill rejected — trader ${issuedBy} attempted to kill orders for user ${targetUserId}`);
+      console.warn(
+        `[oms] Kill rejected — trader ${issuedBy} attempted to kill orders for user ${targetUserId}`,
+      );
       return;
     }
 
-    const isOwned = (order: ActiveOrder) => issuedByRole === "admin" || order.userId === issuedBy;
+    const isOwned = (order: ActiveOrder) =>
+      issuedByRole === "admin" || order.userId === issuedBy;
 
     const toCancel: ActiveOrder[] = [];
     for (const order of activeOrders.values()) {
       if (scope === "all") {
         if (isOwned(order)) toCancel.push(order);
       } else if (scope === "user") {
-        const targetId = (issuedByRole === "admin" && targetUserId) ? targetUserId : issuedBy;
+        const targetId = (issuedByRole === "admin" && targetUserId)
+          ? targetUserId
+          : issuedBy;
         if (order.userId === targetId) toCancel.push(order);
       } else if (scope === "algo") {
-        if (order.strategy === scopeValue && isOwned(order)) toCancel.push(order);
+        if (order.strategy === scopeValue && isOwned(order)) {
+          toCancel.push(order);
+        }
       } else if (scope === "market") {
-        if ((!scopeValue || order.asset.startsWith(scopeValue) || scopeValue === "*") && isOwned(order)) toCancel.push(order);
+        if (
+          (!scopeValue || order.asset.startsWith(scopeValue) ||
+            scopeValue === "*") && isOwned(order)
+        ) toCancel.push(order);
       } else if (scope === "symbol") {
         if (order.asset === scopeValue && isOwned(order)) toCancel.push(order);
       }
     }
 
     if (toCancel.length === 0) {
-      console.log(`[oms] Kill command from ${issuedBy}: no matching active orders (scope=${scope} scopeValue=${scopeValue ?? "—"})`);
+      console.log(
+        `[oms] Kill command from ${issuedBy}: no matching active orders (scope=${scope} scopeValue=${
+          scopeValue ?? "—"
+        })`,
+      );
       return;
     }
 
-    console.log(`[oms] Kill command from ${issuedBy} (role=${issuedByRole}): cancelling ${toCancel.length} orders`);
+    console.log(
+      `[oms] Kill command from ${issuedBy} (role=${issuedByRole}): cancelling ${toCancel.length} orders`,
+    );
 
     for (const order of toCancel) {
       activeOrders.delete(order.clientOrderId);
@@ -480,7 +571,11 @@ killConsumer?.onMessage(async (topic, raw) => {
     }
 
     await producer?.send("orders.kill.audit", {
-      scope, scopeValue, targetUserId, issuedBy, issuedByRole,
+      scope,
+      scopeValue,
+      targetUserId,
+      issuedBy,
+      issuedByRole,
       cancelledCount: toCancel.length,
       cancelledIds: toCancel.map((o) => o.clientOrderId),
       ts,
@@ -489,19 +584,47 @@ killConsumer?.onMessage(async (topic, raw) => {
 
   if (topic === "orders.resume") {
     const cmd = raw as ResumeCommand;
-    const { scope, scopeValue, targetUserId, resumeAt, issuedBy, issuedByRole } = cmd;
+    const {
+      scope,
+      scopeValue,
+      targetUserId,
+      resumeAt,
+      issuedBy,
+      issuedByRole,
+    } = cmd;
     const effectiveAt = resumeAt && resumeAt > ts ? resumeAt : ts;
     const delayMs = effectiveAt - ts;
 
     const doResume = async () => {
-      console.log(`[oms] Resume command from ${issuedBy} (role=${issuedByRole}): scope=${scope} scopeValue=${scopeValue ?? "—"}`);
-      await producer?.send("orders.resumed", { scope, scopeValue, targetUserId, issuedBy, issuedByRole, ts: Date.now() }).catch(() => {});
-      await producer?.send("orders.resume.audit", { scope, scopeValue, targetUserId, issuedBy, issuedByRole, resumeAt: effectiveAt, ts: Date.now() }).catch(() => {});
+      console.log(
+        `[oms] Resume command from ${issuedBy} (role=${issuedByRole}): scope=${scope} scopeValue=${
+          scopeValue ?? "—"
+        }`,
+      );
+      await producer?.send("orders.resumed", {
+        scope,
+        scopeValue,
+        targetUserId,
+        issuedBy,
+        issuedByRole,
+        ts: Date.now(),
+      }).catch(() => {});
+      await producer?.send("orders.resume.audit", {
+        scope,
+        scopeValue,
+        targetUserId,
+        issuedBy,
+        issuedByRole,
+        resumeAt: effectiveAt,
+        ts: Date.now(),
+      }).catch(() => {});
     };
 
     if (delayMs > 0) {
       console.log(`[oms] Resume scheduled in ${delayMs}ms`);
-      setTimeout(() => { doResume().catch(() => {}); }, delayMs);
+      setTimeout(() => {
+        doResume().catch(() => {});
+      }, delayMs);
     } else {
       await doResume();
     }
@@ -515,11 +638,18 @@ async function expireOrphanedOrders() {
     const res = await fetch(`${JOURNAL_URL}/orders?limit=500`);
     if (!res.ok) return;
     const orders = await res.json() as Array<{
-      id: string; clientOrderId?: string; status: string; expiresAt: number; userId?: string;
+      id: string;
+      clientOrderId?: string;
+      status: string;
+      expiresAt: number;
+      userId?: string;
     }>;
     const now = Date.now();
     for (const order of orders) {
-      if ((order.status === "pending" || order.status === "working") && order.expiresAt < now) {
+      if (
+        (order.status === "pending" || order.status === "working") &&
+        order.expiresAt < now
+      ) {
         await producer?.send("orders.expired", {
           orderId: order.id,
           clientOrderId: order.clientOrderId ?? order.id,
@@ -533,12 +663,18 @@ async function expireOrphanedOrders() {
   } catch { /* journal may not be up yet */ }
 }
 
-setTimeout(() => { expireOrphanedOrders().catch(() => {}); }, 3_000);
-setInterval(() => { expireOrphanedOrders().catch(() => {}); }, 15_000);
+setTimeout(() => {
+  expireOrphanedOrders().catch(() => {});
+}, 3_000);
+setInterval(() => {
+  expireOrphanedOrders().catch(() => {});
+}, 15_000);
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
   if (url.pathname === "/health" && req.method === "GET") {
     return new Response(
       JSON.stringify({ service: "oms", version: VERSION, status: "ok" }),

@@ -10,6 +10,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient, type MarketTick } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("VWAP_ALGO_PORT")) || 5_006;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -160,46 +161,8 @@ marketClient.onTick(async (tick) => {
   }).catch(() => {});
 });
 
-setInterval(async () => {
-  const now = Date.now();
-  for (const [id, order] of [...activeOrders.entries()]) {
-    if (now >= order.expiresAt) {
-      const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-      console.log(`[vwap-algo] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
-      activeOrders.delete(id);
-      await producer?.send("orders.expired", {
-        orderId: order.orderId,
-        clientOrderId: order.clientOrderId,
-        algo: "VWAP",
-        filledQty: order.filledQty,
-        avgFillPrice: order.filledQty > 0 ? avgFill : 0,
-        ts: now,
-      }).catch(() => {});
-    }
-  }
-}, 5_000);
+startExpirySweepIndexed(activeOrders, producer, "VWAP", "vwap-algo");
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+serveAlgoHealth(PORT, "vwap", VERSION, () => activeOrders.size);
 
-Deno.serve({ port: PORT }, (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
-  const url = new URL(req.url);
-  if (url.pathname === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({ service: "vwap", version: VERSION, status: "ok", activeOrders: activeOrders.size }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
-  }
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
-});
-
-createConsumer("vwap-algo-news", ["news.signal"]).then((consumer) => {
-  consumer.onMessage((_topic, raw) => {
-    const sig = raw as { symbol: string; sentiment: string; score: number };
-    console.log(`[vwap-algo] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`);
-  });
-}).catch(() => {}); // non-fatal
+subscribeNewsSignals("vwap-algo-news", "vwap-algo");

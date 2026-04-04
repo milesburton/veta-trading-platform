@@ -13,57 +13,12 @@
 
 import * as http from "http";
 import { WebSocketServer, type WebSocket } from "ws";
-
-// ── Auth / asset types (mirror GatewayMock) ───────────────────────────────────
-
-export interface AuthUser {
-  id: string;
-  name: string;
-  role: "trader" | "admin";
-  avatar_emoji: string;
-}
-
-export interface TradingLimits {
-  max_order_qty: number;
-  max_daily_notional: number;
-  allowed_strategies: string[];
-  allowed_desks: string[];
-  dark_pool_access: boolean;
-}
-
-export interface AssetDef {
-  symbol: string;
-  name: string;
-  sector: string;
-  exchange?: string;
-  marketCapB?: number;
-  beta?: number;
-}
-
-// ── Defaults ──────────────────────────────────────────────────────────────────
-
-export const DEFAULT_TRADER: AuthUser = {
-  id: "trader-1",
-  name: "Alice Chen",
-  role: "trader",
-  avatar_emoji: "AL",
-};
-
-export const DEFAULT_LIMITS: TradingLimits = {
-  max_order_qty: 10_000,
-  max_daily_notional: 1_000_000,
-  allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
-  allowed_desks: ["equity", "derivatives"],
-  dark_pool_access: false,
-};
-
-export const DEFAULT_ASSETS: AssetDef[] = [
-  { symbol: "AAPL", name: "Apple Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 3000, beta: 1.2 },
-  { symbol: "MSFT", name: "Microsoft Corp.", sector: "Technology", exchange: "NASDAQ", marketCapB: 2800, beta: 0.9 },
-  { symbol: "GOOGL", name: "Alphabet Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 1800, beta: 1.1 },
-  { symbol: "NVDA", name: "NVIDIA Corp.", sector: "Technology", exchange: "NASDAQ", marketCapB: 2200, beta: 1.8 },
-  { symbol: "AMZN", name: "Amazon.com Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 1900, beta: 1.3 },
-];
+import {
+  DEFAULT_ASSETS,
+  DEFAULT_LIMITS,
+  DEFAULT_TRADER,
+} from "../../tests/helpers/authFixtures.ts";
+import type { AssetDef, AuthUser, TradingLimits } from "../../tests/helpers/authFixtures.ts";
 
 // ── ElectronMockServer ────────────────────────────────────────────────────────
 
@@ -186,9 +141,19 @@ export class ElectronMockServer {
       return;
     }
 
-    // /api/user-service/sessions
-    if (url.includes("/sessions")) {
+    // /api/user-service/sessions/me (GET) and DELETE are valid
+    // POST /sessions is deprecated and returns 410 in backend
+    if (url.includes("/sessions/me") || (url.includes("/sessions") && route.request().method() === "DELETE")) {
       json(this._user);
+      return;
+    }
+    if (url.includes("/sessions") && route.request().method() === "POST") {
+      json({ error: "legacy /sessions login is disabled; use OAuth2 /oauth/authorize + /oauth/token" }, 410"/sessions/me") || (url.includes("/sessions") && route.request().method() === "DELETE")) {
+      json(this._user);
+      return;
+    }
+    if (url.includes("/sessions") && route.request().method() === "POST") {
+      json({ error: "legacy /sessions login is disabled; use OAuth2 /oauth/authorize + /oauth/token" }, 410);
       return;
     }
 

@@ -15,7 +15,9 @@ export function runSpreadCheck(ctx: TicketContext): Diagnostic[] {
     diagnostics.push({
       field: "*",
       severity: "error",
-      message: `Bid-ask spread is ${spreadBps.toFixed(0)} bps — exceeds maximum threshold, order blocked`,
+      message: `Bid-ask spread is ${spreadBps.toFixed(
+        0
+      )} bps — exceeds maximum threshold, order blocked`,
       ruleId: "spread.exceeds-max",
     });
   } else if (spreadBps >= SPREAD_WARNING_THRESHOLD_BPS) {

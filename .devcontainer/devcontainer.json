@@ -4,10 +4,46 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-  "forwardPorts": [8080, 3000, 9090, 3100, 5000, 5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5011, 5013, 5014, 5015, 5017, 5018, 5021, 5022, 5023, 5024, 9879, 9881],
+  "forwardPorts": [
+    8080,
+    3000,
+    9090,
+    3100,
+    5000,
+    5001,
+    5002,
+    5003,
+    5004,
+    5005,
+    5006,
+    5007,
+    5008,
+    5009,
+    5011,
+    5013,
+    5014,
+    5015,
+    5017,
+    5018,
+    5021,
+    5022,
+    5023,
+    5024,
+    9879,
+    9881
+  ],
   "portsAttributes": {
-    "8080": { "label": "Frontend UI", "onAutoForward": "notify", "protocol": "http", "elevateIfNeeded": false },
-    "3000": { "label": "Grafana", "onAutoForward": "notify", "protocol": "http" },
+    "8080": {
+      "label": "Frontend UI",
+      "onAutoForward": "notify",
+      "protocol": "http",
+      "elevateIfNeeded": false
+    },
+    "3000": {
+      "label": "Grafana",
+      "onAutoForward": "notify",
+      "protocol": "http"
+    },
     "9090": { "label": "Prometheus", "onAutoForward": "ignore" },
     "3100": { "label": "Loki", "onAutoForward": "ignore" },
     "5000": { "label": "Market Sim", "onAutoForward": "ignore" },
@@ -37,10 +73,10 @@
     "vscode": {
       "settings": {
         "terminal.integrated.defaultProfile.linux": "fish",
-        "deno.path": "/home/deno/.deno/bin/deno"
-        ,"security.workspace.trust.startupPrompt": "never"
-        ,"extensions.autoUpdate": true
-        ,"extensions.autoCheckUpdates": true
+        "deno.path": "/home/deno/.deno/bin/deno",
+        "security.workspace.trust.startupPrompt": "never",
+        "extensions.autoUpdate": true,
+        "extensions.autoCheckUpdates": true
       },
       "extensions": [
         "GitHub.copilot",

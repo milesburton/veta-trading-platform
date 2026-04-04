@@ -10,7 +10,11 @@ import { reportError } from "./store/observabilitySlice.ts";
 
 window.onerror = (_msg, source, _line, _col, error) => {
   store.dispatch(
-    reportError({ message: error?.message ?? String(_msg), source, stack: error?.stack })
+    reportError({
+      message: error?.message ?? String(_msg),
+      source,
+      stack: error?.stack,
+    })
   );
 };
 

@@ -169,7 +169,7 @@ test.describe("LoginPage — PlatformStatus service grid", () => {
       route.fulfill({ status: 401, body: "" })
     );
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /select your profile/i })).toBeVisible({
+    await expect(page.getByRole("heading", { name: /sign in with oauth2/i })).toBeVisible({
       timeout: 10_000,
     });
   }

@@ -76,7 +76,9 @@ export const analyticsApi = createApi({
       { symbol: string; steps?: number; stepSecs?: number; paths?: number }
     >({
       query: ({ symbol, steps = 24, stepSecs = 3600, paths = 500 }) =>
-        `/analytics/price-fan/${encodeURIComponent(symbol)}?steps=${steps}&stepSecs=${stepSecs}&paths=${paths}`,
+        `/analytics/price-fan/${encodeURIComponent(
+          symbol
+        )}?steps=${steps}&stepSecs=${stepSecs}&paths=${paths}`,
     }),
     getSpreadAnalysis: builder.mutation<SpreadAnalysisResponse, SpreadAnalysisRequest>({
       query: (body) => ({

@@ -43,7 +43,8 @@ const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 
 /** How often to run the settlement sweep (ms). */
-const SETTLEMENT_SWEEP_MS = Number(Deno.env.get("CCP_SETTLEMENT_SWEEP_MS")) || 30_000;
+const SETTLEMENT_SWEEP_MS = Number(Deno.env.get("CCP_SETTLEMENT_SWEEP_MS")) ||
+  30_000;
 
 /** How often to mark-to-market margin positions (ms). */
 const MARGIN_MTM_MS = Number(Deno.env.get("CCP_MARGIN_MTM_MS")) || 10_000;
@@ -55,16 +56,16 @@ const CORS_HEADERS = {
 };
 
 const INITIAL_MARGIN_RATE: Record<string, number> = {
-  equity:      0.10,  // 10% of notional
-  fi:          0.02,  //  2% of notional (bonds are lower risk)
-  derivatives: 0.15,  // 15% of notional (options carry more risk)
-  otc:         0.05,  //  5% default for OTC
+  equity: 0.10, // 10% of notional
+  fi: 0.02, //  2% of notional (bonds are lower risk)
+  derivatives: 0.15, // 15% of notional (options carry more risk)
+  otc: 0.05, //  5% default for OTC
 };
 const _MAINTENANCE_MARGIN_RATE: Record<string, number> = {
-  equity:      0.07,
-  fi:          0.015,
+  equity: 0.07,
+  fi: 0.015,
   derivatives: 0.10,
-  otc:         0.035,
+  otc: 0.035,
 };
 
 interface Fill {
@@ -181,15 +182,18 @@ const producer = await createProducer("ccp-service").catch((err) => {
   return null;
 });
 
-const fillsConsumer = await createConsumer("ccp-fills", ["orders.filled"]).catch((err) => {
-  console.warn("[ccp] Cannot subscribe to orders.filled:", err.message);
-  return null;
-});
+const fillsConsumer = await createConsumer("ccp-fills", ["orders.filled"])
+  .catch((err) => {
+    console.warn("[ccp] Cannot subscribe to orders.filled:", err.message);
+    return null;
+  });
 
-const rfqConsumer = await createConsumer("ccp-rfq", ["rfq.executed"]).catch((err) => {
-  console.warn("[ccp] Cannot subscribe to rfq.executed:", err.message);
-  return null;
-});
+const rfqConsumer = await createConsumer("ccp-rfq", ["rfq.executed"]).catch(
+  (err) => {
+    console.warn("[ccp] Cannot subscribe to rfq.executed:", err.message);
+    return null;
+  },
+);
 
 function getOrCreateMarginAccount(userId: string): MarginAccount {
   let acct = marginAccounts.get(userId);
@@ -208,7 +212,13 @@ function getOrCreateMarginAccount(userId: string): MarginAccount {
   return acct;
 }
 
-function updatePosition(acct: MarginAccount, asset: string, side: "BUY" | "SELL", qty: number, price: number): void {
+function updatePosition(
+  acct: MarginAccount,
+  asset: string,
+  side: "BUY" | "SELL",
+  qty: number,
+  price: number,
+): void {
   const sign = side === "BUY" ? 1 : -1;
   const currentQty = acct.positions[asset] ?? 0;
   const currentCost = acct.costBasis[asset] ?? 0;
@@ -320,7 +330,7 @@ async function novate(
 
   console.log(
     `[ccp] Novated ${tradeId}: ${side} ${quantity} ${asset} @ ${price} ` +
-    `desk=${desk} user=${userId} settle=${settlDate}`
+      `desk=${desk} user=${userId} settle=${settlDate}`,
   );
 
   await producer?.send("ccp.novation", {
@@ -356,12 +366,24 @@ async function novate(
     ts: now,
   }).catch(() => {});
 
-  await postInitialMargin(userId, desk, notional, asset, side, quantity, price, execId);
+  await postInitialMargin(
+    userId,
+    desk,
+    notional,
+    asset,
+    side,
+    quantity,
+    price,
+    execId,
+  );
 }
 
 fillsConsumer?.onMessage((_topic, raw) => {
   const fill = raw as Fill;
-  if (!fill.execId || !fill.userId || !fill.asset || !fill.filledQty || !fill.avgFillPrice) return;
+  if (
+    !fill.execId || !fill.userId || !fill.asset || !fill.filledQty ||
+    !fill.avgFillPrice
+  ) return;
   if (fill.filledQty <= 0) return;
 
   const desk = fill.desk ?? "equity";
@@ -370,22 +392,48 @@ fillsConsumer?.onMessage((_topic, raw) => {
   const counterparty = fill.counterparty ?? "UNKNOWN";
 
   // Settlement date from the fill payload; fall back to T+2 for equity
-  const settlDate = fill.settlementDate ?? new Date(Date.now() + 2 * 86400_000).toISOString().slice(0, 10);
+  const settlDate = fill.settlementDate ??
+    new Date(Date.now() + 2 * 86400_000).toISOString().slice(0, 10);
 
-  novate(fill.execId, fill.userId, fill.asset, fill.side, fill.filledQty,
-    fill.avgFillPrice, notional, desk, marketType, counterparty, settlDate)
+  novate(
+    fill.execId,
+    fill.userId,
+    fill.asset,
+    fill.side,
+    fill.filledQty,
+    fill.avgFillPrice,
+    notional,
+    desk,
+    marketType,
+    counterparty,
+    settlDate,
+  )
     .catch(console.error);
 });
 
 rfqConsumer?.onMessage((_topic, raw) => {
   const exec = raw as RfqExecution;
-  if (!exec.execId || !exec.userId || !exec.asset || !exec.quantity || !exec.price) return;
+  if (
+    !exec.execId || !exec.userId || !exec.asset || !exec.quantity || !exec.price
+  ) return;
 
   const desk = exec.desk ?? "fi";
-  const settlDate = exec.settlementDate ?? new Date(Date.now() + 86400_000).toISOString().slice(0, 10);
+  const settlDate = exec.settlementDate ??
+    new Date(Date.now() + 86400_000).toISOString().slice(0, 10);
 
-  novate(exec.execId, exec.userId, exec.asset, exec.side, exec.quantity,
-    exec.price, exec.notional, desk, "otc", exec.dealerId, settlDate)
+  novate(
+    exec.execId,
+    exec.userId,
+    exec.asset,
+    exec.side,
+    exec.quantity,
+    exec.price,
+    exec.notional,
+    desk,
+    "otc",
+    exec.dealerId,
+    settlDate,
+  )
     .catch(console.error);
 });
 
@@ -408,7 +456,10 @@ async function runSettlementSweep(): Promise<void> {
     if (acct) {
       const rate = INITIAL_MARGIN_RATE[obligation.desk] ?? 0.10;
       const release = parseFloat((obligation.notional * rate).toFixed(2));
-      acct.initialMarginPosted = Math.max(0, acct.initialMarginPosted - release);
+      acct.initialMarginPosted = Math.max(
+        0,
+        acct.initialMarginPosted - release,
+      );
       acct.netMarginRequired = Math.max(0, acct.netMarginRequired - release);
       // Remove settled position from the account
       const sign = obligation.side === "BUY" ? 1 : -1;
@@ -425,7 +476,9 @@ async function runSettlementSweep(): Promise<void> {
 
     totalSettled++;
 
-    console.log(`[ccp] Settled ${obligation.obligationId}: ${obligation.side} ${obligation.quantity} ${obligation.asset}`);
+    console.log(
+      `[ccp] Settled ${obligation.obligationId}: ${obligation.side} ${obligation.quantity} ${obligation.asset}`,
+    );
 
     await producer?.send("ccp.settlement.complete", {
       obligationId: id,
@@ -470,7 +523,9 @@ async function runMarginMtM(): Promise<void> {
     const effectiveMargin = acct.initialMarginPosted + acct.unrealisedPnl;
 
     if (acct.initialMarginPosted > 0 && effectiveMargin < maintenanceRequired) {
-      const variationCall = parseFloat((acct.netMarginRequired - effectiveMargin).toFixed(2));
+      const variationCall = parseFloat(
+        (acct.netMarginRequired - effectiveMargin).toFixed(2),
+      );
       if (variationCall > 0) {
         totalMarginCalls++;
         await producer?.send("ccp.margin", {
@@ -489,32 +544,49 @@ async function runMarginMtM(): Promise<void> {
   }
 }
 
-setInterval(() => { runSettlementSweep().catch(console.error); }, SETTLEMENT_SWEEP_MS);
-setInterval(() => { runMarginMtM().catch(console.error); }, MARGIN_MTM_MS);
+setInterval(() => {
+  runSettlementSweep().catch(console.error);
+}, SETTLEMENT_SWEEP_MS);
+setInterval(() => {
+  runMarginMtM().catch(console.error);
+}, MARGIN_MTM_MS);
 
 console.log(`[ccp] Listening for orders.filled and rfq.executed`);
-console.log(`[ccp] Settlement sweep=${SETTLEMENT_SWEEP_MS}ms  MtM=${MARGIN_MTM_MS}ms`);
+console.log(
+  `[ccp] Settlement sweep=${SETTLEMENT_SWEEP_MS}ms  MtM=${MARGIN_MTM_MS}ms`,
+);
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
 
   if (path === "/health" && req.method === "GET") {
     return new Response(
-      JSON.stringify({ service: "ccp-service", version: VERSION, status: "ok" }),
+      JSON.stringify({
+        service: "ccp-service",
+        version: VERSION,
+        status: "ok",
+      }),
       { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
     );
   }
 
   // GET /ccp/stats
   if (path === "/ccp/stats" && req.method === "GET") {
-    const pendingObligations = [...settlementQueue.values()].filter((o) => !o.settled);
-    const pendingByDate = pendingObligations.reduce<Record<string, number>>((acc, o) => {
-      acc[o.settlementDate] = (acc[o.settlementDate] ?? 0) + 1;
-      return acc;
-    }, {});
+    const pendingObligations = [...settlementQueue.values()].filter((o) =>
+      !o.settled
+    );
+    const pendingByDate = pendingObligations.reduce<Record<string, number>>(
+      (acc, o) => {
+        acc[o.settlementDate] = (acc[o.settlementDate] ?? 0) + 1;
+        return acc;
+      },
+      {},
+    );
     return new Response(
       JSON.stringify({
         service: "ccp-service",
@@ -537,11 +609,20 @@ Deno.serve({ port: PORT }, (req) => {
     const acct = marginAccounts.get(marginMatch[1]);
     if (!acct) {
       return new Response(
-        JSON.stringify({ userId: marginMatch[1], initialMarginPosted: 0, unrealisedPnl: 0, netMarginRequired: 0, positions: {}, costBasis: {} }),
+        JSON.stringify({
+          userId: marginMatch[1],
+          initialMarginPosted: 0,
+          unrealisedPnl: 0,
+          netMarginRequired: 0,
+          positions: {},
+          costBasis: {},
+        }),
         { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
       );
     }
-    return new Response(JSON.stringify(acct), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    return new Response(JSON.stringify(acct), {
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
   }
 
   // GET /ccp/settlements — pending queue
@@ -549,7 +630,9 @@ Deno.serve({ port: PORT }, (req) => {
     const userId = url.searchParams.get("userId");
     let obligations = [...settlementQueue.values()].filter((o) => !o.settled);
     if (userId) obligations = obligations.filter((o) => o.userId === userId);
-    obligations.sort((a, b) => a.settlementDate.localeCompare(b.settlementDate));
+    obligations.sort((a, b) =>
+      a.settlementDate.localeCompare(b.settlementDate)
+    );
     return new Response(
       JSON.stringify({ obligations, total: obligations.length }),
       { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
@@ -557,15 +640,21 @@ Deno.serve({ port: PORT }, (req) => {
   }
 
   // GET /ccp/settlements/:date — obligations for a specific date
-  const settlDateMatch = path.match(/^\/ccp\/settlements\/(\d{4}-\d{2}-\d{2})$/);
+  const settlDateMatch = path.match(
+    /^\/ccp\/settlements\/(\d{4}-\d{2}-\d{2})$/,
+  );
   if (settlDateMatch && req.method === "GET") {
     const userId = url.searchParams.get("userId");
     let obligations = [...settlementQueue.values()].filter(
-      (o) => o.settlementDate === settlDateMatch[1]
+      (o) => o.settlementDate === settlDateMatch[1],
     );
     if (userId) obligations = obligations.filter((o) => o.userId === userId);
     return new Response(
-      JSON.stringify({ date: settlDateMatch[1], obligations, total: obligations.length }),
+      JSON.stringify({
+        date: settlDateMatch[1],
+        obligations,
+        total: obligations.length,
+      }),
       { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
     );
   }

@@ -19,16 +19,30 @@ export interface OrderParams {
 export class OrderTicketPage {
   constructor(
     private readonly root: Locator,
-    private readonly page?: Page
+    private readonly page?: Page,
   ) {}
 
-  private get form() { return this.root.locator("form").first(); }
-  private get strategySelect() { return this.root.getByLabel("Execution strategy"); }
-  private get quantityInput() { return this.root.getByLabel("Order quantity in shares"); }
-  private get limitPriceInput() { return this.root.getByLabel(/Limit Price/i); }
-  private get buyButton() { return this.root.getByRole("button", { name: /^BUY$/i }); }
-  private get sellButton() { return this.root.getByRole("button", { name: /^SELL$/i }); }
-  private get submitButton() { return this.root.getByRole("button", { name: /submit|place order/i }); }
+  private get form() {
+    return this.root.locator("form").first();
+  }
+  private get strategySelect() {
+    return this.root.getByLabel("Execution strategy");
+  }
+  private get quantityInput() {
+    return this.root.getByLabel("Order quantity in shares");
+  }
+  private get limitPriceInput() {
+    return this.root.getByLabel(/Limit Price/i);
+  }
+  private get buyButton() {
+    return this.root.getByRole("button", { name: /^BUY$/i });
+  }
+  private get sellButton() {
+    return this.root.getByRole("button", { name: /^SELL$/i });
+  }
+  private get submitButton() {
+    return this.root.getByRole("button", { name: /submit|place order/i });
+  }
 
   /** Ensure the dialog is open, reopening it via the header button if closed. */
   private async ensureOpen() {
@@ -41,7 +55,10 @@ export class OrderTicketPage {
   }
 
   /** Fill and submit an order. Only overrides the fields you specify. */
-  async fillOrder({ asset, side = "BUY", quantity, limitPrice, strategy = "LIMIT" }: OrderParams) {
+  async fillOrder(
+    { asset, side = "BUY", quantity, limitPrice, strategy = "LIMIT" }:
+      OrderParams,
+  ) {
     await this.ensureOpen();
     // Strategy
     await this.strategySelect.selectOption(strategy);
@@ -62,7 +79,9 @@ export class OrderTicketPage {
 
     // Asset — type into the asset search input
     if (asset !== undefined) {
-      const assetInput = this.root.locator("input[placeholder], input[type='text']").first();
+      const assetInput = this.root.locator(
+        "input[placeholder], input[type='text']",
+      ).first();
       await assetInput.fill(asset);
       // Wait for the suggestion and click it if a dropdown appears
       const option = this.root.getByRole("option", { name: asset }).first();
@@ -94,17 +113,23 @@ export class OrderTicketPage {
 
   /** Assert a limit warning message is visible. */
   async expectLimitWarning(textFragment: string | RegExp) {
-    await expect(this.root.getByText(textFragment)).toBeVisible({ timeout: 5_000 });
+    await expect(this.root.getByText(textFragment)).toBeVisible({
+      timeout: 5_000,
+    });
   }
 
   /** Assert success feedback is shown after submission. */
   async expectSuccessFeedback() {
-    await expect(this.root.getByText(/Order submitted/i)).toBeVisible({ timeout: 6_000 });
+    await expect(this.root.getByText(/Order submitted/i)).toBeVisible({
+      timeout: 6_000,
+    });
   }
 
   /** Assert the admin-cannot-trade notice is shown. */
   async expectAdminNotice() {
-    await expect(this.root.getByText(/Admin account/i)).toBeVisible({ timeout: 5_000 });
+    await expect(this.root.getByText(/Admin account/i)).toBeVisible({
+      timeout: 5_000,
+    });
   }
 
   // ── Options mode helpers ───────────────────────────────────────────────────
@@ -124,7 +149,9 @@ export class OrderTicketPage {
     const strikeInput = this.root.getByLabel(/Option strike price/i);
     await strikeInput.click();
     await strikeInput.fill(String(strike));
-    await expect(this.root.getByLabel("Option premium")).toBeVisible({ timeout: timeoutMs });
+    await expect(this.root.getByLabel("Option premium")).toBeVisible({
+      timeout: timeoutMs,
+    });
   }
 
   /** Click the PUT option type toggle button. */
@@ -139,25 +166,29 @@ export class OrderTicketPage {
 
   /** Click the options-mode submit button (aria-label starts with Submit). */
   async submitOption() {
-    await this.root.getByRole("button", { name: /^Submit (BUY|SELL)/i }).click({ force: true });
+    await this.root.getByRole("button", { name: /^Submit (BUY|SELL)/i }).click({
+      force: true,
+    });
   }
 
   /** Assert the option premium card is visible. */
   async expectPremiumCard(timeoutMs = 3_000) {
-    await expect(this.root.getByLabel("Option premium")).toBeVisible({ timeout: timeoutMs });
+    await expect(this.root.getByLabel("Option premium")).toBeVisible({
+      timeout: timeoutMs,
+    });
   }
 
   /** Assert the rejection feedback for options is shown. */
   async expectOptionRejectionFeedback(timeoutMs = 5_000) {
     await expect(
-      this.root.getByText(/Options not supported in this simulation/i)
+      this.root.getByText(/Options not supported in this simulation/i),
     ).toBeVisible({ timeout: timeoutMs });
   }
 
   /** Assert the options submit button is enabled. */
   async expectOptionSubmitEnabled(timeoutMs = 3_000) {
     await expect(
-      this.root.getByRole("button", { name: /^Submit (BUY|SELL)/i })
+      this.root.getByRole("button", { name: /^Submit (BUY|SELL)/i }),
     ).toBeEnabled({ timeout: timeoutMs });
   }
 
@@ -170,10 +201,11 @@ export class OrderTicketPage {
 
   /** Assert the CALL button has aria-pressed state. */
   async expectCallPressed(pressed: boolean) {
-    await expect(this.root.getByRole("button", { name: "CALL" })).toHaveAttribute(
-      "aria-pressed",
-      String(pressed)
-    );
+    await expect(this.root.getByRole("button", { name: "CALL" }))
+      .toHaveAttribute(
+        "aria-pressed",
+        String(pressed),
+      );
   }
 
   // ── Bond mode helpers ──────────────────────────────────────────────────────
@@ -193,15 +225,21 @@ export class OrderTicketPage {
   }
 
   async waitForBondQuote(timeoutMs = 5_000) {
-    await expect(this.root.getByLabel("Bond price")).toBeVisible({ timeout: timeoutMs });
+    await expect(this.root.getByLabel("Bond price")).toBeVisible({
+      timeout: timeoutMs,
+    });
   }
 
   async expectBondQuoteCard(timeoutMs = 3_000) {
-    await expect(this.root.getByLabel("Bond price")).toBeVisible({ timeout: timeoutMs });
+    await expect(this.root.getByLabel("Bond price")).toBeVisible({
+      timeout: timeoutMs,
+    });
   }
 
   async expectBondSubmitEnabled(timeoutMs = 5_000) {
-    await expect(this.root.getByTestId("submit-order-btn")).toBeEnabled({ timeout: timeoutMs });
+    await expect(this.root.getByTestId("submit-order-btn")).toBeEnabled({
+      timeout: timeoutMs,
+    });
   }
 
   async submitBond() {
@@ -209,7 +247,9 @@ export class OrderTicketPage {
   }
 
   async expectBondOrderSubmitted() {
-    await expect(this.root.getByText(/Bond order submitted/i)).toBeVisible({ timeout: 6_000 });
+    await expect(this.root.getByText(/Bond order submitted/i)).toBeVisible({
+      timeout: 6_000,
+    });
   }
 
   /** Expose root locator for assertions not covered by helpers. */

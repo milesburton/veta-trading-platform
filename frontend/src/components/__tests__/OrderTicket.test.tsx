@@ -36,7 +36,12 @@ vi.mock("../../store/analyticsApi", () => ({
 
 const assets: AssetDef[] = [
   { symbol: "AAPL", initialPrice: 150, volatility: 0.02, sector: "Technology" },
-  { symbol: "MSFT", initialPrice: 300, volatility: 0.015, sector: "Technology" },
+  {
+    symbol: "MSFT",
+    initialPrice: 300,
+    volatility: 0.015,
+    sector: "Technology",
+  },
 ];
 
 const prices: MarketPrices = { AAPL: 155, MSFT: 305 };
@@ -54,7 +59,12 @@ function makeStore() {
     },
     preloadedState: {
       auth: {
-        user: { id: "alice", name: "Alice Chen", role: "trader" as const, avatar_emoji: "👩‍💼" },
+        user: {
+          id: "alice",
+          name: "Alice Chen",
+          role: "trader" as const,
+          avatar_emoji: "👩‍💼",
+        },
         limits: {
           max_order_qty: 10_000,
           max_daily_notional: 1_000_000,
@@ -149,7 +159,9 @@ describe("OrderTicket – side toggle", () => {
     renderTicket();
     fireEvent.click(screen.getByRole("button", { name: "SELL" }));
     // submit button aria-label changes to reflect SELL side
-    const submitBtn = screen.getByRole("button", { name: /Submit SELL order/i });
+    const submitBtn = screen.getByRole("button", {
+      name: /Submit SELL order/i,
+    });
     expect(submitBtn).toBeInTheDocument();
   });
 
@@ -375,7 +387,9 @@ describe("OrderTicket – options mode", () => {
     });
     await waitFor(
       () => {
-        const submit = screen.getByRole("button", { name: /Submit (BUY|SELL)/i });
+        const submit = screen.getByRole("button", {
+          name: /Submit (BUY|SELL)/i,
+        });
         expect(submit).not.toBeDisabled();
       },
       { timeout: 2000 }

@@ -95,7 +95,12 @@ export interface AllGridPrefs {
   marketLadder?: GridPrefs;
 }
 
-export const EMPTY_EXPR_GROUP: ExprGroup = { kind: "group", id: "root", join: "AND", rules: [] };
+export const EMPTY_EXPR_GROUP: ExprGroup = {
+  kind: "group",
+  id: "root",
+  join: "AND",
+  rules: [],
+};
 
 export const EMPTY_GRID_PREFS: GridPrefs = {
   sortField: null,

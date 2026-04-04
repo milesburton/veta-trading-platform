@@ -3,12 +3,25 @@ import type { MarketAdapterEvent } from "../types/intelligence.ts";
 
 export interface MarketEventStore {
   upsertEvent(ev: MarketAdapterEvent, source: string): Promise<void>;
-  getEvents(from: number, to: number, ticker?: string): Promise<MarketAdapterEvent[]>;
+  getEvents(
+    from: number,
+    to: number,
+    ticker?: string,
+  ): Promise<MarketAdapterEvent[]>;
 }
 
 function rowToEvent(r: unknown[]): MarketAdapterEvent {
   const [id, type, ticker, headline, scheduled_at, impact, , fetched_at] =
-    r as [string, string, string | null, string, bigint | number, string, string, bigint | number];
+    r as [
+      string,
+      string,
+      string | null,
+      string,
+      bigint | number,
+      string,
+      string,
+      bigint | number,
+    ];
   return {
     id,
     type: type as MarketAdapterEvent["type"],
@@ -35,27 +48,42 @@ export function createMarketEventStore(pool: Pool): MarketEventStore {
              impact       = EXCLUDED.impact,
              source       = EXCLUDED.source,
              fetched_at   = EXCLUDED.fetched_at`,
-          [ev.id, ev.type, ev.ticker ?? null, ev.headline, ev.scheduledAt, ev.impact, source, ev.ts],
+          [
+            ev.id,
+            ev.type,
+            ev.ticker ?? null,
+            ev.headline,
+            ev.scheduledAt,
+            ev.impact,
+            source,
+            ev.ts,
+          ],
         );
       } finally {
         client.release();
       }
     },
 
-    async getEvents(from: number, to: number, ticker?: string): Promise<MarketAdapterEvent[]> {
+    async getEvents(
+      from: number,
+      to: number,
+      ticker?: string,
+    ): Promise<MarketAdapterEvent[]> {
       const client = await pool.connect();
       try {
         let query: string;
         let params: unknown[];
         if (ticker) {
-          query = `SELECT id, type, ticker, headline, scheduled_at, impact, source, fetched_at
+          query =
+            `SELECT id, type, ticker, headline, scheduled_at, impact, source, fetched_at
                    FROM intelligence.market_events
                    WHERE scheduled_at >= $1 AND scheduled_at <= $2
                      AND (ticker = $3 OR ticker IS NULL)
                    ORDER BY scheduled_at`;
           params = [from, to, ticker];
         } else {
-          query = `SELECT id, type, ticker, headline, scheduled_at, impact, source, fetched_at
+          query =
+            `SELECT id, type, ticker, headline, scheduled_at, impact, source, fetched_at
                    FROM intelligence.market_events
                    WHERE scheduled_at >= $1 AND scheduled_at <= $2
                    ORDER BY scheduled_at`;

@@ -106,7 +106,9 @@ export function ResizableHeader({
     >
       {/* biome-ignore lint/a11y/noStaticElementInteractions: role is set conditionally to "button" when sortable */}
       <span
-        className={`flex items-center gap-1 ${align === "right" ? "justify-end" : ""} ${sortable ? "cursor-pointer group" : ""}`}
+        className={`flex items-center gap-1 ${
+          align === "right" ? "justify-end" : ""
+        } ${sortable ? "cursor-pointer group" : ""}`}
         onClick={sortable ? handleSortClick : undefined}
         onKeyDown={
           sortable

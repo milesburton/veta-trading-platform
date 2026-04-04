@@ -26,20 +26,32 @@ async function bridgeConnection(ws: WebSocket): Promise<void> {
   function closeBoth(): void {
     if (closed) return;
     closed = true;
-    try { ws.close(); } catch { /* already closed */ }
-    try { tcpConn?.close(); } catch { /* already closed */ }
+    try {
+      ws.close();
+    } catch { /* already closed */ }
+    try {
+      tcpConn?.close();
+    } catch { /* already closed */ }
   }
 
   // Connect to FIX Exchange TCP
   try {
-    tcpConn = await Deno.connect({ hostname: FIX_EXCHANGE_HOST, port: FIX_EXCHANGE_PORT });
+    tcpConn = await Deno.connect({
+      hostname: FIX_EXCHANGE_HOST,
+      port: FIX_EXCHANGE_PORT,
+    });
   } catch (err) {
-    console.error(`[FIX Gateway] Cannot connect to exchange at ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}:`, err);
+    console.error(
+      `[FIX Gateway] Cannot connect to exchange at ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}:`,
+      err,
+    );
     ws.close(1011, "Exchange unavailable");
     return;
   }
 
-  console.log(`[FIX Gateway] Bridging WS client to ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}`);
+  console.log(
+    `[FIX Gateway] Bridging WS client to ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}`,
+  );
 
   // WS → TCP: forward FIX messages from browser to exchange
   ws.onmessage = async (event) => {
@@ -95,7 +107,11 @@ Deno.serve({ port: FIX_GATEWAY_PORT }, (req) => {
 
   if (url.pathname === "/health" && req.method === "GET") {
     return new Response(
-      JSON.stringify({ service: "fix-gateway", version: VERSION, status: "ok" }),
+      JSON.stringify({
+        service: "fix-gateway",
+        version: VERSION,
+        status: "ok",
+      }),
       { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
     );
   }
@@ -117,5 +133,7 @@ Deno.serve({ port: FIX_GATEWAY_PORT }, (req) => {
 });
 
 console.log(`[FIX Gateway] Listening on port ${FIX_GATEWAY_PORT}`);
-console.log(`[FIX Gateway] Bridging to exchange at ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}`);
+console.log(
+  `[FIX Gateway] Bridging to exchange at ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}`,
+);
 console.log(`[FIX Gateway] version=${VERSION}`);

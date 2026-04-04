@@ -24,6 +24,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("MOMENTUM_ALGO_PORT")) || 5_025;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -83,19 +84,19 @@ interface ActiveMomentum {
   asset: string;
   side: "BUY" | "SELL";
   limitPrice: number;
-  expiresAt: number;        // absolute ms
-  entryPrice: number;       // price at order receipt
+  expiresAt: number; // absolute ms
+  entryPrice: number; // price at order receipt
   entryThresholdBps: number;
   maxTranches: number;
   shortEmaPeriod: number;
   longEmaPeriod: number;
   cooldownTicks: number;
-  shortEma: number;         // current fast EMA value
-  longEma: number;          // current slow EMA value
-  ticksSeen: number;        // total ticks processed for this order
+  shortEma: number; // current fast EMA value
+  longEma: number; // current slow EMA value
+  ticksSeen: number; // total ticks processed for this order
   cooldownRemaining: number; // ticks remaining in cooldown after last route
   tranchesRouted: number;
-  trancheSize: number;      // shares per tranche (totalQty / maxTranches)
+  trancheSize: number; // shares per tranche (totalQty / maxTranches)
   totalQty: number;
   remainingQty: number;
   filledQty: number;
@@ -105,9 +106,14 @@ interface ActiveMomentum {
 /** Active momentum orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveMomentum>();
 
-const routedConsumer = await createConsumer("momentum-algo-routed", ["orders.routed"]).catch(
+const routedConsumer = await createConsumer("momentum-algo-routed", [
+  "orders.routed",
+]).catch(
   (err) => {
-    console.warn("[momentum-algo] Cannot subscribe to orders.routed:", err.message);
+    console.warn(
+      "[momentum-algo] Cannot subscribe to orders.routed:",
+      err.message,
+    );
     return null;
   },
 );
@@ -116,14 +122,27 @@ routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
 
-  const entryThresholdBps = Math.max(0.1, Number(order.algoParams?.entryThresholdBps ?? 10));
+  const entryThresholdBps = Math.max(
+    0.1,
+    Number(order.algoParams?.entryThresholdBps ?? 10),
+  );
   const maxTranches = Math.max(1, Number(order.algoParams?.maxTranches ?? 5));
-  const shortEmaPeriod = Math.max(2, Number(order.algoParams?.shortEmaPeriod ?? 3));
-  const longEmaPeriod = Math.max(shortEmaPeriod + 1, Number(order.algoParams?.longEmaPeriod ?? 8));
-  const cooldownTicks = Math.max(1, Number(order.algoParams?.cooldownTicks ?? 3));
+  const shortEmaPeriod = Math.max(
+    2,
+    Number(order.algoParams?.shortEmaPeriod ?? 3),
+  );
+  const longEmaPeriod = Math.max(
+    shortEmaPeriod + 1,
+    Number(order.algoParams?.longEmaPeriod ?? 8),
+  );
+  const cooldownTicks = Math.max(
+    1,
+    Number(order.algoParams?.cooldownTicks ?? 3),
+  );
 
   // Capture entry price from market client's last known tick; fall back to limitPrice
-  const entryPrice = marketClient.getLatest()?.prices[order.asset] ?? order.limitPrice;
+  const entryPrice = marketClient.getLatest()?.prices[order.asset] ??
+    order.limitPrice;
 
   // Seed both EMAs with the entry price (warm start — will refine as ticks arrive)
   const mom: ActiveMomentum = {
@@ -154,7 +173,9 @@ routedConsumer?.onMessage((_topic, raw) => {
   activeOrders.set(order.orderId, mom);
 
   console.log(
-    `[momentum-algo] Queued ${order.orderId}: ${order.quantity} ${order.asset} entry=${entryPrice.toFixed(4)} threshold=${entryThresholdBps}bps maxTranches=${maxTranches}`,
+    `[momentum-algo] Queued ${order.orderId}: ${order.quantity} ${order.asset} entry=${
+      entryPrice.toFixed(4)
+    } threshold=${entryThresholdBps}bps maxTranches=${maxTranches}`,
   );
 
   producer?.send("algo.heartbeat", {
@@ -173,9 +194,14 @@ routedConsumer?.onMessage((_topic, raw) => {
   }).catch(() => {});
 });
 
-const fillsConsumer = await createConsumer("momentum-algo-fills", ["orders.filled"]).catch(
+const fillsConsumer = await createConsumer("momentum-algo-fills", [
+  "orders.filled",
+]).catch(
   (err) => {
-    console.warn("[momentum-algo] Cannot subscribe to orders.filled:", err.message);
+    console.warn(
+      "[momentum-algo] Cannot subscribe to orders.filled:",
+      err.message,
+    );
     return null;
   },
 );
@@ -184,7 +210,9 @@ fillsConsumer?.onMessage((_topic, raw) => {
   const fill = raw as FillEvent;
   if ((fill.algo ?? "").toUpperCase() !== ALGO) return;
 
-  const order = fill.parentOrderId ? activeOrders.get(fill.parentOrderId) : undefined;
+  const order = fill.parentOrderId
+    ? activeOrders.get(fill.parentOrderId)
+    : undefined;
   if (!order) return;
 
   const qty = fill.filledQty ?? 0;
@@ -194,13 +222,17 @@ fillsConsumer?.onMessage((_topic, raw) => {
   order.remainingQty = Math.max(0, order.remainingQty - qty);
 
   console.log(
-    `[momentum-algo] Fill ${order.orderId}: +${qty} @ ${price.toFixed(2)} | remaining=${order.remainingQty}`,
+    `[momentum-algo] Fill ${order.orderId}: +${qty} @ ${
+      price.toFixed(2)
+    } | remaining=${order.remainingQty}`,
   );
 
   if (order.remainingQty <= 0) {
     const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
     console.log(
-      `[momentum-algo] Complete ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`,
+      `[momentum-algo] Complete ${order.orderId}: filled=${order.filledQty} avg=${
+        avgFill.toFixed(4)
+      }`,
     );
     activeOrders.delete(order.orderId);
     producer?.send("algo.heartbeat", {
@@ -223,9 +255,13 @@ marketClient.onTick(async (tick) => {
     if (!marketPrice) continue;
 
     if (now >= order.expiresAt) {
-      const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
+      const avgFill = order.filledQty > 0
+        ? order.costBasis / order.filledQty
+        : 0;
       console.log(
-        `[momentum-algo] Expired ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`,
+        `[momentum-algo] Expired ${order.orderId}: filled=${order.filledQty} avg=${
+          avgFill.toFixed(4)
+        }`,
       );
       activeOrders.delete(order.orderId);
       await producer?.send("orders.expired", {
@@ -290,7 +326,9 @@ marketClient.onTick(async (tick) => {
     const childId = `${order.orderId}-mom-${Date.now()}`;
 
     console.log(
-      `[momentum-algo] Tranche ${order.tranchesRouted} for ${order.orderId}: ${qty} ${order.asset} @ mkt ${marketPrice.toFixed(4)} signal=${signal.toFixed(2)}bps`,
+      `[momentum-algo] Tranche ${order.tranchesRouted} for ${order.orderId}: ${qty} ${order.asset} @ mkt ${
+        marketPrice.toFixed(4)
+      } signal=${signal.toFixed(2)}bps`,
     );
 
     await producer?.send("orders.child", {
@@ -325,54 +363,8 @@ marketClient.onTick(async (tick) => {
   }
 });
 
-setInterval(async () => {
-  const now = Date.now();
-  for (const order of [...activeOrders.values()]) {
-    if (now >= order.expiresAt) {
-      const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-      console.log(`[momentum-algo] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
-      activeOrders.delete(order.orderId);
-      await producer?.send("orders.expired", {
-        orderId: order.orderId,
-        clientOrderId: order.clientOrderId,
-        algo: "MOMENTUM",
-        filledQty: order.filledQty,
-        avgFillPrice: order.filledQty > 0 ? avgFill : 0,
-        ts: now,
-      }).catch(() => {});
-    }
-  }
-}, 5_000);
+startExpirySweep(activeOrders, producer, "MOMENTUM", "momentum-algo");
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+serveAlgoHealth(PORT, "momentum", VERSION, () => activeOrders.size);
 
-Deno.serve({ port: PORT }, (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
-  const url = new URL(req.url);
-  if (url.pathname === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({
-        service: "momentum",
-        version: VERSION,
-        status: "ok",
-        activeOrders: activeOrders.size,
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
-  }
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
-});
-
-// News signals — log only; future: widen entryThresholdBps on negative sentiment
-createConsumer("momentum-algo-news", ["news.signal"]).then((consumer) => {
-  consumer.onMessage((_topic, raw) => {
-    const sig = raw as { symbol: string; sentiment: string; score: number };
-    console.log(
-      `[momentum-algo] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`,
-    );
-  });
-}).catch(() => {}); // non-fatal
+subscribeNewsSignals("momentum-algo-news", "momentum-algo");

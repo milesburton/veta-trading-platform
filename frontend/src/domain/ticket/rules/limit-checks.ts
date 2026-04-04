@@ -37,7 +37,9 @@ export function runLimitChecks(ctx: TicketContext): Diagnostic[] {
       diagnostics.push({
         field: "*",
         severity: "error",
-        message: `Notional $${notional.toLocaleString(undefined, { maximumFractionDigits: 0 })} exceeds your daily limit of $${limits.max_daily_notional.toLocaleString()}`,
+        message: `Notional $${notional.toLocaleString(undefined, {
+          maximumFractionDigits: 0,
+        })} exceeds your daily limit of $${limits.max_daily_notional.toLocaleString()}`,
         ruleId: "notional-exceeds-limit",
       });
     }

@@ -42,7 +42,9 @@ export const loadUiPrefs = createAsyncThunk("ui/loadPrefs", async () => {
   if (!res.ok) return null;
   const blob = (await res.json()) as Record<string, unknown>;
   const size = blob?.orderTicketWindowSize as WindowSize | undefined;
-  if (size && typeof size.w === "number" && typeof size.h === "number") return size;
+  if (size && typeof size.w === "number" && typeof size.h === "number") {
+    return size;
+  }
   return null;
 });
 

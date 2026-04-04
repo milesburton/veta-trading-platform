@@ -15,11 +15,45 @@ import { PopOutButton } from "./PopOutButton.tsx";
 const ROW_HEIGHT = 48;
 
 const LADDER_COLS: ColDef[] = [
-  { key: "symbol", label: "Symbol", type: "string", defaultWidth: 90, minWidth: 60 },
-  { key: "bid", label: "Bid", type: "number", defaultWidth: 64, minWidth: 40, align: "right" },
-  { key: "ask", label: "Ask", type: "number", defaultWidth: 64, minWidth: 40, align: "right" },
-  { key: "last", label: "Last", type: "number", defaultWidth: 64, minWidth: 40, align: "right" },
-  { key: "change", label: "Δ%", type: "number", defaultWidth: 56, minWidth: 40, align: "right" },
+  {
+    key: "symbol",
+    label: "Symbol",
+    type: "string",
+    defaultWidth: 90,
+    minWidth: 60,
+  },
+  {
+    key: "bid",
+    label: "Bid",
+    type: "number",
+    defaultWidth: 64,
+    minWidth: 40,
+    align: "right",
+  },
+  {
+    key: "ask",
+    label: "Ask",
+    type: "number",
+    defaultWidth: 64,
+    minWidth: 40,
+    align: "right",
+  },
+  {
+    key: "last",
+    label: "Last",
+    type: "number",
+    defaultWidth: 64,
+    minWidth: 40,
+    align: "right",
+  },
+  {
+    key: "change",
+    label: "Δ%",
+    type: "number",
+    defaultWidth: 56,
+    minWidth: 40,
+    align: "right",
+  },
 ];
 
 function formatPrice(symbol: string, price: number) {
@@ -101,7 +135,11 @@ interface RowData {
 }
 
 interface RowComponentProps extends RowData {
-  ariaAttributes: { "aria-posinset": number; "aria-setsize": number; role: "listitem" };
+  ariaAttributes: {
+    "aria-posinset": number;
+    "aria-setsize": number;
+    role: "listitem";
+  };
   index: number;
   style: React.CSSProperties;
   onContextMenu: (e: React.MouseEvent, symbol: string) => void;
@@ -161,7 +199,13 @@ const Row = memo(function Row({
       onClick={handleSelect}
       onContextMenu={(e) => onContextMenu(e, asset.symbol)}
       aria-pressed={isSelected}
-      aria-label={`${asset.symbol} — ${asset.sector}. Bid ${price > 0 ? formatPrice(asset.symbol, bid) : "unavailable"}, Ask ${price > 0 ? formatPrice(asset.symbol, ask) : "unavailable"}, Last ${price > 0 ? formatPrice(asset.symbol, price) : "unavailable"}, change ${price > 0 ? `${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%` : "unavailable"}. ${isSelected ? "Selected — click to deselect" : "Click to select and view in chart"}`}
+      aria-label={`${asset.symbol} — ${asset.sector}. Bid ${
+        price > 0 ? formatPrice(asset.symbol, bid) : "unavailable"
+      }, Ask ${price > 0 ? formatPrice(asset.symbol, ask) : "unavailable"}, Last ${
+        price > 0 ? formatPrice(asset.symbol, price) : "unavailable"
+      }, change ${
+        price > 0 ? `${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%` : "unavailable"
+      }. ${isSelected ? "Selected — click to deselect" : "Click to select and view in chart"}`}
       title={
         isSelected
           ? "Click again to deselect"
@@ -171,7 +215,9 @@ const Row = memo(function Row({
       <div style={{ width: colWidths.symbol ?? 90 }} className="px-3 flex-shrink-0">
         <div
           className="font-semibold leading-tight"
-          style={{ color: isSelected ? (accentColour ?? "#34d399") : "#e5e7eb" }}
+          style={{
+            color: isSelected ? (accentColour ?? "#34d399") : "#e5e7eb",
+          }}
         >
           {asset.symbol}
         </div>
@@ -212,7 +258,9 @@ const Row = memo(function Row({
       </div>
       <div
         style={{ width: colWidths.change ?? 56 }}
-        className={`text-right px-2 tabular-nums flex-shrink-0 ${changePos ? "text-emerald-400" : "text-red-400"}`}
+        className={`text-right px-2 tabular-nums flex-shrink-0 ${
+          changePos ? "text-emerald-400" : "text-red-400"
+        }`}
       >
         {price > 0 ? `${changePos ? "+" : ""}${changePct.toFixed(2)}%` : "—"}
       </div>
@@ -428,7 +476,11 @@ export function MarketLadder() {
         {LADDER_COLS.map((col) => (
           <div
             key={col.key}
-            style={{ width: getWidth(col.key), flexShrink: 0, position: "relative" }}
+            style={{
+              width: getWidth(col.key),
+              flexShrink: 0,
+              position: "relative",
+            }}
             className={`px-2 py-1.5 ${col.align === "right" ? "text-right" : "text-left"}`}
           >
             {col.label}

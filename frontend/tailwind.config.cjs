@@ -1,6 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./index.html", "./src/**/*.{ts,tsx}", "./src/**/*.stories.{ts,tsx}"],
+  content: [
+    "./index.html",
+    "./src/**/*.{ts,tsx}",
+    "./src/**/*.stories.{ts,tsx}",
+  ],
   theme: {
     extend: {
       fontFamily: {
@@ -8,7 +12,7 @@ module.exports = {
       },
       colors: {
         gray: {
-          50:  "rgb(var(--gray-50) / <alpha-value>)",
+          50: "rgb(var(--gray-50) / <alpha-value>)",
           100: "rgb(var(--gray-100) / <alpha-value>)",
           200: "rgb(var(--gray-200) / <alpha-value>)",
           300: "rgb(var(--gray-300) / <alpha-value>)",

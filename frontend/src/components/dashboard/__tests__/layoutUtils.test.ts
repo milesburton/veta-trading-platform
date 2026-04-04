@@ -13,7 +13,16 @@ import {
 // Helpers
 
 function item(id: string, outgoing?: ChannelNumber, incoming?: ChannelNumber): LayoutItem {
-  return { i: id, panelType: "market-ladder", x: 0, y: 0, w: 4, h: 6, outgoing, incoming };
+  return {
+    i: id,
+    panelType: "market-ladder",
+    x: 0,
+    y: 0,
+    w: 4,
+    h: 6,
+    outgoing,
+    incoming,
+  };
 }
 
 describe("DEFAULT_LAYOUT", () => {

@@ -11,33 +11,51 @@ async function fetchGlobalQuote(symbol: string): Promise<CachedQuote | null> {
   if (!ALPHA_VANTAGE_KEY) return null;
   try {
     console.log(`[alpha-vantage] Polling GLOBAL_QUOTE for ${symbol}`);
-    const url =
-      `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${ALPHA_VANTAGE_KEY}`;
+    const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${
+      encodeURIComponent(symbol)
+    }&apikey=${ALPHA_VANTAGE_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json() as Record<string, Record<string, string>>;
     const q = data["Global Quote"];
     if (!q || !q["05. price"]) {
-      console.warn(`[alpha-vantage] No quote data for ${symbol} — rate limit or invalid symbol?`);
+      console.warn(
+        `[alpha-vantage] No quote data for ${symbol} — rate limit or invalid symbol?`,
+      );
       return null;
     }
     const price = parseFloat(q["05. price"]);
     const volume = parseInt(q["06. volume"] ?? "0", 10);
     const latestTradingDay = q["07. latest trading day"] ?? "";
     if (price <= 0) return null;
-    return { symbol, price, volume, latestTradingDay, fetchedAt: Date.now(), stale: false };
+    return {
+      symbol,
+      price,
+      volume,
+      latestTradingDay,
+      fetchedAt: Date.now(),
+      stale: false,
+    };
   } catch (err) {
-    console.warn(`[alpha-vantage] Quote fetch failed for ${symbol}: ${(err as Error).message}`);
+    console.warn(
+      `[alpha-vantage] Quote fetch failed for ${symbol}: ${
+        (err as Error).message
+      }`,
+    );
     return null;
   }
 }
 
-async function seedIntradayHistory(symbol: string, journalUrl: string): Promise<void> {
+async function seedIntradayHistory(
+  symbol: string,
+  journalUrl: string,
+): Promise<void> {
   if (!ALPHA_VANTAGE_KEY) return;
   try {
     console.log(`[alpha-vantage] Fetching intraday history for ${symbol}`);
-    const url =
-      `${ALPHA_VANTAGE_BASE}?function=TIME_SERIES_INTRADAY&symbol=${encodeURIComponent(symbol)}&interval=1min&outputsize=compact&apikey=${ALPHA_VANTAGE_KEY}`;
+    const url = `${ALPHA_VANTAGE_BASE}?function=TIME_SERIES_INTRADAY&symbol=${
+      encodeURIComponent(symbol)
+    }&interval=1min&outputsize=compact&apikey=${ALPHA_VANTAGE_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json() as Record<string, unknown>;
@@ -75,10 +93,16 @@ async function seedIntradayHistory(symbol: string, journalUrl: string): Promise<
         `[alpha-vantage] Seeded ${candles.length} intraday candles for ${symbol} into journal`,
       );
     } else {
-      console.warn(`[alpha-vantage] Journal seed returned ${seedRes.status} for ${symbol}`);
+      console.warn(
+        `[alpha-vantage] Journal seed returned ${seedRes.status} for ${symbol}`,
+      );
     }
   } catch (err) {
-    console.warn(`[alpha-vantage] Intraday seed failed for ${symbol}: ${(err as Error).message}`);
+    console.warn(
+      `[alpha-vantage] Intraday seed failed for ${symbol}: ${
+        (err as Error).message
+      }`,
+    );
   }
 }
 
@@ -93,7 +117,10 @@ export const alphaVantageEquityProvider: ProviderDef = {
   supportsSymbol(symbol: string): boolean {
     return !symbol.includes("/");
   },
-  async fetchQuote(symbol: string, _journalUrl: string): Promise<CachedQuote | null> {
+  async fetchQuote(
+    symbol: string,
+    _journalUrl: string,
+  ): Promise<CachedQuote | null> {
     return await fetchGlobalQuote(symbol);
   },
   async seedHistory(symbol: string, journalUrl: string): Promise<void> {

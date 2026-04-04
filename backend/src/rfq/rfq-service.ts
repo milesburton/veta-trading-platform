@@ -28,13 +28,13 @@ import { createConsumer, createProducer } from "../lib/messaging.ts";
 import { settlementDate } from "../lib/settlement.ts";
 
 type SellSideRfqState =
-  | "CLIENT_REQUEST"      // client submitted
-  | "SALES_REVIEW"        // waiting for sales to route
-  | "DEALER_QUOTE"        // dealer simulation running (for FI) or just pricing (for equity)
-  | "SALES_MARKUP"        // sales applies markup before sending to client
+  | "CLIENT_REQUEST" // client submitted
+  | "SALES_REVIEW" // waiting for sales to route
+  | "DEALER_QUOTE" // dealer simulation running (for FI) or just pricing (for equity)
+  | "SALES_MARKUP" // sales applies markup before sending to client
   | "CLIENT_CONFIRMATION" // sent to client, awaiting accept/reject
-  | "CONFIRMED"           // client accepted, order placed
-  | "REJECTED";           // rejected at any stage
+  | "CONFIRMED" // client accepted, order placed
+  | "REJECTED"; // rejected at any stage
 
 interface SellSideRfq {
   rfqId: string;
@@ -46,12 +46,12 @@ interface SellSideRfq {
   quantity: number;
   limitPrice?: number;
   // Dealer/pricing layer
-  dealerBestPrice?: number;      // best price from dealer sim or live price
-  dealerBestYield?: number;      // for bonds
+  dealerBestPrice?: number; // best price from dealer sim or live price
+  dealerBestYield?: number; // for bonds
   dealerSpreadBps?: number;
   // Sales markup
   salesMarkupBps?: number;
-  clientQuotedPrice?: number;    // price shown to client after markup
+  clientQuotedPrice?: number; // price shown to client after markup
   // Rejection
   rejectedBy?: string;
   rejectionReason?: string;
@@ -98,13 +98,62 @@ interface DealerProfile {
 }
 
 const DEALERS: DealerProfile[] = [
-  { id: "GSCO", name: "Goldman Sachs",      baseSpreadBps: 2.5, responseRate: 0.97, latencyMs: [60,  400], specialisation: "all"  },
-  { id: "MSCO", name: "Morgan Stanley",     baseSpreadBps: 3.0, responseRate: 0.95, latencyMs: [80,  500], specialisation: "UST"  },
-  { id: "JPMS", name: "JPMorgan",           baseSpreadBps: 2.8, responseRate: 0.96, latencyMs: [50,  350], specialisation: "all"  },
-  { id: "BAML", name: "BofA Securities",    baseSpreadBps: 3.2, responseRate: 0.93, latencyMs: [100, 600], specialisation: "Corp" },
-  { id: "CITI", name: "Citi",               baseSpreadBps: 3.5, responseRate: 0.90, latencyMs: [120, 700], specialisation: "Corp" },
-  { id: "BARX", name: "Barclays",           baseSpreadBps: 3.8, responseRate: 0.88, latencyMs: [150, 800], specialisation: "UST"  },
-  { id: "DBSI", name: "Deutsche Bank",      baseSpreadBps: 4.0, responseRate: 0.82, latencyMs: [200, 800], specialisation: "Corp" },
+  {
+    id: "GSCO",
+    name: "Goldman Sachs",
+    baseSpreadBps: 2.5,
+    responseRate: 0.97,
+    latencyMs: [60, 400],
+    specialisation: "all",
+  },
+  {
+    id: "MSCO",
+    name: "Morgan Stanley",
+    baseSpreadBps: 3.0,
+    responseRate: 0.95,
+    latencyMs: [80, 500],
+    specialisation: "UST",
+  },
+  {
+    id: "JPMS",
+    name: "JPMorgan",
+    baseSpreadBps: 2.8,
+    responseRate: 0.96,
+    latencyMs: [50, 350],
+    specialisation: "all",
+  },
+  {
+    id: "BAML",
+    name: "BofA Securities",
+    baseSpreadBps: 3.2,
+    responseRate: 0.93,
+    latencyMs: [100, 600],
+    specialisation: "Corp",
+  },
+  {
+    id: "CITI",
+    name: "Citi",
+    baseSpreadBps: 3.5,
+    responseRate: 0.90,
+    latencyMs: [120, 700],
+    specialisation: "Corp",
+  },
+  {
+    id: "BARX",
+    name: "Barclays",
+    baseSpreadBps: 3.8,
+    responseRate: 0.88,
+    latencyMs: [150, 800],
+    specialisation: "UST",
+  },
+  {
+    id: "DBSI",
+    name: "Deutsche Bank",
+    baseSpreadBps: 4.0,
+    responseRate: 0.82,
+    latencyMs: [200, 800],
+    specialisation: "Corp",
+  },
 ];
 
 interface BondSpec {
@@ -185,14 +234,18 @@ function nextExecId(): string {
 }
 
 const producer = await createProducer("rfq-service").catch((err) => {
-  console.warn("[rfq] Redpanda unavailable — executions will not be published:", err.message);
+  console.warn(
+    "[rfq] Redpanda unavailable — executions will not be published:",
+    err.message,
+  );
   return null;
 });
 
-const consumer = await createConsumer("rfq-service-fi", ["orders.fi.rfq"]).catch((err) => {
-  console.warn("[rfq] Cannot subscribe to orders.fi.rfq:", err.message);
-  return null;
-});
+const consumer = await createConsumer("rfq-service-fi", ["orders.fi.rfq"])
+  .catch((err) => {
+    console.warn("[rfq] Cannot subscribe to orders.fi.rfq:", err.message);
+    return null;
+  });
 
 /**
  * Price a bond using the standard present-value formula.
@@ -233,19 +286,26 @@ async function simulateDealerQuote(
   const baseYield = spec.yieldAtOrder;
 
   const isUST = spec.creditRating === "AAA" && spec.isin.startsWith("US9128");
-  const specialisationBonus =
-    (dealer.specialisation === "UST" && isUST) ? 0.5 :
-    (dealer.specialisation === "Corp" && !isUST) ? 0.5 : 0;
+  const specialisationBonus = (dealer.specialisation === "UST" && isUST)
+    ? 0.5
+    : (dealer.specialisation === "Corp" && !isUST)
+    ? 0.5
+    : 0;
 
   const jitter = (Math.random() * 0.6 - 0.3) * dealer.baseSpreadBps;
-  const spreadBps = Math.max(0.5, dealer.baseSpreadBps - specialisationBonus + jitter);
+  const spreadBps = Math.max(
+    0.5,
+    dealer.baseSpreadBps - specialisationBonus + jitter,
+  );
 
   // BUY: dealer offers at ask (higher yield); SELL: dealer bids (lower yield = higher price)
   const spreadFactor = rfq.side === "BUY" ? 1 : -1;
   const dealerYield = baseYield + (spreadFactor * spreadBps / 10_000);
 
   const price = priceBond(spec, dealerYield);
-  const notional = parseFloat((rfq.quantity * price * spec.faceValue).toFixed(2));
+  const notional = parseFloat(
+    (rfq.quantity * price * spec.faceValue).toFixed(2),
+  );
 
   return {
     dealerId: dealer.id,
@@ -262,7 +322,10 @@ async function simulateDealerQuote(
  * Pick the best quote: for a BUY, the lowest yield (highest price);
  * for a SELL, the highest yield (lowest price from buyer's perspective = best for seller).
  */
-function selectBestQuote(quotes: DealerQuote[], side: "BUY" | "SELL"): DealerQuote | undefined {
+function selectBestQuote(
+  quotes: DealerQuote[],
+  side: "BUY" | "SELL",
+): DealerQuote | undefined {
   if (quotes.length === 0) return undefined;
   return quotes.reduce((best, q) =>
     side === "BUY"
@@ -284,8 +347,12 @@ async function executeRfq(rfq: RfqRecord, quote: DealerQuote): Promise<void> {
   rfq.executedAt = now;
 
   console.log(
-    `[rfq] Execute ${execId}: ${rfq.side} ${rfq.quantity} ${rfq.asset} @ yield=${quote.yield.toFixed(4)} ` +
-    `price=${quote.price.toFixed(6)} dealer=${quote.dealerId} notional=${quote.notional}`
+    `[rfq] Execute ${execId}: ${rfq.side} ${rfq.quantity} ${rfq.asset} @ yield=${
+      quote.yield.toFixed(4)
+    } ` +
+      `price=${
+        quote.price.toFixed(6)
+      } dealer=${quote.dealerId} notional=${quote.notional}`,
   );
 
   // 1. rfq.executed — full RFQ trade record
@@ -379,7 +446,9 @@ async function executeRfq(rfq: RfqRecord, quote: DealerQuote): Promise<void> {
 async function expireRfq(rfq: RfqRecord): Promise<void> {
   const newState: RfqState = rfq.quotes.length > 0 ? "EXPIRED" : "NO_QUOTES";
   rfq.state = newState;
-  console.log(`[rfq] RFQ ${rfq.rfqId} ${newState} (${rfq.quotes.length} quotes received)`);
+  console.log(
+    `[rfq] RFQ ${rfq.rfqId} ${newState} (${rfq.quotes.length} quotes received)`,
+  );
 
   await producer?.send("rfq.quote.update", {
     rfqId: rfq.rfqId,
@@ -427,7 +496,11 @@ async function processRfq(req: RfqRequest): Promise<void> {
 
   rfqStore.set(rfqId, rfq);
 
-  console.log(`[rfq] New RFQ ${rfqId}: ${req.side} ${req.quantity} ${req.asset} @ yield=${req.bondSpec.yieldAtOrder.toFixed(4)}`);
+  console.log(
+    `[rfq] New RFQ ${rfqId}: ${req.side} ${req.quantity} ${req.asset} @ yield=${
+      req.bondSpec.yieldAtOrder.toFixed(4)
+    }`,
+  );
 
   // Notify frontend that RFQ is live
   await producer?.send("rfq.quote.update", {
@@ -442,13 +515,21 @@ async function processRfq(req: RfqRequest): Promise<void> {
   // Send to 4–5 dealers concurrently (random subset weighted by specialisation)
   const candidateDealers = DEALERS.filter((d) => {
     if (d.specialisation === "all") return true;
-    const isUST = req.bondSpec.creditRating === "AAA" && req.bondSpec.isin.startsWith("US9128");
+    const isUST = req.bondSpec.creditRating === "AAA" &&
+      req.bondSpec.isin.startsWith("US9128");
     return d.specialisation === "UST" ? isUST : !isUST;
   });
   // Always include all-rounder dealers; pick up to 2 specialist dealers
-  const allRounders = candidateDealers.filter((d) => d.specialisation === "all");
-  const specialists = candidateDealers.filter((d) => d.specialisation !== "all");
-  const selectedSpecialists = specialists.sort(() => Math.random() - 0.5).slice(0, 2);
+  const allRounders = candidateDealers.filter((d) =>
+    d.specialisation === "all"
+  );
+  const specialists = candidateDealers.filter((d) =>
+    d.specialisation !== "all"
+  );
+  const selectedSpecialists = specialists.sort(() => Math.random() - 0.5).slice(
+    0,
+    2,
+  );
   const selectedDealers = [...allRounders, ...selectedSpecialists];
 
   // Fire all dealer requests concurrently; collect responses as they arrive
@@ -494,13 +575,17 @@ async function processRfq(req: RfqRequest): Promise<void> {
 consumer?.onMessage((_topic, raw) => {
   const req = raw as RfqRequest;
   if (!req.bondSpec) {
-    console.warn(`[rfq] Ignoring orders.fi.rfq without bondSpec: orderId=${req.orderId}`);
+    console.warn(
+      `[rfq] Ignoring orders.fi.rfq without bondSpec: orderId=${req.orderId}`,
+    );
     return;
   }
   processRfq(req).catch(console.error);
 });
 
-console.log(`[rfq] Listening for orders.fi.rfq on message bus (window=${QUOTE_WINDOW_MS}ms)`);
+console.log(
+  `[rfq] Listening for orders.fi.rfq on message bus (window=${QUOTE_WINDOW_MS}ms)`,
+);
 
 setInterval(() => {
   const cutoff = Date.now() - RFQ_RETENTION_MS;
@@ -510,18 +595,26 @@ setInterval(() => {
 }, 60_000);
 
 async function publishSsRfqUpdate(rfq: SellSideRfq): Promise<void> {
-  await producer?.send("rfq.sellside.update", { ...rfq, ts: Date.now() }).catch(() => {});
+  await producer?.send("rfq.sellside.update", { ...rfq, ts: Date.now() }).catch(
+    () => {},
+  );
 }
 
 Deno.serve({ port: PORT }, async (req) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
 
   if (path === "/health" && req.method === "GET") {
     return new Response(
-      JSON.stringify({ service: "rfq-service", version: VERSION, status: "ok" }),
+      JSON.stringify({
+        service: "rfq-service",
+        version: VERSION,
+        status: "ok",
+      }),
       { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
     );
   }
@@ -529,7 +622,9 @@ Deno.serve({ port: PORT }, async (req) => {
   // GET /rfq — list recent RFQs (most recent first, capped at 100)
   if (path === "/rfq" && req.method === "GET") {
     const userId = url.searchParams.get("userId");
-    let records = [...rfqStore.values()].sort((a, b) => b.createdAt - a.createdAt);
+    let records = [...rfqStore.values()].sort((a, b) =>
+      b.createdAt - a.createdAt
+    );
     if (userId) records = records.filter((r) => r.userId === userId);
     return new Response(
       JSON.stringify({ rfqs: records.slice(0, 100), total: records.length }),
@@ -561,20 +656,38 @@ Deno.serve({ port: PORT }, async (req) => {
   const matchGet = path.match(/^\/rfq\/([^/]+)$/);
   if (matchGet && req.method === "GET") {
     const rfq = rfqStore.get(matchGet[1]);
-    if (!rfq) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: CORS_HEADERS });
-    return new Response(JSON.stringify(rfq), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    if (!rfq) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: CORS_HEADERS,
+      });
+    }
+    return new Response(JSON.stringify(rfq), {
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
   }
 
   // POST /rfq/:id/execute — manually select a specific dealer quote
   const matchExec = path.match(/^\/rfq\/([^/]+)\/execute$/);
   if (matchExec && req.method === "POST") {
     const rfq = rfqStore.get(matchExec[1]);
-    if (!rfq) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: CORS_HEADERS });
+    if (!rfq) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: CORS_HEADERS,
+      });
+    }
     if (rfq.state === "EXECUTED") {
-      return new Response(JSON.stringify({ error: "Already executed" }), { status: 409, headers: CORS_HEADERS });
+      return new Response(JSON.stringify({ error: "Already executed" }), {
+        status: 409,
+        headers: CORS_HEADERS,
+      });
     }
     if (rfq.state === "EXPIRED" || rfq.state === "NO_QUOTES") {
-      return new Response(JSON.stringify({ error: "RFQ has expired" }), { status: 410, headers: CORS_HEADERS });
+      return new Response(JSON.stringify({ error: "RFQ has expired" }), {
+        status: 410,
+        headers: CORS_HEADERS,
+      });
     }
 
     let selectedQuote: DealerQuote | undefined;
@@ -583,35 +696,62 @@ Deno.serve({ port: PORT }, async (req) => {
       if (body.dealerId) {
         selectedQuote = rfq.quotes.find((q) => q.dealerId === body.dealerId);
         if (!selectedQuote) {
-          return new Response(JSON.stringify({ error: "Dealer quote not found" }), { status: 404, headers: CORS_HEADERS });
+          return new Response(
+            JSON.stringify({ error: "Dealer quote not found" }),
+            { status: 404, headers: CORS_HEADERS },
+          );
         }
       }
     } catch {
       // No body — use best quote
     }
 
-    const quoteToExecute = selectedQuote ?? selectBestQuote(rfq.quotes, rfq.side);
+    const quoteToExecute = selectedQuote ??
+      selectBestQuote(rfq.quotes, rfq.side);
     if (!quoteToExecute) {
-      return new Response(JSON.stringify({ error: "No quotes available yet" }), { status: 425, headers: CORS_HEADERS });
+      return new Response(
+        JSON.stringify({ error: "No quotes available yet" }),
+        { status: 425, headers: CORS_HEADERS },
+      );
     }
 
     await executeRfq(rfq, quoteToExecute);
-    return new Response(JSON.stringify({ execId: rfq.execId, executedQuote: rfq.executedQuote }), {
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-    });
+    return new Response(
+      JSON.stringify({ execId: rfq.execId, executedQuote: rfq.executedQuote }),
+      {
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      },
+    );
   }
 
   // POST /rfq/sellside — client submits a sell-side RFQ
   if (path === "/rfq/sellside" && req.method === "POST") {
-    let body: { clientUserId: string; asset: string; side: "BUY" | "SELL"; quantity: number; limitPrice?: number };
+    let body: {
+      clientUserId: string;
+      asset: string;
+      side: "BUY" | "SELL";
+      quantity: number;
+      limitPrice?: number;
+    };
     try {
       body = await req.json();
     } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
     }
     const { clientUserId, asset, side, quantity, limitPrice } = body;
     if (!clientUserId || !asset || !side || !quantity) {
-      return new Response(JSON.stringify({ error: "Missing required fields: clientUserId, asset, side, quantity" }), { status: 400, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      return new Response(
+        JSON.stringify({
+          error: "Missing required fields: clientUserId, asset, side, quantity",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        },
+      );
     }
     const now = Date.now();
     const rfqId = nextSsRfqId();
@@ -628,31 +768,59 @@ Deno.serve({ port: PORT }, async (req) => {
     };
     sellSideRfqStore.set(rfqId, rfq);
     await publishSsRfqUpdate(rfq);
-    console.log(`[rfq] New sell-side RFQ ${rfqId}: ${side} ${quantity} ${asset} from ${clientUserId}`);
-    return new Response(JSON.stringify({ rfqId, state: rfq.state }), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    console.log(
+      `[rfq] New sell-side RFQ ${rfqId}: ${side} ${quantity} ${asset} from ${clientUserId}`,
+    );
+    return new Response(JSON.stringify({ rfqId, state: rfq.state }), {
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
   }
 
   // GET /rfq/sellside/stats — must be before /rfq/sellside/:id
   if (path === "/rfq/sellside/stats" && req.method === "GET") {
-    const byState = [...sellSideRfqStore.values()].reduce<Record<string, number>>((acc, r) => { acc[r.state] = (acc[r.state] ?? 0) + 1; return acc; }, {});
-    return new Response(JSON.stringify({ total: sellSideRfqStore.size, byState }), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    const byState = [...sellSideRfqStore.values()].reduce<
+      Record<string, number>
+    >((acc, r) => {
+      acc[r.state] = (acc[r.state] ?? 0) + 1;
+      return acc;
+    }, {});
+    return new Response(
+      JSON.stringify({ total: sellSideRfqStore.size, byState }),
+      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+    );
   }
 
   // GET /rfq/sellside — list sell-side RFQs
   if (path === "/rfq/sellside" && req.method === "GET") {
     const userId = url.searchParams.get("userId");
     const stateFilter = url.searchParams.get("state");
-    let records = [...sellSideRfqStore.values()].sort((a, b) => b.createdAt - a.createdAt);
-    if (userId) records = records.filter((r) => r.clientUserId === userId || r.salesUserId === userId);
+    let records = [...sellSideRfqStore.values()].sort((a, b) =>
+      b.createdAt - a.createdAt
+    );
+    if (userId) {
+      records = records.filter((r) =>
+        r.clientUserId === userId || r.salesUserId === userId
+      );
+    }
     if (stateFilter) records = records.filter((r) => r.state === stateFilter);
-    return new Response(JSON.stringify({ rfqs: records, total: records.length }), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    return new Response(
+      JSON.stringify({ rfqs: records, total: records.length }),
+      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+    );
   }
 
   // Action routes: /rfq/sellside/:id/(route|markup|confirm|reject)
-  const ssActionMatch = path.match(/^\/rfq\/sellside\/([^/]+)\/(route|markup|confirm|reject)$/);
+  const ssActionMatch = path.match(
+    /^\/rfq\/sellside\/([^/]+)\/(route|markup|confirm|reject)$/,
+  );
   if (ssActionMatch && req.method === "PUT") {
     const rfq = sellSideRfqStore.get(ssActionMatch[1]);
-    if (!rfq) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    if (!rfq) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
     const action = ssActionMatch[2];
     let actionBody: Record<string, unknown> = {};
     try {
@@ -661,11 +829,20 @@ Deno.serve({ port: PORT }, async (req) => {
 
     if (action === "route") {
       if (rfq.state !== "CLIENT_REQUEST") {
-        return new Response(JSON.stringify({ error: `Cannot route from state ${rfq.state}` }), { status: 409, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+        return new Response(
+          JSON.stringify({ error: `Cannot route from state ${rfq.state}` }),
+          {
+            status: 409,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
       }
       const salesUserId = actionBody.salesUserId as string | undefined;
       if (!salesUserId) {
-        return new Response(JSON.stringify({ error: "Missing salesUserId" }), { status: 400, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+        return new Response(JSON.stringify({ error: "Missing salesUserId" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
       }
       const basePrice = rfq.limitPrice ?? 0;
       const jitter = basePrice * (1 + (Math.random() - 0.5) * 0.01);
@@ -675,17 +852,33 @@ Deno.serve({ port: PORT }, async (req) => {
       rfq.salesRoutedAt = Date.now();
       rfq.ts = Date.now();
       await publishSsRfqUpdate(rfq);
-      return new Response(JSON.stringify(rfq), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      return new Response(JSON.stringify(rfq), {
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
     }
 
     if (action === "markup") {
       if (rfq.state !== "SALES_MARKUP") {
-        return new Response(JSON.stringify({ error: `Cannot apply markup from state ${rfq.state}` }), { status: 409, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+        return new Response(
+          JSON.stringify({
+            error: `Cannot apply markup from state ${rfq.state}`,
+          }),
+          {
+            status: 409,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
       }
       const salesUserId = actionBody.salesUserId as string | undefined;
       const markupBps = Number(actionBody.markupBps ?? 0);
       if (!salesUserId || salesUserId !== rfq.salesUserId) {
-        return new Response(JSON.stringify({ error: "salesUserId does not match" }), { status: 403, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+        return new Response(
+          JSON.stringify({ error: "salesUserId does not match" }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
       }
       const dealerPrice = rfq.dealerBestPrice ?? 0;
       const clientPrice = rfq.side === "BUY"
@@ -697,16 +890,30 @@ Deno.serve({ port: PORT }, async (req) => {
       rfq.salesMarkupAppliedAt = Date.now();
       rfq.ts = Date.now();
       await publishSsRfqUpdate(rfq);
-      return new Response(JSON.stringify(rfq), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      return new Response(JSON.stringify(rfq), {
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
     }
 
     if (action === "confirm") {
       if (rfq.state !== "CLIENT_CONFIRMATION") {
-        return new Response(JSON.stringify({ error: `Cannot confirm from state ${rfq.state}` }), { status: 409, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+        return new Response(
+          JSON.stringify({ error: `Cannot confirm from state ${rfq.state}` }),
+          {
+            status: 409,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
       }
       const clientUserId = actionBody.clientUserId as string | undefined;
       if (!clientUserId || clientUserId !== rfq.clientUserId) {
-        return new Response(JSON.stringify({ error: "clientUserId does not match" }), { status: 403, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+        return new Response(
+          JSON.stringify({ error: "clientUserId does not match" }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
       }
       rfq.state = "CONFIRMED";
       rfq.clientConfirmedAt = Date.now();
@@ -726,19 +933,29 @@ Deno.serve({ port: PORT }, async (req) => {
         desk: "rfq",
         ts: Date.now(),
       }).catch(() => {});
-      return new Response(JSON.stringify(rfq), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      return new Response(JSON.stringify(rfq), {
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
     }
 
     if (action === "reject") {
       if (rfq.state === "CONFIRMED" || rfq.state === "REJECTED") {
-        return new Response(JSON.stringify({ error: `Cannot reject from state ${rfq.state}` }), { status: 409, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+        return new Response(
+          JSON.stringify({ error: `Cannot reject from state ${rfq.state}` }),
+          {
+            status: 409,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
       }
       rfq.rejectedBy = actionBody.rejectedBy as string | undefined;
       rfq.rejectionReason = actionBody.reason as string | undefined;
       rfq.state = "REJECTED";
       rfq.ts = Date.now();
       await publishSsRfqUpdate(rfq);
-      return new Response(JSON.stringify(rfq), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      return new Response(JSON.stringify(rfq), {
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
     }
   }
 
@@ -746,8 +963,15 @@ Deno.serve({ port: PORT }, async (req) => {
   const ssIdMatch = path.match(/^\/rfq\/sellside\/([^/]+)$/);
   if (ssIdMatch && req.method === "GET") {
     const rfq = sellSideRfqStore.get(ssIdMatch[1]);
-    if (!rfq) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
-    return new Response(JSON.stringify(rfq), { headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+    if (!rfq) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+    return new Response(JSON.stringify(rfq), {
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });

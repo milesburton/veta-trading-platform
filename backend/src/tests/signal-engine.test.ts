@@ -1,6 +1,6 @@
 import {
-  assertEquals,
   assertAlmostEquals,
+  assertEquals,
 } from "https://deno.land/std@0.210.0/assert/mod.ts";
 import { scoreFeatureVector } from "../signal-engine/scorer.ts";
 import { DEFAULT_WEIGHTS } from "../signal-engine/weight-store.ts";
@@ -20,7 +20,6 @@ function makeNeutralFv(symbol = "TEST"): FeatureVector {
   };
 }
 
-
 Deno.test("default weights: all 7 features present, realisedVol is negative, abs-sum = 1.0", () => {
   const keys = Object.keys(DEFAULT_WEIGHTS);
   assertEquals(keys.length, 7);
@@ -28,10 +27,12 @@ Deno.test("default weights: all 7 features present, realisedVol is negative, abs
   assertEquals("realisedVol" in DEFAULT_WEIGHTS, true);
   assertEquals(DEFAULT_WEIGHTS.realisedVol < 0, true);
 
-  const absSum = Object.values(DEFAULT_WEIGHTS).reduce((a, b) => a + Math.abs(b), 0);
+  const absSum = Object.values(DEFAULT_WEIGHTS).reduce(
+    (a, b) => a + Math.abs(b),
+    0,
+  );
   assertAlmostEquals(absSum, 1.0, 0.001);
 });
-
 
 Deno.test("scorer: neutral FeatureVector → neutral direction with 7 factors", () => {
   const sig = scoreFeatureVector(makeNeutralFv(), DEFAULT_WEIGHTS);
@@ -72,7 +73,17 @@ Deno.test("scorer: score is clamped to [-1, 1] even when all features are maxed"
 Deno.test("scorer: factors array contains all 7 named features", () => {
   const sig = scoreFeatureVector(makeNeutralFv(), DEFAULT_WEIGHTS);
   const names = new Set(sig.factors.map((f) => f.name));
-  for (const name of ["momentum", "relativeVolume", "realisedVol", "sectorRelativeStrength", "eventScore", "newsVelocity", "sentimentDelta"]) {
+  for (
+    const name of [
+      "momentum",
+      "relativeVolume",
+      "realisedVol",
+      "sectorRelativeStrength",
+      "eventScore",
+      "newsVelocity",
+      "sentimentDelta",
+    ]
+  ) {
     assertEquals(names.has(name as never), true, `missing factor: ${name}`);
   }
 });
@@ -85,15 +96,20 @@ Deno.test("scorer: confidence = abs(score); realisedVol reduces score (negative 
 
   const fvHighVol = makeNeutralFv();
   fvHighVol.realisedVol = 0.8;
-  const sigLow  = scoreFeatureVector(makeNeutralFv(), DEFAULT_WEIGHTS);
+  const sigLow = scoreFeatureVector(makeNeutralFv(), DEFAULT_WEIGHTS);
   const sigHigh = scoreFeatureVector(fvHighVol, DEFAULT_WEIGHTS);
   assertEquals(sigHigh.score < sigLow.score, true, "high vol lowers score");
 });
 
 Deno.test("scorer: all-zero weights produce zero score for any FeatureVector", () => {
   const zeroWeights = {
-    momentum: 0, relativeVolume: 0, realisedVol: 0,
-    sectorRelativeStrength: 0, eventScore: 0, newsVelocity: 0, sentimentDelta: 0,
+    momentum: 0,
+    relativeVolume: 0,
+    realisedVol: 0,
+    sectorRelativeStrength: 0,
+    eventScore: 0,
+    newsVelocity: 0,
+    sentimentDelta: 0,
   };
   const sig = scoreFeatureVector(makeNeutralFv(), zeroWeights);
   assertAlmostEquals(sig.score, 0, 1e-6);

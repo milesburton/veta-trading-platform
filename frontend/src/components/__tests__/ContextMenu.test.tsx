@@ -78,7 +78,13 @@ describe("ContextMenu – interactions", () => {
   it("does not call onClick when a disabled item is clicked", () => {
     const onClick = vi.fn();
     const onClose = vi.fn();
-    const items: ContextMenuEntry[] = [{ label: "Disabled", disabled: true, onClick }];
+    const items: ContextMenuEntry[] = [
+      {
+        label: "Disabled",
+        disabled: true,
+        onClick,
+      },
+    ];
     render(<ContextMenu items={items} x={100} y={100} onClose={onClose} />);
     fireEvent.click(screen.getByRole("menuitem"));
     expect(onClick).not.toHaveBeenCalled();

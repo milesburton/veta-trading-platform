@@ -22,6 +22,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("IS_ALGO_PORT")) || 5_026;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -78,21 +79,21 @@ interface ActiveIS {
   asset: string;
   side: "BUY" | "SELL";
   limitPrice: number;
-  expiresAt: number;       // absolute ms
-  receivedAt: number;      // ms — when order was queued
-  arrivalPrice: number;    // mid-price captured at receipt
-  urgency: number;         // 0.0–1.0
-  maxSlippageBps: number;  // adverse drift threshold in bps
+  expiresAt: number; // absolute ms
+  receivedAt: number; // ms — when order was queued
+  arrivalPrice: number; // mid-price captured at receipt
+  urgency: number; // 0.0–1.0
+  maxSlippageBps: number; // adverse drift threshold in bps
   totalQty: number;
   totalRemaining: number;
   filledQty: number;
   costBasis: number;
-  sliceCount: number;      // number of child orders already sent
-  lastSliceAt: number;     // ms — timestamp of last child order sent
-  sliceQtys: number[];     // pre-computed geometric schedule (1-indexed)
-  numSlices: number;       // total slices in schedule
+  sliceCount: number; // number of child orders already sent
+  lastSliceAt: number; // ms — timestamp of last child order sent
+  sliceQtys: number[]; // pre-computed geometric schedule (1-indexed)
+  numSlices: number; // total slices in schedule
   sliceIntervalMs: number; // target interval between slices (uniform spacing)
-  paused: boolean;         // true when adverse drift > maxSlippageBps
+  paused: boolean; // true when adverse drift > maxSlippageBps
 }
 
 /** Active IS orders, keyed by orderId. */
@@ -152,22 +153,33 @@ function buildSliceSchedule(
   return { sliceQtys, numSlices, sliceIntervalMs };
 }
 
-const routedConsumer = await createConsumer("is-algo-routed", ["orders.routed"]).catch((err) => {
-  console.warn("[is-algo] Cannot subscribe to orders.routed:", err.message);
-  return null;
-});
+const routedConsumer = await createConsumer("is-algo-routed", ["orders.routed"])
+  .catch((err) => {
+    console.warn("[is-algo] Cannot subscribe to orders.routed:", err.message);
+    return null;
+  });
 
 routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
 
-  const urgency = Math.max(0.0, Math.min(1.0, Number(order.algoParams?.urgency ?? 0.5)));
-  const maxSlippageBps = Math.max(1, Number(order.algoParams?.maxSlippageBps ?? 50));
+  const urgency = Math.max(
+    0.0,
+    Math.min(1.0, Number(order.algoParams?.urgency ?? 0.5)),
+  );
+  const maxSlippageBps = Math.max(
+    1,
+    Number(order.algoParams?.maxSlippageBps ?? 50),
+  );
   const minSlices = Math.max(1, Number(order.algoParams?.minSlices ?? 3));
-  const maxSlices = Math.max(minSlices, Number(order.algoParams?.maxSlices ?? 10));
+  const maxSlices = Math.max(
+    minSlices,
+    Number(order.algoParams?.maxSlices ?? 10),
+  );
 
   // Capture arrival price from market client's last known tick
-  const arrivalPrice = marketClient.getLatest()?.prices[order.asset] ?? order.limitPrice;
+  const arrivalPrice = marketClient.getLatest()?.prices[order.asset] ??
+    order.limitPrice;
 
   const expiresAt = Date.now() + (Number(order.expiresAt ?? 300)) * 1_000;
   const receivedAt = Date.now();
@@ -207,7 +219,11 @@ routedConsumer?.onMessage((_topic, raw) => {
   activeOrders.set(order.orderId, is);
 
   console.log(
-    `[is-algo] Queued ${order.orderId}: ${order.quantity} ${order.asset} arrival=${arrivalPrice.toFixed(4)} urgency=${urgency} maxSlippage=${maxSlippageBps}bps slices=${numSlices} interval=${(sliceIntervalMs / 1000).toFixed(1)}s`,
+    `[is-algo] Queued ${order.orderId}: ${order.quantity} ${order.asset} arrival=${
+      arrivalPrice.toFixed(4)
+    } urgency=${urgency} maxSlippage=${maxSlippageBps}bps slices=${numSlices} interval=${
+      (sliceIntervalMs / 1000).toFixed(1)
+    }s`,
   );
 
   producer?.send("algo.heartbeat", {
@@ -225,16 +241,19 @@ routedConsumer?.onMessage((_topic, raw) => {
   }).catch(() => {});
 });
 
-const fillsConsumer = await createConsumer("is-algo-fills", ["orders.filled"]).catch((err) => {
-  console.warn("[is-algo] Cannot subscribe to orders.filled:", err.message);
-  return null;
-});
+const fillsConsumer = await createConsumer("is-algo-fills", ["orders.filled"])
+  .catch((err) => {
+    console.warn("[is-algo] Cannot subscribe to orders.filled:", err.message);
+    return null;
+  });
 
 fillsConsumer?.onMessage((_topic, raw) => {
   const fill = raw as FillEvent;
   if ((fill.algo ?? "").toUpperCase() !== ALGO) return;
 
-  const order = fill.parentOrderId ? activeOrders.get(fill.parentOrderId) : undefined;
+  const order = fill.parentOrderId
+    ? activeOrders.get(fill.parentOrderId)
+    : undefined;
   if (!order) return;
 
   const qty = fill.filledQty ?? 0;
@@ -244,17 +263,24 @@ fillsConsumer?.onMessage((_topic, raw) => {
   order.totalRemaining = Math.max(0, order.totalRemaining - qty);
 
   console.log(
-    `[is-algo] Fill ${order.orderId}: +${qty} @ ${price.toFixed(2)} | remaining=${order.totalRemaining}`,
+    `[is-algo] Fill ${order.orderId}: +${qty} @ ${
+      price.toFixed(2)
+    } | remaining=${order.totalRemaining}`,
   );
 
   if (order.totalRemaining <= 0) {
     const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-    const slipBps = ((avgFill - order.arrivalPrice) / order.arrivalPrice) * 10_000;
+    const slipBps = ((avgFill - order.arrivalPrice) / order.arrivalPrice) *
+      10_000;
     const side = order.side;
     const isAdverse = side === "BUY" ? slipBps > 0 : slipBps < 0;
 
     console.log(
-      `[is-algo] Complete ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)} slippage=${slipBps.toFixed(1)}bps (${isAdverse ? "adverse" : "favourable"})`,
+      `[is-algo] Complete ${order.orderId}: filled=${order.filledQty} avg=${
+        avgFill.toFixed(4)
+      } slippage=${slipBps.toFixed(1)}bps (${
+        isAdverse ? "adverse" : "favourable"
+      })`,
     );
 
     activeOrders.delete(order.orderId);
@@ -281,9 +307,13 @@ marketClient.onTick(async (tick) => {
     if (!marketPrice) continue;
 
     if (now >= order.expiresAt) {
-      const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
+      const avgFill = order.filledQty > 0
+        ? order.costBasis / order.filledQty
+        : 0;
       console.log(
-        `[is-algo] Expired ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`,
+        `[is-algo] Expired ${order.orderId}: filled=${order.filledQty} avg=${
+          avgFill.toFixed(4)
+        }`,
       );
       activeOrders.delete(order.orderId);
       await producer?.send("orders.expired", {
@@ -298,7 +328,8 @@ marketClient.onTick(async (tick) => {
     }
 
     // Raw drift: positive = price rose since arrival
-    const rawDriftBps = ((marketPrice - order.arrivalPrice) / order.arrivalPrice) * 10_000;
+    const rawDriftBps =
+      ((marketPrice - order.arrivalPrice) / order.arrivalPrice) * 10_000;
     // Adverse drift: positive = market moved against us
     //   BUY  → price rising is adverse (we pay more than arrival)
     //   SELL → price falling is adverse (we receive less than arrival)
@@ -308,7 +339,9 @@ marketClient.onTick(async (tick) => {
       if (!order.paused) {
         order.paused = true;
         console.log(
-          `[is-algo] Paused ${order.orderId}: drift=${adverseDriftBps.toFixed(1)}bps > ${order.maxSlippageBps}bps`,
+          `[is-algo] Paused ${order.orderId}: drift=${
+            adverseDriftBps.toFixed(1)
+          }bps > ${order.maxSlippageBps}bps`,
         );
         await producer?.send("algo.heartbeat", {
           algo: ALGO,
@@ -329,7 +362,9 @@ marketClient.onTick(async (tick) => {
     if (order.paused) {
       order.paused = false;
       console.log(
-        `[is-algo] Resumed ${order.orderId}: drift=${adverseDriftBps.toFixed(1)}bps now within threshold`,
+        `[is-algo] Resumed ${order.orderId}: drift=${
+          adverseDriftBps.toFixed(1)
+        }bps now within threshold`,
       );
       await producer?.send("algo.heartbeat", {
         algo: ALGO,
@@ -364,15 +399,19 @@ marketClient.onTick(async (tick) => {
     // to get passive-ish fills that still have a high chance of execution.
     const aggressionTolerance = marketPrice * 0.0005;
     const childLimitPrice = order.side === "BUY"
-      ? marketPrice + aggressionTolerance   // slightly above ask for fills
-      : marketPrice - aggressionTolerance;  // slightly below bid for fills
+      ? marketPrice + aggressionTolerance // slightly above ask for fills
+      : marketPrice - aggressionTolerance; // slightly below bid for fills
 
     order.sliceCount += 1;
     const childId = `${order.orderId}-is-${order.sliceCount}`;
     order.lastSliceAt = now;
 
     console.log(
-      `[is-algo] Slice ${order.sliceCount}/${order.numSlices} for ${order.orderId}: ${sliceQty} ${order.asset} @ limit ${childLimitPrice.toFixed(4)} (mkt ${marketPrice.toFixed(4)}, drift ${adverseDriftBps.toFixed(1)}bps)`,
+      `[is-algo] Slice ${order.sliceCount}/${order.numSlices} for ${order.orderId}: ${sliceQty} ${order.asset} @ limit ${
+        childLimitPrice.toFixed(4)
+      } (mkt ${marketPrice.toFixed(4)}, drift ${
+        adverseDriftBps.toFixed(1)
+      }bps)`,
     );
 
     await producer?.send("orders.child", {
@@ -410,54 +449,8 @@ marketClient.onTick(async (tick) => {
   }
 });
 
-setInterval(async () => {
-  const now = Date.now();
-  for (const order of [...activeOrders.values()]) {
-    if (now >= order.expiresAt) {
-      const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-      console.log(`[is-algo] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
-      activeOrders.delete(order.orderId);
-      await producer?.send("orders.expired", {
-        orderId: order.orderId,
-        clientOrderId: order.clientOrderId,
-        algo: "IS",
-        filledQty: order.filledQty,
-        avgFillPrice: order.filledQty > 0 ? avgFill : 0,
-        ts: now,
-      }).catch(() => {});
-    }
-  }
-}, 5_000);
+startExpirySweep(activeOrders, producer, "IS", "is-algo");
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+serveAlgoHealth(PORT, "is", VERSION, () => activeOrders.size);
 
-Deno.serve({ port: PORT }, (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
-  const url = new URL(req.url);
-  if (url.pathname === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({
-        service: "is",
-        version: VERSION,
-        status: "ok",
-        activeOrders: activeOrders.size,
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
-  }
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
-});
-
-// News signals — log only; future: widen maxSlippageBps on negative sentiment
-createConsumer("is-algo-news", ["news.signal"]).then((consumer) => {
-  consumer.onMessage((_topic, raw) => {
-    const sig = raw as { symbol: string; sentiment: string; score: number };
-    console.log(
-      `[is-algo] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`,
-    );
-  });
-}).catch(() => {}); // non-fatal
+subscribeNewsSignals("is-algo-news", "is-algo");

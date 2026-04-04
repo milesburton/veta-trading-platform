@@ -28,48 +28,104 @@ describe("applyFilters", () => {
   });
 
   it("filters with = (string)", () => {
-    const criteria: FilterCriteria[] = [{ id: "1", field: "side", op: "=", value: "BUY" }];
+    const criteria: FilterCriteria[] = [
+      {
+        id: "1",
+        field: "side",
+        op: "=",
+        value: "BUY",
+      },
+    ];
     const result = applyFilters([...rows], criteria);
     expect(result).toHaveLength(2);
     expect(result.every((r) => r.side === "BUY")).toBe(true);
   });
 
   it("filters with = (case-insensitive)", () => {
-    const criteria: FilterCriteria[] = [{ id: "1", field: "side", op: "=", value: "buy" }];
+    const criteria: FilterCriteria[] = [
+      {
+        id: "1",
+        field: "side",
+        op: "=",
+        value: "buy",
+      },
+    ];
     expect(applyFilters([...rows], criteria)).toHaveLength(2);
   });
 
   it("filters with != (string)", () => {
-    const criteria: FilterCriteria[] = [{ id: "1", field: "side", op: "!=", value: "BUY" }];
+    const criteria: FilterCriteria[] = [
+      {
+        id: "1",
+        field: "side",
+        op: "!=",
+        value: "BUY",
+      },
+    ];
     const result = applyFilters([...rows], criteria);
     expect(result).toHaveLength(2);
     expect(result.every((r) => r.side === "SELL")).toBe(true);
   });
 
   it("filters with > (number)", () => {
-    const criteria: FilterCriteria[] = [{ id: "1", field: "quantity", op: ">", value: 10000 }];
+    const criteria: FilterCriteria[] = [
+      {
+        id: "1",
+        field: "quantity",
+        op: ">",
+        value: 10000,
+      },
+    ];
     const result = applyFilters([...rows], criteria);
     expect(result).toHaveLength(2);
     expect(result.map((r) => r.id)).toEqual(["2", "4"]);
   });
 
   it("filters with < (number)", () => {
-    const criteria: FilterCriteria[] = [{ id: "1", field: "quantity", op: "<", value: 10000 }];
+    const criteria: FilterCriteria[] = [
+      {
+        id: "1",
+        field: "quantity",
+        op: "<",
+        value: 10000,
+      },
+    ];
     expect(applyFilters([...rows], criteria)).toHaveLength(1);
   });
 
   it("filters with >= (number)", () => {
-    const criteria: FilterCriteria[] = [{ id: "1", field: "quantity", op: ">=", value: 10000 }];
+    const criteria: FilterCriteria[] = [
+      {
+        id: "1",
+        field: "quantity",
+        op: ">=",
+        value: 10000,
+      },
+    ];
     expect(applyFilters([...rows], criteria)).toHaveLength(3);
   });
 
   it("filters with <= (number)", () => {
-    const criteria: FilterCriteria[] = [{ id: "1", field: "quantity", op: "<=", value: 10000 }];
+    const criteria: FilterCriteria[] = [
+      {
+        id: "1",
+        field: "quantity",
+        op: "<=",
+        value: 10000,
+      },
+    ];
     expect(applyFilters([...rows], criteria)).toHaveLength(2);
   });
 
   it("filters with contains (case-insensitive)", () => {
-    const criteria: FilterCriteria[] = [{ id: "1", field: "asset", op: "contains", value: "oo" }];
+    const criteria: FilterCriteria[] = [
+      {
+        id: "1",
+        field: "asset",
+        op: "contains",
+        value: "oo",
+      },
+    ];
     const result = applyFilters([...rows], criteria);
     expect(result).toHaveLength(1);
     expect(result[0].asset).toBe("GOOG");
@@ -102,7 +158,14 @@ describe("applyFilters", () => {
   });
 
   it("returns empty array when nothing matches", () => {
-    const criteria: FilterCriteria[] = [{ id: "1", field: "asset", op: "=", value: "NVDA" }];
+    const criteria: FilterCriteria[] = [
+      {
+        id: "1",
+        field: "asset",
+        op: "=",
+        value: "NVDA",
+      },
+    ];
     expect(applyFilters([...rows], criteria)).toHaveLength(0);
   });
 });
@@ -165,7 +228,15 @@ describe("applyCfRules", () => {
           kind: "group",
           id: "g1",
           join: "AND",
-          rules: [{ kind: "rule", id: "rr1", field: "status", op: "=", value: "filled" }],
+          rules: [
+            {
+              kind: "rule",
+              id: "rr1",
+              field: "status",
+              op: "=",
+              value: "filled",
+            },
+          ],
         },
         style: { bg: "bg-emerald-900/40" },
       },
@@ -183,7 +254,15 @@ describe("applyCfRules", () => {
           kind: "group",
           id: "g1",
           join: "AND",
-          rules: [{ kind: "rule", id: "rr1", field: "status", op: "=", value: "filled" }],
+          rules: [
+            {
+              kind: "rule",
+              id: "rr1",
+              field: "status",
+              op: "=",
+              value: "filled",
+            },
+          ],
         },
         style: { bg: "bg-emerald-900/40" },
       },
@@ -201,7 +280,15 @@ describe("applyCfRules", () => {
           kind: "group",
           id: "g1",
           join: "AND",
-          rules: [{ kind: "rule", id: "rr1", field: "side", op: "=", value: "BUY" }],
+          rules: [
+            {
+              kind: "rule",
+              id: "rr1",
+              field: "side",
+              op: "=",
+              value: "BUY",
+            },
+          ],
         },
         style: { bg: "bg-blue-900/40" },
       },
@@ -212,7 +299,15 @@ describe("applyCfRules", () => {
           kind: "group",
           id: "g2",
           join: "AND",
-          rules: [{ kind: "rule", id: "rr2", field: "status", op: "=", value: "filled" }],
+          rules: [
+            {
+              kind: "rule",
+              id: "rr2",
+              field: "status",
+              op: "=",
+              value: "filled",
+            },
+          ],
         },
         style: { bg: "bg-emerald-900/40" },
       },
@@ -233,7 +328,15 @@ describe("applyCfRules", () => {
           kind: "group",
           id: "g1",
           join: "AND",
-          rules: [{ kind: "rule", id: "rr1", field: "status", op: "=", value: "expired" }],
+          rules: [
+            {
+              kind: "rule",
+              id: "rr1",
+              field: "status",
+              op: "=",
+              value: "expired",
+            },
+          ],
         },
         style: { textColor: "text-gray-500" },
       },
@@ -252,7 +355,15 @@ describe("applyCfRules", () => {
           kind: "group",
           id: "g1",
           join: "AND",
-          rules: [{ kind: "rule", id: "rr1", field: "status", op: "=", value: "expired" }],
+          rules: [
+            {
+              kind: "rule",
+              id: "rr1",
+              field: "status",
+              op: "=",
+              value: "expired",
+            },
+          ],
         },
         style: { textColor: "text-gray-500" },
       },
@@ -271,7 +382,15 @@ describe("applyCfRules", () => {
           kind: "group",
           id: "g1",
           join: "AND",
-          rules: [{ kind: "rule", id: "rr1", field: "quantity", op: ">", value: 9000 }],
+          rules: [
+            {
+              kind: "rule",
+              id: "rr1",
+              field: "quantity",
+              op: ">",
+              value: 9000,
+            },
+          ],
         },
         style: { textColor: "text-amber-400" },
       },
@@ -283,7 +402,15 @@ describe("applyCfRules", () => {
           kind: "group",
           id: "g2",
           join: "AND",
-          rules: [{ kind: "rule", id: "rr2", field: "quantity", op: ">", value: 9000 }],
+          rules: [
+            {
+              kind: "rule",
+              id: "rr2",
+              field: "quantity",
+              op: ">",
+              value: 9000,
+            },
+          ],
         },
         style: { bold: true },
       },
@@ -302,7 +429,15 @@ describe("applyCfRules", () => {
           kind: "group",
           id: "g1",
           join: "AND",
-          rules: [{ kind: "rule", id: "rr1", field: "side", op: "=", value: "BUY" }],
+          rules: [
+            {
+              kind: "rule",
+              id: "rr1",
+              field: "side",
+              op: "=",
+              value: "BUY",
+            },
+          ],
         },
         style: { bold: true },
       },
@@ -320,7 +455,15 @@ describe("applyCfRules", () => {
           kind: "group",
           id: "g1",
           join: "AND",
-          rules: [{ kind: "rule", id: "rr1", field: "quantity", op: ">", value: 90000 }],
+          rules: [
+            {
+              kind: "rule",
+              id: "rr1",
+              field: "quantity",
+              op: ">",
+              value: 90000,
+            },
+          ],
         },
         style: { border: "border-l-2 border-l-red-500" },
       },
@@ -333,10 +476,38 @@ describe("applyCfRules", () => {
 // ── evalExprGroup / applyExprGroup ─────────────────────────────────────────────
 
 const exprRows = [
-  { id: "1", asset: "AAPL", side: "BUY", quantity: 10000, status: "filled", note: null },
-  { id: "2", asset: "MSFT", side: "SELL", quantity: 50000, status: "working", note: "large" },
-  { id: "3", asset: "GOOG", side: "BUY", quantity: 5000, status: "pending", note: undefined },
-  { id: "4", asset: "TSLA", side: "SELL", quantity: 100000, status: "expired", note: "" },
+  {
+    id: "1",
+    asset: "AAPL",
+    side: "BUY",
+    quantity: 10000,
+    status: "filled",
+    note: null,
+  },
+  {
+    id: "2",
+    asset: "MSFT",
+    side: "SELL",
+    quantity: 50000,
+    status: "working",
+    note: "large",
+  },
+  {
+    id: "3",
+    asset: "GOOG",
+    side: "BUY",
+    quantity: 5000,
+    status: "pending",
+    note: undefined,
+  },
+  {
+    id: "4",
+    asset: "TSLA",
+    side: "SELL",
+    quantity: 100000,
+    status: "expired",
+    note: "",
+  },
 ];
 
 describe("evalExprGroup – AND group", () => {
@@ -392,7 +563,13 @@ describe("evalExprGroup – nested groups", () => {
           join: "OR",
           rules: [
             { kind: "rule", id: "r2", field: "side", op: "=", value: "BUY" },
-            { kind: "rule", id: "r3", field: "status", op: "=", value: "expired" },
+            {
+              kind: "rule",
+              id: "r3",
+              field: "status",
+              op: "=",
+              value: "expired",
+            },
           ],
         },
       ],
@@ -410,7 +587,15 @@ describe("evalExprGroup – new operators", () => {
       kind: "group",
       id: "g",
       join: "AND",
-      rules: [{ kind: "rule", id: "r", field: "note", op: "is_null", value: "" }],
+      rules: [
+        {
+          kind: "rule",
+          id: "r",
+          field: "note",
+          op: "is_null",
+          value: "",
+        },
+      ],
     };
     const result = applyExprGroup(exprRows, g);
     // null, undefined, "" all count as null → rows 1, 3, 4
@@ -422,7 +607,15 @@ describe("evalExprGroup – new operators", () => {
       kind: "group",
       id: "g",
       join: "AND",
-      rules: [{ kind: "rule", id: "r", field: "note", op: "is_not_null", value: "" }],
+      rules: [
+        {
+          kind: "rule",
+          id: "r",
+          field: "note",
+          op: "is_not_null",
+          value: "",
+        },
+      ],
     };
     const result = applyExprGroup(exprRows, g);
     expect(result).toHaveLength(1);
@@ -434,7 +627,15 @@ describe("evalExprGroup – new operators", () => {
       kind: "group",
       id: "g",
       join: "AND",
-      rules: [{ kind: "rule", id: "r", field: "asset", op: "starts_with", value: "MS" }],
+      rules: [
+        {
+          kind: "rule",
+          id: "r",
+          field: "asset",
+          op: "starts_with",
+          value: "MS",
+        },
+      ],
     };
     expect(applyExprGroup(exprRows, g)).toHaveLength(1);
     expect(applyExprGroup(exprRows, g)[0].asset).toBe("MSFT");
@@ -445,7 +646,15 @@ describe("evalExprGroup – new operators", () => {
       kind: "group",
       id: "g",
       join: "AND",
-      rules: [{ kind: "rule", id: "r", field: "asset", op: "ends_with", value: "OG" }],
+      rules: [
+        {
+          kind: "rule",
+          id: "r",
+          field: "asset",
+          op: "ends_with",
+          value: "OG",
+        },
+      ],
     };
     expect(applyExprGroup(exprRows, g)[0].asset).toBe("GOOG");
   });
@@ -479,7 +688,15 @@ describe("exprGroupToDisplay", () => {
       kind: "group",
       id: "g",
       join: "AND",
-      rules: [{ kind: "rule", id: "r", field: "status", op: "is_null", value: "" }],
+      rules: [
+        {
+          kind: "rule",
+          id: "r",
+          field: "status",
+          op: "is_null",
+          value: "",
+        },
+      ],
     };
     expect(exprGroupToDisplay(g, fields)).toBe("Status IS NULL");
   });
@@ -510,7 +727,13 @@ describe("exprGroupToDisplay", () => {
           join: "OR",
           rules: [
             { kind: "rule", id: "r2", field: "side", op: "=", value: "BUY" },
-            { kind: "rule", id: "r3", field: "status", op: "=", value: "expired" },
+            {
+              kind: "rule",
+              id: "r3",
+              field: "status",
+              op: "=",
+              value: "expired",
+            },
           ],
         },
       ],

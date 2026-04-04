@@ -38,11 +38,12 @@ export async function evaluateRecommendationTrigger(
   prevRec: TradeRecommendation | undefined,
 ): Promise<TriggerCandidate | null> {
   if (!canAutoTrigger(policy)) return null;
-  const actionChanged = prevRec !== undefined && prevRec.action !== newRec.action;
-  const qtyChangedMaterially =
-    prevRec !== undefined &&
+  const actionChanged = prevRec !== undefined &&
+    prevRec.action !== newRec.action;
+  const qtyChangedMaterially = prevRec !== undefined &&
     prevRec.suggestedQty > 0 &&
-    Math.abs(newRec.suggestedQty - prevRec.suggestedQty) / prevRec.suggestedQty > 0.2;
+    Math.abs(newRec.suggestedQty - prevRec.suggestedQty) /
+          prevRec.suggestedQty > 0.2;
   if (!actionChanged && !qtyChangedMaterially) return null;
   const hash = await computeContextHash([
     newRec.symbol,
@@ -105,7 +106,10 @@ export async function evaluateStalenessRefreshTrigger(
   latestNoteCreatedAt: number | null,
 ): Promise<TriggerCandidate | null> {
   if (!canAutoTrigger(policy)) return null;
-  if (latestNoteCreatedAt !== null && Date.now() - latestNoteCreatedAt < policy.maxNoteAgeMs) {
+  if (
+    latestNoteCreatedAt !== null &&
+    Date.now() - latestNoteCreatedAt < policy.maxNoteAgeMs
+  ) {
     return null;
   }
   const hash = await computeContextHash([

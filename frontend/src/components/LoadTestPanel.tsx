@@ -55,7 +55,11 @@ export function LoadTestPanel() {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const result = await runLoadTest({ orderCount, strategy, symbols: symbolsArray });
+    const result = await runLoadTest({
+      orderCount,
+      strategy,
+      symbols: symbolsArray,
+    });
 
     if ("data" in result) {
       setLastResult(result.data as LocalLoadTestResult);

@@ -15,21 +15,21 @@ import { computeYieldCurve } from "./yield-curve.ts";
 import type { YieldCurvePoint } from "./types.ts";
 
 export interface SpreadAnalysisRequest {
-  couponRate: number;           // annual coupon rate, e.g. 0.05
-  totalPeriods: number;         // total coupon periods
-  periodsPerYear?: number;      // coupon frequency, default 2
-  yieldAnnual: number;          // bond's current yield
-  face?: number;                // face value, default 1000
+  couponRate: number; // annual coupon rate, e.g. 0.05
+  totalPeriods: number; // total coupon periods
+  periodsPerYear?: number; // coupon frequency, default 2
+  yieldAnnual: number; // bond's current yield
+  face?: number; // face value, default 1000
   nsParams?: Partial<NelsonSiegelParams>;
 }
 
 export interface SpreadAnalysisResponse {
-  bondYield: number;            // input yield
-  tenorYears: number;           // bond maturity in years
-  govSpotRate: number;          // interpolated Nelson-Siegel rate at same tenor
-  gSpread: number;              // G-spread in basis points
-  zSpread: number;              // Z-spread in basis points
-  oas: number;                  // OAS in basis points (= zSpread for vanilla bonds)
+  bondYield: number; // input yield
+  tenorYears: number; // bond maturity in years
+  govSpotRate: number; // interpolated Nelson-Siegel rate at same tenor
+  gSpread: number; // G-spread in basis points
+  zSpread: number; // Z-spread in basis points
+  oas: number; // OAS in basis points (= zSpread for vanilla bonds)
   computedAt: number;
 }
 
@@ -40,7 +40,9 @@ export interface SpreadAnalysisResponse {
 export function rateAt(curve: YieldCurvePoint[], t: number): number {
   const sorted = [...curve].sort((a, b) => a.tenorYears - b.tenorYears);
   if (t <= sorted[0].tenorYears) return sorted[0].spotRate;
-  if (t >= sorted[sorted.length - 1].tenorYears) return sorted[sorted.length - 1].spotRate;
+  if (t >= sorted[sorted.length - 1].tenorYears) {
+    return sorted[sorted.length - 1].spotRate;
+  }
   for (let i = 0; i < sorted.length - 1; i++) {
     const lo = sorted[i];
     const hi = sorted[i + 1];
@@ -91,7 +93,9 @@ function computeZSpread(
   return (lo + hi) / 2;
 }
 
-export function computeSpreadAnalysis(req: SpreadAnalysisRequest): SpreadAnalysisResponse {
+export function computeSpreadAnalysis(
+  req: SpreadAnalysisRequest,
+): SpreadAnalysisResponse {
   const {
     couponRate,
     totalPeriods,
@@ -113,14 +117,24 @@ export function computeSpreadAnalysis(req: SpreadAnalysisRequest): SpreadAnalysi
   const gSpread = (yieldAnnual - govSpotRate) * 10_000;
 
   // Bond price from DCF (needed for Z-spread solve)
-  const bondResult = priceBond({ couponRate, totalPeriods, periodsPerYear, yieldAnnual, face });
+  const bondResult = priceBond({
+    couponRate,
+    totalPeriods,
+    periodsPerYear,
+    yieldAnnual,
+    face,
+  });
 
   // Build raw cash flow schedule (without PV — we'll discount differently for Z-spread)
   const couponPerPeriod = (couponRate * face) / periodsPerYear;
-  const cashFlows: { t: number; cf: number }[] = Array.from({ length: totalPeriods }, (_, i) => {
+  const cashFlows: { t: number; cf: number }[] = Array.from({
+    length: totalPeriods,
+  }, (_, i) => {
     const period = i + 1;
     const t = period / periodsPerYear;
-    const cf = period === totalPeriods ? couponPerPeriod + face : couponPerPeriod;
+    const cf = period === totalPeriods
+      ? couponPerPeriod + face
+      : couponPerPeriod;
     return { t, cf };
   });
 

@@ -3,7 +3,14 @@
 // and returns ExecutionReports using simulated fills from the market-sim.
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { ExecType, MsgType, OrdStatus, OrdType, Side, Tag } from "./fix-dictionary.ts";
+import {
+  ExecType,
+  MsgType,
+  OrdStatus,
+  OrdType,
+  Side,
+  Tag,
+} from "./fix-dictionary.ts";
 import { utcTimestamp } from "./fix-parser.ts";
 import { FixSession } from "./fix-session.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
@@ -35,7 +42,9 @@ function computeFill(
   const filledQty = Math.min(requestedQty, maxFill);
   const remainingQty = requestedQty - filledQty;
   const impactBps = (filledQty / 1_000) * IMPACT_PER_1000;
-  const impactFactor = side === "BUY" ? 1 + impactBps / 10_000 : 1 - impactBps / 10_000;
+  const impactFactor = side === "BUY"
+    ? 1 + impactBps / 10_000
+    : 1 - impactBps / 10_000;
   const avgFillPrice = parseFloat((midPrice * impactFactor).toFixed(4));
   return { filledQty, remainingQty, avgFillPrice, marketImpactBps: impactBps };
 }
@@ -70,7 +79,9 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
     },
   });
 
-  async function handleApplicationMessage(tags: Map<number, string>): Promise<void> {
+  async function handleApplicationMessage(
+    tags: Map<number, string>,
+  ): Promise<void> {
     const msgType = tags.get(Tag.MsgType);
     if (msgType !== MsgType.NewOrderSingle) return;
 
@@ -82,9 +93,13 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
     const ordType = tags.get(Tag.OrdType) ?? OrdType.Limit;
 
     const side: "BUY" | "SELL" = sideRaw === Side.Sell ? "SELL" : "BUY";
-    const orderId = `EX-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const orderId = `EX-${Date.now()}-${
+      Math.random().toString(36).slice(2, 7)
+    }`;
 
-    console.log(`[FIX Exchange] NOS: clOrdId=${clOrdId} symbol=${symbol} side=${side} qty=${orderQty} price=${price}`);
+    console.log(
+      `[FIX Exchange] NOS: clOrdId=${clOrdId} symbol=${symbol} side=${side} qty=${orderQty} price=${price}`,
+    );
 
     // ExecReport: New (acknowledge receipt)
     const ackExecId = `${execIdCounter++}`;
@@ -153,12 +168,16 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
 
       console.log(
         `[FIX Exchange] Fill: clOrdId=${clOrdId} ${fill.filledQty}/${orderQty} @ ${fill.avgFillPrice}` +
-          ` leaves=${remainingQty} impact=${fill.marketImpactBps.toFixed(2)}bps`,
+          ` leaves=${remainingQty} impact=${
+            fill.marketImpactBps.toFixed(2)
+          }bps`,
       );
 
       if (!isFinal) {
         // Small gap between partial fills
-        await new Promise((r) => setTimeout(r, 50 + Math.floor(Math.random() * 100)));
+        await new Promise((r) =>
+          setTimeout(r, 50 + Math.floor(Math.random() * 100))
+        );
       }
     }
   }
@@ -191,7 +210,9 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
     }
   } finally {
     session.disconnect();
-    try { conn.close(); } catch { /* already closed */ }
+    try {
+      conn.close();
+    } catch { /* already closed */ }
     console.log(`[FIX Exchange] Connection closed (${remote})`);
   }
 }
@@ -204,7 +225,11 @@ const HEALTH_PORT = FIX_EXCHANGE_PORT - 1; // 9879
 Deno.serve({ port: HEALTH_PORT }, (req) => {
   if (new URL(req.url).pathname === "/health") {
     return new Response(
-      JSON.stringify({ service: "fix-exchange", version: VERSION, status: "ok" }),
+      JSON.stringify({
+        service: "fix-exchange",
+        version: VERSION,
+        status: "ok",
+      }),
       { headers: { "Content-Type": "application/json" } },
     );
   }
@@ -212,7 +237,9 @@ Deno.serve({ port: HEALTH_PORT }, (req) => {
 });
 
 const listener = Deno.listen({ port: FIX_EXCHANGE_PORT });
-console.log(`[FIX Exchange] Listening on TCP port ${FIX_EXCHANGE_PORT} (health: ${HEALTH_PORT})`);
+console.log(
+  `[FIX Exchange] Listening on TCP port ${FIX_EXCHANGE_PORT} (health: ${HEALTH_PORT})`,
+);
 console.log(`[FIX Exchange] version=${VERSION}`);
 
 for await (const conn of listener) {

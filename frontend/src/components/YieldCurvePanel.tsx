@@ -186,9 +186,21 @@ export function YieldCurvePanel() {
               {[
                 { label: "Face", value: face, setter: setFace },
                 { label: "Coupon %", value: couponRate, setter: setCouponRate },
-                { label: "Freq/yr", value: periodsPerYear, setter: setPeriodsPerYear },
-                { label: "Periods", value: totalPeriods, setter: setTotalPeriods },
-                { label: "Yield %", value: yieldAnnual, setter: setYieldAnnual },
+                {
+                  label: "Freq/yr",
+                  value: periodsPerYear,
+                  setter: setPeriodsPerYear,
+                },
+                {
+                  label: "Periods",
+                  value: totalPeriods,
+                  setter: setTotalPeriods,
+                },
+                {
+                  label: "Yield %",
+                  value: yieldAnnual,
+                  setter: setYieldAnnual,
+                },
               ].map(({ label, value, setter }) => {
                 const id = `bond-${label.toLowerCase().replace(/[^a-z]/g, "-")}`;
                 return (

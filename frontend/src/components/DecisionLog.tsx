@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import { formatTime } from "../utils/format.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
 
@@ -43,14 +44,6 @@ const TOPIC_LABELS: Record<string, { label: string; icon: string; color: string 
   "algo.heartbeat": { label: "Heartbeat", icon: "♡", color: "text-gray-700" },
 };
 
-function formatTime(ms: number) {
-  return new Date(ms).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
 function formatPrice(p: number) {
   return p.toFixed(2);
 }
@@ -62,7 +55,9 @@ function formatQty(n: number) {
 function eventSummary(topic: string, ev: AlgoEvent): string {
   switch (topic) {
     case "orders.submitted":
-      return `${ev.algo ?? ""} ${ev.side ?? ""} ${ev.qty ? formatQty(ev.qty) : ""} ${ev.asset ?? ""} @ ${ev.price ? formatPrice(ev.price) : "mkt"}`;
+      return `${ev.algo ?? ""} ${ev.side ?? ""} ${
+        ev.qty ? formatQty(ev.qty) : ""
+      } ${ev.asset ?? ""} @ ${ev.price ? formatPrice(ev.price) : "mkt"}`;
     case "orders.routed":
       return `→ ${ev.algo ?? ""} engine`;
     case "orders.child": {
@@ -70,7 +65,9 @@ function eventSummary(topic: string, ev: AlgoEvent): string {
         ev.sliceIndex != null && ev.numSlices != null
           ? ` [${ev.sliceIndex + 1}/${ev.numSlices}]`
           : "";
-      return `${ev.algo ?? ""}${slice} ${ev.side ?? ""} ${ev.qty ? formatQty(ev.qty) : ""} ${ev.asset ?? ""} @ ${ev.price ? formatPrice(ev.price) : "—"}`;
+      return `${ev.algo ?? ""}${slice} ${ev.side ?? ""} ${
+        ev.qty ? formatQty(ev.qty) : ""
+      } ${ev.asset ?? ""} @ ${ev.price ? formatPrice(ev.price) : "—"}`;
     }
     case "orders.filled": {
       const impact =
@@ -81,15 +78,25 @@ function eventSummary(topic: string, ev: AlgoEvent): string {
         ev.totalFilled != null && ev.totalQty != null
           ? ` (${formatQty(ev.totalFilled)}/${formatQty(ev.totalQty)})`
           : "";
-      return `${ev.algo ?? ""} filled ${ev.filledQty ? formatQty(ev.filledQty) : ""} ${ev.asset ?? ""}${progress} @ ${ev.avgFillPrice ? formatPrice(ev.avgFillPrice) : "—"}${impact}`;
+      return `${ev.algo ?? ""} filled ${
+        ev.filledQty ? formatQty(ev.filledQty) : ""
+      } ${ev.asset ?? ""}${progress} @ ${
+        ev.avgFillPrice ? formatPrice(ev.avgFillPrice) : "—"
+      }${impact}`;
     }
     case "orders.expired":
-      return `${ev.algo ?? ""} expired ${ev.asset ?? ""} — ${ev.filledQty ? formatQty(ev.filledQty) : "0"} filled`;
+      return `${ev.algo ?? ""} expired ${ev.asset ?? ""} — ${
+        ev.filledQty ? formatQty(ev.filledQty) : "0"
+      } filled`;
     case "algo.heartbeat":
-      if (ev.event === "start")
+      if (ev.event === "start") {
         return `${ev.algo ?? ""} started ${ev.asset ?? ""} × ${ev.numSlices ?? ""} slices`;
-      if (ev.event === "complete")
-        return `${ev.algo ?? ""} complete ${ev.asset ?? ""} — avg ${ev.avgFillPrice ? formatPrice(ev.avgFillPrice) : "—"}`;
+      }
+      if (ev.event === "complete") {
+        return `${ev.algo ?? ""} complete ${ev.asset ?? ""} — avg ${
+          ev.avgFillPrice ? formatPrice(ev.avgFillPrice) : "—"
+        }`;
+      }
       return `${ev.algo ?? ""} alive · ${ev.pendingOrders ?? ev.activeOrders ?? 0} active`;
     default:
       return topic;
@@ -157,7 +164,9 @@ export function DecisionLog() {
       .filter((e) => {
         const p = e.payload as AlgoEvent | undefined;
         if (!showHeartbeats.value && e.type === "algo.heartbeat") return false;
-        if (algoFilter.value !== "ALL" && p?.algo !== algoFilter.value) return false;
+        if (algoFilter.value !== "ALL" && p?.algo !== algoFilter.value) {
+          return false;
+        }
         if (filterOrderId) {
           const matchesOrder =
             p?.orderId === filterOrderId ||
@@ -276,7 +285,9 @@ export function DecisionLog() {
                     {/* Topic badge */}
                     <td className="px-2 py-1 w-20 whitespace-nowrap">
                       <span
-                        className={`${meta?.color ?? "text-gray-500"} ${isHeartbeat ? "opacity-40" : ""}`}
+                        className={`${meta?.color ?? "text-gray-500"} ${
+                          isHeartbeat ? "opacity-40" : ""
+                        }`}
                         title={e.type}
                       >
                         <span className="mr-1">{meta?.icon ?? "·"}</span>
@@ -288,7 +299,9 @@ export function DecisionLog() {
                     <td className="px-2 py-1 w-14 whitespace-nowrap">
                       {p.algo && (
                         <span
-                          className={`font-semibold text-[9px] ${ALGO_COLORS[p.algo] ?? "text-gray-400"}`}
+                          className={`font-semibold text-[9px] ${
+                            ALGO_COLORS[p.algo] ?? "text-gray-400"
+                          }`}
                         >
                           {p.algo}
                         </span>

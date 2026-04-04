@@ -1,6 +1,10 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
-import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "../types/intelligence.ts";
+import type {
+  FeatureVector,
+  MarketAdapterEvent,
+  NewsEvent,
+} from "../types/intelligence.ts";
 import { createFeatureStore } from "./feature-store.ts";
 import {
   computeEventScore,
@@ -41,7 +45,12 @@ const latestFeatures = new Map<string, FeatureVector>();
 const store = createFeatureStore(intelligencePool);
 store.startCleanup();
 
-function pushHistory(map: Map<string, number[]>, symbol: string, value: number, maxLen: number): void {
+function pushHistory(
+  map: Map<string, number[]>,
+  symbol: string,
+  value: number,
+  maxLen: number,
+): void {
   const arr = map.get(symbol) ?? [];
   arr.push(value);
   if (arr.length > maxLen) arr.splice(0, arr.length - maxLen);
@@ -63,7 +72,9 @@ function trimOldEvents(): void {
 
 async function refreshRealisedVol(symbol: string): Promise<void> {
   try {
-    const url = `${JOURNAL_URL}/candles?symbol=${encodeURIComponent(symbol)}&interval=1m&limit=120`;
+    const url = `${JOURNAL_URL}/candles?symbol=${
+      encodeURIComponent(symbol)
+    }&interval=1m&limit=120`;
     const res = await fetch(url, { signal: AbortSignal.timeout(3_000) });
     if (!res.ok) return;
     const candles = await res.json() as { close: number }[];
@@ -105,7 +116,10 @@ function computeFeatureVector(symbol: string): FeatureVector | null {
     momentum: computeMomentum(prices),
     relativeVolume: volumes ? computeRelativeVolume(volumes) : 1,
     realisedVol: cachedRealisedVol.get(symbol) ?? 0,
-    sectorRelativeStrength: computeSectorRelativeStrength(prices, sectorHistories),
+    sectorRelativeStrength: computeSectorRelativeStrength(
+      prices,
+      sectorHistories,
+    ),
     eventScore: computeEventScore(symbol, upcomingEvents),
     newsVelocity: computeNewsVelocity(symbol, recentNews),
     sentimentDelta: computeSentimentDelta(symbol, recentNews),
@@ -128,7 +142,9 @@ async function flushFeatures(): Promise<void> {
 
   for (const fv of batch) {
     latestFeatures.set(fv.symbol, fv);
-    await store.insert(fv).catch((err) => console.warn("[feature-engine] DB insert error:", err.message));
+    await store.insert(fv).catch((err) =>
+      console.warn("[feature-engine] DB insert error:", err.message)
+    );
     if (producer) {
       await producer.send("market.features", fv).catch(() => {});
     }
@@ -137,14 +153,22 @@ async function flushFeatures(): Promise<void> {
 
 setInterval(flushFeatures, 250);
 
-const tickConsumer = await createConsumer("feature-engine-ticks", ["market.ticks"]).catch((err) => {
-  console.warn("[feature-engine] Cannot subscribe to market.ticks:", err.message);
+const tickConsumer = await createConsumer("feature-engine-ticks", [
+  "market.ticks",
+]).catch((err) => {
+  console.warn(
+    "[feature-engine] Cannot subscribe to market.ticks:",
+    err.message,
+  );
   return null;
 });
 
 if (tickConsumer) {
   tickConsumer.onMessage((_topic, raw) => {
-    const tick = raw as { prices?: Record<string, number>; volumes?: Record<string, number> };
+    const tick = raw as {
+      prices?: Record<string, number>;
+      volumes?: Record<string, number>;
+    };
     if (!tick.prices || typeof tick.prices !== "object") return;
 
     for (const [symbol, price] of Object.entries(tick.prices)) {
@@ -162,8 +186,13 @@ if (tickConsumer) {
   });
 }
 
-const newsConsumer = await createConsumer("feature-engine-news", ["news.events.normalised"]).catch((err) => {
-  console.warn("[feature-engine] Cannot subscribe to news.events.normalised:", err.message);
+const newsConsumer = await createConsumer("feature-engine-news", [
+  "news.events.normalised",
+]).catch((err) => {
+  console.warn(
+    "[feature-engine] Cannot subscribe to news.events.normalised:",
+    err.message,
+  );
   return null;
 });
 
@@ -181,8 +210,13 @@ if (newsConsumer) {
   });
 }
 
-const adapterConsumer = await createConsumer("feature-engine-adapters", ["market.external.events"]).catch((err) => {
-  console.warn("[feature-engine] Cannot subscribe to market.external.events:", err.message);
+const adapterConsumer = await createConsumer("feature-engine-adapters", [
+  "market.external.events",
+]).catch((err) => {
+  console.warn(
+    "[feature-engine] Cannot subscribe to market.external.events:",
+    err.message,
+  );
   return null;
 });
 
@@ -209,7 +243,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
 
   if (path === "/health" && req.method === "GET") {
     return json({

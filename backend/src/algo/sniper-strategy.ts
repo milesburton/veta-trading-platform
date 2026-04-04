@@ -19,6 +19,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import type { MarketTick } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("SNIPER_ALGO_PORT")) || 5_022;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -276,54 +277,8 @@ marketClient.onTick(async (tick) => {
   }
 });
 
-setInterval(async () => {
-  const now = Date.now();
-  for (const order of [...activeOrders.values()]) {
-    if (now >= order.expiresAt) {
-      const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-      console.log(`[sniper-algo] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
-      activeOrders.delete(order.orderId);
-      await producer?.send("orders.expired", {
-        orderId: order.orderId,
-        clientOrderId: order.clientOrderId,
-        algo: "SNIPER",
-        filledQty: order.filledQty,
-        avgFillPrice: order.filledQty > 0 ? avgFill : 0,
-        ts: now,
-      }).catch(() => {});
-    }
-  }
-}, 5_000);
+startExpirySweep(activeOrders, producer, "SNIPER", "sniper-algo");
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+serveAlgoHealth(PORT, "sniper", VERSION, () => activeOrders.size);
 
-Deno.serve({ port: PORT }, (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
-  const url = new URL(req.url);
-  if (url.pathname === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({
-        service: "sniper",
-        version: VERSION,
-        status: "ok",
-        activeOrders: activeOrders.size,
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
-  }
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
-});
-
-// News signals — log only
-createConsumer("sniper-algo-news", ["news.signal"]).then((consumer) => {
-  consumer.onMessage((_topic, raw) => {
-    const sig = raw as { symbol: string; sentiment: string; score: number };
-    console.log(
-      `[sniper-algo] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`,
-    );
-  });
-}).catch(() => {}); // non-fatal
+subscribeNewsSignals("sniper-algo-news", "sniper-algo");

@@ -57,7 +57,12 @@ describe("simulationMiddleware – LIMIT via tickReceived", () => {
     const store = makeStore();
     store.dispatch(ordersSlice.actions.orderAdded(makeOrder({ limitPrice: 155 })));
 
-    store.dispatch(marketSlice.actions.tickReceived({ prices: { AAPL: 154 }, ts: NOW + 1000 }));
+    store.dispatch(
+      marketSlice.actions.tickReceived({
+        prices: { AAPL: 154 },
+        ts: NOW + 1000,
+      })
+    );
 
     const [order] = store.getState().orders.orders;
     expect(order.status).toBe("filled");
@@ -68,7 +73,12 @@ describe("simulationMiddleware – LIMIT via tickReceived", () => {
     const store = makeStore();
     store.dispatch(ordersSlice.actions.orderAdded(makeOrder({ limitPrice: 150 })));
 
-    store.dispatch(marketSlice.actions.tickReceived({ prices: { AAPL: 160 }, ts: NOW + 1000 }));
+    store.dispatch(
+      marketSlice.actions.tickReceived({
+        prices: { AAPL: 160 },
+        ts: NOW + 1000,
+      })
+    );
 
     const [order] = store.getState().orders.orders;
     expect(order.status).not.toBe("filled");
@@ -325,7 +335,12 @@ describe("simulationMiddleware – gateway-connected guard", () => {
     store.dispatch(ordersSlice.actions.orderAdded(makeOrder({ limitPrice: 200 })));
 
     // Price is below limit — would fill if local simulation were running
-    store.dispatch(marketSlice.actions.tickReceived({ prices: { AAPL: 100 }, ts: NOW + 1000 }));
+    store.dispatch(
+      marketSlice.actions.tickReceived({
+        prices: { AAPL: 100 },
+        ts: NOW + 1000,
+      })
+    );
 
     const [order] = store.getState().orders.orders;
     expect(order.status).toBe("pending");

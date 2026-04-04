@@ -49,7 +49,9 @@ describe("makeDefaultModel", () => {
   it("includes market-ladder panel", () => {
     let found = false;
     Model.fromJson(makeDefaultModel()).visitNodes((node) => {
-      if (node.getType() === "tab" && node.getId() === "market-ladder") found = true;
+      if (node.getType() === "tab" && node.getId() === "market-ladder") {
+        found = true;
+      }
     });
     expect(found).toBe(true);
   });

@@ -48,8 +48,22 @@ test("shows ok/total count in the Services button", () => {
 
 test("shows version in button when all required services have consistent version", () => {
   const allOk: ServiceHealth[] = [
-    { name: "svc-a", state: "ok", version: "9.9.9", meta: {}, lastChecked: Date.now(), url: "" },
-    { name: "svc-b", state: "ok", version: "9.9.9", meta: {}, lastChecked: Date.now(), url: "" },
+    {
+      name: "svc-a",
+      state: "ok",
+      version: "9.9.9",
+      meta: {},
+      lastChecked: Date.now(),
+      url: "",
+    },
+    {
+      name: "svc-b",
+      state: "ok",
+      version: "9.9.9",
+      meta: {},
+      lastChecked: Date.now(),
+      url: "",
+    },
   ];
   render(<ServiceStatus services={allOk} />);
   const btn = screen.getByRole("button", { name: /services/i });

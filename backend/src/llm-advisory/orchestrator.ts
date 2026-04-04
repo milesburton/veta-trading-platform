@@ -1,17 +1,31 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
-import type { FeatureVector, Signal, TradeRecommendation } from "../types/intelligence.ts";
+import type {
+  FeatureVector,
+  Signal,
+  TradeRecommendation,
+} from "../types/intelligence.ts";
 import type { LlmJob, LlmSubsystemStatus } from "../types/llm-advisory.ts";
 import { createJobStore } from "./job-store.ts";
-import { loadPolicy, isPolicyEnabled, canAutoTrigger, canTriggerFromUi, isWithinAllowedHours } from "./policy.ts";
-import { createRuntimeConfigStore, resolveEffectivePolicy, deriveSubsystemState } from "./runtime-config-store.ts";
+import {
+  canAutoTrigger,
+  canTriggerFromUi,
+  isPolicyEnabled,
+  isWithinAllowedHours,
+  loadPolicy,
+} from "./policy.ts";
+import {
+  createRuntimeConfigStore,
+  deriveSubsystemState,
+  resolveEffectivePolicy,
+} from "./runtime-config-store.ts";
 import { shouldEnqueueJob } from "./dedupe.ts";
 import {
-  evaluateSignalTrigger,
   evaluateRecommendationTrigger,
   evaluateScenarioTrigger,
-  evaluateUiRequestTrigger,
+  evaluateSignalTrigger,
   evaluateStalenessRefreshTrigger,
+  evaluateUiRequestTrigger,
   type TriggerCandidate,
 } from "./trigger-rules.ts";
 import { llmAdvisoryPool } from "../lib/db.ts";
@@ -43,7 +57,10 @@ const producer = await Promise.race([
   createProducer("llm-advisory-orchestrator"),
   new Promise<null>((resolve) => setTimeout(() => resolve(null), 8_000)),
 ]).catch((err) => {
-  console.warn("[llm-advisory] Redpanda unavailable for publishing:", err.message);
+  console.warn(
+    "[llm-advisory] Redpanda unavailable for publishing:",
+    err.message,
+  );
   return null;
 });
 
@@ -58,7 +75,12 @@ async function broadcastStateUpdate() {
     runtimeConfig.getConfig(),
   ]);
   const status: LlmSubsystemStatus = {
-    state: deriveSubsystemState(effectivePolicy, pending, lastErrorMs, lastActivityMs),
+    state: deriveSubsystemState(
+      effectivePolicy,
+      pending,
+      lastErrorMs,
+      lastActivityMs,
+    ),
     policy: effectivePolicy,
     runtimeConfig: config,
     pendingJobs: pending,
@@ -69,12 +91,18 @@ async function broadcastStateUpdate() {
   producer?.send("llm.state.update", status).catch(() => {});
 }
 
-async function enqueueIfAllowed(candidate: TriggerCandidate): Promise<string | null> {
+async function enqueueIfAllowed(
+  candidate: TriggerCandidate,
+): Promise<string | null> {
   const effectivePolicy = await getEffectivePolicy();
   if (!isPolicyEnabled(effectivePolicy)) return null;
   if (!isWithinAllowedHours(effectivePolicy)) return null;
 
-  const allowed = await shouldEnqueueJob(store, candidate.contextHash, effectivePolicy);
+  const allowed = await shouldEnqueueJob(
+    store,
+    candidate.contextHash,
+    effectivePolicy,
+  );
   if (!allowed) return null;
 
   const jobId = await store.insertJob({
@@ -118,19 +146,25 @@ createConsumer("orchestrator-signals", ["market.signals"]).then((c) => {
   });
 }).catch(() => {});
 
-createConsumer("orchestrator-recommendations", ["market.recommendations"]).then((c) => {
-  c.onMessage(async (_topic, raw) => {
-    const rec = raw as TradeRecommendation;
-    if (!rec.symbol) return;
-    const prev = latestRecs.get(rec.symbol);
-    prevRecs.set(rec.symbol, prev ?? rec);
-    latestRecs.set(rec.symbol, rec);
-    const effectivePolicy = await getEffectivePolicy();
-    if (!canAutoTrigger(effectivePolicy)) return;
-    const candidate = await evaluateRecommendationTrigger(effectivePolicy, rec, prev);
-    if (candidate) await enqueueIfAllowed(candidate);
-  });
-}).catch(() => {});
+createConsumer("orchestrator-recommendations", ["market.recommendations"]).then(
+  (c) => {
+    c.onMessage(async (_topic, raw) => {
+      const rec = raw as TradeRecommendation;
+      if (!rec.symbol) return;
+      const prev = latestRecs.get(rec.symbol);
+      prevRecs.set(rec.symbol, prev ?? rec);
+      latestRecs.set(rec.symbol, rec);
+      const effectivePolicy = await getEffectivePolicy();
+      if (!canAutoTrigger(effectivePolicy)) return;
+      const candidate = await evaluateRecommendationTrigger(
+        effectivePolicy,
+        rec,
+        prev,
+      );
+      if (candidate) await enqueueIfAllowed(candidate);
+    });
+  },
+).catch(() => {});
 
 createConsumer("orchestrator-features", ["market.features"]).then((c) => {
   c.onMessage((_topic, raw) => {
@@ -139,14 +173,16 @@ createConsumer("orchestrator-features", ["market.features"]).then((c) => {
   });
 }).catch(() => {});
 
-createConsumer("orchestrator-worker-status", ["llm.worker.status"]).then((c) => {
-  c.onMessage((_topic, raw) => {
-    const msg = raw as { event: string; symbol?: string; error?: string };
-    if (msg.event === "error") lastErrorMs = Date.now();
-    if (msg.event === "completed") lastActivityMs = Date.now();
-    broadcastStateUpdate().catch(() => {});
-  });
-}).catch(() => {});
+createConsumer("orchestrator-worker-status", ["llm.worker.status"]).then(
+  (c) => {
+    c.onMessage((_topic, raw) => {
+      const msg = raw as { event: string; symbol?: string; error?: string };
+      if (msg.event === "error") lastErrorMs = Date.now();
+      if (msg.event === "completed") lastActivityMs = Date.now();
+      broadcastStateUpdate().catch(() => {});
+    });
+  },
+).catch(() => {});
 
 setInterval(async () => {
   const effectivePolicy = await getEffectivePolicy();
@@ -154,16 +190,28 @@ setInterval(async () => {
   const symbols = [...latestSignals.keys()];
   if (symbols.length === 0) return;
   const [pendingJobs, latestNotes] = await Promise.all([
-    Promise.all(symbols.map((s) => store.getJobsBySymbol(s, 5).then((jobs) => ({ s, jobs })))),
-    Promise.all(symbols.map((s) => store.getLatestNote(s).then((note) => ({ s, note })))),
+    Promise.all(
+      symbols.map((s) =>
+        store.getJobsBySymbol(s, 5).then((jobs) => ({ s, jobs }))
+      ),
+    ),
+    Promise.all(
+      symbols.map((s) => store.getLatestNote(s).then((note) => ({ s, note }))),
+    ),
   ]);
   const pendingMap = new Map(pendingJobs.map(({ s, jobs }) => [s, jobs]));
   const noteMap = new Map(latestNotes.map(({ s, note }) => [s, note]));
   for (const symbol of symbols) {
     const jobs = pendingMap.get(symbol) ?? [];
-    if (jobs.some((j) => j.status === "queued" || j.status === "running")) continue;
+    if (jobs.some((j) => j.status === "queued" || j.status === "running")) {
+      continue;
+    }
     const latest = noteMap.get(symbol) ?? null;
-    const candidate = await evaluateStalenessRefreshTrigger(effectivePolicy, symbol, latest?.createdAt ?? null);
+    const candidate = await evaluateStalenessRefreshTrigger(
+      effectivePolicy,
+      symbol,
+      latest?.createdAt ?? null,
+    );
     if (candidate) await enqueueIfAllowed(candidate);
   }
 }, 60_000);
@@ -183,7 +231,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
 
   if (path === "/health" && req.method === "GET") {
     const effectivePolicy = await getEffectivePolicy();
@@ -192,7 +242,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       service: "llm-advisory-orchestrator",
       version: VERSION,
       status: "ok",
-      subsystemState: deriveSubsystemState(effectivePolicy, pending, lastErrorMs, lastActivityMs),
+      subsystemState: deriveSubsystemState(
+        effectivePolicy,
+        pending,
+        lastErrorMs,
+        lastActivityMs,
+      ),
       policyEnabled: effectivePolicy.enabled,
       workerEnabled: effectivePolicy.workerEnabled,
       triggerMode: effectivePolicy.triggerMode,
@@ -205,7 +260,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const effectivePolicy = await getEffectivePolicy();
     const pending = await store.getPendingJobCount();
     const status: LlmSubsystemStatus = {
-      state: deriveSubsystemState(effectivePolicy, pending, lastErrorMs, lastActivityMs),
+      state: deriveSubsystemState(
+        effectivePolicy,
+        pending,
+        lastErrorMs,
+        lastActivityMs,
+      ),
       policy: effectivePolicy,
       runtimeConfig: await runtimeConfig.getConfig(),
       pendingJobs: pending,
@@ -223,17 +283,33 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       triggerMode: string;
       updatedBy: string;
     }>;
-    const VALID_TRIGGER_MODES: import("../types/llm-advisory.ts").LlmTriggerMode[] = [
-      "disabled", "manual", "on-demand-ui", "scheduled-batch", "event-driven",
-    ];
-    if (body.triggerMode !== undefined && !VALID_TRIGGER_MODES.includes(body.triggerMode as import("../types/llm-advisory.ts").LlmTriggerMode)) {
-      return json({ error: `Invalid triggerMode. Must be one of: ${VALID_TRIGGER_MODES.join(", ")}` }, 400);
+    const VALID_TRIGGER_MODES:
+      import("../types/llm-advisory.ts").LlmTriggerMode[] = [
+        "disabled",
+        "manual",
+        "on-demand-ui",
+        "scheduled-batch",
+        "event-driven",
+      ];
+    if (
+      body.triggerMode !== undefined &&
+      !VALID_TRIGGER_MODES.includes(
+        body.triggerMode as import("../types/llm-advisory.ts").LlmTriggerMode,
+      )
+    ) {
+      return json({
+        error: `Invalid triggerMode. Must be one of: ${
+          VALID_TRIGGER_MODES.join(", ")
+        }`,
+      }, 400);
     }
     const updatedBy = body.updatedBy ?? "api";
     const updated = await runtimeConfig.updateConfig({
       enabled: body.enabled,
       workerEnabled: body.workerEnabled,
-      triggerMode: body.triggerMode as import("../types/llm-advisory.ts").LlmTriggerMode | undefined,
+      triggerMode: body.triggerMode as
+        | import("../types/llm-advisory.ts").LlmTriggerMode
+        | undefined,
     }, updatedBy);
     broadcastStateUpdate().catch(() => {});
     return json({ status: "updated", runtimeConfig: updated });
@@ -242,14 +318,24 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/admin/watchlist-brief" && req.method === "POST") {
     const effectivePolicy = await getEffectivePolicy();
     if (!canTriggerFromUi(effectivePolicy)) {
-      return json({ error: "LLM advisory is not enabled or trigger mode prevents UI requests" }, 503);
+      return json({
+        error:
+          "LLM advisory is not enabled or trigger mode prevents UI requests",
+      }, 503);
     }
-    const body = await req.json() as { symbols?: string[]; requestedBy?: string };
+    const body = await req.json() as {
+      symbols?: string[];
+      requestedBy?: string;
+    };
     const symbols = body.symbols ?? [...latestSignals.keys()].slice(0, 10);
     const requestedBy = body.requestedBy ?? "watchlist-brief";
     const jobIds: string[] = [];
     for (const symbol of symbols) {
-      const candidate = await evaluateUiRequestTrigger(effectivePolicy, symbol, requestedBy);
+      const candidate = await evaluateUiRequestTrigger(
+        effectivePolicy,
+        symbol,
+        requestedBy,
+      );
       if (candidate) {
         const jobId = await enqueueIfAllowed(candidate);
         if (jobId) jobIds.push(jobId);
@@ -261,10 +347,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/admin/trigger-worker" && req.method === "POST") {
     const effectivePolicy = await getEffectivePolicy();
     if (!effectivePolicy.workerEnabled) {
-      return json({ error: "LLM_WORKER_ENABLED is false — enable the worker before triggering" }, 503);
+      return json({
+        error:
+          "LLM_WORKER_ENABLED is false — enable the worker before triggering",
+      }, 503);
     }
     try {
-      const supervisorConf = Deno.env.get("SUPERVISORD_CONF") || "/home/deno/supervisord.conf";
+      const supervisorConf = Deno.env.get("SUPERVISORD_CONF") ||
+        "/home/deno/supervisord.conf";
       const cmd = new Deno.Command("supervisorctl", {
         args: ["-c", supervisorConf, "start", "llm-worker"],
         stdout: "piped",
@@ -288,23 +378,36 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const note = await store.getLatestNote(symbol);
     if (!note) return json({ status: "no-advisory", symbol });
     const jobs = await store.getJobsBySymbol(symbol, 5);
-    const pendingJob = jobs.find((j) => j.status === "queued" || j.status === "running");
+    const pendingJob = jobs.find((j) =>
+      j.status === "queued" || j.status === "running"
+    );
     return json({ ...note, hasPendingJob: !!pendingJob });
   }
 
   if (path === "/advisory/request" && req.method === "POST") {
     const effectivePolicy = await getEffectivePolicy();
     if (!canTriggerFromUi(effectivePolicy)) {
-      return json({ error: "LLM advisory is not enabled or trigger mode prevents UI requests" }, 503);
+      return json({
+        error:
+          "LLM advisory is not enabled or trigger mode prevents UI requests",
+      }, 503);
     }
     const body = await req.json() as { symbol?: string; requestedBy?: string };
     if (!body.symbol) return json({ error: "symbol is required" }, 400);
-    const candidate = await evaluateUiRequestTrigger(effectivePolicy, body.symbol, body.requestedBy ?? "unknown");
-    if (!candidate) return json({ error: "Could not create trigger candidate" }, 422);
+    const candidate = await evaluateUiRequestTrigger(
+      effectivePolicy,
+      body.symbol,
+      body.requestedBy ?? "unknown",
+    );
+    if (!candidate) {
+      return json({ error: "Could not create trigger candidate" }, 422);
+    }
     const jobId = await enqueueIfAllowed(candidate);
     if (!jobId) {
       const jobs = await store.getJobsBySymbol(body.symbol, 5);
-      const existingJob = jobs.find((j) => j.status === "queued" || j.status === "running");
+      const existingJob = jobs.find((j) =>
+        j.status === "queued" || j.status === "running"
+      );
       return json({
         status: "deduplicated",
         message: "A recent job already exists for this symbol",
@@ -316,14 +419,26 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   if (path === "/advisory/scenario-context" && req.method === "POST") {
     const effectivePolicy = await getEffectivePolicy();
-    if (!isPolicyEnabled(effectivePolicy)) return json({ status: "disabled" }, 200);
-    const body = await req.json() as { symbol?: string; shocks?: Array<{ factor: string }> };
+    if (!isPolicyEnabled(effectivePolicy)) {
+      return json({ status: "disabled" }, 200);
+    }
+    const body = await req.json() as {
+      symbol?: string;
+      shocks?: Array<{ factor: string }>;
+    };
     if (!body.symbol) return json({ error: "symbol is required" }, 400);
     const shockFactors = (body.shocks ?? []).map((s) => s.factor);
-    const candidate = await evaluateScenarioTrigger(effectivePolicy, body.symbol, shockFactors);
+    const candidate = await evaluateScenarioTrigger(
+      effectivePolicy,
+      body.symbol,
+      shockFactors,
+    );
     if (!candidate) return json({ status: "skipped" }, 200);
     const jobId = await enqueueIfAllowed(candidate);
-    return json({ status: jobId ? "queued" : "deduplicated", jobId }, jobId ? 202 : 200);
+    return json(
+      { status: jobId ? "queued" : "deduplicated", jobId },
+      jobId ? 202 : 200,
+    );
   }
 
   if (path === "/jobs" && req.method === "GET") {
@@ -351,7 +466,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (jobCancelMatch && req.method === "PUT") {
     const job = await store.getJob(jobCancelMatch[1]);
     if (!job) return json({ error: "Job not found" }, 404);
-    if (job.status !== "queued") return json({ error: "Only queued jobs may be cancelled" }, 409);
+    if (job.status !== "queued") {
+      return json({ error: "Only queued jobs may be cancelled" }, 409);
+    }
     await store.updateJobStatus(job.id, "cancelled");
     return json({ status: "cancelled", jobId: job.id });
   }

@@ -77,7 +77,9 @@ export function applyTickMut(
       close: price,
       volume: tickVolume,
     });
-    if (candles.length > MAX_CANDLES) candles.splice(0, candles.length - MAX_CANDLES);
+    if (candles.length > MAX_CANDLES) {
+      candles.splice(0, candles.length - MAX_CANDLES);
+    }
   }
 }
 
@@ -158,7 +160,9 @@ export const marketSlice = createSlice({
         const hist = state.priceHistory[asset] ?? [];
         state.priceHistory[asset] = hist;
         hist.push(price);
-        if (hist.length > HISTORY_LENGTH) hist.splice(0, hist.length - HISTORY_LENGTH);
+        if (hist.length > HISTORY_LENGTH) {
+          hist.splice(0, hist.length - HISTORY_LENGTH);
+        }
 
         if (!state.candleHistory[asset]) {
           state.candleHistory[asset] = { "1m": [], "5m": [] };

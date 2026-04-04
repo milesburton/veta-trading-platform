@@ -40,7 +40,9 @@ export async function runReplay(
   weightStore: WeightStore,
 ): Promise<ReplayFrame[]> {
   const warmupFrom = from - 25 * 60 * 1000;
-  const url = `${JOURNAL_URL}/candles?instrument=${encodeURIComponent(symbol)}&interval=1m&from=${warmupFrom}&to=${to}&limit=2000`;
+  const url = `${JOURNAL_URL}/candles?instrument=${
+    encodeURIComponent(symbol)
+  }&interval=1m&from=${warmupFrom}&to=${to}&limit=2000`;
 
   let candles: JournalCandle[] = [];
   try {
@@ -52,7 +54,9 @@ export async function runReplay(
   }
 
   if (candles.length < 2) {
-    throw new Error(`Insufficient candle data for ${symbol} in requested range`);
+    throw new Error(
+      `Insufficient candle data for ${symbol} in requested range`,
+    );
   }
 
   candles.sort((a, b) => a.time - b.time);
@@ -84,7 +88,9 @@ export async function runReplay(
       ts: c.time,
       momentum: computeMomentum(priceWindow),
       relativeVolume: computeRelativeVolume(volWindow),
-      realisedVol: priceWindow.length >= 20 ? computeRealisedVol(priceWindow) : 0,
+      realisedVol: priceWindow.length >= 20
+        ? computeRealisedVol(priceWindow)
+        : 0,
       sectorRelativeStrength: 0,
       eventScore: computeEventScore(symbol, historicalEvents),
       newsVelocity: 0,

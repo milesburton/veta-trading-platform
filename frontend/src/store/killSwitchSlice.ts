@@ -47,7 +47,9 @@ export function isOrderBlocked(
       case "all":
         return true;
       case "user":
-        if (block.targetUserId ? order.userId === block.targetUserId : true) return true;
+        if (block.targetUserId ? order.userId === block.targetUserId : true) {
+          return true;
+        }
         break;
       case "algo":
         if (block.scopeValues.includes(order.strategy ?? "")) return true;
@@ -56,8 +58,9 @@ export function isOrderBlocked(
         if (block.scopeValues.includes(order.asset ?? "")) return true;
         break;
       case "market":
-        if (block.scopeValues.some((v) => (order.asset ?? "").startsWith(v) || v === "*"))
+        if (block.scopeValues.some((v) => (order.asset ?? "").startsWith(v) || v === "*")) {
           return true;
+        }
         break;
     }
   }

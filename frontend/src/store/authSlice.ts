@@ -1,10 +1,11 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
+import type { AuthRole } from "../auth/rbac.ts";
 
 export interface AuthUser {
   id: string;
   name: string;
-  role: "trader" | "admin" | "compliance" | "sales" | "external-client" | "viewer";
+  role: AuthRole;
   avatar_emoji: string;
 }
 

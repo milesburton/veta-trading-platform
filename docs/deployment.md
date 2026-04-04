@@ -18,7 +18,17 @@ Each service runs in its own container built from a shared base image. **Traefik
 
 ## Fly.io (cloud demo)
 
-The live demo runs at https://veta-trading.fly.dev/. Deployments are triggered manually via GitHub Actions (`workflow_dispatch`). Navigate to **Actions → Deploy to Fly.io → Run workflow** to deploy.
+The live demo runs at https://veta-trading.fly.dev/. Deployments are triggered automatically on every push to `main` or manually via GitHub Actions (`workflow_dispatch`).
+
+### Demo Credentials
+- **Username**: `alice` (trader role) or `bob` (admin role)  
+- **Passcode**: Use the value of `OAUTH2_SHARED_SECRET` (default: `veta-dev-passcode`)
+
+### Deployment Triggers
+
+**Automatic**: Every commit to `main` triggers full test suite (backend lint/typecheck/unit, frontend lint/typecheck/unit, integration tests, E2E tests, Docker build) and deploys if all tests pass.
+
+**Manual**: Navigate to **Actions → Deploy to Fly.io → Run workflow → Branch: main** to manually trigger deployment.
 
 ### First-time setup
 

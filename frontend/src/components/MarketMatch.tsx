@@ -5,6 +5,7 @@ import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useColumnLayout } from "../hooks/useColumnLayout.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import type { ColDef } from "../types/gridPrefs.ts";
+import { formatTime } from "../utils/format.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
 import { ResizableHeader } from "./grid/ResizableHeader.tsx";
@@ -13,14 +14,48 @@ const MATCH_COLS: ColDef[] = [
   { key: "time", label: "Time", type: "string", defaultWidth: 72 },
   { key: "side", label: "Side", type: "string", defaultWidth: 44 },
   { key: "asset", label: "Asset", type: "string", defaultWidth: 72 },
-  { key: "qty", label: "Qty", type: "number", defaultWidth: 72, align: "right" },
-  { key: "fillPx", label: "Fill Px", type: "number", defaultWidth: 72, align: "right" },
-  { key: "bookPosition", label: "Book Position", type: "string", defaultWidth: 128 },
+  {
+    key: "qty",
+    label: "Qty",
+    type: "number",
+    defaultWidth: 72,
+    align: "right",
+  },
+  {
+    key: "fillPx",
+    label: "Fill Px",
+    type: "number",
+    defaultWidth: 72,
+    align: "right",
+  },
+  {
+    key: "bookPosition",
+    label: "Book Position",
+    type: "string",
+    defaultWidth: 128,
+  },
   { key: "liq", label: "Liq", type: "string", defaultWidth: 56 },
   { key: "venue", label: "Venue", type: "string", defaultWidth: 64 },
-  { key: "counterparty", label: "Counterparty", type: "string", defaultWidth: 88 },
-  { key: "impact", label: "Impact", type: "number", defaultWidth: 56, align: "right" },
-  { key: "comm", label: "Comm", type: "number", defaultWidth: 56, align: "right" },
+  {
+    key: "counterparty",
+    label: "Counterparty",
+    type: "string",
+    defaultWidth: 88,
+  },
+  {
+    key: "impact",
+    label: "Impact",
+    type: "number",
+    defaultWidth: 56,
+    align: "right",
+  },
+  {
+    key: "comm",
+    label: "Comm",
+    type: "number",
+    defaultWidth: 56,
+    align: "right",
+  },
 ];
 
 interface FillEvent {
@@ -71,14 +106,6 @@ const VENUE_FLAGS: Record<string, string> = {
   IEXG: "US",
   XCBO: "US",
 };
-
-function formatTime(ms: number) {
-  return new Date(ms).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
 
 function formatPrice(p: number, symbol: string) {
   return symbol.includes("/") ? p.toFixed(4) : p.toFixed(2);
@@ -134,7 +161,10 @@ function BookPosition({
   return (
     <div
       className="flex flex-col gap-0.5"
-      title={`Fill price ${formatPrice(orderPrice, symbol)} vs bid ${formatPrice(bestBid, symbol)} / ask ${formatPrice(bestAsk, symbol)}`}
+      title={`Fill price ${formatPrice(orderPrice, symbol)} vs bid ${formatPrice(
+        bestBid,
+        symbol
+      )} / ask ${formatPrice(bestAsk, symbol)}`}
     >
       <div className="relative h-2 w-full bg-gray-800 rounded overflow-hidden">
         {/* Bid zone */}
@@ -143,7 +173,9 @@ function BookPosition({
         <div className="absolute inset-y-0 right-0 w-1/2 bg-red-900/30" />
         {/* Order position marker */}
         <div
-          className={`absolute top-0 bottom-0 w-0.5 ${isPassive ? "bg-emerald-400" : "bg-amber-400"}`}
+          className={`absolute top-0 bottom-0 w-0.5 ${
+            isPassive ? "bg-emerald-400" : "bg-amber-400"
+          }`}
           style={{ left: `${clamped * 100}%` }}
         />
       </div>
@@ -239,7 +271,15 @@ export function MarketMatch() {
       if (f.venue) venues[f.venue] = (venues[f.venue] ?? 0) + f.filledQty;
     }
 
-    return { buyVol, sellVol, makerVol, takerVol, totalComm, avgImpact, venues };
+    return {
+      buyVol,
+      sellVol,
+      makerVol,
+      takerVol,
+      totalComm,
+      avgImpact,
+      venues,
+    };
   }, [fills]);
 
   const asset = filterAsset ?? fills[0]?.asset ?? "";
@@ -308,7 +348,13 @@ export function MarketMatch() {
                 Avg Impact
               </div>
               <div
-                className={`font-semibold tabular-nums ${stats.avgImpact > 5 ? "text-red-400" : stats.avgImpact < -2 ? "text-emerald-400" : "text-gray-300"}`}
+                className={`font-semibold tabular-nums ${
+                  stats.avgImpact > 5
+                    ? "text-red-400"
+                    : stats.avgImpact < -2
+                      ? "text-emerald-400"
+                      : "text-gray-300"
+                }`}
               >
                 {stats.avgImpact > 0 ? "+" : ""}
                 {stats.avgImpact.toFixed(1)}bp
@@ -361,7 +407,9 @@ export function MarketMatch() {
                         dragKey.value = null;
                       }}
                       align={col.align}
-                      className={`px-2 py-1.5 ${col.align === "right" ? "text-right" : "text-left"}`}
+                      className={`px-2 py-1.5 ${
+                        col.align === "right" ? "text-right" : "text-left"
+                      }`}
                     >
                       {col.label}
                     </ResizableHeader>
@@ -384,7 +432,9 @@ export function MarketMatch() {
                         {formatTime(f.ts)}
                       </td>
                       <td
-                        className={`px-2 py-1.5 font-semibold ${isBuy ? "text-emerald-400" : "text-red-400"}`}
+                        className={`px-2 py-1.5 font-semibold ${
+                          isBuy ? "text-emerald-400" : "text-red-400"
+                        }`}
                       >
                         {f.side}
                       </td>

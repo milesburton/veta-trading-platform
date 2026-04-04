@@ -64,7 +64,12 @@ function migrateCfRules(rules: ConditionalFormatRule[]): ConditionalFormatRule[]
       id: r.id,
       scope: r.scope,
       cellField: legacy.field,
-      expr: { kind: "group" as const, id: uuidv4(), join: "AND" as const, rules: ruleNode },
+      expr: {
+        kind: "group" as const,
+        id: uuidv4(),
+        join: "AND" as const,
+        rules: ruleNode,
+      },
       style: r.style,
       label: r.label,
     } satisfies ConditionalFormatRule;

@@ -32,8 +32,12 @@ function useAllServiceHealth(): ServiceHealth[] {
   const r7 = useGetServiceHealthQuery(SERVICES[7], { pollingInterval: 10_000 });
   const r8 = useGetServiceHealthQuery(SERVICES[8], { pollingInterval: 10_000 });
   const r9 = useGetServiceHealthQuery(SERVICES[9], { pollingInterval: 10_000 });
-  const r10 = useGetServiceHealthQuery(SERVICES[10], { pollingInterval: 10_000 });
-  const r11 = useGetServiceHealthQuery(SERVICES[11], { pollingInterval: 10_000 });
+  const r10 = useGetServiceHealthQuery(SERVICES[10], {
+    pollingInterval: 10_000,
+  });
+  const r11 = useGetServiceHealthQuery(SERVICES[11], {
+    pollingInterval: 10_000,
+  });
   const r12 = useGetServiceHealthQuery(SERVICES[12], {
     pollingInterval: 10_000,
     skip: !SERVICES[12],
@@ -343,7 +347,9 @@ function DataFreshness() {
       className={`flex items-center gap-1 text-[10px] tabular-nums ${textClass}`}
     >
       <span
-        className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass} ${allLive ? "animate-pulse" : ""}`}
+        className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass} ${
+          allLive ? "animate-pulse" : ""
+        }`}
       />
       {anyDead ? "stale" : anyStale ? "slow" : "live"}
     </span>

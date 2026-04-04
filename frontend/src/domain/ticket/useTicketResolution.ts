@@ -42,8 +42,9 @@ function contextEqual(a: TicketContext, b: TicketContext): boolean {
       al.dark_pool_access !== bl.dark_pool_access ||
       !arraysEqual(al.allowed_strategies, bl.allowed_strategies) ||
       !arraysEqual(al.allowed_desks, bl.allowed_desks)
-    )
+    ) {
       return false;
+    }
   }
 
   if (a.killBlocks !== b.killBlocks) return false;
@@ -56,8 +57,9 @@ function contextEqual(a: TicketContext, b: TicketContext): boolean {
     ai.lotSize !== bi.lotSize ||
     ai.currentPrice !== bi.currentPrice ||
     ai.orderBookMid !== bi.orderBookMid
-  )
+  ) {
     return false;
+  }
 
   const ad = a.draft;
   const bd = b.draft;
@@ -68,8 +70,9 @@ function contextEqual(a: TicketContext, b: TicketContext): boolean {
     ad.strategy !== bd.strategy ||
     ad.expiresAtSecs !== bd.expiresAtSecs ||
     ad.tif !== bd.tif
-  )
+  ) {
     return false;
+  }
 
   const ao = a.option;
   const bo = b.option;
@@ -79,8 +82,9 @@ function contextEqual(a: TicketContext, b: TicketContext): boolean {
     ao.expirySecs !== bo.expirySecs ||
     ao.hasQuote !== bo.hasQuote ||
     ao.isFetching !== bo.isFetching
-  )
+  ) {
     return false;
+  }
 
   const ab = a.bond;
   const bb = b.bond;
@@ -90,8 +94,9 @@ function contextEqual(a: TicketContext, b: TicketContext): boolean {
     ab.hasQuote !== bb.hasQuote ||
     ab.isFetching !== bb.isFetching ||
     ab.hasBondDef !== bb.hasBondDef
-  )
+  ) {
     return false;
+  }
 
   return true;
 }

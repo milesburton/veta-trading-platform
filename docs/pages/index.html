@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VETA Trading Platform</title>
+  <meta name="description" content="A full-stack equities and fixed-income trading platform for paper trading and learning market dynamics." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>V</text></svg>" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --green: #22c55e;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .hero {
+      text-align: center;
+      padding: 4rem 1.5rem 3rem;
+      background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    }
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      font-size: 1.2rem;
+      color: var(--muted);
+      max-width: 640px;
+      margin: 0 auto 2rem;
+    }
+    .badges { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem; }
+    .badges img { height: 20px; }
+    .cta-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .cta {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: opacity 0.15s;
+    }
+    .cta:hover { opacity: 0.85; text-decoration: none; }
+    .cta-primary { background: var(--accent); color: #0f172a; }
+    .cta-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+
+    .screenshots {
+      padding: 3rem 0;
+    }
+    .screenshots h2 { text-align: center; font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .screenshots .subtitle { text-align: center; color: var(--muted); margin-bottom: 2rem; }
+    .screenshot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+    .screenshot-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .screenshot-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .screenshot-card img { width: 100%; display: block; }
+    .screenshot-card .caption {
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .features {
+      padding: 4rem 0;
+    }
+    .features h2 { text-align: center; font-size: 1.8rem; margin-bottom: 2rem; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+    }
+    .feature-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+    }
+    .feature-card p { color: var(--muted); font-size: 0.95rem; }
+
+    .arch {
+      padding: 3rem 0;
+    }
+    .arch h2 { text-align: center; font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .arch .subtitle { text-align: center; color: var(--muted); margin-bottom: 2rem; }
+    .arch-diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 2rem;
+      overflow-x: auto;
+    }
+    .arch-diagram pre {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--muted);
+      white-space: pre;
+    }
+
+    .services {
+      padding: 3rem 0;
+    }
+    .services h2 { text-align: center; font-size: 1.8rem; margin-bottom: 2rem; }
+    .services-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .services-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      background: rgba(56, 189, 248, 0.08);
+      color: var(--accent);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .services-table td {
+      padding: 0.6rem 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .services-table code {
+      background: rgba(56, 189, 248, 0.1);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: var(--accent);
+    }
+
+    .tech-stack {
+      padding: 3rem 0;
+    }
+    .tech-stack h2 { text-align: center; font-size: 1.8rem; margin-bottom: 2rem; }
+    .tech-pills {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    footer {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<section class="hero">
+  <h1><span>VETA</span> Trading Platform</h1>
+  <p>A full-stack equities and fixed-income trading platform for paper trading, algo strategy development, and learning market dynamics.</p>
+  <div class="badges">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License" />
+    <img src="https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" />
+    <img src="https://github.com/milesburton/veta-trading-platform/actions/workflows/deploy.yml/badge.svg?branch=main" alt="Deploy" />
+  </div>
+  <div class="cta-row">
+    <a class="cta cta-primary" href="https://veta-trading.fly.dev/">Live Demo</a>
+    <a class="cta cta-secondary" href="https://github.com/milesburton/veta-trading-platform">GitHub Repository</a>
+  </div>
+</section>
+
+<section class="screenshots">
+  <div class="container">
+    <h2>Platform in Action</h2>
+    <p class="subtitle">Auto-generated from the live UI on every commit to main.</p>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="screenshots/01-trading-dashboard.png" alt="Trading Dashboard" loading="lazy" />
+        <div class="caption">Trading Dashboard</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/02-order-ticket.png" alt="Order Ticket" loading="lazy" />
+        <div class="caption">Order Ticket</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/03-order-blotter.png" alt="Order Blotter" loading="lazy" />
+        <div class="caption">Order Blotter</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/04-algo-workspace.png" alt="Algo Workspace" loading="lazy" />
+        <div class="caption">Algo Workspace</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/05-fixed-income.png" alt="Fixed Income" loading="lazy" />
+        <div class="caption">Fixed Income Analysis</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/06-option-pricing.png" alt="Option Pricing" loading="lazy" />
+        <div class="caption">Option Pricing (Black-Scholes)</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/07-market-heatmap.png" alt="Market Heatmap" loading="lazy" />
+        <div class="caption">Market Heatmap</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/08-kill-switch.png" alt="Kill Switch" loading="lazy" />
+        <div class="caption">Kill Switch &amp; Risk Controls</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/09-column-formatting.png" alt="Column Formatting" loading="lazy" />
+        <div class="caption">Custom Column Formatting</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="container">
+    <h2>Key Features</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <h3>9 Algo Strategies</h3>
+        <p>LIMIT, TWAP, VWAP, POV, ICEBERG, SNIPER, ARRIVAL_PRICE, IS, and MOMENTUM. Each runs as an independent microservice consuming from the Redpanda message bus.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Real + Simulated Data</h3>
+        <p>Built-in market simulator generates GBM price paths, seeded with real prices from Alpha Vantage, Polygon, Tiingo, and FRED data feeds.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Fixed Income &amp; Derivatives</h3>
+        <p>Bond pricing, yield curve construction, duration ladders, spread analysis, volatility surfaces, and Black-Scholes option pricing.</p>
+      </div>
+      <div class="feature-card">
+        <h3>FIX Protocol</h3>
+        <p>Full FIX 4.2 exchange simulation with TCP gateway, session management, execution reports, and a FIX archive for trade reconstruction.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Intelligence Pipeline</h3>
+        <p>Feature engine, signal engine, and recommendation engine work together to surface trading insights. Optional LLM advisory via Ollama.</p>
+      </div>
+      <div class="feature-card">
+        <h3>RBAC &amp; OAuth2</h3>
+        <p>Role-based access control with 4 trader personas: high-touch, algo, fixed income, and read-only analyst. OAuth2 + PKCE authentication.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Multi-Workspace UI</h3>
+        <p>Draggable FlexLayout panels with named workspaces: trading, algo, FI analysis, admin. Linked channels for cross-panel communication.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Dark Pool &amp; CCP</h3>
+        <p>Simulated dark pool crossing network and central counterparty clearing service for realistic post-trade workflows.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Electron Desktop</h3>
+        <p>Cross-platform desktop app with pop-out panels, native menus, and linked windows. Builds for macOS, Windows, and Linux.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="arch">
+  <div class="container">
+    <h2>Architecture</h2>
+    <p class="subtitle">Event-driven microservices connected by a Redpanda (Kafka-compatible) message bus.</p>
+    <div class="arch-diagram">
+<pre>
+React Frontend (Vite / Electron)
+        |
+        | WebSocket + HTTP
+        v
+   API Gateway :5011  (BFF - single entry point)
+        |
+        | pub/sub via Redpanda :9092
+        v
++-------+--------+--------+--------+--------+--------+
+|       |        |        |        |        |        |
+v       v        v        v        v        v        v
+Market  OMS     Algo     EMS     Journal  FIX      Analytics
+Sim    :5002   :5003-   :5001   :5009    Exchange  :5014
+:5000          :5026                     :9880
+
+Topics: market.ticks | orders.new | orders.routed | orders.child
+        orders.filled | orders.expired | algo.heartbeat | fix.execution
+        news.feed | news.signal | market.features | market.signals
+</pre>
+    </div>
+  </div>
+</section>
+
+<section class="services">
+  <div class="container">
+    <h2>Service Map</h2>
+    <table class="services-table">
+      <thead>
+        <tr><th>Service</th><th>Port</th><th>Role</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Market Simulator</td><td><code>5000</code></td><td>GBM price engine, real-data seeding</td></tr>
+        <tr><td>EMS</td><td><code>5001</code></td><td>Execution management, FIX bridge</td></tr>
+        <tr><td>OMS</td><td><code>5002</code></td><td>Order validation, routing, RBAC limits</td></tr>
+        <tr><td>LIMIT Algo</td><td><code>5003</code></td><td>Limit order monitoring</td></tr>
+        <tr><td>TWAP Algo</td><td><code>5004</code></td><td>Time-weighted average price slicing</td></tr>
+        <tr><td>POV Algo</td><td><code>5005</code></td><td>Percent-of-volume participation</td></tr>
+        <tr><td>VWAP Algo</td><td><code>5006</code></td><td>Volume-weighted average price</td></tr>
+        <tr><td>Gateway (BFF)</td><td><code>5011</code></td><td>WebSocket hub, HTTP proxy, auth</td></tr>
+        <tr><td>Journal</td><td><code>5009</code></td><td>PostgreSQL trade lifecycle store</td></tr>
+        <tr><td>FIX Archive</td><td><code>5012</code></td><td>FIX execution report persistence</td></tr>
+        <tr><td>Analytics</td><td><code>5014</code></td><td>Black-Scholes, Monte Carlo, recommendations</td></tr>
+        <tr><td>Market Data</td><td><code>5015</code></td><td>Alpha Vantage, Polygon, Tiingo polling</td></tr>
+        <tr><td>ICEBERG Algo</td><td><code>5021</code></td><td>Hidden order iceberg execution</td></tr>
+        <tr><td>SNIPER Algo</td><td><code>5022</code></td><td>Multi-venue smart order routing</td></tr>
+        <tr><td>ARRIVAL_PRICE Algo</td><td><code>5023</code></td><td>Arrival price benchmark execution</td></tr>
+        <tr><td>MOMENTUM Algo</td><td><code>5025</code></td><td>EMA crossover signal-driven</td></tr>
+        <tr><td>IS Algo</td><td><code>5026</code></td><td>Implementation shortfall minimisation</td></tr>
+        <tr><td>FIX Exchange</td><td><code>9880</code></td><td>Simulated FIX 4.2 matching engine</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="tech-stack">
+  <div class="container">
+    <h2>Tech Stack</h2>
+    <div class="tech-pills">
+      <span class="pill">Deno</span>
+      <span class="pill">TypeScript</span>
+      <span class="pill">React</span>
+      <span class="pill">Redux Toolkit</span>
+      <span class="pill">Tailwind CSS</span>
+      <span class="pill">FlexLayout</span>
+      <span class="pill">Vite</span>
+      <span class="pill">Electron</span>
+      <span class="pill">PostgreSQL</span>
+      <span class="pill">SQLite (WAL)</span>
+      <span class="pill">Redpanda (Kafka)</span>
+      <span class="pill">FIX 4.2</span>
+      <span class="pill">Playwright</span>
+      <span class="pill">Docker</span>
+      <span class="pill">Fly.io</span>
+      <span class="pill">Supervisord</span>
+      <span class="pill">Ollama (LLM)</span>
+      <span class="pill">AG Grid</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>VETA Trading Platform &mdash; MIT License &mdash; <a href="https://github.com/milesburton/veta-trading-platform">GitHub</a> &mdash; <a href="https://veta-trading.fly.dev/">Live Demo</a></p>
+</footer>
+
+</body>
+</html>

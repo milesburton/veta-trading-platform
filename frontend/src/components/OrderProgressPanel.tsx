@@ -43,7 +43,11 @@ function buildPieSlices(order: OrderRecord): PieEntry[] {
   const pct = fillPct(order);
   return [
     { name: "Filled", value: Math.round(pct * 100), colour: FILL_COLOUR },
-    { name: "Remaining", value: Math.round((1 - pct) * 100), colour: REMAINING_COLOUR },
+    {
+      name: "Remaining",
+      value: Math.round((1 - pct) * 100),
+      colour: REMAINING_COLOUR,
+    },
   ];
 }
 
@@ -175,7 +179,7 @@ export function OrderProgressPanel() {
           <div className="text-xs text-gray-500 leading-relaxed">
             <div>
               <span className="text-gray-400">{order.filled.toLocaleString()}</span>
-              <span className="text-gray-600"> / {order.quantity.toLocaleString()} shares</span>
+              <span className="text-gray-600">/ {order.quantity.toLocaleString()} shares</span>
             </div>
             {order.avgFillPrice != null && (
               <div>

@@ -15,7 +15,7 @@
  *   xvfb-run --auto-servernum npx playwright test --config=playwright.electron.config.ts tests-electron/screenshots.spec.ts
  */
 
-import { test, type ElectronApplication, type Page } from "@playwright/test";
+import { type ElectronApplication, type Page, test } from "@playwright/test";
 import { _electron as electron } from "playwright";
 import * as path from "path";
 import * as fs from "fs";
@@ -26,8 +26,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MAIN_PATH = path.join(__dirname, "../dist-electron/main.js");
 const OUT_DIR = path.resolve(__dirname, "../../docs/screenshots");
 
-const PRICES = { AAPL: 189.5, MSFT: 421.0, GOOGL: 175.25, NVDA: 876.4, AMZN: 224.8 };
-const VOLUMES = { AAPL: 1_200_000, MSFT: 980_000, GOOGL: 760_000, NVDA: 1_450_000, AMZN: 540_000 };
+const PRICES = {
+  AAPL: 189.5,
+  MSFT: 421.0,
+  GOOGL: 175.25,
+  NVDA: 876.4,
+  AMZN: 224.8,
+};
+const VOLUMES = {
+  AAPL: 1_200_000,
+  MSFT: 980_000,
+  GOOGL: 760_000,
+  NVDA: 1_450_000,
+  AMZN: 540_000,
+};
 
 let mockServer: ElectronMockServer;
 let electronApp: ElectronApplication;
@@ -102,8 +114,13 @@ test("electron screenshot: linked pop-out window", async () => {
       type: "order-blotter",
       layout: "veta-layout-v5",
     });
-    const url = `${window.location.origin}${window.location.pathname}?${params}`;
-    window.open(url, "panel-order-blotter", "width=700,height=600,resizable=yes");
+    const url =
+      `${window.location.origin}${window.location.pathname}?${params}`;
+    window.open(
+      url,
+      "panel-order-blotter",
+      "width=700,height=600,resizable=yes",
+    );
   });
 
   const popOutPage = await popOutPromise;
@@ -115,7 +132,7 @@ test("electron screenshot: linked pop-out window", async () => {
   // Push a fresh tick so both windows show updated prices
   mockServer.sendMarketUpdate(
     { AAPL: 191.2, MSFT: 423.5, GOOGL: 174.8, NVDA: 882.1, AMZN: 226.3 },
-    VOLUMES
+    VOLUMES,
   );
   await mainPage.waitForTimeout(600);
 

@@ -66,7 +66,12 @@ function renderMatch(events: ObsEvent[] = [], channelAsset?: string) {
   render(
     <Provider store={store}>
       <ChannelContext.Provider
-        value={{ instanceId: "test", panelType: "market-match", outgoing: null, incoming }}
+        value={{
+          instanceId: "test",
+          panelType: "market-match",
+          outgoing: null,
+          incoming,
+        }}
       >
         <MarketMatch />
       </ChannelContext.Provider>

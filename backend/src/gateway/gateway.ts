@@ -679,6 +679,22 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             }));
             return;
           }
+          if (currentAuth.user.role !== "trader") {
+            publishAccessEvent({
+              action: "order_rejected",
+              reason: `role ${currentAuth.user.role} is not permitted to submit orders`,
+              userId: currentAuth.user.id,
+              userRole: currentAuth.user.role,
+            });
+            socket.send(JSON.stringify({
+              event: "orderRejected",
+              data: {
+                reason: `${currentAuth.user.role} accounts are not permitted to submit orders`,
+                clientOrderId: msg.payload.clientOrderId ?? null,
+              },
+            }));
+            return;
+          }
           if (!producer.isReady()) {
             socket.send(JSON.stringify({ event: "error", message: "Bus unavailable — order not submitted" }));
             return;

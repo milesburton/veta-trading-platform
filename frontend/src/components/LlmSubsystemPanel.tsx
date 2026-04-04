@@ -93,7 +93,11 @@ export function LlmSubsystemPanel() {
       <div className="flex-1 p-3 space-y-4">
         {(error || success) && (
           <div
-            className={`text-[10px] px-2 py-1 rounded ${error ? "bg-red-950 text-red-400 border border-red-800" : "bg-emerald-950 text-emerald-400 border border-emerald-800"}`}
+            className={`text-[10px] px-2 py-1 rounded ${
+              error
+                ? "bg-red-950 text-red-400 border border-red-800"
+                : "bg-emerald-950 text-emerald-400 border border-emerald-800"
+            }`}
           >
             {error ?? success}
           </div>
@@ -110,10 +114,14 @@ export function LlmSubsystemPanel() {
                 type="button"
                 disabled={isUpdating}
                 onClick={() => patch({ enabled: !status?.policy?.enabled })}
-                className={`relative w-9 h-5 rounded-full transition-colors ${status?.policy?.enabled ? "bg-emerald-600" : "bg-gray-700"} disabled:opacity-50`}
+                className={`relative w-9 h-5 rounded-full transition-colors ${
+                  status?.policy?.enabled ? "bg-emerald-600" : "bg-gray-700"
+                } disabled:opacity-50`}
               >
                 <span
-                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${status?.policy?.enabled ? "translate-x-4" : ""}`}
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                    status?.policy?.enabled ? "translate-x-4" : ""
+                  }`}
                 />
               </button>
             </div>
@@ -123,10 +131,14 @@ export function LlmSubsystemPanel() {
                 type="button"
                 disabled={isUpdating}
                 onClick={() => patch({ workerEnabled: !status?.policy?.workerEnabled })}
-                className={`relative w-9 h-5 rounded-full transition-colors ${status?.policy?.workerEnabled ? "bg-emerald-600" : "bg-gray-700"} disabled:opacity-50`}
+                className={`relative w-9 h-5 rounded-full transition-colors ${
+                  status?.policy?.workerEnabled ? "bg-emerald-600" : "bg-gray-700"
+                } disabled:opacity-50`}
               >
                 <span
-                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${status?.policy?.workerEnabled ? "translate-x-4" : ""}`}
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                    status?.policy?.workerEnabled ? "translate-x-4" : ""
+                  }`}
                 />
               </button>
             </div>

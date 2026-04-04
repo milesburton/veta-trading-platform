@@ -5,9 +5,9 @@
 
 api:
   dashboard: true
-  insecure: true   # Dashboard on :8888 — restrict with auth middleware in prod if needed
+  insecure: true # Dashboard on :8888 — restrict with auth middleware in prod if needed
 
-ping: {}           # Used by homelab health checks
+ping: {} # Used by homelab health checks
 
 entryPoints:
   web:

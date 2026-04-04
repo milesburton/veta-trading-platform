@@ -12,18 +12,45 @@ const CORS_HEADERS = {
 };
 
 interface ExecReport {
-  execId: string; clOrdId: string; origClOrdId?: string;
-  symbol: string; side: string; execType: string; ordStatus: string;
-  leavesQty: number; cumQty: number; avgPx: number;
-  lastQty: number; lastPx: number;
-  venue?: string; counterparty?: string; commission?: number;
-  settlDate?: string; transactTime: string; ts: number;
+  execId: string;
+  clOrdId: string;
+  origClOrdId?: string;
+  symbol: string;
+  side: string;
+  execType: string;
+  ordStatus: string;
+  leavesQty: number;
+  cumQty: number;
+  avgPx: number;
+  lastQty: number;
+  lastPx: number;
+  venue?: string;
+  counterparty?: string;
+  commission?: number;
+  settlDate?: string;
+  transactTime: string;
+  ts: number;
 }
 
 type PendingExec = [
-  string, string, string | null, string, string, string, string,
-  number, number, number, number, number,
-  string | null, string | null, number | null, string | null, string, Date,
+  string,
+  string,
+  string | null,
+  string,
+  string,
+  string,
+  string,
+  number,
+  number,
+  number,
+  number,
+  number,
+  string | null,
+  string | null,
+  number | null,
+  string | null,
+  string,
+  Date,
 ];
 
 const writeQueue: PendingExec[] = [];
@@ -63,16 +90,32 @@ async function flushWriteQueue() {
   }
 }
 
-setInterval(() => { flushWriteQueue().catch(() => {}); }, 50);
+setInterval(() => {
+  flushWriteQueue().catch(() => {});
+}, 50);
 
 createConsumer("fix-archive", ["fix.execution"]).then((consumer) => {
   consumer.onMessage((_topic, raw) => {
     const r = raw as ExecReport;
     writeQueue.push([
-      r.execId, r.clOrdId, r.origClOrdId ?? null, r.symbol, r.side,
-      r.execType, r.ordStatus, r.leavesQty, r.cumQty, r.avgPx,
-      r.lastQty, r.lastPx, r.venue ?? null, r.counterparty ?? null,
-      r.commission ?? null, r.settlDate ?? null, r.transactTime, new Date(r.ts),
+      r.execId,
+      r.clOrdId,
+      r.origClOrdId ?? null,
+      r.symbol,
+      r.side,
+      r.execType,
+      r.ordStatus,
+      r.leavesQty,
+      r.cumQty,
+      r.avgPx,
+      r.lastQty,
+      r.lastPx,
+      r.venue ?? null,
+      r.counterparty ?? null,
+      r.commission ?? null,
+      r.settlDate ?? null,
+      r.transactTime,
+      new Date(r.ts),
     ]);
   });
 }).catch((err) => console.warn("[fix-archive] Cannot subscribe:", err.message));
@@ -86,13 +129,44 @@ function json(data: unknown, status = 200): Response {
 
 // deno-lint-ignore no-explicit-any
 function rowToExec(r: any[]) {
-  const [execId, clOrdId, origClOrdId, symbol, side, execType, ordStatus,
-    leavesQty, cumQty, avgPx, lastQty, lastPx, venue, counterparty,
-    commission, settlDate, transactTime, ts] = r;
+  const [
+    execId,
+    clOrdId,
+    origClOrdId,
+    symbol,
+    side,
+    execType,
+    ordStatus,
+    leavesQty,
+    cumQty,
+    avgPx,
+    lastQty,
+    lastPx,
+    venue,
+    counterparty,
+    commission,
+    settlDate,
+    transactTime,
+    ts,
+  ] = r;
   return {
-    execId, clOrdId, origClOrdId, symbol, side, execType, ordStatus,
-    leavesQty, cumQty, avgPx, lastQty, lastPx, venue, counterparty,
-    commission, settlDate, transactTime,
+    execId,
+    clOrdId,
+    origClOrdId,
+    symbol,
+    side,
+    execType,
+    ordStatus,
+    leavesQty,
+    cumQty,
+    avgPx,
+    lastQty,
+    lastPx,
+    venue,
+    counterparty,
+    commission,
+    settlDate,
+    transactTime,
     ts: ts instanceof Date ? ts.getTime() : ts,
   };
 }
@@ -101,24 +175,44 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
 
   if (path === "/health" && req.method === "GET") {
     try {
       const client = await Promise.race([
         fixArchivePool.connect(),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("db timeout")), 2_000)),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("db timeout")), 2_000)
+        ),
       ]);
       try {
-        const { rows } = await client.queryArray("SELECT COUNT(*) FROM fix_archive.executions");
-        return json({ service: "fix-archive", version: VERSION, status: "ok", executions: Number(rows[0][0]) });
-      } finally { client.release(); }
+        const { rows } = await client.queryArray(
+          "SELECT COUNT(*) FROM fix_archive.executions",
+        );
+        return json({
+          service: "fix-archive",
+          version: VERSION,
+          status: "ok",
+          executions: Number(rows[0][0]),
+        });
+      } finally {
+        client.release();
+      }
     } catch {
-      return json({ service: "fix-archive", version: VERSION, status: "ok", executions: 0, db: "unavailable" });
+      return json({
+        service: "fix-archive",
+        version: VERSION,
+        status: "ok",
+        executions: 0,
+        db: "unavailable",
+      });
     }
   }
 
-  const COLS = `exec_id, cl_ord_id, orig_cl_ord_id, symbol, side, exec_type, ord_status,
+  const COLS =
+    `exec_id, cl_ord_id, orig_cl_ord_id, symbol, side, exec_type, ord_status,
     leaves_qty, cum_qty, avg_px, last_qty, last_px, venue, counterparty,
     commission, settl_date, transact_time, ts`;
 
@@ -132,15 +226,17 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     try {
       const { rows } = symbol
         ? await client.queryArray(
-            `SELECT ${COLS} FROM fix_archive.executions WHERE symbol=$1 AND ts>=$2 AND ts<$3 ORDER BY ts DESC LIMIT $4`,
-            [symbol, from, to, limit],
-          )
+          `SELECT ${COLS} FROM fix_archive.executions WHERE symbol=$1 AND ts>=$2 AND ts<$3 ORDER BY ts DESC LIMIT $4`,
+          [symbol, from, to, limit],
+        )
         : await client.queryArray(
-            `SELECT ${COLS} FROM fix_archive.executions WHERE ts>=$1 AND ts<$2 ORDER BY ts DESC LIMIT $3`,
-            [from, to, limit],
-          );
+          `SELECT ${COLS} FROM fix_archive.executions WHERE ts>=$1 AND ts<$2 ORDER BY ts DESC LIMIT $3`,
+          [from, to, limit],
+        );
       return json(rows.map(rowToExec));
-    } finally { client.release(); }
+    } finally {
+      client.release();
+    }
   }
 
   const match = path.match(/^\/executions\/(.+)$/);
@@ -148,11 +244,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const client = await fixArchivePool.connect();
     try {
       const { rows } = await client.queryArray(
-        `SELECT ${COLS} FROM fix_archive.executions WHERE exec_id=$1`, [match[1]],
+        `SELECT ${COLS} FROM fix_archive.executions WHERE exec_id=$1`,
+        [match[1]],
       );
       if (rows.length === 0) return json({ error: "Not found" }, 404);
       return json(rowToExec(rows[0]));
-    } finally { client.release(); }
+    } finally {
+      client.release();
+    }
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });

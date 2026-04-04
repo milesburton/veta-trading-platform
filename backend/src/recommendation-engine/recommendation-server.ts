@@ -25,11 +25,16 @@ function storeRec(rec: TradeRecommendation): void {
 function signalToRecommendation(signal: Signal): TradeRecommendation | null {
   if (signal.confidence < CONFIDENCE_THRESHOLD) return null;
 
-  const action = signal.direction === "long" ? "buy"
-    : signal.direction === "short" ? "sell"
+  const action = signal.direction === "long"
+    ? "buy"
+    : signal.direction === "short"
+    ? "sell"
     : "hold";
 
-  const suggestedQty = Math.max(10, Math.round(signal.confidence * 100 / 10) * 10);
+  const suggestedQty = Math.max(
+    10,
+    Math.round(signal.confidence * 100 / 10) * 10,
+  );
 
   const topFactors = [...signal.factors]
     .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
@@ -59,8 +64,13 @@ const producer = await createProducer("recommendation-engine").catch((err) => {
   return null;
 });
 
-const consumer = await createConsumer("recommendation-engine", ["market.signals"]).catch((err) => {
-  console.warn("[recommendation-engine] Cannot subscribe to market.signals:", err.message);
+const consumer = await createConsumer("recommendation-engine", [
+  "market.signals",
+]).catch((err) => {
+  console.warn(
+    "[recommendation-engine] Cannot subscribe to market.signals:",
+    err.message,
+  );
   return null;
 });
 
@@ -90,16 +100,25 @@ Deno.serve({ port: PORT }, (req: Request): Response => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
 
   if (path === "/health" && req.method === "GET") {
-    return json({ service: "recommendation-engine", version: VERSION, status: "ok", count: recommendations.length });
+    return json({
+      service: "recommendation-engine",
+      version: VERSION,
+      status: "ok",
+      count: recommendations.length,
+    });
   }
 
   if (path === "/recommendations" && req.method === "GET") {
     const symbol = url.searchParams.get("symbol");
     const limit = Math.min(Number(url.searchParams.get("limit") ?? 20), 200);
-    const filtered = symbol ? recommendations.filter((r) => r.symbol === symbol) : recommendations;
+    const filtered = symbol
+      ? recommendations.filter((r) => r.symbol === symbol)
+      : recommendations;
     return json(filtered.slice(0, limit));
   }
 

@@ -14,9 +14,16 @@
  *   REDPANDA_BROKERS  comma-separated broker list  (default: localhost:9092)
  */
 
-import { Kafka, type Producer, type Consumer, type KafkaMessage } from "npm:kafkajs@2.2.4";
+import {
+  type Consumer,
+  Kafka,
+  type KafkaMessage,
+  type Producer,
+} from "npm:kafkajs@2.2.4";
 
-const BROKERS = (Deno.env.get("REDPANDA_BROKERS") ?? "localhost:9092").split(",").map((b) => b.trim());
+const BROKERS = (Deno.env.get("REDPANDA_BROKERS") ?? "localhost:9092").split(
+  ",",
+).map((b) => b.trim());
 
 function makeKafka(clientId: string): Kafka {
   return new Kafka({
@@ -44,7 +51,9 @@ export interface MsgProducer {
  * ready are silently dropped (fire-and-forget services) or should be retried
  * by the caller. Once connected, the producer is reused for all sends.
  */
-export function createProducer(clientId = "veta-producer"): Promise<MsgProducer> {
+export function createProducer(
+  clientId = "veta-producer",
+): Promise<MsgProducer> {
   let activeProducer: Producer | null = null;
   let stopped = false;
   let reconnecting = false;
@@ -64,7 +73,9 @@ export function createProducer(clientId = "veta-producer"): Promise<MsgProducer>
         return;
       } catch (err) {
         console.warn(
-          `[messaging] producer(${clientId}) failed, retrying in ${delay / 1000}s:`,
+          `[messaging] producer(${clientId}) failed, retrying in ${
+            delay / 1000
+          }s:`,
           (err as Error).message,
         );
         await new Promise((r) => setTimeout(r, delay));
@@ -89,7 +100,10 @@ export function createProducer(clientId = "veta-producer"): Promise<MsgProducer>
           messages: [{ value: JSON.stringify(value) }],
         });
       } catch (err) {
-        console.warn(`[messaging] producer(${clientId}) send failed, reconnecting:`, (err as Error).message);
+        console.warn(
+          `[messaging] producer(${clientId}) send failed, reconnecting:`,
+          (err as Error).message,
+        );
         activeProducer = null;
         if (!reconnecting) {
           reconnecting = true;
@@ -134,10 +148,16 @@ export function createConsumer(
           await consumer.subscribe({ topic, fromBeginning: false });
         }
         await consumer.run({
-          eachMessage: async ({ topic, message }: { topic: string; message: KafkaMessage }) => {
+          eachMessage: async (
+            { topic, message }: { topic: string; message: KafkaMessage },
+          ) => {
             if (!message.value) return;
             let parsed: unknown;
-            try { parsed = JSON.parse(message.value.toString()); } catch { return; }
+            try {
+              parsed = JSON.parse(message.value.toString());
+            } catch {
+              return;
+            }
             for (const handler of handlers) await handler(topic, parsed);
           },
         });
@@ -146,7 +166,9 @@ export function createConsumer(
         return;
       } catch (err) {
         console.warn(
-          `[messaging] createConsumer(${groupId}) failed, retrying in ${delay / 1000}s:`,
+          `[messaging] createConsumer(${groupId}) failed, retrying in ${
+            delay / 1000
+          }s:`,
           (err as Error).message,
         );
         await new Promise((r) => setTimeout(r, delay));

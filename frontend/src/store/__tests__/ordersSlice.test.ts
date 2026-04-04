@@ -109,7 +109,11 @@ describe("ordersSlice – childAdded", () => {
 
 describe("ordersSlice – limitOrdersChecked", () => {
   it("fills a BUY order when market price ≤ limit price", () => {
-    const order = makeOrder({ side: "BUY", limitPrice: 155, status: "pending" });
+    const order = makeOrder({
+      side: "BUY",
+      limitPrice: 155,
+      status: "pending",
+    });
     let state = reducer(initial, orderAdded(order));
     state = reducer(state, limitOrdersChecked({ AAPL: 154 }));
     expect(state.orders[0].status).toBe("filled");
@@ -117,14 +121,22 @@ describe("ordersSlice – limitOrdersChecked", () => {
   });
 
   it("fills a SELL order when market price ≥ limit price", () => {
-    const order = makeOrder({ side: "SELL", limitPrice: 150, status: "pending" });
+    const order = makeOrder({
+      side: "SELL",
+      limitPrice: 150,
+      status: "pending",
+    });
     let state = reducer(initial, orderAdded(order));
     state = reducer(state, limitOrdersChecked({ AAPL: 151 }));
     expect(state.orders[0].status).toBe("filled");
   });
 
   it("does NOT fill a BUY when market price > limit price", () => {
-    const order = makeOrder({ side: "BUY", limitPrice: 150, status: "pending" });
+    const order = makeOrder({
+      side: "BUY",
+      limitPrice: 150,
+      status: "pending",
+    });
     let state = reducer(initial, orderAdded(order));
     state = reducer(state, limitOrdersChecked({ AAPL: 160 }));
     // queued → executing on first check
@@ -132,7 +144,11 @@ describe("ordersSlice – limitOrdersChecked", () => {
   });
 
   it("transitions queued → executing when not triggered", () => {
-    const order = makeOrder({ status: "pending", limitPrice: 100, side: "BUY" });
+    const order = makeOrder({
+      status: "pending",
+      limitPrice: 100,
+      side: "BUY",
+    });
     let state = reducer(initial, orderAdded(order));
     // price above limit — no fill
     state = reducer(state, limitOrdersChecked({ AAPL: 200 }));

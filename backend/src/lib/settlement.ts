@@ -11,10 +11,10 @@
 export type Desk = "equity" | "fi" | "derivatives" | "otc";
 
 const SETTLEMENT_DAYS: Record<Desk, number> = {
-  equity:      2,
-  fi:          1,
+  equity: 2,
+  fi: 1,
   derivatives: 1,
-  otc:         0,
+  otc: 0,
 };
 
 /**
@@ -24,7 +24,10 @@ const SETTLEMENT_DAYS: Record<Desk, number> = {
  * @param desk   — instrument class (default: "equity" → T+2)
  * @param fromMs — base timestamp in ms (default: now)
  */
-export function settlementDate(desk: Desk = "equity", fromMs = Date.now()): string {
+export function settlementDate(
+  desk: Desk = "equity",
+  fromMs = Date.now(),
+): string {
   const days = SETTLEMENT_DAYS[desk];
   if (days === 0) return new Date(fromMs).toISOString().slice(0, 10);
 

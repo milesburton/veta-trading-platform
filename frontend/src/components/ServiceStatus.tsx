@@ -26,8 +26,12 @@ function versionSummary(services: ServiceHealth[]): {
     if (s.lastChecked === null) return max;
     return max === null ? s.lastChecked : Math.max(max, s.lastChecked);
   }, null);
-  if (versions.length === 0) return { consistent: false, version: null, lastChecked };
-  if (versions.length === 1) return { consistent: true, version: versions[0], lastChecked };
+  if (versions.length === 0) {
+    return { consistent: false, version: null, lastChecked };
+  }
+  if (versions.length === 1) {
+    return { consistent: true, version: versions[0], lastChecked };
+  }
   return { consistent: false, version: null, lastChecked };
 }
 

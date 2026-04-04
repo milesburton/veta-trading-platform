@@ -13,7 +13,12 @@
  *   λ  = 2.5    — time constant (years)
  */
 
-import type { ForwardRate, NelsonSiegelParams, YieldCurvePoint, YieldCurveResponse } from "./types.ts";
+import type {
+  ForwardRate,
+  NelsonSiegelParams,
+  YieldCurvePoint,
+  YieldCurveResponse,
+} from "./types.ts";
 
 const DEFAULT_PARAMS: NelsonSiegelParams = {
   beta0: 0.045,
@@ -37,10 +42,10 @@ const TENORS: { years: number; label: string }[] = [
 
 // Pairs of (from, to) tenors for the forward rate table
 const FORWARD_PAIRS: { from: number; to: number; label: string }[] = [
-  { from: 1,  to: 2,  label: "1y→2y" },
-  { from: 2,  to: 3,  label: "2y→3y" },
-  { from: 3,  to: 5,  label: "3y→5y" },
-  { from: 5,  to: 10, label: "5y→10y" },
+  { from: 1, to: 2, label: "1y→2y" },
+  { from: 2, to: 3, label: "2y→3y" },
+  { from: 3, to: 5, label: "3y→5y" },
+  { from: 5, to: 10, label: "5y→10y" },
   { from: 10, to: 20, label: "10y→20y" },
 ];
 
@@ -58,7 +63,9 @@ function nelsonSiegel(tau: number, p: NelsonSiegelParams): number {
  * Compute the full spot yield curve using Nelson-Siegel.
  * Accepts optional parameter overrides — any missing params use the defaults.
  */
-export function computeYieldCurve(params?: Partial<NelsonSiegelParams>): YieldCurvePoint[] {
+export function computeYieldCurve(
+  params?: Partial<NelsonSiegelParams>,
+): YieldCurvePoint[] {
   const p: NelsonSiegelParams = { ...DEFAULT_PARAMS, ...params };
   return TENORS.map(({ years, label }) => ({
     tenorYears: years,
@@ -74,7 +81,9 @@ export function computeYieldCurve(params?: Partial<NelsonSiegelParams>): YieldCu
 export function rateAt(curve: YieldCurvePoint[], t: number): number {
   const sorted = [...curve].sort((a, b) => a.tenorYears - b.tenorYears);
   if (t <= sorted[0].tenorYears) return sorted[0].spotRate;
-  if (t >= sorted[sorted.length - 1].tenorYears) return sorted[sorted.length - 1].spotRate;
+  if (t >= sorted[sorted.length - 1].tenorYears) {
+    return sorted[sorted.length - 1].spotRate;
+  }
   const pair = sorted.slice(0, -1).find((lo, i) => {
     const hi = sorted[i + 1];
     return t >= lo.tenorYears && t <= hi.tenorYears;
@@ -95,7 +104,9 @@ export function forwardRates(curve: YieldCurvePoint[]): ForwardRate[] {
 }
 
 /** Build a full YieldCurveResponse from optional parameter overrides. */
-export function buildYieldCurveResponse(params?: Partial<NelsonSiegelParams>): YieldCurveResponse {
+export function buildYieldCurveResponse(
+  params?: Partial<NelsonSiegelParams>,
+): YieldCurveResponse {
   const curve = computeYieldCurve(params);
   return {
     curve,
@@ -110,18 +121,22 @@ export function buildYieldCurveResponse(params?: Partial<NelsonSiegelParams>): Y
 const FRED_SERIES: { id: string; tenor: number }[] = [
   { id: "DGS3MO", tenor: 0.25 },
   { id: "DGS6MO", tenor: 0.5 },
-  { id: "DGS1",   tenor: 1 },
-  { id: "DGS2",   tenor: 2 },
-  { id: "DGS5",   tenor: 5 },
-  { id: "DGS10",  tenor: 10 },
-  { id: "DGS30",  tenor: 30 },
+  { id: "DGS1", tenor: 1 },
+  { id: "DGS2", tenor: 2 },
+  { id: "DGS5", tenor: 5 },
+  { id: "DGS10", tenor: 10 },
+  { id: "DGS30", tenor: 30 },
 ];
 
-let cachedFredParams: NelsonSiegelParams | Promise<NelsonSiegelParams> | null = null;
+let cachedFredParams: NelsonSiegelParams | Promise<NelsonSiegelParams> | null =
+  null;
 let fredCacheExpiry = 0;
 const FRED_CACHE_MS = 6 * 60 * 60 * 1000;
 
-async function fetchOneFredSeries(apiKey: string, seriesId: string): Promise<number | null> {
+async function fetchOneFredSeries(
+  apiKey: string,
+  seriesId: string,
+): Promise<number | null> {
   try {
     const url =
       `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&sort_order=desc&limit=1&api_key=${apiKey}&file_type=json`;
@@ -139,7 +154,9 @@ async function fetchOneFredSeries(apiKey: string, seriesId: string): Promise<num
 /**
  * Fit Nelson-Siegel params to observed (tenor, rate) pairs via grid search MSE.
  */
-function fitNelsonSiegel(points: { tenor: number; rate: number }[]): NelsonSiegelParams {
+function fitNelsonSiegel(
+  points: { tenor: number; rate: number }[],
+): NelsonSiegelParams {
   const beta0Vals = [0.03, 0.035, 0.04, 0.045, 0.05, 0.055];
   const beta1Vals = [-0.03, -0.02, -0.01, 0.0, 0.01, 0.02];
   const beta2Vals = [-0.02, -0.01, 0.0, 0.01, 0.02, 0.03];
@@ -177,9 +194,13 @@ import type { YieldCurveStore } from "./yield-curve-store.ts";
  * Returns cached params (6-hour TTL) or DEFAULT_PARAMS if unavailable.
  * Optionally persists the fitted snapshot to a YieldCurveStore for backtesting.
  */
-export function fetchFredParams(store?: YieldCurveStore): Promise<NelsonSiegelParams> {
+export function fetchFredParams(
+  store?: YieldCurveStore,
+): Promise<NelsonSiegelParams> {
   if (cachedFredParams instanceof Promise) return cachedFredParams;
-  if (cachedFredParams !== null && Date.now() < fredCacheExpiry) return Promise.resolve(cachedFredParams);
+  if (cachedFredParams !== null && Date.now() < fredCacheExpiry) {
+    return Promise.resolve(cachedFredParams);
+  }
 
   const apiKey = Deno.env.get("FRED_KEY");
   if (!apiKey) return Promise.resolve(DEFAULT_PARAMS);
@@ -192,7 +213,9 @@ export function fetchFredParams(store?: YieldCurveStore): Promise<NelsonSiegelPa
       }),
     );
 
-    const points = results.filter((p): p is { tenor: number; rate: number } => p !== null);
+    const points = results.filter((p): p is { tenor: number; rate: number } =>
+      p !== null
+    );
     if (points.length < 3) return DEFAULT_PARAMS;
 
     const params = fitNelsonSiegel(points);

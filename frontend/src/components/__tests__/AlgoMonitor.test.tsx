@@ -257,9 +257,19 @@ describe("AlgoMonitor – strategy filter", () => {
       id: "2",
       strategy: "POV",
       asset: "MSFT",
-      algoParams: { strategy: "POV", participationRate: 10, minSliceSize: 1, maxSliceSize: 500 },
+      algoParams: {
+        strategy: "POV",
+        participationRate: 10,
+        minSliceSize: 1,
+        maxSliceSize: 500,
+      },
     }),
-    makeOrder({ id: "3", strategy: "LIMIT", asset: "GOOGL", algoParams: { strategy: "LIMIT" } }),
+    makeOrder({
+      id: "3",
+      strategy: "LIMIT",
+      asset: "GOOGL",
+      algoParams: { strategy: "LIMIT" },
+    }),
   ];
 
   it("shows all orders when filter is ALL", () => {

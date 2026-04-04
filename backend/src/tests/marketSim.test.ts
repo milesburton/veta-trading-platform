@@ -1,5 +1,15 @@
-import { assertEquals, assertNotEquals } from "https://deno.land/std@0.210.0/testing/asserts.ts";
-import { generatePrice, marketData, openPrices, prewarmPrices, refreshSectorShocks, snapshotOpenPrices } from "../market-sim/priceEngine.ts";
+import {
+  assertEquals,
+  assertNotEquals,
+} from "https://deno.land/std@0.210.0/testing/asserts.ts";
+import {
+  generatePrice,
+  marketData,
+  openPrices,
+  prewarmPrices,
+  refreshSectorShocks,
+  snapshotOpenPrices,
+} from "../market-sim/priceEngine.ts";
 
 Deno.test("generatePrice returns a positive number for a known asset", () => {
   refreshSectorShocks();
@@ -37,23 +47,42 @@ Deno.test("generatePrice per-tick move is much smaller than daily volatility", (
     const movePct = Math.abs(after - before) / before;
     if (movePct > maxMovePct) maxMovePct = movePct;
   }
-  assertEquals(maxMovePct < 0.005, true, `max move ${(maxMovePct * 100).toFixed(4)}% exceeded 0.5%`);
+  assertEquals(
+    maxMovePct < 0.005,
+    true,
+    `max move ${(maxMovePct * 100).toFixed(4)}% exceeded 0.5%`,
+  );
 });
 
 Deno.test("prewarmPrices moves prices away from their initial values", () => {
   const before: Record<string, number> = { ...marketData };
   prewarmPrices(1_000);
   const movedCount = Object.keys(marketData).filter(
-    (sym) => Math.abs(marketData[sym] - before[sym]) / before[sym] > 0
+    (sym) => Math.abs(marketData[sym] - before[sym]) / before[sym] > 0,
   ).length;
   assertEquals(movedCount > 0, true);
 });
 
 Deno.test("prewarmPrices produces meaningful intraday spread after a full warm-up", () => {
   prewarmPrices(28_080);
-  const sample = ["AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "META", "GOOGL", "AMD", "JPM", "NFLX"];
+  const sample = [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "TSLA",
+    "AMZN",
+    "META",
+    "GOOGL",
+    "AMD",
+    "JPM",
+    "NFLX",
+  ];
   for (const sym of sample) {
-    assertEquals(marketData[sym] > 0, true, `${sym} should have positive price after warm-up`);
+    assertEquals(
+      marketData[sym] > 0,
+      true,
+      `${sym} should have positive price after warm-up`,
+    );
   }
   assertEquals(sample.every((sym) => marketData[sym] > 0), true);
 });
@@ -74,6 +103,8 @@ Deno.test("openPrices remain stable after further price moves", () => {
   for (const sym of Object.keys(snapshot)) {
     assertEquals(openPrices[sym], snapshot[sym]);
   }
-  const changed = Object.keys(snapshot).filter((sym) => marketData[sym] !== snapshot[sym]).length;
+  const changed =
+    Object.keys(snapshot).filter((sym) => marketData[sym] !== snapshot[sym])
+      .length;
   assertNotEquals(changed, 0);
 });

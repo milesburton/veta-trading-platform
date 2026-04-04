@@ -93,7 +93,9 @@ describe("StartupOverlay", () => {
 
     render(<StartupOverlay onReady={onReady} />);
 
-    await waitFor(() => expect(onReady).toHaveBeenCalledTimes(1), { timeout: 10_000 });
+    await waitFor(() => expect(onReady).toHaveBeenCalledTimes(1), {
+      timeout: 10_000,
+    });
   });
 
   test("handles fetch failure gracefully and keeps polling", async () => {
@@ -104,7 +106,9 @@ describe("StartupOverlay", () => {
 
     render(<StartupOverlay onReady={onReady} />);
 
-    await waitFor(() => expect(onReady).toHaveBeenCalledTimes(1), { timeout: 10_000 });
+    await waitFor(() => expect(onReady).toHaveBeenCalledTimes(1), {
+      timeout: 10_000,
+    });
   });
 
   test("updates service indicator colours based on service state", async () => {

@@ -158,7 +158,13 @@ export function SpreadAnalysisPanel() {
           </div>
 
           <div
-            className={`rounded p-2 ${data.oas < 50 ? "bg-emerald-900/30" : data.oas < 150 ? "bg-amber-900/30" : "bg-red-900/30"}`}
+            className={`rounded p-2 ${
+              data.oas < 50
+                ? "bg-emerald-900/30"
+                : data.oas < 150
+                  ? "bg-amber-900/30"
+                  : "bg-red-900/30"
+            }`}
           >
             <p className="text-gray-400">
               OAS (Option-Adjusted Spread)
@@ -174,7 +180,11 @@ export function SpreadAnalysisPanel() {
             <p className="text-gray-400">Spread Comparison</p>
             {[
               { label: "G-Spread", value: data.gSpread, color: "bg-blue-500" },
-              { label: "Z-Spread", value: data.zSpread, color: "bg-emerald-500" },
+              {
+                label: "Z-Spread",
+                value: data.zSpread,
+                color: "bg-emerald-500",
+              },
               { label: "OAS", value: data.oas, color: "bg-purple-500" },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-center gap-2">
@@ -182,7 +192,9 @@ export function SpreadAnalysisPanel() {
                 <div className="flex-1 overflow-hidden rounded bg-gray-700">
                   <div
                     className={`h-4 rounded transition-all duration-500 ${spreadBg(value)}`}
-                    style={{ width: `${Math.max(2, (Math.abs(value) / maxSpread) * 100)}%` }}
+                    style={{
+                      width: `${Math.max(2, (Math.abs(value) / maxSpread) * 100)}%`,
+                    }}
                   />
                 </div>
                 <span className={`w-16 font-mono font-semibold ${spreadColor(value)}`}>

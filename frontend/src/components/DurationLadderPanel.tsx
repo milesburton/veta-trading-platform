@@ -21,9 +21,27 @@ interface PositionRow {
 }
 
 const DEFAULT_POSITIONS: PositionRow[] = [
-  { faceValue: "1000", couponRate: "4.75", totalPeriods: "4", yieldAnnual: "4.88", quantity: "10" },
-  { faceValue: "1000", couponRate: "4.25", totalPeriods: "10", yieldAnnual: "4.35", quantity: "5" },
-  { faceValue: "1000", couponRate: "4.38", totalPeriods: "20", yieldAnnual: "4.45", quantity: "8" },
+  {
+    faceValue: "1000",
+    couponRate: "4.75",
+    totalPeriods: "4",
+    yieldAnnual: "4.88",
+    quantity: "10",
+  },
+  {
+    faceValue: "1000",
+    couponRate: "4.25",
+    totalPeriods: "10",
+    yieldAnnual: "4.35",
+    quantity: "5",
+  },
+  {
+    faceValue: "1000",
+    couponRate: "4.38",
+    totalPeriods: "20",
+    yieldAnnual: "4.45",
+    quantity: "8",
+  },
   {
     faceValue: "1000",
     couponRate: "5.40",
@@ -31,7 +49,13 @@ const DEFAULT_POSITIONS: PositionRow[] = [
     yieldAnnual: "5.55",
     quantity: "-3",
   },
-  { faceValue: "1000", couponRate: "4.63", totalPeriods: "60", yieldAnnual: "4.68", quantity: "2" },
+  {
+    faceValue: "1000",
+    couponRate: "4.63",
+    totalPeriods: "60",
+    yieldAnnual: "4.68",
+    quantity: "2",
+  },
 ];
 
 const BAR_COLORS = ["#3b82f6", "#22c55e", "#eab308", "#ef4444", "#a855f7"];
@@ -201,7 +225,9 @@ export function DurationLadderPanel() {
                   <tr key={b.tenorLabel} className="border-b border-gray-700/50">
                     <td className="py-0.5 pl-2 font-mono text-gray-300">{b.tenorLabel}</td>
                     <td
-                      className={`py-0.5 pr-2 text-right font-mono font-semibold ${b.netDv01 >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                      className={`py-0.5 pr-2 text-right font-mono font-semibold ${
+                        b.netDv01 >= 0 ? "text-emerald-400" : "text-red-400"
+                      }`}
                     >
                       ${Math.abs(b.netDv01).toFixed(4)}
                     </td>

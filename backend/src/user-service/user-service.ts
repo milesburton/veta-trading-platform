@@ -2,6 +2,103 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { usersPool } from "../lib/db.ts";
 import { createProducer } from "../lib/messaging.ts";
 
+const AUTH_ROLES = ["trader", "admin", "compliance", "sales", "external-client", "viewer"] as const;
+type AuthRole = typeof AUTH_ROLES[number];
+
+function parseOAuthClients(config: string): Map<string, {
+  clientId: string;
+  redirectUris: string[];
+  scopes: string[];
+}> {
+  const result = new Map<string, {
+    clientId: string;
+    redirectUris: string[];
+    scopes: string[];
+  }>();
+
+  for (const rawEntry of config.split(";")) {
+    const entry = rawEntry.trim();
+    if (!entry) continue;
+
+    // Supported formats:
+    // 1) clientId:redirect1,redirect2|scope1,scope2
+    // 2) clientId|redirect1,redirect2|scope1,scope2
+    let clientId = "";
+    let redirectPart = "postmessage";
+    let scopePart = "openid,profile";
+
+    if (entry.includes("|")) {
+      const [first = "", second = "postmessage", third = "openid,profile"] = entry.split("|");
+      if (first.includes(":")) {
+        const sep = first.indexOf(":");
+        clientId = first.slice(0, sep).trim();
+        redirectPart = first.slice(sep + 1).trim() || second.trim() || "postmessage";
+        scopePart = third.trim() || "openid,profile";
+      } else {
+        clientId = first.trim();
+        redirectPart = second.trim() || "postmessage";
+        scopePart = third.trim() || "openid,profile";
+      }
+    } else {
+      const sep = entry.indexOf(":");
+      clientId = (sep >= 0 ? entry.slice(0, sep) : entry).trim();
+      redirectPart = sep >= 0 ? entry.slice(sep + 1).trim() || "postmessage" : "postmessage";
+    }
+
+    if (!clientId) continue;
+    result.set(clientId, {
+      clientId,
+      redirectUris: redirectPart.split(",").map((value) => value.trim()).filter(Boolean),
+      scopes: scopePart.split(",").map((value) => value.trim()).filter(Boolean),
+    });
+  }
+
+  return result;
+}
+
+function parseUserSecrets(config: string): Map<string, string> {
+  const result = new Map<string, string>();
+  for (const rawEntry of config.split(";")) {
+    const entry = rawEntry.trim();
+    if (!entry) continue;
+    const sep = entry.indexOf(":");
+    if (sep <= 0) continue;
+    const userId = normalizeUserId(entry.slice(0, sep));
+    const secret = entry.slice(sep + 1).trim();
+    if (!userId || !secret) continue;
+    result.set(userId, secret);
+  }
+  return result;
+}
+
+const OAUTH_CLIENTS = new Map<string, {
+  clientId: string;
+  redirectUris: string[];
+  scopes: string[];
+}>(parseOAuthClients(
+  Deno.env.get("OAUTH2_CLIENTS") ?? "veta-web:postmessage|openid,profile;veta-automation:postmessage|openid,profile",
+));
+
+const OAUTH_USER_SECRETS = parseUserSecrets(Deno.env.get("OAUTH2_USER_SECRETS") ?? "");
+const OAUTH_SHARED_SECRET = Deno.env.get("OAUTH2_SHARED_SECRET") ?? "veta-dev-passcode";
+
+const oauthCodes = new Map<string, {
+  clientId: string;
+  userId: string;
+  redirectUri: string;
+  scope: string;
+  codeChallenge: string;
+  codeChallengeMethod: "S256";
+  expiresAt: number;
+}>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, entry] of oauthCodes) {
+    if (entry.expiresAt <= now) oauthCodes.delete(code);
+  }
+}, 30_000);
+
 const PORT = Number(Deno.env.get("USER_SERVICE_PORT")) || 5_008;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
@@ -18,6 +115,75 @@ const producer = await createProducer("user-service").catch((err) => {
 
 function randomToken(): string {
   return crypto.randomUUID().replace(/-/g, "");
+}
+
+function normalizeUserId(input: string): string {
+  return input.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+}
+
+function jsonError(error: string, status = 400, extra?: Record<string, string>): Response {
+  return json({ error }, status, extra);
+}
+
+function _isAuthRole(role: string): role is AuthRole {
+  return AUTH_ROLES.includes(role as AuthRole);
+}
+
+function canViewUserDirectory(role: string): boolean {
+  return role === "admin" || role === "compliance";
+}
+
+function getOAuthClient(clientId: string | undefined, redirectUri: string | undefined) {
+  if (!clientId) return null;
+  const client = OAUTH_CLIENTS.get(clientId);
+  if (!client) return null;
+  if (!redirectUri || !client.redirectUris.includes(redirectUri)) return null;
+  return client;
+}
+
+async function createSessionForUser(client: Awaited<ReturnType<typeof usersPool.connect>>, userId: string) {
+  const { rows } = await client.queryArray(
+    "SELECT id, name, role, avatar_emoji, firm FROM users.users WHERE id = $1",
+    [userId],
+  );
+  if (rows.length === 0) return null;
+  const [id, name, role, avatar_emoji, firm] = rows[0];
+  const token = randomToken();
+  await client.queryArray(
+    "INSERT INTO users.sessions (token, user_id, created_at, expires_at) VALUES ($1, $2, now(), now() + interval '8 hours')",
+    [token, id],
+  );
+  producer?.send("user.session", { event: "login", userId: id, ts: Date.now() }).catch(() => {});
+  return {
+    token,
+    user: {
+      id: id as string,
+      name: name as string,
+      role: role as AuthRole,
+      avatar_emoji: avatar_emoji as string,
+      firm: (firm as string | null) ?? null,
+    },
+  };
+}
+
+async function derivePkceChallenge(verifier: string): Promise<string> {
+  const bytes = new TextEncoder().encode(verifier);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function verifyOAuthCredentials(userId: string, providedPassword: string | undefined): boolean {
+  const candidate = (providedPassword ?? "").trim();
+  if (!candidate) return false;
+
+  const userSecret = OAUTH_USER_SECRETS.get(userId);
+  if (userSecret) return userSecret === candidate;
+
+  if (!OAUTH_SHARED_SECRET) return false;
+  return OAUTH_SHARED_SECRET === candidate;
 }
 
 function getCookieToken(req: Request): string | null {
@@ -62,7 +228,7 @@ async function handle(req: Request): Promise<Response> {
   if (req.method === "GET" && path === "/users") {
     const caller = await getUserFromToken(getCookieToken(req));
     if (!caller) return json({ error: "unauthenticated" }, 401);
-    if (caller.role !== "admin" && caller.role !== "compliance") {
+    if (!canViewUserDirectory(caller.role)) {
       return json({ error: "forbidden — admin or compliance only" }, 403);
     }
     const client = await usersPool.connect();
@@ -75,30 +241,10 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (req.method === "POST" && path === "/sessions") {
-    let body: { userId?: string };
-    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
-    const userId = body.userId;
-    if (!userId) return json({ error: "userId required" }, 400);
-
-    const client = await usersPool.connect();
-    try {
-      const { rows } = await client.queryArray(
-        "SELECT id, name, role, avatar_emoji FROM users.users WHERE id = $1", [userId],
-      );
-      if (rows.length === 0) return json({ error: "user not found" }, 404);
-      const [id, name, role, avatar_emoji] = rows[0];
-      const token = randomToken();
-      const now = new Date();
-      const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1_000);
-      await client.queryArray(
-        "INSERT INTO users.sessions (token, user_id, created_at, expires_at) VALUES ($1,$2,$3,$4)",
-        [token, userId, now, expiresAt],
-      );
-      producer?.send("user.session", { event: "login", userId, ts: Date.now() }).catch(() => {});
-      return json({ id, name, role, avatar_emoji }, 200, {
-        "Set-Cookie": `veta_user=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800`,
-      });
-    } finally { client.release(); }
+    return jsonError(
+      "legacy /sessions login is disabled; use OAuth2 /oauth/authorize + /oauth/token",
+      410,
+    );
   }
 
   if (req.method === "DELETE" && path === "/sessions") {
@@ -382,81 +528,147 @@ async function handle(req: Request): Promise<Response> {
   }
 
   // ---------------------------------------------------------------------------
-  // Mock OAuth2 Provider
+  // OAuth2 / OIDC-lite provider
   // ---------------------------------------------------------------------------
 
-  const authCodes = new Map<string, { userId: string; expiresAt: number }>();
+  if (req.method === "GET" && path === "/.well-known/openid-configuration") {
+    const issuer = `${url.protocol}//${url.host}`;
+    return json({
+      issuer,
+      authorization_endpoint: `${issuer}/oauth/authorize`,
+      token_endpoint: `${issuer}/oauth/token`,
+      registration_endpoint: `${issuer}/oauth/register`,
+      response_types_supported: ["code"],
+      grant_types_supported: ["authorization_code"],
+      code_challenge_methods_supported: ["S256"],
+      scopes_supported: ["openid", "profile"],
+      token_endpoint_auth_methods_supported: ["none"],
+    });
+  }
 
-  if (req.method === "POST" && path === "/auth/authorize") {
-    let body: { userId?: string; password?: string; redirect_uri?: string };
-    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
-    const userId = body.userId;
-    if (!userId) return json({ error: "userId required" }, 400);
+  if (req.method === "GET" && path === "/oauth/clients") {
+    return json({
+      clients: [...OAUTH_CLIENTS.values()].map((client) => ({
+        client_id: client.clientId,
+        redirect_uris: client.redirectUris,
+        scopes: client.scopes,
+      })),
+    });
+  }
+
+  if (req.method === "POST" && (path === "/oauth/authorize" || path === "/auth/authorize")) {
+    let body: {
+      client_id?: string;
+      username?: string;
+      userId?: string;
+      redirect_uri?: string;
+      response_type?: string;
+      scope?: string;
+      password?: string;
+      code_challenge?: string;
+      code_challenge_method?: string;
+    };
+    try { body = await req.json(); } catch { return jsonError("invalid json", 400); }
+    if (body.response_type !== "code") return jsonError("unsupported response_type", 400);
+    if (body.code_challenge_method !== "S256") return jsonError("invalid code_challenge_method", 400);
+    if (!body.code_challenge) return jsonError("code_challenge required", 400);
+
+    const redirectUri = body.redirect_uri ?? "postmessage";
+    const oauthClient = getOAuthClient(body.client_id, redirectUri);
+    if (!oauthClient) return jsonError("invalid_client", 401);
+
+    const requestedUserId = normalizeUserId(body.username ?? body.userId ?? "");
+    if (!requestedUserId) return jsonError("username required", 400);
+    if (!await verifyOAuthCredentials(requestedUserId, body.password)) {
+      return jsonError("invalid_credentials", 401);
+    }
 
     const client = await usersPool.connect();
     try {
       const { rows } = await client.queryArray(
-        "SELECT id FROM users.users WHERE id = $1", [userId],
+        "SELECT id FROM users.users WHERE id = $1",
+        [requestedUserId],
       );
-      if (rows.length === 0) return json({ error: "user not found" }, 404);
+      if (rows.length === 0) return jsonError("user not found", 404);
 
       const code = crypto.randomUUID();
-      authCodes.set(code, { userId, expiresAt: Date.now() + 60_000 });
+      const scope = body.scope?.trim() || oauthClient.scopes.join(" ");
+      oauthCodes.set(code, {
+        clientId: oauthClient.clientId,
+        userId: requestedUserId,
+        redirectUri,
+        scope,
+        codeChallenge: body.code_challenge,
+        codeChallengeMethod: "S256",
+        expiresAt: Date.now() + 60_000,
+      });
 
-      return json({ code, redirect_uri: body.redirect_uri ?? "/auth/callback" });
+      return json({ code, redirect_uri: redirectUri, expires_in: 60, scope, token_type: "none" });
     } finally { client.release(); }
   }
 
-  if (req.method === "POST" && path === "/auth/token") {
-    let body: { code?: string; grant_type?: string };
-    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
-    if (body.grant_type !== "authorization_code") return json({ error: "unsupported grant_type" }, 400);
-    if (!body.code) return json({ error: "code required" }, 400);
+  if (req.method === "POST" && (path === "/oauth/token" || path === "/auth/token")) {
+    let body: {
+      client_id?: string;
+      code?: string;
+      grant_type?: string;
+      redirect_uri?: string;
+      code_verifier?: string;
+    };
+    try { body = await req.json(); } catch { return jsonError("invalid json", 400); }
+    if (body.grant_type !== "authorization_code") return jsonError("unsupported grant_type", 400);
+    if (!body.code) return jsonError("code required", 400);
+    if (!body.code_verifier) return jsonError("code_verifier required", 400);
 
-    const entry = authCodes.get(body.code);
+    const entry = oauthCodes.get(body.code);
     if (!entry || entry.expiresAt < Date.now()) {
-      authCodes.delete(body.code);
-      return json({ error: "invalid_grant" }, 400);
+      oauthCodes.delete(body.code);
+      return jsonError("invalid_grant", 400);
     }
-    authCodes.delete(body.code);
+
+    const oauthClient = getOAuthClient(body.client_id, body.redirect_uri ?? entry.redirectUri);
+    if (!oauthClient || oauthClient.clientId !== entry.clientId || (body.redirect_uri ?? entry.redirectUri) !== entry.redirectUri) {
+      return jsonError("invalid_client", 401);
+    }
+
+    const derivedChallenge = await derivePkceChallenge(body.code_verifier);
+    if (derivedChallenge !== entry.codeChallenge) return jsonError("invalid_grant", 400);
+    oauthCodes.delete(body.code);
 
     const client = await usersPool.connect();
     try {
-      const { rows } = await client.queryArray(
-        "SELECT id, name, role, avatar_emoji FROM users.users WHERE id = $1", [entry.userId],
-      );
-      if (rows.length === 0) return json({ error: "user not found" }, 404);
-      const [id, name, role, avatar_emoji] = rows[0];
-
-      const token = randomToken();
-      await client.queryArray(
-        "INSERT INTO users.sessions (token, user_id, created_at, expires_at) VALUES ($1, $2, now(), now() + interval '8 hours')",
-        [token, id],
-      );
-      producer?.send("user.session", { event: "login", userId: id, ts: Date.now() }).catch(() => {});
+      const session = await createSessionForUser(client, entry.userId);
+      if (!session) return jsonError("user not found", 404);
 
       return json(
-        { access_token: token, token_type: "bearer", expires_in: 28800, user: { id, name, role, avatar_emoji } },
+        {
+          access_token: session.token,
+          token_type: "bearer",
+          expires_in: 28800,
+          scope: entry.scope,
+          user: session.user,
+        },
         200,
-        { "Set-Cookie": `veta_user=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800` },
+        { "Set-Cookie": `veta_user=${session.token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800` },
       );
     } finally { client.release(); }
   }
 
-  if (req.method === "POST" && path === "/auth/register") {
-    let body: { userId?: string; name?: string; password?: string };
-    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
-    if (!body.userId || !body.name) return json({ error: "userId and name required" }, 400);
+  if (req.method === "POST" && (path === "/oauth/register" || path === "/auth/register")) {
+    let body: { username?: string; userId?: string; name?: string; password?: string };
+    try { body = await req.json(); } catch { return jsonError("invalid json", 400); }
+    if (!(body.username || body.userId) || !body.name) return jsonError("username and name required", 400);
 
-    const userId = body.userId.toLowerCase().replace(/[^a-z0-9_-]/g, "");
-    if (userId.length < 2) return json({ error: "userId too short" }, 400);
+    const userId = normalizeUserId(body.username ?? body.userId ?? "");
+    if (userId.length < 2) return jsonError("username too short", 400);
+    if (!await verifyOAuthCredentials(userId, body.password)) return jsonError("invalid_credentials", 401);
 
     const client = await usersPool.connect();
     try {
       const { rows: existing } = await client.queryArray(
         "SELECT id FROM users.users WHERE id = $1", [userId],
       );
-      if (existing.length > 0) return json({ error: "userId already exists" }, 409);
+      if (existing.length > 0) return jsonError("username already exists", 409);
 
       await client.queryArray(
         "INSERT INTO users.users (id, name, role, avatar_emoji) VALUES ($1, $2, 'viewer', '👁')",

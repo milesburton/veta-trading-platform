@@ -30,7 +30,12 @@ export const AllStatuses: Story = {
   decorators: [
     withStoreDecorator({
       auth: {
-        user: { id: "alice", name: "Alice Chen", role: "trader", avatar_emoji: "👩‍💼" },
+        user: {
+          id: "alice",
+          name: "Alice Chen",
+          role: "trader",
+          avatar_emoji: "👩‍💼",
+        },
         status: "authenticated",
       },
     }),
@@ -49,7 +54,12 @@ export const Empty: Story = {
   decorators: [
     withStoreDecorator({
       auth: {
-        user: { id: "alice", name: "Alice Chen", role: "trader", avatar_emoji: "👩‍💼" },
+        user: {
+          id: "alice",
+          name: "Alice Chen",
+          role: "trader",
+          avatar_emoji: "👩‍💼",
+        },
         status: "authenticated",
       },
     }),
@@ -102,7 +112,12 @@ export const HighVolume: Story = {
   decorators: [
     withStoreDecorator({
       auth: {
-        user: { id: "alice", name: "Alice Chen", role: "trader", avatar_emoji: "👩‍💼" },
+        user: {
+          id: "alice",
+          name: "Alice Chen",
+          role: "trader",
+          avatar_emoji: "👩‍💼",
+        },
         status: "authenticated",
       },
     }),

@@ -44,7 +44,11 @@ import type {
   YieldCurveRequest,
   YieldCurveResponse,
 } from "./types.ts";
-import { estimateVol, estimateVolProfile, fetchSpotPrice } from "./volatility-estimator.ts";
+import {
+  estimateVol,
+  estimateVolProfile,
+  fetchSpotPrice,
+} from "./volatility-estimator.ts";
 import { buildYieldCurveResponse, fetchFredParams } from "./yield-curve.ts";
 import { createYieldCurveStore } from "./yield-curve-store.ts";
 import { intelligencePool } from "../lib/db.ts";
@@ -56,8 +60,12 @@ import { buildVolSurface } from "./vol-surface.ts";
 
 const PORT = Number(Deno.env.get("ANALYTICS_PORT")) || 5_014;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
-const MARKET_SIM_URL = `http://${Deno.env.get("MARKET_SIM_HOST") ?? "localhost"}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
+const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${
+  Deno.env.get("JOURNAL_PORT") ?? "5009"
+}`;
+const MARKET_SIM_URL = `http://${
+  Deno.env.get("MARKET_SIM_HOST") ?? "localhost"
+}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
 
 const yieldCurveStore = createYieldCurveStore(intelligencePool);
 
@@ -86,9 +94,14 @@ async function resolveSpot(symbol: string): Promise<number | null> {
 
   if (assetPriceCache.has(symbol)) return assetPriceCache.get(symbol)!;
   try {
-    const res = await fetch(`${MARKET_SIM_URL}/assets`, { signal: AbortSignal.timeout(5_000) });
+    const res = await fetch(`${MARKET_SIM_URL}/assets`, {
+      signal: AbortSignal.timeout(5_000),
+    });
     if (res.ok) {
-      const assets = await res.json() as { symbol: string; initialPrice: number }[];
+      const assets = await res.json() as {
+        symbol: string;
+        initialPrice: number;
+      }[];
       for (const a of assets) assetPriceCache.set(a.symbol, a.initialPrice);
       if (assetPriceCache.has(symbol)) return assetPriceCache.get(symbol)!;
     }
@@ -101,7 +114,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS });
+  }
 
   if (path === "/health" && req.method === "GET") {
     return json({ service: "analytics", version: VERSION, status: "ok" });
@@ -115,17 +130,29 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       return err("Invalid JSON body");
     }
 
-    const { symbol, optionType, strike, expirySecs, riskFreeRate = 0.05 } = body;
+    const { symbol, optionType, strike, expirySecs, riskFreeRate = 0.05 } =
+      body;
     if (!symbol || !optionType || !strike || !expirySecs) {
-      return err("Missing required fields: symbol, optionType, strike, expirySecs");
+      return err(
+        "Missing required fields: symbol, optionType, strike, expirySecs",
+      );
     }
 
     const spot = await resolveSpot(symbol);
-    if (spot === null) return err(`Cannot resolve spot price for ${symbol}`, 404);
+    if (spot === null) {
+      return err(`Cannot resolve spot price for ${symbol}`, 404);
+    }
 
     const sigma = await estimateVol(JOURNAL_URL, symbol);
     const T = expirySecs / (365 * 86400);
-    const { price, greeks } = blackScholes(optionType, spot, strike, T, riskFreeRate, sigma);
+    const { price, greeks } = blackScholes(
+      optionType,
+      spot,
+      strike,
+      T,
+      riskFreeRate,
+      sigma,
+    );
 
     const response: OptionQuoteResponse = {
       symbol,
@@ -150,41 +177,85 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
 
     const {
-      symbol, optionType, strike, expirySecs, riskFreeRate = 0.05,
-      spotShocks, volShocks, timeDays = 0, paths = 1000,
+      symbol,
+      optionType,
+      strike,
+      expirySecs,
+      riskFreeRate = 0.05,
+      spotShocks,
+      volShocks,
+      timeDays = 0,
+      paths = 1000,
     } = body;
 
-    if (!symbol || !optionType || !strike || !expirySecs || !spotShocks?.length || !volShocks?.length) {
+    if (
+      !symbol || !optionType || !strike || !expirySecs || !spotShocks?.length ||
+      !volShocks?.length
+    ) {
       return err("Missing required fields");
     }
 
     const spot = await resolveSpot(symbol);
-    if (spot === null) return err(`Cannot resolve spot price for ${symbol}`, 404);
+    if (spot === null) {
+      return err(`Cannot resolve spot price for ${symbol}`, 404);
+    }
 
     const sigma = await estimateVol(JOURNAL_URL, symbol);
     const baseT = expirySecs / (365 * 86400);
     const timeElapsed = timeDays / 365;
     const adjustedT = Math.max(0, baseT - timeElapsed);
 
-    const { price: baselinePrice } = blackScholes(optionType, spot, strike, baseT, riskFreeRate, sigma);
+    const { price: baselinePrice } = blackScholes(
+      optionType,
+      spot,
+      strike,
+      baseT,
+      riskFreeRate,
+      sigma,
+    );
 
     const cells: ScenarioCell[][] = spotShocks.map((spotPct) => {
       const shockedSpot = spot * (1 + spotPct);
       return volShocks.map((volPct) => {
         const shockedSigma = Math.max(0.001, sigma + volPct);
-        const { price: optionPrice } = blackScholes(optionType, shockedSpot, strike, adjustedT, riskFreeRate, shockedSigma);
+        const { price: optionPrice } = blackScholes(
+          optionType,
+          shockedSpot,
+          strike,
+          adjustedT,
+          riskFreeRate,
+          shockedSigma,
+        );
         const pnl = optionPrice - baselinePrice;
         const pnlPct = baselinePrice > 0 ? pnl / baselinePrice : 0;
-        const seedKey = `${symbol}-${optionType}-${strike}-${expirySecs}-${spotPct.toFixed(3)}-${volPct.toFixed(3)}`;
-        const mc = monteCarlo(optionType, shockedSpot, strike, adjustedT, riskFreeRate, shockedSigma, paths, seedKey);
+        const seedKey = `${symbol}-${optionType}-${strike}-${expirySecs}-${
+          spotPct.toFixed(3)
+        }-${volPct.toFixed(3)}`;
+        const mc = monteCarlo(
+          optionType,
+          shockedSpot,
+          strike,
+          adjustedT,
+          riskFreeRate,
+          shockedSigma,
+          paths,
+          seedKey,
+        );
         return { spotPct, volPct, optionPrice, pnl, pnlPct, ...mc };
       });
     });
 
     const response: ScenarioResponse = {
-      symbol, optionType, strike, expirySecs,
-      spotPrice: spot, impliedVol: sigma, baselinePrice,
-      spotShocks, volShocks, cells,
+      symbol,
+      optionType,
+      strike,
+      expirySecs,
+      spotPrice: spot,
+      impliedVol: sigma,
+      baselinePrice,
+      spotShocks,
+      volShocks,
+      cells,
       computedAt: Date.now(),
     };
     return json(response);
@@ -198,11 +269,19 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       return err("Invalid JSON body");
     }
 
-    const { symbol, riskFreeRate = 0.05, strikes: reqStrikes, expiries: reqExpiries, signal } = body;
+    const {
+      symbol,
+      riskFreeRate = 0.05,
+      strikes: reqStrikes,
+      expiries: reqExpiries,
+      signal,
+    } = body;
     if (!symbol) return err("Missing required field: symbol");
 
     const spot = await resolveSpot(symbol);
-    if (spot === null) return err(`Cannot resolve spot price for ${symbol}`, 404);
+    if (spot === null) {
+      return err(`Cannot resolve spot price for ${symbol}`, 404);
+    }
 
     const sigma = await estimateVol(JOURNAL_URL, symbol);
     const strikes = reqStrikes ?? generateStrikes(spot);
@@ -214,7 +293,15 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         const T = expirySecs / (365 * 86400);
         for (const optionType of ["call", "put"] as const) {
           const rec = signal
-            ? scoreOptionWithSignal(optionType, spot, K, T, riskFreeRate, sigma, signal)
+            ? scoreOptionWithSignal(
+              optionType,
+              spot,
+              K,
+              T,
+              riskFreeRate,
+              sigma,
+              signal,
+            )
             : scoreOption(optionType, spot, K, T, riskFreeRate, sigma);
           recommendations.push(rec);
         }
@@ -266,19 +353,29 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const sigma = await estimateVol(JOURNAL_URL, symbol);
     const T = expirySecs / (365 * 86400);
 
-    const strikePoints: GreeksSurfacePoint[] = Array.from({ length: 25 }, (_, i) => {
-      const K = spot * (0.70 + i * (0.60 / 24));
-      const { price: callPrice, greeks } = blackScholes("call", spot, K, T, riskFreeRate, sigma);
-      return {
-        strike: K,
-        moneyness: K / spot,
-        callDelta: greeks.delta,
-        gamma: greeks.gamma,
-        theta: greeks.theta,
-        vega: greeks.vega,
-        callPrice,
-      };
-    });
+    const strikePoints: GreeksSurfacePoint[] = Array.from(
+      { length: 25 },
+      (_, i) => {
+        const K = spot * (0.70 + i * (0.60 / 24));
+        const { price: callPrice, greeks } = blackScholes(
+          "call",
+          spot,
+          K,
+          T,
+          riskFreeRate,
+          sigma,
+        );
+        return {
+          strike: K,
+          moneyness: K / spot,
+          callDelta: greeks.delta,
+          gamma: greeks.gamma,
+          theta: greeks.theta,
+          vega: greeks.vega,
+          callPrice,
+        };
+      },
+    );
 
     const response: GreeksSurfaceResponse = {
       symbol,
@@ -301,7 +398,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     const { couponRate, totalPeriods, yieldAnnual } = body;
     if (couponRate == null || totalPeriods == null || yieldAnnual == null) {
-      return err("Missing required fields: couponRate, totalPeriods, yieldAnnual");
+      return err(
+        "Missing required fields: couponRate, totalPeriods, yieldAnnual",
+      );
     }
 
     const response: BondPriceResponse = priceBond(body);
@@ -316,7 +415,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     // Use real FRED Treasury rates when available; caller params override
     const fredParams = await fetchFredParams(yieldCurveStore);
-    const response: YieldCurveResponse = buildYieldCurveResponse({ ...fredParams, ...body.params });
+    const response: YieldCurveResponse = buildYieldCurveResponse({
+      ...fredParams,
+      ...body.params,
+    });
     return json(response);
   }
 
@@ -324,18 +426,37 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const symbol = decodeURIComponent(path.slice("/price-fan/".length));
     if (!symbol) return err("Missing symbol");
 
-    const steps = Math.max(1, Math.min(200, Number(url.searchParams.get("steps")) || 24));
-    const stepSecs = Math.max(60, Number(url.searchParams.get("stepSecs")) || 3600);
-    const paths = Math.max(100, Math.min(2000, Number(url.searchParams.get("paths")) || 500));
+    const steps = Math.max(
+      1,
+      Math.min(200, Number(url.searchParams.get("steps")) || 24),
+    );
+    const stepSecs = Math.max(
+      60,
+      Number(url.searchParams.get("stepSecs")) || 3600,
+    );
+    const paths = Math.max(
+      100,
+      Math.min(2000, Number(url.searchParams.get("paths")) || 500),
+    );
     const riskFreeRate = Number(url.searchParams.get("riskFreeRate")) || 0.05;
 
     const spot = await resolveSpot(symbol);
-    if (spot === null) return err(`Cannot resolve spot price for ${symbol}`, 404);
+    if (spot === null) {
+      return err(`Cannot resolve spot price for ${symbol}`, 404);
+    }
 
     const sigma = await estimateVol(JOURNAL_URL, symbol);
     const seedKey = `fan-${symbol}-${steps}-${stepSecs}`;
 
-    const fanSteps = priceFan(spot, sigma, riskFreeRate, steps, stepSecs, paths, seedKey);
+    const fanSteps = priceFan(
+      spot,
+      sigma,
+      riskFreeRate,
+      steps,
+      stepSecs,
+      paths,
+      seedKey,
+    );
 
     const response: PriceFanResponse = {
       symbol,
@@ -357,7 +478,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
     const { couponRate, totalPeriods, yieldAnnual } = body;
     if (couponRate == null || totalPeriods == null || yieldAnnual == null) {
-      return err("Missing required fields: couponRate, totalPeriods, yieldAnnual");
+      return err(
+        "Missing required fields: couponRate, totalPeriods, yieldAnnual",
+      );
     }
     return json(computeSpreadAnalysis(body));
   }
@@ -380,7 +503,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     if (!symbol) return err("Missing symbol");
 
     const spot = await resolveSpot(symbol);
-    if (spot === null) return err(`Cannot resolve spot price for ${symbol}`, 404);
+    if (spot === null) {
+      return err(`Cannot resolve spot price for ${symbol}`, 404);
+    }
 
     const sigma = await estimateVol(JOURNAL_URL, symbol);
     return json(buildVolSurface(symbol, spot, sigma));

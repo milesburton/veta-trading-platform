@@ -7,20 +7,45 @@ import { useQueryGridQuery } from "../store/gridApi.ts";
 import type { ColDef } from "../types/gridPrefs.ts";
 import type { ChildOrder, LiquidityFlag, OrderRecord, OrderStatus } from "../types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
+import { formatTime } from "../utils/format.ts";
 import { CHANNEL_COLOURS } from "./DashboardLayout.tsx";
 import { ResizableHeader } from "./grid/ResizableHeader.tsx";
 
 const CHILD_COLS: ColDef[] = [
   { key: "time", label: "Time", type: "string", defaultWidth: 80 },
   { key: "sliceId", label: "Slice ID", type: "string", defaultWidth: 96 },
-  { key: "qty", label: "Qty", type: "number", defaultWidth: 64, align: "right" },
-  { key: "fillPx", label: "Fill Px", type: "number", defaultWidth: 72, align: "right" },
-  { key: "filled", label: "Filled", type: "number", defaultWidth: 64, align: "right" },
+  {
+    key: "qty",
+    label: "Qty",
+    type: "number",
+    defaultWidth: 64,
+    align: "right",
+  },
+  {
+    key: "fillPx",
+    label: "Fill Px",
+    type: "number",
+    defaultWidth: 72,
+    align: "right",
+  },
+  {
+    key: "filled",
+    label: "Filled",
+    type: "number",
+    defaultWidth: 64,
+    align: "right",
+  },
   { key: "venue", label: "Venue", type: "string", defaultWidth: 64 },
   { key: "status", label: "Status", type: "string", defaultWidth: 72 },
   { key: "cpty", label: "Cpty", type: "string", defaultWidth: 72 },
   { key: "liq", label: "Liq", type: "string", defaultWidth: 44 },
-  { key: "comm", label: "Comm", type: "number", defaultWidth: 64, align: "right" },
+  {
+    key: "comm",
+    label: "Comm",
+    type: "number",
+    defaultWidth: 64,
+    align: "right",
+  },
   { key: "settle", label: "Settle", type: "string", defaultWidth: 64 },
 ];
 
@@ -39,14 +64,6 @@ const LIQ_STYLES: Record<LiquidityFlag, string> = {
   TAKER: "text-amber-500",
   CROSS: "text-sky-500",
 };
-
-function formatTime(ms: number) {
-  return new Date(ms).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
 
 export function ChildOrdersPanel() {
   const channelIn = useChannelIn();
@@ -67,7 +84,15 @@ export function ChildOrdersPanel() {
         kind: "group",
         id: "root",
         join: "AND",
-        rules: [{ kind: "rule", id: "r0", field: "id", op: "=", value: parentOrderId ?? "" }],
+        rules: [
+          {
+            kind: "rule",
+            id: "r0",
+            field: "id",
+            op: "=",
+            value: parentOrderId ?? "",
+          },
+        ],
       },
       sortField: null,
       sortDir: null,
@@ -100,7 +125,9 @@ export function ChildOrdersPanel() {
         )}
         <span className="text-[11px] text-gray-400 font-medium truncate">
           {parentOrder
-            ? `${parentOrder.asset} ${parentOrder.side} ${parentOrder.quantity} — ${children.length} slice${children.length !== 1 ? "s" : ""}`
+            ? `${parentOrder.asset} ${parentOrder.side} ${parentOrder.quantity} — ${children.length} slice${
+                children.length !== 1 ? "s" : ""
+              }`
             : "No order selected"}
         </span>
         {outColour && (
@@ -197,7 +224,9 @@ export function ChildOrdersPanel() {
                     </td>
                     <td className="px-3 py-1.5">
                       <span
-                        className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase ${STATUS_STYLES[child.status]}`}
+                        className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase ${
+                          STATUS_STYLES[child.status]
+                        }`}
                         title={ORDER_STATUS_DESCRIPTIONS[child.status]}
                       >
                         {child.status}

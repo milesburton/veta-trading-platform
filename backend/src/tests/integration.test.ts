@@ -13,6 +13,7 @@ import {
   assertEquals,
   assertExists,
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
+import { loginAs } from "./test-helpers.ts";
 
 const GATEWAY_URL   = "http://localhost:5011";
 const MARKET_URL    = "http://localhost:5000";
@@ -23,25 +24,8 @@ const TWAP_URL      = "http://localhost:5004";
 const POV_URL       = "http://localhost:5005";
 const VWAP_URL      = "http://localhost:5006";
 const ARCHIVE_URL   = "http://localhost:5012";
-const USER_SVC_URL  = "http://localhost:5008";
 
 function t(ms = 5_000) { return AbortSignal.timeout(ms); }
-
-/** Log in as the given user and return the Set-Cookie header value. */
-async function loginAs(userId: string): Promise<string> {
-  const res = await fetch(`${USER_SVC_URL}/sessions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId }),
-    signal: t(),
-  });
-  assertEquals(res.status, 200, `Login as ${userId} failed`);
-  await res.body?.cancel();
-  const cookie = res.headers.get("set-cookie") ?? "";
-  const match = cookie.match(/veta_user=([^;]+)/);
-  assert(match, `No veta_user cookie in login response for ${userId}`);
-  return `veta_user=${match[1]}`;
-}
 
 // ── OPTIONS preflight (CORS) ──────────────────────────────────────────────────
 
@@ -272,8 +256,8 @@ Deno.test("[shared-workspaces] GET /shared-workspaces without auth returns 401",
 });
 
 Deno.test("[shared-workspaces] full lifecycle: POST → GET → DELETE", async () => {
-  const aliceCookie = await loginAs("alice");
-  const bobCookie   = await loginAs("bob");
+  const aliceCookie = `veta_user=${await loginAs("alice")}`;
+  const bobCookie   = `veta_user=${await loginAs("bob")}`;
 
   // Alice publishes a workspace
   const model = { global: {}, layout: { type: "row", children: [] } };
@@ -327,7 +311,7 @@ Deno.test("[shared-workspaces] full lifecycle: POST → GET → DELETE", async (
 });
 
 Deno.test("[shared-workspaces] GET /:id returns model JSON", async () => {
-  const aliceCookie = await loginAs("alice");
+  const aliceCookie = `veta_user=${await loginAs("alice")}`;
   const model = { global: {}, layout: { type: "row", children: [] } };
 
   const postRes = await fetch(`${GATEWAY_URL}/shared-workspaces`, {

@@ -29,19 +29,31 @@ const ORDER_LIFECYCLE_TOPICS = [
   "user.session",
 ];
 
-const HIGH_FREQ_TOPICS = ["orders.child", "orders.filled", "user.access", "grid.query"];
+const HIGH_FREQ_TOPICS = [
+  "orders.child",
+  "orders.filled",
+  "user.access",
+  "grid.query",
+];
 const HEARTBEAT_TOPICS = ["algo.heartbeat"];
 
 const instanceId = Date.now().toString(36);
 const ORDER_GROUP = `relay-ord-${instanceId}`;
-const HIGH_GROUP  = `relay-high-${instanceId}`;
-const HB_GROUP    = `relay-hb-${instanceId}`;
+const HIGH_GROUP = `relay-high-${instanceId}`;
+const HB_GROUP = `relay-hb-${instanceId}`;
 
 function relayTopic(group: string, topics: string[]) {
   createConsumer(group, topics).then((consumer) => {
     consumer.onMessage((topic, value) => {
       // Single JSON line → Alloy tails this via supervisord log → Loki
-      console.log(JSON.stringify({ type: topic, ts: Date.now(), payload: value, service: "kafka-relay" }));
+      console.log(
+        JSON.stringify({
+          type: topic,
+          ts: Date.now(),
+          payload: value,
+          service: "kafka-relay",
+        }),
+      );
     });
     console.log(`[kafka-relay] ${group} subscribed: ${topics.join(", ")}`);
   }).catch((err) => {
@@ -50,8 +62,8 @@ function relayTopic(group: string, topics: string[]) {
 }
 
 relayTopic(ORDER_GROUP, ORDER_LIFECYCLE_TOPICS);
-relayTopic(HIGH_GROUP,  HIGH_FREQ_TOPICS);
-relayTopic(HB_GROUP,    HEARTBEAT_TOPICS);
+relayTopic(HIGH_GROUP, HIGH_FREQ_TOPICS);
+relayTopic(HB_GROUP, HEARTBEAT_TOPICS);
 
 // ── Health endpoint ───────────────────────────────────────────────────────────
 
@@ -83,7 +95,13 @@ Deno.serve({ port: PORT }, async (req: Request) => {
     const events = await req.json() as unknown[];
     const arr = Array.isArray(events) ? events : [events];
     for (const ev of arr) {
-      console.log(JSON.stringify({ ...(ev as object), _source: "batch", service: "kafka-relay" }));
+      console.log(
+        JSON.stringify({
+          ...(ev as object),
+          _source: "batch",
+          service: "kafka-relay",
+        }),
+      );
     }
     return json({ success: true, count: arr.length });
   }

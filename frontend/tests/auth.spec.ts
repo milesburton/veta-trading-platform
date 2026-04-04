@@ -28,8 +28,8 @@ test.describe("Authentication", () => {
 
       await page.goto("/");
 
-      // The app transitions loading → unauthenticated → LoginPage ("Select your profile")
-      await expect(page.getByRole("heading", { name: /select your profile/i })).toBeVisible({
+      // The app transitions loading → unauthenticated → LoginPage (OAuth2 sign-in)
+      await expect(page.getByRole("heading", { name: /sign in with oauth2/i })).toBeVisible({
         timeout: 10_000,
       });
       // Dashboard should NOT be visible
@@ -43,7 +43,7 @@ test.describe("Authentication", () => {
 
       await page.goto("/");
 
-      await expect(page.getByRole("heading", { name: /select your profile/i })).toBeVisible({
+      await expect(page.getByRole("heading", { name: /sign in with oauth2/i })).toBeVisible({
         timeout: 10_000,
       });
     });

@@ -80,7 +80,11 @@ export function buildSessionSchedule(
   const continuousEnd = earlyClose
     ? earlyClose.closingAuctionStartMinute
     : minute + hours.continuousMinutes;
-  schedule.push({ phase: "CONTINUOUS", startMinute: minute, endMinute: continuousEnd });
+  schedule.push({
+    phase: "CONTINUOUS",
+    startMinute: minute,
+    endMinute: continuousEnd,
+  });
   minute = continuousEnd;
 
   schedule.push({

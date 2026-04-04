@@ -67,7 +67,11 @@ export const submitOrderThunk = createAsyncThunk(
       _gatewayWs.send(
         JSON.stringify({
           type: "submitOrder",
-          payload: { ...trade, strategy: trade.algoParams.strategy, clientOrderId },
+          payload: {
+            ...trade,
+            strategy: trade.algoParams.strategy,
+            clientOrderId,
+          },
         })
       );
     } else {
@@ -134,14 +138,18 @@ export const ordersSlice = createSlice({
       const now = Date.now();
       state.orders = state.orders.map((order) => {
         if (order.strategy !== "LIMIT") return order;
-        if (order.status === "filled" || order.status === "expired") return order;
+        if (order.status === "filled" || order.status === "expired") {
+          return order;
+        }
         const marketPrice = prices[order.asset];
         if (!marketPrice) return order;
         if (now >= order.expiresAt) return { ...order, status: "expired" };
         const triggered =
           (order.side === "BUY" && marketPrice <= order.limitPrice) ||
           (order.side === "SELL" && marketPrice >= order.limitPrice);
-        if (triggered) return { ...order, status: "filled", filled: order.quantity };
+        if (triggered) {
+          return { ...order, status: "filled", filled: order.quantity };
+        }
         if (order.status === "pending") return { ...order, status: "working" };
         return order;
       });

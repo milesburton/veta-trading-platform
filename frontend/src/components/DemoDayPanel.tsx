@@ -110,8 +110,9 @@ export function DemoDayPanel() {
         const status = (err as { status: number }).status;
         const data = (err as { data?: { error?: string } }).data;
         if (status === 401) setError("Session expired — please log in again");
-        else if (status === 503) setError("Message bus unavailable — is Redpanda running?");
-        else setError(data?.error ?? `Request failed (${status})`);
+        else if (status === 503) {
+          setError("Message bus unavailable — is Redpanda running?");
+        } else setError(data?.error ?? `Request failed (${status})`);
       } else {
         setError("Network error");
       }

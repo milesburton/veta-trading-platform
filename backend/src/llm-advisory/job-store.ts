@@ -11,7 +11,15 @@ import type {
 export interface JobStore {
   insertJob(job: Omit<LlmJob, "id">): Promise<string>;
   claimNextJob(workerSessionId: string): Promise<LlmJob | null>;
-  updateJobStatus(jobId: string, status: LlmJobStatus, fields?: { completedAt?: number; errorMessage?: string; retryCount?: number }): Promise<void>;
+  updateJobStatus(
+    jobId: string,
+    status: LlmJobStatus,
+    fields?: {
+      completedAt?: number;
+      errorMessage?: string;
+      retryCount?: number;
+    },
+  ): Promise<void>;
   getJob(jobId: string): Promise<LlmJob | null>;
   getJobsBySymbol(symbol: string, limit?: number): Promise<LlmJob[]>;
   getPendingJobCount(): Promise<number>;
@@ -22,20 +30,56 @@ export interface JobStore {
   insertPromptAudit(audit: Omit<LlmPromptAudit, "id">): Promise<void>;
   insertResponseAudit(audit: Omit<LlmResponseAudit, "id">): Promise<void>;
   insertWorkerSession(session: Omit<LlmWorkerSession, "id">): Promise<string>;
-  updateWorkerSession(sessionId: string, fields: { endedAt?: number; jobsProcessed?: number; jobsFailed?: number; exitReason?: string }): Promise<void>;
+  updateWorkerSession(
+    sessionId: string,
+    fields: {
+      endedAt?: number;
+      jobsProcessed?: number;
+      jobsFailed?: number;
+      exitReason?: string;
+    },
+  ): Promise<void>;
   sweepStuckJobs(maxRunningAgeMs: number): Promise<number>;
   pruneOldData(retentionMs: number): Promise<void>;
 }
 
 function rowToJob(row: unknown[]): LlmJob {
-  const [id, symbol, triggerReason, status, contextHash, priority, requestedBy,
-    createdAt, claimedAt, completedAt, workerSessionId, errorMessage, retryCount] = row as
-    [string, string, string, string, string, number, string | null, bigint | number, bigint | number | null, bigint | number | null, string | null, string | null, number];
+  const [
+    id,
+    symbol,
+    triggerReason,
+    status,
+    contextHash,
+    priority,
+    requestedBy,
+    createdAt,
+    claimedAt,
+    completedAt,
+    workerSessionId,
+    errorMessage,
+    retryCount,
+  ] = row as [
+    string,
+    string,
+    string,
+    string,
+    string,
+    number,
+    string | null,
+    bigint | number,
+    bigint | number | null,
+    bigint | number | null,
+    string | null,
+    string | null,
+    number,
+  ];
   return {
-    id, symbol,
+    id,
+    symbol,
     triggerReason: triggerReason as LlmJob["triggerReason"],
     status: status as LlmJobStatus,
-    contextHash, priority,
+    contextHash,
+    priority,
     requestedBy,
     createdAt: Number(createdAt),
     claimedAt: claimedAt !== null ? Number(claimedAt) : null,
@@ -47,16 +91,45 @@ function rowToJob(row: unknown[]): LlmJob {
 }
 
 function rowToNote(row: unknown[]): AdvisoryNote {
-  const [id, jobId, symbol, content, provider, modelId,
-    promptTokens, completionTokens, latencyMs,
-    signalSnapshot, recommendationSnapshot, createdAt] = row as
-    [string, string, string, string, string, string, number, number, number, string, string | null, bigint | number];
+  const [
+    id,
+    jobId,
+    symbol,
+    content,
+    provider,
+    modelId,
+    promptTokens,
+    completionTokens,
+    latencyMs,
+    signalSnapshot,
+    recommendationSnapshot,
+    createdAt,
+  ] = row as [
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    number,
+    number,
+    number,
+    string,
+    string | null,
+    bigint | number,
+  ];
   return {
-    id, jobId, symbol, content, provider, modelId,
+    id,
+    jobId,
+    symbol,
+    content,
+    provider,
+    modelId,
     promptTokens: Number(promptTokens),
     completionTokens: Number(completionTokens),
     latencyMs: Number(latencyMs),
-    signalSnapshot, recommendationSnapshot,
+    signalSnapshot,
+    recommendationSnapshot,
     createdAt: Number(createdAt),
   };
 }
@@ -87,9 +160,21 @@ export function createJobStore(pool: Pool): JobStore {
             (id, symbol, trigger_reason, status, context_hash, priority, requested_by,
              created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-          [id, job.symbol, job.triggerReason, job.status, job.contextHash, job.priority,
-            job.requestedBy ?? null, job.createdAt, job.claimedAt ?? null, job.completedAt ?? null,
-            job.workerSessionId ?? null, job.errorMessage ?? null, job.retryCount],
+          [
+            id,
+            job.symbol,
+            job.triggerReason,
+            job.status,
+            job.contextHash,
+            job.priority,
+            job.requestedBy ?? null,
+            job.createdAt,
+            job.claimedAt ?? null,
+            job.completedAt ?? null,
+            job.workerSessionId ?? null,
+            job.errorMessage ?? null,
+            job.retryCount,
+          ],
         );
       } finally {
         client.release();
@@ -129,7 +214,15 @@ export function createJobStore(pool: Pool): JobStore {
       }
     },
 
-    async updateJobStatus(jobId: string, status: LlmJobStatus, fields?: { completedAt?: number; errorMessage?: string; retryCount?: number }): Promise<void> {
+    async updateJobStatus(
+      jobId: string,
+      status: LlmJobStatus,
+      fields?: {
+        completedAt?: number;
+        errorMessage?: string;
+        retryCount?: number;
+      },
+    ): Promise<void> {
       const client = await pool.connect();
       try {
         await client.queryArray(
@@ -139,7 +232,13 @@ export function createJobStore(pool: Pool): JobStore {
                error_message = COALESCE($3, error_message),
                retry_count = COALESCE($4, retry_count)
            WHERE id = $5`,
-          [status, fields?.completedAt ?? null, fields?.errorMessage ?? null, fields?.retryCount ?? null, jobId],
+          [
+            status,
+            fields?.completedAt ?? null,
+            fields?.errorMessage ?? null,
+            fields?.retryCount ?? null,
+            jobId,
+          ],
         );
       } finally {
         client.release();
@@ -175,7 +274,10 @@ export function createJobStore(pool: Pool): JobStore {
       }
     },
 
-    async hasRecentJob(contextHash: string, windowMs: number): Promise<boolean> {
+    async hasRecentJob(
+      contextHash: string,
+      windowMs: number,
+    ): Promise<boolean> {
       const client = await pool.connect();
       try {
         const { rows } = await client.queryArray<[bigint | number]>(
@@ -215,9 +317,20 @@ export function createJobStore(pool: Pool): JobStore {
             (id, job_id, symbol, content, provider, model_id, prompt_tokens, completion_tokens,
              latency_ms, signal_snapshot, recommendation_snapshot, created_at)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-          [id, note.jobId, note.symbol, note.content, note.provider, note.modelId,
-            note.promptTokens, note.completionTokens, note.latencyMs,
-            note.signalSnapshot, note.recommendationSnapshot ?? null, note.createdAt],
+          [
+            id,
+            note.jobId,
+            note.symbol,
+            note.content,
+            note.provider,
+            note.modelId,
+            note.promptTokens,
+            note.completionTokens,
+            note.latencyMs,
+            note.signalSnapshot,
+            note.recommendationSnapshot ?? null,
+            note.createdAt,
+          ],
         );
       } finally {
         client.release();
@@ -247,28 +360,46 @@ export function createJobStore(pool: Pool): JobStore {
           `INSERT INTO llm_advisory.prompt_audit
             (id, job_id, prompt_text, system_prompt_hash, context_size_chars, ts)
            VALUES ($1,$2,$3,$4,$5,$6)`,
-          [crypto.randomUUID(), audit.jobId, audit.promptText, audit.systemPromptHash, audit.contextSizeChars, audit.ts],
+          [
+            crypto.randomUUID(),
+            audit.jobId,
+            audit.promptText,
+            audit.systemPromptHash,
+            audit.contextSizeChars,
+            audit.ts,
+          ],
         );
       } finally {
         client.release();
       }
     },
 
-    async insertResponseAudit(audit: Omit<LlmResponseAudit, "id">): Promise<void> {
+    async insertResponseAudit(
+      audit: Omit<LlmResponseAudit, "id">,
+    ): Promise<void> {
       const client = await pool.connect();
       try {
         await client.queryArray(
           `INSERT INTO llm_advisory.response_audit
             (id, job_id, raw_response, parsed_successfully, parse_error_message, ts)
            VALUES ($1,$2,$3,$4,$5,$6)`,
-          [crypto.randomUUID(), audit.jobId, audit.rawResponse, audit.parsedSuccessfully, audit.parseErrorMessage ?? null, audit.ts],
+          [
+            crypto.randomUUID(),
+            audit.jobId,
+            audit.rawResponse,
+            audit.parsedSuccessfully,
+            audit.parseErrorMessage ?? null,
+            audit.ts,
+          ],
         );
       } finally {
         client.release();
       }
     },
 
-    async insertWorkerSession(session: Omit<LlmWorkerSession, "id">): Promise<string> {
+    async insertWorkerSession(
+      session: Omit<LlmWorkerSession, "id">,
+    ): Promise<string> {
       const id = crypto.randomUUID();
       const client = await pool.connect();
       try {
@@ -276,8 +407,17 @@ export function createJobStore(pool: Pool): JobStore {
           `INSERT INTO llm_advisory.worker_sessions
             (id, started_at, ended_at, provider, model_id, jobs_processed, jobs_failed, pid, exit_reason)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-          [id, session.startedAt, session.endedAt ?? null, session.provider, session.modelId,
-            session.jobsProcessed, session.jobsFailed, session.pid, session.exitReason ?? null],
+          [
+            id,
+            session.startedAt,
+            session.endedAt ?? null,
+            session.provider,
+            session.modelId,
+            session.jobsProcessed,
+            session.jobsFailed,
+            session.pid,
+            session.exitReason ?? null,
+          ],
         );
       } finally {
         client.release();
@@ -285,7 +425,15 @@ export function createJobStore(pool: Pool): JobStore {
       return id;
     },
 
-    async updateWorkerSession(sessionId: string, fields: { endedAt?: number; jobsProcessed?: number; jobsFailed?: number; exitReason?: string }): Promise<void> {
+    async updateWorkerSession(
+      sessionId: string,
+      fields: {
+        endedAt?: number;
+        jobsProcessed?: number;
+        jobsFailed?: number;
+        exitReason?: string;
+      },
+    ): Promise<void> {
       const client = await pool.connect();
       try {
         await client.queryArray(
@@ -295,7 +443,13 @@ export function createJobStore(pool: Pool): JobStore {
                jobs_failed = COALESCE($3, jobs_failed),
                exit_reason = COALESCE($4, exit_reason)
            WHERE id = $5`,
-          [fields.endedAt ?? null, fields.jobsProcessed ?? null, fields.jobsFailed ?? null, fields.exitReason ?? null, sessionId],
+          [
+            fields.endedAt ?? null,
+            fields.jobsProcessed ?? null,
+            fields.jobsFailed ?? null,
+            fields.exitReason ?? null,
+            sessionId,
+          ],
         );
       } finally {
         client.release();

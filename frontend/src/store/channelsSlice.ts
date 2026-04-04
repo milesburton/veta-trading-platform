@@ -13,7 +13,10 @@ interface ChannelsState {
   data: Record<number, ChannelData>;
 }
 
-const emptyChannel = (): ChannelData => ({ selectedAsset: null, selectedOrderId: null });
+const emptyChannel = (): ChannelData => ({
+  selectedAsset: null,
+  selectedOrderId: null,
+});
 
 const initialState: ChannelsState = {
   data: {

@@ -12,7 +12,10 @@ export const STRATEGY_OPTIONS: StrategyMeta[] = [
   { value: "VWAP", label: "VWAP — Volume Weighted Avg Price" },
   { value: "ICEBERG", label: "ICEBERG — Hidden quantity reveal" },
   { value: "SNIPER", label: "SNIPER — Multi-venue smart routing" },
-  { value: "ARRIVAL_PRICE", label: "ARRIVAL PRICE — Minimise arrival slippage" },
+  {
+    value: "ARRIVAL_PRICE",
+    label: "ARRIVAL PRICE — Minimise arrival slippage",
+  },
   { value: "IS", label: "IS — Implementation Shortfall" },
   { value: "MOMENTUM", label: "MOMENTUM — EMA crossover entry" },
 ];

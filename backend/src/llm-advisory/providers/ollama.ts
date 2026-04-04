@@ -1,4 +1,7 @@
-import type { ILlmProvider, LlmProviderResponse } from "../../types/llm-advisory.ts";
+import type {
+  ILlmProvider,
+  LlmProviderResponse,
+} from "../../types/llm-advisory.ts";
 
 interface OllamaGenerateResponse {
   response: string;
@@ -6,19 +9,30 @@ interface OllamaGenerateResponse {
   eval_count?: number;
 }
 
-export function createOllamaProvider(modelId: string, baseUrl: string): ILlmProvider {
+export function createOllamaProvider(
+  modelId: string,
+  baseUrl: string,
+): ILlmProvider {
   const base = baseUrl.replace(/\/$/, "");
 
   return {
     providerId: "ollama",
     modelId,
 
-    async generate(prompt: string, systemPrompt: string): Promise<LlmProviderResponse> {
+    async generate(
+      prompt: string,
+      systemPrompt: string,
+    ): Promise<LlmProviderResponse> {
       const start = Date.now();
       const res = await fetch(`${base}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: modelId, prompt, system: systemPrompt, stream: false }),
+        body: JSON.stringify({
+          model: modelId,
+          prompt,
+          system: systemPrompt,
+          stream: false,
+        }),
         signal: AbortSignal.timeout(120_000),
       });
       if (!res.ok) {
@@ -38,7 +52,9 @@ export function createOllamaProvider(modelId: string, baseUrl: string): ILlmProv
 
     async isAvailable(): Promise<boolean> {
       try {
-        const res = await fetch(`${base}/api/tags`, { signal: AbortSignal.timeout(3_000) });
+        const res = await fetch(`${base}/api/tags`, {
+          signal: AbortSignal.timeout(3_000),
+        });
         return res.ok;
       } catch {
         return false;

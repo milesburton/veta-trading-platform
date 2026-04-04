@@ -1,6 +1,11 @@
 import type { MarketAdapterEvent } from "../types/intelligence.ts";
 
-const IMPACT_ROTATION: Array<"high" | "medium" | "low"> = ["high", "medium", "medium", "low"];
+const IMPACT_ROTATION: Array<"high" | "medium" | "low"> = [
+  "high",
+  "medium",
+  "medium",
+  "low",
+];
 
 interface FinnhubEarning {
   symbol: string;
@@ -11,7 +16,10 @@ interface FinnhubEarning {
   year: number | null;
 }
 
-function deriveImpact(actual: number | null, estimate: number | null): "high" | "medium" | "low" {
+function deriveImpact(
+  actual: number | null,
+  estimate: number | null,
+): "high" | "medium" | "low" {
   if (actual == null || estimate == null || estimate === 0) return "medium";
   const beatPct = Math.abs((actual - estimate) / Math.abs(estimate));
   if (beatPct >= 0.15) return "high";
@@ -24,8 +32,10 @@ async function fetchFinnhubEarnings(
   symbols: string[],
 ): Promise<Map<string, FinnhubEarning[]>> {
   const now = new Date();
-  const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const to = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    .slice(0, 10);
+  const to = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString()
+    .slice(0, 10);
   const symbolParam = symbols.slice(0, 50).join(",");
 
   try {
@@ -47,7 +57,10 @@ async function fetchFinnhubEarnings(
     }
     return bySymbol;
   } catch (err) {
-    console.warn("[earnings-adapter] Finnhub fetch failed:", (err as Error).message);
+    console.warn(
+      "[earnings-adapter] Finnhub fetch failed:",
+      (err as Error).message,
+    );
     return new Map();
   }
 }
@@ -87,7 +100,9 @@ function syntheticEarningsEvents(symbols: string[]): MarketAdapterEvent[] {
   return events;
 }
 
-export async function seedEarningsEvents(symbols: string[]): Promise<MarketAdapterEvent[]> {
+export async function seedEarningsEvents(
+  symbols: string[],
+): Promise<MarketAdapterEvent[]> {
   const apiKey = Deno.env.get("FINNHUB_KEY");
 
   if (apiKey) {
@@ -99,7 +114,9 @@ export async function seedEarningsEvents(symbols: string[]): Promise<MarketAdapt
         for (const e of earnings) {
           const scheduledAt = new Date(e.date).getTime();
           const impact = deriveImpact(e.epsActual, e.epsEstimate);
-          const quarter = e.quarter != null && e.year != null ? `Q${e.quarter} ${e.year}` : "";
+          const quarter = e.quarter != null && e.year != null
+            ? `Q${e.quarter} ${e.year}`
+            : "";
           const headline = `${symbol}${quarter ? ` ${quarter}` : ""} Earnings`;
           events.push({
             id: `finnhub-earnings-${symbol}-${e.date}`,
@@ -112,12 +129,16 @@ export async function seedEarningsEvents(symbols: string[]): Promise<MarketAdapt
           });
         }
       }
-      console.log(`[earnings-adapter] Loaded ${events.length} real earnings events from Finnhub`);
+      console.log(
+        `[earnings-adapter] Loaded ${events.length} real earnings events from Finnhub`,
+      );
       return events;
     }
   }
 
-  console.log("[earnings-adapter] Using synthetic earnings events (no FINNHUB_KEY or no data)");
+  console.log(
+    "[earnings-adapter] Using synthetic earnings events (no FINNHUB_KEY or no data)",
+  );
   return syntheticEarningsEvents(symbols);
 }
 

@@ -20,7 +20,9 @@ export function runPriceCollarCheck(ctx: TicketContext): Diagnostic[] {
     diagnostics.push({
       field: "limitPrice",
       severity: "error",
-      message: `Limit price is ${pct}% ${direction} current market ($${instrument.currentPrice.toFixed(2)}) — exceeds price collar`,
+      message: `Limit price is ${pct}% ${direction} current market ($${instrument.currentPrice.toFixed(
+        2
+      )}) — exceeds price collar`,
       ruleId: "price-collar.exceeds-max",
     });
   } else if (deviation >= COLLAR_WARNING_PCT) {
@@ -29,7 +31,9 @@ export function runPriceCollarCheck(ctx: TicketContext): Diagnostic[] {
     diagnostics.push({
       field: "limitPrice",
       severity: "warning",
-      message: `Limit price is ${pct}% ${direction} current market ($${instrument.currentPrice.toFixed(2)})`,
+      message: `Limit price is ${pct}% ${direction} current market ($${instrument.currentPrice.toFixed(
+        2
+      )})`,
       ruleId: "price-collar.deviation",
     });
   }

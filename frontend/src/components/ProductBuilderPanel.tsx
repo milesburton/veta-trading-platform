@@ -239,7 +239,9 @@ export function ProductBuilderPanel() {
         </span>
         {currentState && (
           <span
-            className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold uppercase tracking-wide ${STATE_COLOURS[currentState]}`}
+            className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold uppercase tracking-wide ${
+              STATE_COLOURS[currentState]
+            }`}
           >
             {currentState}
           </span>
@@ -428,7 +430,9 @@ export function ProductBuilderPanel() {
         {legs.value.length > 0 && (
           <div className="flex items-center justify-between text-[10px]">
             <span
-              className={`font-semibold tabular-nums ${weightOk ? "text-emerald-400" : "text-red-400"}`}
+              className={`font-semibold tabular-nums ${
+                weightOk ? "text-emerald-400" : "text-red-400"
+              }`}
             >
               Total: {totalWeight.toFixed(1)}%{!weightOk && " — must equal 100%"}
             </span>

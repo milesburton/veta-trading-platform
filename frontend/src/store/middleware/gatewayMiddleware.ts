@@ -301,7 +301,10 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             break;
           }
           case "orderRejected": {
-            const rejData = msg.data as { reason?: string; clientOrderId?: string };
+            const rejData = msg.data as {
+              reason?: string;
+              clientOrderId?: string;
+            };
             console.warn("[gateway] Order rejected by gateway:", rejData.reason);
             if (rejData.clientOrderId) {
               storeAPI.dispatch(
@@ -315,7 +318,10 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             break;
           }
           case "authIdentity": {
-            const identityData = msg.data as { user: AuthUser; limits: TradingLimits };
+            const identityData = msg.data as {
+              user: AuthUser;
+              limits: TradingLimits;
+            };
             storeAPI.dispatch(setUserWithLimits(identityData));
             // biome-ignore lint/suspicious/noExplicitAny: AsyncThunks; AppDispatch not available in middleware scope
             (storeAPI.dispatch as any)(loadGridPrefs());
@@ -360,7 +366,9 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
                 alertAdded({
                   severity: "WARNING",
                   source: "algo",
-                  message: `Algo ${hb.algo} heartbeat resumed after ${Math.round((now - prev) / 1000)}s gap`,
+                  message: `Algo ${hb.algo} heartbeat resumed after ${Math.round(
+                    (now - prev) / 1000
+                  )}s gap`,
                   ts: now,
                 })
               );
@@ -431,7 +439,12 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       ]);
       const candles1m: OhlcCandle[] = res1m.ok ? await res1m.json() : [];
       const candles5m: OhlcCandle[] = res5m.ok ? await res5m.json() : [];
-      storeAPI.dispatch(candlesSeeded({ symbol, candles: { "1m": candles1m, "5m": candles5m } }));
+      storeAPI.dispatch(
+        candlesSeeded({
+          symbol,
+          candles: { "1m": candles1m, "5m": candles5m },
+        })
+      );
     } catch {
       storeAPI.dispatch(candlesSeeded({ symbol, candles: { "1m": [], "5m": [] } }));
     }
@@ -472,7 +485,9 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   if (!started) {
     started = true;
     fetchAssetsAndSeedCandles().then(() => {
-      const state = storeAPI.getState() as { ui: { selectedAsset: string | null } };
+      const state = storeAPI.getState() as {
+        ui: { selectedAsset: string | null };
+      };
       if (state.ui.selectedAsset) hydrateNewsForSymbol(state.ui.selectedAsset);
     });
     connect();

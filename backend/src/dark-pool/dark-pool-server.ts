@@ -32,7 +32,8 @@ const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const MATCH_CYCLE_MS = Number(Deno.env.get("MATCH_CYCLE_MS")) || 500;
 const EXPIRY_SWEEP_MS = Number(Deno.env.get("EXPIRY_SWEEP_MS")) || 2_000;
 const ORDER_TIMEOUT_MS = Number(Deno.env.get("ORDER_TIMEOUT_MS")) || 30_000;
-const DARK_POOL_MIN_BLOCK = Number(Deno.env.get("DARK_POOL_MIN_BLOCK")) || 10_000;
+const DARK_POOL_MIN_BLOCK = Number(Deno.env.get("DARK_POOL_MIN_BLOCK")) ||
+  10_000;
 const RESIDUAL_ACTION = Deno.env.get("RESIDUAL_ACTION") || "reroute";
 
 const CORS_HEADERS = {
@@ -119,14 +120,18 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("dark-pool").catch((err) => {
-  console.warn("[dark-pool] Redpanda unavailable — executions will not be published:", err.message);
+  console.warn(
+    "[dark-pool] Redpanda unavailable — executions will not be published:",
+    err.message,
+  );
   return null;
 });
 
-const consumer = await createConsumer("dark-pool-routed", ["orders.routed"]).catch((err) => {
-  console.warn("[dark-pool] Cannot subscribe to orders.routed:", err.message);
-  return null;
-});
+const consumer = await createConsumer("dark-pool-routed", ["orders.routed"])
+  .catch((err) => {
+    console.warn("[dark-pool] Cannot subscribe to orders.routed:", err.message);
+    return null;
+  });
 
 consumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
@@ -135,12 +140,16 @@ consumer?.onMessage((_topic, raw) => {
   if (order.marketType !== "dark") return;
 
   if (!order.asset || !order.side || !order.quantity || !order.limitPrice) {
-    console.warn(`[dark-pool] Rejected malformed order ${order.orderId}: missing required fields`);
+    console.warn(
+      `[dark-pool] Rejected malformed order ${order.orderId}: missing required fields`,
+    );
     return;
   }
 
   if (order.quantity < DARK_POOL_MIN_BLOCK) {
-    console.warn(`[dark-pool] Rejected order ${order.orderId}: qty ${order.quantity} below min block ${DARK_POOL_MIN_BLOCK}`);
+    console.warn(
+      `[dark-pool] Rejected order ${order.orderId}: qty ${order.quantity} below min block ${DARK_POOL_MIN_BLOCK}`,
+    );
     return;
   }
 
@@ -168,10 +177,16 @@ consumer?.onMessage((_topic, raw) => {
     pool.sells.push(darkOrder);
   }
 
-  console.log(`[dark-pool] Admitted ${order.side} ${order.quantity} ${order.asset} @ limit=${order.limitPrice} orderId=${order.orderId}`);
+  console.log(
+    `[dark-pool] Admitted ${order.side} ${order.quantity} ${order.asset} @ limit=${order.limitPrice} orderId=${order.orderId}`,
+  );
 });
 
-function matchSymbol(pool: SymbolPool, asset: string, midPrice: number): DarkFill[] {
+function matchSymbol(
+  pool: SymbolPool,
+  asset: string,
+  midPrice: number,
+): DarkFill[] {
   // FIFO order — price not used for priority (dark pool matching semantics)
   pool.buys.sort((a, b) => a.admittedAt - b.admittedAt);
   pool.sells.sort((a, b) => a.admittedAt - b.admittedAt);
@@ -186,14 +201,26 @@ function matchSymbol(pool: SymbolPool, asset: string, midPrice: number): DarkFil
     const buy = pool.buys[bi];
     const sell = pool.sells[si];
 
-    if (now >= buy.deadlineAt) { bi++; continue; }
-    if (now >= sell.deadlineAt) { si++; continue; }
+    if (now >= buy.deadlineAt) {
+      bi++;
+      continue;
+    }
+    if (now >= sell.deadlineAt) {
+      si++;
+      continue;
+    }
 
     const buyEligible = buy.limitPrice >= midPrice;
     const sellEligible = sell.limitPrice <= midPrice;
 
-    if (!buyEligible) { bi++; continue; }
-    if (!sellEligible) { si++; continue; }
+    if (!buyEligible) {
+      bi++;
+      continue;
+    }
+    if (!sellEligible) {
+      si++;
+      continue;
+    }
 
     const matchedQty = Math.min(buy.remainingQty, sell.remainingQty);
     if (matchedQty <= 0) {
@@ -222,8 +249,10 @@ function matchSymbol(pool: SymbolPool, asset: string, midPrice: number): DarkFil
     });
 
     console.log(
-      `[dark-pool] Match ${fills[fills.length - 1].execId}: ${matchedQty} ${asset} @ ${midPrice} ` +
-      `buy=${buy.orderId} sell=${sell.orderId}`
+      `[dark-pool] Match ${
+        fills[fills.length - 1].execId
+      }: ${matchedQty} ${asset} @ ${midPrice} ` +
+        `buy=${buy.orderId} sell=${sell.orderId}`,
     );
 
     if (buy.remainingQty <= 0) bi++;
@@ -326,10 +355,22 @@ async function runMatchCycle(): Promise<void> {
       totalMatchedAllTime++;
 
       await producer?.send("dark.execution", fill).catch(() => {});
-      await producer?.send("orders.filled", buildOrdersFilled(fill, "BUY", buyOrder)).catch(() => {});
-      await producer?.send("orders.filled", buildOrdersFilled(fill, "SELL", sellOrder)).catch(() => {});
-      await producer?.send("fix.execution", buildFixExecution(fill, "BUY", buyOrder)).catch(() => {});
-      await producer?.send("fix.execution", buildFixExecution(fill, "SELL", sellOrder)).catch(() => {});
+      await producer?.send(
+        "orders.filled",
+        buildOrdersFilled(fill, "BUY", buyOrder),
+      ).catch(() => {});
+      await producer?.send(
+        "orders.filled",
+        buildOrdersFilled(fill, "SELL", sellOrder),
+      ).catch(() => {});
+      await producer?.send(
+        "fix.execution",
+        buildFixExecution(fill, "BUY", buyOrder),
+      ).catch(() => {});
+      await producer?.send(
+        "fix.execution",
+        buildFixExecution(fill, "SELL", sellOrder),
+      ).catch(() => {});
     }
 
     if (pool.buys.length === 0 && pool.sells.length === 0) {
@@ -358,7 +399,7 @@ async function sweepExpiredOrders(): Promise<void> {
       if (order.remainingQty <= 0) continue; // fully filled — already handled
 
       console.log(
-        `[dark-pool] Order ${order.orderId} (${order.side} ${order.remainingQty} ${asset}) timed out — action=${RESIDUAL_ACTION}`
+        `[dark-pool] Order ${order.orderId} (${order.side} ${order.remainingQty} ${asset}) timed out — action=${RESIDUAL_ACTION}`,
       );
 
       if (RESIDUAL_ACTION === "reroute") {
@@ -399,16 +440,24 @@ async function sweepExpiredOrders(): Promise<void> {
   }
 }
 
-setInterval(() => { runMatchCycle().catch(console.error); }, MATCH_CYCLE_MS);
-setInterval(() => { sweepExpiredOrders().catch(console.error); }, EXPIRY_SWEEP_MS);
+setInterval(() => {
+  runMatchCycle().catch(console.error);
+}, MATCH_CYCLE_MS);
+setInterval(() => {
+  sweepExpiredOrders().catch(console.error);
+}, EXPIRY_SWEEP_MS);
 
 console.log(`[dark-pool] Listening for orders.routed (DARK1) on message bus`);
-console.log(`[dark-pool] Match cycle=${MATCH_CYCLE_MS}ms timeout=${ORDER_TIMEOUT_MS}ms residual=${RESIDUAL_ACTION}`);
+console.log(
+  `[dark-pool] Match cycle=${MATCH_CYCLE_MS}ms timeout=${ORDER_TIMEOUT_MS}ms residual=${RESIDUAL_ACTION}`,
+);
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
 
   if (url.pathname === "/health" && req.method === "GET") {
     return new Response(
@@ -418,7 +467,10 @@ Deno.serve({ port: PORT }, (req) => {
   }
 
   if (url.pathname === "/pool/stats" && req.method === "GET") {
-    const depth: Record<string, { buys: number; sells: number; buyQty: number; sellQty: number }> = {};
+    const depth: Record<
+      string,
+      { buys: number; sells: number; buyQty: number; sellQty: number }
+    > = {};
     for (const [asset, pool] of orderBook) {
       depth[asset] = {
         buys: pool.buys.length,

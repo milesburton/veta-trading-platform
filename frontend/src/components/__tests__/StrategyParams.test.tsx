@@ -72,7 +72,9 @@ test("calls setTwapSlices when TWAP slices input changes", () => {
 test("calls setTwapCap when TWAP cap input changes", () => {
   const setTwapCap = vi.fn();
   render(<StrategyParams {...defaultProps} activeStrategy="TWAP" setTwapCap={setTwapCap} />);
-  fireEvent.change(screen.getByLabelText(/Part. Cap %/), { target: { value: "50" } });
+  fireEvent.change(screen.getByLabelText(/Part. Cap %/), {
+    target: { value: "50" },
+  });
   expect(setTwapCap).toHaveBeenCalledWith("50");
 });
 
@@ -87,7 +89,9 @@ test("renders POV params when POV active", () => {
 test("calls setPovRate when POV rate input changes", () => {
   const setPovRate = vi.fn();
   render(<StrategyParams {...defaultProps} activeStrategy="POV" setPovRate={setPovRate} />);
-  fireEvent.change(screen.getByLabelText(/Participation Rate %/), { target: { value: "20" } });
+  fireEvent.change(screen.getByLabelText(/Participation Rate %/), {
+    target: { value: "20" },
+  });
   expect(setPovRate).toHaveBeenCalledWith("20");
 });
 
@@ -102,8 +106,12 @@ test("calls setPovMin and setPovMax when POV slice inputs change", () => {
       setPovMax={setPovMax}
     />
   );
-  fireEvent.change(screen.getByLabelText(/Min Slice/), { target: { value: "5" } });
-  fireEvent.change(screen.getByLabelText(/Max Slice/), { target: { value: "1000" } });
+  fireEvent.change(screen.getByLabelText(/Min Slice/), {
+    target: { value: "5" },
+  });
+  fireEvent.change(screen.getByLabelText(/Max Slice/), {
+    target: { value: "1000" },
+  });
   expect(setPovMin).toHaveBeenCalledWith("5");
   expect(setPovMax).toHaveBeenCalledWith("1000");
 });
@@ -119,7 +127,9 @@ test("renders VWAP params when VWAP active", () => {
 test("calls setVwapDev when VWAP deviation input changes", () => {
   const setVwapDev = vi.fn();
   render(<StrategyParams {...defaultProps} activeStrategy="VWAP" setVwapDev={setVwapDev} />);
-  fireEvent.change(screen.getByLabelText(/Max Deviation %/), { target: { value: "1.0" } });
+  fireEvent.change(screen.getByLabelText(/Max Deviation %/), {
+    target: { value: "1.0" },
+  });
   expect(setVwapDev).toHaveBeenCalledWith("1.0");
 });
 
@@ -134,8 +144,12 @@ test("calls setVwapStart and setVwapEnd when VWAP offset inputs change", () => {
       setVwapEnd={setVwapEnd}
     />
   );
-  fireEvent.change(screen.getByLabelText(/Start Offset/), { target: { value: "10" } });
-  fireEvent.change(screen.getByLabelText(/End Offset/), { target: { value: "600" } });
+  fireEvent.change(screen.getByLabelText(/Start Offset/), {
+    target: { value: "10" },
+  });
+  fireEvent.change(screen.getByLabelText(/End Offset/), {
+    target: { value: "600" },
+  });
   expect(setVwapStart).toHaveBeenCalledWith("10");
   expect(setVwapEnd).toHaveBeenCalledWith("600");
 });
@@ -161,7 +175,9 @@ test("calls setIcebergVisible when visible qty input changes", () => {
       setIcebergVisible={setIcebergVisible}
     />
   );
-  fireEvent.change(screen.getByLabelText(/Visible Qty/), { target: { value: "50" } });
+  fireEvent.change(screen.getByLabelText(/Visible Qty/), {
+    target: { value: "50" },
+  });
   expect(setIcebergVisible).toHaveBeenCalledWith("50");
 });
 
@@ -188,7 +204,9 @@ test("calls setSniperAggression when aggression input changes", () => {
       setSniperAggression={setSniperAggression}
     />
   );
-  fireEvent.change(screen.getByLabelText(/Aggression %/), { target: { value: "60" } });
+  fireEvent.change(screen.getByLabelText(/Aggression %/), {
+    target: { value: "60" },
+  });
   expect(setSniperAggression).toHaveBeenCalledWith("60");
 });
 
@@ -201,7 +219,9 @@ test("calls setSniperMaxVenues when max venues input changes", () => {
       setSniperMaxVenues={setSniperMaxVenues}
     />
   );
-  fireEvent.change(screen.getByLabelText(/Max Venues/), { target: { value: "3" } });
+  fireEvent.change(screen.getByLabelText(/Max Venues/), {
+    target: { value: "3" },
+  });
   expect(setSniperMaxVenues).toHaveBeenCalledWith("3");
 });
 
@@ -217,7 +237,9 @@ test("calls setApUrgency when urgency input changes", () => {
   render(
     <StrategyParams {...defaultProps} activeStrategy="ARRIVAL_PRICE" setApUrgency={setApUrgency} />
   );
-  fireEvent.change(screen.getByLabelText(/Urgency/), { target: { value: "75" } });
+  fireEvent.change(screen.getByLabelText(/Urgency/), {
+    target: { value: "75" },
+  });
   expect(setApUrgency).toHaveBeenCalledWith("75");
 });
 
@@ -230,7 +252,9 @@ test("calls setApMaxSlippageBps when max slippage input changes", () => {
       setApMaxSlippageBps={setApMaxSlippageBps}
     />
   );
-  fireEvent.change(screen.getByLabelText(/Max Slippage Bps/), { target: { value: "50" } });
+  fireEvent.change(screen.getByLabelText(/Max Slippage Bps/), {
+    target: { value: "50" },
+  });
   expect(setApMaxSlippageBps).toHaveBeenCalledWith("50");
 });
 

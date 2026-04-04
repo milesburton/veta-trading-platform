@@ -93,8 +93,9 @@ export function ComponentPicker() {
     if (
       id === "product-builder" &&
       (user?.role === "external-client" || user?.role === "compliance")
-    )
+    ) {
       return false;
+    }
     if (id === "product-book" && user?.role === "compliance") return false;
     return true;
   });

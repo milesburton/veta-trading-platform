@@ -53,7 +53,12 @@ function renderLog(events: ObsEvent[] = [], channelAsset?: string) {
   render(
     <Provider store={store}>
       <ChannelContext.Provider
-        value={{ instanceId: "test", panelType: "decision-log", outgoing: null, incoming }}
+        value={{
+          instanceId: "test",
+          panelType: "decision-log",
+          outgoing: null,
+          incoming,
+        }}
       >
         <DecisionLog />
       </ChannelContext.Provider>

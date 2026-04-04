@@ -8,7 +8,8 @@
  *   or    svc-ui  (fish alias)
  */
 
-const CONF = "/workspaces/virtual-equities-trading-application/supervisord.conf";
+const CONF =
+  "/workspaces/virtual-equities-trading-application/supervisord.conf";
 const CTL = ["supervisorctl", "-c", CONF];
 const REFRESH_MS = 2000;
 
@@ -246,12 +247,11 @@ function renderRow(name: string, info: SvcInfo | undefined): string {
       col("  (not in supervisord output)", A.dim)
     );
   }
-  const uptime =
-    info.state === "RUNNING"
-      ? col(`  up ${info.uptime}`, A.dim)
-      : info.state === "STOPPED"
-      ? col("  stopped", A.dim)
-      : col(`  pid ${info.pid}`, A.dim);
+  const uptime = info.state === "RUNNING"
+    ? col(`  up ${info.uptime}`, A.dim)
+    : info.state === "STOPPED"
+    ? col("  stopped", A.dim)
+    : col(`  pid ${info.pid}`, A.dim);
   return (
     "  │  " +
     stateIndicator(info.state) +
@@ -308,10 +308,9 @@ function render(status: Map<string, SvcInfo>, tick: number): string {
 
   const runStr = col(`${running} running`, A.green, A.bold);
   const stpStr = col(`${stopped} stopped`, A.dim);
-  const errStr =
-    error > 0
-      ? col(`  ${error} error`, A.red, A.bold)
-      : col("  0 errors", A.dim);
+  const errStr = error > 0
+    ? col(`  ${error} error`, A.red, A.bold)
+    : col("  0 errors", A.dim);
   lines.push(
     `  ${runStr}  ${stpStr}${errStr}` +
       col(`  of ${total} total`, A.dim),

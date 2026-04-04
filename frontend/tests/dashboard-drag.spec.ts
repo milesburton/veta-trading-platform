@@ -1,28 +1,51 @@
-import { test, expect, type Page } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Mock the auth API so the app skips the login page and goes straight to the dashboard. */
 async function mockAuth(page: Page) {
-  const user = { id: "alice", name: "Alice Chen", role: "trader", avatar_emoji: "👩‍💼" };
+  const user = {
+    id: "alice",
+    name: "Alice Chen",
+    role: "trader",
+    avatar_emoji: "👩‍💼",
+  };
 
   // Playwright matches routes in reverse registration order (last registered wins).
   // stubBackend must be called BEFORE mockAuth so the specific session routes take precedence.
   // These two are registered last here so they win over the catch-all in stubBackend.
-  await page.route("/api/user-service/sessions/me", (route) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(user) })
+  await page.route(
+    "/api/user-service/sessions/me",
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(user),
+      }),
   );
 
-  await page.route("/api/user-service/sessions", (route) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(user) })
+  await page.route(
+    "/api/user-service/sessions",
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(user),
+      }),
   );
 }
 
 /** Stub backend so panels don't error out. */
 async function stubBackend(page: Page) {
   // Catch-all: fulfill all API requests (any method) with null to prevent ECONNREFUSED
-  await page.route("/api/**", (route) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: "null" })
+  await page.route(
+    "/api/**",
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "null",
+      }),
   );
 
   // gateway/ready must return { ready: true } so StartupOverlay dismisses immediately
@@ -31,8 +54,7 @@ async function stubBackend(page: Page) {
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ ready: true, services: {} }),
-    })
-  );
+    }));
 
   // Stub WS so the app doesn't hang waiting for a gateway connection
   await page.routeWebSocket("/ws/gateway", (ws) => {
@@ -58,7 +80,12 @@ async function allPanelBoxes(page: Page) {
 }
 
 /** Drag a tab button by (dx, dy) using slow intermediate steps. */
-async function dragTab(page: Page, tabLocator: ReturnType<Page["locator"]>, dx: number, dy: number) {
+async function dragTab(
+  page: Page,
+  tabLocator: ReturnType<Page["locator"]>,
+  dx: number,
+  dy: number,
+) {
   const box = await tabLocator.boundingBox();
   expect(box).not.toBeNull();
   if (!box) return;
@@ -69,7 +96,11 @@ async function dragTab(page: Page, tabLocator: ReturnType<Page["locator"]>, dx: 
   await page.mouse.down();
   const steps = 12;
   for (let i = 1; i <= steps; i++) {
-    await page.mouse.move(startX + (dx * i) / steps, startY + (dy * i) / steps, { steps: 1 });
+    await page.mouse.move(
+      startX + (dx * i) / steps,
+      startY + (dy * i) / steps,
+      { steps: 1 },
+    );
   }
   await page.mouse.up();
   await page.waitForTimeout(200);
@@ -104,9 +135,13 @@ test.describe("Dashboard panel layout (flexlayout)", () => {
       for (let j = i + 1; j < boxes.length; j++) {
         const a = boxes[i];
         const b = boxes[j];
-        const overlapX = a.x + a.w - tolerance > b.x && b.x + b.w - tolerance > a.x;
-        const overlapY = a.y + a.h - tolerance > b.y && b.y + b.h - tolerance > a.y;
-        expect(overlapX && overlapY, `Panel ${i} and panel ${j} overlap`).toBe(false);
+        const overlapX = a.x + a.w - tolerance > b.x &&
+          b.x + b.w - tolerance > a.x;
+        const overlapY = a.y + a.h - tolerance > b.y &&
+          b.y + b.h - tolerance > a.y;
+        expect(overlapX && overlapY, `Panel ${i} and panel ${j} overlap`).toBe(
+          false,
+        );
       }
     }
   });
@@ -130,8 +165,10 @@ test.describe("Dashboard panel layout (flexlayout)", () => {
       const after = await pane.boundingBox();
       if (!after) continue;
 
-      expect(Math.abs(after.x - before.x), `panel ${i} x changed after click`).toBeLessThanOrEqual(3);
-      expect(Math.abs(after.y - before.y), `panel ${i} y changed after click`).toBeLessThanOrEqual(3);
+      expect(Math.abs(after.x - before.x), `panel ${i} x changed after click`)
+        .toBeLessThanOrEqual(3);
+      expect(Math.abs(after.y - before.y), `panel ${i} y changed after click`)
+        .toBeLessThanOrEqual(3);
     }
   });
 
@@ -194,9 +231,16 @@ test.describe("Dashboard panel layout (flexlayout)", () => {
     expect(beforeBoxes.length).toBeGreaterThan(1);
 
     // Drag splitter 60px to the right
-    await page.mouse.move(splitterBox.x + splitterBox.width / 2, splitterBox.y + splitterBox.height / 2);
+    await page.mouse.move(
+      splitterBox.x + splitterBox.width / 2,
+      splitterBox.y + splitterBox.height / 2,
+    );
     await page.mouse.down();
-    await page.mouse.move(splitterBox.x + splitterBox.width / 2 + 60, splitterBox.y + splitterBox.height / 2, { steps: 8 });
+    await page.mouse.move(
+      splitterBox.x + splitterBox.width / 2 + 60,
+      splitterBox.y + splitterBox.height / 2,
+      { steps: 8 },
+    );
     await page.mouse.up();
     await page.waitForTimeout(200);
 

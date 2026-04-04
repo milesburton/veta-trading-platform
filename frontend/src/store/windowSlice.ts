@@ -25,7 +25,10 @@ export const windowSlice = createSlice({
       }
     },
     panelDialogOpened(state, action: PayloadAction<{ panelId: string; panelType: string }>) {
-      state.dialogs[action.payload.panelId] = { open: true, panelType: action.payload.panelType };
+      state.dialogs[action.payload.panelId] = {
+        open: true,
+        panelType: action.payload.panelType,
+      };
     },
     panelDialogClosed(state, action: PayloadAction<{ panelId: string }>) {
       if (state.dialogs[action.payload.panelId]) {

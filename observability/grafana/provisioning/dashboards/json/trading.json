@@ -18,8 +18,14 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "type": "value", "options": { "1": { "text": "UP", "color": "green" } } },
-            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" } } }
+            {
+              "type": "value",
+              "options": { "1": { "text": "UP", "color": "green" } }
+            },
+            {
+              "type": "value",
+              "options": { "0": { "text": "DOWN", "color": "red" } }
+            }
           ],
           "thresholds": {
             "mode": "absolute",
@@ -357,7 +363,10 @@
       "gridPos": { "x": 12, "y": 35, "w": 12, "h": 8 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "fieldConfig": {
-        "defaults": { "unit": "decmbytes", "color": { "mode": "palette-classic" } },
+        "defaults": {
+          "unit": "decmbytes",
+          "color": { "mode": "palette-classic" }
+        },
         "overrides": []
       },
       "options": {

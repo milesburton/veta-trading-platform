@@ -26,14 +26,15 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { alphaVantageEquityProvider } from "./providers/alpha-vantage-equity.ts";
 import { alphaVantageFxProvider } from "./providers/alpha-vantage-fx.ts";
 import { tiingoProvider } from "./providers/tiingo.ts";
-import { polygonProvider, openPolygonStream } from "./providers/polygon.ts";
-import { fredProvider, fetchYieldCurve } from "./providers/fred.ts";
+import { openPolygonStream, polygonProvider } from "./providers/polygon.ts";
+import { fetchYieldCurve, fredProvider } from "./providers/fred.ts";
 import type { CachedQuote, ProviderDef } from "./providers/types.ts";
 
 const PORT = Number(Deno.env.get("MARKET_DATA_PORT")) || 5_015;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const JOURNAL_URL =
-  `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
+const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${
+  Deno.env.get("JOURNAL_PORT") ?? "5009"
+}`;
 const ALPHA_VANTAGE_KEY = Deno.env.get("ALPHA_VANTAGE_KEY") ?? "";
 const POLYGON_KEY = Deno.env.get("POLYGON_KEY") ?? "";
 const FRED_KEY = Deno.env.get("FRED_KEY") ?? "";
@@ -43,7 +44,7 @@ const FEED_STATE_FILE = "market_data_feed_state.json";
 // How long between polls per symbol (free tier: 25 calls/day → ~3456s per call if 1 symbol,
 // but we target 5-min intervals per symbol in a round-robin queue)
 const POLL_INTERVAL_MS = 5 * 60 * 1_000; // 5 minutes
-const CACHE_TTL_MS = 310_000;             // 310 seconds — slightly over 5 min
+const CACHE_TTL_MS = 310_000; // 310 seconds — slightly over 5 min
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -125,9 +126,13 @@ async function loadOverrides(): Promise<void> {
     const text = await Deno.readTextFile(OVERRIDES_FILE);
     const data = JSON.parse(text) as Record<string, string>;
     overrides = new Map(Object.entries(data));
-    console.log(`[market-data] Loaded ${overrides.size} overrides from ${OVERRIDES_FILE}`);
+    console.log(
+      `[market-data] Loaded ${overrides.size} overrides from ${OVERRIDES_FILE}`,
+    );
   } catch {
-    console.log(`[market-data] No overrides file found — starting with empty overrides`);
+    console.log(
+      `[market-data] No overrides file found — starting with empty overrides`,
+    );
   }
 }
 
@@ -136,7 +141,9 @@ async function saveOverrides(): Promise<void> {
     const data = Object.fromEntries(overrides.entries());
     await Deno.writeTextFile(OVERRIDES_FILE, JSON.stringify(data, null, 2));
   } catch (err) {
-    console.warn(`[market-data] Failed to persist overrides: ${(err as Error).message}`);
+    console.warn(
+      `[market-data] Failed to persist overrides: ${(err as Error).message}`,
+    );
   }
 }
 
@@ -154,7 +161,9 @@ async function loadFeedState(): Promise<void> {
     } else if (data.feedPaused === true) {
       pausedSources = new Set(["alpha-vantage"]);
     }
-    console.log(`[market-data] Feed state loaded: ${pausedSources.size} sources paused`);
+    console.log(
+      `[market-data] Feed state loaded: ${pausedSources.size} sources paused`,
+    );
   } catch {
     console.log(`[market-data] No feed state file — defaulting to all active`);
   }
@@ -165,7 +174,9 @@ async function saveFeedState(): Promise<void> {
     const data: FeedStateFile = { pausedSources: Array.from(pausedSources) };
     await Deno.writeTextFile(FEED_STATE_FILE, JSON.stringify(data, null, 2));
   } catch (err) {
-    console.warn(`[market-data] Failed to persist feed state: ${(err as Error).message}`);
+    console.warn(
+      `[market-data] Failed to persist feed state: ${(err as Error).message}`,
+    );
   }
 }
 
@@ -255,14 +266,19 @@ if (ALPHA_VANTAGE_KEY) {
   const toSeed = symbolsForProvider("alpha-vantage");
   for (let i = 0; i < toSeed.length; i++) {
     setTimeout(
-      () => alphaVantageEquityProvider.seedHistory?.(toSeed[i], JOURNAL_URL).catch(() => {}),
+      () =>
+        alphaVantageEquityProvider.seedHistory?.(toSeed[i], JOURNAL_URL).catch(
+          () => {},
+        ),
       i * 2_000,
     );
     setTimeout(
       () =>
-        alphaVantageEquityProvider.fetchQuote(toSeed[i], JOURNAL_URL).then((q) => {
-          if (q) quoteCache.set(toSeed[i], q);
-        }).catch(() => {}),
+        alphaVantageEquityProvider.fetchQuote(toSeed[i], JOURNAL_URL).then(
+          (q) => {
+            if (q) quoteCache.set(toSeed[i], q);
+          },
+        ).catch(() => {}),
       i * 1_500,
     );
   }
@@ -274,12 +290,13 @@ restartPolygonStream();
 startPollLoop();
 startStalenessChecker();
 
-
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS });
+  }
 
   if (path === "/health" && req.method === "GET") {
     return json({
@@ -307,10 +324,16 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     // Find provider (include synthetic as non-togglable)
     const provider = PROVIDERS.find((p) => p.id === sourceId);
     if (!provider) {
-      return json({ error: `Source "${sourceId}" does not support toggling` }, 400);
+      return json(
+        { error: `Source "${sourceId}" does not support toggling` },
+        400,
+      );
     }
     if (!provider.togglable) {
-      return json({ error: `Source "${sourceId}" does not support toggling` }, 400);
+      return json(
+        { error: `Source "${sourceId}" does not support toggling` },
+        400,
+      );
     }
 
     if (pausedSources.has(sourceId)) {
@@ -355,7 +378,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
 
     // Validate source IDs — build valid set from all known providers + synthetic
-    const validSources = new Set<string>(["synthetic", ...PROVIDERS.map((p) => p.id)]);
+    const validSources = new Set<string>([
+      "synthetic",
+      ...PROVIDERS.map((p) => p.id),
+    ]);
     for (const [sym, src] of Object.entries(body.overrides)) {
       if (!validSources.has(src)) {
         return json({ error: `Unknown source: ${src} for symbol ${sym}` }, 400);
@@ -386,7 +412,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     // Restart polygon stream if polygon symbols changed
     restartPolygonStream();
 
-    console.log(`[market-data] Overrides updated: ${overrides.size} symbols configured`);
+    console.log(
+      `[market-data] Overrides updated: ${overrides.size} symbols configured`,
+    );
     return json({ overrides: Object.fromEntries(overrides.entries()) });
   }
 
@@ -396,7 +424,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const symbol = decodeURIComponent(quoteMatch[1]).toUpperCase();
     const src = overrides.get(symbol);
     if (!src || src === "synthetic") {
-      return json({ error: `Symbol ${symbol} is not configured for a real data source` }, 404);
+      return json({
+        error: `Symbol ${symbol} is not configured for a real data source`,
+      }, 404);
     }
 
     const cached = quoteCache.get(symbol);
@@ -408,7 +438,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           if (q) quoteCache.set(symbol, q);
         }).catch(() => {});
       }
-      return json({ error: `No quote available for ${symbol} yet — fetch triggered` }, 404);
+      return json({
+        error: `No quote available for ${symbol} yet — fetch triggered`,
+      }, 404);
     }
     return json(cached);
   }

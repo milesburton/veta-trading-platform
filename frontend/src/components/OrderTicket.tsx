@@ -182,8 +182,16 @@ function OptionPreview({ qty, premium }: { qty: number; premium: number }) {
 const TIF_OPTIONS = [
   { value: "DAY", label: "DAY", title: "Day order — expires at market close" },
   { value: "GTC", label: "GTC", title: "Good Till Cancelled" },
-  { value: "IOC", label: "IOC", title: "Immediate Or Cancel — fill what you can instantly" },
-  { value: "FOK", label: "FOK", title: "Fill Or Kill — all or nothing immediately" },
+  {
+    value: "IOC",
+    label: "IOC",
+    title: "Immediate Or Cancel — fill what you can instantly",
+  },
+  {
+    value: "FOK",
+    label: "FOK",
+    title: "Fill Or Kill — all or nothing immediately",
+  },
 ] as const;
 
 type TifValue = (typeof TIF_OPTIONS)[number]["value"];
@@ -322,7 +330,12 @@ export function OrderTicket() {
       if (!symbol || strike <= 0 || expirySecs <= 0) return;
       quoteFetching.value = true;
       try {
-        const result = await getQuote({ symbol, optionType: optionType.value, strike, expirySecs });
+        const result = await getQuote({
+          symbol,
+          optionType: optionType.value,
+          strike,
+          expirySecs,
+        });
         if ("data" in result && result.data) {
           optionQuote.value = result.data;
           limitPrice.value = result.data.price.toFixed(4);
@@ -344,7 +357,9 @@ export function OrderTicket() {
     instrumentType.value = "equity";
     optionQuote.value = null;
     const price = currentPrice;
-    if (price) limitPrice.value = formatPrice(selectedAsset?.symbol ?? "", price);
+    if (price) {
+      limitPrice.value = formatPrice(selectedAsset?.symbol ?? "", price);
+    }
   }
 
   function handleSwitchToBond() {
@@ -1397,7 +1412,9 @@ export function OrderTicket() {
           aria-label={
             isValid
               ? isOptions
-                ? `Submit ${activeSide} option for ${qty} ${optionType.value === "call" ? "CALL" : "PUT"} on ${symbol} strike ${optionStrikeNum}`
+                ? `Submit ${activeSide} option for ${qty} ${
+                    optionType.value === "call" ? "CALL" : "PUT"
+                  } on ${symbol} strike ${optionStrikeNum}`
                 : isBond
                   ? `Submit ${activeSide} bond order for ${qty}× ${bondSymbol.value}`
                   : `Submit ${activeSide} order for ${qty} shares of ${symbol} at $${lx}`
@@ -1412,10 +1429,26 @@ export function OrderTicket() {
           {submitting.value
             ? "Submitting…"
             : isOptions
-              ? `${activeSide} ${qty}× ${symbol} ${optionStrikeNum > 0 ? `$${optionStrikeNum}` : ""}${optionType.value.toUpperCase()}${optionQuote.value ? ` · $${(qty * 100 * optionQuote.value.price).toFixed(0)}` : ""}`
+              ? `${activeSide} ${qty}× ${symbol} ${
+                  optionStrikeNum > 0 ? `$${optionStrikeNum}` : ""
+                }${optionType.value.toUpperCase()}${
+                  optionQuote.value ? ` · $${(qty * 100 * optionQuote.value.price).toFixed(0)}` : ""
+                }`
               : isBond
-                ? `${activeSide} ${qty}× ${bondSymbol.value}${bondQuote.value ? ` · $${(qty * bondQuote.value.price).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : ""}`
-                : `${activeSide} ${symbol}${qty > 0 && lx > 0 ? ` · $${(qty * lx).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : ""}`}
+                ? `${activeSide} ${qty}× ${bondSymbol.value}${
+                    bondQuote.value
+                      ? ` · $${(qty * bondQuote.value.price).toLocaleString(undefined, {
+                          maximumFractionDigits: 0,
+                        })}`
+                      : ""
+                  }`
+                : `${activeSide} ${symbol}${
+                    qty > 0 && lx > 0
+                      ? ` · $${(qty * lx).toLocaleString(undefined, {
+                          maximumFractionDigits: 0,
+                        })}`
+                      : ""
+                  }`}
         </button>
 
         <p

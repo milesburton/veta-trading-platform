@@ -84,7 +84,9 @@ export function MarketDataSourcesPanel() {
   const externalCount = symbols.filter((s) => getSymbolSource(s) !== "synthetic").length;
 
   const filteredSymbols = symbols.filter((sym) => {
-    if (search && !sym.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !sym.toLowerCase().includes(search.toLowerCase())) {
+      return false;
+    }
     if (showOverridesOnly && getSymbolSource(sym) === "synthetic") return false;
     return true;
   });
@@ -172,7 +174,9 @@ export function MarketDataSourcesPanel() {
                   >
                     <td className="px-4 py-1.5">
                       <span
-                        className={`font-mono text-[11px] ${isDirty ? "text-amber-300" : "text-gray-300"}`}
+                        className={`font-mono text-[11px] ${
+                          isDirty ? "text-amber-300" : "text-gray-300"
+                        }`}
                       >
                         {sym}
                       </span>

@@ -1,12 +1,22 @@
 import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
-import type { LlmPolicy, LlmRuntimeConfig, LlmSubsystemState, LlmTriggerMode } from "../types/llm-advisory.ts";
+import type {
+  LlmPolicy,
+  LlmRuntimeConfig,
+  LlmSubsystemState,
+  LlmTriggerMode,
+} from "../types/llm-advisory.ts";
 
 export interface RuntimeConfigStore {
   getConfig(): Promise<LlmRuntimeConfig>;
-  updateConfig(patch: Partial<Omit<LlmRuntimeConfig, "updatedAt">>, updatedBy: string): Promise<LlmRuntimeConfig>;
+  updateConfig(
+    patch: Partial<Omit<LlmRuntimeConfig, "updatedAt">>,
+    updatedBy: string,
+  ): Promise<LlmRuntimeConfig>;
 }
 
-export async function createRuntimeConfigStore(pool: Pool): Promise<RuntimeConfigStore> {
+export async function createRuntimeConfigStore(
+  pool: Pool,
+): Promise<RuntimeConfigStore> {
   // Ensure default row exists
   const client = await pool.connect();
   try {
@@ -23,13 +33,22 @@ export async function createRuntimeConfigStore(pool: Pool): Promise<RuntimeConfi
   async function getConfig(): Promise<LlmRuntimeConfig> {
     const c = await pool.connect();
     try {
-      const { rows } = await c.queryArray<[boolean, boolean, string, bigint | number, string]>(
+      const { rows } = await c.queryArray<
+        [boolean, boolean, string, bigint | number, string]
+      >(
         "SELECT enabled, worker_enabled, trigger_mode, updated_at, updated_by FROM llm_advisory.runtime_config WHERE id = 1",
       );
       if (rows.length === 0) {
-        return { enabled: false, workerEnabled: false, triggerMode: "manual", updatedAt: Date.now(), updatedBy: "system" };
+        return {
+          enabled: false,
+          workerEnabled: false,
+          triggerMode: "manual",
+          updatedAt: Date.now(),
+          updatedBy: "system",
+        };
       }
-      const [enabled, workerEnabled, triggerMode, updatedAt, updatedBy] = rows[0];
+      const [enabled, workerEnabled, triggerMode, updatedAt, updatedBy] =
+        rows[0];
       return {
         enabled: Boolean(enabled),
         workerEnabled: Boolean(workerEnabled),
@@ -45,7 +64,10 @@ export async function createRuntimeConfigStore(pool: Pool): Promise<RuntimeConfi
   return {
     getConfig,
 
-    async updateConfig(patch: Partial<Omit<LlmRuntimeConfig, "updatedAt">>, updatedBy: string): Promise<LlmRuntimeConfig> {
+    async updateConfig(
+      patch: Partial<Omit<LlmRuntimeConfig, "updatedAt">>,
+      updatedBy: string,
+    ): Promise<LlmRuntimeConfig> {
       const current = await getConfig();
       const next: LlmRuntimeConfig = {
         enabled: patch.enabled ?? current.enabled,
@@ -60,7 +82,13 @@ export async function createRuntimeConfigStore(pool: Pool): Promise<RuntimeConfi
           `UPDATE llm_advisory.runtime_config
            SET enabled=$1, worker_enabled=$2, trigger_mode=$3, updated_at=$4, updated_by=$5
            WHERE id=1`,
-          [next.enabled, next.workerEnabled, next.triggerMode, next.updatedAt, next.updatedBy],
+          [
+            next.enabled,
+            next.workerEnabled,
+            next.triggerMode,
+            next.updatedAt,
+            next.updatedBy,
+          ],
         );
       } finally {
         c.release();
@@ -92,6 +120,8 @@ export function deriveSubsystemState(
   if (lastErrorMs !== null && Date.now() - lastErrorMs < 30_000) return "error";
   if (pendingJobs > 0) return "active";
   const minRefreshMs = effectivePolicy.minRefreshMinutes * 60 * 1000;
-  if (lastActivityMs !== null && Date.now() - lastActivityMs < minRefreshMs) return "cooldown";
+  if (lastActivityMs !== null && Date.now() - lastActivityMs < minRefreshMs) {
+    return "cooldown";
+  }
   return "armed";
 }

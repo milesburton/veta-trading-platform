@@ -1,4 +1,13 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  nativeImage,
+  shell,
+  Tray,
+} from "electron";
 import { writeFile } from "fs/promises";
 import * as path from "path";
 
@@ -49,16 +58,18 @@ function createWindow(): void {
     e.preventDefault();
   });
 
-  mainWindow.on("maximize", () =>
-    mainWindow?.webContents.send("window:maximizeChange", true)
+  mainWindow.on(
+    "maximize",
+    () => mainWindow?.webContents.send("window:maximizeChange", true),
   );
-  mainWindow.on("unmaximize", () =>
-    mainWindow?.webContents.send("window:maximizeChange", false)
+  mainWindow.on(
+    "unmaximize",
+    () => mainWindow?.webContents.send("window:maximizeChange", false),
   );
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    const allowed =
-      url.startsWith("http://localhost") || url.startsWith("file://");
+    const allowed = url.startsWith("http://localhost") ||
+      url.startsWith("file://");
     if (allowed) {
       return {
         action: "allow" as const,
@@ -83,14 +94,22 @@ function createWindow(): void {
     mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
   }
 
-  mainWindow.on("closed", () => { mainWindow = null; });
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
 }
 
 function createTray(): void {
-  const iconName = process.platform === "win32" ? "tray-icon.ico" : "tray-icon.png";
+  const iconName = process.platform === "win32"
+    ? "tray-icon.ico"
+    : "tray-icon.png";
   const iconPath = path.join(__dirname, "assets", iconName);
   const icon = nativeImage.createFromPath(iconPath);
-  tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon.resize({ width: 16, height: 16 }));
+  tray = new Tray(
+    icon.isEmpty()
+      ? nativeImage.createEmpty()
+      : icon.resize({ width: 16, height: 16 }),
+  );
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -186,15 +205,20 @@ ipcMain.on("app:quit", () => {
 });
 
 ipcMain.on("shell:openExternal", (_, url: string) => {
-  if (typeof url === "string" && /^https?:\/\//.test(url)) shell.openExternal(url);
+  if (typeof url === "string" && /^https?:\/\//.test(url)) {
+    shell.openExternal(url);
+  }
 });
 
 ipcMain.handle(
   "dialog:showSave",
-  async (_, options: { defaultPath?: string; filters?: Electron.FileFilter[] }) => {
+  async (
+    _,
+    options: { defaultPath?: string; filters?: Electron.FileFilter[] },
+  ) => {
     const result = await dialog.showSaveDialog(mainWindow!, options);
     return result.canceled ? null : result.filePath;
-  }
+  },
 );
 
 ipcMain.handle("fs:writeFile", async (_, filePath: string, content: string) => {
@@ -210,26 +234,29 @@ function buildMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     ...(isMac
       ? [{
-          label: app.name,
-          submenu: [
-            { role: "about" as const },
-            { type: "separator" as const },
-            { role: "services" as const },
-            { type: "separator" as const },
-            { role: "hide" as const },
-            { role: "hideOthers" as const },
-            { role: "unhide" as const },
-            { type: "separator" as const },
-            { role: "quit" as const },
-          ],
-        }]
+        label: app.name,
+        submenu: [
+          { role: "about" as const },
+          { type: "separator" as const },
+          { role: "services" as const },
+          { type: "separator" as const },
+          { role: "hide" as const },
+          { role: "hideOthers" as const },
+          { role: "unhide" as const },
+          { type: "separator" as const },
+          { role: "quit" as const },
+        ],
+      }]
       : []),
     {
       label: "File",
       submenu: [
         isMac ? { role: "close" as const } : {
           label: "Quit VETA",
-          click: () => { tray?.destroy(); app.quit(); },
+          click: () => {
+            tray?.destroy();
+            app.quit();
+          },
         },
       ],
     },

@@ -46,6 +46,7 @@ const DARK_POOL_URL = svcUrl(5027, "/api/dark-pool");
 const CCP_URL       = svcUrl(5028, "/api/ccp-service");
 const RFQ_URL       = svcUrl(5029, "/api/rfq-service");
 const MDA_URL       = svcUrl(5016, "/api/market-data-adapters");
+const OAUTH_PASSWORD = Deno.env.get("OAUTH2_SHARED_SECRET") ?? "veta-dev-passcode";
 
 
 const ALL_SERVICES = [
@@ -320,21 +321,53 @@ Deno.test("[market-sim] WebSocket emits tick data within 3s", async () => {
 });
 
 
-Deno.test("[user-service] POST /sessions sets veta_user cookie for alice", async () => {
+Deno.test("[user-service] OAuth2 token exchange sets veta_user cookie for alice", async () => {
   let res: Response | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     if (attempt > 0) await new Promise((r) => setTimeout(r, 1_000));
-    res = await fetch(`${USER_SVC_URL}/sessions`, {
+    const verifier = `smoke-${crypto.randomUUID()}`;
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+    const challenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/g, "");
+    const authorize = await fetch(`${USER_SVC_URL}/oauth/authorize`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: "alice" }),
+      body: JSON.stringify({
+        client_id: "veta-automation",
+        username: "alice",
+        password: OAUTH_PASSWORD,
+        redirect_uri: "postmessage",
+        response_type: "code",
+        scope: "openid profile",
+        code_challenge: challenge,
+        code_challenge_method: "S256",
+      }),
+      signal: timeout(5_000),
+    });
+    if (!authorize.ok) {
+      await authorize.body?.cancel();
+      continue;
+    }
+    const { code } = await authorize.json() as { code: string };
+    res = await fetch(`${USER_SVC_URL}/oauth/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: "veta-automation",
+        code,
+        grant_type: "authorization_code",
+        redirect_uri: "postmessage",
+        code_verifier: verifier,
+      }),
       signal: timeout(5_000),
     });
     await res.body?.cancel();
     if (res.status === 200) break;
     res = null;
   }
-  assert(res !== null, "POST /sessions never returned 200 after retries");
+  assert(res !== null, "OAuth2 token exchange never returned 200 after retries");
   assertEquals(res!.status, 200);
   assert(
     (res!.headers.get("set-cookie") ?? "").includes("veta_user="),
@@ -888,15 +921,93 @@ Deno.test("[observability] GET /health returns ok", async () => {
   assertEquals(body.status, "ok");
 });
 
-Deno.test("[user-service] POST /sessions with unknown userId returns 401 or 404", async () => {
+Deno.test("[user-service] OAuth2 authorize with unknown userId returns 404", async () => {
+  const res = await fetch(`${USER_SVC_URL}/oauth/authorize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: "veta-automation",
+      username: "does-not-exist-xyz",
+      password: OAUTH_PASSWORD,
+      redirect_uri: "postmessage",
+      response_type: "code",
+      scope: "openid profile",
+      code_challenge: "invalid",
+      code_challenge_method: "S256",
+    }),
+    signal: timeout(5_000),
+  });
+  assertEquals(res.status, 404);
+  await res.body?.cancel();
+});
+
+Deno.test("[user-service] OAuth2 authorize with invalid password returns 401", async () => {
+  const res = await fetch(`${USER_SVC_URL}/oauth/authorize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: "veta-automation",
+      username: "alice",
+      password: "wrong-passcode-xyz",
+      redirect_uri: "postmessage",
+      response_type: "code",
+      scope: "openid profile",
+      code_challenge: "invalid",
+      code_challenge_method: "S256",
+    }),
+    signal: timeout(5_000),
+  });
+  assertEquals(res.status, 401);
+  const body = await res.json() as { error?: string };
+  assertEquals(body.error, "invalid_credentials");
+});
+
+Deno.test("[user-service] OAuth2 authorize with missing password returns 401", async () => {
+  const res = await fetch(`${USER_SVC_URL}/oauth/authorize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: "veta-automation",
+      username: "alice",
+      redirect_uri: "postmessage",
+      response_type: "code",
+      scope: "openid profile",
+      code_challenge: "invalid",
+      code_challenge_method: "S256",
+    }),
+    signal: timeout(5_000),
+  });
+  assertEquals(res.status, 401);
+  const body = await res.json() as { error?: string };
+  assertEquals(body.error, "invalid_credentials");
+});
+
+Deno.test("[user-service] OAuth2 register with invalid password returns 401", async () => {
+  const res = await fetch(`${USER_SVC_URL}/oauth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: "test-viewer-invalid-creds",
+      name: "Test Viewer",
+      password: "wrong-passcode",
+    }),
+    signal: timeout(5_000),
+  });
+  assertEquals(res.status, 401);
+  const body = await res.json() as { error?: string };
+  assertEquals(body.error, "invalid_credentials");
+});
+
+Deno.test("[user-service] legacy POST /sessions is disabled (410 Gone)", async () => {
   const res = await fetch(`${USER_SVC_URL}/sessions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId: "does-not-exist-xyz" }),
+    body: JSON.stringify({ userId: "alice" }),
     signal: timeout(5_000),
   });
-  assert(res.status === 401 || res.status === 404, `Expected 401 or 404, got ${res.status}`);
-  await res.body?.cancel();
+  assertEquals(res.status, 410);
+  const body = await res.json() as { error?: string };
+  assertEquals(body.error, "legacy /sessions login is disabled; use OAuth2 /oauth/authorize + /oauth/token");
 });
 
 Deno.test("[gateway] trader role cannot access admin-only endpoint", async () => {

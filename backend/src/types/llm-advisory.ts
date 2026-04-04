@@ -1,4 +1,9 @@
-export type LlmJobStatus = "queued" | "running" | "done" | "failed" | "cancelled";
+export type LlmJobStatus =
+  | "queued"
+  | "running"
+  | "done"
+  | "failed"
+  | "cancelled";
 
 export type AdvisoryStatus =
   | "not-requested"

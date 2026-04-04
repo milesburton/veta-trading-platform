@@ -73,7 +73,11 @@ export function MarketDepth({ symbol }: Props) {
 
         {/* Spread indicator */}
         <div
-          title={`Spread ${asks.length > 0 && bids.length > 0 ? (asks[0].price - bids[0].price).toFixed(decimals) : "unavailable"}, mid price ${snapshot.mid.toFixed(decimals)}`}
+          title={`Spread ${
+            asks.length > 0 && bids.length > 0
+              ? (asks[0].price - bids[0].price).toFixed(decimals)
+              : "unavailable"
+          }, mid price ${snapshot.mid.toFixed(decimals)}`}
           className="flex items-center justify-center gap-3 py-1 border-y border-gray-800/50 bg-gray-900/40 shrink-0"
         >
           <span

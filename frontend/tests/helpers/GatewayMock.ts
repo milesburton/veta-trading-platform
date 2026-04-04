@@ -15,33 +15,22 @@
  */
 
 import type { Page, WebSocketRoute } from "@playwright/test";
+import {
+  ALGO_TRADER,
+  ALGO_TRADER_LIMITS,
+  ANALYST_LIMITS,
+  DEFAULT_ADMIN,
+  DEFAULT_ASSETS,
+  DEFAULT_LIMITS,
+  DEFAULT_TRADER,
+  FI_TRADER,
+  FI_TRADER_LIMITS,
+  RESEARCH_ANALYST,
+} from "./authFixtures.ts";
+import type { AssetDef, AuthUser, TradingLimits } from "./authFixtures.ts";
 
 // ── Protocol types (mirroring gatewayMiddleware) ──────────────────────────────
 
-export interface AuthUser {
-  id: string;
-  name: string;
-  role: "trader" | "admin";
-  avatar_emoji: string;
-}
-
-export interface TradingLimits {
-  max_order_qty: number;
-  max_daily_notional: number;
-  allowed_strategies: string[];
-}
-
-export interface AssetDef {
-  symbol: string;
-  name: string;
-  sector: string;
-  exchange?: string;
-  marketCapB?: number;
-  beta?: number;
-  dividendYield?: number;
-  peRatio?: number;
-  lotSize?: number;
-}
 
 // Inbound message shapes (gateway → client)
 type GatewayInbound =
@@ -68,97 +57,6 @@ interface GatewayOutbound {
  * Full strategy access, lower qty/notional limits. Focuses on single-stock
  * discretionary trades with LIMIT and TWAP execution.
  */
-export const DEFAULT_TRADER: AuthUser = {
-  id: "trader-1",
-  name: "Alice Chen",
-  role: "trader",
-  avatar_emoji: "AL",
-};
-
-/**
- * Bob Martinez — low-touch / algorithmic trader.
- * All algo strategies enabled (LIMIT, TWAP, POV, VWAP, ICEBERG, SNIPER,
- * ARRIVAL_PRICE). Higher qty/notional caps — routes via systematic algos.
- */
-export const ALGO_TRADER: AuthUser = {
-  id: "trader-2",
-  name: "Bob Martinez",
-  role: "trader",
-  avatar_emoji: "BM",
-};
-
-/**
- * Carol Davis — fixed income trader.
- * Limited to LIMIT strategy only (bonds always execute at quoted price).
- * Accesses yield-curve, spread-analysis, duration-ladder, vol-surface panels.
- */
-export const FI_TRADER: AuthUser = {
-  id: "trader-3",
-  name: "Carol Davis",
-  role: "trader",
-  avatar_emoji: "CD",
-};
-
-/**
- * David Kim — research analyst (read-only).
- * No trading permissions. Accesses intelligence, signal-explainability,
- * research-radar, and analytics panels only.
- */
-export const RESEARCH_ANALYST: AuthUser = {
-  id: "trader-4",
-  name: "David Kim",
-  role: "trader",
-  avatar_emoji: "DK",
-};
-
-export const DEFAULT_ADMIN: AuthUser = {
-  id: "admin-1",
-  name: "Admin User",
-  role: "admin",
-  avatar_emoji: "AD",
-};
-
-/** Trading limits for high-touch equity trader (Alice). */
-export const DEFAULT_LIMITS: TradingLimits = {
-  max_order_qty: 10_000,
-  max_daily_notional: 1_000_000,
-  allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
-  allowed_desks: ["equity", "derivatives"],
-  dark_pool_access: false,
-};
-
-/** Trading limits for low-touch algorithmic trader (Bob) — all strategies, higher caps. */
-export const ALGO_TRADER_LIMITS: TradingLimits = {
-  max_order_qty: 100_000,
-  max_daily_notional: 50_000_000,
-  allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE"],
-  allowed_desks: ["equity"],
-  dark_pool_access: true,
-};
-
-/** Trading limits for FI trader (Carol) — LIMIT only, high notional for bond size. */
-export const FI_TRADER_LIMITS: TradingLimits = {
-  max_order_qty: 1_000,
-  max_daily_notional: 100_000_000,
-  allowed_strategies: ["LIMIT"],
-  allowed_desks: ["fi"],
-  dark_pool_access: false,
-};
-
-/** Trading limits for research analyst (David) — no trading permitted. */
-export const ANALYST_LIMITS: TradingLimits = {
-  max_order_qty: 0,
-  max_daily_notional: 0,
-  allowed_strategies: [],
-  allowed_desks: [],
-  dark_pool_access: false,
-};
-
-export const DEFAULT_ASSETS: AssetDef[] = [
-  { symbol: "AAPL", name: "Apple Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 3000, beta: 1.2 },
-  { symbol: "MSFT", name: "Microsoft Corp.", sector: "Technology", exchange: "NASDAQ", marketCapB: 2800, beta: 0.9 },
-  { symbol: "GOOGL", name: "Alphabet Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 1800, beta: 1.1 },
-];
 
 // ── FI mock responses ─────────────────────────────────────────────────────────
 
@@ -402,9 +300,9 @@ export class GatewayMock {
       })
     );
 
-    await page.route("/api/user-service/sessions", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(user) })
-    );
+    // /api/user-service/sessions/me for GET (still valid)
+    // /api/user-service/sessions POST is deprecated (returns 410 in backend)
+    // /api/user-service/sessions DELETE is still valid (logout) /api/user-service/sessions DELETE is still valid (logout)
     await page.route("/api/user-service/sessions/me", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(user) })
     );

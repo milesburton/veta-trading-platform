@@ -39,7 +39,12 @@ function u32be(n) {
 function pngChunk(tag, data) {
   const t = Buffer.from(tag);
   const d = Buffer.isBuffer(data) ? data : Buffer.from(data);
-  return Buffer.concat([u32be(d.length), t, d, u32be(crc32(Buffer.concat([t, d])))]);
+  return Buffer.concat([
+    u32be(d.length),
+    t,
+    d,
+    u32be(crc32(Buffer.concat([t, d]))),
+  ]);
 }
 
 function makePNG(w, h, r, g, b) {

@@ -201,7 +201,9 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
                   />
                 </td>
                 <td
-                  className={`pr-6 py-0.5 align-middle whitespace-nowrap ${up ? "text-gray-300" : "text-gray-500"}`}
+                  className={`pr-6 py-0.5 align-middle whitespace-nowrap ${
+                    up ? "text-gray-300" : "text-gray-500"
+                  }`}
                 >
                   {SERVICE_LABELS[key]}
                 </td>

@@ -32,8 +32,8 @@ export function priceBond(req: BondPriceRequest): BondPriceResponse {
   // Cash flows: coupons at each period + principal at final period
   const cashFlows: { t: number; cf: number; pv: number }[] = [];
   let price = 0;
-  let durationNumer = 0;   // Σ tᵢ × CF_pv_i
-  let convexityNumer = 0;  // Σ tᵢ² × CF_pv_i
+  let durationNumer = 0; // Σ tᵢ × CF_pv_i
+  let convexityNumer = 0; // Σ tᵢ² × CF_pv_i
 
   for (let i = 1; i <= totalPeriods; i++) {
     const t = i / periodsPerYear;

@@ -15,6 +15,9 @@ export const JOURNAL_URL    = svcUrl(5009, "/api/journal");
 export const OBS_URL        = svcUrl(5007, "/api/observability");
 export const USER_SVC_URL   = svcUrl(5008, "/api/user-service");
 export const ARCHIVE_URL    = svcUrl(5012, "/api/fix-archive");
+const OAUTH_CLIENT_ID       = "veta-automation";
+const OAUTH_REDIRECT_URI    = "postmessage";
+const OAUTH_PASSWORD        = Deno.env.get("OAUTH2_SHARED_SECRET") ?? "veta-dev-passcode";
 
 export const GATEWAY_WS_URL = BASE === "http://localhost"
   ? "ws://localhost:5011/ws"
@@ -22,17 +25,52 @@ export const GATEWAY_WS_URL = BASE === "http://localhost"
 
 export function timeout(ms = 10_000) { return AbortSignal.timeout(ms); }
 
-/** POST /sessions and return the raw veta_user token value. */
+async function createPkcePair(): Promise<{ verifier: string; challenge: string }> {
+  const verifier = `veta-test-${crypto.randomUUID()}`;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+  return { verifier, challenge };
+}
+
+/** Complete the OAuth2 authorization-code exchange and return the raw veta_user token value. */
 export async function loginAs(userId: string): Promise<string> {
-  const res = await fetch(`${USER_SVC_URL}/sessions`, {
+  const pkce = await createPkcePair();
+  const authorizeRes = await fetch(`${USER_SVC_URL}/oauth/authorize`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId }),
+    body: JSON.stringify({
+      client_id: OAUTH_CLIENT_ID,
+      username: userId,
+      redirect_uri: OAUTH_REDIRECT_URI,
+      response_type: "code",
+      scope: "openid profile",
+      password: OAUTH_PASSWORD,
+      code_challenge: pkce.challenge,
+      code_challenge_method: "S256",
+    }),
     signal: timeout(),
   });
-  await res.body?.cancel();
-  assertEquals(res.status, 200, `Login as ${userId} failed`);
-  const cookie = res.headers.get("set-cookie") ?? "";
+  assertEquals(authorizeRes.status, 200, `OAuth authorize as ${userId} failed`);
+  const { code } = await authorizeRes.json() as { code: string };
+
+  const tokenRes = await fetch(`${USER_SVC_URL}/oauth/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: OAUTH_CLIENT_ID,
+      code,
+      grant_type: "authorization_code",
+      redirect_uri: OAUTH_REDIRECT_URI,
+      code_verifier: pkce.verifier,
+    }),
+    signal: timeout(),
+  });
+  await tokenRes.body?.cancel();
+  assertEquals(tokenRes.status, 200, `OAuth token exchange as ${userId} failed`);
+  const cookie = tokenRes.headers.get("set-cookie") ?? "";
   const match = cookie.match(/veta_user=([^;]+)/);
   assert(match, `No veta_user cookie for ${userId}`);
   return match[1];

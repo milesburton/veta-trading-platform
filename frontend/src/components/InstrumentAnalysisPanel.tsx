@@ -80,7 +80,11 @@ function ReplayTooltip({ active, payload, label }: any) {
         </div>
       )}
       {score && (
-        <div style={{ color: (score.value as number) >= 0 ? "#34d399" : "#f87171" }}>
+        <div
+          style={{
+            color: (score.value as number) >= 0 ? "#34d399" : "#f87171",
+          }}
+        >
           Score:{" "}
           <span className="tabular-nums">
             {(score.value as number) >= 0 ? "+" : ""}

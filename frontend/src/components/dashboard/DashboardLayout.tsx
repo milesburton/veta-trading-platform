@@ -283,7 +283,12 @@ function tabChannelButtons({
   ];
 }
 
-type AnyJsonNode = IJsonTabNode | IJsonModel["layout"] | { children?: AnyJsonNode[] };
+type AnyJsonNode =
+  | IJsonTabNode
+  | IJsonModel["layout"]
+  | {
+      children?: AnyJsonNode[];
+    };
 
 function patchTabConfig(
   nodes: AnyJsonNode[],
@@ -900,7 +905,9 @@ export function DashboardLayout() {
             label: isMaximized ? "Restore" : "Maximise panel",
             icon: isMaximized ? "⊡" : "⊞",
             onClick: () => {
-              if (tabSetNode) model.doAction(Actions.maximizeToggle(tabSetNode.getId()));
+              if (tabSetNode) {
+                model.doAction(Actions.maximizeToggle(tabSetNode.getId()));
+              }
               setModel(Model.fromJson(model.toJson() as IJsonModel));
             },
           },

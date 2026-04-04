@@ -93,7 +93,11 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
   }
 
   function handleOpChange(op: ExprOp) {
-    onChange({ ...rule, op, value: NO_VALUE_OPS.includes(op) ? "" : rule.value });
+    onChange({
+      ...rule,
+      op,
+      value: NO_VALUE_OPS.includes(op) ? "" : rule.value,
+    });
   }
 
   return (
@@ -134,7 +138,10 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
               value={Array.isArray(rule.value) ? String((rule.value as [number, number])[0]) : ""}
               onChange={(e) => {
                 const hi = Array.isArray(rule.value) ? (rule.value as [number, number])[1] : 0;
-                onChange({ ...rule, value: [Number(e.target.value) || 0, hi] });
+                onChange({
+                  ...rule,
+                  value: [Number(e.target.value) || 0, hi],
+                });
               }}
               className="w-20 bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500 tabular-nums"
             />
@@ -144,7 +151,10 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
               value={Array.isArray(rule.value) ? String((rule.value as [number, number])[1]) : ""}
               onChange={(e) => {
                 const lo = Array.isArray(rule.value) ? (rule.value as [number, number])[0] : 0;
-                onChange({ ...rule, value: [lo, Number(e.target.value) || 0] });
+                onChange({
+                  ...rule,
+                  value: [lo, Number(e.target.value) || 0],
+                });
               }}
               className="w-20 bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500 tabular-nums"
             />
@@ -345,7 +355,11 @@ export function ExpressionBuilder({ gridId, fields, initial, initialField, onClo
     if (initial && initial.rules.length > 0) return initial;
     if (initialField) {
       const rule = makeRule(fields);
-      return { ...EMPTY_EXPR_GROUP, id: uuidv4(), rules: [{ ...rule, field: initialField }] };
+      return {
+        ...EMPTY_EXPR_GROUP,
+        id: uuidv4(),
+        rules: [{ ...rule, field: initialField }],
+      };
     }
     return { ...EMPTY_EXPR_GROUP, id: uuidv4(), rules: [makeRule(fields)] };
   })();
@@ -377,7 +391,12 @@ export function ExpressionBuilder({ gridId, fields, initial, initialField, onClo
   }
 
   function handleClear() {
-    dispatch(setFilterExpr({ gridId, expr: { ...EMPTY_EXPR_GROUP, id: uuidv4(), rules: [] } }));
+    dispatch(
+      setFilterExpr({
+        gridId,
+        expr: { ...EMPTY_EXPR_GROUP, id: uuidv4(), rules: [] },
+      })
+    );
     dispatch(saveGridPrefs());
     onClose();
   }

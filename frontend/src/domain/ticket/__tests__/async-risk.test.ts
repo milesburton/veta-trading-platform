@@ -49,8 +49,20 @@ function makeCtx(overrides: Partial<TicketContext> = {}): TicketContext {
       expiresAtSecs: 300,
       tif: "DAY",
     },
-    option: { optionType: "call", strike: 0, expirySecs: 0, hasQuote: false, isFetching: false },
-    bond: { symbol: "", yieldPct: 0, hasQuote: false, isFetching: false, hasBondDef: false },
+    option: {
+      optionType: "call",
+      strike: 0,
+      expirySecs: 0,
+      hasQuote: false,
+      isFetching: false,
+    },
+    bond: {
+      symbol: "",
+      yieldPct: 0,
+      hasQuote: false,
+      isFetching: false,
+      hasBondDef: false,
+    },
     session: CONTINUOUS_SESSION,
     dirtyFields: new Set(),
     ...overrides,
@@ -75,7 +87,9 @@ describe("shouldTriggerRiskCheck", () => {
 
   it("returns true when symbol changes", () => {
     const prev = makeCtx();
-    const next = makeCtx({ instrument: { ...prev.instrument, symbol: "MSFT" } });
+    const next = makeCtx({
+      instrument: { ...prev.instrument, symbol: "MSFT" },
+    });
     expect(shouldTriggerRiskCheck(prev, next)).toBe(true);
   });
 
@@ -123,7 +137,11 @@ describe("checkPreTradeRisk", () => {
           Promise.resolve({
             approved: false,
             violations: [
-              { ruleId: "credit-limit", message: "Credit limit exceeded", severity: "error" },
+              {
+                ruleId: "credit-limit",
+                message: "Credit limit exceeded",
+                severity: "error",
+              },
               {
                 ruleId: "concentration",
                 message: "Position concentration warning",

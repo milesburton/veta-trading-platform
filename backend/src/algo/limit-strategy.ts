@@ -10,6 +10,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
@@ -20,7 +21,10 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("limit-algo").catch((err) => {
-  console.warn("[limit-algo] Redpanda unavailable — orders will not be published:", err.message);
+  console.warn(
+    "[limit-algo] Redpanda unavailable — orders will not be published:",
+    err.message,
+  );
   return null;
 });
 
@@ -40,10 +44,14 @@ interface PendingLimit {
 const pendingOrders: PendingLimit[] = [];
 
 // Subscribe to orders.routed — filter for LIMIT strategy
-const consumer = await createConsumer("limit-algo-routed", ["orders.routed"]).catch((err) => {
-  console.warn("[limit-algo] Cannot subscribe to orders.routed:", err.message);
-  return null;
-});
+const consumer = await createConsumer("limit-algo-routed", ["orders.routed"])
+  .catch((err) => {
+    console.warn(
+      "[limit-algo] Cannot subscribe to orders.routed:",
+      err.message,
+    );
+    return null;
+  });
 
 consumer?.onMessage((_topic, raw) => {
   const order = raw as PendingLimit & { strategy?: string; expiresAt?: number };
@@ -90,7 +98,9 @@ marketClient.onTick(async (tick) => {
         avgFillPrice: order.avgFillPrice,
         ts: now,
       }).catch(() => {});
-      console.log(`[limit-algo] Expired ${order.orderId} filled=${order.filledQty}/${order.quantity}`);
+      console.log(
+        `[limit-algo] Expired ${order.orderId} filled=${order.filledQty}/${order.quantity}`,
+      );
       pendingOrders.splice(i, 1);
       continue;
     }
@@ -135,7 +145,9 @@ setInterval(async () => {
   for (let i = pendingOrders.length - 1; i >= 0; i--) {
     const order = pendingOrders[i];
     if (now >= order.expiresAt) {
-      console.log(`[limit-algo] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
+      console.log(
+        `[limit-algo] Expiry sweep: ${order.orderId} filled=${order.filledQty}`,
+      );
       pendingOrders.splice(i, 1);
       await producer?.send("orders.expired", {
         orderId: order.orderId,
@@ -149,28 +161,6 @@ setInterval(async () => {
   }
 }, 5_000);
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+serveAlgoHealth(PORT, "limit", VERSION, () => pendingOrders.length);
 
-Deno.serve({ port: PORT }, (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
-  const url = new URL(req.url);
-  if (url.pathname === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({ service: "limit", version: VERSION, status: "ok", pending: pendingOrders.length }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
-  }
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
-});
-
-// News signals — log only; future: adjust limit price tolerance or pause orders
-createConsumer("limit-algo-news", ["news.signal"]).then((consumer) => {
-  consumer.onMessage((_topic, raw) => {
-    const sig = raw as { symbol: string; sentiment: string; score: number };
-    console.log(`[limit-algo] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`);
-  });
-}).catch(() => {}); // non-fatal
+subscribeNewsSignals("limit-algo-news", "limit-algo");

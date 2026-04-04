@@ -23,10 +23,14 @@ const producer = await createProducer("signal-engine").catch((err) => {
   return null;
 });
 
-const consumer = await createConsumer("signal-engine", ["market.features"]).catch((err) => {
-  console.warn("[signal-engine] Cannot subscribe to market.features:", err.message);
-  return null;
-});
+const consumer = await createConsumer("signal-engine", ["market.features"])
+  .catch((err) => {
+    console.warn(
+      "[signal-engine] Cannot subscribe to market.features:",
+      err.message,
+    );
+    return null;
+  });
 
 if (consumer) {
   consumer.onMessage(async (_topic, raw) => {
@@ -55,10 +59,17 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
 
   if (path === "/health" && req.method === "GET") {
-    return json({ service: "signal-engine", version: VERSION, status: "ok", trackedSymbols: latestSignals.size });
+    return json({
+      service: "signal-engine",
+      version: VERSION,
+      status: "ok",
+      trackedSymbols: latestSignals.size,
+    });
   }
 
   if (path === "/weights" && req.method === "GET") {

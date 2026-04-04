@@ -1,12 +1,12 @@
 import {
   assert,
-  assertEquals,
   assertAlmostEquals,
+  assertEquals,
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
 
 import { intradayVolumeFactor, TRADING_DAY_MINUTES } from "../lib/timeScale.ts";
 import { generatePrice, marketData } from "../market-sim/priceEngine.ts";
-import { SP500_ASSETS, ASSET_MAP } from "../market-sim/sp500Assets.ts";
+import { ASSET_MAP, SP500_ASSETS } from "../market-sim/sp500Assets.ts";
 
 Deno.test("[timeScale] intradayVolumeFactor is in [0.3, 1.0] for all minutes", () => {
   for (let m = 0; m < TRADING_DAY_MINUTES; m++) {
@@ -19,21 +19,33 @@ Deno.test("[timeScale] intradayVolumeFactor is in [0.3, 1.0] for all minutes", (
 Deno.test("[timeScale] intradayVolumeFactor peaks at open (minute 0)", () => {
   const atOpen = intradayVolumeFactor(0);
   const atMidday = intradayVolumeFactor(195);
-  assert(atOpen > atMidday, `open (${atOpen}) should exceed midday (${atMidday})`);
+  assert(
+    atOpen > atMidday,
+    `open (${atOpen}) should exceed midday (${atMidday})`,
+  );
 });
 
 Deno.test("[timeScale] intradayVolumeFactor peaks at close (minute 389)", () => {
   const atClose = intradayVolumeFactor(389);
   const atMidday = intradayVolumeFactor(195);
-  assert(atClose > atMidday, `close (${atClose}) should exceed midday (${atMidday})`);
+  assert(
+    atClose > atMidday,
+    `close (${atClose}) should exceed midday (${atMidday})`,
+  );
 });
 
 Deno.test("[timeScale] intradayVolumeFactor open and close are both higher than midday", () => {
   const atOpen = intradayVolumeFactor(0);
   const atClose = intradayVolumeFactor(TRADING_DAY_MINUTES - 1);
   const atMidday = intradayVolumeFactor(Math.floor(TRADING_DAY_MINUTES / 2));
-  assert(atOpen > atMidday, `open (${atOpen}) should exceed midday (${atMidday})`);
-  assert(atClose > atMidday, `close (${atClose}) should exceed midday (${atMidday})`);
+  assert(
+    atOpen > atMidday,
+    `open (${atOpen}) should exceed midday (${atMidday})`,
+  );
+  assert(
+    atClose > atMidday,
+    `close (${atClose}) should exceed midday (${atMidday})`,
+  );
   assertAlmostEquals(atOpen, atClose, 0.05);
 });
 
@@ -41,16 +53,41 @@ Deno.test("[timeScale] TRADING_DAY_MINUTES is 390", () => {
   assertEquals(TRADING_DAY_MINUTES, 390);
 });
 
-function parseTick(data: unknown): { prices: Record<string, number>; volumes: Record<string, number>; marketMinute: number } {
-  if (data !== null && typeof data === "object" && "prices" in (data as object) && "volumes" in (data as object)) {
-    const d = data as { prices: Record<string, number>; volumes: Record<string, number>; marketMinute: number };
-    return { prices: d.prices, volumes: d.volumes, marketMinute: d.marketMinute ?? 0 };
+function parseTick(
+  data: unknown,
+): {
+  prices: Record<string, number>;
+  volumes: Record<string, number>;
+  marketMinute: number;
+} {
+  if (
+    data !== null && typeof data === "object" && "prices" in (data as object) &&
+    "volumes" in (data as object)
+  ) {
+    const d = data as {
+      prices: Record<string, number>;
+      volumes: Record<string, number>;
+      marketMinute: number;
+    };
+    return {
+      prices: d.prices,
+      volumes: d.volumes,
+      marketMinute: d.marketMinute ?? 0,
+    };
   }
-  return { prices: data as Record<string, number>, volumes: {}, marketMinute: 0 };
+  return {
+    prices: data as Record<string, number>,
+    volumes: {},
+    marketMinute: 0,
+  };
 }
 
 Deno.test("[marketSimClient] parseTick handles new enriched format", () => {
-  const raw = { prices: { AAPL: 189.3 }, volumes: { AAPL: 12345 }, marketMinute: 42 };
+  const raw = {
+    prices: { AAPL: 189.3 },
+    volumes: { AAPL: 12345 },
+    marketMinute: 42,
+  };
   const tick = parseTick(raw);
   assertEquals(tick.prices["AAPL"], 189.3);
   assertEquals(tick.volumes["AAPL"], 12345);
@@ -74,17 +111,26 @@ Deno.test("[marketSimClient] parseTick marketMinute defaults to 0 if missing", (
 
 Deno.test("[priceEngine] generatePrice returns a positive number", () => {
   const price = generatePrice("AAPL");
-  assert(typeof price === "number" && price > 0, `expected positive number, got ${price}`);
+  assert(
+    typeof price === "number" && price > 0,
+    `expected positive number, got ${price}`,
+  );
 });
 
 Deno.test("[priceEngine] generatePrice stays within asset volatility band", () => {
-  const cases: Array<[string, number]> = [["PG", 0.012], ["TSLA", 0.045], ["NVDA", 0.035]];
+  const cases: Array<[string, number]> = [["PG", 0.012], ["TSLA", 0.045], [
+    "NVDA",
+    0.035,
+  ]];
   for (const [asset, vol] of cases) {
     const before = marketData[asset];
     const after = generatePrice(asset);
     const maxMove = before * vol;
     const diff = Math.abs(after - before);
-    assert(diff <= maxMove + 0.001, `${asset}: move ${diff} exceeded volatility ${vol} × ${before} = ${maxMove}`);
+    assert(
+      diff <= maxMove + 0.001,
+      `${asset}: move ${diff} exceeded volatility ${vol} × ${before} = ${maxMove}`,
+    );
   }
 });
 
@@ -96,18 +142,36 @@ Deno.test("[priceEngine] generatePrice mutates marketData", () => {
   let changed = false;
   for (let i = 0; i < 20; i++) {
     generatePrice("MSFT");
-    if (marketData["MSFT"] !== before) { changed = true; break; }
+    if (marketData["MSFT"] !== before) {
+      changed = true;
+      break;
+    }
   }
   assert(changed, "generatePrice never changed the price over 20 iterations");
 });
 
 Deno.test("[sp500Assets] all assets have required fields", () => {
   for (const a of SP500_ASSETS) {
-    assert(typeof a.symbol === "string" && a.symbol.length > 0, `${a.symbol}: missing symbol`);
-    assert(typeof a.initialPrice === "number" && a.initialPrice > 0, `${a.symbol}: initialPrice must be positive`);
-    assert(typeof a.volatility === "number" && a.volatility > 0, `${a.symbol}: volatility must be positive`);
-    assert(typeof a.sector === "string" && a.sector.length > 0, `${a.symbol}: missing sector`);
-    assert(typeof a.dailyVolume === "number" && a.dailyVolume > 0, `${a.symbol}: dailyVolume must be positive`);
+    assert(
+      typeof a.symbol === "string" && a.symbol.length > 0,
+      `${a.symbol}: missing symbol`,
+    );
+    assert(
+      typeof a.initialPrice === "number" && a.initialPrice > 0,
+      `${a.symbol}: initialPrice must be positive`,
+    );
+    assert(
+      typeof a.volatility === "number" && a.volatility > 0,
+      `${a.symbol}: volatility must be positive`,
+    );
+    assert(
+      typeof a.sector === "string" && a.sector.length > 0,
+      `${a.symbol}: missing sector`,
+    );
+    assert(
+      typeof a.dailyVolume === "number" && a.dailyVolume > 0,
+      `${a.symbol}: dailyVolume must be positive`,
+    );
   }
 });
 
@@ -132,7 +196,10 @@ Deno.test("[sp500Assets] AAPL has expected properties", () => {
   const aapl = ASSET_MAP.get("AAPL");
   assert(aapl !== undefined, "AAPL not found");
   assertEquals(aapl!.sector, "Technology");
-  assert(aapl!.dailyVolume >= 1_000_000, "AAPL ADV should be at least 1M shares");
+  assert(
+    aapl!.dailyVolume >= 1_000_000,
+    "AAPL ADV should be at least 1M shares",
+  );
 });
 
 Deno.test("[sp500Assets] ETF sector assets exist", () => {

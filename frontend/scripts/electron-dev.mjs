@@ -37,7 +37,12 @@ function waitForServer(url, timeoutMs = 30_000) {
 }
 
 // Start Vite renderer (plain vite, no electron plugin)
-const vite = spawn("node_modules/.bin/vite", ["--port", String(VITE_PORT), "--mode", "electron"], {
+const vite = spawn("node_modules/.bin/vite", [
+  "--port",
+  String(VITE_PORT),
+  "--mode",
+  "electron",
+], {
   stdio: "inherit",
   env: { ...process.env, ELECTRON_BUILD: "0" },
 });
@@ -81,7 +86,7 @@ waitForServer(VITE_URL).then(() => {
         WAYLAND_DISPLAY: process.env.WAYLAND_DISPLAY ?? "",
         XDG_RUNTIME_DIR: process.env.XDG_RUNTIME_DIR ?? "/tmp",
       },
-    }
+    },
   );
 
   electron.on("close", (code) => {

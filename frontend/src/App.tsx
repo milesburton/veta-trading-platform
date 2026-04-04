@@ -99,7 +99,11 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolea
   state = { crashed: false };
   componentDidCatch(error: Error) {
     store.dispatch(
-      reportError({ message: error.message, source: "ErrorBoundary", stack: error.stack })
+      reportError({
+        message: error.message,
+        source: "ErrorBoundary",
+        stack: error.stack,
+      })
     );
     this.setState({ crashed: true });
   }
@@ -213,7 +217,10 @@ function TradingApp() {
         const seed = seedWorkspaces(userRole);
         finalWorkspaces = seed.workspaces;
         finalLayoutsJson = seed.layouts;
-        saveWorkspacePrefs({ workspaces: finalWorkspaces, layouts: finalLayoutsJson });
+        saveWorkspacePrefs({
+          workspaces: finalWorkspaces,
+          layouts: finalLayoutsJson,
+        });
       } else {
         const { workspaces: presetWs } = seedWorkspaces(userRole);
         const lockedIds = new Set(presetWs.filter((w) => w.locked).map((w) => w.id));
@@ -224,7 +231,10 @@ function TradingApp() {
         if (reconciled.restored.length > 0) {
           finalWorkspaces = reconciled.workspaces;
           finalLayoutsJson = reconciled.layouts;
-          saveWorkspacePrefs({ workspaces: finalWorkspaces, layouts: finalLayoutsJson });
+          saveWorkspacePrefs({
+            workspaces: finalWorkspaces,
+            layouts: finalLayoutsJson,
+          });
         }
       }
 
@@ -286,7 +296,10 @@ function TradingApp() {
 
   const savePrefs = useCallback(
     (nextWorkspaces: typeof workspaces, nextLayouts: Record<string, Model>) => {
-      pendingSaveRef.current = { workspaces: nextWorkspaces, layouts: nextLayouts };
+      pendingSaveRef.current = {
+        workspaces: nextWorkspaces,
+        layouts: nextLayouts,
+      };
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         pendingSaveRef.current = null;
@@ -294,7 +307,10 @@ function TradingApp() {
         for (const [id, m] of Object.entries(nextLayouts)) {
           layoutsJson[id] = m.toJson() as IJsonModel;
         }
-        saveWorkspacePrefs({ workspaces: nextWorkspaces, layouts: layoutsJson });
+        saveWorkspacePrefs({
+          workspaces: nextWorkspaces,
+          layouts: layoutsJson,
+        });
       }, 500);
     },
     []
@@ -345,7 +361,13 @@ function TradingApp() {
   function cloneSharedWorkspace() {
     if (!cloneBanner) return;
     const newId = `ws-${Date.now()}`;
-    const newWorkspaces = [...workspaces, { id: newId, name: cloneBanner.name }];
+    const newWorkspaces = [
+      ...workspaces,
+      {
+        id: newId,
+        name: cloneBanner.name,
+      },
+    ];
     const newModel = Model.fromJson(cloneBanner.model);
     const newLayouts = { ...layouts, [newId]: newModel };
     setWorkspaces(newWorkspaces);
@@ -458,7 +480,10 @@ export default function App() {
       .then(async (res) => {
         if (cancelled) return;
         if (res.ok) {
-          const data = (await res.json()) as { ready: boolean; startedAt?: number };
+          const data = (await res.json()) as {
+            ready: boolean;
+            startedAt?: number;
+          };
           if (data.ready && data.startedAt && Date.now() - data.startedAt > BOOTING_WINDOW_MS) {
             setPlatformState("ready");
           } else {

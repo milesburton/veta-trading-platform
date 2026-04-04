@@ -1,24 +1,42 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { advanceRegime, generatePrice, marketData, openPrices, seedPrice, refreshSectorShocks, prewarmPrices, snapshotOpenPrices } from "./priceEngine.ts";
+import {
+  advanceRegime,
+  generatePrice,
+  marketData,
+  openPrices,
+  prewarmPrices,
+  refreshSectorShocks,
+  seedPrice,
+  snapshotOpenPrices,
+} from "./priceEngine.ts";
 import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
-import { FX_ASSETS, FX_ASSET_MAP } from "./fxAssets.ts";
-import { COMMODITY_ASSETS, COMMODITY_ASSET_MAP } from "./commodityAssets.ts";
-import { BOND_ASSETS, BOND_ASSET_MAP } from "./bondAssets.ts";
+import { FX_ASSET_MAP, FX_ASSETS } from "./fxAssets.ts";
+import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodityAssets.ts";
+import { BOND_ASSET_MAP, BOND_ASSETS } from "./bondAssets.ts";
 import { intradayVolumeFactor } from "../lib/timeScale.ts";
 import { createProducer } from "../lib/messaging.ts";
-import type { OrderBookLevel, OrderBookSnapshot } from "../lib/marketSimClient.ts";
+import type {
+  OrderBookLevel,
+  OrderBookSnapshot,
+} from "../lib/marketSimClient.ts";
 
 const PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
-const MARKET_DATA_URL = `http://${Deno.env.get("MARKET_DATA_HOST") ?? "localhost"}:${Deno.env.get("MARKET_DATA_PORT") ?? "5015"}`;
+const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${
+  Deno.env.get("JOURNAL_PORT") ?? "5009"
+}`;
+const MARKET_DATA_URL = `http://${
+  Deno.env.get("MARKET_DATA_HOST") ?? "localhost"
+}:${Deno.env.get("MARKET_DATA_PORT") ?? "5015"}`;
 
 const realPriceCache = new Map<string, number>();
 let overriddenSymbols = new Set<string>();
 
 async function refreshOverrides(): Promise<void> {
   try {
-    const res = await fetch(`${MARKET_DATA_URL}/overrides`, { signal: AbortSignal.timeout(5_000) });
+    const res = await fetch(`${MARKET_DATA_URL}/overrides`, {
+      signal: AbortSignal.timeout(5_000),
+    });
     if (!res.ok) return;
     const data = await res.json() as { overrides: Record<string, string> };
     overriddenSymbols = new Set(Object.keys(data.overrides));
@@ -27,14 +45,21 @@ async function refreshOverrides(): Promise<void> {
 
 async function fetchRealPrice(symbol: string): Promise<void> {
   try {
-    const res = await fetch(`${MARKET_DATA_URL}/quote/${encodeURIComponent(symbol)}`, {
-      signal: AbortSignal.timeout(5_000),
-    });
+    const res = await fetch(
+      `${MARKET_DATA_URL}/quote/${encodeURIComponent(symbol)}`,
+      {
+        signal: AbortSignal.timeout(5_000),
+      },
+    );
     if (!res.ok) return;
     const data = await res.json() as { price: number };
     if (data.price > 0) {
       realPriceCache.set(symbol, data.price);
-      console.log(`[market-sim] Seeding ${symbol} with real price: $${data.price.toFixed(4)}`);
+      console.log(
+        `[market-sim] Seeding ${symbol} with real price: $${
+          data.price.toFixed(4)
+        }`,
+      );
     }
   } catch { /* keep cached/GBM price */ }
 }
@@ -49,8 +74,18 @@ refreshOverrides().catch(() => {});
 
 const producer = await createProducer("market-sim");
 
-const ALL_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS, ...BOND_ASSETS];
-const ALL_ASSET_MAP = new Map([...ASSET_MAP, ...FX_ASSET_MAP, ...COMMODITY_ASSET_MAP, ...BOND_ASSET_MAP]);
+const ALL_ASSETS = [
+  ...SP500_ASSETS,
+  ...FX_ASSETS,
+  ...COMMODITY_ASSETS,
+  ...BOND_ASSETS,
+];
+const ALL_ASSET_MAP = new Map([
+  ...ASSET_MAP,
+  ...FX_ASSET_MAP,
+  ...COMMODITY_ASSET_MAP,
+  ...BOND_ASSET_MAP,
+]);
 
 async function seedFromJournal(): Promise<void> {
   const symbols = ALL_ASSETS.map((a) => a.symbol);
@@ -78,9 +113,13 @@ async function seedFromJournal(): Promise<void> {
     }),
   );
   if (seeded > 0) {
-    console.log(`[market-sim] Seeded ${seeded}/${symbols.length} assets from journal candle history`);
+    console.log(
+      `[market-sim] Seeded ${seeded}/${symbols.length} assets from journal candle history`,
+    );
   } else {
-    console.log("[market-sim] Journal unavailable or empty — starting from initialPrice");
+    console.log(
+      "[market-sim] Journal unavailable or empty — starting from initialPrice",
+    );
   }
 }
 
@@ -114,7 +153,7 @@ const SOR_VENUES = [
   { mic: "ARCX", spreadMult: 1.08, depthMult: 0.85 },
   { mic: "BATS", spreadMult: 0.95, depthMult: 0.90 },
   { mic: "EDGX", spreadMult: 0.98, depthMult: 0.75 },
-  { mic: "IEX",  spreadMult: 1.02, depthMult: 0.95 },
+  { mic: "IEX", spreadMult: 1.02, depthMult: 0.95 },
   { mic: "MEMX", spreadMult: 0.97, depthMult: 0.65 },
   { mic: "XNYS", spreadMult: 1.05, depthMult: 1.20 },
 ] as const;
@@ -128,7 +167,10 @@ function buildBookForVenue(
   depthMult: number,
   now: number,
 ): OrderBookSnapshot {
-  const spreadBps = Math.max(3, Math.min(25, dailyVol * 700 * (0.85 + Math.random() * 0.3)));
+  const spreadBps = Math.max(
+    3,
+    Math.min(25, dailyVol * 700 * (0.85 + Math.random() * 0.3)),
+  );
   const halfSpread = mid * (spreadBps / 10_000) * spreadMult;
   const avgLotSize = Math.max(100, Math.round(dailyVolume / 5_000));
   const LEVELS = 10;
@@ -139,11 +181,17 @@ function buildBookForVenue(
     const decay = Math.max(0.05, 1 - i * 0.09);
     bids.push({
       price: parseFloat((mid - priceStep).toFixed(4)),
-      size: Math.max(100, Math.round(avgLotSize * depthMult * decay * (0.5 + Math.random()))),
+      size: Math.max(
+        100,
+        Math.round(avgLotSize * depthMult * decay * (0.5 + Math.random())),
+      ),
     });
     asks.push({
       price: parseFloat((mid + priceStep).toFixed(4)),
-      size: Math.max(100, Math.round(avgLotSize * depthMult * decay * (0.5 + Math.random()))),
+      size: Math.max(
+        100,
+        Math.round(avgLotSize * depthMult * decay * (0.5 + Math.random())),
+      ),
     });
   }
   return { bids, asks, mid, ts: now };
@@ -157,26 +205,48 @@ function computeOrderBook(
   const now = Date.now();
   for (const [symbol, mid] of Object.entries(prices)) {
     const asset = ALL_ASSET_MAP.get(symbol);
-    book[symbol] = buildBookForVenue(mid, asset?.volatility ?? 0.02, asset?.dailyVolume ?? 1_000_000, 1.0, 1.0, now);
+    book[symbol] = buildBookForVenue(
+      mid,
+      asset?.volatility ?? 0.02,
+      asset?.dailyVolume ?? 1_000_000,
+      1.0,
+      1.0,
+      now,
+    );
   }
   return book;
 }
 
-function computeVenueBooks(prices: Record<string, number>): Record<SorVenueMIC, Record<string, OrderBookSnapshot>> {
+function computeVenueBooks(
+  prices: Record<string, number>,
+): Record<SorVenueMIC, Record<string, OrderBookSnapshot>> {
   const result = {} as Record<SorVenueMIC, Record<string, OrderBookSnapshot>>;
   const now = Date.now();
   for (const venue of SOR_VENUES) {
     const book: Record<string, OrderBookSnapshot> = {};
     for (const [symbol, mid] of Object.entries(prices)) {
       const asset = ALL_ASSET_MAP.get(symbol);
-      book[symbol] = buildBookForVenue(mid, asset?.volatility ?? 0.02, asset?.dailyVolume ?? 1_000_000, venue.spreadMult, venue.depthMult, now);
+      book[symbol] = buildBookForVenue(
+        mid,
+        asset?.volatility ?? 0.02,
+        asset?.dailyVolume ?? 1_000_000,
+        venue.spreadMult,
+        venue.depthMult,
+        now,
+      );
     }
     result[venue.mic] = book;
   }
   return result;
 }
 
-type SessionPhase = "PRE_OPEN" | "OPENING_AUCTION" | "CONTINUOUS" | "CLOSING_AUCTION" | "HALTED" | "CLOSED";
+type SessionPhase =
+  | "PRE_OPEN"
+  | "OPENING_AUCTION"
+  | "CONTINUOUS"
+  | "CLOSING_AUCTION"
+  | "HALTED"
+  | "CLOSED";
 
 function deriveSessionPhase(minute: number): SessionPhase {
   if (minute < 5) return "PRE_OPEN";
@@ -190,7 +260,9 @@ const clients = new Set<WebSocket>();
 
 setInterval(() => {
   tickCount++;
-  if (tickCount % TICKS_PER_MINUTE === 0) marketMinute = (marketMinute + 1) % 390;
+  if (tickCount % TICKS_PER_MINUTE === 0) {
+    marketMinute = (marketMinute + 1) % 390;
+  }
   advanceRegime();
   refreshSectorShocks();
   for (const sym of overriddenSymbols) {
@@ -202,16 +274,35 @@ setInterval(() => {
   const orderBook = computeOrderBook(marketData, volumes);
   const venueBooks = computeVenueBooks(marketData);
   const sessionPhase = deriveSessionPhase(marketMinute);
-  const tick = { prices: { ...marketData }, openPrices: { ...openPrices }, volumes, marketMinute, orderBook, venueBooks, sessionPhase };
+  const tick = {
+    prices: { ...marketData },
+    openPrices: { ...openPrices },
+    volumes,
+    marketMinute,
+    orderBook,
+    venueBooks,
+    sessionPhase,
+  };
   const msg = JSON.stringify({ event: "marketUpdate", data: tick });
 
   for (const socket of clients) {
-    try { socket.send(msg); } catch { clients.delete(socket); }
+    try {
+      socket.send(msg);
+    } catch {
+      clients.delete(socket);
+    }
   }
 
   // Publish to Redpanda without venueBooks (too large for default message limits;
   // algo services consume venue data via the direct WebSocket connection instead)
-  producer?.send("market.ticks", { prices: tick.prices, openPrices: tick.openPrices, volumes: tick.volumes, marketMinute: tick.marketMinute, orderBook: tick.orderBook, sessionPhase: tick.sessionPhase }).catch(() => {});
+  producer?.send("market.ticks", {
+    prices: tick.prices,
+    openPrices: tick.openPrices,
+    volumes: tick.volumes,
+    marketMinute: tick.marketMinute,
+    orderBook: tick.orderBook,
+    sessionPhase: tick.sessionPhase,
+  }).catch(() => {});
 }, 250);
 
 console.log(`Market Simulator running on ws://localhost:${PORT}`);
@@ -244,7 +335,13 @@ Deno.serve({ port: PORT }, (req) => {
     const volumes = computeTickVolumes(marketMinute);
     const orderBook = computeOrderBook(marketData, volumes);
     const venueBooks = computeVenueBooks(marketData);
-    const snapshot = { prices: { ...marketData }, volumes, marketMinute, orderBook, venueBooks };
+    const snapshot = {
+      prices: { ...marketData },
+      volumes,
+      marketMinute,
+      orderBook,
+      venueBooks,
+    };
     socket.send(JSON.stringify({ event: "marketData", data: snapshot }));
   };
 

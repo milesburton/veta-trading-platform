@@ -4,7 +4,11 @@
 import { EncryptMethod, MsgType, Tag } from "./fix-dictionary.ts";
 import { decode, encode, utcTimestamp } from "./fix-parser.ts";
 
-export type SessionState = "DISCONNECTED" | "LOGON_SENT" | "ACTIVE" | "LOGOUT_SENT";
+export type SessionState =
+  | "DISCONNECTED"
+  | "LOGON_SENT"
+  | "ACTIVE"
+  | "LOGOUT_SENT";
 
 export interface SessionConfig {
   senderCompID: string;
@@ -18,7 +22,7 @@ export interface SessionConfig {
 export class FixSession {
   private state: SessionState = "DISCONNECTED";
   private outSeq = 1; // next outbound MsgSeqNum
-  private inSeq = 1;  // next expected inbound MsgSeqNum
+  private inSeq = 1; // next expected inbound MsgSeqNum
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private testReqId: string | null = null;
   private readonly config: Required<SessionConfig>;
@@ -114,7 +118,9 @@ export class FixSession {
   }
 
   private onLogon(tags: Map<number, string>): void {
-    const heartBtInt = Number(tags.get(Tag.HeartBtInt) ?? this.config.heartBtInt);
+    const heartBtInt = Number(
+      tags.get(Tag.HeartBtInt) ?? this.config.heartBtInt,
+    );
     if (this.state === "LOGON_SENT") {
       // Acceptor responded — session active
       this.setState("ACTIVE");

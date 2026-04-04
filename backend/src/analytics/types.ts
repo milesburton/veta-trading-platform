@@ -7,17 +7,17 @@ export type OptionType = "call" | "put";
 export interface Greeks {
   delta: number;
   gamma: number;
-  theta: number;  // per-day decay
-  vega: number;   // per 1% vol move
-  rho: number;    // per 1% rate move
+  theta: number; // per-day decay
+  vega: number; // per 1% vol move
+  rho: number; // per 1% rate move
 }
 
 export interface OptionQuoteRequest {
   symbol: string;
   optionType: OptionType;
-  strike: number;          // option strike price
-  expirySecs: number;      // seconds to expiry
-  riskFreeRate?: number;   // annual, default 0.05
+  strike: number; // option strike price
+  expirySecs: number; // seconds to expiry
+  riskFreeRate?: number; // annual, default 0.05
 }
 
 export interface OptionQuoteResponse {
@@ -26,23 +26,23 @@ export interface OptionQuoteResponse {
   strike: number;
   expirySecs: number;
   spotPrice: number;
-  impliedVol: number;      // annualised σ used in calculation
-  price: number;           // theoretical option price
+  impliedVol: number; // annualised σ used in calculation
+  price: number; // theoretical option price
   greeks: Greeks;
-  computedAt: number;      // unix ms
+  computedAt: number; // unix ms
 }
 
 export interface ScenarioShock {
-  spotPct: number;    // e.g. -0.10 = -10%
-  volPct: number;     // e.g.  0.20 = vol +20pp
-  timeDays: number;   // e.g. 7 = 7 days elapsed
+  spotPct: number; // e.g. -0.10 = -10%
+  volPct: number; // e.g.  0.20 = vol +20pp
+  timeDays: number; // e.g. 7 = 7 days elapsed
 }
 
 export interface ScenarioCell {
   spotPct: number;
   volPct: number;
   optionPrice: number;
-  pnl: number;                // vs baseline price (no shock)
+  pnl: number; // vs baseline price (no shock)
   pnlPct: number;
   // Monte Carlo distribution for this cell
   p5: number;
@@ -58,10 +58,10 @@ export interface ScenarioRequest {
   strike: number;
   expirySecs: number;
   riskFreeRate?: number;
-  spotShocks: number[];   // e.g. [-0.20, -0.10, 0, 0.10, 0.20]
-  volShocks: number[];    // e.g. [-0.20, -0.10, 0, 0.10, 0.20]
-  timeDays?: number;      // fixed time elapsed for all cells (default 0)
-  paths?: number;         // Monte Carlo paths per cell (default 1000)
+  spotShocks: number[]; // e.g. [-0.20, -0.10, 0, 0.10, 0.20]
+  volShocks: number[]; // e.g. [-0.20, -0.10, 0, 0.10, 0.20]
+  timeDays?: number; // fixed time elapsed for all cells (default 0)
+  paths?: number; // Monte Carlo paths per cell (default 1000)
 }
 
 export interface ScenarioResponse {
@@ -74,11 +74,16 @@ export interface ScenarioResponse {
   baselinePrice: number;
   spotShocks: number[];
   volShocks: number[];
-  cells: ScenarioCell[][];   // [spotShockIndex][volShockIndex]
+  cells: ScenarioCell[][]; // [spotShockIndex][volShockIndex]
   computedAt: number;
 }
 
-export type SignalStrength = "STRONG_BUY" | "BUY" | "NEUTRAL" | "SELL" | "STRONG_SELL";
+export type SignalStrength =
+  | "STRONG_BUY"
+  | "BUY"
+  | "NEUTRAL"
+  | "SELL"
+  | "STRONG_SELL";
 
 /** @deprecated Use string[] in Recommendation.reasons — kept only for type compat. */
 export type SignalReason =
@@ -96,9 +101,9 @@ export type SignalReason =
   | "FAVOURABLE_RISK_REWARD";
 
 export interface SignalInput {
-  score: number;          // -1 to +1 from intelligence pipeline
+  score: number; // -1 to +1 from intelligence pipeline
   direction: "long" | "short" | "neutral";
-  confidence: number;     // 0 to 1
+  confidence: number; // 0 to 1
   factors: { name: string; weight: number; contribution: number }[];
 }
 
@@ -107,9 +112,9 @@ export interface Recommendation {
   strike: number;
   expirySecs: number;
   price: number;
-  score: number;                // -100 to +100
+  score: number; // -100 to +100
   signalStrength: SignalStrength;
-  reasons: string[];            // rule codes + factor names
+  reasons: string[]; // rule codes + factor names
   greeks: Greeks;
   impliedVol: number;
   // Signal-driven scoring fields (undefined when scoringMode is "rule-based")
@@ -123,9 +128,9 @@ export interface Recommendation {
 export interface RecommendationRequest {
   symbol: string;
   riskFreeRate?: number;
-  strikes?: number[];       // if omitted, auto-generate ±5 strikes around ATM
-  expiries?: number[];      // seconds to expiry; if omitted, [7, 14, 30, 60, 90] days
-  signal?: SignalInput;     // optional: include for signal-driven scoring
+  strikes?: number[]; // if omitted, auto-generate ±5 strikes around ATM
+  expiries?: number[]; // seconds to expiry; if omitted, [7, 14, 30, 60, 90] days
+  signal?: SignalInput; // optional: include for signal-driven scoring
 }
 
 export interface RecommendationResponse {
@@ -137,25 +142,25 @@ export interface RecommendationResponse {
 }
 
 export interface VolProfileSample {
-  ts: number;   // unix ms (candle timestamp)
-  vol: number;  // annualised EWMA vol at this bar
+  ts: number; // unix ms (candle timestamp)
+  vol: number; // annualised EWMA vol at this bar
 }
 
 export interface VolProfileResponse {
   symbol: string;
   spotPrice: number | null;
-  ewmaVol: number;      // current EWMA vol (last bar)
-  rollingVol: number;   // simple rolling std-dev vol (for reference)
+  ewmaVol: number; // current EWMA vol (last bar)
+  rollingVol: number; // simple rolling std-dev vol (for reference)
   series: VolProfileSample[];
   computedAt: number;
 }
 
 export interface BondPriceRequest {
-  face?: number;           // face value, default 1000
-  couponRate: number;      // annual coupon rate e.g. 0.05
+  face?: number; // face value, default 1000
+  couponRate: number; // annual coupon rate e.g. 0.05
   periodsPerYear?: number; // coupon frequency, default 2 (semi-annual)
-  totalPeriods: number;    // total coupon periods e.g. 20 = 10yr semi-annual
-  yieldAnnual: number;     // current yield (continuous compounding)
+  totalPeriods: number; // total coupon periods e.g. 20 = 10yr semi-annual
+  yieldAnnual: number; // current yield (continuous compounding)
 }
 
 export interface BondPriceResponse {
@@ -163,16 +168,16 @@ export interface BondPriceResponse {
   yieldAnnual: number;
   modifiedDuration: number;
   convexity: number;
-  dv01: number;            // dollar value of 1bp
+  dv01: number; // dollar value of 1bp
   cashFlows: { t: number; cf: number; pv: number }[];
   computedAt: number;
 }
 
 export interface NelsonSiegelParams {
-  beta0: number;   // long-run level
-  beta1: number;   // slope
-  beta2: number;   // curvature
-  lambda: number;  // time constant (years)
+  beta0: number; // long-run level
+  beta1: number; // slope
+  beta2: number; // curvature
+  lambda: number; // time constant (years)
 }
 
 export interface YieldCurvePoint {
@@ -219,7 +224,7 @@ export interface PriceFanResponse {
 
 export interface GreeksSurfacePoint {
   strike: number;
-  moneyness: number;    // K / S
+  moneyness: number; // K / S
   callDelta: number;
   gamma: number;
   theta: number;

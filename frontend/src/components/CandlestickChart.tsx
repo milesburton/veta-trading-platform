@@ -36,7 +36,11 @@ function getChartTheme() {
     crosshair: { mode: CrosshairMode.Normal },
     leftPriceScale: { visible: false },
     rightPriceScale: { borderColor: ch("--gray-800") },
-    timeScale: { borderColor: ch("--gray-800"), timeVisible: true, secondsVisible: false },
+    timeScale: {
+      borderColor: ch("--gray-800"),
+      timeVisible: true,
+      secondsVisible: false,
+    },
   };
 }
 

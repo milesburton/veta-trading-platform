@@ -3,17 +3,48 @@ import {
   assertEquals,
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
 
-import { applyExprGroup, applySort, evalExprGroup, evalOp } from "../lib/gridQuery.ts";
+import {
+  applyExprGroup,
+  applySort,
+  evalExprGroup,
+  evalOp,
+} from "../lib/gridQuery.ts";
 import type { ExprGroup } from "../types/gridQuery.ts";
 
-
 const rows = [
-  { id: "1", asset: "AAPL", side: "BUY", quantity: 10000, status: "filled", userId: "alice" },
-  { id: "2", asset: "MSFT", side: "SELL", quantity: 50000, status: "executing", userId: null },
-  { id: "3", asset: "GOOG", side: "BUY", quantity: 5000, status: "queued", userId: "bob" },
-  { id: "4", asset: "TSLA", side: "SELL", quantity: 100000, status: "expired", userId: "" },
+  {
+    id: "1",
+    asset: "AAPL",
+    side: "BUY",
+    quantity: 10000,
+    status: "filled",
+    userId: "alice",
+  },
+  {
+    id: "2",
+    asset: "MSFT",
+    side: "SELL",
+    quantity: 50000,
+    status: "executing",
+    userId: null,
+  },
+  {
+    id: "3",
+    asset: "GOOG",
+    side: "BUY",
+    quantity: 5000,
+    status: "queued",
+    userId: "bob",
+  },
+  {
+    id: "4",
+    asset: "TSLA",
+    side: "SELL",
+    quantity: 100000,
+    status: "expired",
+    userId: "",
+  },
 ];
-
 
 Deno.test("[gridQuery/evalOp] = string match (case-insensitive)", () => {
   assert(evalOp("BUY", "=", "buy"));
@@ -95,7 +126,6 @@ Deno.test("[gridQuery/evalOp] is_not_null", () => {
   assert(!evalOp("", "is_not_null", ""));
 });
 
-
 Deno.test("[gridQuery/evalExprGroup] empty group passes every row", () => {
   const g: ExprGroup = { kind: "group", id: "root", join: "AND", rules: [] };
   for (const row of rows) {
@@ -105,7 +135,9 @@ Deno.test("[gridQuery/evalExprGroup] empty group passes every row", () => {
 
 Deno.test("[gridQuery/evalExprGroup] AND group — all rules must match", () => {
   const g: ExprGroup = {
-    kind: "group", id: "root", join: "AND",
+    kind: "group",
+    id: "root",
+    join: "AND",
     rules: [
       { kind: "rule", id: "r1", field: "side", op: "=", value: "BUY" },
       { kind: "rule", id: "r2", field: "quantity", op: ">", value: 5000 },
@@ -117,7 +149,9 @@ Deno.test("[gridQuery/evalExprGroup] AND group — all rules must match", () => 
 
 Deno.test("[gridQuery/evalExprGroup] OR group — any rule matches", () => {
   const g: ExprGroup = {
-    kind: "group", id: "root", join: "OR",
+    kind: "group",
+    id: "root",
+    join: "OR",
     rules: [
       { kind: "rule", id: "r1", field: "status", op: "=", value: "filled" },
       { kind: "rule", id: "r2", field: "status", op: "=", value: "expired" },
@@ -129,14 +163,24 @@ Deno.test("[gridQuery/evalExprGroup] OR group — any rule matches", () => {
 
 Deno.test("[gridQuery/evalExprGroup] nested AND containing OR sub-group", () => {
   const g: ExprGroup = {
-    kind: "group", id: "root", join: "AND",
+    kind: "group",
+    id: "root",
+    join: "AND",
     rules: [
       { kind: "rule", id: "r1", field: "quantity", op: ">", value: 5000 },
       {
-        kind: "group", id: "sub", join: "OR",
+        kind: "group",
+        id: "sub",
+        join: "OR",
         rules: [
           { kind: "rule", id: "r2", field: "side", op: "=", value: "BUY" },
-          { kind: "rule", id: "r3", field: "status", op: "=", value: "expired" },
+          {
+            kind: "rule",
+            id: "r3",
+            field: "status",
+            op: "=",
+            value: "expired",
+          },
         ],
       },
     ],
@@ -147,14 +191,24 @@ Deno.test("[gridQuery/evalExprGroup] nested AND containing OR sub-group", () => 
 
 Deno.test("[gridQuery/evalExprGroup] nested OR containing AND sub-group", () => {
   const g: ExprGroup = {
-    kind: "group", id: "root", join: "OR",
+    kind: "group",
+    id: "root",
+    join: "OR",
     rules: [
       { kind: "rule", id: "r1", field: "asset", op: "=", value: "GOOG" },
       {
-        kind: "group", id: "sub", join: "AND",
+        kind: "group",
+        id: "sub",
+        join: "AND",
         rules: [
           { kind: "rule", id: "r2", field: "side", op: "=", value: "SELL" },
-          { kind: "rule", id: "r3", field: "quantity", op: ">=", value: 100000 },
+          {
+            kind: "rule",
+            id: "r3",
+            field: "quantity",
+            op: ">=",
+            value: 100000,
+          },
         ],
       },
     ],
@@ -165,8 +219,16 @@ Deno.test("[gridQuery/evalExprGroup] nested OR containing AND sub-group", () => 
 
 Deno.test("[gridQuery/evalExprGroup] is_null on null and empty-string userId", () => {
   const g: ExprGroup = {
-    kind: "group", id: "root", join: "AND",
-    rules: [{ kind: "rule", id: "r1", field: "userId", op: "is_null", value: "" }],
+    kind: "group",
+    id: "root",
+    join: "AND",
+    rules: [{
+      kind: "rule",
+      id: "r1",
+      field: "userId",
+      op: "is_null",
+      value: "",
+    }],
   };
   const result = applyExprGroup(rows, g);
   assertEquals(result.map((r) => r.id).sort(), ["2", "4"]);
@@ -174,8 +236,16 @@ Deno.test("[gridQuery/evalExprGroup] is_null on null and empty-string userId", (
 
 Deno.test("[gridQuery/evalExprGroup] is_not_null on userId", () => {
   const g: ExprGroup = {
-    kind: "group", id: "root", join: "AND",
-    rules: [{ kind: "rule", id: "r1", field: "userId", op: "is_not_null", value: "" }],
+    kind: "group",
+    id: "root",
+    join: "AND",
+    rules: [{
+      kind: "rule",
+      id: "r1",
+      field: "userId",
+      op: "is_not_null",
+      value: "",
+    }],
   };
   const result = applyExprGroup(rows, g);
   assertEquals(result.map((r) => r.id).sort(), ["1", "3"]);
@@ -183,8 +253,16 @@ Deno.test("[gridQuery/evalExprGroup] is_not_null on userId", () => {
 
 Deno.test("[gridQuery/evalExprGroup] between on quantity", () => {
   const g: ExprGroup = {
-    kind: "group", id: "root", join: "AND",
-    rules: [{ kind: "rule", id: "r1", field: "quantity", op: "between", value: [5000, 50000] }],
+    kind: "group",
+    id: "root",
+    join: "AND",
+    rules: [{
+      kind: "rule",
+      id: "r1",
+      field: "quantity",
+      op: "between",
+      value: [5000, 50000],
+    }],
   };
   const result = applyExprGroup(rows, g);
   assertEquals(result.map((r) => r.id).sort(), ["1", "2", "3"]);
@@ -192,13 +270,20 @@ Deno.test("[gridQuery/evalExprGroup] between on quantity", () => {
 
 Deno.test("[gridQuery/evalExprGroup] starts_with on asset", () => {
   const g: ExprGroup = {
-    kind: "group", id: "root", join: "AND",
-    rules: [{ kind: "rule", id: "r1", field: "asset", op: "starts_with", value: "A" }],
+    kind: "group",
+    id: "root",
+    join: "AND",
+    rules: [{
+      kind: "rule",
+      id: "r1",
+      field: "asset",
+      op: "starts_with",
+      value: "A",
+    }],
   };
   const result = applyExprGroup(rows, g);
   assertEquals(result.map((r) => r.id), ["1"]); // AAPL
 });
-
 
 Deno.test("[gridQuery/applySort] ascending by quantity", () => {
   const sorted = applySort([...rows], "quantity", "asc");
@@ -233,7 +318,6 @@ Deno.test("[gridQuery/applySort] does not mutate input array", () => {
   assertEquals(original[0].id, "1"); // input order unchanged
 });
 
-
 Deno.test("[gridQuery/applyExprGroup] empty group returns all rows", () => {
   const g: ExprGroup = { kind: "group", id: "root", join: "AND", rules: [] };
   const result = applyExprGroup([...rows], g);
@@ -242,7 +326,9 @@ Deno.test("[gridQuery/applyExprGroup] empty group returns all rows", () => {
 
 Deno.test("[gridQuery/applyExprGroup] no match returns empty array", () => {
   const g: ExprGroup = {
-    kind: "group", id: "root", join: "AND",
+    kind: "group",
+    id: "root",
+    join: "AND",
     rules: [{ kind: "rule", id: "r1", field: "asset", op: "=", value: "NVDA" }],
   };
   const result = applyExprGroup([...rows], g);

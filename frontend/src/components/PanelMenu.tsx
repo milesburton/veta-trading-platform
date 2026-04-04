@@ -55,7 +55,11 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
 
   function openNewWindow() {
     open.value = false;
-    const params = new URLSearchParams({ panel: instanceId, type: panelType, layout: storageKey });
+    const params = new URLSearchParams({
+      panel: instanceId,
+      type: panelType,
+      layout: storageKey,
+    });
     const url = `${window.location.origin}${window.location.pathname}?${params}`;
     const w = window.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
     if (w) {
@@ -98,7 +102,9 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
         aria-label="Panel actions"
         aria-haspopup="menu"
         aria-expanded={open.value}
-        className={`text-xs transition-colors ${isActive ? "text-sky-400" : "text-gray-600 hover:text-gray-300"} disabled:opacity-30`}
+        className={`text-xs transition-colors ${
+          isActive ? "text-sky-400" : "text-gray-600 hover:text-gray-300"
+        } disabled:opacity-30`}
       >
         ⬡
       </button>

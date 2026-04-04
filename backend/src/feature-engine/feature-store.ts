@@ -11,8 +11,27 @@ export interface FeatureStore {
 }
 
 function rowToFv(row: unknown[]): FeatureVector {
-  const [symbol, ts, momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta] =
-    row as [string, bigint | number, number, number, number, number, number, number, number];
+  const [
+    symbol,
+    ts,
+    momentum,
+    relativeVolume,
+    realisedVol,
+    sectorRelativeStrength,
+    eventScore,
+    newsVelocity,
+    sentimentDelta,
+  ] = row as [
+    string,
+    bigint | number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
   return {
     symbol,
     ts: Number(ts),
@@ -35,8 +54,17 @@ export function createFeatureStore(pool: Pool): FeatureStore {
           `INSERT INTO intelligence.feature_vectors
             (symbol, ts, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-          [fv.symbol, fv.ts, fv.momentum, fv.relativeVolume, fv.realisedVol,
-            fv.sectorRelativeStrength, fv.eventScore, fv.newsVelocity, fv.sentimentDelta],
+          [
+            fv.symbol,
+            fv.ts,
+            fv.momentum,
+            fv.relativeVolume,
+            fv.realisedVol,
+            fv.sectorRelativeStrength,
+            fv.eventScore,
+            fv.newsVelocity,
+            fv.sentimentDelta,
+          ],
         );
       } finally {
         client.release();
@@ -86,7 +114,10 @@ export function createFeatureStore(pool: Pool): FeatureStore {
             [MAX_PER_SYMBOL],
           );
         } catch (err) {
-          console.warn("[feature-store] cleanup error:", (err as Error).message);
+          console.warn(
+            "[feature-store] cleanup error:",
+            (err as Error).message,
+          );
         } finally {
           client.release();
         }

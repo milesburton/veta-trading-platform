@@ -8,7 +8,7 @@
  *   - Selecting a symbol row broadcasts to linked panels (tab title update)
  */
 
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 import { DEFAULT_ASSETS } from "./helpers/GatewayMock.ts";
 
@@ -54,7 +54,11 @@ test.describe("Market data", () => {
       await ladder.waitForSymbol("AAPL");
 
       // Send a tick
-      app.gateway.sendMarketUpdate({ AAPL: 189.50, MSFT: 421.00, GOOGL: 175.25 });
+      app.gateway.sendMarketUpdate({
+        AAPL: 189.50,
+        MSFT: 421.00,
+        GOOGL: 175.25,
+      });
 
       // The ladder batches ticks at 250ms, wait a bit then check price text
       await page.waitForTimeout(400);
@@ -135,7 +139,7 @@ test.describe("Market data", () => {
 
       // The row should have aria-pressed=true after selection
       await expect(
-        ladder.rowForSymbol("AAPL")
+        ladder.rowForSymbol("AAPL"),
       ).toHaveAttribute("aria-pressed", "true", { timeout: 3_000 });
     });
 
@@ -148,10 +152,18 @@ test.describe("Market data", () => {
 
       // Select then deselect
       await ladder.selectSymbol("AAPL");
-      await expect(ladder.rowForSymbol("AAPL")).toHaveAttribute("aria-pressed", "true", { timeout: 3_000 });
+      await expect(ladder.rowForSymbol("AAPL")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+        { timeout: 3_000 },
+      );
 
       await ladder.selectSymbol("AAPL");
-      await expect(ladder.rowForSymbol("AAPL")).toHaveAttribute("aria-pressed", "false", { timeout: 3_000 });
+      await expect(ladder.rowForSymbol("AAPL")).toHaveAttribute(
+        "aria-pressed",
+        "false",
+        { timeout: 3_000 },
+      );
     });
   });
 });

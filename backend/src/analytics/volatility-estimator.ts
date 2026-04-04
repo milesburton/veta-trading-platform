@@ -46,14 +46,21 @@ function computeVol(closes: number[], timestamps: number[]): VolResult {
   const ewmaSeries: VolProfileSample[] = [];
   for (let i = 0; i < n; i++) {
     ewmaVar = LAMBDA * ewmaVar + (1 - LAMBDA) * logReturns[i] * logReturns[i];
-    const annualisedVol = Math.min(5.0, Math.max(0.01, Math.sqrt(ewmaVar) * ANNUAL_FACTOR));
+    const annualisedVol = Math.min(
+      5.0,
+      Math.max(0.01, Math.sqrt(ewmaVar) * ANNUAL_FACTOR),
+    );
     ewmaSeries.push({ ts: timestamps[i + 1], vol: annualisedVol });
   }
   const ewmaVol = ewmaSeries[ewmaSeries.length - 1].vol;
 
   const mean = logReturns.reduce((a, b) => a + b, 0) / n;
-  const variance = logReturns.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1);
-  const rollingVol = Math.min(5.0, Math.max(0.01, Math.sqrt(variance) * ANNUAL_FACTOR));
+  const variance = logReturns.reduce((a, b) => a + (b - mean) ** 2, 0) /
+    (n - 1);
+  const rollingVol = Math.min(
+    5.0,
+    Math.max(0.01, Math.sqrt(variance) * ANNUAL_FACTOR),
+  );
 
   return { ewmaVol, rollingVol, ewmaSeries };
 }
@@ -63,7 +70,9 @@ async function fetchCandles(
   symbol: string,
 ): Promise<{ close: number; ts?: number }[] | null> {
   try {
-    const url = `${journalUrl}/candles?symbol=${encodeURIComponent(symbol)}&interval=1m&limit=120`;
+    const url = `${journalUrl}/candles?symbol=${
+      encodeURIComponent(symbol)
+    }&interval=1m&limit=120`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5_000) });
     if (!res.ok) return null;
     return await res.json() as { close: number; ts?: number }[];
@@ -120,11 +129,17 @@ export async function estimateVol(
 export async function estimateVolProfile(
   journalUrl: string,
   symbol: string,
-): Promise<{ ewmaVol: number; rollingVol: number; ewmaSeries: VolProfileSample[] } | null> {
+): Promise<
+  { ewmaVol: number; rollingVol: number; ewmaSeries: VolProfileSample[] } | null
+> {
   const now = Date.now();
   const cached = volCache.get(symbol);
   if (cached && cached.expiresAt > now) {
-    return { ewmaVol: cached.ewmaVol, rollingVol: cached.rollingVol, ewmaSeries: cached.ewmaSeries };
+    return {
+      ewmaVol: cached.ewmaVol,
+      rollingVol: cached.rollingVol,
+      ewmaSeries: cached.ewmaSeries,
+    };
   }
 
   const candles = await fetchCandles(journalUrl, symbol);
@@ -147,9 +162,14 @@ export async function estimateVolProfile(
  * @param journalUrl - base URL of the journal service
  * @param symbol     - asset symbol
  */
-export async function fetchSpotPrice(journalUrl: string, symbol: string): Promise<number | null> {
+export async function fetchSpotPrice(
+  journalUrl: string,
+  symbol: string,
+): Promise<number | null> {
   try {
-    const url = `${journalUrl}/candles?symbol=${encodeURIComponent(symbol)}&interval=1m&limit=1`;
+    const url = `${journalUrl}/candles?symbol=${
+      encodeURIComponent(symbol)
+    }&interval=1m&limit=1`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5_000) });
     if (!res.ok) return null;
     const candles = await res.json() as { close: number }[];

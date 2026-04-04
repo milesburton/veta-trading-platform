@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { useAppSelector } from "../store/hooks.ts";
 import type { LiquidityFlag, ObsEvent, OrderRecord } from "../types.ts";
+import { formatBps, formatTime } from "../utils/format.ts";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 type ObsTab = "summary" | "trades" | "events";
@@ -21,19 +22,6 @@ const LIQ_COLORS: Record<LiquidityFlag, string> = {
   TAKER: "#f59e0b",
   CROSS: "#38bdf8",
 };
-
-function formatTime(ms: number) {
-  return new Date(ms).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-function formatBps(bps: number) {
-  const sign = bps > 0 ? "+" : "";
-  return `${sign}${bps.toFixed(1)}bp`;
-}
 
 function buildFillTimeline(order: OrderRecord) {
   if (order.children.length === 0) return [];
@@ -234,7 +222,9 @@ function TradeRow({ order }: { order: OrderRecord }) {
         </td>
         <td className="px-3 py-1.5 font-semibold text-gray-200">{order.asset}</td>
         <td
-          className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"}`}
+          className={`px-3 py-1.5 font-semibold ${
+            order.side === "BUY" ? "text-emerald-400" : "text-red-400"
+          }`}
         >
           {order.side}
         </td>
@@ -357,7 +347,9 @@ export function ObservabilityPanel() {
 
   function replay() {
     const r = events.slice().reverse();
-    const blob = new Blob([JSON.stringify(r, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(r, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank");
   }
@@ -375,7 +367,11 @@ export function ObservabilityPanel() {
               title="Summary — overview of fill statistics, notional, commission, and liquidity mix"
               aria-pressed={tab.value === "summary"}
               data-testid="summary-tab"
-              className={`px-2.5 py-1 transition-colors ${tab.value === "summary" ? "bg-sky-900/60 text-sky-300" : "text-gray-500 hover:text-gray-300"}`}
+              className={`px-2.5 py-1 transition-colors ${
+                tab.value === "summary"
+                  ? "bg-sky-900/60 text-sky-300"
+                  : "text-gray-500 hover:text-gray-300"
+              }`}
             >
               Summary
             </button>
@@ -387,7 +383,11 @@ export function ObservabilityPanel() {
               title="Trades — individual trade records with fill progression charts"
               aria-pressed={tab.value === "trades"}
               data-testid="trades-tab"
-              className={`px-2.5 py-1 transition-colors ${tab.value === "trades" ? "bg-sky-900/60 text-sky-300" : "text-gray-500 hover:text-gray-300"}`}
+              className={`px-2.5 py-1 transition-colors ${
+                tab.value === "trades"
+                  ? "bg-sky-900/60 text-sky-300"
+                  : "text-gray-500 hover:text-gray-300"
+              }`}
             >
               Trades
               {tradeOrders.length > 0 && (
@@ -404,7 +404,11 @@ export function ObservabilityPanel() {
               title="Events — raw observability event stream from the algo engine"
               aria-pressed={tab.value === "events"}
               data-testid="events-tab"
-              className={`px-2.5 py-1 transition-colors ${tab.value === "events" ? "bg-sky-900/60 text-sky-300" : "text-gray-500 hover:text-gray-300"}`}
+              className={`px-2.5 py-1 transition-colors ${
+                tab.value === "events"
+                  ? "bg-sky-900/60 text-sky-300"
+                  : "text-gray-500 hover:text-gray-300"
+              }`}
             >
               Events
             </button>

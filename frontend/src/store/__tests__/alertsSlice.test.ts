@@ -28,7 +28,10 @@ describe("alertsSlice — alertAdded", () => {
   it("generates a valid id when crypto.randomUUID is unavailable (non-secure context)", () => {
     // Simulate HTTP (non-secure) context where randomUUID is not available
     const original = crypto.randomUUID;
-    Object.defineProperty(crypto, "randomUUID", { value: undefined, configurable: true });
+    Object.defineProperty(crypto, "randomUUID", {
+      value: undefined,
+      configurable: true,
+    });
 
     try {
       const state = reducer(undefined, alertAdded(BASE_ALERT));
@@ -36,7 +39,10 @@ describe("alertsSlice — alertAdded", () => {
       expect(typeof state.alerts[0].id).toBe("string");
       expect(state.alerts[0].id.length).toBeGreaterThan(0);
     } finally {
-      Object.defineProperty(crypto, "randomUUID", { value: original, configurable: true });
+      Object.defineProperty(crypto, "randomUUID", {
+        value: original,
+        configurable: true,
+      });
     }
   });
 
@@ -65,7 +71,11 @@ describe("alertsSlice — source field", () => {
   it("service and non-service alerts are distinguishable by source in the same state", () => {
     let state = reducer(
       undefined,
-      alertAdded({ ...BASE_ALERT, source: "service", message: "EMS: service down" })
+      alertAdded({
+        ...BASE_ALERT,
+        source: "service",
+        message: "EMS: service down",
+      })
     );
     state = reducer(
       state,

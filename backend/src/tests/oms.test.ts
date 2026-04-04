@@ -28,7 +28,10 @@ type ValidationResult =
 
 function validateOrder(order: Order, limits: TradingLimits): ValidationResult {
   if (!order.asset || !order.side || !order.quantity) {
-    return { ok: false, reason: "Missing required fields: asset, side, quantity" };
+    return {
+      ok: false,
+      reason: "Missing required fields: asset, side, quantity",
+    };
   }
 
   const strategy = (order.strategy ?? "LIMIT").toUpperCase();
@@ -37,21 +40,35 @@ function validateOrder(order: Order, limits: TradingLimits): ValidationResult {
   }
 
   if (order.userRole === "admin") {
-    return { ok: false, reason: "Admin accounts are not permitted to submit orders" };
+    return {
+      ok: false,
+      reason: "Admin accounts are not permitted to submit orders",
+    };
   }
 
   if (order.userId) {
     if (order.quantity > limits.max_order_qty) {
-      return { ok: false, reason: `Order quantity ${order.quantity} exceeds your limit of ${limits.max_order_qty}` };
+      return {
+        ok: false,
+        reason:
+          `Order quantity ${order.quantity} exceeds your limit of ${limits.max_order_qty}`,
+      };
     }
 
     if (!limits.allowed_strategies.includes(strategy)) {
-      return { ok: false, reason: `Strategy ${strategy} is not permitted for your account` };
+      return {
+        ok: false,
+        reason: `Strategy ${strategy} is not permitted for your account`,
+      };
     }
 
     const notional = order.quantity * (order.limitPrice ?? 0);
     if (notional > limits.max_daily_notional) {
-      return { ok: false, reason: `Order notional $${notional.toLocaleString()} exceeds your daily limit of $${limits.max_daily_notional.toLocaleString()}` };
+      return {
+        ok: false,
+        reason:
+          `Order notional $${notional.toLocaleString()} exceeds your daily limit of $${limits.max_daily_notional.toLocaleString()}`,
+      };
     }
   }
 
@@ -74,23 +91,30 @@ const VALID_ORDER: Order = {
   userRole: "trader",
 };
 
-
 Deno.test("[oms] rejects order missing asset", () => {
-  const result = validateOrder({ ...VALID_ORDER, asset: undefined }, DEFAULT_LIMITS);
+  const result = validateOrder(
+    { ...VALID_ORDER, asset: undefined },
+    DEFAULT_LIMITS,
+  );
   assertEquals(result.ok, false);
   if (!result.ok) assertMatch(result.reason, /Missing required fields/);
 });
 
 Deno.test("[oms] rejects order missing side", () => {
-  const result = validateOrder({ ...VALID_ORDER, side: undefined }, DEFAULT_LIMITS);
+  const result = validateOrder(
+    { ...VALID_ORDER, side: undefined },
+    DEFAULT_LIMITS,
+  );
   assertEquals(result.ok, false);
 });
 
 Deno.test("[oms] rejects order missing quantity", () => {
-  const result = validateOrder({ ...VALID_ORDER, quantity: undefined }, DEFAULT_LIMITS);
+  const result = validateOrder(
+    { ...VALID_ORDER, quantity: undefined },
+    DEFAULT_LIMITS,
+  );
   assertEquals(result.ok, false);
 });
-
 
 Deno.test("[oms] accepts known strategies", () => {
   for (const strategy of ["LIMIT", "TWAP", "POV", "VWAP"]) {
@@ -100,35 +124,48 @@ Deno.test("[oms] accepts known strategies", () => {
 });
 
 Deno.test("[oms] normalises strategy to uppercase", () => {
-  const result = validateOrder({ ...VALID_ORDER, strategy: "limit" }, DEFAULT_LIMITS);
+  const result = validateOrder(
+    { ...VALID_ORDER, strategy: "limit" },
+    DEFAULT_LIMITS,
+  );
   assertEquals(result.ok, true);
   if (result.ok) assertEquals(result.strategy, "LIMIT");
 });
 
 Deno.test("[oms] rejects unknown strategy", () => {
-  const result = validateOrder({ ...VALID_ORDER, strategy: "ICEBERG" }, DEFAULT_LIMITS);
+  const result = validateOrder(
+    { ...VALID_ORDER, strategy: "ICEBERG" },
+    DEFAULT_LIMITS,
+  );
   assertEquals(result.ok, false);
   if (!result.ok) assertMatch(result.reason, /Unknown strategy/);
 });
 
 Deno.test("[oms] defaults missing strategy to LIMIT", () => {
-  const result = validateOrder({ ...VALID_ORDER, strategy: undefined }, DEFAULT_LIMITS);
+  const result = validateOrder(
+    { ...VALID_ORDER, strategy: undefined },
+    DEFAULT_LIMITS,
+  );
   assertEquals(result.ok, true);
   if (result.ok) assertEquals(result.strategy, "LIMIT");
 });
 
-
 Deno.test("[oms] rejects orders from admin role", () => {
-  const result = validateOrder({ ...VALID_ORDER, userRole: "admin" }, DEFAULT_LIMITS);
+  const result = validateOrder(
+    { ...VALID_ORDER, userRole: "admin" },
+    DEFAULT_LIMITS,
+  );
   assertEquals(result.ok, false);
   if (!result.ok) assertMatch(result.reason, /Admin accounts/);
 });
 
 Deno.test("[oms] accepts orders from trader role", () => {
-  const result = validateOrder({ ...VALID_ORDER, userRole: "trader" }, DEFAULT_LIMITS);
+  const result = validateOrder(
+    { ...VALID_ORDER, userRole: "trader" },
+    DEFAULT_LIMITS,
+  );
   assertEquals(result.ok, true);
 });
-
 
 Deno.test("[oms] rejects quantity exceeding max_order_qty", () => {
   const limits = { ...DEFAULT_LIMITS, max_order_qty: 50 };
@@ -158,14 +195,22 @@ Deno.test("[oms] accepts strategy in allowed_strategies", () => {
 
 Deno.test("[oms] rejects order where notional exceeds max_daily_notional", () => {
   const limits = { ...DEFAULT_LIMITS, max_daily_notional: 1_000 };
-  const result = validateOrder({ ...VALID_ORDER, quantity: 100, limitPrice: 190 }, limits);
+  const result = validateOrder({
+    ...VALID_ORDER,
+    quantity: 100,
+    limitPrice: 190,
+  }, limits);
   assertEquals(result.ok, false);
   if (!result.ok) assertMatch(result.reason, /exceeds your daily limit/);
 });
 
 Deno.test("[oms] accepts order where notional equals max_daily_notional", () => {
   const limits = { ...DEFAULT_LIMITS, max_daily_notional: 19_000 };
-  const result = validateOrder({ ...VALID_ORDER, quantity: 100, limitPrice: 190 }, limits);
+  const result = validateOrder({
+    ...VALID_ORDER,
+    quantity: 100,
+    limitPrice: 190,
+  }, limits);
   assertEquals(result.ok, true);
 });
 

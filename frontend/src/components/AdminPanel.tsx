@@ -241,7 +241,9 @@ export function AdminPanel() {
                 journal.map((entry, idx) => (
                   <tr
                     key={entry.id}
-                    className={`border-t border-gray-800 ${idx % 2 === 0 ? "bg-gray-950" : "bg-gray-900/40"}`}
+                    className={`border-t border-gray-800 ${
+                      idx % 2 === 0 ? "bg-gray-950" : "bg-gray-900/40"
+                    }`}
                   >
                     <td className="px-3 py-1.5 text-gray-500 tabular-nums whitespace-nowrap">
                       {new Date(entry.ts).toLocaleTimeString()}

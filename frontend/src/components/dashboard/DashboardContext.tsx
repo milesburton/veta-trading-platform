@@ -84,8 +84,9 @@ export function DashboardProvider({
         if (
           SINGLETON_PANELS.has(panelType) &&
           modelToLayoutItems(prev).some((l) => l.panelType === panelType)
-        )
+        ) {
           return prev;
+        }
 
         const newTab: IJsonTabNode = {
           type: "tab",

@@ -11,7 +11,7 @@
  *   - Limit violations disable the submit button and show a warning
  */
 
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 import { DEFAULT_ASSETS, DEFAULT_LIMITS } from "./helpers/GatewayMock.ts";
 
@@ -24,7 +24,11 @@ async function setupWithPrice(page: Parameters<typeof AppPage>[0]["page"]) {
   await app.gotoAsTrader(DEFAULT_ASSETS);
 
   // Send a price tick so the Order Ticket has a valid limit price
-  app.gateway.sendMarketUpdate({ AAPL: AAPL_PRICE, MSFT: 421.00, GOOGL: 175.25 });
+  app.gateway.sendMarketUpdate({
+    AAPL: AAPL_PRICE,
+    MSFT: 421.00,
+    GOOGL: 175.25,
+  });
   await page.waitForTimeout(400); // let the 250ms batch flush + React re-render
 
   return app;
@@ -62,17 +66,22 @@ async function setupOptionsMode(page: Parameters<typeof AppPage>[0]["page"]) {
 test.describe("Option order ticket", () => {
   test("Options tab shows CALL/PUT buttons, strike input, and expiry selector", async ({ page }) => {
     const { ticket } = await setupOptionsMode(page);
-    await expect(ticket.locator.getByRole("button", { name: "CALL" })).toBeVisible();
-    await expect(ticket.locator.getByRole("button", { name: "PUT" })).toBeVisible();
-    await expect(ticket.locator.getByLabel(/Option strike price/i)).toBeVisible();
+    await expect(ticket.locator.getByRole("button", { name: "CALL" }))
+      .toBeVisible();
+    await expect(ticket.locator.getByRole("button", { name: "PUT" }))
+      .toBeVisible();
+    await expect(ticket.locator.getByLabel(/Option strike price/i))
+      .toBeVisible();
     await expect(ticket.locator.getByLabel(/Option expiry/i)).toBeVisible();
   });
 
   test("Options tab hides equity-only fields", async ({ page }) => {
     const { ticket } = await setupOptionsMode(page);
     await expect(ticket.locator.getByLabel(/Limit Price/i)).not.toBeVisible();
-    await expect(ticket.locator.getByLabel(/Order duration/i)).not.toBeVisible();
-    await expect(ticket.locator.getByLabel(/Execution strategy/i)).not.toBeVisible();
+    await expect(ticket.locator.getByLabel(/Order duration/i)).not
+      .toBeVisible();
+    await expect(ticket.locator.getByLabel(/Execution strategy/i)).not
+      .toBeVisible();
   });
 
   test("CALL is pressed by default in options mode", async ({ page }) => {
@@ -83,7 +92,9 @@ test.describe("Option order ticket", () => {
   test("algo strategies notice is shown in options mode", async ({ page }) => {
     const { ticket } = await setupOptionsMode(page);
     await expect(
-      ticket.locator.getByText(/Algorithmic strategies are not available for options/i)
+      ticket.locator.getByText(
+        /Algorithmic strategies are not available for options/i,
+      ),
     ).toBeVisible();
   });
 
@@ -108,8 +119,12 @@ test.describe("Option order ticket", () => {
     const msg = await outboundPromise;
 
     expect(msg.payload.instrumentType).toBe("option");
-    expect((msg.payload.optionSpec as Record<string, unknown>).optionType).toBe("call");
-    expect((msg.payload.optionSpec as Record<string, unknown>).strike).toBe(190);
+    expect((msg.payload.optionSpec as Record<string, unknown>).optionType).toBe(
+      "call",
+    );
+    expect((msg.payload.optionSpec as Record<string, unknown>).strike).toBe(
+      190,
+    );
   });
 
   test("option order shows rejection feedback after submission", async ({ page }) => {
@@ -123,7 +138,8 @@ test.describe("Option order ticket", () => {
     const { ticket } = await setupOptionsMode(page);
     await ticket.switchToEquity();
     await expect(ticket.locator.getByLabel(/Limit Price/i)).toBeVisible();
-    await expect(ticket.locator.getByLabel(/Option strike price/i)).not.toBeVisible();
+    await expect(ticket.locator.getByLabel(/Option strike price/i)).not
+      .toBeVisible();
   });
 });
 
@@ -155,7 +171,11 @@ test.describe("Order submission", () => {
     const ticket = await app.getOrderTicket();
 
     // Fill the form — asset/price should already be AAPL at ~189.50 from the tick
-    await ticket.fillOrder({ side: "BUY", quantity: 100, limitPrice: AAPL_PRICE });
+    await ticket.fillOrder({
+      side: "BUY",
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+    });
 
     // Race: capture outbound message before clicking submit
     const outboundPromise = app.gateway.nextOutbound("submitOrder");
@@ -172,7 +192,11 @@ test.describe("Order submission", () => {
     const app = await setupWithPrice(page);
     const ticket = await app.getOrderTicket();
 
-    await ticket.fillOrder({ side: "SELL", quantity: 50, limitPrice: AAPL_PRICE });
+    await ticket.fillOrder({
+      side: "SELL",
+      quantity: 50,
+      limitPrice: AAPL_PRICE,
+    });
 
     const outboundPromise = app.gateway.nextOutbound("submitOrder");
     await ticket.submit();
@@ -201,7 +225,10 @@ test.describe("Order submission", () => {
   test("order appears in blotter immediately after submission (optimistic)", async ({ page }) => {
     const app = await setupWithPrice(page);
 
-    await (await app.getOrderTicket()).fillOrder({ quantity: 100, limitPrice: AAPL_PRICE });
+    await (await app.getOrderTicket()).fillOrder({
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+    });
     await (await app.getOrderTicket()).submit();
 
     const blotter = await app.getOrderBlotter();
@@ -215,7 +242,10 @@ test.describe("Order submission", () => {
 
     // Capture clientOrderId from submit
     const outboundPromise = app.gateway.nextOutbound("submitOrder");
-    await (await app.getOrderTicket()).fillOrder({ quantity: 100, limitPrice: AAPL_PRICE });
+    await (await app.getOrderTicket()).fillOrder({
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+    });
     await (await app.getOrderTicket()).submit();
     const msg = await outboundPromise;
     const clientOrderId = msg.payload.clientOrderId as string;
@@ -249,13 +279,19 @@ test.describe("Order submission", () => {
     const blotter = await app.getOrderBlotter();
 
     const outboundPromise = app.gateway.nextOutbound("submitOrder");
-    await (await app.getOrderTicket()).fillOrder({ quantity: 100, limitPrice: AAPL_PRICE });
+    await (await app.getOrderTicket()).fillOrder({
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+    });
     await (await app.getOrderTicket()).submit();
     const msg = await outboundPromise;
     const clientOrderId = msg.payload.clientOrderId as string;
 
     // Gateway rejects at auth level
-    app.gateway.sendOrderRejected(clientOrderId, "Unauthenticated — please log in again");
+    app.gateway.sendOrderRejected(
+      clientOrderId,
+      "Unauthenticated — please log in again",
+    );
     await blotter.waitForStatus("rejected");
   });
 
@@ -264,7 +300,10 @@ test.describe("Order submission", () => {
     const blotter = await app.getOrderBlotter();
 
     const outboundPromise = app.gateway.nextOutbound("submitOrder");
-    await (await app.getOrderTicket()).fillOrder({ quantity: 100, limitPrice: AAPL_PRICE });
+    await (await app.getOrderTicket()).fillOrder({
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+    });
     await (await app.getOrderTicket()).submit();
     const msg = await outboundPromise;
     const clientOrderId = msg.payload.clientOrderId as string;
@@ -281,7 +320,10 @@ test.describe("Order submission", () => {
     const blotter = await app.getOrderBlotter();
 
     const outboundPromise = app.gateway.nextOutbound("submitOrder");
-    await (await app.getOrderTicket()).fillOrder({ quantity: 100, limitPrice: AAPL_PRICE });
+    await (await app.getOrderTicket()).fillOrder({
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+    });
     await (await app.getOrderTicket()).submit();
     const msg = await outboundPromise;
     const clientOrderId = msg.payload.clientOrderId as string;
@@ -326,7 +368,9 @@ test.describe("Order submission", () => {
 
   test("quantity exceeding max_order_qty shows warning and disables submit", async ({ page }) => {
     const app = new AppPage(page);
-    await app.goto({ user: { id: "t1", name: "Trader", role: "trader", avatar_emoji: "T" } });
+    await app.goto({
+      user: { id: "t1", name: "Trader", role: "trader", avatar_emoji: "T" },
+    });
     await app.waitForDashboard();
 
     // Send tight limits: max 50 shares
@@ -338,14 +382,21 @@ test.describe("Order submission", () => {
     app.gateway.sendMarketUpdate({ AAPL: AAPL_PRICE });
     await page.waitForTimeout(400);
 
-    await (await app.getOrderTicket()).fillOrder({ quantity: 100, limitPrice: AAPL_PRICE });
-    await (await app.getOrderTicket()).expectLimitWarning(/exceeds your limit/i);
+    await (await app.getOrderTicket()).fillOrder({
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+    });
+    await (await app.getOrderTicket()).expectLimitWarning(
+      /exceeds your limit/i,
+    );
     await (await app.getOrderTicket()).expectSubmitDisabled();
   });
 
   test("notional exceeding max_daily_notional shows warning and disables submit", async ({ page }) => {
     const app = new AppPage(page);
-    await app.goto({ user: { id: "t1", name: "Trader", role: "trader", avatar_emoji: "T" } });
+    await app.goto({
+      user: { id: "t1", name: "Trader", role: "trader", avatar_emoji: "T" },
+    });
     await app.waitForDashboard();
 
     // Max notional: $1,000 — 100 × 189.50 = $18,950 > $1,000
@@ -356,8 +407,13 @@ test.describe("Order submission", () => {
     app.gateway.sendMarketUpdate({ AAPL: AAPL_PRICE });
     await page.waitForTimeout(400);
 
-    await (await app.getOrderTicket()).fillOrder({ quantity: 100, limitPrice: AAPL_PRICE });
-    await (await app.getOrderTicket()).expectLimitWarning(/exceeds your daily limit/i);
+    await (await app.getOrderTicket()).fillOrder({
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+    });
+    await (await app.getOrderTicket()).expectLimitWarning(
+      /exceeds your daily limit/i,
+    );
     await (await app.getOrderTicket()).expectSubmitDisabled();
   });
 });

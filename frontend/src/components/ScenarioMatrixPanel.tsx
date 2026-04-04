@@ -61,7 +61,9 @@ function cellValue(cell: ScenarioCell, metric: CellMetric): number {
 }
 
 function fmtCell(val: number, metric: CellMetric): string {
-  if (metric === "pnlPct") return `${val >= 0 ? "+" : ""}${(val * 100).toFixed(1)}%`;
+  if (metric === "pnlPct") {
+    return `${val >= 0 ? "+" : ""}${(val * 100).toFixed(1)}%`;
+  }
   if (metric === "pnl") return `${val >= 0 ? "+" : ""}${val.toFixed(2)}`;
   return val.toFixed(2);
 }

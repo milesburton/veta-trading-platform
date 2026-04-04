@@ -14,7 +14,10 @@ async function fetchTiingoEquity(symbol: string): Promise<CachedQuote | null> {
       `https://api.tiingo.com/iex/${symbol.toLowerCase()}?token=${TIINGO_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json() as { last?: number; lastSaleTimestamp?: string }[];
+    const data = await res.json() as {
+      last?: number;
+      lastSaleTimestamp?: string;
+    }[];
     if (!Array.isArray(data) || data.length === 0 || data[0].last == null) {
       console.warn(`[tiingo] No equity data for ${symbol}`);
       return null;
@@ -24,9 +27,18 @@ async function fetchTiingoEquity(symbol: string): Promise<CachedQuote | null> {
       ? data[0].lastSaleTimestamp.slice(0, 10)
       : new Date().toISOString().slice(0, 10);
     if (price <= 0) return null;
-    return { symbol, price, volume: 0, latestTradingDay, fetchedAt: Date.now(), stale: false };
+    return {
+      symbol,
+      price,
+      volume: 0,
+      latestTradingDay,
+      fetchedAt: Date.now(),
+      stale: false,
+    };
   } catch (err) {
-    console.warn(`[tiingo] Equity fetch failed for ${symbol}: ${(err as Error).message}`);
+    console.warn(
+      `[tiingo] Equity fetch failed for ${symbol}: ${(err as Error).message}`,
+    );
     return null;
   }
 }
@@ -48,9 +60,18 @@ async function fetchTiingoFx(symbol: string): Promise<CachedQuote | null> {
     const price = data[0].midPrice!;
     const latestTradingDay = new Date().toISOString().slice(0, 10);
     if (price <= 0) return null;
-    return { symbol, price, volume: 0, latestTradingDay, fetchedAt: Date.now(), stale: false };
+    return {
+      symbol,
+      price,
+      volume: 0,
+      latestTradingDay,
+      fetchedAt: Date.now(),
+      stale: false,
+    };
   } catch (err) {
-    console.warn(`[tiingo] FX fetch failed for ${symbol}: ${(err as Error).message}`);
+    console.warn(
+      `[tiingo] FX fetch failed for ${symbol}: ${(err as Error).message}`,
+    );
     return null;
   }
 }
@@ -66,7 +87,10 @@ export const tiingoProvider: ProviderDef = {
   supportsSymbol(_symbol: string): boolean {
     return true;
   },
-  async fetchQuote(symbol: string, _journalUrl: string): Promise<CachedQuote | null> {
+  async fetchQuote(
+    symbol: string,
+    _journalUrl: string,
+  ): Promise<CachedQuote | null> {
     if (!TIINGO_KEY) return null;
     if (symbol.includes("/")) {
       return await fetchTiingoFx(symbol);

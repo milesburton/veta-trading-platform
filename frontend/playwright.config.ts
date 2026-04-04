@@ -1,9 +1,9 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 5173;
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: "./tests",
   timeout: 30_000,
   // Fail the build if test.only is accidentally left in source.
   forbidOnly: !!process.env.CI,
@@ -16,8 +16,8 @@ export default defineConfig({
     command: `npx vite --port ${PORT} --mode test`,
     port: PORT,
     reuseExistingServer: !process.env.CI,
-    stdout: 'pipe',
-    stderr: 'pipe',
+    stdout: "pipe",
+    stderr: "pipe",
   },
 
   use: {
@@ -27,14 +27,17 @@ export default defineConfig({
     actionTimeout: 10_000,
     ignoreHTTPSErrors: true,
     // Capture trace on first retry so failures are diagnosable in CI.
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    trace: "on-first-retry",
+    screenshot: "only-on-failure",
   },
 
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1920, height: 1080 },
+      },
     },
   ],
 });

@@ -98,7 +98,12 @@ const POV_INTERVAL_MS = 5000;
 const VWAP_INTERVAL_MS = 5000;
 
 function startTwapSimulation(order: OrderRecord, api: SimListenerAPI): void {
-  api.dispatch(ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "working" } }));
+  api.dispatch(
+    ordersSlice.actions.orderPatched({
+      id: order.id,
+      patch: { status: "working" },
+    })
+  );
   const params = order.algoParams.strategy === "TWAP" ? order.algoParams : null;
   const durationMs = order.expiresAt - Date.now();
   const numSlices = params?.numSlices ?? Math.max(1, Math.round(durationMs / TWAP_INTERVAL_MS));
@@ -137,14 +142,22 @@ function startTwapSimulation(order: OrderRecord, api: SimListenerAPI): void {
     const current = api.getState().orders.orders.find((o) => o.id === order.id);
     if (current && current.status !== "filled") {
       api.dispatch(
-        ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "expired" } })
+        ordersSlice.actions.orderPatched({
+          id: order.id,
+          patch: { status: "expired" },
+        })
       );
     }
   }, order.expiresAt - Date.now());
 }
 
 function startPovSimulation(order: OrderRecord, api: SimListenerAPI): void {
-  api.dispatch(ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "working" } }));
+  api.dispatch(
+    ordersSlice.actions.orderPatched({
+      id: order.id,
+      patch: { status: "working" },
+    })
+  );
   const params = order.algoParams.strategy === "POV" ? order.algoParams : null;
   const participationRate = params?.participationRate ?? 10;
   const minSlice = params?.minSliceSize ?? 0;
@@ -185,14 +198,22 @@ function startPovSimulation(order: OrderRecord, api: SimListenerAPI): void {
     const current = api.getState().orders.orders.find((o) => o.id === order.id);
     if (current && current.status !== "filled") {
       api.dispatch(
-        ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "expired" } })
+        ordersSlice.actions.orderPatched({
+          id: order.id,
+          patch: { status: "expired" },
+        })
       );
     }
   }, order.expiresAt - Date.now());
 }
 
 function startVwapSimulation(order: OrderRecord, api: SimListenerAPI): void {
-  api.dispatch(ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "working" } }));
+  api.dispatch(
+    ordersSlice.actions.orderPatched({
+      id: order.id,
+      patch: { status: "working" },
+    })
+  );
   const params = order.algoParams.strategy === "VWAP" ? order.algoParams : null;
   const maxDev = params?.maxDeviation ?? 0.005;
   const durationMs = order.expiresAt - Date.now();
@@ -235,7 +256,10 @@ function startVwapSimulation(order: OrderRecord, api: SimListenerAPI): void {
     const current = api.getState().orders.orders.find((o) => o.id === order.id);
     if (current && current.status !== "filled") {
       api.dispatch(
-        ordersSlice.actions.orderPatched({ id: order.id, patch: { status: "expired" } })
+        ordersSlice.actions.orderPatched({
+          id: order.id,
+          patch: { status: "expired" },
+        })
       );
     }
   }, order.expiresAt - Date.now());

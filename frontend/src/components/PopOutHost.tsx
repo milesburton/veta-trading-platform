@@ -206,7 +206,10 @@ export function PopOutHost({
       timer = setTimeout(() => {
         // biome-ignore lint/suspicious/noExplicitAny: saveOrderTicketWindowSize is AsyncThunk; typed dispatch unavailable here
         (dispatch as any)(
-          saveOrderTicketWindowSize({ w: window.outerWidth, h: window.outerHeight })
+          saveOrderTicketWindowSize({
+            w: window.outerWidth,
+            h: window.outerHeight,
+          })
         );
       }, 300);
     }

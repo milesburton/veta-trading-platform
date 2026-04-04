@@ -1,4 +1,7 @@
-export interface OrderBookLevel { price: number; size: number; }
+export interface OrderBookLevel {
+  price: number;
+  size: number;
+}
 export interface OrderBookSnapshot {
   bids: OrderBookLevel[];
   asks: OrderBookLevel[];
@@ -42,10 +45,17 @@ function parseTick(data: unknown): MarketTick {
       venueBooks: d.venueBooks,
     };
   }
-  return { prices: data as Record<string, number>, volumes: {}, marketMinute: 0 };
+  return {
+    prices: data as Record<string, number>,
+    volumes: {},
+    marketMinute: 0,
+  };
 }
 
-export function createMarketSimClient(host: string, port: number): MarketSimClient {
+export function createMarketSimClient(
+  host: string,
+  port: number,
+): MarketSimClient {
   let ws: WebSocket | null = null;
   let latest: MarketTick = { prices: {}, volumes: {}, marketMinute: 0 };
   const callbacks: TickCallback[] = [];
@@ -81,7 +91,9 @@ export function createMarketSimClient(host: string, port: number): MarketSimClie
     };
 
     socket.onclose = () => {
-      console.warn(`[MarketSimClient] Disconnected. Reconnecting in ${reconnectDelay}ms...`);
+      console.warn(
+        `[MarketSimClient] Disconnected. Reconnecting in ${reconnectDelay}ms...`,
+      );
       if (!stopped) {
         setTimeout(connect, reconnectDelay);
         reconnectDelay = Math.min(reconnectDelay * 2, 30_000);

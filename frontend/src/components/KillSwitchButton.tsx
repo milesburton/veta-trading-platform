@@ -14,8 +14,16 @@ const SCOPE_META: Record<KillScope, { label: string; hasValues: boolean; placeho
   all: { label: "All orders", hasValues: false },
   user: { label: "By user", hasValues: false },
   algo: { label: "By algorithm", hasValues: true },
-  symbol: { label: "By symbol", hasValues: true, placeholder: "Filter symbols…" },
-  market: { label: "By market/exchange", hasValues: true, placeholder: "e.g. XNAS" },
+  symbol: {
+    label: "By symbol",
+    hasValues: true,
+    placeholder: "Filter symbols…",
+  },
+  market: {
+    label: "By market/exchange",
+    hasValues: true,
+    placeholder: "e.g. XNAS",
+  },
 };
 
 const RESUME_PRESETS = [5, 15, 30, 60] as const;
@@ -170,8 +178,9 @@ export function KillSwitchButton() {
         for (const val of scopeVals.length > 0 ? scopeVals : [undefined]) {
           const payload: KillOrdersPayload = { scope: scope.value };
           if (val) payload.scopeValue = val;
-          if (scope.value === "user" && isAdmin && targetUserId.value)
+          if (scope.value === "user" && isAdmin && targetUserId.value) {
             payload.targetUserId = targetUserId.value;
+          }
           await dispatch(killOrdersThunk(payload));
         }
         // Optimistic local block
@@ -189,8 +198,9 @@ export function KillSwitchButton() {
       } else {
         const payload: ResumeOrdersPayload = { scope: scope.value };
         if (scopeVals.length > 0) payload.scopeValue = scopeVals[0];
-        if (scope.value === "user" && isAdmin && targetUserId.value)
+        if (scope.value === "user" && isAdmin && targetUserId.value) {
           payload.targetUserId = targetUserId.value;
+        }
         if (resumeMode.value === "scheduled" && resumeMinutes.value) {
           payload.resumeAt = Date.now() + Number(resumeMinutes.value) * 60_000;
         }
@@ -516,7 +526,11 @@ export function KillSwitchButton() {
                     This will <strong>immediately cancel</strong> and <strong>block</strong>{" "}
                     {scope.value === "all"
                       ? "all active orders"
-                      : `${SCOPE_META[scope.value].label.toLowerCase()} orders${selectedValues.value.size > 0 ? ` (${[...selectedValues.value].join(", ")})` : ""}`}
+                      : `${SCOPE_META[scope.value].label.toLowerCase()} orders${
+                          selectedValues.value.size > 0
+                            ? ` (${[...selectedValues.value].join(", ")})`
+                            : ""
+                        }`}
                     . New matching orders will be blocked until resumed. This action is logged for
                     regulatory purposes.
                   </>

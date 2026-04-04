@@ -143,7 +143,10 @@ export function BasketOrderPanel() {
 
     feedback.value =
       failed === 0
-        ? { ok: true, msg: `${submitted} order${submitted !== 1 ? "s" : ""} submitted.` }
+        ? {
+            ok: true,
+            msg: `${submitted} order${submitted !== 1 ? "s" : ""} submitted.`,
+          }
         : { ok: false, msg: `${submitted} submitted, ${failed} failed.` };
     submitting.value = false;
     setTimeout(() => {
@@ -297,7 +300,9 @@ export function BasketOrderPanel() {
                     </td>
                     <td className="px-2 py-1 text-right tabular-nums text-gray-300">
                       {leg.qty > 0 && leg.price > 0 ? (
-                        `$${(leg.qty * leg.price).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                        `$${(leg.qty * leg.price).toLocaleString(undefined, {
+                          maximumFractionDigits: 0,
+                        })}`
                       ) : (
                         <span className="text-gray-600">—</span>
                       )}
@@ -306,7 +311,9 @@ export function BasketOrderPanel() {
                       <button
                         type="button"
                         onClick={() =>
-                          updateLeg(leg.id, { side: leg.side === "BUY" ? "SELL" : "BUY" })
+                          updateLeg(leg.id, {
+                            side: leg.side === "BUY" ? "SELL" : "BUY",
+                          })
                         }
                         className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border transition-colors ${
                           leg.side === "BUY"
@@ -337,7 +344,9 @@ export function BasketOrderPanel() {
         {computedLegs.length > 0 && (
           <div className="flex items-center justify-between text-[10px]">
             <span
-              className={`font-semibold tabular-nums ${weightOk ? "text-emerald-400" : "text-amber-400"}`}
+              className={`font-semibold tabular-nums ${
+                weightOk ? "text-emerald-400" : "text-amber-400"
+              }`}
             >
               Weights: {totalWeight.toFixed(1)}%{!weightOk && " ≠ 100%"}
             </span>
@@ -349,7 +358,10 @@ export function BasketOrderPanel() {
               Distribute evenly
             </button>
             <span className="text-gray-500 tabular-nums">
-              ≈ ${totalNotional.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              ≈ $
+              {totalNotional.toLocaleString(undefined, {
+                maximumFractionDigits: 0,
+              })}
             </span>
           </div>
         )}
@@ -374,7 +386,9 @@ export function BasketOrderPanel() {
         >
           {submitting.value
             ? "Submitting…"
-            : `Submit ${computedLegs.filter((l) => l.qty > 0).length} order${computedLegs.filter((l) => l.qty > 0).length !== 1 ? "s" : ""}`}
+            : `Submit ${computedLegs.filter((l) => l.qty > 0).length} order${
+                computedLegs.filter((l) => l.qty > 0).length !== 1 ? "s" : ""
+              }`}
         </button>
 
         <p

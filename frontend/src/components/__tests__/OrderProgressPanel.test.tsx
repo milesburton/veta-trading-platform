@@ -61,7 +61,12 @@ function renderPanel(orders: OrderRecord[] = [], selectedOrderId: string | null 
   return render(
     <Provider store={store}>
       <ChannelContext.Provider
-        value={{ instanceId: "test", panelType: "order-progress", outgoing: null, incoming: 2 }}
+        value={{
+          instanceId: "test",
+          panelType: "order-progress",
+          outgoing: null,
+          incoming: 2,
+        }}
       >
         <OrderProgressPanel />
       </ChannelContext.Provider>
@@ -93,7 +98,14 @@ describe("OrderProgressPanel", () => {
 
   it("shows 100% for a fully filled order", () => {
     renderPanel(
-      [makeOrder({ id: "order-1", filled: 100, quantity: 100, status: "filled" })],
+      [
+        makeOrder({
+          id: "order-1",
+          filled: 100,
+          quantity: 100,
+          status: "filled",
+        }),
+      ],
       "order-1"
     );
     expect(screen.getByText("100%")).toBeInTheDocument();

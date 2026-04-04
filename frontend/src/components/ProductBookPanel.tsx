@@ -127,7 +127,10 @@ export function ProductBookPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ soldTo: "eve", rfqId: "" }),
       });
-      const data = (await res.json()) as { state?: ProductState; error?: string };
+      const data = (await res.json()) as {
+        state?: ProductState;
+        error?: string;
+      };
       if (!res.ok) {
         showFeedback(product.productId, false, data.error ?? "Failed to mark as sold.");
         return;
@@ -146,7 +149,10 @@ export function ProductBookPanel() {
         headers: { "Content-Type": "application/json" },
         body: "{}",
       });
-      const data = (await res.json()) as { state?: ProductState; error?: string };
+      const data = (await res.json()) as {
+        state?: ProductState;
+        error?: string;
+      };
       if (!res.ok) {
         showFeedback(product.productId, false, data.error ?? "Failed to unwind.");
         return;
@@ -250,7 +256,9 @@ export function ProductBookPanel() {
                       </td>
                       <td className="px-2 py-1.5">
                         <span
-                          className={`px-1 py-0.5 rounded border text-[9px] font-semibold uppercase ${STATE_COLOURS[product.state]}`}
+                          className={`px-1 py-0.5 rounded border text-[9px] font-semibold uppercase ${
+                            STATE_COLOURS[product.state]
+                          }`}
                         >
                           {product.state}
                         </span>
@@ -313,7 +321,9 @@ export function ProductBookPanel() {
                       <tr key={`${product.productId}-fb`} className="border-t border-gray-700/20">
                         <td
                           colSpan={8}
-                          className={`px-3 py-1 text-[10px] ${fb.ok ? "text-emerald-400" : "text-red-400"}`}
+                          className={`px-3 py-1 text-[10px] ${
+                            fb.ok ? "text-emerald-400" : "text-red-400"
+                          }`}
                         >
                           {fb.msg}
                         </td>

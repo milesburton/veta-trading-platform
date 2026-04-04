@@ -13,26 +13,109 @@ function fxIsin(symbol: string): string {
 // lotSize = 1000 (standard FX "lot" expressed in base units for display).
 // exchange = "XCME" (CME FX futures venue; spot FX is OTC but we use a single MIC).
 
-const _RAW_FX: Omit<AssetDef, "marketCapB" | "beta" | "dividendYield" | "peRatio" | "float" | "isin" | "assetClass">[] = [
-  { symbol: "EUR/USD", initialPrice: 1.0850,  volatility: 0.0045, sector: "FX", dailyVolume: 800_000_000, exchange: "XCME", currency: "USD", lotSize: 1_000 },
-  { symbol: "GBP/USD", initialPrice: 1.2680,  volatility: 0.0055, sector: "FX", dailyVolume: 400_000_000, exchange: "XCME", currency: "USD", lotSize: 1_000 },
-  { symbol: "USD/JPY", initialPrice: 145.50,  volatility: 0.0040, sector: "FX", dailyVolume: 600_000_000, exchange: "XCME", currency: "JPY", lotSize: 1_000 },
-  { symbol: "AUD/USD", initialPrice: 0.6520,  volatility: 0.0060, sector: "FX", dailyVolume: 200_000_000, exchange: "XCME", currency: "USD", lotSize: 1_000 },
-  { symbol: "USD/CAD", initialPrice: 1.3680,  volatility: 0.0042, sector: "FX", dailyVolume: 150_000_000, exchange: "XCME", currency: "CAD", lotSize: 1_000 },
-  { symbol: "NZD/USD", initialPrice: 0.6050,  volatility: 0.0065, sector: "FX", dailyVolume: 80_000_000,  exchange: "XCME", currency: "USD", lotSize: 1_000 },
-  { symbol: "EUR/GBP", initialPrice: 0.8560,  volatility: 0.0038, sector: "FX", dailyVolume: 100_000_000, exchange: "XCME", currency: "GBP", lotSize: 1_000 },
-  { symbol: "USD/CHF", initialPrice: 0.8850,  volatility: 0.0042, sector: "FX", dailyVolume: 120_000_000, exchange: "XCME", currency: "CHF", lotSize: 1_000 },
+const _RAW_FX: Omit<
+  AssetDef,
+  | "marketCapB"
+  | "beta"
+  | "dividendYield"
+  | "peRatio"
+  | "float"
+  | "isin"
+  | "assetClass"
+>[] = [
+  {
+    symbol: "EUR/USD",
+    initialPrice: 1.0850,
+    volatility: 0.0045,
+    sector: "FX",
+    dailyVolume: 800_000_000,
+    exchange: "XCME",
+    currency: "USD",
+    lotSize: 1_000,
+  },
+  {
+    symbol: "GBP/USD",
+    initialPrice: 1.2680,
+    volatility: 0.0055,
+    sector: "FX",
+    dailyVolume: 400_000_000,
+    exchange: "XCME",
+    currency: "USD",
+    lotSize: 1_000,
+  },
+  {
+    symbol: "USD/JPY",
+    initialPrice: 145.50,
+    volatility: 0.0040,
+    sector: "FX",
+    dailyVolume: 600_000_000,
+    exchange: "XCME",
+    currency: "JPY",
+    lotSize: 1_000,
+  },
+  {
+    symbol: "AUD/USD",
+    initialPrice: 0.6520,
+    volatility: 0.0060,
+    sector: "FX",
+    dailyVolume: 200_000_000,
+    exchange: "XCME",
+    currency: "USD",
+    lotSize: 1_000,
+  },
+  {
+    symbol: "USD/CAD",
+    initialPrice: 1.3680,
+    volatility: 0.0042,
+    sector: "FX",
+    dailyVolume: 150_000_000,
+    exchange: "XCME",
+    currency: "CAD",
+    lotSize: 1_000,
+  },
+  {
+    symbol: "NZD/USD",
+    initialPrice: 0.6050,
+    volatility: 0.0065,
+    sector: "FX",
+    dailyVolume: 80_000_000,
+    exchange: "XCME",
+    currency: "USD",
+    lotSize: 1_000,
+  },
+  {
+    symbol: "EUR/GBP",
+    initialPrice: 0.8560,
+    volatility: 0.0038,
+    sector: "FX",
+    dailyVolume: 100_000_000,
+    exchange: "XCME",
+    currency: "GBP",
+    lotSize: 1_000,
+  },
+  {
+    symbol: "USD/CHF",
+    initialPrice: 0.8850,
+    volatility: 0.0042,
+    sector: "FX",
+    dailyVolume: 120_000_000,
+    exchange: "XCME",
+    currency: "CHF",
+    lotSize: 1_000,
+  },
 ];
 
 export const FX_ASSETS: AssetDef[] = _RAW_FX.map((raw) => ({
   ...raw,
   assetClass: "fx" as const,
-  marketCapB: 0,       // not applicable for FX
-  beta:          0.0,  // FX has no equity beta
+  marketCapB: 0, // not applicable for FX
+  beta: 0.0, // FX has no equity beta
   dividendYield: 0.0,
-  peRatio:       0.0,
-  float:         1.0,
+  peRatio: 0.0,
+  float: 1.0,
   isin: fxIsin(raw.symbol),
 }));
 
-export const FX_ASSET_MAP = new Map<string, AssetDef>(FX_ASSETS.map((a) => [a.symbol, a]));
+export const FX_ASSET_MAP = new Map<string, AssetDef>(
+  FX_ASSETS.map((a) => [a.symbol, a]),
+);

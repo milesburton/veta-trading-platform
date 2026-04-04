@@ -14,6 +14,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("ICEBERG_ALGO_PORT")) || 5_021;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -26,7 +27,10 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("iceberg-algo").catch((err) => {
-  console.warn("[iceberg-algo] Redpanda unavailable — orders will not be published:", err.message);
+  console.warn(
+    "[iceberg-algo] Redpanda unavailable — orders will not be published:",
+    err.message,
+  );
   return null;
 });
 
@@ -69,9 +73,14 @@ interface ActiveIceberg {
 
 const activeOrders = new Map<string, ActiveIceberg>();
 
-const routedConsumer = await createConsumer("iceberg-algo-routed", ["orders.routed"]).catch(
+const routedConsumer = await createConsumer("iceberg-algo-routed", [
+  "orders.routed",
+]).catch(
   (err) => {
-    console.warn("[iceberg-algo] Cannot subscribe to orders.routed:", err.message);
+    console.warn(
+      "[iceberg-algo] Cannot subscribe to orders.routed:",
+      err.message,
+    );
     return null;
   },
 );
@@ -102,7 +111,9 @@ routedConsumer?.onMessage((_topic, raw) => {
   activeOrders.set(order.orderId, iceberg);
 
   console.log(
-    `[iceberg-algo] Queued ${order.orderId}: ${totalQty} ${order.asset} total, ${visibleQty} per slice (${Math.ceil(totalQty / visibleQty)} slices)`,
+    `[iceberg-algo] Queued ${order.orderId}: ${totalQty} ${order.asset} total, ${visibleQty} per slice (${
+      Math.ceil(totalQty / visibleQty)
+    } slices)`,
   );
 
   producer?.send("algo.heartbeat", {
@@ -117,9 +128,14 @@ routedConsumer?.onMessage((_topic, raw) => {
   }).catch(() => {});
 });
 
-const fillsConsumer = await createConsumer("iceberg-algo-fills", ["orders.filled"]).catch(
+const fillsConsumer = await createConsumer("iceberg-algo-fills", [
+  "orders.filled",
+]).catch(
   (err) => {
-    console.warn("[iceberg-algo] Cannot subscribe to orders.filled:", err.message);
+    console.warn(
+      "[iceberg-algo] Cannot subscribe to orders.filled:",
+      err.message,
+    );
     return null;
   },
 );
@@ -128,7 +144,9 @@ fillsConsumer?.onMessage((_topic, raw) => {
   const fill = raw as FillEvent;
   if ((fill.algo ?? "").toUpperCase() !== "ICEBERG") return;
 
-  const order = fill.parentOrderId ? activeOrders.get(fill.parentOrderId) : undefined;
+  const order = fill.parentOrderId
+    ? activeOrders.get(fill.parentOrderId)
+    : undefined;
   if (!order) return;
 
   const qty = fill.filledQty ?? 0;
@@ -139,13 +157,17 @@ fillsConsumer?.onMessage((_topic, raw) => {
   order.sliceInFlight = false;
 
   console.log(
-    `[iceberg-algo] Fill ${order.orderId}: +${qty} @ ${price.toFixed(2)} | remaining=${order.totalRemaining}`,
+    `[iceberg-algo] Fill ${order.orderId}: +${qty} @ ${
+      price.toFixed(2)
+    } | remaining=${order.totalRemaining}`,
   );
 
   if (order.totalRemaining <= 0) {
     const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
     console.log(
-      `[iceberg-algo] Complete ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`,
+      `[iceberg-algo] Complete ${order.orderId}: filled=${order.filledQty} avg=${
+        avgFill.toFixed(4)
+      }`,
     );
     activeOrders.delete(order.orderId);
     producer?.send("algo.heartbeat", {
@@ -171,9 +193,13 @@ marketClient.onTick(async (tick) => {
     if (!marketPrice) continue;
 
     if (now >= order.expiresAt) {
-      const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
+      const avgFill = order.filledQty > 0
+        ? order.costBasis / order.filledQty
+        : 0;
       console.log(
-        `[iceberg-algo] Expired ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`,
+        `[iceberg-algo] Expired ${order.orderId}: filled=${order.filledQty} avg=${
+          avgFill.toFixed(4)
+        }`,
       );
       activeOrders.delete(order.orderId);
       await producer?.send("orders.expired", {
@@ -191,7 +217,9 @@ marketClient.onTick(async (tick) => {
       (order.side === "BUY" && marketPrice <= order.limitPrice) ||
       (order.side === "SELL" && marketPrice >= order.limitPrice);
 
-    if (!triggered || order.sliceInFlight || order.currentSliceQty <= 0) continue;
+    if (!triggered || order.sliceInFlight || order.currentSliceQty <= 0) {
+      continue;
+    }
 
     order.sliceCount += 1;
     const childId = `${order.orderId}-ice-${order.sliceCount}`;
@@ -230,53 +258,8 @@ marketClient.onTick(async (tick) => {
   }
 });
 
-setInterval(async () => {
-  const now = Date.now();
-  for (const order of [...activeOrders.values()]) {
-    if (now >= order.expiresAt) {
-      const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-      console.log(`[iceberg-algo] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
-      activeOrders.delete(order.orderId);
-      await producer?.send("orders.expired", {
-        orderId: order.orderId,
-        clientOrderId: order.clientOrderId,
-        algo: "ICEBERG",
-        filledQty: order.filledQty,
-        avgFillPrice: order.filledQty > 0 ? avgFill : 0,
-        ts: now,
-      }).catch(() => {});
-    }
-  }
-}, 5_000);
+startExpirySweep(activeOrders, producer, "ICEBERG", "iceberg-algo");
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+serveAlgoHealth(PORT, "iceberg", VERSION, () => activeOrders.size);
 
-Deno.serve({ port: PORT }, (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
-  const url = new URL(req.url);
-  if (url.pathname === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({
-        service: "iceberg",
-        version: VERSION,
-        status: "ok",
-        activeOrders: activeOrders.size,
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
-  }
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
-});
-
-createConsumer("iceberg-algo-news", ["news.signal"]).then((consumer) => {
-  consumer.onMessage((_topic, raw) => {
-    const sig = raw as { symbol: string; sentiment: string; score: number };
-    console.log(
-      `[iceberg-algo] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`,
-    );
-  });
-}).catch(() => {}); // non-fatal
+subscribeNewsSignals("iceberg-algo-news", "iceberg-algo");

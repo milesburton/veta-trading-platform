@@ -42,7 +42,9 @@ interface ServiceRowProps {
 }
 
 function ServiceRow({ svc, dispatch }: ServiceRowProps) {
-  const { data, isError } = useGetServiceHealthQuery(svc, { pollingInterval: 10_000 });
+  const { data, isError } = useGetServiceHealthQuery(svc, {
+    pollingInterval: 10_000,
+  });
   const prevRef = useRef<"ok" | "error" | null>(null);
 
   const state: "ok" | "error" | "unknown" = data?.state ?? (isError ? "error" : "unknown");
@@ -385,13 +387,21 @@ function TimelineZone() {
 }
 
 const SEVERITY_STYLES = {
-  CRITICAL: { border: "border-l-red-500", badge: "bg-red-900/50 text-red-400", label: "CRIT" },
+  CRITICAL: {
+    border: "border-l-red-500",
+    badge: "bg-red-900/50 text-red-400",
+    label: "CRIT",
+  },
   WARNING: {
     border: "border-l-yellow-500",
     badge: "bg-yellow-900/50 text-yellow-400",
     label: "WARN",
   },
-  INFO: { border: "border-l-blue-500", badge: "bg-blue-900/50 text-blue-400", label: "INFO" },
+  INFO: {
+    border: "border-l-blue-500",
+    badge: "bg-blue-900/50 text-blue-400",
+    label: "INFO",
+  },
 };
 
 const SOURCE_LABELS: Record<string, string> = {

@@ -54,8 +54,18 @@ export const MsgType = {
 
 export const Side = { Buy: "1", Sell: "2" } as const;
 export const OrdType = { Market: "1", Limit: "2" } as const;
-export const ExecType = { New: "0", PartialFill: "1", Fill: "F", Canceled: "4" } as const;
-export const OrdStatus = { New: "0", PartiallyFilled: "1", Filled: "2", Canceled: "4" } as const;
+export const ExecType = {
+  New: "0",
+  PartialFill: "1",
+  Fill: "F",
+  Canceled: "4",
+} as const;
+export const OrdStatus = {
+  New: "0",
+  PartiallyFilled: "1",
+  Filled: "2",
+  Canceled: "4",
+} as const;
 export const EncryptMethod = { None: "0" } as const;
 
 export function encode(tags: [number, string | number][]): string {
@@ -93,7 +103,9 @@ export function utcTimestamp(d = new Date()): string {
   const pad3 = (n: number) => String(n).padStart(3, "0");
   return (
     `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}-` +
-    `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())}.${pad3(d.getUTCMilliseconds())}`
+    `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(
+      d.getUTCSeconds()
+    )}.${pad3(d.getUTCMilliseconds())}`
   );
 }
 

@@ -33,7 +33,9 @@ export const versionWatchMiddleware: Middleware = (storeAPI) => {
 
     if (servicesApi.endpoints.getServiceHealth.matchFulfilled(action)) {
       const svc = action.payload;
-      if (svc.state !== "ok" || svc.version === "dev" || svc.version === "—") return result;
+      if (svc.state !== "ok" || svc.version === "dev" || svc.version === "—") {
+        return result;
+      }
       const known = backendBaseline.get(svc.name);
       if (known === undefined) {
         backendBaseline.set(svc.name, svc.version);

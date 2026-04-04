@@ -10,6 +10,7 @@ import { orderPatched } from "../store/ordersSlice.ts";
 import type { ColDef } from "../types/gridPrefs.ts";
 import type { ChildOrder, OrderRecord, OrderStatus } from "../types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
+import { formatTime } from "../utils/format.ts";
 import { applyCfRules } from "../utils/gridFilter.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
@@ -33,9 +34,27 @@ const BLOTTER_COLS: ColDef[] = [
   { key: "submittedAt", label: "Time", type: "string", defaultWidth: 80 },
   { key: "id", label: "ID", type: "string", defaultWidth: 88 },
   { key: "asset", label: "Asset", type: "string", defaultWidth: 72 },
-  { key: "side", label: "Side", type: "enum", options: ["BUY", "SELL"], defaultWidth: 52 },
-  { key: "quantity", label: "Qty", type: "number", defaultWidth: 80, align: "right" },
-  { key: "limitPrice", label: "Limit/Fill", type: "number", defaultWidth: 88, align: "right" },
+  {
+    key: "side",
+    label: "Side",
+    type: "enum",
+    options: ["BUY", "SELL"],
+    defaultWidth: 52,
+  },
+  {
+    key: "quantity",
+    label: "Qty",
+    type: "number",
+    defaultWidth: 80,
+    align: "right",
+  },
+  {
+    key: "limitPrice",
+    label: "Limit/Fill",
+    type: "number",
+    defaultWidth: 88,
+    align: "right",
+  },
   {
     key: "strategy",
     label: "Strat/Venue",
@@ -67,17 +86,15 @@ const BLOTTER_COLS: ColDef[] = [
   { key: "userId", label: "Booked By", type: "string", defaultWidth: 80 },
   { key: "counterparty", label: "Cpty", type: "string", defaultWidth: 64 },
   { key: "liquidityFlag", label: "Liq", type: "string", defaultWidth: 44 },
-  { key: "commission", label: "Comm", type: "number", defaultWidth: 64, align: "right" },
+  {
+    key: "commission",
+    label: "Comm",
+    type: "number",
+    defaultWidth: 64,
+    align: "right",
+  },
   { key: "settlementDate", label: "Settle", type: "string", defaultWidth: 64 },
 ];
-
-function formatTime(ms: number) {
-  return new Date(ms).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
 
 function formatPrice(asset: string, price: number) {
   return asset.includes("/") ? price.toFixed(4) : price.toFixed(2);
@@ -352,7 +369,10 @@ export function OrderBlotter() {
                       onClick={() => selectOrder(order.id)}
                       onContextMenu={(e) => openOrderCtxMenu(e, order.id)}
                       aria-selected={selectedOrderId.value === order.id}
-                      title={`${order.side} ${order.quantity.toLocaleString()} ${order.asset} @ ${formatPrice(order.asset, order.limitPrice)} — ${order.status}. Right-click for actions.`}
+                      title={`${order.side} ${order.quantity.toLocaleString()} ${order.asset} @ ${formatPrice(
+                        order.asset,
+                        order.limitPrice
+                      )} — ${order.status}. Right-click for actions.`}
                       style={
                         selectedOrderId.value === order.id && channelColour
                           ? {
@@ -410,7 +430,9 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"} ${cellCls}`}
+                                className={`px-3 py-1.5 font-semibold ${
+                                  order.side === "BUY" ? "text-emerald-400" : "text-red-400"
+                                } ${cellCls}`}
                               >
                                 {order.side}
                               </td>
@@ -446,7 +468,9 @@ export function OrderBlotter() {
                               <td key={col.key} className={`px-3 py-1.5 ${cellCls}`}>
                                 <span
                                   data-testid="order-status-badge"
-                                  className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${STATUS_STYLES[order.status]}`}
+                                  className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
+                                    STATUS_STYLES[order.status]
+                                  }`}
                                   title={ORDER_STATUS_DESCRIPTIONS[order.status]}
                                 >
                                   {order.status}

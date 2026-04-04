@@ -101,8 +101,16 @@ describe("reconcilePresetWorkspaces", () => {
   });
 
   test("restores multiple missing presets in order", () => {
-    const saved: Workspace[] = [{ id: "ws-trading", name: "Trading", locked: true }];
-    const savedLayouts = { "ws-trading": seedWorkspaces().layouts["ws-trading"] };
+    const saved: Workspace[] = [
+      {
+        id: "ws-trading",
+        name: "Trading",
+        locked: true,
+      },
+    ];
+    const savedLayouts = {
+      "ws-trading": seedWorkspaces().layouts["ws-trading"],
+    };
 
     const { workspaces: out, restored } = reconcilePresetWorkspaces(saved, savedLayouts);
 
@@ -196,14 +204,22 @@ describe("Workspace userLocked field", () => {
   });
 
   test("custom workspace can carry userLocked=true", () => {
-    const custom: Workspace = { id: "ws-custom-1", name: "My Setup", userLocked: true };
+    const custom: Workspace = {
+      id: "ws-custom-1",
+      name: "My Setup",
+      userLocked: true,
+    };
     expect(custom.userLocked).toBe(true);
     expect(custom.locked).toBeUndefined();
   });
 
   test("reconcile preserves userLocked on custom workspaces", () => {
     const { workspaces, layouts } = seedWorkspaces();
-    const custom: Workspace = { id: "ws-custom-1", name: "My Setup", userLocked: true };
+    const custom: Workspace = {
+      id: "ws-custom-1",
+      name: "My Setup",
+      userLocked: true,
+    };
     const withCustom = [...workspaces, custom];
 
     const { workspaces: out } = reconcilePresetWorkspaces(withCustom, layouts);

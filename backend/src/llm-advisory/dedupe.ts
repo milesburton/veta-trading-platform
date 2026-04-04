@@ -6,7 +6,8 @@ export async function computeContextHash(parts: string[]): Promise<string> {
   const data = encoder.encode(parts.join("|"));
   const hash = await crypto.subtle.digest("SHA-256", data);
   const bytes = new Uint8Array(hash);
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("")
+    .slice(0, 16);
 }
 
 export async function shouldEnqueueJob(

@@ -17,7 +17,8 @@ const api = {
     return ipcRenderer.invoke("window:isMaximized");
   },
   onMaximizeChange(cb: (maximized: boolean) => void): () => void {
-    const handler = (_: Electron.IpcRendererEvent, maximized: boolean) => cb(maximized);
+    const handler = (_: Electron.IpcRendererEvent, maximized: boolean) =>
+      cb(maximized);
     ipcRenderer.on("window:maximizeChange", handler);
     return () => ipcRenderer.off("window:maximizeChange", handler);
   },

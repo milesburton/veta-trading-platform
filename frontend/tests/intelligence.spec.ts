@@ -7,7 +7,7 @@
  * All backend services are mocked via GatewayMock — no live services needed.
  */
 
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 import { DEFAULT_ASSETS } from "./helpers/GatewayMock.ts";
 
@@ -19,13 +19,13 @@ const AAPL_SIGNAL = {
   direction: "long",
   confidence: 0.65,
   factors: [
-    { name: "momentum",               weight: 0.25,  contribution: 0.25 },
-    { name: "relativeVolume",         weight: 0.10,  contribution: 0.05 },
-    { name: "realisedVol",            weight: -0.15, contribution: -0.05 },
-    { name: "sectorRelativeStrength", weight: 0.20,  contribution: 0.15 },
-    { name: "eventScore",             weight: 0.10,  contribution: 0.05 },
-    { name: "newsVelocity",           weight: 0.10,  contribution: 0.08 },
-    { name: "sentimentDelta",         weight: 0.10,  contribution: 0.08 },
+    { name: "momentum", weight: 0.25, contribution: 0.25 },
+    { name: "relativeVolume", weight: 0.10, contribution: 0.05 },
+    { name: "realisedVol", weight: -0.15, contribution: -0.05 },
+    { name: "sectorRelativeStrength", weight: 0.20, contribution: 0.15 },
+    { name: "eventScore", weight: 0.10, contribution: 0.05 },
+    { name: "newsVelocity", weight: 0.10, contribution: 0.08 },
+    { name: "sentimentDelta", weight: 0.10, contribution: 0.08 },
   ],
   ts: Date.now(),
 };
@@ -35,7 +35,10 @@ const MSFT_SIGNAL = {
   score: -0.45,
   direction: "short",
   confidence: 0.45,
-  factors: AAPL_SIGNAL.factors.map((f) => ({ ...f, contribution: -f.contribution })),
+  factors: AAPL_SIGNAL.factors.map((f) => ({
+    ...f,
+    contribution: -f.contribution,
+  })),
   ts: Date.now(),
 };
 
@@ -59,15 +62,24 @@ async function openResearchLayout(app: AppPage) {
   // Wait for the dropdown to appear, then scope button search inside it to avoid
   // accidentally clicking the "FI Research" workspace sidebar tab.
   // The dropdown is the absolute-positioned sibling div inside the same relative container.
-  const dropdown = app.page.locator("div.absolute").filter({ hasText: /Layout Templates/ });
+  const dropdown = app.page.locator("div.absolute").filter({
+    hasText: /Layout Templates/,
+  });
   await dropdown.waitFor({ state: "visible", timeout: 5_000 });
   // Use the unique description text to identify the correct Research template button
-  await dropdown.getByRole("button", { name: /factor explainability/i }).click();
-  await app.page.waitForSelector(".flexlayout__tab_button", { timeout: 10_000 });
+  await dropdown.getByRole("button", { name: /factor explainability/i })
+    .click();
+  await app.page.waitForSelector(".flexlayout__tab_button", {
+    timeout: 10_000,
+  });
 }
 
-async function selectSymbolInRadar(page: import("@playwright/test").Page, symbol: string) {
-  const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i }).first();
+async function selectSymbolInRadar(
+  page: import("@playwright/test").Page,
+  symbol: string,
+) {
+  const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i })
+    .first();
   await radar.getByText(symbol).first().click();
 }
 
@@ -82,9 +94,14 @@ test.describe("Research Radar Panel", () => {
     app.gateway.sendSignalUpdate(AAPL_SIGNAL);
     app.gateway.sendSignalUpdate(MSFT_SIGNAL);
 
-    const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i }).first();
-    await expect(radar.locator("circle[data-symbol='AAPL']")).toBeVisible({ timeout: 5_000 });
-    await expect(radar.locator("circle[data-symbol='MSFT']")).toBeVisible({ timeout: 5_000 });
+    const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i })
+      .first();
+    await expect(radar.locator("circle[data-symbol='AAPL']")).toBeVisible({
+      timeout: 5_000,
+    });
+    await expect(radar.locator("circle[data-symbol='MSFT']")).toBeVisible({
+      timeout: 5_000,
+    });
   });
 
   test("long bubble is green and short bubble is red", async ({ page }) => {
@@ -92,10 +109,11 @@ test.describe("Research Radar Panel", () => {
     await app.gotoAsTrader(DEFAULT_ASSETS);
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);   // long
-    app.gateway.sendSignalUpdate(MSFT_SIGNAL);   // short
+    app.gateway.sendSignalUpdate(AAPL_SIGNAL); // long
+    app.gateway.sendSignalUpdate(MSFT_SIGNAL); // short
 
-    const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i }).first();
+    const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i })
+      .first();
 
     const aaplCircle = radar.locator("circle[data-symbol='AAPL']");
     const msftCircle = radar.locator("circle[data-symbol='MSFT']");
@@ -116,11 +134,16 @@ test.describe("Research Radar Panel", () => {
     app.gateway.sendSignalUpdate(AAPL_SIGNAL);
     app.gateway.sendSignalUpdate(MSFT_SIGNAL);
 
-    const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i }).first();
+    const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i })
+      .first();
     await expect(radar.getByText("AAPL")).toBeVisible({ timeout: 5_000 });
     await expect(radar.getByText("MSFT")).toBeVisible({ timeout: 5_000 });
-    await expect(radar.locator("tbody").getByText("long")).toBeVisible({ timeout: 5_000 });
-    await expect(radar.locator("tbody").getByText("short")).toBeVisible({ timeout: 5_000 });
+    await expect(radar.locator("tbody").getByText("long")).toBeVisible({
+      timeout: 5_000,
+    });
+    await expect(radar.locator("tbody").getByText("short")).toBeVisible({
+      timeout: 5_000,
+    });
   });
 
   test("second signal for same symbol replaces the first (latest wins)", async ({ page }) => {
@@ -128,12 +151,18 @@ test.describe("Research Radar Panel", () => {
     await app.gotoAsTrader(DEFAULT_ASSETS);
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);  // long, 0.65
+    app.gateway.sendSignalUpdate(AAPL_SIGNAL); // long, 0.65
 
     // Replace with a short signal
-    app.gateway.sendSignalUpdate({ ...AAPL_SIGNAL, score: -0.30, direction: "short", confidence: 0.30 });
+    app.gateway.sendSignalUpdate({
+      ...AAPL_SIGNAL,
+      score: -0.30,
+      direction: "short",
+      confidence: 0.30,
+    });
 
-    const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i }).first();
+    const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i })
+      .first();
     // Should now be coloured as short (red)
     await expect(radar.locator("circle[data-symbol='AAPL']")).toHaveAttribute(
       "fill",
@@ -150,7 +179,8 @@ test.describe("Research Radar Panel", () => {
     app.gateway.sendSignalUpdate(AAPL_SIGNAL);
     app.gateway.sendSignalUpdate(MSFT_SIGNAL);
 
-    const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i }).first();
+    const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i })
+      .first();
     await expect(radar.getByText("AAPL")).toBeVisible({ timeout: 5_000 });
     await expect(radar.getByText("MSFT")).toBeVisible({ timeout: 5_000 });
   });
@@ -170,7 +200,9 @@ test.describe("Instrument Analysis Panel", () => {
 
     const panel = await app.panelByTitle(/Instrument Analysis/i);
     await expect(panel.getByText("Momentum")).toBeVisible({ timeout: 5_000 });
-    await expect(panel.getByText("Rel. Volume")).toBeVisible({ timeout: 5_000 });
+    await expect(panel.getByText("Rel. Volume")).toBeVisible({
+      timeout: 5_000,
+    });
   });
 
   test("signal score value appears in the panel once signal is received", async ({ page }) => {
@@ -200,7 +232,9 @@ test.describe("Signal Explainability Panel", () => {
     const panel = await app.panelByTitle(/Signal Explainability/i);
     await expect(panel.getByText("Momentum")).toBeVisible({ timeout: 5_000 });
     await expect(panel.getByText("Sector RS")).toBeVisible({ timeout: 5_000 });
-    await expect(panel.getByText(/factor contributions/i)).toBeVisible({ timeout: 5_000 });
+    await expect(panel.getByText(/factor contributions/i)).toBeVisible({
+      timeout: 5_000,
+    });
   });
 
   test("final score and confidence percentage display correctly", async ({ page }) => {
@@ -212,7 +246,9 @@ test.describe("Signal Explainability Panel", () => {
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Signal Explainability/i);
-    await expect(panel.getByText("Final score")).toBeVisible({ timeout: 5_000 });
+    await expect(panel.getByText("Final score")).toBeVisible({
+      timeout: 5_000,
+    });
     await expect(panel.getByText("Confidence")).toBeVisible({ timeout: 5_000 });
     await expect(panel.getByText(/65\.0%/)).toBeVisible({ timeout: 5_000 });
   });
@@ -226,7 +262,9 @@ test.describe("Signal Explainability Panel", () => {
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Signal Explainability/i);
-    await expect(panel.getByText(/weight -0\.15/)).toBeVisible({ timeout: 5_000 });
+    await expect(panel.getByText(/weight -0\.15/)).toBeVisible({
+      timeout: 5_000,
+    });
   });
 });
 
@@ -243,9 +281,14 @@ test.describe("AI Advisory Panel", () => {
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Instrument Analysis/i);
-    await expect(panel.getByText("AI Advisory")).toBeVisible({ timeout: 5_000 });
-    await expect(panel.getByText("Not requested")).toBeVisible({ timeout: 5_000 });
-    await expect(panel.getByRole("button", { name: /get advisory/i })).toBeVisible();
+    await expect(panel.getByText("AI Advisory")).toBeVisible({
+      timeout: 5_000,
+    });
+    await expect(panel.getByText("Not requested")).toBeVisible({
+      timeout: 5_000,
+    });
+    await expect(panel.getByRole("button", { name: /get advisory/i }))
+      .toBeVisible();
     await expect(panel.getByText(/educational purposes only/i)).toBeVisible();
   });
 
@@ -259,10 +302,15 @@ test.describe("AI Advisory Panel", () => {
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Instrument Analysis/i);
-    await expect(panel.getByRole("button", { name: /get advisory/i })).toBeVisible({ timeout: 5_000 });
+    await expect(panel.getByRole("button", { name: /get advisory/i }))
+      .toBeVisible({ timeout: 5_000 });
     await panel.getByRole("button", { name: /get advisory/i }).click();
 
-    await expect(panel.getByText(/failed to request advisory|llm service may not be enabled/i)).toBeVisible({
+    await expect(
+      panel.getByText(
+        /failed to request advisory|llm service may not be enabled/i,
+      ),
+    ).toBeVisible({
       timeout: 5_000,
     });
   });
@@ -272,7 +320,9 @@ test.describe("AI Advisory Panel", () => {
     await app.gotoAsTrader(DEFAULT_ASSETS);
 
     let resolveRequest!: () => void;
-    const requestHeld = new Promise<void>((res) => { resolveRequest = res; });
+    const requestHeld = new Promise<void>((res) => {
+      resolveRequest = res;
+    });
     await page.unroute("/api/gateway/advisory/request");
     await page.route("/api/gateway/advisory/request", async (route) => {
       if (route.request().method() !== "POST") return route.fallback();
@@ -290,10 +340,12 @@ test.describe("AI Advisory Panel", () => {
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Instrument Analysis/i);
-    await expect(panel.getByRole("button", { name: /get advisory/i })).toBeVisible({ timeout: 5_000 });
+    await expect(panel.getByRole("button", { name: /get advisory/i }))
+      .toBeVisible({ timeout: 5_000 });
     await panel.getByRole("button", { name: /get advisory/i }).click();
 
-    await expect(panel.getByRole("button", { name: /requesting/i })).toBeVisible({ timeout: 5_000 });
+    await expect(panel.getByRole("button", { name: /requesting/i }))
+      .toBeVisible({ timeout: 5_000 });
     resolveRequest();
   });
 
@@ -310,7 +362,8 @@ test.describe("AI Advisory Panel", () => {
       jobId: "job-test-001",
       symbol: "AAPL",
       noteId: "note-001",
-      content: "AAPL shows strong momentum with elevated relative volume. Bullish bias for short-term position.",
+      content:
+        "AAPL shows strong momentum with elevated relative volume. Bullish bias for short-term position.",
       provider: "mock",
       modelId: "mock-model",
       createdAt: Date.now(),
@@ -318,9 +371,15 @@ test.describe("AI Advisory Panel", () => {
     });
 
     const panel = await app.panelByTitle(/Instrument Analysis/i);
-    await expect(panel.getByText(/strong momentum/i)).toBeVisible({ timeout: 5_000 });
-    await expect(panel.getByText("Fresh").first()).toBeVisible({ timeout: 5_000 });
-    await expect(panel.getByRole("button", { name: /refresh/i })).toBeVisible({ timeout: 5_000 });
+    await expect(panel.getByText(/strong momentum/i)).toBeVisible({
+      timeout: 5_000,
+    });
+    await expect(panel.getByText("Fresh").first()).toBeVisible({
+      timeout: 5_000,
+    });
+    await expect(panel.getByRole("button", { name: /refresh/i })).toBeVisible({
+      timeout: 5_000,
+    });
     await expect(panel.getByText(/mock/)).toBeVisible({ timeout: 5_000 });
     await expect(panel.getByText(/educational purposes only/i)).toBeVisible();
   });
@@ -335,6 +394,8 @@ test.describe("AI Advisory Panel", () => {
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Instrument Analysis/i);
-    await expect(panel.getByText(/not financial advice/i)).toBeVisible({ timeout: 5_000 });
+    await expect(panel.getByText(/not financial advice/i)).toBeVisible({
+      timeout: 5_000,
+    });
   });
 });

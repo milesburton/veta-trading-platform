@@ -11,13 +11,17 @@ function svcUrl(localPort: number, prodPath: string): string {
 }
 const MDS_URL = svcUrl(5015, "/api/market-data");
 
-function t(ms = 8_000) { return AbortSignal.timeout(ms); }
+function t(ms = 8_000) {
+  return AbortSignal.timeout(ms);
+}
 
 Deno.test("[market-data/http] GET /health returns ok with override count", async () => {
   const res = await fetch(`${MDS_URL}/health`, { signal: t() });
   assertEquals(res.status, 200);
   const body = await res.json() as {
-    status: string; overrides: number; alphaVantageConfigured: boolean;
+    status: string;
+    overrides: number;
+    alphaVantageConfigured: boolean;
   };
   assertEquals(body.status, "ok");
   assert(typeof body.overrides === "number" && body.overrides >= 0);
@@ -27,7 +31,11 @@ Deno.test("[market-data/http] GET /health returns ok with override count", async
 Deno.test("[market-data/http] GET /sources returns non-empty array with id, label, enabled", async () => {
   const res = await fetch(`${MDS_URL}/sources`, { signal: t() });
   assertEquals(res.status, 200);
-  const body = await res.json() as { id: string; label: string; enabled: boolean }[];
+  const body = await res.json() as {
+    id: string;
+    label: string;
+    enabled: boolean;
+  }[];
   assert(Array.isArray(body) && body.length > 0);
   const synthetic = body.find((s) => s.id === "synthetic");
   assertExists(synthetic, "synthetic source must be present");
@@ -68,7 +76,10 @@ Deno.test("[market-data/http] PUT /overrides with unknown source returns 400", a
   });
   assertEquals(res.status, 400);
   const body = await res.json() as { error: string };
-  assert(body.error.toLowerCase().includes("unknown source") || body.error.toLowerCase().includes("bloomberg"));
+  assert(
+    body.error.toLowerCase().includes("unknown source") ||
+      body.error.toLowerCase().includes("bloomberg"),
+  );
 });
 
 Deno.test("[market-data/http] PUT /overrides with invalid JSON returns 400", async () => {
@@ -97,7 +108,9 @@ Deno.test("[market-data/http] PUT /overrides synthetic override is idempotent", 
   const res1 = await fetch(`${MDS_URL}/overrides`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ overrides: { AAPL: "synthetic", MSFT: "synthetic" } }),
+    body: JSON.stringify({
+      overrides: { AAPL: "synthetic", MSFT: "synthetic" },
+    }),
     signal: t(),
   });
   assertEquals(res1.status, 200);
@@ -125,7 +138,10 @@ Deno.test("[market-data/http] POST /sources/alpha-vantage/toggle returns updated
     assertEquals(after, !before, "toggle should flip active state");
   }
 
-  const restoreRes = await fetch(`${MDS_URL}/sources/alpha-vantage/toggle`, { method: "POST", signal: t() });
+  const restoreRes = await fetch(`${MDS_URL}/sources/alpha-vantage/toggle`, {
+    method: "POST",
+    signal: t(),
+  });
   await restoreRes.body?.cancel();
 });
 

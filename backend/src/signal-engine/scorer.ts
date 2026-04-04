@@ -1,4 +1,9 @@
-import type { FeatureName, FeatureVector, Signal, SignalFactor } from "../types/intelligence.ts";
+import type {
+  FeatureName,
+  FeatureVector,
+  Signal,
+  SignalFactor,
+} from "../types/intelligence.ts";
 import type { WeightMap } from "./weight-store.ts";
 
 const FEATURE_SCALES: Record<FeatureName, number> = {
@@ -19,13 +24,24 @@ function normalise(feature: FeatureName, value: number): number {
   return clamp(value / FEATURE_SCALES[feature], -1, 1);
 }
 
-export function scoreFeatureVector(fv: FeatureVector, weights: WeightMap): Signal {
+export function scoreFeatureVector(
+  fv: FeatureVector,
+  weights: WeightMap,
+): Signal {
   const featureNames: FeatureName[] = [
-    "momentum", "relativeVolume", "realisedVol",
-    "sectorRelativeStrength", "eventScore", "newsVelocity", "sentimentDelta",
+    "momentum",
+    "relativeVolume",
+    "realisedVol",
+    "sectorRelativeStrength",
+    "eventScore",
+    "newsVelocity",
+    "sentimentDelta",
   ];
 
-  const totalAbsWeight = featureNames.reduce((sum, f) => sum + Math.abs(weights[f]), 0);
+  const totalAbsWeight = featureNames.reduce(
+    (sum, f) => sum + Math.abs(weights[f]),
+    0,
+  );
 
   const factors: SignalFactor[] = featureNames.map((name) => {
     const normValue = normalise(name, fv[name] as number);
@@ -34,7 +50,9 @@ export function scoreFeatureVector(fv: FeatureVector, weights: WeightMap): Signa
   });
 
   const rawScore = factors.reduce((sum, f) => sum + f.contribution, 0);
-  const score = totalAbsWeight > 0 ? clamp(rawScore / totalAbsWeight, -1, 1) : 0;
+  const score = totalAbsWeight > 0
+    ? clamp(rawScore / totalAbsWeight, -1, 1)
+    : 0;
   const direction = score > 0.2 ? "long" : score < -0.2 ? "short" : "neutral";
 
   return {

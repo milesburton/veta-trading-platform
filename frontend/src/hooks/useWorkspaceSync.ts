@@ -103,7 +103,9 @@ export async function publishSharedWorkspace(
 
 export async function deleteSharedWorkspace(id: string): Promise<boolean> {
   try {
-    const res = await fetch(`${GATEWAY_URL}/shared-workspaces/${id}`, { method: "DELETE" });
+    const res = await fetch(`${GATEWAY_URL}/shared-workspaces/${id}`, {
+      method: "DELETE",
+    });
     return res.ok;
   } catch {
     return false;

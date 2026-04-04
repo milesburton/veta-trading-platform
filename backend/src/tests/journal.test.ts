@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-} from "https://deno.land/std@0.210.0/testing/asserts.ts";
-
+import { assertEquals } from "https://deno.land/std@0.210.0/testing/asserts.ts";
 
 interface OrderRecord {
   id: string;
@@ -66,7 +63,9 @@ function reconstructOrders(events: JournalEvent[]): OrderRecord[] {
       if (eventType === "orders.filled") {
         const childFilled = Number(raw.filledQty ?? 0);
         order.filled = Number(order.filled ?? 0) + childFilled;
-        order.status = order.quantity > 0 && order.filled >= order.quantity ? "filled" : "executing";
+        order.status = order.quantity > 0 && order.filled >= order.quantity
+          ? "filled"
+          : "executing";
       } else if (eventType === "orders.expired") {
         order.status = "expired";
       } else if (eventType === "orders.rejected") {
@@ -86,7 +85,6 @@ function reconstructOrders(events: JournalEvent[]): OrderRecord[] {
   return [...orderMap.values()];
 }
 
-
 const BASE_ORDER = {
   orderId: "ord-1",
   ts: 1_000_000,
@@ -102,7 +100,10 @@ const BASE_ORDER = {
 };
 
 Deno.test("[journal] reconstructs queued order from orders.submitted", () => {
-  const orders = reconstructOrders([{ ...BASE_ORDER, eventType: "orders.submitted" }]);
+  const orders = reconstructOrders([{
+    ...BASE_ORDER,
+    eventType: "orders.submitted",
+  }]);
   assertEquals(orders.length, 1);
   assertEquals(orders[0].status, "queued");
   assertEquals(orders[0].asset, "AAPL");
@@ -113,7 +114,11 @@ Deno.test("[journal] reconstructs queued order from orders.submitted", () => {
 Deno.test("[journal] transitions to executing after first partial fill", () => {
   const orders = reconstructOrders([
     { ...BASE_ORDER, eventType: "orders.submitted" },
-    { ...BASE_ORDER, eventType: "orders.filled", raw: { ...BASE_ORDER.raw, filledQty: 25 } },
+    {
+      ...BASE_ORDER,
+      eventType: "orders.filled",
+      raw: { ...BASE_ORDER.raw, filledQty: 25 },
+    },
   ]);
   assertEquals(orders[0].status, "executing");
   assertEquals(orders[0].filled, 25);
@@ -152,7 +157,11 @@ Deno.test("[journal] marks order as expired", () => {
 Deno.test("[journal] marks OMS-rejected order as rejected (after submission)", () => {
   const orders = reconstructOrders([
     { ...BASE_ORDER, eventType: "orders.submitted" },
-    { ...BASE_ORDER, eventType: "orders.rejected", raw: { reason: "Limit exceeded" } },
+    {
+      ...BASE_ORDER,
+      eventType: "orders.rejected",
+      raw: { reason: "Limit exceeded" },
+    },
   ]);
   assertEquals(orders[0].status, "rejected");
   assertEquals(orders[0].rejectReason, "Limit exceeded");
@@ -164,7 +173,12 @@ Deno.test("[journal] creates stub for gateway-rejected order (no prior submissio
       orderId: "ord-gw",
       eventType: "orders.rejected",
       ts: 2_000_000,
-      raw: { asset: "MSFT", side: "SELL", quantity: 50, reason: "Session expired" },
+      raw: {
+        asset: "MSFT",
+        side: "SELL",
+        quantity: 50,
+        reason: "Session expired",
+      },
     },
   ]);
   assertEquals(orders.length, 1);
@@ -187,9 +201,36 @@ Deno.test("[journal] appends child orders", () => {
 
 Deno.test("[journal] handles multiple independent orders", () => {
   const orders = reconstructOrders([
-    { orderId: "ord-A", eventType: "orders.submitted", ts: 1000, raw: { asset: "AAPL", side: "BUY", quantity: 100, limitPrice: 190, strategy: "LIMIT" } },
-    { orderId: "ord-B", eventType: "orders.submitted", ts: 2000, raw: { asset: "MSFT", side: "SELL", quantity: 50, limitPrice: 400, strategy: "TWAP" } },
-    { orderId: "ord-A", eventType: "orders.filled", ts: 3000, raw: { filledQty: 100 } },
+    {
+      orderId: "ord-A",
+      eventType: "orders.submitted",
+      ts: 1000,
+      raw: {
+        asset: "AAPL",
+        side: "BUY",
+        quantity: 100,
+        limitPrice: 190,
+        strategy: "LIMIT",
+      },
+    },
+    {
+      orderId: "ord-B",
+      eventType: "orders.submitted",
+      ts: 2000,
+      raw: {
+        asset: "MSFT",
+        side: "SELL",
+        quantity: 50,
+        limitPrice: 400,
+        strategy: "TWAP",
+      },
+    },
+    {
+      orderId: "ord-A",
+      eventType: "orders.filled",
+      ts: 3000,
+      raw: { filledQty: 100 },
+    },
   ]);
   assertEquals(orders.length, 2);
   const a = orders.find((o) => o.id === "ord-A")!;
@@ -200,7 +241,12 @@ Deno.test("[journal] handles multiple independent orders", () => {
 
 Deno.test("[journal] ignores events for unknown orderId", () => {
   const orders = reconstructOrders([
-    { orderId: "ord-1", eventType: "orders.filled", ts: 1000, raw: { filledQty: 50 } },
+    {
+      orderId: "ord-1",
+      eventType: "orders.filled",
+      ts: 1000,
+      raw: { filledQty: 50 },
+    },
   ]);
   assertEquals(orders.length, 0);
 });

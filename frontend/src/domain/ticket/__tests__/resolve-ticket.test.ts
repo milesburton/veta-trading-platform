@@ -85,8 +85,20 @@ function makeCtx(overrides: Partial<TicketContext> = {}): TicketContext {
       expiresAtSecs: 300,
       tif: "DAY",
     },
-    option: { optionType: "call", strike: 0, expirySecs: 0, hasQuote: false, isFetching: false },
-    bond: { symbol: "", yieldPct: 0, hasQuote: false, isFetching: false, hasBondDef: false },
+    option: {
+      optionType: "call",
+      strike: 0,
+      expirySecs: 0,
+      hasQuote: false,
+      isFetching: false,
+    },
+    bond: {
+      symbol: "",
+      yieldPct: 0,
+      hasQuote: false,
+      isFetching: false,
+      hasBondDef: false,
+    },
     session: CONTINUOUS_SESSION,
     dirtyFields: new Set(),
     ...overrides,
@@ -198,7 +210,13 @@ describe("resolveTicket", () => {
       const r = resolveTicket(
         makeCtx({
           killBlocks: [
-            { id: "k1", scope: "all", scopeValues: [], issuedBy: "admin-1", issuedAt: Date.now() },
+            {
+              id: "k1",
+              scope: "all",
+              scopeValues: [],
+              issuedBy: "admin-1",
+              issuedAt: Date.now(),
+            },
           ],
         })
       );
@@ -281,7 +299,12 @@ describe("resolveTicket", () => {
     it.each([
       [
         "option has no quote",
-        { strike: 150, expirySecs: 86400, hasQuote: false, isFetching: false },
+        {
+          strike: 150,
+          expirySecs: 86400,
+          hasQuote: false,
+          isFetching: false,
+        },
         "option-quote-missing",
       ],
       [
@@ -293,7 +316,10 @@ describe("resolveTicket", () => {
       const r = resolveTicket(
         makeCtx({
           instrument: { ...makeCtx().instrument, instrumentType: "option" },
-          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
+          limits: {
+            ...DEFAULT_LIMITS,
+            allowed_desks: ["equity", "derivatives"],
+          },
           option: { optionType: "call", ...optionOverrides },
         })
       );
@@ -321,7 +347,10 @@ describe("resolveTicket", () => {
       const r = resolveTicket(
         makeCtx({
           instrument: { ...makeCtx().instrument, instrumentType: "option" },
-          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
+          limits: {
+            ...DEFAULT_LIMITS,
+            allowed_desks: ["equity", "derivatives"],
+          },
           option: {
             optionType: "call",
             strike: 150,
@@ -344,7 +373,11 @@ describe("resolveTicket", () => {
     ] as const)("access=%s qty=%d type=%s → eligible=%s", (access, qty, type, expected) => {
       const r = resolveTicket(
         makeCtx({
-          limits: { ...DEFAULT_LIMITS, dark_pool_access: access, allowed_desks: ["equity", "fi"] },
+          limits: {
+            ...DEFAULT_LIMITS,
+            dark_pool_access: access,
+            allowed_desks: ["equity", "fi"],
+          },
           ...withDraft({ quantity: qty }),
           instrument: { ...makeCtx().instrument, instrumentType: type },
           ...(type === "bond" ? { bond: VALID_BOND } : {}),
@@ -365,7 +398,10 @@ describe("resolveTicket", () => {
       const r = resolveTicket(
         makeCtx({
           instrument: { ...makeCtx().instrument, instrumentType },
-          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives", "fi"] },
+          limits: {
+            ...DEFAULT_LIMITS,
+            allowed_desks: ["equity", "derivatives", "fi"],
+          },
           ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
           ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
         })
@@ -387,7 +423,10 @@ describe("resolveTicket", () => {
     it("reflects allowed desks", () => {
       const r = resolveTicket(
         makeCtx({
-          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives", "fi"] },
+          limits: {
+            ...DEFAULT_LIMITS,
+            allowed_desks: ["equity", "derivatives", "fi"],
+          },
         })
       );
       expect(r.availableInstrumentTypes).toContain("equity");
@@ -431,7 +470,10 @@ describe("resolveTicket", () => {
       const r = resolveTicket(
         makeCtx({
           instrument: { ...makeCtx().instrument, instrumentType },
-          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives", "fi"] },
+          limits: {
+            ...DEFAULT_LIMITS,
+            allowed_desks: ["equity", "derivatives", "fi"],
+          },
           ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
           ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
         })
@@ -478,14 +520,20 @@ describe("resolveTicket", () => {
 
     it("blocks algos during auction, allows LIMIT", () => {
       const twapResult = resolveTicket(
-        makeCtx({ session: AUCTION_SESSION, ...withDraft({ strategy: "TWAP" }) })
+        makeCtx({
+          session: AUCTION_SESSION,
+          ...withDraft({ strategy: "TWAP" }),
+        })
       );
       expect(twapResult.errors.some((d) => d.ruleId === "session.strategy-not-supported")).toBe(
         true
       );
 
       const limitResult = resolveTicket(
-        makeCtx({ session: AUCTION_SESSION, ...withDraft({ strategy: "LIMIT" }) })
+        makeCtx({
+          session: AUCTION_SESSION,
+          ...withDraft({ strategy: "LIMIT" }),
+        })
       );
       expect(limitResult.errors.filter((d) => d.ruleId.startsWith("session."))).toHaveLength(0);
     });
@@ -498,7 +546,10 @@ describe("resolveTicket", () => {
         allowsAmend: false,
       };
       const auctionResult = resolveTicket(
-        makeCtx({ session: closingAuction, ...withDraft({ strategy: "LIMIT" }) })
+        makeCtx({
+          session: closingAuction,
+          ...withDraft({ strategy: "LIMIT" }),
+        })
       );
       expect(auctionResult.diagnostics.some((d) => d.ruleId === "session.auction-info")).toBe(true);
 
@@ -528,7 +579,10 @@ describe("resolveTicket", () => {
       const r = resolveTicket(
         makeCtx({
           instrument: { ...makeCtx().instrument, instrumentType: "option" },
-          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
+          limits: {
+            ...DEFAULT_LIMITS,
+            allowed_desks: ["equity", "derivatives"],
+          },
           session: HALTED_SESSION,
           option: VALID_OPTION,
         })
@@ -648,8 +702,15 @@ describe("resolveTicket", () => {
     it("skips for options", () => {
       const r = resolveTicket(
         makeCtx({
-          instrument: { ...makeCtx().instrument, instrumentType: "option", currentPrice: 100 },
-          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives"] },
+          instrument: {
+            ...makeCtx().instrument,
+            instrumentType: "option",
+            currentPrice: 100,
+          },
+          limits: {
+            ...DEFAULT_LIMITS,
+            allowed_desks: ["equity", "derivatives"],
+          },
           option: VALID_OPTION,
           ...withDraft({ limitPrice: 200 }),
         })
@@ -693,7 +754,10 @@ describe("resolveTicket", () => {
       const r = resolveTicket(
         makeCtx({
           instrument: { ...makeCtx().instrument, instrumentType },
-          limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "derivatives", "fi"] },
+          limits: {
+            ...DEFAULT_LIMITS,
+            allowed_desks: ["equity", "derivatives", "fi"],
+          },
           ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
           ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
         })

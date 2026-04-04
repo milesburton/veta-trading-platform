@@ -38,7 +38,9 @@ const YIELD_CURVE_TTL_MS = 60 * 60 * 1_000;
 let yieldCurveCache: Map<string, YieldCurvePoint> | null = null;
 let yieldCurveFetchedAt = 0;
 
-async function fetchOneSeries(seriesId: string): Promise<YieldCurvePoint | null> {
+async function fetchOneSeries(
+  seriesId: string,
+): Promise<YieldCurvePoint | null> {
   try {
     const url =
       `${FRED_BASE}?series_id=${seriesId}&api_key=${FRED_KEY}&file_type=json&sort_order=desc&limit=5`;
@@ -60,7 +62,9 @@ async function fetchOneSeries(seriesId: string): Promise<YieldCurvePoint | null>
     console.warn(`[fred] No valid observation for ${seriesId}`);
     return null;
   } catch (err) {
-    console.warn(`[fred] Series fetch failed for ${seriesId}: ${(err as Error).message}`);
+    console.warn(
+      `[fred] Series fetch failed for ${seriesId}: ${(err as Error).message}`,
+    );
     return null;
   }
 }
@@ -80,7 +84,9 @@ export async function fetchYieldCurve(): Promise<Map<string, YieldCurvePoint>> {
     return new Map();
   }
 
-  console.log(`[fred] Fetching yield curve (${YIELD_CURVE_SERIES.length} series)`);
+  console.log(
+    `[fred] Fetching yield curve (${YIELD_CURVE_SERIES.length} series)`,
+  );
   const results = await Promise.all(YIELD_CURVE_SERIES.map(fetchOneSeries));
   const map = new Map<string, YieldCurvePoint>();
   for (const point of results) {
@@ -88,7 +94,9 @@ export async function fetchYieldCurve(): Promise<Map<string, YieldCurvePoint>> {
   }
   yieldCurveCache = map;
   yieldCurveFetchedAt = now;
-  console.log(`[fred] Yield curve cached: ${map.size}/${YIELD_CURVE_SERIES.length} series`);
+  console.log(
+    `[fred] Yield curve cached: ${map.size}/${YIELD_CURVE_SERIES.length} series`,
+  );
   return map;
 }
 
@@ -104,7 +112,10 @@ export const fredProvider: ProviderDef = {
   supportsSymbol(_symbol: string): boolean {
     return false;
   },
-  fetchQuote(_symbol: string, _journalUrl: string): Promise<CachedQuote | null> {
+  fetchQuote(
+    _symbol: string,
+    _journalUrl: string,
+  ): Promise<CachedQuote | null> {
     return Promise.resolve(null);
   },
 };

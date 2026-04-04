@@ -22,7 +22,11 @@ export const observabilitySlice = createSlice({
       state,
       action: PayloadAction<{ message: string; source?: string; stack?: string }>
     ) {
-      const evt: ObsEvent = { type: "client.error", ts: Date.now(), payload: action.payload };
+      const evt: ObsEvent = {
+        type: "client.error",
+        ts: Date.now(),
+        payload: action.payload,
+      };
       state.events = [evt, ...state.events].slice(0, 1000);
     },
   },

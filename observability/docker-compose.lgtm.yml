@@ -3,12 +3,12 @@ services:
     image: grafana/alloy:v1.7.0
     container_name: lgtm-alloy
     ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
       - "12345:12345" # Alloy UI
     volumes:
       - ./alloy-config.alloy:/etc/alloy/config.alloy:ro
-      - /tmp:/var/log/supervisor:ro   # tail supervisord stdout logs
+      - /tmp:/var/log/supervisor:ro # tail supervisord stdout logs
     command: run /etc/alloy/config.alloy --server.http.listen-addr=0.0.0.0:12345
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -47,7 +47,7 @@ services:
     container_name: lgtm-tempo
     ports:
       - "3200:3200"
-      - "4319:4317"   # Tempo's own OTLP gRPC (offset to avoid conflict with alloy)
+      - "4319:4317" # Tempo's own OTLP gRPC (offset to avoid conflict with alloy)
     volumes:
       - ./tempo.yaml:/etc/tempo/tempo.yaml:ro
       - tempo-data:/var/tempo
