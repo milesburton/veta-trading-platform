@@ -83,9 +83,9 @@ Deno.test("[market] /assets returns enriched fields", async () => {
 Deno.test("[limit-algo] health includes pending count", async () => {
   const res = await fetch(`${LIMIT_URL}/health`, { signal: t() });
   assertEquals(res.status, 200);
-  const body = await res.json() as { status: string; pending: number };
+  const body = await res.json() as { status: string; activeOrders: number };
   assertEquals(body.status, "ok");
-  assertEquals(typeof body.pending, "number");
+  assertEquals(typeof body.activeOrders, "number");
 });
 
 Deno.test("[pov-algo] health includes activeOrders count", async () => {

@@ -148,11 +148,6 @@ export class ElectronMockServer {
       return;
     }
     if (url.includes("/sessions") && route.request().method() === "POST") {
-      json({ error: "legacy /sessions login is disabled; use OAuth2 /oauth/authorize + /oauth/token" }, 410"/sessions/me") || (url.includes("/sessions") && route.request().method() === "DELETE")) {
-      json(this._user);
-      return;
-    }
-    if (url.includes("/sessions") && route.request().method() === "POST") {
       json({ error: "legacy /sessions login is disabled; use OAuth2 /oauth/authorize + /oauth/token" }, 410);
       return;
     }
