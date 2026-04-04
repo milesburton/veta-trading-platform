@@ -15,7 +15,7 @@
  */
 
 import type { Page, WebSocketRoute } from "@playwright/test";
-export {
+import {
   ALGO_TRADER,
   ALGO_TRADER_LIMITS,
   ANALYST_LIMITS,
@@ -27,7 +27,20 @@ export {
   FI_TRADER_LIMITS,
   RESEARCH_ANALYST,
 } from "./authFixtures.ts";
-export type { AssetDef, AuthUser, TradingLimits } from "./authFixtures.ts";
+import type { AssetDef, AuthUser, TradingLimits } from "./authFixtures.ts";
+export {
+  ALGO_TRADER,
+  ALGO_TRADER_LIMITS,
+  ANALYST_LIMITS,
+  DEFAULT_ADMIN,
+  DEFAULT_ASSETS,
+  DEFAULT_LIMITS,
+  DEFAULT_TRADER,
+  FI_TRADER,
+  FI_TRADER_LIMITS,
+  RESEARCH_ANALYST,
+};
+export type { AssetDef, AuthUser, TradingLimits };
 
 // ── Protocol types (mirroring gatewayMiddleware) ──────────────────────────────
 
