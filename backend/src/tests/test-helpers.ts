@@ -30,8 +30,8 @@ export async function loginAs(userId: string): Promise<string> {
     body: JSON.stringify({ userId }),
     signal: timeout(),
   });
-  assertEquals(res.status, 200, `Login as ${userId} failed`);
   await res.body?.cancel();
+  assertEquals(res.status, 200, `Login as ${userId} failed`);
   const cookie = res.headers.get("set-cookie") ?? "";
   const match = cookie.match(/veta_user=([^;]+)/);
   assert(match, `No veta_user cookie for ${userId}`);

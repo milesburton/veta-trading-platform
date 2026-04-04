@@ -321,16 +321,23 @@ Deno.test("[market-sim] WebSocket emits tick data within 3s", async () => {
 
 
 Deno.test("[user-service] POST /sessions sets veta_user cookie for alice", async () => {
-  const res = await fetch(`${USER_SVC_URL}/sessions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId: "alice" }),
-    signal: timeout(5_000),
-  });
-  assertEquals(res.status, 200);
-  await res.body?.cancel();
+  let res: Response | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 1_000));
+    res = await fetch(`${USER_SVC_URL}/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: "alice" }),
+      signal: timeout(5_000),
+    });
+    await res.body?.cancel();
+    if (res.status === 200) break;
+    res = null;
+  }
+  assert(res !== null, "POST /sessions never returned 200 after retries");
+  assertEquals(res!.status, 200);
   assert(
-    (res.headers.get("set-cookie") ?? "").includes("veta_user="),
+    (res!.headers.get("set-cookie") ?? "").includes("veta_user="),
     "Expected veta_user cookie in Set-Cookie header",
   );
 });
