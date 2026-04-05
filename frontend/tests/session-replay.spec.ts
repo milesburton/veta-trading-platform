@@ -63,16 +63,17 @@ test.describe("Session Replay panel", () => {
       total: 2,
     };
 
-    await page.route("**/api/replay/sessions**", (route) =>
+    const app = new AppPage(page);
+    app.gateway = await GatewayMock.attach(page, { user: DEFAULT_ADMIN });
+
+    await page.unroute("/api/replay/sessions");
+    await page.route("/api/replay/sessions**", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(mockSessions),
       }),
     );
-
-    const app = new AppPage(page);
-    app.gateway = await GatewayMock.attach(page, { user: DEFAULT_ADMIN });
 
     await page.goto("/?ws=ws-administration");
     await app.waitForDashboard();
