@@ -417,6 +417,7 @@ async function proxyGet(internalUrl: string, req: Request): Promise<Response> {
   target.search = src.search;
   try {
     const res = await fetch(target.toString(), {
+      method: req.method,
       signal: AbortSignal.timeout(8_000),
     });
     const body = await res.arrayBuffer();
