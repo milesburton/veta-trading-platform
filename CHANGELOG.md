@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.13.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.12.5...veta-trading-platform-v1.13.0) (2026-04-05)
+
+
+### Features
+
+* **replay:** add session replay with rrweb recording and playback ([9c0cfed](https://github.com/milesburton/veta-trading-platform/commit/9c0cfed233e31a3b2a2c4ff2979e3f2249d19461))
+
+
+### Bug Fixes
+
+* **ci:** add replay-service to CI integration tests and Fly.io supervisord ([ff9b04d](https://github.com/milesburton/veta-trading-platform/commit/ff9b04d36c22d29aa40900825af225868495c259))
+* **ci:** repair integration test and Biome-corrupted ElectronMockServer ([50aad3d](https://github.com/milesburton/veta-trading-platform/commit/50aad3da27d1f4420463a9d54bd44d363d8113e5))
+* **tests:** authenticate replay smoke tests for Fly.io, fix E2E route ordering ([416a135](https://github.com/milesburton/veta-trading-platform/commit/416a1356082c28e5c42ce1d7ec7f799abbd02cd9))
+* **tests:** import and re-export auth fixtures from GatewayMock ([75b296c](https://github.com/milesburton/veta-trading-platform/commit/75b296c31d1b4ea852bab95853ce86f6a88a50c1))
+* **tests:** re-export auth fixtures from GatewayMock for downstream imports ([32a9257](https://github.com/milesburton/veta-trading-platform/commit/32a9257dc14f1c16a4d2147cdfc67da5130d6626))
+* **tests:** unroute then re-route replay sessions in E2E for correct mock data ([7147310](https://github.com/milesburton/veta-trading-platform/commit/71473108327e6dcd3e7e5bb61042919c9476339e))
+
 ## [1.12.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.12.4...veta-trading-platform-v1.12.5) (2026-04-04)
 
 
