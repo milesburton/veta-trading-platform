@@ -23,13 +23,14 @@
 13. [Workspace Layout Templates](#13-workspace-layout-templates)
 14. [Desktop App (Electron)](#14-desktop-app-electron)
 15. [LLM Advisory Subsystem](#15-llm-advisory-subsystem)
-16. [Data Stores](#16-data-stores)
-17. [Process Management](#17-process-management)
-18. [Deployment](#18-deployment)
-19. [CI / CD](#19-ci--cd)
-20. [Testing Reference](#20-testing-reference)
-21. [Configuration Reference](#21-configuration-reference)
-22. [Troubleshooting](#22-troubleshooting)
+16. [Session Replay](#16-session-replay)
+17. [Data Stores](#17-data-stores)
+18. [Process Management](#18-process-management)
+19. [Deployment](#19-deployment)
+20. [CI / CD](#20-ci--cd)
+21. [Testing Reference](#21-testing-reference)
+22. [Configuration Reference](#22-configuration-reference)
+23. [Troubleshooting](#23-troubleshooting)
 
 ---
 
@@ -851,7 +852,80 @@ POST /advisory/admin/trigger-worker
 
 ---
 
-## 16. Data Stores
+## 16. Session Replay
+
+Session replay enables admins to record and play back user browser sessions for
+training, audit, and debugging. It uses [rrweb](https://www.rrweb.io/), an
+open-source library that captures DOM mutations and user interactions.
+
+### Enabling Recording
+
+1. Log in as an `admin` user (e.g. `alice`)
+2. Navigate to the **Administration** workspace (`?ws=ws-administration`)
+3. Open the **Session Replay** panel
+4. Toggle the recording switch — a red **REC** indicator confirms recording is active
+
+Once enabled, all authenticated users' sessions are automatically recorded.
+
+### What Gets Recorded
+
+- DOM mutations (layout changes, panel switches, data updates)
+- Mouse movements, clicks, scrolling
+- Keyboard input (all form inputs are **masked** — no passwords or sensitive data captured)
+- Viewport dimensions and browser user agent
+
+Elements with `data-sensitive` attribute or `.no-replay` CSS class are excluded.
+
+### How Recording Works
+
+- rrweb takes an initial full DOM snapshot, then tracks incremental mutations
+- Events buffer in the browser and flush every 30 seconds as JSONB chunks
+- Chunks are uploaded to the replay service (`POST /api/replay/sessions/:id/chunks`)
+- Maximum session duration: 30 minutes (auto-stops and can restart)
+
+### Playing Back Sessions
+
+1. Open the **Session Replay** panel (Administration workspace or via Component Picker)
+2. The session list shows: user name, role, start time, duration
+3. Click **Play** on any completed session
+4. The rrweb-player loads with:
+   - Timeline scrubber (drag to any point)
+   - Play/pause button
+   - Speed controls (1x, 2x, 4x, etc.)
+5. Click **Back to sessions** to return to the list
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/replay/config` | Get recording toggle state |
+| `PUT` | `/api/replay/config` | Set recording enabled/disabled (admin) |
+| `GET` | `/api/replay/sessions` | List recorded sessions (paginated) |
+| `POST` | `/api/replay/sessions` | Create a new session record |
+| `PUT` | `/api/replay/sessions/:id/end` | Mark session as ended |
+| `POST` | `/api/replay/sessions/:id/chunks` | Upload a chunk of rrweb events |
+| `GET` | `/api/replay/sessions/:id/events` | Fetch all events for playback |
+| `DELETE` | `/api/replay/sessions/:id` | Delete a session (admin) |
+
+### Access Control
+
+| Role | Can toggle recording | Can view sessions | Can delete sessions |
+|------|---------------------|-------------------|---------------------|
+| `admin` | Yes | Yes | Yes |
+| `compliance` | No | Yes | Yes |
+| Others | No | Yes | No |
+
+### Database Schema
+
+Stored in PostgreSQL under the `replay` schema:
+
+- `replay.sessions` — session metadata (user, timestamps, viewport info)
+- `replay.chunks` — JSONB event chunks with sequence numbers
+- `replay.config` — single-row config toggle
+
+---
+
+## 17. Data Stores
 
 ### PostgreSQL (port 5432)
 
@@ -865,6 +939,9 @@ Used by the **User Service** only.
 | `users` | `preferences` | Per-user layout and UI preferences |
 | `users` | `shared_workspaces` | Shared layout presets |
 | `users` | `alerts` | User alert records |
+| `replay` | `sessions` | Session replay metadata (user, timestamps) |
+| `replay` | `chunks` | rrweb event chunks (JSONB, sequenced) |
+| `replay` | `config` | Recording enabled/disabled toggle |
 
 ### SQLite (per-service)
 
@@ -894,7 +971,7 @@ Batched write queue (Journal, FIX Archive): max 50 rows/transaction, 50 ms flush
 
 ---
 
-## 17. Process Management
+## 18. Process Management
 
 ### Dev Container — supervisord
 
@@ -938,7 +1015,7 @@ docker compose -f compose.yml -f compose.prod.yml logs -f gateway
 
 ---
 
-## 18. Deployment
+## 19. Deployment
 
 ### Homelab (self-hosted Proxmox VM)
 
@@ -992,7 +1069,7 @@ Fly.io terminates TLS at the edge. `min_machines_running=1`, `auto_stop_machines
 
 ---
 
-## 19. CI / CD
+## 20. CI / CD
 
 GitHub Actions workflows are in [.github/workflows/](../.github/workflows/).
 
@@ -1021,7 +1098,7 @@ Triggered on `v*` tags. Builds Electron installers on `macos-latest`, `windows-l
 
 ---
 
-## 20. Testing Reference
+## 21. Testing Reference
 
 ### Backend
 
@@ -1097,7 +1174,7 @@ npm run lint:fix
 
 ---
 
-## 21. Configuration Reference
+## 22. Configuration Reference
 
 ### Deno Tasks (`deno.json`)
 
@@ -1131,7 +1208,7 @@ npm run test:electron   # Playwright Electron E2E
 
 ---
 
-## 22. Troubleshooting
+## 23. Troubleshooting
 
 ### Service won't start
 

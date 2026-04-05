@@ -29,14 +29,15 @@ This platform consists of:
 * React based front end using Tailwind
 * Observability service to retain logging throughout the platform
 * Authentication and authorisation service
-* 9 (currently) algo services (POV, TWAP, VWAP, Iceburg and so on)
+* 9 (currently) algo services (POV, TWAP, VWAP, Iceberg and so on)
 * Signal engine driven from live market data
 * Analytics engine to perform "What-If" scenarios
 * Fake exchange to generate market data combined with real market data
 * LLM service using OLLAMA to provide possible market signals (though this is advisory only)
 * Order Management System
 * Journalling system using PostgreSQL
-* Market Data Adapter service to control incoming real world and immitation data
+* Market Data Adapter service to control incoming real world and imitation data
+* Session replay service powered by [rrweb](https://www.rrweb.io/) for recording and playing back user sessions
 
 The platform requires approximately 10-12GB of memory depending on load. It's not overly CPU hungry however that will diverge depending on the number of orders are on the market.
 

@@ -85,6 +85,7 @@ Sim      :5002  :5003–5006         :5009      Pipeline
 | 5024 | LLM Advisory Orchestrator          | `llm-advisory`          |
 | 5025 | Momentum Algo                      | `momentum-algo`         |
 | 5026 | IS (Implementation Shortfall) Algo | `is-algo`               |
+| 5031 | Session Replay                     | `replay-service`        |
 | 9880 | FIX Exchange (TCP)                 | `fix-exchange`          |
 | 9881 | FIX Gateway (WebSocket bridge)     | `fix-gateway`           |
 
@@ -347,6 +348,23 @@ re-runs the signal scorer, and returns `{ baseline, shocked, delta }`.
 
 Source:
 [backend/src/scenario-engine/scenario-server.ts](../backend/src/scenario-engine/scenario-server.ts)
+
+### Session Replay Service (port 5031)
+
+Records and replays browser sessions using [rrweb](https://www.rrweb.io/).
+Recording is opt-in — an admin toggles it on via the Session Replay panel. When
+enabled, the rrweb library in the browser captures DOM mutations, mouse
+movements, clicks, and scrolls, masking all form inputs and blocking elements
+marked `data-sensitive` or `.no-replay`. Events are buffered client-side and
+flushed every 30 seconds as JSONB chunks to PostgreSQL (`replay` schema). Each
+session has a maximum duration of 30 minutes.
+
+The replay panel lists completed sessions and embeds the rrweb-player for
+playback with timeline scrubbing and speed controls. Only `admin` and
+`compliance` roles can toggle recording or delete sessions.
+
+Source:
+[backend/src/replay/replay-service.ts](../backend/src/replay/replay-service.ts)
 
 ---
 
