@@ -1032,18 +1032,29 @@ Deno.test("[gateway] request with invalid token returns 401", async () => {
 });
 
 Deno.test("[replay] GET /config returns recordingEnabled boolean", async () => {
-  const res = await fetch(`${REPLAY_URL}/config`, { signal: timeout(5_000) });
+  const headers: Record<string, string> = {};
+  if (BASE !== "http://localhost") {
+    const token = await loginAsVerified("alice");
+    headers.Cookie = `veta_user=${token}`;
+  }
+  const res = await fetch(`${REPLAY_URL}/config`, { headers, signal: timeout(5_000) });
   assertEquals(res.status, 200);
   const body = await res.json() as { recordingEnabled: boolean };
   assertEquals(typeof body.recordingEnabled, "boolean");
 });
 
 Deno.test("[replay] session CRUD: create, list, end, events, delete", async () => {
+  const authHeaders: Record<string, string> = {};
+  if (BASE !== "http://localhost") {
+    const token = await loginAsVerified("alice");
+    authHeaders.Cookie = `veta_user=${token}`;
+  }
+
   const sessionId = `smoke-test-${Date.now()}`;
 
   const createRes = await fetch(`${REPLAY_URL}/sessions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders },
     body: JSON.stringify({ id: sessionId, userId: "smoke-test", userName: "Smoke Test", userRole: "admin" }),
     signal: timeout(5_000),
   });
@@ -1052,7 +1063,7 @@ Deno.test("[replay] session CRUD: create, list, end, events, delete", async () =
 
   const chunkRes = await fetch(`${REPLAY_URL}/sessions/${sessionId}/chunks`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders },
     body: JSON.stringify({ seq: 0, events: [{ type: 2, data: {}, timestamp: Date.now() }] }),
     signal: timeout(5_000),
   });
@@ -1061,23 +1072,25 @@ Deno.test("[replay] session CRUD: create, list, end, events, delete", async () =
 
   const endRes = await fetch(`${REPLAY_URL}/sessions/${sessionId}/end`, {
     method: "PUT",
+    headers: authHeaders,
     signal: timeout(5_000),
   });
   assertEquals(endRes.status, 200);
   await endRes.body?.cancel();
 
-  const listRes = await fetch(`${REPLAY_URL}/sessions?limit=5`, { signal: timeout(5_000) });
+  const listRes = await fetch(`${REPLAY_URL}/sessions?limit=5`, { headers: authHeaders, signal: timeout(5_000) });
   assertEquals(listRes.status, 200);
   const listBody = await listRes.json() as { sessions: { id: string }[]; total: number };
   assert(listBody.sessions.some((s) => s.id === sessionId));
 
-  const eventsRes = await fetch(`${REPLAY_URL}/sessions/${sessionId}/events`, { signal: timeout(5_000) });
+  const eventsRes = await fetch(`${REPLAY_URL}/sessions/${sessionId}/events`, { headers: authHeaders, signal: timeout(5_000) });
   assertEquals(eventsRes.status, 200);
   const eventsBody = await eventsRes.json() as { events: unknown[] };
   assert(eventsBody.events.length > 0);
 
   const deleteRes = await fetch(`${REPLAY_URL}/sessions/${sessionId}`, {
     method: "DELETE",
+    headers: authHeaders,
     signal: timeout(5_000),
   });
   assertEquals(deleteRes.status, 200);

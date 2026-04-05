@@ -37,40 +37,42 @@ test.describe("Session Replay panel", () => {
   });
 
   test("renders session table when sessions exist", async ({ page }) => {
-    const app = new AppPage(page);
-    app.gateway = await GatewayMock.attach(page, { user: DEFAULT_ADMIN });
+    const mockSessions = {
+      sessions: [
+        {
+          id: "sess-001",
+          userId: "trader-1",
+          userName: "Alice Chen",
+          userRole: "trader",
+          startedAt: new Date(Date.now() - 3600_000).toISOString(),
+          endedAt: new Date(Date.now() - 1800_000).toISOString(),
+          durationMs: 1800_000,
+          metadata: {},
+        },
+        {
+          id: "sess-002",
+          userId: "admin-1",
+          userName: "Admin User",
+          userRole: "admin",
+          startedAt: new Date(Date.now() - 600_000).toISOString(),
+          endedAt: null,
+          durationMs: null,
+          metadata: {},
+        },
+      ],
+      total: 2,
+    };
 
-    await page.route("/api/replay/sessions", (route) =>
+    await page.route("**/api/replay/sessions**", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({
-          sessions: [
-            {
-              id: "sess-001",
-              userId: "trader-1",
-              userName: "Alice Chen",
-              userRole: "trader",
-              startedAt: new Date(Date.now() - 3600_000).toISOString(),
-              endedAt: new Date(Date.now() - 1800_000).toISOString(),
-              durationMs: 1800_000,
-              metadata: {},
-            },
-            {
-              id: "sess-002",
-              userId: "admin-1",
-              userName: "Admin User",
-              userRole: "admin",
-              startedAt: new Date(Date.now() - 600_000).toISOString(),
-              endedAt: null,
-              durationMs: null,
-              metadata: {},
-            },
-          ],
-          total: 2,
-        }),
-      })
+        body: JSON.stringify(mockSessions),
+      }),
     );
+
+    const app = new AppPage(page);
+    app.gateway = await GatewayMock.attach(page, { user: DEFAULT_ADMIN });
 
     await page.goto("/?ws=ws-administration");
     await app.waitForDashboard();
