@@ -313,6 +313,41 @@ export class GatewayMock {
       })
     );
 
+    await page.route("/api/replay/config", (route) => {
+      if (route.request().method() === "PUT") {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ recordingEnabled: true }),
+        });
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          recordingEnabled: false,
+          updatedBy: null,
+          updatedAt: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await page.route("/api/replay/sessions", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ sessions: [], total: 0 }),
+      })
+    );
+
+    await page.route("/api/replay/health", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ service: "replay", version: "dev", status: "ok" }),
+      })
+    );
+
     // /api/user-service/sessions/me for GET (still valid)
     // /api/user-service/sessions POST is deprecated (returns 410 in backend)
     // /api/user-service/sessions DELETE is still valid (logout) /api/user-service/sessions DELETE is still valid (logout)
