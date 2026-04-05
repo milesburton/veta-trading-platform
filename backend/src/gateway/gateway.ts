@@ -36,6 +36,7 @@ const PRODUCT_SERVICE_URL = `http://${Deno.env.get("PRODUCT_SERVICE_HOST") ?? "l
 const NEWS_AGGREGATOR_URL = `http://${Deno.env.get("NEWS_AGGREGATOR_HOST") ?? "localhost"}:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`;
 const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost"}:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`;
 const DISK_MONITOR_URL = `http://${Deno.env.get("DISK_MONITOR_HOST") ?? "localhost"}:${Deno.env.get("DISK_MONITOR_PORT") ?? "8099"}`;
+const REPLAY_URL = `http://${Deno.env.get("REPLAY_HOST") ?? "localhost"}:${Deno.env.get("REPLAY_PORT") ?? "5031"}`;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -487,6 +488,7 @@ type ServiceHealth = {
   darkPool: boolean; ccpService: boolean; rfqService: boolean; productService: boolean;
   analytics: boolean; marketData: boolean; featureEngine: boolean; signalEngine: boolean;
   recommendationEngine: boolean; scenarioEngine: boolean; newsAggregator: boolean; llmAdvisory: boolean;
+  replay: boolean;
   bus: boolean;
 };
 
@@ -500,6 +502,7 @@ async function refreshHealth(): Promise<void> {
     limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
     darkPool, ccpService, rfqService, productService,
     analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
+    replay,
     bus,
   ] = await Promise.all([
     chk(MARKET_SIM_URL), chk(EMS_URL), chk(OMS_URL), chk(JOURNAL_URL), chk(USER_SERVICE_URL),
@@ -509,6 +512,7 @@ async function refreshHealth(): Promise<void> {
     chk(DARK_POOL_URL), chk(CCP_SERVICE_URL), chk(RFQ_SERVICE_URL), chk(PRODUCT_SERVICE_URL),
     chk(ANALYTICS_URL), chk(MARKET_DATA_URL), chk(FEATURE_ENGINE_URL), chk(SIGNAL_ENGINE_URL),
     chk(RECOMMENDATION_ENGINE_URL), chk(SCENARIO_ENGINE_URL), chk(NEWS_AGGREGATOR_URL), chk(LLM_ADVISORY_URL),
+    chk(REPLAY_URL),
     chk(OBSERVABILITY_URL),
   ]);
   cachedHealth = {
@@ -516,6 +520,7 @@ async function refreshHealth(): Promise<void> {
     limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
     darkPool, ccpService, rfqService, productService,
     analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
+    replay,
     bus,
   };
 }
@@ -1673,6 +1678,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "dark-pool":            DARK_POOL_URL,
     "ccp-service":          CCP_SERVICE_URL,
     "rfq-service":          RFQ_SERVICE_URL,
+    "replay":               REPLAY_URL,
   };
 
   const svcMatch = path.match(/^\/api\/([^/]+)(\/.*)?$/);

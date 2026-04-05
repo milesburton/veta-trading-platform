@@ -50,6 +50,7 @@ import { ResearchRadarPanel } from "../ResearchRadarPanel.tsx";
 import { SalesWorkbenchPanel } from "../SalesWorkbenchPanel.tsx";
 import { ScenarioMatrixPanel } from "../ScenarioMatrixPanel.tsx";
 import { ServiceHealthPanel } from "../ServiceHealthPanel.tsx";
+import { SessionReplayPanel } from "../SessionReplayPanel.tsx";
 import { SignalExplainabilityPanel } from "../SignalExplainabilityPanel.tsx";
 import { SpreadAnalysisPanel } from "../SpreadAnalysisPanel.tsx";
 import { ThroughputGaugesPanel } from "../ThroughputGaugesPanel.tsx";
@@ -702,6 +703,8 @@ export function DashboardLayout() {
           return wrap(<ProductBuilderPanel />);
         case "product-book":
           return wrap(<ProductBookPanel />);
+        case "session-replay":
+          return wrap(<SessionReplayPanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }

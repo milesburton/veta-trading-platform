@@ -53,6 +53,7 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "sales-workbench": "Review client RFQs, route to pricing, apply markup, confirm to client",
   "product-builder": "Build multi-leg structured products with equity, bond, and option legs",
   "product-book": "Browse issued products and initiate client sales via RFQ",
+  "session-replay": "Record and replay user sessions for training and audit",
 };
 
 export function ComponentPicker() {

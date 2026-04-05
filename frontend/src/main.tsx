@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import "./index.css";
+import "rrweb-player/dist/style.css";
 import App from "./App.tsx";
 import { PopOutHost } from "./components/PopOutHost.tsx";
 import { listenForStateRequests } from "./store/channel.ts";

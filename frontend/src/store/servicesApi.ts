@@ -214,6 +214,15 @@ const SERVICES_ALL: {
     description: "Kafka → stdout relay feeding Grafana Alloy / Loki",
     port: 5007,
   },
+  {
+    name: "Replay",
+    url: `${_origin}/api/replay/health`,
+    link: `${_origin}/api/replay/health`,
+    optional: true,
+    category: "observability",
+    description: "Session recording and replay",
+    port: 5031,
+  },
 ];
 
 // Filter out services that are restricted to specific deployments

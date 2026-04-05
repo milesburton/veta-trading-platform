@@ -56,6 +56,7 @@ export const PANEL_IDS = [
   "sales-workbench",
   "product-builder",
   "product-book",
+  "session-replay",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -105,6 +106,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "sales-workbench": "Sales Workbench (RFQ routing)",
   "product-builder": "Product Builder (structured products)",
   "product-book": "Product Book (issued products)",
+  "session-replay": "Session Replay",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -187,6 +189,7 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Build structured products — add equity, bond, and option legs with weights, structure, and issue to the client catalogue",
   "product-book":
     "Browse and manage structured products — view all products by state, request quotes, and track sales",
+  "session-replay": "Record and replay user sessions for training and audit",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -209,6 +212,7 @@ export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
   "sales-workbench",
   "product-builder",
   "product-book",
+  "session-replay",
 ]);
 
 export interface TabChannelConfig {
@@ -263,4 +267,5 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "sales-workbench": { out: false, in: false },
   "product-builder": { out: false, in: false },
   "product-book": { out: false, in: false },
+  "session-replay": { out: false, in: false },
 };

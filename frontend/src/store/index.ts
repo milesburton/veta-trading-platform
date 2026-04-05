@@ -23,6 +23,7 @@ import { newsApi } from "./newsApi.ts";
 import { newsSlice } from "./newsSlice.ts";
 import { observabilitySlice } from "./observabilitySlice.ts";
 import { ordersSlice } from "./ordersSlice.ts";
+import { replayApi } from "./replayApi.ts";
 import { servicesApi } from "./servicesApi.ts";
 import { themeSlice } from "./themeSlice.ts";
 import { uiSlice } from "./uiSlice.ts";
@@ -54,6 +55,7 @@ export const store = configureStore({
     [gatewayApi.reducerPath]: gatewayApi.reducer,
     [gridApi.reducerPath]: gridApi.reducer,
     [newsApi.reducerPath]: newsApi.reducer,
+    [replayApi.reducerPath]: replayApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -65,6 +67,7 @@ export const store = configureStore({
       .concat(gatewayApi.middleware)
       .concat(gridApi.middleware)
       .concat(newsApi.middleware)
+      .concat(replayApi.middleware)
       .concat(userApi.middleware)
       .concat(gatewayMiddleware)
       .concat(alertsMiddleware)

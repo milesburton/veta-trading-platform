@@ -1284,6 +1284,15 @@ export function makeAdministrationModel(): IJsonModel {
                     panelType: "llm-subsystem",
                   } satisfies TabChannelConfig,
                 },
+                {
+                  type: "tab",
+                  id: "session-replay",
+                  name: PANEL_TITLES["session-replay"],
+                  component: "session-replay",
+                  config: {
+                    panelType: "session-replay",
+                  } satisfies TabChannelConfig,
+                },
               ],
             },
           ],

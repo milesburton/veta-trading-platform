@@ -18,6 +18,7 @@ import {
   WorkspaceSidebar,
 } from "./components/WorkspaceBar.tsx";
 import { TradingProvider } from "./context/TradingContext.tsx";
+import { useSessionRecording } from "./hooks/useSessionRecording.ts";
 import {
   fetchSharedWorkspace,
   loadWorkspacePrefs,
@@ -170,6 +171,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 function TradingApp() {
+  useSessionRecording();
   const userId = useAppSelector((s) => s.auth.user?.id ?? "anonymous");
   const userRole = useAppSelector((s) => s.auth.user?.role);
   const dispatch = useAppDispatch();
