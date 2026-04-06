@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.13.0...veta-trading-platform-v1.13.1) (2026-04-06)
+
+
+### Bug Fixes
+
+* **gateway:** forward HTTP method in proxyGet so DELETE requests work ([541ee65](https://github.com/milesburton/veta-trading-platform/commit/541ee6544f919bff9846011dee39fe86248a0166))
+
 ## [1.13.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.12.5...veta-trading-platform-v1.13.0) (2026-04-05)
 
 
