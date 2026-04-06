@@ -13,18 +13,6 @@
 
 VETA is a near real world equities and fixed income trading platform. It will enable you to "paper trade" using one of the algo services which is intended to help you learn market dynamics.
 
-## Authentication
-
-The platform uses **OAuth2 with PKCE** (Proof Key for Code Exchange) for secure authentication:
-- Š**Authorization Code Flow**: `/oauth/authorize` + `/oauth/token`
-- **Credential Verification**: All OAuth2 requests require a passcode (configured via `OAUTH2_SHARED_SECRET` env var)
-- **Self-Service Registration**: `/oauth/register` endpoint
-- **RBAC Enforcement**: Role-based order submission (trader-only)
-- **Legacy /sessions disabled**: Secure OAuth2-only authentication path
-
-Default credentials for demo:
-- Username: `alice` | Passcode: `veta-dev-passcode`
-
 This platform consists of:
 * React based front end using Tailwind
 * Observability service to retain logging throughout the platform
