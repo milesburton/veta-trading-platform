@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.14.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.13.1...veta-trading-platform-v1.14.0) (2026-04-06)
+
+
+### Features
+
+* **permissions:** centralize panel RBAC and remove order-ticket from defaults ([48a6777](https://github.com/milesburton/veta-trading-platform/commit/48a67774e7881a11b76ba752b3d44ab496a14553))
+
+
+### Bug Fixes
+
+* **login:** remove OAuth2 wording from UI, add disk monitoring, login smoke tests ([47ba8c4](https://github.com/milesburton/veta-trading-platform/commit/47ba8c44435a5cbfd5d9d8471754fc5491975fa9))
+* **tests:** update remaining 'sign in with oauth2' regex to 'sign in' ([74cd194](https://github.com/milesburton/veta-trading-platform/commit/74cd194bdade225e1a71060605812e9c10b2b6b4))
+
 ## [1.13.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.13.0...veta-trading-platform-v1.13.1) (2026-04-06)
 
 
