@@ -8,8 +8,19 @@ import { ComponentPicker } from "../ComponentPicker";
 import type { PanelId } from "../DashboardLayout";
 import { DashboardContext, DEFAULT_LAYOUT } from "../DashboardLayout";
 
-function makeStore() {
-  return configureStore({ reducer: { auth: authSlice.reducer } });
+function makeStore(
+  role: "trader" | "admin" | "compliance" | "sales" | "external-client" | "viewer" = "trader"
+) {
+  const store = configureStore({ reducer: { auth: authSlice.reducer } });
+  store.dispatch(
+    authSlice.actions.setUser({
+      id: `${role}-1`,
+      name: `${role} user`,
+      role,
+      avatar_emoji: "TE",
+    })
+  );
+  return store;
 }
 
 // ─── Helper: render ComponentPicker with a custom context value ───────────────

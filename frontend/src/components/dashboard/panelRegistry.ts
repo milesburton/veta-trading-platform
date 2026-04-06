@@ -1,3 +1,4 @@
+import type { AuthRole } from "../../auth/rbac.ts";
 import type { ChannelNumber } from "../../store/channelsSlice.ts";
 
 export type { ChannelNumber };
@@ -269,3 +270,84 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "product-book": { out: false, in: false },
   "session-replay": { out: false, in: false },
 };
+
+export const PANEL_PERMISSIONS: Record<PanelId, ReadonlySet<AuthRole>> = {
+  "market-ladder": new Set<AuthRole>([
+    "trader",
+    "admin",
+    "compliance",
+    "sales",
+    "external-client",
+    "viewer",
+  ]),
+  "order-ticket": new Set<AuthRole>(["trader"]),
+  "order-blotter": new Set<AuthRole>(["trader", "admin", "compliance", "sales"]),
+  "child-orders": new Set<AuthRole>(["trader", "admin", "compliance", "sales"]),
+  "algo-monitor": new Set<AuthRole>(["trader", "admin", "compliance"]),
+  observability: new Set<AuthRole>([
+    "trader",
+    "admin",
+    "compliance",
+    "sales",
+    "external-client",
+    "viewer",
+  ]),
+  "candle-chart": new Set<AuthRole>([
+    "trader",
+    "admin",
+    "compliance",
+    "sales",
+    "external-client",
+    "viewer",
+  ]),
+  "market-depth": new Set<AuthRole>(["trader", "admin", "compliance", "sales", "viewer"]),
+  executions: new Set<AuthRole>(["trader", "admin", "compliance", "sales"]),
+  "decision-log": new Set<AuthRole>(["trader", "admin", "compliance"]),
+  "market-match": new Set<AuthRole>(["trader", "admin", "compliance", "sales", "viewer"]),
+  admin: new Set<AuthRole>(["admin"]),
+  news: new Set<AuthRole>(["trader", "admin", "compliance", "sales", "external-client", "viewer"]),
+  "news-sources": new Set<AuthRole>(["admin"]),
+  "order-progress": new Set<AuthRole>(["trader", "admin", "compliance", "sales"]),
+  "market-heatmap": new Set<AuthRole>([
+    "trader",
+    "admin",
+    "compliance",
+    "sales",
+    "external-client",
+    "viewer",
+  ]),
+  alerts: new Set<AuthRole>(["trader", "admin", "compliance", "sales"]),
+  "option-pricing": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "scenario-matrix": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "trade-recommendation": new Set<AuthRole>(["trader", "admin", "sales"]),
+  "market-data-sources": new Set<AuthRole>(["admin"]),
+  "market-feed-control": new Set<AuthRole>(["admin"]),
+  "research-radar": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "instrument-analysis": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "signal-explainability": new Set<AuthRole>(["trader", "admin", "compliance", "sales", "viewer"]),
+  "service-health": new Set<AuthRole>(["trader", "admin", "compliance", "sales", "viewer"]),
+  "throughput-gauges": new Set<AuthRole>(["admin", "compliance"]),
+  "algo-leaderboard": new Set<AuthRole>(["trader", "admin", "compliance"]),
+  "load-test": new Set<AuthRole>(["admin"]),
+  "llm-subsystem": new Set<AuthRole>(["admin"]),
+  "greeks-surface": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "vol-profile": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "estate-overview": new Set<AuthRole>(["admin", "compliance"]),
+  "yield-curve": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "price-fan": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "demo-day": new Set<AuthRole>(["admin"]),
+  "spread-analysis": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "duration-ladder": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "vol-surface": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "basket-order": new Set<AuthRole>(["trader"]),
+  "client-rfq": new Set<AuthRole>(["external-client"]),
+  "sales-workbench": new Set<AuthRole>(["sales"]),
+  "product-builder": new Set<AuthRole>(["sales", "admin"]),
+  "product-book": new Set<AuthRole>(["trader", "admin", "sales", "external-client"]),
+  "session-replay": new Set<AuthRole>(["admin", "compliance"]),
+};
+
+export function canAccessPanel(panelId: PanelId, role: AuthRole | undefined): boolean {
+  if (!role) return false;
+  return PANEL_PERMISSIONS[panelId]?.has(role) ?? false;
+}

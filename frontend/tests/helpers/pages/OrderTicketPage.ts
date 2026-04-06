@@ -22,6 +22,10 @@ export class OrderTicketPage {
     private readonly page?: Page,
   ) {}
 
+  get container(): Locator {
+    return this.root;
+  }
+
   private get form() {
     return this.root.locator("form").first();
   }

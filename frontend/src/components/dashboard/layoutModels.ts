@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v21`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v22`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -20,28 +20,8 @@ export function makeDefaultModel(): IJsonModel {
       type: "row",
       children: [
         {
-          type: "tabset",
-          weight: 18,
-          enableDrag: false,
-          children: [
-            {
-              type: "tab",
-              id: "order-ticket",
-              name: PANEL_TITLES["order-ticket"],
-              component: "order-ticket",
-              enableDrag: false,
-              enableClose: false,
-              config: {
-                panelType: "order-ticket",
-                incoming: 1,
-                pinned: true,
-              } satisfies TabChannelConfig,
-            },
-          ],
-        },
-        {
           type: "row",
-          weight: 22,
+          weight: 40,
           children: [
             {
               type: "tabset",
@@ -206,7 +186,7 @@ export function makeExecutionModel(): IJsonModel {
       children: [
         {
           type: "tabset",
-          weight: 40,
+          weight: 30,
           children: [
             {
               type: "tab",
@@ -221,39 +201,34 @@ export function makeExecutionModel(): IJsonModel {
           ],
         },
         {
-          type: "row",
-          weight: 60,
+          type: "tabset",
+          weight: 35,
           children: [
             {
-              type: "tabset",
-              weight: 50,
-              children: [
-                {
-                  type: "tab",
-                  id: "order-ticket",
-                  name: PANEL_TITLES["order-ticket"],
-                  component: "order-ticket",
-                  config: {
-                    panelType: "order-ticket",
-                    incoming: 1,
-                  } satisfies TabChannelConfig,
-                },
-              ],
+              type: "tab",
+              id: "candle-chart",
+              name: PANEL_TITLES["candle-chart"],
+              component: "candle-chart",
+              config: {
+                panelType: "candle-chart",
+                incoming: 1,
+              } satisfies TabChannelConfig,
             },
+          ],
+        },
+        {
+          type: "tabset",
+          weight: 35,
+          children: [
             {
-              type: "tabset",
-              weight: 50,
-              children: [
-                {
-                  type: "tab",
-                  id: "order-blotter",
-                  name: PANEL_TITLES["order-blotter"],
-                  component: "order-blotter",
-                  config: {
-                    panelType: "order-blotter",
-                  } satisfies TabChannelConfig,
-                },
-              ],
+              type: "tab",
+              id: "order-blotter",
+              name: PANEL_TITLES["order-blotter"],
+              component: "order-blotter",
+              config: {
+                panelType: "order-blotter",
+                outgoing: 2,
+              } satisfies TabChannelConfig,
             },
           ],
         },
@@ -1486,16 +1461,6 @@ export function makeAiAdvisoryModel(): IJsonModel {
               children: [
                 {
                   type: "tab",
-                  id: "order-ticket",
-                  name: PANEL_TITLES["order-ticket"],
-                  component: "order-ticket",
-                  config: {
-                    panelType: "order-ticket",
-                    incoming: 1,
-                  } satisfies TabChannelConfig,
-                },
-                {
-                  type: "tab",
                   id: "signal-explainability",
                   name: PANEL_TITLES["signal-explainability"],
                   component: "signal-explainability",
@@ -1904,23 +1869,7 @@ export function makeFiTradingModel(): IJsonModel {
           children: [
             {
               type: "tabset",
-              weight: 48,
-              children: [
-                {
-                  type: "tab",
-                  id: "order-ticket",
-                  name: PANEL_TITLES["order-ticket"],
-                  component: "order-ticket",
-                  config: {
-                    panelType: "order-ticket",
-                    incoming: 1,
-                  } satisfies TabChannelConfig,
-                },
-              ],
-            },
-            {
-              type: "tabset",
-              weight: 52,
+              weight: 100,
               children: [
                 {
                   type: "tab",

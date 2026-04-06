@@ -65,6 +65,7 @@ import { wouldCreateCycleIn, wouldCreateCycleOut } from "./layoutUtils.ts";
 import type { PanelId, TabChannelConfig } from "./panelRegistry.ts";
 import {
   CHANNEL_COLOURS,
+  canAccessPanel,
   PANEL_CHANNEL_CAPS,
   PANEL_DESCRIPTIONS,
   PANEL_IDS,
@@ -493,6 +494,7 @@ export function DashboardLayout() {
   const legacySelectedAsset = useAppSelector((s) => s.ui.selectedAsset);
   const channelsData = useAppSelector((s) => s.channels.data);
   const dialogs = useAppSelector((s) => s.windows.dialogs);
+  const userRole = useAppSelector((s) => s.auth.user?.role);
   const { model, setModel, layout, removePanel, addPanel, activePanelIds, storageKey } =
     useDashboard();
   const dispatch = useAppDispatch();
@@ -596,6 +598,14 @@ export function DashboardLayout() {
           <ChannelContext.Provider value={{ instanceId, panelType, outgoing, incoming }}>
             <div className="h-full overflow-hidden bg-gray-950">{content}</div>
           </ChannelContext.Provider>
+        );
+      }
+
+      if (!canAccessPanel(panelType, userRole)) {
+        return wrap(
+          <div className="h-full flex items-center justify-center text-gray-600 text-xs p-4 text-center">
+            You do not have permission to view this panel.
+          </div>
         );
       }
 
@@ -709,7 +719,7 @@ export function DashboardLayout() {
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }
     },
-    [legacySelectedAsset, channelsData]
+    [legacySelectedAsset, channelsData, userRole]
   );
 
   const onRenderTab = useCallback(

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   CHANNEL_COLOURS,
+  canAccessPanel,
   PANEL_CHANNEL_CAPS,
   PANEL_DESCRIPTIONS,
   PANEL_IDS,
+  PANEL_PERMISSIONS,
   PANEL_TITLES,
   SINGLETON_PANELS,
 } from "../panelRegistry.ts";
@@ -92,5 +94,79 @@ describe("PANEL_CHANNEL_CAPS logic", () => {
   it("market-heatmap can broadcast but not receive", () => {
     expect(PANEL_CHANNEL_CAPS["market-heatmap"].out).toBe(true);
     expect(PANEL_CHANNEL_CAPS["market-heatmap"].in).toBe(false);
+  });
+});
+
+describe("PANEL_PERMISSIONS completeness", () => {
+  it("every PANEL_ID has a permission set", () => {
+    for (const id of PANEL_IDS) {
+      expect(PANEL_PERMISSIONS[id], `permissions missing for ${id}`).toBeDefined();
+      expect(PANEL_PERMISSIONS[id].size, `${id} has no roles`).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("canAccessPanel — role restrictions", () => {
+  it("returns false when role is undefined", () => {
+    expect(canAccessPanel("market-ladder", undefined)).toBe(false);
+  });
+
+  it("only traders can access order-ticket and basket-order", () => {
+    expect(canAccessPanel("order-ticket", "trader")).toBe(true);
+    expect(canAccessPanel("order-ticket", "admin")).toBe(false);
+    expect(canAccessPanel("order-ticket", "compliance")).toBe(false);
+    expect(canAccessPanel("order-ticket", "sales")).toBe(false);
+    expect(canAccessPanel("order-ticket", "external-client")).toBe(false);
+    expect(canAccessPanel("order-ticket", "viewer")).toBe(false);
+
+    expect(canAccessPanel("basket-order", "trader")).toBe(true);
+    expect(canAccessPanel("basket-order", "admin")).toBe(false);
+  });
+
+  it("only admins can access admin panels", () => {
+    expect(canAccessPanel("admin", "admin")).toBe(true);
+    expect(canAccessPanel("admin", "trader")).toBe(false);
+    expect(canAccessPanel("load-test", "admin")).toBe(true);
+    expect(canAccessPanel("load-test", "trader")).toBe(false);
+    expect(canAccessPanel("llm-subsystem", "admin")).toBe(true);
+    expect(canAccessPanel("llm-subsystem", "trader")).toBe(false);
+    expect(canAccessPanel("market-data-sources", "admin")).toBe(true);
+    expect(canAccessPanel("market-data-sources", "compliance")).toBe(false);
+  });
+
+  it("only sales can access sales-workbench", () => {
+    expect(canAccessPanel("sales-workbench", "sales")).toBe(true);
+    expect(canAccessPanel("sales-workbench", "trader")).toBe(false);
+    expect(canAccessPanel("sales-workbench", "admin")).toBe(false);
+  });
+
+  it("only external-client can access client-rfq", () => {
+    expect(canAccessPanel("client-rfq", "external-client")).toBe(true);
+    expect(canAccessPanel("client-rfq", "trader")).toBe(false);
+    expect(canAccessPanel("client-rfq", "admin")).toBe(false);
+  });
+
+  it("session-replay is admin and compliance only", () => {
+    expect(canAccessPanel("session-replay", "admin")).toBe(true);
+    expect(canAccessPanel("session-replay", "compliance")).toBe(true);
+    expect(canAccessPanel("session-replay", "trader")).toBe(false);
+  });
+
+  it("market-ladder is accessible to everyone", () => {
+    expect(canAccessPanel("market-ladder", "trader")).toBe(true);
+    expect(canAccessPanel("market-ladder", "admin")).toBe(true);
+    expect(canAccessPanel("market-ladder", "compliance")).toBe(true);
+    expect(canAccessPanel("market-ladder", "sales")).toBe(true);
+    expect(canAccessPanel("market-ladder", "external-client")).toBe(true);
+    expect(canAccessPanel("market-ladder", "viewer")).toBe(true);
+  });
+
+  it("viewer has read-only access to market data and analytics", () => {
+    expect(canAccessPanel("market-ladder", "viewer")).toBe(true);
+    expect(canAccessPanel("candle-chart", "viewer")).toBe(true);
+    expect(canAccessPanel("market-heatmap", "viewer")).toBe(true);
+    expect(canAccessPanel("order-ticket", "viewer")).toBe(false);
+    expect(canAccessPanel("admin", "viewer")).toBe(false);
+    expect(canAccessPanel("sales-workbench", "viewer")).toBe(false);
   });
 });

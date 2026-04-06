@@ -342,11 +342,10 @@ test("screenshot: order ticket pre-filled", async ({ page }) => {
   seedMarket(app);
   await page.waitForTimeout(600);
 
-  const panel = await app.panelByTitle(/(place trades)/i);
-  await panel.waitFor({ state: "visible" });
+  const ticket = await app.getOrderTicket();
   await page.waitForTimeout(400);
 
-  await panel.screenshot({ path: path.join(OUT_DIR, "02-order-ticket.png") });
+  await ticket.container.screenshot({ path: path.join(OUT_DIR, "02-order-ticket.png") });
 });
 
 test("screenshot: order blotter with lifecycle", async ({ page }) => {

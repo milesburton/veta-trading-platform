@@ -175,8 +175,12 @@ export class AppPage {
   }
 
   async getOrderTicket(): Promise<OrderTicketPage> {
-    // Tab title is dynamic: "AAPL(place trades)" when a symbol is selected,
-    // or "Order Ticket (place trades)" when no symbol is selected.
+    const existing = this.page.locator(".flexlayout__tab_button", { hasText: /(place trades)/i }).first();
+    if (!(await existing.isVisible().catch(() => false))) {
+      await this.page.getByTestId("component-picker").getByRole("button", { name: /Add Panel/i }).click();
+      await this.page.getByTestId("add-panel-order-ticket").click();
+      await this.page.waitForTimeout(200);
+    }
     const panel = await this.panelByTitle(/(place trades)/i);
     return new OrderTicketPage(panel, this.page);
   }

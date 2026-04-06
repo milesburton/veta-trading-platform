@@ -2,6 +2,7 @@ import { useSignal } from "@preact/signals-react";
 import { useAppSelector } from "../store/hooks.ts";
 import type { PanelId } from "./DashboardLayout.tsx";
 import { PANEL_IDS, PANEL_TITLES, SINGLETON_PANELS, useDashboard } from "./DashboardLayout.tsx";
+import { canAccessPanel } from "./dashboard/panelRegistry.ts";
 import { clearDraggedPanelId, setDraggedPanelId } from "./panelDragState.ts";
 
 const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -61,45 +62,7 @@ export function ComponentPicker() {
   const { activePanelIds, addPanel } = useDashboard();
   const user = useAppSelector((s) => s.auth.user);
 
-  // Admin-only panels
-  const ADMIN_ONLY_PANELS: ReadonlySet<PanelId> = new Set([
-    "admin",
-    "news-sources",
-    "market-data-sources",
-    "market-feed-control",
-    "load-test",
-    "llm-subsystem",
-  ]);
-  // Panels hidden from admins (trading capability — admins must not interfere with the market)
-  const TRADER_ONLY_PANELS: ReadonlySet<PanelId> = new Set(["order-ticket"]);
-  const SALES_ONLY_PANELS: ReadonlySet<PanelId> = new Set<PanelId>(["sales-workbench"]);
-  const CLIENT_ONLY_PANELS: ReadonlySet<PanelId> = new Set<PanelId>(["client-rfq"]);
-
-  const visiblePanelIds = PANEL_IDS.filter((id) => {
-    if (ADMIN_ONLY_PANELS.has(id)) return user?.role === "admin";
-    if (TRADER_ONLY_PANELS.has(id)) {
-      return (
-        user?.role !== "admin" &&
-        user?.role !== "compliance" &&
-        user?.role !== "sales" &&
-        user?.role !== "external-client"
-      );
-    }
-    if (SALES_ONLY_PANELS.has(id)) {
-      return user?.role === "sales";
-    }
-    if (CLIENT_ONLY_PANELS.has(id)) {
-      return user?.role === "external-client";
-    }
-    if (
-      id === "product-builder" &&
-      (user?.role === "external-client" || user?.role === "compliance")
-    ) {
-      return false;
-    }
-    if (id === "product-book" && user?.role === "compliance") return false;
-    return true;
-  });
+  const visiblePanelIds = PANEL_IDS.filter((id) => canAccessPanel(id, user?.role));
 
   return (
     <div data-testid="component-picker" className="relative">

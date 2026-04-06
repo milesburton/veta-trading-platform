@@ -72,8 +72,9 @@ describe("makeExecutionModel", () => {
       if (node.getType() === "tab") ids.add(node.getId());
     });
     expect(ids.has("market-ladder")).toBe(true);
-    expect(ids.has("order-ticket")).toBe(true);
+    expect(ids.has("candle-chart")).toBe(true);
     expect(ids.has("order-blotter")).toBe(true);
+    expect(ids.has("order-ticket")).toBe(false);
   });
 });
 
