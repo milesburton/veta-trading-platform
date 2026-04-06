@@ -410,7 +410,7 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
             Trading Platform
           </div>
           <h1 data-testid="login-heading" className="text-2xl font-semibold text-gray-100 mb-1">
-            Sign in with OAuth2
+            Sign in
           </h1>
           <p className="text-gray-500 text-sm">
             Use your VETA user ID and passcode, or register a new viewer account for read-only
@@ -438,8 +438,8 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
           >
             {localError ??
               ("status" in apiError!
-                ? `OAuth2 request failed (${String(apiError.status)})`
-                : "OAuth2 request failed")}
+                ? `Sign in failed (${String(apiError.status)})`
+                : "Sign in failed")}
           </div>
         )}
 
@@ -573,8 +573,7 @@ function AuthForm({
 
       <div className="flex items-center justify-between gap-4 pt-1">
         <div className="text-xs text-gray-500">
-          Client <span className="font-mono text-gray-400">{OAUTH_CLIENT_ID}</span> uses PKCE with
-          the internal VETA identity service.
+          Authenticated against the internal VETA identity service.
         </div>
         <button
           data-testid="oauth-submit"

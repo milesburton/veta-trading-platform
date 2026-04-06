@@ -29,7 +29,7 @@ test.describe("Authentication", () => {
       await page.goto("/");
 
       // The app transitions loading → unauthenticated → LoginPage (OAuth2 sign-in)
-      await expect(page.getByRole("heading", { name: /sign in with oauth2/i })).toBeVisible({
+      await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({
         timeout: 10_000,
       });
       // Dashboard should NOT be visible
@@ -43,9 +43,94 @@ test.describe("Authentication", () => {
 
       await page.goto("/");
 
-      await expect(page.getByRole("heading", { name: /sign in with oauth2/i })).toBeVisible({
+      await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({
         timeout: 10_000,
       });
+    });
+
+    test("login form does not contain OAuth2 implementation details", async ({ page }) => {
+      await page.route("/api/**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "null" }));
+      await page.route("/api/gateway/ready", (route) => route.fulfill({ status: 200, contentType: "application/json", body: READY_BODY }));
+      await page.route("/api/user-service/sessions/me", (route) => route.fulfill({ status: 401, body: "" }));
+
+      await page.goto("/");
+
+      await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({ timeout: 10_000 });
+      const bodyText = await page.locator("body").textContent();
+      expect(bodyText).not.toMatch(/OAuth2/i);
+      expect(bodyText).not.toMatch(/PKCE/i);
+    });
+
+    test("submitting valid credentials reaches the dashboard", async ({ page }) => {
+      await page.route("/api/**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "null" }));
+      await page.route("/api/gateway/ready", (route) => route.fulfill({ status: 200, contentType: "application/json", body: READY_BODY }));
+
+      let sessionExists = false;
+      await page.route("/api/user-service/sessions/me", (route) => {
+        if (sessionExists) {
+          return route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ id: "alice", name: "Alice Chen", role: "trader", avatar_emoji: "AL" }),
+          });
+        }
+        return route.fulfill({ status: 401, body: "" });
+      });
+      await page.route("/api/user-service/oauth/authorize", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ code: "test-code-123", redirect_uri: "postmessage", expires_in: 60, scope: "openid profile" }),
+        }),
+      );
+      await page.route("/api/user-service/oauth/token", (route) => {
+        sessionExists = true;
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          headers: { "Set-Cookie": "veta_user=test-token; HttpOnly; Path=/; Max-Age=28800" },
+          body: JSON.stringify({
+            access_token: "test-token",
+            token_type: "bearer",
+            expires_in: 28800,
+            scope: "openid profile",
+            user: { id: "alice", name: "Alice Chen", role: "trader", avatar_emoji: "AL" },
+          }),
+        });
+      });
+
+      await page.goto("/");
+      await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({ timeout: 10_000 });
+
+      await page.getByTestId("oauth-username").fill("alice");
+      await page.getByTestId("oauth-password").fill("veta-dev-passcode");
+      await page.getByTestId("oauth-submit").click();
+
+      await expect(page.getByRole("heading", { name: /^sign in$/i })).not.toBeVisible({ timeout: 10_000 });
+    });
+
+    test("submitting invalid credentials shows an error message", async ({ page }) => {
+      await page.route("/api/**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "null" }));
+      await page.route("/api/gateway/ready", (route) => route.fulfill({ status: 200, contentType: "application/json", body: READY_BODY }));
+      await page.route("/api/user-service/sessions/me", (route) => route.fulfill({ status: 401, body: "" }));
+      await page.route("/api/user-service/oauth/authorize", (route) =>
+        route.fulfill({
+          status: 401,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "invalid_credentials" }),
+        }),
+      );
+
+      await page.goto("/");
+      await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({ timeout: 10_000 });
+
+      await page.getByTestId("oauth-username").fill("alice");
+      await page.getByTestId("oauth-password").fill("wrong");
+      await page.getByTestId("oauth-submit").click();
+
+      await expect(page.getByTestId("login-error")).toBeVisible({ timeout: 5_000 });
+      await expect(page.getByTestId("login-error")).toContainText(/sign in failed/i);
+      await expect(page.getByTestId("login-error")).not.toContainText(/oauth/i);
     });
   });
 

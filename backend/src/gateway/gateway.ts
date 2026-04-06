@@ -35,7 +35,6 @@ const RFQ_SERVICE_URL = `http://${Deno.env.get("RFQ_SERVICE_HOST") ?? "localhost
 const PRODUCT_SERVICE_URL = `http://${Deno.env.get("PRODUCT_SERVICE_HOST") ?? "localhost"}:${Deno.env.get("PRODUCT_SERVICE_PORT") ?? "5030"}`;
 const NEWS_AGGREGATOR_URL = `http://${Deno.env.get("NEWS_AGGREGATOR_HOST") ?? "localhost"}:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`;
 const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost"}:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`;
-const DISK_MONITOR_URL = `http://${Deno.env.get("DISK_MONITOR_HOST") ?? "localhost"}:${Deno.env.get("DISK_MONITOR_PORT") ?? "8099"}`;
 const REPLAY_URL = `http://${Deno.env.get("REPLAY_HOST") ?? "localhost"}:${Deno.env.get("REPLAY_PORT") ?? "5031"}`;
 
 const CORS_HEADERS = {
@@ -579,30 +578,51 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/system" && req.method === "GET") {
+    let disk: { total: number; used: number; available: number; percentUsed: number } | null = null;
+    let diskStatus = "unavailable";
     try {
-      const res = await fetch(`${DISK_MONITOR_URL}/health`, { signal: AbortSignal.timeout(3_000) });
-      const disk = res.ok ? await res.json() : null;
-      const mem = Deno.memoryUsage();
-      return new Response(
-        JSON.stringify({
-          disk: disk?.disk ?? null,
-          diskStatus: disk?.status ?? "unavailable",
-          diskWarnPct: disk?.warn_pct ?? 85,
-          memory: {
-            rss_mb: Math.round(mem.rss / 1_048_576),
-            heap_used_mb: Math.round(mem.heapUsed / 1_048_576),
-            heap_total_mb: Math.round(mem.heapTotal / 1_048_576),
-            external_mb: Math.round(mem.external / 1_048_576),
-          },
-        }),
-        { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-      );
-    } catch {
-      return new Response(JSON.stringify({ disk: null, diskStatus: "unavailable", memory: null }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      const proc = new Deno.Command("df", {
+        args: ["-Pk", "/"],
+        stdout: "piped",
+        stderr: "null",
       });
+      const { code, stdout } = await proc.output();
+      if (code === 0) {
+        const lines = new TextDecoder().decode(stdout).trim().split("\n");
+        if (lines.length >= 2) {
+          const cols = lines[1].split(/\s+/);
+          const totalKb = Number(cols[1]);
+          const usedKb = Number(cols[2]);
+          const availKb = Number(cols[3]);
+          if (totalKb > 0) {
+            disk = {
+              total: totalKb * 1024,
+              used: usedKb * 1024,
+              available: availKb * 1024,
+              percentUsed: (usedKb / totalKb) * 100,
+            };
+            diskStatus = disk.percentUsed > 95 ? "critical" : disk.percentUsed > 85 ? "warning" : "ok";
+          }
+        }
+      }
+    } catch {
+      // best-effort — df may not be available in some environments
     }
+    const mem = Deno.memoryUsage();
+    return new Response(
+      JSON.stringify({
+        disk,
+        diskStatus,
+        diskWarnPct: 85,
+        memory: {
+          rss_mb: Math.round(mem.rss / 1_048_576),
+          heap_used_mb: Math.round(mem.heapUsed / 1_048_576),
+          heap_total_mb: Math.round(mem.heapTotal / 1_048_576),
+          external_mb: Math.round(mem.external / 1_048_576),
+        },
+      }),
+      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+    );
   }
 
   if (path === "/ws/market-sim") {

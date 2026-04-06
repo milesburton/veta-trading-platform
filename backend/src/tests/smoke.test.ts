@@ -1096,3 +1096,103 @@ Deno.test("[replay] session CRUD: create, list, end, events, delete", async () =
   assertEquals(deleteRes.status, 200);
   await deleteRes.body?.cancel();
 });
+
+Deno.test("[landing-page] full OAuth login flow with browser-style headers succeeds", async () => {
+  const verifier = `landing-${crypto.randomUUID()}`;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+
+  const browserHeaders = {
+    "Content-Type": "application/json",
+    "Origin": BASE === "http://localhost" ? "http://localhost:3000" : BASE,
+    "Referer": BASE === "http://localhost" ? "http://localhost:3000/" : `${BASE}/`,
+  };
+
+  const authorize = await fetch(`${USER_SVC_URL}/oauth/authorize`, {
+    method: "POST",
+    headers: browserHeaders,
+    body: JSON.stringify({
+      client_id: "veta-web",
+      username: "alice",
+      password: OAUTH_PASSWORD,
+      redirect_uri: "postmessage",
+      response_type: "code",
+      scope: "openid profile",
+      code_challenge: challenge,
+      code_challenge_method: "S256",
+    }),
+    signal: timeout(8_000),
+  });
+  assertEquals(
+    authorize.status,
+    200,
+    `landing-page authorize POST returned ${authorize.status} (browser-style request through gateway proxy must succeed)`,
+  );
+  const authBody = await authorize.json() as { code: string };
+  assert(authBody.code, "authorize response missing code");
+
+  const token = await fetch(`${USER_SVC_URL}/oauth/token`, {
+    method: "POST",
+    headers: browserHeaders,
+    body: JSON.stringify({
+      client_id: "veta-web",
+      code: authBody.code,
+      grant_type: "authorization_code",
+      redirect_uri: "postmessage",
+      code_verifier: verifier,
+    }),
+    signal: timeout(8_000),
+  });
+  assertEquals(token.status, 200, `landing-page token POST returned ${token.status}`);
+  const tokenBody = await token.json() as { user: { id: string; role: string } };
+  assertEquals(tokenBody.user.id, "alice");
+  assertEquals(tokenBody.user.role, "trader");
+});
+
+Deno.test("[landing-page] OAuth login with invalid password returns 401 (not 500)", async () => {
+  const verifier = `landing-bad-${crypto.randomUUID()}`;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+
+  const res = await fetch(`${USER_SVC_URL}/oauth/authorize`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Origin": BASE === "http://localhost" ? "http://localhost:3000" : BASE,
+    },
+    body: JSON.stringify({
+      client_id: "veta-web",
+      username: "alice",
+      password: "definitely-wrong-password",
+      redirect_uri: "postmessage",
+      response_type: "code",
+      scope: "openid profile",
+      code_challenge: challenge,
+      code_challenge_method: "S256",
+    }),
+    signal: timeout(8_000),
+  });
+  await res.body?.cancel();
+  assertEquals(res.status, 401, `expected 401 for bad password, got ${res.status}`);
+});
+
+Deno.test("[gateway/system] disk usage is reported and not exhausted", async () => {
+  const res = await fetch(`${GATEWAY_URL}/system`, { signal: timeout(5_000) });
+  assertEquals(res.status, 200);
+  const body = await res.json() as {
+    disk: { total?: number; used?: number; available?: number; percentUsed?: number } | null;
+    diskStatus?: string;
+  };
+  if (body.disk && body.disk.percentUsed != null) {
+    assert(
+      body.disk.percentUsed < 95,
+      `disk is ${body.disk.percentUsed.toFixed(1)}% full (cleanup required)`,
+    );
+  }
+});

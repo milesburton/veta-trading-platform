@@ -90,7 +90,7 @@ describe("LoginPage", () => {
     renderLogin();
 
     expect(screen.getByTestId("brand-title")).toHaveTextContent("VETA");
-    expect(screen.getByTestId("login-heading")).toHaveTextContent("Sign in with OAuth2");
+    expect(screen.getByTestId("login-heading")).toHaveTextContent("Sign in");
     expect(screen.getByTestId("oauth-mode-signin")).toBeInTheDocument();
     expect(screen.getByTestId("oauth-mode-register")).toBeInTheDocument();
     expect(screen.getByTestId("oauth-username")).toBeInTheDocument();
