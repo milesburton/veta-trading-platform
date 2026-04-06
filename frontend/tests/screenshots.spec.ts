@@ -3,6 +3,8 @@ import { fileURLToPath } from "node:url";
 import { test } from "@playwright/test";
 import {
   type AssetDef,
+  DEFAULT_ADMIN,
+  GatewayMock,
   MOCK_BOND_PRICE_RESPONSE,
   MOCK_DURATION_LADDER_RESPONSE,
   MOCK_SPREAD_ANALYSIS_RESPONSE,
@@ -521,6 +523,171 @@ test("screenshot: kill switch dialog", async ({ page }) => {
   await page.waitForTimeout(200);
 
   await page.screenshot({ path: path.join(OUT_DIR, "08-kill-switch.png") });
+});
+
+test("screenshot: mission control workspace", async ({ page }) => {
+  const app = new AppPage(page);
+  await app.goto({ user: DEFAULT_ADMIN, assets: MARKET_ASSETS, url: "/?ws=ws-system-status" });
+  await app.waitForDashboard();
+  app.gateway.sendAuthIdentity({ user: DEFAULT_ADMIN });
+  await app.waitForOverlayGone();
+
+  app.gateway.sendMarketUpdateWithOpen(SESSION_OPEN, PRICES, VOLUMES);
+  await page.waitForTimeout(600);
+
+  app.gateway.sendNewsUpdate({
+    id: "mc1",
+    symbol: "NVDA",
+    headline: "NVIDIA H200 shipments exceed forecasts, AI infrastructure demand accelerating",
+    source: "Reuters",
+    url: "https://example.com",
+    publishedAt: Date.now() - 180_000,
+    sentiment: "positive",
+    sentimentScore: 0.88,
+    relatedSymbols: ["NVDA", "AMD"],
+  });
+  app.gateway.sendNewsUpdate({
+    id: "mc2",
+    symbol: "JPM",
+    headline: "Fed signals cautious stance on rate cuts amid sticky inflation data",
+    source: "Bloomberg",
+    url: "https://example.com",
+    publishedAt: Date.now() - 420_000,
+    sentiment: "neutral",
+    sentimentScore: 0.1,
+    relatedSymbols: ["JPM", "BAC", "GS"],
+  });
+  app.gateway.sendNewsUpdate({
+    id: "mc3",
+    symbol: "TSLA",
+    headline: "Tesla deliveries miss estimates for Q1, production ramp slower than expected",
+    source: "CNBC",
+    url: "https://example.com",
+    publishedAt: Date.now() - 600_000,
+    sentiment: "negative",
+    sentimentScore: -0.72,
+    relatedSymbols: ["TSLA"],
+  });
+  await page.waitForTimeout(500);
+
+  await page.screenshot({ path: path.join(OUT_DIR, "10-mission-control.png") });
+});
+
+test("screenshot: session replay panel", async ({ page }) => {
+  const mockSessions = {
+    sessions: [
+      {
+        id: "sess-2026040501",
+        userId: "trader-1",
+        userName: "Alice Chen",
+        userRole: "trader",
+        startedAt: new Date(Date.now() - 7200_000).toISOString(),
+        endedAt: new Date(Date.now() - 5400_000).toISOString(),
+        durationMs: 1800_000,
+        metadata: { userAgent: "Mozilla/5.0", viewport: { w: 1920, h: 1080 } },
+      },
+      {
+        id: "sess-2026040502",
+        userId: "algo-1",
+        userName: "Bob Martinez",
+        userRole: "trader",
+        startedAt: new Date(Date.now() - 5400_000).toISOString(),
+        endedAt: new Date(Date.now() - 3600_000).toISOString(),
+        durationMs: 1800_000,
+        metadata: { userAgent: "Mozilla/5.0", viewport: { w: 2560, h: 1440 } },
+      },
+      {
+        id: "sess-2026040503",
+        userId: "fi-1",
+        userName: "Carol Davis",
+        userRole: "trader",
+        startedAt: new Date(Date.now() - 3600_000).toISOString(),
+        endedAt: new Date(Date.now() - 2400_000).toISOString(),
+        durationMs: 1200_000,
+        metadata: { userAgent: "Mozilla/5.0", viewport: { w: 1920, h: 1080 } },
+      },
+      {
+        id: "sess-2026040504",
+        userId: "admin-1",
+        userName: "Sarah Kim",
+        userRole: "admin",
+        startedAt: new Date(Date.now() - 2400_000).toISOString(),
+        endedAt: new Date(Date.now() - 900_000).toISOString(),
+        durationMs: 1500_000,
+        metadata: { userAgent: "Mozilla/5.0", viewport: { w: 1920, h: 1080 } },
+      },
+      {
+        id: "sess-2026040505",
+        userId: "trader-2",
+        userName: "David Park",
+        userRole: "trader",
+        startedAt: new Date(Date.now() - 600_000).toISOString(),
+        endedAt: null,
+        durationMs: null,
+        metadata: { userAgent: "Mozilla/5.0", viewport: { w: 1920, h: 1080 } },
+      },
+    ],
+    total: 5,
+  };
+
+  const app = new AppPage(page);
+  app.gateway = await GatewayMock.attach(page, { user: DEFAULT_ADMIN });
+
+  await page.unroute("/api/replay/sessions");
+  await page.route("/api/replay/sessions**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(mockSessions),
+    }),
+  );
+
+  await page.unroute("/api/replay/config");
+  await page.route("/api/replay/config", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        recordingEnabled: true,
+        updatedBy: "admin-1",
+        updatedAt: new Date().toISOString(),
+      }),
+    }),
+  );
+
+  await page.route("/api/user-service/users", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([]),
+    }),
+  );
+  await page.route("/api/journal/journal**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ entries: [] }),
+    }),
+  );
+
+  await page.addInitScript(() => {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith("dashboard-layout") || key.startsWith("veta-layout")) {
+        localStorage.removeItem(key);
+      }
+    }
+  });
+  await page.goto("/?ws=ws-administration");
+  await app.waitForDashboard();
+  app.gateway.sendAuthIdentity({ user: DEFAULT_ADMIN });
+  await app.waitForOverlayGone();
+  await page.waitForTimeout(500);
+
+  const replayTab = page.locator(".flexlayout__tab_button", { hasText: /Session Replay/i }).first();
+  await replayTab.click();
+  await page.waitForTimeout(800);
+
+  await page.screenshot({ path: path.join(OUT_DIR, "11-session-replay.png") });
 });
 
 test("screenshot: order blotter with formatting", async ({ page }) => {

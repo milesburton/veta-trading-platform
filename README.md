@@ -76,9 +76,13 @@ cd frontend && npm run electron:build
 |---|---|
 | ![Market Heatmap](docs/screenshots/07-market-heatmap.png) | ![Kill Switch](docs/screenshots/08-kill-switch.png) |
 
-| Column Formatting | |
+| Column Formatting | Mission Control |
 |---|---|
-| ![Column Formatting](docs/screenshots/09-column-formatting.png) | |
+| ![Column Formatting](docs/screenshots/09-column-formatting.png) | ![Mission Control](docs/screenshots/10-mission-control.png) |
+
+| Session Replay | |
+|---|---|
+| ![Session Replay](docs/screenshots/11-session-replay.png) | |
 
 ## Desktop (Electron)
 
