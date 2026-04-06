@@ -106,7 +106,7 @@ export class AppPage {
 
   /** Wait for the login page to be shown (unauthenticated state). */
   async waitForLoginPage() {
-    await expect(this.page.getByRole("heading", { name: /sign in with oauth2/i })).toBeVisible({
+    await expect(this.page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({
       timeout: 8_000,
     });
   }
