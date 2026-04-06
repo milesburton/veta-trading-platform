@@ -2,6 +2,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "@playwright/test";
 import {
+  ALGO_TRADER,
+  ALGO_TRADER_LIMITS,
   type AssetDef,
   DEFAULT_ADMIN,
   GatewayMock,
@@ -340,10 +342,11 @@ test("screenshot: order ticket pre-filled", async ({ page }) => {
   seedMarket(app);
   await page.waitForTimeout(600);
 
-  seedOrders(app);
-  await page.waitForTimeout(300);
+  const panel = await app.panelByTitle(/(place trades)/i);
+  await panel.waitFor({ state: "visible" });
+  await page.waitForTimeout(400);
 
-  await page.screenshot({ path: path.join(OUT_DIR, "02-order-ticket.png") });
+  await panel.screenshot({ path: path.join(OUT_DIR, "02-order-ticket.png") });
 });
 
 test("screenshot: order blotter with lifecycle", async ({ page }) => {
@@ -356,7 +359,11 @@ test("screenshot: order blotter with lifecycle", async ({ page }) => {
   seedOrders(app);
   await page.waitForTimeout(500);
 
-  await page.screenshot({ path: path.join(OUT_DIR, "03-order-blotter.png") });
+  const panel = await app.panelByTitle(/Orders.*active/i);
+  await panel.waitFor({ state: "visible" });
+  await page.waitForTimeout(400);
+
+  await panel.screenshot({ path: path.join(OUT_DIR, "03-order-blotter.png") });
 });
 
 test("screenshot: algo trading workspace", async ({ page }) => {
@@ -365,6 +372,48 @@ test("screenshot: algo trading workspace", async ({ page }) => {
   await app.waitForOverlayGone();
   seedMarket(app);
   await page.waitForTimeout(600);
+
+  app.gateway.injectOrder({
+    asset: "AAPL",
+    side: "BUY",
+    quantity: 5000,
+    strategy: "TWAP",
+    limitPrice: 192.34,
+    status: "executing",
+  });
+  app.gateway.injectOrder({
+    asset: "NVDA",
+    side: "BUY",
+    quantity: 2000,
+    strategy: "VWAP",
+    limitPrice: 889.12,
+    status: "executing",
+  });
+  app.gateway.injectOrder({
+    asset: "MSFT",
+    side: "SELL",
+    quantity: 3000,
+    strategy: "POV",
+    limitPrice: 418.67,
+    status: "executing",
+  });
+  app.gateway.injectOrder({
+    asset: "TSLA",
+    side: "BUY",
+    quantity: 1500,
+    strategy: "ICEBERG",
+    limitPrice: 178.45,
+    status: "executing",
+  });
+  app.gateway.injectOrder({
+    asset: "JPM",
+    side: "BUY",
+    quantity: 2500,
+    strategy: "ARRIVAL_PRICE",
+    limitPrice: 201.23,
+    status: "filled",
+  });
+  await page.waitForTimeout(400);
 
   app.gateway.sendRecommendationUpdate({
     symbol: "NVDA",
@@ -495,15 +544,19 @@ test("screenshot: option pricing (Black-Scholes)", async ({ page }) => {
 
 test("screenshot: market heatmap", async ({ page }) => {
   const app = new AppPage(page);
-  await app.goto({ assets: MARKET_ASSETS, url: "/?ws=ws-overview" });
+  await app.goto({ user: DEFAULT_ADMIN, assets: MARKET_ASSETS, url: "/?ws=ws-market-feeds" });
   await app.waitForDashboard();
-  app.gateway.sendAuthIdentity({});
+  app.gateway.sendAuthIdentity({ user: DEFAULT_ADMIN });
   await app.waitForOverlayGone();
 
   app.gateway.sendMarketUpdateWithOpen(SESSION_OPEN, PRICES, VOLUMES);
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(1000);
 
-  await page.screenshot({ path: path.join(OUT_DIR, "07-market-heatmap.png") });
+  const panel = await app.panelByTitle(/Market Heatmap/i);
+  await panel.waitFor({ state: "visible" });
+  await page.waitForTimeout(400);
+
+  await panel.screenshot({ path: path.join(OUT_DIR, "07-market-heatmap.png") });
 });
 
 test("screenshot: kill switch dialog", async ({ page }) => {
@@ -724,7 +777,14 @@ test("screenshot: order blotter with formatting", async ({ page }) => {
   });
   await page.waitForTimeout(500);
 
-  await page.screenshot({
+  const panel = await app.panelByTitle(/Orders.*active/i);
+  await panel.waitFor({ state: "visible" });
+  await page.waitForTimeout(400);
+
+  await panel.getByRole("button", { name: /Format/i }).click();
+  await page.waitForTimeout(400);
+
+  await panel.screenshot({
     path: path.join(OUT_DIR, "09-column-formatting.png"),
   });
 });
