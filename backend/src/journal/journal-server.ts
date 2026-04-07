@@ -211,6 +211,7 @@ async function pruneOldEvents(): Promise<void> {
       "DELETE FROM journal.events WHERE ts < now() - ($1 || ' milliseconds')::interval",
       [RETENTION_MS],
     );
+    await c.queryArray("VACUUM journal.events").catch(() => {});
     console.log(
       `[journal] Prune: removed ${
         result.rowCount ?? 0
@@ -223,8 +224,9 @@ async function pruneOldEvents(): Promise<void> {
   }
 }
 
+const PRUNE_INTERVAL_MS = Number(Deno.env.get("JOURNAL_PRUNE_INTERVAL_MS")) || 60 * 60 * 1_000;
 setTimeout(() => pruneOldEvents().catch(() => {}), 30_000);
-setInterval(() => pruneOldEvents().catch(() => {}), 24 * 60 * 60 * 1_000);
+setInterval(() => pruneOldEvents().catch(() => {}), PRUNE_INTERVAL_MS);
 
 // deno-lint-ignore no-explicit-any
 function ingest(topic: string, value: any) {
