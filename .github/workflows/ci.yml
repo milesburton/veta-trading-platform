@@ -389,14 +389,27 @@ jobs:
           git add docs/screenshots/electron-*.png
           if git diff --staged --quiet; then
             echo "No Electron screenshot changes"
-          else
-            git commit -m "chore(screenshots): update Electron desktop screenshots [skip ci]"
-            for i in 1 2 3; do
-              git pull --rebase origin main && git push && break
-              echo "Push attempt $i failed, retrying..."
-              sleep 2
-            done
+            exit 0
           fi
+          git commit -m "chore(screenshots): update Electron desktop screenshots [skip ci]"
+          for i in 1 2 3; do
+            # Stash any unstaged build artefacts so rebase can proceed cleanly
+            git stash --include-untracked --quiet || true
+            if git pull --rebase origin main; then
+              git stash pop --quiet 2>/dev/null || true
+              if git push; then
+                echo "✅ Pushed Electron screenshots on attempt $i"
+                exit 0
+              fi
+            else
+              git rebase --abort 2>/dev/null || true
+              git stash pop --quiet 2>/dev/null || true
+            fi
+            echo "Push attempt $i failed, retrying..."
+            sleep 5
+          done
+          echo "❌ Failed to push Electron screenshots after 3 attempts"
+          exit 1
 
       - name: Upload Electron test report on failure
         if: always() && (steps.electron-e2e.outcome == 'failure' || failure())
