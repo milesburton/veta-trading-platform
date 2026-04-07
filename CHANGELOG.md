@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.14.0...veta-trading-platform-v1.14.1) (2026-04-07)
+
+
+### Bug Fixes
+
+* **fly:** cap supervisord logs and add deploy retry/concurrency ([247b77b](https://github.com/milesburton/veta-trading-platform/commit/247b77bd4c2149347aa7666c094c223198e08273))
+
 ## [1.14.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.13.1...veta-trading-platform-v1.14.0) (2026-04-06)
 
 
