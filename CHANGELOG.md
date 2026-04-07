@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.14.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.14.1...veta-trading-platform-v1.14.2) (2026-04-07)
+
+
+### Bug Fixes
+
+* **ci:** make electron screenshot push survive unstaged build artefacts ([7abfe80](https://github.com/milesburton/veta-trading-platform/commit/7abfe80e10ef0669463c90541e580970f1fd2870))
+* **ci:** unblock electron screenshot capture from flaky E2E tests ([3665d5f](https://github.com/milesburton/veta-trading-platform/commit/3665d5f6555412a73df24f1780e53ac5f1316515))
+
 ## [1.14.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.14.0...veta-trading-platform-v1.14.1) (2026-04-07)
 
 
