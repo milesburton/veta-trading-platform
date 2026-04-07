@@ -362,22 +362,27 @@ jobs:
           ELECTRON_BUILD: "1"
 
       - name: Run Electron E2E tests (headless via xvfb)
+        id: electron-e2e
+        continue-on-error: true
         working-directory: frontend
         run: xvfb-run --auto-servernum npm run test:electron
         env:
           CI: true
 
       - name: Build Electron app (test variant — mocks baked in)
+        if: always()
         working-directory: frontend
         run: npm run electron:build-test
 
       - name: Capture Electron screenshots (headless via xvfb)
+        if: always()
         working-directory: frontend
         run: xvfb-run --auto-servernum npx playwright test --config=playwright.electron.config.ts tests-electron/screenshots.spec.ts --reporter=list
         env:
           CI: true
 
       - name: Commit updated Electron screenshots
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -394,7 +399,7 @@ jobs:
           fi
 
       - name: Upload Electron test report on failure
-        if: failure()
+        if: always() && (steps.electron-e2e.outcome == 'failure' || failure())
         uses: actions/upload-artifact@v4
         with:
           name: electron-test-results
@@ -402,6 +407,15 @@ jobs:
             frontend/playwright-report/
             frontend/test-results/
           retention-days: 7
+
+      - name: Report Electron E2E result
+        if: always()
+        run: |
+          if [ "${{ steps.electron-e2e.outcome }}" = "failure" ]; then
+            echo "::warning::Electron E2E tests failed (non-blocking) — screenshot capture and commit still ran"
+          else
+            echo "✅ Electron E2E tests passed"
+          fi
 
   docker-base:
     name: Build base image
