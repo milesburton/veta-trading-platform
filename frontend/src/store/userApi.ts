@@ -113,8 +113,24 @@ export const userApi = createApi({
       }),
       invalidatesTags: (_result, _error, { userId }) => [{ type: "UserLimits", id: userId }],
     }),
+    getDemoPersonas: builder.query<{ personas: DemoPersona[] }, void>({
+      query: () => "/personas",
+    }),
   }),
 });
+
+export interface DemoPersona {
+  id: string;
+  name: string;
+  role: string;
+  avatar_emoji: string;
+  description: string;
+  trading_style: string | null;
+  primary_desk: string | null;
+  allowed_strategies: string[];
+  max_order_qty: number;
+  dark_pool_access: boolean;
+}
 
 export const {
   useAuthorizeOAuthMutation,
@@ -124,4 +140,5 @@ export const {
   useGetUsersQuery,
   useGetUserLimitsQuery,
   useUpdateUserLimitsMutation,
+  useGetDemoPersonasQuery,
 } = userApi;

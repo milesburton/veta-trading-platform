@@ -1031,6 +1031,52 @@ Deno.test("[gateway] request with invalid token returns 401", async () => {
   await res.body?.cancel();
 });
 
+Deno.test("[personas] GET /personas returns trader personas with trading_style and primary_desk", async () => {
+  const res = await fetch(`${USER_SVC_URL}/personas`, { signal: timeout(5_000) });
+  assertEquals(res.status, 200);
+  const body = await res.json() as {
+    personas: Array<{
+      id: string;
+      name: string;
+      role: string;
+      avatar_emoji: string;
+      description: string;
+      trading_style: string | null;
+      primary_desk: string | null;
+      allowed_strategies: string[];
+      max_order_qty: number;
+      dark_pool_access: boolean;
+    }>;
+  };
+  assert(Array.isArray(body.personas));
+  assert(body.personas.length >= 10, `expected at least 10 personas, got ${body.personas.length}`);
+
+  const alice = body.personas.find((p) => p.id === "alice");
+  assertExists(alice, "alice persona missing");
+  assertEquals(alice!.trading_style, "high_touch");
+  assertEquals(alice!.primary_desk, "equity-cash");
+
+  const bob = body.personas.find((p) => p.id === "bob");
+  assertExists(bob, "bob persona missing");
+  assertEquals(bob!.trading_style, "low_touch");
+
+  const carol = body.personas.find((p) => p.id === "carol");
+  assertExists(carol, "carol persona missing");
+  assertEquals(carol!.trading_style, "fi_voice");
+
+  const frank = body.personas.find((p) => p.id === "frank");
+  assertExists(frank, "frank persona missing");
+  assertEquals(frank!.role, "desk-head");
+
+  for (const p of body.personas) {
+    if (p.role === "trader") {
+      assert(p.primary_desk !== null, `trader ${p.id} missing primary_desk`);
+      assert(p.trading_style !== null, `trader ${p.id} missing trading_style`);
+      assert(p.primary_desk !== "cross-desk", `trader ${p.id} has cross-desk primary (should be a single-asset-class desk)`);
+    }
+  }
+});
+
 Deno.test("[replay] GET /config returns recordingEnabled boolean", async () => {
   const headers: Record<string, string> = {};
   if (BASE !== "http://localhost") {

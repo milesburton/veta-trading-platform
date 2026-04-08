@@ -757,7 +757,29 @@ export function WorkspaceSidebar({
   );
 }
 
-export function useWorkspaces(_userId: string) {
+const DEFAULT_WORKSPACE_BY_STYLE: Record<string, string> = {
+  high_touch: "ws-trading",
+  low_touch: "ws-algo",
+  fi_voice: "ws-fi-trading",
+  fx_electronic: "ws-algo",
+  commodities_voice: "ws-commodities",
+  derivatives_high_touch: "ws-options",
+  derivatives_low_touch: "ws-algo",
+  oversight: "ws-trading",
+};
+
+export function defaultWorkspaceForStyle(
+  style: string | undefined,
+  available: Workspace[]
+): string {
+  if (style) {
+    const preferred = DEFAULT_WORKSPACE_BY_STYLE[style];
+    if (preferred && available.find((w) => w.id === preferred)) return preferred;
+  }
+  return available[0]?.id ?? "";
+}
+
+export function useWorkspaces(_userId: string, tradingStyle?: string) {
   const seed = seedWorkspaces();
 
   const [workspaces, setWorkspacesState] = useState<Workspace[]>(seed.workspaces);
@@ -765,7 +787,8 @@ export function useWorkspaces(_userId: string) {
   const [activeId, setActiveId] = useState<string>(() => {
     const fromUrl = getWorkspaceFromUrl();
     const valid = seed.workspaces.find((w) => w.id === fromUrl);
-    return valid?.id ?? seed.workspaces[0]?.id ?? "";
+    if (valid) return valid.id;
+    return defaultWorkspaceForStyle(tradingStyle, seed.workspaces);
   });
 
   const setWorkspaces = useCallback((ws: Workspace[]) => {

@@ -174,6 +174,7 @@ function TradingApp() {
   useSessionRecording();
   const userId = useAppSelector((s) => s.auth.user?.id ?? "anonymous");
   const userRole = useAppSelector((s) => s.auth.user?.role);
+  const tradingStyle = useAppSelector((s) => s.auth.limits?.trading_style);
   const dispatch = useAppDispatch();
   const criticalAlerts = useAppSelector(selectCriticalAlerts);
   const latestCritical = criticalAlerts[0] ?? null;
@@ -183,7 +184,10 @@ function TradingApp() {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  const { workspaces, activeId, handleSelect, handleChange, setWorkspaces } = useWorkspaces(userId);
+  const { workspaces, activeId, handleSelect, handleChange, setWorkspaces } = useWorkspaces(
+    userId,
+    tradingStyle
+  );
 
   const locallyModifiedRef = useRef(false);
 

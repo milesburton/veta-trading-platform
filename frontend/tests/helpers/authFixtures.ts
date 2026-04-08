@@ -1,7 +1,17 @@
+export type TestTradingStyle =
+  | "high_touch"
+  | "low_touch"
+  | "fi_voice"
+  | "fx_electronic"
+  | "commodities_voice"
+  | "derivatives_high_touch"
+  | "derivatives_low_touch"
+  | "oversight";
+
 export interface AuthUser {
   id: string;
   name: string;
-  role: "trader" | "admin";
+  role: "trader" | "desk-head" | "admin";
   avatar_emoji: string;
 }
 
@@ -11,6 +21,8 @@ export interface TradingLimits {
   allowed_strategies: string[];
   allowed_desks: string[];
   dark_pool_access: boolean;
+  trading_style?: TestTradingStyle;
+  primary_desk?: string;
 }
 
 export interface AssetDef {
@@ -64,8 +76,10 @@ export const DEFAULT_LIMITS: TradingLimits = {
   max_order_qty: 10_000,
   max_daily_notional: 1_000_000,
   allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
-  allowed_desks: ["equity", "derivatives"],
+  allowed_desks: ["equity"],
   dark_pool_access: false,
+  trading_style: "high_touch",
+  primary_desk: "equity-cash",
 };
 
 export const ALGO_TRADER_LIMITS: TradingLimits = {
@@ -74,6 +88,8 @@ export const ALGO_TRADER_LIMITS: TradingLimits = {
   allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE"],
   allowed_desks: ["equity"],
   dark_pool_access: true,
+  trading_style: "low_touch",
+  primary_desk: "equity-cash",
 };
 
 export const FI_TRADER_LIMITS: TradingLimits = {
@@ -82,6 +98,8 @@ export const FI_TRADER_LIMITS: TradingLimits = {
   allowed_strategies: ["LIMIT"],
   allowed_desks: ["fi"],
   dark_pool_access: false,
+  trading_style: "fi_voice",
+  primary_desk: "fi-govies",
 };
 
 export const ANALYST_LIMITS: TradingLimits = {

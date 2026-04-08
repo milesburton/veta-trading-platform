@@ -8,6 +8,7 @@ import {
   useExchangeOAuthCodeMutation,
   useRegisterOAuthUserMutation,
 } from "../store/userApi.ts";
+import { DemoPersonas } from "./DemoPersonas.tsx";
 
 const OAUTH_CLIENT_ID = import.meta.env.VITE_OAUTH_CLIENT_ID ?? "veta-web";
 const OAUTH_REDIRECT_URI = import.meta.env.VITE_OAUTH_REDIRECT_URI ?? "postmessage";
@@ -442,6 +443,14 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
                 : "Sign in failed")}
           </div>
         )}
+
+        <DemoPersonas
+          onSelect={(personaId) => {
+            setMode("signin");
+            setUsername(personaId);
+            setPassword(import.meta.env.VITE_DEMO_PASSCODE ?? "veta-dev-passcode");
+          }}
+        />
 
         {/* Full platform status with all services */}
         <PlatformStatus />
