@@ -479,19 +479,32 @@ The FlexLayout-based dashboard supports 20+ panel types registered in
 ## Authentication
 
 Sessions are stored as `veta_user` HTTP-only cookies set by the User Service at
-login. The Gateway validates this cookie on every WebSocket connection and every
-HTTP proxy request (cached 10 seconds). Admin users can view all panels but
-cannot submit orders — blocked at both the OMS (bus) and UI (OrderTicket hidden)
-levels.
+login via OAuth2 authorization-code flow with PKCE. The Gateway validates this
+cookie on every WebSocket connection and every HTTP proxy request (cached 10
+seconds). The OMS independently fetches limits from the User Service (cached 30
+seconds).
 
-Four built-in personas:
+Runtime roles: `trader`, `desk-head`, `admin`, `compliance`, `sales`,
+`external-client`, `viewer`. Only `trader` accounts can submit orders. All
+other roles are read-only or administrative and are rejected at both the OMS
+(bus) and UI (OrderTicket role-locked) layers.
 
-| User  | Role                  | Default strategies                                            |
-| ----- | --------------------- | ------------------------------------------------------------- |
-| alice | trader (high-touch)   | All strategies                                                |
-| bob   | trader (algo)         | TWAP, POV, VWAP, ICEBERG, SNIPER, ARRIVAL_PRICE, IS, MOMENTUM |
-| carol | trader (fixed income) | LIMIT                                                         |
-| david | read-only analyst     | None (no order submission)                                    |
+### Trading Styles
+
+Every trader has exactly **one primary desk and one trading style**. Cross-
+asset-class trading is impossible — a trader cannot cover both equities and
+fixed income simultaneously. Multi-desk oversight is modeled through the
+separate `desk-head` role with read-only cross-desk visibility.
+
+The eight trading styles are `high_touch`, `low_touch`, `fi_voice`,
+`fx_electronic`, `commodities_voice`, `derivatives_high_touch`,
+`derivatives_low_touch` and `oversight`. Panel access is restricted by style
+in the frontend `panelRegistry.PANEL_TRADING_STYLES` map — see the manual for
+the full matrix. Default workspaces also follow style (high-touch lands on
+Trading, low-touch on Algo, FI voice on FI Trading, etc).
+
+See the README for the full list of seeded demo personas and which desk each
+belongs to.
 
 ## Testing
 

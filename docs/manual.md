@@ -342,9 +342,30 @@ For self-service viewer onboarding, first call `POST /oauth/register` with `{ us
 
 Successful token exchange sets the `veta_user` cookie and returns the authenticated user.
 
-Runtime RBAC roles are: `trader`, `admin`, `compliance`, `sales`, `external-client`, `viewer`.
+Runtime RBAC roles are: `trader`, `desk-head`, `admin`, `compliance`, `sales`, `external-client`, `viewer`.
 
-Only `trader` accounts may submit orders. Non-trading roles remain read-only/administrative.
+Only `trader` accounts may submit orders. `desk-head` is a read-only oversight role — see *Trading Styles & Desks* below. All other non-trading roles are read-only or administrative.
+
+### Trading Styles & Desks
+
+Every trader belongs to exactly **one primary desk** and has exactly **one trading style**. Cross-asset-class trading is not permitted — regulatory segregation (Chinese walls) and product specialisation make a single trader covering both equities and fixed income unrealistic. Multi-desk oversight is modeled through the separate `desk-head` role with read-only cross-desk access.
+
+Trading styles and the panels each can open:
+
+| Style | Can open | Cannot open |
+|---|---|---|
+| `high_touch` | Order Ticket, Basket Order, cash blotter, charts | Algo Monitor, Yield Curve, Vol Surface |
+| `low_touch` | Algo Monitor, Algo Leaderboard, Decision Log, blotter | Order Ticket, Basket Order |
+| `fi_voice` | Yield Curve, Duration Ladder, Spread Analysis, blotter | Order Ticket, Algo Monitor, Vol Surface |
+| `fx_electronic` | Order Ticket, Algo Monitor, Algo Leaderboard | FI panels, vol surface |
+| `commodities_voice` | Price Fan, blotter, RFQ tools | Order Ticket, Algo Monitor |
+| `derivatives_high_touch` | Order Ticket, Vol Surface, Greeks, Option Pricing, Scenario Matrix | Algo Monitor, FI panels |
+| `derivatives_low_touch` | Algo Monitor, Vol Surface, Greeks, Option Pricing | Order Ticket, FI panels |
+| `oversight` (desk-head) | Every read-only panel + Algo Monitor + FI panels + derivatives panels | Order Ticket, Basket Order, admin panels |
+
+The RBAC layer enforces style hard — an `algo_trader` literally cannot open the manual Order Ticket via the ComponentPicker, and a stale saved layout with an unauthorised panel shows a "you do not have permission" message instead of crashing. Default workspaces also follow style (high-touch lands on Trading, low-touch on Algo, FI voice on FI Trading, derivatives high-touch on Options, etc).
+
+Primary desks are: `equity-cash`, `equity-derivs`, `fi-rates`, `fi-credit`, `fi-govies`, `fx-cash`, `commodities`, `cross-desk`. The first seven are single-asset-class; `cross-desk` is reserved for `desk-head`, `compliance` and `admin`. The OMS-facing `allowed_desks` array still uses coarse names (`equity`, `fi`, `derivatives`, `fx`, `commodities`) for backward compatibility with order routing.
 
 ### Trading Limit Defaults (when no DB record exists)
 
@@ -353,8 +374,16 @@ max_order_qty:       10,000 shares
 max_daily_notional:  $1,000,000
 allowed_strategies:  LIMIT, TWAP, POV, VWAP
 allowed_desks:       equity
+trading_style:       high_touch
+primary_desk:        equity-cash
 dark_pool_access:    false
 ```
+
+### Demo Personas
+
+In demo mode (default on Fly.io and local dev), the login page exposes a collapsible "Demo personas" panel that lists every seeded user grouped by desk. Clicking a persona pre-fills the username and the dev passcode so reviewers can sign in with one click and see exactly how each role experiences the platform. The full persona table is in the README.
+
+Demo mode can be disabled with `VETA_DEMO_MODE=false` on the user-service — the `/personas` endpoint returns 404 in that mode.
 
 ### Auth Flow
 
