@@ -9,7 +9,15 @@ import type { PanelId } from "../DashboardLayout";
 import { DashboardContext, DEFAULT_LAYOUT } from "../DashboardLayout";
 
 function makeStore(
-  role: "trader" | "admin" | "compliance" | "sales" | "external-client" | "viewer" = "trader"
+  role:
+    | "trader"
+    | "desk-head"
+    | "admin"
+    | "compliance"
+    | "sales"
+    | "external-client"
+    | "viewer" = "trader",
+  tradingStyle: "high_touch" | "low_touch" | "fi_voice" | "oversight" | undefined = "high_touch"
 ) {
   const store = configureStore({ reducer: { auth: authSlice.reducer } });
   store.dispatch(
@@ -20,6 +28,19 @@ function makeStore(
       avatar_emoji: "TE",
     })
   );
+  if (role === "trader") {
+    store.dispatch(
+      authSlice.actions.setLimits({
+        max_order_qty: 10000,
+        max_daily_notional: 1_000_000,
+        allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+        allowed_desks: ["equity"],
+        dark_pool_access: false,
+        trading_style: tradingStyle,
+        primary_desk: "equity-cash",
+      })
+    );
+  }
   return store;
 }
 
@@ -91,17 +112,43 @@ describe("ComponentPicker – toggle open/closed", () => {
     expect(screen.getByText(/^Market Ladder/)).toBeInTheDocument();
   });
 
-  it("shows all available panel names", () => {
+  it("shows cross-style panels to high-touch traders but not Algo Monitor", () => {
     renderPicker();
     openDropdown();
     expect(screen.getByText(/^Market Ladder/)).toBeInTheDocument();
     expect(screen.getByText(/^Order Ticket/)).toBeInTheDocument();
     expect(screen.getByText(/^Orders/)).toBeInTheDocument();
-    expect(screen.getByText(/^Algo Monitor/)).toBeInTheDocument();
     expect(screen.getByText(/^Observability/)).toBeInTheDocument();
     expect(screen.getByText(/^Price Chart/)).toBeInTheDocument();
     expect(screen.getByText(/^Market Depth/)).toBeInTheDocument();
     expect(screen.getByText(/^News & Signals/)).toBeInTheDocument();
+    expect(screen.queryByText(/^Algo Monitor/)).not.toBeInTheDocument();
+  });
+
+  it("low-touch traders see Algo Monitor but not Order Ticket", () => {
+    render(
+      <Provider store={makeStore("trader", "low_touch")}>
+        <DashboardContext.Provider
+          value={{
+            layout: DEFAULT_LAYOUT,
+            setLayout: vi.fn(),
+            activePanelIds: new Set([]),
+            addPanel: vi.fn(),
+            removePanel: vi.fn(),
+            removeTabById: vi.fn(),
+            resetLayout: vi.fn(),
+            storageKey: "dashboard-layout",
+            model: Model.fromJson({ global: {}, layout: { type: "row", children: [] } }),
+            setModel: vi.fn(),
+          }}
+        >
+          <ComponentPicker />
+        </DashboardContext.Provider>
+      </Provider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: /add panel/i }));
+    expect(screen.getByText(/^Algo Monitor/)).toBeInTheDocument();
+    expect(screen.queryByText(/^Order Ticket/)).not.toBeInTheDocument();
   });
 
   it("closes dropdown when clicking the backdrop", () => {

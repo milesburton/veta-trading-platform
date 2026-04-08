@@ -495,6 +495,7 @@ export function DashboardLayout() {
   const channelsData = useAppSelector((s) => s.channels.data);
   const dialogs = useAppSelector((s) => s.windows.dialogs);
   const userRole = useAppSelector((s) => s.auth.user?.role);
+  const tradingStyle = useAppSelector((s) => s.auth.limits?.trading_style);
   const { model, setModel, layout, removePanel, addPanel, activePanelIds, storageKey } =
     useDashboard();
   const dispatch = useAppDispatch();
@@ -601,7 +602,7 @@ export function DashboardLayout() {
         );
       }
 
-      if (!canAccessPanel(panelType, userRole)) {
+      if (!canAccessPanel(panelType, userRole, tradingStyle)) {
         return wrap(
           <div className="h-full flex items-center justify-center text-gray-600 text-xs p-4 text-center">
             You do not have permission to view this panel.
@@ -719,7 +720,7 @@ export function DashboardLayout() {
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }
     },
-    [legacySelectedAsset, channelsData, userRole]
+    [legacySelectedAsset, channelsData, userRole, tradingStyle]
   );
 
   const onRenderTab = useCallback(

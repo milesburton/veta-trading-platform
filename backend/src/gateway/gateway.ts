@@ -56,6 +56,8 @@ interface UserLimits {
   allowed_strategies: string[];
   allowed_desks?: string[];
   dark_pool_access?: boolean;
+  trading_style?: string;
+  primary_desk?: string;
 }
 
 function getCookieToken(req: Request): string | null {

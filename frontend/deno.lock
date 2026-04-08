@@ -38,7 +38,6 @@
     "npm:uuid@10": "10.0.0",
     "npm:vite-plugin-electron-renderer@~0.14.6": "0.14.6",
     "npm:vite-plugin-electron@~0.28.8": "0.28.8_vite-plugin-electron-renderer@0.14.6",
-    "npm:vite@^7.3.1": "7.3.1_picomatch@4.0.3",
     "npm:vitest@^4.0.18": "4.0.18_jsdom@28.1.0"
   },
   "npm": {
@@ -4460,7 +4459,7 @@
         "npm:uuid@10",
         "npm:vite-plugin-electron-renderer@~0.14.6",
         "npm:vite-plugin-electron@~0.28.8",
-        "npm:vite@^7.3.1",
+        "npm:vite@^7.3.2",
         "npm:vitest@^4.0.18",
         "npm:ws@^8.20.0"
       ]

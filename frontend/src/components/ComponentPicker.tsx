@@ -61,8 +61,9 @@ export function ComponentPicker() {
   const open = useSignal(false);
   const { activePanelIds, addPanel } = useDashboard();
   const user = useAppSelector((s) => s.auth.user);
+  const tradingStyle = useAppSelector((s) => s.auth.limits?.trading_style);
 
-  const visiblePanelIds = PANEL_IDS.filter((id) => canAccessPanel(id, user?.role));
+  const visiblePanelIds = PANEL_IDS.filter((id) => canAccessPanel(id, user?.role, tradingStyle));
 
   return (
     <div data-testid="component-picker" className="relative">

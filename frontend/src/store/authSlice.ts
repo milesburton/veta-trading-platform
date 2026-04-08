@@ -2,6 +2,26 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
 import type { AuthRole } from "../auth/rbac.ts";
 
+export type TradingStyle =
+  | "high_touch"
+  | "low_touch"
+  | "fi_voice"
+  | "fx_electronic"
+  | "commodities_voice"
+  | "derivatives_high_touch"
+  | "derivatives_low_touch"
+  | "oversight";
+
+export type PrimaryDesk =
+  | "equity-cash"
+  | "equity-derivs"
+  | "fi-rates"
+  | "fi-credit"
+  | "fi-govies"
+  | "fx-cash"
+  | "commodities"
+  | "cross-desk";
+
 export interface AuthUser {
   id: string;
   name: string;
@@ -15,6 +35,8 @@ export interface TradingLimits {
   allowed_strategies: string[];
   allowed_desks: string[];
   dark_pool_access: boolean;
+  trading_style?: TradingStyle;
+  primary_desk?: PrimaryDesk;
 }
 
 const DEFAULT_LIMITS: TradingLimits = {

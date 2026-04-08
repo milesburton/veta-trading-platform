@@ -271,83 +271,176 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "session-replay": { out: false, in: false },
 };
 
+export type TradingStyle =
+  | "high_touch"
+  | "low_touch"
+  | "fi_voice"
+  | "fx_electronic"
+  | "commodities_voice"
+  | "derivatives_high_touch"
+  | "derivatives_low_touch"
+  | "oversight";
+
+const ALL_READ_ROLES: AuthRole[] = [
+  "trader",
+  "desk-head",
+  "admin",
+  "compliance",
+  "sales",
+  "external-client",
+  "viewer",
+];
+
+const DESK_ROLES: AuthRole[] = ["trader", "desk-head", "admin", "compliance"];
+
 export const PANEL_PERMISSIONS: Record<PanelId, ReadonlySet<AuthRole>> = {
-  "market-ladder": new Set<AuthRole>([
-    "trader",
-    "admin",
-    "compliance",
-    "sales",
-    "external-client",
-    "viewer",
-  ]),
+  "market-ladder": new Set<AuthRole>(ALL_READ_ROLES),
   "order-ticket": new Set<AuthRole>(["trader"]),
-  "order-blotter": new Set<AuthRole>(["trader", "admin", "compliance", "sales"]),
-  "child-orders": new Set<AuthRole>(["trader", "admin", "compliance", "sales"]),
-  "algo-monitor": new Set<AuthRole>(["trader", "admin", "compliance"]),
-  observability: new Set<AuthRole>([
+  "order-blotter": new Set<AuthRole>(["trader", "desk-head", "admin", "compliance", "sales"]),
+  "child-orders": new Set<AuthRole>(["trader", "desk-head", "admin", "compliance", "sales"]),
+  "algo-monitor": new Set<AuthRole>(["trader", "desk-head", "admin", "compliance"]),
+  observability: new Set<AuthRole>(ALL_READ_ROLES),
+  "candle-chart": new Set<AuthRole>(ALL_READ_ROLES),
+  "market-depth": new Set<AuthRole>([
     "trader",
+    "desk-head",
     "admin",
     "compliance",
     "sales",
-    "external-client",
     "viewer",
   ]),
-  "candle-chart": new Set<AuthRole>([
+  executions: new Set<AuthRole>(["trader", "desk-head", "admin", "compliance", "sales"]),
+  "decision-log": new Set<AuthRole>(["trader", "desk-head", "admin", "compliance"]),
+  "market-match": new Set<AuthRole>([
     "trader",
+    "desk-head",
     "admin",
     "compliance",
     "sales",
-    "external-client",
     "viewer",
   ]),
-  "market-depth": new Set<AuthRole>(["trader", "admin", "compliance", "sales", "viewer"]),
-  executions: new Set<AuthRole>(["trader", "admin", "compliance", "sales"]),
-  "decision-log": new Set<AuthRole>(["trader", "admin", "compliance"]),
-  "market-match": new Set<AuthRole>(["trader", "admin", "compliance", "sales", "viewer"]),
   admin: new Set<AuthRole>(["admin"]),
-  news: new Set<AuthRole>(["trader", "admin", "compliance", "sales", "external-client", "viewer"]),
+  news: new Set<AuthRole>(ALL_READ_ROLES),
   "news-sources": new Set<AuthRole>(["admin"]),
-  "order-progress": new Set<AuthRole>(["trader", "admin", "compliance", "sales"]),
-  "market-heatmap": new Set<AuthRole>([
-    "trader",
-    "admin",
-    "compliance",
-    "sales",
-    "external-client",
-    "viewer",
-  ]),
-  alerts: new Set<AuthRole>(["trader", "admin", "compliance", "sales"]),
-  "option-pricing": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
-  "scenario-matrix": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
-  "trade-recommendation": new Set<AuthRole>(["trader", "admin", "sales"]),
+  "order-progress": new Set<AuthRole>(["trader", "desk-head", "admin", "compliance", "sales"]),
+  "market-heatmap": new Set<AuthRole>(ALL_READ_ROLES),
+  alerts: new Set<AuthRole>(["trader", "desk-head", "admin", "compliance", "sales"]),
+  "option-pricing": new Set<AuthRole>(["trader", "desk-head", "admin", "sales", "viewer"]),
+  "scenario-matrix": new Set<AuthRole>(["trader", "desk-head", "admin", "sales", "viewer"]),
+  "trade-recommendation": new Set<AuthRole>(["trader", "desk-head", "admin", "sales"]),
   "market-data-sources": new Set<AuthRole>(["admin"]),
   "market-feed-control": new Set<AuthRole>(["admin"]),
-  "research-radar": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
-  "instrument-analysis": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
-  "signal-explainability": new Set<AuthRole>(["trader", "admin", "compliance", "sales", "viewer"]),
-  "service-health": new Set<AuthRole>(["trader", "admin", "compliance", "sales", "viewer"]),
-  "throughput-gauges": new Set<AuthRole>(["admin", "compliance"]),
-  "algo-leaderboard": new Set<AuthRole>(["trader", "admin", "compliance"]),
+  "research-radar": new Set<AuthRole>(["trader", "desk-head", "admin", "sales", "viewer"]),
+  "instrument-analysis": new Set<AuthRole>(["trader", "desk-head", "admin", "sales", "viewer"]),
+  "signal-explainability": new Set<AuthRole>([
+    "trader",
+    "desk-head",
+    "admin",
+    "compliance",
+    "sales",
+    "viewer",
+  ]),
+  "service-health": new Set<AuthRole>([
+    "trader",
+    "desk-head",
+    "admin",
+    "compliance",
+    "sales",
+    "viewer",
+  ]),
+  "throughput-gauges": new Set<AuthRole>(["desk-head", "admin", "compliance"]),
+  "algo-leaderboard": new Set<AuthRole>(["trader", "desk-head", "admin", "compliance"]),
   "load-test": new Set<AuthRole>(["admin"]),
   "llm-subsystem": new Set<AuthRole>(["admin"]),
-  "greeks-surface": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
-  "vol-profile": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
-  "estate-overview": new Set<AuthRole>(["admin", "compliance"]),
-  "yield-curve": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
-  "price-fan": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "greeks-surface": new Set<AuthRole>(["trader", "desk-head", "admin", "sales", "viewer"]),
+  "vol-profile": new Set<AuthRole>(["trader", "desk-head", "admin", "sales", "viewer"]),
+  "estate-overview": new Set<AuthRole>(["desk-head", "admin", "compliance"]),
+  "yield-curve": new Set<AuthRole>(["trader", "desk-head", "admin", "sales", "viewer"]),
+  "price-fan": new Set<AuthRole>(["trader", "desk-head", "admin", "sales", "viewer"]),
   "demo-day": new Set<AuthRole>(["admin"]),
-  "spread-analysis": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
-  "duration-ladder": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
-  "vol-surface": new Set<AuthRole>(["trader", "admin", "sales", "viewer"]),
+  "spread-analysis": new Set<AuthRole>(["trader", "desk-head", "admin", "sales", "viewer"]),
+  "duration-ladder": new Set<AuthRole>(["trader", "desk-head", "admin", "sales", "viewer"]),
+  "vol-surface": new Set<AuthRole>(["trader", "desk-head", "admin", "sales", "viewer"]),
   "basket-order": new Set<AuthRole>(["trader"]),
   "client-rfq": new Set<AuthRole>(["external-client"]),
   "sales-workbench": new Set<AuthRole>(["sales"]),
   "product-builder": new Set<AuthRole>(["sales", "admin"]),
-  "product-book": new Set<AuthRole>(["trader", "admin", "sales", "external-client"]),
+  "product-book": new Set<AuthRole>(["trader", "desk-head", "admin", "sales", "external-client"]),
   "session-replay": new Set<AuthRole>(["admin", "compliance"]),
 };
 
-export function canAccessPanel(panelId: PanelId, role: AuthRole | undefined): boolean {
+export const PANEL_TRADING_STYLES: Partial<Record<PanelId, ReadonlySet<TradingStyle>>> = {
+  "order-ticket": new Set<TradingStyle>(["high_touch", "fx_electronic", "derivatives_high_touch"]),
+  "basket-order": new Set<TradingStyle>(["high_touch"]),
+  "algo-monitor": new Set<TradingStyle>([
+    "low_touch",
+    "fx_electronic",
+    "derivatives_low_touch",
+    "oversight",
+  ]),
+  "algo-leaderboard": new Set<TradingStyle>([
+    "low_touch",
+    "fx_electronic",
+    "derivatives_low_touch",
+    "oversight",
+  ]),
+  "decision-log": new Set<TradingStyle>([
+    "low_touch",
+    "fx_electronic",
+    "derivatives_low_touch",
+    "oversight",
+  ]),
+  "yield-curve": new Set<TradingStyle>(["fi_voice", "oversight"]),
+  "duration-ladder": new Set<TradingStyle>(["fi_voice", "oversight"]),
+  "spread-analysis": new Set<TradingStyle>(["fi_voice", "oversight"]),
+  "price-fan": new Set<TradingStyle>(["fi_voice", "commodities_voice", "oversight"]),
+  "vol-surface": new Set<TradingStyle>([
+    "derivatives_high_touch",
+    "derivatives_low_touch",
+    "oversight",
+  ]),
+  "greeks-surface": new Set<TradingStyle>([
+    "derivatives_high_touch",
+    "derivatives_low_touch",
+    "oversight",
+  ]),
+  "option-pricing": new Set<TradingStyle>([
+    "derivatives_high_touch",
+    "derivatives_low_touch",
+    "oversight",
+  ]),
+  "scenario-matrix": new Set<TradingStyle>([
+    "derivatives_high_touch",
+    "derivatives_low_touch",
+    "oversight",
+  ]),
+  "vol-profile": new Set<TradingStyle>([
+    "derivatives_high_touch",
+    "derivatives_low_touch",
+    "oversight",
+  ]),
+};
+
+export function canAccessPanel(
+  panelId: PanelId,
+  role: AuthRole | undefined,
+  tradingStyle?: TradingStyle
+): boolean {
   if (!role) return false;
-  return PANEL_PERMISSIONS[panelId]?.has(role) ?? false;
+  const allowedRoles = PANEL_PERMISSIONS[panelId];
+  if (!allowedRoles?.has(role)) return false;
+
+  if (role === "trader") {
+    const styleRestriction = PANEL_TRADING_STYLES[panelId];
+    if (styleRestriction) {
+      if (!tradingStyle) return false;
+      if (!styleRestriction.has(tradingStyle)) return false;
+    }
+  }
+
+  return true;
+}
+
+export function isDeskRole(role: AuthRole | undefined): boolean {
+  return role !== undefined && DESK_ROLES.includes(role);
 }

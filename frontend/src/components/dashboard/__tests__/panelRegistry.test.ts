@@ -111,54 +111,106 @@ describe("canAccessPanel — role restrictions", () => {
     expect(canAccessPanel("market-ladder", undefined)).toBe(false);
   });
 
-  it("only traders can access order-ticket and basket-order", () => {
-    expect(canAccessPanel("order-ticket", "trader")).toBe(true);
+  it("only traders can access order-ticket and only with a permitted trading style", () => {
+    expect(canAccessPanel("order-ticket", "trader", "high_touch")).toBe(true);
+    expect(canAccessPanel("order-ticket", "trader", "fx_electronic")).toBe(true);
+    expect(canAccessPanel("order-ticket", "trader", "derivatives_high_touch")).toBe(true);
+    expect(canAccessPanel("order-ticket", "trader", "low_touch")).toBe(false);
+    expect(canAccessPanel("order-ticket", "trader", "fi_voice")).toBe(false);
+    expect(canAccessPanel("order-ticket", "trader", "derivatives_low_touch")).toBe(false);
+    expect(canAccessPanel("order-ticket", "trader")).toBe(false);
     expect(canAccessPanel("order-ticket", "admin")).toBe(false);
     expect(canAccessPanel("order-ticket", "compliance")).toBe(false);
     expect(canAccessPanel("order-ticket", "sales")).toBe(false);
     expect(canAccessPanel("order-ticket", "external-client")).toBe(false);
     expect(canAccessPanel("order-ticket", "viewer")).toBe(false);
+    expect(canAccessPanel("order-ticket", "desk-head")).toBe(false);
 
-    expect(canAccessPanel("basket-order", "trader")).toBe(true);
+    expect(canAccessPanel("basket-order", "trader", "high_touch")).toBe(true);
+    expect(canAccessPanel("basket-order", "trader", "low_touch")).toBe(false);
     expect(canAccessPanel("basket-order", "admin")).toBe(false);
+  });
+
+  it("low-touch and FX electronic traders get algo monitor, high-touch do not", () => {
+    expect(canAccessPanel("algo-monitor", "trader", "low_touch")).toBe(true);
+    expect(canAccessPanel("algo-monitor", "trader", "fx_electronic")).toBe(true);
+    expect(canAccessPanel("algo-monitor", "trader", "derivatives_low_touch")).toBe(true);
+    expect(canAccessPanel("algo-monitor", "trader", "high_touch")).toBe(false);
+    expect(canAccessPanel("algo-monitor", "trader", "fi_voice")).toBe(false);
+    expect(canAccessPanel("algo-monitor", "trader", "commodities_voice")).toBe(false);
+  });
+
+  it("FI voice traders see yield curve and duration ladder, other trader styles do not", () => {
+    expect(canAccessPanel("yield-curve", "trader", "fi_voice")).toBe(true);
+    expect(canAccessPanel("duration-ladder", "trader", "fi_voice")).toBe(true);
+    expect(canAccessPanel("spread-analysis", "trader", "fi_voice")).toBe(true);
+    expect(canAccessPanel("yield-curve", "trader", "high_touch")).toBe(false);
+    expect(canAccessPanel("yield-curve", "trader", "low_touch")).toBe(false);
+    expect(canAccessPanel("duration-ladder", "trader", "fx_electronic")).toBe(false);
+  });
+
+  it("derivatives traders see vol surface and greeks, other trader styles do not", () => {
+    expect(canAccessPanel("vol-surface", "trader", "derivatives_high_touch")).toBe(true);
+    expect(canAccessPanel("vol-surface", "trader", "derivatives_low_touch")).toBe(true);
+    expect(canAccessPanel("greeks-surface", "trader", "derivatives_high_touch")).toBe(true);
+    expect(canAccessPanel("option-pricing", "trader", "derivatives_low_touch")).toBe(true);
+    expect(canAccessPanel("vol-surface", "trader", "high_touch")).toBe(false);
+    expect(canAccessPanel("greeks-surface", "trader", "fi_voice")).toBe(false);
+  });
+
+  it("desk-head has read-only cross-desk oversight but cannot access order-ticket", () => {
+    expect(canAccessPanel("order-blotter", "desk-head")).toBe(true);
+    expect(canAccessPanel("algo-monitor", "desk-head")).toBe(true);
+    expect(canAccessPanel("yield-curve", "desk-head")).toBe(true);
+    expect(canAccessPanel("vol-surface", "desk-head")).toBe(true);
+    expect(canAccessPanel("greeks-surface", "desk-head")).toBe(true);
+    expect(canAccessPanel("estate-overview", "desk-head")).toBe(true);
+    expect(canAccessPanel("throughput-gauges", "desk-head")).toBe(true);
+    expect(canAccessPanel("order-ticket", "desk-head")).toBe(false);
+    expect(canAccessPanel("basket-order", "desk-head")).toBe(false);
+    expect(canAccessPanel("admin", "desk-head")).toBe(false);
+    expect(canAccessPanel("load-test", "desk-head")).toBe(false);
   });
 
   it("only admins can access admin panels", () => {
     expect(canAccessPanel("admin", "admin")).toBe(true);
-    expect(canAccessPanel("admin", "trader")).toBe(false);
+    expect(canAccessPanel("admin", "trader", "high_touch")).toBe(false);
     expect(canAccessPanel("load-test", "admin")).toBe(true);
-    expect(canAccessPanel("load-test", "trader")).toBe(false);
+    expect(canAccessPanel("load-test", "trader", "high_touch")).toBe(false);
     expect(canAccessPanel("llm-subsystem", "admin")).toBe(true);
-    expect(canAccessPanel("llm-subsystem", "trader")).toBe(false);
+    expect(canAccessPanel("llm-subsystem", "trader", "high_touch")).toBe(false);
     expect(canAccessPanel("market-data-sources", "admin")).toBe(true);
     expect(canAccessPanel("market-data-sources", "compliance")).toBe(false);
   });
 
   it("only sales can access sales-workbench", () => {
     expect(canAccessPanel("sales-workbench", "sales")).toBe(true);
-    expect(canAccessPanel("sales-workbench", "trader")).toBe(false);
+    expect(canAccessPanel("sales-workbench", "trader", "high_touch")).toBe(false);
     expect(canAccessPanel("sales-workbench", "admin")).toBe(false);
   });
 
   it("only external-client can access client-rfq", () => {
     expect(canAccessPanel("client-rfq", "external-client")).toBe(true);
-    expect(canAccessPanel("client-rfq", "trader")).toBe(false);
+    expect(canAccessPanel("client-rfq", "trader", "high_touch")).toBe(false);
     expect(canAccessPanel("client-rfq", "admin")).toBe(false);
   });
 
   it("session-replay is admin and compliance only", () => {
     expect(canAccessPanel("session-replay", "admin")).toBe(true);
     expect(canAccessPanel("session-replay", "compliance")).toBe(true);
-    expect(canAccessPanel("session-replay", "trader")).toBe(false);
+    expect(canAccessPanel("session-replay", "trader", "high_touch")).toBe(false);
+    expect(canAccessPanel("session-replay", "desk-head")).toBe(false);
   });
 
   it("market-ladder is accessible to everyone", () => {
-    expect(canAccessPanel("market-ladder", "trader")).toBe(true);
+    expect(canAccessPanel("market-ladder", "trader", "high_touch")).toBe(true);
+    expect(canAccessPanel("market-ladder", "trader", "low_touch")).toBe(true);
     expect(canAccessPanel("market-ladder", "admin")).toBe(true);
     expect(canAccessPanel("market-ladder", "compliance")).toBe(true);
     expect(canAccessPanel("market-ladder", "sales")).toBe(true);
     expect(canAccessPanel("market-ladder", "external-client")).toBe(true);
     expect(canAccessPanel("market-ladder", "viewer")).toBe(true);
+    expect(canAccessPanel("market-ladder", "desk-head")).toBe(true);
   });
 
   it("viewer has read-only access to market data and analytics", () => {

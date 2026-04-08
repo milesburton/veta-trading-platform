@@ -199,6 +199,10 @@ function json(data: unknown, status = 200, extra?: Record<string, string>): Resp
   });
 }
 
+function splitCsv(s: string): string[] {
+  return s.split(",").map((x) => x.trim()).filter((x) => x.length > 0);
+}
+
 async function getUserFromToken(token: string | null) {
   if (!token) return null;
   const client = await usersPool.connect();
@@ -237,6 +241,48 @@ async function handle(req: Request): Promise<Response> {
         "SELECT id, name, role, avatar_emoji, firm FROM users.users ORDER BY role DESC, name",
       );
       return json(rows.map(([id, name, role, avatar_emoji, firm]) => ({ id, name, role, avatar_emoji, firm: firm ?? null })));
+    } finally { client.release(); }
+  }
+
+  if (req.method === "GET" && path === "/personas") {
+    const demoMode = (Deno.env.get("VETA_DEMO_MODE") ?? "true").toLowerCase() !== "false";
+    if (!demoMode) return json({ error: "demo mode disabled" }, 404);
+    const client = await usersPool.connect();
+    try {
+      const { rows } = await client.queryArray(
+        `SELECT u.id, u.name, u.role, u.avatar_emoji, u.description,
+                l.trading_style, l.primary_desk, l.allowed_strategies, l.max_order_qty, l.dark_pool_access
+         FROM users.users u
+         LEFT JOIN users.trading_limits l ON l.user_id = u.id
+         WHERE u.role IN ('trader','desk-head','compliance','sales','admin','external-client')
+         ORDER BY
+           CASE u.role
+             WHEN 'trader' THEN 1
+             WHEN 'desk-head' THEN 2
+             WHEN 'sales' THEN 3
+             WHEN 'external-client' THEN 4
+             WHEN 'compliance' THEN 5
+             WHEN 'admin' THEN 6
+             ELSE 7
+           END,
+           l.primary_desk NULLS LAST,
+           l.trading_style NULLS LAST,
+           u.name`,
+      );
+      return json({
+        personas: rows.map((r) => ({
+          id: r[0] as string,
+          name: r[1] as string,
+          role: r[2] as string,
+          avatar_emoji: r[3] as string,
+          description: (r[4] as string) ?? "",
+          trading_style: (r[5] as string) ?? null,
+          primary_desk: (r[6] as string) ?? null,
+          allowed_strategies: r[7] ? splitCsv(r[7] as string) : [],
+          max_order_qty: (r[8] as number) ?? 0,
+          dark_pool_access: (r[9] as boolean) ?? false,
+        })),
+      });
     } finally { client.release(); }
   }
 
@@ -281,18 +327,20 @@ async function handle(req: Request): Promise<Response> {
     const client = await usersPool.connect();
     try {
       const { rows } = await client.queryArray(
-        "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access FROM users.trading_limits WHERE user_id = $1",
+        "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk FROM users.trading_limits WHERE user_id = $1",
         [user.id],
       );
       const limits = rows.length > 0
         ? {
             max_order_qty: rows[0][0] as number,
             max_daily_notional: rows[0][1] as number,
-            allowed_strategies: (rows[0][2] as string).split(","),
-            allowed_desks: (rows[0][3] as string).split(","),
+            allowed_strategies: splitCsv(rows[0][2] as string),
+            allowed_desks: splitCsv(rows[0][3] as string),
             dark_pool_access: rows[0][4] as boolean,
+            trading_style: rows[0][5] as string,
+            primary_desk: rows[0][6] as string,
           }
-        : { max_order_qty: 10000, max_daily_notional: 1_000_000, allowed_strategies: ["LIMIT","TWAP","POV","VWAP"], allowed_desks: ["equity"], dark_pool_access: false };
+        : { max_order_qty: 10000, max_daily_notional: 1_000_000, allowed_strategies: ["LIMIT","TWAP","POV","VWAP"], allowed_desks: ["equity-cash"], dark_pool_access: false, trading_style: "high_touch", primary_desk: "equity-cash" };
       return json({ user, limits });
     } finally { client.release(); }
   }
@@ -304,18 +352,20 @@ async function handle(req: Request): Promise<Response> {
       const client = await usersPool.connect();
       try {
         const { rows } = await client.queryArray(
-          "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access FROM users.trading_limits WHERE user_id = $1",
+          "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk FROM users.trading_limits WHERE user_id = $1",
           [userId],
         );
         if (rows.length === 0) return json({ error: "user not found" }, 404);
-        const [max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access] = rows[0];
+        const [max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk] = rows[0];
         return json({
           userId,
           max_order_qty,
           max_daily_notional,
-          allowed_strategies: (allowed_strategies as string).split(","),
-          allowed_desks: (allowed_desks as string).split(","),
+          allowed_strategies: splitCsv(allowed_strategies as string),
+          allowed_desks: splitCsv(allowed_desks as string),
           dark_pool_access: dark_pool_access as boolean,
+          trading_style: trading_style as string,
+          primary_desk: primary_desk as string,
         });
       } finally { client.release(); }
     }

@@ -1,5 +1,6 @@
 export const AUTH_ROLES = [
   "trader",
+  "desk-head",
   "admin",
   "compliance",
   "sales",
@@ -10,6 +11,7 @@ export const AUTH_ROLES = [
 export type AuthRole = (typeof AUTH_ROLES)[number];
 
 export const NON_TRADING_ROLES = new Set<AuthRole>([
+  "desk-head",
   "admin",
   "compliance",
   "sales",
@@ -19,6 +21,7 @@ export const NON_TRADING_ROLES = new Set<AuthRole>([
 
 export const ROLE_LABELS: Record<AuthRole, string> = {
   trader: "Trader",
+  "desk-head": "Desk Head",
   admin: "Administrator",
   compliance: "Compliance",
   sales: "Sales",
