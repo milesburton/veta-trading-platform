@@ -46,6 +46,7 @@ export interface TicketContext {
   userRole:
     | "trader"
     | "desk-head"
+    | "risk-manager"
     | "admin"
     | "compliance"
     | "sales"

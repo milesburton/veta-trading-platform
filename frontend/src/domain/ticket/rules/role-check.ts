@@ -10,6 +10,8 @@ const ROLE_MESSAGES: Record<string, string> = {
   viewer: "View-only access. Contact your administrator to request trading permissions.",
   "desk-head":
     "Desk heads have read-only oversight across the desk. Manual order entry is disabled.",
+  "risk-manager":
+    "Risk managers have read-only oversight across all desks. Manual order entry is disabled.",
 };
 
 const STYLE_BLOCK_MESSAGES: Record<string, string> = {

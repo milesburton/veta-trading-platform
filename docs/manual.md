@@ -342,9 +342,11 @@ For self-service viewer onboarding, first call `POST /oauth/register` with `{ us
 
 Successful token exchange sets the `veta_user` cookie and returns the authenticated user.
 
-Runtime RBAC roles are: `trader`, `desk-head`, `admin`, `compliance`, `sales`, `external-client`, `viewer`.
+Runtime RBAC roles are: `trader`, `desk-head`, `risk-manager`, `admin`, `compliance`, `sales`, `external-client`, `viewer`.
 
-Only `trader` accounts may submit orders. `desk-head` is a read-only oversight role — see *Trading Styles & Desks* below. All other non-trading roles are read-only or administrative.
+Only `trader` accounts may submit orders. `desk-head` and `risk-manager` are read-only oversight roles — see *Trading Styles & Desks* below. All other non-trading roles are read-only or administrative.
+
+`risk-manager` is the second-line market-risk role: it sees every desk's positions, blotter, P&L and risk panels (greeks, vol surface, yield curve, DV01) but cannot submit orders. The seeded persona is `maya` (Maya Tanaka). The risk-engine and risk-monitor services that consume this role are introduced in a follow-up PR.
 
 ### Trading Styles & Desks
 

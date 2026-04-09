@@ -11,7 +11,7 @@ export type TestTradingStyle =
 export interface AuthUser {
   id: string;
   name: string;
-  role: "trader" | "desk-head" | "admin";
+  role: "trader" | "desk-head" | "risk-manager" | "admin";
   avatar_emoji: string;
 }
 

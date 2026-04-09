@@ -484,10 +484,12 @@ cookie on every WebSocket connection and every HTTP proxy request (cached 10
 seconds). The OMS independently fetches limits from the User Service (cached 30
 seconds).
 
-Runtime roles: `trader`, `desk-head`, `admin`, `compliance`, `sales`,
-`external-client`, `viewer`. Only `trader` accounts can submit orders. All
-other roles are read-only or administrative and are rejected at both the OMS
-(bus) and UI (OrderTicket role-locked) layers.
+Runtime roles: `trader`, `desk-head`, `risk-manager`, `admin`, `compliance`,
+`sales`, `external-client`, `viewer`. Only `trader` accounts can submit
+orders. `desk-head` and `risk-manager` are read-only oversight roles — the
+former scoped to a set of supervised desks, the latter cross-firm. All other
+roles are read-only or administrative and are rejected at both the OMS (bus)
+and UI (OrderTicket role-locked) layers.
 
 ### Trading Styles
 

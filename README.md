@@ -38,6 +38,7 @@ cross-desk access.
 | yuki | trader | FX cash | High touch | FX desk head — manual EUR/USD, USD/JPY quotes |
 | rajesh | trader | Commodities | Commodities voice | Oil, metals, agriculture RFQs |
 | frank | **desk-head** | Equity cash + Equity derivs + FI rates | Oversight | Read-only cross-desk supervision |
+| maya | **risk-manager** | All desks | Oversight | Sets VaR/notional limits, halts trading on breach (read-only book access) |
 | compliance | compliance | All | — | Read-only audit, session replay, trade review |
 | admin | admin | — | — | Mission Control, load test, LLM subsystem, RBAC |
 

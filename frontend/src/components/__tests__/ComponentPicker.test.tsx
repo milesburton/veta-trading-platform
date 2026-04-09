@@ -12,6 +12,7 @@ function makeStore(
   role:
     | "trader"
     | "desk-head"
+    | "risk-manager"
     | "admin"
     | "compliance"
     | "sales"

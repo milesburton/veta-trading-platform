@@ -302,7 +302,8 @@ consumer?.onMessage(async (_topic, raw) => {
     order.userRole === "sales" ||
     order.userRole === "external-client" ||
     order.userRole === "viewer" ||
-    order.userRole === "desk-head"
+    order.userRole === "desk-head" ||
+    order.userRole === "risk-manager"
   ) {
     const roleLabel = order.userRole === "admin"
       ? "Admin"
@@ -314,6 +315,8 @@ consumer?.onMessage(async (_topic, raw) => {
       ? "Viewer"
       : order.userRole === "desk-head"
       ? "Desk-head (read-only oversight)"
+      : order.userRole === "risk-manager"
+      ? "Risk Manager (read-only oversight)"
       : "External-client";
     console.warn(
       `[oms] Order rejected — ${order.userRole} user ${order.userId} attempted to submit an order`,

@@ -121,10 +121,18 @@ describe("resolveTicket", () => {
       "compliance",
       "sales",
       "external-client",
+      "viewer",
+      "desk-head",
+      "risk-manager",
     ] as const)("locks out %s users", (role) => {
       const r = resolveTicket(makeCtx({ userRole: role }));
       expect(r.roleLocked).toBe(true);
       expect(r.canSubmit).toBe(false);
+    });
+
+    it("risk-manager lock message mentions oversight", () => {
+      const r = resolveTicket(makeCtx({ userRole: "risk-manager" }));
+      expect(r.roleLockedMessage).toMatch(/risk manager|oversight/i);
     });
 
     it("allows trader users", () => {

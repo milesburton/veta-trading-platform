@@ -1068,6 +1068,13 @@ Deno.test("[personas] GET /personas returns trader personas with trading_style a
   assertExists(frank, "frank persona missing");
   assertEquals(frank!.role, "desk-head");
 
+  const maya = body.personas.find((p) => p.id === "maya");
+  assertExists(maya, "maya persona missing");
+  assertEquals(maya!.role, "risk-manager");
+  assertEquals(maya!.trading_style, "oversight");
+  assertEquals(maya!.primary_desk, "cross-desk");
+  assertEquals(maya!.max_order_qty, 0);
+
   for (const p of body.personas) {
     if (p.role === "trader") {
       assert(p.primary_desk !== null, `trader ${p.id} missing primary_desk`);

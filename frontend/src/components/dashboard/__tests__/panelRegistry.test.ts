@@ -158,6 +158,28 @@ describe("canAccessPanel — role restrictions", () => {
     expect(canAccessPanel("greeks-surface", "trader", "fi_voice")).toBe(false);
   });
 
+  it("risk-manager has read-only cross-desk oversight but cannot trade or admin", () => {
+    expect(canAccessPanel("market-ladder", "risk-manager")).toBe(true);
+    expect(canAccessPanel("order-blotter", "risk-manager")).toBe(true);
+    expect(canAccessPanel("algo-monitor", "risk-manager")).toBe(true);
+    expect(canAccessPanel("algo-leaderboard", "risk-manager")).toBe(true);
+    expect(canAccessPanel("decision-log", "risk-manager")).toBe(true);
+    expect(canAccessPanel("yield-curve", "risk-manager")).toBe(true);
+    expect(canAccessPanel("vol-surface", "risk-manager")).toBe(true);
+    expect(canAccessPanel("greeks-surface", "risk-manager")).toBe(true);
+    expect(canAccessPanel("estate-overview", "risk-manager")).toBe(true);
+    expect(canAccessPanel("throughput-gauges", "risk-manager")).toBe(true);
+    expect(canAccessPanel("session-replay", "risk-manager")).toBe(true);
+    expect(canAccessPanel("order-ticket", "risk-manager")).toBe(false);
+    expect(canAccessPanel("basket-order", "risk-manager")).toBe(false);
+    expect(canAccessPanel("admin", "risk-manager")).toBe(false);
+    expect(canAccessPanel("load-test", "risk-manager")).toBe(false);
+    expect(canAccessPanel("llm-subsystem", "risk-manager")).toBe(false);
+    expect(canAccessPanel("market-data-sources", "risk-manager")).toBe(false);
+    expect(canAccessPanel("client-rfq", "risk-manager")).toBe(false);
+    expect(canAccessPanel("sales-workbench", "risk-manager")).toBe(false);
+  });
+
   it("desk-head has read-only cross-desk oversight but cannot access order-ticket", () => {
     expect(canAccessPanel("order-blotter", "desk-head")).toBe(true);
     expect(canAccessPanel("algo-monitor", "desk-head")).toBe(true);
