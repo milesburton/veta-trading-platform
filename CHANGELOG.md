@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.14.2...veta-trading-platform-v1.15.0) (2026-04-08)
+
+
+### Features
+
+* **personas:** demo persona picker on login + style-aware default workspace ([c060b6f](https://github.com/milesburton/veta-trading-platform/commit/c060b6f68d80c667336b4916df050b976720592b))
+* **personas:** realistic desk segregation and high/low-touch RBAC ([dd9ac78](https://github.com/milesburton/veta-trading-platform/commit/dd9ac78f85f187c7bd6db575059cfe42e684fae1))
+
 ## [1.14.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.14.1...veta-trading-platform-v1.14.2) (2026-04-07)
 
 
