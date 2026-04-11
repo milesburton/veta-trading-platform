@@ -36,6 +36,7 @@ import { MarketFeedControlPanel } from "../MarketFeedControlPanel.tsx";
 import { MarketHeatmap } from "../MarketHeatmap.tsx";
 import { MarketLadder } from "../MarketLadder.tsx";
 import { MarketMatch } from "../MarketMatch.tsx";
+import { MyPositionsPanel } from "../MyPositionsPanel.tsx";
 import { NewsSourcesPanel } from "../NewsSourcesPanel.tsx";
 import { ObservabilityPanel } from "../ObservabilityPanel.tsx";
 import { OptionPricingPanel } from "../OptionPricingPanel.tsx";
@@ -47,6 +48,7 @@ import { ProductBookPanel } from "../ProductBookPanel.tsx";
 import { ProductBuilderPanel } from "../ProductBuilderPanel.tsx";
 import { clearDraggedPanelId, draggedPanelId } from "../panelDragState.ts";
 import { ResearchRadarPanel } from "../ResearchRadarPanel.tsx";
+import { RiskDashboardPanel } from "../RiskDashboardPanel.tsx";
 import { SalesWorkbenchPanel } from "../SalesWorkbenchPanel.tsx";
 import { ScenarioMatrixPanel } from "../ScenarioMatrixPanel.tsx";
 import { ServiceHealthPanel } from "../ServiceHealthPanel.tsx";
@@ -716,6 +718,10 @@ export function DashboardLayout() {
           return wrap(<ProductBookPanel />);
         case "session-replay":
           return wrap(<SessionReplayPanel />);
+        case "risk-dashboard":
+          return wrap(<RiskDashboardPanel />);
+        case "my-positions":
+          return wrap(<MyPositionsPanel />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }

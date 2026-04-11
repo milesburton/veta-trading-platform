@@ -73,6 +73,8 @@ interface Position {
   netQty: number;
   avgPrice: number;
   costBasis: number;
+  realisedPnl: number;
+  fillCount: number;
 }
 const positions: Map<string, Map<string, Position>> = new Map();
 
@@ -342,20 +344,51 @@ function updatePosition(
   }
   let pos = userPositions.get(symbol);
   if (!pos) {
-    pos = { symbol, netQty: 0, avgPrice: 0, costBasis: 0 };
+    pos = { symbol, netQty: 0, avgPrice: 0, costBasis: 0, realisedPnl: 0, fillCount: 0 };
     userPositions.set(symbol, pos);
   }
 
+  pos.fillCount += 1;
   const signedQty = side === "BUY" ? qty : -qty;
   const prevNetQty = pos.netQty;
-  pos.netQty += signedQty;
-  pos.costBasis += signedQty * price;
-  pos.avgPrice = pos.netQty !== 0 ? Math.abs(pos.costBasis / pos.netQty) : 0;
 
-  if (prevNetQty !== 0 && Math.sign(prevNetQty) !== Math.sign(pos.netQty)) {
-    pos.costBasis = pos.netQty * price;
-    pos.avgPrice = price;
+  const isReducing =
+    prevNetQty !== 0 &&
+    ((prevNetQty > 0 && signedQty < 0) || (prevNetQty < 0 && signedQty > 0));
+
+  if (isReducing) {
+    const closedQty = Math.min(Math.abs(signedQty), Math.abs(prevNetQty));
+    pos.realisedPnl += closedQty * (price - pos.avgPrice) * (prevNetQty > 0 ? 1 : -1);
   }
+
+  pos.netQty += signedQty;
+
+  if (pos.netQty === 0) {
+    pos.avgPrice = 0;
+    pos.costBasis = 0;
+  } else if (prevNetQty !== 0 && Math.sign(prevNetQty) !== Math.sign(pos.netQty)) {
+    pos.avgPrice = price;
+    pos.costBasis = pos.netQty * price;
+  } else if (!isReducing) {
+    pos.costBasis += signedQty * price;
+    pos.avgPrice = Math.abs(pos.costBasis / pos.netQty);
+  }
+}
+
+function formatPosition(p: Position) {
+  const mark = prices[p.symbol] ?? p.avgPrice;
+  const unrealisedPnl = p.netQty * (mark - p.avgPrice);
+  return {
+    symbol: p.symbol,
+    netQty: p.netQty,
+    avgPrice: Number(p.avgPrice.toFixed(4)),
+    costBasis: Number(p.costBasis.toFixed(2)),
+    markPrice: Number(mark.toFixed(4)),
+    unrealisedPnl: Number(unrealisedPnl.toFixed(2)),
+    realisedPnl: Number(p.realisedPnl.toFixed(2)),
+    totalPnl: Number((unrealisedPnl + p.realisedPnl).toFixed(2)),
+    fillCount: p.fillCount,
+  };
 }
 
 fetchPrices();
@@ -409,14 +442,7 @@ Deno.serve({ port: PORT }, async (req) => {
     if (!userPositions || userPositions.size === 0) {
       return json({ userId, positions: [] });
     }
-    const posArr = [...userPositions.values()].map((p) => ({
-      symbol: p.symbol,
-      netQty: p.netQty,
-      avgPrice: Number(p.avgPrice.toFixed(4)),
-      costBasis: Number(p.costBasis.toFixed(2)),
-      markPrice: prices[p.symbol] ?? 0,
-      unrealisedPnl: p.netQty * ((prices[p.symbol] ?? p.avgPrice) - p.avgPrice),
-    }));
+    const posArr = [...userPositions.values()].map((p) => formatPosition(p));
     return json({ userId, positions: posArr });
   }
 
@@ -432,13 +458,7 @@ Deno.serve({ port: PORT }, async (req) => {
       }>
     > = {};
     for (const [userId, userPos] of positions) {
-      allPositions[userId] = [...userPos.values()].map((p) => ({
-        symbol: p.symbol,
-        netQty: p.netQty,
-        avgPrice: Number(p.avgPrice.toFixed(4)),
-        markPrice: prices[p.symbol] ?? 0,
-        unrealisedPnl: p.netQty * ((prices[p.symbol] ?? p.avgPrice) - p.avgPrice),
-      }));
+      allPositions[userId] = [...userPos.values()].map((p) => formatPosition(p));
     }
     return json({ positions: allPositions });
   }

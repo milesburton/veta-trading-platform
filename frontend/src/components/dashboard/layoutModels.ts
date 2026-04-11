@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v22`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v23`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -228,6 +228,15 @@ export function makeExecutionModel(): IJsonModel {
               config: {
                 panelType: "order-blotter",
                 outgoing: 2,
+              } satisfies TabChannelConfig,
+            },
+            {
+              type: "tab",
+              id: "my-positions",
+              name: PANEL_TITLES["my-positions"],
+              component: "my-positions",
+              config: {
+                panelType: "my-positions",
               } satisfies TabChannelConfig,
             },
           ],
@@ -1266,6 +1275,15 @@ export function makeAdministrationModel(): IJsonModel {
                   component: "session-replay",
                   config: {
                     panelType: "session-replay",
+                  } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "risk-dashboard",
+                  name: PANEL_TITLES["risk-dashboard"],
+                  component: "risk-dashboard",
+                  config: {
+                    panelType: "risk-dashboard",
                   } satisfies TabChannelConfig,
                 },
               ],

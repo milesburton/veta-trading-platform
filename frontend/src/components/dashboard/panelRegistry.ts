@@ -58,6 +58,8 @@ export const PANEL_IDS = [
   "product-builder",
   "product-book",
   "session-replay",
+  "risk-dashboard",
+  "my-positions",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -108,6 +110,8 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "product-builder": "Product Builder (structured products)",
   "product-book": "Product Book (issued products)",
   "session-replay": "Session Replay",
+  "risk-dashboard": "Risk Dashboard (firm-wide P&L)",
+  "my-positions": "My Positions (live book)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -191,6 +195,8 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "product-book":
     "Browse and manage structured products — view all products by state, request quotes, and track sales",
   "session-replay": "Record and replay user sessions for training and audit",
+  "risk-dashboard": "Firm-wide position and P&L monitor — every trader's book in one view",
+  "my-positions": "Your open positions with live mark-to-market P&L",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -214,6 +220,8 @@ export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
   "product-builder",
   "product-book",
   "session-replay",
+  "risk-dashboard",
+  "my-positions",
 ]);
 
 export interface TabChannelConfig {
@@ -269,6 +277,8 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "product-builder": { out: false, in: false },
   "product-book": { out: false, in: false },
   "session-replay": { out: false, in: false },
+  "risk-dashboard": { out: false, in: false },
+  "my-positions": { out: false, in: false },
 };
 
 export type TradingStyle =
@@ -503,6 +513,8 @@ export const PANEL_PERMISSIONS: Record<PanelId, ReadonlySet<AuthRole>> = {
     "external-client",
   ]),
   "session-replay": new Set<AuthRole>(["admin", "compliance", "risk-manager"]),
+  "risk-dashboard": new Set<AuthRole>(["desk-head", "risk-manager", "admin", "compliance"]),
+  "my-positions": new Set<AuthRole>(["trader", "desk-head", "risk-manager", "admin", "compliance"]),
 };
 
 export const PANEL_TRADING_STYLES: Partial<Record<PanelId, ReadonlySet<TradingStyle>>> = {

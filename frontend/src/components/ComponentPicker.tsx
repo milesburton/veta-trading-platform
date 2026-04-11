@@ -55,6 +55,8 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "product-builder": "Build multi-leg structured products with equity, bond, and option legs",
   "product-book": "Browse issued products and initiate client sales via RFQ",
   "session-replay": "Record and replay user sessions for training and audit",
+  "risk-dashboard": "Firm-wide position and P&L monitor — every trader's book in one view",
+  "my-positions": "Your open positions with live mark-to-market P&L",
 };
 
 export function ComponentPicker() {
