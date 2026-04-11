@@ -117,10 +117,12 @@ RUN mkdir -p /var/lib/postgresql && chown -R postgres:postgres /var/lib/postgres
 RUN printf '%s\n' \
     '#!/bin/bash' \
     'set -e' \
-    'echo "[startup] truncating any pre-existing supervisor logs"' \
+    'echo "[startup] cleaning disk for fresh start (ephemeral demo)"' \
     'find /var/log/supervisor -type f -name "*.log*" -exec truncate -s 0 {} \; 2>/dev/null || true' \
     'find /var/log -maxdepth 1 -type f -name "*.log*" -exec truncate -s 0 {} \; 2>/dev/null || true' \
-    'echo "[startup] disk usage after truncate:"' \
+    'rm -rf /var/lib/postgresql/data 2>/dev/null || true' \
+    'mkdir -p /var/lib/postgresql/data && chown postgres:postgres /var/lib/postgresql/data' \
+    'echo "[startup] disk usage after cleanup:"' \
     'df -Pkh / || true' \
     'exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf' \
     > /usr/local/bin/start-veta.sh && chmod +x /usr/local/bin/start-veta.sh

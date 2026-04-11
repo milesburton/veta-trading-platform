@@ -22,6 +22,7 @@ import { createConsumer, createProducer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("OMS_PORT")) || 5_002;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
+const RISK_ENGINE_URL = `http://${Deno.env.get("RISK_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("RISK_ENGINE_PORT") ?? "5032"}`;
 const USER_SERVICE_URL = `http://${
   Deno.env.get("USER_SERVICE_HOST") ?? "localhost"
 }:${Deno.env.get("USER_SERVICE_PORT") ?? "5008"}`;
@@ -344,6 +345,53 @@ consumer?.onMessage(async (_topic, raw) => {
       clientOrderId: order.clientOrderId,
       userId: order.userId,
       reason: `Your account does not have access to the ${desk} desk`,
+      ts: Date.now(),
+    }).catch(() => {});
+    return;
+  }
+
+  try {
+    const riskRes = await fetch(`${RISK_ENGINE_URL}/check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderId: order.clientOrderId,
+        userId: order.userId,
+        userRole: order.userRole,
+        symbol: order.asset,
+        side: order.side,
+        quantity: order.quantity,
+        limitPrice: order.limitPrice,
+        strategy: order.strategy,
+        instrumentType: order.instrumentType,
+      }),
+      signal: AbortSignal.timeout(3_000),
+    });
+    const riskResult = (await riskRes.json()) as {
+      allowed: boolean;
+      reasons: string[];
+      warnings: string[];
+    };
+    if (!riskResult.allowed) {
+      const reason = riskResult.reasons.join("; ");
+      console.warn(`[oms] Risk-engine rejected order ${order.clientOrderId}: ${reason}`);
+      await producer?.send("orders.rejected", {
+        clientOrderId: order.clientOrderId,
+        userId: order.userId,
+        reason: `Risk check failed: ${reason}`,
+        ts: Date.now(),
+      }).catch(() => {});
+      return;
+    }
+    for (const w of riskResult.warnings) {
+      console.log(`[oms] Risk warning for ${order.clientOrderId}: ${w}`);
+    }
+  } catch (err) {
+    console.error(`[oms] Risk-engine unreachable — rejecting order ${order.clientOrderId}:`, (err as Error).message);
+    await producer?.send("orders.rejected", {
+      clientOrderId: order.clientOrderId,
+      userId: order.userId,
+      reason: "Risk engine unavailable — all orders are blocked until the risk service is restored",
       ts: Date.now(),
     }).catch(() => {});
     return;

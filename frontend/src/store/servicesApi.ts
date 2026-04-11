@@ -223,6 +223,14 @@ const SERVICES_ALL: {
     description: "Session recording and replay",
     port: 5031,
   },
+  {
+    name: "Risk Engine",
+    url: `${_origin}/api/risk-engine/health`,
+    link: `${_origin}/api/risk-engine/health`,
+    category: "core",
+    description: "Real-time pre-trade and post-trade risk checks",
+    port: 5032,
+  },
 ];
 
 // Filter out services that are restricted to specific deployments

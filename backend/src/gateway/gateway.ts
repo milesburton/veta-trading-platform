@@ -36,6 +36,7 @@ const PRODUCT_SERVICE_URL = `http://${Deno.env.get("PRODUCT_SERVICE_HOST") ?? "l
 const NEWS_AGGREGATOR_URL = `http://${Deno.env.get("NEWS_AGGREGATOR_HOST") ?? "localhost"}:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`;
 const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost"}:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`;
 const REPLAY_URL = `http://${Deno.env.get("REPLAY_HOST") ?? "localhost"}:${Deno.env.get("REPLAY_PORT") ?? "5031"}`;
+const RISK_ENGINE_URL = `http://${Deno.env.get("RISK_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("RISK_ENGINE_PORT") ?? "5032"}`;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -491,6 +492,7 @@ type ServiceHealth = {
   analytics: boolean; marketData: boolean; featureEngine: boolean; signalEngine: boolean;
   recommendationEngine: boolean; scenarioEngine: boolean; newsAggregator: boolean; llmAdvisory: boolean;
   replay: boolean;
+  riskEngine: boolean;
   bus: boolean;
 };
 
@@ -505,6 +507,7 @@ async function refreshHealth(): Promise<void> {
     darkPool, ccpService, rfqService, productService,
     analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
     replay,
+    riskEngine,
     bus,
   ] = await Promise.all([
     chk(MARKET_SIM_URL), chk(EMS_URL), chk(OMS_URL), chk(JOURNAL_URL), chk(USER_SERVICE_URL),
@@ -515,6 +518,7 @@ async function refreshHealth(): Promise<void> {
     chk(ANALYTICS_URL), chk(MARKET_DATA_URL), chk(FEATURE_ENGINE_URL), chk(SIGNAL_ENGINE_URL),
     chk(RECOMMENDATION_ENGINE_URL), chk(SCENARIO_ENGINE_URL), chk(NEWS_AGGREGATOR_URL), chk(LLM_ADVISORY_URL),
     chk(REPLAY_URL),
+    chk(RISK_ENGINE_URL),
     chk(OBSERVABILITY_URL),
   ]);
   cachedHealth = {
@@ -523,6 +527,7 @@ async function refreshHealth(): Promise<void> {
     darkPool, ccpService, rfqService, productService,
     analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
     replay,
+    riskEngine,
     bus,
   };
 }
@@ -1702,6 +1707,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "ccp-service":          CCP_SERVICE_URL,
     "rfq-service":          RFQ_SERVICE_URL,
     "replay":               REPLAY_URL,
+    "risk-engine":          RISK_ENGINE_URL,
   };
 
   const svcMatch = path.match(/^\/api\/([^/]+)(\/.*)?$/);

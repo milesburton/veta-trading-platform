@@ -47,6 +47,7 @@ const CCP_URL       = svcUrl(5028, "/api/ccp-service");
 const RFQ_URL       = svcUrl(5029, "/api/rfq-service");
 const MDA_URL       = svcUrl(5016, "/api/market-data-adapters");
 const REPLAY_URL    = svcUrl(5031, "/api/replay");
+const RISK_ENGINE_URL = svcUrl(5032, "/api/risk-engine");
 const OAUTH_PASSWORD = Deno.env.get("OAUTH2_SHARED_SECRET") ?? "veta-dev-passcode";
 
 
@@ -88,6 +89,7 @@ const ALL_SERVICES = [
   // LLM advisory
   { name: "llm-advisory-orchestrator", url: LLM_URL       },
   { name: "replay-service",           url: REPLAY_URL    },
+  { name: "risk-engine",             url: RISK_ENGINE_URL },
 ] as const;
 
 
