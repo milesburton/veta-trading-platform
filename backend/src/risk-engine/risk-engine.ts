@@ -23,12 +23,16 @@ interface RiskConfig {
   fatFingerPct: number;
   maxOpenOrders: number;
   duplicateWindowMs: number;
+  maxOrdersPerSecond: number;
+  maxAdvPct: number;
 }
 
 const config: RiskConfig = {
   fatFingerPct: 5.0,
   maxOpenOrders: 50,
   duplicateWindowMs: 500,
+  maxOrdersPerSecond: 10,
+  maxAdvPct: 10.0,
 };
 
 interface CheckRequest {
@@ -50,8 +54,27 @@ interface CheckResult {
 }
 
 const prices: Record<string, number> = {};
+const volumes: Record<string, number> = {};
 
 const activeOrderCounts: Map<string, number> = new Map();
+
+interface WorkingOrder {
+  userId: string;
+  symbol: string;
+  side: "BUY" | "SELL";
+  orderId: string;
+}
+const workingOrders: WorkingOrder[] = [];
+
+const rateBuckets: Map<string, { tokens: number; lastRefill: number }> = new Map();
+
+interface Position {
+  symbol: string;
+  netQty: number;
+  avgPrice: number;
+  costBasis: number;
+}
+const positions: Map<string, Map<string, Position>> = new Map();
 
 interface RecentOrder {
   userId: string;
@@ -136,6 +159,57 @@ function checkMaxOpenOrders(req: CheckRequest): { code: string; message: string 
   return null;
 }
 
+function checkSelfCross(req: CheckRequest): { code: string; message: string } | null {
+  const oppositeSide = req.side === "BUY" ? "SELL" : "BUY";
+  const conflict = workingOrders.find(
+    (o) => o.userId === req.userId && o.symbol === req.symbol && o.side === oppositeSide,
+  );
+  if (conflict) {
+    return {
+      code: "SELF_CROSS",
+      message: `Self-cross: you have a working ${oppositeSide} on ${req.symbol} (${conflict.orderId}) — submitting a ${req.side} would cross your own order`,
+    };
+  }
+  return null;
+}
+
+function checkOrderSizeVsAdv(req: CheckRequest): { code: string; message: string } | null {
+  const adv = volumes[req.symbol];
+  if (!adv || adv <= 0) return null;
+
+  const pctOfAdv = (req.quantity / adv) * 100;
+  if (pctOfAdv > config.maxAdvPct) {
+    return {
+      code: "ORDER_SIZE_VS_ADV",
+      message: `Order quantity ${req.quantity.toLocaleString()} is ${pctOfAdv.toFixed(1)}% of ADV ${adv.toLocaleString()} (limit: ${config.maxAdvPct}%)`,
+    };
+  }
+  return null;
+}
+
+function checkRateLimit(req: CheckRequest): { code: string; message: string } | null {
+  const now = Date.now();
+  let bucket = rateBuckets.get(req.userId);
+  if (!bucket) {
+    bucket = { tokens: config.maxOrdersPerSecond, lastRefill: now };
+    rateBuckets.set(req.userId, bucket);
+  }
+
+  const elapsed = (now - bucket.lastRefill) / 1_000;
+  bucket.tokens = Math.min(config.maxOrdersPerSecond, bucket.tokens + elapsed * config.maxOrdersPerSecond);
+  bucket.lastRefill = now;
+
+  if (bucket.tokens < 1) {
+    return {
+      code: "RATE_LIMIT",
+      message: `Rate limit exceeded: max ${config.maxOrdersPerSecond} orders/second for user ${req.userId}`,
+    };
+  }
+
+  bucket.tokens -= 1;
+  return null;
+}
+
 function runChecks(req: CheckRequest): CheckResult {
   const reasons: string[] = [];
   const warnings: string[] = [];
@@ -148,6 +222,15 @@ function runChecks(req: CheckRequest): CheckResult {
 
   const maxOrders = checkMaxOpenOrders(req);
   if (maxOrders) reasons.push(`[${maxOrders.code}] ${maxOrders.message}`);
+
+  const selfCross = checkSelfCross(req);
+  if (selfCross) reasons.push(`[${selfCross.code}] ${selfCross.message}`);
+
+  const advCheck = checkOrderSizeVsAdv(req);
+  if (advCheck) reasons.push(`[${advCheck.code}] ${advCheck.message}`);
+
+  const rateLimit = checkRateLimit(req);
+  if (rateLimit) reasons.push(`[${rateLimit.code}] ${rateLimit.message}`);
 
   return {
     allowed: reasons.length === 0,
@@ -163,9 +246,14 @@ async function fetchPrices(): Promise<void> {
       { signal: AbortSignal.timeout(3_000) },
     );
     if (res.ok) {
-      const assets = (await res.json()) as Array<{ symbol: string; price: number }>;
+      const assets = (await res.json()) as Array<{
+        symbol: string;
+        price: number;
+        volume?: number;
+      }>;
       for (const a of assets) {
         if (a.price > 0) prices[a.symbol] = a.price;
+        if (a.volume && a.volume > 0) volumes[a.symbol] = a.volume;
       }
     }
   } catch {
@@ -176,6 +264,7 @@ async function fetchPrices(): Promise<void> {
 function trackOrderCounts() {
   createConsumer(`risk-engine-orders-${Date.now()}`, [
     "orders.submitted",
+    "orders.routed",
     "orders.filled",
     "orders.expired",
     "orders.rejected",
@@ -183,19 +272,90 @@ function trackOrderCounts() {
   ])
     .then((consumer) => {
       consumer.onMessage((topic, raw) => {
-        const msg = raw as { userId?: string; clientOrderId?: string };
+        const msg = raw as {
+          userId?: string;
+          clientOrderId?: string;
+          orderId?: string;
+          asset?: string;
+          symbol?: string;
+          side?: string;
+          filledQty?: number;
+          avgFillPrice?: number;
+          quantity?: number;
+        };
         const userId = msg.userId;
         if (!userId) return;
+        const symbol = msg.asset ?? msg.symbol;
+        const orderId = msg.orderId ?? msg.clientOrderId ?? "";
 
         if (topic === "orders.submitted") {
           activeOrderCounts.set(userId, (activeOrderCounts.get(userId) ?? 0) + 1);
-        } else {
+        } else if (
+          topic === "orders.filled" ||
+          topic === "orders.expired" ||
+          topic === "orders.rejected" ||
+          topic === "orders.cancelled"
+        ) {
           const count = activeOrderCounts.get(userId) ?? 0;
           if (count > 0) activeOrderCounts.set(userId, count - 1);
+
+          const idx = workingOrders.findIndex(
+            (o) => o.userId === userId && o.orderId === orderId,
+          );
+          if (idx >= 0) workingOrders.splice(idx, 1);
+        }
+
+        if (topic === "orders.routed" && symbol && msg.side) {
+          workingOrders.push({
+            userId,
+            symbol,
+            side: msg.side as "BUY" | "SELL",
+            orderId,
+          });
+        }
+
+        if (topic === "orders.filled" && symbol && msg.filledQty && msg.avgFillPrice) {
+          updatePosition(
+            userId,
+            symbol,
+            msg.side as "BUY" | "SELL",
+            msg.filledQty,
+            msg.avgFillPrice,
+          );
         }
       });
     })
     .catch(() => {});
+}
+
+function updatePosition(
+  userId: string,
+  symbol: string,
+  side: "BUY" | "SELL",
+  qty: number,
+  price: number,
+): void {
+  let userPositions = positions.get(userId);
+  if (!userPositions) {
+    userPositions = new Map();
+    positions.set(userId, userPositions);
+  }
+  let pos = userPositions.get(symbol);
+  if (!pos) {
+    pos = { symbol, netQty: 0, avgPrice: 0, costBasis: 0 };
+    userPositions.set(symbol, pos);
+  }
+
+  const signedQty = side === "BUY" ? qty : -qty;
+  const prevNetQty = pos.netQty;
+  pos.netQty += signedQty;
+  pos.costBasis += signedQty * price;
+  pos.avgPrice = pos.netQty !== 0 ? Math.abs(pos.costBasis / pos.netQty) : 0;
+
+  if (prevNetQty !== 0 && Math.sign(prevNetQty) !== Math.sign(pos.netQty)) {
+    pos.costBasis = pos.netQty * price;
+    pos.avgPrice = price;
+  }
 }
 
 fetchPrices();
@@ -216,7 +376,10 @@ Deno.serve({ port: PORT }, async (req) => {
       version: VERSION,
       status: "ok",
       pricesTracked: Object.keys(prices).length,
+      volumesTracked: Object.keys(volumes).length,
       activeUsers: activeOrderCounts.size,
+      workingOrders: workingOrders.length,
+      positionsTracked: positions.size,
       config,
     });
   }
@@ -231,10 +394,53 @@ Deno.serve({ port: PORT }, async (req) => {
       if (body.fatFingerPct !== undefined) config.fatFingerPct = Math.max(0.1, body.fatFingerPct);
       if (body.maxOpenOrders !== undefined) config.maxOpenOrders = Math.max(1, body.maxOpenOrders);
       if (body.duplicateWindowMs !== undefined) config.duplicateWindowMs = Math.max(50, body.duplicateWindowMs);
+      if (body.maxOrdersPerSecond !== undefined) config.maxOrdersPerSecond = Math.max(1, body.maxOrdersPerSecond);
+      if (body.maxAdvPct !== undefined) config.maxAdvPct = Math.max(0.1, body.maxAdvPct);
       return json(config);
     } catch {
       return json({ error: "invalid json" }, 400);
     }
+  }
+
+  const positionsMatch = path.match(/^\/positions\/([^/]+)$/);
+  if (positionsMatch && req.method === "GET") {
+    const userId = positionsMatch[1];
+    const userPositions = positions.get(userId);
+    if (!userPositions || userPositions.size === 0) {
+      return json({ userId, positions: [] });
+    }
+    const posArr = [...userPositions.values()].map((p) => ({
+      symbol: p.symbol,
+      netQty: p.netQty,
+      avgPrice: Number(p.avgPrice.toFixed(4)),
+      costBasis: Number(p.costBasis.toFixed(2)),
+      markPrice: prices[p.symbol] ?? 0,
+      unrealisedPnl: p.netQty * ((prices[p.symbol] ?? p.avgPrice) - p.avgPrice),
+    }));
+    return json({ userId, positions: posArr });
+  }
+
+  if (path === "/positions" && req.method === "GET") {
+    const allPositions: Record<
+      string,
+      Array<{
+        symbol: string;
+        netQty: number;
+        avgPrice: number;
+        markPrice: number;
+        unrealisedPnl: number;
+      }>
+    > = {};
+    for (const [userId, userPos] of positions) {
+      allPositions[userId] = [...userPos.values()].map((p) => ({
+        symbol: p.symbol,
+        netQty: p.netQty,
+        avgPrice: Number(p.avgPrice.toFixed(4)),
+        markPrice: prices[p.symbol] ?? 0,
+        unrealisedPnl: p.netQty * ((prices[p.symbol] ?? p.avgPrice) - p.avgPrice),
+      }));
+    }
+    return json({ positions: allPositions });
   }
 
   if (path === "/check" && req.method === "POST") {

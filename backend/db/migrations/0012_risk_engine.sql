@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS risk.config (
   fat_finger_pct DOUBLE PRECISION NOT NULL DEFAULT 5.0,
   max_open_orders INTEGER NOT NULL DEFAULT 50,
   duplicate_window_ms INTEGER NOT NULL DEFAULT 500,
+  max_orders_per_second INTEGER NOT NULL DEFAULT 10,
+  max_adv_pct DOUBLE PRECISION NOT NULL DEFAULT 10.0,
   updated_by TEXT,
   updated_at TIMESTAMPTZ DEFAULT now()
 );
