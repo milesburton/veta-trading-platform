@@ -238,12 +238,16 @@ async function fetchPrices(): Promise<void> {
     if (res.ok) {
       const assets = (await res.json()) as Array<{
         symbol: string;
-        price: number;
+        price?: number;
+        initialPrice?: number;
         volume?: number;
+        dailyVolume?: number;
       }>;
       for (const a of assets) {
-        if (a.price > 0) prices[a.symbol] = a.price;
-        if (a.volume && a.volume > 0) volumes[a.symbol] = a.volume;
+        const p = a.price ?? a.initialPrice ?? 0;
+        if (p > 0) prices[a.symbol] = p;
+        const v = a.volume ?? a.dailyVolume ?? 0;
+        if (v > 0) volumes[a.symbol] = v;
       }
     }
   } catch {
