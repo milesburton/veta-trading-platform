@@ -226,6 +226,18 @@ jobs:
             sleep 2
           done
 
+      - name: Wait for risk-engine to have prices
+        run: |
+          for i in $(seq 1 30); do
+            TRACKED=$(curl -sf http://localhost:5032/health | python3 -c "import sys,json; print(json.load(sys.stdin).get('pricesTracked',0))" 2>/dev/null || echo 0)
+            if [ "$TRACKED" -gt 0 ] 2>/dev/null; then
+              echo "Risk-engine has $TRACKED prices tracked"
+              break
+            fi
+            echo "Waiting for risk-engine prices ($i/30)..."
+            sleep 2
+          done
+
       - name: Wait for Kafka consumers to subscribe
         run: |
           echo "Allowing 20s for all algo Kafka consumers to subscribe to their topics..."
