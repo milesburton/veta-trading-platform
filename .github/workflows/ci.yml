@@ -238,6 +238,14 @@ jobs:
             sleep 2
           done
 
+      - name: Configure risk-engine for integration tests
+        run: |
+          curl -sf -X PUT http://localhost:5032/config \
+            -H 'Content-Type: application/json' \
+            -d '{"maxOrdersPerSecond":100,"duplicateWindowMs":50,"maxOpenOrders":500,"fatFingerPct":50,"maxAdvPct":100}' \
+            && echo "✅ Risk-engine configured for integration test throughput" \
+            || echo "⚠️ Could not configure risk-engine (tests may be rate-limited)"
+
       - name: Wait for Kafka consumers to subscribe
         run: |
           echo "Allowing 20s for all algo Kafka consumers to subscribe to their topics..."
