@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.16.0...veta-trading-platform-v1.16.1) (2026-04-12)
+
+
+### Bug Fixes
+
+* **ci:** mark smoke tests continue-on-error (SNIPER/IS/MOMENTUM settled-order flakes) ([987ada3](https://github.com/milesburton/veta-trading-platform/commit/987ada32e1ba68d09bf03522a3d0a4aca3fdf930))
+
 ## [1.16.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.15.0...veta-trading-platform-v1.16.0) (2026-04-12)
 
 
