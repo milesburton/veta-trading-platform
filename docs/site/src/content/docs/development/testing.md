@@ -1,6 +1,8 @@
 ---
 title: Testing
 description: Test suites, coverage, and how to run them.
+sidebar:
+  order: 6
 ---
 
 ## Test suites

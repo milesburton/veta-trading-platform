@@ -1,6 +1,8 @@
 ---
 title: Deployment
 description: How to deploy VETA to Fly.io, homelab, or locally.
+sidebar:
+  order: 7
 ---
 
 ## Fly.io (cloud demo)

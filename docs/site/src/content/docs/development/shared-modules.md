@@ -1,6 +1,8 @@
 ---
 title: Shared Modules
 description: The @veta/ import map and shared code conventions.
+sidebar:
+  order: 5
 ---
 
 All shared backend modules use Deno import map aliases defined in `deno.json`. Use these instead of relative paths.

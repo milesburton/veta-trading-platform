@@ -1,6 +1,8 @@
 ---
 title: Project Structure
 description: How the codebase is organised.
+sidebar:
+  order: 4
 ---
 
 ```

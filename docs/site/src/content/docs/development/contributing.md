@@ -1,6 +1,8 @@
 ---
 title: Contributing
 description: How to contribute to the VETA Trading Platform.
+sidebar:
+  order: 3
 ---
 
 ## Development environment
