@@ -18,3 +18,5 @@ frontend/storybook-static/
 .jscpd-report-post/
 .vite/
 test-results/
+docs/site/public/screenshots/
+docs/site/.astro/

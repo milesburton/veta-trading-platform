@@ -1,0 +1,59 @@
+:root {
+  --sl-color-accent-low: #1e293b;
+  --sl-color-accent: #38bdf8;
+  --sl-color-accent-high: #bae6fd;
+}
+
+.screenshot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.screenshot-card {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.15s;
+}
+
+.screenshot-card:hover {
+  transform: translateY(-2px);
+}
+
+.screenshot-card img {
+  width: 100%;
+  display: block;
+}
+
+.screenshot-card .caption {
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: var(--sl-color-gray-2);
+}
+
+.persona-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.persona-card {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 0.9rem;
+}
+
+.persona-card h4 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.persona-card .meta {
+  font-size: 0.8rem;
+  color: var(--sl-color-gray-3);
+  margin-bottom: 0.5rem;
+}

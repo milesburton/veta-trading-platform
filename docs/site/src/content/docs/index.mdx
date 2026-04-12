@@ -1,0 +1,49 @@
+---
+title: VETA Trading Platform
+description: A near real-world equities and fixed income trading platform for paper trading and learning market dynamics.
+template: splash
+hero:
+  tagline: Paper trade equities, fixed income, FX, and commodities with realistic desk segregation, algo strategies, and pre-trade risk controls.
+  image:
+    file: ../../assets/logo.svg
+  actions:
+    - text: Live Demo
+      link: https://veta-trading.fly.dev/
+      icon: external
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/milesburton/veta-trading-platform
+      icon: github
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="9 Algo Strategies" icon="rocket">
+    LIMIT, TWAP, VWAP, POV, ICEBERG, SNIPER, ARRIVAL_PRICE, IS, and MOMENTUM.
+    Each runs as an independent microservice on the Redpanda message bus.
+  </Card>
+  <Card title="Pre-trade Risk Engine" icon="warning">
+    6 real-time checks: fat-finger price collar, duplicate detection,
+    rate limiting, self-cross prevention, ADV check, and max open orders.
+    Hard-fail on outage — orders are blocked, not bypassed.
+  </Card>
+  <Card title="Realistic Desk Segregation" icon="approve-check">
+    18 seeded personas across equity cash, equity derivatives, FI rates,
+    FI credit, FX, and commodities. Cross-asset-class trading is impossible.
+    High-touch vs low-touch RBAC enforced at the panel level.
+  </Card>
+  <Card title="Fixed Income & Derivatives" icon="document">
+    Bond pricing, yield curves, duration ladders, spread analysis, vol
+    surfaces, Black-Scholes option pricing, and scenario matrices.
+  </Card>
+  <Card title="Live P&L & Positions" icon="list-format">
+    Real-time position tracking from fills with unrealised, realised, and
+    total P&L. Risk Dashboard for firm-wide oversight; My Positions for
+    individual traders.
+  </Card>
+  <Card title="Session Replay" icon="magnifier">
+    Record and play back browser sessions with rrweb for training, audit,
+    and post-incident review. Admin-controlled toggle with timeline playback.
+  </Card>
+</CardGrid>

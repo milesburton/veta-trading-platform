@@ -26,17 +26,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Assemble site
-        run: |
-          mkdir -p _site
-          cp docs/pages/index.html _site/
-          cp -r docs/screenshots _site/screenshots
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install docs dependencies
+        working-directory: docs/site
+        run: npm ci
+
+      - name: Copy screenshots into Astro public
+        run: cp docs/screenshots/*.png docs/site/public/screenshots/
+
+      - name: Build Astro site
+        working-directory: docs/site
+        run: npm run build
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: docs/site/dist
 
       - id: deployment
         uses: actions/deploy-pages@v4

@@ -1,0 +1,80 @@
+---
+title: Screenshots
+description: Auto-generated screenshots from the live UI on every commit to main.
+---
+
+All screenshots are auto-generated from the live UI using Playwright on every push to `main`.
+
+## Trading Dashboard
+
+The default workspace for high-touch equity traders. Shows the market ladder (live quotes), price chart, and order blotter with status-coloured rows (filled, executing, expired, rejected).
+
+![Trading Dashboard](/veta-trading-platform/screenshots/01-trading-dashboard.png)
+
+## Order Ticket
+
+The manual order entry panel. Shows Equity/Options tabs, strategy selector (TWAP selected), asset details (AAPL with market cap, P/E, beta, dividend yield), BUY/SELL buttons, quantity, limit price, time-in-force, duration, and algo parameters. Only accessible to high-touch, FX electronic, derivatives high-touch, FI voice, and commodities voice traders.
+
+![Order Ticket](/veta-trading-platform/screenshots/02-order-ticket.png)
+
+## Order Blotter
+
+The live order blotter showing all statuses: FILLED (green), EXECUTING (white), EXPIRED (grey), REJECTED (red). Columns include time, asset, side, quantity, limit/fill price, strategy/venue, status, desk, and liquidity flag. Filter bar and conditional formatting editor available.
+
+![Order Blotter](/veta-trading-platform/screenshots/03-order-blotter.png)
+
+## Algo Workspace
+
+The low-touch equity trader's view (Pipeline Ops workspace). Shows the algo leaderboard, throughput gauges, decision log, and execution analytics. Orders use TWAP, VWAP, POV, ICEBERG, and ARRIVAL_PRICE strategies.
+
+![Algo Workspace](/veta-trading-platform/screenshots/04-algo-workspace.png)
+
+## Fixed Income Analysis
+
+The FI voice trader's workspace. Shows spread analysis (G-spread, Z-spread, OAS), duration ladder (DV01 by tenor bucket), vol surface (implied vol smile), and bond pricing with pick par/off modes.
+
+![Fixed Income](/veta-trading-platform/screenshots/05-fixed-income.png)
+
+## Option Pricing
+
+The derivatives workspace. Shows Black-Scholes option pricing panel, vol surface heatmap (5 expiries x 9 strikes), scenario matrix (spot/vol shocks with Monte Carlo distribution), and trade recommendations.
+
+![Option Pricing](/veta-trading-platform/screenshots/06-option-pricing.png)
+
+## Market Heatmap
+
+Sector treemap coloured by percentage price change. Assets sized by market cap within each sector (Technology, Consumer Discretionary, Financials, Healthcare, Energy). Toggle between "By Cap" and "By Move" views.
+
+![Market Heatmap](/veta-trading-platform/screenshots/07-market-heatmap.png)
+
+## Kill Switch
+
+The emergency kill switch dialog. Supports scoped cancellation: All Orders, By User, By Symbol, By Strategy, or Current Workspace. Confirmation required with "I understand this action" checkbox.
+
+![Kill Switch](/veta-trading-platform/screenshots/08-kill-switch.png)
+
+## Column Formatting
+
+The order blotter with the Conditional Formatting editor open. Define rules to highlight rows based on status, side, quantity, or any column value. Rules are persisted per-user.
+
+![Column Formatting](/veta-trading-platform/screenshots/09-column-formatting.png)
+
+## Mission Control
+
+The system status workspace showing estate overview, service health grid, observability panel, and throughput gauges. Used by admin and desk-head personas for platform monitoring.
+
+![Mission Control](/veta-trading-platform/screenshots/10-mission-control.png)
+
+## Session Replay
+
+The session replay panel in the Administration workspace. Shows recorded sessions with user name, role, start time, duration, and a "live" badge for active recordings. Admin toggle enables/disables recording with a red REC indicator. Playback uses rrweb-player with timeline scrubbing.
+
+![Session Replay](/veta-trading-platform/screenshots/11-session-replay.png)
+
+## Desktop (Electron)
+
+Cross-platform desktop app with pop-out panels, native menus, and linked windows. Builds for macOS, Windows, and Linux.
+
+| Dashboard | Main Window | Linked Pop-out |
+|-----------|-------------|----------------|
+| ![Electron Dashboard](/veta-trading-platform/screenshots/electron-01-dashboard.png) | ![Main Window](/veta-trading-platform/screenshots/electron-02-main-window.png) | ![Pop-out](/veta-trading-platform/screenshots/electron-03-linked-popout.png) |
