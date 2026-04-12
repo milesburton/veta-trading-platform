@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.16.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.15.0...veta-trading-platform-v1.16.0) (2026-04-12)
+
+
+### Features
+
+* **ci:** add test coverage reporting with badge + strip test comments ([f39c1ce](https://github.com/milesburton/veta-trading-platform/commit/f39c1cebaf47acf1e28b0ecde3159822c1ae2f3e))
+* **rbac:** introduce risk-manager role and Maya Tanaka persona ([563fc74](https://github.com/milesburton/veta-trading-platform/commit/563fc74c8e7d218c889fd7735ac8a1d965a25f5c))
+* **risk:** add pre-trade risk-engine with fat-finger, duplicate, and max-open-orders checks ([acc14cd](https://github.com/milesburton/veta-trading-platform/commit/acc14cdbc4d6591ffe01531e1a6dcd02dcf8ca6c))
+* **risk:** add self-cross, ADV, rate-limit checks and live position tracking ([f11ef1e](https://github.com/milesburton/veta-trading-platform/commit/f11ef1ea0abe685c1dc5cc1a71576390d3ba8443))
+* **risk:** Risk Dashboard + My Positions panels with live P&L ([e192605](https://github.com/milesburton/veta-trading-platform/commit/e192605e67bd16c126f1f89a4e6a96dfd75e6772))
+
+
+### Bug Fixes
+
+* add risk-manager to /personas query + mark SNIPER/IS/MOMENTUM smoke tests non-blocking ([b8bf05f](https://github.com/milesburton/veta-trading-platform/commit/b8bf05f506e270242396034c9d4ddd3ae0269374))
+* **ci:** add retry for flaky algo integration tests (SNIPER/IS/MOMENTUM) ([b1df9e6](https://github.com/milesburton/veta-trading-platform/commit/b1df9e692283c834bd51040cfd9cea86b4ff48e4))
+* **ci:** add RISK_ENGINE_ENABLED toggle, disable for algo integration tests ([4cc3794](https://github.com/milesburton/veta-trading-platform/commit/4cc3794d1cc615b76d7410af0446dc843ee8ac7f))
+* **ci:** configure risk-engine limits for integration test throughput ([12a33c7](https://github.com/milesburton/veta-trading-platform/commit/12a33c7a6b10e4cf41582580f7e739d0ebdb3bc9))
+* **ci:** fix flaky TWAP expiry test + mark algo integration as non-blocking ([1ec9dac](https://github.com/milesburton/veta-trading-platform/commit/1ec9dac11fd47e195f50115edd7c4a1d27709f94))
+* **ci:** read initialPrice from market-sim /assets (not price) ([e3c4910](https://github.com/milesburton/veta-trading-platform/commit/e3c4910d88faa3725ffcab9a0c3be267f7f1d85a))
+* **ci:** skip timing-dependent TWAP expiry test under coverage ([cfb4603](https://github.com/milesburton/veta-trading-platform/commit/cfb46038a03d41066914c8636c4a34b22db8e67b))
+* **ci:** wait for risk-engine prices before integration tests + strengthen pre-commit ([1cdba23](https://github.com/milesburton/veta-trading-platform/commit/1cdba23ef5adfd84ed99531af0fc26ced796b955))
+
 ## [1.15.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.14.2...veta-trading-platform-v1.15.0) (2026-04-08)
 
 
