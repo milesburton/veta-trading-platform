@@ -26,8 +26,16 @@ jobs:
       - name: Type check
         run: deno task check
 
-      - name: Unit tests
-        run: deno task test
+      - name: Unit tests with coverage
+        run: deno task test:coverage
+
+      - name: Upload backend coverage
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage.lcov
+          retention-days: 14
 
   frontend:
     name: Frontend lint & type-check
@@ -61,9 +69,53 @@ jobs:
         working-directory: frontend
         run: npx tsc --noEmit
 
-      - name: Vitest unit tests
+      - name: Vitest unit tests with coverage
         working-directory: frontend
-        run: npm run test:unit -- --run
+        run: npm run test:coverage
+
+      - name: Upload frontend coverage
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 14
+
+      - name: Generate coverage badge JSON
+        if: github.ref == 'refs/heads/main'
+        run: |
+          if [ -f frontend/coverage/coverage-summary.json ]; then
+            PCT=$(python3 -c "
+          import json
+          with open('frontend/coverage/coverage-summary.json') as f:
+              d = json.load(f)
+          lines = d.get('total', {}).get('lines', {}).get('pct', 0)
+          print(f'{lines:.1f}')
+          ")
+            echo "Frontend line coverage: ${PCT}%"
+            COLOR="red"
+            if (( $(echo "$PCT > 80" | bc -l) )); then COLOR="brightgreen"; elif (( $(echo "$PCT > 60" | bc -l) )); then COLOR="yellow"; fi
+            echo "{\"schemaVersion\":1,\"label\":\"coverage\",\"message\":\"${PCT}%\",\"color\":\"${COLOR}\"}" > frontend/coverage/badge.json
+            echo "FRONTEND_COVERAGE=${PCT}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Commit coverage badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          if [ -f frontend/coverage/badge.json ]; then
+            mkdir -p docs/badges
+            cp frontend/coverage/badge.json docs/badges/coverage.json
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add docs/badges/coverage.json
+            if ! git diff --staged --quiet; then
+              git commit -m "chore(ci): update coverage badge [skip ci]"
+              git stash --include-untracked --quiet || true
+              git pull --rebase origin main || { git rebase --abort 2>/dev/null; git stash pop --quiet 2>/dev/null || true; exit 0; }
+              git stash pop --quiet 2>/dev/null || true
+              git push || true
+            fi
+          fi
 
   integration:
     name: Integration tests

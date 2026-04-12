@@ -1,8 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Mock the auth API so the app skips the login page and goes straight to the dashboard. */
 async function mockAuth(page: Page) {
   const user = {
     id: "alice",
@@ -11,9 +8,6 @@ async function mockAuth(page: Page) {
     avatar_emoji: "👩‍💼",
   };
 
-  // Playwright matches routes in reverse registration order (last registered wins).
-  // stubBackend must be called BEFORE mockAuth so the specific session routes take precedence.
-  // These two are registered last here so they win over the catch-all in stubBackend.
   await page.route(
     "/api/user-service/sessions/me",
     (route) =>
@@ -35,9 +29,7 @@ async function mockAuth(page: Page) {
   );
 }
 
-/** Stub backend so panels don't error out. */
 async function stubBackend(page: Page) {
-  // Catch-all: fulfill all API requests (any method) with null to prevent ECONNREFUSED
   await page.route(
     "/api/**",
     (route) =>
@@ -48,7 +40,6 @@ async function stubBackend(page: Page) {
       }),
   );
 
-  // gateway/ready must return { ready: true } so StartupOverlay dismisses immediately
   await page.route("/api/gateway/ready", (route) =>
     route.fulfill({
       status: 200,
@@ -56,18 +47,15 @@ async function stubBackend(page: Page) {
       body: JSON.stringify({ ready: true, services: {} }),
     }));
 
-  // Stub WS so the app doesn't hang waiting for a gateway connection
   await page.routeWebSocket("/ws/gateway", (ws) => {
     ws.onMessage(() => {});
   });
 }
 
-/** Wait until flexlayout has rendered at least one tab. */
 async function waitForDashboard(page: Page) {
   await page.waitForSelector(".flexlayout__tab", { timeout: 15_000 });
 }
 
-/** Collect bounding boxes for all flexlayout tab content panes. */
 async function allPanelBoxes(page: Page) {
   const panes = page.locator(".flexlayout__tab");
   const count = await panes.count();
@@ -79,7 +67,6 @@ async function allPanelBoxes(page: Page) {
   return boxes;
 }
 
-/** Drag a tab button by (dx, dy) using slow intermediate steps. */
 async function dragTab(
   page: Page,
   tabLocator: ReturnType<Page["locator"]>,
@@ -106,11 +93,8 @@ async function dragTab(
   await page.waitForTimeout(200);
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
-
 test.describe("Dashboard panel layout (flexlayout)", () => {
   test.beforeEach(async ({ page }) => {
-    // stubBackend first (catch-all, lowest priority), mockAuth last (specific routes, highest priority)
     await stubBackend(page);
     await mockAuth(page);
     await page.goto("/");
@@ -156,7 +140,6 @@ test.describe("Dashboard panel layout (flexlayout)", () => {
       const before = await pane.boundingBox();
       if (!before) continue;
 
-      // Click well inside the content area (avoid splitter edges)
       const clickX = before.x + before.width / 2;
       const clickY = before.y + before.height / 2;
       await page.mouse.click(clickX, clickY);
@@ -173,24 +156,19 @@ test.describe("Dashboard panel layout (flexlayout)", () => {
   });
 
   test("dragging a tab to another tabset moves it and preserves all panels", async ({ page }) => {
-    // Count tab buttons (all tabs, not just visible panels) — this is the canonical panel count
     const tabs = page.locator(".flexlayout__tab_button");
     const tabCount = await tabs.count();
-    if (tabCount < 2) return; // Not enough tabs to test
+    if (tabCount < 2) return;
     const beforeTabCount = tabCount;
 
-    // Drag the second tab button 300px to the right to drop into an adjacent tabset
     const srcTab = tabs.nth(1);
     await dragTab(page, srcTab, 300, 0);
 
     await page.waitForTimeout(400);
 
-    // Tab button count should be the same — no tabs lost or duplicated
-    // (visible panel count may decrease by 1 if the tab lands in a tabset that already has an active panel)
     const afterTabCount = await page.locator(".flexlayout__tab_button").count();
     expect(afterTabCount).toBe(beforeTabCount);
 
-    // All visible panels still have positive size
     const afterBoxes = await allPanelBoxes(page);
     for (const box of afterBoxes) {
       expect(box.w).toBeGreaterThan(10);
@@ -206,19 +184,16 @@ test.describe("Dashboard panel layout (flexlayout)", () => {
     const srcTab = tabs.first();
     const before = await srcTab.boundingBox();
 
-    // Small drag that resolves back to the same tabset (no movement)
     await dragTab(page, srcTab, 5, 5);
 
     await page.waitForTimeout(500);
 
     const boxes = await allPanelBoxes(page);
-    // Check all panels still have reasonable dimensions after micro-drag
     for (const box of boxes) {
       expect(box.w).toBeGreaterThan(10);
       expect(box.h).toBeGreaterThan(10);
     }
 
-    // Suppress unused-var warning — before used for symmetry
     void before;
   });
 
@@ -230,7 +205,6 @@ test.describe("Dashboard panel layout (flexlayout)", () => {
     const beforeBoxes = await allPanelBoxes(page);
     expect(beforeBoxes.length).toBeGreaterThan(1);
 
-    // Drag splitter 60px to the right
     await page.mouse.move(
       splitterBox.x + splitterBox.width / 2,
       splitterBox.y + splitterBox.height / 2,
@@ -246,10 +220,8 @@ test.describe("Dashboard panel layout (flexlayout)", () => {
 
     const afterBoxes = await allPanelBoxes(page);
 
-    // Same number of panels — splitter drag never destroys panels
     expect(afterBoxes.length).toBe(beforeBoxes.length);
 
-    // Total area covered must still be positive for all panels
     for (const box of afterBoxes) {
       expect(box.w).toBeGreaterThan(10);
       expect(box.h).toBeGreaterThan(10);
@@ -257,14 +229,13 @@ test.describe("Dashboard panel layout (flexlayout)", () => {
   });
 
   test("clicking a Market Ladder row does not move any panel", async ({ page }) => {
-    // Find the panel containing Market Ladder text
     const mlTab = page
       .locator(".flexlayout__tab")
       .filter({ has: page.locator("[role='listitem']") })
       .first();
 
     const isVisible = await mlTab.isVisible();
-    if (!isVisible) return; // Market Ladder may not be rendered in current viewport
+    if (!isVisible) return;
 
     const before = await mlTab.boundingBox();
     if (!before) return;

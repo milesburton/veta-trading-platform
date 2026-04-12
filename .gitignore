@@ -4,6 +4,7 @@ dist/
 *.log
 *.pid
 coverage/
+!docs/badges/
 *.lcov
 *.db
 backend/data/

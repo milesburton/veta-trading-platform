@@ -1,17 +1,3 @@
-/**
- * Algo order E2E tests.
- *
- * Uses GatewayMock.injectOrder() to create orders directly in the mock store
- * and send the appropriate WS events, bypassing the Order Ticket UI entirely.
- * This avoids FlexLayout tab overflow issues in CI viewports.
- *
- * Tests verify:
- * - Orders with each strategy appear in the blotter
- * - Full lifecycle transitions (queued -> executing -> filled)
- * - Rejection and expiry statuses surface correctly
- * - Multiple strategies coexist in the blotter
- */
-
 import { expect, test } from "@playwright/test";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 import { DEFAULT_ASSETS, DEFAULT_LIMITS } from "./helpers/GatewayMock.ts";
@@ -20,7 +6,6 @@ test.setTimeout(60_000);
 
 const AAPL_PRICE = 189.5;
 
-/** All strategies the system supports. */
 const ALL_STRATEGIES = [
   "LIMIT",
   "TWAP",
@@ -31,7 +16,6 @@ const ALL_STRATEGIES = [
   "ARRIVAL_PRICE",
 ] as const;
 
-/** Set up a trader session with all strategies permitted and initial price ticks. */
 async function setup(page: Parameters<typeof AppPage>[0]["page"]) {
   const app = new AppPage(page);
   await app.goto({
@@ -45,12 +29,10 @@ async function setup(page: Parameters<typeof AppPage>[0]["page"]) {
   });
   await app.waitForDashboard();
 
-  // Grant all strategies
   app.gateway.sendAuthIdentity({
     limits: { ...DEFAULT_LIMITS, allowed_strategies: [...ALL_STRATEGIES] },
   });
 
-  // Seed prices
   app.gateway.sendMarketUpdate({
     AAPL: AAPL_PRICE,
     MSFT: 421.0,
@@ -60,8 +42,6 @@ async function setup(page: Parameters<typeof AppPage>[0]["page"]) {
 
   return app;
 }
-
-// -- Strategy presence in blotter -----------------------------------------------
 
 test.describe("Algo order appears in blotter", () => {
   for (const strategy of ALL_STRATEGIES) {
@@ -83,8 +63,6 @@ test.describe("Algo order appears in blotter", () => {
     });
   }
 });
-
-// -- LIMIT lifecycle -----------------------------------------------------------
 
 test.describe("LIMIT order lifecycle", () => {
   test("LIMIT BUY: queued -> executing -> filled", async ({ page }) => {
@@ -198,8 +176,6 @@ test.describe("LIMIT order lifecycle", () => {
   });
 });
 
-// -- TWAP lifecycle ------------------------------------------------------------
-
 test.describe("TWAP order lifecycle", () => {
   test("TWAP BUY: queued -> executing -> filled", async ({ page }) => {
     const app = await setup(page);
@@ -243,8 +219,6 @@ test.describe("TWAP order lifecycle", () => {
   });
 });
 
-// -- POV lifecycle -------------------------------------------------------------
-
 test.describe("POV order lifecycle", () => {
   test("POV BUY: queued -> executing -> filled", async ({ page }) => {
     const app = await setup(page);
@@ -287,8 +261,6 @@ test.describe("POV order lifecycle", () => {
     await blotter.waitForStatus("rejected");
   });
 });
-
-// -- VWAP lifecycle ------------------------------------------------------------
 
 test.describe("VWAP order lifecycle", () => {
   test("VWAP SELL: queued -> executing -> filled", async ({ page }) => {
@@ -334,8 +306,6 @@ test.describe("VWAP order lifecycle", () => {
   });
 });
 
-// -- ICEBERG lifecycle ---------------------------------------------------------
-
 test.describe("ICEBERG order lifecycle", () => {
   test("ICEBERG BUY: queued -> executing -> filled", async ({ page }) => {
     const app = await setup(page);
@@ -378,8 +348,6 @@ test.describe("ICEBERG order lifecycle", () => {
     await blotter.waitForStatus("rejected");
   });
 });
-
-// -- SNIPER lifecycle ----------------------------------------------------------
 
 test.describe("SNIPER order lifecycle", () => {
   test("SNIPER BUY: queued -> executing -> filled", async ({ page }) => {
@@ -424,8 +392,6 @@ test.describe("SNIPER order lifecycle", () => {
   });
 });
 
-// -- ARRIVAL_PRICE lifecycle ---------------------------------------------------
-
 test.describe("ARRIVAL_PRICE order lifecycle", () => {
   test("ARRIVAL_PRICE BUY: queued -> executing -> filled", async ({ page }) => {
     const app = await setup(page);
@@ -468,8 +434,6 @@ test.describe("ARRIVAL_PRICE order lifecycle", () => {
     await blotter.waitForStatus("rejected");
   });
 });
-
-// -- Direct status injection (rejected / expired) ------------------------------
 
 test.describe("Direct status injection", () => {
   test("injected rejected order shows rejected badge immediately", async ({ page }) => {
@@ -521,14 +485,11 @@ test.describe("Direct status injection", () => {
   });
 });
 
-// -- Multi-strategy blotter ----------------------------------------------------
-
 test.describe("Multi-strategy order blotter", () => {
   test("blotter shows orders from multiple strategies concurrently", async ({ page }) => {
     const app = await setup(page);
     const blotter = await app.getOrderBlotter();
 
-    // Inject a LIMIT order and fill it
     const limitId = app.gateway.injectOrder({
       asset: "AAPL",
       side: "BUY",
@@ -548,7 +509,6 @@ test.describe("Multi-strategy order blotter", () => {
     });
     await blotter.waitForStatus("filled");
 
-    // Inject a TWAP order — blotter should now have 2 rows
     app.gateway.injectOrder({
       asset: "AAPL",
       side: "BUY",

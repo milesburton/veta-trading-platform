@@ -1,17 +1,6 @@
-/**
- * Intelligence pipeline E2E tests.
- *
- * Verifies that signalUpdate / featureUpdate WS events from the gateway
- * flow into the Research panels and render correctly.
- *
- * All backend services are mocked via GatewayMock — no live services needed.
- */
-
 import { expect, test } from "@playwright/test";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 import { DEFAULT_ASSETS } from "./helpers/GatewayMock.ts";
-
-// ── Shared payloads ───────────────────────────────────────────────────────────
 
 const AAPL_SIGNAL = {
   symbol: "AAPL",
@@ -54,19 +43,13 @@ const AAPL_FEATURE = {
   sentimentDelta: 0.4,
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 async function openResearchLayout(app: AppPage) {
   const trigger = app.page.getByTitle("Switch layout template");
   await trigger.click();
-  // Wait for the dropdown to appear, then scope button search inside it to avoid
-  // accidentally clicking the "FI Research" workspace sidebar tab.
-  // The dropdown is the absolute-positioned sibling div inside the same relative container.
   const dropdown = app.page.locator("div.absolute").filter({
     hasText: /Layout Templates/,
   });
   await dropdown.waitFor({ state: "visible", timeout: 5_000 });
-  // Use the unique description text to identify the correct Research template button
   await dropdown.getByRole("button", { name: /factor explainability/i })
     .click();
   await app.page.waitForSelector(".flexlayout__tab_button", {
@@ -82,8 +65,6 @@ async function selectSymbolInRadar(
     .first();
   await radar.getByText(symbol).first().click();
 }
-
-// ── Research Radar Panel ─────────────────────────────────────────────────────
 
 test.describe("Research Radar Panel", () => {
   test("signal bubbles appear when signalUpdate events are received", async ({ page }) => {
@@ -109,8 +90,8 @@ test.describe("Research Radar Panel", () => {
     await app.gotoAsTrader(DEFAULT_ASSETS);
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL); // long
-    app.gateway.sendSignalUpdate(MSFT_SIGNAL); // short
+    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
+    app.gateway.sendSignalUpdate(MSFT_SIGNAL);
 
     const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i })
       .first();
@@ -151,9 +132,8 @@ test.describe("Research Radar Panel", () => {
     await app.gotoAsTrader(DEFAULT_ASSETS);
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL); // long, 0.65
+    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
 
-    // Replace with a short signal
     app.gateway.sendSignalUpdate({
       ...AAPL_SIGNAL,
       score: -0.30,
@@ -163,7 +143,6 @@ test.describe("Research Radar Panel", () => {
 
     const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i })
       .first();
-    // Should now be coloured as short (red)
     await expect(radar.locator("circle[data-symbol='AAPL']")).toHaveAttribute(
       "fill",
       /#f87171|#ef4444/,
@@ -185,8 +164,6 @@ test.describe("Research Radar Panel", () => {
     await expect(radar.getByText("MSFT")).toBeVisible({ timeout: 5_000 });
   });
 });
-
-// ── Instrument Analysis Panel ─────────────────────────────────────────────────
 
 test.describe("Instrument Analysis Panel", () => {
   test("feature bars render when featureUpdate received for selected symbol", async ({ page }) => {
@@ -217,8 +194,6 @@ test.describe("Instrument Analysis Panel", () => {
     await expect(panel.getByText(/0\.6[0-9]/)).toBeVisible({ timeout: 5_000 });
   });
 });
-
-// ── Signal Explainability Panel ───────────────────────────────────────────────
 
 test.describe("Signal Explainability Panel", () => {
   test("factor contribution bars and labels render for received signal", async ({ page }) => {
@@ -267,8 +242,6 @@ test.describe("Signal Explainability Panel", () => {
     });
   });
 });
-
-// ── AI Advisory Panel (embedded in Instrument Analysis) ───────────────────────
 
 test.describe("AI Advisory Panel", () => {
   test("shows 'Not requested' status and Get Advisory button by default", async ({ page }) => {

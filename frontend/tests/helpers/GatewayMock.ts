@@ -1,19 +1,3 @@
-/**
- * GatewayMock — typed WebSocket + HTTP interceptor for Playwright tests.
- *
- * Intercepts:
- *   ws://localhost:PORT/ws/gateway        → fake WebSocket server
- *   POST /api/gateway/grid/query         → server-driven grid query (returns mock order store)
- *   /api/user-service/sessions/me        → mock session response
- *   /api/**                              → stub all other GETs to null
- *
- * Usage:
- *   const gw = await GatewayMock.attach(page);
- *   await gw.sendAuthIdentity({ role: "trader" });
- *   await gw.sendMarketUpdate({ AAPL: 189.5, MSFT: 421.0 });
- *   const msg = await gw.nextOutbound("submitOrder");
- */
-
 import type { Page, WebSocketRoute } from "@playwright/test";
 import {
   ALGO_TRADER,
@@ -42,10 +26,6 @@ export {
 };
 export type { AssetDef, AuthUser, TradingLimits };
 
-// ── Protocol types (mirroring gatewayMiddleware) ──────────────────────────────
-
-
-// Inbound message shapes (gateway → client)
 type GatewayInbound =
   | { event: "authIdentity"; data: { user: AuthUser; limits: TradingLimits } }
   | { event: "marketUpdate"; data: { prices: Record<string, number>; volumes: Record<string, number> } }
@@ -57,21 +37,10 @@ type GatewayInbound =
   | { event: "recommendationUpdate"; data: Record<string, unknown> }
   | { event: "advisoryUpdate"; data: Record<string, unknown> };
 
-// Outbound message shape (client → gateway)
 interface GatewayOutbound {
   type: string;
   payload: Record<string, unknown>;
 }
-
-// ── Defaults ──────────────────────────────────────────────────────────────────
-
-/**
- * Alice Chen — high-touch equity trader.
- * Full strategy access, lower qty/notional limits. Focuses on single-stock
- * discretionary trades with LIMIT and TWAP execution.
- */
-
-// ── FI mock responses ─────────────────────────────────────────────────────────
 
 export const MOCK_BOND_PRICE_RESPONSE = {
   price: 987.43,
@@ -154,8 +123,6 @@ export const MOCK_VOL_SURFACE_RESPONSE = {
   computedAt: Date.now(),
 };
 
-// ── Mock order record (matches OrderRecord shape used in blotter) ─────────────
-
 interface MockOrder {
   id: string;
   clientOrderId: string;
@@ -172,22 +139,15 @@ interface MockOrder {
   children: unknown[];
 }
 
-// ── GatewayMock class ─────────────────────────────────────────────────────────
-
 export class GatewayMock {
   private _wsRoute: WebSocketRoute | null = null;
   private _outboundQueue: GatewayOutbound[] = [];
   private _outboundResolvers: Array<{ type: string; resolve: (msg: GatewayOutbound) => void }> = [];
 
-  /** In-memory order store — keyed by clientOrderId. Served by grid/query mock. */
   private _orders = new Map<string, MockOrder>();
 
   private constructor(private readonly page: Page) {}
 
-  /**
-   * Attach mock to the page. Must be called BEFORE page.goto().
-   * Sets up WS interception and stubs all backend HTTP.
-   */
   static async attach(
     page: Page,
     opts: { user?: AuthUser; assets?: AssetDef[] } = {}
@@ -196,15 +156,10 @@ export class GatewayMock {
     const user = opts.user ?? DEFAULT_TRADER;
     const assets = opts.assets ?? DEFAULT_ASSETS;
 
-    // Playwright matches routes in reverse-registration order (last registered wins).
-    // Register the catch-all FIRST so specific routes registered after take precedence.
-
     await page.route("/api/**", (route) => {
       return route.fulfill({ status: 200, contentType: "application/json", body: "null" });
     });
 
-    // Stub all service health endpoints — prevents CRITICAL alert banners in screenshots.
-    // The transformResponse in servicesApi.ts needs a truthy response with a `version` field.
     await page.route("**/health", (route) =>
       route.fulfill({
         status: 200,
@@ -239,7 +194,6 @@ export class GatewayMock {
       })
     );
 
-    // Grid query endpoint — serve mock order store (registered after catch-all = higher priority)
     await page.route("/api/gateway/grid/query", async (route) => {
       if (route.request().method() !== "POST") return route.fallback();
       const rows = Array.from(mock._orders.values()).reverse();
@@ -247,8 +201,6 @@ export class GatewayMock {
       return route.fulfill({ status: 200, contentType: "application/json", body });
     });
 
-    // Stub advisory request (POST) — default: respond with "disabled" (503)
-    // Tests that need a different response can override this route after attach().
     await page.route("/api/gateway/advisory/request", (route) => {
       if (route.request().method() !== "POST") return route.fallback();
       return route.fulfill({
@@ -258,22 +210,18 @@ export class GatewayMock {
       });
     });
 
-    // Stub news
     await page.route("/api/news-aggregator/**", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
     );
 
-    // Stub orders history (empty — no pre-existing orders)
     await page.route("/api/gateway/orders**", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
     );
 
-    // Stub candles (empty arrays — candle chart shows loading spinner)
     await page.route("/api/gateway/candles**", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
     );
 
-    // Stub assets endpoint
     await page.route("/api/gateway/assets", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(assets) })
     );
@@ -348,14 +296,10 @@ export class GatewayMock {
       })
     );
 
-    // /api/user-service/sessions/me for GET (still valid)
-    // /api/user-service/sessions POST is deprecated (returns 410 in backend)
-    // /api/user-service/sessions DELETE is still valid (logout) /api/user-service/sessions DELETE is still valid (logout)
     await page.route("/api/user-service/sessions/me", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(user) })
     );
 
-    // Intercept WebSocket
     await page.routeWebSocket("/ws/gateway", (ws) => {
       mock._wsRoute = ws;
 
@@ -363,7 +307,6 @@ export class GatewayMock {
         try {
           const msg = JSON.parse(raw as string) as GatewayOutbound;
 
-          // Track submitted orders in the internal store and send orderAck back
           if (msg.type === "submitOrder") {
             const p = msg.payload;
             const clientOrderId = p.clientOrderId as string;
@@ -382,12 +325,9 @@ export class GatewayMock {
               algoParams: (p.algoParams as Record<string, unknown>) ?? {},
               children: [],
             });
-            // Send orderAck back so the middleware can invalidate the grid cache
-            // after the order is recorded in the mock store
             ws.send(JSON.stringify({ event: "orderAck", data: { clientOrderId } }));
           }
 
-          // Settle any waiting promises first
           const idx = mock._outboundResolvers.findIndex((r) => r.type === msg.type);
           if (idx !== -1) {
             const [resolver] = mock._outboundResolvers.splice(idx, 1);
@@ -396,7 +336,6 @@ export class GatewayMock {
             mock._outboundQueue.push(msg);
           }
         } catch {
-          // ignore unparseable
         }
       });
     });
@@ -404,13 +343,10 @@ export class GatewayMock {
     return mock;
   }
 
-  // ── Send helpers (gateway → client) ────────────────────────────────────────
-
   private _send(msg: GatewayInbound) {
     this._wsRoute?.send(JSON.stringify(msg));
   }
 
-  /** Send authIdentity — sets user and trading limits in Redux. */
   sendAuthIdentity(opts: { user?: AuthUser; limits?: TradingLimits } = {}) {
     this._send({
       event: "authIdentity",
@@ -431,15 +367,10 @@ export class GatewayMock {
     this._send({ event: "marketUpdate", data: { prices, openPrices, volumes: vols } });
   }
 
-  /** Send an order event on the given topic. */
   sendOrderEvent(topic: string, data: Record<string, unknown>) {
     this._send({ event: "orderEvent", topic, data });
   }
 
-  /**
-   * Simulate a full order lifecycle: submitted → routed → filled.
-   * Pass the clientOrderId that the frontend used when submitting.
-   */
   sendOrderLifecycle(
     clientOrderId: string,
     opts: {
@@ -497,7 +428,6 @@ export class GatewayMock {
     }
   }
 
-  /** Patch an order's fields in the internal store (used to keep grid/query in sync). */
   private _patchOrder(clientOrderId: string, patch: Partial<MockOrder>) {
     const order = this._orders.get(clientOrderId);
     if (order) Object.assign(order, patch);
@@ -550,13 +480,11 @@ export class GatewayMock {
     return clientOrderId;
   }
 
-  /** Send a gateway-level orderRejected (auth failure path). */
   sendOrderRejected(clientOrderId: string, reason = "Unauthenticated") {
     this._patchOrder(clientOrderId, { status: "rejected" });
     this._send({ event: "orderRejected", data: { clientOrderId, reason } });
   }
 
-  /** Send a news item update. */
   sendNewsUpdate(item: {
     id: string;
     symbol: string;
@@ -571,40 +499,28 @@ export class GatewayMock {
     this._send({ event: "newsUpdate", data: item });
   }
 
-  /** Send a signal update (intelligence pipeline output). */
   sendSignalUpdate(signal: Record<string, unknown>) {
     this._send({ event: "signalUpdate", data: signal });
   }
 
-  /** Send a feature vector update (feature-engine output). */
   sendFeatureUpdate(fv: Record<string, unknown>) {
     this._send({ event: "featureUpdate", data: fv });
   }
 
-  /** Send a trade recommendation update. */
   sendRecommendationUpdate(rec: Record<string, unknown>) {
     this._send({ event: "recommendationUpdate", data: rec });
   }
 
-  /** Send an LLM advisory note ready event. */
   sendAdvisoryUpdate(advisory: Record<string, unknown>) {
     this._send({ event: "advisoryUpdate", data: advisory });
   }
 
-  // ── Receive helpers (client → gateway) ─────────────────────────────────────
-
-  /**
-   * Wait for the next outbound message of the given type from the client.
-   * Resolves with the full message. Rejects after timeout.
-   */
   nextOutbound(type: string, timeoutMs = 5_000): Promise<GatewayOutbound> {
-    // Check if already buffered
     const idx = this._outboundQueue.findIndex((m) => m.type === type);
     if (idx !== -1) {
       const [msg] = this._outboundQueue.splice(idx, 1);
       return Promise.resolve(msg);
     }
-    // Otherwise wait
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         const ri = this._outboundResolvers.findIndex((r) => r.resolve === resolve);

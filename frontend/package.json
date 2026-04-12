@@ -11,6 +11,7 @@
     "lint:fix": "deno run -A npm:@biomejs/biome check --write src/",
     "typecheck": "tsc --noEmit",
     "test:unit": "NODE_OPTIONS=--max-old-space-size=4096 vitest",
+    "test:coverage": "NODE_OPTIONS=--max-old-space-size=4096 vitest run --coverage",
     "test:ui": "npx playwright test",
     "test:ui:headed": "npx playwright test --headed",
     "electron:dev": "node_modules/.bin/tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json',JSON.stringify({type:'commonjs'}))\" && node -e \"require('fs').cpSync('electron/assets','dist-electron/assets',{recursive:true})\" && node scripts/electron-dev.mjs",
