@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.16.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.16.1...veta-trading-platform-v1.16.2) (2026-04-12)
+
+
+### Bug Fixes
+
+* **rbac:** allow FI/commodities voice traders access to order-ticket and vol-surface ([c6f305d](https://github.com/milesburton/veta-trading-platform/commit/c6f305d0fcbfc96cae1c5254d5c654cac22538cc))
+* **tests:** restore derivatives desk for default trader + skip analyst order-ticket test ([3ad3f7e](https://github.com/milesburton/veta-trading-platform/commit/3ad3f7e9f12e4f2b980011c446d9ede3b351257d))
+
 ## [1.16.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.16.0...veta-trading-platform-v1.16.1) (2026-04-12)
 
 
