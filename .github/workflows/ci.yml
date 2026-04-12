@@ -176,7 +176,7 @@ jobs:
           SHA=$(git rev-parse --short HEAD)
           COMMIT_SHA=$SHA MARKET_SIM_PORT=5000 deno run --allow-all backend/src/market-sim/market-sim.ts &
           COMMIT_SHA=$SHA EMS_PORT=5001 deno run --allow-all backend/src/ems/ems-server.ts &
-          COMMIT_SHA=$SHA OMS_PORT=5002 ALGO_TRADER_PORT=5003 TWAP_ALGO_PORT=5004 POV_ALGO_PORT=5005 VWAP_ALGO_PORT=5006 ICEBERG_ALGO_PORT=5021 SNIPER_ALGO_PORT=5022 ARRIVAL_PRICE_ALGO_PORT=5023 MOMENTUM_ALGO_PORT=5025 IS_ALGO_PORT=5026 deno run --allow-all backend/src/oms/oms-server.ts &
+          COMMIT_SHA=$SHA OMS_PORT=5002 RISK_ENGINE_ENABLED=false RISK_ENGINE_HOST=localhost RISK_ENGINE_PORT=5032 ALGO_TRADER_PORT=5003 TWAP_ALGO_PORT=5004 POV_ALGO_PORT=5005 VWAP_ALGO_PORT=5006 ICEBERG_ALGO_PORT=5021 SNIPER_ALGO_PORT=5022 ARRIVAL_PRICE_ALGO_PORT=5023 MOMENTUM_ALGO_PORT=5025 IS_ALGO_PORT=5026 deno run --allow-all backend/src/oms/oms-server.ts &
           COMMIT_SHA=$SHA ALGO_TRADER_PORT=5003 deno run --allow-all backend/src/algo/limit-strategy.ts &
           COMMIT_SHA=$SHA TWAP_ALGO_PORT=5004 deno run --allow-all backend/src/algo/twap-strategy.ts &
           COMMIT_SHA=$SHA POV_ALGO_PORT=5005 deno run --allow-all backend/src/algo/pov-strategy.ts &

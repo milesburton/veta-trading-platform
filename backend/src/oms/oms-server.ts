@@ -24,6 +24,7 @@ import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 const PORT = Number(Deno.env.get("OMS_PORT")) || 5_002;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const RISK_ENGINE_URL = `http://${Deno.env.get("RISK_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("RISK_ENGINE_PORT") ?? "5032"}`;
+const RISK_ENGINE_ENABLED = (Deno.env.get("RISK_ENGINE_ENABLED") ?? "true").toLowerCase() !== "false";
 const USER_SERVICE_URL = `http://${
   Deno.env.get("USER_SERVICE_HOST") ?? "localhost"
 }:${Deno.env.get("USER_SERVICE_PORT") ?? "5008"}`;
@@ -345,7 +346,9 @@ consumer?.onMessage(async (_topic, raw) => {
     return;
   }
 
-  try {
+  if (!RISK_ENGINE_ENABLED) {
+    console.log(`[oms] Risk-engine disabled — skipping pre-trade checks for ${order.clientOrderId}`);
+  } else try {
     const riskRes = await fetch(`${RISK_ENGINE_URL}/check`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
