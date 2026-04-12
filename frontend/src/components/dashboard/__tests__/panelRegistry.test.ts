@@ -116,7 +116,7 @@ describe("canAccessPanel — role restrictions", () => {
     expect(canAccessPanel("order-ticket", "trader", "fx_electronic")).toBe(true);
     expect(canAccessPanel("order-ticket", "trader", "derivatives_high_touch")).toBe(true);
     expect(canAccessPanel("order-ticket", "trader", "low_touch")).toBe(false);
-    expect(canAccessPanel("order-ticket", "trader", "fi_voice")).toBe(false);
+    expect(canAccessPanel("order-ticket", "trader", "fi_voice")).toBe(true);
     expect(canAccessPanel("order-ticket", "trader", "derivatives_low_touch")).toBe(false);
     expect(canAccessPanel("order-ticket", "trader")).toBe(false);
     expect(canAccessPanel("order-ticket", "admin")).toBe(false);

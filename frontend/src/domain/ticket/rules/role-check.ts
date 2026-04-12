@@ -17,10 +17,6 @@ const ROLE_MESSAGES: Record<string, string> = {
 const STYLE_BLOCK_MESSAGES: Record<string, string> = {
   low_touch:
     "Low-touch traders do not submit orders via the manual ticket — use the Algo Monitor workspace.",
-  fi_voice:
-    "Fixed income voice traders submit orders via the Sales Workbench / RFQ flow, not the manual ticket.",
-  commodities_voice:
-    "Commodities voice traders submit orders via the RFQ flow, not the manual ticket.",
   derivatives_low_touch:
     "Low-touch derivatives traders do not use the manual ticket — use the Algo Monitor workspace.",
 };

@@ -518,7 +518,13 @@ export const PANEL_PERMISSIONS: Record<PanelId, ReadonlySet<AuthRole>> = {
 };
 
 export const PANEL_TRADING_STYLES: Partial<Record<PanelId, ReadonlySet<TradingStyle>>> = {
-  "order-ticket": new Set<TradingStyle>(["high_touch", "fx_electronic", "derivatives_high_touch"]),
+  "order-ticket": new Set<TradingStyle>([
+    "high_touch",
+    "fx_electronic",
+    "derivatives_high_touch",
+    "fi_voice",
+    "commodities_voice",
+  ]),
   "basket-order": new Set<TradingStyle>(["high_touch"]),
   "algo-monitor": new Set<TradingStyle>([
     "low_touch",
@@ -545,6 +551,7 @@ export const PANEL_TRADING_STYLES: Partial<Record<PanelId, ReadonlySet<TradingSt
   "vol-surface": new Set<TradingStyle>([
     "derivatives_high_touch",
     "derivatives_low_touch",
+    "fi_voice",
     "oversight",
   ]),
   "greeks-surface": new Set<TradingStyle>([
