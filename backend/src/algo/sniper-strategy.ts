@@ -20,6 +20,7 @@ import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import type { MarketTick } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import type { RoutedOrder, FillEvent } from "../types/orders.ts";
 
 const PORT = Number(Deno.env.get("SNIPER_ALGO_PORT")) || 5_022;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -53,27 +54,6 @@ function bestVenuePrice(
   return level?.price ?? fallback;
 }
 
-interface RoutedOrder {
-  orderId: string;
-  clientOrderId?: string;
-  asset: string;
-  side: "BUY" | "SELL";
-  quantity: number;
-  limitPrice: number;
-  expiresAt: number; // seconds duration from OMS
-  strategy?: string;
-  algoParams?: { aggressionPct?: number; maxVenues?: number };
-}
-
-interface FillEvent {
-  childId?: string;
-  parentOrderId?: string;
-  clientOrderId?: string;
-  algo?: string;
-  filledQty?: number;
-  avgFillPrice?: number;
-}
-
 interface ActiveSniper {
   orderId: string;
   clientOrderId?: string;
@@ -105,8 +85,9 @@ routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
 
-  const aggressionPct = Math.min(100, Math.max(1, Number(order.algoParams?.aggressionPct ?? 80)));
-  const maxVenues = Math.min(3, Math.max(1, Number(order.algoParams?.maxVenues ?? 2)));
+  const params = order.algoParams as { aggressionPct?: number; maxVenues?: number } | undefined;
+  const aggressionPct = Math.min(100, Math.max(1, Number(params?.aggressionPct ?? 80)));
+  const maxVenues = Math.min(3, Math.max(1, Number(params?.maxVenues ?? 2)));
 
   const sniper: ActiveSniper = {
     orderId: order.orderId,

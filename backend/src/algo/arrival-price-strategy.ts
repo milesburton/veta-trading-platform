@@ -17,6 +17,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import type { RoutedOrder, FillEvent } from "../types/orders.ts";
 
 const PORT = Number(Deno.env.get("ARRIVAL_PRICE_ALGO_PORT")) || 5_023;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -39,27 +40,6 @@ const producer = await createProducer("arrival-price-algo").catch((err) => {
   );
   return null;
 });
-
-interface RoutedOrder {
-  orderId: string;
-  clientOrderId?: string;
-  asset: string;
-  side: "BUY" | "SELL";
-  quantity: number;
-  limitPrice: number;
-  expiresAt: number; // seconds duration from OMS
-  strategy?: string;
-  algoParams?: { urgency?: number; maxSlippageBps?: number };
-}
-
-interface FillEvent {
-  childId?: string;
-  parentOrderId?: string;
-  clientOrderId?: string;
-  algo?: string;
-  filledQty?: number;
-  avgFillPrice?: number;
-}
 
 interface ActiveAP {
   orderId: string;
@@ -96,13 +76,14 @@ routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
 
+  const params = order.algoParams as { urgency?: number; maxSlippageBps?: number } | undefined;
   const urgency = Math.min(
     100,
-    Math.max(1, Number(order.algoParams?.urgency ?? 50)),
+    Math.max(1, Number(params?.urgency ?? 50)),
   );
   const maxSlippageBps = Math.max(
     1,
-    Number(order.algoParams?.maxSlippageBps ?? 30),
+    Number(params?.maxSlippageBps ?? 30),
   );
 
   // Capture arrival price from market client's last known tick

@@ -14,6 +14,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import { type Desk, settlementDate } from "../lib/settlement.ts";
+import { CORS_HEADERS, corsOptions, json } from "../lib/http.ts";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
@@ -257,22 +258,11 @@ consumer?.onMessage(async (_topic, raw) => {
 
 console.log(`[ems] Listening for orders.child on message bus`);
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
-
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
-  }
+  if (req.method === "OPTIONS") return corsOptions();
   if (url.pathname === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({ service: "ems", version: VERSION, status: "ok" }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({ service: "ems", version: VERSION, status: "ok" });
   }
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 });

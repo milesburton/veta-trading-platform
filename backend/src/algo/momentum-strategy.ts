@@ -25,6 +25,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import type { RoutedOrder, FillEvent } from "../types/orders.ts";
 
 const PORT = Number(Deno.env.get("MOMENTUM_ALGO_PORT")) || 5_025;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -49,33 +50,6 @@ const producer = await createProducer("momentum-algo").catch((err) => {
 function nextEma(price: number, prevEma: number, period: number): number {
   const k = 2 / (period + 1);
   return price * k + prevEma * (1 - k);
-}
-
-interface RoutedOrder {
-  orderId: string;
-  clientOrderId?: string;
-  asset: string;
-  side: "BUY" | "SELL";
-  quantity: number;
-  limitPrice: number;
-  expiresAt: number; // seconds duration from OMS
-  strategy?: string;
-  algoParams?: {
-    entryThresholdBps?: number;
-    maxTranches?: number;
-    shortEmaPeriod?: number;
-    longEmaPeriod?: number;
-    cooldownTicks?: number;
-  };
-}
-
-interface FillEvent {
-  childId?: string;
-  parentOrderId?: string;
-  clientOrderId?: string;
-  algo?: string;
-  filledQty?: number;
-  avgFillPrice?: number;
 }
 
 interface ActiveMomentum {
@@ -122,22 +96,29 @@ routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
 
+  const params = order.algoParams as {
+    entryThresholdBps?: number;
+    maxTranches?: number;
+    shortEmaPeriod?: number;
+    longEmaPeriod?: number;
+    cooldownTicks?: number;
+  } | undefined;
   const entryThresholdBps = Math.max(
     0.1,
-    Number(order.algoParams?.entryThresholdBps ?? 10),
+    Number(params?.entryThresholdBps ?? 10),
   );
-  const maxTranches = Math.max(1, Number(order.algoParams?.maxTranches ?? 5));
+  const maxTranches = Math.max(1, Number(params?.maxTranches ?? 5));
   const shortEmaPeriod = Math.max(
     2,
-    Number(order.algoParams?.shortEmaPeriod ?? 3),
+    Number(params?.shortEmaPeriod ?? 3),
   );
   const longEmaPeriod = Math.max(
     shortEmaPeriod + 1,
-    Number(order.algoParams?.longEmaPeriod ?? 8),
+    Number(params?.longEmaPeriod ?? 8),
   );
   const cooldownTicks = Math.max(
     1,
-    Number(order.algoParams?.cooldownTicks ?? 3),
+    Number(params?.cooldownTicks ?? 3),
   );
 
   // Capture entry price from market client's last known tick; fall back to limitPrice

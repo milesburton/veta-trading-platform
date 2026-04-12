@@ -61,11 +61,7 @@ interface UserLimits {
   primary_desk?: string;
 }
 
-function getCookieToken(req: Request): string | null {
-  const cookie = req.headers.get("cookie") ?? "";
-  const match = cookie.match(/veta_user=([^;]+)/);
-  return match ? match[1] : null;
-}
+import { getCookieToken } from "../lib/auth.ts";
 
 const authCache = new Map<string, { result: { user: AuthenticatedUser; limits: UserLimits }; expiresAt: number }>();
 setInterval(() => {

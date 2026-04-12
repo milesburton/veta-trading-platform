@@ -1,15 +1,10 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { fixArchivePool } from "../lib/db.ts";
 import { createConsumer } from "../lib/messaging.ts";
+import { json, corsOptions } from "../lib/http.ts";
 
 const PORT = Number(Deno.env.get("FIX_ARCHIVE_PORT")) || 5_012;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
 
 interface ExecReport {
   execId: string;
@@ -120,13 +115,6 @@ createConsumer("fix-archive", ["fix.execution"]).then((consumer) => {
   });
 }).catch((err) => console.warn("[fix-archive] Cannot subscribe:", err.message));
 
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
-
 // deno-lint-ignore no-explicit-any
 function rowToExec(r: any[]) {
   const [
@@ -176,7 +164,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const path = url.pathname;
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return corsOptions();
   }
 
   if (path === "/health" && req.method === "GET") {
@@ -254,7 +242,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
   }
 
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
+  return json({ error: "Not Found" }, 404);
 });
 
 console.log(`[fix-archive] running on port ${PORT}`);

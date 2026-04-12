@@ -3,11 +3,9 @@ import {
   assertEquals,
 } from "https://deno.land/std@0.210.0/testing/asserts.ts";
 
-const BASE = "http://localhost:5032";
+import { timeout } from "./test-helpers.ts";
 
-function timeout(ms = 5_000) {
-  return AbortSignal.timeout(ms);
-}
+const BASE = "http://localhost:5032";
 
 async function check(body: Record<string, unknown>): Promise<{
   allowed: boolean;

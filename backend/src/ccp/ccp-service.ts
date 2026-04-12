@@ -36,6 +36,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { CORS_HEADERS, corsOptions, json } from "../lib/http.ts";
 
 const PORT = Number(Deno.env.get("CCP_SERVICE_PORT")) || 5_028;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -48,12 +49,6 @@ const SETTLEMENT_SWEEP_MS = Number(Deno.env.get("CCP_SETTLEMENT_SWEEP_MS")) ||
 
 /** How often to mark-to-market margin positions (ms). */
 const MARGIN_MTM_MS = Number(Deno.env.get("CCP_MARGIN_MTM_MS")) || 10_000;
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
 
 const INITIAL_MARGIN_RATE: Record<string, number> = {
   equity: 0.10, // 10% of notional
@@ -560,19 +555,14 @@ Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
-  }
+  if (req.method === "OPTIONS") return corsOptions();
 
   if (path === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({
-        service: "ccp-service",
-        version: VERSION,
-        status: "ok",
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({
+      service: "ccp-service",
+      version: VERSION,
+      status: "ok",
+    });
   }
 
   // GET /ccp/stats
@@ -587,20 +577,17 @@ Deno.serve({ port: PORT }, (req) => {
       },
       {},
     );
-    return new Response(
-      JSON.stringify({
-        service: "ccp-service",
-        version: VERSION,
-        totalNovated,
-        totalSettled,
-        totalMarginCalls,
-        pendingObligations: pendingObligations.length,
-        pendingByDate,
-        marginAccountCount: marginAccounts.size,
-        ts: Date.now(),
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({
+      service: "ccp-service",
+      version: VERSION,
+      totalNovated,
+      totalSettled,
+      totalMarginCalls,
+      pendingObligations: pendingObligations.length,
+      pendingByDate,
+      marginAccountCount: marginAccounts.size,
+      ts: Date.now(),
+    });
   }
 
   // GET /ccp/margin/:userId
@@ -608,21 +595,16 @@ Deno.serve({ port: PORT }, (req) => {
   if (marginMatch && req.method === "GET") {
     const acct = marginAccounts.get(marginMatch[1]);
     if (!acct) {
-      return new Response(
-        JSON.stringify({
-          userId: marginMatch[1],
-          initialMarginPosted: 0,
-          unrealisedPnl: 0,
-          netMarginRequired: 0,
-          positions: {},
-          costBasis: {},
-        }),
-        { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-      );
+      return json({
+        userId: marginMatch[1],
+        initialMarginPosted: 0,
+        unrealisedPnl: 0,
+        netMarginRequired: 0,
+        positions: {},
+        costBasis: {},
+      });
     }
-    return new Response(JSON.stringify(acct), {
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-    });
+    return json(acct);
   }
 
   // GET /ccp/settlements — pending queue
@@ -633,10 +615,7 @@ Deno.serve({ port: PORT }, (req) => {
     obligations.sort((a, b) =>
       a.settlementDate.localeCompare(b.settlementDate)
     );
-    return new Response(
-      JSON.stringify({ obligations, total: obligations.length }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({ obligations, total: obligations.length });
   }
 
   // GET /ccp/settlements/:date — obligations for a specific date
@@ -649,14 +628,11 @@ Deno.serve({ port: PORT }, (req) => {
       (o) => o.settlementDate === settlDateMatch[1],
     );
     if (userId) obligations = obligations.filter((o) => o.userId === userId);
-    return new Response(
-      JSON.stringify({
-        date: settlDateMatch[1],
-        obligations,
-        total: obligations.length,
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({
+      date: settlDateMatch[1],
+      obligations,
+      total: obligations.length,
+    });
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });

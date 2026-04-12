@@ -10,6 +10,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import { serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
+import type { RoutedOrder } from "../types/orders.ts";
 
 const PORT = Number(Deno.env.get("TWAP_ALGO_PORT")) || 5_004;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -29,18 +30,6 @@ const producer = await createProducer("twap-algo").catch((err) => {
   );
   return null;
 });
-
-interface RoutedOrder {
-  orderId: string;
-  clientOrderId?: string;
-  asset: string;
-  side: "BUY" | "SELL";
-  quantity: number;
-  limitPrice: number;
-  expiresAt: number; // seconds duration from OMS
-  strategy?: string;
-  algoParams?: { numSlices?: number; participationCap?: number };
-}
 
 async function executeTWAP(order: RoutedOrder): Promise<void> {
   const durationMs = order.expiresAt * 1_000;

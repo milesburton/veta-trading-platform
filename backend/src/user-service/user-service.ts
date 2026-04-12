@@ -186,11 +186,7 @@ function verifyOAuthCredentials(userId: string, providedPassword: string | undef
   return OAUTH_SHARED_SECRET === candidate;
 }
 
-function getCookieToken(req: Request): string | null {
-  const cookie = req.headers.get("cookie") ?? "";
-  const match = cookie.match(/veta_user=([^;]+)/);
-  return match ? match[1] : null;
-}
+import { getCookieToken } from "../lib/auth.ts";
 
 function json(data: unknown, status = 200, extra?: Record<string, string>): Response {
   return new Response(JSON.stringify(data), {

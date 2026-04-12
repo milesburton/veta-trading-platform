@@ -24,6 +24,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import { settlementDate } from "../lib/settlement.ts";
+import { CORS_HEADERS, corsOptions, json } from "../lib/http.ts";
 
 const PORT = Number(Deno.env.get("DARK_POOL_PORT")) || 5_027;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -35,12 +36,6 @@ const ORDER_TIMEOUT_MS = Number(Deno.env.get("ORDER_TIMEOUT_MS")) || 30_000;
 const DARK_POOL_MIN_BLOCK = Number(Deno.env.get("DARK_POOL_MIN_BLOCK")) ||
   10_000;
 const RESIDUAL_ACTION = Deno.env.get("RESIDUAL_ACTION") || "reroute";
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
 
 interface RoutedOrder {
   orderId: string;
@@ -455,15 +450,10 @@ console.log(
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
 
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
-  }
+  if (req.method === "OPTIONS") return corsOptions();
 
   if (url.pathname === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({ service: "dark-pool", version: VERSION, status: "ok" }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({ service: "dark-pool", version: VERSION, status: "ok" });
   }
 
   if (url.pathname === "/pool/stats" && req.method === "GET") {
@@ -479,20 +469,17 @@ Deno.serve({ port: PORT }, (req) => {
         sellQty: pool.sells.reduce((s, o) => s + o.remainingQty, 0),
       };
     }
-    return new Response(
-      JSON.stringify({
-        service: "dark-pool",
-        version: VERSION,
-        matchCycleMs: MATCH_CYCLE_MS,
-        orderTimeoutMs: ORDER_TIMEOUT_MS,
-        residualAction: RESIDUAL_ACTION,
-        totalMatchedToday,
-        totalMatchedAllTime,
-        currentDepth: depth,
-        ts: Date.now(),
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({
+      service: "dark-pool",
+      version: VERSION,
+      matchCycleMs: MATCH_CYCLE_MS,
+      orderTimeoutMs: ORDER_TIMEOUT_MS,
+      residualAction: RESIDUAL_ACTION,
+      totalMatchedToday,
+      totalMatchedAllTime,
+      currentDepth: depth,
+      ts: Date.now(),
+    });
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });

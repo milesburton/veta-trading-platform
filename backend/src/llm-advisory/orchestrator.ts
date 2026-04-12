@@ -1,5 +1,6 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { corsOptions, json } from "../lib/http.ts";
 import type {
   FeatureVector,
   Signal,
@@ -32,12 +33,6 @@ import { llmAdvisoryPool } from "../lib/db.ts";
 
 const PORT = Number(Deno.env.get("LLM_ADVISORY_PORT")) || 5_024;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
 
 const basePolicy = loadPolicy();
 const store = createJobStore(llmAdvisoryPool);
@@ -220,20 +215,11 @@ setInterval(async () => {
   await store.pruneOldData(7 * 24 * 60 * 60 * 1000);
 }, 24 * 60 * 60 * 1000);
 
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
-
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
-  }
+  if (req.method === "OPTIONS") return corsOptions();
 
   if (path === "/health" && req.method === "GET") {
     const effectivePolicy = await getEffectivePolicy();

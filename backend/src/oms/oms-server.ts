@@ -19,6 +19,7 @@
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { CORS_HEADERS, corsOptions, json } from "../lib/http.ts";
 
 const PORT = Number(Deno.env.get("OMS_PORT")) || 5_002;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -34,12 +35,6 @@ const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${
 const DARK_POOL_MIN_BLOCK = Number(
   Deno.env.get("DARK_POOL_MIN_BLOCK") ?? "10000",
 );
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
 
 const KNOWN_STRATEGIES = new Set([
   "LIMIT",
@@ -726,14 +721,9 @@ setInterval(() => {
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
-  }
+  if (req.method === "OPTIONS") return corsOptions();
   if (url.pathname === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({ service: "oms", version: VERSION, status: "ok" }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({ service: "oms", version: VERSION, status: "ok" });
   }
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 });

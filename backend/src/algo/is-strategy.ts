@@ -23,6 +23,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import type { RoutedOrder, FillEvent } from "../types/orders.ts";
 
 const PORT = Number(Deno.env.get("IS_ALGO_PORT")) || 5_026;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -42,32 +43,6 @@ const producer = await createProducer("is-algo").catch((err) => {
   );
   return null;
 });
-
-interface RoutedOrder {
-  orderId: string;
-  clientOrderId?: string;
-  asset: string;
-  side: "BUY" | "SELL";
-  quantity: number;
-  limitPrice: number;
-  expiresAt: number; // seconds duration from OMS
-  strategy?: string;
-  algoParams?: {
-    urgency?: number;
-    maxSlippageBps?: number;
-    minSlices?: number;
-    maxSlices?: number;
-  };
-}
-
-interface FillEvent {
-  childId?: string;
-  parentOrderId?: string;
-  clientOrderId?: string;
-  algo?: string;
-  filledQty?: number;
-  avgFillPrice?: number;
-}
 
 /**
  * Pre-computed geometric slice schedule for an IS order.
@@ -163,18 +138,24 @@ routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
 
+  const params = order.algoParams as {
+    urgency?: number;
+    maxSlippageBps?: number;
+    minSlices?: number;
+    maxSlices?: number;
+  } | undefined;
   const urgency = Math.max(
     0.0,
-    Math.min(1.0, Number(order.algoParams?.urgency ?? 0.5)),
+    Math.min(1.0, Number(params?.urgency ?? 0.5)),
   );
   const maxSlippageBps = Math.max(
     1,
-    Number(order.algoParams?.maxSlippageBps ?? 50),
+    Number(params?.maxSlippageBps ?? 50),
   );
-  const minSlices = Math.max(1, Number(order.algoParams?.minSlices ?? 3));
+  const minSlices = Math.max(1, Number(params?.minSlices ?? 3));
   const maxSlices = Math.max(
     minSlices,
-    Number(order.algoParams?.maxSlices ?? 10),
+    Number(params?.maxSlices ?? 10),
   );
 
   // Capture arrival price from market client's last known tick

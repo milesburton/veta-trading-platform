@@ -9,15 +9,10 @@
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createProducer } from "../lib/messaging.ts";
+import { json, corsOptions } from "../lib/http.ts";
 
 const PORT = Number(Deno.env.get("PRODUCT_SERVICE_PORT")) || 5_030;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
 
 type ProductState = "draft" | "structured" | "issued" | "sold" | "unwound";
 
@@ -71,17 +66,11 @@ const producer = await createProducer("product-service").catch(
 );
 
 function jsonErr(msg: string, status: number): Response {
-  return new Response(JSON.stringify({ error: msg }), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
+  return json({ error: msg }, status);
 }
 
 function jsonOk(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
+  return json(body, status);
 }
 
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
@@ -90,7 +79,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const method = req.method;
 
   if (method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return corsOptions();
   }
 
   if (path === "/health" && method === "GET") {
@@ -350,10 +339,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return jsonOk(product);
   }
 
-  return new Response(JSON.stringify({ error: "Not found" }), {
-    status: 404,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
+  return json({ error: "Not found" }, 404);
 });
 
 console.log(`[product-service] Listening on port ${PORT}`);

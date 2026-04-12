@@ -5,17 +5,12 @@ import { seedEarningsEvents } from "./earnings-adapter.ts";
 import { seedEconomicEvents } from "./economic-adapter.ts";
 import { createMarketEventStore } from "./market-event-store.ts";
 import { intelligencePool } from "../lib/db.ts";
+import { json, corsOptions } from "../lib/http.ts";
 
 const PORT = Number(Deno.env.get("MARKET_DATA_ADAPTERS_PORT")) || 5_016;
 const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") ||
   "http://localhost:5000";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
 
 const eventStore = createMarketEventStore(intelligencePool);
 
@@ -103,19 +98,12 @@ setInterval(async () => {
   await seedEvents();
 }, 7 * 24 * 60 * 60 * 1000);
 
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
-
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return corsOptions();
   }
 
   if (path === "/health" && req.method === "GET") {
@@ -152,7 +140,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(filtered.slice(0, limit));
   }
 
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
+  return json({ error: "Not Found" }, 404);
 });
 
 console.log(`[market-data-adapters] Running on port ${PORT}`);

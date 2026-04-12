@@ -1,10 +1,5 @@
 import { createConsumer } from "../lib/messaging.ts";
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+import { CORS_HEADERS, corsOptions, json } from "../lib/http.ts";
 
 export function serveAlgoHealth(
   port: number,
@@ -13,16 +8,11 @@ export function serveAlgoHealth(
   getActiveOrders: () => number,
 ): void {
   Deno.serve({ port }, (req) => {
-    if (req.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
-    }
+    if (req.method === "OPTIONS") return corsOptions();
 
     const url = new URL(req.url);
     if (url.pathname === "/health" && req.method === "GET") {
-      return new Response(
-        JSON.stringify({ service, version, status: "ok", activeOrders: getActiveOrders() }),
-        { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-      );
+      return json({ service, version, status: "ok", activeOrders: getActiveOrders() });
     }
 
     return new Response("Not Found", { status: 404, headers: CORS_HEADERS });

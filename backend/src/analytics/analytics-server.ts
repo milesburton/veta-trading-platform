@@ -52,6 +52,7 @@ import {
 import { buildYieldCurveResponse, fetchFredParams } from "./yield-curve.ts";
 import { createYieldCurveStore } from "./yield-curve-store.ts";
 import { intelligencePool } from "../lib/db.ts";
+import { json, corsOptions } from "../lib/http.ts";
 import { computeSpreadAnalysis } from "./spread-analysis.ts";
 import type { SpreadAnalysisRequest } from "./spread-analysis.ts";
 import { computeDurationLadder } from "./duration-ladder.ts";
@@ -68,19 +69,6 @@ const MARKET_SIM_URL = `http://${
 }:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
 
 const yieldCurveStore = createYieldCurveStore(intelligencePool);
-
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS },
-  });
-}
 
 function err(message: string, status = 400): Response {
   return json({ error: message }, status);
@@ -115,7 +103,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const path = url.pathname;
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS });
+    return corsOptions();
   }
 
   if (path === "/health" && req.method === "GET") {
@@ -511,7 +499,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(buildVolSurface(symbol, spot, sigma));
   }
 
-  return new Response("Not Found", { status: 404, headers: CORS });
+  return json({ error: "Not Found" }, 404);
 });
 
 console.log(`[analytics] Analytics service running on port ${PORT}`);

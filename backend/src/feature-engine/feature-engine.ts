@@ -16,16 +16,11 @@ import {
   computeSentimentDelta,
 } from "./feature-computers.ts";
 import { intelligencePool } from "../lib/db.ts";
+import { json, corsOptions } from "../lib/http.ts";
 
 const PORT = Number(Deno.env.get("FEATURE_ENGINE_PORT")) || 5_017;
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
 
 const priceHistory = new Map<string, number[]>();
 const volumeHistory = new Map<string, number[]>();
@@ -232,19 +227,12 @@ if (adapterConsumer) {
   });
 }
 
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
-
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname;
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return corsOptions();
   }
 
   if (path === "/health" && req.method === "GET") {
@@ -275,7 +263,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(fv);
   }
 
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
+  return json({ error: "Not Found" }, 404);
 });
 
 console.log(`[feature-engine] Running on port ${PORT}`);

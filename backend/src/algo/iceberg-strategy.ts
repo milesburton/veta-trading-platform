@@ -15,6 +15,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "../lib/marketSimClient.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import type { RoutedOrder, FillEvent } from "../types/orders.ts";
 
 const PORT = Number(Deno.env.get("ICEBERG_ALGO_PORT")) || 5_021;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -33,27 +34,6 @@ const producer = await createProducer("iceberg-algo").catch((err) => {
   );
   return null;
 });
-
-interface RoutedOrder {
-  orderId: string;
-  clientOrderId?: string;
-  asset: string;
-  side: "BUY" | "SELL";
-  quantity: number;
-  limitPrice: number;
-  expiresAt: number; // seconds duration from OMS
-  strategy?: string;
-  algoParams?: { visibleQty?: number };
-}
-
-interface FillEvent {
-  childId?: string;
-  parentOrderId?: string;
-  clientOrderId?: string;
-  algo?: string;
-  filledQty?: number;
-  avgFillPrice?: number;
-}
 
 interface ActiveIceberg {
   orderId: string;
@@ -89,7 +69,7 @@ routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== "ICEBERG") return;
 
-  const visibleQty = Math.max(1, Number(order.algoParams?.visibleQty ?? 100));
+  const visibleQty = Math.max(1, Number((order.algoParams as { visibleQty?: number })?.visibleQty ?? 100));
   const totalQty = order.quantity;
 
   const iceberg: ActiveIceberg = {

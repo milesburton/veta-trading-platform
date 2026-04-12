@@ -6,17 +6,12 @@ import type {
   GridQueryRequest,
   GridQueryResponse,
 } from "../types/gridQuery.ts";
+import { CORS_HEADERS, corsOptions, json } from "../lib/http.ts";
 
 const PORT = Number(Deno.env.get("JOURNAL_PORT")) || 5_009;
 const RETENTION_DAYS = Number(Deno.env.get("JOURNAL_RETENTION_DAYS")) || 90;
 const RETENTION_MS = RETENTION_DAYS * 24 * 60 * 60 * 1_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
 
 const TICKS_PER_MINUTE = 240;
 const MAX_CANDLES = 120;
@@ -370,13 +365,6 @@ createConsumer(marketGroupId, ["market.ticks"]).then((consumer) => {
   console.log("[journal] Subscribed to: market.ticks");
 });
 
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
-
 function rowToEntry(row: unknown[]) {
   const [
     id,
@@ -445,9 +433,7 @@ function rowToEntry(row: unknown[]) {
 }
 
 async function handle(req: Request): Promise<Response> {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
-  }
+  if (req.method === "OPTIONS") return corsOptions();
 
   const url = new URL(req.url);
   const path = url.pathname;

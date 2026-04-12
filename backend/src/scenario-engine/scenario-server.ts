@@ -6,6 +6,7 @@ import type {
 } from "../types/intelligence.ts";
 import { scoreFeatureVector } from "../signal-engine/scorer.ts";
 import { DEFAULT_WEIGHTS } from "../signal-engine/weight-store.ts";
+import { json, corsOptions } from "../lib/http.ts";
 
 const PORT = Number(Deno.env.get("SCENARIO_ENGINE_PORT")) || 5_020;
 const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") ||
@@ -13,19 +14,6 @@ const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") ||
 const SIGNAL_ENGINE_URL = Deno.env.get("SIGNAL_ENGINE_URL") ||
   "http://localhost:5018";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
 
 interface ScenarioRequest {
   symbol: string;
@@ -45,7 +33,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const path = url.pathname;
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return corsOptions();
   }
 
   if (path === "/health" && req.method === "GET") {
@@ -113,7 +101,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(result);
   }
 
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
+  return json({ error: "Not Found" }, 404);
 });
 
 console.log(`[scenario-engine] Running on port ${PORT}`);

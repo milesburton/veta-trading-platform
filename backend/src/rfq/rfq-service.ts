@@ -26,6 +26,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import { settlementDate } from "../lib/settlement.ts";
+import { CORS_HEADERS, corsOptions, json, jsonError } from "../lib/http.ts";
 
 type SellSideRfqState =
   | "CLIENT_REQUEST" // client submitted
@@ -77,12 +78,6 @@ const QUOTE_WINDOW_MS = Number(Deno.env.get("RFQ_QUOTE_WINDOW_MS")) || 3_000;
 
 /** How long (ms) to keep completed RFQs in memory before pruning. */
 const RFQ_RETENTION_MS = Number(Deno.env.get("RFQ_RETENTION_MS")) || 300_000; // 5 minutes
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
 
 interface DealerProfile {
   id: string;
@@ -604,19 +599,14 @@ Deno.serve({ port: PORT }, async (req) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
-  }
+  if (req.method === "OPTIONS") return corsOptions();
 
   if (path === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({
-        service: "rfq-service",
-        version: VERSION,
-        status: "ok",
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({
+      service: "rfq-service",
+      version: VERSION,
+      status: "ok",
+    });
   }
 
   // GET /rfq — list recent RFQs (most recent first, capped at 100)
@@ -626,10 +616,7 @@ Deno.serve({ port: PORT }, async (req) => {
       b.createdAt - a.createdAt
     );
     if (userId) records = records.filter((r) => r.userId === userId);
-    return new Response(
-      JSON.stringify({ rfqs: records.slice(0, 100), total: records.length }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({ rfqs: records.slice(0, 100), total: records.length });
   }
 
   // GET /rfq/stats — must be checked before /rfq/:id to avoid "stats" being treated as an id
@@ -639,55 +626,32 @@ Deno.serve({ port: PORT }, async (req) => {
       acc[r.state] = (acc[r.state] ?? 0) + 1;
       return acc;
     }, {});
-    return new Response(
-      JSON.stringify({
-        service: "rfq-service",
-        version: VERSION,
-        total: all.length,
-        byState,
-        quoteWindowMs: QUOTE_WINDOW_MS,
-        ts: Date.now(),
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({
+      service: "rfq-service",
+      version: VERSION,
+      total: all.length,
+      byState,
+      quoteWindowMs: QUOTE_WINDOW_MS,
+      ts: Date.now(),
+    });
   }
 
   // GET /rfq/:id — fetch a single RFQ
   const matchGet = path.match(/^\/rfq\/([^/]+)$/);
   if (matchGet && req.method === "GET") {
     const rfq = rfqStore.get(matchGet[1]);
-    if (!rfq) {
-      return new Response(JSON.stringify({ error: "Not found" }), {
-        status: 404,
-        headers: CORS_HEADERS,
-      });
-    }
-    return new Response(JSON.stringify(rfq), {
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-    });
+    if (!rfq) return jsonError("Not found", 404);
+    return json(rfq);
   }
 
   // POST /rfq/:id/execute — manually select a specific dealer quote
   const matchExec = path.match(/^\/rfq\/([^/]+)\/execute$/);
   if (matchExec && req.method === "POST") {
     const rfq = rfqStore.get(matchExec[1]);
-    if (!rfq) {
-      return new Response(JSON.stringify({ error: "Not found" }), {
-        status: 404,
-        headers: CORS_HEADERS,
-      });
-    }
-    if (rfq.state === "EXECUTED") {
-      return new Response(JSON.stringify({ error: "Already executed" }), {
-        status: 409,
-        headers: CORS_HEADERS,
-      });
-    }
+    if (!rfq) return jsonError("Not found", 404);
+    if (rfq.state === "EXECUTED") return jsonError("Already executed", 409);
     if (rfq.state === "EXPIRED" || rfq.state === "NO_QUOTES") {
-      return new Response(JSON.stringify({ error: "RFQ has expired" }), {
-        status: 410,
-        headers: CORS_HEADERS,
-      });
+      return jsonError("RFQ has expired", 410);
     }
 
     let selectedQuote: DealerQuote | undefined;
@@ -695,12 +659,7 @@ Deno.serve({ port: PORT }, async (req) => {
       const body = await req.json() as { dealerId?: string };
       if (body.dealerId) {
         selectedQuote = rfq.quotes.find((q) => q.dealerId === body.dealerId);
-        if (!selectedQuote) {
-          return new Response(
-            JSON.stringify({ error: "Dealer quote not found" }),
-            { status: 404, headers: CORS_HEADERS },
-          );
-        }
+        if (!selectedQuote) return jsonError("Dealer quote not found", 404);
       }
     } catch {
       // No body — use best quote
@@ -708,20 +667,10 @@ Deno.serve({ port: PORT }, async (req) => {
 
     const quoteToExecute = selectedQuote ??
       selectBestQuote(rfq.quotes, rfq.side);
-    if (!quoteToExecute) {
-      return new Response(
-        JSON.stringify({ error: "No quotes available yet" }),
-        { status: 425, headers: CORS_HEADERS },
-      );
-    }
+    if (!quoteToExecute) return jsonError("No quotes available yet", 425);
 
     await executeRfq(rfq, quoteToExecute);
-    return new Response(
-      JSON.stringify({ execId: rfq.execId, executedQuote: rfq.executedQuote }),
-      {
-        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-      },
-    );
+    return json({ execId: rfq.execId, executedQuote: rfq.executedQuote });
   }
 
   // POST /rfq/sellside — client submits a sell-side RFQ
@@ -736,21 +685,13 @@ Deno.serve({ port: PORT }, async (req) => {
     try {
       body = await req.json();
     } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-      });
+      return jsonError("Invalid JSON body", 400);
     }
     const { clientUserId, asset, side, quantity, limitPrice } = body;
     if (!clientUserId || !asset || !side || !quantity) {
-      return new Response(
-        JSON.stringify({
-          error: "Missing required fields: clientUserId, asset, side, quantity",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-        },
+      return jsonError(
+        "Missing required fields: clientUserId, asset, side, quantity",
+        400,
       );
     }
     const now = Date.now();
@@ -771,9 +712,7 @@ Deno.serve({ port: PORT }, async (req) => {
     console.log(
       `[rfq] New sell-side RFQ ${rfqId}: ${side} ${quantity} ${asset} from ${clientUserId}`,
     );
-    return new Response(JSON.stringify({ rfqId, state: rfq.state }), {
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-    });
+    return json({ rfqId, state: rfq.state });
   }
 
   // GET /rfq/sellside/stats — must be before /rfq/sellside/:id
@@ -784,10 +723,7 @@ Deno.serve({ port: PORT }, async (req) => {
       acc[r.state] = (acc[r.state] ?? 0) + 1;
       return acc;
     }, {});
-    return new Response(
-      JSON.stringify({ total: sellSideRfqStore.size, byState }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({ total: sellSideRfqStore.size, byState });
   }
 
   // GET /rfq/sellside — list sell-side RFQs
@@ -803,10 +739,7 @@ Deno.serve({ port: PORT }, async (req) => {
       );
     }
     if (stateFilter) records = records.filter((r) => r.state === stateFilter);
-    return new Response(
-      JSON.stringify({ rfqs: records, total: records.length }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return json({ rfqs: records, total: records.length });
   }
 
   // Action routes: /rfq/sellside/:id/(route|markup|confirm|reject)
@@ -815,12 +748,7 @@ Deno.serve({ port: PORT }, async (req) => {
   );
   if (ssActionMatch && req.method === "PUT") {
     const rfq = sellSideRfqStore.get(ssActionMatch[1]);
-    if (!rfq) {
-      return new Response(JSON.stringify({ error: "Not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-      });
-    }
+    if (!rfq) return jsonError("Not found", 404);
     const action = ssActionMatch[2];
     let actionBody: Record<string, unknown> = {};
     try {
@@ -829,21 +757,10 @@ Deno.serve({ port: PORT }, async (req) => {
 
     if (action === "route") {
       if (rfq.state !== "CLIENT_REQUEST") {
-        return new Response(
-          JSON.stringify({ error: `Cannot route from state ${rfq.state}` }),
-          {
-            status: 409,
-            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-          },
-        );
+        return jsonError(`Cannot route from state ${rfq.state}`, 409);
       }
       const salesUserId = actionBody.salesUserId as string | undefined;
-      if (!salesUserId) {
-        return new Response(JSON.stringify({ error: "Missing salesUserId" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-        });
-      }
+      if (!salesUserId) return jsonError("Missing salesUserId", 400);
       const basePrice = rfq.limitPrice ?? 0;
       const jitter = basePrice * (1 + (Math.random() - 0.5) * 0.01);
       rfq.salesUserId = salesUserId;
@@ -852,33 +769,17 @@ Deno.serve({ port: PORT }, async (req) => {
       rfq.salesRoutedAt = Date.now();
       rfq.ts = Date.now();
       await publishSsRfqUpdate(rfq);
-      return new Response(JSON.stringify(rfq), {
-        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-      });
+      return json(rfq);
     }
 
     if (action === "markup") {
       if (rfq.state !== "SALES_MARKUP") {
-        return new Response(
-          JSON.stringify({
-            error: `Cannot apply markup from state ${rfq.state}`,
-          }),
-          {
-            status: 409,
-            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-          },
-        );
+        return jsonError(`Cannot apply markup from state ${rfq.state}`, 409);
       }
       const salesUserId = actionBody.salesUserId as string | undefined;
       const markupBps = Number(actionBody.markupBps ?? 0);
       if (!salesUserId || salesUserId !== rfq.salesUserId) {
-        return new Response(
-          JSON.stringify({ error: "salesUserId does not match" }),
-          {
-            status: 403,
-            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-          },
-        );
+        return jsonError("salesUserId does not match", 403);
       }
       const dealerPrice = rfq.dealerBestPrice ?? 0;
       const clientPrice = rfq.side === "BUY"
@@ -890,36 +791,21 @@ Deno.serve({ port: PORT }, async (req) => {
       rfq.salesMarkupAppliedAt = Date.now();
       rfq.ts = Date.now();
       await publishSsRfqUpdate(rfq);
-      return new Response(JSON.stringify(rfq), {
-        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-      });
+      return json(rfq);
     }
 
     if (action === "confirm") {
       if (rfq.state !== "CLIENT_CONFIRMATION") {
-        return new Response(
-          JSON.stringify({ error: `Cannot confirm from state ${rfq.state}` }),
-          {
-            status: 409,
-            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-          },
-        );
+        return jsonError(`Cannot confirm from state ${rfq.state}`, 409);
       }
       const clientUserId = actionBody.clientUserId as string | undefined;
       if (!clientUserId || clientUserId !== rfq.clientUserId) {
-        return new Response(
-          JSON.stringify({ error: "clientUserId does not match" }),
-          {
-            status: 403,
-            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-          },
-        );
+        return jsonError("clientUserId does not match", 403);
       }
       rfq.state = "CONFIRMED";
       rfq.clientConfirmedAt = Date.now();
       rfq.ts = Date.now();
       await publishSsRfqUpdate(rfq);
-      // Publish to orders.new so the order enters the main pipeline
       await producer?.send("orders.new", {
         orderId: `${rfq.rfqId}-ord`,
         clientOrderId: rfq.rfqId,
@@ -933,29 +819,19 @@ Deno.serve({ port: PORT }, async (req) => {
         desk: "rfq",
         ts: Date.now(),
       }).catch(() => {});
-      return new Response(JSON.stringify(rfq), {
-        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-      });
+      return json(rfq);
     }
 
     if (action === "reject") {
       if (rfq.state === "CONFIRMED" || rfq.state === "REJECTED") {
-        return new Response(
-          JSON.stringify({ error: `Cannot reject from state ${rfq.state}` }),
-          {
-            status: 409,
-            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-          },
-        );
+        return jsonError(`Cannot reject from state ${rfq.state}`, 409);
       }
       rfq.rejectedBy = actionBody.rejectedBy as string | undefined;
       rfq.rejectionReason = actionBody.reason as string | undefined;
       rfq.state = "REJECTED";
       rfq.ts = Date.now();
       await publishSsRfqUpdate(rfq);
-      return new Response(JSON.stringify(rfq), {
-        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-      });
+      return json(rfq);
     }
   }
 
@@ -963,15 +839,8 @@ Deno.serve({ port: PORT }, async (req) => {
   const ssIdMatch = path.match(/^\/rfq\/sellside\/([^/]+)$/);
   if (ssIdMatch && req.method === "GET") {
     const rfq = sellSideRfqStore.get(ssIdMatch[1]);
-    if (!rfq) {
-      return new Response(JSON.stringify({ error: "Not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-      });
-    }
-    return new Response(JSON.stringify(rfq), {
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-    });
+    if (!rfq) return jsonError("Not found", 404);
+    return json(rfq);
   }
 
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });

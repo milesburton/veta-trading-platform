@@ -1,16 +1,11 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "../lib/messaging.ts";
 import type { Signal, TradeRecommendation } from "../types/intelligence.ts";
+import { json, corsOptions } from "../lib/http.ts";
 
 const PORT = Number(Deno.env.get("RECOMMENDATION_ENGINE_PORT")) || 5_019;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const CONFIDENCE_THRESHOLD = 0.6;
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
 
 const recommendations: TradeRecommendation[] = [];
 const MAX_RECOMMENDATIONS = 500;
@@ -89,19 +84,12 @@ if (consumer) {
   });
 }
 
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
-
 Deno.serve({ port: PORT }, (req: Request): Response => {
   const url = new URL(req.url);
   const path = url.pathname;
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return corsOptions();
   }
 
   if (path === "/health" && req.method === "GET") {
@@ -122,7 +110,7 @@ Deno.serve({ port: PORT }, (req: Request): Response => {
     return json(filtered.slice(0, limit));
   }
 
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
+  return json({ error: "Not Found" }, 404);
 });
 
 console.log(`[recommendation-engine] Running on port ${PORT}`);

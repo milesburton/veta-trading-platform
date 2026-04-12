@@ -22,6 +22,7 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { json, corsOptions } from "../lib/http.ts";
 
 import { alphaVantageEquityProvider } from "./providers/alpha-vantage-equity.ts";
 import { alphaVantageFxProvider } from "./providers/alpha-vantage-fx.ts";
@@ -45,19 +46,6 @@ const FEED_STATE_FILE = "market_data_feed_state.json";
 // but we target 5-min intervals per symbol in a round-robin queue)
 const POLL_INTERVAL_MS = 5 * 60 * 1_000; // 5 minutes
 const CACHE_TTL_MS = 310_000; // 310 seconds — slightly over 5 min
-
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS },
-  });
-}
 
 export interface DataSource {
   id: string;
@@ -295,7 +283,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const path = url.pathname;
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS });
+    return corsOptions();
   }
 
   if (path === "/health" && req.method === "GET") {
@@ -451,7 +439,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(Object.fromEntries(curve.entries()));
   }
 
-  return new Response("Not Found", { status: 404, headers: CORS });
+  return json({ error: "Not Found" }, 404);
 });
 
 console.log(`[market-data] Market Data Service running on port ${PORT}`);
