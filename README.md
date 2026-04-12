@@ -12,15 +12,14 @@
 
 **Live demo:** https://veta-trading.fly.dev/ (Note this will be transiently online as the project matures)
 
-VETA is a near real world equities and fixed income trading platform. It will enable you to "paper trade" using one of the algo services which is intended to help you learn market dynamics.
+VETA is a near real world equities and fixed income trading platform. It will enable you to "paper trade" using one of the algo services which is intended to help you learn market dynamics. Note this is a work in progress.
 
 ## Demo personas
 
 The login page has a "Demo personas" panel at the bottom. Click any card to
 pre-fill the sign-in form and log in with one click. Every trader is modeled
 after a real-world desk: **exactly one primary desk, exactly one trading
-style**. Cross-asset-class traders do not exist — regulatory segregation
-(Chinese walls) and product specialisation make them unrealistic. Multi-desk
+style**. Cross-asset-class traders do not exist - regulatory segregation and product specialisation make them unrealistic. Multi-desk
 oversight is modeled through the separate `desk-head` role with **read-only**
 cross-desk access.
 
@@ -46,9 +45,7 @@ cross-desk access.
 Trading style is enforced hard by the dashboard: low-touch traders literally
 cannot open the manual Order Ticket, high-touch traders cannot open the Algo
 Monitor, FI voice traders cannot open the equity blotter, derivatives traders
-get the vol surface / greeks / scenario matrix panels that other styles don't.
-Default workspaces follow the style too — high-touch lands on Trading,
-low-touch on Algo, FI voice on FI Trading, etc.
+get the vol surface / greeks / scenario matrix panels that other styles don't n and so on...
 
 The default demo passcode is `veta-dev-passcode` (configurable via the
 `OAUTH2_SHARED_SECRET` env var on the user-service).
