@@ -51,8 +51,8 @@ import {
 } from "./volatility-estimator.ts";
 import { buildYieldCurveResponse, fetchFredParams } from "./yield-curve.ts";
 import { createYieldCurveStore } from "./yield-curve-store.ts";
-import { intelligencePool } from "../lib/db.ts";
-import { json, corsOptions } from "../lib/http.ts";
+import { intelligencePool } from "@veta/db";
+import { json, corsOptions } from "@veta/http";
 import { computeSpreadAnalysis } from "./spread-analysis.ts";
 import type { SpreadAnalysisRequest } from "./spread-analysis.ts";
 import { computeDurationLadder } from "./duration-ladder.ts";

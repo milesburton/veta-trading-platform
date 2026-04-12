@@ -1,4 +1,4 @@
-import type { LlmPolicy, LlmTriggerMode } from "../types/llm-advisory.ts";
+import type { LlmPolicy, LlmTriggerMode } from "@veta/types/llm-advisory";
 
 export function loadPolicy(): LlmPolicy {
   const triggerModeRaw = Deno.env.get("LLM_TRIGGER_MODE") ?? "manual";

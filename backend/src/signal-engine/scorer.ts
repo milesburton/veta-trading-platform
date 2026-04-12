@@ -3,7 +3,7 @@ import type {
   FeatureVector,
   Signal,
   SignalFactor,
-} from "../types/intelligence.ts";
+} from "@veta/types/intelligence";
 import type { WeightMap } from "./weight-store.ts";
 
 const FEATURE_SCALES: Record<FeatureName, number> = {

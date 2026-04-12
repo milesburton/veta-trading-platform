@@ -1,11 +1,11 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createConsumer, createProducer } from "../lib/messaging.ts";
-import type { FeatureVector, Signal } from "../types/intelligence.ts";
+import { createConsumer, createProducer } from "@veta/messaging";
+import type { FeatureVector, Signal } from "@veta/types/intelligence";
 import { createWeightStore } from "./weight-store.ts";
 import { scoreFeatureVector } from "./scorer.ts";
 import { runReplay } from "./replay-server.ts";
-import { intelligencePool } from "../lib/db.ts";
-import { json, corsOptions } from "../lib/http.ts";
+import { intelligencePool } from "@veta/db";
+import { json, corsOptions } from "@veta/http";
 
 const PORT = Number(Deno.env.get("SIGNAL_ENGINE_PORT")) || 5_018;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";

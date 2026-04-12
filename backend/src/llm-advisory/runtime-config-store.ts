@@ -4,7 +4,7 @@ import type {
   LlmRuntimeConfig,
   LlmSubsystemState,
   LlmTriggerMode,
-} from "../types/llm-advisory.ts";
+} from "@veta/types/llm-advisory";
 
 export interface RuntimeConfigStore {
   getConfig(): Promise<LlmRuntimeConfig>;

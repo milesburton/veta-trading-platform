@@ -1,10 +1,10 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { createConsumer, createProducer } from "@veta/messaging";
 import type {
   FeatureVector,
   MarketAdapterEvent,
   NewsEvent,
-} from "../types/intelligence.ts";
+} from "@veta/types/intelligence";
 import { createFeatureStore } from "./feature-store.ts";
 import {
   computeEventScore,
@@ -15,8 +15,8 @@ import {
   computeSectorRelativeStrength,
   computeSentimentDelta,
 } from "./feature-computers.ts";
-import { intelligencePool } from "../lib/db.ts";
-import { json, corsOptions } from "../lib/http.ts";
+import { intelligencePool } from "@veta/db";
+import { json, corsOptions } from "@veta/http";
 
 const PORT = Number(Deno.env.get("FEATURE_ENGINE_PORT")) || 5_017;
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";

@@ -3,10 +3,10 @@ import type {
   FeatureVector,
   ScenarioShock,
   Signal,
-} from "../types/intelligence.ts";
+} from "@veta/types/intelligence";
 import { scoreFeatureVector } from "../signal-engine/scorer.ts";
 import { DEFAULT_WEIGHTS } from "../signal-engine/weight-store.ts";
-import { json, corsOptions } from "../lib/http.ts";
+import { json, corsOptions } from "@veta/http";
 
 const PORT = Number(Deno.env.get("SCENARIO_ENGINE_PORT")) || 5_020;
 const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") ||

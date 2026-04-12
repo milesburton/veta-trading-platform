@@ -13,12 +13,12 @@ import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
 import { FX_ASSET_MAP, FX_ASSETS } from "./fxAssets.ts";
 import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodityAssets.ts";
 import { BOND_ASSET_MAP, BOND_ASSETS } from "./bondAssets.ts";
-import { intradayVolumeFactor } from "../lib/timeScale.ts";
-import { createProducer } from "../lib/messaging.ts";
+import { intradayVolumeFactor } from "@veta/time-scale";
+import { createProducer } from "@veta/messaging";
 import type {
   OrderBookLevel,
   OrderBookSnapshot,
-} from "../lib/marketSimClient.ts";
+} from "@veta/market-client";
 
 const PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";

@@ -1,5 +1,5 @@
 import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
-import type { MarketAdapterEvent } from "../types/intelligence.ts";
+import type { MarketAdapterEvent } from "@veta/types/intelligence";
 
 export interface MarketEventStore {
   upsertEvent(ev: MarketAdapterEvent, source: string): Promise<void>;

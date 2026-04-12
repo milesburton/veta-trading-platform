@@ -1,4 +1,4 @@
-import type { FeatureVector, Signal } from "../types/intelligence.ts";
+import type { FeatureVector, Signal } from "@veta/types/intelligence";
 import { scoreFeatureVector } from "./scorer.ts";
 import type { WeightStore } from "./weight-store.ts";
 import {
@@ -8,7 +8,7 @@ import {
   computeRelativeVolume,
 } from "../feature-engine/feature-computers.ts";
 import { createMarketEventStore } from "../market-data-adapters/market-event-store.ts";
-import { intelligencePool } from "../lib/db.ts";
+import { intelligencePool } from "@veta/db";
 
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
 

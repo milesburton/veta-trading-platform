@@ -1,6 +1,6 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { corsOptions, json } from "../lib/http.ts";
-import { createConsumer } from "../lib/messaging.ts";
+import { corsOptions, json } from "@veta/http";
+import { createConsumer } from "@veta/messaging";
 
 const PORT = Number(Deno.env.get("RISK_ENGINE_PORT")) || 5_032;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";

@@ -1,5 +1,5 @@
 import type { JobStore } from "./job-store.ts";
-import type { LlmPolicy } from "../types/llm-advisory.ts";
+import type { LlmPolicy } from "@veta/types/llm-advisory";
 
 export async function computeContextHash(parts: string[]): Promise<string> {
   const encoder = new TextEncoder();

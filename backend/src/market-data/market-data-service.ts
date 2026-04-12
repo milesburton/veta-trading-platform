@@ -22,7 +22,7 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { json, corsOptions } from "../lib/http.ts";
+import { json, corsOptions } from "@veta/http";
 
 import { alphaVantageEquityProvider } from "./providers/alpha-vantage-equity.ts";
 import { alphaVantageFxProvider } from "./providers/alpha-vantage-fx.ts";

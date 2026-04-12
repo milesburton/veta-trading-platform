@@ -1,7 +1,7 @@
 import type {
   ILlmProvider,
   LlmProviderResponse,
-} from "../../types/llm-advisory.ts";
+} from "@veta/types/llm-advisory";
 
 interface OllamaGenerateResponse {
   response: string;

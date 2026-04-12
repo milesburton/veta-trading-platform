@@ -11,10 +11,10 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createMarketSimClient } from "../lib/marketSimClient.ts";
-import { createConsumer, createProducer } from "../lib/messaging.ts";
-import { type Desk, settlementDate } from "../lib/settlement.ts";
-import { CORS_HEADERS, corsOptions, json } from "../lib/http.ts";
+import { createMarketSimClient } from "@veta/market-client";
+import { createConsumer, createProducer } from "@veta/messaging";
+import { type Desk, settlementDate } from "@veta/settlement";
+import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";

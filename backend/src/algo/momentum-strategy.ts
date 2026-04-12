@@ -22,10 +22,10 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createMarketSimClient } from "../lib/marketSimClient.ts";
-import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { createMarketSimClient } from "@veta/market-client";
+import { createConsumer, createProducer } from "@veta/messaging";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
-import type { RoutedOrder, FillEvent } from "../types/orders.ts";
+import type { RoutedOrder, FillEvent } from "@veta/types/orders";
 
 const PORT = Number(Deno.env.get("MOMENTUM_ALGO_PORT")) || 5_025;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;

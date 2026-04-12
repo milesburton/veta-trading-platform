@@ -8,8 +8,8 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createProducer } from "../lib/messaging.ts";
-import { json, corsOptions } from "../lib/http.ts";
+import { createProducer } from "@veta/messaging";
+import { json, corsOptions } from "@veta/http";
 
 const PORT = Number(Deno.env.get("PRODUCT_SERVICE_PORT")) || 5_030;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";

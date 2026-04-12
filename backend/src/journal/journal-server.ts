@@ -1,12 +1,12 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { applyExprGroup, applySort } from "../lib/gridQuery.ts";
-import { journalPool } from "../lib/db.ts";
-import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { applyExprGroup, applySort } from "@veta/grid-query";
+import { journalPool } from "@veta/db";
+import { createConsumer, createProducer } from "@veta/messaging";
 import type {
   GridQueryRequest,
   GridQueryResponse,
-} from "../types/gridQuery.ts";
-import { CORS_HEADERS, corsOptions, json } from "../lib/http.ts";
+} from "@veta/types/grid-query";
+import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 
 const PORT = Number(Deno.env.get("JOURNAL_PORT")) || 5_009;
 const RETENTION_DAYS = Number(Deno.env.get("JOURNAL_RETENTION_DAYS")) || 90;

@@ -1,5 +1,5 @@
 import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
-import type { FeatureVector } from "../types/intelligence.ts";
+import type { FeatureVector } from "@veta/types/intelligence";
 
 const MAX_PER_SYMBOL = 500;
 

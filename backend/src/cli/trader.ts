@@ -3,7 +3,7 @@ import {
   Select,
 } from "https://deno.land/x/cliffy@v0.25.4/prompt/mod.ts";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import type { Trade } from "../types/types.ts";
+import type { Trade } from "@veta/types/trade";
 
 const DEFAULT_OMS_URL = Deno.env.get("OMS_URL") || "http://localhost:5002";
 const DEFAULT_TWAP_URL = Deno.env.get("TWAP_ALGO_URL") ||

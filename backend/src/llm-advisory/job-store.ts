@@ -6,7 +6,7 @@ import type {
   LlmPromptAudit,
   LlmResponseAudit,
   LlmWorkerSession,
-} from "../types/llm-advisory.ts";
+} from "@veta/types/llm-advisory";
 
 export interface JobStore {
   insertJob(job: Omit<LlmJob, "id">): Promise<string>;

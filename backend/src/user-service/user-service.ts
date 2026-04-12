@@ -1,6 +1,6 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { usersPool } from "../lib/db.ts";
-import { createProducer } from "../lib/messaging.ts";
+import { usersPool } from "@veta/db";
+import { createProducer } from "@veta/messaging";
 
 const AUTH_ROLES = ["trader", "admin", "compliance", "sales", "external-client", "viewer", "desk-head", "risk-manager"] as const;
 type AuthRole = typeof AUTH_ROLES[number];
@@ -186,7 +186,7 @@ function verifyOAuthCredentials(userId: string, providedPassword: string | undef
   return OAUTH_SHARED_SECRET === candidate;
 }
 
-import { getCookieToken } from "../lib/auth.ts";
+import { getCookieToken } from "@veta/auth";
 
 function json(data: unknown, status = 200, extra?: Record<string, string>): Response {
   return new Response(JSON.stringify(data), {

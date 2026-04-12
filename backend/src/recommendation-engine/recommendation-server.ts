@@ -1,7 +1,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createConsumer, createProducer } from "../lib/messaging.ts";
-import type { Signal, TradeRecommendation } from "../types/intelligence.ts";
-import { json, corsOptions } from "../lib/http.ts";
+import { createConsumer, createProducer } from "@veta/messaging";
+import type { Signal, TradeRecommendation } from "@veta/types/intelligence";
+import { json, corsOptions } from "@veta/http";
 
 const PORT = Number(Deno.env.get("RECOMMENDATION_ENGINE_PORT")) || 5_019;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";

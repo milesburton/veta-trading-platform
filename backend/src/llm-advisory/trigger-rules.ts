@@ -1,6 +1,6 @@
-import type { Signal, TradeRecommendation } from "../types/intelligence.ts";
-import type { LlmPolicy } from "../types/llm-advisory.ts";
-import { AdvisoryTriggerReason } from "../types/llm-advisory.ts";
+import type { Signal, TradeRecommendation } from "@veta/types/intelligence";
+import type { LlmPolicy } from "@veta/types/llm-advisory";
+import { AdvisoryTriggerReason } from "@veta/types/llm-advisory";
 import { canAutoTrigger, meetsConvictionThreshold } from "./policy.ts";
 import { computeContextHash } from "./dedupe.ts";
 

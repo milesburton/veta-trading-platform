@@ -24,9 +24,9 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createConsumer, createProducer } from "../lib/messaging.ts";
-import { settlementDate } from "../lib/settlement.ts";
-import { CORS_HEADERS, corsOptions, json, jsonError } from "../lib/http.ts";
+import { createConsumer, createProducer } from "@veta/messaging";
+import { settlementDate } from "@veta/settlement";
+import { CORS_HEADERS, corsOptions, json, jsonError } from "@veta/http";
 
 type SellSideRfqState =
   | "CLIENT_REQUEST" // client submitted

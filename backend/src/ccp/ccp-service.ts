@@ -34,9 +34,9 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createMarketSimClient } from "../lib/marketSimClient.ts";
-import { createConsumer, createProducer } from "../lib/messaging.ts";
-import { CORS_HEADERS, corsOptions, json } from "../lib/http.ts";
+import { createMarketSimClient } from "@veta/market-client";
+import { createConsumer, createProducer } from "@veta/messaging";
+import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 
 const PORT = Number(Deno.env.get("CCP_SERVICE_PORT")) || 5_028;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";

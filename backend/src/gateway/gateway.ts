@@ -1,5 +1,5 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { createConsumer, createProducer } from "@veta/messaging";
 import { serveDir } from "jsr:@std/http@1.0.25/file-server";
 
 const PORT = Number(Deno.env.get("GATEWAY_PORT")) || 5_011;
@@ -61,7 +61,7 @@ interface UserLimits {
   primary_desk?: string;
 }
 
-import { getCookieToken } from "../lib/auth.ts";
+import { getCookieToken } from "@veta/auth";
 
 const authCache = new Map<string, { result: { user: AuthenticatedUser; limits: UserLimits }; expiresAt: number }>();
 setInterval(() => {

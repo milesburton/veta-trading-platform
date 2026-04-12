@@ -1,4 +1,4 @@
-import type { MarketAdapterEvent, NewsEvent } from "../types/intelligence.ts";
+import type { MarketAdapterEvent, NewsEvent } from "@veta/types/intelligence";
 
 export function computeMomentum(priceHistory: number[]): number {
   if (priceHistory.length < 20) return 0;

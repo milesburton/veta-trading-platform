@@ -1,5 +1,5 @@
-import { createConsumer } from "../lib/messaging.ts";
-import { CORS_HEADERS, corsOptions, json } from "../lib/http.ts";
+import { createConsumer } from "@veta/messaging";
+import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 
 export function serveAlgoHealth(
   port: number,

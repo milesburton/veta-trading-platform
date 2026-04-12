@@ -1,4 +1,4 @@
-import type { MarketAdapterEvent } from "../types/intelligence.ts";
+import type { MarketAdapterEvent } from "@veta/types/intelligence";
 
 const IMPACT_ROTATION: Array<"high" | "medium" | "low"> = [
   "high",

@@ -1,12 +1,12 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createConsumer, createProducer } from "../lib/messaging.ts";
-import { corsOptions, json } from "../lib/http.ts";
+import { createConsumer, createProducer } from "@veta/messaging";
+import { corsOptions, json } from "@veta/http";
 import type {
   FeatureVector,
   Signal,
   TradeRecommendation,
-} from "../types/intelligence.ts";
-import type { LlmJob, LlmSubsystemStatus } from "../types/llm-advisory.ts";
+} from "@veta/types/intelligence";
+import type { LlmJob, LlmSubsystemStatus } from "@veta/types/llm-advisory";
 import { createJobStore } from "./job-store.ts";
 import {
   canAutoTrigger,
@@ -29,7 +29,7 @@ import {
   evaluateUiRequestTrigger,
   type TriggerCandidate,
 } from "./trigger-rules.ts";
-import { llmAdvisoryPool } from "../lib/db.ts";
+import { llmAdvisoryPool } from "@veta/db";
 
 const PORT = Number(Deno.env.get("LLM_ADVISORY_PORT")) || 5_024;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";

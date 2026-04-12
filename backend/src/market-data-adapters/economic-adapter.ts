@@ -1,4 +1,4 @@
-import type { MarketAdapterEvent } from "../types/intelligence.ts";
+import type { MarketAdapterEvent } from "@veta/types/intelligence";
 
 interface MacroTemplate {
   headline: string;

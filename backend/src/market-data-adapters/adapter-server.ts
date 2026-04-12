@@ -1,11 +1,11 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createProducer } from "../lib/messaging.ts";
-import type { MarketAdapterEvent } from "../types/intelligence.ts";
+import { createProducer } from "@veta/messaging";
+import type { MarketAdapterEvent } from "@veta/types/intelligence";
 import { seedEarningsEvents } from "./earnings-adapter.ts";
 import { seedEconomicEvents } from "./economic-adapter.ts";
 import { createMarketEventStore } from "./market-event-store.ts";
-import { intelligencePool } from "../lib/db.ts";
-import { json, corsOptions } from "../lib/http.ts";
+import { intelligencePool } from "@veta/db";
+import { json, corsOptions } from "@veta/http";
 
 const PORT = Number(Deno.env.get("MARKET_DATA_ADAPTERS_PORT")) || 5_016;
 const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") ||

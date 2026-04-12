@@ -8,8 +8,8 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createMarketSimClient } from "../lib/marketSimClient.ts";
-import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { createMarketSimClient } from "@veta/market-client";
+import { createConsumer, createProducer } from "@veta/messaging";
 import { serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;

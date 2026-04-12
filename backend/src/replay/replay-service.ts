@@ -1,6 +1,6 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { replayPool } from "../lib/db.ts";
-import { corsOptions, json } from "../lib/http.ts";
+import { replayPool } from "@veta/db";
+import { corsOptions, json } from "@veta/http";
 
 const PORT = Number(Deno.env.get("REPLAY_PORT")) || 5_031;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";

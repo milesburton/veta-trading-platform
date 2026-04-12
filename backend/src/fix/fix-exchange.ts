@@ -13,7 +13,7 @@ import {
 } from "./fix-dictionary.ts";
 import { utcTimestamp } from "./fix-parser.ts";
 import { FixSession } from "./fix-session.ts";
-import { createMarketSimClient } from "../lib/marketSimClient.ts";
+import { createMarketSimClient } from "@veta/market-client";
 
 const FIX_EXCHANGE_PORT = Number(Deno.env.get("FIX_EXCHANGE_PORT")) || 9_880;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";

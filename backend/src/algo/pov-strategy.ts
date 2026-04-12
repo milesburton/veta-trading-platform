@@ -7,8 +7,8 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createMarketSimClient, type MarketTick } from "../lib/marketSimClient.ts";
-import { createConsumer, createProducer } from "../lib/messaging.ts";
+import { createMarketSimClient, type MarketTick } from "@veta/market-client";
+import { createConsumer, createProducer } from "@veta/messaging";
 import { serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("POV_ALGO_PORT")) || 5_005;

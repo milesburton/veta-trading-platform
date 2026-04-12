@@ -2,7 +2,7 @@ import type {
   FeatureVector,
   Signal,
   TradeRecommendation,
-} from "../types/intelligence.ts";
+} from "@veta/types/intelligence";
 
 export const SYSTEM_PROMPT =
   `You are an educational market analysis assistant embedded in a trading simulator.

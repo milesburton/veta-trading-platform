@@ -1,7 +1,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createProducer } from "../lib/messaging.ts";
-import type { NewsEvent } from "../types/intelligence.ts";
-import { json, corsOptions } from "../lib/http.ts";
+import { createProducer } from "@veta/messaging";
+import type { NewsEvent } from "@veta/types/intelligence";
+import { json, corsOptions } from "@veta/http";
 
 const PORT = Number(Deno.env.get("NEWS_AGGREGATOR_PORT")) || 5_013;
 const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") ||

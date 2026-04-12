@@ -1,5 +1,5 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createProducer } from "../lib/messaging.ts";
+import { createProducer } from "@veta/messaging";
 import { createJobStore } from "./job-store.ts";
 import { isWorkerAllowed, loadPolicy } from "./policy.ts";
 import {
@@ -14,7 +14,7 @@ import {
 import { createMockProvider } from "./providers/mock.ts";
 import { createOllamaProvider } from "./providers/ollama.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
-import { llmAdvisoryPool } from "../lib/db.ts";
+import { llmAdvisoryPool } from "@veta/db";
 
 const PORT = Number(Deno.env.get("LLM_WORKER_PORT")) || 5_033;
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
