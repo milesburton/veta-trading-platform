@@ -93,9 +93,7 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
     const ordType = tags.get(Tag.OrdType) ?? OrdType.Limit;
 
     const side: "BUY" | "SELL" = sideRaw === Side.Sell ? "SELL" : "BUY";
-    const orderId = `EX-${Date.now()}-${
-      Math.random().toString(36).slice(2, 7)
-    }`;
+    const orderId = `EX-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
     console.log(
       `[FIX Exchange] NOS: clOrdId=${clOrdId} symbol=${symbol} side=${side} qty=${orderQty} price=${price}`,

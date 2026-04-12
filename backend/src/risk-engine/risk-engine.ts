@@ -1,23 +1,11 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { corsOptions, json } from "../lib/http.ts";
 import { createConsumer } from "../lib/messaging.ts";
 
 const PORT = Number(Deno.env.get("RISK_ENGINE_PORT")) || 5_032;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-
-const CORS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS },
-  });
-}
 
 interface RiskConfig {
   fatFingerPct: number;
@@ -397,7 +385,7 @@ trackOrderCounts();
 
 Deno.serve({ port: PORT }, async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS });
+    return corsOptions();
   }
 
   const url = new URL(req.url);
@@ -476,7 +464,7 @@ Deno.serve({ port: PORT }, async (req) => {
     }
   }
 
-  return new Response("Not Found", { status: 404, headers: CORS });
+  return json({ error: "Not Found" }, 404);
 });
 
 console.log(`[risk-engine] Listening on port ${PORT}`);

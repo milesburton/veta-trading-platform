@@ -93,21 +93,15 @@ async function seedFromJournal(): Promise<void> {
   await Promise.allSettled(
     symbols.map(async (symbol) => {
       try {
-        const abort = new AbortController();
-        const timer = setTimeout(() => abort.abort(), 5_000);
-        try {
-          const res = await fetch(
-            `${JOURNAL_URL}/candles?instrument=${symbol}&interval=1m&limit=1`,
-            { signal: abort.signal },
-          );
-          if (!res.ok) return;
-          const rows = await res.json() as { close: number }[];
-          if (rows.length > 0 && rows[rows.length - 1].close > 0) {
-            seedPrice(symbol, rows[rows.length - 1].close);
-            seeded++;
-          }
-        } finally {
-          clearTimeout(timer);
+        const res = await fetch(
+          `${JOURNAL_URL}/candles?instrument=${symbol}&interval=1m&limit=1`,
+          { signal: AbortSignal.timeout(5_000) },
+        );
+        if (!res.ok) return;
+        const rows = await res.json() as { close: number }[];
+        if (rows.length > 0 && rows[rows.length - 1].close > 0) {
+          seedPrice(symbol, rows[rows.length - 1].close);
+          seeded++;
         }
       } catch { /* journal unavailable */ }
     }),

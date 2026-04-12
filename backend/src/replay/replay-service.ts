@@ -1,21 +1,9 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { replayPool } from "../lib/db.ts";
+import { corsOptions, json } from "../lib/http.ts";
 
 const PORT = Number(Deno.env.get("REPLAY_PORT")) || 5_031;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
-
-const CORS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS },
-  });
-}
 
 async function getConfig(): Promise<Response> {
   const client = await replayPool.connect();
@@ -169,7 +157,7 @@ async function deleteSession(sessionId: string): Promise<Response> {
 
 Deno.serve({ port: PORT }, async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS });
+    return corsOptions();
   }
 
   const url = new URL(req.url);
@@ -213,7 +201,7 @@ Deno.serve({ port: PORT }, async (req) => {
       return await getSessionEvents(eventsMatch[1]);
     }
 
-    return new Response("Not Found", { status: 404, headers: CORS });
+    return json({ error: "Not Found" }, 404);
   } catch (err) {
     console.error("[replay-service] Error:", err);
     return json({ error: String(err) }, 500);

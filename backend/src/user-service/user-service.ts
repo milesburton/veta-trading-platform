@@ -2,7 +2,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { usersPool } from "../lib/db.ts";
 import { createProducer } from "../lib/messaging.ts";
 
-const AUTH_ROLES = ["trader", "admin", "compliance", "sales", "external-client", "viewer"] as const;
+const AUTH_ROLES = ["trader", "admin", "compliance", "sales", "external-client", "viewer", "desk-head", "risk-manager"] as const;
 type AuthRole = typeof AUTH_ROLES[number];
 
 function parseOAuthClients(config: string): Map<string, {

@@ -41,5 +41,4 @@ export const windowSlice = createSlice({
 export const { panelPopped, panelClosed, panelDialogOpened, panelDialogClosed } =
   windowSlice.actions;
 
-// Keep PanelId alias for any code that imported it from here
-export type PanelId = string;
+export type { PanelId } from "../components/dashboard/panelRegistry.ts";

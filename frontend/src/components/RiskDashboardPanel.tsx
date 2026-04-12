@@ -3,20 +3,8 @@ import {
   useGetPositionsQuery,
   useGetRiskConfigQuery,
 } from "../store/riskApi.ts";
+import { formatCurrency, pnlColor } from "../utils/format.ts";
 import { PopOutButton } from "./PopOutButton.tsx";
-
-function pnlColor(pnl: number): string {
-  if (pnl > 0) return "text-emerald-400";
-  if (pnl < 0) return "text-red-400";
-  return "text-gray-500";
-}
-
-function formatCurrency(n: number): string {
-  const abs = Math.abs(n);
-  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toFixed(2);
-}
 
 function UserPositionRow({ userId, positions }: { userId: string; positions: RiskPosition[] }) {
   const totalUnrealised = positions.reduce((s, p) => s + p.unrealisedPnl, 0);
