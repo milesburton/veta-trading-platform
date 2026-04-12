@@ -3,12 +3,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 [![Deploy to Fly.io](https://github.com/milesburton/veta-trading-platform/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/deploy.yml)
-[![Backend: lint, typecheck, unit](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=backend%3A%20lint%20%2B%20unit&logo=deno)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Frontend: lint, typecheck, unit](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=frontend%3A%20lint%20%2B%20unit&logo=typescript)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Integration tests](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=integration%20tests&logo=postgresql)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![E2E tests](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=e2e%20%28playwright%29&logo=playwright)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Docker build](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=docker%20build&logo=docker)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
+[![Backend unit tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/backend-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
+[![Frontend unit tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/frontend-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
+[![Integration tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/integration-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
+[![E2E tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/e2e-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
+[![Docker build](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=docker%20build&logo=docker)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 
 **Live demo:** https://veta-trading.fly.dev/ (Note this will be transiently online as the project matures)
 
@@ -19,7 +19,7 @@ VETA is a near real world equities and fixed income trading platform. It will en
 The login page has a "Demo personas" panel at the bottom. Click any card to
 pre-fill the sign-in form and log in with one click. Every trader is modeled
 after a real-world desk: **exactly one primary desk, exactly one trading
-style**. Cross-asset-class traders do not exist - regulatory segregation and product specialisation make them unrealistic. Multi-desk
+style**. Cross-asset-class traders do not exist; regulatory segregation and product specialisation make them unrealistic. Multi-desk
 oversight is modeled through the separate `desk-head` role with **read-only**
 cross-desk access.
 
@@ -42,10 +42,12 @@ cross-desk access.
 | compliance | compliance | All | — | Read-only audit, session replay, trade review |
 | admin | admin | — | — | Mission Control, load test, LLM subsystem, RBAC |
 
-Trading style is enforced hard by the dashboard: low-touch traders literally
-cannot open the manual Order Ticket, high-touch traders cannot open the Algo
-Monitor, FI voice traders cannot open the equity blotter, derivatives traders
-get the vol surface / greeks / scenario matrix panels that other styles don't n and so on...
+Trading style is enforced by the dashboard: low-touch traders cannot open the
+manual Order Ticket, high-touch traders cannot open the Algo Monitor, FI voice
+traders see yield curve and duration ladder panels that equity traders don't,
+and derivatives traders get vol surface / greeks / scenario matrix. Default
+workspaces follow the style — high-touch lands on Trading, low-touch on Algo,
+FI voice on FI Trading, derivatives on Options.
 
 The default demo passcode is `veta-dev-passcode` (configurable via the
 `OAUTH2_SHARED_SECRET` env var on the user-service).

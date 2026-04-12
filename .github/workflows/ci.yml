@@ -27,7 +27,30 @@ jobs:
         run: deno task check
 
       - name: Unit tests with coverage
-        run: deno task test:coverage
+        run: |
+          deno task test:coverage 2>&1 | tee /tmp/backend-test-output.txt
+          PASSED=$(grep -oP '\d+(?= passed)' /tmp/backend-test-output.txt | tail -1 || echo 0)
+          echo "BACKEND_TESTS_PASSED=${PASSED}" >> "$GITHUB_ENV"
+
+      - name: Generate backend test badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          COUNT="${BACKEND_TESTS_PASSED:-0}"
+          echo "{\"schemaVersion\":1,\"label\":\"backend tests\",\"message\":\"${COUNT} passed\",\"color\":\"brightgreen\"}" > docs/badges/backend-tests.json
+
+      - name: Commit backend test badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/badges/backend-tests.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(ci): update backend test badge [skip ci]"
+            git stash --include-untracked --quiet || true
+            git pull --rebase origin main || { git rebase --abort 2>/dev/null; git stash pop --quiet 2>/dev/null || true; exit 0; }
+            git stash pop --quiet 2>/dev/null || true
+            git push || true
+          fi
 
       - name: Upload backend coverage
         if: github.ref == 'refs/heads/main'
@@ -71,7 +94,16 @@ jobs:
 
       - name: Vitest unit tests with coverage
         working-directory: frontend
-        run: npm run test:coverage
+        run: |
+          npm run test:coverage 2>&1 | tee /tmp/frontend-test-output.txt
+          PASSED=$(grep -oP '\d+(?= passed)' /tmp/frontend-test-output.txt | tail -1 || echo 0)
+          echo "FRONTEND_TESTS_PASSED=${PASSED}" >> "$GITHUB_ENV"
+
+      - name: Generate frontend test badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          COUNT="${FRONTEND_TESTS_PASSED:-0}"
+          echo "{\"schemaVersion\":1,\"label\":\"frontend tests\",\"message\":\"${COUNT} passed\",\"color\":\"brightgreen\"}" > docs/badges/frontend-tests.json
 
       - name: Upload frontend coverage
         if: github.ref == 'refs/heads/main'
@@ -99,22 +131,20 @@ jobs:
             echo "FRONTEND_COVERAGE=${PCT}" >> "$GITHUB_ENV"
           fi
 
-      - name: Commit coverage badge
+      - name: Commit test + coverage badges
         if: github.ref == 'refs/heads/main'
         run: |
-          if [ -f frontend/coverage/badge.json ]; then
-            mkdir -p docs/badges
-            cp frontend/coverage/badge.json docs/badges/coverage.json
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add docs/badges/coverage.json
-            if ! git diff --staged --quiet; then
-              git commit -m "chore(ci): update coverage badge [skip ci]"
-              git stash --include-untracked --quiet || true
-              git pull --rebase origin main || { git rebase --abort 2>/dev/null; git stash pop --quiet 2>/dev/null || true; exit 0; }
-              git stash pop --quiet 2>/dev/null || true
-              git push || true
-            fi
+          mkdir -p docs/badges
+          [ -f frontend/coverage/badge.json ] && cp frontend/coverage/badge.json docs/badges/coverage.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/badges/
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(ci): update test badges [skip ci]"
+            git stash --include-untracked --quiet || true
+            git pull --rebase origin main || { git rebase --abort 2>/dev/null; git stash pop --quiet 2>/dev/null || true; exit 0; }
+            git stash pop --quiet 2>/dev/null || true
+            git push || true
           fi
 
   integration:
@@ -284,9 +314,32 @@ jobs:
 
       - name: Smoke tests (all service health + contracts)
         continue-on-error: true
-        run: deno task test:smoke
+        run: |
+          deno task test:smoke 2>&1 | tee /tmp/smoke-test-output.txt || true
+          PASSED=$(grep -oP '\d+(?= passed)' /tmp/smoke-test-output.txt | tail -1 || echo 0)
+          echo "INTEGRATION_TESTS_PASSED=${PASSED}" >> "$GITHUB_ENV"
         env:
           DATABASE_URL: postgres://veta:veta@localhost:5432/veta
+
+      - name: Generate integration test badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          COUNT="${INTEGRATION_TESTS_PASSED:-0}"
+          echo "{\"schemaVersion\":1,\"label\":\"integration tests\",\"message\":\"${COUNT} passed\",\"color\":\"brightgreen\"}" > docs/badges/integration-tests.json
+
+      - name: Commit integration test badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/badges/integration-tests.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(ci): update integration test badge [skip ci]"
+            git stash --include-untracked --quiet || true
+            git pull --rebase origin main || { git rebase --abort 2>/dev/null; git stash pop --quiet 2>/dev/null || true; exit 0; }
+            git stash pop --quiet 2>/dev/null || true
+            git push || true
+          fi
 
   playwright-ui:
     name: Playwright UI tests
@@ -321,9 +374,32 @@ jobs:
 
       - name: Run Playwright UI tests (headless)
         working-directory: frontend
-        run: npx playwright test --reporter=list
+        run: |
+          npx playwright test --reporter=list 2>&1 | tee /tmp/e2e-test-output.txt
+          PASSED=$(grep -oP '\d+(?= passed)' /tmp/e2e-test-output.txt | tail -1 || echo 0)
+          echo "E2E_TESTS_PASSED=${PASSED}" >> "$GITHUB_ENV"
         env:
           CI: true
+
+      - name: Generate E2E test badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          COUNT="${E2E_TESTS_PASSED:-0}"
+          echo "{\"schemaVersion\":1,\"label\":\"e2e tests\",\"message\":\"${COUNT} passed\",\"color\":\"brightgreen\"}" > docs/badges/e2e-tests.json
+
+      - name: Commit E2E test badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/badges/e2e-tests.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(ci): update e2e test badge [skip ci]"
+            git stash --include-untracked --quiet || true
+            git pull --rebase origin main || { git rebase --abort 2>/dev/null; git stash pop --quiet 2>/dev/null || true; exit 0; }
+            git stash pop --quiet 2>/dev/null || true
+            git push || true
+          fi
 
       - name: Upload Playwright report on failure
         if: failure()
