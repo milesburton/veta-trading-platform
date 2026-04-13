@@ -169,8 +169,14 @@ function _totalConnections(): number {
   return n;
 }
 
+const MAX_BUFFERED_AMOUNT = 1_048_576;
+
 function _sendTo(ws: WebSocket, frame: string): void {
-  try { if (ws.readyState === WebSocket.OPEN) ws.send(frame); } catch { /* ignore */ }
+  try {
+    if (ws.readyState !== WebSocket.OPEN) return;
+    if (ws.bufferedAmount > MAX_BUFFERED_AMOUNT) return;
+    ws.send(frame);
+  } catch { /* ignore */ }
 }
 
 /** Send to all connected sockets (market ticks, signals, news — non-confidential). */

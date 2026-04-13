@@ -577,11 +577,11 @@ async function handle(req: Request): Promise<Response> {
         [...params, limit, offset],
       );
       const { rows: countRows } = await client.queryArray(
-        `SELECT COUNT(*) FROM journal.events WHERE ${where}`,
-        params,
+        `SELECT reltuples::bigint FROM pg_class WHERE relname = 'events'`,
       );
+      const estimatedTotal = Math.max(Number(countRows[0]?.[0] ?? 0), rows.length);
       return json({
-        total: Number(countRows[0][0]),
+        total: estimatedTotal,
         limit,
         offset,
         entries: rows.map(rowToEntry),

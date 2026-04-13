@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useAppSelector } from "../store/hooks.ts";
 
 interface Props {
@@ -6,10 +7,34 @@ interface Props {
 
 const MAX_LEVELS = 12;
 
+function buildCumulativeSizes(levels: { size: number }[]): number[] {
+  const result: number[] = [];
+  let sum = 0;
+  for (const l of levels) {
+    sum += l.size;
+    result.push(sum);
+  }
+  return result;
+}
+
 export function MarketDepth({ symbol }: Props) {
   const snapshot = useAppSelector((s) => s.market.orderBook[symbol]);
 
-  if (!snapshot) {
+  const depthData = useMemo(() => {
+    if (!snapshot) return null;
+    const bids = snapshot.bids.slice(0, MAX_LEVELS);
+    const asks = snapshot.asks.slice(0, MAX_LEVELS);
+    const maxSize = Math.max(...bids.map((l) => l.size), ...asks.map((l) => l.size), 1);
+    return {
+      bids,
+      asks,
+      maxSize,
+      bidCum: buildCumulativeSizes(bids),
+      askCum: buildCumulativeSizes(asks),
+    };
+  }, [snapshot]);
+
+  if (!depthData) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-600 text-xs bg-gray-950">
         No depth data for {symbol}
@@ -17,12 +42,7 @@ export function MarketDepth({ symbol }: Props) {
     );
   }
 
-  const bids = snapshot.bids.slice(0, MAX_LEVELS);
-  const asks = snapshot.asks.slice(0, MAX_LEVELS);
-
-  // Max size across all levels for bar scaling
-  const maxSize = Math.max(...bids.map((l) => l.size), ...asks.map((l) => l.size), 1);
-
+  const { bids, asks, maxSize, bidCum, askCum } = depthData;
   const decimals = symbol.includes("/") ? 4 : 2;
 
   return (
@@ -43,10 +63,8 @@ export function MarketDepth({ symbol }: Props) {
         <div data-testid="ask-table" className="flex-1 flex flex-col justify-end overflow-hidden">
           {[...asks].reverse().map((level, i) => {
             const barPct = (level.size / maxSize) * 100;
-            // asks[0] is best ask; reversed display means index i from top = asks[LEVELS-1-i]
-            // cumulative = sum from best ask (asks[0]) to this level (asks[LEVELS-1-i])
             const levelIdx = asks.length - 1 - i;
-            const cum = asks.slice(0, levelIdx + 1).reduce((s, l) => s + l.size, 0);
+            const cum = askCum[levelIdx];
             return (
               <div
                 key={`ask-${level.price}`}
@@ -103,7 +121,7 @@ export function MarketDepth({ symbol }: Props) {
         <div data-testid="bid-table" className="flex-1 overflow-hidden">
           {bids.map((level, i) => {
             const barPct = (level.size / maxSize) * 100;
-            const cum = bids.slice(0, i + 1).reduce((s, l) => s + l.size, 0);
+            const cum = bidCum[i];
             return (
               <div
                 key={`bid-${level.price}`}

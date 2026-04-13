@@ -167,6 +167,8 @@ export function createConsumer(
           }
         });
 
+        const HANDLER_TIMEOUT_MS = 5_000;
+
         await consumer.run({
           eachMessage: async (
             { topic, message }: { topic: string; message: KafkaMessage },
@@ -178,7 +180,18 @@ export function createConsumer(
             } catch {
               return;
             }
-            for (const handler of handlers) await handler(topic, parsed);
+            for (const handler of handlers) {
+              try {
+                await Promise.race([
+                  handler(topic, parsed),
+                  new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error(`handler timeout (${HANDLER_TIMEOUT_MS}ms)`)), HANDLER_TIMEOUT_MS)
+                  ),
+                ]);
+              } catch (err) {
+                console.warn(`[messaging] consumer(${groupId}) handler slow/failed:`, (err as Error).message);
+              }
+            }
           },
         });
         activeConsumer = consumer;
