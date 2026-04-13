@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useEffect, useRef } from "react";
 import { useGetVolSurfaceQuery } from "../store/analyticsApi.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { setOptionPrefill } from "../store/uiSlice.ts";
@@ -51,22 +52,22 @@ interface TooltipState {
 }
 
 export function VolSurfacePanel() {
-  const [symbol, setSymbol] = useState("AAPL");
+  const symbol = useSignal("AAPL");
   const dispatch = useAppDispatch();
   const selectedAsset = useAppSelector((s) => s.ui.selectedAsset);
 
   useEffect(() => {
     if (selectedAsset && DEFAULT_SYMBOLS.includes(selectedAsset)) {
-      setSymbol(selectedAsset);
+      symbol.value = selectedAsset;
     }
-  }, [selectedAsset]);
+  }, [selectedAsset, symbol]);
 
-  const { data, isFetching, isError } = useGetVolSurfaceQuery(symbol, {
-    skip: !symbol,
+  const { data, isFetching, isError } = useGetVolSurfaceQuery(symbol.value, {
+    skip: !symbol.value,
     pollingInterval: 60_000,
   });
 
-  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const tooltip = useSignal<TooltipState | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const vols = data?.surface.map((p) => p.impliedVol) ?? [];
@@ -91,11 +92,11 @@ export function VolSurfacePanel() {
   function handleCellMouseEnter(point: VolSurfacePoint, e: React.MouseEvent) {
     const rect = containerRef.current?.getBoundingClientRect();
     if (rect) {
-      setTooltip({
+      tooltip.value = {
         point,
         x: e.clientX - rect.left,
         y: e.clientY - rect.top,
-      });
+      };
     }
   }
 
@@ -110,8 +111,10 @@ export function VolSurfacePanel() {
           {isFetching && <span className="text-[10px] text-gray-500">refreshing…</span>}
           <select
             className="rounded border border-gray-700 bg-gray-800 px-2 py-0.5 text-xs focus:border-blue-500 focus:outline-none"
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
+            value={symbol.value}
+            onChange={(e) => {
+              symbol.value = e.target.value;
+            }}
           >
             {DEFAULT_SYMBOLS.map((s) => (
               <option key={s} value={s}>
@@ -178,7 +181,9 @@ export function VolSurfacePanel() {
                       style={{ backgroundColor: bg }}
                       onClick={() => handleCellClick(point)}
                       onMouseEnter={(e) => handleCellMouseEnter(point, e)}
-                      onMouseLeave={() => setTooltip(null)}
+                      onMouseLeave={() => {
+                        tooltip.value = null;
+                      }}
                     >
                       {(point.impliedVol * 100).toFixed(1)}%
                     </button>
@@ -204,22 +209,24 @@ export function VolSurfacePanel() {
         </div>
       )}
 
-      {tooltip && (
+      {tooltip.value && (
         <div
           className="pointer-events-none absolute z-50 rounded border border-gray-600 bg-gray-900 p-2 text-[10px] shadow-xl"
           style={{
-            left: Math.min(tooltip.x + 12, (containerRef.current?.clientWidth ?? 300) - 180),
-            top: Math.min(tooltip.y + 8, (containerRef.current?.clientHeight ?? 300) - 100),
+            left: Math.min(tooltip.value.x + 12, (containerRef.current?.clientWidth ?? 300) - 180),
+            top: Math.min(tooltip.value.y + 8, (containerRef.current?.clientHeight ?? 300) - 100),
           }}
         >
-          <p className="font-semibold text-white">Strike: ${tooltip.point.strike.toFixed(2)}</p>
-          <p className="text-gray-300">Expiry: {tooltip.point.expiryLabel}</p>
+          <p className="font-semibold text-white">
+            Strike: ${tooltip.value.point.strike.toFixed(2)}
+          </p>
+          <p className="text-gray-300">Expiry: {tooltip.value.point.expiryLabel}</p>
           <p className="text-yellow-300">
-            Implied Vol: {(tooltip.point.impliedVol * 100).toFixed(2)}%
+            Implied Vol: {(tooltip.value.point.impliedVol * 100).toFixed(2)}%
           </p>
           <p className="text-gray-400">
-            Moneyness: {(tooltip.point.moneyness * 100).toFixed(1)}%
-            {tooltip.point.moneyness === 1.0 ? " (ATM)" : ""}
+            Moneyness: {(tooltip.value.point.moneyness * 100).toFixed(1)}%
+            {tooltip.value.point.moneyness === 1.0 ? " (ATM)" : ""}
           </p>
           <p className="mt-1 text-blue-400 text-[9px]">Click → pre-fill Option Pricing</p>
         </div>

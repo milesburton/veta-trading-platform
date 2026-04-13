@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import {
   Bar,
   BarChart,
@@ -62,15 +62,15 @@ const BAR_COLORS = ["#3b82f6", "#22c55e", "#eab308", "#ef4444", "#a855f7"];
 const TENOR_LABELS = ["3m", "1y", "2y", "5y", "10y", "30y"];
 
 export function DurationLadderPanel() {
-  const [positions, setPositions] = useState<PositionRow[]>(DEFAULT_POSITIONS);
+  const positions = useSignal<PositionRow[]>(DEFAULT_POSITIONS);
   const [compute, { data, isLoading, isError }] = useGetDurationLadderMutation();
 
   function updatePosition(idx: number, field: keyof PositionRow, value: string) {
-    setPositions((prev) => prev.map((p, i) => (i === idx ? { ...p, [field]: value } : p)));
+    positions.value = positions.value.map((p, i) => (i === idx ? { ...p, [field]: value } : p));
   }
 
   function handleCompute() {
-    const bondPositions: BondPosition[] = positions.map((p) => ({
+    const bondPositions: BondPosition[] = positions.value.map((p) => ({
       faceValue: Number(p.faceValue),
       couponRate: Number(p.couponRate) / 100,
       totalPeriods: Number(p.totalPeriods),
@@ -119,7 +119,7 @@ export function DurationLadderPanel() {
             </tr>
           </thead>
           <tbody>
-            {positions.map((pos, idx) => (
+            {positions.value.map((pos, idx) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: positions are identified by index
               <tr key={idx} className="border-b border-gray-800">
                 <td className="py-0.5 pr-2 text-gray-500">{idx + 1}</td>
@@ -197,14 +197,14 @@ export function DurationLadderPanel() {
                   ]}
                 />
                 <ReferenceLine y={0} stroke="#6b7280" strokeDasharray="3 3" />
-                {positions.map((_, i) => (
+                {positions.value.map((_, i) => (
                   <Bar
                     // biome-ignore lint/suspicious/noArrayIndexKey: bond index is the chart series key
                     key={`bond${i}`}
                     dataKey={`bond${i}`}
                     stackId="dv01"
                     fill={BAR_COLORS[i % BAR_COLORS.length]}
-                    radius={i === positions.length - 1 ? [2, 2, 0, 0] : [0, 0, 0, 0]}
+                    radius={i === positions.value.length - 1 ? [2, 2, 0, 0] : [0, 0, 0, 0]}
                   />
                 ))}
               </BarChart>

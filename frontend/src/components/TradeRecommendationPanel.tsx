@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import { useGetRecommendationsMutation } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import type { Recommendation, RecommendationResponse, SignalStrength } from "../types/analytics.ts";
@@ -81,7 +81,7 @@ function ScoreBar({ score }: { score: number }) {
 }
 
 function RecommendationRow({ rec }: { rec: Recommendation }) {
-  const [expanded, setExpanded] = useState(false);
+  const expanded = useSignal(false);
   const s = SIGNAL_STYLES[rec.signalStrength];
 
   // Format reason string: factor contribution codes look like "momentum:+0.123"
@@ -99,7 +99,9 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
       {/* biome-ignore lint/a11y/noStaticElementInteractions: list row toggle */}
       <div
         className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-900/60 transition-colors"
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => {
+          expanded.value = !expanded.value;
+        }}
       >
         <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${s.dot}`} />
         <span
@@ -121,10 +123,10 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
           {rec.score > 0 ? "+" : ""}
           {rec.score.toFixed(0)}
         </span>
-        <span className="text-gray-600 text-xs ml-1">{expanded ? "▾" : "▸"}</span>
+        <span className="text-gray-600 text-xs ml-1">{expanded.value ? "▾" : "▸"}</span>
       </div>
 
-      {expanded && (
+      {expanded.value && (
         <div className="px-4 pb-3 bg-gray-900/30">
           <div className="grid grid-cols-2 gap-x-6 gap-y-1 mb-2 pt-2">
             <div className="text-[10px] text-gray-500">Δ {rec.greeks.delta.toFixed(3)}</div>
@@ -180,18 +182,18 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
 
 export function TradeRecommendationPanel() {
   const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
-  const [symbol, setSymbol] = useState(symbols[0] ?? "AAPL");
-  const [result, setResult] = useState<RecommendationResponse | null>(null);
-  const [filterStrength, setFilterStrength] = useState<SignalStrength | "ALL">("ALL");
+  const symbol = useSignal(symbols[0] ?? "AAPL");
+  const result = useSignal<RecommendationResponse | null>(null);
+  const filterStrength = useSignal<SignalStrength | "ALL">("ALL");
 
-  const signal = useAppSelector((s) => s.intelligence.signals[symbol]);
+  const signal = useAppSelector((s) => s.intelligence.signals[symbol.value]);
 
   const [getRecommendations, { isLoading, error }] = useGetRecommendationsMutation();
 
   async function handleFetch() {
     try {
       const res = await getRecommendations({
-        symbol,
+        symbol: symbol.value,
         ...(signal
           ? {
               signal: {
@@ -203,17 +205,17 @@ export function TradeRecommendationPanel() {
             }
           : {}),
       }).unwrap();
-      setResult(res);
-      setFilterStrength("ALL");
+      result.value = res;
+      filterStrength.value = "ALL";
     } catch {
       /* error shown below */
     }
   }
 
-  const filtered = result
-    ? filterStrength === "ALL"
-      ? result.recommendations
-      : result.recommendations.filter((r) => r.signalStrength === filterStrength)
+  const filtered = result.value
+    ? filterStrength.value === "ALL"
+      ? result.value.recommendations
+      : result.value.recommendations.filter((r) => r.signalStrength === filterStrength.value)
     : [];
 
   const signalColor =
@@ -236,8 +238,10 @@ export function TradeRecommendationPanel() {
 
       <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-800 shrink-0">
         <select
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
+          value={symbol.value}
+          onChange={(e) => {
+            symbol.value = e.target.value;
+          }}
           className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 flex-1"
         >
           {symbols.map((s) => (
@@ -298,15 +302,16 @@ export function TradeRecommendationPanel() {
         </div>
       )}
 
-      {result && (
+      {result.value && (
         <>
           {/* Summary bar */}
           <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-800 shrink-0">
             <span className="text-[10px] text-gray-500">
-              Spot ${result.spotPrice.toFixed(2)} · Vol {(result.impliedVol * 100).toFixed(1)}%
+              Spot ${result.value.spotPrice.toFixed(2)} · Vol{" "}
+              {(result.value.impliedVol * 100).toFixed(1)}%
             </span>
             <span className="text-[10px] text-gray-600">
-              {result.recommendations.length} options
+              {result.value.recommendations.length} options
             </span>
           </div>
 
@@ -316,9 +321,11 @@ export function TradeRecommendationPanel() {
               <button
                 key={f}
                 type="button"
-                onClick={() => setFilterStrength(f)}
+                onClick={() => {
+                  filterStrength.value = f;
+                }}
                 className={`text-[9px] px-2 py-0.5 rounded transition-colors ${
-                  filterStrength === f
+                  filterStrength.value === f
                     ? "bg-gray-700 text-gray-100"
                     : "text-gray-600 hover:text-gray-400"
                 }`}
@@ -347,13 +354,13 @@ export function TradeRecommendationPanel() {
           </div>
 
           <div className="px-4 py-1.5 border-t border-gray-800 shrink-0 text-[9px] text-gray-700">
-            {new Date(result.computedAt).toLocaleTimeString()} ·{" "}
+            {new Date(result.value.computedAt).toLocaleTimeString()} ·{" "}
             {signal ? "Signal-driven scoring" : "Rule-based scoring"} · For educational use only
           </div>
         </>
       )}
 
-      {!result && !isLoading && (
+      {!result.value && !isLoading && (
         <div className="flex-1 flex items-center justify-center text-gray-700 text-[11px]">
           Select a symbol and click Analyse
         </div>

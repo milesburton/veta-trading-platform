@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import type { LoadTestResult } from "../store/gatewayApi.ts";
 import { useRunLoadTestMutation } from "../store/gatewayApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
@@ -12,11 +12,11 @@ interface LocalLoadTestResult extends LoadTestResult {
 export function LoadTestPanel() {
   const user = useAppSelector((s) => s.auth.user);
 
-  const [orderCount, setOrderCount] = useState(100);
-  const [strategy, setStrategy] = useState<string>("LIMIT");
-  const [symbols, setSymbols] = useState("AAPL,MSFT,GOOGL,AMZN,TSLA");
-  const [lastResult, setLastResult] = useState<LocalLoadTestResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const orderCount = useSignal(100);
+  const strategy = useSignal<string>("LIMIT");
+  const symbols = useSignal("AAPL,MSFT,GOOGL,AMZN,TSLA");
+  const lastResult = useSignal<LocalLoadTestResult | null>(null);
+  const error = useSignal<string | null>(null);
 
   const [runLoadTest, { isLoading: isRunning }] = useRunLoadTestMutation();
 
@@ -47,29 +47,30 @@ export function LoadTestPanel() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    setLastResult(null);
+    error.value = null;
+    lastResult.value = null;
 
-    const symbolsArray = symbols
+    const symbolsArray = symbols.value
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const result = await runLoadTest({
-      orderCount,
-      strategy,
+    const res = await runLoadTest({
+      orderCount: orderCount.value,
+      strategy: strategy.value,
       symbols: symbolsArray,
     });
 
-    if ("data" in result) {
-      setLastResult(result.data as LocalLoadTestResult);
-    } else if ("error" in result) {
-      const err = result.error;
+    if ("data" in res) {
+      lastResult.value = res.data as LocalLoadTestResult;
+    } else if ("error" in res) {
+      const err = res.error;
       if (err && "status" in err) {
         const data = (err as { status: number; data?: { error?: string } }).data;
-        setError(data?.error ?? `Request failed with status ${(err as { status: number }).status}`);
+        error.value =
+          data?.error ?? `Request failed with status ${(err as { status: number }).status}`;
       } else {
-        setError("Network error — request failed");
+        error.value = "Network error — request failed";
       }
     }
   }
@@ -107,8 +108,10 @@ export function LoadTestPanel() {
                 min={1}
                 max={500}
                 step={10}
-                value={orderCount}
-                onChange={(e) => setOrderCount(Number(e.target.value))}
+                value={orderCount.value}
+                onChange={(e) => {
+                  orderCount.value = Number(e.target.value);
+                }}
                 disabled={isRunning}
                 className="flex-1 accent-blue-500 disabled:opacity-50"
               />
@@ -118,8 +121,10 @@ export function LoadTestPanel() {
                 min={1}
                 max={500}
                 step={10}
-                value={orderCount}
-                onChange={(e) => setOrderCount(Math.min(500, Math.max(1, Number(e.target.value))))}
+                value={orderCount.value}
+                onChange={(e) => {
+                  orderCount.value = Math.min(500, Math.max(1, Number(e.target.value)));
+                }}
                 disabled={isRunning}
                 className="w-16 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 tabular-nums text-right disabled:opacity-50"
               />
@@ -135,8 +140,10 @@ export function LoadTestPanel() {
             </label>
             <select
               id="lt-strategy"
-              value={strategy}
-              onChange={(e) => setStrategy(e.target.value)}
+              value={strategy.value}
+              onChange={(e) => {
+                strategy.value = e.target.value;
+              }}
               disabled={isRunning}
               className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-[11px] text-gray-200 disabled:opacity-50"
             >
@@ -158,8 +165,10 @@ export function LoadTestPanel() {
             <input
               id="lt-symbols"
               type="text"
-              value={symbols}
-              onChange={(e) => setSymbols(e.target.value)}
+              value={symbols.value}
+              onChange={(e) => {
+                symbols.value = e.target.value;
+              }}
               disabled={isRunning}
               placeholder="AAPL,MSFT,GOOGL,AMZN,TSLA"
               className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-[11px] text-gray-200 font-mono placeholder:text-gray-600 disabled:opacity-50"
@@ -198,29 +207,31 @@ export function LoadTestPanel() {
           </button>
         </form>
 
-        {!isRunning && lastResult && (
+        {!isRunning && lastResult.value && (
           <div className="rounded border border-emerald-700/50 bg-emerald-950/30 px-3 py-2.5 space-y-1.5">
             <div className="text-[11px] font-semibold text-emerald-400">Job submitted</div>
             <div className="space-y-0.5 text-[10px] text-gray-400">
-              {"jobId" in lastResult && (
+              {"jobId" in lastResult.value && (
                 <div>
                   <span className="text-gray-600">Job ID:</span>{" "}
-                  <span className="font-mono text-gray-300">{lastResult.jobId}</span>
+                  <span className="font-mono text-gray-300">{lastResult.value.jobId}</span>
                 </div>
               )}
               <div>
                 <span className="text-gray-600">Orders submitted:</span>{" "}
                 <span className="tabular-nums text-gray-300">
-                  {lastResult.submitted.toLocaleString()}
+                  {lastResult.value.submitted.toLocaleString()}
                 </span>
               </div>
               <div>
                 <span className="text-gray-600">Strategy:</span>{" "}
-                <span className="font-mono text-gray-300">{lastResult.strategy}</span>
+                <span className="font-mono text-gray-300">{lastResult.value.strategy}</span>
               </div>
               <div>
                 <span className="text-gray-600">Symbols:</span>{" "}
-                <span className="font-mono text-gray-300">{lastResult.symbols.join(", ")}</span>
+                <span className="font-mono text-gray-300">
+                  {lastResult.value.symbols.join(", ")}
+                </span>
               </div>
             </div>
             <div className="pt-1 text-[10px] text-gray-600 leading-relaxed">
@@ -230,9 +241,9 @@ export function LoadTestPanel() {
           </div>
         )}
 
-        {!isRunning && error && (
+        {!isRunning && error.value && (
           <div className="rounded border border-red-700/50 bg-red-950/30 px-3 py-2 text-[10px] text-red-400 leading-relaxed">
-            <span className="font-semibold">Error:</span> {error}
+            <span className="font-semibold">Error:</span> {error.value}
           </div>
         )}
       </div>

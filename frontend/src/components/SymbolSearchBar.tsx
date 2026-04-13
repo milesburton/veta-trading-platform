@@ -69,7 +69,7 @@ function matchAssets(query: string, assets: AssetDef[]): AssetDef[] {
       const fields = [a.symbol, a.name, a.ric, a.bbgTicker, a.isin, a.sector, a.exchange].filter(
         Boolean
       );
-      return fields.some((f) => f!.toLowerCase().includes(q));
+      return fields.some((f) => f?.toLowerCase().includes(q));
     })
     .slice(0, 20);
 }
@@ -194,7 +194,7 @@ export function SymbolSearchBar() {
         </div>
       </div>
 
-      {parsed && parsed.symbol && (
+      {parsed?.symbol && (
         <div
           data-testid="trade-parse-preview"
           className="mx-3 mb-1 flex items-center gap-2 rounded-lg border border-emerald-800/50 bg-emerald-950/30 px-3 py-1.5 text-xs"

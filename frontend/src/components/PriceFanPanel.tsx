@@ -5,7 +5,7 @@
  * equity symbol over a chosen horizon.  Auto-refreshes every 60 seconds.
  */
 
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import {
   Area,
   CartesianGrid,
@@ -40,21 +40,21 @@ function formatStepLabel(tSecs: number, stepSecs: number): string {
 }
 
 export function PriceFanPanel() {
-  const [symbol, setSymbol] = useState("AAPL");
-  const [inputValue, setInputValue] = useState("AAPL");
-  const [horizonIdx, setHorizonIdx] = useState(2);
+  const symbol = useSignal("AAPL");
+  const inputValue = useSignal("AAPL");
+  const horizonIdx = useSignal(2);
 
-  const horizon = HORIZONS[horizonIdx];
+  const horizon = HORIZONS[horizonIdx.value];
 
   const { data, isFetching, isError } = useGetPriceFanQuery(
-    { symbol, steps: horizon.steps, stepSecs: horizon.stepSecs },
-    { pollingInterval: 60_000, skip: !symbol }
+    { symbol: symbol.value, steps: horizon.steps, stepSecs: horizon.stepSecs },
+    { pollingInterval: 60_000, skip: !symbol.value }
   );
 
   function handleSymbolSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const trimmed = inputValue.trim().toUpperCase();
-    if (trimmed) setSymbol(trimmed);
+    const trimmed = inputValue.value.trim().toUpperCase();
+    if (trimmed) symbol.value = trimmed;
   }
 
   const steps = data?.steps ?? [];
@@ -106,8 +106,10 @@ export function PriceFanPanel() {
         <form onSubmit={handleSymbolSubmit} className="flex gap-1 items-center">
           <input
             type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value.toUpperCase())}
+            value={inputValue.value}
+            onChange={(e) => {
+              inputValue.value = e.target.value.toUpperCase();
+            }}
             placeholder="AAPL"
             className="w-20 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-[10px] text-gray-200 font-mono focus:outline-none focus:border-blue-600"
           />
@@ -123,9 +125,11 @@ export function PriceFanPanel() {
             <button
               key={h.label}
               type="button"
-              onClick={() => setHorizonIdx(i)}
+              onClick={() => {
+                horizonIdx.value = i;
+              }}
               className={`text-[10px] px-2 py-0.5 rounded border ${
-                i === horizonIdx
+                i === horizonIdx.value
                   ? "bg-blue-800/60 border-blue-600 text-blue-200"
                   : "bg-gray-900 border-gray-700 text-gray-400 hover:text-gray-200"
               }`}
@@ -139,11 +143,11 @@ export function PriceFanPanel() {
       <div className="flex-1 min-h-0 px-2 py-2">
         {isError ? (
           <div className="flex items-center justify-center h-full text-red-400 text-[10px]">
-            Failed to load fan data for {symbol}
+            Failed to load fan data for {symbol.value}
           </div>
         ) : steps.length === 0 && !isFetching ? (
           <div className="flex items-center justify-center h-full text-gray-600 text-[10px]">
-            {symbol ? `No data for ${symbol}` : "Enter a symbol"}
+            {symbol.value ? `No data for ${symbol.value}` : "Enter a symbol"}
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">

@@ -7,7 +7,8 @@
  *  3. Collapsible bond pricing form
  */
 
-import { useEffect, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useEffect } from "react";
 import {
   CartesianGrid,
   Line,
@@ -61,13 +62,12 @@ export function YieldCurvePanel() {
   const [fetchCurve, { data: curveData, isLoading: curveLoading }] = useGetYieldCurveMutation();
   const [priceBond, { data: bondData, isLoading: bondLoading }] = useGetBondPriceMutation();
 
-  // Bond form state
-  const [showBond, setShowBond] = useState(false);
-  const [face, setFace] = useState("1000");
-  const [couponRate, setCouponRate] = useState("5");
-  const [periodsPerYear, setPeriodsPerYear] = useState("2");
-  const [totalPeriods, setTotalPeriods] = useState("20");
-  const [yieldAnnual, setYieldAnnual] = useState("4.5");
+  const showBond = useSignal(false);
+  const face = useSignal("1000");
+  const couponRate = useSignal("5");
+  const periodsPerYear = useSignal("2");
+  const totalPeriods = useSignal("20");
+  const yieldAnnual = useSignal("4.5");
 
   // Auto-fetch curve on mount
   useEffect(() => {
@@ -76,11 +76,11 @@ export function YieldCurvePanel() {
 
   function handlePriceBond() {
     priceBond({
-      face: Number(face),
-      couponRate: Number(couponRate) / 100,
-      periodsPerYear: Number(periodsPerYear),
-      totalPeriods: Number(totalPeriods),
-      yieldAnnual: Number(yieldAnnual) / 100,
+      face: Number(face.value),
+      couponRate: Number(couponRate.value) / 100,
+      periodsPerYear: Number(periodsPerYear.value),
+      totalPeriods: Number(totalPeriods.value),
+      yieldAnnual: Number(yieldAnnual.value) / 100,
     });
   }
 
@@ -172,36 +172,26 @@ export function YieldCurvePanel() {
       <div className="border-t border-gray-800 shrink-0">
         <button
           type="button"
-          onClick={() => setShowBond((v) => !v)}
+          onClick={() => {
+            showBond.value = !showBond.value;
+          }}
           className="w-full text-left px-3 py-1.5 text-[10px] text-gray-500 hover:text-gray-300 flex items-center gap-1"
         >
-          <span>{showBond ? "▾" : "▸"}</span>
+          <span>{showBond.value ? "▾" : "▸"}</span>
           Bond Pricing (price / duration / convexity / DV01)
         </button>
 
-        {showBond && (
+        {showBond.value && (
           <div className="px-3 pb-3">
             {/* Form inputs */}
             <div className="grid grid-cols-5 gap-1.5 mb-2">
               {[
-                { label: "Face", value: face, setter: setFace },
-                { label: "Coupon %", value: couponRate, setter: setCouponRate },
-                {
-                  label: "Freq/yr",
-                  value: periodsPerYear,
-                  setter: setPeriodsPerYear,
-                },
-                {
-                  label: "Periods",
-                  value: totalPeriods,
-                  setter: setTotalPeriods,
-                },
-                {
-                  label: "Yield %",
-                  value: yieldAnnual,
-                  setter: setYieldAnnual,
-                },
-              ].map(({ label, value, setter }) => {
+                { label: "Face", signal: face },
+                { label: "Coupon %", signal: couponRate },
+                { label: "Freq/yr", signal: periodsPerYear },
+                { label: "Periods", signal: totalPeriods },
+                { label: "Yield %", signal: yieldAnnual },
+              ].map(({ label, signal }) => {
                 const id = `bond-${label.toLowerCase().replace(/[^a-z]/g, "-")}`;
                 return (
                   <div key={label} className="flex flex-col gap-0.5">
@@ -211,8 +201,10 @@ export function YieldCurvePanel() {
                     <input
                       id={id}
                       type="number"
-                      value={value}
-                      onChange={(e) => setter(e.target.value)}
+                      value={signal.value}
+                      onChange={(e) => {
+                        signal.value = e.target.value;
+                      }}
                       className="w-full bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-[10px] text-gray-200 font-mono focus:outline-none focus:border-blue-600"
                     />
                   </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import {
   type NewsSource,
   useCreateNewsSourceMutation,
@@ -16,17 +16,17 @@ interface SourceFormProps {
 }
 
 function SourceForm({ initial, onCancel, onSave, saving }: SourceFormProps) {
-  const [label, setLabel] = useState(initial?.label ?? "");
-  const [rssTemplate, setRssTemplate] = useState(initial?.rssTemplate ?? "");
-  const [symbolSpecific, setSymbolSpecific] = useState(initial?.symbolSpecific ?? false);
+  const label = useSignal(initial?.label ?? "");
+  const rssTemplate = useSignal(initial?.rssTemplate ?? "");
+  const symbolSpecific = useSignal(initial?.symbolSpecific ?? false);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!label.trim() || !rssTemplate.trim()) return;
+    if (!label.value.trim() || !rssTemplate.value.trim()) return;
     onSave({
-      label: label.trim(),
-      rssTemplate: rssTemplate.trim(),
-      symbolSpecific,
+      label: label.value.trim(),
+      rssTemplate: rssTemplate.value.trim(),
+      symbolSpecific: symbolSpecific.value,
     });
   }
 
@@ -41,24 +41,30 @@ function SourceForm({ initial, onCancel, onSave, saving }: SourceFormProps) {
       <input
         type="text"
         placeholder="Label (e.g. Reuters)"
-        value={label}
-        onChange={(e) => setLabel(e.target.value)}
+        value={label.value}
+        onChange={(e) => {
+          label.value = e.target.value;
+        }}
         required
         className="w-full bg-gray-800 border border-gray-700 focus:border-gray-500 outline-none rounded px-2 py-1 text-[11px] text-gray-200 placeholder-gray-600"
       />
       <input
         type="text"
         placeholder="RSS URL (use {symbol} for symbol-specific)"
-        value={rssTemplate}
-        onChange={(e) => setRssTemplate(e.target.value)}
+        value={rssTemplate.value}
+        onChange={(e) => {
+          rssTemplate.value = e.target.value;
+        }}
         required
         className="w-full bg-gray-800 border border-gray-700 focus:border-gray-500 outline-none rounded px-2 py-1 text-[11px] text-gray-200 placeholder-gray-600"
       />
       <label className="flex items-center gap-2 text-[11px] text-gray-400 cursor-pointer select-none">
         <input
           type="checkbox"
-          checked={symbolSpecific}
-          onChange={(e) => setSymbolSpecific(e.target.checked)}
+          checked={symbolSpecific.value}
+          onChange={(e) => {
+            symbolSpecific.value = e.target.checked;
+          }}
           className="accent-emerald-500"
         />
         Symbol-specific (URL contains <code className="text-emerald-400">{"{symbol}"}</code>)
@@ -73,7 +79,7 @@ function SourceForm({ initial, onCancel, onSave, saving }: SourceFormProps) {
         </button>
         <button
           type="submit"
-          disabled={saving || !label.trim() || !rssTemplate.trim()}
+          disabled={saving || !label.value.trim() || !rssTemplate.value.trim()}
           className="text-[10px] text-emerald-400 border border-emerald-700/50 hover:bg-emerald-900/20 px-2 py-1 rounded transition-colors disabled:opacity-40"
         >
           {saving ? "Saving…" : initial ? "Save" : "Add"}
@@ -91,9 +97,9 @@ export function NewsSourcesPanel() {
   const [updateSource, { isLoading: updating }] = useUpdateNewsSourceMutation();
   const [deleteSource] = useDeleteNewsSourceMutation();
 
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const showAddForm = useSignal(false);
+  const editingId = useSignal<string | null>(null);
+  const confirmDeleteId = useSignal<string | null>(null);
 
   async function handleCreate(values: {
     label: string;
@@ -101,7 +107,7 @@ export function NewsSourcesPanel() {
     symbolSpecific: boolean;
   }) {
     await createSource({ ...values, enabled: true });
-    setShowAddForm(false);
+    showAddForm.value = false;
   }
 
   async function handleUpdate(
@@ -109,12 +115,12 @@ export function NewsSourcesPanel() {
     values: { label: string; rssTemplate: string; symbolSpecific: boolean }
   ) {
     await updateSource({ id, ...values });
-    setEditingId(null);
+    editingId.value = null;
   }
 
   async function handleDelete(id: string) {
     await deleteSource(id);
-    setConfirmDeleteId(null);
+    confirmDeleteId.value = null;
   }
 
   return (
@@ -128,8 +134,8 @@ export function NewsSourcesPanel() {
           <button
             type="button"
             onClick={() => {
-              setShowAddForm((v) => !v);
-              setEditingId(null);
+              showAddForm.value = !showAddForm.value;
+              editingId.value = null;
             }}
             title="Add news source"
             aria-label="Add news source"
@@ -152,9 +158,11 @@ export function NewsSourcesPanel() {
 
       {/* Body */}
       <div className="flex-1 min-h-0 overflow-y-auto p-3 flex flex-col gap-2">
-        {showAddForm && (
+        {showAddForm.value && (
           <SourceForm
-            onCancel={() => setShowAddForm(false)}
+            onCancel={() => {
+              showAddForm.value = false;
+            }}
             onSave={handleCreate}
             saving={creating}
           />
@@ -181,7 +189,7 @@ export function NewsSourcesPanel() {
           </div>
         )}
 
-        {!isLoading && !isError && sources.length === 0 && !showAddForm && (
+        {!isLoading && !isError && sources.length === 0 && !showAddForm.value && (
           <div className="flex items-center justify-center flex-1">
             <span className="text-[11px] text-gray-600">
               No sources configured. Click + Add to create one.
@@ -193,21 +201,25 @@ export function NewsSourcesPanel() {
           !isError &&
           sources.map((source) => (
             <div key={source.id}>
-              {editingId === source.id ? (
+              {editingId.value === source.id ? (
                 <SourceForm
                   initial={source}
-                  onCancel={() => setEditingId(null)}
+                  onCancel={() => {
+                    editingId.value = null;
+                  }}
                   onSave={(v) => handleUpdate(source.id, v)}
                   saving={updating}
                 />
-              ) : confirmDeleteId === source.id ? (
+              ) : confirmDeleteId.value === source.id ? (
                 <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-red-900/20 border border-red-700/40">
                   <span className="flex-1 text-[11px] text-gray-300">
                     Delete &ldquo;{source.label}&rdquo;?
                   </span>
                   <button
                     type="button"
-                    onClick={() => setConfirmDeleteId(null)}
+                    onClick={() => {
+                      confirmDeleteId.value = null;
+                    }}
                     className="text-[10px] text-gray-500 hover:text-gray-300 px-2 py-0.5 rounded border border-gray-700 transition-colors"
                   >
                     Cancel
@@ -260,8 +272,8 @@ export function NewsSourcesPanel() {
                     <button
                       type="button"
                       onClick={() => {
-                        setEditingId(source.id);
-                        setShowAddForm(false);
+                        editingId.value = source.id;
+                        showAddForm.value = false;
                       }}
                       title={`Edit ${source.label}`}
                       className="text-[10px] text-gray-600 hover:text-gray-300 opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded border border-gray-700 hover:border-gray-500 transition-all"
@@ -270,7 +282,9 @@ export function NewsSourcesPanel() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setConfirmDeleteId(source.id)}
+                      onClick={() => {
+                        confirmDeleteId.value = source.id;
+                      }}
                       title={`Delete ${source.label}`}
                       className="text-[10px] text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded border border-gray-700 hover:border-red-700/50 transition-all"
                     >

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import { useGetSpreadAnalysisMutation } from "../store/analyticsApi.ts";
 
 const DEFAULT_COUPON = "5.0";
@@ -20,21 +20,21 @@ function spreadBg(bps: number): string {
 }
 
 export function SpreadAnalysisPanel() {
-  const [coupon, setCoupon] = useState(DEFAULT_COUPON);
-  const [periods, setPeriods] = useState(DEFAULT_PERIODS);
-  const [freq, setFreq] = useState(DEFAULT_FREQ);
-  const [yld, setYld] = useState(DEFAULT_YIELD);
-  const [face, setFace] = useState(DEFAULT_FACE);
+  const coupon = useSignal(DEFAULT_COUPON);
+  const periods = useSignal(DEFAULT_PERIODS);
+  const freq = useSignal(DEFAULT_FREQ);
+  const yld = useSignal(DEFAULT_YIELD);
+  const face = useSignal(DEFAULT_FACE);
 
   const [compute, { data, isLoading, isError }] = useGetSpreadAnalysisMutation();
 
   function handleCompute() {
     compute({
-      couponRate: Number(coupon) / 100,
-      totalPeriods: Number(periods),
-      periodsPerYear: Number(freq),
-      yieldAnnual: Number(yld) / 100,
-      face: Number(face),
+      couponRate: Number(coupon.value) / 100,
+      totalPeriods: Number(periods.value),
+      periodsPerYear: Number(freq.value),
+      yieldAnnual: Number(yld.value) / 100,
+      face: Number(face.value),
     });
   }
 
@@ -55,11 +55,13 @@ export function SpreadAnalysisPanel() {
           <input
             type="number"
             className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-            value={coupon}
+            value={coupon.value}
             step="0.25"
             min="0"
             max="20"
-            onChange={(e) => setCoupon(e.target.value)}
+            onChange={(e) => {
+              coupon.value = e.target.value;
+            }}
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -67,11 +69,13 @@ export function SpreadAnalysisPanel() {
           <input
             type="number"
             className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-            value={periods}
+            value={periods.value}
             step="1"
             min="1"
             max="120"
-            onChange={(e) => setPeriods(e.target.value)}
+            onChange={(e) => {
+              periods.value = e.target.value;
+            }}
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -79,11 +83,13 @@ export function SpreadAnalysisPanel() {
           <input
             type="number"
             className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-            value={freq}
+            value={freq.value}
             step="1"
             min="1"
             max="12"
-            onChange={(e) => setFreq(e.target.value)}
+            onChange={(e) => {
+              freq.value = e.target.value;
+            }}
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -91,11 +97,13 @@ export function SpreadAnalysisPanel() {
           <input
             type="number"
             className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-            value={yld}
+            value={yld.value}
             step="0.01"
             min="0"
             max="30"
-            onChange={(e) => setYld(e.target.value)}
+            onChange={(e) => {
+              yld.value = e.target.value;
+            }}
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -103,10 +111,12 @@ export function SpreadAnalysisPanel() {
           <input
             type="number"
             className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-            value={face}
+            value={face.value}
             step="100"
             min="100"
-            onChange={(e) => setFace(e.target.value)}
+            onChange={(e) => {
+              face.value = e.target.value;
+            }}
           />
         </label>
       </div>

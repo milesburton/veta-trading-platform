@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useEffect, useMemo } from "react";
 import { useAppSelector } from "../store/hooks.ts";
 import {
   useGetOverridesQuery,
@@ -87,13 +88,15 @@ export function MarketFeedControlPanel() {
   const [toggleFeed, { isLoading: toggling }] = useToggleFeedMutation();
 
   // Market session clock — recalculates every 60s
-  const [session, setSession] = useState<MarketSession>(getMarketSession);
+  const session = useSignal<MarketSession>(getMarketSession());
   useEffect(() => {
-    const id = setInterval(() => setSession(getMarketSession()), 60_000);
+    const id = setInterval(() => {
+      session.value = getMarketSession();
+    }, 60_000);
     return () => clearInterval(id);
-  }, []);
+  }, [session]);
 
-  const [search, setSearch] = useState("");
+  const search = useSignal("");
 
   const serverOverrides = overridesData?.overrides ?? {};
   // Consider feed paused if any togglable external source is paused
@@ -101,7 +104,7 @@ export function MarketFeedControlPanel() {
 
   const symbolRows = useMemo(() => {
     return assets
-      .filter((a) => !search || a.symbol.toLowerCase().includes(search.toLowerCase()))
+      .filter((a) => !search.value || a.symbol.toLowerCase().includes(search.value.toLowerCase()))
       .map((a) => {
         const src = serverOverrides[a.symbol] ?? "synthetic";
         const srcDef = sources.find((s) => s.id === src);
@@ -114,10 +117,10 @@ export function MarketFeedControlPanel() {
         };
       })
       .sort((a, b) => a.symbol.localeCompare(b.symbol));
-  }, [assets, serverOverrides, sources, search]);
+  }, [assets, serverOverrides, sources, search.value]);
 
   const externalCount = symbolRows.filter((r) => r.source !== "synthetic").length;
-  const badge = sessionBadge(session);
+  const badge = sessionBadge(session.value);
 
   return (
     <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs">
@@ -233,8 +236,10 @@ export function MarketFeedControlPanel() {
           <input
             type="text"
             placeholder="Search symbol…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={search.value}
+            onChange={(e) => {
+              search.value = e.target.value;
+            }}
             className="w-full mb-2 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 placeholder:text-gray-600"
           />
         </div>

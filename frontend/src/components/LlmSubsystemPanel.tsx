@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import {
   useGetLlmSubsystemStateQuery,
   useRequestWatchlistBriefMutation,
@@ -34,42 +34,48 @@ export function LlmSubsystemPanel() {
   const [updateState, { isLoading: isUpdating }] = useUpdateLlmSubsystemStateMutation();
   const [requestBrief, { isLoading: isBriefing }] = useRequestWatchlistBriefMutation();
   const [triggerWorker, { isLoading: isTriggering }] = useTriggerWorkerMutation();
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const error = useSignal<string | null>(null);
+  const success = useSignal<string | null>(null);
 
   async function patch(changes: Parameters<typeof updateState>[0]) {
-    setError(null);
-    setSuccess(null);
+    error.value = null;
+    success.value = null;
     try {
       await updateState(changes).unwrap();
-      setSuccess("Updated");
+      success.value = "Updated";
       refetch();
     } catch {
-      setError("Failed to update LLM subsystem state");
+      error.value = "Failed to update LLM subsystem state";
     }
-    setTimeout(() => setSuccess(null), 3000);
+    setTimeout(() => {
+      success.value = null;
+    }, 3000);
   }
 
   async function handleBrief() {
-    setError(null);
+    error.value = null;
     try {
-      const result = await requestBrief({}).unwrap();
-      setSuccess(`Queued ${result.count} advisory job(s)`);
+      const res = await requestBrief({}).unwrap();
+      success.value = `Queued ${res.count} advisory job(s)`;
     } catch {
-      setError("Failed to queue watchlist brief");
+      error.value = "Failed to queue watchlist brief";
     }
-    setTimeout(() => setSuccess(null), 4000);
+    setTimeout(() => {
+      success.value = null;
+    }, 4000);
   }
 
   async function handleTriggerWorker() {
-    setError(null);
+    error.value = null;
     try {
       await triggerWorker().unwrap();
-      setSuccess("Worker started");
+      success.value = "Worker started";
     } catch {
-      setError("Failed to start worker — check LLM_WORKER_ENABLED");
+      error.value = "Failed to start worker — check LLM_WORKER_ENABLED";
     }
-    setTimeout(() => setSuccess(null), 4000);
+    setTimeout(() => {
+      success.value = null;
+    }, 4000);
   }
 
   const state = status?.state ?? "disabled";
@@ -91,15 +97,15 @@ export function LlmSubsystemPanel() {
       </div>
 
       <div className="flex-1 p-3 space-y-4">
-        {(error || success) && (
+        {(error.value || success.value) && (
           <div
             className={`text-[10px] px-2 py-1 rounded ${
-              error
+              error.value
                 ? "bg-red-950 text-red-400 border border-red-800"
                 : "bg-emerald-950 text-emerald-400 border border-emerald-800"
             }`}
           >
-            {error ?? success}
+            {error.value ?? success.value}
           </div>
         )}
 

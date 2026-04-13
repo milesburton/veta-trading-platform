@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useEffect, useMemo } from "react";
 import {
   CartesianGrid,
   Legend,
@@ -90,66 +91,71 @@ const CHART_TOOLTIP_STYLE = {
 
 export function OptionPricingPanel() {
   const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
-  const [symbol, setSymbol] = useState(symbols[0] ?? "AAPL");
-  const [optionType, setOptionType] = useState<OptionType>("call");
-  const [strike, setStrike] = useState("");
-  const [expirySecs, setExpirySecs] = useState(30 * 86400);
-  const [customDate, setCustomDate] = useState("");
-  const [result, setResult] = useState<OptionQuoteResponse | null>(null);
+  const symbol = useSignal(symbols[0] ?? "AAPL");
+  const optionType = useSignal<OptionType>("call");
+  const strike = useSignal("");
+  const expirySecs = useSignal(30 * 86400);
+  const customDate = useSignal("");
+  const result = useSignal<OptionQuoteResponse | null>(null);
 
   const [getQuote, { isLoading, error }] = useGetQuoteMutation();
   const dispatch = useAppDispatch();
 
-  const currentPrice = useAppSelector((s) => s.market.prices[symbol]);
+  const currentPrice = useAppSelector((s) => s.market.prices[symbol.value]);
   useEffect(() => {
     if (currentPrice && currentPrice > 0) {
-      setStrike(currentPrice.toFixed(2));
+      strike.value = currentPrice.toFixed(2);
     }
-  }, [currentPrice]);
+  }, [currentPrice, strike]);
 
   const optionPrefill = useAppSelector((s) => s.ui.optionPrefill);
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional — consume once and clear
   useEffect(() => {
     if (optionPrefill) {
-      setStrike(optionPrefill.strike.toFixed(2));
-      setExpirySecs(optionPrefill.expirySecs);
-      setCustomDate("");
+      strike.value = optionPrefill.strike.toFixed(2);
+      expirySecs.value = optionPrefill.expirySecs;
+      customDate.value = "";
       dispatch(setOptionPrefill(null));
     }
   }, [optionPrefill]);
 
   function handleCustomDate(dateStr: string) {
-    setCustomDate(dateStr);
+    customDate.value = dateStr;
     if (!dateStr) return;
     const days = Math.max(1, Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86_400_000));
-    setExpirySecs(days * 86400);
+    expirySecs.value = days * 86400;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const k = Number(strike);
+    const k = Number(strike.value);
     if (!k || k <= 0) return;
     try {
-      const res = await getQuote({ symbol, optionType, strike: k, expirySecs }).unwrap();
-      setResult(res);
+      const res = await getQuote({
+        symbol: symbol.value,
+        optionType: optionType.value,
+        strike: k,
+        expirySecs: expirySecs.value,
+      }).unwrap();
+      result.value = res;
     } catch {
       /* error shown below */
     }
   }
 
   const sensitivityData = useMemo(() => {
-    if (!result) return [];
-    const T = result.expirySecs / (365 * 86400);
+    if (!result.value) return [];
+    const T = result.value.expirySecs / (365 * 86400);
     const r = 0.05;
     return Array.from({ length: 25 }, (_, i) => {
-      const S = result.spotPrice * (0.7 + i * (0.6 / 24));
+      const S = result.value!.spotPrice * (0.7 + i * (0.6 / 24));
       const { delta, gamma, theta, vega } = bsGreeks(
-        result.optionType,
+        result.value!.optionType,
         S,
-        result.strike,
+        result.value!.strike,
         T,
         r,
-        result.impliedVol
+        result.value!.impliedVol
       );
       return {
         spot: S.toFixed(1),
@@ -159,7 +165,7 @@ export function OptionPricingPanel() {
         vega: +vega.toFixed(4),
       };
     });
-  }, [result]);
+  }, [result.value]);
 
   return (
     <div
@@ -186,8 +192,10 @@ export function OptionPricingPanel() {
             </label>
             <select
               id="op-symbol"
-              value={symbol}
-              onChange={(e) => setSymbol(e.target.value)}
+              value={symbol.value}
+              onChange={(e) => {
+                symbol.value = e.target.value;
+              }}
               className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200"
             >
               {symbols.map((s) => (
@@ -206,9 +214,11 @@ export function OptionPricingPanel() {
                   key={t}
                   type="button"
                   data-testid={t === "call" ? "call-btn" : "put-btn"}
-                  onClick={() => setOptionType(t)}
+                  onClick={() => {
+                    optionType.value = t;
+                  }}
                   className={`flex-1 py-1 rounded text-[11px] font-semibold transition-colors ${
-                    optionType === t
+                    optionType.value === t
                       ? t === "call"
                         ? "bg-emerald-800 text-emerald-200"
                         : "bg-red-900 text-red-200"
@@ -236,8 +246,10 @@ export function OptionPricingPanel() {
               type="number"
               min="0.01"
               step="0.01"
-              value={strike}
-              onChange={(e) => setStrike(e.target.value)}
+              value={strike.value}
+              onChange={(e) => {
+                strike.value = e.target.value;
+              }}
               placeholder="e.g. 150"
               data-testid="strike-input"
               className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 placeholder:text-gray-600"
@@ -257,11 +269,11 @@ export function OptionPricingPanel() {
                   key={o.secs}
                   type="button"
                   onClick={() => {
-                    setExpirySecs(o.secs);
-                    setCustomDate("");
+                    expirySecs.value = o.secs;
+                    customDate.value = "";
                   }}
                   className={`px-1.5 py-0.5 rounded text-[9px] transition-colors ${
-                    expirySecs === o.secs && !customDate
+                    expirySecs.value === o.secs && !customDate.value
                       ? "bg-blue-700 text-white"
                       : "bg-gray-800 text-gray-500 hover:text-gray-300"
                   }`}
@@ -273,7 +285,7 @@ export function OptionPricingPanel() {
             <input
               id="op-expiry-date"
               type="date"
-              value={customDate}
+              value={customDate.value}
               onChange={(e) => handleCustomDate(e.target.value)}
               data-testid="expiry-input"
               className="bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-[10px] text-gray-200 mt-0.5"
@@ -283,7 +295,7 @@ export function OptionPricingPanel() {
 
         <button
           type="submit"
-          disabled={isLoading || !strike}
+          disabled={isLoading || !strike.value}
           data-testid="get-quote-btn"
           className="w-full py-1.5 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-40 text-[11px] font-semibold text-white transition-colors"
         >
@@ -299,29 +311,33 @@ export function OptionPricingPanel() {
         )}
       </form>
 
-      {result && (
+      {result.value && (
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4" data-testid="quote-result">
           <div className="bg-gray-900 rounded p-3">
             <div className="flex justify-between mb-2">
               <span className="text-[10px] text-gray-500">Theoretical Price</span>
               <span className="text-lg font-bold text-gray-100 tabular-nums font-mono">
-                ${fmt(result.price, 4)}
+                ${fmt(result.value.price, 4)}
               </span>
             </div>
             <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-[10px]">
               <div>
                 <span className="text-gray-500">Spot</span>
                 <div className="text-gray-300 tabular-nums font-mono">
-                  ${fmt(result.spotPrice, 2)}
+                  ${fmt(result.value.spotPrice, 2)}
                 </div>
               </div>
               <div>
                 <span className="text-gray-500">Strike</span>
-                <div className="text-gray-300 tabular-nums font-mono">${fmt(result.strike, 2)}</div>
+                <div className="text-gray-300 tabular-nums font-mono">
+                  ${fmt(result.value.strike, 2)}
+                </div>
               </div>
               <div>
                 <span className="text-gray-500">Impl. Vol</span>
-                <div className="text-gray-300 tabular-nums font-mono">{pct(result.impliedVol)}</div>
+                <div className="text-gray-300 tabular-nums font-mono">
+                  {pct(result.value.impliedVol)}
+                </div>
               </div>
             </div>
           </div>
@@ -331,27 +347,27 @@ export function OptionPricingPanel() {
             <div className="bg-gray-900 rounded p-3">
               <GreekRow
                 label="Δ Delta"
-                value={fmt(result.greeks.delta)}
+                value={fmt(result.value.greeks.delta)}
                 title="Rate of price change vs spot"
               />
               <GreekRow
                 label="Γ Gamma"
-                value={fmt(result.greeks.gamma, 6)}
+                value={fmt(result.value.greeks.gamma, 6)}
                 title="Rate of delta change vs spot"
               />
               <GreekRow
                 label="Θ Theta (daily)"
-                value={`-${fmt(Math.abs(result.greeks.theta), 4)}`}
+                value={`-${fmt(Math.abs(result.value.greeks.theta), 4)}`}
                 title="Daily time decay"
               />
               <GreekRow
                 label="ν Vega (per 1%)"
-                value={fmt(result.greeks.vega, 4)}
+                value={fmt(result.value.greeks.vega, 4)}
                 title="Price change per 1pp vol move"
               />
               <GreekRow
                 label="ρ Rho (per 1%)"
-                value={fmt(result.greeks.rho, 4)}
+                value={fmt(result.value.greeks.rho, 4)}
                 title="Price change per 1pp rate move"
               />
             </div>
@@ -409,12 +425,12 @@ export function OptionPricingPanel() {
           )}
 
           <div className="text-[9px] text-gray-700 text-right">
-            Computed {new Date(result.computedAt).toLocaleTimeString()} · EWMA vol
+            Computed {new Date(result.value.computedAt).toLocaleTimeString()} · EWMA vol
           </div>
         </div>
       )}
 
-      {!result && (
+      {!result.value && (
         <div className="flex-1 flex items-center justify-center text-gray-700 text-[11px]">
           Enter parameters and click Price Option
         </div>

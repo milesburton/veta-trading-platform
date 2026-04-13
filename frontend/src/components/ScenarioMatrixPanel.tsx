@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useMemo } from "react";
 import { useGetScenarioMutation } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import type { OptionType, ScenarioCell, ScenarioResponse } from "../types/analytics.ts";
@@ -103,43 +104,43 @@ export function ScenarioMatrixPanel() {
   const currentPrice = useAppSelector((s) =>
     symbols.length > 0 ? s.market.prices[symbols[0]] : undefined
   );
-  const [symbol, setSymbol] = useState(symbols[0] ?? "AAPL");
-  const [optionType, setOptionType] = useState<OptionType>("call");
-  const [strike, setStrike] = useState(() => (currentPrice ? currentPrice.toFixed(2) : ""));
-  const [expirySecs, setExpirySecs] = useState(30 * 86400);
-  const [metric, setMetric] = useState<CellMetric>("pnl");
-  const [result, setResult] = useState<ScenarioResponse | null>(null);
-  const [spotRange, setSpotRange] = useState(20);
-  const [volRange, setVolRange] = useState(20);
-  const [showRanges, setShowRanges] = useState(false);
-  const [hovered, setHovered] = useState<{ cell: ScenarioCell; x: number; y: number } | null>(null);
+  const symbol = useSignal(symbols[0] ?? "AAPL");
+  const optionType = useSignal<OptionType>("call");
+  const strike = useSignal(currentPrice ? currentPrice.toFixed(2) : "");
+  const expirySecs = useSignal(30 * 86400);
+  const metric = useSignal<CellMetric>("pnl");
+  const result = useSignal<ScenarioResponse | null>(null);
+  const spotRange = useSignal(20);
+  const volRange = useSignal(20);
+  const showRanges = useSignal(false);
+  const hovered = useSignal<{ cell: ScenarioCell; x: number; y: number } | null>(null);
 
   const [getScenario, { isLoading, error }] = useGetScenarioMutation();
 
-  const spotShocks = useMemo(() => buildShocks(spotRange), [spotRange]);
-  const volShocks = useMemo(() => buildVolShocks(volRange), [volRange]);
+  const spotShocks = useMemo(() => buildShocks(spotRange.value), [spotRange.value]);
+  const volShocks = useMemo(() => buildVolShocks(volRange.value), [volRange.value]);
 
   const [minVal, maxVal] = useMemo(() => {
-    if (!result) return [0, 0];
-    const vals = result.cells.flatMap((row) => row.map((c) => cellValue(c, metric)));
+    if (!result.value) return [0, 0];
+    const vals = result.value.cells.flatMap((row) => row.map((c) => cellValue(c, metric.value)));
     return [Math.min(...vals), Math.max(...vals)];
-  }, [result, metric]);
+  }, [result.value, metric.value]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const k = Number(strike);
+    const k = Number(strike.value);
     if (!k || k <= 0) return;
     try {
       const res = await getScenario({
-        symbol,
-        optionType,
+        symbol: symbol.value,
+        optionType: optionType.value,
         strike: k,
-        expirySecs,
+        expirySecs: expirySecs.value,
         spotShocks,
         volShocks,
         paths: 1000,
       }).unwrap();
-      setResult(res);
+      result.value = res;
     } catch {
       /* error shown below */
     }
@@ -166,8 +167,10 @@ export function ScenarioMatrixPanel() {
           </label>
           <select
             id="sm-symbol"
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
+            value={symbol.value}
+            onChange={(e) => {
+              symbol.value = e.target.value;
+            }}
             className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200"
           >
             {symbols.map((s) => (
@@ -185,9 +188,11 @@ export function ScenarioMatrixPanel() {
               <button
                 key={t}
                 type="button"
-                onClick={() => setOptionType(t)}
+                onClick={() => {
+                  optionType.value = t;
+                }}
                 className={`px-2 py-1 rounded text-[10px] font-semibold transition-colors ${
-                  optionType === t
+                  optionType.value === t
                     ? t === "call"
                       ? "bg-emerald-800 text-emerald-200"
                       : "bg-red-900 text-red-200"
@@ -209,8 +214,10 @@ export function ScenarioMatrixPanel() {
             type="number"
             min="0.01"
             step="0.01"
-            value={strike}
-            onChange={(e) => setStrike(e.target.value)}
+            value={strike.value}
+            onChange={(e) => {
+              strike.value = e.target.value;
+            }}
             placeholder="e.g. 150"
             className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 w-24 placeholder:text-gray-600"
           />
@@ -222,8 +229,10 @@ export function ScenarioMatrixPanel() {
           </label>
           <select
             id="sm-expiry"
-            value={expirySecs}
-            onChange={(e) => setExpirySecs(Number(e.target.value))}
+            value={expirySecs.value}
+            onChange={(e) => {
+              expirySecs.value = Number(e.target.value);
+            }}
             className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200"
           >
             {EXPIRY_OPTIONS.map((o) => (
@@ -236,7 +245,7 @@ export function ScenarioMatrixPanel() {
 
         <button
           type="submit"
-          disabled={isLoading || !strike}
+          disabled={isLoading || !strike.value}
           data-testid="run-scenario-btn"
           className="px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-40 text-[11px] font-semibold text-white transition-colors"
         >
@@ -245,10 +254,12 @@ export function ScenarioMatrixPanel() {
 
         <button
           type="button"
-          onClick={() => setShowRanges((v) => !v)}
+          onClick={() => {
+            showRanges.value = !showRanges.value;
+          }}
           className="px-2 py-1.5 rounded bg-gray-800 text-gray-500 hover:text-gray-300 text-[10px] transition-colors"
         >
-          {showRanges ? "▲ Ranges" : "▼ Ranges"}
+          {showRanges.value ? "▲ Ranges" : "▼ Ranges"}
         </button>
 
         {error && (
@@ -258,11 +269,11 @@ export function ScenarioMatrixPanel() {
         )}
       </form>
 
-      {showRanges && (
+      {showRanges.value && (
         <div className="flex gap-4 px-4 py-2 border-b border-gray-800 shrink-0">
           <div className="flex flex-col gap-1 flex-1">
             <label htmlFor="spot-range" className="text-[9px] text-gray-600 uppercase">
-              Spot shock ±{spotRange}%
+              Spot shock ±{spotRange.value}%
             </label>
             <input
               id="spot-range"
@@ -270,14 +281,16 @@ export function ScenarioMatrixPanel() {
               min={5}
               max={50}
               step={5}
-              value={spotRange}
-              onChange={(e) => setSpotRange(Number(e.target.value))}
+              value={spotRange.value}
+              onChange={(e) => {
+                spotRange.value = Number(e.target.value);
+              }}
               className="w-full accent-blue-500 h-1"
             />
           </div>
           <div className="flex flex-col gap-1 flex-1">
             <label htmlFor="vol-range" className="text-[9px] text-gray-600 uppercase">
-              Vol shock ±{volRange}%
+              Vol shock ±{volRange.value}%
             </label>
             <input
               id="vol-range"
@@ -285,15 +298,17 @@ export function ScenarioMatrixPanel() {
               min={5}
               max={50}
               step={5}
-              value={volRange}
-              onChange={(e) => setVolRange(Number(e.target.value))}
+              value={volRange.value}
+              onChange={(e) => {
+                volRange.value = Number(e.target.value);
+              }}
               className="w-full accent-purple-500 h-1"
             />
           </div>
         </div>
       )}
 
-      {result && (
+      {result.value && (
         <>
           {/* Metric picker */}
           <div className="flex gap-1 px-4 py-1.5 border-b border-gray-800 shrink-0">
@@ -301,9 +316,13 @@ export function ScenarioMatrixPanel() {
               <button
                 key={k}
                 type="button"
-                onClick={() => setMetric(k)}
+                onClick={() => {
+                  metric.value = k;
+                }}
                 className={`text-[9px] px-2 py-0.5 rounded transition-colors ${
-                  metric === k ? "bg-gray-700 text-gray-100" : "text-gray-600 hover:text-gray-400"
+                  metric.value === k
+                    ? "bg-gray-700 text-gray-100"
+                    : "text-gray-600 hover:text-gray-400"
                 }`}
               >
                 {label}
@@ -314,20 +333,23 @@ export function ScenarioMatrixPanel() {
           {/* Heatmap grid */}
           <div className="flex-1 overflow-auto p-3">
             <div className="text-[9px] text-gray-600 mb-2">
-              Spot ${result.spotPrice.toFixed(2)} · Vol {(result.impliedVol * 100).toFixed(1)}% ·
-              Base ${result.baselinePrice.toFixed(4)} · Hover for all metrics
+              Spot ${result.value.spotPrice.toFixed(2)} · Vol{" "}
+              {(result.value.impliedVol * 100).toFixed(1)}% · Base $
+              {result.value.baselinePrice.toFixed(4)} · Hover for all metrics
             </div>
             <table
               className="border-collapse text-[10px] w-full"
               data-testid="scenario-table"
-              onMouseLeave={() => setHovered(null)}
+              onMouseLeave={() => {
+                hovered.value = null;
+              }}
             >
               <thead>
                 <tr>
                   <th className="text-[9px] text-gray-600 text-left pr-2 pb-1 font-normal">
                     Spot ↓ / Vol →
                   </th>
-                  {result.volShocks.map((vs) => (
+                  {result.value.volShocks.map((vs) => (
                     <th
                       key={vs}
                       className="text-[9px] text-gray-500 text-center pb-1 px-1 font-semibold min-w-[60px]"
@@ -338,16 +360,16 @@ export function ScenarioMatrixPanel() {
                 </tr>
               </thead>
               <tbody>
-                {result.cells.map((row, si) => {
-                  const spotPct = result.spotShocks[si];
+                {result.value.cells.map((row, si) => {
+                  const spotPct = result.value!.spotShocks[si];
                   return (
                     <tr key={spotPct}>
                       <td className="text-[9px] text-gray-500 pr-2 font-semibold">
                         {pctLabel(spotPct)}
                       </td>
                       {row.map((cell) => {
-                        const val = cellValue(cell, metric);
-                        const isPnl = metric === "pnl" || metric === "pnlPct";
+                        const val = cellValue(cell, metric.value);
+                        const isPnl = metric.value === "pnl" || metric.value === "pnlPct";
                         const bg = isPnl ? divergingColor(val, minVal, maxVal) : priceColor();
                         const textColor = isPnl
                           ? val > (minVal + maxVal) / 2
@@ -359,18 +381,19 @@ export function ScenarioMatrixPanel() {
                             key={cell.volPct}
                             className="text-center px-1 py-0.5 rounded-sm text-[10px] tabular-nums font-mono cursor-default"
                             style={{ backgroundColor: bg, color: textColor }}
-                            onMouseEnter={(e) =>
-                              setHovered({
+                            onMouseEnter={(e) => {
+                              hovered.value = {
                                 cell,
                                 x: e.clientX,
                                 y: e.clientY,
-                              })
-                            }
-                            onMouseMove={(e) =>
-                              setHovered((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : null))
-                            }
+                              };
+                            }}
+                            onMouseMove={(e) => {
+                              if (hovered.value)
+                                hovered.value = { ...hovered.value, x: e.clientX, y: e.clientY };
+                            }}
                           >
-                            {fmtCell(val, metric)}
+                            {fmtCell(val, metric.value)}
                           </td>
                         );
                       })}
@@ -381,7 +404,7 @@ export function ScenarioMatrixPanel() {
             </table>
 
             {/* Colour scale legend */}
-            {(metric === "pnl" || metric === "pnlPct") && (
+            {(metric.value === "pnl" || metric.value === "pnlPct") && (
               <div className="flex items-center gap-2 mt-3">
                 <span className="text-[9px] text-red-400">Loss</span>
                 <div
@@ -396,15 +419,17 @@ export function ScenarioMatrixPanel() {
             )}
 
             <div className="text-[9px] text-gray-700 mt-2 text-right">
-              {new Date(result.computedAt).toLocaleTimeString()} · 1000 MC paths/cell
+              {new Date(result.value.computedAt).toLocaleTimeString()} · 1000 MC paths/cell
             </div>
           </div>
         </>
       )}
 
-      {hovered && <CellTooltip cell={hovered.cell} x={hovered.x} y={hovered.y} />}
+      {hovered.value && (
+        <CellTooltip cell={hovered.value.cell} x={hovered.value.x} y={hovered.value.y} />
+      )}
 
-      {!result && (
+      {!result.value && (
         <div className="flex-1 flex items-center justify-center text-gray-700 text-[11px]">
           Configure parameters and click Run Scenario
         </div>

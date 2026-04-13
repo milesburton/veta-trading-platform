@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useEffect } from "react";
 import { useAppSelector } from "../store/hooks.ts";
 import {
   useGetOverridesQuery,
@@ -17,42 +18,39 @@ export function MarketDataSourcesPanel() {
   const { data: overridesData, isLoading: overridesLoading } = useGetOverridesQuery();
   const [setOverrides, { isLoading: saving }] = useSetOverridesMutation();
 
-  const [pending, setPending] = useState<Record<string, string>>({});
-  const [hasPending, setHasPending] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const pending = useSignal<Record<string, string>>({});
+  const hasPending = useSignal(false);
+  const saveError = useSignal<string | null>(null);
+  const saveSuccess = useSignal(false);
 
-  const [search, setSearch] = useState("");
-  const [showOverridesOnly, setShowOverridesOnly] = useState(false);
+  const search = useSignal("");
+  const showOverridesOnly = useSignal(false);
 
   useEffect(() => {
     if (overridesData) {
-      setPending({});
-      setHasPending(false);
+      pending.value = {};
+      hasPending.value = false;
     }
-  }, [overridesData]);
+  }, [overridesData, hasPending, pending]);
 
   const serverOverrides = overridesData?.overrides ?? {};
   const anyExternalAvailable = sources.some((s) => s.id !== "synthetic" && s.enabled);
 
-  function getSymbolSource(symbol: string): string {
-    if (symbol in pending) return pending[symbol];
-    return serverOverrides[symbol] ?? "synthetic";
+  function getSymbolSource(sym: string): string {
+    if (sym in pending.value) return pending.value[sym];
+    return serverOverrides[sym] ?? "synthetic";
   }
 
-  function handleSourceChange(symbol: string, newSource: string) {
-    setPending((prev) => {
-      const next = { ...prev, [symbol]: newSource };
-      setHasPending(true);
-      return next;
-    });
-    setSaveSuccess(false);
-    setSaveError(null);
+  function handleSourceChange(sym: string, newSource: string) {
+    pending.value = { ...pending.value, [sym]: newSource };
+    hasPending.value = true;
+    saveSuccess.value = false;
+    saveError.value = null;
   }
 
   async function handleSave() {
     const merged: Record<string, string> = { ...serverOverrides };
-    for (const [sym, src] of Object.entries(pending)) {
+    for (const [sym, src] of Object.entries(pending.value)) {
       if (src === "synthetic") {
         delete merged[sym];
       } else {
@@ -61,12 +59,14 @@ export function MarketDataSourcesPanel() {
     }
     try {
       await setOverrides(merged).unwrap();
-      setPending({});
-      setHasPending(false);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      pending.value = {};
+      hasPending.value = false;
+      saveSuccess.value = true;
+      setTimeout(() => {
+        saveSuccess.value = false;
+      }, 3000);
     } catch (err) {
-      setSaveError((err as { data?: { error?: string } })?.data?.error ?? "Failed to save");
+      saveError.value = (err as { data?: { error?: string } })?.data?.error ?? "Failed to save";
     }
   }
 
@@ -75,19 +75,19 @@ export function MarketDataSourcesPanel() {
     for (const sym of symbols) {
       resetMap[sym] = "synthetic";
     }
-    setPending(resetMap);
-    setHasPending(true);
-    setSaveSuccess(false);
-    setSaveError(null);
+    pending.value = resetMap;
+    hasPending.value = true;
+    saveSuccess.value = false;
+    saveError.value = null;
   }
 
   const externalCount = symbols.filter((s) => getSymbolSource(s) !== "synthetic").length;
 
   const filteredSymbols = symbols.filter((sym) => {
-    if (search && !sym.toLowerCase().includes(search.toLowerCase())) {
+    if (search.value && !sym.toLowerCase().includes(search.value.toLowerCase())) {
       return false;
     }
-    if (showOverridesOnly && getSymbolSource(sym) === "synthetic") return false;
+    if (showOverridesOnly.value && getSymbolSource(sym) === "synthetic") return false;
     return true;
   });
 
@@ -129,15 +129,19 @@ export function MarketDataSourcesPanel() {
         <input
           type="text"
           placeholder="Search symbol…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={search.value}
+          onChange={(e) => {
+            search.value = e.target.value;
+          }}
           className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 placeholder:text-gray-600"
         />
         <button
           type="button"
-          onClick={() => setShowOverridesOnly((v) => !v)}
+          onClick={() => {
+            showOverridesOnly.value = !showOverridesOnly.value;
+          }}
           className={`px-2 py-1 rounded text-[10px] transition-colors ${
-            showOverridesOnly
+            showOverridesOnly.value
               ? "bg-amber-800/50 text-amber-300 border border-amber-700"
               : "bg-gray-800 text-gray-500 border border-gray-700 hover:text-gray-300"
           }`}
@@ -166,7 +170,7 @@ export function MarketDataSourcesPanel() {
             <tbody>
               {filteredSymbols.map((sym) => {
                 const currentSource = getSymbolSource(sym);
-                const isDirty = sym in pending;
+                const isDirty = sym in pending.value;
                 return (
                   <tr
                     key={sym}
@@ -231,7 +235,7 @@ export function MarketDataSourcesPanel() {
           <button
             type="button"
             onClick={handleSave}
-            disabled={!hasPending || saving}
+            disabled={!hasPending.value || saving}
             className="px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-40 text-[11px] font-semibold text-white transition-colors"
           >
             {saving ? "Saving…" : "Save Changes"}
@@ -244,8 +248,10 @@ export function MarketDataSourcesPanel() {
           >
             Reset All to Synthetic
           </button>
-          {saveSuccess && <span className="text-[10px] text-emerald-400 ml-1">Saved</span>}
-          {saveError && <span className="text-[10px] text-red-400 ml-1">{saveError}</span>}
+          {saveSuccess.value && <span className="text-[10px] text-emerald-400 ml-1">Saved</span>}
+          {saveError.value && (
+            <span className="text-[10px] text-red-400 ml-1">{saveError.value}</span>
+          )}
         </div>
       )}
 

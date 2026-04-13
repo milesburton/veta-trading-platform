@@ -68,8 +68,8 @@ describe("sessionRecorder", () => {
     const upload = vi.fn().mockResolvedValue(undefined);
     startRecording(upload);
 
-    emitCallback!(fakeEvent(1000));
-    emitCallback!(fakeEvent(2000));
+    emitCallback?.(fakeEvent(1000));
+    emitCallback?.(fakeEvent(2000));
 
     vi.advanceTimersByTime(30_000);
     await vi.runAllTimersAsync();
@@ -81,8 +81,8 @@ describe("sessionRecorder", () => {
     const upload = vi.fn().mockResolvedValue(undefined);
     startRecording(upload);
 
-    emitCallback!(fakeEvent(1000));
-    emitCallback!(fakeEvent(2000));
+    emitCallback?.(fakeEvent(1000));
+    emitCallback?.(fakeEvent(2000));
 
     await stopRecording();
 
@@ -132,7 +132,7 @@ describe("sessionRecorder", () => {
       .mockResolvedValue(undefined);
     startRecording(upload);
 
-    emitCallback!(fakeEvent(1000));
+    emitCallback?.(fakeEvent(1000));
 
     vi.advanceTimersByTime(30_000);
     await vi.advanceTimersByTimeAsync(0);
@@ -140,7 +140,7 @@ describe("sessionRecorder", () => {
     expect(upload).toHaveBeenCalledTimes(1);
     expect(upload).toHaveBeenCalledWith(0, [fakeEvent(1000)]);
 
-    emitCallback!(fakeEvent(2000));
+    emitCallback?.(fakeEvent(2000));
 
     vi.advanceTimersByTime(30_000);
     await vi.advanceTimersByTimeAsync(0);

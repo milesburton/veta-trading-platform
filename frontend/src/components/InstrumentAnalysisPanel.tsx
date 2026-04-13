@@ -7,7 +7,8 @@
  *  - Backtest replay as dual-axis Recharts ComposedChart
  */
 
-import { useMemo, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useMemo } from "react";
 import {
   CartesianGrid,
   ComposedChart,
@@ -120,9 +121,9 @@ export function InstrumentAnalysisPanel() {
   // All features across all symbols for cross-symbol z-score normalisation
   const allFeatures = useAppSelector((s) => s.intelligence.features);
 
-  const [replayLoading, setReplayLoading] = useState(false);
-  const [replayFrames, setReplayFrames] = useState<ReplayFrame[] | null>(null);
-  const [replayError, setReplayError] = useState<string | null>(null);
+  const replayLoading = useSignal(false);
+  const replayFrames = useSignal<ReplayFrame[] | null>(null);
+  const replayError = useSignal<string | null>(null);
 
   const GATEWAY =
     (import.meta as { env: Record<string, string> }).env.VITE_GATEWAY_URL ?? "/api/gateway";
@@ -148,9 +149,9 @@ export function InstrumentAnalysisPanel() {
 
   async function runBacktest() {
     if (!symbol) return;
-    setReplayLoading(true);
-    setReplayError(null);
-    setReplayFrames(null);
+    replayLoading.value = true;
+    replayError.value = null;
+    replayFrames.value = null;
     try {
       const to = Date.now();
       const from = to - 4 * 60 * 60 * 1000;
@@ -161,11 +162,11 @@ export function InstrumentAnalysisPanel() {
       });
       if (!res.ok) throw new Error(await res.text());
       const frames: ReplayFrame[] = await res.json();
-      setReplayFrames(frames);
+      replayFrames.value = frames;
     } catch (err) {
-      setReplayError((err as Error).message);
+      replayError.value = (err as Error).message;
     } finally {
-      setReplayLoading(false);
+      replayLoading.value = false;
     }
   }
 
@@ -185,7 +186,7 @@ export function InstrumentAnalysisPanel() {
         : "text-gray-400";
 
   // Build chart data: ts, close, score
-  const chartData = replayFrames?.map((f) => ({
+  const chartData = replayFrames.value?.map((f) => ({
     ts: f.ts,
     close: f.close,
     score: f.signal.score,
@@ -231,12 +232,12 @@ export function InstrumentAnalysisPanel() {
         <button
           type="button"
           onClick={runBacktest}
-          disabled={replayLoading}
+          disabled={replayLoading.value}
           className="px-3 py-1 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded transition-colors disabled:opacity-50"
         >
-          {replayLoading ? "Running…" : "Run Backtest"}
+          {replayLoading.value ? "Running…" : "Run Backtest"}
         </button>
-        {replayError && <div className="mt-2 text-xs text-red-400">{replayError}</div>}
+        {replayError.value && <div className="mt-2 text-xs text-red-400">{replayError.value}</div>}
 
         {chartData && chartData.length > 0 && (
           <div className="mt-3">

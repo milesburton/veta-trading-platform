@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useEffect, useRef } from "react";
 import type { DemoDayResult } from "../store/gatewayApi.ts";
 import { useRunDemoDayMutation } from "../store/gatewayApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
@@ -72,10 +73,10 @@ const BADGE_MAP: Record<string, string> = {
 
 export function DemoDayPanel() {
   const user = useAppSelector((s) => s.auth.user);
-  const [selected, setSelected] = useState<string>("standard");
-  const [result, setResult] = useState<LocalDemoResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [elapsed, setElapsed] = useState<number>(0);
+  const selected = useSignal<string>("standard");
+  const result = useSignal<LocalDemoResult | null>(null);
+  const error = useSignal<string | null>(null);
+  const elapsed = useSignal<number>(0);
   const tickerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [runDemoDay, { isLoading: isRunning }] = useRunDemoDayMutation();
@@ -87,39 +88,38 @@ export function DemoDayPanel() {
   }, []);
 
   async function handleLaunch() {
-    setError(null);
-    setResult(null);
-    setElapsed(0);
+    error.value = null;
+    result.value = null;
+    elapsed.value = 0;
     const startedAt = Date.now();
 
-    tickerRef.current = setInterval(
-      () => setElapsed(Math.floor((Date.now() - startedAt) / 1000)),
-      500
-    );
+    tickerRef.current = setInterval(() => {
+      elapsed.value = Math.floor((Date.now() - startedAt) / 1000);
+    }, 500);
 
-    const res = await runDemoDay({ scenario: selected });
+    const res = await runDemoDay({ scenario: selected.value });
 
     if (tickerRef.current) clearInterval(tickerRef.current);
-    setElapsed(Math.floor((Date.now() - startedAt) / 1000));
+    elapsed.value = Math.floor((Date.now() - startedAt) / 1000);
 
     if ("data" in res) {
-      setResult(res.data as LocalDemoResult);
+      result.value = res.data as LocalDemoResult;
     } else if ("error" in res) {
       const err = res.error;
       if (err && "status" in err) {
         const status = (err as { status: number }).status;
         const data = (err as { data?: { error?: string } }).data;
-        if (status === 401) setError("Session expired — please log in again");
+        if (status === 401) error.value = "Session expired — please log in again";
         else if (status === 503) {
-          setError("Message bus unavailable — is Redpanda running?");
-        } else setError(data?.error ?? `Request failed (${status})`);
+          error.value = "Message bus unavailable — is Redpanda running?";
+        } else error.value = data?.error ?? `Request failed (${status})`;
       } else {
-        setError("Network error");
+        error.value = "Network error";
       }
     }
   }
 
-  const scenario = SCENARIOS.find((s) => s.id === selected) ?? SCENARIOS[0];
+  const scenario = SCENARIOS.find((s) => s.id === selected.value) ?? SCENARIOS[0];
 
   return (
     <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs overflow-hidden">
@@ -149,7 +149,7 @@ export function DemoDayPanel() {
           </div>
           <div className="space-y-2">
             {SCENARIOS.map((sc) => {
-              const active = sc.id === selected;
+              const active = sc.id === selected.value;
               const colours = COLOUR_MAP[sc.colour];
               const badge = BADGE_MAP[sc.colour];
               return (
@@ -157,7 +157,7 @@ export function DemoDayPanel() {
                   type="button"
                   key={sc.id}
                   onClick={() => {
-                    if (!isRunning) setSelected(sc.id);
+                    if (!isRunning) selected.value = sc.id;
                   }}
                   disabled={isRunning}
                   className={[
@@ -218,9 +218,9 @@ export function DemoDayPanel() {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                 />
               </svg>
-              Launching… ({elapsed}s)
+              Launching… ({elapsed.value}s)
             </>
-          ) : result ? (
+          ) : result.value ? (
             "Launch Another Demo"
           ) : (
             `Launch Demo — ${scenario.label}`
@@ -228,24 +228,24 @@ export function DemoDayPanel() {
         </button>
 
         {/* Success result */}
-        {!isRunning && result && (
+        {!isRunning && result.value && (
           <div className="rounded border border-emerald-700/50 bg-emerald-950/30 px-3 py-2.5 space-y-2">
             <div className="text-[11px] font-semibold text-emerald-400">Demo launched</div>
             <div className="space-y-1 text-[10px]">
               <div className="flex items-center justify-between">
                 <span className="text-gray-500">Scenario</span>
-                <span className="text-gray-200 font-medium">{result.scenario}</span>
+                <span className="text-gray-200 font-medium">{result.value.scenario}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500">Orders injected</span>
                 <span className="text-emerald-300 tabular-nums font-semibold">
-                  {result.submitted.toLocaleString()}
+                  {result.value.submitted.toLocaleString()}
                 </span>
               </div>
-              {"jobId" in result && (
+              {"jobId" in result.value && (
                 <div className="flex items-center justify-between">
                   <span className="text-gray-500">Job ID</span>
-                  <span className="text-gray-400 font-mono text-[9px]">{result.jobId}</span>
+                  <span className="text-gray-400 font-mono text-[9px]">{result.value.jobId}</span>
                 </div>
               )}
             </div>
@@ -256,9 +256,9 @@ export function DemoDayPanel() {
           </div>
         )}
 
-        {!isRunning && error && (
+        {!isRunning && error.value && (
           <div className="rounded border border-red-700/50 bg-red-950/30 px-3 py-2 text-[10px] text-red-400 leading-relaxed">
-            <span className="font-semibold">Error:</span> {error}
+            <span className="font-semibold">Error:</span> {error.value}
           </div>
         )}
 
