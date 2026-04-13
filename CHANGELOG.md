@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.17.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.16.2...veta-trading-platform-v1.17.0) (2026-04-13)
+
+
+### Features
+
+* add MCP config for Ollama via host.docker.internal ([7b47b4b](https://github.com/milesburton/veta-trading-platform/commit/7b47b4b77456c9c99315787af5a9f1acfd44d9b8))
+* **ci:** add test-count badges for all test suites + fix README typos ([573bc57](https://github.com/milesburton/veta-trading-platform/commit/573bc57c1a33c33a0ef450385b2f8031e694822d))
+* **docs:** replace static GitHub Pages with Astro + Starlight docs site ([e27ea75](https://github.com/milesburton/veta-trading-platform/commit/e27ea7517d02ef455b874e5d46b9dba20aba7d3e))
+* multi-select and permission-gated order actions in blotter ([3d734df](https://github.com/milesburton/veta-trading-platform/commit/3d734df84cac4b094ce45a651bb303ed2bb00f87))
+* pre-populate demo credentials, add docs link, expand roadmap ([136bcda](https://github.com/milesburton/veta-trading-platform/commit/136bcda4f4952e19789d8bd3ff72312adec5aafc))
+* symbol search bar with typeahead, identifiers, and trade paste parser ([6be87a2](https://github.com/milesburton/veta-trading-platform/commit/6be87a233dee339819b4591afd9446a9acaf2d26))
+* system status bar with data depth, quality warnings, and upgrade banner ([aece3f5](https://github.com/milesburton/veta-trading-platform/commit/aece3f5a6c4fd914e28bd1a77b496ff4a4d3f7cd))
+
+
+### Bug Fixes
+
+* add consumer crash watchdog for automatic Kafka reconnection ([135a820](https://github.com/milesburton/veta-trading-platform/commit/135a82023839ee319f816a7298ab99354d732b00))
+* **ci:** mkdir for Pages screenshots + mark Fly.io smoke tests non-blocking ([48412e3](https://github.com/milesburton/veta-trading-platform/commit/48412e3489e4f520140431366b486dfac857a1ea))
+* **docs:** show sidebar on landing page + add Getting Started link ([65763a3](https://github.com/milesburton/veta-trading-platform/commit/65763a35a406de1c8c982f7ea89e5ec5517fc71c))
+* **homelab:** add restart policy to Traefik container ([261500b](https://github.com/milesburton/veta-trading-platform/commit/261500bdbbcd5974c18773b8040eadfffd82513b))
+
+
+### Performance Improvements
+
+* **ci:** parallelize Playwright, screenshots, Docker alongside integration ([dfd59d6](https://github.com/milesburton/veta-trading-platform/commit/dfd59d60e7b74272ab2553fd8620172b17721311))
+
+
+### Reverts
+
+* remove MCP config — not needed for this project ([699ddcf](https://github.com/milesburton/veta-trading-platform/commit/699ddcfa22cf89eff3159644ca1b30b838193bc9))
+
 ## [1.16.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.16.1...veta-trading-platform-v1.16.2) (2026-04-12)
 
 
