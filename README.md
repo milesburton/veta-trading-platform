@@ -18,4 +18,10 @@ A near real-world equities and fixed income trading platform for paper trading a
   <a href="https://veta-trading.fly.dev/">Live Demo</a>
   &nbsp;&middot;&nbsp;
   <a href="https://milesburton.github.io/veta-trading-platform/guides/overview/">Getting Started</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://milesburton.github.io/veta-trading-platform/platform/screenshots/">Screenshots</a>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/01-trading-dashboard.png" alt="Trading Dashboard" width="800" />
 </p>
