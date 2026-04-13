@@ -175,6 +175,9 @@ export class GatewayMock {
         body: JSON.stringify({
           ready: true,
           startedAt: Date.now() - 300_000,
+          upgradeInProgress: false,
+          upgradeMessage: null,
+          dataDepth: { totalSymbols: 5, avgDays: 3.2, minDays: 1.5, queriedAt: Date.now() },
           services: {
             bus: true,
             marketSim: true,
@@ -190,6 +193,26 @@ export class GatewayMock {
             scenarioEngine: true,
             llmAdvisory: true,
           },
+        }),
+      })
+    );
+
+    await page.route("/api/gateway/data-depth", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          totalSymbols: 5,
+          avgDays: 3.2,
+          minDays: 1.5,
+          queriedAt: Date.now(),
+          symbols: assets.map((a) => ({
+            instrument: a.symbol,
+            candleCount: 120,
+            earliestMs: Date.now() - 3.2 * 86_400_000,
+            latestMs: Date.now(),
+            spanDays: 3.2,
+          })),
         }),
       })
     );
@@ -355,6 +378,10 @@ export class GatewayMock {
         limits: opts.limits ?? DEFAULT_LIMITS,
       },
     });
+  }
+
+  sendUpgradeStatus(inProgress: boolean, message?: string) {
+    this._send({ event: "upgradeStatus", data: { inProgress, message: message ?? null } });
   }
 
   sendMarketUpdate(prices: Record<string, number>, volumes?: Record<string, number>) {
