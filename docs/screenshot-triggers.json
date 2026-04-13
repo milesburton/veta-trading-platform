@@ -1,0 +1,58 @@
+{
+  "_description": "Maps screenshot files to source files that should trigger regeneration. Used by CI to detect stale screenshots.",
+  "screenshots": {
+    "01-trading-dashboard.png": [
+      "frontend/src/components/MarketLadder.tsx",
+      "frontend/src/components/OrderBlotter.tsx",
+      "frontend/src/components/StatusBar.tsx",
+      "frontend/src/components/dashboard/layoutModels.ts"
+    ],
+    "02-order-ticket.png": [
+      "frontend/src/components/OrderTicket.tsx",
+      "frontend/src/components/AssetSelector.tsx"
+    ],
+    "03-order-blotter.png": [
+      "frontend/src/components/OrderBlotter.tsx"
+    ],
+    "04-algo-workspace.png": [
+      "frontend/src/components/AlgoMonitor.tsx",
+      "frontend/src/components/TradeRecommendationPanel.tsx",
+      "frontend/src/components/dashboard/layoutModels.ts"
+    ],
+    "05-fixed-income.png": [
+      "frontend/src/components/SpreadAnalysisPanel.tsx",
+      "frontend/src/components/DurationLadderPanel.tsx",
+      "frontend/src/components/VolSurfacePanel.tsx"
+    ],
+    "06-option-pricing.png": [
+      "frontend/src/components/OptionPricingPanel.tsx",
+      "frontend/src/components/ScenarioMatrixPanel.tsx"
+    ],
+    "07-market-heatmap.png": [
+      "frontend/src/components/MarketHeatmap.tsx"
+    ],
+    "08-kill-switch.png": [
+      "frontend/src/components/KillSwitchButton.tsx"
+    ],
+    "09-column-formatting.png": [
+      "frontend/src/components/OrderBlotter.tsx",
+      "frontend/src/components/grid/CfRuleEditor.tsx"
+    ],
+    "10-mission-control.png": [
+      "frontend/src/components/EstateOverviewPanel.tsx",
+      "frontend/src/components/dashboard/layoutModels.ts"
+    ],
+    "11-session-replay.png": [
+      "frontend/src/components/SessionReplayPanel.tsx"
+    ],
+    "ug-symbol-search.png": [
+      "frontend/src/components/SymbolSearchBar.tsx"
+    ],
+    "ug-trade-paste.png": [
+      "frontend/src/components/SymbolSearchBar.tsx"
+    ],
+    "ug-blotter-multiselect.png": [
+      "frontend/src/components/OrderBlotter.tsx"
+    ]
+  }
+}

@@ -29,6 +29,10 @@ export default defineConfig({
           autogenerate: { directory: "guides" },
         },
         {
+          label: "User Guide",
+          autogenerate: { directory: "user-guide" },
+        },
+        {
           label: "Platform",
           autogenerate: { directory: "platform" },
         },

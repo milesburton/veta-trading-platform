@@ -787,3 +787,62 @@ test("screenshot: order blotter with formatting", async ({ page }) => {
     path: path.join(OUT_DIR, "09-column-formatting.png"),
   });
 });
+
+test("screenshot: symbol search with results", async ({ page }) => {
+  const app = new AppPage(page);
+  await app.gotoAsTrader(MARKET_ASSETS);
+  await app.waitForOverlayGone();
+  seedMarket(app);
+  await page.waitForTimeout(400);
+
+  const searchInput = page.getByTestId("symbol-search-input");
+  if (await searchInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await searchInput.fill("AAPL");
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: path.join(OUT_DIR, "ug-symbol-search.png") });
+    await searchInput.fill("");
+  } else {
+    await page.screenshot({ path: path.join(OUT_DIR, "ug-symbol-search.png") });
+  }
+});
+
+test("screenshot: trade paste preview", async ({ page }) => {
+  const app = new AppPage(page);
+  await app.gotoAsTrader(MARKET_ASSETS);
+  await app.waitForOverlayGone();
+  seedMarket(app);
+  await page.waitForTimeout(400);
+
+  const searchInput = page.getByTestId("symbol-search-input");
+  if (await searchInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await searchInput.fill("BUY 5000 AAPL US Equity @ 192.34 TWAP");
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: path.join(OUT_DIR, "ug-trade-paste.png") });
+    await searchInput.fill("");
+  } else {
+    await page.screenshot({ path: path.join(OUT_DIR, "ug-trade-paste.png") });
+  }
+});
+
+test("screenshot: blotter multi-select", async ({ page }) => {
+  const app = new AppPage(page);
+  await app.gotoAsTrader(MARKET_ASSETS);
+  await app.waitForOverlayGone();
+  seedMarket(app);
+  await page.waitForTimeout(400);
+
+  seedOrders(app);
+  await page.waitForTimeout(400);
+
+  const selectAll = page.getByTestId("select-all-checkbox");
+  if (await selectAll.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await selectAll.click();
+    await page.waitForTimeout(200);
+  }
+
+  const panel = await app.panelByTitle(/Orders.*active/i);
+  await panel.waitFor({ state: "visible" });
+  await page.waitForTimeout(300);
+
+  await panel.screenshot({ path: path.join(OUT_DIR, "ug-blotter-multiselect.png") });
+});
