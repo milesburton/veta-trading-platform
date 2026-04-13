@@ -24,10 +24,17 @@ export interface RoutedOrder {
 }
 
 export interface FillEvent {
-  childId?: string;
-  parentOrderId?: string;
+  childId: string;
+  parentOrderId: string;
   clientOrderId?: string;
-  algo?: string;
-  filledQty?: number;
-  avgFillPrice?: number;
+  algo: string;
+  asset: string;
+  side: OrderSide;
+  filledQty: number;
+  avgFillPrice: number;
+  venue?: string;
+  counterparty?: string;
+  liquidityFlag?: "MAKER" | "TAKER" | "CROSS";
+  commissionUSD?: number;
+  marketImpactBps?: number;
 }

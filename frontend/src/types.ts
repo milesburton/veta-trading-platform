@@ -1,3 +1,11 @@
+declare const __brand: unique symbol;
+type Brand<T, B extends string> = T & { readonly [__brand]: B };
+
+export type OrderId = Brand<string, "OrderId">;
+export type ChildOrderId = Brand<string, "ChildOrderId">;
+export type UserId = Brand<string, "UserId">;
+export type ClientOrderId = Brand<string, "ClientOrderId">;
+
 export type OrderSide = "BUY" | "SELL";
 
 export type AssetClass = "equity" | "fx" | "commodity" | "bond";
@@ -281,8 +289,45 @@ export interface OrderRecord {
   marketType?: MarketType;
 }
 
+export type ObsEventType =
+  | "orders.new"
+  | "orders.submitted"
+  | "orders.routed"
+  | "orders.child"
+  | "orders.filled"
+  | "orders.expired"
+  | "orders.rejected"
+  | "orders.cancelled"
+  | "orders.held"
+  | "algo.heartbeat"
+  | "fix.execution"
+  | "child_created"
+  | "order_submitted"
+  | "news.feed"
+  | "news.signal"
+  | "market.features"
+  | "market.signals"
+  | "market.recommendations";
+
+export interface OrderFillPayload {
+  asset: string;
+  side: OrderSide;
+  filledQty: number;
+  avgFillPrice: number;
+  venue: string;
+  counterparty: string;
+  liquidityFlag: LiquidityFlag;
+  commissionUSD: number;
+  marketImpactBps: number;
+  orderId?: string;
+  childId?: string;
+  parentOrderId?: string;
+  algo?: string;
+  ts?: number;
+}
+
 export interface ObsEvent {
-  type: string;
+  type: ObsEventType | (string & Record<never, never>);
   ts?: number;
   payload?: Record<string, unknown>;
 }

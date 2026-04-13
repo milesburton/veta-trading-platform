@@ -5,7 +5,7 @@ import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useColumnLayout } from "../hooks/useColumnLayout.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import type { ColDef } from "../types/gridPrefs.ts";
-import type { OrderSide } from "../types.ts";
+import type { OrderFillPayload, OrderSide } from "../types.ts";
 import { formatTime } from "../utils/format.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
@@ -230,22 +230,22 @@ export function MarketMatch() {
     return events
       .filter((e) => e.type === "orders.filled")
       .map((e) => {
-        const p = e.payload as Record<string, unknown>;
+        const p = (e.payload ?? {}) as OrderFillPayload & Record<string, unknown>;
         return {
-          ts: (p.ts as number) ?? e.ts ?? 0,
-          asset: (p.asset as string) ?? "",
-          side: (p.side as OrderSide) ?? "BUY",
-          filledQty: (p.filledQty as number) ?? 0,
-          avgFillPrice: (p.avgFillPrice as number) ?? 0,
-          marketImpactBps: p.marketImpactBps as number | undefined,
-          venue: p.venue as string | undefined,
-          counterparty: p.counterparty as string | undefined,
-          liquidityFlag: p.liquidityFlag as "MAKER" | "TAKER" | "CROSS" | undefined,
-          commissionUSD: p.commissionUSD as number | undefined,
-          algo: p.algo as string | undefined,
-          parentOrderId: p.parentOrderId as string | undefined,
-          childId: p.childId as string | undefined,
-          midPrice: p.midPrice as number | undefined,
+          ts: p.ts ?? e.ts ?? 0,
+          asset: p.asset ?? "",
+          side: p.side ?? "BUY",
+          filledQty: p.filledQty ?? 0,
+          avgFillPrice: p.avgFillPrice ?? 0,
+          marketImpactBps: p.marketImpactBps,
+          venue: p.venue,
+          counterparty: p.counterparty,
+          liquidityFlag: p.liquidityFlag,
+          commissionUSD: p.commissionUSD,
+          algo: p.algo,
+          parentOrderId: p.parentOrderId,
+          childId: p.childId,
+          midPrice: (p as Record<string, unknown>).midPrice as number | undefined,
         };
       })
       .filter((f) => !filterAsset || f.asset === filterAsset)
