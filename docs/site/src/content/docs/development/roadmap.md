@@ -5,26 +5,35 @@ description: Planned features and improvements for the VETA Trading Platform.
 
 Planned features and improvements, roughly prioritised. Complexity is in story points (1 = trivial, 13 = major effort).
 
+## Recently completed
+
+| Feature | Purpose | Complexity |
+|---------|---------|:----------:|
+| System status bar | Header showing market data depth, service health, and data quality warnings | 5 |
+| Upgrade-in-progress banner | Orange pulsing banner when system upgrade in progress, admin-toggled via API | 2 |
+| E2E user workflow tests | 12 Playwright tests covering equity, algo, risk rejection, system status, and order expiry | 8 |
+| Multi-select on grids | Checkbox column, shift-click range, ctrl-click toggle in order blotter | 3 |
+| Right-click context menus | Hold, unhold, cancel, force kill — permission-gated by role | 5 |
+| Symbol search bar | Typeahead search on symbol, RIC, BBG, ISIN with Bloomberg trade paste parser | 5 |
+| Identifier aliases | RIC, BBG ticker, ISIN, and company names on all 270+ instruments | 3 |
+
 ## High priority
 
 | Feature | Purpose | Complexity |
 |---------|---------|:----------:|
-| System status bar | Header/footer showing market data depth per exchange, service health, and data quality warnings (e.g. "Analytics: limited — 2 days data") | 5 |
-| Upgrade-in-progress banner | Warn traders when a system update is in progress — orders may be delayed or rejected | 2 |
-| E2E user workflow tests | Full trade lifecycle Playwright tests: login → place order → fill → blotter. Cover equity high-touch, algo, FI RFQ, and risk rejection flows | 8 |
+| Alert / notification system | Severity-tiered notifications with criteria builder, shared filter presets, red overlay for emergencies | 13 |
 | SNIPER / IS / MOMENTUM fixes | Root-cause venue book data gaps causing consistent algo test failures in CI | 3 |
+| LLM trade parsing | Enhance the trade paste parser with Ollama for natural language trade instructions | 5 |
+| True reference data source | Replace deterministic identifiers with a real symbology provider (OpenFIGI, LSEG) | 5 |
 
 ## Medium priority
 
 | Feature | Purpose | Complexity |
 |---------|---------|:----------:|
-| Alert / notification system | Severity-tiered notifications (info → warning → critical → emergency). Criteria builder for suppression, shared filter presets between traders, red overlay for system-wide emergencies | 13 |
-| Right-click context menus | Cancel, hold/unhold, restart orders from blotter. Permission-gated: traders own orders, desk-heads their desk, risk-managers can kill anything | 5 |
-| Multi-select on grids | Checkbox column for bulk operations (cancel, hold, export). Companion to context menus | 3 |
-| Shared DataGrid component | Extract a common grid with consistent column formatting, sorting, filtering, and row styling across all panels | 5 |
-| Keyboard shortcuts | Ctrl+N new order, Escape cancel ticket, arrow keys in grids. Power traders live on the keyboard | 3 |
+| Keyboard shortcuts | Ctrl+N new order, Escape cancel ticket, arrow keys in grids | 3 |
 | Audit trail panel | Compliance/admin view showing every state change for an order with timestamps | 5 |
 | Watchlist panel | Persistent symbol lists with live prices and configurable columns | 5 |
+| Shared DataGrid component | Extract a common grid with consistent column formatting, sorting, filtering, and row styling | 5 |
 | Electron integration | Wrap the frontend as a desktop app with native menus and pop-out panels | 8 |
 | Load / performance testing | Stress-test the full pipeline to measure throughput limits and find bottlenecks | 5 |
 | Per-service architecture pages | Clickable Mermaid nodes linking to dedicated pages showing internals and key functions | 5 |
