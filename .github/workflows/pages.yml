@@ -36,7 +36,7 @@ jobs:
         run: npm ci
 
       - name: Copy screenshots into Astro public
-        run: cp docs/screenshots/*.png docs/site/public/screenshots/
+        run: mkdir -p docs/site/public/screenshots && cp docs/screenshots/*.png docs/site/public/screenshots/
 
       - name: Build Astro site
         working-directory: docs/site
