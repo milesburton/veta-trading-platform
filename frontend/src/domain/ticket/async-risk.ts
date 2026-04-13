@@ -1,3 +1,4 @@
+import type { OrderSide } from "../../types.ts";
 import type { Diagnostic, TicketContext } from "./ticket-types";
 
 export type RiskCheckStatus = "idle" | "pending" | "approved" | "rejected" | "error";
@@ -11,7 +12,7 @@ export interface RiskCheckResult {
 export interface PreTradeRiskRequest {
   userId: string;
   symbol: string;
-  side: "BUY" | "SELL";
+  side: OrderSide;
   quantity: number;
   limitPrice: number;
   notional: number;

@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { useChannelOut } from "../hooks/useChannelOut.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { setActiveSide, setActiveStrategy } from "../store/uiSlice.ts";
-import type { AssetDef, Strategy } from "../types.ts";
+import type { AssetDef, OrderSide, Strategy } from "../types.ts";
 
 const STRATEGIES: Strategy[] = [
   "LIMIT",
@@ -18,7 +18,7 @@ const STRATEGIES: Strategy[] = [
 ];
 
 interface ParsedTrade {
-  side?: "BUY" | "SELL";
+  side?: OrderSide;
   quantity?: number;
   symbol?: string;
   price?: number;
@@ -53,7 +53,7 @@ function parseTradePaste(input: string, assets: AssetDef[]): ParsedTrade | null 
   if (!sideMatch && !qtyMatch && !foundSymbol) return null;
 
   return {
-    side: sideMatch?.[1] as "BUY" | "SELL" | undefined,
+    side: sideMatch?.[1] as OrderSide | undefined,
     quantity: qtyMatch ? Number(qtyMatch[1].replace(/,/g, "")) : undefined,
     symbol: foundSymbol,
     price: priceMatch ? Number(priceMatch[1].replace(/,/g, "")) : undefined,

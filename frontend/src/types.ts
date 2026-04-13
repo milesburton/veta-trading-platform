@@ -1,3 +1,11 @@
+export type OrderSide = "BUY" | "SELL";
+
+export type AssetClass = "equity" | "fx" | "commodity" | "bond";
+
+export type Desk = "equity" | "fi" | "derivatives" | "otc";
+
+export type MarketType = "lit" | "dark" | "otc";
+
 export interface AssetDef {
   symbol: string;
   initialPrice: number;
@@ -16,7 +24,7 @@ export interface AssetDef {
   bbgTicker?: string;
   name?: string;
   lotSize?: number;
-  assetClass?: "equity" | "fx" | "commodity" | "bond";
+  assetClass?: AssetClass;
 }
 
 export interface MarketPrices {
@@ -198,7 +206,7 @@ export interface BondSpec {
 
 export interface Trade {
   asset: string;
-  side: "BUY" | "SELL";
+  side: OrderSide;
   quantity: number;
   limitPrice: number;
   expiresAt: number;
@@ -212,7 +220,7 @@ export interface ChildOrder {
   id: string;
   parentId: string;
   asset: string;
-  side: "BUY" | "SELL";
+  side: OrderSide;
   quantity: number;
   limitPrice: number;
   status: OrderStatus;
@@ -238,7 +246,7 @@ export interface OrderRecord {
   id: string;
   submittedAt: number;
   asset: string;
-  side: "BUY" | "SELL";
+  side: OrderSide;
   quantity: number;
   limitPrice: number;
   expiresAt: number;
@@ -269,8 +277,8 @@ export interface OrderRecord {
   instrumentType?: InstrumentType;
   optionSpec?: OptionSpec;
   bondSpec?: BondSpec;
-  desk?: "equity" | "fi" | "derivatives" | "otc";
-  marketType?: "lit" | "dark" | "otc";
+  desk?: Desk;
+  marketType?: MarketType;
 }
 
 export interface ObsEvent {

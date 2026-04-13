@@ -20,7 +20,7 @@
  */
 
 import type { Middleware, UnknownAction } from "@reduxjs/toolkit";
-import type { AssetDef, OhlcCandle, OrderBookSnapshot } from "../../types.ts";
+import type { AssetDef, OhlcCandle, OrderBookSnapshot, OrderSide } from "../../types.ts";
 import { advisoryNoteReceived } from "../advisorySlice.ts";
 import { alertAdded } from "../alertsSlice.ts";
 import type { AuthUser, TradingLimits } from "../authSlice.ts";
@@ -94,7 +94,7 @@ interface OrderEventData {
   settlementDate?: string;
   orderId?: string;
   asset?: string;
-  side?: "BUY" | "SELL";
+  side?: OrderSide;
   quantity?: number;
   limitPrice?: number;
   expiresAt?: number;

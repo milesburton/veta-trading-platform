@@ -1,6 +1,6 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import type { Strategy } from "../types.ts";
+import type { OrderSide, Strategy } from "../types.ts";
 import type { RootState } from "./index.ts";
 
 const GATEWAY_PREFS_URL = `${import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway"}/preferences`;
@@ -22,7 +22,7 @@ interface UpgradeStatus {
 
 interface UiState {
   activeStrategy: Strategy;
-  activeSide: "BUY" | "SELL";
+  activeSide: OrderSide;
   showShortcuts: boolean;
   selectedAsset: string | null;
   updateAvailable: boolean;
@@ -78,7 +78,7 @@ export const uiSlice = createSlice({
     setActiveStrategy(state, action: PayloadAction<Strategy>) {
       state.activeStrategy = action.payload;
     },
-    setActiveSide(state, action: PayloadAction<"BUY" | "SELL">) {
+    setActiveSide(state, action: PayloadAction<OrderSide>) {
       state.activeSide = action.payload;
     },
     toggleShortcuts(state) {

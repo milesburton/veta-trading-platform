@@ -5,6 +5,7 @@ import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useColumnLayout } from "../hooks/useColumnLayout.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import type { ColDef } from "../types/gridPrefs.ts";
+import type { OrderSide } from "../types.ts";
 import { formatTime } from "../utils/format.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
@@ -61,7 +62,7 @@ const MATCH_COLS: ColDef[] = [
 interface FillEvent {
   ts: number;
   asset: string;
-  side: "BUY" | "SELL";
+  side: OrderSide;
   filledQty: number;
   avgFillPrice: number;
   marketImpactBps?: number;
@@ -141,7 +142,7 @@ function BookPosition({
 }: {
   symbol: string;
   orderPrice: number;
-  side: "BUY" | "SELL";
+  side: OrderSide;
 }) {
   const snapshot = useAppSelector((s) => s.market.orderBook[symbol]);
   if (!snapshot) return null;
@@ -233,7 +234,7 @@ export function MarketMatch() {
         return {
           ts: (p.ts as number) ?? e.ts ?? 0,
           asset: (p.asset as string) ?? "",
-          side: (p.side as "BUY" | "SELL") ?? "BUY",
+          side: (p.side as OrderSide) ?? "BUY",
           filledQty: (p.filledQty as number) ?? 0,
           avgFillPrice: (p.avgFillPrice as number) ?? 0,
           marketImpactBps: p.marketImpactBps as number | undefined,

@@ -1,13 +1,14 @@
 import { useSignal } from "@preact/signals-react";
 import { useEffect } from "react";
 import { useAppSelector } from "../store/hooks.ts";
+import type { OrderSide } from "../types.ts";
 import { SELL_SIDE_RFQ_STATE_COLORS, type SellSideRfq } from "./rfq/shared.ts";
 
 export function ClientRfqPanel() {
   const user = useAppSelector((s) => s.auth.user);
 
   const asset = useSignal("AAPL");
-  const side = useSignal<"BUY" | "SELL">("BUY");
+  const side = useSignal<OrderSide>("BUY");
   const quantity = useSignal("100");
   const limitPrice = useSignal("");
   const submitting = useSignal(false);

@@ -21,6 +21,7 @@ import type {
   IsParams,
   LimitParams,
   MomentumParams,
+  OrderSide,
   PovParams,
   SniperParams,
   Trade,
@@ -113,7 +114,7 @@ function OrderPreview({
   symbol: string;
   qty: number;
   limitPx: number;
-  side: "BUY" | "SELL";
+  side: OrderSide;
 }) {
   const orderBook = useAppSelector((s) => s.market.orderBook);
   if (qty <= 0 || limitPx <= 0) return null;

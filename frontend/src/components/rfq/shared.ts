@@ -1,3 +1,4 @@
+import type { OrderSide } from "../../types.ts";
 export type SellSideRfqState =
   | "CLIENT_REQUEST"
   | "SALES_REVIEW"
@@ -13,7 +14,7 @@ export interface SellSideRfq {
   clientUserId: string;
   salesUserId?: string;
   asset: string;
-  side: "BUY" | "SELL";
+  side: OrderSide;
   quantity: number;
   limitPrice?: number;
   dealerBestPrice?: number;

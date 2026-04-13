@@ -1,6 +1,8 @@
+import type { OrderSide } from "./orders.ts";
+
 export interface Trade {
   asset: string;
-  side: "BUY" | "SELL";
+  side: OrderSide;
   quantity: number;
   limitPrice: number;
   expiresAt: number;

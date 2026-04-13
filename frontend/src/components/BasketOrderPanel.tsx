@@ -1,13 +1,13 @@
 import { useSignal } from "@preact/signals-react";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { submitOrderThunk } from "../store/ordersSlice.ts";
-import type { LimitParams, Trade } from "../types.ts";
+import type { LimitParams, OrderSide, Trade } from "../types.ts";
 
 interface BasketLeg {
   id: string;
   symbol: string;
   weight: number;
-  side: "BUY" | "SELL";
+  side: OrderSide;
   qty: number;
   price: number;
   lotSize: number;
