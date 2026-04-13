@@ -48,6 +48,7 @@ export type StoryPreloadedState = {
     showShortcuts?: boolean;
     selectedAsset?: string | null;
     updateAvailable?: boolean;
+    upgradeStatus?: { inProgress: boolean; message: string | null };
     optionPrefill?: null;
     orderTicketWindowSize?: { w: number; h: number };
   };

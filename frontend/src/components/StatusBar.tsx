@@ -6,7 +6,12 @@ import type { AlertSeverity } from "../store/alertsSlice.ts";
 import { alertAdded, selectAlertCount, selectHighestSeverity } from "../store/alertsSlice.ts";
 import { clearUser } from "../store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { DEPLOYMENT, SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
+import {
+  DEPLOYMENT,
+  SERVICES,
+  useGetDataDepthQuery,
+  useGetServiceHealthQuery,
+} from "../store/servicesApi.ts";
 import type { Theme } from "../store/themeSlice.ts";
 import { saveTheme, setTheme } from "../store/themeSlice.ts";
 import { selectOrderTicketWindowSize } from "../store/uiSlice.ts";
@@ -356,8 +361,58 @@ function DataFreshness() {
   );
 }
 
+const DATA_DEPTH_THRESHOLDS = { good: 7, limited: 1 };
+
+function dataQualityLabel(days: number): { label: string; color: string; dotColor: string } {
+  if (days >= DATA_DEPTH_THRESHOLDS.good)
+    return { label: `${Math.round(days)}d`, color: "text-emerald-400", dotColor: "bg-emerald-500" };
+  if (days >= DATA_DEPTH_THRESHOLDS.limited)
+    return { label: `${Math.round(days)}d`, color: "text-amber-400", dotColor: "bg-amber-400" };
+  return {
+    label: days > 0 ? `${Math.round(days * 24)}h` : "none",
+    color: "text-red-400",
+    dotColor: "bg-red-500",
+  };
+}
+
+function DataDepthIndicator() {
+  const { data, isLoading } = useGetDataDepthQuery(undefined, { pollingInterval: 30_000 });
+
+  if (isLoading || !data) {
+    return <span className="text-[10px] text-gray-600 tabular-nums">data: –</span>;
+  }
+
+  const { label, color, dotColor } = dataQualityLabel(data.minDays);
+  const warnings: string[] = [];
+  if (data.minDays < DATA_DEPTH_THRESHOLDS.good) {
+    warnings.push("Analytics accuracy is limited with less than 7 days of market data");
+  }
+  if (data.minDays < DATA_DEPTH_THRESHOLDS.limited) {
+    warnings.push("Scenario analysis and volatility estimates are unreliable");
+  }
+
+  const tooltip = [
+    `${data.totalSymbols} symbols tracked`,
+    `Min depth: ${label}`,
+    `Avg depth: ${Math.round(data.avgDays)}d`,
+    ...warnings,
+  ].join("\n");
+
+  return (
+    <span
+      data-testid="data-depth"
+      title={tooltip}
+      className={`flex items-center gap-1 text-[10px] tabular-nums ${color}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
+      {data.totalSymbols} sym · {label}
+    </span>
+  );
+}
+
 export function AppHeader() {
   const updateAvailable = useAppSelector((s) => s.ui.updateAvailable);
+  const upgradeStatus = useAppSelector((s) => s.ui.upgradeStatus);
   const user = useAppSelector((s) => s.auth.user);
   const orderTicketWindowSize = useAppSelector(selectOrderTicketWindowSize);
   const services = useAllServiceHealth();
@@ -382,6 +437,18 @@ export function AppHeader() {
 
   return (
     <div className="shrink-0" data-testid="app-header">
+      {upgradeStatus.inProgress && (
+        <div
+          data-testid="upgrade-banner"
+          className="flex items-center justify-center gap-2 px-4 py-1.5 bg-orange-900/70 border-b border-orange-700/60 text-xs text-orange-200"
+        >
+          <span className="h-2 w-2 rounded-full bg-orange-400 animate-pulse shrink-0" />
+          <span>
+            {upgradeStatus.message ??
+              "System upgrade in progress — orders may be delayed or rejected."}
+          </span>
+        </div>
+      )}
       {updateAvailable && (
         <div
           data-testid="update-banner"
@@ -417,6 +484,7 @@ export function AppHeader() {
 
         <div className="flex items-center gap-4">
           <DataFreshness />
+          <DataDepthIndicator />
           <div data-testid="service-health-cluster">
             <ServiceStatus services={services} />
           </div>

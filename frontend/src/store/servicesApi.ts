@@ -284,7 +284,27 @@ export const servicesApi = createApi({
     getSystemMetrics: builder.query<SystemMetrics, void>({
       query: () => ({ url: "/api/gateway/system" }),
     }),
+    getDataDepth: builder.query<DataDepth, void>({
+      query: () => ({ url: "/api/gateway/data-depth" }),
+    }),
   }),
 });
 
-export const { useGetServiceHealthQuery, useGetSystemMetricsQuery } = servicesApi;
+export interface DataDepthSymbol {
+  instrument: string;
+  candleCount: number;
+  earliestMs: number;
+  latestMs: number;
+  spanDays: number;
+}
+
+export interface DataDepth {
+  totalSymbols: number;
+  avgDays: number;
+  minDays: number;
+  queriedAt: number;
+  symbols: DataDepthSymbol[];
+}
+
+export const { useGetServiceHealthQuery, useGetSystemMetricsQuery, useGetDataDepthQuery } =
+  servicesApi;

@@ -15,12 +15,18 @@ export interface WindowSize {
   h: number;
 }
 
+interface UpgradeStatus {
+  inProgress: boolean;
+  message: string | null;
+}
+
 interface UiState {
   activeStrategy: Strategy;
   activeSide: "BUY" | "SELL";
   showShortcuts: boolean;
   selectedAsset: string | null;
   updateAvailable: boolean;
+  upgradeStatus: UpgradeStatus;
   /** Set by VolSurfacePanel when a cell is clicked — consumed by OptionPricingPanel. */
   optionPrefill: OptionPrefill | null;
   /** Persisted order-ticket pop-out window dimensions. */
@@ -33,6 +39,7 @@ const initialState: UiState = {
   showShortcuts: false,
   selectedAsset: null,
   updateAvailable: false,
+  upgradeStatus: { inProgress: false, message: null },
   optionPrefill: null,
   orderTicketWindowSize: { w: 480, h: 780 },
 };
@@ -86,6 +93,9 @@ export const uiSlice = createSlice({
     setUpdateAvailable(state) {
       state.updateAvailable = true;
     },
+    setUpgradeStatus(state, action: PayloadAction<UpgradeStatus>) {
+      state.upgradeStatus = action.payload;
+    },
     setOptionPrefill(state, action: PayloadAction<OptionPrefill | null>) {
       state.optionPrefill = action.payload;
     },
@@ -110,5 +120,6 @@ export const {
   hideShortcuts,
   setSelectedAsset,
   setUpdateAvailable,
+  setUpgradeStatus,
   setOptionPrefill,
 } = uiSlice.actions;

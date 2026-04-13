@@ -447,6 +447,37 @@ async function handle(req: Request): Promise<Response> {
     });
   }
 
+  if (req.method === "GET" && path === "/data-depth") {
+    const client = await journalPool.connect();
+    try {
+      const { rows } = await client.queryArray(
+        `SELECT instrument,
+                COUNT(*)::int AS candle_count,
+                MIN(time) AS earliest,
+                MAX(time) AS latest
+         FROM journal.candles
+         WHERE interval = '1m'
+         GROUP BY instrument
+         ORDER BY instrument`,
+      );
+      const now = Date.now();
+      const symbols = rows.map(([instrument, count, earliest, latest]) => {
+        const earliestMs = earliest instanceof Date ? earliest.getTime() : Number(earliest);
+        const latestMs = latest instanceof Date ? latest.getTime() : Number(latest);
+        const spanDays = (latestMs - earliestMs) / 86_400_000;
+        return { instrument, candleCount: count, earliestMs, latestMs, spanDays: Math.round(spanDays * 10) / 10 };
+      });
+      const totalSymbols = symbols.length;
+      const avgDays = totalSymbols > 0
+        ? Math.round((symbols.reduce((s, r) => s + r.spanDays, 0) / totalSymbols) * 10) / 10
+        : 0;
+      const minDays = totalSymbols > 0 ? Math.min(...symbols.map((r) => r.spanDays)) : 0;
+      return json({ totalSymbols, avgDays, minDays, queriedAt: now, symbols });
+    } finally {
+      client.release();
+    }
+  }
+
   if (req.method === "GET" && path === "/candles") {
     const instrument = url.searchParams.get("instrument");
     const interval = url.searchParams.get("interval") ?? "1m";

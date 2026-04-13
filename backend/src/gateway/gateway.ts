@@ -492,7 +492,29 @@ type ServiceHealth = {
   bus: boolean;
 };
 
+let upgradeInProgress = Deno.env.get("UPGRADE_IN_PROGRESS") === "true";
+let upgradeMessage: string | null = Deno.env.get("UPGRADE_MESSAGE") ?? null;
+
 let cachedHealth: ServiceHealth | null = null;
+
+interface DataDepthSummary {
+  totalSymbols: number;
+  avgDays: number;
+  minDays: number;
+  queriedAt: number;
+}
+
+let cachedDataDepth: DataDepthSummary | null = null;
+
+async function refreshDataDepth(): Promise<void> {
+  try {
+    const res = await fetch(`${JOURNAL_URL}/data-depth`, { signal: AbortSignal.timeout(5_000) });
+    if (res.ok) {
+      const data = await res.json();
+      cachedDataDepth = { totalSymbols: data.totalSymbols, avgDays: data.avgDays, minDays: data.minDays, queriedAt: data.queriedAt };
+    }
+  } catch { /* non-critical */ }
+}
 
 async function refreshHealth(): Promise<void> {
   const chk = (url: string) =>
@@ -529,7 +551,9 @@ async function refreshHealth(): Promise<void> {
 }
 
 refreshHealth();
+refreshDataDepth();
 setInterval(refreshHealth, HEALTH_REFRESH_MS);
+setInterval(refreshDataDepth, 30_000);
 
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
@@ -572,6 +596,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           signalEngine: h.signalEngine, recommendationEngine: h.recommendationEngine,
           scenarioEngine: h.scenarioEngine, newsAggregator: h.newsAggregator, llmAdvisory: h.llmAdvisory,
         },
+        dataDepth: cachedDataDepth,
+        upgradeInProgress,
+        upgradeMessage,
       }),
       {
         status: ready ? 200 : 503,
@@ -626,6 +653,24 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       }),
       { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
     );
+  }
+
+  if (path === "/upgrade-status" && req.method === "PUT") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    if (auth.user.role !== "admin") {
+      return new Response(JSON.stringify({ error: "admin role required" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+    const body = await req.json() as { inProgress: boolean; message?: string };
+    upgradeInProgress = body.inProgress;
+    upgradeMessage = body.message ?? null;
+    broadcastAll({ event: "upgradeStatus", data: { inProgress: upgradeInProgress, message: upgradeMessage } });
+    return new Response(JSON.stringify({ inProgress: upgradeInProgress, message: upgradeMessage }), {
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
   }
 
   if (path === "/ws/market-sim") {
@@ -835,6 +880,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
     return proxyGet(`${MARKET_SIM_URL}/assets`, req);
+  }
+
+  if (path === "/data-depth" && req.method === "GET") {
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
+    return proxyGet(`${JOURNAL_URL}/data-depth`, req);
   }
 
   if (path === "/candles" && req.method === "GET") {

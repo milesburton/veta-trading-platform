@@ -25,6 +25,10 @@ vi.mock("../../store/servicesApi", async (importOriginal) => {
       isError: false,
       isLoading: true,
     }),
+    useGetDataDepthQuery: () => ({
+      data: undefined,
+      isLoading: true,
+    }),
   };
 });
 
@@ -88,5 +92,5 @@ function renderBar(connected: boolean) {
 test("shows brand name and time", () => {
   renderBar(true);
   expect(screen.getByText(/VETA Trading Platform/)).toBeInTheDocument();
-  expect(screen.getByText(/:/)).toBeInTheDocument();
+  expect(screen.getByText(/\d{1,2}:\d{2}:\d{2}/)).toBeInTheDocument();
 });

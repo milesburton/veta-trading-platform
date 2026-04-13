@@ -30,6 +30,7 @@ function makeStore(events: ObsEvent[] = [], channelAsset?: string) {
         showShortcuts: false,
         selectedAsset: null,
         updateAvailable: false,
+        upgradeStatus: { inProgress: false, message: null },
         optionPrefill: null,
         orderTicketWindowSize: { w: 480, h: 780 },
       },

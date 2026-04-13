@@ -56,7 +56,7 @@ import {
   orderPatched,
   setGatewayWs,
 } from "../ordersSlice.ts";
-import { loadUiPrefs, setSelectedAsset } from "../uiSlice.ts";
+import { loadUiPrefs, setSelectedAsset, setUpgradeStatus } from "../uiSlice.ts";
 
 const _origin = typeof window !== "undefined" ? window.location.origin : "";
 const _wsOrigin = _origin.replace(/^http/, "ws");
@@ -277,6 +277,19 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       reconnectDelay = 2_000;
       setGatewayWs(ws);
       storeAPI.dispatch(marketSlice.actions.setConnected(true));
+      fetch(`${GATEWAY_URL}/ready`, { credentials: "include" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.upgradeInProgress !== undefined) {
+            storeAPI.dispatch(
+              setUpgradeStatus({
+                inProgress: data.upgradeInProgress,
+                message: data.upgradeMessage ?? null,
+              })
+            );
+          }
+        })
+        .catch(() => {});
     };
 
     ws.onmessage = (event) => {
@@ -404,6 +417,13 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           case "llmStateUpdate":
             storeAPI.dispatch(llmStateReceived(msg.data as LlmSubsystemStatus));
             break;
+          case "upgradeStatus": {
+            const upgrade = msg.data as { inProgress: boolean; message?: string | null };
+            storeAPI.dispatch(
+              setUpgradeStatus({ inProgress: upgrade.inProgress, message: upgrade.message ?? null })
+            );
+            break;
+          }
           case "error":
             console.error("[gateway] Server error:", (msg.data as { message?: string }).message);
             break;
