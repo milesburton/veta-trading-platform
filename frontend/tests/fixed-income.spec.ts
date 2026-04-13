@@ -1,5 +1,7 @@
-import { expect, test } from "@playwright/test";
+import { test as base, expect } from "@playwright/test";
+import { fiTest } from "./helpers/fixtures.ts";
 import { AppPage } from "./helpers/pages/AppPage.ts";
+import { OrderTicketPage } from "./helpers/pages/OrderTicketPage.ts";
 import {
   DEFAULT_ASSETS,
   MOCK_BOND_PRICE_RESPONSE,
@@ -8,35 +10,27 @@ import {
   MOCK_VOL_SURFACE_RESPONSE,
 } from "./helpers/GatewayMock.ts";
 
-const AAPL_PRICE = 189.5;
+const BOND_PRICES: Record<string, number> = {
+  AAPL: 189.5,
+  MSFT: 421.0,
+  GOOGL: 175.25,
+};
 
-async function setupFiAnalysis(page: Parameters<typeof AppPage>[0]["page"]) {
-  const app = new AppPage(page);
-  await app.gotoAsFiTrader(DEFAULT_ASSETS, "ws-fi-analysis");
-  app.gateway.sendMarketUpdate({
-    AAPL: AAPL_PRICE,
-    MSFT: 421.0,
-    GOOGL: 175.25,
-  });
-  await page.waitForTimeout(300);
-  return app;
-}
+const bondTest = base.extend<{ app: AppPage; ticket: OrderTicketPage }>({
+  app: async ({ page }, use) => {
+    const app = new AppPage(page);
+    await app.gotoAsFiTrader(DEFAULT_ASSETS);
+    app.gateway.sendMarketUpdate(BOND_PRICES);
+    await page.waitForTimeout(300);
+    await use(app);
+  },
+  ticket: async ({ app }, use) => {
+    await use(await app.getOrderTicket());
+  },
+});
 
-async function setupFiTrader(page: Parameters<typeof AppPage>[0]["page"]) {
-  const app = new AppPage(page);
-  await app.gotoAsFiTrader(DEFAULT_ASSETS);
-  app.gateway.sendMarketUpdate({
-    AAPL: AAPL_PRICE,
-    MSFT: 421.0,
-    GOOGL: 175.25,
-  });
-  await page.waitForTimeout(300);
-  return app;
-}
-
-test.describe("Fixed Income — Spread Analysis Panel", () => {
-  test("compute button triggers request and result chips are visible", async ({ page }) => {
-    const app = await setupFiAnalysis(page);
+fiTest.describe("Fixed Income — Spread Analysis Panel", () => {
+  fiTest("compute button triggers request and result chips are visible", async ({ app }) => {
     const panel = await app.panelByTitle(/Spread Analysis/i);
 
     await expect(panel.getByRole("button", { name: /Compute Spreads/i }))
@@ -59,8 +53,7 @@ test.describe("Fixed Income — Spread Analysis Panel", () => {
     });
   });
 
-  test("OAS chip is visible after compute", async ({ page }) => {
-    const app = await setupFiAnalysis(page);
+  fiTest("OAS chip is visible after compute", async ({ app }) => {
     const panel = await app.panelByTitle(/Spread Analysis/i);
 
     await panel.getByRole("button", { name: /Compute Spreads/i }).click();
@@ -75,9 +68,8 @@ test.describe("Fixed Income — Spread Analysis Panel", () => {
   });
 });
 
-test.describe("Fixed Income — Duration Ladder Panel", () => {
-  test("compute ladder renders portfolio DV01 summary", async ({ page }) => {
-    const app = await setupFiAnalysis(page);
+fiTest.describe("Fixed Income — Duration Ladder Panel", () => {
+  fiTest("compute ladder renders portfolio DV01 summary", async ({ app }) => {
     const panel = await app.panelByTitle(/Duration Ladder/i);
 
     await expect(panel.getByRole("button", { name: /Compute Ladder/i }))
@@ -98,8 +90,7 @@ test.describe("Fixed Income — Duration Ladder Panel", () => {
     });
   });
 
-  test("bucket table shows tenor labels after compute", async ({ page }) => {
-    const app = await setupFiAnalysis(page);
+  fiTest("bucket table shows tenor labels after compute", async ({ app }) => {
     const panel = await app.panelByTitle(/Duration Ladder/i);
 
     await panel.getByRole("button", { name: /Compute Ladder/i }).click();
@@ -112,9 +103,8 @@ test.describe("Fixed Income — Duration Ladder Panel", () => {
   });
 });
 
-test.describe("Fixed Income — Vol Surface Panel", () => {
-  test("heatmap renders with ATM vol and expiry labels", async ({ page }) => {
-    const app = await setupFiAnalysis(page);
+fiTest.describe("Fixed Income — Vol Surface Panel", () => {
+  fiTest("heatmap renders with ATM vol and expiry labels", async ({ app }) => {
     const panel = await app.panelByTitle(/Vol Surface/i);
 
     const atmPct = (MOCK_VOL_SURFACE_RESPONSE.atTheMoneyVol * 100).toFixed(1);
@@ -128,8 +118,7 @@ test.describe("Fixed Income — Vol Surface Panel", () => {
     });
   });
 
-  test("cell click does not throw an error", async ({ page }) => {
-    const app = await setupFiAnalysis(page);
+  fiTest("cell click does not throw an error", async ({ app, page }) => {
     const panel = await app.panelByTitle(/Vol Surface/i);
 
     await expect(panel.getByText("ATM").first()).toBeVisible({
@@ -147,21 +136,15 @@ test.describe("Fixed Income — Vol Surface Panel", () => {
   });
 });
 
-test.describe("Fixed Income — Bond Order Ticket", () => {
-  test("Bond tab is accessible and shows ISIN selector", async ({ page }) => {
-    const app = await setupFiTrader(page);
-    const ticket = await app.getOrderTicket();
-
+bondTest.describe("Fixed Income — Bond Order Ticket", () => {
+  bondTest("Bond tab is accessible and shows ISIN selector", async ({ ticket }) => {
     await ticket.switchToBond();
     await expect(ticket.locator.locator("#bondSymbol")).toBeVisible({
       timeout: 5_000,
     });
   });
 
-  test("switching to Bond mode auto-fetches a price quote", async ({ page }) => {
-    const app = await setupFiTrader(page);
-    const ticket = await app.getOrderTicket();
-
+  bondTest("switching to Bond mode auto-fetches a price quote", async ({ ticket }) => {
     await ticket.switchToBond();
     await ticket.waitForBondQuote(8_000);
 
@@ -170,10 +153,7 @@ test.describe("Fixed Income — Bond Order Ticket", () => {
     });
   });
 
-  test("bond quote card shows the mocked clean price", async ({ page }) => {
-    const app = await setupFiTrader(page);
-    const ticket = await app.getOrderTicket();
-
+  bondTest("bond quote card shows the mocked clean price", async ({ ticket }) => {
     await ticket.switchToBond();
     await ticket.waitForBondQuote(8_000);
 
@@ -183,10 +163,7 @@ test.describe("Fixed Income — Bond Order Ticket", () => {
     });
   });
 
-  test("submit button is enabled after quote loads with quantity > 0", async ({ page }) => {
-    const app = await setupFiTrader(page);
-    const ticket = await app.getOrderTicket();
-
+  bondTest("submit button is enabled after quote loads with quantity > 0", async ({ ticket }) => {
     await ticket.switchToBond();
     await ticket.waitForBondQuote(8_000);
 
@@ -195,10 +172,7 @@ test.describe("Fixed Income — Bond Order Ticket", () => {
     await ticket.expectBondSubmitEnabled(5_000);
   });
 
-  test("submitting bond order sends a submitOrder WS message with instrumentType=bond", async ({ page }) => {
-    const app = await setupFiTrader(page);
-    const ticket = await app.getOrderTicket();
-
+  bondTest("submitting bond order sends a submitOrder WS message with instrumentType=bond", async ({ app, ticket }) => {
     await ticket.switchToBond();
     await ticket.waitForBondQuote(8_000);
 
@@ -213,10 +187,7 @@ test.describe("Fixed Income — Bond Order Ticket", () => {
     expect(msg.payload.quantity).toBe(5);
   });
 
-  test("success feedback is shown after bond order submission", async ({ page }) => {
-    const app = await setupFiTrader(page);
-    const ticket = await app.getOrderTicket();
-
+  bondTest("success feedback is shown after bond order submission", async ({ ticket }) => {
     await ticket.switchToBond();
     await ticket.waitForBondQuote(8_000);
 
@@ -228,24 +199,24 @@ test.describe("Fixed Income — Bond Order Ticket", () => {
   });
 });
 
-test.describe("Trader personas", () => {
-  test("FI trader (Carol Davis) name appears in header", async ({ page }) => {
+base.describe("Trader personas", () => {
+  base("FI trader (Carol Davis) name appears in header", async ({ page }) => {
     const app = new AppPage(page);
     await app.gotoAsFiTrader(DEFAULT_ASSETS);
     await app.expectUserVisible("Carol Davis");
   });
 
-  test("algo trader (Bob Martinez) name appears in header", async ({ page }) => {
+  base("algo trader (Bob Martinez) name appears in header", async ({ page }) => {
     const app = new AppPage(page);
     await app.gotoAsAlgoTrader(DEFAULT_ASSETS);
     await app.expectUserVisible("Bob Martinez");
   });
 
-  test("research analyst (David Kim) name appears in header", async ({ page }) => {
+  base("research analyst (David Kim) name appears in header", async ({ page }) => {
     const app = new AppPage(page);
     await app.gotoAsAnalyst(DEFAULT_ASSETS);
     await app.expectUserVisible("David Kim");
   });
 
-  test.skip("research analyst has no trading permission — order ticket not accessible (RBAC blocks)");
+  base.skip("research analyst has no trading permission — order ticket not accessible (RBAC blocks)");
 });

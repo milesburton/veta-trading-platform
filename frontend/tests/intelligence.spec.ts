@@ -1,6 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { traderTest, expect } from "./helpers/fixtures.ts";
 import { AppPage } from "./helpers/pages/AppPage.ts";
-import { DEFAULT_ASSETS } from "./helpers/GatewayMock.ts";
 
 const AAPL_SIGNAL = {
   symbol: "AAPL",
@@ -66,14 +65,12 @@ async function selectSymbolInRadar(
   await radar.getByText(symbol).first().click();
 }
 
-test.describe("Research Radar Panel", () => {
-  test("signal bubbles appear when signalUpdate events are received", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+traderTest.describe("Research Radar Panel", () => {
+  traderTest("signal bubbles appear when signalUpdate events are received", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
-    app.gateway.sendSignalUpdate(MSFT_SIGNAL);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendSignalUpdate(MSFT_SIGNAL);
 
     const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i })
       .first();
@@ -85,13 +82,11 @@ test.describe("Research Radar Panel", () => {
     });
   });
 
-  test("long bubble is green and short bubble is red", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+  traderTest("long bubble is green and short bubble is red", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
-    app.gateway.sendSignalUpdate(MSFT_SIGNAL);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendSignalUpdate(MSFT_SIGNAL);
 
     const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i })
       .first();
@@ -107,13 +102,11 @@ test.describe("Research Radar Panel", () => {
     expect(msftFill).toMatch(/#f87171|#ef4444|red/i);
   });
 
-  test("ranked table shows symbol and direction for each signal", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+  traderTest("ranked table shows symbol and direction for each signal", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
-    app.gateway.sendSignalUpdate(MSFT_SIGNAL);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendSignalUpdate(MSFT_SIGNAL);
 
     const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i })
       .first();
@@ -127,14 +120,12 @@ test.describe("Research Radar Panel", () => {
     });
   });
 
-  test("second signal for same symbol replaces the first (latest wins)", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+  traderTest("second signal for same symbol replaces the first (latest wins)", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
 
-    app.gateway.sendSignalUpdate({
+    gateway.sendSignalUpdate({
       ...AAPL_SIGNAL,
       score: -0.30,
       direction: "short",
@@ -150,13 +141,11 @@ test.describe("Research Radar Panel", () => {
     );
   });
 
-  test("multiple symbols appear independently in the radar", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+  traderTest("multiple symbols appear independently in the radar", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
-    app.gateway.sendSignalUpdate(MSFT_SIGNAL);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendSignalUpdate(MSFT_SIGNAL);
 
     const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i })
       .first();
@@ -165,14 +154,12 @@ test.describe("Research Radar Panel", () => {
   });
 });
 
-test.describe("Instrument Analysis Panel", () => {
-  test("feature bars render when featureUpdate received for selected symbol", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+traderTest.describe("Instrument Analysis Panel", () => {
+  traderTest("feature bars render when featureUpdate received for selected symbol", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
-    app.gateway.sendFeatureUpdate(AAPL_FEATURE);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendFeatureUpdate(AAPL_FEATURE);
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Instrument Analysis/i);
@@ -182,12 +169,10 @@ test.describe("Instrument Analysis Panel", () => {
     });
   });
 
-  test("signal score value appears in the panel once signal is received", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+  traderTest("signal score value appears in the panel once signal is received", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Instrument Analysis/i);
@@ -195,13 +180,11 @@ test.describe("Instrument Analysis Panel", () => {
   });
 });
 
-test.describe("Signal Explainability Panel", () => {
-  test("factor contribution bars and labels render for received signal", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+traderTest.describe("Signal Explainability Panel", () => {
+  traderTest("factor contribution bars and labels render for received signal", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Signal Explainability/i);
@@ -212,12 +195,10 @@ test.describe("Signal Explainability Panel", () => {
     });
   });
 
-  test("final score and confidence percentage display correctly", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+  traderTest("final score and confidence percentage display correctly", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Signal Explainability/i);
@@ -228,12 +209,10 @@ test.describe("Signal Explainability Panel", () => {
     await expect(panel.getByText(/65\.0%/)).toBeVisible({ timeout: 5_000 });
   });
 
-  test("weight signs match: realisedVol weight is negative (shown as -)", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+  traderTest("weight signs match: realisedVol weight is negative (shown as -)", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Signal Explainability/i);
@@ -243,14 +222,12 @@ test.describe("Signal Explainability Panel", () => {
   });
 });
 
-test.describe("AI Advisory Panel", () => {
-  test("shows 'Not requested' status and Get Advisory button by default", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+traderTest.describe("AI Advisory Panel", () => {
+  traderTest("shows 'Not requested' status and Get Advisory button by default", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
-    app.gateway.sendFeatureUpdate(AAPL_FEATURE);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendFeatureUpdate(AAPL_FEATURE);
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Instrument Analysis/i);
@@ -265,13 +242,11 @@ test.describe("AI Advisory Panel", () => {
     await expect(panel.getByText(/educational purposes only/i)).toBeVisible();
   });
 
-  test("shows error message when LLM service is disabled (503)", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+  traderTest("shows error message when LLM service is disabled (503)", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
-    app.gateway.sendFeatureUpdate(AAPL_FEATURE);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendFeatureUpdate(AAPL_FEATURE);
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Instrument Analysis/i);
@@ -288,10 +263,7 @@ test.describe("AI Advisory Panel", () => {
     });
   });
 
-  test("shows requesting state while advisory POST is in flight", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
-
+  traderTest("shows requesting state while advisory POST is in flight", async ({ app, gateway, page }) => {
     let resolveRequest!: () => void;
     const requestHeld = new Promise<void>((res) => {
       resolveRequest = res;
@@ -308,8 +280,8 @@ test.describe("AI Advisory Panel", () => {
     });
 
     await openResearchLayout(app);
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
-    app.gateway.sendFeatureUpdate(AAPL_FEATURE);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendFeatureUpdate(AAPL_FEATURE);
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Instrument Analysis/i);
@@ -322,16 +294,14 @@ test.describe("AI Advisory Panel", () => {
     resolveRequest();
   });
 
-  test("renders advisory note content when advisoryUpdate WS event is received", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+  traderTest("renders advisory note content when advisoryUpdate WS event is received", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
-    app.gateway.sendFeatureUpdate(AAPL_FEATURE);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendFeatureUpdate(AAPL_FEATURE);
     await selectSymbolInRadar(page, "AAPL");
 
-    app.gateway.sendAdvisoryUpdate({
+    gateway.sendAdvisoryUpdate({
       jobId: "job-test-001",
       symbol: "AAPL",
       noteId: "note-001",
@@ -357,13 +327,11 @@ test.describe("AI Advisory Panel", () => {
     await expect(panel.getByText(/educational purposes only/i)).toBeVisible();
   });
 
-  test("disclaimer text always visible regardless of advisory state", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.gotoAsTrader(DEFAULT_ASSETS);
+  traderTest("disclaimer text always visible regardless of advisory state", async ({ app, gateway, page }) => {
     await openResearchLayout(app);
 
-    app.gateway.sendSignalUpdate(AAPL_SIGNAL);
-    app.gateway.sendFeatureUpdate(AAPL_FEATURE);
+    gateway.sendSignalUpdate(AAPL_SIGNAL);
+    gateway.sendFeatureUpdate(AAPL_FEATURE);
     await selectSymbolInRadar(page, "AAPL");
 
     const panel = await app.panelByTitle(/Instrument Analysis/i);

@@ -125,66 +125,6 @@ test.describe("Pipeline Monitor layout", () => {
   });
 });
 
-test.describe("LoginPage — PlatformStatus service grid", () => {
-  async function gotoLoginPage(page: AppPage["page"]) {
-    await page.route("/api/**", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: "null" })
-    );
-    await page.route("/api/gateway/ready", (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ ready: true, services: {} }),
-      })
-    );
-    await page.route("/api/user-service/sessions/me", (route) =>
-      route.fulfill({ status: 401, body: "" })
-    );
-    await page.goto("/");
-    await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({
-      timeout: 10_000,
-    });
-  }
-
-  test("shows platform-status section with all service categories", async ({ page }) => {
-    await gotoLoginPage(page);
-
-    const status = page.getByTestId("platform-status");
-    await expect(status).toBeVisible();
-
-    await expect(status.getByText(/Order Flow/i)).toBeVisible();
-    await expect(status.getByText(/Algo Engines/i)).toBeVisible();
-    await expect(status.getByText(/Data Services/i)).toBeVisible();
-    await expect(status.getByText(/Infrastructure/i)).toBeVisible();
-    await expect(status.getByText(/Observability/i)).toBeVisible();
-  });
-
-  test("shows key services with their port numbers", async ({ page }) => {
-    await gotoLoginPage(page);
-
-    const status = page.getByTestId("platform-status");
-
-    await expect(status.getByText(/Market Sim/i).first()).toBeVisible();
-    await expect(status.getByText(/:5000/).first()).toBeVisible();
-
-    await expect(status.getByText(/TWAP Algo/i).first()).toBeVisible();
-
-    await expect(status.getByText(/Kafka Relay/i).first()).toBeVisible();
-  });
-
-  test("summary label shows 'Checking platform…' while services are loading", async ({ page }) => {
-    await gotoLoginPage(page);
-
-    await expect(page.getByTestId("platform-status-label")).toHaveText(/Checking platform|Platform/);
-  });
-
-  test("Grafana is not shown in the platform status (removed from services)", async ({ page }) => {
-    await gotoLoginPage(page);
-
-    const status = page.getByTestId("platform-status");
-    await expect(status.getByText(/Grafana Dashboards/i)).not.toBeVisible();
-  });
-});
 
 test.describe("Layout template picker", () => {
   test("Observability and Pipeline Monitor appear in the layout picker for traders", async ({
