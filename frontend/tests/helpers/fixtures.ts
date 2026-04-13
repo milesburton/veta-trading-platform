@@ -102,4 +102,42 @@ export const fiTest = base.extend<FiFixtures>({
   },
 });
 
+interface AdminFixtures {
+  app: AppPage;
+  gateway: GatewayMock;
+}
+
+export const adminTest = base.extend<AdminFixtures>({
+  app: async ({ page }, use) => {
+    const app = new AppPage(page);
+    await app.gotoAsAdmin();
+    await use(app);
+  },
+  gateway: async ({ app }, use) => {
+    await use(app.gateway);
+  },
+});
+
+interface LadderFixtures {
+  app: AppPage;
+  gateway: GatewayMock;
+  ladder: MarketLadderPage;
+}
+
+export const ladderTest = base.extend<LadderFixtures>({
+  app: async ({ page }, use) => {
+    const app = new AppPage(page);
+    await app.gotoAsTrader(DEFAULT_ASSETS);
+    await use(app);
+  },
+  gateway: async ({ app }, use) => {
+    await use(app.gateway);
+  },
+  ladder: async ({ app }, use) => {
+    const ladder = await app.getMarketLadder();
+    await ladder.waitForSymbol("AAPL");
+    await use(ladder);
+  },
+});
+
 export { expect, PRICES };
