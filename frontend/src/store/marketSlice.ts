@@ -144,7 +144,9 @@ export const marketSlice = createSlice({
       }>
     ) {
       const { prices, openPrices, volumes = {}, ts } = action.payload;
-      state.prices = prices;
+      for (const [asset, price] of Object.entries(prices)) {
+        state.prices[asset] = price;
+      }
       for (const asset of Object.keys(prices)) {
         const price = prices[asset];
         // Prefer server-sent open prices (set once after pre-warm) over the

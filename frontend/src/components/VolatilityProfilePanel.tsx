@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import { useGetVolProfileQuery } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import { selectSymbols } from "../store/selectors.ts";
 
 interface TooltipPayloadItem {
   name: string;
@@ -48,7 +49,7 @@ function VolTooltip({
 }
 
 export function VolatilityProfilePanel() {
-  const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
+  const symbols = useAppSelector(selectSymbols);
   const symbol = useSignal(symbols[0] ?? "AAPL");
 
   const { data, isFetching, error } = useGetVolProfileQuery(symbol.value, {

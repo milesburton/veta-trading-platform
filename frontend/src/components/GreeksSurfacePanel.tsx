@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import { useGetGreeksSurfaceQuery } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import { selectSymbols } from "../store/selectors.ts";
 
 const EXPIRY_PRESETS = [
   { label: "7d", secs: 7 * 86400 },
@@ -60,7 +61,7 @@ function SurfaceTooltip({
 }
 
 export function GreeksSurfacePanel() {
-  const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
+  const symbols = useAppSelector(selectSymbols);
   const symbol = useSignal(symbols[0] ?? "AAPL");
   const expirySecs = useSignal(30 * 86400);
 

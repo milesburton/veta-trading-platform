@@ -13,7 +13,6 @@ import { panelDialogClosed, panelDialogOpened } from "../../store/windowSlice.ts
 import { CandlestickChart } from "../CandlestickChart.tsx";
 import type { ContextMenuEntry } from "../ContextMenu.tsx";
 import { ContextMenu } from "../ContextMenu.tsx";
-import { MarketDepth } from "../MarketDepth.tsx";
 import { clearDraggedPanelId, draggedPanelId } from "../panelDragState.ts";
 import { DashboardContext, useDashboard } from "./DashboardContext.tsx";
 import { LAYOUT_TEMPLATES } from "./layoutModels.ts";
@@ -571,31 +570,13 @@ export function DashboardLayout() {
       if (panelType === "candle-chart") {
         return wrap(<CandleChartPanel incoming={incoming} />);
       }
-      if (panelType === "market-depth") {
-        const depthSymbol =
-          incoming !== null
-            ? (channelsData[incoming]?.selectedAsset ?? legacySelectedAsset)
-            : legacySelectedAsset;
-        return wrap(
-          <div className="flex flex-col h-full">
-            {depthSymbol ? (
-              <MarketDepth symbol={depthSymbol} />
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-600 text-xs bg-gradient-to-br from-gray-900 to-gray-950">
-                <div className="text-center">Select an asset in Market Ladder</div>
-              </div>
-            )}
-          </div>
-        );
-      }
-
       const PanelComponent = getPanelComponent(panelType);
       if (PanelComponent) {
         return wrap(<PanelComponent />);
       }
       return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
     },
-    [legacySelectedAsset, channelsData, userRole, tradingStyle]
+    [userRole, tradingStyle]
   );
 
   const onRenderTab = useCallback(

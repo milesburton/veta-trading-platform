@@ -18,6 +18,7 @@ import { InstrumentAnalysisPanel } from "../InstrumentAnalysisPanel.tsx";
 import { LlmSubsystemPanel } from "../LlmSubsystemPanel.tsx";
 import { LoadTestPanel } from "../LoadTestPanel.tsx";
 import { MarketDataSourcesPanel } from "../MarketDataSourcesPanel.tsx";
+import { MarketDepthPanel } from "../MarketDepth.tsx";
 import { MarketFeedControlPanel } from "../MarketFeedControlPanel.tsx";
 import { MarketHeatmap } from "../MarketHeatmap.tsx";
 import { MarketLadder } from "../MarketLadder.tsx";
@@ -67,7 +68,7 @@ registerPanel("child-orders", ChildOrdersPanel);
 registerPanel("algo-monitor", AlgoMonitor);
 registerPanel("observability", ObservabilityPanel);
 // candle-chart is handled as a special case in DashboardLayout (needs incoming channel prop)
-// market-depth is handled as a special case in DashboardLayout (needs symbol prop from channel)
+registerPanel("market-depth", MarketDepthPanel);
 registerPanel("executions", ExecutionsPanel);
 registerPanel("decision-log", DecisionLog);
 registerPanel("market-match", MarketMatch);

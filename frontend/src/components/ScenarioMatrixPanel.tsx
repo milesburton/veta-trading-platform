@@ -2,6 +2,7 @@ import { useSignal } from "@preact/signals-react";
 import { useMemo } from "react";
 import { useGetScenarioMutation } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import { selectSymbols } from "../store/selectors.ts";
 import type { OptionType, ScenarioCell, ScenarioResponse } from "../types/analytics.ts";
 
 const EXPIRY_OPTIONS = [
@@ -100,7 +101,7 @@ function CellTooltip({ cell, x, y }: CellTooltipProps) {
 }
 
 export function ScenarioMatrixPanel() {
-  const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
+  const symbols = useAppSelector(selectSymbols);
   const currentPrice = useAppSelector((s) =>
     symbols.length > 0 ? s.market.prices[symbols[0]] : undefined
   );

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useAppSelector } from "../store/hooks.ts";
 
 interface Props {
@@ -147,4 +148,16 @@ export function MarketDepth({ symbol }: Props) {
       </div>
     </div>
   );
+}
+
+export function MarketDepthPanel() {
+  const { selectedAsset } = useChannelIn();
+  if (!selectedAsset) {
+    return (
+      <div className="flex items-center justify-center h-full text-gray-600 text-xs bg-gradient-to-br from-gray-900 to-gray-950">
+        Select an asset in Market Ladder
+      </div>
+    );
+  }
+  return <MarketDepth symbol={selectedAsset} />;
 }

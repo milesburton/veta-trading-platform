@@ -1,6 +1,7 @@
 import { useSignal } from "@preact/signals-react";
 import { useGetRecommendationsMutation } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import { selectSymbols } from "../store/selectors.ts";
 import type { Recommendation, RecommendationResponse, SignalStrength } from "../types/analytics.ts";
 
 const SIGNAL_STYLES: Record<SignalStrength, { badge: string; dot: string }> = {
@@ -181,7 +182,7 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
 }
 
 export function TradeRecommendationPanel() {
-  const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
+  const symbols = useAppSelector(selectSymbols);
   const symbol = useSignal(symbols[0] ?? "AAPL");
   const result = useSignal<RecommendationResponse | null>(null);
   const filterStrength = useSignal<SignalStrength | "ALL">("ALL");

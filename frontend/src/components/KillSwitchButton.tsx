@@ -5,6 +5,7 @@ import type { KillBlock } from "../store/killSwitchSlice.ts";
 import { blockAdded, blockRemoved } from "../store/killSwitchSlice.ts";
 import type { KillOrdersPayload, KillScope, ResumeOrdersPayload } from "../store/ordersSlice.ts";
 import { killOrdersThunk, resumeOrdersThunk } from "../store/ordersSlice.ts";
+import { selectSymbols } from "../store/selectors.ts";
 
 type DialogTab = "kill" | "resume";
 
@@ -113,7 +114,7 @@ export function KillSwitchButton() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
   const isAdmin = user?.role === "admin";
-  const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
+  const symbols = useAppSelector(selectSymbols);
   const seenUsers = useAppSelector(
     (s) => [...new Set(s.orders.orders.map((o) => o.userId).filter(Boolean))] as string[]
   );

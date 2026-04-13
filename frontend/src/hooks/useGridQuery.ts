@@ -9,7 +9,7 @@
  * live order events to trigger a background refetch.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryGridQuery } from "../store/gridApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import { EMPTY_EXPR_GROUP } from "../types/gridPrefs.ts";
@@ -71,12 +71,14 @@ export function useGridQuery<T = Record<string, unknown>>(
 
   const { data, isLoading, isError, isFetching } = useQueryGridQuery(request);
 
-  return {
-    rows: (data as GridQueryResponse<T> | undefined)?.rows ?? [],
-    total: data?.total ?? 0,
-    evalMs: data?.evalMs ?? 0,
-    isLoading,
-    isError,
-    isFetching,
-  };
+  const rows = (data as GridQueryResponse<T> | undefined)?.rows ?? EMPTY_ROWS;
+  const total = data?.total ?? 0;
+  const evalMs = data?.evalMs ?? 0;
+
+  return useMemo(
+    () => ({ rows, total, evalMs, isLoading, isError, isFetching }),
+    [rows, total, evalMs, isLoading, isError, isFetching]
+  );
 }
+
+const EMPTY_ROWS: never[] = [];

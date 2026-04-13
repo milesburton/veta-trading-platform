@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { useGetQuoteMutation } from "../store/analyticsApi.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+import { selectSymbols } from "../store/selectors.ts";
 import { setOptionPrefill } from "../store/uiSlice.ts";
 import type { OptionQuoteResponse, OptionType } from "../types/analytics.ts";
 
@@ -90,7 +91,7 @@ const CHART_TOOLTIP_STYLE = {
 };
 
 export function OptionPricingPanel() {
-  const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
+  const symbols = useAppSelector(selectSymbols);
   const symbol = useSignal(symbols[0] ?? "AAPL");
   const optionType = useSignal<OptionType>("call");
   const strike = useSignal("");

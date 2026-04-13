@@ -1,7 +1,7 @@
 import type { IJsonModel, IJsonTabNode, TabNode } from "flexlayout-react";
 import { Actions, DockLocation, Model } from "flexlayout-react";
 import type { ReactNode } from "react";
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { makeClearModel, makeDefaultModel } from "./layoutModels.ts";
 import type { LayoutItem, TabChannelConfig } from "./layoutUtils.ts";
 import { DEFAULT_LAYOUT, modelToLayoutItems } from "./layoutUtils.ts";
@@ -62,7 +62,7 @@ export function DashboardProvider({
   );
   const [layout, setLayoutState] = useState<LayoutItem[]>(() => modelToLayoutItems(model));
 
-  const activePanelIds = new Set(layout.map((l) => l.panelType));
+  const activePanelIds = useMemo(() => new Set(layout.map((l) => l.panelType)), [layout]);
 
   const setModel = useCallback(
     (m: Model) => {
@@ -159,22 +159,31 @@ export function DashboardProvider({
     [onModelChange]
   );
 
-  return (
-    <DashboardContext.Provider
-      value={{
-        layout,
-        setLayout,
-        activePanelIds,
-        addPanel,
-        removePanel,
-        removeTabById,
-        resetLayout,
-        storageKey: "",
-        model,
-        setModel,
-      }}
-    >
-      {children}
-    </DashboardContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      layout,
+      setLayout,
+      activePanelIds,
+      addPanel,
+      removePanel,
+      removeTabById,
+      resetLayout,
+      storageKey: "",
+      model,
+      setModel,
+    }),
+    [
+      layout,
+      setLayout,
+      activePanelIds,
+      addPanel,
+      removePanel,
+      removeTabById,
+      resetLayout,
+      model,
+      setModel,
+    ]
   );
+
+  return <DashboardContext.Provider value={contextValue}>{children}</DashboardContext.Provider>;
 }
