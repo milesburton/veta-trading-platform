@@ -134,12 +134,14 @@ export function createConsumer(
   const handlers: MessageHandler[] = [];
   let activeConsumer: Consumer | null = null;
   let stopped = false;
+  let reconnecting = false;
+  let generation = 0;
 
-  // Connect in the background — services bind their HTTP port before Kafka is ready.
   async function connectLoop() {
     const MAX_DELAY_MS = 30_000;
     let delay = 2_000;
-    while (!stopped) {
+    const gen = ++generation;
+    while (!stopped && gen === generation) {
       try {
         const kafka = makeKafka(clientId);
         const consumer: Consumer = kafka.consumer({ groupId });
@@ -147,6 +149,24 @@ export function createConsumer(
         for (const topic of topics) {
           await consumer.subscribe({ topic, fromBeginning: false });
         }
+
+        consumer.on("consumer.crash", async ({ payload }) => {
+          if (stopped || gen !== generation) return;
+          console.warn(
+            `[messaging] consumer(${groupId}) crashed, restarting:`,
+            (payload as { error?: Error }).error?.message ?? "unknown",
+          );
+          activeConsumer = null;
+          try { await consumer.disconnect(); } catch { /* best effort */ }
+          if (!reconnecting) {
+            reconnecting = true;
+            setTimeout(() => {
+              reconnecting = false;
+              connectLoop();
+            }, 3_000);
+          }
+        });
+
         await consumer.run({
           eachMessage: async (
             { topic, message }: { topic: string; message: KafkaMessage },
@@ -162,7 +182,9 @@ export function createConsumer(
           },
         });
         activeConsumer = consumer;
+        reconnecting = false;
         delay = 2_000;
+        console.log(`[messaging] consumer(${groupId}) connected (gen=${gen})`);
         return;
       } catch (err) {
         console.warn(
@@ -177,7 +199,7 @@ export function createConsumer(
     }
   }
 
-  connectLoop(); // fire-and-forget
+  connectLoop();
 
   return Promise.resolve({
     onMessage(handler: MessageHandler): void {
@@ -185,6 +207,7 @@ export function createConsumer(
     },
     async disconnect(): Promise<void> {
       stopped = true;
+      generation++;
       await activeConsumer?.disconnect();
     },
   });
