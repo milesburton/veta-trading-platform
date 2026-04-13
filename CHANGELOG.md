@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.17.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.17.0...veta-trading-platform-v1.17.1) (2026-04-13)
+
+
+### Bug Fixes
+
+* defer gateway WebSocket until after auth, remove pre-auth service polling ([ab0659d](https://github.com/milesburton/veta-trading-platform/commit/ab0659d371265e43637879857680b140ca4ca5e8))
+* eliminate all explicit any types, enforce noExplicitAny as error ([596b5b9](https://github.com/milesburton/veta-trading-platform/commit/596b5b946fb1529c242feb823b9643f0ed665b79))
+
+
+### Performance Improvements
+
+* backpressure, memoisation, and pool tuning across stack ([b43786b](https://github.com/milesburton/veta-trading-platform/commit/b43786b07febcd51e62daa212b025f1927a0041a))
+* targeted React performance fixes from profiling audit ([e342cd1](https://github.com/milesburton/veta-trading-platform/commit/e342cd1e03c926043868085265afbdb324ccd09e))
+
 ## [1.17.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.16.2...veta-trading-platform-v1.17.0) (2026-04-13)
 
 
