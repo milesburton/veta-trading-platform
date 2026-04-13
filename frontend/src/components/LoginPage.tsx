@@ -324,8 +324,8 @@ interface LoginPageProps {
 export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
   const dispatch = useAppDispatch();
   const [mode, setMode] = useState<"signin" | "register">("signin");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("alice");
+  const [password, setPassword] = useState("veta-dev-passcode");
   const [displayName, setDisplayName] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const [authorizeOAuth, authorizeState] = useAuthorizeOAuthMutation();
@@ -417,6 +417,14 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
             Use your VETA user ID and passcode, or register a new viewer account for read-only
             access.
           </p>
+          <a
+            href="https://milesburton.github.io/veta-trading-platform/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-3 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+          >
+            Platform Documentation &rarr;
+          </a>
         </div>
 
         <AuthForm
