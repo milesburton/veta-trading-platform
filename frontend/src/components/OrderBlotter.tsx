@@ -6,7 +6,12 @@ import { useColumnLayout } from "../hooks/useColumnLayout.ts";
 import { useContainerLimit, useGridQuery } from "../hooks/useGridQuery.ts";
 import { saveGridPrefs, setSort } from "../store/gridPrefsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { orderPatched } from "../store/ordersSlice.ts";
+import {
+  cancelOrdersThunk,
+  holdOrdersThunk,
+  orderPatched,
+  unholdOrdersThunk,
+} from "../store/ordersSlice.ts";
 import type { ColDef } from "../types/gridPrefs.ts";
 import type { ChildOrder, OrderRecord, OrderStatus } from "../types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
@@ -117,6 +122,8 @@ function totalCommission(children: ChildOrder[]): string {
 export function OrderBlotter() {
   const { cfRules } = useAppSelector((s) => s.gridPrefs.orderBlotter);
   const lastSubmittedOrderId = useAppSelector((s) => s.orders.lastSubmittedOrderId);
+  const userRole = useAppSelector((s) => s.auth.user?.role);
+  const userId = useAppSelector((s) => s.auth.user?.id);
   const { containerRef, limit } = useContainerLimit();
   const {
     rows: displayOrders,
@@ -124,6 +131,8 @@ export function OrderBlotter() {
     isLoading,
   } = useGridQuery<OrderRecord>("orderBlotter", 0, limit);
   const selectedOrderId = useSignal<string | null>(null);
+  const selectedIds = useSignal<Set<string>>(new Set());
+  const lastClickedId = useSignal<string | null>(null);
   const userPinnedId = useSignal<string | null>(null);
   const showCfEditor = useSignal(false);
   const filterField = useSignal<string | null>(null);
@@ -166,11 +175,39 @@ export function OrderBlotter() {
     broadcast({ selectedOrderId: lastSubmittedOrderId });
   }, [lastSubmittedOrderId, broadcast, selectedOrderId, userPinnedId]);
 
-  function selectOrder(id: string) {
-    const next = selectedOrderId.value === id ? null : id;
+  function selectOrder(id: string, e?: React.MouseEvent) {
+    if (e?.shiftKey && lastClickedId.value) {
+      const ids = displayOrders.map((o) => o.id);
+      const from = ids.indexOf(lastClickedId.value);
+      const to = ids.indexOf(id);
+      if (from !== -1 && to !== -1) {
+        const [lo, hi] = from < to ? [from, to] : [to, from];
+        const next = new Set(selectedIds.value);
+        for (let i = lo; i <= hi; i++) next.add(ids[i]);
+        selectedIds.value = next;
+      }
+    } else if (e?.ctrlKey || e?.metaKey) {
+      const next = new Set(selectedIds.value);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      selectedIds.value = next;
+    } else {
+      selectedIds.value = new Set([id]);
+    }
+    lastClickedId.value = id;
+    const next =
+      selectedOrderId.value === id && !e?.shiftKey && !e?.ctrlKey && !e?.metaKey ? null : id;
     selectedOrderId.value = next;
     userPinnedId.value = next;
     broadcast({ selectedOrderId: next });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.value.size === displayOrders.length) {
+      selectedIds.value = new Set();
+    } else {
+      selectedIds.value = new Set(displayOrders.map((o) => o.id));
+    }
   }
 
   function openOrderCtxMenu(e: React.MouseEvent, orderId: string) {
@@ -178,7 +215,26 @@ export function OrderBlotter() {
     e.stopPropagation();
     const order = displayOrders.find((o) => o.id === orderId);
     if (!order) return;
-    const isActive = order.status === "pending" || order.status === "working";
+
+    if (!selectedIds.value.has(orderId)) {
+      selectedIds.value = new Set([orderId]);
+      lastClickedId.value = orderId;
+    }
+
+    const targetIds = selectedIds.value.size > 1 ? [...selectedIds.value] : [orderId];
+    const targetOrders = displayOrders.filter((o) => targetIds.includes(o.id));
+    const hasActive = targetOrders.some((o) => o.status === "pending" || o.status === "working");
+    const hasHeld = targetOrders.some((o) => o.status === "held");
+    const allBelongToUser = targetOrders.every((o) => o.userId === userId);
+    const canManage =
+      userRole === "admin" ||
+      userRole === "risk-manager" ||
+      userRole === "desk-head" ||
+      (userRole === "trader" && allBelongToUser);
+    const canKill = userRole === "admin" || userRole === "risk-manager";
+    const multi = targetIds.length > 1;
+    const label = multi ? `${targetIds.length} orders` : order.id.slice(0, 8);
+
     const items: ContextMenuEntry[] = [
       {
         label: "Select & broadcast",
@@ -194,20 +250,69 @@ export function OrderBlotter() {
       {
         label: "Copy order ID",
         icon: "⎘",
+        disabled: multi,
         onClick: () => navigator.clipboard.writeText(order.id),
       },
       { separator: true },
       {
-        label: "Cancel order",
+        label: `Hold ${label}`,
+        icon: "⏸",
+        disabled: !hasActive || !canManage,
+        title: !canManage
+          ? "Insufficient permissions"
+          : !hasActive
+            ? "No active orders"
+            : `Pause ${label}`,
+        onClick: () => {
+          for (const id of targetIds) dispatch(orderPatched({ id, patch: { status: "held" } }));
+          dispatch(holdOrdersThunk(targetIds) as never);
+        },
+      },
+      {
+        label: `Unhold ${label}`,
+        icon: "▶",
+        disabled: !hasHeld || !canManage,
+        title: !canManage
+          ? "Insufficient permissions"
+          : !hasHeld
+            ? "No held orders"
+            : `Resume ${label}`,
+        onClick: () => {
+          for (const id of targetIds) dispatch(orderPatched({ id, patch: { status: "working" } }));
+          dispatch(unholdOrdersThunk(targetIds) as never);
+        },
+      },
+      {
+        label: `Cancel ${label}`,
         icon: "✕",
         danger: true,
-        disabled: !isActive,
-        title: isActive ? "Mark order as expired/cancelled" : "Order is already complete",
+        disabled: !(hasActive || hasHeld) || !canManage,
+        title: !canManage ? "Insufficient permissions" : "Cancel selected orders",
         onClick: () => {
-          dispatch(orderPatched({ id: order.id, patch: { status: "expired" } }));
+          for (const id of targetIds)
+            dispatch(orderPatched({ id, patch: { status: "cancelled" } }));
+          dispatch(cancelOrdersThunk(targetIds) as never);
+          selectedIds.value = new Set();
         },
       },
     ];
+
+    if (canKill) {
+      items.push({ separator: true });
+      items.push({
+        label: `Force kill ${label}`,
+        icon: "⚡",
+        danger: true,
+        title: "Immediately terminate — admin/risk-manager only",
+        onClick: () => {
+          for (const id of targetIds)
+            dispatch(orderPatched({ id, patch: { status: "cancelled" } }));
+          dispatch(cancelOrdersThunk(targetIds) as never);
+          selectedIds.value = new Set();
+        },
+      });
+    }
+
     ctxMenu.value = { x: e.clientX, y: e.clientY, items };
   }
 
@@ -317,6 +422,24 @@ export function OrderBlotter() {
 
       <FilterBar gridId="orderBlotter" fields={BLOTTER_FIELDS} openFieldSignal={filterField} />
 
+      {selectedIds.value.size > 1 && (
+        <div
+          data-testid="multi-select-bar"
+          className="flex items-center gap-3 px-3 py-1 bg-sky-950/40 border-b border-sky-800/40 text-[10px] text-sky-300 shrink-0"
+        >
+          <span className="font-medium">{selectedIds.value.size} orders selected</span>
+          <button
+            type="button"
+            onClick={() => {
+              selectedIds.value = new Set();
+            }}
+            className="text-sky-500 hover:text-sky-300"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       <div ref={containerRef} className="overflow-auto flex-1">
         {isLoading && displayOrders.length === 0 ? (
           <div className="flex items-center justify-center h-24 text-gray-600 text-xs">
@@ -334,6 +457,18 @@ export function OrderBlotter() {
           <table className="w-full text-xs" data-testid="orders-table">
             <thead>
               <tr className="text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950">
+                <th className="w-8 px-1 py-2 text-center">
+                  <input
+                    type="checkbox"
+                    data-testid="select-all-checkbox"
+                    checked={
+                      displayOrders.length > 0 && selectedIds.value.size === displayOrders.length
+                    }
+                    onChange={toggleSelectAll}
+                    className="accent-emerald-500 cursor-pointer"
+                    title="Select all"
+                  />
+                </th>
                 {orderedCols.map((col) => (
                   <ResizableHeader
                     key={col.key}
@@ -366,9 +501,11 @@ export function OrderBlotter() {
                   <Fragment key={order.id}>
                     <tr
                       data-testid={`order-row-${order.id}`}
-                      onClick={() => selectOrder(order.id)}
+                      onClick={(e) => selectOrder(order.id, e)}
                       onContextMenu={(e) => openOrderCtxMenu(e, order.id)}
-                      aria-selected={selectedOrderId.value === order.id}
+                      aria-selected={
+                        selectedIds.value.has(order.id) || selectedOrderId.value === order.id
+                      }
                       title={`${order.side} ${order.quantity.toLocaleString()} ${order.asset} @ ${formatPrice(
                         order.asset,
                         order.limitPrice
@@ -389,6 +526,26 @@ export function OrderBlotter() {
                             : ""
                       }`}
                     >
+                      <td
+                        className="w-8 px-1 py-1.5 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          if (e.key === " ") e.stopPropagation();
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          data-testid={`select-order-${order.id}`}
+                          checked={selectedIds.value.has(order.id)}
+                          onChange={() => {
+                            const next = new Set(selectedIds.value);
+                            if (next.has(order.id)) next.delete(order.id);
+                            else next.add(order.id);
+                            selectedIds.value = next;
+                          }}
+                          className="accent-emerald-500 cursor-pointer"
+                        />
+                      </td>
                       {orderedCols.map((col) => {
                         const cellCls = cellClasses[col.key] ?? "";
                         switch (col.key) {

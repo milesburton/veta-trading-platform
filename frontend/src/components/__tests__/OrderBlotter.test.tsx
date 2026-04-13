@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 import { ChannelContext } from "../../contexts/ChannelContext";
+import { authSlice } from "../../store/authSlice";
 import { channelsSlice } from "../../store/channelsSlice";
 import { gridPrefsSlice } from "../../store/gridPrefsSlice";
 import { ordersSlice } from "../../store/ordersSlice";
@@ -56,6 +57,7 @@ function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
 function makeStore() {
   return configureStore({
     reducer: {
+      auth: authSlice.reducer,
       orders: ordersSlice.reducer,
       windows: windowSlice.reducer,
       channels: channelsSlice.reducer,

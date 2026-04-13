@@ -100,6 +100,24 @@ export const resumeOrdersThunk = createAsyncThunk(
   }
 );
 
+export const cancelOrdersThunk = createAsyncThunk("orders/cancel", (orderIds: string[]) => {
+  if (_gatewayWs?.readyState === WebSocket.OPEN) {
+    _gatewayWs.send(JSON.stringify({ type: "cancelOrders", payload: { orderIds } }));
+  }
+});
+
+export const holdOrdersThunk = createAsyncThunk("orders/hold", (orderIds: string[]) => {
+  if (_gatewayWs?.readyState === WebSocket.OPEN) {
+    _gatewayWs.send(JSON.stringify({ type: "holdOrders", payload: { orderIds } }));
+  }
+});
+
+export const unholdOrdersThunk = createAsyncThunk("orders/unhold", (orderIds: string[]) => {
+  if (_gatewayWs?.readyState === WebSocket.OPEN) {
+    _gatewayWs.send(JSON.stringify({ type: "unholdOrders", payload: { orderIds } }));
+  }
+});
+
 interface OrdersState {
   orders: OrderRecord[];
   lastSubmittedOrderId: string | null;

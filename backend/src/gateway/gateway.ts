@@ -853,6 +853,41 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           });
           socket.send(JSON.stringify({ event: "resumeAck", data: resumeCommand }));
         }
+
+        if (msg.type === "cancelOrders" || msg.type === "holdOrders" || msg.type === "unholdOrders") {
+          const currentAuth = auth ?? (token ? await validateToken(token) : null);
+          if (!currentAuth) {
+            socket.send(JSON.stringify({ event: "error", data: { message: "Unauthenticated" } }));
+            return;
+          }
+          const allowedRoles = ["trader", "desk-head", "risk-manager", "admin"];
+          if (!allowedRoles.includes(currentAuth.user.role)) {
+            socket.send(JSON.stringify({ event: "error", data: { message: `${currentAuth.user.role} cannot manage orders` } }));
+            return;
+          }
+          if (!producer.isReady()) {
+            socket.send(JSON.stringify({ event: "error", data: { message: "Bus unavailable" } }));
+            return;
+          }
+          const topicMap: Record<string, string> = {
+            cancelOrders: "orders.cancelled",
+            holdOrders: "orders.held",
+            unholdOrders: "orders.unhold",
+          };
+          const orderIds = (msg.payload.orderIds ?? []) as string[];
+          for (const orderId of orderIds) {
+            const command = {
+              clientOrderId: orderId,
+              issuedBy: currentAuth.user.id,
+              issuedByRole: currentAuth.user.role,
+              ts: Date.now(),
+            };
+            await producer.send(topicMap[msg.type], command);
+          }
+          const ackEvent = msg.type === "cancelOrders" ? "cancelAck" : msg.type === "holdOrders" ? "holdAck" : "unholdAck";
+          socket.send(JSON.stringify({ event: ackEvent, data: { orderIds, issuedBy: currentAuth.user.id } }));
+          broadcastAll({ event: "orderEvent", topic: topicMap[msg.type], data: { orderIds, issuedBy: currentAuth.user.id } });
+        }
       } catch (err) {
         socket.send(JSON.stringify({ event: "error", message: (err as Error).message }));
       }
