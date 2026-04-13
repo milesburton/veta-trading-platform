@@ -133,16 +133,17 @@ describe("StartupOverlay", () => {
     render(<StartupOverlay onReady={vi.fn()} buildDate="2026-03-08" commitSha="abc1234" />);
 
     const footer = screen.getByTestId("startup-build-info");
-    expect(footer).toHaveTextContent("2026-03-08");
-    expect(footer).toHaveTextContent("abc1234");
+    expect(footer).toHaveTextContent("vabc1234");
+    expect(footer).toHaveTextContent("Miles Burton");
   });
 
-  test("renders empty build info footer when props omitted", () => {
+  test("renders footer with author and github link when props omitted", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify(NOT_READY_RESPONSE), { status: 200 })
     );
     render(<StartupOverlay onReady={vi.fn()} />);
 
-    expect(screen.getByTestId("startup-build-info")).toBeEmptyDOMElement();
+    expect(screen.getByTestId("startup-build-info")).toHaveTextContent("Miles Burton");
+    expect(screen.getByText("GitHub")).toBeInTheDocument();
   });
 });

@@ -229,10 +229,23 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
         {timeStr} elapsed
       </div>
 
-      <div data-testid="startup-build-info" className="text-[10px] text-gray-700 tabular-nums">
-        {buildDate && <span>{buildDate}</span>}
-        {buildDate && commitSha && <span className="mx-1">·</span>}
-        {commitSha && <span>{commitSha}</span>}
+      <div
+        data-testid="startup-build-info"
+        className="flex items-center justify-between w-full px-6 py-2 text-[10px] text-gray-700 tabular-nums border-t border-gray-800/50"
+      >
+        <span>VETA &middot; Miles Burton</span>
+        <span className="flex items-center gap-3">
+          {commitSha && <span>v{commitSha}</span>}
+          {!commitSha && buildDate && <span>{buildDate}</span>}
+          <a
+            href="https://github.com/milesburton/veta-trading-platform"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-600 hover:text-gray-400 transition-colors"
+          >
+            GitHub
+          </a>
+        </span>
       </div>
     </div>
   );

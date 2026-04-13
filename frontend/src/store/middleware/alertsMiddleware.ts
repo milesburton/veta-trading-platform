@@ -95,21 +95,21 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
     }
 
     if (alertAdded.match(action)) {
-      if (action.payload.source !== "service") {
-        const a = (
-          storeAPI.getState() as {
-            alerts: {
-              alerts: Array<{
-                id: string;
-                severity: string;
-                source: string;
-                message: string;
-                detail?: string;
-                ts: number;
-              }>;
-            };
-          }
-        ).alerts.alerts[0];
+      const state = storeAPI.getState() as {
+        auth: { user: { id: string } | null };
+        alerts: {
+          alerts: Array<{
+            id: string;
+            severity: string;
+            source: string;
+            message: string;
+            detail?: string;
+            ts: number;
+          }>;
+        };
+      };
+      if (action.payload.source !== "service" && state.auth.user) {
+        const a = state.alerts.alerts[0];
         if (a) postAlert(a);
       }
     }

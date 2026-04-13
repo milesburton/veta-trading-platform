@@ -24,7 +24,7 @@ import type { AssetDef, OhlcCandle, OrderBookSnapshot, OrderSide } from "../../t
 import { advisoryNoteReceived } from "../advisorySlice.ts";
 import { alertAdded } from "../alertsSlice.ts";
 import type { AuthUser, TradingLimits } from "../authSlice.ts";
-import { setUserWithLimits } from "../authSlice.ts";
+import { setUser, setUserWithLimits } from "../authSlice.ts";
 import { feedReceived } from "../feedSlice.ts";
 import { gridApi } from "../gridApi.ts";
 import { loadGridPrefs } from "../gridPrefsSlice.ts";
@@ -501,7 +501,8 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     }
   }
 
-  if (!started) {
+  function startGateway() {
+    if (started) return;
     started = true;
     fetchAssetsAndSeedCandles().then(() => {
       const state = storeAPI.getState() as {
@@ -514,6 +515,10 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
 
   return (next) => (action: unknown) => {
     const result = next(action);
+
+    if (setUser.match(action as Parameters<typeof setUser.match>[0])) {
+      startGateway();
+    }
 
     if (setSelectedAsset.match(action as Parameters<typeof setSelectedAsset.match>[0])) {
       const symbol = (action as ReturnType<typeof setSelectedAsset>).payload;

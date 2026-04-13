@@ -160,67 +160,26 @@ describe("LoginPage", () => {
     await waitFor(() => expect(mockAuthorizeOAuth).toHaveBeenCalled());
   });
 
-  test("renders build info footer when props provided", () => {
+  test("renders footer with author and github link", () => {
     renderLogin({ buildDate: "2026-03-08", commitSha: "abc1234" });
 
-    const footer = screen.getByTestId("login-build-info");
-    expect(footer).toHaveTextContent("2026-03-08");
-    expect(footer).toHaveTextContent("abc1234");
+    expect(screen.getByText(/Miles Burton/)).toBeInTheDocument();
+    expect(screen.getByText("GitHub")).toHaveAttribute(
+      "href",
+      "https://github.com/milesburton/veta-trading-platform"
+    );
+    expect(screen.getByText("vabc1234")).toBeInTheDocument();
+    expect(screen.getByText("Alert Ops")).toBeInTheDocument();
   });
 
-  test("renders empty build info footer when props omitted", () => {
+  test("renders footer without build info when props omitted", () => {
     renderLogin();
-    expect(screen.getByTestId("login-build-info")).toBeEmptyDOMElement();
+    expect(screen.getByText(/Miles Burton/)).toBeInTheDocument();
+    expect(screen.getByText("GitHub")).toBeInTheDocument();
   });
 
-  test("shows platform status section", () => {
+  test("does not render platform status section", () => {
     renderLogin();
-    expect(screen.getByTestId("platform-status")).toBeInTheDocument();
-    expect(screen.getByTestId("platform-status-label")).toHaveTextContent("Checking platform…");
-  });
-
-  test("shows all service category headings in the platform status grid", () => {
-    renderLogin();
-    const status = screen.getByTestId("platform-status");
-    expect(status).toHaveTextContent("Order Flow");
-    expect(status).toHaveTextContent("Algo Engines");
-    expect(status).toHaveTextContent("Data Services");
-    expect(status).toHaveTextContent("Infrastructure");
-    expect(status).toHaveTextContent("Observability");
-  });
-
-  test("shows core service names with port numbers in platform status", () => {
-    renderLogin();
-    const status = screen.getByTestId("platform-status");
-    expect(status).toHaveTextContent("Market Sim");
-    expect(status).toHaveTextContent(":5000");
-    expect(status).toHaveTextContent("Gateway");
-    expect(status).toHaveTextContent(":5011");
-  });
-
-  test("shows algo engine services in platform status", () => {
-    renderLogin();
-    const status = screen.getByTestId("platform-status");
-    expect(status).toHaveTextContent("TWAP Algo");
-    expect(status).toHaveTextContent("POV Algo");
-    expect(status).toHaveTextContent("VWAP Algo");
-    expect(status).toHaveTextContent("Iceberg Algo");
-    expect(status).toHaveTextContent("Sniper Algo");
-    expect(status).toHaveTextContent("Arrival Price Algo");
-    expect(status).toHaveTextContent("IS Algo");
-    expect(status).toHaveTextContent("Momentum Algo");
-  });
-
-  test("shows observability services including Kafka Relay", () => {
-    renderLogin();
-    const status = screen.getByTestId("platform-status");
-    expect(status).toHaveTextContent("Kafka Relay");
-  });
-
-  test("services show their description text", () => {
-    renderLogin();
-    const status = screen.getByTestId("platform-status");
-    expect(status).toHaveTextContent("GBM price simulation");
-    expect(status).toHaveTextContent("Black-Scholes");
+    expect(screen.queryByTestId("platform-status")).not.toBeInTheDocument();
   });
 });
