@@ -43,6 +43,9 @@ function bondToAssetDef(bond: BondDef): AssetDef {
     currency: "USD" as const,
     assetClass: "bond",
     isin: bond.isin,
+    ric: `${bond.symbol}=`,
+    bbgTicker: `${bond.symbol} Govt`,
+    name: bond.issuer === "UST" ? `US Treasury ${bond.symbol}` : `${bond.issuer} ${bond.symbol}`,
     lotSize: 1,
   };
 }

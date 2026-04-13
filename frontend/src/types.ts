@@ -12,9 +12,10 @@ export interface AssetDef {
   exchange?: string;
   currency?: string;
   isin?: string;
-  /** Round lot size (1, 10, or 100). Minimum tradeable quantity increment. */
+  ric?: string;
+  bbgTicker?: string;
+  name?: string;
   lotSize?: number;
-  /** Asset class — equity (default when absent), fx, or commodity. */
   assetClass?: "equity" | "fx" | "commodity" | "bond";
 }
 

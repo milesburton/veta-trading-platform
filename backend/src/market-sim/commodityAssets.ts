@@ -13,6 +13,16 @@ function commodityIsin(symbol: string): string {
 // lotSize = 1 contract (quantity in the OMS is always integer contracts).
 // exchange = CME/NYMEX/CBOT venues mapped to a single MIC per commodity.
 
+const COMMODITY_NAMES: Record<string, string> = {
+  "CL1!": "WTI Crude Oil Front Month", "NG1!": "Natural Gas Front Month",
+  "GC1!": "Gold Front Month", "SI1!": "Silver Front Month",
+  "HG1!": "Copper Front Month", "PL1!": "Platinum Front Month",
+  "PA1!": "Palladium Front Month", "ZC1!": "Corn Front Month",
+  "ZW1!": "Wheat Front Month", "ZS1!": "Soybeans Front Month",
+  "CT1!": "Cotton Front Month", "KC1!": "Coffee Front Month",
+  "SB1!": "Sugar Front Month",
+};
+
 const _RAW_COMMODITY: Omit<
   AssetDef,
   | "marketCapB"
@@ -21,6 +31,9 @@ const _RAW_COMMODITY: Omit<
   | "peRatio"
   | "float"
   | "isin"
+  | "ric"
+  | "bbgTicker"
+  | "name"
   | "assetClass"
 >[] = [
   {
@@ -115,16 +128,22 @@ const _RAW_COMMODITY: Omit<
   },
 ];
 
-export const COMMODITY_ASSETS: AssetDef[] = _RAW_COMMODITY.map((raw) => ({
-  ...raw,
-  assetClass: "commodity" as const,
-  marketCapB: 0,
-  beta: 0.0,
-  dividendYield: 0.0,
-  peRatio: 0.0,
-  float: 1.0,
-  isin: commodityIsin(raw.symbol),
-}));
+export const COMMODITY_ASSETS: AssetDef[] = _RAW_COMMODITY.map((raw) => {
+  const base = raw.symbol.replace(/\d*!$/, "");
+  return {
+    ...raw,
+    assetClass: "commodity" as const,
+    marketCapB: 0,
+    beta: 0.0,
+    dividendYield: 0.0,
+    peRatio: 0.0,
+    float: 1.0,
+    isin: commodityIsin(raw.symbol),
+    ric: `${base}c1`,
+    bbgTicker: `${base}1 Comdty`,
+    name: COMMODITY_NAMES[raw.symbol] ?? raw.symbol,
+  };
+});
 
 export const COMMODITY_ASSET_MAP = new Map<string, AssetDef>(
   COMMODITY_ASSETS.map((a) => [a.symbol, a]),

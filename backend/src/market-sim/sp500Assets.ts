@@ -23,6 +23,12 @@ export interface AssetDef {
   assetClass?: "equity" | "fx" | "commodity" | "bond";
   /** Simulated ISIN (format: US + 9 uppercase alphanum + 1 check digit). */
   isin: string;
+  /** Reuters Instrument Code (e.g. AAPL.OQ for NASDAQ, MSFT.N for NYSE). */
+  ric: string;
+  /** Bloomberg ticker (e.g. "AAPL US Equity", "EUR Curncy"). */
+  bbgTicker: string;
+  /** Full company/instrument name. */
+  name: string;
   /** Round lot size — minimum tradeable quantity increment. 1 for high-price stocks (>$500),
    *  10 for mid-price ($100–500), 100 for standard equities (<$100). ETFs always 1. */
   lotSize: number;
@@ -38,6 +44,9 @@ type RawAsset = Omit<
   | "exchange"
   | "currency"
   | "isin"
+  | "ric"
+  | "bbgTicker"
+  | "name"
   | "lotSize"
   | "assetClass"
 >;
@@ -2549,6 +2558,50 @@ function derivePeRatio(sector: string, volatility: number): number {
   return base[sector] ?? 20;
 }
 
+const EXCHANGE_RIC_SUFFIX: Record<string, string> = {
+  XNAS: ".OQ", XNYS: ".N", ARCX: ".P", XCHI: ".MW",
+  XCME: ".CME", XNYM: ".NYM", XCBT: ".CBT",
+};
+
+function deriveRic(symbol: string, exchange: string, assetClass?: string): string {
+  if (assetClass === "fx") return `${symbol.replace("/", "")}=X`;
+  if (assetClass === "commodity") return `${symbol.replace("!", "")}c1`;
+  return `${symbol.replace(".", "/")}${EXCHANGE_RIC_SUFFIX[exchange] ?? ".OQ"}`;
+}
+
+function deriveBbgTicker(symbol: string, assetClass?: string): string {
+  if (assetClass === "fx") return `${symbol.replace("/", "")} Curncy`;
+  if (assetClass === "commodity") {
+    const base = symbol.replace(/\d*!$/, "");
+    return `${base}1 Comdty`;
+  }
+  return `${symbol.replace(".", "/")} US Equity`;
+}
+
+const COMPANY_NAMES: Record<string, string> = {
+  AAPL: "Apple Inc.", MSFT: "Microsoft Corp.", AMZN: "Amazon.com Inc.", NVDA: "NVIDIA Corp.",
+  GOOGL: "Alphabet Inc. (Class A)", META: "Meta Platforms Inc.", TSLA: "Tesla Inc.",
+  "BRK.B": "Berkshire Hathaway Inc. (Class B)", LLY: "Eli Lilly & Co.", JPM: "JPMorgan Chase & Co.",
+  V: "Visa Inc.", UNH: "UnitedHealth Group Inc.", XOM: "Exxon Mobil Corp.", MA: "Mastercard Inc.",
+  JNJ: "Johnson & Johnson", PG: "Procter & Gamble Co.", HD: "Home Depot Inc.", COST: "Costco Wholesale Corp.",
+  ABBV: "AbbVie Inc.", MRK: "Merck & Co. Inc.", CRM: "Salesforce Inc.", CVX: "Chevron Corp.",
+  KO: "Coca-Cola Co.", PEP: "PepsiCo Inc.", AVGO: "Broadcom Inc.", WMT: "Walmart Inc.",
+  LIN: "Linde plc", TMO: "Thermo Fisher Scientific Inc.", MCD: "McDonald's Corp.", CSCO: "Cisco Systems Inc.",
+  ACN: "Accenture plc", ABT: "Abbott Laboratories", ADBE: "Adobe Inc.", DHR: "Danaher Corp.",
+  NFLX: "Netflix Inc.", TXN: "Texas Instruments Inc.", AMD: "Advanced Micro Devices Inc.",
+  NEE: "NextEra Energy Inc.", PM: "Philip Morris International Inc.", BMY: "Bristol-Myers Squibb Co.",
+  QCOM: "Qualcomm Inc.", INTC: "Intel Corp.", UPS: "United Parcel Service Inc.",
+  AMGN: "Amgen Inc.", BA: "Boeing Co.", GE: "GE Aerospace", CAT: "Caterpillar Inc.",
+  DIS: "Walt Disney Co.", IBM: "IBM Corp.", GS: "Goldman Sachs Group Inc.", MS: "Morgan Stanley",
+  SPY: "SPDR S&P 500 ETF Trust", QQQ: "Invesco QQQ Trust", IWM: "iShares Russell 2000 ETF",
+  DIA: "SPDR Dow Jones Industrial Average ETF", VTI: "Vanguard Total Stock Market ETF",
+};
+
+function deriveName(symbol: string, sector: string): string {
+  if (COMPANY_NAMES[symbol]) return COMPANY_NAMES[symbol];
+  return `${symbol} ${sector}`;
+}
+
 function enrichAsset(
   raw: Omit<
     AssetDef,
@@ -2560,11 +2613,15 @@ function enrichAsset(
     | "exchange"
     | "currency"
     | "isin"
+    | "ric"
+    | "bbgTicker"
+    | "name"
     | "lotSize"
     | "assetClass"
   >,
 ): AssetDef {
   const curated = CURATED_META[raw.symbol];
+  const exchange = curated?.exchange ?? deriveExchange(raw.sector);
   return {
     ...raw,
     marketCapB: curated?.marketCapB ??
@@ -2574,9 +2631,12 @@ function enrichAsset(
       deriveDividendYield(raw.sector, raw.volatility),
     peRatio: curated?.peRatio ?? derivePeRatio(raw.sector, raw.volatility),
     float: curated?.float ?? (raw.volatility > 0.04 ? 0.72 : 0.98),
-    exchange: curated?.exchange ?? deriveExchange(raw.sector),
+    exchange,
     currency: "USD",
     isin: deriveIsin(raw.symbol),
+    ric: deriveRic(raw.symbol, exchange),
+    bbgTicker: deriveBbgTicker(raw.symbol),
+    name: deriveName(raw.symbol, raw.sector),
     lotSize: curated?.lotSize ?? deriveLotSize(raw.symbol, raw.initialPrice),
   };
 }

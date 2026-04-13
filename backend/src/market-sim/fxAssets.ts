@@ -13,6 +13,14 @@ function fxIsin(symbol: string): string {
 // lotSize = 1000 (standard FX "lot" expressed in base units for display).
 // exchange = "XCME" (CME FX futures venue; spot FX is OTC but we use a single MIC).
 
+const FX_NAMES: Record<string, string> = {
+  "EUR/USD": "Euro / US Dollar", "GBP/USD": "British Pound / US Dollar",
+  "USD/JPY": "US Dollar / Japanese Yen", "AUD/USD": "Australian Dollar / US Dollar",
+  "USD/CAD": "US Dollar / Canadian Dollar", "USD/CHF": "US Dollar / Swiss Franc",
+  "NZD/USD": "New Zealand Dollar / US Dollar", "EUR/GBP": "Euro / British Pound",
+  "EUR/JPY": "Euro / Japanese Yen",
+};
+
 const _RAW_FX: Omit<
   AssetDef,
   | "marketCapB"
@@ -21,6 +29,9 @@ const _RAW_FX: Omit<
   | "peRatio"
   | "float"
   | "isin"
+  | "ric"
+  | "bbgTicker"
+  | "name"
   | "assetClass"
 >[] = [
   {
@@ -108,12 +119,15 @@ const _RAW_FX: Omit<
 export const FX_ASSETS: AssetDef[] = _RAW_FX.map((raw) => ({
   ...raw,
   assetClass: "fx" as const,
-  marketCapB: 0, // not applicable for FX
-  beta: 0.0, // FX has no equity beta
+  marketCapB: 0,
+  beta: 0.0,
   dividendYield: 0.0,
   peRatio: 0.0,
   float: 1.0,
   isin: fxIsin(raw.symbol),
+  ric: `${raw.symbol.replace("/", "")}=X`,
+  bbgTicker: `${raw.symbol.replace("/", "")} Curncy`,
+  name: FX_NAMES[raw.symbol] ?? raw.symbol,
 }));
 
 export const FX_ASSET_MAP = new Map<string, AssetDef>(

@@ -57,6 +57,7 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "session-replay": "Record and replay user sessions for training and audit",
   "risk-dashboard": "Firm-wide position and P&L monitor — every trader's book in one view",
   "my-positions": "Your open positions with live mark-to-market P&L",
+  "symbol-search": "Search by symbol, RIC, BBG ticker, ISIN, or paste a Bloomberg trade",
 };
 
 export function ComponentPicker() {

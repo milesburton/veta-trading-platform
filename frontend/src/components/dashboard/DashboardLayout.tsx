@@ -55,6 +55,7 @@ import { ServiceHealthPanel } from "../ServiceHealthPanel.tsx";
 import { SessionReplayPanel } from "../SessionReplayPanel.tsx";
 import { SignalExplainabilityPanel } from "../SignalExplainabilityPanel.tsx";
 import { SpreadAnalysisPanel } from "../SpreadAnalysisPanel.tsx";
+import { SymbolSearchBar } from "../SymbolSearchBar.tsx";
 import { ThroughputGaugesPanel } from "../ThroughputGaugesPanel.tsx";
 import { TradeRecommendationPanel } from "../TradeRecommendationPanel.tsx";
 import { VolatilityProfilePanel } from "../VolatilityProfilePanel.tsx";
@@ -722,6 +723,8 @@ export function DashboardLayout() {
           return wrap(<RiskDashboardPanel />);
         case "my-positions":
           return wrap(<MyPositionsPanel />);
+        case "symbol-search":
+          return wrap(<SymbolSearchBar />);
         default:
           return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
       }
