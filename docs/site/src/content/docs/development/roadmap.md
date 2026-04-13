@@ -16,6 +16,12 @@ Planned features and improvements, roughly prioritised. Complexity is in story p
 | Right-click context menus | Hold, unhold, cancel, force kill — permission-gated by role | 5 |
 | Symbol search bar | Typeahead search on symbol, RIC, BBG, ISIN with Bloomberg trade paste parser | 5 |
 | Identifier aliases | RIC, BBG ticker, ISIN, and company names on all 270+ instruments | 3 |
+| User guide documentation | 7 pages with auto-generated screenshots and stale-detection mapping | 5 |
+| Registry-driven panel factory | Plugin-ready panel system — `registerPanel()` replaces 100-line switch | 3 |
+| Kafka consumer crash watchdog | Auto-reconnect on Redpanda group eviction — eliminates manual restarts | 2 |
+| No-any enforcement | `noExplicitAny: "error"` in biome — builds fail on any usage | 2 |
+| Signals-first migration | All 80+ useState calls migrated to useSignal (8 remain for React interop) | 5 |
+| Type system strengthening | OrderSide, branded IDs, ObsEventType union, OrderFillPayload, tightened FillEvent | 5 |
 
 ## High priority
 
@@ -23,6 +29,7 @@ Planned features and improvements, roughly prioritised. Complexity is in story p
 |---------|---------|:----------:|
 | Alert / notification system | Severity-tiered notifications with criteria builder, shared filter presets, red overlay for emergencies | 13 |
 | SNIPER / IS / MOMENTUM fixes | Root-cause venue book data gaps causing consistent algo test failures in CI | 3 |
+| Kafka message type tests | Compile-time assertion tests (tsd/expectType) verifying JSON parse results match typed interfaces | 3 |
 | LLM trade parsing | Enhance the trade paste parser with Ollama for natural language trade instructions | 5 |
 | True reference data source | Replace deterministic identifiers with a real symbology provider (OpenFIGI, LSEG) | 5 |
 
@@ -37,6 +44,7 @@ Planned features and improvements, roughly prioritised. Complexity is in story p
 | Electron integration | Wrap the frontend as a desktop app with native menus and pop-out panels | 8 |
 | Load / performance testing | Stress-test the full pipeline to measure throughput limits and find bottlenecks | 5 |
 | Per-service architecture pages | Clickable Mermaid nodes linking to dedicated pages showing internals and key functions | 5 |
+| Progressive branded ID adoption | Apply OrderId, UserId, ChildOrderId brands to interface fields and creation sites | 5 |
 
 ## Low priority
 
