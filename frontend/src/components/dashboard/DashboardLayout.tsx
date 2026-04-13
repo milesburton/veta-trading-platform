@@ -2,7 +2,7 @@ import type { BorderNode, IJsonModel, IJsonTabNode, TabNode, TabSetNode } from "
 import { Actions, Layout, Model } from "flexlayout-react";
 import type React from "react";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import "flexlayout-react/style/dark.css";
 import { useSignal } from "@preact/signals-react";
@@ -50,30 +50,30 @@ function ChannelPicker({
   allItems = [],
   instanceId,
 }: ChannelPickerProps) {
-  const [open, setOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const open = useSignal(false);
+  const dropdownPos = useSignal({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open.value) return;
     function handle(e: MouseEvent) {
       if (
         btnRef.current &&
         !btnRef.current.closest("[data-channel-picker]")?.contains(e.target as Node)
       ) {
-        setOpen(false);
+        open.value = false;
       }
     }
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
-  }, [open]);
+  }, [open.value, open]);
 
   function handleOpen() {
     if (btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+      dropdownPos.value = { top: rect.bottom + 4, left: rect.left };
     }
-    setOpen((o) => !o);
+    open.value = !open.value;
   }
 
   const colour = current !== null ? CHANNEL_COLOURS[current] : null;
@@ -96,11 +96,11 @@ function ChannelPicker({
     ? `${dirLabel} Ch ${current} ${colour.label}${connectedStr} — click to change`
     : `${dirLabel}: not set — click to connect`;
 
-  const dropdown = open
+  const dropdown = open.value
     ? createPortal(
         <div
           data-channel-picker
-          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+          style={{ top: dropdownPos.value.top, left: dropdownPos.value.left }}
           className="fixed z-[9999] bg-gray-900 border border-gray-700 rounded shadow-xl p-1.5 flex flex-col gap-0.5 min-w-[110px]"
         >
           <span className="text-[9px] text-gray-500 px-1 pb-0.5">{dirLabel}</span>
@@ -115,7 +115,7 @@ function ChannelPicker({
                 title={blocked ? "Would create a cycle" : col.label}
                 onClick={() => {
                   onPick(n);
-                  setOpen(false);
+                  open.value = false;
                 }}
                 className={`flex items-center gap-1.5 px-1.5 py-1 rounded text-[10px] transition-colors text-left ${
                   current === n
@@ -138,7 +138,7 @@ function ChannelPicker({
             type="button"
             onClick={() => {
               onPick(null);
-              setOpen(false);
+              open.value = false;
             }}
             className="flex items-center gap-1.5 px-1.5 py-1 rounded text-[10px] text-gray-500 hover:bg-gray-800 hover:text-gray-300 transition-colors"
           >

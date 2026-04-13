@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useEffect } from "react";
 import { useAppSelector } from "../store/hooks.ts";
 import type { UserLimits, UserRow } from "../store/userApi.ts";
 import {
@@ -33,9 +34,9 @@ interface UserLimitsRowProps {
 function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
   const { data: serverLimits } = useGetUserLimitsQuery(user.id);
   const [updateLimits, { isLoading: saving, error: saveError }] = useUpdateUserLimitsMutation();
-  const [localLimits, setLocalLimits] = useState<UserLimits | null>(null);
+  const localLimits = useSignal<UserLimits | null>(null);
 
-  const lim = localLimits ?? serverLimits ?? null;
+  const lim = localLimits.value ?? serverLimits ?? null;
 
   function toggleStrategy(strategy: string) {
     if (!lim) return;
@@ -43,7 +44,7 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
     const updated = current.includes(strategy)
       ? current.filter((s) => s !== strategy)
       : [...current, strategy];
-    setLocalLimits({ ...lim, allowed_strategies: updated });
+    localLimits.value = { ...lim, allowed_strategies: updated };
   }
 
   async function saveLimitsHandler() {
@@ -54,7 +55,7 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
       max_daily_notional: lim.max_daily_notional,
       allowed_strategies: lim.allowed_strategies,
     });
-    setLocalLimits(null);
+    localLimits.value = null;
   }
 
   return (
@@ -83,12 +84,12 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
               type="number"
               value={lim.max_order_qty}
               disabled={!isAdmin}
-              onChange={(e) =>
-                setLocalLimits((prev) => ({
-                  ...(prev ?? lim),
+              onChange={(e) => {
+                localLimits.value = {
+                  ...(localLimits.value ?? lim),
                   max_order_qty: Number(e.target.value),
-                }))
-              }
+                };
+              }}
               className="w-24 bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
             />
           ) : (
@@ -101,12 +102,12 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
               type="number"
               value={lim.max_daily_notional}
               disabled={!isAdmin}
-              onChange={(e) =>
-                setLocalLimits((prev) => ({
-                  ...(prev ?? lim),
+              onChange={(e) => {
+                localLimits.value = {
+                  ...(localLimits.value ?? lim),
                   max_daily_notional: Number(e.target.value),
-                }))
-              }
+                };
+              }}
               className="w-28 bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
             />
           ) : (
@@ -166,14 +167,16 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
 export function AdminPanel() {
   const currentUser = useAppSelector((s) => s.auth.user);
   const { data: users = [] } = useGetUsersQuery();
-  const [journal, setJournal] = useState<JournalEntry[]>([]);
+  const journal = useSignal<JournalEntry[]>([]);
 
   useEffect(() => {
     fetch("/api/journal/journal?limit=50", { credentials: "include" })
       .then((r) => r.json())
-      .then((data: { entries: JournalEntry[] }) => setJournal(data.entries ?? []))
+      .then((data: { entries: JournalEntry[] }) => {
+        journal.value = data.entries ?? [];
+      })
       .catch(() => {});
-  }, []);
+  }, [journal]);
 
   const isAdmin = currentUser?.role === "admin";
   const traderUsers = users.filter((u) => u.role !== "admin");
@@ -231,14 +234,14 @@ export function AdminPanel() {
               </tr>
             </thead>
             <tbody>
-              {journal.length === 0 ? (
+              {journal.value.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-3 py-4 text-center text-gray-600">
                     No journal entries yet
                   </td>
                 </tr>
               ) : (
-                journal.map((entry, idx) => (
+                journal.value.map((entry, idx) => (
                   <tr
                     key={entry.id}
                     className={`border-t border-gray-800 ${

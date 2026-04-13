@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useEffect, useMemo, useRef } from "react";
 import { useAppSelector } from "../store/hooks.ts";
 import type { OrderRecord } from "../types.ts";
 
@@ -108,18 +109,20 @@ function SlippageCell({ bps }: { bps: number | null }) {
 
 export function AlgoLeaderboardPanel() {
   const allOrders = useAppSelector((s) => s.orders.orders);
-  const [tick, setTick] = useState(0);
+  const tick = useSignal(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    intervalRef.current = setInterval(() => setTick((t) => t + 1), 10_000);
+    intervalRef.current = setInterval(() => {
+      tick.value = tick.value + 1;
+    }, 10_000);
     return () => {
       if (intervalRef.current !== null) clearInterval(intervalRef.current);
     };
-  }, []);
+  }, [tick]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: tick is intentional for timed refresh
-  const metrics = useMemo(() => computeMetrics(allOrders, 300_000), [allOrders, tick]);
+  const metrics = useMemo(() => computeMetrics(allOrders, 300_000), [allOrders, tick.value]);
 
   return (
     <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs">

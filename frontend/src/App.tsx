@@ -1,3 +1,4 @@
+import { useSignal } from "@preact/signals-react";
 import type { IJsonModel } from "flexlayout-react";
 import { Model } from "flexlayout-react";
 import type { ReactNode } from "react";
@@ -48,26 +49,26 @@ const TOAST_EPOCH = Date.now();
 function ToastHost() {
   const alerts = useAppSelector(selectActiveAlerts);
   const dispatch = useAppDispatch();
-  const [shown, setShown] = useState<Set<string>>(new Set());
+  const shown = useSignal<Set<string>>(new Set());
 
   const toastable = alerts.filter(
     (a) =>
       (a.severity === "WARNING" || a.severity === "INFO") &&
       a.source !== "service" &&
-      !shown.has(a.id) &&
+      !shown.value.has(a.id) &&
       a.ts >= TOAST_EPOCH
   );
 
   useEffect(() => {
     for (const a of toastable) {
-      setShown((prev) => new Set([...prev, a.id]));
+      shown.value = new Set([...shown.value, a.id]);
       const id = a.id;
       setTimeout(() => dispatch(alertDismissed(id)), 6000);
     }
-  }, [toastable, dispatch]);
+  }, [toastable, dispatch, shown]);
 
   const visible = alerts.filter(
-    (a) => (a.severity === "WARNING" || a.severity === "INFO") && shown.has(a.id)
+    (a) => (a.severity === "WARNING" || a.severity === "INFO") && shown.value.has(a.id)
   );
 
   if (visible.length === 0) return null;
@@ -204,7 +205,7 @@ function TradingApp() {
     return initial;
   });
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [cloneBanner, setCloneBanner] = useState<{
+  const cloneBanner = useSignal<{
     id: string;
     name: string;
     ownerName: string;
@@ -291,9 +292,9 @@ function TradingApp() {
     const sharedId = new URLSearchParams(window.location.search).get("shared");
     if (!sharedId) return;
     fetchSharedWorkspace(sharedId).then((entry) => {
-      if (entry) setCloneBanner(entry);
+      if (entry) cloneBanner.value = entry;
     });
-  }, [authStatus]);
+  }, [authStatus, cloneBanner]);
 
   const pendingSaveRef = useRef<{
     workspaces: typeof workspaces;
@@ -365,22 +366,22 @@ function TradingApp() {
   );
 
   function cloneSharedWorkspace() {
-    if (!cloneBanner) return;
+    if (!cloneBanner.value) return;
     const newId = `ws-${Date.now()}`;
     const newWorkspaces = [
       ...workspaces,
       {
         id: newId,
-        name: cloneBanner.name,
+        name: cloneBanner.value.name,
       },
     ];
-    const newModel = Model.fromJson(cloneBanner.model);
+    const newModel = Model.fromJson(cloneBanner.value.model);
     const newLayouts = { ...layouts, [newId]: newModel };
     setWorkspaces(newWorkspaces);
     setLayouts(newLayouts);
     handleSelect(newId);
     savePrefs(newWorkspaces, newLayouts);
-    setCloneBanner(null);
+    cloneBanner.value = null;
     const url = new URL(window.location.href);
     url.searchParams.delete("shared");
     history.replaceState(null, "", url.toString());
@@ -416,12 +417,12 @@ function TradingApp() {
           </div>
         )}
 
-        {cloneBanner && (
+        {cloneBanner.value && (
           <div className="flex items-center gap-3 px-4 py-2 bg-emerald-950 border-b border-emerald-800 text-sm text-emerald-200 shrink-0">
             <span>
-              <span className="font-semibold">{cloneBanner.ownerName}</span> shared workspace{" "}
-              <span className="font-semibold">&ldquo;{cloneBanner.name}&rdquo;</span> — clone it
-              into your account?
+              <span className="font-semibold">{cloneBanner.value.ownerName}</span> shared workspace{" "}
+              <span className="font-semibold">&ldquo;{cloneBanner.value.name}&rdquo;</span> — clone
+              it into your account?
             </span>
             <button
               type="button"
@@ -432,7 +433,9 @@ function TradingApp() {
             </button>
             <button
               type="button"
-              onClick={() => setCloneBanner(null)}
+              onClick={() => {
+                cloneBanner.value = null;
+              }}
               className="px-2 py-0.5 rounded text-emerald-500 hover:text-emerald-300 text-xs transition-colors"
             >
               Dismiss

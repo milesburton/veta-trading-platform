@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useEffect, useRef } from "react";
 
 interface ReadyServices {
   marketSim: boolean;
@@ -88,9 +89,9 @@ interface Props {
 type OverlayMode = "booting" | "waiting";
 
 export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
-  const [elapsed, setElapsed] = useState(0);
-  const [services, setServices] = useState<ReadyServices | null>(null);
-  const [mode, setMode] = useState<OverlayMode>("booting");
+  const elapsed = useSignal(0);
+  const services = useSignal<ReadyServices | null>(null);
+  const mode = useSignal<OverlayMode>("booting");
 
   // startRef anchors the timer. Updated to gateway's startedAt on first poll.
   const startRef = useRef(Date.now());
@@ -100,10 +101,10 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
 
   useEffect(() => {
     const clock = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
+      elapsed.value = Math.floor((Date.now() - startRef.current) / 1000);
     }, 1_000);
     return () => clearInterval(clock);
-  }, []);
+  }, [elapsed]);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,10 +123,10 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
               // If the gateway has been running for more than BOOTING_WINDOW_MS,
               // this is a refresh on an already-running platform — show "waiting" mode.
               const age = Date.now() - data.startedAt;
-              setMode(age > BOOTING_WINDOW_MS ? "waiting" : "booting");
+              mode.value = age > BOOTING_WINDOW_MS ? "waiting" : "booting";
             }
 
-            setServices({ gateway: true, ...data.services });
+            services.value = { gateway: true, ...data.services };
 
             if (data.ready) {
               onReadyRef.current();
@@ -134,7 +135,7 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
           }
         } catch {
           if (!cancelled) {
-            setServices((prev) => ({ ...prev, gateway: false }) as ReadyServices);
+            services.value = { ...services.value, gateway: false } as ReadyServices;
           }
         }
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
@@ -145,16 +146,16 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [services, mode]);
 
-  const mins = Math.floor(elapsed / 60);
-  const secs = elapsed % 60;
+  const mins = Math.floor(elapsed.value / 60);
+  const secs = elapsed.value % 60;
   const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
-  const upCount = SERVICE_ORDER.filter((k) => services?.[k]).length;
+  const upCount = SERVICE_ORDER.filter((k) => services.value?.[k]).length;
   const totalCount = SERVICE_ORDER.length;
 
-  const isBooting = mode === "booting";
+  const isBooting = mode.value === "booting";
 
   return (
     <div
@@ -190,7 +191,7 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
       <table className="border-collapse text-sm">
         <tbody>
           {SERVICE_ORDER.map((key) => {
-            const up = services?.[key];
+            const up = services.value?.[key];
             return (
               <tr key={key} data-testid={`service-indicator-${key}`}>
                 <td className="pr-3 py-0.5 align-middle">

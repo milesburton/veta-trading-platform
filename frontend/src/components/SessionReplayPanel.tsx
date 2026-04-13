@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useCallback, useEffect, useRef } from "react";
 import { useAppSelector } from "../store/hooks.ts";
 import {
   type ReplaySession,
@@ -244,11 +245,24 @@ function SessionPlayer({ sessionId, onBack }: { sessionId: string; onBack: () =>
 }
 
 export function SessionReplayPanel() {
-  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const selectedSession = useSignal<string | null>(null);
 
-  if (selectedSession) {
-    return <SessionPlayer sessionId={selectedSession} onBack={() => setSelectedSession(null)} />;
+  if (selectedSession.value) {
+    return (
+      <SessionPlayer
+        sessionId={selectedSession.value}
+        onBack={() => {
+          selectedSession.value = null;
+        }}
+      />
+    );
   }
 
-  return <SessionList onSelect={setSelectedSession} />;
+  return (
+    <SessionList
+      onSelect={(id) => {
+        selectedSession.value = id;
+      }}
+    />
+  );
 }

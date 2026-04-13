@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import { type DemoPersona, useGetDemoPersonasQuery } from "../store/userApi.ts";
 
 const STYLE_LABELS: Record<string, string> = {
@@ -37,9 +37,9 @@ interface DemoPersonasProps {
 }
 
 export function DemoPersonas({ onSelect }: DemoPersonasProps) {
-  const [expanded, setExpanded] = useState(false);
+  const expanded = useSignal(false);
   const { data, isLoading, error } = useGetDemoPersonasQuery(undefined, {
-    skip: !expanded,
+    skip: !expanded.value,
   });
 
   const personas = data?.personas ?? [];
@@ -53,16 +53,18 @@ export function DemoPersonas({ onSelect }: DemoPersonasProps) {
       <button
         type="button"
         data-testid="demo-personas-toggle"
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => {
+          expanded.value = !expanded.value;
+        }}
         className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-300 hover:bg-gray-800/40 transition-colors rounded-xl"
       >
         <span className="font-medium tracking-wide uppercase text-[11px] text-gray-400">
           Demo personas
         </span>
-        <span className="text-gray-600 text-xs">{expanded ? "▾ hide" : "▸ show list"}</span>
+        <span className="text-gray-600 text-xs">{expanded.value ? "▾ hide" : "▸ show list"}</span>
       </button>
 
-      {expanded && (
+      {expanded.value && (
         <div className="px-4 pb-4 pt-1 space-y-4 max-h-[480px] overflow-auto">
           {isLoading && <div className="text-xs text-gray-500 py-2">Loading personas...</div>}
           {error && (

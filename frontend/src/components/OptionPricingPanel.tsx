@@ -148,14 +148,15 @@ export function OptionPricingPanel() {
     const T = result.value.expirySecs / (365 * 86400);
     const r = 0.05;
     return Array.from({ length: 25 }, (_, i) => {
-      const S = result.value!.spotPrice * (0.7 + i * (0.6 / 24));
+      const r0 = result.value!;
+      const S = r0.spotPrice * (0.7 + i * (0.6 / 24));
       const { delta, gamma, theta, vega } = bsGreeks(
-        result.value!.optionType,
+        r0.optionType,
         S,
-        result.value!.strike,
+        r0.strike,
         T,
         r,
-        result.value!.impliedVol
+        r0.impliedVol
       );
       return {
         spot: S.toFixed(1),

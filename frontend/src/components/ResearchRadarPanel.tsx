@@ -7,7 +7,8 @@
  * Filter by direction; sort by score, confidence, or news velocity.
  */
 
-import { useMemo, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useMemo } from "react";
 import {
   CartesianGrid,
   Cell,
@@ -82,8 +83,8 @@ export function ResearchRadarPanel() {
   const features = useAppSelector((s) => s.intelligence.features);
   const broadcast = useChannelOut();
 
-  const [filter, setFilter] = useState<Direction | "ALL">("ALL");
-  const [sort, setSort] = useState<SortKey>("score");
+  const filter = useSignal<Direction | "ALL">("ALL");
+  const sort = useSignal<SortKey>("score");
 
   const allEntries = useMemo<Entry[]>(() => {
     return Object.keys(signals).map((sym) => {
@@ -111,17 +112,18 @@ export function ResearchRadarPanel() {
   );
 
   const filtered = useMemo(
-    () => (filter === "ALL" ? allEntries : allEntries.filter((e) => e.direction === filter)),
-    [allEntries, filter]
+    () =>
+      filter.value === "ALL" ? allEntries : allEntries.filter((e) => e.direction === filter.value),
+    [allEntries, filter.value]
   );
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
-      if (sort === "score") return Math.abs(b.score) - Math.abs(a.score);
-      if (sort === "confidence") return b.confidence - a.confidence;
+      if (sort.value === "score") return Math.abs(b.score) - Math.abs(a.score);
+      if (sort.value === "confidence") return b.confidence - a.confidence;
       return b.newsVelocity - a.newsVelocity;
     });
-  }, [filtered, sort]);
+  }, [filtered, sort.value]);
 
   if (allEntries.length === 0) {
     return (
@@ -153,9 +155,13 @@ export function ResearchRadarPanel() {
             <button
               key={key}
               type="button"
-              onClick={() => setFilter(key)}
+              onClick={() => {
+                filter.value = key;
+              }}
               className={`text-[9px] px-2 py-0.5 rounded transition-colors ${
-                filter === key ? "bg-gray-700 text-gray-100" : "text-gray-600 hover:text-gray-400"
+                filter.value === key
+                  ? "bg-gray-700 text-gray-100"
+                  : "text-gray-600 hover:text-gray-400"
               }`}
             >
               {label}
@@ -168,9 +174,11 @@ export function ResearchRadarPanel() {
             <button
               key={key}
               type="button"
-              onClick={() => setSort(key)}
+              onClick={() => {
+                sort.value = key;
+              }}
               className={`px-1.5 py-0.5 rounded transition-colors ${
-                sort === key ? "text-gray-300 underline" : "hover:text-gray-400"
+                sort.value === key ? "text-gray-300 underline" : "hover:text-gray-400"
               }`}
             >
               {label}

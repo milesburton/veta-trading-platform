@@ -6,7 +6,7 @@
  * Auto-polls every 60 seconds via RTK Query.
  */
 
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import {
   Area,
   AreaChart,
@@ -49,10 +49,10 @@ function VolTooltip({
 
 export function VolatilityProfilePanel() {
   const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
-  const [symbol, setSymbol] = useState(symbols[0] ?? "AAPL");
+  const symbol = useSignal(symbols[0] ?? "AAPL");
 
-  const { data, isFetching, error } = useGetVolProfileQuery(symbol, {
-    skip: !symbol,
+  const { data, isFetching, error } = useGetVolProfileQuery(symbol.value, {
+    skip: !symbol.value,
     pollingInterval: 60_000,
   });
 
@@ -73,8 +73,10 @@ export function VolatilityProfilePanel() {
       {/* Controls */}
       <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-800 shrink-0">
         <select
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
+          value={symbol.value}
+          onChange={(e) => {
+            symbol.value = e.target.value;
+          }}
           className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 flex-1"
         >
           {symbols.map((s) => (

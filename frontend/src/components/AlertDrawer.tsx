@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import type { Alert, AlertSeverity } from "../store/alertsSlice.ts";
 import { alertDismissed, allAlertsDismissed, selectActiveAlerts } from "../store/alertsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
@@ -137,7 +137,7 @@ interface Props {
 export function AlertDrawer({ onClose }: Props) {
   const dispatch = useAppDispatch();
   const alerts = useAppSelector(selectActiveAlerts);
-  const [filter, setFilter] = useState<Filter>("ALL");
+  const filter = useSignal<Filter>("ALL");
   const { activePanelIds, addPanel } = useDashboard();
   const isPinned = activePanelIds.has("alerts");
 
@@ -186,7 +186,13 @@ export function AlertDrawer({ onClose }: Props) {
           </div>
         </div>
 
-        <AlertList alerts={alerts} filter={filter} onFilter={setFilter} />
+        <AlertList
+          alerts={alerts}
+          filter={filter.value}
+          onFilter={(f) => {
+            filter.value = f;
+          }}
+        />
       </div>
     </>
   );

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useCallback, useEffect, useRef } from "react";
 import { alertAdded, purgeServiceAlerts } from "../store/alertsSlice.ts";
 import { useAppDispatch } from "../store/hooks.ts";
 import type { AppDispatch } from "../store/index.ts";
@@ -218,25 +219,28 @@ function HostResourcesSection() {
 
 export function ServiceHealthPanel() {
   const dispatch = useAppDispatch();
-  const [healthMap, setHealthMap] = useState<Map<string, ServiceHealth>>(new Map());
-  const [now, setNow] = useState(Date.now());
+  const healthMap = useSignal<Map<string, ServiceHealth>>(new Map());
+  const now = useSignal(Date.now());
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1_000);
+    const id = setInterval(() => {
+      now.value = Date.now();
+    }, 1_000);
     return () => clearInterval(id);
-  }, []);
+  }, [now]);
 
-  const handleUpdate = useCallback((health: ServiceHealth) => {
-    setHealthMap((prev) => {
-      const next = new Map(prev);
+  const handleUpdate = useCallback(
+    (health: ServiceHealth) => {
+      const next = new Map(healthMap.value);
       next.set(health.name, health);
-      return next;
-    });
-  }, []);
+      healthMap.value = next;
+    },
+    [healthMap]
+  );
 
   const allOk =
-    healthMap.size > 0 &&
-    Array.from(healthMap.values()).every((h) => h.state === "ok" || h.optional);
+    healthMap.value.size > 0 &&
+    Array.from(healthMap.value.values()).every((h) => h.state === "ok" || h.optional);
 
   return (
     <div className="h-full flex flex-col bg-gray-950 text-gray-200 overflow-auto">
@@ -286,7 +290,7 @@ export function ServiceHealthPanel() {
           </thead>
           <tbody>
             {SERVICES.map((svc, idx) => {
-              const health = healthMap.get(svc.name) ?? {
+              const health = healthMap.value.get(svc.name) ?? {
                 name: svc.name,
                 url: svc.url,
                 link: svc.link,
@@ -298,7 +302,12 @@ export function ServiceHealthPanel() {
                 lastChecked: null,
               };
               return (
-                <RowDisplay key={svc.name} health={health as ServiceHealth} index={idx} now={now} />
+                <RowDisplay
+                  key={svc.name}
+                  health={health as ServiceHealth}
+                  index={idx}
+                  now={now.value}
+                />
               );
             })}
           </tbody>

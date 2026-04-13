@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import { useRequestAdvisoryMutation } from "../store/advisoryApi.ts";
 import type { AdvisoryStatus } from "../store/advisorySlice.ts";
 import { selectAdvisoryForSymbol } from "../store/advisorySlice.ts";
@@ -26,17 +26,17 @@ export function AdvisoryPanel({ symbol }: AdvisoryPanelProps) {
   const bySymbol = useAppSelector((s) => s.advisory.bySymbol);
   const entry = selectAdvisoryForSymbol(bySymbol, symbol, now);
   const [requestAdvisory, { isLoading: isRequesting }] = useRequestAdvisoryMutation();
-  const [requestError, setRequestError] = useState<string | null>(null);
+  const requestError = useSignal<string | null>(null);
 
   async function handleRequest() {
-    setRequestError(null);
+    requestError.value = null;
     try {
       const result = await requestAdvisory({ symbol }).unwrap();
       if (result.status === "deduplicated") {
-        setRequestError("A recent advisory job already exists for this symbol.");
+        requestError.value = "A recent advisory job already exists for this symbol.";
       }
     } catch {
-      setRequestError("Failed to request advisory. The LLM service may not be enabled.");
+      requestError.value = "Failed to request advisory. The LLM service may not be enabled.";
     }
   }
 
@@ -64,7 +64,9 @@ export function AdvisoryPanel({ symbol }: AdvisoryPanelProps) {
           >
             {isRequesting ? "Requesting…" : entry.status === "failed" ? "Retry" : "Get Advisory"}
           </button>
-          {requestError && <div className="text-[10px] text-amber-400">{requestError}</div>}
+          {requestError.value && (
+            <div className="text-[10px] text-amber-400">{requestError.value}</div>
+          )}
         </div>
       )}
 

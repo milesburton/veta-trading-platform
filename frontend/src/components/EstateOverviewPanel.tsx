@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useEffect, useRef } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import {
   alertAdded,
@@ -467,21 +468,21 @@ export function EstateOverviewPanel() {
   const dispatch = useAppDispatch();
   const orders = useAppSelector((s) => s.orders.orders);
 
-  const [metrics, setMetrics] = useState<Metrics>({
+  const metrics = useSignal<Metrics>({
     ordersPerMin: 0,
     fillsPerMin: 0,
     fillRate: 0,
     fillRateRecentChildren: 0,
     activeStrategies: 0,
   });
-  const [sparkline, setSparkline] = useState<SparkPoint[]>([]);
+  const sparkline = useSignal<SparkPoint[]>([]);
   const threshRef = useRef({ fillRateLow: false, orderFlood: false });
 
   useEffect(() => {
     function refresh() {
       const m = computeMetrics(orders);
-      setMetrics(m);
-      setSparkline(buildSparkline(orders));
+      metrics.value = m;
+      sparkline.value = buildSparkline(orders);
 
       // Threshold transitions
       const hasFillData = m.fillRateRecentChildren >= 5;
@@ -535,7 +536,7 @@ export function EstateOverviewPanel() {
     refresh();
     const id = setInterval(refresh, 5_000);
     return () => clearInterval(id);
-  }, [orders, dispatch]);
+  }, [orders, dispatch, metrics, sparkline]);
 
   return (
     <div className="h-full flex flex-col bg-gray-950 text-gray-200 overflow-hidden">
@@ -552,7 +553,7 @@ export function EstateOverviewPanel() {
       {/* Zones 2+3: Throughput left, Timeline right */}
       <div className="flex flex-1 min-h-0 divide-x divide-gray-800">
         <div className="w-[42%] flex flex-col overflow-hidden">
-          <ThroughputZone metrics={metrics} sparkline={sparkline} />
+          <ThroughputZone metrics={metrics.value} sparkline={sparkline.value} />
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">
           <TimelineZone />

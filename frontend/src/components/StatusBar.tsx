@@ -1,7 +1,7 @@
 import { useSignal } from "@preact/signals-react";
 import type { IJsonModel, TabNode } from "flexlayout-react";
 import { Actions, Model } from "flexlayout-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { AlertSeverity } from "../store/alertsSlice.ts";
 import { alertAdded, selectAlertCount, selectHighestSeverity } from "../store/alertsSlice.ts";
 import { clearUser } from "../store/authSlice.ts";
@@ -206,7 +206,7 @@ function ThemeSwitcher() {
 
 function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
   const dispatch = useAppDispatch();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerOpen = useSignal(false);
   const alertCount = useAppSelector(selectAlertCount);
   const highestSeverity = useAppSelector(selectHighestSeverity);
   const prevServiceStates = useRef<Record<string, string>>({});
@@ -271,7 +271,7 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
         type="button"
         onClick={() => {
           if (isPinned) focusAlertsTab();
-          else setDrawerOpen(true);
+          else drawerOpen.value = true;
         }}
         title={isPinned ? "Jump to Alerts panel" : "Alert Centre"}
         data-testid="alert-bell-btn"
@@ -284,7 +284,13 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
           </span>
         )}
       </button>
-      {drawerOpen && !isPinned && <AlertDrawer onClose={() => setDrawerOpen(false)} />}
+      {drawerOpen.value && !isPinned && (
+        <AlertDrawer
+          onClose={() => {
+            drawerOpen.value = false;
+          }}
+        />
+      )}
     </>
   );
 }

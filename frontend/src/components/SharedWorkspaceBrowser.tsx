@@ -1,5 +1,6 @@
+import { useSignal } from "@preact/signals-react";
 import type { IJsonModel } from "flexlayout-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { SharedWorkspaceEntry } from "../hooks/useWorkspaceSync.ts";
 import {
   deleteSharedWorkspace,
@@ -22,20 +23,24 @@ function relativeTime(unixSec: number): string {
 }
 
 export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
-  const [entries, setEntries] = useState<SharedWorkspaceEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [cloningId, setCloningId] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const entries = useSignal<SharedWorkspaceEntry[]>([]);
+  const loading = useSignal(true);
+  const cloningId = useSignal<string | null>(null);
+  const search = useSignal("");
   const isAdmin = useAppSelector((s) => s.auth.user?.role === "admin");
 
   useEffect(() => {
     listSharedWorkspaces()
-      .then(setEntries)
-      .finally(() => setLoading(false));
-  }, []);
+      .then((result) => {
+        entries.value = result;
+      })
+      .finally(() => {
+        loading.value = false;
+      });
+  }, [entries, loading]);
 
-  const filtered = entries.filter((e) => {
-    const q = search.toLowerCase();
+  const filtered = entries.value.filter((e) => {
+    const q = search.value.toLowerCase();
     return (
       e.name.toLowerCase().includes(q) ||
       e.description.toLowerCase().includes(q) ||
@@ -44,16 +49,16 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
   });
 
   async function handleClone(entry: SharedWorkspaceEntry) {
-    setCloningId(entry.id);
+    cloningId.value = entry.id;
     const detail = await fetchSharedWorkspace(entry.id);
-    setCloningId(null);
+    cloningId.value = null;
     if (!detail) return;
     onClone(detail.name, detail.model);
   }
 
   async function handleDelete(id: string) {
     await deleteSharedWorkspace(id);
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+    entries.value = entries.value.filter((e) => e.id !== id);
   }
 
   return (
@@ -83,15 +88,17 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
           <input
             type="search"
             placeholder="Filter by name, description or owner…"
-            value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
+            value={search.value}
+            onChange={(e) => {
+              search.value = e.currentTarget.value;
+            }}
             className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"
           />
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto">
-          {loading ? (
+          {loading.value ? (
             <div className="flex items-center justify-center py-12 text-gray-600 text-sm">
               Loading...
             </div>
@@ -99,7 +106,7 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
             <div className="flex flex-col items-center justify-center py-12 gap-2 text-gray-600 text-sm">
               <span className="text-2xl">⊞</span>
               <span>
-                {search ? "No workspaces match your search." : "No shared workspaces yet."}
+                {search.value ? "No workspaces match your search." : "No shared workspaces yet."}
               </span>
             </div>
           ) : (
@@ -125,11 +132,11 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
                   <div className="flex items-center gap-1 shrink-0 mt-0.5">
                     <button
                       type="button"
-                      disabled={cloningId === entry.id}
+                      disabled={cloningId.value === entry.id}
                       onClick={() => handleClone(entry)}
                       className="text-[11px] px-2.5 py-1 rounded bg-emerald-800 hover:bg-emerald-700 text-emerald-200 transition-colors disabled:opacity-50"
                     >
-                      {cloningId === entry.id ? "Cloning…" : "Clone"}
+                      {cloningId.value === entry.id ? "Cloning…" : "Clone"}
                     </button>
                     {isAdmin && (
                       <button
@@ -149,11 +156,11 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
         </div>
 
         {/* Footer count */}
-        {!loading && entries.length > 0 && (
+        {!loading.value && entries.value.length > 0 && (
           <div className="px-4 py-2 border-t border-gray-800 shrink-0 text-[10px] text-gray-600">
-            {filtered.length === entries.length
-              ? `${entries.length} workspace${entries.length !== 1 ? "s" : ""}`
-              : `${filtered.length} of ${entries.length}`}
+            {filtered.length === entries.value.length
+              ? `${entries.value.length} workspace${entries.value.length !== 1 ? "s" : ""}`
+              : `${filtered.length} of ${entries.value.length}`}
           </div>
         )}
       </div>

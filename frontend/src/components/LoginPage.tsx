@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import { type AuthRole, ROLE_LABELS } from "../auth/rbac.ts";
 import { setUser } from "../store/authSlice.ts";
 import { useAppDispatch } from "../store/hooks.ts";
@@ -323,11 +323,11 @@ interface LoginPageProps {
 
 export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
   const dispatch = useAppDispatch();
-  const [mode, setMode] = useState<"signin" | "register">("signin");
-  const [username, setUsername] = useState("alice");
-  const [password, setPassword] = useState("veta-dev-passcode");
-  const [displayName, setDisplayName] = useState("");
-  const [localError, setLocalError] = useState<string | null>(null);
+  const mode = useSignal<"signin" | "register">("signin");
+  const username = useSignal("alice");
+  const password = useSignal("veta-dev-passcode");
+  const displayName = useSignal("");
+  const localError = useSignal<string | null>(null);
   const [authorizeOAuth, authorizeState] = useAuthorizeOAuthMutation();
   const [exchangeOAuthCode, tokenState] = useExchangeOAuthCodeMutation();
   const [registerOAuthUser, registerState] = useRegisterOAuthUserMutation();
@@ -337,31 +337,31 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const normalizedUsername = username.trim().toLowerCase();
-    const trimmedName = displayName.trim();
-    setLocalError(null);
+    const normalizedUsername = username.value.trim().toLowerCase();
+    const trimmedName = displayName.value.trim();
+    localError.value = null;
     authorizeState.reset();
     tokenState.reset();
     registerState.reset();
 
     if (!normalizedUsername) {
-      setLocalError("Username is required.");
+      localError.value = "Username is required.";
       return;
     }
-    if (!password.trim()) {
-      setLocalError("Passcode is required.");
+    if (!password.value.trim()) {
+      localError.value = "Passcode is required.";
       return;
     }
-    if (mode === "register" && !trimmedName) {
-      setLocalError("Display name is required to register a viewer account.");
+    if (mode.value === "register" && !trimmedName) {
+      localError.value = "Display name is required to register a viewer account.";
       return;
     }
 
-    if (mode === "register") {
+    if (mode.value === "register") {
       const registerResult = await registerOAuthUser({
         username: normalizedUsername,
         name: trimmedName,
-        password,
+        password: password.value,
       });
       if (!("data" in registerResult)) return;
     }
@@ -370,7 +370,7 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
     const authorizeResult = await authorizeOAuth({
       client_id: OAUTH_CLIENT_ID,
       username: normalizedUsername,
-      password,
+      password: password.value,
       redirect_uri: OAUTH_REDIRECT_URI,
       response_type: "code",
       scope: OAUTH_SCOPE,
@@ -428,24 +428,32 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
         </div>
 
         <AuthForm
-          mode={mode}
-          username={username}
-          password={password}
-          displayName={displayName}
+          mode={mode.value}
+          username={username.value}
+          password={password.value}
+          displayName={displayName.value}
           loading={isLoading}
-          onModeChange={setMode}
-          onUsernameChange={setUsername}
-          onPasswordChange={setPassword}
-          onDisplayNameChange={setDisplayName}
+          onModeChange={(m) => {
+            mode.value = m;
+          }}
+          onUsernameChange={(v) => {
+            username.value = v;
+          }}
+          onPasswordChange={(v) => {
+            password.value = v;
+          }}
+          onDisplayNameChange={(v) => {
+            displayName.value = v;
+          }}
           onSubmit={handleSubmit}
         />
 
-        {(localError || apiError) && (
+        {(localError.value || apiError) && (
           <div
             data-testid="login-error"
             className="mt-6 text-center text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-lg px-4 py-2"
           >
-            {localError ??
+            {localError.value ??
               ("status" in apiError!
                 ? `Sign in failed (${String(apiError.status)})`
                 : "Sign in failed")}
@@ -454,9 +462,9 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
 
         <DemoPersonas
           onSelect={(personaId) => {
-            setMode("signin");
-            setUsername(personaId);
-            setPassword(import.meta.env.VITE_DEMO_PASSCODE ?? "veta-dev-passcode");
+            mode.value = "signin";
+            username.value = personaId;
+            password.value = import.meta.env.VITE_DEMO_PASSCODE ?? "veta-dev-passcode";
           }}
         />
 

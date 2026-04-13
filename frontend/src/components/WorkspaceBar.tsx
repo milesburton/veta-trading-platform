@@ -246,13 +246,11 @@ export function WorkspaceSidebar({
   const editValue = useSignal("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [shareToast, setShareToast] = useState<string | null>(null);
-  const [browseOpen, setBrowseOpen] = useState(false);
-  const [sharedIds, setSharedIds] = useState<Set<string>>(new Set());
-  const [shareDialog, setShareDialog] = useState<{ ws: Workspace; description: string } | null>(
-    null
-  );
+  const confirmDeleteId = useSignal<string | null>(null);
+  const shareToast = useSignal<string | null>(null);
+  const browseOpen = useSignal(false);
+  const sharedIds = useSignal<Set<string>>(new Set());
+  const shareDialog = useSignal<{ ws: Workspace; description: string } | null>(null);
 
   const isExpanded = pinned.value || hovered.value;
 
@@ -338,26 +336,28 @@ export function WorkspaceSidebar({
 
   function shareWorkspace(ws: Workspace) {
     if (!layouts[ws.id] || ws.locked || ws.userLocked) return;
-    setShareDialog({ ws, description: "" });
+    shareDialog.value = { ws, description: "" };
   }
 
   async function confirmShare() {
-    if (!shareDialog) return;
-    const { ws, description } = shareDialog;
-    setShareDialog(null);
+    if (!shareDialog.value) return;
+    const { ws, description } = shareDialog.value;
+    shareDialog.value = null;
     const model = layouts[ws.id];
     if (!model) return;
     const id = await publishSharedWorkspace(ws.name, description, model.toJson() as IJsonModel);
     if (!id) return;
-    setSharedIds((prev) => new Set([...prev, ws.id]));
+    sharedIds.value = new Set([...sharedIds.value, ws.id]);
     const url = `${window.location.origin}${window.location.pathname}?shared=${id}`;
     try {
       await navigator.clipboard.writeText(url);
-      setShareToast("Link copied!");
+      shareToast.value = "Link copied!";
     } catch {
-      setShareToast(url);
+      shareToast.value = url;
     }
-    setTimeout(() => setShareToast(null), 3000);
+    setTimeout(() => {
+      shareToast.value = null;
+    }, 3000);
   }
 
   return (
@@ -395,7 +395,9 @@ export function WorkspaceSidebar({
                 type="button"
                 aria-label="Browse shared workspaces"
                 title="Browse shared workspaces"
-                onClick={() => setBrowseOpen(true)}
+                onClick={() => {
+                  browseOpen.value = true;
+                }}
                 className="flex items-center justify-center w-7 h-full shrink-0 text-gray-600 hover:text-gray-300 transition-colors text-sm"
               >
                 ⊞
@@ -441,7 +443,7 @@ export function WorkspaceSidebar({
           {workspaces.map((ws) => {
             const active = ws.id === activeId;
             const isEditing = editingId.value === ws.id;
-            const isConfirmingDelete = confirmDeleteId === ws.id;
+            const isConfirmingDelete = confirmDeleteId.value === ws.id;
             const presetLocked = ws.locked === true;
             const locked = presetLocked || ws.userLocked === true;
 
@@ -463,7 +465,9 @@ export function WorkspaceSidebar({
                         </span>
                         <button
                           type="button"
-                          onClick={() => setConfirmDeleteId(null)}
+                          onClick={() => {
+                            confirmDeleteId.value = null;
+                          }}
                           className="text-[10px] text-gray-500 hover:text-gray-300 px-1"
                         >
                           Cancel
@@ -471,7 +475,7 @@ export function WorkspaceSidebar({
                         <button
                           type="button"
                           onClick={() => {
-                            setConfirmDeleteId(null);
+                            confirmDeleteId.value = null;
                             removeWorkspace(ws.id);
                           }}
                           className="text-[10px] text-red-500 hover:text-red-400 px-1"
@@ -600,7 +604,7 @@ export function WorkspaceSidebar({
                               data-testid="share-workspace-btn"
                               aria-label={`Share workspace ${ws.name}`}
                               title={
-                                sharedIds.has(ws.id)
+                                sharedIds.value.has(ws.id)
                                   ? "Shared — click to copy link again"
                                   : "Share workspace (copies link)"
                               }
@@ -609,7 +613,7 @@ export function WorkspaceSidebar({
                                 shareWorkspace(ws);
                               }}
                               className={`shrink-0 transition-all hover:scale-110 p-0.5 ${
-                                sharedIds.has(ws.id)
+                                sharedIds.value.has(ws.id)
                                   ? "text-emerald-400 opacity-100 hover:text-emerald-300"
                                   : "text-gray-300 opacity-0 group-hover:opacity-100 hover:text-emerald-300"
                               }`}
@@ -630,7 +634,7 @@ export function WorkspaceSidebar({
                               title={`Delete ${ws.name}`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setConfirmDeleteId(ws.id);
+                                confirmDeleteId.value = ws.id;
                               }}
                               className="shrink-0 text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 p-0.5"
                             >
@@ -690,54 +694,58 @@ export function WorkspaceSidebar({
         </ul>
       </nav>
 
-      {shareToast && (
+      {shareToast.value && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-gray-800 text-gray-100 text-xs px-4 py-2 rounded shadow-lg border border-gray-700">
-          {shareToast}
+          {shareToast.value}
         </div>
       )}
 
-      {browseOpen && (
+      {browseOpen.value && (
         <SharedWorkspaceBrowser
-          onClose={() => setBrowseOpen(false)}
+          onClose={() => {
+            browseOpen.value = false;
+          }}
           onClone={(name, model) => {
             const newId = `ws-${Date.now()}`;
             const next = [...workspaces, { id: newId, name }];
             onWorkspacesChange(next);
             onSelect(newId);
             onCloneWorkspace?.(newId, model);
-            setBrowseOpen(false);
+            browseOpen.value = false;
           }}
         />
       )}
 
-      {shareDialog && (
+      {shareDialog.value && (
         // biome-ignore lint/a11y/noStaticElementInteractions: modal backdrop
         // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard handled by buttons inside
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setShareDialog(null);
+            if (e.target === e.currentTarget) shareDialog.value = null;
           }}
         >
           <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-sm mx-4 p-4 flex flex-col gap-3">
             <p className="text-sm font-semibold text-gray-200">
-              Share &ldquo;{shareDialog.ws.name}&rdquo;
+              Share &ldquo;{shareDialog.value.ws.name}&rdquo;
             </p>
             <textarea
               rows={3}
               placeholder="Add a description so others know what this workspace is for… (optional)"
-              value={shareDialog.description}
-              onChange={(e) =>
-                setShareDialog((prev) =>
-                  prev ? { ...prev, description: e.currentTarget.value } : prev
-                )
-              }
+              value={shareDialog.value.description}
+              onChange={(e) => {
+                shareDialog.value = shareDialog.value
+                  ? { ...shareDialog.value, description: e.currentTarget.value }
+                  : shareDialog.value;
+              }}
               className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500 resize-none"
             />
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
-                onClick={() => setShareDialog(null)}
+                onClick={() => {
+                  shareDialog.value = null;
+                }}
                 className="px-3 py-1.5 rounded text-xs text-gray-400 hover:text-gray-200 transition-colors"
               >
                 Cancel

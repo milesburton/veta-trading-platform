@@ -5,7 +5,7 @@
  * given symbol and expiry.  Data from GET /analytics/greeks-surface/:symbol.
  */
 
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import {
   CartesianGrid,
   ComposedChart,
@@ -61,12 +61,12 @@ function SurfaceTooltip({
 
 export function GreeksSurfacePanel() {
   const symbols = useAppSelector((s) => s.market.assets.map((a) => a.symbol));
-  const [symbol, setSymbol] = useState(symbols[0] ?? "AAPL");
-  const [expirySecs, setExpirySecs] = useState(30 * 86400);
+  const symbol = useSignal(symbols[0] ?? "AAPL");
+  const expirySecs = useSignal(30 * 86400);
 
   const { data, isFetching, error } = useGetGreeksSurfaceQuery(
-    { symbol, expirySecs },
-    { skip: !symbol }
+    { symbol: symbol.value, expirySecs: expirySecs.value },
+    { skip: !symbol.value }
   );
 
   const chartData = data?.strikes.map((pt) => ({
@@ -89,8 +89,10 @@ export function GreeksSurfacePanel() {
       {/* Controls */}
       <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-800 shrink-0 flex-wrap">
         <select
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
+          value={symbol.value}
+          onChange={(e) => {
+            symbol.value = e.target.value;
+          }}
           className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200"
         >
           {symbols.map((s) => (
@@ -105,9 +107,11 @@ export function GreeksSurfacePanel() {
             <button
               key={label}
               type="button"
-              onClick={() => setExpirySecs(secs)}
+              onClick={() => {
+                expirySecs.value = secs;
+              }}
               className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
-                expirySecs === secs
+                expirySecs.value === secs
                   ? "bg-blue-700 text-white"
                   : "bg-gray-800 text-gray-400 hover:bg-gray-700"
               }`}

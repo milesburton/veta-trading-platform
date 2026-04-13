@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useSignal } from "@preact/signals-react";
+import { useEffect, useRef } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { alertAdded } from "../store/alertsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
@@ -105,7 +106,7 @@ export function ThroughputGaugesPanel() {
   const orders = useAppSelector((s) => s.orders.orders);
   const events = useAppSelector((s) => s.observability.events);
 
-  const [metrics, setMetrics] = useState<Metrics>({
+  const metrics = useSignal<Metrics>({
     ordersPerMin: 0,
     fillsPerMin: 0,
     fillRate: 0,
@@ -113,7 +114,7 @@ export function ThroughputGaugesPanel() {
     activeStrategies: 0,
     busEventsPerMin: 0,
   });
-  const [sparkline, setSparkline] = useState<SparkPoint[]>([]);
+  const sparkline = useSignal<SparkPoint[]>([]);
 
   // Track threshold state for transition detection
   const threshRef = useRef({ fillRateLow: false, orderFlood: false });
@@ -121,8 +122,8 @@ export function ThroughputGaugesPanel() {
   useEffect(() => {
     function refresh() {
       const m = computeMetrics(orders, events);
-      setMetrics(m);
-      setSparkline(buildSparkline(orders));
+      metrics.value = m;
+      sparkline.value = buildSparkline(orders);
 
       // Fill rate threshold transitions
       const hasFillData = m.fillRateRecentChildren >= 5;
@@ -179,54 +180,54 @@ export function ThroughputGaugesPanel() {
     refresh();
     const id = setInterval(refresh, 5_000);
     return () => clearInterval(id);
-  }, [orders, events, dispatch]);
+  }, [orders, events, dispatch, metrics, sparkline]);
 
   // Fill rate card colouring
   const fillRateBorder =
-    metrics.fillRate < FILL_RATE_CRIT && metrics.fillRateRecentChildren >= 5
+    metrics.value.fillRate < FILL_RATE_CRIT && metrics.value.fillRateRecentChildren >= 5
       ? "border-red-700/60"
-      : metrics.fillRate < FILL_RATE_WARN && metrics.fillRateRecentChildren >= 5
+      : metrics.value.fillRate < FILL_RATE_WARN && metrics.value.fillRateRecentChildren >= 5
         ? "border-yellow-700/60"
         : "border-yellow-700/60";
   const fillRateText =
-    metrics.fillRate < FILL_RATE_CRIT && metrics.fillRateRecentChildren >= 5
+    metrics.value.fillRate < FILL_RATE_CRIT && metrics.value.fillRateRecentChildren >= 5
       ? "text-red-400"
-      : metrics.fillRate < FILL_RATE_WARN && metrics.fillRateRecentChildren >= 5
+      : metrics.value.fillRate < FILL_RATE_WARN && metrics.value.fillRateRecentChildren >= 5
         ? "text-yellow-300"
         : "text-yellow-400";
 
   const ordersBorder =
-    metrics.ordersPerMin > ORDER_FLOOD ? "border-red-700/60" : "border-blue-700/60";
-  const ordersText = metrics.ordersPerMin > ORDER_FLOOD ? "text-red-400" : "text-blue-400";
+    metrics.value.ordersPerMin > ORDER_FLOOD ? "border-red-700/60" : "border-blue-700/60";
+  const ordersText = metrics.value.ordersPerMin > ORDER_FLOOD ? "text-red-400" : "text-blue-400";
 
   const cards: MetricCardProps[] = [
     {
       label: "Orders / min",
-      value: metrics.ordersPerMin,
+      value: metrics.value.ordersPerMin,
       borderClass: ordersBorder,
       textClass: ordersText,
     },
     {
       label: "Fills / min",
-      value: metrics.fillsPerMin,
+      value: metrics.value.fillsPerMin,
       borderClass: "border-green-700/60",
       textClass: "text-green-400",
     },
     {
       label: "Fill rate",
-      value: `${metrics.fillRate}%`,
+      value: `${metrics.value.fillRate}%`,
       borderClass: fillRateBorder,
       textClass: fillRateText,
     },
     {
       label: "Active strategies",
-      value: metrics.activeStrategies,
+      value: metrics.value.activeStrategies,
       borderClass: "border-purple-700/60",
       textClass: "text-purple-400",
     },
     {
       label: "Bus events / min",
-      value: metrics.busEventsPerMin,
+      value: metrics.value.busEventsPerMin,
       borderClass: "border-orange-700/60",
       textClass: "text-orange-400",
     },
@@ -255,7 +256,7 @@ export function ThroughputGaugesPanel() {
         </div>
         <div className="flex-1 min-h-[60px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={sparkline} margin={{ top: 2, right: 4, left: 0, bottom: 2 }}>
+            <LineChart data={sparkline.value} margin={{ top: 2, right: 4, left: 0, bottom: 2 }}>
               <XAxis dataKey="t" hide />
               <Tooltip
                 contentStyle={{
@@ -271,7 +272,7 @@ export function ThroughputGaugesPanel() {
               <Line
                 type="monotone"
                 dataKey="count"
-                stroke={metrics.ordersPerMin > ORDER_FLOOD ? "#f87171" : "#3b82f6"}
+                stroke={metrics.value.ordersPerMin > ORDER_FLOOD ? "#f87171" : "#3b82f6"}
                 strokeWidth={1.5}
                 dot={false}
                 isAnimationActive={false}

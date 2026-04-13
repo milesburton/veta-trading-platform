@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSignal } from "@preact/signals-react";
 import type { AlertSeverity } from "../store/alertsSlice.ts";
 import { allAlertsDismissed, selectActiveAlerts } from "../store/alertsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
@@ -9,7 +9,7 @@ type Filter = "ALL" | AlertSeverity;
 export function AlertsPanel() {
   const dispatch = useAppDispatch();
   const alerts = useAppSelector(selectActiveAlerts);
-  const [filter, setFilter] = useState<Filter>("ALL");
+  const filter = useSignal<Filter>("ALL");
 
   return (
     <div
@@ -31,7 +31,13 @@ export function AlertsPanel() {
           </button>
         )}
       </div>
-      <AlertList alerts={alerts} filter={filter} onFilter={setFilter} />
+      <AlertList
+        alerts={alerts}
+        filter={filter.value}
+        onFilter={(f) => {
+          filter.value = f;
+        }}
+      />
     </div>
   );
 }
