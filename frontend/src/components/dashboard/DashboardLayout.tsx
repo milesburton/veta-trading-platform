@@ -10,61 +10,16 @@ import { ChannelContext } from "../../contexts/ChannelContext.tsx";
 import type { ChannelNumber } from "../../store/channelsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../../store/hooks.ts";
 import { panelDialogClosed, panelDialogOpened } from "../../store/windowSlice.ts";
-import { AdminPanel } from "../AdminPanel.tsx";
-import { AlertsPanel } from "../AlertsPanel.tsx";
-import { AlgoLeaderboardPanel } from "../AlgoLeaderboardPanel.tsx";
-import { AlgoMonitor } from "../AlgoMonitor.tsx";
-import { AnalysisPanel } from "../AnalysisPanel.tsx";
-import { BasketOrderPanel } from "../BasketOrderPanel.tsx";
 import { CandlestickChart } from "../CandlestickChart.tsx";
-import { ChildOrdersPanel } from "../ChildOrdersPanel.tsx";
-import { ClientRfqPanel } from "../ClientRfqPanel.tsx";
 import type { ContextMenuEntry } from "../ContextMenu.tsx";
 import { ContextMenu } from "../ContextMenu.tsx";
-import { DecisionLog } from "../DecisionLog.tsx";
-import { DemoDayPanel } from "../DemoDayPanel.tsx";
-import { DurationLadderPanel } from "../DurationLadderPanel.tsx";
-import { EstateOverviewPanel } from "../EstateOverviewPanel.tsx";
-import { ExecutionsPanel } from "../ExecutionsPanel.tsx";
-import { GreeksSurfacePanel } from "../GreeksSurfacePanel.tsx";
-import { InstrumentAnalysisPanel } from "../InstrumentAnalysisPanel.tsx";
-import { LlmSubsystemPanel } from "../LlmSubsystemPanel.tsx";
-import { LoadTestPanel } from "../LoadTestPanel.tsx";
-import { MarketDataSourcesPanel } from "../MarketDataSourcesPanel.tsx";
 import { MarketDepth } from "../MarketDepth.tsx";
-import { MarketFeedControlPanel } from "../MarketFeedControlPanel.tsx";
-import { MarketHeatmap } from "../MarketHeatmap.tsx";
-import { MarketLadder } from "../MarketLadder.tsx";
-import { MarketMatch } from "../MarketMatch.tsx";
-import { MyPositionsPanel } from "../MyPositionsPanel.tsx";
-import { NewsSourcesPanel } from "../NewsSourcesPanel.tsx";
-import { ObservabilityPanel } from "../ObservabilityPanel.tsx";
-import { OptionPricingPanel } from "../OptionPricingPanel.tsx";
-import { OrderBlotter } from "../OrderBlotter.tsx";
-import { OrderProgressPanel } from "../OrderProgressPanel.tsx";
-import { OrderTicket } from "../OrderTicket.tsx";
-import { PriceFanPanel } from "../PriceFanPanel.tsx";
-import { ProductBookPanel } from "../ProductBookPanel.tsx";
-import { ProductBuilderPanel } from "../ProductBuilderPanel.tsx";
 import { clearDraggedPanelId, draggedPanelId } from "../panelDragState.ts";
-import { ResearchRadarPanel } from "../ResearchRadarPanel.tsx";
-import { RiskDashboardPanel } from "../RiskDashboardPanel.tsx";
-import { SalesWorkbenchPanel } from "../SalesWorkbenchPanel.tsx";
-import { ScenarioMatrixPanel } from "../ScenarioMatrixPanel.tsx";
-import { ServiceHealthPanel } from "../ServiceHealthPanel.tsx";
-import { SessionReplayPanel } from "../SessionReplayPanel.tsx";
-import { SignalExplainabilityPanel } from "../SignalExplainabilityPanel.tsx";
-import { SpreadAnalysisPanel } from "../SpreadAnalysisPanel.tsx";
-import { SymbolSearchBar } from "../SymbolSearchBar.tsx";
-import { ThroughputGaugesPanel } from "../ThroughputGaugesPanel.tsx";
-import { TradeRecommendationPanel } from "../TradeRecommendationPanel.tsx";
-import { VolatilityProfilePanel } from "../VolatilityProfilePanel.tsx";
-import { VolSurfacePanel } from "../VolSurfacePanel.tsx";
-import { YieldCurvePanel } from "../YieldCurvePanel.tsx";
 import { DashboardContext, useDashboard } from "./DashboardContext.tsx";
 import { LAYOUT_TEMPLATES } from "./layoutModels.ts";
 import type { LayoutItem } from "./layoutUtils.ts";
 import { wouldCreateCycleIn, wouldCreateCycleOut } from "./layoutUtils.ts";
+import { getPanelComponent } from "./panelComponents.ts";
 import type { PanelId, TabChannelConfig } from "./panelRegistry.ts";
 import {
   CHANNEL_COLOURS,
@@ -317,22 +272,22 @@ function patchTabConfig(
   return false;
 }
 
-const DIALOG_PANEL_MAP: Record<string, React.ComponentType<{ instanceId: string }>> = {
-  "market-ladder": MarketLadder,
-  "order-ticket": OrderTicket,
-  "order-blotter": OrderBlotter,
-  "child-orders": ChildOrdersPanel,
-  "algo-monitor": AlgoMonitor,
-  observability: ObservabilityPanel,
-  executions: ExecutionsPanel,
-  "decision-log": DecisionLog,
-  "market-match": MarketMatch,
-  admin: AdminPanel,
-  news: AnalysisPanel,
-  "news-sources": NewsSourcesPanel,
-  "order-progress": OrderProgressPanel,
-  "market-heatmap": MarketHeatmap,
-};
+const DIALOG_PANEL_IDS = new Set([
+  "market-ladder",
+  "order-ticket",
+  "order-blotter",
+  "child-orders",
+  "algo-monitor",
+  "observability",
+  "executions",
+  "decision-log",
+  "market-match",
+  "admin",
+  "news",
+  "news-sources",
+  "order-progress",
+  "market-heatmap",
+]);
 
 function PanelDialog({
   instanceId,
@@ -343,7 +298,7 @@ function PanelDialog({
   panelType: string;
   onClose: () => void;
 }) {
-  const DialogPanel = DIALOG_PANEL_MAP[panelType];
+  const DialogPanel = DIALOG_PANEL_IDS.has(panelType) ? getPanelComponent(panelType) : undefined;
   const title = PANEL_TITLES[panelType as PanelId] ?? panelType;
 
   useEffect(() => {
@@ -613,121 +568,32 @@ export function DashboardLayout() {
         );
       }
 
-      switch (panelType) {
-        case "market-ladder":
-          return wrap(<MarketLadder />);
-        case "order-ticket":
-          return wrap(<OrderTicket />);
-        case "order-blotter":
-          return wrap(<OrderBlotter />);
-        case "child-orders":
-          return wrap(<ChildOrdersPanel />);
-        case "algo-monitor":
-          return wrap(<AlgoMonitor />);
-        case "observability":
-          return wrap(<ObservabilityPanel />);
-        case "candle-chart":
-          return wrap(<CandleChartPanel incoming={incoming} />);
-        case "market-depth": {
-          const depthSymbol =
-            incoming !== null
-              ? (channelsData[incoming]?.selectedAsset ?? legacySelectedAsset)
-              : legacySelectedAsset;
-          return wrap(
-            <div className="flex flex-col h-full">
-              {depthSymbol ? (
-                <MarketDepth symbol={depthSymbol} />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-600 text-xs bg-gradient-to-br from-gray-900 to-gray-950">
-                  <div className="text-center">Select an asset in Market Ladder</div>
-                </div>
-              )}
-            </div>
-          );
-        }
-        case "executions":
-          return wrap(<ExecutionsPanel />);
-        case "decision-log":
-          return wrap(<DecisionLog />);
-        case "market-match":
-          return wrap(<MarketMatch />);
-        case "admin":
-          return wrap(<AdminPanel />);
-        case "news":
-          return wrap(<AnalysisPanel />);
-        case "news-sources":
-          return wrap(<NewsSourcesPanel />);
-        case "order-progress":
-          return wrap(<OrderProgressPanel />);
-        case "market-heatmap":
-          return wrap(<MarketHeatmap />);
-        case "alerts":
-          return wrap(<AlertsPanel />);
-        case "option-pricing":
-          return wrap(<OptionPricingPanel />);
-        case "scenario-matrix":
-          return wrap(<ScenarioMatrixPanel />);
-        case "trade-recommendation":
-          return wrap(<TradeRecommendationPanel />);
-        case "market-data-sources":
-          return wrap(<MarketDataSourcesPanel />);
-        case "market-feed-control":
-          return wrap(<MarketFeedControlPanel />);
-        case "research-radar":
-          return wrap(<ResearchRadarPanel />);
-        case "instrument-analysis":
-          return wrap(<InstrumentAnalysisPanel />);
-        case "signal-explainability":
-          return wrap(<SignalExplainabilityPanel />);
-        case "service-health":
-          return wrap(<ServiceHealthPanel />);
-        case "throughput-gauges":
-          return wrap(<ThroughputGaugesPanel />);
-        case "algo-leaderboard":
-          return wrap(<AlgoLeaderboardPanel />);
-        case "load-test":
-          return wrap(<LoadTestPanel />);
-        case "llm-subsystem":
-          return wrap(<LlmSubsystemPanel />);
-        case "estate-overview":
-          return wrap(<EstateOverviewPanel />);
-        case "greeks-surface":
-          return wrap(<GreeksSurfacePanel />);
-        case "vol-profile":
-          return wrap(<VolatilityProfilePanel />);
-        case "yield-curve":
-          return wrap(<YieldCurvePanel />);
-        case "price-fan":
-          return wrap(<PriceFanPanel />);
-        case "demo-day":
-          return wrap(<DemoDayPanel />);
-        case "spread-analysis":
-          return wrap(<SpreadAnalysisPanel />);
-        case "duration-ladder":
-          return wrap(<DurationLadderPanel />);
-        case "vol-surface":
-          return wrap(<VolSurfacePanel />);
-        case "basket-order":
-          return wrap(<BasketOrderPanel />);
-        case "client-rfq":
-          return wrap(<ClientRfqPanel />);
-        case "sales-workbench":
-          return wrap(<SalesWorkbenchPanel />);
-        case "product-builder":
-          return wrap(<ProductBuilderPanel />);
-        case "product-book":
-          return wrap(<ProductBookPanel />);
-        case "session-replay":
-          return wrap(<SessionReplayPanel />);
-        case "risk-dashboard":
-          return wrap(<RiskDashboardPanel />);
-        case "my-positions":
-          return wrap(<MyPositionsPanel />);
-        case "symbol-search":
-          return wrap(<SymbolSearchBar />);
-        default:
-          return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
+      if (panelType === "candle-chart") {
+        return wrap(<CandleChartPanel incoming={incoming} />);
       }
+      if (panelType === "market-depth") {
+        const depthSymbol =
+          incoming !== null
+            ? (channelsData[incoming]?.selectedAsset ?? legacySelectedAsset)
+            : legacySelectedAsset;
+        return wrap(
+          <div className="flex flex-col h-full">
+            {depthSymbol ? (
+              <MarketDepth symbol={depthSymbol} />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-600 text-xs bg-gradient-to-br from-gray-900 to-gray-950">
+                <div className="text-center">Select an asset in Market Ladder</div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      const PanelComponent = getPanelComponent(panelType);
+      if (PanelComponent) {
+        return wrap(<PanelComponent />);
+      }
+      return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
     },
     [legacySelectedAsset, channelsData, userRole, tradingStyle]
   );

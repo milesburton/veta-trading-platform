@@ -1,0 +1,112 @@
+import type { ComponentType } from "react";
+import { AdminPanel } from "../AdminPanel.tsx";
+import { AlertsPanel } from "../AlertsPanel.tsx";
+import { AlgoLeaderboardPanel } from "../AlgoLeaderboardPanel.tsx";
+import { AlgoMonitor } from "../AlgoMonitor.tsx";
+import { AnalysisPanel } from "../AnalysisPanel.tsx";
+import { BasketOrderPanel } from "../BasketOrderPanel.tsx";
+import { CandlestickChart } from "../CandlestickChart.tsx";
+import { ChildOrdersPanel } from "../ChildOrdersPanel.tsx";
+import { ClientRfqPanel } from "../ClientRfqPanel.tsx";
+import { DecisionLog } from "../DecisionLog.tsx";
+import { DemoDayPanel } from "../DemoDayPanel.tsx";
+import { DurationLadderPanel } from "../DurationLadderPanel.tsx";
+import { EstateOverviewPanel } from "../EstateOverviewPanel.tsx";
+import { ExecutionsPanel } from "../ExecutionsPanel.tsx";
+import { GreeksSurfacePanel } from "../GreeksSurfacePanel.tsx";
+import { InstrumentAnalysisPanel } from "../InstrumentAnalysisPanel.tsx";
+import { LlmSubsystemPanel } from "../LlmSubsystemPanel.tsx";
+import { LoadTestPanel } from "../LoadTestPanel.tsx";
+import { MarketDataSourcesPanel } from "../MarketDataSourcesPanel.tsx";
+import { MarketDepth } from "../MarketDepth.tsx";
+import { MarketFeedControlPanel } from "../MarketFeedControlPanel.tsx";
+import { MarketHeatmap } from "../MarketHeatmap.tsx";
+import { MarketLadder } from "../MarketLadder.tsx";
+import { MarketMatch } from "../MarketMatch.tsx";
+import { MyPositionsPanel } from "../MyPositionsPanel.tsx";
+import { NewsSourcesPanel } from "../NewsSourcesPanel.tsx";
+import { ObservabilityPanel } from "../ObservabilityPanel.tsx";
+import { OptionPricingPanel } from "../OptionPricingPanel.tsx";
+import { OrderBlotter } from "../OrderBlotter.tsx";
+import { OrderProgressPanel } from "../OrderProgressPanel.tsx";
+import { OrderTicket } from "../OrderTicket.tsx";
+import { PriceFanPanel } from "../PriceFanPanel.tsx";
+import { ProductBookPanel } from "../ProductBookPanel.tsx";
+import { ProductBuilderPanel } from "../ProductBuilderPanel.tsx";
+import { ResearchRadarPanel } from "../ResearchRadarPanel.tsx";
+import { RiskDashboardPanel } from "../RiskDashboardPanel.tsx";
+import { SalesWorkbenchPanel } from "../SalesWorkbenchPanel.tsx";
+import { ScenarioMatrixPanel } from "../ScenarioMatrixPanel.tsx";
+import { ServiceHealthPanel } from "../ServiceHealthPanel.tsx";
+import { SessionReplayPanel } from "../SessionReplayPanel.tsx";
+import { SignalExplainabilityPanel } from "../SignalExplainabilityPanel.tsx";
+import { SpreadAnalysisPanel } from "../SpreadAnalysisPanel.tsx";
+import { SymbolSearchBar } from "../SymbolSearchBar.tsx";
+import { ThroughputGaugesPanel } from "../ThroughputGaugesPanel.tsx";
+import { TradeRecommendationPanel } from "../TradeRecommendationPanel.tsx";
+import { VolatilityProfilePanel } from "../VolatilityProfilePanel.tsx";
+import { VolSurfacePanel } from "../VolSurfacePanel.tsx";
+import { YieldCurvePanel } from "../YieldCurvePanel.tsx";
+import type { PanelId } from "./panelRegistry.ts";
+
+// biome-ignore lint/suspicious/noExplicitAny: panels have varying prop signatures
+type AnyComponent = ComponentType<any>;
+
+const registry = new Map<PanelId, AnyComponent>();
+
+export function registerPanel(id: PanelId, component: AnyComponent): void {
+  registry.set(id, component);
+}
+
+export function getPanelComponent(id: string): AnyComponent | undefined {
+  return registry.get(id as PanelId);
+}
+
+registerPanel("market-ladder", MarketLadder);
+registerPanel("order-ticket", OrderTicket);
+registerPanel("order-blotter", OrderBlotter);
+registerPanel("child-orders", ChildOrdersPanel);
+registerPanel("algo-monitor", AlgoMonitor);
+registerPanel("observability", ObservabilityPanel);
+registerPanel("candle-chart", CandlestickChart);
+registerPanel("market-depth", MarketDepth);
+registerPanel("executions", ExecutionsPanel);
+registerPanel("decision-log", DecisionLog);
+registerPanel("market-match", MarketMatch);
+registerPanel("admin", AdminPanel);
+registerPanel("news", AnalysisPanel);
+registerPanel("news-sources", NewsSourcesPanel);
+registerPanel("order-progress", OrderProgressPanel);
+registerPanel("market-heatmap", MarketHeatmap);
+registerPanel("alerts", AlertsPanel);
+registerPanel("option-pricing", OptionPricingPanel);
+registerPanel("scenario-matrix", ScenarioMatrixPanel);
+registerPanel("trade-recommendation", TradeRecommendationPanel);
+registerPanel("market-data-sources", MarketDataSourcesPanel);
+registerPanel("market-feed-control", MarketFeedControlPanel);
+registerPanel("research-radar", ResearchRadarPanel);
+registerPanel("instrument-analysis", InstrumentAnalysisPanel);
+registerPanel("signal-explainability", SignalExplainabilityPanel);
+registerPanel("service-health", ServiceHealthPanel);
+registerPanel("throughput-gauges", ThroughputGaugesPanel);
+registerPanel("algo-leaderboard", AlgoLeaderboardPanel);
+registerPanel("load-test", LoadTestPanel);
+registerPanel("llm-subsystem", LlmSubsystemPanel);
+registerPanel("estate-overview", EstateOverviewPanel);
+registerPanel("greeks-surface", GreeksSurfacePanel);
+registerPanel("vol-profile", VolatilityProfilePanel);
+registerPanel("yield-curve", YieldCurvePanel);
+registerPanel("price-fan", PriceFanPanel);
+registerPanel("demo-day", DemoDayPanel);
+registerPanel("spread-analysis", SpreadAnalysisPanel);
+registerPanel("duration-ladder", DurationLadderPanel);
+registerPanel("vol-surface", VolSurfacePanel);
+registerPanel("basket-order", BasketOrderPanel);
+registerPanel("client-rfq", ClientRfqPanel);
+registerPanel("sales-workbench", SalesWorkbenchPanel);
+registerPanel("product-builder", ProductBuilderPanel);
+registerPanel("product-book", ProductBookPanel);
+registerPanel("session-replay", SessionReplayPanel);
+registerPanel("risk-dashboard", RiskDashboardPanel);
+registerPanel("my-positions", MyPositionsPanel);
+registerPanel("symbol-search", SymbolSearchBar);
