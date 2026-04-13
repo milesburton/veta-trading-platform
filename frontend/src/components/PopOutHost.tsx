@@ -1,3 +1,4 @@
+import type { UnknownAction } from "@reduxjs/toolkit";
 import type { IJsonModel } from "flexlayout-react";
 import { Model } from "flexlayout-react";
 import type React from "react";
@@ -204,12 +205,11 @@ export function PopOutHost({
     function onResize() {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: saveOrderTicketWindowSize is AsyncThunk; typed dispatch unavailable here
-        (dispatch as any)(
+        dispatch(
           saveOrderTicketWindowSize({
             w: window.outerWidth,
             h: window.outerHeight,
-          })
+          }) as unknown as UnknownAction
         );
       }, 300);
     }

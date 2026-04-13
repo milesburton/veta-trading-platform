@@ -42,8 +42,13 @@ interface Entry {
   z: number;
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: recharts tooltip type
-function RadarTooltip({ active, payload }: any) {
+interface TooltipPayloadItem {
+  name: string;
+  value: number;
+  dataKey: string;
+  payload?: Entry;
+}
+function RadarTooltip({ active, payload }: { active?: boolean; payload?: TooltipPayloadItem[] }) {
   if (!active || !payload?.length) return null;
   const d = payload[0]?.payload as Entry | undefined;
   if (!d) return null;

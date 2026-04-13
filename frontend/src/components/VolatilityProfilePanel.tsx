@@ -20,8 +20,21 @@ import {
 import { useGetVolProfileQuery } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
 
-// biome-ignore lint/suspicious/noExplicitAny: recharts tooltip type
-function VolTooltip({ active, payload, label }: any) {
+interface TooltipPayloadItem {
+  name: string;
+  value: number;
+  dataKey: string;
+  color?: string;
+}
+function VolTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string | number;
+}) {
   if (!active || !payload?.length) return null;
   const vol = payload[0]?.value as number | undefined;
   return (

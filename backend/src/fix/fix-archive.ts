@@ -115,8 +115,8 @@ createConsumer("fix-archive", ["fix.execution"]).then((consumer) => {
   });
 }).catch((err) => console.warn("[fix-archive] Cannot subscribe:", err.message));
 
-// deno-lint-ignore no-explicit-any
-function rowToExec(r: any[]) {
+type SqlRow = (string | number | Date | null | unknown)[];
+function rowToExec(r: SqlRow) {
   const [
     execId,
     clOrdId,

@@ -28,8 +28,21 @@ const EXPIRY_PRESETS = [
   { label: "90d", secs: 90 * 86400 },
 ];
 
-// biome-ignore lint/suspicious/noExplicitAny: recharts tooltip type
-function SurfaceTooltip({ active, payload, label }: any) {
+interface TooltipPayloadItem {
+  name: string;
+  value: number;
+  dataKey: string;
+  color?: string;
+}
+function SurfaceTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string | number;
+}) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-[10px]">

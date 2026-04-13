@@ -19,7 +19,7 @@
  *   { type: "submitOrder", payload: Trade }
  */
 
-import type { Middleware } from "@reduxjs/toolkit";
+import type { Middleware, UnknownAction } from "@reduxjs/toolkit";
 import type { AssetDef, OhlcCandle, OrderBookSnapshot } from "../../types.ts";
 import { advisoryNoteReceived } from "../advisorySlice.ts";
 import { alertAdded } from "../alertsSlice.ts";
@@ -336,9 +336,8 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
               limits: TradingLimits;
             };
             storeAPI.dispatch(setUserWithLimits(identityData));
-            // biome-ignore lint/suspicious/noExplicitAny: AsyncThunks; AppDispatch not available in middleware scope
-            (storeAPI.dispatch as any)(loadGridPrefs());
-            (storeAPI.dispatch as any)(loadUiPrefs());
+            storeAPI.dispatch(loadGridPrefs() as unknown as UnknownAction);
+            storeAPI.dispatch(loadUiPrefs() as unknown as UnknownAction);
             break;
           }
           case "killAck": {

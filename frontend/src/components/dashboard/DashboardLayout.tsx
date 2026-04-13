@@ -350,7 +350,7 @@ function PanelDialog({
           >
             <div className="h-full overflow-hidden bg-gray-950">
               {DialogPanel ? (
-                <DialogPanel instanceId={instanceId} />
+                <DialogPanel />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-600 text-xs">
                   Panel not available in dialog mode

@@ -5,7 +5,7 @@ import { AlgoLeaderboardPanel } from "../AlgoLeaderboardPanel.tsx";
 import { AlgoMonitor } from "../AlgoMonitor.tsx";
 import { AnalysisPanel } from "../AnalysisPanel.tsx";
 import { BasketOrderPanel } from "../BasketOrderPanel.tsx";
-import { CandlestickChart } from "../CandlestickChart.tsx";
+// CandlestickChart and MarketDepth are handled as special cases in DashboardLayout (need props from channel context)
 import { ChildOrdersPanel } from "../ChildOrdersPanel.tsx";
 import { ClientRfqPanel } from "../ClientRfqPanel.tsx";
 import { DecisionLog } from "../DecisionLog.tsx";
@@ -18,7 +18,6 @@ import { InstrumentAnalysisPanel } from "../InstrumentAnalysisPanel.tsx";
 import { LlmSubsystemPanel } from "../LlmSubsystemPanel.tsx";
 import { LoadTestPanel } from "../LoadTestPanel.tsx";
 import { MarketDataSourcesPanel } from "../MarketDataSourcesPanel.tsx";
-import { MarketDepth } from "../MarketDepth.tsx";
 import { MarketFeedControlPanel } from "../MarketFeedControlPanel.tsx";
 import { MarketHeatmap } from "../MarketHeatmap.tsx";
 import { MarketLadder } from "../MarketLadder.tsx";
@@ -49,16 +48,15 @@ import { VolSurfacePanel } from "../VolSurfacePanel.tsx";
 import { YieldCurvePanel } from "../YieldCurvePanel.tsx";
 import type { PanelId } from "./panelRegistry.ts";
 
-// biome-ignore lint/suspicious/noExplicitAny: panels have varying prop signatures
-type AnyComponent = ComponentType<any>;
+type PanelComponent = ComponentType<Record<string, never>>;
 
-const registry = new Map<PanelId, AnyComponent>();
+const registry = new Map<PanelId, PanelComponent>();
 
-export function registerPanel(id: PanelId, component: AnyComponent): void {
+export function registerPanel(id: PanelId, component: PanelComponent): void {
   registry.set(id, component);
 }
 
-export function getPanelComponent(id: string): AnyComponent | undefined {
+export function getPanelComponent(id: string): PanelComponent | undefined {
   return registry.get(id as PanelId);
 }
 
@@ -68,8 +66,8 @@ registerPanel("order-blotter", OrderBlotter);
 registerPanel("child-orders", ChildOrdersPanel);
 registerPanel("algo-monitor", AlgoMonitor);
 registerPanel("observability", ObservabilityPanel);
-registerPanel("candle-chart", CandlestickChart);
-registerPanel("market-depth", MarketDepth);
+// candle-chart is handled as a special case in DashboardLayout (needs incoming channel prop)
+// market-depth is handled as a special case in DashboardLayout (needs symbol prop from channel)
 registerPanel("executions", ExecutionsPanel);
 registerPanel("decision-log", DecisionLog);
 registerPanel("market-match", MarketMatch);

@@ -99,8 +99,29 @@ const CONSUME_TOPICS = [
   "orders.rejected",
 ];
 
-// deno-lint-ignore no-explicit-any
-function extractFields(topic: string, value: any) {
+interface KafkaEventValue {
+  ts?: number;
+  childId?: string;
+  orderId?: string;
+  token?: string;
+  userId?: string;
+  algo?: string;
+  asset?: string;
+  side?: string;
+  parentOrderId?: string;
+  quantity?: number;
+  requestedQty?: number;
+  limitPrice?: number;
+  avgFillPrice?: number;
+  fillPrice?: number;
+  filledQty?: number;
+  marketPrice?: number;
+  marketImpactBps?: number;
+  algoParams?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+function extractFields(topic: string, value: KafkaEventValue) {
   const baseId = value.childId ?? value.orderId ?? value.token ?? null;
   return {
     event_id: baseId ? `${topic}:${baseId}` : null,
@@ -223,8 +244,7 @@ const PRUNE_INTERVAL_MS = Number(Deno.env.get("JOURNAL_PRUNE_INTERVAL_MS")) || 6
 setTimeout(() => pruneOldEvents().catch(() => {}), 30_000);
 setInterval(() => pruneOldEvents().catch(() => {}), PRUNE_INTERVAL_MS);
 
-// deno-lint-ignore no-explicit-any
-function ingest(topic: string, value: any) {
+function ingest(topic: string, value: KafkaEventValue) {
   const ts = new Date(value.ts ?? Date.now());
   const fields = extractFields(topic, value);
   const raw = (topic === "orders.child" || topic === "orders.filled")

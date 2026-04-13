@@ -66,14 +66,29 @@ interface ReplayFrame {
   signal: { score: number; direction: string; confidence: number };
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: recharts tooltip type
-function ReplayTooltip({ active, payload, label }: any) {
+interface TooltipPayloadItem {
+  name: string;
+  value: number;
+  dataKey: string;
+  color?: string;
+}
+function ReplayTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string | number;
+}) {
   if (!active || !payload?.length) return null;
   const score = payload.find((p: { dataKey: string }) => p.dataKey === "score");
   const price = payload.find((p: { dataKey: string }) => p.dataKey === "close");
   return (
     <div className="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[10px]">
-      <div className="text-gray-500 mb-0.5">{new Date(label).toLocaleTimeString()}</div>
+      <div className="text-gray-500 mb-0.5">
+        {label != null ? new Date(label).toLocaleTimeString() : ""}
+      </div>
       {price && (
         <div className="text-gray-300">
           Price: <span className="tabular-nums">${(price.value as number).toFixed(2)}</span>

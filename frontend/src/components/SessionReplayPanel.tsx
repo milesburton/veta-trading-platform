@@ -179,9 +179,16 @@ function SessionPlayer({ sessionId, onBack }: { sessionId: string; onBack: () =>
     let player: { $destroy?: () => void } | null = null;
 
     (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mod = (await import("rrweb-player")) as any;
-      const RRWebPlayer = mod.default ?? mod;
+      interface RRWebPlayerClass {
+        new (opts: {
+          target: HTMLElement;
+          props: Record<string, unknown>;
+        }): { $destroy?: () => void; destroy?: () => void };
+      }
+      const mod = (await import("rrweb-player")) as unknown as {
+        default?: RRWebPlayerClass;
+      } & RRWebPlayerClass;
+      const RRWebPlayer: RRWebPlayerClass = mod.default ?? mod;
 
       if (!containerRef.current) return;
       containerRef.current.innerHTML = "";
