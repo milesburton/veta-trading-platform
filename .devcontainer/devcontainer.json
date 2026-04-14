@@ -4,6 +4,8 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
+  "workspaceFolder": "/workspaces/project",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/project,type=bind,consistency=cached",
   "forwardPorts": [
     8080,
     3000,
@@ -81,8 +83,8 @@
       "extensions": [
         "GitHub.copilot",
         "GitHub.copilot-chat",
+        "openai.chatgpt",
         "anthropic.claude-code",
-        "Codeium.codeium",
         "denoland.vscode-deno",
         "redhat.vscode-json",
         "foxundermoon.shell-format",
@@ -102,6 +104,7 @@
       ]
     }
   },
+  "initializeCommand": "mkdir -p $HOME/.ssh $HOME/.config/gh $HOME/.claude $HOME/.fly && touch $HOME/.gitconfig",
   "remoteUser": "deno",
   "mounts": [
     "source=${localEnv:HOME}/.ssh,target=/home/deno/.ssh,type=bind,consistency=cached",
@@ -111,6 +114,6 @@
     "source=${localEnv:HOME}/.fly,target=/home/deno/.fly,type=bind,consistency=cached",
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
-  "postCreateCommand": "cd /workspaces/virtual-equities-trading-application/frontend && npm ci --ignore-scripts && cd /workspaces/virtual-equities-trading-application && ./frontend/node_modules/.bin/husky install .husky",
-  "postStartCommand": "chmod 700 /home/deno/.ssh && chmod 600 /home/deno/.ssh/* || true && cd /workspaces/virtual-equities-trading-application && docker compose up -d"
+  "postCreateCommand": "cd ${containerWorkspaceFolder}/frontend && npm ci --ignore-scripts && cd ${containerWorkspaceFolder} && ./frontend/node_modules/.bin/husky install .husky",
+  "postStartCommand": "chmod 700 /home/deno/.ssh && chmod 600 /home/deno/.ssh/* || true && cd ${containerWorkspaceFolder} && docker compose up -d"
 }

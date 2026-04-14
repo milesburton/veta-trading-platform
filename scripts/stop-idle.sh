@@ -14,8 +14,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 SOCK=/tmp/supervisor.sock
-CTL="supervisorctl -c /workspaces/virtual-equities-trading-application/supervisord.conf"
+CTL="supervisorctl -c $WORKSPACE_ROOT/supervisord.conf"
 
 if [ ! -S "$SOCK" ]; then
   echo "ERROR: supervisord is not running (no socket at $SOCK)" >&2

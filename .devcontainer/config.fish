@@ -3,6 +3,8 @@ set -gx DENO_INSTALL "$HOME/.deno"
 fish_add_path $DENO_INSTALL/bin
 set -gx FLYCTL_INSTALL "$HOME/.fly"
 fish_add_path $FLYCTL_INSTALL/bin
+set -l WS "/workspaces/project"
+set -l _SCONF "$WS/supervisord.conf"
 
 # ── Login banner — live service status snapshot ───────────────────────────────
 if status is-interactive
@@ -24,31 +26,28 @@ if status is-interactive
   echo "    svc-logs <name>        tail logs for a service"
   echo ""
   echo "  Electron (desktop app)" | lolcat
-  echo "    cd /workspaces/virtual-equities-trading-application/frontend"
+  echo "    cd $WS/frontend"
   echo "    npm run electron:dev"
   echo "    (requires start-trading to be running first)"
   echo ""
   echo "  Service status" | lolcat
-  deno run --allow-run --allow-env /workspaces/virtual-equities-trading-application/scripts/status.ts --once 2>/dev/null; or true
+  deno run --allow-run --allow-env $WS/scripts/status.ts --once 2>/dev/null; or true
   echo ""
 end
 
 # ── Supervisord shortcuts ─────────────────────────────────────────────────────
-set -l _SCONF "/workspaces/virtual-equities-trading-application/supervisord.conf"
 alias svc-status="supervisorctl -c $_SCONF status"
 alias svc-restart="supervisorctl -c $_SCONF restart"
 alias svc-restart-all="supervisorctl -c $_SCONF restart all"
 alias svc-logs="supervisorctl -c $_SCONF tail -f"
-alias svc-ui="deno run --allow-run --allow-env /workspaces/virtual-equities-trading-application/scripts/status.ts"
-alias start-trading="/workspaces/virtual-equities-trading-application/scripts/start-trading.sh"
-alias stop-idle="/workspaces/virtual-equities-trading-application/scripts/stop-idle.sh"
+alias svc-ui="deno run --allow-run --allow-env $WS/scripts/status.ts"
+alias start-trading="$WS/scripts/start-trading.sh"
+alias stop-idle="$WS/scripts/stop-idle.sh"
 
 # Legacy
 alias restart-services="svc-restart-all"
 
 # ── Per-service run aliases (debug / manual mode) ─────────────────────────────
-set -l WS "/workspaces/virtual-equities-trading-application"
-
 alias run-frontend="cd $WS/frontend && npm run dev"
 alias run-gateway="deno run --allow-all $WS/backend/src/gateway/gateway.ts"
 alias run-market-sim="deno run --allow-all $WS/backend/src/market-sim/market-sim.ts"

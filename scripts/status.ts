@@ -8,8 +8,7 @@
  *   or    svc-ui  (fish alias)
  */
 
-const CONF =
-  "/workspaces/virtual-equities-trading-application/supervisord.conf";
+const CONF = new URL("../supervisord.conf", import.meta.url).pathname;
 const CTL = ["supervisorctl", "-c", CONF];
 const REFRESH_MS = 2000;
 
