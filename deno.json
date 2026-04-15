@@ -35,8 +35,10 @@
   },
   "lint": {
     "rules": {
-      "tags": ["recommended"]
-    }
+      "tags": ["recommended"],
+      "include": ["no-console"]
+    },
+    "exclude": ["backend/src/cli/trader.ts"]
   },
   "compilerOptions": {
     "lib": ["deno.ns", "deno.window", "esnext"],
