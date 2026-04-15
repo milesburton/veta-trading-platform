@@ -2,6 +2,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createProducer } from "@veta/messaging";
 import type { NewsEvent } from "@veta/types/intelligence";
 import { json, corsOptions } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("NEWS_AGGREGATOR_PORT")) || 5_013;
 const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") ||
@@ -12,7 +13,7 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MAX_ITEMS_PER_SYMBOL = 100;
 const SOURCES_FILE = Deno.env.get("NEWS_SOURCES_FILE") ?? "./news_sources.json";
 
-console.log(`[news-aggregator] Starting, poll=${POLL_INTERVAL_MS}ms`);
+logger.info(`Starting, poll=${POLL_INTERVAL_MS}ms`);
 
 interface NewsSource {
   id: string;
@@ -60,7 +61,7 @@ function saveSources(): void {
   try {
     Deno.writeTextFileSync(SOURCES_FILE, JSON.stringify(SOURCES, null, 2));
   } catch (e) {
-    console.warn(`[news-aggregator] Could not persist sources: ${e}`);
+    logger.warn(`Could not persist sources: ${e}`);
   }
 }
 
@@ -540,7 +541,7 @@ async function fetchRss(url: string): Promise<RssItem[]> {
 }
 
 const producer = await createProducer("news-aggregator").catch((err) => {
-  console.warn("[news-aggregator] Redpanda unavailable:", err.message);
+  logger.warn("Redpanda unavailable", { err });
   return null;
 });
 
@@ -623,9 +624,7 @@ async function pollSourceForSymbol(
   }
 
   if (newCount > 0) {
-    console.log(
-      `[news-aggregator] ${source.label} → ${symbol}: +${newCount} items`,
-    );
+    logger.info(`${source.label} → ${symbol}: +${newCount} items`);
   }
 }
 
@@ -661,9 +660,9 @@ async function loadSymbols(): Promise<void> {
     if (!res.ok) return;
     const assets = await res.json() as { symbol: string }[];
     knownSymbols = assets.map((a) => a.symbol);
-    console.log(`[news-aggregator] Loaded ${knownSymbols.length} symbols`);
+    logger.info(`Loaded ${knownSymbols.length} symbols`);
   } catch {
-    console.warn("[news-aggregator] Could not load symbols from market-sim");
+    logger.warn(`Could not load symbols from market-sim`);
   }
 }
 
@@ -730,7 +729,7 @@ Deno.serve({ port: PORT }, async (req) => {
     else if (action === "disable") source.enabled = false;
     else source.enabled = !source.enabled;
     saveSources();
-    console.log(`[news-aggregator] Source ${id} → enabled=${source.enabled}`);
+    logger.info(`Source ${id} → enabled=${source.enabled}`);
     return json({
       id: source.id,
       label: source.label,
@@ -764,7 +763,7 @@ Deno.serve({ port: PORT }, async (req) => {
     };
     SOURCES.push(newSource);
     saveSources();
-    console.log(`[news-aggregator] Source created: ${id}`);
+    logger.info(`Source created: ${id}`);
     return json(newSource, 201);
   }
 
@@ -787,7 +786,7 @@ Deno.serve({ port: PORT }, async (req) => {
     }
     if (body.enabled !== undefined) source.enabled = body.enabled;
     saveSources();
-    console.log(`[news-aggregator] Source updated: ${id}`);
+    logger.info(`Source updated: ${id}`);
     return json(source);
   }
 
@@ -798,7 +797,7 @@ Deno.serve({ port: PORT }, async (req) => {
     if (idx === -1) return json({ error: "source not found" }, 404);
     SOURCES.splice(idx, 1);
     saveSources();
-    console.log(`[news-aggregator] Source deleted: ${id}`);
+    logger.info(`Source deleted: ${id}`);
     return corsOptions();
   }
 

@@ -1,6 +1,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { replayPool } from "@veta/db";
 import { corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("REPLAY_PORT")) || 5_031;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -203,9 +204,9 @@ Deno.serve({ port: PORT }, async (req) => {
 
     return json({ error: "Not Found" }, 404);
   } catch (err) {
-    console.error("[replay-service] Error:", err);
+    logger.error("Error", { detail: err });
     return json({ error: String(err) }, 500);
   }
 });
 
-console.log(`[replay-service] Listening on port ${PORT}`);
+logger.info(`Listening on port ${PORT}`);

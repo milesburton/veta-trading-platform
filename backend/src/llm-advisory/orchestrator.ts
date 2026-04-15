@@ -30,6 +30,7 @@ import {
   type TriggerCandidate,
 } from "./trigger-rules.ts";
 import { llmAdvisoryPool } from "@veta/db";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("LLM_ADVISORY_PORT")) || 5_024;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -52,10 +53,7 @@ const producer = await Promise.race([
   createProducer("llm-advisory-orchestrator"),
   new Promise<null>((resolve) => setTimeout(() => resolve(null), 8_000)),
 ]).catch((err) => {
-  console.warn(
-    "[llm-advisory] Redpanda unavailable for publishing:",
-    err.message,
-  );
+  logger.warn("Redpanda unavailable for publishing", { err });
   return null;
 });
 

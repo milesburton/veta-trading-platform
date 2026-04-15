@@ -15,6 +15,7 @@ import { createMockProvider } from "./providers/mock.ts";
 import { createOllamaProvider } from "./providers/ollama.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
 import { llmAdvisoryPool } from "@veta/db";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("LLM_WORKER_PORT")) || 5_033;
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
@@ -35,9 +36,7 @@ const effectivePolicy = resolveEffectivePolicy(
 );
 
 if (!isWorkerAllowed(effectivePolicy)) {
-  console.log(
-    "[llm-worker] LLM_ENABLED or LLM_WORKER_ENABLED is false — exiting",
-  );
+  logger.info("LLM_ENABLED or LLM_WORKER_ENABLED is false — exiting");
   Deno.exit(0);
 }
 
@@ -58,14 +57,12 @@ const provider = buildProvider();
 
 const available = await provider.isAvailable();
 if (!available) {
-  console.warn(
-    `[llm-worker] Provider '${effectivePolicy.provider}' is not available — exiting`,
-  );
+  logger.warn(`Provider '${effectivePolicy.provider}' is not available — exiting`);
   Deno.exit(0);
 }
 
 const producer = await createProducer("llm-worker").catch((err) => {
-  console.warn("[llm-worker] Redpanda unavailable:", err.message);
+  logger.warn("Redpanda unavailable", { err });
   return null;
 });
 
@@ -80,9 +77,7 @@ const sessionId = await store.insertWorkerSession({
   exitReason: null,
 });
 
-console.log(
-  `[llm-worker] Session ${sessionId} started. Provider: ${provider.providerId}. Max jobs: ${MAX_JOBS_PER_SESSION}. Idle timeout: ${IDLE_TIMEOUT_MS}ms`,
-);
+logger.info(`Session ${sessionId} started. Provider: ${provider.providerId}. Max jobs: ${MAX_JOBS_PER_SESSION}. Idle timeout: ${IDLE_TIMEOUT_MS}ms`);
 
 producer?.send("llm.worker.status", {
   event: "started",
@@ -217,7 +212,7 @@ async function processJob(jobId: string): Promise<boolean> {
     return true;
   } catch (err) {
     const errMsg = (err as Error).message;
-    console.error(`[llm-worker] Job ${job.id} failed:`, errMsg);
+    logger.error(`Job ${job.id} failed`, { detail: errMsg });
 
     producer?.send("llm.worker.status", {
       event: "error",
@@ -262,7 +257,7 @@ const server = Deno.serve({ port: PORT }, (_req: Request): Response => {
   );
 });
 
-console.log("[llm-worker] Entering work loop");
+logger.info(`Entering work loop`);
 
 let exitReason = "queue-exhausted";
 const sessionStart = Date.now();
@@ -270,17 +265,13 @@ const sessionStart = Date.now();
 outer: while (true) {
   if (jobsProcessed >= MAX_JOBS_PER_SESSION) {
     exitReason = "max-jobs-per-session";
-    console.log(
-      `[llm-worker] Reached max jobs per session (${MAX_JOBS_PER_SESSION}) — exiting`,
-    );
+    logger.info(`Reached max jobs per session (${MAX_JOBS_PER_SESSION}) — exiting`);
     break;
   }
 
   const job = await store.claimNextJob(sessionId);
   if (!job) {
-    console.log(
-      `[llm-worker] Queue empty — waiting up to ${IDLE_TIMEOUT_MS}ms for new jobs`,
-    );
+    logger.info(`Queue empty — waiting up to ${IDLE_TIMEOUT_MS}ms for new jobs`);
     const deadline = Date.now() + IDLE_TIMEOUT_MS;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 2_000));
@@ -291,21 +282,17 @@ outer: while (true) {
           exitReason = "max-jobs-per-session";
           break outer;
         }
-        console.log(
-          `[llm-worker] Processing job ${next.id} for ${next.symbol} (${next.triggerReason})`,
-        );
+        logger.info(`Processing job ${next.id} for ${next.symbol} (${next.triggerReason})`);
         await processJob(next.id);
         continue outer;
       }
     }
     exitReason = "idle-timeout";
-    console.log(`[llm-worker] Idle timeout reached — exiting`);
+    logger.info(`Idle timeout reached — exiting`);
     break;
   }
 
-  console.log(
-    `[llm-worker] Processing job ${job.id} for ${job.symbol} (${job.triggerReason})`,
-  );
+  logger.info(`Processing job ${job.id} for ${job.symbol} (${job.triggerReason})`);
   await processJob(job.id);
 }
 
@@ -321,8 +308,6 @@ producer?.send("llm.worker.status", {
   ts: Date.now(),
 }).catch(() => {});
 
-console.log(
-  `[llm-worker] Session ended. Reason: ${exitReason}. Processed: ${jobsProcessed}, failed: ${jobsFailed}`,
-);
+logger.info(`Session ended. Reason: ${exitReason}. Processed: ${jobsProcessed}, failed: ${jobsFailed}`);
 await server.shutdown();
 Deno.exit(0);

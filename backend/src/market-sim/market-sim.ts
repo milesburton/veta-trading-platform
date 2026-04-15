@@ -15,6 +15,7 @@ import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodityAssets.ts";
 import { BOND_ASSET_MAP, BOND_ASSETS } from "./bondAssets.ts";
 import { intradayVolumeFactor } from "@veta/time-scale";
 import { createProducer } from "@veta/messaging";
+import { logger } from "@veta/logger";
 import type {
   OrderBookLevel,
   OrderBookSnapshot,
@@ -55,11 +56,9 @@ async function fetchRealPrice(symbol: string): Promise<void> {
     const data = await res.json() as { price: number };
     if (data.price > 0) {
       realPriceCache.set(symbol, data.price);
-      console.log(
-        `[market-sim] Seeding ${symbol} with real price: $${
+      logger.info(`Seeding ${symbol} with real price: $${
           data.price.toFixed(4)
-        }`,
-      );
+        }`);
     }
   } catch { /* keep cached/GBM price */ }
 }
@@ -107,20 +106,16 @@ async function seedFromJournal(): Promise<void> {
     }),
   );
   if (seeded > 0) {
-    console.log(
-      `[market-sim] Seeded ${seeded}/${symbols.length} assets from journal candle history`,
-    );
+    logger.info(`Seeded ${seeded}/${symbols.length} assets from journal candle history`);
   } else {
-    console.log(
-      "[market-sim] Journal unavailable or empty — starting from initialPrice",
-    );
+    logger.info("Journal unavailable or empty — starting from initialPrice");
   }
 }
 
 await seedFromJournal();
 prewarmPrices();
 snapshotOpenPrices();
-console.log("[market-sim] Price engine pre-warmed — intraday moves seeded");
+logger.info(`Price engine pre-warmed — intraday moves seeded`);
 
 let marketMinute = 0;
 let tickCount = 0;
@@ -299,7 +294,7 @@ setInterval(() => {
   }).catch(() => {});
 }, 250);
 
-console.log(`Market Simulator running on ws://localhost:${PORT}`);
+logger.info(`Market Simulator running on ws://localhost:${PORT}`);
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
@@ -324,7 +319,7 @@ Deno.serve({ port: PORT }, (req) => {
   const { socket, response } = Deno.upgradeWebSocket(req);
 
   socket.onopen = () => {
-    console.log("New WebSocket connection");
+    logger.info(`New WebSocket connection`);
     clients.add(socket);
     const volumes = computeTickVolumes(marketMinute);
     const orderBook = computeOrderBook(marketData, volumes);
@@ -340,12 +335,12 @@ Deno.serve({ port: PORT }, (req) => {
   };
 
   socket.onmessage = (event) => {
-    console.log(`Message from client: ${event.data}`);
+    logger.info(`Message from client: ${event.data}`);
   };
 
   socket.onclose = () => {
     clients.delete(socket);
-    console.log("WebSocket connection closed");
+    logger.info(`WebSocket connection closed`);
   };
 
   return response;

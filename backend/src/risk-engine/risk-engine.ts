@@ -1,5 +1,6 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { corsOptions, json, parseBody } from "@veta/http";
+import { logger } from "@veta/logger";
 import { createConsumer, createProducer, type MsgProducer } from "@veta/messaging";
 import {
   type CheckRequest,
@@ -468,11 +469,9 @@ function fireMarketMoveBreaker(symbol: string, observedPct: number): void {
   };
   breakerProducer?.send("orders.kill", killPayload).catch(() => {});
   breakerProducer?.send("risk.breaker", breakerPayload).catch(() => {});
-  console.log(
-    `[risk-engine] Market-move breaker fired for ${symbol}: ${
+  logger.info(`Market-move breaker fired for ${symbol}: ${
       observedPct.toFixed(1)
-    }% > ${config.haltMovePercent}%`,
-  );
+    }% > ${config.haltMovePercent}%`);
 }
 
 function fireUserPnlBreaker(userId: string, observedPnl: number): void {
@@ -503,11 +502,9 @@ function fireUserPnlBreaker(userId: string, observedPnl: number): void {
   };
   breakerProducer?.send("orders.kill", killPayload).catch(() => {});
   breakerProducer?.send("risk.breaker", breakerPayload).catch(() => {});
-  console.log(
-    `[risk-engine] User P&L breaker fired for ${userId}: $${
+  logger.info(`User P&L breaker fired for ${userId}: $${
       observedPnl.toFixed(2)
-    } <= $${config.maxDailyLoss.toFixed(2)}`,
-  );
+    } <= $${config.maxDailyLoss.toFixed(2)}`);
 }
 
 function evaluateMarketMoveBreaker(): void {
@@ -627,7 +624,7 @@ createProducer("risk-engine")
     breakerProducer = p;
   })
   .catch((err) => {
-    console.warn("[risk-engine] producer init failed:", (err as Error).message);
+    logger.warn("producer init failed", { err: err as Error });
   });
 
 Deno.serve({ port: PORT }, async (req) => {
@@ -798,4 +795,4 @@ Deno.serve({ port: PORT }, async (req) => {
   return json({ error: "Not Found" }, 404);
 });
 
-console.log(`[risk-engine] Listening on port ${PORT}`);
+logger.info(`Listening on port ${PORT}`);
