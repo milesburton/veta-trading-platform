@@ -1,11 +1,12 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { corsOptions, json } from "@veta/http";
-import { createConsumer } from "@veta/messaging";
+import { createConsumer, createProducer, type MsgProducer } from "@veta/messaging";
 
 const PORT = Number(Deno.env.get("RISK_ENGINE_PORT")) || 5_032;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
+const TEST_MODE = Deno.env.get("RISK_ENGINE_TEST_MODE") === "1";
 
 interface RiskConfig {
   fatFingerPct: number;
@@ -13,6 +14,12 @@ interface RiskConfig {
   duplicateWindowMs: number;
   maxOrdersPerSecond: number;
   maxAdvPct: number;
+  maxGrossNotional: number;
+  maxDailyLoss: number;
+  maxConcentrationPct: number;
+  haltMovePercent: number;
+  breakerCooldownMs: number;
+  breakersEnabled: boolean;
 }
 
 const config: RiskConfig = {
@@ -21,6 +28,12 @@ const config: RiskConfig = {
   duplicateWindowMs: 500,
   maxOrdersPerSecond: 10,
   maxAdvPct: 10.0,
+  maxGrossNotional: 5_000_000,
+  maxDailyLoss: -50_000,
+  maxConcentrationPct: 25,
+  haltMovePercent: 10,
+  breakerCooldownMs: 60_000,
+  breakersEnabled: true,
 };
 
 interface CheckRequest {
@@ -43,6 +56,21 @@ interface CheckResult {
 
 const prices: Record<string, number> = {};
 const volumes: Record<string, number> = {};
+const openPrices: Record<string, number> = {};
+
+interface BreakerFire {
+  type: "market-move" | "user-pnl";
+  scope: "symbol" | "user";
+  target: string;
+  observedValue: number;
+  threshold: number;
+  firedAt: number;
+}
+const breakerCooldown = new Map<string, number>();
+const breakerHistory: BreakerFire[] = [];
+const BREAKER_HISTORY_MAX = 200;
+let breakerFireCount = 0;
+let breakerProducer: MsgProducer | null = null;
 
 const activeOrderCounts: Map<string, number> = new Map();
 
@@ -200,6 +228,50 @@ function checkRateLimit(req: CheckRequest): { code: string; message: string } | 
   return null;
 }
 
+function checkPositionNotional(req: CheckRequest): { code: string; message: string } | null {
+  const proposed = orderNotional(req);
+  const current = userGrossNotional(req.userId);
+  const postTrade = current + proposed;
+  if (postTrade > config.maxGrossNotional) {
+    return {
+      code: "POSITION_NOTIONAL_LIMIT",
+      message: `Gross notional post-trade $${postTrade.toFixed(0)} would exceed limit $${
+        config.maxGrossNotional.toFixed(0)
+      }`,
+    };
+  }
+  return null;
+}
+
+function checkDailyPnlStop(req: CheckRequest): { code: string; message: string } | null {
+  const pnl = userTotalPnl(req.userId);
+  if (pnl <= config.maxDailyLoss) {
+    fireUserPnlBreaker(req.userId, pnl);
+    return {
+      code: "DAILY_LOSS_STOP",
+      message: `User P&L $${pnl.toFixed(2)} at/beyond loss limit $${config.maxDailyLoss.toFixed(2)}`,
+    };
+  }
+  return null;
+}
+
+function checkConcentration(req: CheckRequest): { code: string; message: string } | null {
+  const proposed = orderNotional(req);
+  const currentSymbol = userSymbolNotional(req.userId, req.symbol);
+  const currentGross = userGrossNotional(req.userId);
+  const postSymbol = currentSymbol + proposed;
+  const postGross = currentGross + proposed;
+  if (postGross <= 0) return null;
+  const pct = (postSymbol / postGross) * 100;
+  if (pct > config.maxConcentrationPct) {
+    return {
+      code: "CONCENTRATION_LIMIT",
+      message: `Post-trade concentration in ${req.symbol} would be ${pct.toFixed(1)}% (limit ${config.maxConcentrationPct}%)`,
+    };
+  }
+  return null;
+}
+
 function runChecks(req: CheckRequest): CheckResult {
   const reasons: string[] = [];
   const warnings: string[] = [];
@@ -221,6 +293,15 @@ function runChecks(req: CheckRequest): CheckResult {
 
   const rateLimit = checkRateLimit(req);
   if (rateLimit) reasons.push(`[${rateLimit.code}] ${rateLimit.message}`);
+
+  const posLimit = checkPositionNotional(req);
+  if (posLimit) reasons.push(`[${posLimit.code}] ${posLimit.message}`);
+
+  const pnlStop = checkDailyPnlStop(req);
+  if (pnlStop) reasons.push(`[${pnlStop.code}] ${pnlStop.message}`);
+
+  const conc = checkConcentration(req);
+  if (conc) reasons.push(`[${conc.code}] ${conc.message}`);
 
   return {
     allowed: reasons.length === 0,
@@ -367,6 +448,183 @@ function updatePosition(
   }
 }
 
+function tryFireBreaker(type: "market-move" | "user-pnl", target: string): boolean {
+  const key = `${type}:${target}`;
+  const last = breakerCooldown.get(key) ?? 0;
+  const now = Date.now();
+  if (now - last < config.breakerCooldownMs) return false;
+  breakerCooldown.set(key, now);
+  return true;
+}
+
+function recordBreakerFire(fire: BreakerFire): void {
+  breakerHistory.unshift(fire);
+  if (breakerHistory.length > BREAKER_HISTORY_MAX) breakerHistory.length = BREAKER_HISTORY_MAX;
+  breakerFireCount += 1;
+}
+
+function fireMarketMoveBreaker(symbol: string, observedPct: number): void {
+  if (!tryFireBreaker("market-move", symbol)) return;
+  const ts = Date.now();
+  recordBreakerFire({
+    type: "market-move",
+    scope: "symbol",
+    target: symbol,
+    observedValue: observedPct,
+    threshold: config.haltMovePercent,
+    firedAt: ts,
+  });
+  const killPayload = {
+    scope: "symbol",
+    scopeValue: symbol,
+    issuedBy: "circuit-breaker",
+    issuedByRole: "admin",
+    ts,
+  };
+  const breakerPayload = {
+    type: "market-move",
+    scope: "symbol",
+    scopeValue: symbol,
+    observedValue: observedPct,
+    threshold: config.haltMovePercent,
+    ts,
+  };
+  breakerProducer?.send("orders.kill", killPayload).catch(() => {});
+  breakerProducer?.send("risk.breaker", breakerPayload).catch(() => {});
+  console.log(
+    `[risk-engine] Market-move breaker fired for ${symbol}: ${
+      observedPct.toFixed(1)
+    }% > ${config.haltMovePercent}%`,
+  );
+}
+
+function fireUserPnlBreaker(userId: string, observedPnl: number): void {
+  if (!tryFireBreaker("user-pnl", userId)) return;
+  const ts = Date.now();
+  recordBreakerFire({
+    type: "user-pnl",
+    scope: "user",
+    target: userId,
+    observedValue: observedPnl,
+    threshold: config.maxDailyLoss,
+    firedAt: ts,
+  });
+  const killPayload = {
+    scope: "user",
+    targetUserId: userId,
+    issuedBy: "circuit-breaker",
+    issuedByRole: "admin",
+    ts,
+  };
+  const breakerPayload = {
+    type: "user-pnl",
+    scope: "user",
+    targetUserId: userId,
+    observedValue: observedPnl,
+    threshold: config.maxDailyLoss,
+    ts,
+  };
+  breakerProducer?.send("orders.kill", killPayload).catch(() => {});
+  breakerProducer?.send("risk.breaker", breakerPayload).catch(() => {});
+  console.log(
+    `[risk-engine] User P&L breaker fired for ${userId}: $${
+      observedPnl.toFixed(2)
+    } <= $${config.maxDailyLoss.toFixed(2)}`,
+  );
+}
+
+function evaluateMarketMoveBreaker(): void {
+  for (const [symbol, price] of Object.entries(prices)) {
+    const open = openPrices[symbol];
+    if (!open || open <= 0) continue;
+    const movePct = Math.abs((price - open) / open) * 100;
+    if (movePct > config.haltMovePercent) {
+      fireMarketMoveBreaker(symbol, movePct);
+    }
+  }
+}
+
+function evaluateUserPnlBreakers(): void {
+  for (const userId of positions.keys()) {
+    const pnl = userTotalPnl(userId);
+    if (pnl <= config.maxDailyLoss) fireUserPnlBreaker(userId, pnl);
+  }
+}
+
+function evaluateBreakers(): void {
+  if (!config.breakersEnabled) return;
+  evaluateMarketMoveBreaker();
+  evaluateUserPnlBreakers();
+}
+
+function consumeMarketTicks(): void {
+  createConsumer(`risk-engine-ticks-${Date.now()}`, ["market.ticks"])
+    .then((consumer) => {
+      consumer.onMessage((_topic, raw) => {
+        const tick = raw as {
+          prices?: Record<string, number>;
+          openPrices?: Record<string, number>;
+          volumes?: Record<string, number>;
+        };
+        if (tick.prices) {
+          for (const [s, p] of Object.entries(tick.prices)) {
+            if (p > 0) prices[s] = p;
+          }
+        }
+        if (tick.openPrices) {
+          for (const [s, p] of Object.entries(tick.openPrices)) {
+            if (p > 0) openPrices[s] = p;
+          }
+        }
+        if (tick.volumes) {
+          for (const [s, v] of Object.entries(tick.volumes)) {
+            if (v > 0) volumes[s] = v;
+          }
+        }
+        evaluateBreakers();
+      });
+    })
+    .catch(() => {});
+}
+
+function markPriceFor(symbol: string, fallback: number): number {
+  const p = prices[symbol];
+  return p && p > 0 ? p : fallback;
+}
+
+function userGrossNotional(userId: string): number {
+  const userPositions = positions.get(userId);
+  if (!userPositions) return 0;
+  let total = 0;
+  for (const p of userPositions.values()) {
+    total += Math.abs(p.netQty * markPriceFor(p.symbol, p.avgPrice));
+  }
+  return total;
+}
+
+function userTotalPnl(userId: string): number {
+  const userPositions = positions.get(userId);
+  if (!userPositions) return 0;
+  let total = 0;
+  for (const p of userPositions.values()) {
+    const mark = markPriceFor(p.symbol, p.avgPrice);
+    total += p.realisedPnl + p.netQty * (mark - p.avgPrice);
+  }
+  return total;
+}
+
+function userSymbolNotional(userId: string, symbol: string): number {
+  const userPositions = positions.get(userId);
+  if (!userPositions) return 0;
+  const p = userPositions.get(symbol);
+  if (!p) return 0;
+  return Math.abs(p.netQty * markPriceFor(p.symbol, p.avgPrice));
+}
+
+function orderNotional(req: CheckRequest): number {
+  return req.quantity * req.limitPrice;
+}
+
 function formatPosition(p: Position) {
   const mark = prices[p.symbol] ?? p.avgPrice;
   const unrealisedPnl = p.netQty * (mark - p.avgPrice);
@@ -386,6 +644,14 @@ function formatPosition(p: Position) {
 fetchPrices();
 setInterval(fetchPrices, 5_000);
 trackOrderCounts();
+consumeMarketTicks();
+createProducer("risk-engine")
+  .then((p) => {
+    breakerProducer = p;
+  })
+  .catch((err) => {
+    console.warn("[risk-engine] producer init failed:", (err as Error).message);
+  });
 
 Deno.serve({ port: PORT }, async (req) => {
   if (req.method === "OPTIONS") {
@@ -402,11 +668,103 @@ Deno.serve({ port: PORT }, async (req) => {
       status: "ok",
       pricesTracked: Object.keys(prices).length,
       volumesTracked: Object.keys(volumes).length,
+      openPricesTracked: Object.keys(openPrices).length,
       activeUsers: activeOrderCounts.size,
       workingOrders: workingOrders.length,
       positionsTracked: positions.size,
+      breakerFireCount,
       config,
     });
+  }
+
+  if (path === "/breakers" && req.method === "GET") {
+    const now = Date.now();
+    const active: Array<{
+      key: string;
+      type: "market-move" | "user-pnl";
+      target: string;
+      firedAt: number;
+      expiresAt: number;
+    }> = [];
+    for (const [key, firedAt] of breakerCooldown) {
+      const expiresAt = firedAt + config.breakerCooldownMs;
+      if (expiresAt > now) {
+        const [type, ...targetParts] = key.split(":");
+        active.push({
+          key,
+          type: type as "market-move" | "user-pnl",
+          target: targetParts.join(":"),
+          firedAt,
+          expiresAt,
+        });
+      }
+    }
+    return json({
+      active,
+      history: breakerHistory,
+      fireCount: breakerFireCount,
+      config: {
+        cooldownMs: config.breakerCooldownMs,
+        enabled: config.breakersEnabled,
+        haltMovePercent: config.haltMovePercent,
+        maxDailyLoss: config.maxDailyLoss,
+      },
+    });
+  }
+
+  if (TEST_MODE && path === "/test/positions" && req.method === "POST") {
+    try {
+      const body = (await req.json()) as {
+        userId: string;
+        symbol: string;
+        netQty: number;
+        avgPrice: number;
+        realisedPnl?: number;
+      };
+      let userPositions = positions.get(body.userId);
+      if (!userPositions) {
+        userPositions = new Map();
+        positions.set(body.userId, userPositions);
+      }
+      userPositions.set(body.symbol, {
+        symbol: body.symbol,
+        netQty: body.netQty,
+        avgPrice: body.avgPrice,
+        costBasis: body.netQty * body.avgPrice,
+        realisedPnl: body.realisedPnl ?? 0,
+        fillCount: 1,
+      });
+      return json({ ok: true });
+    } catch {
+      return json({ error: "invalid json" }, 400);
+    }
+  }
+
+  if (TEST_MODE && path === "/test/positions/reset" && req.method === "POST") {
+    positions.clear();
+    breakerCooldown.clear();
+    breakerHistory.length = 0;
+    breakerFireCount = 0;
+    return json({ ok: true });
+  }
+
+  if (TEST_MODE && path === "/test/tick" && req.method === "POST") {
+    try {
+      const body = (await req.json()) as {
+        prices?: Record<string, number>;
+        openPrices?: Record<string, number>;
+      };
+      if (body.prices) {
+        for (const [s, p] of Object.entries(body.prices)) if (p > 0) prices[s] = p;
+      }
+      if (body.openPrices) {
+        for (const [s, p] of Object.entries(body.openPrices)) if (p > 0) openPrices[s] = p;
+      }
+      evaluateBreakers();
+      return json({ ok: true, fireCount: breakerFireCount });
+    } catch {
+      return json({ error: "invalid json" }, 400);
+    }
   }
 
   if (path === "/config" && req.method === "GET") {
@@ -416,11 +774,24 @@ Deno.serve({ port: PORT }, async (req) => {
   if (path === "/config" && req.method === "PUT") {
     try {
       const body = (await req.json()) as Partial<RiskConfig>;
+      if (body.maxDailyLoss !== undefined && body.maxDailyLoss >= 0) {
+        return json({ error: "maxDailyLoss must be negative" }, 400);
+      }
       if (body.fatFingerPct !== undefined) config.fatFingerPct = Math.max(0.1, body.fatFingerPct);
       if (body.maxOpenOrders !== undefined) config.maxOpenOrders = Math.max(1, body.maxOpenOrders);
       if (body.duplicateWindowMs !== undefined) config.duplicateWindowMs = Math.max(50, body.duplicateWindowMs);
       if (body.maxOrdersPerSecond !== undefined) config.maxOrdersPerSecond = Math.max(1, body.maxOrdersPerSecond);
       if (body.maxAdvPct !== undefined) config.maxAdvPct = Math.max(0.1, body.maxAdvPct);
+      if (body.maxGrossNotional !== undefined) config.maxGrossNotional = Math.max(0, body.maxGrossNotional);
+      if (body.maxDailyLoss !== undefined) config.maxDailyLoss = body.maxDailyLoss;
+      if (body.maxConcentrationPct !== undefined) {
+        config.maxConcentrationPct = Math.min(100, Math.max(1, body.maxConcentrationPct));
+      }
+      if (body.haltMovePercent !== undefined) config.haltMovePercent = Math.max(0.1, body.haltMovePercent);
+      if (body.breakerCooldownMs !== undefined) {
+        config.breakerCooldownMs = Math.max(1_000, body.breakerCooldownMs);
+      }
+      if (typeof body.breakersEnabled === "boolean") config.breakersEnabled = body.breakersEnabled;
       return json(config);
     } catch {
       return json({ error: "invalid json" }, 400);

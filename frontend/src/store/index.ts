@@ -4,6 +4,7 @@ import { advisorySlice } from "./advisorySlice.ts";
 import { alertsSlice } from "./alertsSlice.ts";
 import { analyticsApi } from "./analyticsApi.ts";
 import { authSlice } from "./authSlice.ts";
+import { breakersSlice } from "./breakersSlice.ts";
 import { createBroadcastChannelMiddleware } from "./channel.ts";
 import { channelsSlice } from "./channelsSlice.ts";
 import { feedSlice } from "./feedSlice.ts";
@@ -45,6 +46,7 @@ export const store = configureStore({
     gridPrefs: gridPrefsSlice.reducer,
     theme: themeSlice.reducer,
     killSwitch: killSwitchSlice.reducer,
+    breakers: breakersSlice.reducer,
     alerts: alertsSlice.reducer,
     intelligence: intelligenceSlice.reducer,
     advisory: advisorySlice.reducer,

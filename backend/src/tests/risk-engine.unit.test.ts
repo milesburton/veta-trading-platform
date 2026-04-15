@@ -1,7 +1,7 @@
 import {
   assert,
   assertEquals,
-} from "https://deno.land/std@0.210.0/testing/asserts.ts";
+} from "jsr:@std/assert@0.217";
 
 import { timeout } from "./test-helpers.ts";
 
@@ -209,6 +209,12 @@ Deno.test("[risk-engine] config includes new fields maxOrdersPerSecond and maxAd
   const cfg = await res.json();
   assert(typeof cfg.maxOrdersPerSecond === "number");
   assert(typeof cfg.maxAdvPct === "number");
+  assert(typeof cfg.maxGrossNotional === "number");
+  assert(typeof cfg.maxDailyLoss === "number");
+  assert(typeof cfg.maxConcentrationPct === "number");
+  assert(typeof cfg.haltMovePercent === "number");
+  assert(typeof cfg.breakerCooldownMs === "number");
+  assert(typeof cfg.breakersEnabled === "boolean");
 });
 
 Deno.test("[risk-engine] GET /positions/:userId returns empty for unknown user", async () => {
@@ -235,4 +241,271 @@ Deno.test("[risk-engine] missing fields returns 400", async () => {
   });
   assertEquals(res.status, 400);
   await res.body?.cancel();
+});
+
+async function seedPosition(body: {
+  userId: string;
+  symbol: string;
+  netQty: number;
+  avgPrice: number;
+  realisedPnl?: number;
+}): Promise<void> {
+  const res = await fetch(`${BASE}/test/positions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: timeout(),
+  });
+  assertEquals(res.status, 200, "seedPosition expected 200 (is RISK_ENGINE_TEST_MODE=1?)");
+  await res.body?.cancel();
+}
+
+async function resetTestState(): Promise<void> {
+  const res = await fetch(`${BASE}/test/positions/reset`, {
+    method: "POST",
+    signal: timeout(),
+  });
+  if (res.ok) await res.body?.cancel();
+  else await res.body?.cancel();
+}
+
+async function sendTick(body: {
+  prices?: Record<string, number>;
+  openPrices?: Record<string, number>;
+}): Promise<{ ok: boolean; fireCount: number }> {
+  const res = await fetch(`${BASE}/test/tick`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: timeout(),
+  });
+  assertEquals(res.status, 200);
+  return await res.json();
+}
+
+async function getBreakers(): Promise<{
+  active: Array<{ key: string; type: string; target: string }>;
+  history: Array<{
+    type: string;
+    scope: string;
+    target: string;
+    observedValue: number;
+    threshold: number;
+    firedAt: number;
+  }>;
+  fireCount: number;
+}> {
+  const res = await fetch(`${BASE}/breakers`, { signal: timeout() });
+  assertEquals(res.status, 200);
+  return await res.json();
+}
+
+Deno.test("[risk-engine] PUT /config accepts the 6 new fields", async () => {
+  await setConfig({
+    maxGrossNotional: 3_000_000,
+    maxDailyLoss: -25_000,
+    maxConcentrationPct: 40,
+    haltMovePercent: 7.5,
+    breakerCooldownMs: 30_000,
+    breakersEnabled: false,
+  });
+  const res = await fetch(`${BASE}/config`, { signal: timeout() });
+  const cfg = await res.json();
+  assertEquals(cfg.maxGrossNotional, 3_000_000);
+  assertEquals(cfg.maxDailyLoss, -25_000);
+  assertEquals(cfg.maxConcentrationPct, 40);
+  assertEquals(cfg.haltMovePercent, 7.5);
+  assertEquals(cfg.breakerCooldownMs, 30_000);
+  assertEquals(cfg.breakersEnabled, false);
+
+  await setConfig({
+    maxGrossNotional: 5_000_000,
+    maxDailyLoss: -50_000,
+    maxConcentrationPct: 25,
+    haltMovePercent: 10,
+    breakerCooldownMs: 60_000,
+    breakersEnabled: true,
+  });
+});
+
+Deno.test("[risk-engine] PUT /config rejects maxDailyLoss >= 0 with 400", async () => {
+  const before = await (await fetch(`${BASE}/config`, { signal: timeout() })).json();
+  const res = await fetch(`${BASE}/config`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ maxDailyLoss: 0 }),
+    signal: timeout(),
+  });
+  assertEquals(res.status, 400);
+  const err = await res.json();
+  assert(typeof err.error === "string");
+  const after = await (await fetch(`${BASE}/config`, { signal: timeout() })).json();
+  assertEquals(after.maxDailyLoss, before.maxDailyLoss);
+});
+
+Deno.test("[risk-engine] position notional: allow under limit", async () => {
+  await resetTestState();
+  await setConfig({ maxGrossNotional: 5_000_000 });
+  const result = await check({
+    userId: "test-notional-ok",
+    symbol: "AAPL",
+    side: "BUY",
+    quantity: 100,
+    limitPrice: 192.0,
+  });
+  const r = result.reasons.find((x) => x.includes("POSITION_NOTIONAL_LIMIT"));
+  assertEquals(r, undefined);
+});
+
+Deno.test("[risk-engine] position notional: reject when post-trade > limit", async () => {
+  await resetTestState();
+  await setConfig({ maxGrossNotional: 10_000 });
+  const result = await check({
+    userId: "test-notional-reject",
+    symbol: "AAPL",
+    side: "BUY",
+    quantity: 200,
+    limitPrice: 100,
+  });
+  await setConfig({ maxGrossNotional: 5_000_000 });
+  const r = result.reasons.find((x) => x.includes("POSITION_NOTIONAL_LIMIT"));
+  assert(r !== undefined, "expected POSITION_NOTIONAL_LIMIT rejection");
+  assertEquals(result.allowed, false);
+});
+
+Deno.test("[risk-engine] position notional: at limit is allowed (strict >)", async () => {
+  await resetTestState();
+  await setConfig({ maxGrossNotional: 10_000 });
+  const result = await check({
+    userId: "test-notional-boundary",
+    symbol: "AAPL",
+    side: "BUY",
+    quantity: 100,
+    limitPrice: 100,
+  });
+  await setConfig({ maxGrossNotional: 5_000_000 });
+  const r = result.reasons.find((x) => x.includes("POSITION_NOTIONAL_LIMIT"));
+  assertEquals(r, undefined, "10_000 exactly should pass (strict >)");
+});
+
+Deno.test("[risk-engine] P&L stop: allow for user with no positions", async () => {
+  await resetTestState();
+  const result = await check({
+    userId: "test-pnl-empty",
+    symbol: "AAPL",
+    side: "BUY",
+    quantity: 10,
+    limitPrice: 192.0,
+  });
+  const r = result.reasons.find((x) => x.includes("DAILY_LOSS_STOP"));
+  assertEquals(r, undefined);
+});
+
+Deno.test("[risk-engine] P&L stop: reject when total P&L at/below threshold", async () => {
+  await resetTestState();
+  await setConfig({ maxDailyLoss: -10_000, breakerCooldownMs: 60_000 });
+  await seedPosition({
+    userId: "test-pnl-breached",
+    symbol: "AAPL",
+    netQty: 0,
+    avgPrice: 0,
+    realisedPnl: -15_000,
+  });
+  const result = await check({
+    userId: "test-pnl-breached",
+    symbol: "AAPL",
+    side: "BUY",
+    quantity: 10,
+    limitPrice: 192.0,
+  });
+  await setConfig({ maxDailyLoss: -50_000 });
+  const r = result.reasons.find((x) => x.includes("DAILY_LOSS_STOP"));
+  assert(r !== undefined, "expected DAILY_LOSS_STOP rejection");
+  assertEquals(result.allowed, false);
+});
+
+Deno.test("[risk-engine] concentration: allow diverse book", async () => {
+  await resetTestState();
+  await setConfig({ maxConcentrationPct: 25 });
+  await seedPosition({ userId: "test-conc-ok", symbol: "MSFT", netQty: 1000, avgPrice: 300 });
+  await seedPosition({ userId: "test-conc-ok", symbol: "NVDA", netQty: 1000, avgPrice: 300 });
+  await seedPosition({ userId: "test-conc-ok", symbol: "GOOGL", netQty: 1000, avgPrice: 300 });
+  const result = await check({
+    userId: "test-conc-ok",
+    symbol: "AMZN",
+    side: "BUY",
+    quantity: 10,
+    limitPrice: 100,
+  });
+  const r = result.reasons.find((x) => x.includes("CONCENTRATION_LIMIT"));
+  assertEquals(r, undefined);
+});
+
+Deno.test("[risk-engine] concentration: reject when single symbol > pct", async () => {
+  await resetTestState();
+  await setConfig({ maxConcentrationPct: 25, maxGrossNotional: 5_000_000 });
+  await seedPosition({ userId: "test-conc-fail", symbol: "MSFT", netQty: 10, avgPrice: 10 });
+  const result = await check({
+    userId: "test-conc-fail",
+    symbol: "AAPL",
+    side: "BUY",
+    quantity: 100,
+    limitPrice: 100,
+  });
+  await setConfig({ maxConcentrationPct: 25 });
+  const r = result.reasons.find((x) => x.includes("CONCENTRATION_LIMIT"));
+  assert(r !== undefined, "expected CONCENTRATION_LIMIT rejection");
+  assertEquals(result.allowed, false);
+});
+
+Deno.test("[risk-engine] market-move breaker fires on >haltMovePercent move", async () => {
+  await resetTestState();
+  await setConfig({ haltMovePercent: 10, breakerCooldownMs: 60_000, breakersEnabled: true });
+  const before = (await getBreakers()).fireCount;
+  await sendTick({ openPrices: { ZZZA: 100 }, prices: { ZZZA: 115 } });
+  const state = await getBreakers();
+  assert(state.fireCount > before, "breaker fireCount should have increased");
+  const h = state.history[0];
+  assertEquals(h.type, "market-move");
+  assertEquals(h.target, "ZZZA");
+  assert(h.observedValue >= 15, "observedValue should be ~15%");
+});
+
+Deno.test("[risk-engine] breaker cooldown prevents double-fire within window", async () => {
+  await resetTestState();
+  await setConfig({ haltMovePercent: 10, breakerCooldownMs: 60_000, breakersEnabled: true });
+  await sendTick({ openPrices: { ZZZB: 100 }, prices: { ZZZB: 115 } });
+  const first = (await getBreakers()).fireCount;
+  await sendTick({ openPrices: { ZZZB: 100 }, prices: { ZZZB: 120 } });
+  const second = (await getBreakers()).fireCount;
+  assertEquals(second, first, "second fire within cooldown should be suppressed");
+});
+
+Deno.test("[risk-engine] breaker cooldown allows refire after window", async () => {
+  await resetTestState();
+  await setConfig({ haltMovePercent: 10, breakerCooldownMs: 1_000, breakersEnabled: true });
+  await sendTick({ openPrices: { ZZZC: 100 }, prices: { ZZZC: 115 } });
+  const first = (await getBreakers()).fireCount;
+  await new Promise((r) => setTimeout(r, 1_100));
+  await sendTick({ openPrices: { ZZZC: 100 }, prices: { ZZZC: 120 } });
+  const second = (await getBreakers()).fireCount;
+  await setConfig({ breakerCooldownMs: 60_000 });
+  assert(second > first, "refire after cooldown expiry should succeed");
+});
+
+Deno.test("[risk-engine] restore defaults", async () => {
+  await resetTestState();
+  await setConfig({
+    fatFingerPct: 5,
+    maxOpenOrders: 50,
+    duplicateWindowMs: 500,
+    maxOrdersPerSecond: 10,
+    maxAdvPct: 10,
+    maxGrossNotional: 5_000_000,
+    maxDailyLoss: -50_000,
+    maxConcentrationPct: 25,
+    haltMovePercent: 10,
+    breakerCooldownMs: 60_000,
+    breakersEnabled: true,
+  });
 });

@@ -25,6 +25,7 @@ import { advisoryNoteReceived } from "../advisorySlice.ts";
 import { alertAdded } from "../alertsSlice.ts";
 import type { AuthUser, TradingLimits } from "../authSlice.ts";
 import { setUser, setUserWithLimits } from "../authSlice.ts";
+import { breakerExpired, breakerFired } from "../breakersSlice.ts";
 import { feedReceived } from "../feedSlice.ts";
 import { gridApi } from "../gridApi.ts";
 import { loadGridPrefs } from "../gridPrefsSlice.ts";
@@ -416,6 +417,33 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           case "llmStateUpdate":
             storeAPI.dispatch(llmStateReceived(msg.data as LlmSubsystemStatus));
             break;
+          case "riskBreaker": {
+            const br = msg.data as {
+              type: "market-move" | "user-pnl";
+              scope: "symbol" | "user";
+              scopeValue?: string;
+              targetUserId?: string;
+              observedValue: number;
+              threshold: number;
+              ts: number;
+            };
+            const target = br.scope === "symbol" ? (br.scopeValue ?? "") : (br.targetUserId ?? "");
+            if (target) {
+              storeAPI.dispatch(
+                blockAdded({
+                  id: `breaker-${br.ts}-${br.scope}-${target}`,
+                  scope: br.scope,
+                  scopeValues: br.scope === "symbol" ? [target] : [],
+                  targetUserId: br.scope === "user" ? target : undefined,
+                  issuedBy: "circuit-breaker",
+                  issuedAt: br.ts,
+                  fromGateway: true,
+                })
+              );
+              storeAPI.dispatch(breakerFired(br));
+            }
+            break;
+          }
           case "upgradeStatus": {
             const upgrade = msg.data as { inProgress: boolean; message?: string | null };
             storeAPI.dispatch(
@@ -511,6 +539,16 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       if (state.ui.selectedAsset) hydrateNewsForSymbol(state.ui.selectedAsset);
     });
     connect();
+    setInterval(() => {
+      const state = storeAPI.getState() as {
+        breakers?: { active: Array<{ key: string; expiresAt: number }> };
+      };
+      const active = state.breakers?.active ?? [];
+      const now = Date.now();
+      for (const a of active) {
+        if (a.expiresAt <= now) storeAPI.dispatch(breakerExpired({ key: a.key }));
+      }
+    }, 1_000);
   }
 
   return (next) => (action: unknown) => {

@@ -349,6 +349,12 @@ function startConsumers(): void {
     });
   }).catch(() => {});
 
+  createConsumer("gateway-risk-breaker", ["risk.breaker"]).then((c) => {
+    c.onMessage((_topic, value) => {
+      broadcastAll({ event: "riskBreaker", data: value });
+    });
+  }).catch(() => {});
+
   createConsumer("gateway-ccp", [
     "ccp.novation", "ccp.margin", "ccp.settlement.queued", "ccp.settlement.complete",
   ]).then((c) => {
