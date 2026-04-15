@@ -1,7 +1,7 @@
 import {
   assert,
   assertEquals,
-} from "https://deno.land/std@0.210.0/testing/asserts.ts";
+} from "jsr:@std/assert@0.217";
 
 const BASE = Deno.env.get("VETA_BASE_URL") ?? "http://localhost";
 

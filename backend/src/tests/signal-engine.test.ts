@@ -1,7 +1,7 @@
 import {
   assertAlmostEquals,
   assertEquals,
-} from "https://deno.land/std@0.210.0/assert/mod.ts";
+} from "jsr:@std/assert@0.217";
 import { scoreFeatureVector } from "../signal-engine/scorer.ts";
 import { DEFAULT_WEIGHTS } from "../signal-engine/weight-store.ts";
 import type { FeatureVector } from "../types/intelligence.ts";

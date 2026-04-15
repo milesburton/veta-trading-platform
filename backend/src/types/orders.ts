@@ -1,15 +1,6 @@
-export type OrderSide = "BUY" | "SELL";
+import type { LiquidityFlag, OrderSide, Strategy } from "@veta/primitives";
 
-export type Strategy =
-  | "LIMIT"
-  | "TWAP"
-  | "POV"
-  | "VWAP"
-  | "ICEBERG"
-  | "SNIPER"
-  | "ARRIVAL_PRICE"
-  | "IS"
-  | "MOMENTUM";
+export type { LiquidityFlag, OrderSide, Strategy } from "@veta/primitives";
 
 export interface RoutedOrder {
   orderId: string;
@@ -34,7 +25,7 @@ export interface FillEvent {
   avgFillPrice: number;
   venue?: string;
   counterparty?: string;
-  liquidityFlag?: "MAKER" | "TAKER" | "CROSS";
+  liquidityFlag?: LiquidityFlag;
   commissionUSD?: number;
   marketImpactBps?: number;
 }

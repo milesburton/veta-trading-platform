@@ -1,9 +1,7 @@
-import type { InstrumentType } from "../../../types";
+import type { Desk, InstrumentType } from "../../../types";
 import type { Diagnostic, TicketContext } from "../ticket-types";
 
-export function deriveDesk(
-  instrumentType: InstrumentType
-): "equity" | "fi" | "derivatives" | "fx" | "commodities" {
+export function deriveDesk(instrumentType: InstrumentType): Desk {
   switch (instrumentType) {
     case "bond":
       return "fi";

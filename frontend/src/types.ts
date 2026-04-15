@@ -1,3 +1,20 @@
+import type {
+  AssetClass,
+  OrderStatus as BackendOrderStatus,
+  Desk,
+  LiquidityFlag,
+  OrderSide,
+  Strategy,
+} from "@shared/primitives";
+
+export type {
+  AssetClass,
+  Desk,
+  LiquidityFlag,
+  OrderSide,
+  Strategy,
+} from "@shared/primitives";
+
 declare const __brand: unique symbol;
 type Brand<T, B extends string> = T & { readonly [__brand]: B };
 
@@ -5,12 +22,6 @@ export type OrderId = Brand<string, "OrderId">;
 export type ChildOrderId = Brand<string, "ChildOrderId">;
 export type UserId = Brand<string, "UserId">;
 export type ClientOrderId = Brand<string, "ClientOrderId">;
-
-export type OrderSide = "BUY" | "SELL";
-
-export type AssetClass = "equity" | "fx" | "commodity" | "bond";
-
-export type Desk = "equity" | "fi" | "derivatives" | "otc";
 
 export type MarketType = "lit" | "dark" | "otc";
 
@@ -68,14 +79,7 @@ export interface CandleHistory {
   [asset: string]: { "1m": OhlcCandle[]; "5m": OhlcCandle[] };
 }
 
-export type OrderStatus =
-  | "pending"
-  | "working"
-  | "filled"
-  | "expired"
-  | "rejected"
-  | "cancelled"
-  | "held";
+export type OrderStatus = BackendOrderStatus | "held";
 
 export const ORDER_STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
   pending: "Received by OMS — awaiting routing to execution algo",
@@ -87,22 +91,8 @@ export const ORDER_STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
   held: "Blocked by an active kill switch — submit disabled",
 };
 
-export type Strategy =
-  | "LIMIT"
-  | "TWAP"
-  | "POV"
-  | "VWAP"
-  | "ICEBERG"
-  | "SNIPER"
-  | "ARRIVAL_PRICE"
-  | "IS"
-  | "MOMENTUM";
-
 /** FIX Time In Force (tag 59). */
 export type TimeInForce = "DAY" | "GTC" | "IOC" | "FOK" | "GTD";
-
-/** Whether this fill added (maker) or removed (taker) liquidity. */
-export type LiquidityFlag = "MAKER" | "TAKER" | "CROSS";
 
 /** Execution venue MIC code. */
 export type VenueMIC =

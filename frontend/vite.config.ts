@@ -1,6 +1,9 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isElectron = process.env.ELECTRON_BUILD === "1";
 
 export default defineConfig(async ({ mode }) => {
@@ -51,6 +54,11 @@ export default defineConfig(async ({ mode }) => {
       }),
       ...extraPlugins,
     ],
+    resolve: {
+      alias: {
+        "@shared": path.resolve(__dirname, "../shared"),
+      },
+    },
     ...(isElectronMode ? {} : {
       server: {
         port: 5173,

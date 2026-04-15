@@ -2,7 +2,7 @@ import {
   assert,
   assertEquals,
   assertExists,
-} from "https://deno.land/std@0.210.0/testing/asserts.ts";
+} from "jsr:@std/assert@0.217";
 import { JOURNAL_URL, timeout as t } from "./test-helpers.ts";
 
 Deno.test("[journal/http] GET /health returns ok with retentionDays", async () => {

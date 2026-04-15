@@ -2,7 +2,7 @@ import {
   assert,
   assertAlmostEquals,
   assertEquals,
-} from "https://deno.land/std@0.210.0/testing/asserts.ts";
+} from "jsr:@std/assert@0.217";
 
 // Pure logic extracted from ems-server.ts for unit testing.
 // The EMS service itself requires Redpanda; these tests cover the fill model math.

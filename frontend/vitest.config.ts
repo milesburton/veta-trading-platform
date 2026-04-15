@@ -1,10 +1,19 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [
     react({ babel: { plugins: [["module:@preact/signals-react-transform"]] } }),
   ],
+  resolve: {
+    alias: {
+      "@shared": path.resolve(__dirname, "../shared"),
+    },
+  },
   test: {
     environment: "jsdom",
     environmentOptions: { jsdom: { url: "http://localhost:3000" } },

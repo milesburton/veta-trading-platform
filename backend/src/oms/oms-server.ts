@@ -20,6 +20,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
+import type { Desk } from "@veta/primitives";
 
 const PORT = Number(Deno.env.get("OMS_PORT")) || 5_002;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -49,7 +50,6 @@ const KNOWN_STRATEGIES = new Set([
   "MOMENTUM",
 ]);
 
-type Desk = "equity" | "fi" | "derivatives" | "fx" | "commodities";
 type MarketType = "lit" | "dark" | "otc";
 
 interface TradingLimits {

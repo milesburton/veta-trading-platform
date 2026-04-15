@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.210.0/testing/asserts.ts";
+import { assertEquals } from "jsr:@std/assert@0.217";
 
 interface OrderRecord {
   id: string;

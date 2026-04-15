@@ -1,29 +1,15 @@
-/**
- * Settlement date utilities — shared across EMS, dark-pool, CCP, and RFQ services.
- *
- * Standard cycles:
- *   equity   — T+2 business days
- *   fi       — T+1 business day
- *   option   — T+1 business day
- *   otc      — T+0 (same day)
- */
+import type { Desk } from "@veta/primitives";
 
-export type Desk = "equity" | "fi" | "derivatives" | "otc";
+export type { Desk } from "@veta/primitives";
 
 const SETTLEMENT_DAYS: Record<Desk, number> = {
   equity: 2,
   fi: 1,
   derivatives: 1,
-  otc: 0,
+  fx: 2,
+  commodities: 2,
 };
 
-/**
- * Returns the settlement date as a YYYY-MM-DD string.
- * Skips weekends; does not account for public holidays.
- *
- * @param desk   — instrument class (default: "equity" → T+2)
- * @param fromMs — base timestamp in ms (default: now)
- */
 export function settlementDate(
   desk: Desk = "equity",
   fromMs = Date.now(),

@@ -2,7 +2,7 @@ import {
   assert,
   assertAlmostEquals,
   assertEquals,
-} from "https://deno.land/std@0.210.0/assert/mod.ts";
+} from "jsr:@std/assert@0.217";
 import { computeSpreadAnalysis } from "../analytics/spread-analysis.ts";
 import { computeDurationLadder } from "../analytics/duration-ladder.ts";
 import type { BondPosition } from "../analytics/duration-ladder.ts";

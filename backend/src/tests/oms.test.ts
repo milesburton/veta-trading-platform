@@ -1,7 +1,7 @@
 import {
   assertEquals,
   assertMatch,
-} from "https://deno.land/std@0.210.0/testing/asserts.ts";
+} from "jsr:@std/assert@0.217";
 
 interface TradingLimits {
   max_order_qty: number;

@@ -12,7 +12,7 @@ import {
   assert,
   assertEquals,
   assertExists,
-} from "https://deno.land/std@0.210.0/testing/asserts.ts";
+} from "jsr:@std/assert@0.217";
 import { loginAs } from "./test-helpers.ts";
 
 const GATEWAY_URL   = "http://localhost:5011";
