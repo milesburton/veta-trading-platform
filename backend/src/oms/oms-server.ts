@@ -18,8 +18,9 @@
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createConsumer, createProducer } from "@veta/messaging";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
+import { createConsumer, createProducer } from "@veta/messaging";
 import type { Desk } from "@veta/primitives";
 import {
   type OrderKillCommand,
@@ -227,16 +228,13 @@ function nextOrderId(): string {
 }
 
 const producer = await createProducer("oms").catch((err) => {
-  console.warn(
-    "[oms] Redpanda unavailable — orders will not be published to bus:",
-    err.message,
-  );
+  logger.warn("Redpanda unavailable — orders will not be published to bus", { err });
   return null;
 });
 
 const consumer = await createConsumer("oms-new-orders", ["orders.new"]).catch(
   (err) => {
-    console.warn("[oms] Cannot subscribe to orders.new:", err.message);
+    logger.warn("Cannot subscribe to orders.new", { err });
     return null;
   },
 );
@@ -245,10 +243,7 @@ const killConsumer = await createConsumer("oms-kill-orders", [
   "orders.kill",
   "orders.resume",
 ]).catch((err) => {
-  console.warn(
-    "[oms] Cannot subscribe to orders.kill/orders.resume:",
-    err.message,
-  );
+  logger.warn("Cannot subscribe to orders.kill/orders.resume", { err });
   return null;
 });
 
@@ -261,7 +256,7 @@ consumer?.onMessage(async (_topic, raw) => {
     const issues = parsed.error.issues
       .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
       .join("; ");
-    console.warn(`[oms] Malformed orders.new message — ${issues}`);
+    logger.warn(`Malformed orders.new message — ${issues}`);
     await producer?.send("orders.rejected", {
       clientOrderId: rawPartial.clientOrderId,
       userId: rawPartial.userId ?? "unknown",
@@ -294,9 +289,7 @@ consumer?.onMessage(async (_topic, raw) => {
       : order.userRole === "risk-manager"
       ? "Risk Manager (read-only oversight)"
       : "External-client";
-    console.warn(
-      `[oms] Order rejected — ${order.userRole} user ${order.userId} attempted to submit an order`,
-    );
+    logger.warn(`Order rejected — ${order.userRole} user ${order.userId} attempted to submit an order`);
     await producer?.send("orders.rejected", {
       clientOrderId: order.clientOrderId,
       userId: order.userId,
@@ -313,9 +306,7 @@ consumer?.onMessage(async (_topic, raw) => {
     : DEFAULT_LIMITS;
 
   if (!limits.allowed_desks.includes(desk)) {
-    console.warn(
-      `[oms] Order rejected — user ${order.userId} does not have access to ${desk} desk`,
-    );
+    logger.warn(`Order rejected — user ${order.userId} does not have access to ${desk} desk`);
     await producer?.send("orders.rejected", {
       clientOrderId: order.clientOrderId,
       userId: order.userId,
@@ -326,7 +317,7 @@ consumer?.onMessage(async (_topic, raw) => {
   }
 
   if (!RISK_ENGINE_ENABLED) {
-    console.log(`[oms] Risk-engine disabled — skipping pre-trade checks for ${order.clientOrderId}`);
+    logger.info(`Risk-engine disabled — skipping pre-trade checks for ${order.clientOrderId}`);
   } else try {
     const riskRes = await fetch(`${RISK_ENGINE_URL}/check`, {
       method: "POST",
@@ -351,7 +342,7 @@ consumer?.onMessage(async (_topic, raw) => {
     };
     if (!riskResult.allowed) {
       const reason = riskResult.reasons.join("; ");
-      console.warn(`[oms] Risk-engine rejected order ${order.clientOrderId}: ${reason}`);
+      logger.warn(`Risk-engine rejected order ${order.clientOrderId}: ${reason}`);
       await producer?.send("orders.rejected", {
         clientOrderId: order.clientOrderId,
         userId: order.userId,
@@ -361,10 +352,10 @@ consumer?.onMessage(async (_topic, raw) => {
       return;
     }
     for (const w of riskResult.warnings) {
-      console.log(`[oms] Risk warning for ${order.clientOrderId}: ${w}`);
+      logger.info(`Risk warning for ${order.clientOrderId}: ${w}`);
     }
   } catch (err) {
-    console.error(`[oms] Risk-engine unreachable — rejecting order ${order.clientOrderId}:`, (err as Error).message);
+    logger.error(`Risk-engine unreachable — rejecting order ${order.clientOrderId}`, { err: err as Error });
     await producer?.send("orders.rejected", {
       clientOrderId: order.clientOrderId,
       userId: order.userId,
@@ -459,9 +450,7 @@ consumer?.onMessage(async (_topic, raw) => {
   // Lot size validation — warn but don't hard-reject (algos may work in fractional lots)
   const lotSize = await getAssetLotSize(order.asset);
   if (lotSize > 1 && order.quantity % lotSize !== 0) {
-    console.warn(
-      `[oms] Order qty ${order.quantity} is not a multiple of lot size ${lotSize} for ${order.asset}`,
-    );
+    logger.warn(`Order qty ${order.quantity} is not a multiple of lot size ${lotSize} for ${order.asset}`);
     // Attach note to the order but do not reject
   }
 
@@ -498,12 +487,10 @@ consumer?.onMessage(async (_topic, raw) => {
     optionSpec: order.optionSpec,
   };
 
-  console.log(
-    `[oms] Accepted ${strategy} order ${orderId}: ${order.side} ${order.quantity} ${order.asset} ` +
+  logger.info(`Accepted ${strategy} order ${orderId}: ${order.side} ${order.quantity} ${order.asset} ` +
       `desk=${desk} marketType=${marketType} venue=${destinationVenue} (user=${
         order.userId ?? "unknown"
-      })`,
-  );
+      })`);
 
   if (order.clientOrderId) {
     activeOrders.set(order.clientOrderId, {
@@ -523,9 +510,7 @@ consumer?.onMessage(async (_topic, raw) => {
     // FI orders go to RFQ service — not via algo strategies
     await producer?.send("orders.fi.rfq", { ...enriched, routedAt: Date.now() })
       .catch(() => {});
-    console.log(
-      `[oms] Bond order ${orderId} routed to RFQ service (${order.bondSpec?.symbol})`,
-    );
+    logger.info(`Bond order ${orderId} routed to RFQ service (${order.bondSpec?.symbol})`);
   } else {
     await producer?.send("orders.routed", { ...enriched, routedAt: Date.now() })
       .catch(() => {});
@@ -541,16 +526,14 @@ killConsumer?.onMessage(async (topic, raw) => {
       const issues = parsed.error.issues
         .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
         .join("; ");
-      console.warn(`[oms] Malformed orders.kill — dropped: ${issues}`);
+      logger.warn(`Malformed orders.kill — dropped: ${issues}`);
       return;
     }
     const cmd: KillCommand = parsed.data;
     const { scope, scopeValue, targetUserId, issuedBy, issuedByRole } = cmd;
 
     if (issuedByRole !== "admin" && targetUserId && targetUserId !== issuedBy) {
-      console.warn(
-        `[oms] Kill rejected — trader ${issuedBy} attempted to kill orders for user ${targetUserId}`,
-      );
+      logger.warn(`Kill rejected — trader ${issuedBy} attempted to kill orders for user ${targetUserId}`);
       return;
     }
 
@@ -581,17 +564,13 @@ killConsumer?.onMessage(async (topic, raw) => {
     }
 
     if (toCancel.length === 0) {
-      console.log(
-        `[oms] Kill command from ${issuedBy}: no matching active orders (scope=${scope} scopeValue=${
+      logger.info(`Kill command from ${issuedBy}: no matching active orders (scope=${scope} scopeValue=${
           scopeValue ?? "—"
-        })`,
-      );
+        })`);
       return;
     }
 
-    console.log(
-      `[oms] Kill command from ${issuedBy} (role=${issuedByRole}): cancelling ${toCancel.length} orders`,
-    );
+    logger.info(`Kill command from ${issuedBy} (role=${issuedByRole}): cancelling ${toCancel.length} orders`);
 
     for (const order of toCancel) {
       activeOrders.delete(order.clientOrderId);
@@ -627,7 +606,7 @@ killConsumer?.onMessage(async (topic, raw) => {
       const issues = parsed.error.issues
         .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
         .join("; ");
-      console.warn(`[oms] Malformed orders.resume — dropped: ${issues}`);
+      logger.warn(`Malformed orders.resume — dropped: ${issues}`);
       return;
     }
     const cmd: ResumeCommand = parsed.data;
@@ -643,11 +622,9 @@ killConsumer?.onMessage(async (topic, raw) => {
     const delayMs = effectiveAt - ts;
 
     const doResume = async () => {
-      console.log(
-        `[oms] Resume command from ${issuedBy} (role=${issuedByRole}): scope=${scope} scopeValue=${
+      logger.info(`Resume command from ${issuedBy} (role=${issuedByRole}): scope=${scope} scopeValue=${
           scopeValue ?? "—"
-        }`,
-      );
+        }`);
       await producer?.send("orders.resumed", {
         scope,
         scopeValue,
@@ -668,7 +645,7 @@ killConsumer?.onMessage(async (topic, raw) => {
     };
 
     if (delayMs > 0) {
-      console.log(`[oms] Resume scheduled in ${delayMs}ms`);
+      logger.info(`Resume scheduled in ${delayMs}ms`);
       setTimeout(() => {
         doResume().catch(() => {});
       }, delayMs);
@@ -678,7 +655,7 @@ killConsumer?.onMessage(async (topic, raw) => {
   }
 });
 
-console.log(`[oms] Listening for orders.new on message bus`);
+logger.info(`Listening for orders.new on message bus`);
 
 async function expireOrphanedOrders() {
   try {
@@ -704,7 +681,7 @@ async function expireOrphanedOrders() {
           ts: now,
           reason: "expired_on_oms_restart",
         }).catch(() => {});
-        console.log(`[oms] Expired orphaned order ${order.id}`);
+        logger.info(`Expired orphaned order ${order.id}`);
       }
     }
   } catch { /* journal may not be up yet */ }

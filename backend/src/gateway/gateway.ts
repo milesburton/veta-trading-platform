@@ -1,4 +1,6 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { getCookieToken } from "@veta/auth";
+import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { serveDir } from "jsr:@std/http@1.0.25/file-server";
 
@@ -61,8 +63,6 @@ interface UserLimits {
   primary_desk?: string;
 }
 
-import { getCookieToken } from "@veta/auth";
-
 const authCache = new Map<string, { result: { user: AuthenticatedUser; limits: UserLimits }; expiresAt: number }>();
 setInterval(() => {
   const now = Date.now();
@@ -88,14 +88,14 @@ async function validateToken(token: string): Promise<{ user: AuthenticatedUser; 
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      console.warn(`[gateway] validateToken: user-service returned ${res.status} for token ${token.slice(0, 8)}...: ${body}`);
+      logger.warn(`validateToken: user-service returned ${res.status} for token ${token.slice(0, 8)}...: ${body}`);
       return null;
     }
     const result = await res.json() as { user: AuthenticatedUser; limits: UserLimits };
     authCache.set(token, { result, expiresAt: now + 60_000 });
     return result;
   } catch (err) {
-    console.warn(`[gateway] validateToken: fetch error for token ${token.slice(0, 8)}...:`, (err as Error).message);
+    logger.warn(`validateToken: fetch error for token ${token.slice(0, 8)}...`, { err: err as Error });
     return null;
   }
 }
@@ -721,7 +721,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       } else {
         anonymousClients.add(socket);
       }
-      console.log(`[gateway] Client connected user=${socketUserId ?? "anonymous"} (total=${_totalConnections()})`);
+      logger.info(`Client connected user=${socketUserId ?? "anonymous"} (total=${_totalConnections()})`);
       if (auth) {
         socket.send(JSON.stringify({ event: "authIdentity", data: { user: auth.user, limits: auth.limits } }));
         publishAccessEvent({ action: "ws_connect", userId: auth.user.id, userRole: auth.user.role });
@@ -907,7 +907,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     socket.onclose = () => {
       _removeSocket(socketUserId, socket);
-      console.log(`[gateway] Client disconnected user=${socketUserId ?? "anonymous"} (total=${_totalConnections()})`);
+      logger.info(`Client disconnected user=${socketUserId ?? "anonymous"} (total=${_totalConnections()})`);
     };
 
     socket.onerror = () => socket.close();
@@ -1830,4 +1830,4 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 });
 
-console.log(`[gateway] API Gateway running on port ${PORT}`);
+logger.info(`API Gateway running on port ${PORT}`);

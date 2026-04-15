@@ -1,6 +1,8 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { getCookieToken } from "@veta/auth";
 import { usersPool } from "@veta/db";
 import { parseBody } from "@veta/http";
+import { logger } from "@veta/logger";
 import { createProducer } from "@veta/messaging";
 import {
   AlertCreateSchema,
@@ -120,7 +122,7 @@ const CORS_HEADERS = {
 };
 
 const producer = await createProducer("user-service").catch((err) => {
-  console.warn("[user-service] Redpanda unavailable:", err.message);
+  logger.warn("Redpanda unavailable", { err });
   return null;
 });
 
@@ -196,8 +198,6 @@ function verifyOAuthCredentials(userId: string, providedPassword: string | undef
   if (!OAUTH_SHARED_SECRET) return false;
   return OAUTH_SHARED_SECRET === candidate;
 }
-
-import { getCookieToken } from "@veta/auth";
 
 function json(data: unknown, status = 200, extra?: Record<string, string>): Response {
   return new Response(JSON.stringify(data), {
@@ -727,5 +727,5 @@ async function handle(req: Request): Promise<Response> {
   return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
 }
 
-console.log(`[user-service] running on port ${PORT}`);
+logger.info(`running on port ${PORT}`);
 Deno.serve({ port: PORT }, handle);

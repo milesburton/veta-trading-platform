@@ -15,6 +15,7 @@ import { createMarketSimClient } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { type Desk, settlementDate } from "@veta/settlement";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
@@ -104,10 +105,7 @@ function deskFromOrder(order: ChildOrder): Desk {
 }
 
 const producer = await createProducer("ems").catch((err) => {
-  console.warn(
-    "[ems] Redpanda unavailable — fills will not be published to bus:",
-    err.message,
-  );
+  logger.warn("Redpanda unavailable — fills will not be published to bus", { err });
   return null;
 });
 
@@ -138,7 +136,7 @@ interface ChildOrder {
 
 const consumer = await createConsumer("ems-child-orders", ["orders.child"])
   .catch((err) => {
-    console.warn("[ems] Cannot subscribe to orders.child:", err.message);
+    logger.warn("Cannot subscribe to orders.child", { err });
     return null;
   });
 
@@ -150,9 +148,7 @@ consumer?.onMessage(async (_topic, raw) => {
   const midPrice = tick.prices[child.asset];
 
   if (!midPrice) {
-    console.warn(
-      `[ems] Unknown asset ${child.asset} — cannot fill ${child.childId}`,
-    );
+    logger.warn(`Unknown asset ${child.asset} — cannot fill ${child.childId}`);
     return;
   }
 
@@ -194,12 +190,10 @@ consumer?.onMessage(async (_topic, raw) => {
 
   const execId = `EX${String(fillSeq++).padStart(8, "0")}`;
 
-  console.log(
-    `[ems] Fill ${execId}: ${child.side} ${filledQty}/${child.quantity} ${child.asset} ` +
+  logger.info(`Fill ${execId}: ${child.side} ${filledQty}/${child.quantity} ${child.asset} ` +
       `@ ${avgFillPrice} via ${venue} (${liquidityFlag}) impact=${
         impactBps.toFixed(2)
-      }bps`,
-  );
+      }bps`);
 
   if (filledQty > 0) {
     const fillPayload = {
@@ -256,7 +250,7 @@ consumer?.onMessage(async (_topic, raw) => {
   }
 });
 
-console.log(`[ems] Listening for orders.child on message bus`);
+logger.info(`Listening for orders.child on message bus`);
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);

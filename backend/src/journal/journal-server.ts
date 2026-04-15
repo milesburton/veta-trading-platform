@@ -7,6 +7,7 @@ import type {
   GridQueryResponse,
 } from "@veta/types/grid-query";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("JOURNAL_PORT")) || 5_009;
 const RETENTION_DAYS = Number(Deno.env.get("JOURNAL_RETENTION_DAYS")) || 90;
@@ -83,7 +84,7 @@ async function ingestTick(
     await client.queryArray("COMMIT");
   } catch (err) {
     await client.queryArray("ROLLBACK").catch(() => {});
-    console.warn("[journal] candle upsert failed:", (err as Error).message);
+    logger.warn("candle upsert failed", { err: err as Error });
   } finally {
     client.release();
   }
@@ -228,13 +229,11 @@ async function pruneOldEvents(): Promise<void> {
       [RETENTION_MS],
     );
     await c.queryArray("VACUUM journal.events").catch(() => {});
-    console.log(
-      `[journal] Prune: removed ${
+    logger.info(`Prune: removed ${
         result.rowCount ?? 0
-      } events older than ${RETENTION_DAYS}d`,
-    );
+      } events older than ${RETENTION_DAYS}d`);
   } catch (err) {
-    console.warn("[journal] Prune failed:", (err as Error).message);
+    logger.warn("Prune failed", { err: err as Error });
   } finally {
     c.release();
   }
@@ -323,15 +322,10 @@ async function reconcileFillsFromArchive(): Promise<void> {
     }
 
     if (reconciled > 0) {
-      console.log(
-        `[journal] Reconciled ${reconciled} missing fill(s) from fix-archive`,
-      );
+      logger.info(`Reconciled ${reconciled} missing fill(s) from fix-archive`);
     }
   } catch (err) {
-    console.warn(
-      "[journal] Fill reconciliation failed:",
-      (err as Error).message,
-    );
+    logger.warn("Fill reconciliation failed", { err: err as Error });
   }
 }
 
@@ -362,15 +356,13 @@ const journalGroupId = journalRowCount === 0
 const marketGroupId = journalRowCount === 0
   ? `journal-market-fresh-${Date.now().toString(36)}`
   : "journal-market";
-console.log(
-  `[journal] Consumer groups: ${journalGroupId}, ${marketGroupId} (${journalRowCount} rows)`,
-);
+logger.info(`Consumer groups: ${journalGroupId}, ${marketGroupId} (${journalRowCount} rows)`);
 
 createConsumer(journalGroupId, CONSUME_TOPICS).then((consumer) => {
   consumer.onMessage((topic, value) =>
     ingest(topic, value as Record<string, unknown>)
   );
-  console.log(`[journal] Subscribed to: ${CONSUME_TOPICS.join(", ")}`);
+  logger.info(`Subscribed to: ${CONSUME_TOPICS.join(", ")}`);
 });
 
 createConsumer(marketGroupId, ["market.ticks"]).then((consumer) => {
@@ -382,7 +374,7 @@ createConsumer(marketGroupId, ["market.ticks"]).then((consumer) => {
       },
     )
   );
-  console.log("[journal] Subscribed to: market.ticks");
+  logger.info(`Subscribed to: market.ticks`);
 });
 
 function rowToEntry(row: unknown[]) {
