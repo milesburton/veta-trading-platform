@@ -16,22 +16,20 @@ import { createMarketSimClient } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 import type { RoutedOrder, FillEvent } from "@veta/types/orders";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("ICEBERG_ALGO_PORT")) || 5_021;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
-console.log(`[iceberg-algo] Starting on port ${PORT}`);
+logger.info(`Starting on port ${PORT}`);
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("iceberg-algo").catch((err) => {
-  console.warn(
-    "[iceberg-algo] Redpanda unavailable — orders will not be published:",
-    err.message,
-  );
+  logger.warn("Redpanda unavailable — orders will not be published", { err });
   return null;
 });
 
@@ -57,10 +55,7 @@ const routedConsumer = await createConsumer("iceberg-algo-routed", [
   "orders.routed",
 ]).catch(
   (err) => {
-    console.warn(
-      "[iceberg-algo] Cannot subscribe to orders.routed:",
-      err.message,
-    );
+    logger.warn("Cannot subscribe to orders.routed", { err });
     return null;
   },
 );
@@ -69,7 +64,7 @@ routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== "ICEBERG") return;
   if (order.limitPrice === undefined) {
-    console.warn(`[iceberg-algo] Rejecting ${order.orderId}: missing limitPrice`);
+    logger.warn(`Rejecting ${order.orderId}: missing limitPrice`);
     return;
   }
 
@@ -94,11 +89,9 @@ routedConsumer?.onMessage((_topic, raw) => {
 
   activeOrders.set(order.orderId, iceberg);
 
-  console.log(
-    `[iceberg-algo] Queued ${order.orderId}: ${totalQty} ${order.asset} total, ${visibleQty} per slice (${
+  logger.info(`Queued ${order.orderId}: ${totalQty} ${order.asset} total, ${visibleQty} per slice (${
       Math.ceil(totalQty / visibleQty)
-    } slices)`,
-  );
+    } slices)`);
 
   producer?.send("algo.heartbeat", {
     algo: "ICEBERG",
@@ -116,10 +109,7 @@ const fillsConsumer = await createConsumer("iceberg-algo-fills", [
   "orders.filled",
 ]).catch(
   (err) => {
-    console.warn(
-      "[iceberg-algo] Cannot subscribe to orders.filled:",
-      err.message,
-    );
+    logger.warn("Cannot subscribe to orders.filled", { err });
     return null;
   },
 );
@@ -140,19 +130,15 @@ fillsConsumer?.onMessage((_topic, raw) => {
   order.totalRemaining = Math.max(0, order.totalRemaining - qty);
   order.sliceInFlight = false;
 
-  console.log(
-    `[iceberg-algo] Fill ${order.orderId}: +${qty} @ ${
+  logger.info(`Fill ${order.orderId}: +${qty} @ ${
       price.toFixed(2)
-    } | remaining=${order.totalRemaining}`,
-  );
+    } | remaining=${order.totalRemaining}`);
 
   if (order.totalRemaining <= 0) {
     const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-    console.log(
-      `[iceberg-algo] Complete ${order.orderId}: filled=${order.filledQty} avg=${
+    logger.info(`Complete ${order.orderId}: filled=${order.filledQty} avg=${
         avgFill.toFixed(4)
-      }`,
-    );
+      }`);
     activeOrders.delete(order.orderId);
     producer?.send("algo.heartbeat", {
       algo: "ICEBERG",
@@ -180,11 +166,9 @@ marketClient.onTick(async (tick) => {
       const avgFill = order.filledQty > 0
         ? order.costBasis / order.filledQty
         : 0;
-      console.log(
-        `[iceberg-algo] Expired ${order.orderId}: filled=${order.filledQty} avg=${
+      logger.info(`Expired ${order.orderId}: filled=${order.filledQty} avg=${
           avgFill.toFixed(4)
-        }`,
-      );
+        }`);
       activeOrders.delete(order.orderId);
       await producer?.send("orders.expired", {
         orderId: order.orderId,
@@ -209,9 +193,7 @@ marketClient.onTick(async (tick) => {
     const childId = `${order.orderId}-ice-${order.sliceCount}`;
     order.sliceInFlight = true;
 
-    console.log(
-      `[iceberg-algo] Slice ${order.sliceCount} for ${order.orderId}: ${order.currentSliceQty} ${order.asset} @ mkt ${marketPrice}`,
-    );
+    logger.info(`Slice ${order.sliceCount} for ${order.orderId}: ${order.currentSliceQty} ${order.asset} @ mkt ${marketPrice}`);
 
     await producer?.send("orders.child", {
       childId,

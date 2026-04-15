@@ -18,6 +18,7 @@ import { createMarketSimClient } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 import type { RoutedOrder, FillEvent } from "@veta/types/orders";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("ARRIVAL_PRICE_ALGO_PORT")) || 5_023;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -28,16 +29,13 @@ const ALGO = "ARRIVAL_PRICE" as const;
 /** Target interval between slices at urgency=50 (one slice every 5s). */
 const BASE_SLICE_INTERVAL_SECS = 5;
 
-console.log(`[arrival-price-algo] Starting on port ${PORT}`);
+logger.info(`Starting on port ${PORT}`);
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("arrival-price-algo").catch((err) => {
-  console.warn(
-    "[arrival-price-algo] Redpanda unavailable — orders will not be published:",
-    err.message,
-  );
+  logger.warn("Redpanda unavailable — orders will not be published", { err });
   return null;
 });
 
@@ -65,10 +63,7 @@ const activeOrders = new Map<string, ActiveAP>();
 
 const routedConsumer = await createConsumer("ap-algo-routed", ["orders.routed"])
   .catch((err) => {
-    console.warn(
-      "[arrival-price-algo] Cannot subscribe to orders.routed:",
-      err.message,
-    );
+    logger.warn("Cannot subscribe to orders.routed", { err });
     return null;
   });
 
@@ -76,7 +71,7 @@ routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
   if (order.limitPrice === undefined) {
-    console.warn(`[arrival-price-algo] Rejecting ${order.orderId}: missing limitPrice`);
+    logger.warn(`Rejecting ${order.orderId}: missing limitPrice`);
     return;
   }
 
@@ -115,11 +110,9 @@ routedConsumer?.onMessage((_topic, raw) => {
 
   activeOrders.set(order.orderId, ap);
 
-  console.log(
-    `[arrival-price-algo] Queued ${order.orderId}: ${order.quantity} ${order.asset} arrival=${
+  logger.info(`Queued ${order.orderId}: ${order.quantity} ${order.asset} arrival=${
       arrivalPrice.toFixed(4)
-    } urgency=${urgency} maxSlippage=${maxSlippageBps}bps`,
-  );
+    } urgency=${urgency} maxSlippage=${maxSlippageBps}bps`);
 
   producer?.send("algo.heartbeat", {
     algo: ALGO,
@@ -136,10 +129,7 @@ routedConsumer?.onMessage((_topic, raw) => {
 
 const fillsConsumer = await createConsumer("ap-algo-fills", ["orders.filled"])
   .catch((err) => {
-    console.warn(
-      "[arrival-price-algo] Cannot subscribe to orders.filled:",
-      err.message,
-    );
+    logger.warn("Cannot subscribe to orders.filled", { err });
     return null;
   });
 
@@ -158,21 +148,17 @@ fillsConsumer?.onMessage((_topic, raw) => {
   order.costBasis += qty * price;
   order.totalRemaining = Math.max(0, order.totalRemaining - qty);
 
-  console.log(
-    `[arrival-price-algo] Fill ${order.orderId}: +${qty} @ ${
+  logger.info(`Fill ${order.orderId}: +${qty} @ ${
       price.toFixed(2)
-    } | remaining=${order.totalRemaining}`,
-  );
+    } | remaining=${order.totalRemaining}`);
 
   if (order.totalRemaining <= 0) {
     const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
     const slipBps = ((avgFill - order.arrivalPrice) / order.arrivalPrice) *
       10_000;
-    console.log(
-      `[arrival-price-algo] Complete ${order.orderId}: filled=${order.filledQty} avg=${
+    logger.info(`Complete ${order.orderId}: filled=${order.filledQty} avg=${
         avgFill.toFixed(4)
-      } slippage=${slipBps.toFixed(1)}bps`,
-    );
+      } slippage=${slipBps.toFixed(1)}bps`);
     activeOrders.delete(order.orderId);
     producer?.send("algo.heartbeat", {
       algo: ALGO,
@@ -200,11 +186,9 @@ marketClient.onTick(async (tick) => {
       const avgFill = order.filledQty > 0
         ? order.costBasis / order.filledQty
         : 0;
-      console.log(
-        `[arrival-price-algo] Expired ${order.orderId}: filled=${order.filledQty} avg=${
+      logger.info(`Expired ${order.orderId}: filled=${order.filledQty} avg=${
           avgFill.toFixed(4)
-        }`,
-      );
+        }`);
       activeOrders.delete(order.orderId);
       await producer?.send("orders.expired", {
         orderId: order.orderId,
@@ -264,13 +248,11 @@ marketClient.onTick(async (tick) => {
     const childId = `${order.orderId}-ap-${order.sliceCount}`;
     order.lastSliceAt = now;
 
-    console.log(
-      `[arrival-price-algo] Slice ${order.sliceCount} for ${order.orderId}: ${sliceQty} ${order.asset} @ mkt ${
+    logger.info(`Slice ${order.sliceCount} for ${order.orderId}: ${sliceQty} ${order.asset} @ mkt ${
         marketPrice.toFixed(4)
       } (arrival ${order.arrivalPrice.toFixed(4)}, drift ${
         adverseDriftBps.toFixed(1)
-      }bps)`,
-    );
+      }bps)`);
 
     await producer?.send("orders.child", {
       childId,

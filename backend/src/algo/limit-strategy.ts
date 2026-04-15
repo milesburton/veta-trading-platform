@@ -11,6 +11,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
+import { logger } from "@veta/logger";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
@@ -21,10 +22,7 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("limit-algo").catch((err) => {
-  console.warn(
-    "[limit-algo] Redpanda unavailable — orders will not be published:",
-    err.message,
-  );
+  logger.warn("Redpanda unavailable — orders will not be published", { err });
   return null;
 });
 
@@ -46,10 +44,7 @@ const pendingOrders: PendingLimit[] = [];
 // Subscribe to orders.routed — filter for LIMIT strategy
 const consumer = await createConsumer("limit-algo-routed", ["orders.routed"])
   .catch((err) => {
-    console.warn(
-      "[limit-algo] Cannot subscribe to orders.routed:",
-      err.message,
-    );
+    logger.warn("Cannot subscribe to orders.routed", { err });
     return null;
   });
 
@@ -71,9 +66,7 @@ consumer?.onMessage((_topic, raw) => {
     avgFillPrice: 0,
   };
 
-  console.log(
-    `[limit-algo] Queued ${pending.side} ${pending.quantity} ${pending.asset} @ ${pending.limitPrice} (${pending.orderId})`,
-  );
+  logger.info(`Queued ${pending.side} ${pending.quantity} ${pending.asset} @ ${pending.limitPrice} (${pending.orderId})`);
   pendingOrders.push(pending);
 });
 
@@ -98,9 +91,7 @@ marketClient.onTick(async (tick) => {
         avgFillPrice: order.avgFillPrice,
         ts: now,
       }).catch(() => {});
-      console.log(
-        `[limit-algo] Expired ${order.orderId} filled=${order.filledQty}/${order.quantity}`,
-      );
+      logger.info(`Expired ${order.orderId} filled=${order.filledQty}/${order.quantity}`);
       pendingOrders.splice(i, 1);
       continue;
     }
@@ -111,9 +102,7 @@ marketClient.onTick(async (tick) => {
 
     if (triggered && order.remainingQty > 0) {
       const childId = `${order.orderId}-lim-${now}`;
-      console.log(
-        `[limit-algo] Triggered ${order.orderId}: ${order.side} ${order.remainingQty} ${order.asset} @ mkt ${marketPrice}`,
-      );
+      logger.info(`Triggered ${order.orderId}: ${order.side} ${order.remainingQty} ${order.asset} @ mkt ${marketPrice}`);
       await producer?.send("orders.child", {
         childId,
         parentOrderId: order.orderId,
@@ -145,9 +134,7 @@ setInterval(async () => {
   for (let i = pendingOrders.length - 1; i >= 0; i--) {
     const order = pendingOrders[i];
     if (now >= order.expiresAt) {
-      console.log(
-        `[limit-algo] Expiry sweep: ${order.orderId} filled=${order.filledQty}`,
-      );
+      logger.info(`Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
       pendingOrders.splice(i, 1);
       await producer?.send("orders.expired", {
         orderId: order.orderId,

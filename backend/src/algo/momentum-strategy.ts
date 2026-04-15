@@ -26,6 +26,7 @@ import { createMarketSimClient } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 import type { RoutedOrder, FillEvent } from "@veta/types/orders";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("MOMENTUM_ALGO_PORT")) || 5_025;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -34,16 +35,13 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 const ALGO = "MOMENTUM" as const;
 
-console.log(`[momentum-algo] Starting on port ${PORT}`);
+logger.info(`Starting on port ${PORT}`);
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("momentum-algo").catch((err) => {
-  console.warn(
-    "[momentum-algo] Redpanda unavailable — orders will not be published:",
-    err.message,
-  );
+  logger.warn("Redpanda unavailable — orders will not be published", { err });
   return null;
 });
 
@@ -84,10 +82,7 @@ const routedConsumer = await createConsumer("momentum-algo-routed", [
   "orders.routed",
 ]).catch(
   (err) => {
-    console.warn(
-      "[momentum-algo] Cannot subscribe to orders.routed:",
-      err.message,
-    );
+    logger.warn("Cannot subscribe to orders.routed", { err });
     return null;
   },
 );
@@ -153,11 +148,9 @@ routedConsumer?.onMessage((_topic, raw) => {
 
   activeOrders.set(order.orderId, mom);
 
-  console.log(
-    `[momentum-algo] Queued ${order.orderId}: ${order.quantity} ${order.asset} entry=${
+  logger.info(`Queued ${order.orderId}: ${order.quantity} ${order.asset} entry=${
       entryPrice.toFixed(4)
-    } threshold=${entryThresholdBps}bps maxTranches=${maxTranches}`,
-  );
+    } threshold=${entryThresholdBps}bps maxTranches=${maxTranches}`);
 
   producer?.send("algo.heartbeat", {
     algo: ALGO,
@@ -179,10 +172,7 @@ const fillsConsumer = await createConsumer("momentum-algo-fills", [
   "orders.filled",
 ]).catch(
   (err) => {
-    console.warn(
-      "[momentum-algo] Cannot subscribe to orders.filled:",
-      err.message,
-    );
+    logger.warn("Cannot subscribe to orders.filled", { err });
     return null;
   },
 );
@@ -202,19 +192,15 @@ fillsConsumer?.onMessage((_topic, raw) => {
   order.costBasis += qty * price;
   order.remainingQty = Math.max(0, order.remainingQty - qty);
 
-  console.log(
-    `[momentum-algo] Fill ${order.orderId}: +${qty} @ ${
+  logger.info(`Fill ${order.orderId}: +${qty} @ ${
       price.toFixed(2)
-    } | remaining=${order.remainingQty}`,
-  );
+    } | remaining=${order.remainingQty}`);
 
   if (order.remainingQty <= 0) {
     const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-    console.log(
-      `[momentum-algo] Complete ${order.orderId}: filled=${order.filledQty} avg=${
+    logger.info(`Complete ${order.orderId}: filled=${order.filledQty} avg=${
         avgFill.toFixed(4)
-      }`,
-    );
+      }`);
     activeOrders.delete(order.orderId);
     producer?.send("algo.heartbeat", {
       algo: ALGO,
@@ -239,11 +225,9 @@ marketClient.onTick(async (tick) => {
       const avgFill = order.filledQty > 0
         ? order.costBasis / order.filledQty
         : 0;
-      console.log(
-        `[momentum-algo] Expired ${order.orderId}: filled=${order.filledQty} avg=${
+      logger.info(`Expired ${order.orderId}: filled=${order.filledQty} avg=${
           avgFill.toFixed(4)
-        }`,
-      );
+        }`);
       activeOrders.delete(order.orderId);
       await producer?.send("orders.expired", {
         orderId: order.orderId,
@@ -306,11 +290,9 @@ marketClient.onTick(async (tick) => {
     order.cooldownRemaining = order.cooldownTicks;
     const childId = `${order.orderId}-mom-${Date.now()}`;
 
-    console.log(
-      `[momentum-algo] Tranche ${order.tranchesRouted} for ${order.orderId}: ${qty} ${order.asset} @ mkt ${
+    logger.info(`Tranche ${order.tranchesRouted} for ${order.orderId}: ${qty} ${order.asset} @ mkt ${
         marketPrice.toFixed(4)
-      } signal=${signal.toFixed(2)}bps`,
-    );
+      } signal=${signal.toFixed(2)}bps`);
 
     await producer?.send("orders.child", {
       childId,

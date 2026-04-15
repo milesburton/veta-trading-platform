@@ -11,6 +11,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient, type MarketTick } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("VWAP_ALGO_PORT")) || 5_006;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -18,13 +19,13 @@ const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const VWAP_WINDOW = Number(Deno.env.get("VWAP_WINDOW_TICKS")) || 20;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
-console.log(`[vwap-algo] Starting, window=${VWAP_WINDOW} ticks`);
+logger.info(`Starting, window=${VWAP_WINDOW} ticks`);
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("vwap-algo").catch((err) => {
-  console.warn("[vwap-algo] Redpanda unavailable — orders will not be published:", err.message);
+  logger.warn("Redpanda unavailable — orders will not be published", { err });
   return null;
 });
 
@@ -76,9 +77,7 @@ async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<
 
   const deviation = Math.abs(price - vwap) / vwap;
   if (deviation > order.maxDeviation) {
-    console.log(
-      `[vwap-algo] Skip [${order.id}]: dev=${(deviation * 100).toFixed(2)}% > max ${(order.maxDeviation * 100).toFixed(2)}%`,
-    );
+    logger.info(`Skip [${order.id}]: dev=${(deviation * 100).toFixed(2)}% > max ${(order.maxDeviation * 100).toFixed(2)}%`);
     return;
   }
 
@@ -103,7 +102,7 @@ async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<
 }
 
 const consumer = await createConsumer("vwap-algo-routed", ["orders.routed"]).catch((err) => {
-  console.warn("[vwap-algo] Cannot subscribe to orders.routed:", err.message);
+  logger.warn("Cannot subscribe to orders.routed", { err });
   return null;
 });
 
@@ -127,7 +126,7 @@ consumer?.onMessage((_topic, raw) => {
     limitPrice: order.limitPrice ?? 0,
   };
   activeOrders.set(id, state);
-  console.log(`[vwap-algo] Queued [${id}] ${state.side} ${state.totalQty} ${state.asset} (${state.orderId})`);
+  logger.info(`Queued [${id}] ${state.side} ${state.totalQty} ${state.asset} (${state.orderId})`);
 });
 
 marketClient.onTick(async (tick) => {

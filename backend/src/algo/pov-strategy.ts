@@ -10,6 +10,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient, type MarketTick } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("POV_ALGO_PORT")) || 5_005;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -19,13 +20,13 @@ const MIN_SLICE = Number(Deno.env.get("POV_MIN_SLICE")) || 10;
 const MAX_SLICE = Number(Deno.env.get("POV_MAX_SLICE")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
-console.log(`[pov-algo] Starting, rate=${(POV_RATE * 100).toFixed(0)}%`);
+logger.info(`Starting, rate=${(POV_RATE * 100).toFixed(0)}%`);
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("pov-algo").catch((err) => {
-  console.warn("[pov-algo] Redpanda unavailable — orders will not be published:", err.message);
+  logger.warn("Redpanda unavailable — orders will not be published", { err });
   return null;
 });
 
@@ -71,7 +72,7 @@ async function processTickForOrder(state: PovOrder, tick: MarketTick): Promise<v
 }
 
 const consumer = await createConsumer("pov-algo-routed", ["orders.routed"]).catch((err) => {
-  console.warn("[pov-algo] Cannot subscribe to orders.routed:", err.message);
+  logger.warn("Cannot subscribe to orders.routed", { err });
   return null;
 });
 
@@ -93,7 +94,7 @@ consumer?.onMessage((_topic, raw) => {
     costBasis: 0,
   };
   activeOrders.set(id, state);
-  console.log(`[pov-algo] Queued [${id}] ${state.side} ${state.quantity} ${state.asset} (${state.orderId})`);
+  logger.info(`Queued [${id}] ${state.side} ${state.quantity} ${state.asset} (${state.orderId})`);
 });
 
 marketClient.onTick(async (tick) => {

@@ -1,5 +1,6 @@
 import { createConsumer } from "@veta/messaging";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 
 export function serveAlgoHealth(
   port: number,
@@ -40,9 +41,7 @@ export function startExpirySweep<T extends ExpirableOrder>(
         const avgFill = order.filledQty > 0
           ? order.costBasis / order.filledQty
           : 0;
-        console.log(
-          `[${label}] Expiry sweep: ${order.orderId} filled=${order.filledQty}`,
-        );
+        logger.info(`[${label}] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
         activeOrders.delete(order.orderId);
         await producer?.send("orders.expired", {
           orderId: order.orderId,
@@ -70,9 +69,7 @@ export function startExpirySweepIndexed<T extends Omit<ExpirableOrder, never>>(
         const avgFill = order.filledQty > 0
           ? order.costBasis / order.filledQty
           : 0;
-        console.log(
-          `[${label}] Expiry sweep: ${order.orderId} filled=${order.filledQty}`,
-        );
+        logger.info(`[${label}] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
         activeOrders.delete(id);
         await producer?.send("orders.expired", {
           orderId: order.orderId,
@@ -94,9 +91,7 @@ export function subscribeNewsSignals(
   createConsumer(groupId, ["news.signal"]).then((consumer) => {
     consumer.onMessage((_topic, raw) => {
       const sig = raw as { symbol: string; sentiment: string; score: number };
-      console.log(
-        `[${label}] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`,
-      );
+      logger.info(`[${label}] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`);
     });
   }).catch(() => {}); // non-fatal
 }

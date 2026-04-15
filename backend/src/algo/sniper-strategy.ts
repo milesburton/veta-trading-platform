@@ -21,6 +21,7 @@ import type { MarketTick } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 import type { RoutedOrder, FillEvent } from "@veta/types/orders";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("SNIPER_ALGO_PORT")) || 5_022;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -32,13 +33,13 @@ const COOLDOWN_MS = 2_000;
 const VENUES = ["XNAS", "ARCX", "BATS", "EDGX", "IEX", "MEMX", "XNYS"] as const;
 type SorVenueMIC = (typeof VENUES)[number];
 
-console.log(`[sniper-algo] Starting on port ${PORT}`);
+logger.info(`Starting on port ${PORT}`);
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("sniper-algo").catch((err) => {
-  console.warn("[sniper-algo] Redpanda unavailable — orders will not be published:", err.message);
+  logger.warn("Redpanda unavailable — orders will not be published", { err });
   return null;
 });
 
@@ -76,7 +77,7 @@ const activeOrders = new Map<string, ActiveSniper>();
 
 const routedConsumer = await createConsumer("sniper-algo-routed", ["orders.routed"]).catch(
   (err) => {
-    console.warn("[sniper-algo] Cannot subscribe to orders.routed:", err.message);
+    logger.warn("Cannot subscribe to orders.routed", { err });
     return null;
   },
 );
@@ -85,7 +86,7 @@ routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
   if (order.limitPrice === undefined) {
-    console.warn(`[sniper-algo] Rejecting ${order.orderId}: missing limitPrice`);
+    logger.warn(`Rejecting ${order.orderId}: missing limitPrice`);
     return;
   }
 
@@ -112,9 +113,7 @@ routedConsumer?.onMessage((_topic, raw) => {
 
   activeOrders.set(order.orderId, sniper);
 
-  console.log(
-    `[sniper-algo] Queued ${order.orderId}: ${order.quantity} ${order.asset} aggression=${aggressionPct}% maxVenues=${maxVenues}`,
-  );
+  logger.info(`Queued ${order.orderId}: ${order.quantity} ${order.asset} aggression=${aggressionPct}% maxVenues=${maxVenues}`);
 
   producer?.send("algo.heartbeat", {
     algo: ALGO,
@@ -130,7 +129,7 @@ routedConsumer?.onMessage((_topic, raw) => {
 
 const fillsConsumer = await createConsumer("sniper-algo-fills", ["orders.filled"]).catch(
   (err) => {
-    console.warn("[sniper-algo] Cannot subscribe to orders.filled:", err.message);
+    logger.warn("Cannot subscribe to orders.filled", { err });
     return null;
   },
 );
@@ -148,15 +147,11 @@ fillsConsumer?.onMessage((_topic, raw) => {
   order.costBasis += qty * price;
   order.totalRemaining = Math.max(0, order.totalRemaining - qty);
 
-  console.log(
-    `[sniper-algo] Fill ${order.orderId}: +${qty} @ ${price.toFixed(2)} | remaining=${order.totalRemaining}`,
-  );
+  logger.info(`Fill ${order.orderId}: +${qty} @ ${price.toFixed(2)} | remaining=${order.totalRemaining}`);
 
   if (order.totalRemaining <= 0) {
     const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-    console.log(
-      `[sniper-algo] Complete ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`,
-    );
+    logger.info(`Complete ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`);
     activeOrders.delete(order.orderId);
     producer?.send("algo.heartbeat", {
       algo: ALGO,
@@ -180,9 +175,7 @@ marketClient.onTick(async (tick) => {
     // Expiry check
     if (now >= order.expiresAt) {
       const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-      console.log(
-        `[sniper-algo] Expired ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`,
-      );
+      logger.info(`Expired ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`);
       activeOrders.delete(order.orderId);
       await producer?.send("orders.expired", {
         orderId: order.orderId,
@@ -223,9 +216,7 @@ marketClient.onTick(async (tick) => {
       order.sliceCount += 1;
       const childId = `${order.orderId}-snp-${order.sliceCount}`;
 
-      console.log(
-        `[sniper-algo] Route ${order.sliceCount} for ${order.orderId}: ${qty} ${order.asset} → ${venue} @ ${effectivePrice.toFixed(4)}`,
-      );
+      logger.info(`Route ${order.sliceCount} for ${order.orderId}: ${qty} ${order.asset} → ${venue} @ ${effectivePrice.toFixed(4)}`);
 
       await producer?.send("orders.child", {
         childId,

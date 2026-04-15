@@ -24,6 +24,7 @@ import { createMarketSimClient } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 import type { RoutedOrder, FillEvent } from "@veta/types/orders";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("IS_ALGO_PORT")) || 5_026;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -31,16 +32,13 @@ const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const ALGO = "IS" as const;
 
-console.log(`[is-algo] Starting on port ${PORT}`);
+logger.info(`Starting on port ${PORT}`);
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("is-algo").catch((err) => {
-  console.warn(
-    "[is-algo] Redpanda unavailable — orders will not be published:",
-    err.message,
-  );
+  logger.warn("Redpanda unavailable — orders will not be published", { err });
   return null;
 });
 
@@ -130,7 +128,7 @@ function buildSliceSchedule(
 
 const routedConsumer = await createConsumer("is-algo-routed", ["orders.routed"])
   .catch((err) => {
-    console.warn("[is-algo] Cannot subscribe to orders.routed:", err.message);
+    logger.warn("Cannot subscribe to orders.routed", { err });
     return null;
   });
 
@@ -199,13 +197,11 @@ routedConsumer?.onMessage((_topic, raw) => {
 
   activeOrders.set(order.orderId, is);
 
-  console.log(
-    `[is-algo] Queued ${order.orderId}: ${order.quantity} ${order.asset} arrival=${
+  logger.info(`Queued ${order.orderId}: ${order.quantity} ${order.asset} arrival=${
       arrivalPrice.toFixed(4)
     } urgency=${urgency} maxSlippage=${maxSlippageBps}bps slices=${numSlices} interval=${
       (sliceIntervalMs / 1000).toFixed(1)
-    }s`,
-  );
+    }s`);
 
   producer?.send("algo.heartbeat", {
     algo: ALGO,
@@ -224,7 +220,7 @@ routedConsumer?.onMessage((_topic, raw) => {
 
 const fillsConsumer = await createConsumer("is-algo-fills", ["orders.filled"])
   .catch((err) => {
-    console.warn("[is-algo] Cannot subscribe to orders.filled:", err.message);
+    logger.warn("Cannot subscribe to orders.filled", { err });
     return null;
   });
 
@@ -243,11 +239,9 @@ fillsConsumer?.onMessage((_topic, raw) => {
   order.costBasis += qty * price;
   order.totalRemaining = Math.max(0, order.totalRemaining - qty);
 
-  console.log(
-    `[is-algo] Fill ${order.orderId}: +${qty} @ ${
+  logger.info(`Fill ${order.orderId}: +${qty} @ ${
       price.toFixed(2)
-    } | remaining=${order.totalRemaining}`,
-  );
+    } | remaining=${order.totalRemaining}`);
 
   if (order.totalRemaining <= 0) {
     const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
@@ -256,13 +250,11 @@ fillsConsumer?.onMessage((_topic, raw) => {
     const side = order.side;
     const isAdverse = side === "BUY" ? slipBps > 0 : slipBps < 0;
 
-    console.log(
-      `[is-algo] Complete ${order.orderId}: filled=${order.filledQty} avg=${
+    logger.info(`Complete ${order.orderId}: filled=${order.filledQty} avg=${
         avgFill.toFixed(4)
       } slippage=${slipBps.toFixed(1)}bps (${
         isAdverse ? "adverse" : "favourable"
-      })`,
-    );
+      })`);
 
     activeOrders.delete(order.orderId);
 
@@ -291,11 +283,9 @@ marketClient.onTick(async (tick) => {
       const avgFill = order.filledQty > 0
         ? order.costBasis / order.filledQty
         : 0;
-      console.log(
-        `[is-algo] Expired ${order.orderId}: filled=${order.filledQty} avg=${
+      logger.info(`Expired ${order.orderId}: filled=${order.filledQty} avg=${
           avgFill.toFixed(4)
-        }`,
-      );
+        }`);
       activeOrders.delete(order.orderId);
       await producer?.send("orders.expired", {
         orderId: order.orderId,
@@ -319,11 +309,9 @@ marketClient.onTick(async (tick) => {
     if (adverseDriftBps > order.maxSlippageBps) {
       if (!order.paused) {
         order.paused = true;
-        console.log(
-          `[is-algo] Paused ${order.orderId}: drift=${
+        logger.info(`Paused ${order.orderId}: drift=${
             adverseDriftBps.toFixed(1)
-          }bps > ${order.maxSlippageBps}bps`,
-        );
+          }bps > ${order.maxSlippageBps}bps`);
         await producer?.send("algo.heartbeat", {
           algo: ALGO,
           orderId: order.orderId,
@@ -342,11 +330,9 @@ marketClient.onTick(async (tick) => {
 
     if (order.paused) {
       order.paused = false;
-      console.log(
-        `[is-algo] Resumed ${order.orderId}: drift=${
+      logger.info(`Resumed ${order.orderId}: drift=${
           adverseDriftBps.toFixed(1)
-        }bps now within threshold`,
-      );
+        }bps now within threshold`);
       await producer?.send("algo.heartbeat", {
         algo: ALGO,
         orderId: order.orderId,
@@ -387,13 +373,11 @@ marketClient.onTick(async (tick) => {
     const childId = `${order.orderId}-is-${order.sliceCount}`;
     order.lastSliceAt = now;
 
-    console.log(
-      `[is-algo] Slice ${order.sliceCount}/${order.numSlices} for ${order.orderId}: ${sliceQty} ${order.asset} @ limit ${
+    logger.info(`Slice ${order.sliceCount}/${order.numSlices} for ${order.orderId}: ${sliceQty} ${order.asset} @ limit ${
         childLimitPrice.toFixed(4)
       } (mkt ${marketPrice.toFixed(4)}, drift ${
         adverseDriftBps.toFixed(1)
-      }bps)`,
-    );
+      }bps)`);
 
     await producer?.send("orders.child", {
       childId,

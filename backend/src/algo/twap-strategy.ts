@@ -11,6 +11,7 @@ import { createMarketSimClient } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
 import type { RoutedOrder } from "@veta/types/orders";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("TWAP_ALGO_PORT")) || 5_004;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -18,16 +19,13 @@ const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const INTERVAL_MS = Number(Deno.env.get("TWAP_INTERVAL_MS")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
-console.log(`[twap-algo] Starting, interval=${INTERVAL_MS}ms`);
+logger.info(`Starting, interval=${INTERVAL_MS}ms`);
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("twap-algo").catch((err) => {
-  console.warn(
-    "[twap-algo] Redpanda unavailable — orders will not be published:",
-    err.message,
-  );
+  logger.warn("Redpanda unavailable — orders will not be published", { err });
   return null;
 });
 
@@ -39,9 +37,7 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
   let filledQty = 0;
   let costBasis = 0;
 
-  console.log(
-    `[twap-algo] Started ${order.orderId}: ${order.quantity} ${order.asset} over ${numSlices} slices`,
-  );
+  logger.info(`Started ${order.orderId}: ${order.quantity} ${order.asset} over ${numSlices} slices`);
 
   await producer?.send("algo.heartbeat", {
     algo: "TWAP",
@@ -82,11 +78,9 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
     filledQty += sliceQty;
     costBasis += sliceQty * marketPrice;
 
-    console.log(
-      `[twap-algo] Slice ${
+    logger.info(`Slice ${
         i + 1
-      }/${numSlices}: ${sliceQty} ${order.asset} @ mkt ${marketPrice}`,
-    );
+      }/${numSlices}: ${sliceQty} ${order.asset} @ mkt ${marketPrice}`);
 
     await producer?.send("algo.heartbeat", {
       algo: "TWAP",
@@ -108,14 +102,12 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
     ts: Date.now(),
   }).catch(() => {});
 
-  console.log(
-    `[twap-algo] Complete ${order.orderId}: filled=${filledQty}/${order.quantity} avg=${avgFill}`,
-  );
+  logger.info(`Complete ${order.orderId}: filled=${filledQty}/${order.quantity} avg=${avgFill}`);
 }
 
 const consumer = await createConsumer("twap-algo-routed", ["orders.routed"])
   .catch((err) => {
-    console.warn("[twap-algo] Cannot subscribe to orders.routed:", err.message);
+    logger.warn("Cannot subscribe to orders.routed", { err });
     return null;
   });
 
