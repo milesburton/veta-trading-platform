@@ -32,7 +32,7 @@ const producer = await createProducer("twap-algo").catch((err) => {
 });
 
 async function executeTWAP(order: RoutedOrder): Promise<void> {
-  const durationMs = order.expiresAt * 1_000;
+  const durationMs = (order.expiresAt ?? 300) * 1_000;
   const numSlices = Math.max(1, Math.round(durationMs / INTERVAL_MS));
   const baseSliceQty = order.quantity / numSlices;
 

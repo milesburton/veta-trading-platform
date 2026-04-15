@@ -75,6 +75,10 @@ const routedConsumer = await createConsumer("ap-algo-routed", ["orders.routed"])
 routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
+  if (order.limitPrice === undefined) {
+    console.warn(`[arrival-price-algo] Rejecting ${order.orderId}: missing limitPrice`);
+    return;
+  }
 
   const params = order.algoParams as { urgency?: number; maxSlippageBps?: number } | undefined;
   const urgency = Math.min(

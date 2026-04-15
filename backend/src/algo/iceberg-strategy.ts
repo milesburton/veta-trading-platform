@@ -68,6 +68,10 @@ const routedConsumer = await createConsumer("iceberg-algo-routed", [
 routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== "ICEBERG") return;
+  if (order.limitPrice === undefined) {
+    console.warn(`[iceberg-algo] Rejecting ${order.orderId}: missing limitPrice`);
+    return;
+  }
 
   const visibleQty = Math.max(1, Number((order.algoParams as { visibleQty?: number })?.visibleQty ?? 100));
   const totalQty = order.quantity;

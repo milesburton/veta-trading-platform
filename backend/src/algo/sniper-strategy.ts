@@ -84,6 +84,10 @@ const routedConsumer = await createConsumer("sniper-algo-routed", ["orders.route
 routedConsumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
   if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
+  if (order.limitPrice === undefined) {
+    console.warn(`[sniper-algo] Rejecting ${order.orderId}: missing limitPrice`);
+    return;
+  }
 
   const params = order.algoParams as { aggressionPct?: number; maxVenues?: number } | undefined;
   const aggressionPct = Math.min(100, Math.max(1, Number(params?.aggressionPct ?? 80)));
