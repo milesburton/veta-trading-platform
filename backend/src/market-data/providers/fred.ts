@@ -7,9 +7,11 @@
  */
 
 import type { CachedQuote, ProviderDef } from "./types.ts";
+import { logger } from "@veta/logger";
 
 const FRED_KEY = Deno.env.get("FRED_KEY") ?? "";
 const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
+const PROV = { provider: "fred" };
 
 export const YIELD_CURVE_SERIES = [
   "DGS1MO",
@@ -59,12 +61,14 @@ async function fetchOneSeries(
         }
       }
     }
-    console.warn(`[fred] No valid observation for ${seriesId}`);
+    logger.warn("no valid observation", { ...PROV, seriesId });
     return null;
   } catch (err) {
-    console.warn(
-      `[fred] Series fetch failed for ${seriesId}: ${(err as Error).message}`,
-    );
+    logger.warn("series fetch failed", {
+      ...PROV,
+      seriesId,
+      err: err as Error,
+    });
     return null;
   }
 }
@@ -80,13 +84,14 @@ export async function fetchYieldCurve(): Promise<Map<string, YieldCurvePoint>> {
   }
 
   if (!FRED_KEY) {
-    console.warn(`[fred] FRED_KEY not configured — yield curve unavailable`);
+    logger.warn("FRED_KEY not configured, yield curve unavailable", PROV);
     return new Map();
   }
 
-  console.log(
-    `[fred] Fetching yield curve (${YIELD_CURVE_SERIES.length} series)`,
-  );
+  logger.info("fetching yield curve", {
+    ...PROV,
+    seriesCount: YIELD_CURVE_SERIES.length,
+  });
   const results = await Promise.all(YIELD_CURVE_SERIES.map(fetchOneSeries));
   const map = new Map<string, YieldCurvePoint>();
   for (const point of results) {
@@ -94,9 +99,11 @@ export async function fetchYieldCurve(): Promise<Map<string, YieldCurvePoint>> {
   }
   yieldCurveCache = map;
   yieldCurveFetchedAt = now;
-  console.log(
-    `[fred] Yield curve cached: ${map.size}/${YIELD_CURVE_SERIES.length} series`,
-  );
+  logger.info("yield curve cached", {
+    ...PROV,
+    cached: map.size,
+    total: YIELD_CURVE_SERIES.length,
+  });
   return map;
 }
 

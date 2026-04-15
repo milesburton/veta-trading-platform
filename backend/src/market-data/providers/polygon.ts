@@ -4,15 +4,17 @@
  */
 
 import type { CachedQuote, ProviderDef } from "./types.ts";
+import { logger } from "@veta/logger";
 
 const POLYGON_KEY = Deno.env.get("POLYGON_KEY") ?? "";
+const PROV = { provider: "polygon" };
 
 async function fetchPolygonLastTrade(
   symbol: string,
 ): Promise<CachedQuote | null> {
   if (!POLYGON_KEY) return null;
   try {
-    console.log(`[polygon] Fetching last trade for ${symbol}`);
+    logger.debug("fetching last trade", { ...PROV, symbol });
     const url = `https://api.polygon.io/v2/last/trade/${
       encodeURIComponent(symbol)
     }?apiKey=${POLYGON_KEY}`;
@@ -21,7 +23,7 @@ async function fetchPolygonLastTrade(
     const data = await res.json() as { results?: { p?: number; t?: number } };
     const results = data.results;
     if (!results || results.p == null) {
-      console.warn(`[polygon] No last trade data for ${symbol}`);
+      logger.warn("no last trade data", { ...PROV, symbol });
       return null;
     }
     const price = results.p;
@@ -39,11 +41,11 @@ async function fetchPolygonLastTrade(
       stale: false,
     };
   } catch (err) {
-    console.warn(
-      `[polygon] Last trade fetch failed for ${symbol}: ${
-        (err as Error).message
-      }`,
-    );
+    logger.warn("last trade fetch failed", {
+      ...PROV,
+      symbol,
+      err: err as Error,
+    });
     return null;
   }
 }
@@ -96,11 +98,11 @@ export function openPolygonStream(
 
   function connect() {
     if (closed) return;
-    console.log(`[polygon] Opening WebSocket stream for ${symbols.join(", ")}`);
+    logger.info("opening WebSocket stream", { ...PROV, symbols });
     ws = new WebSocket("wss://delayed.polygon.io/stocks");
 
     ws.onopen = () => {
-      console.log(`[polygon] WS connected — authenticating`);
+      logger.info("WS connected, authenticating", PROV);
       ws!.send(JSON.stringify({ action: "auth", params: apiKey }));
     };
 
@@ -119,12 +121,12 @@ export function openPolygonStream(
         if (msg.ev === "auth_success") {
           // Subscribe to trades for each symbol
           const subs = symbols.map((s) => `T.${s}`).join(",");
-          console.log(`[polygon] Auth OK — subscribing to ${subs}`);
+          logger.info("auth OK, subscribing", { ...PROV, subs });
           ws!.send(JSON.stringify({ action: "subscribe", params: subs }));
           continue;
         }
         if (msg.ev === "auth_failed") {
-          console.warn(`[polygon] WS auth failed — closing stream`);
+          logger.warn("WS auth failed, closing stream", PROV);
           ws!.close();
           return;
         }
@@ -148,14 +150,15 @@ export function openPolygonStream(
     };
 
     ws.onerror = (err) => {
-      console.warn(
-        `[polygon] WS error: ${(err as ErrorEvent).message ?? "unknown"}`,
-      );
+      logger.warn("WS error", {
+        ...PROV,
+        message: (err as ErrorEvent).message ?? "unknown",
+      });
     };
 
     ws.onclose = () => {
       if (!closed) {
-        console.log(`[polygon] WS closed — reconnecting in 10s`);
+        logger.info("WS closed, reconnecting in 10s", PROV);
         setTimeout(connect, 10_000);
       }
     };

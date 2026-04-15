@@ -4,12 +4,14 @@
  */
 
 import type { CachedQuote, ProviderDef } from "./types.ts";
+import { logger } from "@veta/logger";
 
 const TIINGO_KEY = Deno.env.get("TIINGO_KEY") ?? "";
+const PROV = { provider: "tiingo" };
 
 async function fetchTiingoEquity(symbol: string): Promise<CachedQuote | null> {
   try {
-    console.log(`[tiingo] Polling IEX quote for ${symbol}`);
+    logger.debug("polling IEX quote", { ...PROV, symbol });
     const url =
       `https://api.tiingo.com/iex/${symbol.toLowerCase()}?token=${TIINGO_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
@@ -19,7 +21,7 @@ async function fetchTiingoEquity(symbol: string): Promise<CachedQuote | null> {
       lastSaleTimestamp?: string;
     }[];
     if (!Array.isArray(data) || data.length === 0 || data[0].last == null) {
-      console.warn(`[tiingo] No equity data for ${symbol}`);
+      logger.warn("no equity data", { ...PROV, symbol });
       return null;
     }
     const price = data[0].last!;
@@ -36,9 +38,7 @@ async function fetchTiingoEquity(symbol: string): Promise<CachedQuote | null> {
       stale: false,
     };
   } catch (err) {
-    console.warn(
-      `[tiingo] Equity fetch failed for ${symbol}: ${(err as Error).message}`,
-    );
+    logger.warn("equity fetch failed", { ...PROV, symbol, err: err as Error });
     return null;
   }
 }
@@ -47,14 +47,14 @@ async function fetchTiingoFx(symbol: string): Promise<CachedQuote | null> {
   // Reformat e.g. "EUR/USD" → "eurusd"
   const pair = symbol.replace("/", "").toLowerCase();
   try {
-    console.log(`[tiingo] Polling FX top for ${symbol}`);
+    logger.debug("polling FX top", { ...PROV, symbol });
     const url =
       `https://api.tiingo.com/tiingo/fx/${pair}/top?token=${TIINGO_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json() as { midPrice?: number }[];
     if (!Array.isArray(data) || data.length === 0 || data[0].midPrice == null) {
-      console.warn(`[tiingo] No FX data for ${symbol}`);
+      logger.warn("no FX data", { ...PROV, symbol });
       return null;
     }
     const price = data[0].midPrice!;
@@ -69,9 +69,7 @@ async function fetchTiingoFx(symbol: string): Promise<CachedQuote | null> {
       stale: false,
     };
   } catch (err) {
-    console.warn(
-      `[tiingo] FX fetch failed for ${symbol}: ${(err as Error).message}`,
-    );
+    logger.warn("FX fetch failed", { ...PROV, symbol, err: err as Error });
     return null;
   }
 }

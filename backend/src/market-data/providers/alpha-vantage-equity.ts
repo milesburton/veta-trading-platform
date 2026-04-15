@@ -3,14 +3,16 @@
  */
 
 import type { CachedQuote, ProviderDef } from "./types.ts";
+import { logger } from "@veta/logger";
 
 const ALPHA_VANTAGE_KEY = Deno.env.get("ALPHA_VANTAGE_KEY") ?? "";
 const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
+const PROV = { provider: "alpha-vantage" };
 
 async function fetchGlobalQuote(symbol: string): Promise<CachedQuote | null> {
   if (!ALPHA_VANTAGE_KEY) return null;
   try {
-    console.log(`[alpha-vantage] Polling GLOBAL_QUOTE for ${symbol}`);
+    logger.debug("polling GLOBAL_QUOTE", { ...PROV, symbol });
     const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${
       encodeURIComponent(symbol)
     }&apikey=${ALPHA_VANTAGE_KEY}`;
@@ -19,9 +21,10 @@ async function fetchGlobalQuote(symbol: string): Promise<CachedQuote | null> {
     const data = await res.json() as Record<string, Record<string, string>>;
     const q = data["Global Quote"];
     if (!q || !q["05. price"]) {
-      console.warn(
-        `[alpha-vantage] No quote data for ${symbol} — rate limit or invalid symbol?`,
-      );
+      logger.warn("no quote data (rate limit or invalid symbol?)", {
+        ...PROV,
+        symbol,
+      });
       return null;
     }
     const price = parseFloat(q["05. price"]);
@@ -37,11 +40,7 @@ async function fetchGlobalQuote(symbol: string): Promise<CachedQuote | null> {
       stale: false,
     };
   } catch (err) {
-    console.warn(
-      `[alpha-vantage] Quote fetch failed for ${symbol}: ${
-        (err as Error).message
-      }`,
-    );
+    logger.warn("quote fetch failed", { ...PROV, symbol, err: err as Error });
     return null;
   }
 }
@@ -52,7 +51,7 @@ async function seedIntradayHistory(
 ): Promise<void> {
   if (!ALPHA_VANTAGE_KEY) return;
   try {
-    console.log(`[alpha-vantage] Fetching intraday history for ${symbol}`);
+    logger.info("fetching intraday history", { ...PROV, symbol });
     const url = `${ALPHA_VANTAGE_BASE}?function=TIME_SERIES_INTRADAY&symbol=${
       encodeURIComponent(symbol)
     }&interval=1min&outputsize=compact&apikey=${ALPHA_VANTAGE_KEY}`;
@@ -63,7 +62,7 @@ async function seedIntradayHistory(
       | Record<string, Record<string, string>>
       | undefined;
     if (!series) {
-      console.warn(`[alpha-vantage] No intraday data for ${symbol}`);
+      logger.warn("no intraday data", { ...PROV, symbol });
       return;
     }
 
@@ -89,20 +88,20 @@ async function seedIntradayHistory(
       signal: AbortSignal.timeout(15_000),
     });
     if (seedRes.ok) {
-      console.log(
-        `[alpha-vantage] Seeded ${candles.length} intraday candles for ${symbol} into journal`,
-      );
+      logger.info("seeded intraday candles into journal", {
+        ...PROV,
+        symbol,
+        count: candles.length,
+      });
     } else {
-      console.warn(
-        `[alpha-vantage] Journal seed returned ${seedRes.status} for ${symbol}`,
-      );
+      logger.warn("journal seed non-OK response", {
+        ...PROV,
+        symbol,
+        status: seedRes.status,
+      });
     }
   } catch (err) {
-    console.warn(
-      `[alpha-vantage] Intraday seed failed for ${symbol}: ${
-        (err as Error).message
-      }`,
-    );
+    logger.warn("intraday seed failed", { ...PROV, symbol, err: err as Error });
   }
 }
 

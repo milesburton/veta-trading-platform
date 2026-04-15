@@ -3,24 +3,25 @@
  */
 
 import type { CachedQuote, ProviderDef } from "./types.ts";
+import { logger } from "@veta/logger";
 
 const ALPHA_VANTAGE_KEY = Deno.env.get("ALPHA_VANTAGE_KEY") ?? "";
 const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
+const PROV = { provider: "alpha-vantage-fx" };
 
 async function fetchFxRate(symbol: string): Promise<CachedQuote | null> {
   if (!ALPHA_VANTAGE_KEY) return null;
   const parts = symbol.split("/");
   if (parts.length !== 2) {
-    console.warn(
-      `[alpha-vantage-fx] Invalid FX symbol format: ${symbol} (expected BASE/QUOTE)`,
-    );
+    logger.warn("invalid FX symbol format (expected BASE/QUOTE)", {
+      ...PROV,
+      symbol,
+    });
     return null;
   }
   const [fromCurrency, toCurrency] = parts;
   try {
-    console.log(
-      `[alpha-vantage-fx] Polling CURRENCY_EXCHANGE_RATE for ${symbol}`,
-    );
+    logger.debug("polling CURRENCY_EXCHANGE_RATE", { ...PROV, symbol });
     const url =
       `${ALPHA_VANTAGE_BASE}?function=CURRENCY_EXCHANGE_RATE&from_currency=${
         encodeURIComponent(fromCurrency)
@@ -32,9 +33,10 @@ async function fetchFxRate(symbol: string): Promise<CachedQuote | null> {
     const data = await res.json() as Record<string, Record<string, string>>;
     const rate = data["Realtime Currency Exchange Rate"];
     if (!rate || !rate["5. Exchange Rate"]) {
-      console.warn(
-        `[alpha-vantage-fx] No rate data for ${symbol} — rate limit or invalid pair?`,
-      );
+      logger.warn("no rate data (rate limit or invalid pair?)", {
+        ...PROV,
+        symbol,
+      });
       return null;
     }
     const price = parseFloat(rate["5. Exchange Rate"]);
@@ -50,11 +52,7 @@ async function fetchFxRate(symbol: string): Promise<CachedQuote | null> {
       stale: false,
     };
   } catch (err) {
-    console.warn(
-      `[alpha-vantage-fx] Rate fetch failed for ${symbol}: ${
-        (err as Error).message
-      }`,
-    );
+    logger.warn("rate fetch failed", { ...PROV, symbol, err: err as Error });
     return null;
   }
 }
