@@ -1,6 +1,17 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { usersPool } from "@veta/db";
+import { parseBody } from "@veta/http";
 import { createProducer } from "@veta/messaging";
+import {
+  AlertCreateSchema,
+  AuthorizeRequestSchema,
+  LimitsUpdateSchema,
+  PreferencesUpdateSchema,
+  RegisterRequestSchema,
+  SessionValidateSchema,
+  SharedWorkspaceCreateSchema,
+  TokenRequestSchema,
+} from "@veta/schemas/user";
 
 const AUTH_ROLES = ["trader", "admin", "compliance", "sales", "external-client", "viewer", "desk-head", "risk-manager"] as const;
 type AuthRole = typeof AUTH_ROLES[number];
@@ -316,9 +327,9 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (req.method === "POST" && path === "/sessions/validate") {
-    let body: { token?: string };
-    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
-    const user = await getUserFromToken(body.token ?? null);
+    const parsed = await parseBody(req, SessionValidateSchema);
+    if (!parsed.ok) return parsed.res;
+    const user = await getUserFromToken(parsed.data.token ?? null);
     if (!user) return json({ error: "unauthenticated" }, 401);
 
     const client = await usersPool.connect();
@@ -370,8 +381,9 @@ async function handle(req: Request): Promise<Response> {
       const caller = await getUserFromToken(getCookieToken(req));
       if (!caller) return json({ error: "unauthenticated" }, 401);
       if (caller.role !== "admin") return json({ error: "forbidden — admin only" }, 403);
-      let body: { max_order_qty?: number; max_daily_notional?: number; allowed_strategies?: string[]; allowed_desks?: string[]; dark_pool_access?: boolean };
-      try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+      const parsed = await parseBody(req, LimitsUpdateSchema);
+      if (!parsed.ok) return parsed.res;
+      const body = parsed.data;
 
       const client = await usersPool.connect();
       try {
@@ -414,13 +426,13 @@ async function handle(req: Request): Promise<Response> {
       const caller = await getUserFromToken(getCookieToken(req));
       if (!caller) return json({ error: "unauthenticated" }, 401);
       if (caller.id !== userId && caller.role !== "admin") return json({ error: "forbidden" }, 403);
-      let body: Record<string, unknown>;
-      try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+      const parsed = await parseBody(req, PreferencesUpdateSchema);
+      if (!parsed.ok) return parsed.res;
       const client = await usersPool.connect();
       try {
         await client.queryArray(
           "INSERT INTO users.user_preferences (user_id, data) VALUES ($1,$2) ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data",
-          [userId, body],
+          [userId, parsed.data],
         );
         return json({ success: true });
       } finally { client.release(); }
@@ -448,9 +460,9 @@ async function handle(req: Request): Promise<Response> {
   if (req.method === "POST" && path === "/shared-workspaces") {
     const caller = await getUserFromToken(getCookieToken(req));
     if (!caller) return json({ error: "unauthenticated" }, 401);
-    let body: { name?: string; description?: string; model?: unknown };
-    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
-    if (!body.name || !body.model) return json({ error: "name and model required" }, 400);
+    const parsed = await parseBody(req, SharedWorkspaceCreateSchema);
+    if (!parsed.ok) return parsed.res;
+    const body = parsed.data;
     const id = crypto.randomUUID();
     const client = await usersPool.connect();
     try {
@@ -526,9 +538,9 @@ async function handle(req: Request): Promise<Response> {
       const caller = await getUserFromToken(getCookieToken(req));
       if (!caller) return json({ error: "unauthenticated" }, 401);
       if (caller.id !== userId && caller.role !== "admin") return json({ error: "forbidden" }, 403);
-      let body: { id?: string; severity?: string; source?: string; message?: string; detail?: string; ts?: number };
-      try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
-      if (!body.severity || !body.source || !body.message) return json({ error: "severity, source and message required" }, 400);
+      const parsed = await parseBody(req, AlertCreateSchema);
+      if (!parsed.ok) return parsed.res;
+      const body = parsed.data;
       const id = body.id ?? crypto.randomUUID();
       const client = await usersPool.connect();
       try {
@@ -604,21 +616,9 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (req.method === "POST" && (path === "/oauth/authorize" || path === "/auth/authorize")) {
-    let body: {
-      client_id?: string;
-      username?: string;
-      userId?: string;
-      redirect_uri?: string;
-      response_type?: string;
-      scope?: string;
-      password?: string;
-      code_challenge?: string;
-      code_challenge_method?: string;
-    };
-    try { body = await req.json(); } catch { return jsonError("invalid json", 400); }
-    if (body.response_type !== "code") return jsonError("unsupported response_type", 400);
-    if (body.code_challenge_method !== "S256") return jsonError("invalid code_challenge_method", 400);
-    if (!body.code_challenge) return jsonError("code_challenge required", 400);
+    const parsed = await parseBody(req, AuthorizeRequestSchema);
+    if (!parsed.ok) return parsed.res;
+    const body = parsed.data;
 
     const redirectUri = body.redirect_uri ?? "postmessage";
     const oauthClient = getOAuthClient(body.client_id, redirectUri);
@@ -655,17 +655,9 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (req.method === "POST" && (path === "/oauth/token" || path === "/auth/token")) {
-    let body: {
-      client_id?: string;
-      code?: string;
-      grant_type?: string;
-      redirect_uri?: string;
-      code_verifier?: string;
-    };
-    try { body = await req.json(); } catch { return jsonError("invalid json", 400); }
-    if (body.grant_type !== "authorization_code") return jsonError("unsupported grant_type", 400);
-    if (!body.code) return jsonError("code required", 400);
-    if (!body.code_verifier) return jsonError("code_verifier required", 400);
+    const parsed = await parseBody(req, TokenRequestSchema);
+    if (!parsed.ok) return parsed.res;
+    const body = parsed.data;
 
     const entry = oauthCodes.get(body.code);
     if (!entry || entry.expiresAt < Date.now()) {
@@ -702,9 +694,9 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (req.method === "POST" && (path === "/oauth/register" || path === "/auth/register")) {
-    let body: { username?: string; userId?: string; name?: string; password?: string };
-    try { body = await req.json(); } catch { return jsonError("invalid json", 400); }
-    if (!(body.username || body.userId) || !body.name) return jsonError("username and name required", 400);
+    const parsed = await parseBody(req, RegisterRequestSchema);
+    if (!parsed.ok) return parsed.res;
+    const body = parsed.data;
 
     const userId = normalizeUserId(body.username ?? body.userId ?? "");
     if (userId.length < 2) return jsonError("username too short", 400);
