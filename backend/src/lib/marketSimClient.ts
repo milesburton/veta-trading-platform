@@ -1,3 +1,7 @@
+import { logger } from "@veta/logger";
+
+const LIB = { component: "market-client" };
+
 export interface OrderBookLevel {
   price: number;
   size: number;
@@ -65,12 +69,12 @@ export function createMarketSimClient(
   function connect(): void {
     if (stopped) return;
     const url = `ws://${host}:${port}`;
-    console.log(`[MarketSimClient] Connecting to ${url}...`);
+    logger.info("connecting to market-sim", { ...LIB, url });
     const socket = new WebSocket(url);
     ws = socket;
 
     socket.onopen = () => {
-      console.log("[MarketSimClient] Connected to market-sim");
+      logger.info("connected to market-sim", LIB);
       reconnectDelay = 1_000;
     };
 
@@ -87,13 +91,14 @@ export function createMarketSimClient(
     };
 
     socket.onerror = () => {
-      console.error("[MarketSimClient] WebSocket error");
+      logger.error("WebSocket error", LIB);
     };
 
     socket.onclose = () => {
-      console.warn(
-        `[MarketSimClient] Disconnected. Reconnecting in ${reconnectDelay}ms...`,
-      );
+      logger.warn("disconnected, reconnecting", {
+        ...LIB,
+        reconnectDelayMs: reconnectDelay,
+      });
       if (!stopped) {
         setTimeout(connect, reconnectDelay);
         reconnectDelay = Math.min(reconnectDelay * 2, 30_000);

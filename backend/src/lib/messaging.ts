@@ -20,6 +20,9 @@ import {
   type KafkaMessage,
   type Producer,
 } from "npm:kafkajs@2.2.4";
+import { logger } from "@veta/logger";
+
+const LIB = { component: "messaging" };
 
 const BROKERS = (Deno.env.get("REDPANDA_BROKERS") ?? "localhost:9092").split(
   ",",
@@ -69,15 +72,15 @@ export function createProducer(
         await p.connect();
         activeProducer = p;
         reconnecting = false;
-        console.log(`[messaging] producer(${clientId}) connected`);
+        logger.info("producer connected", { ...LIB, clientId });
         return;
       } catch (err) {
-        console.warn(
-          `[messaging] producer(${clientId}) failed, retrying in ${
-            delay / 1000
-          }s:`,
-          (err as Error).message,
-        );
+        logger.warn("producer connect failed, retrying", {
+          ...LIB,
+          clientId,
+          retryInSecs: delay / 1000,
+          err: err as Error,
+        });
         await new Promise((r) => setTimeout(r, delay));
         delay = Math.min(delay * 2, MAX_DELAY_MS);
       }
@@ -100,10 +103,11 @@ export function createProducer(
           messages: [{ value: JSON.stringify(value) }],
         });
       } catch (err) {
-        console.warn(
-          `[messaging] producer(${clientId}) send failed, reconnecting:`,
-          (err as Error).message,
-        );
+        logger.warn("producer send failed, reconnecting", {
+          ...LIB,
+          clientId,
+          err: err as Error,
+        });
         activeProducer = null;
         if (!reconnecting) {
           reconnecting = true;
@@ -152,10 +156,12 @@ export function createConsumer(
 
         consumer.on("consumer.crash", async ({ payload }) => {
           if (stopped || gen !== generation) return;
-          console.warn(
-            `[messaging] consumer(${groupId}) crashed, restarting:`,
-            (payload as { error?: Error }).error?.message ?? "unknown",
-          );
+          const crashErr = (payload as { error?: Error }).error;
+          logger.warn("consumer crashed, restarting", {
+            ...LIB,
+            groupId,
+            err: crashErr,
+          });
           activeConsumer = null;
           try { await consumer.disconnect(); } catch { /* best effort */ }
           if (!reconnecting) {
@@ -189,7 +195,12 @@ export function createConsumer(
                   ),
                 ]);
               } catch (err) {
-                console.warn(`[messaging] consumer(${groupId}) handler slow/failed:`, (err as Error).message);
+                logger.warn("consumer handler slow/failed", {
+                  ...LIB,
+                  groupId,
+                  topic,
+                  err: err as Error,
+                });
               }
             }
           },
@@ -197,15 +208,15 @@ export function createConsumer(
         activeConsumer = consumer;
         reconnecting = false;
         delay = 2_000;
-        console.log(`[messaging] consumer(${groupId}) connected (gen=${gen})`);
+        logger.info("consumer connected", { ...LIB, groupId, gen });
         return;
       } catch (err) {
-        console.warn(
-          `[messaging] createConsumer(${groupId}) failed, retrying in ${
-            delay / 1000
-          }s:`,
-          (err as Error).message,
-        );
+        logger.warn("createConsumer failed, retrying", {
+          ...LIB,
+          groupId,
+          retryInSecs: delay / 1000,
+          err: err as Error,
+        });
         await new Promise((r) => setTimeout(r, delay));
         delay = Math.min(delay * 2, MAX_DELAY_MS);
       }
