@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.18.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.17.1...veta-trading-platform-v1.18.0) (2026-04-15)
+
+
+### Features
+
+* **alerts:** mute rules, source filtering, critical overlay + DevTools panel ([21fcd61](https://github.com/milesburton/veta-trading-platform/commit/21fcd61a9a9e68dc8bec4ff5f56ea63c7bc049ef))
+
+
+### Bug Fixes
+
+* stabilize devcontainer workspace paths and tooling ([a1e5daa](https://github.com/milesburton/veta-trading-platform/commit/a1e5daa17c791167c88d0a5e38969533def7eada))
+
 ## [1.17.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.17.0...veta-trading-platform-v1.17.1) (2026-04-13)
 
 
