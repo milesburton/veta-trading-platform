@@ -15,13 +15,33 @@ export interface Alert {
   dismissed: boolean;
 }
 
+export interface MuteRule {
+  id: string;
+  source?: AlertSource;
+  severity?: AlertSeverity;
+  messageContains?: string;
+  createdAt: number;
+}
+
+function alertMatchesMuteRule(alert: Alert, rule: MuteRule): boolean {
+  if (rule.source && alert.source !== rule.source) return false;
+  if (rule.severity && alert.severity !== rule.severity) return false;
+  if (
+    rule.messageContains &&
+    !alert.message.toLowerCase().includes(rule.messageContains.toLowerCase())
+  )
+    return false;
+  return true;
+}
+
 const MAX_ALERTS = 200;
 
 interface AlertsState {
   alerts: Alert[];
+  muteRules: MuteRule[];
 }
 
-const initialState: AlertsState = { alerts: [] };
+const initialState: AlertsState = { alerts: [], muteRules: [] };
 
 export const alertsSlice = createSlice({
   name: "alerts",
@@ -51,15 +71,47 @@ export const alertsSlice = createSlice({
     purgeServiceAlerts(state) {
       state.alerts = state.alerts.filter((a) => a.source !== "service");
     },
+    muteRuleAdded(state, action: PayloadAction<Omit<MuteRule, "id" | "createdAt">>) {
+      state.muteRules.push({
+        ...action.payload,
+        id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        createdAt: Date.now(),
+      });
+    },
+    muteRuleRemoved(state, action: PayloadAction<string>) {
+      state.muteRules = state.muteRules.filter((r) => r.id !== action.payload);
+    },
+    allMuteRulesCleared(state) {
+      state.muteRules = [];
+    },
   },
 });
 
-export const { alertAdded, alertDismissed, allAlertsDismissed, alertsLoaded, purgeServiceAlerts } =
-  alertsSlice.actions;
+export const {
+  alertAdded,
+  alertDismissed,
+  allAlertsDismissed,
+  alertsLoaded,
+  purgeServiceAlerts,
+  muteRuleAdded,
+  muteRuleRemoved,
+  allMuteRulesCleared,
+} = alertsSlice.actions;
+
+export const selectMuteRules = (s: RootState) => s.alerts.muteRules;
 
 export const selectActiveAlerts = createSelector(
   (s: RootState) => s.alerts.alerts,
-  (alerts) => alerts.filter((a) => !a.dismissed)
+  (s: RootState) => s.alerts.muteRules,
+  (alerts, muteRules) =>
+    alerts.filter((a) => !a.dismissed && !muteRules.some((rule) => alertMatchesMuteRule(a, rule)))
+);
+
+export const selectAllUnmutedAlerts = createSelector(
+  (s: RootState) => s.alerts.alerts,
+  (s: RootState) => s.alerts.muteRules,
+  (alerts, muteRules) =>
+    alerts.filter((a) => !muteRules.some((rule) => alertMatchesMuteRule(a, rule)))
 );
 
 export const selectCriticalAlerts = createSelector(selectActiveAlerts, (alerts) =>

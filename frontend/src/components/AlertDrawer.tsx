@@ -1,6 +1,12 @@
 import { useSignal } from "@preact/signals-react";
-import type { Alert, AlertSeverity } from "../store/alertsSlice.ts";
-import { alertDismissed, allAlertsDismissed, selectActiveAlerts } from "../store/alertsSlice.ts";
+import type { Alert, AlertSeverity, AlertSource } from "../store/alertsSlice.ts";
+import {
+  alertDismissed,
+  allAlertsDismissed,
+  muteRuleAdded,
+  selectActiveAlerts,
+  selectMuteRules,
+} from "../store/alertsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { useDashboard } from "./dashboard/DashboardContext.tsx";
 
@@ -12,25 +18,26 @@ function relativeTime(ts: number): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-const SEVERITY_STYLES: Record<AlertSeverity, { dot: string; badge: string; label: string }> = {
-  CRITICAL: {
-    dot: "bg-red-500",
-    badge: "bg-red-900/60 text-red-300 border border-red-800",
-    label: "CRITICAL",
-  },
-  WARNING: {
-    dot: "bg-amber-400",
-    badge: "bg-amber-900/60 text-amber-300 border border-amber-800",
-    label: "WARNING",
-  },
-  INFO: {
-    dot: "bg-blue-400",
-    badge: "bg-blue-900/40 text-blue-300 border border-blue-800",
-    label: "INFO",
-  },
-};
+export const SEVERITY_STYLES: Record<AlertSeverity, { dot: string; badge: string; label: string }> =
+  {
+    CRITICAL: {
+      dot: "bg-red-500",
+      badge: "bg-red-900/60 text-red-300 border border-red-800",
+      label: "CRITICAL",
+    },
+    WARNING: {
+      dot: "bg-amber-400",
+      badge: "bg-amber-900/60 text-amber-300 border border-amber-800",
+      label: "WARNING",
+    },
+    INFO: {
+      dot: "bg-blue-400",
+      badge: "bg-blue-900/40 text-blue-300 border border-blue-800",
+      label: "INFO",
+    },
+  };
 
-const SOURCE_LABELS: Record<Alert["source"], string> = {
+export const SOURCE_LABELS: Record<Alert["source"], string> = {
   "kill-switch": "Kill Switch",
   service: "Service",
   algo: "Algo",
@@ -38,36 +45,83 @@ const SOURCE_LABELS: Record<Alert["source"], string> = {
   workspace: "Workspace",
 };
 
-type Filter = "ALL" | AlertSeverity;
+const ALL_SOURCES: AlertSource[] = ["kill-switch", "service", "algo", "order", "workspace"];
+
+type SeverityFilter = "ALL" | AlertSeverity;
 
 export function AlertList({
   alerts,
   filter,
   onFilter,
+  sourceFilter,
+  onSourceFilter,
 }: {
   alerts: Alert[];
-  filter: Filter;
-  onFilter: (f: Filter) => void;
+  filter: SeverityFilter;
+  onFilter: (f: SeverityFilter) => void;
+  sourceFilter?: AlertSource | null;
+  onSourceFilter?: (s: AlertSource | null) => void;
 }) {
   const dispatch = useAppDispatch();
-  const filtered = filter === "ALL" ? alerts : alerts.filter((a) => a.severity === filter);
+  const muteRules = useAppSelector(selectMuteRules);
+  const filtered = alerts.filter((a) => {
+    if (filter !== "ALL" && a.severity !== filter) return false;
+    if (sourceFilter && a.source !== sourceFilter) return false;
+    return true;
+  });
 
   return (
     <>
-      <div className="flex gap-1.5 px-4 py-2 border-b border-gray-800 shrink-0">
-        {(["ALL", "CRITICAL", "WARNING", "INFO"] as const).map((f) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => onFilter(f)}
-            data-testid={`severity-filter-${f}`}
-            className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${
-              filter === f ? "bg-gray-700 text-gray-100" : "text-gray-500 hover:text-gray-300"
-            }`}
-          >
-            {f}
-          </button>
-        ))}
+      <div className="flex flex-col gap-1 px-4 py-2 border-b border-gray-800 shrink-0">
+        <div className="flex gap-1.5">
+          {(["ALL", "CRITICAL", "WARNING", "INFO"] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => onFilter(f)}
+              data-testid={`severity-filter-${f}`}
+              className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${
+                filter === f ? "bg-gray-700 text-gray-100" : "text-gray-500 hover:text-gray-300"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+        {onSourceFilter && (
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => onSourceFilter(null)}
+              data-testid="source-filter-all"
+              className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+                !sourceFilter ? "bg-gray-700 text-gray-100" : "text-gray-500 hover:text-gray-300"
+              }`}
+            >
+              All Sources
+            </button>
+            {ALL_SOURCES.map((src) => (
+              <button
+                key={src}
+                type="button"
+                onClick={() => onSourceFilter(sourceFilter === src ? null : src)}
+                data-testid={`source-filter-${src}`}
+                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+                  sourceFilter === src
+                    ? "bg-gray-700 text-gray-100"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {SOURCE_LABELS[src]}
+              </button>
+            ))}
+          </div>
+        )}
+        {muteRules.length > 0 && (
+          <div className="text-[9px] text-gray-600">
+            {muteRules.length} mute rule{muteRules.length !== 1 ? "s" : ""} active
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -83,7 +137,7 @@ export function AlertList({
               return (
                 <li
                   key={alert.id}
-                  className="flex items-start gap-3 px-4 py-3"
+                  className="group flex items-start gap-3 px-4 py-3"
                   data-testid="alert-row"
                 >
                   <span className={`shrink-0 w-2 h-2 rounded-full mt-1.5 ${s.dot}`} />
@@ -104,14 +158,32 @@ export function AlertList({
                     )}
                     <div className="text-[10px] text-gray-600 mt-0.5">{relativeTime(alert.ts)}</div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => dispatch(alertDismissed(alert.id))}
-                    className="shrink-0 text-gray-600 hover:text-gray-400 transition-colors text-sm leading-none mt-0.5"
-                    title="Dismiss"
-                  >
-                    ×
-                  </button>
+                  <div className="shrink-0 flex items-center gap-1 mt-0.5">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        dispatch(
+                          muteRuleAdded({
+                            source: alert.source,
+                            severity: alert.severity,
+                          })
+                        )
+                      }
+                      className="hidden group-hover:block text-gray-600 hover:text-amber-400 transition-colors text-[9px] leading-none"
+                      title={`Mute ${alert.severity} alerts from ${SOURCE_LABELS[alert.source]}`}
+                      data-testid="mute-similar-btn"
+                    >
+                      ◇
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => dispatch(alertDismissed(alert.id))}
+                      className="shrink-0 text-gray-600 hover:text-gray-400 transition-colors text-sm leading-none"
+                      title="Dismiss"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </li>
               );
             })}
@@ -137,7 +209,8 @@ interface Props {
 export function AlertDrawer({ onClose }: Props) {
   const dispatch = useAppDispatch();
   const alerts = useAppSelector(selectActiveAlerts);
-  const filter = useSignal<Filter>("ALL");
+  const filter = useSignal<SeverityFilter>("ALL");
+  const sourceFilter = useSignal<AlertSource | null>(null);
   const { activePanelIds, addPanel } = useDashboard();
   const isPinned = activePanelIds.has("alerts");
 
@@ -191,6 +264,10 @@ export function AlertDrawer({ onClose }: Props) {
           filter={filter.value}
           onFilter={(f) => {
             filter.value = f;
+          }}
+          sourceFilter={sourceFilter.value}
+          onSourceFilter={(s) => {
+            sourceFilter.value = s;
           }}
         />
       </div>

@@ -61,6 +61,7 @@ export const PANEL_IDS = [
   "risk-dashboard",
   "my-positions",
   "symbol-search",
+  "dev-tools",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -114,6 +115,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "risk-dashboard": "Risk Dashboard (firm-wide P&L)",
   "my-positions": "My Positions (live book)",
   "symbol-search": "Symbol Search (find instruments)",
+  "dev-tools": "Dev Tools (homelab debugging)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -200,6 +202,8 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "risk-dashboard": "Firm-wide position and P&L monitor — every trader's book in one view",
   "my-positions": "Your open positions with live mark-to-market P&L",
   "symbol-search": "Search by symbol, RIC, BBG ticker, ISIN, or paste a Bloomberg trade",
+  "dev-tools":
+    "Homelab debugging toolkit — fire test alerts (all severities), inject demo trades, run load tests, manage mute rules, and inspect connection state",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -226,6 +230,7 @@ export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
   "risk-dashboard",
   "my-positions",
   "symbol-search",
+  "dev-tools",
 ]);
 
 export interface TabChannelConfig {
@@ -284,6 +289,7 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "risk-dashboard": { out: false, in: false },
   "my-positions": { out: false, in: false },
   "symbol-search": { out: true, in: false },
+  "dev-tools": { out: false, in: false },
 };
 
 export type TradingStyle =
@@ -530,6 +536,7 @@ export const PANEL_PERMISSIONS: Record<PanelId, ReadonlySet<AuthRole>> = {
     "external-client",
     "viewer",
   ]),
+  "dev-tools": new Set<AuthRole>(["admin"]),
 };
 
 export const PANEL_TRADING_STYLES: Partial<Record<PanelId, ReadonlySet<TradingStyle>>> = {

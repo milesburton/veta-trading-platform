@@ -983,6 +983,15 @@ export function makeAdminModel(): IJsonModel {
                     panelType: "llm-subsystem",
                   } satisfies TabChannelConfig,
                 },
+                {
+                  type: "tab",
+                  id: "dev-tools",
+                  name: PANEL_TITLES["dev-tools"],
+                  component: "dev-tools",
+                  config: {
+                    panelType: "dev-tools",
+                  } satisfies TabChannelConfig,
+                },
               ],
             },
             {

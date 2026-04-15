@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals-react";
-import type { AlertSeverity } from "../store/alertsSlice.ts";
+import type { AlertSeverity, AlertSource } from "../store/alertsSlice.ts";
 import { allAlertsDismissed, selectActiveAlerts } from "../store/alertsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { AlertList } from "./AlertDrawer.tsx";
@@ -10,6 +10,7 @@ export function AlertsPanel() {
   const dispatch = useAppDispatch();
   const alerts = useAppSelector(selectActiveAlerts);
   const filter = useSignal<Filter>("ALL");
+  const sourceFilter = useSignal<AlertSource | null>(null);
 
   return (
     <div
@@ -36,6 +37,10 @@ export function AlertsPanel() {
         filter={filter.value}
         onFilter={(f) => {
           filter.value = f;
+        }}
+        sourceFilter={sourceFilter.value}
+        onSourceFilter={(s) => {
+          sourceFilter.value = s;
         }}
       />
     </div>

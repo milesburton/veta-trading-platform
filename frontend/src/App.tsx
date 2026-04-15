@@ -472,6 +472,17 @@ function TradingApp() {
             </div>
           </DashboardProvider>
         </div>
+
+        {criticalAlerts.length > 0 && (
+          <div
+            data-testid="critical-overlay"
+            className="fixed inset-0 z-30 pointer-events-none border-2 border-red-600/40 animate-pulse"
+            style={{
+              background:
+                "radial-gradient(ellipse at center, transparent 50%, rgba(127,29,29,0.12) 100%)",
+            }}
+          />
+        )}
       </div>
     </TradingProvider>
   );
