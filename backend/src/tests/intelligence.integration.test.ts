@@ -27,6 +27,7 @@ import {
   assertEquals,
   assertExists,
 } from "jsr:@std/assert@0.217";
+import { logger } from "@veta/logger";
 import { loginAs } from "./test-helpers.ts";
 
 const FEATURE_ENGINE_URL = "http://localhost:5017";
@@ -268,7 +269,7 @@ Deno.test("[intelligence] scenario: positive momentum shock increases signal sco
 
   if (res.status === 503) {
     await res.body?.cancel();
-    console.warn("[skip] Scenario engine: feature-engine not ready");
+    logger.warn("skip: scenario engine — feature-engine not ready");
     return;
   }
   assert(res.ok, `POST /scenario → ${res.status}`);
@@ -302,7 +303,7 @@ Deno.test("[intelligence] scenario: negative sentiment shock decreases signal sc
 
   if (res.status === 503) {
     await res.body?.cancel();
-    console.warn("[skip] Scenario engine: feature-engine not ready");
+    logger.warn("skip: scenario engine — feature-engine not ready");
     return;
   }
   assert(res.ok, `POST /scenario → ${res.status}`);
