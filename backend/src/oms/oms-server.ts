@@ -21,6 +21,14 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 import type { Desk } from "@veta/primitives";
+import {
+  type OrderKillCommand,
+  OrderKillCommandSchema,
+  type OrderNew,
+  OrderNewSchema,
+  type OrderResumeCommand,
+  OrderResumeCommandSchema,
+} from "@veta/schemas/orders";
 
 const PORT = Number(Deno.env.get("OMS_PORT")) || 5_002;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -199,42 +207,9 @@ interface OptionSpec {
   isOtc?: boolean;
 }
 
-interface NewOrder {
-  asset: string;
-  side: "BUY" | "SELL";
-  quantity: number;
-  limitPrice: number;
-  expiresAt: number;
-  strategy?: string;
-  algoParams?: Record<string, unknown>;
-  clientOrderId?: string;
-  userId?: string;
-  userRole?: string;
-  instrumentType?: string;
-  bondSpec?: BondSpec;
-  optionSpec?: OptionSpec;
-}
-
-type KillScope = "all" | "user" | "algo" | "market" | "symbol";
-
-interface KillCommand {
-  scope: KillScope;
-  scopeValue?: string;
-  targetUserId?: string;
-  issuedBy: string;
-  issuedByRole: string;
-  ts: number;
-}
-
-interface ResumeCommand {
-  scope: KillScope;
-  scopeValue?: string;
-  targetUserId?: string;
-  resumeAt?: number;
-  issuedBy: string;
-  issuedByRole: string;
-  ts: number;
-}
+type NewOrder = OrderNew;
+type KillCommand = OrderKillCommand;
+type ResumeCommand = OrderResumeCommand;
 
 interface ActiveOrder {
   orderId: string;
@@ -280,18 +255,22 @@ const killConsumer = await createConsumer("oms-kill-orders", [
 const activeOrders = new Map<string, ActiveOrder>();
 
 consumer?.onMessage(async (_topic, raw) => {
-  const order = raw as NewOrder;
-
-  if (!order.asset || !order.side || !order.quantity) {
-    console.warn("[oms] Malformed order — missing required fields");
+  const parsed = OrderNewSchema.safeParse(raw);
+  if (!parsed.success) {
+    const rawPartial = raw as { clientOrderId?: string; userId?: string };
+    const issues = parsed.error.issues
+      .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+      .join("; ");
+    console.warn(`[oms] Malformed orders.new message — ${issues}`);
     await producer?.send("orders.rejected", {
-      clientOrderId: order.clientOrderId,
-      userId: order.userId,
-      reason: "Missing required fields: asset, side, quantity",
+      clientOrderId: rawPartial.clientOrderId,
+      userId: rawPartial.userId ?? "unknown",
+      reason: `schema_invalid: ${issues}`,
       ts: Date.now(),
     }).catch(() => {});
     return;
   }
+  const order: NewOrder = parsed.data;
 
   if (
     order.userRole === "admin" ||
@@ -557,7 +536,15 @@ killConsumer?.onMessage(async (topic, raw) => {
   const ts = Date.now();
 
   if (topic === "orders.kill") {
-    const cmd = raw as KillCommand;
+    const parsed = OrderKillCommandSchema.safeParse(raw);
+    if (!parsed.success) {
+      const issues = parsed.error.issues
+        .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+        .join("; ");
+      console.warn(`[oms] Malformed orders.kill — dropped: ${issues}`);
+      return;
+    }
+    const cmd: KillCommand = parsed.data;
     const { scope, scopeValue, targetUserId, issuedBy, issuedByRole } = cmd;
 
     if (issuedByRole !== "admin" && targetUserId && targetUserId !== issuedBy) {
@@ -635,7 +622,15 @@ killConsumer?.onMessage(async (topic, raw) => {
   }
 
   if (topic === "orders.resume") {
-    const cmd = raw as ResumeCommand;
+    const parsed = OrderResumeCommandSchema.safeParse(raw);
+    if (!parsed.success) {
+      const issues = parsed.error.issues
+        .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+        .join("; ");
+      console.warn(`[oms] Malformed orders.resume — dropped: ${issues}`);
+      return;
+    }
+    const cmd: ResumeCommand = parsed.data;
     const {
       scope,
       scopeValue,
