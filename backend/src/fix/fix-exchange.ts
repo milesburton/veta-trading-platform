@@ -14,6 +14,7 @@ import {
 import { utcTimestamp } from "./fix-parser.ts";
 import { FixSession } from "./fix-session.ts";
 import { createMarketSimClient } from "@veta/market-client";
+import { logger } from "@veta/logger";
 
 const FIX_EXCHANGE_PORT = Number(Deno.env.get("FIX_EXCHANGE_PORT")) || 9_880;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
@@ -53,7 +54,7 @@ const SOH = "\x01";
 
 async function handleConnection(conn: Deno.TcpConn): Promise<void> {
   const remote = `${conn.remoteAddr.hostname}:${conn.remoteAddr.port}`;
-  console.log(`[FIX Exchange] Connection from ${remote}`);
+  logger.info(`[FIX Exchange] Connection from ${remote}`);
 
   let execIdCounter = 1;
   let buffer = "";
@@ -71,11 +72,11 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
     },
     onApplicationMessage: (tags: Map<number, string>) => {
       handleApplicationMessage(tags).catch((err) => {
-        console.error("[FIX Exchange] Error processing message:", err);
+        logger.error("[FIX Exchange] Error processing message", { detail: err });
       });
     },
     onStateChange: (state) => {
-      console.log(`[FIX Exchange] Session state → ${state} (${remote})`);
+      logger.info(`[FIX Exchange] Session state → ${state} (${remote})`);
     },
   });
 
@@ -95,9 +96,7 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
     const side: "BUY" | "SELL" = sideRaw === Side.Sell ? "SELL" : "BUY";
     const orderId = `EX-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
-    console.log(
-      `[FIX Exchange] NOS: clOrdId=${clOrdId} symbol=${symbol} side=${side} qty=${orderQty} price=${price}`,
-    );
+    logger.info(`[FIX Exchange] NOS: clOrdId=${clOrdId} symbol=${symbol} side=${side} qty=${orderQty} price=${price}`);
 
     // ExecReport: New (acknowledge receipt)
     const ackExecId = `${execIdCounter++}`;
@@ -164,12 +163,10 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
         [Tag.TransactTime, utcTimestamp()],
       ]);
 
-      console.log(
-        `[FIX Exchange] Fill: clOrdId=${clOrdId} ${fill.filledQty}/${orderQty} @ ${fill.avgFillPrice}` +
+      logger.info(`[FIX Exchange] Fill: clOrdId=${clOrdId} ${fill.filledQty}/${orderQty} @ ${fill.avgFillPrice}` +
           ` leaves=${remainingQty} impact=${
             fill.marketImpactBps.toFixed(2)
-          }bps`,
-      );
+          }bps`);
 
       if (!isFinal) {
         // Small gap between partial fills
@@ -204,14 +201,14 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
     }
   } catch (err) {
     if (!(err instanceof Deno.errors.BadResource)) {
-      console.error(`[FIX Exchange] Read error (${remote}):`, err);
+      logger.error(`[FIX Exchange] Read error (${remote})`, { detail: err });
     }
   } finally {
     session.disconnect();
     try {
       conn.close();
     } catch { /* already closed */ }
-    console.log(`[FIX Exchange] Connection closed (${remote})`);
+    logger.info(`[FIX Exchange] Connection closed (${remote})`);
   }
 }
 
@@ -235,13 +232,11 @@ Deno.serve({ port: HEALTH_PORT }, (req) => {
 });
 
 const listener = Deno.listen({ port: FIX_EXCHANGE_PORT });
-console.log(
-  `[FIX Exchange] Listening on TCP port ${FIX_EXCHANGE_PORT} (health: ${HEALTH_PORT})`,
-);
-console.log(`[FIX Exchange] version=${VERSION}`);
+logger.info(`[FIX Exchange] Listening on TCP port ${FIX_EXCHANGE_PORT} (health: ${HEALTH_PORT})`);
+logger.info(`[FIX Exchange] version=${VERSION}`);
 
 for await (const conn of listener) {
   handleConnection(conn as Deno.TcpConn).catch((err) => {
-    console.error("[FIX Exchange] Unhandled connection error:", err);
+    logger.error("[FIX Exchange] Unhandled connection error", { detail: err });
   });
 }

@@ -3,6 +3,7 @@
 
 import { EncryptMethod, MsgType, Tag } from "./fix-dictionary.ts";
 import { decode, encode, utcTimestamp } from "./fix-parser.ts";
+import { logger } from "@veta/logger";
 
 export type SessionState =
   | "DISCONNECTED"
@@ -176,7 +177,7 @@ export class FixSession {
       [Tag.GapFillFlag, "Y"],
       [Tag.NewSeqNo, end === 0 ? this.outSeq : end + 1],
     ]);
-    console.log(`[FIX] Gap fill ${begin}-${end}`);
+    logger.info(`Gap fill ${begin}-${end}`);
     this.config.onSend(reset);
   }
 
@@ -202,7 +203,7 @@ export class FixSession {
       if (this.state !== "ACTIVE") return;
       if (this.testReqId) {
         // No heartbeat received since we sent TestRequest → disconnect
-        console.warn("[FIX] Heartbeat timeout — disconnecting");
+        logger.warn(`Heartbeat timeout — disconnecting`);
         this.disconnect();
         return;
       }

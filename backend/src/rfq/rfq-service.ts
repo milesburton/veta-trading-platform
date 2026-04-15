@@ -27,6 +27,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { settlementDate } from "@veta/settlement";
 import { CORS_HEADERS, corsOptions, json, jsonError } from "@veta/http";
+import { logger } from "@veta/logger";
 
 type SellSideRfqState =
   | "CLIENT_REQUEST" // client submitted
@@ -229,16 +230,13 @@ function nextExecId(): string {
 }
 
 const producer = await createProducer("rfq-service").catch((err) => {
-  console.warn(
-    "[rfq] Redpanda unavailable — executions will not be published:",
-    err.message,
-  );
+  logger.warn("Redpanda unavailable — executions will not be published", { err });
   return null;
 });
 
 const consumer = await createConsumer("rfq-service-fi", ["orders.fi.rfq"])
   .catch((err) => {
-    console.warn("[rfq] Cannot subscribe to orders.fi.rfq:", err.message);
+    logger.warn("Cannot subscribe to orders.fi.rfq", { err });
     return null;
   });
 
@@ -341,14 +339,12 @@ async function executeRfq(rfq: RfqRecord, quote: DealerQuote): Promise<void> {
   rfq.execId = execId;
   rfq.executedAt = now;
 
-  console.log(
-    `[rfq] Execute ${execId}: ${rfq.side} ${rfq.quantity} ${rfq.asset} @ yield=${
+  logger.info(`Execute ${execId}: ${rfq.side} ${rfq.quantity} ${rfq.asset} @ yield=${
       quote.yield.toFixed(4)
     } ` +
       `price=${
         quote.price.toFixed(6)
-      } dealer=${quote.dealerId} notional=${quote.notional}`,
-  );
+      } dealer=${quote.dealerId} notional=${quote.notional}`);
 
   // 1. rfq.executed — full RFQ trade record
   await producer?.send("rfq.executed", {
@@ -441,9 +437,7 @@ async function executeRfq(rfq: RfqRecord, quote: DealerQuote): Promise<void> {
 async function expireRfq(rfq: RfqRecord): Promise<void> {
   const newState: RfqState = rfq.quotes.length > 0 ? "EXPIRED" : "NO_QUOTES";
   rfq.state = newState;
-  console.log(
-    `[rfq] RFQ ${rfq.rfqId} ${newState} (${rfq.quotes.length} quotes received)`,
-  );
+  logger.info(`RFQ ${rfq.rfqId} ${newState} (${rfq.quotes.length} quotes received)`);
 
   await producer?.send("rfq.quote.update", {
     rfqId: rfq.rfqId,
@@ -491,11 +485,9 @@ async function processRfq(req: RfqRequest): Promise<void> {
 
   rfqStore.set(rfqId, rfq);
 
-  console.log(
-    `[rfq] New RFQ ${rfqId}: ${req.side} ${req.quantity} ${req.asset} @ yield=${
+  logger.info(`New RFQ ${rfqId}: ${req.side} ${req.quantity} ${req.asset} @ yield=${
       req.bondSpec.yieldAtOrder.toFixed(4)
-    }`,
-  );
+    }`);
 
   // Notify frontend that RFQ is live
   await producer?.send("rfq.quote.update", {
@@ -570,17 +562,13 @@ async function processRfq(req: RfqRequest): Promise<void> {
 consumer?.onMessage((_topic, raw) => {
   const req = raw as RfqRequest;
   if (!req.bondSpec) {
-    console.warn(
-      `[rfq] Ignoring orders.fi.rfq without bondSpec: orderId=${req.orderId}`,
-    );
+    logger.warn(`Ignoring orders.fi.rfq without bondSpec: orderId=${req.orderId}`);
     return;
   }
-  processRfq(req).catch(console.error);
+  processRfq(req).catch((err) => logger.error("async error", { err }));
 });
 
-console.log(
-  `[rfq] Listening for orders.fi.rfq on message bus (window=${QUOTE_WINDOW_MS}ms)`,
-);
+logger.info(`Listening for orders.fi.rfq on message bus (window=${QUOTE_WINDOW_MS}ms)`);
 
 setInterval(() => {
   const cutoff = Date.now() - RFQ_RETENTION_MS;
@@ -709,9 +697,7 @@ Deno.serve({ port: PORT }, async (req) => {
     };
     sellSideRfqStore.set(rfqId, rfq);
     await publishSsRfqUpdate(rfq);
-    console.log(
-      `[rfq] New sell-side RFQ ${rfqId}: ${side} ${quantity} ${asset} from ${clientUserId}`,
-    );
+    logger.info(`New sell-side RFQ ${rfqId}: ${side} ${quantity} ${asset} from ${clientUserId}`);
     return json({ rfqId, state: rfq.state });
   }
 

@@ -7,6 +7,7 @@
 //   GET /health   → JSON health check
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { logger } from "@veta/logger";
 
 const FIX_GATEWAY_PORT = Number(Deno.env.get("FIX_GATEWAY_PORT")) || 9_881;
 const FIX_EXCHANGE_HOST = Deno.env.get("FIX_EXCHANGE_HOST") || "localhost";
@@ -41,17 +42,12 @@ async function bridgeConnection(ws: WebSocket): Promise<void> {
       port: FIX_EXCHANGE_PORT,
     });
   } catch (err) {
-    console.error(
-      `[FIX Gateway] Cannot connect to exchange at ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}:`,
-      err,
-    );
+    logger.error(`[FIX Gateway] Cannot connect to exchange at ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}`, { detail: err });
     ws.close(1011, "Exchange unavailable");
     return;
   }
 
-  console.log(
-    `[FIX Gateway] Bridging WS client to ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}`,
-  );
+  logger.info(`[FIX Gateway] Bridging WS client to ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}`);
 
   // WS → TCP: forward FIX messages from browser to exchange
   ws.onmessage = async (event) => {
@@ -62,18 +58,18 @@ async function bridgeConnection(ws: WebSocket): Promise<void> {
         : new Uint8Array(event.data as ArrayBuffer);
       await tcpConn.write(data);
     } catch (err) {
-      console.error("[FIX Gateway] WS→TCP write error:", err);
+      logger.error("[FIX Gateway] WS→TCP write error", { detail: err });
       closeBoth();
     }
   };
 
   ws.onclose = () => {
-    console.log("[FIX Gateway] WS client disconnected");
+    logger.info(`[FIX Gateway] WS client disconnected`);
     closeBoth();
   };
 
   ws.onerror = (err) => {
-    console.error("[FIX Gateway] WS error:", err);
+    logger.error("[FIX Gateway] WS error", { detail: err });
     closeBoth();
   };
 
@@ -91,7 +87,7 @@ async function bridgeConnection(ws: WebSocket): Promise<void> {
     }
   } catch (err) {
     if (!closed && !(err instanceof Deno.errors.BadResource)) {
-      console.error("[FIX Gateway] TCP→WS read error:", err);
+      logger.error("[FIX Gateway] TCP→WS read error", { detail: err });
     }
   } finally {
     closeBoth();
@@ -124,7 +120,7 @@ Deno.serve({ port: FIX_GATEWAY_PORT }, (req) => {
   ) {
     const { socket, response } = Deno.upgradeWebSocket(req);
     bridgeConnection(socket).catch((err) => {
-      console.error("[FIX Gateway] Bridge error:", err);
+      logger.error("[FIX Gateway] Bridge error", { detail: err });
     });
     return response;
   }
@@ -132,8 +128,6 @@ Deno.serve({ port: FIX_GATEWAY_PORT }, (req) => {
   return new Response("Not found", { status: 404, headers: CORS_HEADERS });
 });
 
-console.log(`[FIX Gateway] Listening on port ${FIX_GATEWAY_PORT}`);
-console.log(
-  `[FIX Gateway] Bridging to exchange at ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}`,
-);
-console.log(`[FIX Gateway] version=${VERSION}`);
+logger.info(`[FIX Gateway] Listening on port ${FIX_GATEWAY_PORT}`);
+logger.info(`[FIX Gateway] Bridging to exchange at ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}`);
+logger.info(`[FIX Gateway] version=${VERSION}`);

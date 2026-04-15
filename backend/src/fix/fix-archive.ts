@@ -2,6 +2,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { fixArchivePool } from "@veta/db";
 import { createConsumer } from "@veta/messaging";
 import { json, corsOptions } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("FIX_ARCHIVE_PORT")) || 5_012;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -113,7 +114,7 @@ createConsumer("fix-archive", ["fix.execution"]).then((consumer) => {
       new Date(r.ts),
     ]);
   });
-}).catch((err) => console.warn("[fix-archive] Cannot subscribe:", err.message));
+}).catch((err) => logger.warn("Cannot subscribe", { err: err as Error }));
 
 type SqlRow = (string | number | Date | null | unknown)[];
 function rowToExec(r: SqlRow) {
@@ -245,4 +246,4 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   return json({ error: "Not Found" }, 404);
 });
 
-console.log(`[fix-archive] running on port ${PORT}`);
+logger.info(`running on port ${PORT}`);

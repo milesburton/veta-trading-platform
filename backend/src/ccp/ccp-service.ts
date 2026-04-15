@@ -37,6 +37,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("CCP_SERVICE_PORT")) || 5_028;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -173,19 +174,19 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("ccp-service").catch((err) => {
-  console.warn("[ccp] Redpanda unavailable:", err.message);
+  logger.warn("Redpanda unavailable", { err });
   return null;
 });
 
 const fillsConsumer = await createConsumer("ccp-fills", ["orders.filled"])
   .catch((err) => {
-    console.warn("[ccp] Cannot subscribe to orders.filled:", err.message);
+    logger.warn("Cannot subscribe to orders.filled", { err });
     return null;
   });
 
 const rfqConsumer = await createConsumer("ccp-rfq", ["rfq.executed"]).catch(
   (err) => {
-    console.warn("[ccp] Cannot subscribe to rfq.executed:", err.message);
+    logger.warn("Cannot subscribe to rfq.executed", { err });
     return null;
   },
 );
@@ -323,10 +324,8 @@ async function novate(
 
   totalNovated++;
 
-  console.log(
-    `[ccp] Novated ${tradeId}: ${side} ${quantity} ${asset} @ ${price} ` +
-      `desk=${desk} user=${userId} settle=${settlDate}`,
-  );
+  logger.info(`Novated ${tradeId}: ${side} ${quantity} ${asset} @ ${price} ` +
+      `desk=${desk} user=${userId} settle=${settlDate}`);
 
   await producer?.send("ccp.novation", {
     tradeId,
@@ -403,7 +402,7 @@ fillsConsumer?.onMessage((_topic, raw) => {
     counterparty,
     settlDate,
   )
-    .catch(console.error);
+    .catch((err) => logger.error("async error", { err }));
 });
 
 rfqConsumer?.onMessage((_topic, raw) => {
@@ -429,7 +428,7 @@ rfqConsumer?.onMessage((_topic, raw) => {
     exec.dealerId,
     settlDate,
   )
-    .catch(console.error);
+    .catch((err) => logger.error("async error", { err }));
 });
 
 async function runSettlementSweep(): Promise<void> {
@@ -471,9 +470,7 @@ async function runSettlementSweep(): Promise<void> {
 
     totalSettled++;
 
-    console.log(
-      `[ccp] Settled ${obligation.obligationId}: ${obligation.side} ${obligation.quantity} ${obligation.asset}`,
-    );
+    logger.info(`Settled ${obligation.obligationId}: ${obligation.side} ${obligation.quantity} ${obligation.asset}`);
 
     await producer?.send("ccp.settlement.complete", {
       obligationId: id,
@@ -540,16 +537,14 @@ async function runMarginMtM(): Promise<void> {
 }
 
 setInterval(() => {
-  runSettlementSweep().catch(console.error);
+  runSettlementSweep().catch((err) => logger.error("async error", { err }));
 }, SETTLEMENT_SWEEP_MS);
 setInterval(() => {
-  runMarginMtM().catch(console.error);
+  runMarginMtM().catch((err) => logger.error("async error", { err }));
 }, MARGIN_MTM_MS);
 
-console.log(`[ccp] Listening for orders.filled and rfq.executed`);
-console.log(
-  `[ccp] Settlement sweep=${SETTLEMENT_SWEEP_MS}ms  MtM=${MARGIN_MTM_MS}ms`,
-);
+logger.info(`Listening for orders.filled and rfq.executed`);
+logger.info(`Settlement sweep=${SETTLEMENT_SWEEP_MS}ms  MtM=${MARGIN_MTM_MS}ms`);
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);

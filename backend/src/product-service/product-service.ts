@@ -10,6 +10,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createProducer } from "@veta/messaging";
 import { json, corsOptions } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("PRODUCT_SERVICE_PORT")) || 5_030;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -57,10 +58,7 @@ function nextLegId(): string {
 
 const producer = await createProducer("product-service").catch(
   (err: unknown) => {
-    console.warn(
-      "[product-service] Kafka producer unavailable:",
-      (err as Error).message,
-    );
+    logger.warn("Kafka producer unavailable", { err: err as Error });
     return null;
   },
 );
@@ -342,4 +340,4 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   return json({ error: "Not found" }, 404);
 });
 
-console.log(`[product-service] Listening on port ${PORT}`);
+logger.info(`Listening on port ${PORT}`);

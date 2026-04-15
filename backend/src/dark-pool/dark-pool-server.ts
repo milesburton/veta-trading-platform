@@ -25,6 +25,7 @@ import { createMarketSimClient } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { settlementDate } from "@veta/settlement";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("DARK_POOL_PORT")) || 5_027;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -115,16 +116,13 @@ const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
 
 const producer = await createProducer("dark-pool").catch((err) => {
-  console.warn(
-    "[dark-pool] Redpanda unavailable — executions will not be published:",
-    err.message,
-  );
+  logger.warn("Redpanda unavailable — executions will not be published", { err });
   return null;
 });
 
 const consumer = await createConsumer("dark-pool-routed", ["orders.routed"])
   .catch((err) => {
-    console.warn("[dark-pool] Cannot subscribe to orders.routed:", err.message);
+    logger.warn("Cannot subscribe to orders.routed", { err });
     return null;
   });
 
@@ -135,16 +133,12 @@ consumer?.onMessage((_topic, raw) => {
   if (order.marketType !== "dark") return;
 
   if (!order.asset || !order.side || !order.quantity || !order.limitPrice) {
-    console.warn(
-      `[dark-pool] Rejected malformed order ${order.orderId}: missing required fields`,
-    );
+    logger.warn(`Rejected malformed order ${order.orderId}: missing required fields`);
     return;
   }
 
   if (order.quantity < DARK_POOL_MIN_BLOCK) {
-    console.warn(
-      `[dark-pool] Rejected order ${order.orderId}: qty ${order.quantity} below min block ${DARK_POOL_MIN_BLOCK}`,
-    );
+    logger.warn(`Rejected order ${order.orderId}: qty ${order.quantity} below min block ${DARK_POOL_MIN_BLOCK}`);
     return;
   }
 
@@ -172,9 +166,7 @@ consumer?.onMessage((_topic, raw) => {
     pool.sells.push(darkOrder);
   }
 
-  console.log(
-    `[dark-pool] Admitted ${order.side} ${order.quantity} ${order.asset} @ limit=${order.limitPrice} orderId=${order.orderId}`,
-  );
+  logger.info(`Admitted ${order.side} ${order.quantity} ${order.asset} @ limit=${order.limitPrice} orderId=${order.orderId}`);
 });
 
 function matchSymbol(
@@ -243,12 +235,10 @@ function matchSymbol(
       ts: now,
     });
 
-    console.log(
-      `[dark-pool] Match ${
+    logger.info(`Match ${
         fills[fills.length - 1].execId
       }: ${matchedQty} ${asset} @ ${midPrice} ` +
-        `buy=${buy.orderId} sell=${sell.orderId}`,
-    );
+        `buy=${buy.orderId} sell=${sell.orderId}`);
 
     if (buy.remainingQty <= 0) bi++;
     if (sell.remainingQty <= 0) si++;
@@ -333,7 +323,7 @@ async function runMatchCycle(): Promise<void> {
 
     const midPrice = tick.prices[asset];
     if (!midPrice) {
-      console.warn(`[dark-pool] No price for ${asset} — skipping match`);
+      logger.warn(`No price for ${asset} — skipping match`);
       continue;
     }
 
@@ -393,9 +383,7 @@ async function sweepExpiredOrders(): Promise<void> {
     for (const order of [...expiredBuys, ...expiredSells]) {
       if (order.remainingQty <= 0) continue; // fully filled — already handled
 
-      console.log(
-        `[dark-pool] Order ${order.orderId} (${order.side} ${order.remainingQty} ${asset}) timed out — action=${RESIDUAL_ACTION}`,
-      );
+      logger.info(`Order ${order.orderId} (${order.side} ${order.remainingQty} ${asset}) timed out — action=${RESIDUAL_ACTION}`);
 
       if (RESIDUAL_ACTION === "reroute") {
         const reroutedOrder = {
@@ -436,16 +424,14 @@ async function sweepExpiredOrders(): Promise<void> {
 }
 
 setInterval(() => {
-  runMatchCycle().catch(console.error);
+  runMatchCycle().catch((err) => logger.error("async error", { err }));
 }, MATCH_CYCLE_MS);
 setInterval(() => {
-  sweepExpiredOrders().catch(console.error);
+  sweepExpiredOrders().catch((err) => logger.error("async error", { err }));
 }, EXPIRY_SWEEP_MS);
 
-console.log(`[dark-pool] Listening for orders.routed (DARK1) on message bus`);
-console.log(
-  `[dark-pool] Match cycle=${MATCH_CYCLE_MS}ms timeout=${ORDER_TIMEOUT_MS}ms residual=${RESIDUAL_ACTION}`,
-);
+logger.info(`Listening for orders.routed (DARK1) on message bus`);
+logger.info(`Match cycle=${MATCH_CYCLE_MS}ms timeout=${ORDER_TIMEOUT_MS}ms residual=${RESIDUAL_ACTION}`);
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
