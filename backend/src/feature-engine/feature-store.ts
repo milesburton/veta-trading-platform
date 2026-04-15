@@ -1,5 +1,6 @@
 import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 import type { FeatureVector } from "@veta/types/intelligence";
+import { logger } from "@veta/logger";
 
 const MAX_PER_SYMBOL = 500;
 
@@ -114,10 +115,7 @@ export function createFeatureStore(pool: Pool): FeatureStore {
             [MAX_PER_SYMBOL],
           );
         } catch (err) {
-          console.warn(
-            "[feature-store] cleanup error:",
-            (err as Error).message,
-          );
+          logger.warn("cleanup error", { err: err as Error });
         } finally {
           client.release();
         }

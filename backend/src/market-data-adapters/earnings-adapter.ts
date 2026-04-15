@@ -1,4 +1,5 @@
 import type { MarketAdapterEvent } from "@veta/types/intelligence";
+import { logger } from "@veta/logger";
 
 const IMPACT_ROTATION: Array<"high" | "medium" | "low"> = [
   "high",
@@ -43,7 +44,7 @@ async function fetchFinnhubEarnings(
       `https://finnhub.io/api/v1/calendar/earnings?from=${from}&to=${to}&symbol=${symbolParam}&token=${apiKey}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) {
-      console.warn(`[earnings-adapter] Finnhub returned ${res.status}`);
+      logger.warn(`Finnhub returned ${res.status}`);
       return new Map();
     }
     const data = await res.json() as { earningsCalendar?: FinnhubEarning[] };
@@ -57,10 +58,7 @@ async function fetchFinnhubEarnings(
     }
     return bySymbol;
   } catch (err) {
-    console.warn(
-      "[earnings-adapter] Finnhub fetch failed:",
-      (err as Error).message,
-    );
+    logger.warn("Finnhub fetch failed", { err: err as Error });
     return new Map();
   }
 }
@@ -129,16 +127,12 @@ export async function seedEarningsEvents(
           });
         }
       }
-      console.log(
-        `[earnings-adapter] Loaded ${events.length} real earnings events from Finnhub`,
-      );
+      logger.info(`Loaded ${events.length} real earnings events from Finnhub`);
       return events;
     }
   }
 
-  console.log(
-    "[earnings-adapter] Using synthetic earnings events (no FINNHUB_KEY or no data)",
-  );
+  logger.info("Using synthetic earnings events (no FINNHUB_KEY or no data)");
   return syntheticEarningsEvents(symbols);
 }
 

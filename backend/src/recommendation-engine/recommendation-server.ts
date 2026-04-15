@@ -2,6 +2,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { Signal, TradeRecommendation } from "@veta/types/intelligence";
 import { json, corsOptions } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("RECOMMENDATION_ENGINE_PORT")) || 5_019;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -55,17 +56,14 @@ function signalToRecommendation(signal: Signal): TradeRecommendation | null {
 }
 
 const producer = await createProducer("recommendation-engine").catch((err) => {
-  console.warn("[recommendation-engine] Redpanda unavailable:", err.message);
+  logger.warn("Redpanda unavailable", { err });
   return null;
 });
 
 const consumer = await createConsumer("recommendation-engine", [
   "market.signals",
 ]).catch((err) => {
-  console.warn(
-    "[recommendation-engine] Cannot subscribe to market.signals:",
-    err.message,
-  );
+  logger.warn("Cannot subscribe to market.signals", { err });
   return null;
 });
 
@@ -113,4 +111,4 @@ Deno.serve({ port: PORT }, (req: Request): Response => {
   return json({ error: "Not Found" }, 404);
 });
 
-console.log(`[recommendation-engine] Running on port ${PORT}`);
+logger.info(`Running on port ${PORT}`);

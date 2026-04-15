@@ -58,6 +58,7 @@ import type { SpreadAnalysisRequest } from "./spread-analysis.ts";
 import { computeDurationLadder } from "./duration-ladder.ts";
 import type { BondPosition } from "./duration-ladder.ts";
 import { buildVolSurface } from "./vol-surface.ts";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("ANALYTICS_PORT")) || 5_014;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -502,4 +503,4 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   return json({ error: "Not Found" }, 404);
 });
 
-console.log(`[analytics] Analytics service running on port ${PORT}`);
+logger.info(`Analytics service running on port ${PORT}`);

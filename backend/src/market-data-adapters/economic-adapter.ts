@@ -1,4 +1,5 @@
 import type { MarketAdapterEvent } from "@veta/types/intelligence";
+import { logger } from "@veta/logger";
 
 interface MacroTemplate {
   headline: string;
@@ -76,7 +77,7 @@ async function fetchFinnhubEconomic(
       `https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${apiKey}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) {
-      console.warn(`[economic-adapter] Finnhub returned ${res.status}`);
+      logger.warn(`Finnhub returned ${res.status}`);
       return [];
     }
     const data = await res.json() as {
@@ -100,10 +101,7 @@ async function fetchFinnhubEconomic(
         ts,
       }));
   } catch (err) {
-    console.warn(
-      "[economic-adapter] Finnhub fetch failed:",
-      (err as Error).message,
-    );
+    logger.warn("Finnhub fetch failed", { err: err as Error });
     return [];
   }
 }
@@ -114,16 +112,12 @@ export async function seedEconomicEvents(): Promise<MarketAdapterEvent[]> {
   if (apiKey) {
     const events = await fetchFinnhubEconomic(apiKey);
     if (events.length > 0) {
-      console.log(
-        `[economic-adapter] Loaded ${events.length} real economic events from Finnhub`,
-      );
+      logger.info(`Loaded ${events.length} real economic events from Finnhub`);
       return events;
     }
   }
 
-  console.log(
-    "[economic-adapter] Using synthetic economic calendar (no FINNHUB_KEY or no data)",
-  );
+  logger.info("Using synthetic economic calendar (no FINNHUB_KEY or no data)");
   const now = Date.now();
   const weekMs = 7 * 24 * 60 * 60 * 1000;
 

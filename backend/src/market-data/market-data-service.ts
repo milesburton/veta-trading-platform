@@ -30,6 +30,7 @@ import { tiingoProvider } from "./providers/tiingo.ts";
 import { openPolygonStream, polygonProvider } from "./providers/polygon.ts";
 import { fetchYieldCurve, fredProvider } from "./providers/fred.ts";
 import type { CachedQuote, ProviderDef } from "./providers/types.ts";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("MARKET_DATA_PORT")) || 5_015;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -114,13 +115,9 @@ async function loadOverrides(): Promise<void> {
     const text = await Deno.readTextFile(OVERRIDES_FILE);
     const data = JSON.parse(text) as Record<string, string>;
     overrides = new Map(Object.entries(data));
-    console.log(
-      `[market-data] Loaded ${overrides.size} overrides from ${OVERRIDES_FILE}`,
-    );
+    logger.info(`Loaded ${overrides.size} overrides from ${OVERRIDES_FILE}`);
   } catch {
-    console.log(
-      `[market-data] No overrides file found — starting with empty overrides`,
-    );
+    logger.info(`No overrides file found — starting with empty overrides`);
   }
 }
 
@@ -129,9 +126,7 @@ async function saveOverrides(): Promise<void> {
     const data = Object.fromEntries(overrides.entries());
     await Deno.writeTextFile(OVERRIDES_FILE, JSON.stringify(data, null, 2));
   } catch (err) {
-    console.warn(
-      `[market-data] Failed to persist overrides: ${(err as Error).message}`,
-    );
+    logger.warn(`Failed to persist overrides: ${(err as Error).message}`);
   }
 }
 
@@ -149,11 +144,9 @@ async function loadFeedState(): Promise<void> {
     } else if (data.feedPaused === true) {
       pausedSources = new Set(["alpha-vantage"]);
     }
-    console.log(
-      `[market-data] Feed state loaded: ${pausedSources.size} sources paused`,
-    );
+    logger.info(`Feed state loaded: ${pausedSources.size} sources paused`);
   } catch {
-    console.log(`[market-data] No feed state file — defaulting to all active`);
+    logger.info(`No feed state file — defaulting to all active`);
   }
 }
 
@@ -162,9 +155,7 @@ async function saveFeedState(): Promise<void> {
     const data: FeedStateFile = { pausedSources: Array.from(pausedSources) };
     await Deno.writeTextFile(FEED_STATE_FILE, JSON.stringify(data, null, 2));
   } catch (err) {
-    console.warn(
-      `[market-data] Failed to persist feed state: ${(err as Error).message}`,
-    );
+    logger.warn(`Failed to persist feed state: ${(err as Error).message}`);
   }
 }
 
@@ -326,12 +317,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     if (pausedSources.has(sourceId)) {
       pausedSources.delete(sourceId);
-      console.log(`[market-data] Source "${sourceId}" resumed`);
+      logger.info(`Source "${sourceId}" resumed`);
       // Restart polygon stream if it was paused
       if (sourceId === "polygon") restartPolygonStream();
     } else {
       pausedSources.add(sourceId);
-      console.log(`[market-data] Source "${sourceId}" paused`);
+      logger.info(`Source "${sourceId}" paused`);
       // Tear down polygon stream if pausing
       if (sourceId === "polygon" && polygonTeardown) {
         polygonTeardown();
@@ -400,9 +391,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     // Restart polygon stream if polygon symbols changed
     restartPolygonStream();
 
-    console.log(
-      `[market-data] Overrides updated: ${overrides.size} symbols configured`,
-    );
+    logger.info(`Overrides updated: ${overrides.size} symbols configured`);
     return json({ overrides: Object.fromEntries(overrides.entries()) });
   }
 
@@ -442,4 +431,4 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   return json({ error: "Not Found" }, 404);
 });
 
-console.log(`[market-data] Market Data Service running on port ${PORT}`);
+logger.info(`Market Data Service running on port ${PORT}`);

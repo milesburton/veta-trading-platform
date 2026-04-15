@@ -7,6 +7,7 @@ import type {
 import { scoreFeatureVector } from "../signal-engine/scorer.ts";
 import { DEFAULT_WEIGHTS } from "../signal-engine/weight-store.ts";
 import { json, corsOptions } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("SCENARIO_ENGINE_PORT")) || 5_020;
 const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") ||
@@ -104,4 +105,4 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   return json({ error: "Not Found" }, 404);
 });
 
-console.log(`[scenario-engine] Running on port ${PORT}`);
+logger.info(`Running on port ${PORT}`);

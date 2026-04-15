@@ -6,6 +6,7 @@ import { seedEconomicEvents } from "./economic-adapter.ts";
 import { createMarketEventStore } from "./market-event-store.ts";
 import { intelligencePool } from "@veta/db";
 import { json, corsOptions } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("MARKET_DATA_ADAPTERS_PORT")) || 5_016;
 const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") ||
@@ -23,7 +24,7 @@ function storeEvent(ev: MarketAdapterEvent): void {
 }
 
 const producer = await createProducer("market-data-adapters").catch((err) => {
-  console.warn("[market-data-adapters] Redpanda unavailable:", err.message);
+  logger.warn("Redpanda unavailable", { err });
   return null;
 });
 
@@ -32,9 +33,9 @@ export async function publishEvent(
   source = "synthetic",
 ): Promise<void> {
   storeEvent(ev);
-  await eventStore.upsertEvent(ev, source).catch((err) =>
-    console.warn("[market-data-adapters] DB upsert error:", err.message)
-  );
+  await eventStore.upsertEvent(ev, source).catch((err) => {
+    logger.warn("DB upsert error", { err });
+  });
   if (!producer) return;
   await producer.send("market.external.events", ev).catch(() => {});
 }
@@ -49,11 +50,9 @@ async function loadSymbols(): Promise<void> {
     if (!res.ok) return;
     const assets = await res.json() as { symbol: string }[];
     knownSymbols = assets.map((a) => a.symbol);
-    console.log(`[market-data-adapters] Loaded ${knownSymbols.length} symbols`);
+    logger.info(`Loaded ${knownSymbols.length} symbols`);
   } catch {
-    console.warn(
-      "[market-data-adapters] Could not load symbols from market-sim, using fallback list",
-    );
+    logger.warn("Could not load symbols from market-sim, using fallback list");
     knownSymbols = [
       "AAPL",
       "MSFT",
@@ -85,9 +84,7 @@ async function seedEvents(): Promise<void> {
     ? "finnhub"
     : "synthetic";
 
-  console.log(
-    `[market-data-adapters] Seeding ${earningsEvents.length} earnings (${earningsSource}) + ${economicEvents.length} economic (${economicSource}) events`,
-  );
+  logger.info(`Seeding ${earningsEvents.length} earnings (${earningsSource}) + ${economicEvents.length} economic (${economicSource}) events`);
 
   for (const ev of earningsEvents) await publishEvent(ev, earningsSource);
   for (const ev of economicEvents) await publishEvent(ev, economicSource);
@@ -143,4 +140,4 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   return json({ error: "Not Found" }, 404);
 });
 
-console.log(`[market-data-adapters] Running on port ${PORT}`);
+logger.info(`Running on port ${PORT}`);

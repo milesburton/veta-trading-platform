@@ -6,6 +6,7 @@ import { scoreFeatureVector } from "./scorer.ts";
 import { runReplay } from "./replay-server.ts";
 import { intelligencePool } from "@veta/db";
 import { json, corsOptions } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("SIGNAL_ENGINE_PORT")) || 5_018;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -14,16 +15,13 @@ const weightStore = await createWeightStore(intelligencePool);
 const latestSignals = new Map<string, Signal>();
 
 const producer = await createProducer("signal-engine").catch((err) => {
-  console.warn("[signal-engine] Redpanda unavailable:", err.message);
+  logger.warn("Redpanda unavailable", { err });
   return null;
 });
 
 const consumer = await createConsumer("signal-engine", ["market.features"])
   .catch((err) => {
-    console.warn(
-      "[signal-engine] Cannot subscribe to market.features:",
-      err.message,
-    );
+    logger.warn("Cannot subscribe to market.features", { err });
     return null;
   });
 
@@ -75,7 +73,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         }
       }
       await weightStore.saveWeights(updated);
-      console.log("[signal-engine] Weights updated:", updated);
+      logger.info("Weights updated", { detail: updated });
       return json(updated);
     } catch {
       return json({ error: "Invalid body" }, 400);
@@ -119,4 +117,4 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   return json({ error: "Not Found" }, 404);
 });
 
-console.log(`[signal-engine] Running on port ${PORT}`);
+logger.info(`Running on port ${PORT}`);

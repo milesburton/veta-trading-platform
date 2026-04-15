@@ -17,6 +17,7 @@ import {
 } from "./feature-computers.ts";
 import { intelligencePool } from "@veta/db";
 import { json, corsOptions } from "@veta/http";
+import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("FEATURE_ENGINE_PORT")) || 5_017;
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
@@ -124,7 +125,7 @@ function computeFeatureVector(symbol: string): FeatureVector | null {
 }
 
 const producer = await createProducer("feature-engine").catch((err) => {
-  console.warn("[feature-engine] Redpanda unavailable:", err.message);
+  logger.warn("Redpanda unavailable", { err });
   return null;
 });
 
@@ -137,9 +138,9 @@ async function flushFeatures(): Promise<void> {
 
   for (const fv of batch) {
     latestFeatures.set(fv.symbol, fv);
-    await store.insert(fv).catch((err) =>
-      console.warn("[feature-engine] DB insert error:", err.message)
-    );
+    await store.insert(fv).catch((err) => {
+      logger.warn("DB insert error", { err });
+    });
     if (producer) {
       await producer.send("market.features", fv).catch(() => {});
     }
@@ -151,10 +152,7 @@ setInterval(flushFeatures, 250);
 const tickConsumer = await createConsumer("feature-engine-ticks", [
   "market.ticks",
 ]).catch((err) => {
-  console.warn(
-    "[feature-engine] Cannot subscribe to market.ticks:",
-    err.message,
-  );
+  logger.warn("Cannot subscribe to market.ticks", { err });
   return null;
 });
 
@@ -184,10 +182,7 @@ if (tickConsumer) {
 const newsConsumer = await createConsumer("feature-engine-news", [
   "news.events.normalised",
 ]).catch((err) => {
-  console.warn(
-    "[feature-engine] Cannot subscribe to news.events.normalised:",
-    err.message,
-  );
+  logger.warn("Cannot subscribe to news.events.normalised", { err });
   return null;
 });
 
@@ -208,10 +203,7 @@ if (newsConsumer) {
 const adapterConsumer = await createConsumer("feature-engine-adapters", [
   "market.external.events",
 ]).catch((err) => {
-  console.warn(
-    "[feature-engine] Cannot subscribe to market.external.events:",
-    err.message,
-  );
+  logger.warn("Cannot subscribe to market.external.events", { err });
   return null;
 });
 
@@ -266,4 +258,4 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   return json({ error: "Not Found" }, 404);
 });
 
-console.log(`[feature-engine] Running on port ${PORT}`);
+logger.info(`Running on port ${PORT}`);
