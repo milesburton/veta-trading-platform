@@ -1,26 +1,21 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { corsOptions, json } from "@veta/http";
+import { corsOptions, json, parseBody } from "@veta/http";
 import { createConsumer, createProducer, type MsgProducer } from "@veta/messaging";
+import {
+  type CheckRequest,
+  CheckRequestSchema,
+  type CheckResult,
+  type RiskConfig,
+  RiskConfigUpdateSchema,
+  TestPositionSchema,
+  TestTickSchema,
+} from "@veta/schemas/risk";
 
 const PORT = Number(Deno.env.get("RISK_ENGINE_PORT")) || 5_032;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const TEST_MODE = Deno.env.get("RISK_ENGINE_TEST_MODE") === "1";
-
-interface RiskConfig {
-  fatFingerPct: number;
-  maxOpenOrders: number;
-  duplicateWindowMs: number;
-  maxOrdersPerSecond: number;
-  maxAdvPct: number;
-  maxGrossNotional: number;
-  maxDailyLoss: number;
-  maxConcentrationPct: number;
-  haltMovePercent: number;
-  breakerCooldownMs: number;
-  breakersEnabled: boolean;
-}
 
 const config: RiskConfig = {
   fatFingerPct: 5.0,
@@ -35,24 +30,6 @@ const config: RiskConfig = {
   breakerCooldownMs: 60_000,
   breakersEnabled: true,
 };
-
-interface CheckRequest {
-  orderId?: string;
-  userId: string;
-  userRole?: string;
-  symbol: string;
-  side: "BUY" | "SELL";
-  quantity: number;
-  limitPrice: number;
-  strategy?: string;
-  instrumentType?: string;
-}
-
-interface CheckResult {
-  allowed: boolean;
-  reasons: string[];
-  warnings: string[];
-}
 
 const prices: Record<string, number> = {};
 const volumes: Record<string, number> = {};
@@ -713,31 +690,23 @@ Deno.serve({ port: PORT }, async (req) => {
   }
 
   if (TEST_MODE && path === "/test/positions" && req.method === "POST") {
-    try {
-      const body = (await req.json()) as {
-        userId: string;
-        symbol: string;
-        netQty: number;
-        avgPrice: number;
-        realisedPnl?: number;
-      };
-      let userPositions = positions.get(body.userId);
-      if (!userPositions) {
-        userPositions = new Map();
-        positions.set(body.userId, userPositions);
-      }
-      userPositions.set(body.symbol, {
-        symbol: body.symbol,
-        netQty: body.netQty,
-        avgPrice: body.avgPrice,
-        costBasis: body.netQty * body.avgPrice,
-        realisedPnl: body.realisedPnl ?? 0,
-        fillCount: 1,
-      });
-      return json({ ok: true });
-    } catch {
-      return json({ error: "invalid json" }, 400);
+    const parsed = await parseBody(req, TestPositionSchema);
+    if (!parsed.ok) return parsed.res;
+    const body = parsed.data;
+    let userPositions = positions.get(body.userId);
+    if (!userPositions) {
+      userPositions = new Map();
+      positions.set(body.userId, userPositions);
     }
+    userPositions.set(body.symbol, {
+      symbol: body.symbol,
+      netQty: body.netQty,
+      avgPrice: body.avgPrice,
+      costBasis: body.netQty * body.avgPrice,
+      realisedPnl: body.realisedPnl ?? 0,
+      fillCount: 1,
+    });
+    return json({ ok: true });
   }
 
   if (TEST_MODE && path === "/test/positions/reset" && req.method === "POST") {
@@ -749,22 +718,17 @@ Deno.serve({ port: PORT }, async (req) => {
   }
 
   if (TEST_MODE && path === "/test/tick" && req.method === "POST") {
-    try {
-      const body = (await req.json()) as {
-        prices?: Record<string, number>;
-        openPrices?: Record<string, number>;
-      };
-      if (body.prices) {
-        for (const [s, p] of Object.entries(body.prices)) if (p > 0) prices[s] = p;
-      }
-      if (body.openPrices) {
-        for (const [s, p] of Object.entries(body.openPrices)) if (p > 0) openPrices[s] = p;
-      }
-      evaluateBreakers();
-      return json({ ok: true, fireCount: breakerFireCount });
-    } catch {
-      return json({ error: "invalid json" }, 400);
+    const parsed = await parseBody(req, TestTickSchema);
+    if (!parsed.ok) return parsed.res;
+    const body = parsed.data;
+    if (body.prices) {
+      for (const [s, p] of Object.entries(body.prices)) if (p > 0) prices[s] = p;
     }
+    if (body.openPrices) {
+      for (const [s, p] of Object.entries(body.openPrices)) if (p > 0) openPrices[s] = p;
+    }
+    evaluateBreakers();
+    return json({ ok: true, fireCount: breakerFireCount });
   }
 
   if (path === "/config" && req.method === "GET") {
@@ -772,30 +736,28 @@ Deno.serve({ port: PORT }, async (req) => {
   }
 
   if (path === "/config" && req.method === "PUT") {
-    try {
-      const body = (await req.json()) as Partial<RiskConfig>;
-      if (body.maxDailyLoss !== undefined && body.maxDailyLoss >= 0) {
-        return json({ error: "maxDailyLoss must be negative" }, 400);
-      }
-      if (body.fatFingerPct !== undefined) config.fatFingerPct = Math.max(0.1, body.fatFingerPct);
-      if (body.maxOpenOrders !== undefined) config.maxOpenOrders = Math.max(1, body.maxOpenOrders);
-      if (body.duplicateWindowMs !== undefined) config.duplicateWindowMs = Math.max(50, body.duplicateWindowMs);
-      if (body.maxOrdersPerSecond !== undefined) config.maxOrdersPerSecond = Math.max(1, body.maxOrdersPerSecond);
-      if (body.maxAdvPct !== undefined) config.maxAdvPct = Math.max(0.1, body.maxAdvPct);
-      if (body.maxGrossNotional !== undefined) config.maxGrossNotional = Math.max(0, body.maxGrossNotional);
-      if (body.maxDailyLoss !== undefined) config.maxDailyLoss = body.maxDailyLoss;
-      if (body.maxConcentrationPct !== undefined) {
-        config.maxConcentrationPct = Math.min(100, Math.max(1, body.maxConcentrationPct));
-      }
-      if (body.haltMovePercent !== undefined) config.haltMovePercent = Math.max(0.1, body.haltMovePercent);
-      if (body.breakerCooldownMs !== undefined) {
-        config.breakerCooldownMs = Math.max(1_000, body.breakerCooldownMs);
-      }
-      if (typeof body.breakersEnabled === "boolean") config.breakersEnabled = body.breakersEnabled;
-      return json(config);
-    } catch {
-      return json({ error: "invalid json" }, 400);
+    const parsed = await parseBody(req, RiskConfigUpdateSchema);
+    if (!parsed.ok) return parsed.res;
+    const body = parsed.data;
+    if (body.maxDailyLoss !== undefined && body.maxDailyLoss >= 0) {
+      return json({ error: "maxDailyLoss must be negative" }, 400);
     }
+    if (body.fatFingerPct !== undefined) config.fatFingerPct = Math.max(0.1, body.fatFingerPct);
+    if (body.maxOpenOrders !== undefined) config.maxOpenOrders = Math.max(1, body.maxOpenOrders);
+    if (body.duplicateWindowMs !== undefined) config.duplicateWindowMs = Math.max(50, body.duplicateWindowMs);
+    if (body.maxOrdersPerSecond !== undefined) config.maxOrdersPerSecond = Math.max(1, body.maxOrdersPerSecond);
+    if (body.maxAdvPct !== undefined) config.maxAdvPct = Math.max(0.1, body.maxAdvPct);
+    if (body.maxGrossNotional !== undefined) config.maxGrossNotional = Math.max(0, body.maxGrossNotional);
+    if (body.maxDailyLoss !== undefined) config.maxDailyLoss = body.maxDailyLoss;
+    if (body.maxConcentrationPct !== undefined) {
+      config.maxConcentrationPct = Math.min(100, Math.max(1, body.maxConcentrationPct));
+    }
+    if (body.haltMovePercent !== undefined) config.haltMovePercent = Math.max(0.1, body.haltMovePercent);
+    if (body.breakerCooldownMs !== undefined) {
+      config.breakerCooldownMs = Math.max(1_000, body.breakerCooldownMs);
+    }
+    if (body.breakersEnabled !== undefined) config.breakersEnabled = body.breakersEnabled;
+    return json(config);
   }
 
   const positionsMatch = path.match(/^\/positions\/([^/]+)$/);
@@ -827,16 +789,10 @@ Deno.serve({ port: PORT }, async (req) => {
   }
 
   if (path === "/check" && req.method === "POST") {
-    try {
-      const body = (await req.json()) as CheckRequest;
-      if (!body.userId || !body.symbol || !body.side || !body.quantity || !body.limitPrice) {
-        return json({ error: "missing required fields" }, 400);
-      }
-      const result = runChecks(body);
-      return json(result);
-    } catch {
-      return json({ error: "invalid json" }, 400);
-    }
+    const parsed = await parseBody(req, CheckRequestSchema);
+    if (!parsed.ok) return parsed.res;
+    const result = runChecks(parsed.data);
+    return json(result);
   }
 
   return json({ error: "Not Found" }, 404);
