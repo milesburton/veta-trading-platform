@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.19.1...veta-trading-platform-v1.19.2) (2026-04-16)
+
+
+### Reverts
+
+* restore /workspaces/virtual-equities-trading-application paths ([dd70bd1](https://github.com/milesburton/veta-trading-platform/commit/dd70bd1c5042c20a7b883028fcb7e46eccb70444))
+
 ## [1.19.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.19.0...veta-trading-platform-v1.19.1) (2026-04-16)
 
 
