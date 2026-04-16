@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.19.0...veta-trading-platform-v1.19.1) (2026-04-16)
+
+
+### Bug Fixes
+
+* **fly:** register product-service in supervisord-fly ([de0beb4](https://github.com/milesburton/veta-trading-platform/commit/de0beb4851ecc5ba15133e43ec407f00b556396e))
+
 ## [1.19.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.18.0...veta-trading-platform-v1.19.0) (2026-04-16)
 
 
