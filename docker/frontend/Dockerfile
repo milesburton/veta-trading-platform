@@ -11,6 +11,7 @@ ENV VITE_BUILD_DATE=$VITE_BUILD_DATE
 
 COPY frontend/package.json frontend/package-lock.json* ./
 COPY frontend/ ./
+COPY shared/ /src/shared/
 RUN npm ci --silent
 RUN npm run build
 
