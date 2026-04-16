@@ -564,8 +564,8 @@ jobs:
             echo "Push attempt $i failed, retrying..."
             sleep 5
           done
-          echo "❌ Failed to push Electron screenshots after 3 attempts"
-          exit 1
+          echo "⚠️ Failed to push Electron screenshots after 3 attempts (likely branch protection) — treating as non-fatal"
+          exit 0
 
       - name: Upload Electron test report on failure
         if: always() && (steps.electron-e2e.outcome == 'failure' || failure())
