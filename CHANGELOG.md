@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.19.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.18.0...veta-trading-platform-v1.19.0) (2026-04-16)
+
+
+### Features
+
+* **logger:** add @veta/logger for structured JSON logs ([4c9b270](https://github.com/milesburton/veta-trading-platform/commit/4c9b270a09b755c791484a3884cc541011a077e1))
+* **risk:** circuit breakers, position limits, and P&L stop ([f912efd](https://github.com/milesburton/veta-trading-platform/commit/f912efd657941186366148c52b4608dea8ec93c0))
+
+
+### Bug Fixes
+
+* **docker:** copy shared/ into frontend build contexts ([5437a2c](https://github.com/milesburton/veta-trading-platform/commit/5437a2c1b71d7009f27ef516758862b1cf908500))
+
 ## [1.18.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.17.1...veta-trading-platform-v1.18.0) (2026-04-15)
 
 
