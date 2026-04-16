@@ -3,7 +3,7 @@ set -gx DENO_INSTALL "$HOME/.deno"
 fish_add_path $DENO_INSTALL/bin
 set -gx FLYCTL_INSTALL "$HOME/.fly"
 fish_add_path $FLYCTL_INSTALL/bin
-set -l WS "/workspaces/project"
+set -l WS "/workspaces/virtual-equities-trading-application"
 set -l _SCONF "$WS/supervisord.conf"
 
 # ── Login banner — live service status snapshot ───────────────────────────────
