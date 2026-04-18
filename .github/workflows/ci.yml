@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      backend-coverage: ${{ steps.backend_coverage.outputs.value }}
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +35,12 @@ jobs:
           deno task test:coverage 2>&1 | tee /tmp/backend-test-output.txt
           PASSED=$(grep -oP '\d+(?= passed)' /tmp/backend-test-output.txt | tail -1 || echo 0)
           echo "BACKEND_TESTS_PASSED=${PASSED}" >> "$GITHUB_ENV"
+
+      - name: Extract backend line coverage
+        id: backend_coverage
+        run: |
+          PCT=$(awk -F: '/^LF:/{lf+=$2}/^LH:/{lh+=$2} END { if (lf > 0) printf "%.1f", (lh*100/lf); else print "0.0" }' coverage.lcov)
+          echo "value=${PCT}" >> "$GITHUB_OUTPUT"
 
       - name: Generate backend test badge
         if: github.ref == 'refs/heads/main'
@@ -67,6 +75,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      frontend-coverage: ${{ steps.frontend_coverage.outputs.value }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node
@@ -117,34 +127,68 @@ jobs:
           path: frontend/coverage/
           retention-days: 14
 
-      - name: Generate coverage badge JSON
-        if: github.ref == 'refs/heads/main'
+      - name: Extract frontend line coverage
+        id: frontend_coverage
         run: |
           if [ -f frontend/coverage/coverage-summary.json ]; then
-            PCT=$(python3 -c "
-          import json
-          with open('frontend/coverage/coverage-summary.json') as f:
-              d = json.load(f)
-          lines = d.get('total', {}).get('lines', {}).get('pct', 0)
-          print(f'{lines:.1f}')
-          ")
-            echo "Frontend line coverage: ${PCT}%"
-            COLOR="red"
-            if (( $(echo "$PCT > 80" | bc -l) )); then COLOR="brightgreen"; elif (( $(echo "$PCT > 60" | bc -l) )); then COLOR="yellow"; fi
-            echo "{\"schemaVersion\":1,\"label\":\"coverage\",\"message\":\"${PCT}%\",\"color\":\"${COLOR}\"}" > frontend/coverage/badge.json
-            echo "FRONTEND_COVERAGE=${PCT}" >> "$GITHUB_ENV"
+            PCT=$(python3 -c "import json; d=json.load(open('frontend/coverage/coverage-summary.json', encoding='utf-8')); print(f\"{d.get('total',{}).get('lines',{}).get('pct',0):.1f}\")")
+            echo "value=${PCT}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Commit test + coverage badges
+      - name: Commit frontend test badge
         if: github.ref == 'refs/heads/main'
         run: |
-          mkdir -p docs/badges
-          [ -f frontend/coverage/badge.json ] && cp frontend/coverage/badge.json docs/badges/coverage.json
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/badges/
+          git add docs/badges/frontend-tests.json
           if ! git diff --staged --quiet; then
-            git commit -m "chore(ci): update test badges [skip ci]"
+            git commit -m "chore(ci): update frontend test badge [skip ci]"
+            git stash --include-untracked --quiet || true
+            git pull --rebase origin main || { git rebase --abort 2>/dev/null; git stash pop --quiet 2>/dev/null || true; exit 0; }
+            git stash pop --quiet 2>/dev/null || true
+            git push || true
+          fi
+
+  coverage-badges:
+    name: Publish coverage badges
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, frontend]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frontend/backend/combined coverage badges
+        env:
+          BACKEND_COVERAGE: ${{ needs.lint-and-test.outputs.backend-coverage }}
+          FRONTEND_COVERAGE: ${{ needs.frontend.outputs.frontend-coverage }}
+        run: |
+          mkdir -p docs/badges
+          BACKEND="${BACKEND_COVERAGE:-0.0}"
+          FRONTEND="${FRONTEND_COVERAGE:-0.0}"
+          COMBINED=$(awk -v b="$BACKEND" -v f="$FRONTEND" 'BEGIN { printf "%.1f", (b + f) / 2 }')
+
+          color_for() {
+          awk -v v="$1" 'BEGIN { if (v > 80) print "brightgreen"; else if (v > 60) print "yellow"; else print "red" }'
+          }
+
+          BACKEND_COLOR=$(color_for "$BACKEND")
+          FRONTEND_COLOR=$(color_for "$FRONTEND")
+          COMBINED_COLOR=$(color_for "$COMBINED")
+
+          printf '{"schemaVersion":1,"label":"backend coverage","message":"%s%%","color":"%s"}\n' "$BACKEND" "$BACKEND_COLOR" > docs/badges/backend-coverage.json
+          printf '{"schemaVersion":1,"label":"frontend coverage","message":"%s%%","color":"%s"}\n' "$FRONTEND" "$FRONTEND_COLOR" > docs/badges/frontend-coverage.json
+          printf '{"schemaVersion":1,"label":"combined coverage","message":"%s%%","color":"%s"}\n' "$COMBINED" "$COMBINED_COLOR" > docs/badges/combined-coverage.json
+          printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' "$FRONTEND" "$FRONTEND_COLOR" > docs/badges/coverage.json
+
+      - name: Commit coverage badges
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/badges/backend-coverage.json docs/badges/frontend-coverage.json docs/badges/combined-coverage.json docs/badges/coverage.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(ci): update coverage badges [skip ci]"
             git stash --include-untracked --quiet || true
             git pull --rebase origin main || { git rebase --abort 2>/dev/null; git stash pop --quiet 2>/dev/null || true; exit 0; }
             git stash pop --quiet 2>/dev/null || true

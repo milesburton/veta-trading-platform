@@ -30,6 +30,8 @@ export default defineConfig({
         "src/**/*.test.*",
         "src/**/*.spec.*",
         "src/**/*.stories.*",
+        "src/stories/**",
+        "src/electron.d.ts",
         "src/setupTests.ts",
         "src/main.tsx",
         "src/vite-env.d.ts",

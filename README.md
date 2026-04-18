@@ -7,7 +7,9 @@
 [![Frontend unit tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/frontend-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 [![Integration tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/integration-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 [![E2E tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/e2e-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
+[![Frontend coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/frontend-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
+[![Backend coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/backend-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
+[![Combined coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/combined-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 [![Docker build](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=docker%20build&logo=docker)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 
 A near real-world equities and fixed income trading platform for paper trading and learning market dynamics. 
