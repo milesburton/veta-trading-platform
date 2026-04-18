@@ -1,7 +1,8 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { SessionReplayPanel } from "../SessionReplayPanel";
 import { type AuthUser, authSlice } from "../../store/authSlice";
 import type { ReplayConfig, ReplaySession } from "../../store/replayApi";
 import { windowSlice } from "../../store/windowSlice";
@@ -88,13 +89,6 @@ function renderPanel(user: AuthUser | null = ADMIN_USER) {
     </Provider>
   );
 }
-
-let SessionReplayPanel: React.ComponentType;
-
-beforeEach(async () => {
-  const mod = await import("../SessionReplayPanel");
-  SessionReplayPanel = mod.SessionReplayPanel;
-});
 
 afterEach(() => {
   cleanup();

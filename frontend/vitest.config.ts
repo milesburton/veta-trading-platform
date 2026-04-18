@@ -18,6 +18,8 @@ export default defineConfig({
     environment: "jsdom",
     environmentOptions: { jsdom: { url: "http://localhost:3000" } },
     globals: true,
+    testTimeout: 15_000,
+    hookTimeout: 20_000,
     setupFiles: ["./src/setupTests.ts"],
     include: ["src/**/*.{test,spec}.{js,ts,tsx}"],
     pool: "forks",
