@@ -10,7 +10,7 @@
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 [![Docker build](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=docker%20build&logo=docker)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 
-A near real-world equities and fixed income trading platform for paper trading and learning market dynamics. 30+ microservices, 9 algo strategies, pre-trade risk controls, and realistic desk segregation — all connected by a Redpanda message bus.
+A near real-world equities and fixed income trading platform for paper trading and learning market dynamics. 
 
 <p align="center">
   <a href="https://milesburton.github.io/veta-trading-platform/"><strong>View Documentation</strong></a>
