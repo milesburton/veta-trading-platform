@@ -249,7 +249,7 @@ type AnyJsonNode =
       children?: AnyJsonNode[];
     };
 
-function patchTabConfig(
+export function patchTabConfig(
   nodes: AnyJsonNode[],
   tabId: string,
   dir: "out" | "in",

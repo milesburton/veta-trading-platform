@@ -5,7 +5,7 @@ import { useAppSelector } from "../store/hooks.ts";
 import { COLOR } from "../tokens.ts";
 import type { AssetDef } from "../types.ts";
 
-function pctToColor(pct: number): string {
+export function pctToColor(pct: number): string {
   if (pct >= 4) return COLOR.HEAT_STRONG_UP;
   if (pct >= 2) return COLOR.HEAT_MID_UP;
   if (pct >= 1) return COLOR.HEAT_UP;
@@ -19,7 +19,7 @@ function pctToColor(pct: number): string {
   return COLOR.HEAT_DEEP_DOWN;
 }
 
-function tileTextColor(pct: number): string {
+export function tileTextColor(pct: number): string {
   // Faint tiles are dark olive/dark maroon — need light-coloured text for legibility.
   if (pct > 0 && pct < 0.25) return COLOR.HEAT_TEXT_LIGHT_UP;
   if (pct < 0 && pct > -0.25) return COLOR.HEAT_TEXT_LIGHT_DOWN;
@@ -42,7 +42,7 @@ interface TileData {
 }
 interface LayoutTile extends TileData, Rect {}
 
-function squarify(items: TileData[], bounds: Rect): LayoutTile[] {
+export function squarify(items: TileData[], bounds: Rect): LayoutTile[] {
   if (items.length === 0 || bounds.w <= 0 || bounds.h <= 0) return [];
   const total = items.reduce((s, d) => s + d.size, 0);
   if (total <= 0) return [];
@@ -129,7 +129,7 @@ function squarify(items: TileData[], bounds: Rect): LayoutTile[] {
   return result;
 }
 
-function collapseSmallTiles(items: TileData[], bounds: Rect, sector: string): TileData[] {
+export function collapseSmallTiles(items: TileData[], bounds: Rect, sector: string): TileData[] {
   if (items.length === 0) return [];
   const layout = squarify(items, bounds);
   const MIN_PX = 18;
