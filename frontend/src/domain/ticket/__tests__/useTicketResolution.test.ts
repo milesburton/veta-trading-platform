@@ -76,9 +76,12 @@ describe("useTicketResolution", () => {
     const spy = vi.spyOn(resolver, "resolveTicket");
     const base = makeCtx();
 
-    const { result, rerender } = renderHook(({ ctx }: { ctx: TicketContext }) => useTicketResolution(ctx), {
-      initialProps: { ctx: base },
-    });
+    const { result, rerender } = renderHook(
+      ({ ctx }: { ctx: TicketContext }) => useTicketResolution(ctx),
+      {
+        initialProps: { ctx: base },
+      },
+    );
 
     const first = result.current;
     const callsAfterFirstRender = spy.mock.calls.length;
@@ -105,9 +108,12 @@ describe("useTicketResolution", () => {
     const spy = vi.spyOn(resolver, "resolveTicket");
     const base = makeCtx();
 
-    const { result, rerender } = renderHook(({ ctx }: { ctx: TicketContext }) => useTicketResolution(ctx), {
-      initialProps: { ctx: base },
-    });
+    const { result, rerender } = renderHook(
+      ({ ctx }: { ctx: TicketContext }) => useTicketResolution(ctx),
+      {
+        initialProps: { ctx: base },
+      },
+    );
 
     const first = result.current;
     const callsAfterFirstRender = spy.mock.calls.length;

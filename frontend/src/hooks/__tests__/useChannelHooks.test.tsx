@@ -20,7 +20,10 @@ function makeStore() {
 
 function makeWrapper(
   store: ReturnType<typeof makeStore>,
-  context: { incoming: 1 | 2 | 3 | 4 | 5 | 6 | null; outgoing: 1 | 2 | 3 | 4 | 5 | 6 | null },
+  context: {
+    incoming: 1 | 2 | 3 | 4 | 5 | 6 | null;
+    outgoing: 1 | 2 | 3 | 4 | 5 | 6 | null;
+  },
 ) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
@@ -54,7 +57,10 @@ describe("useChannelIn", () => {
       wrapper: makeWrapper(store, { incoming: 2, outgoing: null }),
     });
 
-    expect(result.current).toEqual({ selectedAsset: "MSFT", selectedOrderId: "ord-2" });
+    expect(result.current).toEqual({
+      selectedAsset: "MSFT",
+      selectedOrderId: "ord-2",
+    });
   });
 
   it("falls back to legacy selectedAsset when no incoming channel", () => {
@@ -65,7 +71,10 @@ describe("useChannelIn", () => {
       wrapper: makeWrapper(store, { incoming: null, outgoing: null }),
     });
 
-    expect(result.current).toEqual({ selectedAsset: "AAPL", selectedOrderId: null });
+    expect(result.current).toEqual({
+      selectedAsset: "AAPL",
+      selectedOrderId: null,
+    });
   });
 
   it("falls back to legacy selectedAsset when incoming channel has no data", () => {
@@ -77,7 +86,10 @@ describe("useChannelIn", () => {
       wrapper: makeWrapper(store, { incoming: 6, outgoing: null }),
     });
 
-    expect(result.current).toEqual({ selectedAsset: null, selectedOrderId: null });
+    expect(result.current).toEqual({
+      selectedAsset: null,
+      selectedOrderId: null,
+    });
   });
 });
 
@@ -92,7 +104,10 @@ describe("useChannelOut", () => {
     result.current({ selectedAsset: "NVDA", selectedOrderId: "ord-9" });
 
     const state = store.getState();
-    expect(state.channels.data[3]).toEqual({ selectedAsset: "NVDA", selectedOrderId: "ord-9" });
+    expect(state.channels.data[3]).toEqual({
+      selectedAsset: "NVDA",
+      selectedOrderId: "ord-9",
+    });
     expect(state.ui.selectedAsset).toBeNull();
   });
 
@@ -107,7 +122,10 @@ describe("useChannelOut", () => {
 
     const state = store.getState();
     expect(state.ui.selectedAsset).toBe("AMD");
-    expect(state.channels.data[1]).toEqual({ selectedAsset: null, selectedOrderId: null });
+    expect(state.channels.data[1]).toEqual({
+      selectedAsset: null,
+      selectedOrderId: null,
+    });
   });
 
   it("does nothing on legacy fallback when patch has no selectedAsset", () => {

@@ -40,7 +40,10 @@ let mockConfig: ReplayConfig = {
   updatedBy: null,
   updatedAt: "2026-04-01T00:00:00Z",
 };
-let mockSessions: { sessions: ReplaySession[]; total: number } = { sessions: [], total: 0 };
+let mockSessions: { sessions: ReplaySession[]; total: number } = {
+  sessions: [],
+  total: 0,
+};
 let mockEvents: { events: unknown[] } = { events: [] };
 const mockUpdateConfig = vi.fn();
 const mockDeleteSession = vi.fn();
@@ -48,7 +51,11 @@ const mockDeleteSession = vi.fn();
 vi.mock("../../store/replayApi.ts", () => ({
   useGetReplayConfigQuery: () => ({ data: mockConfig, isLoading: false }),
   useUpdateReplayConfigMutation: () => [mockUpdateConfig, { isLoading: false }],
-  useListSessionsQuery: () => ({ data: mockSessions, isLoading: false, refetch: vi.fn() }),
+  useListSessionsQuery: () => ({
+    data: mockSessions,
+    isLoading: false,
+    refetch: vi.fn(),
+  }),
   useDeleteSessionMutation: () => [mockDeleteSession, { isLoading: false }],
   useGetSessionEventsQuery: () => ({ data: mockEvents, isLoading: false }),
 }));
@@ -75,7 +82,9 @@ function makeStore(user: AuthUser | null = ADMIN_USER) {
           allowed_desks: ["equity"],
           dark_pool_access: false,
         },
-        status: user ? ("authenticated" as const) : ("unauthenticated" as const),
+        status: user
+          ? ("authenticated" as const)
+          : ("unauthenticated" as const),
       },
     },
   });
@@ -86,13 +95,17 @@ function renderPanel(user: AuthUser | null = ADMIN_USER) {
   return render(
     <Provider store={store}>
       <SessionReplayPanel />
-    </Provider>
+    </Provider>,
   );
 }
 
 afterEach(() => {
   cleanup();
-  mockConfig = { recordingEnabled: false, updatedBy: null, updatedAt: "2026-04-01T00:00:00Z" };
+  mockConfig = {
+    recordingEnabled: false,
+    updatedBy: null,
+    updatedAt: "2026-04-01T00:00:00Z",
+  };
   mockSessions = { sessions: [], total: 0 };
   mockEvents = { events: [] };
 });
@@ -100,7 +113,9 @@ afterEach(() => {
 describe("SessionReplayPanel — empty state, recording disabled", () => {
   it("shows message to enable recording when no sessions exist", () => {
     renderPanel();
-    expect(screen.getByText(/No recorded sessions\. Enable recording/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/No recorded sessions\. Enable recording/i),
+    ).toBeInTheDocument();
   });
 
   it("renders the Session Replay header", () => {
@@ -111,13 +126,19 @@ describe("SessionReplayPanel — empty state, recording disabled", () => {
 
 describe("SessionReplayPanel — recording enabled, no sessions", () => {
   beforeEach(() => {
-    mockConfig = { recordingEnabled: true, updatedBy: null, updatedAt: "2026-04-01T00:00:00Z" };
+    mockConfig = {
+      recordingEnabled: true,
+      updatedBy: null,
+      updatedAt: "2026-04-01T00:00:00Z",
+    };
   });
 
   it("shows recording active message", () => {
     renderPanel();
     expect(
-      screen.getByText(/Recording is active\. Sessions will appear here once completed\./i)
+      screen.getByText(
+        /Recording is active\. Sessions will appear here once completed\./i,
+      ),
     ).toBeInTheDocument();
   });
 });
@@ -126,7 +147,12 @@ describe("SessionReplayPanel — session list rendering", () => {
   beforeEach(() => {
     mockSessions = {
       sessions: [
-        makeSession({ id: "s1", userName: "Alice Chen", userRole: "trader", durationMs: 300000 }),
+        makeSession({
+          id: "s1",
+          userName: "Alice Chen",
+          userRole: "trader",
+          durationMs: 300000,
+        }),
         makeSession({
           id: "s2",
           userName: "Bob Martinez",
@@ -184,7 +210,11 @@ describe("SessionReplayPanel — admin toggle", () => {
 
 describe("SessionReplayPanel — REC indicator", () => {
   it("shows REC when recording enabled", () => {
-    mockConfig = { recordingEnabled: true, updatedBy: null, updatedAt: "2026-04-01T00:00:00Z" };
+    mockConfig = {
+      recordingEnabled: true,
+      updatedBy: null,
+      updatedAt: "2026-04-01T00:00:00Z",
+    };
     renderPanel();
     expect(screen.getByText("REC")).toBeInTheDocument();
   });
@@ -198,7 +228,9 @@ describe("SessionReplayPanel — REC indicator", () => {
 describe("SessionReplayPanel — play button", () => {
   it("play button is disabled for live sessions (no endedAt)", () => {
     mockSessions = {
-      sessions: [makeSession({ id: "live-1", endedAt: null, durationMs: null })],
+      sessions: [
+        makeSession({ id: "live-1", endedAt: null, durationMs: null }),
+      ],
       total: 1,
     };
     renderPanel();
