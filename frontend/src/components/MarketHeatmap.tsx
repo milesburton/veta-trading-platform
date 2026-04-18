@@ -73,10 +73,12 @@ export function squarify(items: TileData[], bounds: Rect): LayoutTile[] {
     y0: number,
     w0: number,
     h0: number,
-    horiz: boolean
+    horiz: boolean,
   ) {
     const rowSum = row.reduce((s, d) => s + d.size, 0);
-    const stripW = horiz ? ((rowSum / total) * area) / h0 : ((rowSum / total) * area) / w0;
+    const stripW = horiz
+      ? ((rowSum / total) * area) / h0
+      : ((rowSum / total) * area) / w0;
     let cursor = 0;
     for (const item of row) {
       const frac = item.size / rowSum;
@@ -129,7 +131,11 @@ export function squarify(items: TileData[], bounds: Rect): LayoutTile[] {
   return result;
 }
 
-export function collapseSmallTiles(items: TileData[], bounds: Rect, sector: string): TileData[] {
+export function collapseSmallTiles(
+  items: TileData[],
+  bounds: Rect,
+  sector: string,
+): TileData[] {
   if (items.length === 0) return [];
   const layout = squarify(items, bounds);
   const MIN_PX = 18;
@@ -147,7 +153,9 @@ export function collapseSmallTiles(items: TileData[], bounds: Rect, sector: stri
   if (collapsed.length === 0) return items;
   const otherSize = collapsed.reduce((s, d) => s + d.size, 0);
   const otherPct =
-    otherSize > 0 ? collapsed.reduce((s, d) => s + d.pct * d.size, 0) / otherSize : 0;
+    otherSize > 0
+      ? collapsed.reduce((s, d) => s + d.pct * d.size, 0) / otherSize
+      : 0;
   const other: TileData = {
     symbol: `${sector}:OTHER`,
     sector,
@@ -203,7 +211,10 @@ export function MarketHeatmap() {
       const price = prices[a.symbol] ?? a.initialPrice;
       const open = sessionOpen[a.symbol] ?? a.initialPrice;
       const pct = open > 0 ? ((price - open) / open) * 100 : 0;
-      const size = sortBy.value === "cap" ? (a.marketCapB ?? 1) : Math.max(Math.abs(pct), 0.1);
+      const size =
+        sortBy.value === "cap"
+          ? (a.marketCapB ?? 1)
+          : Math.max(Math.abs(pct), 0.1);
       return { symbol: a.symbol, sector: a.sector, pct, size };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -219,7 +230,9 @@ export function MarketHeatmap() {
       .map(([sector, items]) => {
         const totalSize = items.reduce((s, d) => s + d.size, 0);
         const sectorPct =
-          totalSize > 0 ? items.reduce((s, d) => s + d.pct * d.size, 0) / totalSize : 0;
+          totalSize > 0
+            ? items.reduce((s, d) => s + d.pct * d.size, 0) / totalSize
+            : 0;
         return {
           sector,
           items: [...items].sort((a, b) => b.size - a.size),
@@ -234,20 +247,25 @@ export function MarketHeatmap() {
   const rawH = canvasH.value;
 
   const isDrilled = drilldown.value !== null;
-  const drilledSector = isDrilled ? sectors.find((s) => s.sector === drilldown.value) : null;
+  const drilledSector = isDrilled
+    ? sectors.find((s) => s.sector === drilldown.value)
+    : null;
 
   const ch = isDrilled
     ? Math.max(
         rawH,
         Math.ceil(
-          (MIN_TILE_SIZE * MIN_TILE_SIZE * (drilledSector?.items.length ?? 1)) / Math.max(cw, 1)
-        )
+          (MIN_TILE_SIZE * MIN_TILE_SIZE * (drilledSector?.items.length ?? 1)) /
+            Math.max(cw, 1),
+        ),
       )
     : (() => {
         const totalTiles = sectors.reduce((s, sec) => s + sec.items.length, 0);
         const minH =
           totalTiles > 0
-            ? Math.ceil((MIN_TILE_SIZE * MIN_TILE_SIZE * totalTiles) / Math.max(cw, 1))
+            ? Math.ceil(
+                (MIN_TILE_SIZE * MIN_TILE_SIZE * totalTiles) / Math.max(cw, 1),
+              )
             : rawH;
         return Math.max(rawH, minH);
       })();
@@ -261,7 +279,7 @@ export function MarketHeatmap() {
           pct: s.sectorPct,
           size: s.totalSize,
         })),
-        { x: 0, y: 0, w: cw, h: ch }
+        { x: 0, y: 0, w: cw, h: ch },
       );
 
   const sectorBlocks = isDrilled
@@ -284,18 +302,29 @@ export function MarketHeatmap() {
           h: Math.max(sRect.h - SECTOR_GAP * 2 - (hasLabel ? LABEL_H : 0), 1),
         };
         const collapsed = collapseSmallTiles(s.items, inner, s.sector);
-        return { ...s, sRect, hasLabel, layoutTiles: squarify(collapsed, inner) };
+        return {
+          ...s,
+          sRect,
+          hasLabel,
+          layoutTiles: squarify(collapsed, inner),
+        };
       });
 
   const drilledLayout =
-    isDrilled && drilledSector ? squarify(drilledSector.items, { x: 0, y: 0, w: cw, h: ch }) : null;
+    isDrilled && drilledSector
+      ? squarify(drilledSector.items, { x: 0, y: 0, w: cw, h: ch })
+      : null;
 
   const tooltipSymbolRaw = tooltip.value?.symbol ?? null;
-  const tooltipSymbol = tooltipSymbolRaw?.includes(":OTHER") ? null : tooltipSymbolRaw;
+  const tooltipSymbol = tooltipSymbolRaw?.includes(":OTHER")
+    ? null
+    : tooltipSymbolRaw;
   const tooltipAsset = tooltipSymbol
     ? assets.find((a: AssetDef) => a.symbol === tooltipSymbol)
     : null;
-  const tooltipTile = tooltipSymbol ? tiles.find((t) => t.symbol === tooltipSymbol) : null;
+  const tooltipTile = tooltipSymbol
+    ? tiles.find((t) => t.symbol === tooltipSymbol)
+    : null;
 
   function handleTileMouseEvent(e: React.MouseEvent, symbol: string) {
     const wrap = wrapRef.current;
@@ -308,7 +337,10 @@ export function MarketHeatmap() {
     };
   }
 
-  function renderTile(tile: LayoutTile, onClickOther?: (sector: string) => void) {
+  function renderTile(
+    tile: LayoutTile,
+    onClickOther?: (sector: string) => void,
+  ) {
     const isHovered = tooltip.value?.symbol === tile.symbol;
     const color = pctToColor(tile.pct);
     const textClr = tileTextColor(tile.pct);
@@ -454,7 +486,13 @@ export function MarketHeatmap() {
               className="flex items-center gap-1 text-gray-400 hover:text-gray-200 transition-colors"
               aria-label="Back to full market view"
             >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                aria-hidden="true"
+              >
                 <path
                   d="M8 2L4 6L8 10"
                   stroke="currentColor"
@@ -512,7 +550,10 @@ export function MarketHeatmap() {
         </div>
       </div>
 
-      <div ref={wrapRef} className="flex-1 overflow-y-auto overflow-x-hidden relative bg-[#0d1117]">
+      <div
+        ref={wrapRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden relative bg-[#0d1117]"
+      >
         <svg
           width="100%"
           height={ch}
@@ -554,7 +595,10 @@ export function MarketHeatmap() {
                         <text
                           x={sRect.x + SECTOR_GAP + 5}
                           y={sRect.y + SECTOR_GAP + LABEL_H / 2 + 1}
-                          fontSize={Math.min(10, (sRect.w - SECTOR_GAP * 2) / 10)}
+                          fontSize={Math.min(
+                            10,
+                            (sRect.w - SECTOR_GAP * 2) / 10,
+                          )}
                           fontWeight="600"
                           dominantBaseline="middle"
                           style={{
@@ -566,7 +610,13 @@ export function MarketHeatmap() {
                           {sRect.w > 120
                             ? block.sector.toUpperCase()
                             : block.sector
-                                .slice(0, Math.max(Math.floor((sRect.w - SECTOR_GAP * 2) / 8), 3))
+                                .slice(
+                                  0,
+                                  Math.max(
+                                    Math.floor((sRect.w - SECTOR_GAP * 2) / 8),
+                                    3,
+                                  ),
+                                )
                                 .toUpperCase()}
                         </text>
                       </>
@@ -575,7 +625,7 @@ export function MarketHeatmap() {
                       renderTile(tile, (sector) => {
                         drilldown.value = sector;
                         tooltip.value = null;
-                      })
+                      }),
                     )}
                   </g>
                 );
@@ -596,16 +646,22 @@ export function MarketHeatmap() {
               const TOOLTIP_H = 64;
               const OFFSET = 12;
               const left =
-                mouseX + OFFSET + TOOLTIP_W > cw ? mouseX - TOOLTIP_W - OFFSET : mouseX + OFFSET;
+                mouseX + OFFSET + TOOLTIP_W > cw
+                  ? mouseX - TOOLTIP_W - OFFSET
+                  : mouseX + OFFSET;
               const top =
-                mouseY + OFFSET + TOOLTIP_H > ch ? mouseY - TOOLTIP_H - OFFSET : mouseY + OFFSET;
+                mouseY + OFFSET + TOOLTIP_H > ch
+                  ? mouseY - TOOLTIP_H - OFFSET
+                  : mouseY + OFFSET;
               return (
                 <div
                   className="absolute bg-gray-900/95 border border-gray-700 rounded shadow-xl px-3 py-2 text-[11px] pointer-events-none z-10"
                   style={{ left, top, width: TOOLTIP_W }}
                   aria-live="polite"
                 >
-                  <div className="font-bold text-gray-100 text-sm mb-0.5">{sector} — Other</div>
+                  <div className="font-bold text-gray-100 text-sm mb-0.5">
+                    {sector} — Other
+                  </div>
                   <div className="text-gray-400 text-[10px] mb-1">
                     {otherTile.otherCount} stocks too small to display
                   </div>
@@ -625,15 +681,20 @@ export function MarketHeatmap() {
             }
 
             if (!tooltipTile || !tooltipAsset) return null;
-            const price = prices[tooltipAsset.symbol] ?? tooltipAsset.initialPrice;
+            const price =
+              prices[tooltipAsset.symbol] ?? tooltipAsset.initialPrice;
             const capB = tooltipAsset.marketCapB;
             const TOOLTIP_W = 160;
             const TOOLTIP_H = 130;
             const OFFSET = 12;
             const left =
-              mouseX + OFFSET + TOOLTIP_W > cw ? mouseX - TOOLTIP_W - OFFSET : mouseX + OFFSET;
+              mouseX + OFFSET + TOOLTIP_W > cw
+                ? mouseX - TOOLTIP_W - OFFSET
+                : mouseX + OFFSET;
             const top =
-              mouseY + OFFSET + TOOLTIP_H > ch ? mouseY - TOOLTIP_H - OFFSET : mouseY + OFFSET;
+              mouseY + OFFSET + TOOLTIP_H > ch
+                ? mouseY - TOOLTIP_H - OFFSET
+                : mouseY + OFFSET;
             return (
               <div
                 className="absolute bg-gray-900/95 border border-gray-700 rounded shadow-xl px-3 py-2 text-[11px] pointer-events-none z-10"
@@ -641,7 +702,9 @@ export function MarketHeatmap() {
                 aria-live="polite"
               >
                 <div className="flex items-baseline justify-between mb-1">
-                  <span className="font-bold text-gray-100 text-sm">{tooltipAsset.symbol}</span>
+                  <span className="font-bold text-gray-100 text-sm">
+                    {tooltipAsset.symbol}
+                  </span>
                   <span
                     className={`font-bold text-sm ${
                       tooltipTile.pct >= 0 ? "text-emerald-400" : "text-red-400"
@@ -651,17 +714,23 @@ export function MarketHeatmap() {
                     {tooltipTile.pct.toFixed(2)}%
                   </span>
                 </div>
-                <div className="text-gray-500 text-[10px] mb-2">{tooltipAsset.sector}</div>
+                <div className="text-gray-500 text-[10px] mb-2">
+                  {tooltipAsset.sector}
+                </div>
                 <div className="space-y-0.5 text-[10px]">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Price</span>
-                    <span className="text-gray-200 tabular-nums">${price.toFixed(2)}</span>
+                    <span className="text-gray-200 tabular-nums">
+                      ${price.toFixed(2)}
+                    </span>
                   </div>
                   {capB != null && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">Mkt Cap</span>
                       <span className="text-gray-200 tabular-nums">
-                        {capB >= 1000 ? `$${(capB / 1000).toFixed(1)}T` : `$${capB.toFixed(0)}B`}
+                        {capB >= 1000
+                          ? `$${(capB / 1000).toFixed(1)}T`
+                          : `$${capB.toFixed(0)}B`}
                       </span>
                     </div>
                   )}
@@ -681,14 +750,15 @@ export function MarketHeatmap() {
                       </span>
                     </div>
                   )}
-                  {tooltipAsset.dividendYield != null && tooltipAsset.dividendYield > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Div Yield</span>
-                      <span className="text-gray-200 tabular-nums">
-                        {tooltipAsset.dividendYield.toFixed(2)}%
-                      </span>
-                    </div>
-                  )}
+                  {tooltipAsset.dividendYield != null &&
+                    tooltipAsset.dividendYield > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Div Yield</span>
+                        <span className="text-gray-200 tabular-nums">
+                          {tooltipAsset.dividendYield.toFixed(2)}%
+                        </span>
+                      </div>
+                    )}
                   {tooltipAsset.dailyVolume != null && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">Volume</span>

@@ -8,6 +8,10 @@
 # Services are managed by docker compose via the host Docker socket — no supervisord.
 FROM ghcr.io/milesburton/veta-trading-platform-base:latest
 
+# Devcontainer Features inject POSIX shell scripts during build; ensure they run
+# under a POSIX shell even if the base image default SHELL is fish.
+SHELL ["/bin/bash", "-c"]
+
 # xvfb provides a headless X display for running Electron E2E tests locally.
 # Usage: xvfb-run --auto-servernum npm run test:electron
 USER root

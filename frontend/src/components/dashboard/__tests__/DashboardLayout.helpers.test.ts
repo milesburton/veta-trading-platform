@@ -20,7 +20,11 @@ describe("patchTabConfig", () => {
 
     expect(changed).toBe(true);
     const tab = (nodes[0].children as Array<Record<string, unknown>>)[0];
-    expect(tab.config).toMatchObject({ panelType: "market-ladder", incoming: 2, outgoing: 5 });
+    expect(tab.config).toMatchObject({
+      panelType: "market-ladder",
+      incoming: 2,
+      outgoing: 5,
+    });
   });
 
   it("clears incoming channel on matching tab", () => {
@@ -51,7 +55,9 @@ describe("patchTabConfig", () => {
     const nodes = [
       {
         type: "tabset",
-        children: [{ type: "tab", id: "panel-a", config: { panelType: "news" } }],
+        children: [
+          { type: "tab", id: "panel-a", config: { panelType: "news" } },
+        ],
       },
     ] as unknown as Array<Record<string, unknown>>;
 

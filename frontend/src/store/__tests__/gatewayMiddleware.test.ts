@@ -52,7 +52,7 @@ describe("gatewayMiddleware", () => {
           return { ok: true, json: async () => ({ upgradeInProgress: false }) };
         }
         return { ok: false, json: async () => null };
-      })
+      }),
     );
   });
 
@@ -63,7 +63,12 @@ describe("gatewayMiddleware", () => {
 
   it("starts gateway websocket once on setUser", () => {
     const { invoke } = createHarness();
-    const user = { id: "u1", name: "Trader", role: "trader", avatar_emoji: ":test:" } as const;
+    const user = {
+      id: "u1",
+      name: "Trader",
+      role: "trader",
+      avatar_emoji: ":test:",
+    } as const;
 
     invoke(setUser(user));
     invoke(setUser(user));
@@ -74,7 +79,12 @@ describe("gatewayMiddleware", () => {
 
   it("batches market updates and flushes a UI tick", () => {
     const { dispatched, invoke } = createHarness();
-    const user = { id: "u1", name: "Trader", role: "trader", avatar_emoji: ":test:" } as const;
+    const user = {
+      id: "u1",
+      name: "Trader",
+      role: "trader",
+      avatar_emoji: ":test:",
+    } as const;
 
     invoke(setUser(user));
     const ws = MockWebSocket.instances[0];
@@ -109,7 +119,12 @@ describe("gatewayMiddleware", () => {
 
   it("closes websocket on marketFeed/stop", () => {
     const { invoke } = createHarness();
-    const user = { id: "u1", name: "Trader", role: "trader", avatar_emoji: ":test:" } as const;
+    const user = {
+      id: "u1",
+      name: "Trader",
+      role: "trader",
+      avatar_emoji: ":test:",
+    } as const;
 
     invoke(setUser(user));
     const ws = MockWebSocket.instances[0];

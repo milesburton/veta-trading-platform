@@ -1,4 +1,10 @@
-import type { BorderNode, IJsonModel, IJsonTabNode, TabNode, TabSetNode } from "flexlayout-react";
+import type {
+  BorderNode,
+  IJsonModel,
+  IJsonTabNode,
+  TabNode,
+  TabSetNode,
+} from "flexlayout-react";
 import { Actions, Layout, Model } from "flexlayout-react";
 import type React from "react";
 import type { ReactNode } from "react";
@@ -9,7 +15,10 @@ import { useSignal } from "@preact/signals-react";
 import { ChannelContext } from "../../contexts/ChannelContext.tsx";
 import type { ChannelNumber } from "../../store/channelsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../../store/hooks.ts";
-import { panelDialogClosed, panelDialogOpened } from "../../store/windowSlice.ts";
+import {
+  panelDialogClosed,
+  panelDialogOpened,
+} from "../../store/windowSlice.ts";
 import { CandlestickChart } from "../CandlestickChart.tsx";
 import type { ContextMenuEntry } from "../ContextMenu.tsx";
 import { ContextMenu } from "../ContextMenu.tsx";
@@ -58,7 +67,9 @@ function ChannelPicker({
     function handle(e: MouseEvent) {
       if (
         btnRef.current &&
-        !btnRef.current.closest("[data-channel-picker]")?.contains(e.target as Node)
+        !btnRef.current
+          .closest("[data-channel-picker]")
+          ?.contains(e.target as Node)
       ) {
         open.value = false;
       }
@@ -83,13 +94,16 @@ function ChannelPicker({
     current !== null && allItems.length > 0
       ? allItems
           .filter((item) => {
-            if (isOut) return item.incoming === current && item.i !== instanceId;
+            if (isOut)
+              return item.incoming === current && item.i !== instanceId;
             return item.outgoing === current && item.i !== instanceId;
           })
           .map((item) => PANEL_TITLES[item.panelType] ?? item.panelType)
       : [];
   const connectedStr =
-    connectedPanels.length > 0 ? ` · ${isOut ? "→" : "←"} ${connectedPanels.join(", ")}` : "";
+    connectedPanels.length > 0
+      ? ` · ${isOut ? "→" : "←"} ${connectedPanels.join(", ")}`
+      : "";
 
   const buttonTitle = colour
     ? `${dirLabel} Ch ${current} ${colour.label}${connectedStr} — click to change`
@@ -102,7 +116,9 @@ function ChannelPicker({
           style={{ top: dropdownPos.value.top, left: dropdownPos.value.left }}
           className="fixed z-[9999] bg-gray-900 border border-gray-700 rounded shadow-xl p-1.5 flex flex-col gap-0.5 min-w-[110px]"
         >
-          <span className="text-[9px] text-gray-500 px-1 pb-0.5">{dirLabel}</span>
+          <span className="text-[9px] text-gray-500 px-1 pb-0.5">
+            {dirLabel}
+          </span>
           {([1, 2, 3, 4, 5, 6] as ChannelNumber[]).map((n) => {
             const col = CHANNEL_COLOURS[n];
             const blocked = blockedChannels.has(n);
@@ -144,7 +160,7 @@ function ChannelPicker({
             None
           </button>
         </div>,
-        document.body
+        document.body,
       )
     : null;
 
@@ -161,14 +177,19 @@ function ChannelPicker({
             : "text-gray-500 hover:bg-gray-700/40 border border-dashed border-gray-700/60 hover:border-gray-500 hover:text-gray-400"
         }`}
       >
-        <span className={colour ? "text-gray-500" : "text-gray-600"}>{isOut ? "Out:" : "In:"}</span>
+        <span className={colour ? "text-gray-500" : "text-gray-600"}>
+          {isOut ? "Out:" : "In:"}
+        </span>
         {colour ? (
           <>
             <span
               className="w-2 h-2 rounded-full shrink-0"
               style={{ backgroundColor: colour.hex }}
             />
-            <span className="font-mono tabular-nums" style={{ color: colour.hex }}>
+            <span
+              className="font-mono tabular-nums"
+              style={{ color: colour.hex }}
+            >
               Ch {current}
             </span>
           </>
@@ -184,7 +205,11 @@ function ChannelPicker({
 interface TabChannelButtonsProps {
   node: TabNode;
   allItems: LayoutItem[];
-  onChannelChange: (instanceId: string, dir: "out" | "in", ch: ChannelNumber | null) => void;
+  onChannelChange: (
+    instanceId: string,
+    dir: "out" | "in",
+    ch: ChannelNumber | null,
+  ) => void;
 }
 
 function tabChannelButtons({
@@ -204,16 +229,16 @@ function tabChannelButtons({
   const blockedOut = new Set<ChannelNumber>(
     caps.out
       ? ([1, 2, 3, 4, 5, 6] as ChannelNumber[]).filter((n) =>
-          wouldCreateCycleOut(n, instanceId, allItems)
+          wouldCreateCycleOut(n, instanceId, allItems),
         )
-      : ([1, 2, 3, 4, 5, 6] as ChannelNumber[])
+      : ([1, 2, 3, 4, 5, 6] as ChannelNumber[]),
   );
   const blockedIn = new Set<ChannelNumber>(
     caps.in
       ? ([1, 2, 3, 4, 5, 6] as ChannelNumber[]).filter((n) =>
-          wouldCreateCycleIn(n, instanceId, allItems)
+          wouldCreateCycleIn(n, instanceId, allItems),
         )
-      : ([1, 2, 3, 4, 5, 6] as ChannelNumber[])
+      : ([1, 2, 3, 4, 5, 6] as ChannelNumber[]),
   );
 
   return [
@@ -253,16 +278,22 @@ export function patchTabConfig(
   nodes: AnyJsonNode[],
   tabId: string,
   dir: "out" | "in",
-  ch: ChannelNumber | null
+  ch: ChannelNumber | null,
 ): boolean {
   for (const node of nodes) {
     const n = node as IJsonTabNode & { children?: AnyJsonNode[] };
     if (n.id === tabId) {
       const prev = (n.config ?? {}) as TabChannelConfig;
       if (dir === "out") {
-        n.config = ch !== null ? { ...prev, outgoing: ch } : { ...prev, outgoing: undefined };
+        n.config =
+          ch !== null
+            ? { ...prev, outgoing: ch }
+            : { ...prev, outgoing: undefined };
       } else {
-        n.config = ch !== null ? { ...prev, incoming: ch } : { ...prev, incoming: undefined };
+        n.config =
+          ch !== null
+            ? { ...prev, incoming: ch }
+            : { ...prev, incoming: undefined };
       }
       return true;
     }
@@ -297,7 +328,9 @@ function PanelDialog({
   panelType: string;
   onClose: () => void;
 }) {
-  const DialogPanel = DIALOG_PANEL_IDS.has(panelType) ? getPanelComponent(panelType) : undefined;
+  const DialogPanel = DIALOG_PANEL_IDS.has(panelType)
+    ? getPanelComponent(panelType)
+    : undefined;
   const title = PANEL_TITLES[panelType as PanelId] ?? panelType;
 
   useEffect(() => {
@@ -318,10 +351,17 @@ function PanelDialog({
         if (e.target === e.currentTarget) onClose();
       }}
       onKeyDown={(e) => {
-        if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) onClose();
+        if (
+          (e.key === "Enter" || e.key === " ") &&
+          e.target === e.currentTarget
+        )
+          onClose();
       }}
     >
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        aria-hidden="true"
+      />
       <div
         className="relative z-10 bg-gray-950 border border-gray-700 rounded-lg shadow-2xl flex flex-col"
         style={{ width: "min(90vw, 1100px)", height: "min(85vh, 800px)" }}
@@ -360,7 +400,7 @@ function PanelDialog({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
@@ -371,9 +411,14 @@ function CandleChartPanel({ incoming }: { incoming: ChannelNumber | null }) {
     incoming !== null
       ? (channelsData[incoming]?.selectedAsset ?? legacySelectedAsset)
       : legacySelectedAsset;
-  const candles = useAppSelector((s) => (symbol ? s.market.candleHistory[symbol] : undefined));
-  const ready = useAppSelector((s) => (symbol ? s.market.candlesReady[symbol] : false));
-  const hasEnoughBars = candles && (candles["1m"]?.length >= 2 || candles["5m"]?.length >= 2);
+  const candles = useAppSelector((s) =>
+    symbol ? s.market.candleHistory[symbol] : undefined,
+  );
+  const ready = useAppSelector((s) =>
+    symbol ? s.market.candlesReady[symbol] : false,
+  );
+  const hasEnoughBars =
+    candles && (candles["1m"]?.length >= 2 || candles["5m"]?.length >= 2);
 
   if (symbol && ready && hasEnoughBars) {
     return <CandlestickChart key={symbol} symbol={symbol} candles={candles} />;
@@ -413,7 +458,9 @@ function EmptyWorkspace() {
   const userRole = useAppSelector((s) => s.auth.user?.role);
 
   const templates = LAYOUT_TEMPLATES.filter(
-    (t) => t.id !== "clear" && (!ADMIN_ONLY_TEMPLATE_IDS.has(t.id) || userRole === "admin")
+    (t) =>
+      t.id !== "clear" &&
+      (!ADMIN_ONLY_TEMPLATE_IDS.has(t.id) || userRole === "admin"),
   );
 
   return (
@@ -432,16 +479,21 @@ function EmptyWorkspace() {
             className="flex flex-col items-start gap-1 rounded-lg border border-gray-700 px-4 py-3 text-left transition-colors hover:border-emerald-600 hover:bg-emerald-950/30 cursor-pointer"
           >
             <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-300">
-              {tpl.locked && <span className="text-[10px] text-gray-500">🔒</span>}
+              {tpl.locked && (
+                <span className="text-[10px] text-gray-500">🔒</span>
+              )}
               {tpl.label}
             </span>
-            <span className="text-[9px] text-gray-600 leading-tight">{tpl.description}</span>
+            <span className="text-[9px] text-gray-600 leading-tight">
+              {tpl.description}
+            </span>
           </button>
         ))}
       </div>
 
       <p className="text-[10px] text-gray-700">
-        Or use <span className="text-gray-500">⊞ Layout</span> in the toolbar to switch at any time.
+        Or use <span className="text-gray-500">⊞ Layout</span> in the toolbar to
+        switch at any time.
       </p>
     </div>
   );
@@ -453,11 +505,22 @@ export function DashboardLayout() {
   const dialogs = useAppSelector((s) => s.windows.dialogs);
   const userRole = useAppSelector((s) => s.auth.user?.role);
   const tradingStyle = useAppSelector((s) => s.auth.limits?.trading_style);
-  const { model, setModel, layout, removePanel, addPanel, activePanelIds, storageKey } =
-    useDashboard();
+  const {
+    model,
+    setModel,
+    layout,
+    removePanel,
+    addPanel,
+    activePanelIds,
+    storageKey,
+  } = useDashboard();
   const dispatch = useAppDispatch();
 
-  const tabCtxMenu = useSignal<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
+  const tabCtxMenu = useSignal<{
+    x: number;
+    y: number;
+    items: ContextMenuEntry[];
+  } | null>(null);
 
   const draggedTabIdRef = useRef<string | null>(null);
 
@@ -470,7 +533,9 @@ export function DashboardLayout() {
       }
       const path = btn.getAttribute("data-layout-path");
       if (path) {
-        const label = btn.querySelector(".flexlayout__tab_button_content")?.textContent?.trim();
+        const label = btn
+          .querySelector(".flexlayout__tab_button_content")
+          ?.textContent?.trim();
         if (label) {
           let found: string | null = null;
           model.visitNodes((node) => {
@@ -502,8 +567,11 @@ export function DashboardLayout() {
       });
       if (!tabNode) return;
 
-      const cfg = (tabNode as TabNode).getConfig() as TabChannelConfig | undefined;
-      const panelType = cfg?.panelType ?? ((tabNode as TabNode).getComponent() as PanelId);
+      const cfg = (tabNode as TabNode).getConfig() as
+        | TabChannelConfig
+        | undefined;
+      const panelType =
+        cfg?.panelType ?? ((tabNode as TabNode).getComponent() as PanelId);
       const instanceId = (tabNode as TabNode).getId();
       const params = new URLSearchParams({
         panel: instanceId,
@@ -511,7 +579,11 @@ export function DashboardLayout() {
         layout: "dashboard-layout",
       });
       const url = `${window.location.origin}${window.location.pathname}?${params}`;
-      const w = window.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
+      const w = window.open(
+        url,
+        `panel-${instanceId}`,
+        "width=1200,height=700,resizable=yes",
+      );
       if (w) {
         // Remove the tab so the host layout closes the gap left by the drag.
         model.doAction(Actions.deleteTab(instanceId));
@@ -540,20 +612,23 @@ export function DashboardLayout() {
 
       setModel(Model.fromJson(json));
     },
-    [model, setModel]
+    [model, setModel],
   );
 
   const factory = useCallback(
     (node: TabNode): ReactNode => {
       const cfg = node.getConfig() as TabChannelConfig | undefined;
-      const panelType: PanelId = cfg?.panelType ?? (node.getComponent() as PanelId);
+      const panelType: PanelId =
+        cfg?.panelType ?? (node.getComponent() as PanelId);
       const instanceId = node.getId();
       const outgoing: ChannelNumber | null = cfg?.outgoing ?? null;
       const incoming: ChannelNumber | null = cfg?.incoming ?? null;
 
       function wrap(content: ReactNode) {
         return (
-          <ChannelContext.Provider value={{ instanceId, panelType, outgoing, incoming }}>
+          <ChannelContext.Provider
+            value={{ instanceId, panelType, outgoing, incoming }}
+          >
             <div className="h-full overflow-hidden bg-gray-950">{content}</div>
           </ChannelContext.Provider>
         );
@@ -563,7 +638,7 @@ export function DashboardLayout() {
         return wrap(
           <div className="h-full flex items-center justify-center text-gray-600 text-xs p-4 text-center">
             You do not have permission to view this panel.
-          </div>
+          </div>,
         );
       }
 
@@ -574,17 +649,25 @@ export function DashboardLayout() {
       if (PanelComponent) {
         return wrap(<PanelComponent />);
       }
-      return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
+      return wrap(
+        <div className="text-gray-600 text-xs p-4">
+          Unknown panel: {panelType}
+        </div>,
+      );
     },
-    [userRole, tradingStyle]
+    [userRole, tradingStyle],
   );
 
   const onRenderTab = useCallback(
-    (node: TabNode, renderValues: { content: ReactNode; buttons: ReactNode[] }) => {
+    (
+      node: TabNode,
+      renderValues: { content: ReactNode; buttons: ReactNode[] },
+    ) => {
       const cfg = node.getConfig() as TabChannelConfig | undefined;
       const panelType = cfg?.panelType;
 
-      const isPinned = cfg?.pinned ?? !(node.isEnableDrag() && node.isEnableClose());
+      const isPinned =
+        cfg?.pinned ?? !(node.isEnableDrag() && node.isEnableClose());
       renderValues.buttons.push(
         <button
           key="pin"
@@ -600,17 +683,19 @@ export function DashboardLayout() {
               Actions.updateNodeAttributes(node.getId(), {
                 enableDrag: !next,
                 enableClose: !next,
-              })
+              }),
             );
             model.doAction(
               Actions.updateNodeAttributes(node.getId(), {
                 config: { ...cfg, pinned: next },
-              })
+              }),
             );
             setModel(Model.fromJson(model.toJson() as IJsonModel));
           }}
           className={`flex items-center justify-center w-4 h-4 rounded transition-colors ${
-            isPinned ? "text-amber-400 hover:text-amber-300" : "text-gray-600 hover:text-gray-400"
+            isPinned
+              ? "text-amber-400 hover:text-amber-300"
+              : "text-gray-600 hover:text-gray-400"
           }`}
         >
           <svg
@@ -630,7 +715,7 @@ export function DashboardLayout() {
               <path d="M11.5 4.5a3.5 3.5 0 0 0-7 0V6H3.75A1.75 1.75 0 0 0 2 7.75v4.5C2 13.216 2.784 14 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-4.5A1.75 1.75 0 0 0 12.25 6H11.5V4.5Zm-1.5 0V6h-4V4.5a2 2 0 1 1 4 0Zm-1 5.75a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
             )}
           </svg>
-        </button>
+        </button>,
       );
 
       if (panelType) {
@@ -674,7 +759,9 @@ export function DashboardLayout() {
                 />
               )}
               <span>{symbol}</span>
-              {bracket && <span className="text-gray-500 font-normal">{bracket}</span>}
+              {bracket && (
+                <span className="text-gray-500 font-normal">{bracket}</span>
+              )}
             </span>
           );
         }
@@ -687,18 +774,28 @@ export function DashboardLayout() {
       });
       for (const b of btns) renderValues.buttons.push(b);
     },
-    [layout, handleChannelChange, channelsData, legacySelectedAsset, model, setModel]
+    [
+      layout,
+      handleChannelChange,
+      channelsData,
+      legacySelectedAsset,
+      model,
+      setModel,
+    ],
   );
 
   const onModelChange = useCallback(
     (m: Model) => {
       setModel(m);
     },
-    [setModel]
+    [setModel],
   );
 
   const onRenderTabSet = useCallback(
-    (tabSetNode: TabSetNode | BorderNode, renderValues: { buttons: ReactNode[] }) => {
+    (
+      tabSetNode: TabSetNode | BorderNode,
+      renderValues: { buttons: ReactNode[] },
+    ) => {
       if (tabSetNode.getType() !== "tabset") return;
       const ts = tabSetNode as TabSetNode;
       const selectedNode = ts.getSelectedNode();
@@ -715,7 +812,11 @@ export function DashboardLayout() {
           layout: storageKey,
         });
         const url = `${window.location.origin}${window.location.pathname}?${params}`;
-        const w = window.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
+        const w = window.open(
+          url,
+          `panel-${instanceId}`,
+          "width=1200,height=700,resizable=yes",
+        );
         if (w) {
           // Remove the tab from the host layout so it leaves no gap.
           // The panel lives entirely in the new window; the user re-adds it
@@ -750,14 +851,17 @@ export function DashboardLayout() {
           style={{ fontSize: "11px" }}
         >
           ↗
-        </button>
+        </button>,
       );
     },
-    [dispatch, storageKey, model.doAction]
+    [dispatch, storageKey, model.doAction],
   );
 
   const onContextMenu = useCallback(
-    (node: TabNode | TabSetNode | BorderNode, event: React.MouseEvent<HTMLElement>) => {
+    (
+      node: TabNode | TabSetNode | BorderNode,
+      event: React.MouseEvent<HTMLElement>,
+    ) => {
       event.preventDefault();
       const items: ContextMenuEntry[] = [];
 
@@ -769,7 +873,8 @@ export function DashboardLayout() {
         const isMaximized = tabSetNode?.isMaximized() ?? false;
 
         const tabCfg = tab.getConfig() as TabChannelConfig | undefined;
-        const isTabPinned = tabCfg?.pinned ?? !(tab.isEnableDrag() && tab.isEnableClose());
+        const isTabPinned =
+          tabCfg?.pinned ?? !(tab.isEnableDrag() && tab.isEnableClose());
         items.push(
           {
             label: isMaximized ? "Restore" : "Maximise panel",
@@ -784,7 +889,9 @@ export function DashboardLayout() {
           {
             label: isTabPinned ? "Unpin panel" : "Pin panel",
             icon: isTabPinned ? "◇" : "◈",
-            title: isTabPinned ? "Allow moving and closing" : "Prevent moving or closing",
+            title: isTabPinned
+              ? "Allow moving and closing"
+              : "Prevent moving or closing",
             onClick: () => {
               const next = !isTabPinned;
               model.doAction(
@@ -792,7 +899,7 @@ export function DashboardLayout() {
                   enableDrag: !next,
                   enableClose: !next,
                   config: { ...tabCfg, pinned: next },
-                })
+                }),
               );
               setModel(Model.fromJson(model.toJson() as IJsonModel));
             },
@@ -806,7 +913,7 @@ export function DashboardLayout() {
               if (panelType) removePanel(panelType);
               else model.doAction(Actions.deleteTab(tab.getId()));
             },
-          }
+          },
         );
       } else if (node.getType() === "tabset") {
         const tabset = node as TabSetNode;
@@ -820,7 +927,7 @@ export function DashboardLayout() {
               setModel(Model.fromJson(model.toJson() as IJsonModel));
             },
           },
-          { separator: true, label: "Add panel here" }
+          { separator: true, label: "Add panel here" },
         );
 
         const openTypes = new Set(layout.map((l) => l.panelType));
@@ -840,7 +947,7 @@ export function DashboardLayout() {
         tabCtxMenu.value = { x: event.clientX, y: event.clientY, items };
       }
     },
-    [model, setModel, layout, addPanel, removePanel, tabCtxMenu]
+    [model, setModel, layout, addPanel, removePanel, tabCtxMenu],
   );
 
   const isEmpty = layout.length === 0;
@@ -857,8 +964,10 @@ export function DashboardLayout() {
         onContextMenu={onContextMenu}
         onExternalDrag={(_event) => {
           const panelType = draggedPanelId as PanelId | "";
-          if (!panelType || !PANEL_IDS.includes(panelType as PanelId)) return undefined;
-          if (SINGLETON_PANELS.has(panelType) && activePanelIds.has(panelType)) return undefined;
+          if (!panelType || !PANEL_IDS.includes(panelType as PanelId))
+            return undefined;
+          if (SINGLETON_PANELS.has(panelType) && activePanelIds.has(panelType))
+            return undefined;
           return {
             json: {
               type: "tab",
