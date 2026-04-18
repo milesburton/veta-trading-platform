@@ -10,6 +10,8 @@ jobs:
   lint-and-test:
     name: Lint, type-check, unit tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -63,6 +65,8 @@ jobs:
   frontend:
     name: Frontend lint & type-check
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node
@@ -151,6 +155,8 @@ jobs:
     name: Integration tests
     runs-on: ubuntu-latest
     needs: lint-and-test
+    permissions:
+      contents: write
 
     services:
       postgres:
@@ -345,6 +351,8 @@ jobs:
     name: Playwright UI tests
     runs-on: ubuntu-latest
     needs: [frontend]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -745,5 +753,5 @@ jobs:
             VITE_DEPLOYMENT=homelab
             VITE_COMMIT_SHA=${{ github.sha }}
             VITE_BUILD_DATE=${{ github.run_started_at }}
-          cache-from: type=registry,ref=ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}:buildcache
-          cache-to: type=registry,ref=ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}:buildcache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
