@@ -467,6 +467,44 @@ describe("resolveTicket", () => {
       );
       expect(r.arrivalSlippageBps).toBeCloseTo(52.9, 0);
     });
+
+    it("computes negative arrival slippage for SELL above mid", () => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, orderBookMid: 189.0 },
+          ...withDraft({ limitPrice: 190.0, side: "SELL" }),
+        }),
+      );
+      expect(r.arrivalSlippageBps).toBeLessThan(0);
+    });
+
+    it("arrival slippage is null when mid is missing or instrument is non-equity-like", () => {
+      const noMid = resolveTicket(
+        makeCtx({ instrument: { ...makeCtx().instrument, orderBookMid: undefined } }),
+      );
+      expect(noMid.arrivalSlippageBps).toBeNull();
+
+      const option = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType: "option" },
+          limits: {
+            ...DEFAULT_LIMITS,
+            allowed_desks: ["equity", "derivatives"],
+          },
+          option: VALID_OPTION,
+        }),
+      );
+      expect(option.arrivalSlippageBps).toBeNull();
+    });
+  });
+
+  describe("submit block reason", () => {
+    it("uses the first error message when submission is blocked", () => {
+      const r = resolveTicket(makeCtx(withDraft({ quantity: 0, limitPrice: 0 })));
+      expect(r.canSubmit).toBe(false);
+      expect(r.errors.length).toBeGreaterThan(0);
+      expect(r.submitBlockReason).toBe(r.errors[0].message);
+    });
   });
 
   describe("quantity labels", () => {
