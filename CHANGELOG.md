@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.19.2...veta-trading-platform-v1.19.3) (2026-04-18)
+
+
+### Bug Fixes
+
+* **docs:** align homepage cards and restore live badges ([3471199](https://github.com/milesburton/veta-trading-platform/commit/3471199f7176b2b6f22e9e680fa6d5d88f7497ae))
+
 ## [1.19.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.19.1...veta-trading-platform-v1.19.2) (2026-04-16)
 
 
