@@ -66,6 +66,8 @@ describe("PriceFanPanel", () => {
     expect(screen.getByText(/No data for AAPL/i)).toBeInTheDocument();
 
     rerender(<PriceFanPanel />);
-    expect(screen.getByText(/Failed to load fan data for AAPL/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Failed to load fan data for AAPL/i),
+    ).toBeInTheDocument();
   });
 });

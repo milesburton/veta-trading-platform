@@ -36,11 +36,21 @@ describe("SpreadAnalysisPanel", () => {
   it("submits spread analysis request from form values", async () => {
     render(<SpreadAnalysisPanel />);
 
-    fireEvent.change(screen.getByLabelText(/Coupon %/i), { target: { value: "6.25" } });
-    fireEvent.change(screen.getByLabelText(/^Periods$/i), { target: { value: "10" } });
-    fireEvent.change(screen.getByLabelText(/Freq\/yr/i), { target: { value: "4" } });
-    fireEvent.change(screen.getByLabelText(/Yield %/i), { target: { value: "5.5" } });
-    fireEvent.change(screen.getByLabelText(/Face \$/i), { target: { value: "2000" } });
+    fireEvent.change(screen.getByLabelText(/Coupon %/i), {
+      target: { value: "6.25" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Periods$/i), {
+      target: { value: "10" },
+    });
+    fireEvent.change(screen.getByLabelText(/Freq\/yr/i), {
+      target: { value: "4" },
+    });
+    fireEvent.change(screen.getByLabelText(/Yield %/i), {
+      target: { value: "5.5" },
+    });
+    fireEvent.change(screen.getByLabelText(/Face \$/i), {
+      target: { value: "2000" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /Compute Spreads/i }));
 
     await waitFor(() => {

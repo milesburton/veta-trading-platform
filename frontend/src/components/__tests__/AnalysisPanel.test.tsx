@@ -65,7 +65,9 @@ describe("AnalysisPanel", () => {
   it("shows empty state when no asset is selected", () => {
     renderPanel(null);
 
-    expect(screen.getByText(/Select an asset to see news/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Select an asset to see news/i),
+    ).toBeInTheDocument();
   });
 
   it("shows fetch prompt when selected asset has no news", () => {
@@ -108,7 +110,9 @@ describe("AnalysisPanel", () => {
       expect(screen.getByTestId("news-feed")).toBeInTheDocument();
     });
     expect(screen.getByText("Apple beats estimates")).toBeInTheDocument();
-    expect(screen.getByText("Supply chain concerns persist")).toBeInTheDocument();
+    expect(
+      screen.getByText("Supply chain concerns persist"),
+    ).toBeInTheDocument();
     expect(screen.getByText(/▲ 1/i)).toBeInTheDocument();
     expect(screen.getByText(/▼ 1/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "↺" }));
