@@ -36,7 +36,10 @@ vi.mock("../../store/newsApi.ts", () => ({
     isError: state.isError,
     refetch,
   }),
-  useToggleNewsSourceMutation: () => [toggleNewsSource, { isLoading: false, originalArgs: null }],
+  useToggleNewsSourceMutation: () => [
+    toggleNewsSource,
+    { isLoading: false, originalArgs: null },
+  ],
   useCreateNewsSourceMutation: () => [createNewsSource, { isLoading: false }],
   useUpdateNewsSourceMutation: () => [updateNewsSource, { isLoading: false }],
   useDeleteNewsSourceMutation: () => [deleteNewsSource, { isLoading: false }],
@@ -88,7 +91,9 @@ describe("NewsSourcesPanel", () => {
     state.isError = true;
     renderPanel();
 
-    expect(screen.getByText(/Could not reach news-aggregator/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Could not reach news-aggregator/i),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Retry/i }));
     expect(refetch).toHaveBeenCalledTimes(1);
   });

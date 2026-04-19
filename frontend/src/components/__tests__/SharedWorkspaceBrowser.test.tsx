@@ -142,7 +142,9 @@ describe("SharedWorkspaceBrowser", () => {
     await screen.findByText("Macro Desk");
 
     // Trader can still clone but should not see delete buttons
-    expect(screen.getAllByRole("button", { name: /Clone/i }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("button", { name: /Clone/i }).length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "✕" })).not.toBeInTheDocument();
   });
 });

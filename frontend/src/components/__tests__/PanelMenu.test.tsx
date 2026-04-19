@@ -50,10 +50,14 @@ describe("PanelMenu", () => {
     renderMenu();
 
     fireEvent.click(screen.getByRole("button", { name: /Panel actions/i }));
-    expect(screen.getByRole("menu", { name: /Panel actions menu/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("menu", { name: /Panel actions menu/i }),
+    ).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("menu", { name: /Panel actions menu/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("menu", { name: /Panel actions menu/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("opens dialog from menu", async () => {
@@ -64,12 +68,16 @@ describe("PanelMenu", () => {
 
     await waitFor(() => {
       expect(store.getState().windows.dialogs["panel-123"]?.open).toBe(true);
-      expect(store.getState().windows.dialogs["panel-123"]?.panelType).toBe("market-ladder");
+      expect(store.getState().windows.dialogs["panel-123"]?.panelType).toBe(
+        "market-ladder",
+      );
     });
   });
 
   it("opens new window and removes tab when popup is created", async () => {
-    const openSpy = vi.spyOn(window, "open").mockReturnValue({ closed: false } as Window);
+    const openSpy = vi
+      .spyOn(window, "open")
+      .mockReturnValue({ closed: false } as Window);
     renderMenu();
 
     fireEvent.click(screen.getByRole("button", { name: /Panel actions/i }));
@@ -88,13 +96,18 @@ describe("PanelMenu", () => {
   it("shows and handles close dialog action when already open", async () => {
     const store = makeStore();
     store.dispatch(
-      windowSlice.actions.panelDialogOpened({ panelId: "panel-123", panelType: "market-ladder" }),
+      windowSlice.actions.panelDialogOpened({
+        panelId: "panel-123",
+        panelType: "market-ladder",
+      }),
     );
 
     renderMenu(store);
     fireEvent.click(screen.getByRole("button", { name: /Panel actions/i }));
 
-    expect(screen.getByRole("menuitem", { name: /Close dialog/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: /Close dialog/i }),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("menuitem", { name: /Close dialog/i }));
 
     await waitFor(() => {

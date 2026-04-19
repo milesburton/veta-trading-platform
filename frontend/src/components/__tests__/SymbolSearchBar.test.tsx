@@ -82,7 +82,9 @@ describe("SymbolSearchBar", () => {
       target: { value: "AAPL" },
     });
 
-    expect(await screen.findByTestId("symbol-search-results")).toBeInTheDocument();
+    expect(
+      await screen.findByTestId("symbol-search-results"),
+    ).toBeInTheDocument();
     fireEvent.mouseDown(screen.getByTestId("search-result-AAPL"));
 
     await waitFor(() => {
@@ -97,7 +99,9 @@ describe("SymbolSearchBar", () => {
       target: { value: "SELL 200 MSFT @ 300 POV" },
     });
 
-    expect(await screen.findByTestId("trade-parse-preview")).toBeInTheDocument();
+    expect(
+      await screen.findByTestId("trade-parse-preview"),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("apply-parsed-trade"));
 
     await waitFor(() => {

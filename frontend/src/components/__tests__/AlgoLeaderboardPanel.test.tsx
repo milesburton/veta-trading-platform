@@ -49,14 +49,33 @@ function renderPanel(orders: OrderRecord[]) {
 describe("AlgoLeaderboardPanel", () => {
   it("shows empty state when there are no recent orders", () => {
     renderPanel([]);
-    expect(screen.getByText(/No order data in last 5 minutes/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/No order data in last 5 minutes/i),
+    ).toBeInTheDocument();
   });
 
   it("renders strategy rows with order counts and fill rate", () => {
     renderPanel([
-      makeOrder({ id: "twap-filled", strategy: "TWAP", status: "filled", filled: 100 }),
-      makeOrder({ id: "twap-expired", strategy: "TWAP", status: "expired", filled: 10 }),
-      makeOrder({ id: "pov-filled", strategy: "POV", status: "filled", filled: 50, limitPrice: 100, avgFillPrice: 100 }),
+      makeOrder({
+        id: "twap-filled",
+        strategy: "TWAP",
+        status: "filled",
+        filled: 100,
+      }),
+      makeOrder({
+        id: "twap-expired",
+        strategy: "TWAP",
+        status: "expired",
+        filled: 10,
+      }),
+      makeOrder({
+        id: "pov-filled",
+        strategy: "POV",
+        status: "filled",
+        filled: 50,
+        limitPrice: 100,
+        avgFillPrice: 100,
+      }),
     ]);
 
     expect(screen.getByText("TWAP")).toBeInTheDocument();
@@ -92,8 +111,20 @@ describe("AlgoLeaderboardPanel", () => {
 
   it("orders strategies by fill rate descending", () => {
     renderPanel([
-      makeOrder({ id: "twap-expired", strategy: "TWAP", status: "expired", filled: 0 }),
-      makeOrder({ id: "pov-filled", strategy: "POV", status: "filled", filled: 100, limitPrice: 100, avgFillPrice: 100 }),
+      makeOrder({
+        id: "twap-expired",
+        strategy: "TWAP",
+        status: "expired",
+        filled: 0,
+      }),
+      makeOrder({
+        id: "pov-filled",
+        strategy: "POV",
+        status: "filled",
+        filled: 100,
+        limitPrice: 100,
+        avgFillPrice: 100,
+      }),
     ]);
 
     const rows = screen.getAllByRole("row");
