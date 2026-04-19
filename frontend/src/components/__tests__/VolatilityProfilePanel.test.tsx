@@ -104,6 +104,8 @@ describe("VolatilityProfilePanel", () => {
     renderPanel();
 
     expect(screen.getByText("backend down")).toBeInTheDocument();
-    expect(screen.getByText(/Could not load volatility data/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Could not load volatility data/i),
+    ).toBeInTheDocument();
   });
 });

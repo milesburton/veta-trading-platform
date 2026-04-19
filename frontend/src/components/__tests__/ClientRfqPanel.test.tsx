@@ -64,8 +64,14 @@ describe("ClientRfqPanel", () => {
   it("submits an RFQ and shows success feedback", async () => {
     const fetchMock = vi
       .spyOn(global, "fetch")
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ rfqs: [] }) } as Response)
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ rfqId: "rfq-new" }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ rfqs: [] }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ rfqId: "rfq-new" }),
+      } as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ rfqs: [makeRfq({ rfqId: "rfq-new" })] }),
@@ -108,7 +114,10 @@ describe("ClientRfqPanel", () => {
 
   it("shows API error feedback for failed submit", async () => {
     vi.spyOn(global, "fetch")
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ rfqs: [] }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ rfqs: [] }),
+      } as Response)
       .mockResolvedValueOnce({
         ok: false,
         status: 400,
@@ -138,7 +147,10 @@ describe("ClientRfqPanel", () => {
           ],
         }),
       } as Response)
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ rfqs: [] }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ rfqs: [] }),
+      } as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -151,7 +163,10 @@ describe("ClientRfqPanel", () => {
           ],
         }),
       } as Response)
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ rfqs: [] }) } as Response);
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ rfqs: [] }),
+      } as Response);
 
     renderPanel();
 

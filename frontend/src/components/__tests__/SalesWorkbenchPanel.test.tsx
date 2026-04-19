@@ -69,7 +69,9 @@ describe("SalesWorkbenchPanel", () => {
 
     renderPanel();
 
-    expect(await screen.findByText(/No RFQs in the system/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/No RFQs in the system/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/0 RFQs/i)).toBeInTheDocument();
   });
 
@@ -146,7 +148,9 @@ describe("SalesWorkbenchPanel", () => {
     });
     expect(screen.getByText("$100.50")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Send Quote to Client/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Send Quote to Client/i }),
+    );
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(

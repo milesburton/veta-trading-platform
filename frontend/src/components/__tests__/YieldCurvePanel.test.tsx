@@ -97,11 +97,21 @@ describe("YieldCurvePanel", () => {
     render(<YieldCurvePanel />);
 
     fireEvent.click(screen.getByRole("button", { name: /Bond Pricing/i }));
-    fireEvent.change(screen.getByLabelText("Face"), { target: { value: "2000" } });
-    fireEvent.change(screen.getByLabelText("Coupon %"), { target: { value: "6" } });
-    fireEvent.change(screen.getByLabelText("Freq/yr"), { target: { value: "2" } });
-    fireEvent.change(screen.getByLabelText("Periods"), { target: { value: "10" } });
-    fireEvent.change(screen.getByLabelText("Yield %"), { target: { value: "5" } });
+    fireEvent.change(screen.getByLabelText("Face"), {
+      target: { value: "2000" },
+    });
+    fireEvent.change(screen.getByLabelText("Coupon %"), {
+      target: { value: "6" },
+    });
+    fireEvent.change(screen.getByLabelText("Freq/yr"), {
+      target: { value: "2" },
+    });
+    fireEvent.change(screen.getByLabelText("Periods"), {
+      target: { value: "10" },
+    });
+    fireEvent.change(screen.getByLabelText("Yield %"), {
+      target: { value: "5" },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /Price Bond/i }));
 

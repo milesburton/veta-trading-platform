@@ -52,16 +52,18 @@ vi.mock("../PopOutButton.tsx", () => ({
   PopOutButton: () => <button type="button">Pop Out</button>,
 }));
 
-function renderPanel(wsBreakers: Array<{
-  key: string;
-  type: "market-move" | "user-pnl";
-  scope: "symbol" | "user";
-  target: string;
-  observedValue: number;
-  threshold: number;
-  firedAt: number;
-  expiresAt: number;
-}> = []) {
+function renderPanel(
+  wsBreakers: Array<{
+    key: string;
+    type: "market-move" | "user-pnl";
+    scope: "symbol" | "user";
+    target: string;
+    observedValue: number;
+    threshold: number;
+    firedAt: number;
+    expiresAt: number;
+  }> = [],
+) {
   const store = configureStore({
     reducer: { breakers: breakersSlice.reducer },
     preloadedState: {
@@ -175,7 +177,9 @@ describe("RiskDashboardPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /Apply/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/maxDailyLoss must be negative/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/maxDailyLoss must be negative/i),
+      ).toBeInTheDocument();
     });
     expect(updateRiskConfig).not.toHaveBeenCalled();
   });
