@@ -1,6 +1,16 @@
-import { describe, expect, test } from "vitest";
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, describe, expect, test } from "vitest";
 import type { Workspace } from "../WorkspaceBar";
-import { reconcilePresetWorkspaces, seedWorkspaces } from "../WorkspaceBar";
+import {
+  defaultWorkspaceForStyle,
+  reconcilePresetWorkspaces,
+  seedWorkspaces,
+  useWorkspaces,
+} from "../WorkspaceBar";
+
+afterEach(() => {
+  window.history.replaceState(null, "", "/");
+});
 
 // ── seedWorkspaces ────────────────────────────────────────────────────────────
 
@@ -238,5 +248,80 @@ describe("Workspace userLocked field", () => {
     const restored = out.find((w) => w.id === "ws-algo");
     expect(restored?.userLocked).toBeUndefined();
     expect(restored?.locked).toBe(true);
+  });
+});
+
+describe("defaultWorkspaceForStyle", () => {
+  test("prefers mapped workspace when available", () => {
+    const { workspaces } = seedWorkspaces();
+    expect(defaultWorkspaceForStyle("derivatives_high_touch", workspaces)).toBe("ws-options");
+  });
+
+  test("falls back to first workspace when preferred is unavailable", () => {
+    const available: Workspace[] = [
+      { id: "ws-custom", name: "Custom" },
+      { id: "ws-alt", name: "Alt" },
+    ];
+    expect(defaultWorkspaceForStyle("low_touch", available)).toBe("ws-custom");
+    expect(defaultWorkspaceForStyle(undefined, available)).toBe("ws-custom");
+  });
+});
+
+describe("useWorkspaces", () => {
+  test("uses valid workspace id from URL query on first render", () => {
+    window.history.replaceState(null, "", "/?ws=ws-options");
+    const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
+    expect(result.current.activeId).toBe("ws-options");
+  });
+
+  test("falls back to trading style default when URL workspace is invalid", () => {
+    window.history.replaceState(null, "", "/?ws=missing");
+    const { result } = renderHook(() => useWorkspaces("u-1", "low_touch"));
+    expect(result.current.activeId).toBe("ws-algo");
+  });
+
+  test("handleSelect updates active workspace and pushes URL state", () => {
+    window.history.replaceState(null, "", "/");
+    const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
+
+    act(() => {
+      result.current.handleSelect("ws-analysis");
+    });
+
+    expect(result.current.activeId).toBe("ws-analysis");
+    expect(new URLSearchParams(window.location.search).get("ws")).toBe("ws-analysis");
+    expect((window.history.state as { workspaceId?: string } | null)?.workspaceId).toBe(
+      "ws-analysis"
+    );
+  });
+
+  test("setWorkspaces resets active id when current id is removed", () => {
+    const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
+
+    act(() => {
+      result.current.handleSelect("ws-overview");
+    });
+    expect(result.current.activeId).toBe("ws-overview");
+
+    const trimmed = result.current.workspaces.filter((w) => w.id !== "ws-overview");
+    act(() => {
+      result.current.setWorkspaces(trimmed);
+    });
+
+    expect(result.current.activeId).toBe(trimmed[0]?.id ?? "");
+  });
+
+  test("popstate selects requested workspace when it exists", () => {
+    const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent("popstate", { state: { workspaceId: "ws-research" } }));
+    });
+    expect(result.current.activeId).toBe("ws-research");
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent("popstate", { state: { workspaceId: "ws-missing" } }));
+    });
+    expect(result.current.activeId).toBe("ws-research");
   });
 });
