@@ -133,4 +133,121 @@ describe("gatewayMiddleware", () => {
 
     expect(ws.closeCalled).toBe(true);
   });
+
+  it("handles orderRejected by patching status and invalidating grid", () => {
+    const { dispatched, invoke } = createHarness();
+    const user = {
+      id: "u1",
+      name: "Trader",
+      role: "trader",
+      avatar_emoji: ":test:",
+    } as const;
+
+    invoke(setUser(user));
+    const ws = MockWebSocket.instances[0];
+
+    ws.onmessage?.({
+      data: JSON.stringify({
+        event: "orderRejected",
+        data: { reason: "blocked", clientOrderId: "coid-1" },
+      }),
+    } as MessageEvent);
+
+    expect(
+      dispatched.some(
+        (a) =>
+          a.type === "orders/orderPatched" &&
+          (a.payload as { id?: string; patch?: { status?: string } }).id ===
+            "coid-1" &&
+          (a.payload as { patch?: { status?: string } }).patch?.status ===
+            "rejected",
+      ),
+    ).toBe(true);
+    expect(dispatched.some((a) => a.type === "gridApi/invalidateTags")).toBe(
+      true,
+    );
+  });
+
+  it("maps killAck and resumeAck to kill-switch actions", () => {
+    const { dispatched, invoke } = createHarness();
+    const user = {
+      id: "u1",
+      name: "Trader",
+      role: "trader",
+      avatar_emoji: ":test:",
+    } as const;
+
+    invoke(setUser(user));
+    const ws = MockWebSocket.instances[0];
+
+    ws.onmessage?.({
+      data: JSON.stringify({
+        event: "killAck",
+        data: {
+          scope: "symbol",
+          scopeValue: "AAPL",
+          issuedBy: "admin",
+        },
+      }),
+    } as MessageEvent);
+
+    ws.onmessage?.({
+      data: JSON.stringify({ event: "resumeAck", data: {} }),
+    } as MessageEvent);
+
+    expect(dispatched.some((a) => a.type === "killSwitch/blockAdded")).toBe(
+      true,
+    );
+    expect(
+      dispatched.some((a) => a.type === "killSwitch/allBlocksCleared"),
+    ).toBe(true);
+  });
+
+  it("handles riskBreaker and emits breaker event only with a valid target", () => {
+    const { dispatched, invoke } = createHarness();
+    const user = {
+      id: "u1",
+      name: "Trader",
+      role: "trader",
+      avatar_emoji: ":test:",
+    } as const;
+
+    invoke(setUser(user));
+    const ws = MockWebSocket.instances[0];
+
+    ws.onmessage?.({
+      data: JSON.stringify({
+        event: "riskBreaker",
+        data: {
+          type: "market-move",
+          scope: "symbol",
+          scopeValue: "AAPL",
+          observedValue: 7,
+          threshold: 5,
+          ts: 123,
+        },
+      }),
+    } as MessageEvent);
+
+    ws.onmessage?.({
+      data: JSON.stringify({
+        event: "riskBreaker",
+        data: {
+          type: "user-pnl",
+          scope: "user",
+          observedValue: -1200,
+          threshold: -1000,
+          ts: 124,
+        },
+      }),
+    } as MessageEvent);
+
+    const breakerFiredCount = dispatched.filter(
+      (a) => a.type === "breakers/breakerFired",
+    ).length;
+    expect(breakerFiredCount).toBe(1);
+    expect(dispatched.some((a) => a.type === "killSwitch/blockAdded")).toBe(
+      true,
+    );
+  });
 });
