@@ -14,7 +14,12 @@ const state = {
     disk: { total_gb: 100, used_gb: 92, free_gb: 8, used_pct: 92 },
     diskStatus: "critical" as const,
     diskWarnPct: 80,
-    memory: { rss_mb: 800, heap_used_mb: 400, heap_total_mb: 1000, external_mb: 50 },
+    memory: {
+      rss_mb: 800,
+      heap_used_mb: 400,
+      heap_total_mb: 1000,
+      external_mb: 50,
+    },
   },
 };
 
@@ -42,10 +47,21 @@ vi.mock("../../store/servicesApi.ts", () => ({
     { name: "OMS", url: "http://oms/health", optional: false },
     { name: "Gateway", url: "http://gateway/health", optional: false },
   ],
-  useGetServiceHealthQuery: ({ name, url, optional }: { name: string; url: string; optional?: boolean }) => {
+  useGetServiceHealthQuery: ({
+    name,
+    url,
+    optional,
+  }: {
+    name: string;
+    url: string;
+    optional?: boolean;
+  }) => {
     const item = state.byService[name as keyof typeof state.byService];
     if (!item || item.kind === "error") {
-      if (!stableQueryResults[name] || stableQueryResults[name].signature !== "error") {
+      if (
+        !stableQueryResults[name] ||
+        stableQueryResults[name].signature !== "error"
+      ) {
         stableQueryResults[name] = {
           signature: "error",
           data: undefined,
@@ -55,7 +71,10 @@ vi.mock("../../store/servicesApi.ts", () => ({
       return stableQueryResults[name];
     }
     const signature = `ok:${item.version}`;
-    if (!stableQueryResults[name] || stableQueryResults[name].signature !== signature) {
+    if (
+      !stableQueryResults[name] ||
+      stableQueryResults[name].signature !== signature
+    ) {
       stableQueryResults[name] = {
         signature,
         data: {

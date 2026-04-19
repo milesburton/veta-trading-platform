@@ -33,7 +33,10 @@ const apiState = {
 };
 
 vi.mock("../../store/marketDataApi.ts", () => ({
-  useGetSourcesQuery: () => ({ data: apiState.sources, isLoading: apiState.loading }),
+  useGetSourcesQuery: () => ({
+    data: apiState.sources,
+    isLoading: apiState.loading,
+  }),
   useGetOverridesQuery: () => ({ data: { overrides: apiState.overrides } }),
   useToggleFeedMutation: () => [toggleFeed, { isLoading: false }],
 }));

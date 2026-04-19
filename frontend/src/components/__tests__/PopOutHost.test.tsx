@@ -9,7 +9,9 @@ import { uiSlice } from "../../store/uiSlice";
 import { PopOutHost } from "../PopOutHost";
 
 vi.mock("../MarketLadder.tsx", () => ({
-  MarketLadder: () => <div data-testid="market-ladder-panel">Market Ladder Panel</div>,
+  MarketLadder: () => (
+    <div data-testid="market-ladder-panel">Market Ladder Panel</div>
+  ),
 }));
 
 vi.mock("../DashboardLayout.tsx", () => ({
@@ -21,14 +23,18 @@ vi.mock("../OrderTicket.tsx", () => ({
 }));
 vi.mock("../OrderBlotter.tsx", () => ({ OrderBlotter: () => <div /> }));
 vi.mock("../AlgoMonitor.tsx", () => ({ AlgoMonitor: () => <div /> }));
-vi.mock("../ObservabilityPanel.tsx", () => ({ ObservabilityPanel: () => <div /> }));
+vi.mock("../ObservabilityPanel.tsx", () => ({
+  ObservabilityPanel: () => <div />,
+}));
 vi.mock("../ExecutionsPanel.tsx", () => ({ ExecutionsPanel: () => <div /> }));
 vi.mock("../DecisionLog.tsx", () => ({ DecisionLog: () => <div /> }));
 vi.mock("../MarketMatch.tsx", () => ({ MarketMatch: () => <div /> }));
 vi.mock("../AdminPanel.tsx", () => ({ AdminPanel: () => <div /> }));
 vi.mock("../AnalysisPanel.tsx", () => ({ AnalysisPanel: () => <div /> }));
 vi.mock("../NewsSourcesPanel.tsx", () => ({ NewsSourcesPanel: () => <div /> }));
-vi.mock("../OrderProgressPanel.tsx", () => ({ OrderProgressPanel: () => <div /> }));
+vi.mock("../OrderProgressPanel.tsx", () => ({
+  OrderProgressPanel: () => <div />,
+}));
 vi.mock("../MarketHeatmap.tsx", () => ({ MarketHeatmap: () => <div /> }));
 vi.mock("../CandlestickChart.tsx", () => ({ CandlestickChart: () => <div /> }));
 vi.mock("../MarketDepth.tsx", () => ({
@@ -71,7 +77,11 @@ function renderHost(panelType: string) {
 
   render(
     <Provider store={store}>
-      <PopOutHost instanceId="panel-1" panelType={panelType} layoutKey="layout-test" />
+      <PopOutHost
+        instanceId="panel-1"
+        panelType={panelType}
+        layoutKey="layout-test"
+      />
     </Provider>,
   );
 }
