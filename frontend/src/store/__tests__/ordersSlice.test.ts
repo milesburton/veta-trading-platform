@@ -1,11 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { ChildOrder, OrderRecord } from "../../types";
 import {
   childAdded,
+  fillReceived,
   limitOrdersChecked,
   orderAdded,
+  orderCancelled,
   orderPatched,
   ordersSlice,
+  setGatewayWs,
+  submitOrderThunk,
+  killOrdersThunk,
+  cancelOrdersThunk,
 } from "../ordersSlice";
 
 const { reducer } = ordersSlice;
@@ -51,21 +57,30 @@ describe("ordersSlice – orderPatched", () => {
   it("patches a matching order", () => {
     const order = makeOrder({ status: "pending" });
     let state = reducer(initial, orderAdded(order));
-    state = reducer(state, orderPatched({ id: "order-1", patch: { status: "working" } }));
+    state = reducer(
+      state,
+      orderPatched({ id: "order-1", patch: { status: "working" } }),
+    );
     expect(state.orders[0].status).toBe("working");
   });
 
   it("ignores patch for unknown id", () => {
     const order = makeOrder();
     let state = reducer(initial, orderAdded(order));
-    state = reducer(state, orderPatched({ id: "unknown-id", patch: { status: "filled" } }));
+    state = reducer(
+      state,
+      orderPatched({ id: "unknown-id", patch: { status: "filled" } }),
+    );
     expect(state.orders[0].status).toBe("pending");
   });
 
   it("patches filled quantity", () => {
     const order = makeOrder({ filled: 0, quantity: 100 });
     let state = reducer(initial, orderAdded(order));
-    state = reducer(state, orderPatched({ id: "order-1", patch: { filled: 50 } }));
+    state = reducer(
+      state,
+      orderPatched({ id: "order-1", patch: { filled: 50 } }),
+    );
     expect(state.orders[0].filled).toBe(50);
   });
 });
@@ -101,8 +116,14 @@ describe("ordersSlice – childAdded", () => {
   it("can add multiple children", () => {
     const order = makeOrder();
     let state = reducer(initial, orderAdded(order));
-    state = reducer(state, childAdded({ parentId: "order-1", child: { ...child, id: "c1" } }));
-    state = reducer(state, childAdded({ parentId: "order-1", child: { ...child, id: "c2" } }));
+    state = reducer(
+      state,
+      childAdded({ parentId: "order-1", child: { ...child, id: "c1" } }),
+    );
+    state = reducer(
+      state,
+      childAdded({ parentId: "order-1", child: { ...child, id: "c2" } }),
+    );
     expect(state.orders[0].children).toHaveLength(2);
   });
 });
@@ -189,5 +210,197 @@ describe("ordersSlice – limitOrdersChecked", () => {
     let state = reducer(initial, orderAdded(order));
     state = reducer(state, limitOrdersChecked({ AAPL: 100 })); // no XYZ price
     expect(state.orders[0].status).toBe("pending");
+  });
+});
+
+describe("ordersSlice – fillReceived", () => {
+  it("accumulates fill quantity and marks order as working for partial fill", () => {
+    const order = makeOrder({ quantity: 100, filled: 0, status: "pending" });
+    let state = reducer(initial, orderAdded(order));
+    state = reducer(
+      state,
+      fillReceived({
+        clOrdId: "order-1",
+        filledQty: 40,
+        avgFillPrice: 150,
+        leavesQty: 60,
+      }),
+    );
+    expect(state.orders[0].filled).toBe(40);
+    expect(state.orders[0].status).toBe("working");
+  });
+
+  it("marks order as filled when cumulative fill reaches quantity", () => {
+    const order = makeOrder({ quantity: 100, filled: 60, status: "working" });
+    let state = reducer(initial, orderAdded(order));
+    state = reducer(
+      state,
+      fillReceived({
+        clOrdId: "order-1",
+        filledQty: 40,
+        avgFillPrice: 150,
+        leavesQty: 0,
+      }),
+    );
+    expect(state.orders[0].filled).toBe(100);
+    expect(state.orders[0].status).toBe("filled");
+  });
+
+  it("does nothing for unknown order id", () => {
+    const order = makeOrder({ status: "working" });
+    let state = reducer(initial, orderAdded(order));
+    state = reducer(
+      state,
+      fillReceived({
+        clOrdId: "no-such-id",
+        filledQty: 10,
+        avgFillPrice: 150,
+        leavesQty: 90,
+      }),
+    );
+    expect(state.orders[0].filled).toBe(0);
+  });
+});
+
+describe("ordersSlice – orderCancelled", () => {
+  it("marks a matching order as cancelled", () => {
+    const order = makeOrder({ status: "working" });
+    let state = reducer(initial, orderAdded(order));
+    state = reducer(state, orderCancelled({ clientOrderId: "order-1" }));
+    expect(state.orders[0].status).toBe("cancelled");
+  });
+
+  it("does nothing for unknown clientOrderId", () => {
+    const order = makeOrder({ status: "working" });
+    let state = reducer(initial, orderAdded(order));
+    state = reducer(state, orderCancelled({ clientOrderId: "no-such-id" }));
+    expect(state.orders[0].status).toBe("working");
+  });
+});
+
+describe("ordersSlice – MAX_ORDERS cap", () => {
+  it("trims orders list to 500 entries", () => {
+    let state = initial;
+    for (let i = 0; i < 502; i++) {
+      state = reducer(state, orderAdded(makeOrder({ id: `order-${i}` })));
+    }
+    expect(state.orders).toHaveLength(500);
+  });
+});
+
+describe("ordersSlice – submitOrderThunk", () => {
+  let mockWs: { readyState: number; send: ReturnType<typeof vi.fn> };
+
+  beforeEach(() => {
+    mockWs = { readyState: 1 /* OPEN */, send: vi.fn() };
+    setGatewayWs(mockWs as unknown as WebSocket);
+  });
+
+  afterEach(() => {
+    setGatewayWs(null);
+  });
+
+  it("dispatches orderAdded and sends submitOrder over WebSocket", async () => {
+    const dispatched: unknown[] = [];
+    const thunkDispatch = (action: unknown) => {
+      dispatched.push(action);
+      return action;
+    };
+    const getState = () => ({ auth: { user: { id: "u1" } } });
+
+    const trade = {
+      asset: "AAPL",
+      side: "BUY" as const,
+      quantity: 100,
+      limitPrice: 150,
+      expiresAt: 300,
+      algoParams: { strategy: "LIMIT" },
+    };
+
+    await submitOrderThunk(trade as never)(
+      thunkDispatch as never,
+      getState as never,
+      undefined,
+    );
+
+    expect(mockWs.send).toHaveBeenCalled();
+    const sent = JSON.parse(mockWs.send.mock.calls[0][0]);
+    expect(sent.type).toBe("submitOrder");
+    expect(sent.payload.asset).toBe("AAPL");
+  });
+
+  it("dispatches orderAdded even when WebSocket is not connected", async () => {
+    setGatewayWs(null);
+    const dispatched: unknown[] = [];
+    const thunkDispatch = (action: unknown) => {
+      dispatched.push(action);
+      return action;
+    };
+    const getState = () => ({ auth: { user: { id: "u1" } } });
+    const trade = {
+      asset: "TSLA",
+      side: "SELL" as const,
+      quantity: 50,
+      limitPrice: 200,
+      expiresAt: 300,
+      algoParams: { strategy: "LIMIT" },
+    };
+
+    await submitOrderThunk(trade as never)(
+      thunkDispatch as never,
+      getState as never,
+      undefined,
+    );
+
+    const orderAddedAction = dispatched.find((a) =>
+      orderAdded.match(a as { type: string }),
+    );
+    expect(orderAddedAction).toBeDefined();
+    expect(mockWs.send).not.toHaveBeenCalled();
+  });
+
+  it("sets lastSubmittedOrderId in the reducer when fulfilled", () => {
+    const clientOrderId = "test-client-id";
+    const state = reducer(initial, {
+      type: "orders/submit/fulfilled",
+      payload: clientOrderId,
+    } as never);
+    expect(state.lastSubmittedOrderId).toBe(clientOrderId);
+  });
+});
+
+describe("ordersSlice – killOrdersThunk", () => {
+  it("sends killOrders message over WebSocket", async () => {
+    const mockWs = { readyState: 1, send: vi.fn() };
+    setGatewayWs(mockWs as unknown as WebSocket);
+
+    await killOrdersThunk({ scope: "all" })(
+      vi.fn() as never,
+      vi.fn() as never,
+      undefined,
+    );
+
+    const sent = JSON.parse(mockWs.send.mock.calls[0][0]);
+    expect(sent.type).toBe("killOrders");
+    expect(sent.payload.scope).toBe("all");
+    setGatewayWs(null);
+  });
+});
+
+describe("ordersSlice – cancelOrdersThunk", () => {
+  it("sends cancelOrders message over WebSocket", async () => {
+    const mockWs = { readyState: 1, send: vi.fn() };
+    setGatewayWs(mockWs as unknown as WebSocket);
+
+    await cancelOrdersThunk(["ord-1", "ord-2"])(
+      vi.fn() as never,
+      vi.fn() as never,
+      undefined,
+    );
+
+    const sent = JSON.parse(mockWs.send.mock.calls[0][0]);
+    expect(sent.type).toBe("cancelOrders");
+    expect(sent.payload.orderIds).toEqual(["ord-1", "ord-2"]);
+    setGatewayWs(null);
   });
 });

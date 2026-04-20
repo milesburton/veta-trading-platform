@@ -34,7 +34,7 @@ function renderPanel(events: ObsEvent[] = []) {
   return render(
     <Provider store={makeStore(events)}>
       <ObservabilityPanel />
-    </Provider>
+    </Provider>,
   );
 }
 
@@ -118,7 +118,7 @@ describe("ObservabilityPanel – Export button", () => {
 describe("ObservabilityPanel – event cap", () => {
   it("renders at most 100 events in the list", () => {
     const events: ObsEvent[] = Array.from({ length: 150 }, (_, i) =>
-      makeEvent({ type: `event_${i}`, ts: Date.now() + i })
+      makeEvent({ type: `event_${i}`, ts: Date.now() + i }),
     );
     renderPanel(events);
     clickEventsTab();
@@ -138,5 +138,93 @@ describe("ObservabilityPanel – Summary tab", () => {
   it("shows Trades tab button", () => {
     renderPanel();
     expect(screen.getByRole("button", { name: /Trades/i })).toBeInTheDocument();
+  });
+});
+
+describe("ObservabilityPanel – Trades tab", () => {
+  function makeOrder(
+    id: string,
+    status: "filled" | "working" | "pending",
+  ): import("../../types").OrderRecord {
+    return {
+      id,
+      submittedAt: Date.now() - 5000,
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 100,
+      limitPrice: 150,
+      expiresAt: Date.now() + 300_000,
+      strategy: "TWAP",
+      status,
+      filled: status === "filled" ? 100 : 0,
+      algoParams: { strategy: "TWAP" },
+      children:
+        status === "filled"
+          ? [
+              {
+                id: `${id}-c1`,
+                parentId: id,
+                asset: "AAPL",
+                side: "BUY",
+                quantity: 100,
+                limitPrice: 150,
+                status: "filled",
+                filled: 100,
+                submittedAt: Date.now() - 3000,
+                avgFillPrice: 149.5,
+                commissionUSD: 1.5,
+              },
+            ]
+          : [],
+    };
+  }
+
+  function makeStoreWithOrders(orders: import("../../types").OrderRecord[]) {
+    return configureStore({
+      reducer: {
+        observability: observabilitySlice.reducer,
+        orders: ordersSlice.reducer,
+        windows: windowSlice.reducer,
+      },
+      preloadedState: {
+        observability: { events: [] },
+        orders: { orders, lastSubmittedOrderId: null },
+      },
+    });
+  }
+
+  function renderPanelWithOrders(orders: import("../../types").OrderRecord[]) {
+    return render(
+      <Provider store={makeStoreWithOrders(orders)}>
+        <ObservabilityPanel />
+      </Provider>,
+    );
+  }
+
+  it("switches to Trades tab when clicked", () => {
+    renderPanelWithOrders([makeOrder("o1", "filled")]);
+    fireEvent.click(screen.getByRole("button", { name: /Trades/i }));
+    expect(screen.getByText("Asset")).toBeInTheDocument();
+  });
+
+  it("renders a filled order row on the Trades tab", () => {
+    renderPanelWithOrders([makeOrder("o1", "filled")]);
+    fireEvent.click(screen.getByRole("button", { name: /Trades/i }));
+    expect(screen.getAllByText("AAPL").length).toBeGreaterThan(0);
+  });
+
+  it("shows empty state on Trades tab when no filled orders", () => {
+    renderPanelWithOrders([makeOrder("o1", "working")]);
+    fireEvent.click(screen.getByRole("button", { name: /Trades/i }));
+    expect(screen.getByText(/No trades yet/i)).toBeInTheDocument();
+  });
+
+  it("shows Fill Rate stat on Summary tab with mixed orders", () => {
+    renderPanelWithOrders([
+      makeOrder("o1", "filled"),
+      makeOrder("o2", "working"),
+    ]);
+    expect(screen.getByText(/Filled/i)).toBeInTheDocument();
+    expect(screen.getByText(/Active/i)).toBeInTheDocument();
   });
 });
