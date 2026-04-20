@@ -74,7 +74,20 @@ export class AppPage {
   }
 
   async waitForDashboard() {
-    await this.page.waitForSelector(".flexlayout__tab", { timeout: 15_000 });
+    await this.waitForAppReady();
+    await this.page.locator(".flexlayout__tab_button").first().waitFor({ state: "visible", timeout: 15_000 });
+  }
+
+  async waitForAppReady() {
+    await this.page.waitForLoadState("domcontentloaded");
+    await this.page.waitForSelector('[data-testid="app-header"]', { timeout: 20_000 });
+    await this.waitForOverlayGone().catch(() => {
+      // Some test views do not show the startup overlay; continue when header is present.
+    });
+    await expect(this.page.getByTestId("app-header")).toBeVisible({ timeout: 10_000 });
+    // Give Vite optimize/reload a brief window to settle on first cold run.
+    await this.page.waitForTimeout(250);
+    await expect(this.page.getByTestId("app-header")).toBeVisible({ timeout: 10_000 });
   }
 
   async waitForOverlayGone() {
@@ -94,8 +107,20 @@ export class AppPage {
     const btn = this.page.locator(".flexlayout__tab_button", { hasText: tabTitle }).first();
     const visible = await btn.isVisible().catch(() => false);
 
+    const clickTab = async () => {
+      await this.waitForOverlayGone().catch(() => {
+        // Overlay may already be gone or not present in some routes.
+      });
+      try {
+        await btn.click({ timeout: 5_000 });
+      } catch {
+        await this.page.waitForTimeout(150);
+        await btn.click({ timeout: 5_000, force: true });
+      }
+    };
+
     if (visible) {
-      await btn.click();
+      await clickTab();
       await this.page.waitForTimeout(100);
       const btnPath = await btn.getAttribute("data-layout-path");
       if (btnPath) {
@@ -125,7 +150,7 @@ export class AppPage {
     }
 
     await btn.waitFor({ state: "attached", timeout: 10_000 });
-    await btn.click();
+    await clickTab();
     await this.page.waitForTimeout(100);
     const btnPath = await btn.getAttribute("data-layout-path");
     if (!btnPath) throw new Error(`No tab button found with title matching ${tabTitle}`);
