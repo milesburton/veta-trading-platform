@@ -465,6 +465,63 @@ describe("gatewayMiddleware", () => {
       expect(dispatched.some((a) => a.type === "ui/setUpgradeStatus")).toBe(true);
     });
 
+    it("algoHeartbeat emits warning when heartbeat resumes after timeout", () => {
+      vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+      const { dispatched, invoke } = createHarness();
+      const ws = connectWs(invoke);
+
+      ws.onmessage?.({
+        data: JSON.stringify({
+          event: "algoHeartbeat",
+          data: { algo: "twap" },
+        }),
+      } as MessageEvent);
+
+      vi.setSystemTime(new Date("2026-01-01T00:00:12.000Z"));
+      ws.onmessage?.({
+        data: JSON.stringify({
+          event: "algoHeartbeat",
+          data: { algo: "twap" },
+        }),
+      } as MessageEvent);
+
+      expect(dispatched.some((a) => a.type === "alerts/alertAdded")).toBe(true);
+    });
+
+    it("advisoryUpdate dispatches advisoryNoteReceived", () => {
+      const { dispatched, invoke } = createHarness();
+      const ws = connectWs(invoke);
+      ws.onmessage?.({
+        data: JSON.stringify({
+          event: "advisoryUpdate",
+          data: {
+            jobId: "job-1",
+            symbol: "AAPL",
+            noteId: "note-1",
+            content: "watch liquidity",
+            provider: "llm",
+            modelId: "m-1",
+            createdAt: Date.now(),
+          },
+        }),
+      } as MessageEvent);
+
+      expect(dispatched.some((a) => a.type === "advisory/advisoryNoteReceived")).toBe(true);
+    });
+
+    it("error event logs server errors", () => {
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const { invoke } = createHarness();
+      const ws = connectWs(invoke);
+
+      ws.onmessage?.({
+        data: JSON.stringify({ event: "error", data: { message: "boom" } }),
+      } as MessageEvent);
+
+      expect(errSpy).toHaveBeenCalled();
+      errSpy.mockRestore();
+    });
+
     it("ws.onclose marks feed as disconnected and schedules reconnect", () => {
       vi.useFakeTimers();
       const { dispatched, invoke } = createHarness();
@@ -476,12 +533,98 @@ describe("gatewayMiddleware", () => {
       vi.useRealTimers();
     });
 
+    it("reconnects after close delay and creates a new websocket", () => {
+      const { invoke } = createHarness();
+      const ws = connectWs(invoke);
+
+      ws.onclose?.({} as CloseEvent);
+      expect(MockWebSocket.instances).toHaveLength(1);
+
+      vi.advanceTimersByTime(2_000);
+      expect(MockWebSocket.instances.length).toBeGreaterThan(1);
+    });
+
     it("ignores unparseable WebSocket frames without throwing", () => {
       const { invoke } = createHarness();
       const ws = connectWs(invoke);
       expect(() => {
         ws.onmessage?.({ data: "not-valid-json{{" } as MessageEvent);
       }).not.toThrow();
+    });
+
+    it("seeds assets and candles on startup and hydrates news for selected asset", async () => {
+      const dispatched: Array<{ type?: string; payload?: unknown }> = [];
+      const state = {
+        ui: { selectedAsset: "AAPL" },
+        breakers: { active: [{ key: "k1", expiresAt: Date.now() - 1 }] },
+      };
+
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: string | URL) => {
+          const url = String(input);
+          if (url.includes("/ready")) {
+            return {
+              ok: true,
+              json: async () => ({
+                upgradeInProgress: true,
+                upgradeMessage: "up",
+              }),
+            };
+          }
+          if (url.endsWith("/assets")) {
+            return {
+              ok: true,
+              json: async () => [
+                {
+                  symbol: "AAPL",
+                  initialPrice: 100,
+                  volatility: 1,
+                  sector: "Tech",
+                },
+              ],
+            };
+          }
+          if (url.includes("/candles")) {
+            return {
+              ok: true,
+              json: async () => [{ time: 1, open: 1, high: 1, low: 1, close: 1 }],
+            };
+          }
+          return { ok: false, json: async () => null };
+        })
+      );
+
+      const storeAPI = {
+        dispatch: (action: unknown) => {
+          if (typeof action === "function") {
+            return Promise.resolve({
+              data: [{ id: "news-1", headline: "h", symbols: ["AAPL"] }],
+            });
+          }
+          const typed = action as { type?: string; payload?: unknown };
+          dispatched.push(typed);
+          return typed;
+        },
+        getState: () => state,
+      };
+
+      const invoke = gatewayMiddleware(storeAPI as never)(vi.fn((action) => action));
+      invoke(
+        setUser({
+          id: "u1",
+          name: "Trader",
+          role: "trader",
+          avatar_emoji: ":t:",
+        })
+      );
+
+      await vi.advanceTimersByTimeAsync(1_250);
+
+      expect(dispatched.some((a) => a.type === "market/setAssets")).toBe(true);
+      expect(dispatched.some((a) => a.type === "market/candlesSeeded")).toBe(true);
+      expect(dispatched.some((a) => a.type === "news/newsBatchReceived")).toBe(true);
+      expect(dispatched.some((a) => a.type === "breakers/breakerExpired")).toBe(true);
     });
   });
 });

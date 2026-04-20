@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import type { IJsonModel } from "flexlayout-react";
+import { type IJsonModel, Model } from "flexlayout-react";
 import { useContext } from "react";
 import { describe, expect, it } from "vitest";
 import { DashboardContext, DashboardProvider, useDashboard } from "../DashboardContext";
@@ -34,7 +34,8 @@ function makeMinimalModel(panelTypes: PanelId[]): IJsonModel {
 // ─── Consumer component for testing context values ────────────────────────────
 
 function ContextInspector() {
-  const { activePanelIds, addPanel, removePanel, resetLayout } = useDashboard();
+  const { activePanelIds, addPanel, removePanel, resetLayout, setLayout, removeTabById, setModel } =
+    useDashboard();
   return (
     <div>
       <span data-testid="active-count">{activePanelIds.size}</span>
@@ -47,6 +48,28 @@ function ContextInspector() {
       </button>
       <button type="button" onClick={() => resetLayout()}>
         Reset
+      </button>
+      <button type="button" onClick={() => setLayout(() => [])}>
+        Set Layout Noop
+      </button>
+      <button type="button" onClick={() => removeTabById("order-blotter")}>
+        Remove By Id
+      </button>
+      <button
+        type="button"
+        onClick={() => setModel(Model.fromJson(makeMinimalModel(["market-ladder"])))}
+      >
+        Set Model
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          resetLayout(
+            makeMinimalModel(["order-ticket", "market-ladder", "order-blotter"]) as IJsonModel
+          )
+        }
+      >
+        Reset Template
       </button>
     </div>
   );
@@ -146,6 +169,46 @@ describe("DashboardProvider – resetLayout", () => {
       .join(",");
     const activeIds = screen.getByTestId("active-ids").textContent?.split(",").sort().join(",");
     expect(activeIds).toBe(defaultIds);
+  });
+
+  it("supports resetting from an explicit template model", () => {
+    renderProvider();
+    act(() => {
+      fireEvent.click(screen.getByText("Reset Template"));
+    });
+    const active = screen.getByTestId("active-ids").textContent ?? "";
+    expect(active).toContain("order-ticket");
+    expect(active).toContain("market-ladder");
+    expect(active).toContain("order-blotter");
+  });
+});
+
+describe("DashboardProvider – model and tab controls", () => {
+  it("setModel replaces active panel set", () => {
+    renderWithDefault();
+    act(() => {
+      fireEvent.click(screen.getByText("Set Model"));
+    });
+    expect(screen.getByTestId("active-ids").textContent).toContain("market-ladder");
+    expect(screen.getByTestId("active-ids").textContent).not.toContain("order-blotter");
+  });
+
+  it("removeTabById removes a specific tab instance", () => {
+    renderWithDefault();
+    expect(screen.getByTestId("active-ids").textContent).toContain("order-blotter");
+    act(() => {
+      fireEvent.click(screen.getByText("Remove By Id"));
+    });
+    expect(screen.getByTestId("active-ids").textContent).not.toContain("order-blotter");
+  });
+
+  it("setLayout callback remains a no-op by design", () => {
+    renderWithDefault();
+    const before = screen.getByTestId("active-ids").textContent;
+    act(() => {
+      fireEvent.click(screen.getByText("Set Layout Noop"));
+    });
+    expect(screen.getByTestId("active-ids").textContent).toBe(before);
   });
 });
 
