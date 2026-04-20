@@ -143,10 +143,23 @@ jobs:
           git add docs/badges/frontend-tests.json
           if ! git diff --staged --quiet; then
             git commit -m "chore(ci): update frontend test badge [skip ci]"
-            git stash --include-untracked --quiet || true
-            git pull --rebase origin main || { git rebase --abort 2>/dev/null; git stash pop --quiet 2>/dev/null || true; exit 0; }
-            git stash pop --quiet 2>/dev/null || true
-            git push || true
+            for i in 1 2 3; do
+              git stash --include-untracked --quiet || true
+              if git pull --rebase origin main; then
+                git stash pop --quiet 2>/dev/null || true
+                if git push; then
+                  echo "Pushed frontend test badge on attempt $i"
+                  exit 0
+                fi
+              else
+                git rebase --abort 2>/dev/null || true
+                git stash pop --quiet 2>/dev/null || true
+              fi
+              echo "Frontend test badge push attempt $i failed, retrying..."
+              sleep 2
+            done
+            echo "::error::Failed to publish frontend test badge after 3 attempts"
+            exit 1
           fi
 
   coverage-badges:
@@ -189,10 +202,23 @@ jobs:
           git add docs/badges/backend-coverage.json docs/badges/frontend-coverage.json docs/badges/combined-coverage.json docs/badges/coverage.json
           if ! git diff --staged --quiet; then
             git commit -m "chore(ci): update coverage badges [skip ci]"
-            git stash --include-untracked --quiet || true
-            git pull --rebase origin main || { git rebase --abort 2>/dev/null; git stash pop --quiet 2>/dev/null || true; exit 0; }
-            git stash pop --quiet 2>/dev/null || true
-            git push || true
+            for i in 1 2 3; do
+              git stash --include-untracked --quiet || true
+              if git pull --rebase origin main; then
+                git stash pop --quiet 2>/dev/null || true
+                if git push; then
+                  echo "Pushed coverage badges on attempt $i"
+                  exit 0
+                fi
+              else
+                git rebase --abort 2>/dev/null || true
+                git stash pop --quiet 2>/dev/null || true
+              fi
+              echo "Coverage badge push attempt $i failed, retrying..."
+              sleep 2
+            done
+            echo "::error::Failed to publish coverage badges after 3 attempts"
+            exit 1
           fi
 
   integration:
