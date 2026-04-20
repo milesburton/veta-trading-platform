@@ -352,7 +352,10 @@ describe("WorkspaceSidebar", () => {
 
     render(
       createElement(
-        Provider as unknown as ComponentType<{ store: typeof store; children?: ReactNode }>,
+        Provider as unknown as ComponentType<{
+          store: typeof store;
+          children?: ReactNode;
+        }>,
         { store },
         createElement(WorkspaceSidebar, {
           activeId: "ws-1",
