@@ -2,7 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { newsSlice, type NewsItem } from "../../store/newsSlice";
+import { type NewsItem, newsSlice } from "../../store/newsSlice";
 import { uiSlice } from "../../store/uiSlice";
 import { AnalysisPanel } from "../AnalysisPanel";
 
@@ -31,8 +31,8 @@ function makeStore(selectedAsset: string | null = null) {
     },
     preloadedState: {
       ui: {
-        activeStrategy: "TWAP",
-        activeSide: "BUY",
+        activeStrategy: "TWAP" as const,
+        activeSide: "BUY" as const,
         showShortcuts: false,
         selectedAsset,
         updateAvailable: false,
@@ -51,7 +51,7 @@ function renderPanel(selectedAsset: string | null = null) {
   render(
     <Provider store={makeStore(selectedAsset)}>
       <AnalysisPanel />
-    </Provider>,
+    </Provider>
   );
 }
 
@@ -65,9 +65,7 @@ describe("AnalysisPanel", () => {
   it("shows empty state when no asset is selected", () => {
     renderPanel(null);
 
-    expect(
-      screen.getByText(/Select an asset to see news/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Select an asset to see news/i)).toBeInTheDocument();
   });
 
   it("shows fetch prompt when selected asset has no news", () => {
@@ -110,9 +108,7 @@ describe("AnalysisPanel", () => {
       expect(screen.getByTestId("news-feed")).toBeInTheDocument();
     });
     expect(screen.getByText("Apple beats estimates")).toBeInTheDocument();
-    expect(
-      screen.getByText("Supply chain concerns persist"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Supply chain concerns persist")).toBeInTheDocument();
     expect(screen.getByText(/▲ 1/i)).toBeInTheDocument();
     expect(screen.getByText(/▼ 1/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "↺" }));

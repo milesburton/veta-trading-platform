@@ -52,7 +52,7 @@ describe("gatewayMiddleware", () => {
           return { ok: true, json: async () => ({ upgradeInProgress: false }) };
         }
         return { ok: false, json: async () => null };
-      }),
+      })
     );
   });
 
@@ -157,15 +157,11 @@ describe("gatewayMiddleware", () => {
       dispatched.some(
         (a) =>
           a.type === "orders/orderPatched" &&
-          (a.payload as { id?: string; patch?: { status?: string } }).id ===
-            "coid-1" &&
-          (a.payload as { patch?: { status?: string } }).patch?.status ===
-            "rejected",
-      ),
+          (a.payload as { id?: string; patch?: { status?: string } }).id === "coid-1" &&
+          (a.payload as { patch?: { status?: string } }).patch?.status === "rejected"
+      )
     ).toBe(true);
-    expect(dispatched.some((a) => a.type === "gridApi/invalidateTags")).toBe(
-      true,
-    );
+    expect(dispatched.some((a) => a.type === "gridApi/invalidateTags")).toBe(true);
   });
 
   it("maps killAck and resumeAck to kill-switch actions", () => {
@@ -195,12 +191,8 @@ describe("gatewayMiddleware", () => {
       data: JSON.stringify({ event: "resumeAck", data: {} }),
     } as MessageEvent);
 
-    expect(dispatched.some((a) => a.type === "killSwitch/blockAdded")).toBe(
-      true,
-    );
-    expect(
-      dispatched.some((a) => a.type === "killSwitch/allBlocksCleared"),
-    ).toBe(true);
+    expect(dispatched.some((a) => a.type === "killSwitch/blockAdded")).toBe(true);
+    expect(dispatched.some((a) => a.type === "killSwitch/allBlocksCleared")).toBe(true);
   });
 
   it("handles riskBreaker and emits breaker event only with a valid target", () => {
@@ -242,13 +234,9 @@ describe("gatewayMiddleware", () => {
       }),
     } as MessageEvent);
 
-    const breakerFiredCount = dispatched.filter(
-      (a) => a.type === "breakers/breakerFired",
-    ).length;
+    const breakerFiredCount = dispatched.filter((a) => a.type === "breakers/breakerFired").length;
     expect(breakerFiredCount).toBe(1);
-    expect(dispatched.some((a) => a.type === "killSwitch/blockAdded")).toBe(
-      true,
-    );
+    expect(dispatched.some((a) => a.type === "killSwitch/blockAdded")).toBe(true);
   });
 
   describe("orderEvent message routing", () => {
@@ -259,17 +247,12 @@ describe("gatewayMiddleware", () => {
           name: "Trader",
           role: "trader",
           avatar_emoji: ":t:",
-        }),
+        })
       );
       return MockWebSocket.instances[0];
     }
 
-    function send(
-      ws: MockWebSocket,
-      event: string,
-      topic: string,
-      data: unknown,
-    ) {
+    function send(ws: MockWebSocket, event: string, topic: string, data: unknown) {
       ws.onmessage?.({
         data: JSON.stringify({ event, topic, data }),
       } as MessageEvent);
@@ -286,9 +269,8 @@ describe("gatewayMiddleware", () => {
         dispatched.some(
           (a) =>
             a.type === "orders/orderPatched" &&
-            (a.payload as { patch: { status: string } }).patch.status ===
-              "pending",
-        ),
+            (a.payload as { patch: { status: string } }).patch.status === "pending"
+        )
       ).toBe(true);
     });
 
@@ -303,9 +285,8 @@ describe("gatewayMiddleware", () => {
         dispatched.some(
           (a) =>
             a.type === "orders/orderPatched" &&
-            (a.payload as { patch: { status: string } }).patch.status ===
-              "working",
-        ),
+            (a.payload as { patch: { status: string } }).patch.status === "working"
+        )
       ).toBe(true);
     });
 
@@ -333,9 +314,7 @@ describe("gatewayMiddleware", () => {
         avgFillPrice: 150,
         remainingQty: 75,
       });
-      expect(dispatched.some((a) => a.type === "orders/fillReceived")).toBe(
-        true,
-      );
+      expect(dispatched.some((a) => a.type === "orders/fillReceived")).toBe(true);
     });
 
     it("orders.expired patches order to expired", () => {
@@ -349,9 +328,8 @@ describe("gatewayMiddleware", () => {
         dispatched.some(
           (a) =>
             a.type === "orders/orderPatched" &&
-            (a.payload as { patch: { status: string } }).patch.status ===
-              "expired",
-        ),
+            (a.payload as { patch: { status: string } }).patch.status === "expired"
+        )
       ).toBe(true);
     });
 
@@ -359,9 +337,7 @@ describe("gatewayMiddleware", () => {
       const { dispatched, invoke } = createHarness();
       const ws = connectWs(invoke);
       send(ws, "orderEvent", "orders.cancelled", { clientOrderId: "c1" });
-      expect(dispatched.some((a) => a.type === "orders/orderCancelled")).toBe(
-        true,
-      );
+      expect(dispatched.some((a) => a.type === "orders/orderCancelled")).toBe(true);
     });
   });
 
@@ -373,7 +349,7 @@ describe("gatewayMiddleware", () => {
           name: "Trader",
           role: "trader",
           avatar_emoji: ":t:",
-        }),
+        })
       );
       return MockWebSocket.instances[0];
     }
@@ -384,9 +360,7 @@ describe("gatewayMiddleware", () => {
       ws.onmessage?.({
         data: JSON.stringify({ event: "orderAck", data: {} }),
       } as MessageEvent);
-      expect(dispatched.some((a) => a.type === "gridApi/invalidateTags")).toBe(
-        true,
-      );
+      expect(dispatched.some((a) => a.type === "gridApi/invalidateTags")).toBe(true);
     });
 
     it("authIdentity dispatches setUserWithLimits and loads prefs", () => {
@@ -406,9 +380,7 @@ describe("gatewayMiddleware", () => {
           },
         }),
       } as MessageEvent);
-      expect(dispatched.some((a) => a.type === "auth/setUserWithLimits")).toBe(
-        true,
-      );
+      expect(dispatched.some((a) => a.type === "auth/setUserWithLimits")).toBe(true);
     });
 
     it("newsUpdate dispatches newsItemReceived", () => {
@@ -425,9 +397,7 @@ describe("gatewayMiddleware", () => {
           },
         }),
       } as MessageEvent);
-      expect(dispatched.some((a) => a.type === "news/newsItemReceived")).toBe(
-        true,
-      );
+      expect(dispatched.some((a) => a.type === "news/newsItemReceived")).toBe(true);
     });
 
     it("signalUpdate dispatches signalReceived", () => {
@@ -439,9 +409,7 @@ describe("gatewayMiddleware", () => {
           data: { symbol: "AAPL", value: 0.8 },
         }),
       } as MessageEvent);
-      expect(
-        dispatched.some((a) => a.type === "intelligence/signalReceived"),
-      ).toBe(true);
+      expect(dispatched.some((a) => a.type === "intelligence/signalReceived")).toBe(true);
     });
 
     it("featureUpdate dispatches featureReceived", () => {
@@ -453,9 +421,7 @@ describe("gatewayMiddleware", () => {
           data: { symbol: "AAPL", features: {} },
         }),
       } as MessageEvent);
-      expect(
-        dispatched.some((a) => a.type === "intelligence/featureReceived"),
-      ).toBe(true);
+      expect(dispatched.some((a) => a.type === "intelligence/featureReceived")).toBe(true);
     });
 
     it("recommendationUpdate dispatches recommendationReceived", () => {
@@ -467,11 +433,7 @@ describe("gatewayMiddleware", () => {
           data: { symbol: "AAPL", action: "BUY", confidence: 0.9 },
         }),
       } as MessageEvent);
-      expect(
-        dispatched.some(
-          (a) => a.type === "intelligence/recommendationReceived",
-        ),
-      ).toBe(true);
+      expect(dispatched.some((a) => a.type === "intelligence/recommendationReceived")).toBe(true);
     });
 
     it("llmStateUpdate dispatches llmStateReceived", () => {
@@ -488,9 +450,7 @@ describe("gatewayMiddleware", () => {
           },
         }),
       } as MessageEvent);
-      expect(
-        dispatched.some((a) => a.type === "llmSubsystem/llmStateReceived"),
-      ).toBe(true);
+      expect(dispatched.some((a) => a.type === "llmSubsystem/llmStateReceived")).toBe(true);
     });
 
     it("upgradeStatus dispatches setUpgradeStatus", () => {
@@ -502,9 +462,7 @@ describe("gatewayMiddleware", () => {
           data: { inProgress: true, message: "Deploying v2" },
         }),
       } as MessageEvent);
-      expect(dispatched.some((a) => a.type === "ui/setUpgradeStatus")).toBe(
-        true,
-      );
+      expect(dispatched.some((a) => a.type === "ui/setUpgradeStatus")).toBe(true);
     });
 
     it("ws.onclose marks feed as disconnected and schedules reconnect", () => {
@@ -513,10 +471,7 @@ describe("gatewayMiddleware", () => {
       const ws = connectWs(invoke);
       ws.onclose?.({} as CloseEvent);
       expect(
-        dispatched.some(
-          (a) =>
-            a.type === "market/setConnected" || a.type === "feed/setConnected",
-        ),
+        dispatched.some((a) => a.type === "market/setConnected" || a.type === "feed/setConnected")
       ).toBe(true);
       vi.useRealTimers();
     });

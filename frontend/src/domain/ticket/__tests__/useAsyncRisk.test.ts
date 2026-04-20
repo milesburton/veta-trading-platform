@@ -141,12 +141,9 @@ describe("useAsyncRisk", () => {
     });
 
     const ctx = makeCtx();
-    const { rerender } = renderHook(
-      ({ value }: { value: TicketContext }) => useAsyncRisk(value),
-      {
-        initialProps: { value: ctx },
-      },
-    );
+    const { rerender } = renderHook(({ value }: { value: TicketContext }) => useAsyncRisk(value), {
+      initialProps: { value: ctx },
+    });
 
     act(() => {
       vi.advanceTimersByTime(800);

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CfRuleEditor } from "../CfRuleEditor";
 
 const dispatch = vi.fn();
-let cfRules: any[] = [];
+let cfRules: unknown[] = [];
 
 vi.mock("../../../store/hooks.ts", () => ({
   useAppDispatch: () => dispatch,
@@ -27,7 +27,7 @@ describe("CfRuleEditor", () => {
         gridId="executions"
         fields={[{ key: "asset", label: "Asset", type: "string", defaultWidth: 90 }]}
         onClose={() => {}}
-      />,
+      />
     );
 
     expect(screen.getByText(/No formatting rules yet/i)).toBeInTheDocument();
@@ -38,7 +38,7 @@ describe("CfRuleEditor", () => {
     expect(dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "gridPrefs/setCfRules",
-      }),
+      })
     );
     expect(typeof dispatch.mock.calls[1][0]).toBe("function");
   });
@@ -59,7 +59,7 @@ describe("CfRuleEditor", () => {
         gridId="executions"
         fields={[{ key: "asset", label: "Asset", type: "string", defaultWidth: 90 }]}
         onClose={() => {}}
-      />,
+      />
     );
 
     fireEvent.click(screen.getByRole("button", { name: /Delete rule/i }));
@@ -67,7 +67,7 @@ describe("CfRuleEditor", () => {
       expect.objectContaining({
         type: "gridPrefs/setCfRules",
         payload: { gridId: "executions", rules: [] },
-      }),
+      })
     );
   });
 });

@@ -20,10 +20,7 @@ describe("killSwitchSlice", () => {
     const withBlock = killSwitchSlice.reducer(undefined, blockAdded(block));
     expect(withBlock.blocks).toHaveLength(1);
 
-    const removed = killSwitchSlice.reducer(
-      withBlock,
-      blockRemoved({ id: "b1" }),
-    );
+    const removed = killSwitchSlice.reducer(withBlock, blockRemoved({ id: "b1" }));
     expect(removed.blocks).toHaveLength(0);
 
     const cleared = killSwitchSlice.reducer(withBlock, allBlocksCleared());
@@ -45,7 +42,7 @@ describe("killSwitchSlice", () => {
         asset: "AAPL",
         strategy: "TWAP",
         userId: "u-1",
-      }),
+      })
     ).toBe(true);
   });
 
@@ -136,7 +133,7 @@ describe("killSwitchSlice", () => {
         strategy: "TWAP",
         asset: "AAPL",
         userId: "u-1",
-      }),
+      })
     ).toBe(false);
   });
 });

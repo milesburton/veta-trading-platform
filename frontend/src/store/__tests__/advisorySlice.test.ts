@@ -14,10 +14,7 @@ const { reducer } = advisorySlice;
 
 describe("advisorySlice", () => {
   it("creates an entry when advisory is requested", () => {
-    const state = reducer(
-      undefined,
-      advisoryRequested({ symbol: "AAPL", jobId: "job-1" }),
-    );
+    const state = reducer(undefined, advisoryRequested({ symbol: "AAPL", jobId: "job-1" }));
 
     expect(state.bySymbol.AAPL.status).toBe("queued");
     expect(state.bySymbol.AAPL.jobId).toBe("job-1");
@@ -26,20 +23,11 @@ describe("advisorySlice", () => {
   });
 
   it("only marks a job running when the ids match", () => {
-    let state = reducer(
-      undefined,
-      advisoryRequested({ symbol: "AAPL", jobId: "job-1" }),
-    );
-    state = reducer(
-      state,
-      advisoryJobRunning({ symbol: "AAPL", jobId: "other" }),
-    );
+    let state = reducer(undefined, advisoryRequested({ symbol: "AAPL", jobId: "job-1" }));
+    state = reducer(state, advisoryJobRunning({ symbol: "AAPL", jobId: "other" }));
     expect(state.bySymbol.AAPL.status).toBe("queued");
 
-    state = reducer(
-      state,
-      advisoryJobRunning({ symbol: "AAPL", jobId: "job-1" }),
-    );
+    state = reducer(state, advisoryJobRunning({ symbol: "AAPL", jobId: "job-1" }));
     expect(state.bySymbol.AAPL.status).toBe("running");
   });
 
@@ -54,7 +42,7 @@ describe("advisorySlice", () => {
         provider: "openai",
         modelId: "gpt",
         createdAt: 123,
-      }),
+      })
     );
 
     expect(state.bySymbol.MSFT.status).toBe("ready");
@@ -63,10 +51,7 @@ describe("advisorySlice", () => {
     state = reducer(state, advisoryMarkedStale({ symbol: "MSFT" }));
     expect(state.bySymbol.MSFT.status).toBe("stale");
 
-    state = reducer(
-      state,
-      advisoryFailed({ symbol: "MSFT", error: "timeout" }),
-    );
+    state = reducer(state, advisoryFailed({ symbol: "MSFT", error: "timeout" }));
     expect(state.bySymbol.MSFT.status).toBe("failed");
     expect(state.bySymbol.MSFT.errorMessage).toBe("timeout");
   });
@@ -105,7 +90,7 @@ describe("selectAdvisoryForSymbol", () => {
         },
       },
       "AAPL",
-      now,
+      now
     );
 
     expect(entry.status).toBe("stale");

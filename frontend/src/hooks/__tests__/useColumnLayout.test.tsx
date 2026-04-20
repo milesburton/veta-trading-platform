@@ -62,7 +62,7 @@ describe("useColumnLayout", () => {
       expect.objectContaining({
         type: "gridPrefs/setColumnWidth",
         payload: { gridId: "executions", key: "asset", width: 140 },
-      }),
+      })
     );
     expect(typeof dispatch.mock.calls[1][0]).toBe("function");
 
@@ -72,7 +72,7 @@ describe("useColumnLayout", () => {
       expect.objectContaining({
         type: "gridPrefs/setColumnOrder",
         payload: { gridId: "executions", order: ["side", "qty", "asset"] },
-      }),
+      })
     );
     expect(typeof dispatch.mock.calls[1][0]).toBe("function");
   });

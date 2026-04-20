@@ -1,21 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Alert, AlertSeverity } from "../alertsSlice";
 import { alertAdded, alertDismissed, allAlertsDismissed } from "../alertsSlice";
-import { blockAdded, allBlocksCleared } from "../killSwitchSlice";
-import { orderPatched } from "../ordersSlice";
+import { allBlocksCleared, blockAdded } from "../killSwitchSlice";
 import { alertsMiddleware } from "../middleware/alertsMiddleware";
+import { orderPatched } from "../ordersSlice";
 
 function createHarness(
   authUser: { id: string } | null = { id: "u1" },
-  initialAlerts: unknown[] = [],
+  initialAlerts: Alert[] = []
 ) {
   const dispatched: unknown[] = [];
-  let alerts: unknown[] = [...initialAlerts];
+  let alerts: Alert[] = [...initialAlerts];
 
   const storeAPI = {
     dispatch: (action: unknown) => {
       dispatched.push(action);
-      if (alertAdded.match(action as { type: string })) {
-        alerts = [action.payload, ...alerts];
+      const typed = action as { type: string; payload?: Alert };
+      if (alertAdded.match(typed) && typed.payload) {
+        alerts = [typed.payload, ...alerts];
       }
       return action;
     },
@@ -56,13 +58,10 @@ describe("alertsMiddleware", () => {
           scopeValues: [],
           issuedBy: "admin",
           issuedAt: 1000,
-          expiresAt: null,
           fromGateway: true,
-        }),
+        })
       );
-      const alert = dispatched.find((a) =>
-        alertAdded.match(a as { type: string }),
-      ) as {
+      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
         payload: { severity: string; message: string };
       };
       expect(alert?.payload.severity).toBe("CRITICAL");
@@ -79,13 +78,10 @@ describe("alertsMiddleware", () => {
           scopeValues: ["trader1"],
           issuedBy: "admin",
           issuedAt: 1000,
-          expiresAt: null,
           fromGateway: true,
-        }),
+        })
       );
-      const alert = dispatched.find((a) =>
-        alertAdded.match(a as { type: string }),
-      ) as {
+      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
         payload: { message: string };
       };
       expect(alert?.payload.message).toContain("user trading halted");
@@ -100,13 +96,10 @@ describe("alertsMiddleware", () => {
           scopeValues: ["AAPL", "TSLA"],
           issuedBy: "risk",
           issuedAt: 2000,
-          expiresAt: null,
           fromGateway: true,
-        }),
+        })
       );
-      const alert = dispatched.find((a) =>
-        alertAdded.match(a as { type: string }),
-      ) as {
+      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
         payload: { message: string };
       };
       expect(alert?.payload.message).toContain("symbol: AAPL, TSLA");
@@ -121,15 +114,13 @@ describe("alertsMiddleware", () => {
           scopeValues: [],
           issuedBy: "ui",
           issuedAt: 1000,
-          expiresAt: null,
           fromGateway: false,
-        }),
+        })
       );
       const killAlert = dispatched.find(
         (a) =>
           alertAdded.match(a as { type: string }) &&
-          (a as { payload: { source: string } }).payload.source ===
-            "kill-switch",
+          (a as { payload: { source: string } }).payload.source === "kill-switch"
       );
       expect(killAlert).toBeUndefined();
     });
@@ -139,9 +130,7 @@ describe("alertsMiddleware", () => {
     it("dispatches an INFO alert when trading resumes", () => {
       const { dispatched, invoke } = createHarness();
       invoke(allBlocksCleared());
-      const alert = dispatched.find((a) =>
-        alertAdded.match(a as { type: string }),
-      ) as {
+      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
         payload: { severity: string; message: string };
       };
       expect(alert?.payload.severity).toBe("INFO");
@@ -153,9 +142,7 @@ describe("alertsMiddleware", () => {
     it("dispatches a WARNING alert when an order is rejected", () => {
       const { dispatched, invoke } = createHarness();
       invoke(orderPatched({ id: "ord-99", patch: { status: "rejected" } }));
-      const alert = dispatched.find((a) =>
-        alertAdded.match(a as { type: string }),
-      ) as {
+      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
         payload: { severity: string; message: string };
       };
       expect(alert?.payload.severity).toBe("WARNING");
@@ -165,9 +152,7 @@ describe("alertsMiddleware", () => {
     it("does NOT alert for non-rejected patches", () => {
       const { dispatched, invoke } = createHarness();
       invoke(orderPatched({ id: "ord-1", patch: { status: "working" } }));
-      const alert = dispatched.find((a) =>
-        alertAdded.match(a as { type: string }),
-      );
+      const alert = dispatched.find((a) => alertAdded.match(a as { type: string }));
       expect(alert).toBeUndefined();
     });
   });
@@ -175,18 +160,19 @@ describe("alertsMiddleware", () => {
   describe("alertAdded – persisting to backend", () => {
     it("calls fetch to POST the alert when user is logged in and source is not service", () => {
       const alertPayload = {
-        id: "a1",
-        severity: "INFO",
-        source: "order",
+        severity: "INFO" as AlertSeverity,
+        source: "order" as const,
         message: "Test alert",
         ts: 1000,
       };
       // Seed the state with the alert so postAlert can read alerts[0]
-      const { invoke } = createHarness({ id: "u1" }, [alertPayload]);
+      const { invoke } = createHarness({ id: "u1" }, [
+        { ...alertPayload, id: "seed-1", dismissed: false },
+      ]);
       invoke(alertAdded(alertPayload));
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
         expect.stringContaining("/alerts"),
-        expect.objectContaining({ method: "POST" }),
+        expect.objectContaining({ method: "POST" })
       );
     });
 
@@ -196,12 +182,11 @@ describe("alertsMiddleware", () => {
       const { invoke } = createHarness({ id: "u1" });
       invoke(
         alertAdded({
-          id: "a2",
           severity: "INFO",
           source: "service",
           message: "Service alert",
           ts: 1000,
-        }),
+        })
       );
       expect(fetchMock).not.toHaveBeenCalled();
     });
@@ -212,12 +197,11 @@ describe("alertsMiddleware", () => {
       const { invoke } = createHarness(null);
       invoke(
         alertAdded({
-          id: "a3",
           severity: "WARNING",
           source: "order",
           message: "Anon alert",
           ts: 1000,
-        }),
+        })
       );
       expect(fetchMock).not.toHaveBeenCalled();
     });
@@ -229,7 +213,7 @@ describe("alertsMiddleware", () => {
       invoke(alertDismissed("alert-42"));
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
         expect.stringContaining("/alert-42/dismiss"),
-        expect.objectContaining({ method: "PUT" }),
+        expect.objectContaining({ method: "PUT" })
       );
     });
   });
@@ -240,7 +224,7 @@ describe("alertsMiddleware", () => {
       invoke(allAlertsDismissed());
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
         expect.stringContaining("/dismiss-all"),
-        expect.objectContaining({ method: "PUT" }),
+        expect.objectContaining({ method: "PUT" })
       );
     });
   });

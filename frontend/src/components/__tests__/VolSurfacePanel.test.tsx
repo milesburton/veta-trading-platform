@@ -64,7 +64,7 @@ describe("VolSurfacePanel", () => {
       expect.objectContaining({
         type: "ui/setOptionPrefill",
         payload: { strike: 150, expirySecs: 7 * 86400 },
-      }),
+      })
     );
   });
 

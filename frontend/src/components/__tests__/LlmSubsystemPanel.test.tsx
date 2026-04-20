@@ -15,12 +15,7 @@ let serverState: {
   policy: {
     enabled: boolean;
     workerEnabled: boolean;
-    triggerMode:
-      | "disabled"
-      | "manual"
-      | "on-demand-ui"
-      | "scheduled-batch"
-      | "event-driven";
+    triggerMode: "disabled" | "manual" | "on-demand-ui" | "scheduled-batch" | "event-driven";
     minRefreshMinutes: number;
     workerIdleTimeoutSeconds: number;
     workerMaxJobsPerSession: number;
@@ -28,12 +23,7 @@ let serverState: {
   };
   pendingJobs: number;
   trackedSymbols: number;
-  triggerMode:
-    | "disabled"
-    | "manual"
-    | "on-demand-ui"
-    | "scheduled-batch"
-    | "event-driven";
+  triggerMode: "disabled" | "manual" | "on-demand-ui" | "scheduled-batch" | "event-driven";
   workerEnabled: boolean;
   ts: number;
 } | null;
@@ -66,9 +56,7 @@ function makeStatus(overrides: Partial<NonNullable<typeof serverState>> = {}) {
   };
 }
 
-function renderPanel(
-  liveStatus: NonNullable<typeof serverState> | null = null,
-) {
+function renderPanel(liveStatus: NonNullable<typeof serverState> | null = null) {
   const store = configureStore({
     reducer: { llmSubsystem: llmSubsystemSlice.reducer },
     preloadedState: {
@@ -82,7 +70,7 @@ function renderPanel(
   render(
     <Provider store={store}>
       <LlmSubsystemPanel />
-    </Provider>,
+    </Provider>
   );
 }
 
@@ -123,12 +111,8 @@ describe("LlmSubsystemPanel", () => {
     renderPanel();
 
     expect(screen.getByText(/Cooldown/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Generate watchlist brief/i }),
-    ).toBeDisabled();
-    expect(
-      screen.getByRole("button", { name: /Start LLM worker/i }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Generate watchlist brief/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Start LLM worker/i })).toBeDisabled();
   });
 
   it("prefers live store state and patches the trigger mode", async () => {
@@ -152,13 +136,9 @@ describe("LlmSubsystemPanel", () => {
     });
 
     renderPanel();
-    fireEvent.click(
-      screen.getByRole("button", { name: /Generate watchlist brief/i }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /Generate watchlist brief/i }));
 
-    expect(
-      await screen.findByText(/Failed to queue watchlist brief/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Failed to queue watchlist brief/i)).toBeInTheDocument();
   });
 
   it("starts the worker and shows a success message", async () => {

@@ -5,7 +5,7 @@
  * middleware, and RTK Query APIs registered. These tests ensure the
  * full store graph compiles and the initial state shape is correct.
  */
-import { describe, expect, it, vi, afterEach } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 // versionWatchMiddleware starts polling on init — stub fetch to avoid noise
 vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));

@@ -17,9 +17,7 @@ vi.mock("../../../store/hooks.ts", () => ({
   useAppSelector: (selector: (s: unknown) => unknown) => selector(state),
 }));
 
-function renderHeader(
-  props: Partial<React.ComponentProps<typeof ResizableHeader>> = {},
-) {
+function renderHeader(props: Partial<React.ComponentProps<typeof ResizableHeader>> = {}) {
   const onResize = vi.fn();
   const onColumnDragStart = vi.fn();
   const onColumnDrop = vi.fn();
@@ -44,7 +42,7 @@ function renderHeader(
           </ResizableHeader>
         </tr>
       </thead>
-    </table>,
+    </table>
   );
 
   return { onResize, onColumnDragStart, onColumnDrop, onContextMenu };
@@ -66,7 +64,7 @@ describe("ResizableHeader", () => {
       expect.objectContaining({
         type: "gridPrefs/setSort",
         payload: { gridId: "executions", field: "asset", dir: "asc" },
-      }),
+      })
     );
     expect(typeof dispatch.mock.calls[1][0]).toBe("function");
   });
@@ -77,9 +75,10 @@ describe("ResizableHeader", () => {
 
     renderHeader();
 
-    expect(
-      screen.getByRole("columnheader", { name: /Asset/i }),
-    ).toHaveAttribute("aria-sort", "ascending");
+    expect(screen.getByRole("columnheader", { name: /Asset/i })).toHaveAttribute(
+      "aria-sort",
+      "ascending"
+    );
     fireEvent.keyDown(screen.getByRole("button", { name: /Asset/i }), {
       key: "Enter",
     });
@@ -88,7 +87,7 @@ describe("ResizableHeader", () => {
       expect.objectContaining({
         type: "gridPrefs/setSort",
         payload: { gridId: "executions", field: "asset", dir: "desc" },
-      }),
+      })
     );
   });
 

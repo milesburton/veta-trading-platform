@@ -37,24 +37,22 @@ describe("ProductBookPanel", () => {
   });
 
   it("loads products, expands legs, and sells an issued product", async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockImplementation(async (input, init) => {
-        const url = String(input);
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
 
-        if (url.startsWith("/api/gateway/products?")) {
-          return new Response(JSON.stringify([issuedProduct]), { status: 200 });
-        }
-        if (url.includes("/sell") && init?.method === "PUT") {
-          return new Response(JSON.stringify({ state: "sold" }), {
-            status: 200,
-          });
-        }
-
-        return new Response(JSON.stringify({ error: "unexpected request" }), {
-          status: 500,
+      if (url.startsWith("/api/gateway/products?")) {
+        return new Response(JSON.stringify([issuedProduct]), { status: 200 });
+      }
+      if (url.includes("/sell") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ state: "sold" }), {
+          status: 200,
         });
+      }
+
+      return new Response(JSON.stringify({ error: "unexpected request" }), {
+        status: 500,
       });
+    });
 
     render(<ProductBookPanel />);
 
@@ -64,9 +62,7 @@ describe("ProductBookPanel", () => {
     expect(await screen.findByText("AAPL")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /^Sell$/i }));
-    expect(
-      await screen.findByText(/Product marked as sold/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Product marked as sold/i)).toBeInTheDocument();
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalled();
@@ -76,36 +72,29 @@ describe("ProductBookPanel", () => {
   it("shows request quote action for external client", async () => {
     role = "external-client";
 
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockImplementation(async (input, init) => {
-        const url = String(input);
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
 
-        if (url.startsWith("/api/gateway/products?")) {
-          return new Response(JSON.stringify([issuedProduct]), { status: 200 });
-        }
-        if (
-          url.includes("/api/gateway/rfq/sellside") &&
-          init?.method === "POST"
-        ) {
-          return new Response(JSON.stringify({ rfqId: "rfq-9" }), {
-            status: 200,
-          });
-        }
-
-        return new Response(JSON.stringify({ error: "unexpected request" }), {
-          status: 500,
+      if (url.startsWith("/api/gateway/products?")) {
+        return new Response(JSON.stringify([issuedProduct]), { status: 200 });
+      }
+      if (url.includes("/api/gateway/rfq/sellside") && init?.method === "POST") {
+        return new Response(JSON.stringify({ rfqId: "rfq-9" }), {
+          status: 200,
         });
+      }
+
+      return new Response(JSON.stringify({ error: "unexpected request" }), {
+        status: 500,
       });
+    });
 
     render(<ProductBookPanel />);
 
     expect(await screen.findByText(/Income Note/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Request Quote/i }));
 
-    expect(
-      await screen.findByText(/Quote requested \(RFQ: rfq-9\)/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Quote requested \(RFQ: rfq-9\)/i)).toBeInTheDocument();
     expect(fetchSpy).toHaveBeenCalled();
   });
 });

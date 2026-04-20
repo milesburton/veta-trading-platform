@@ -14,7 +14,7 @@ function makeStore() {
         user: {
           id: "sales-1",
           name: "Sales User",
-          role: "trader",
+          role: "trader" as const,
           avatar_emoji: "S",
         },
         limits: {
@@ -34,7 +34,7 @@ function renderPanel() {
   render(
     <Provider store={makeStore()}>
       <SalesWorkbenchPanel />
-    </Provider>,
+    </Provider>
   );
 }
 
@@ -62,22 +62,20 @@ afterEach(() => {
 
 describe("SalesWorkbenchPanel", () => {
   it("shows empty state when no RFQs are available", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValue({
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({ rfqs: [] }),
     } as Response);
 
     renderPanel();
 
-    expect(
-      await screen.findByText(/No RFQs in the system/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/No RFQs in the system/i)).toBeInTheDocument();
     expect(screen.getByText(/0 RFQs/i)).toBeInTheDocument();
   });
 
   it("routes an actionable RFQ", async () => {
     const fetchMock = vi
-      .spyOn(global, "fetch")
+      .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ rfqs: [makeRfq()] }),
@@ -104,7 +102,7 @@ describe("SalesWorkbenchPanel", () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/gateway/rfq/sellside/rfq-1/route",
-        expect.objectContaining({ method: "PUT" }),
+        expect.objectContaining({ method: "PUT" })
       );
     });
 
@@ -113,7 +111,7 @@ describe("SalesWorkbenchPanel", () => {
 
   it("submits markup and shows computed client price", async () => {
     const fetchMock = vi
-      .spyOn(global, "fetch")
+      .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -148,9 +146,7 @@ describe("SalesWorkbenchPanel", () => {
     });
     expect(screen.getByText("$100.50")).toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /Send Quote to Client/i }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /Send Quote to Client/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -158,13 +154,13 @@ describe("SalesWorkbenchPanel", () => {
         expect.objectContaining({
           method: "PUT",
           body: JSON.stringify({ salesUserId: "sales-1", markupBps: 50 }),
-        }),
+        })
       );
     });
   });
 
   it("shows backend error when route action fails", async () => {
-    vi.spyOn(global, "fetch")
+    vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ rfqs: [makeRfq()] }),

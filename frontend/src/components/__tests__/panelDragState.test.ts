@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  clearDraggedPanelId,
-  draggedPanelId,
-  setDraggedPanelId,
-} from "../panelDragState";
+import { clearDraggedPanelId, draggedPanelId, setDraggedPanelId } from "../panelDragState";
 
 describe("panelDragState", () => {
   it("stores and clears dragged panel id", () => {

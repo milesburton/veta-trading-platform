@@ -29,7 +29,7 @@ function renderPanel(
     message: string;
     ts: number;
     dismissed: boolean;
-  }>,
+  }>
 ) {
   const store = configureStore({
     reducer: { alerts: alertsSlice.reducer },
@@ -44,7 +44,7 @@ function renderPanel(
   render(
     <Provider store={store}>
       <AlertsPanel />
-    </Provider>,
+    </Provider>
   );
 
   return store;

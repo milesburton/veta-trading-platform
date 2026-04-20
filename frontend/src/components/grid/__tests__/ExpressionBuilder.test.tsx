@@ -1,9 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  ExpressionBuilder,
-  ExpressionBuilderInline,
-} from "../ExpressionBuilder";
+import type { FieldDef } from "../../../types/gridPrefs";
+import { ExpressionBuilder, ExpressionBuilderInline } from "../ExpressionBuilder";
 
 const dispatch = vi.fn();
 const setFilterExpr = vi.fn((payload: unknown) => ({
@@ -21,21 +19,17 @@ vi.mock("../../../store/gridPrefsSlice.ts", () => ({
   saveGridPrefs: () => saveGridPrefs(),
 }));
 
-const fields = [
+const fields: FieldDef[] = [
   { key: "symbol", label: "Symbol", type: "string" },
   { key: "qty", label: "Qty", type: "number" },
   { key: "status", label: "Status", type: "enum", options: ["OPEN", "DONE"] },
-] as const;
+];
 
 beforeAll(() => {
-  HTMLDialogElement.prototype.showModal = vi.fn(function mockShowModal(
-    this: HTMLDialogElement,
-  ) {
+  HTMLDialogElement.prototype.showModal = vi.fn(function mockShowModal(this: HTMLDialogElement) {
     this.open = true;
   });
-  HTMLDialogElement.prototype.close = vi.fn(function mockClose(
-    this: HTMLDialogElement,
-  ) {
+  HTMLDialogElement.prototype.close = vi.fn(function mockClose(this: HTMLDialogElement) {
     this.open = false;
   });
 });
@@ -48,7 +42,7 @@ describe("ExpressionBuilderInline", () => {
         fields={[...fields]}
         value={{ kind: "group", id: "root", join: "AND", rules: [] }}
         onChange={onChange}
-      />,
+      />
     );
 
     fireEvent.click(screen.getByRole("button", { name: "+ Add rule" }));
@@ -80,7 +74,7 @@ describe("ExpressionBuilder", () => {
         fields={[...fields]}
         initialField="status"
         onClose={onClose}
-      />,
+      />
     );
 
     const selects = screen.getAllByRole("combobox");
@@ -92,7 +86,7 @@ describe("ExpressionBuilder", () => {
       expect.objectContaining({
         gridId: "executions",
         expr: expect.objectContaining({ kind: "group" }),
-      }),
+      })
     );
     expect(saveGridPrefs).toHaveBeenCalledTimes(1);
     expect(dispatch).toHaveBeenCalledTimes(2);
@@ -109,12 +103,10 @@ describe("ExpressionBuilder", () => {
           kind: "group",
           id: "seed",
           join: "AND",
-          rules: [
-            { kind: "rule", id: "r1", field: "symbol", op: "=", value: "AAPL" },
-          ],
+          rules: [{ kind: "rule", id: "r1", field: "symbol", op: "=", value: "AAPL" }],
         }}
         onClose={onClose}
-      />,
+      />
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
@@ -123,7 +115,7 @@ describe("ExpressionBuilder", () => {
       expect.objectContaining({
         gridId: "executions",
         expr: expect.objectContaining({ rules: [] }),
-      }),
+      })
     );
     expect(saveGridPrefs).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);

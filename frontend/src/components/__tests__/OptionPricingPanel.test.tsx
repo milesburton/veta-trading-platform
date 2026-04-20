@@ -52,7 +52,13 @@ describe("OptionPricingPanel", () => {
           spotPrice: 150.25,
           impliedVol: 0.24,
           price: 5.1,
-          greeks: { delta: -0.4, gamma: 0.02, theta: -0.03, vega: 0.1, rho: -0.02 },
+          greeks: {
+            delta: -0.4,
+            gamma: 0.02,
+            theta: -0.03,
+            vega: 0.1,
+            rho: -0.02,
+          },
           computedAt: Date.now(),
         }),
     });
@@ -71,7 +77,9 @@ describe("OptionPricingPanel", () => {
     render(<OptionPricingPanel />);
 
     fireEvent.click(screen.getByTestId("put-btn"));
-    fireEvent.change(screen.getByTestId("strike-input"), { target: { value: "150" } });
+    fireEvent.change(screen.getByTestId("strike-input"), {
+      target: { value: "150" },
+    });
     fireEvent.click(screen.getByTestId("get-quote-btn"));
 
     await waitFor(() => {

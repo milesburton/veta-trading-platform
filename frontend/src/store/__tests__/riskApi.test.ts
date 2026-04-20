@@ -15,7 +15,7 @@ function installRelativeRequestSupport() {
         }
         super(input, init);
       }
-    },
+    }
   );
 }
 
@@ -70,7 +70,7 @@ describe("riskApi", () => {
 
     expect(calls.some((c) => c.url.endsWith("/positions") && c.method === "GET")).toBe(true);
     expect(calls.some((c) => c.url.includes("/positions/user%2F1") && c.method === "GET")).toBe(
-      true,
+      true
     );
     expect(calls.some((c) => c.url.endsWith("/config") && c.method === "GET")).toBe(true);
     expect(calls.some((c) => c.url.endsWith("/config") && c.method === "PUT")).toBe(true);

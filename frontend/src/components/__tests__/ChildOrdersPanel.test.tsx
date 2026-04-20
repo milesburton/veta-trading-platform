@@ -35,9 +35,7 @@ vi.mock("../../store/gridApi.ts", () => ({
 }));
 
 vi.mock("../grid/ResizableHeader.tsx", () => ({
-  ResizableHeader: ({ children }: { children: React.ReactNode }) => (
-    <th>{children}</th>
-  ),
+  ResizableHeader: ({ children }: { children: React.ReactNode }) => <th>{children}</th>,
 }));
 
 describe("ChildOrdersPanel", () => {

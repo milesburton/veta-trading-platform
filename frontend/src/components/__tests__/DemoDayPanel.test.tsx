@@ -28,12 +28,21 @@ describe("DemoDayPanel", () => {
     render(<DemoDayPanel />);
 
     expect(screen.getByText(/Demo Day/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Launch Demo — Standard Trading Day/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: /Launch Demo — Standard Trading Day/i,
+      })
+    ).toBeInTheDocument();
   });
 
   it("changes selected scenario and submits it", async () => {
     runDemoDay.mockResolvedValue({
-      data: { scenario: "market-open", submitted: 120, elapsedMs: 1000, jobId: "job-42" },
+      data: {
+        scenario: "market-open",
+        submitted: 120,
+        elapsedMs: 1000,
+        jobId: "job-42",
+      },
     });
 
     render(<DemoDayPanel />);

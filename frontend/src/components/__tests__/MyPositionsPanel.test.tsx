@@ -33,7 +33,7 @@ function renderPanel() {
         user: {
           id: "u-1",
           name: "Trader",
-          role: "trader",
+          role: "trader" as const,
           avatar_emoji: "T",
         },
         limits: {
@@ -51,7 +51,7 @@ function renderPanel() {
   render(
     <Provider store={store}>
       <MyPositionsPanel />
-    </Provider>,
+    </Provider>
   );
 }
 

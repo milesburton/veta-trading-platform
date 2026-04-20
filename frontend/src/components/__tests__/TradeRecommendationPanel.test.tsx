@@ -48,7 +48,13 @@ describe("TradeRecommendationPanel", () => {
               score: 68,
               signalStrength: "STRONG_BUY",
               reasons: ["momentum:+0.500", "ATM_HIGH_VOL"],
-              greeks: { delta: 0.51, gamma: 0.02, theta: -0.03, vega: 0.11, rho: 0.01 },
+              greeks: {
+                delta: 0.51,
+                gamma: 0.02,
+                theta: -0.03,
+                vega: 0.11,
+                rho: 0.01,
+              },
               impliedVol: 0.25,
               scoringMode: "signal-driven",
               signalScore: 0.72,
@@ -78,8 +84,12 @@ describe("TradeRecommendationPanel", () => {
       expect(getRecommendations).toHaveBeenCalledWith(
         expect.objectContaining({
           symbol: "AAPL",
-          signal: expect.objectContaining({ score: 0.72, direction: "long", confidence: 0.83 }),
-        }),
+          signal: expect.objectContaining({
+            score: 0.72,
+            direction: "long",
+            confidence: 0.83,
+          }),
+        })
       );
     });
   });

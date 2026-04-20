@@ -15,7 +15,7 @@ function installRelativeRequestSupport() {
         }
         super(input, init);
       }
-    },
+    }
   );
 }
 
@@ -63,40 +63,38 @@ describe("advisoryApi", () => {
     const store = createStore();
 
     await store.dispatch(advisoryApi.endpoints.getAdvisory.initiate("AAPL/US"));
-    await store.dispatch(
-      advisoryApi.endpoints.requestAdvisory.initiate({ symbol: "AAPL" }),
-    );
+    await store.dispatch(advisoryApi.endpoints.requestAdvisory.initiate({ symbol: "AAPL" }));
     await store.dispatch(advisoryApi.endpoints.getLlmSubsystemState.initiate());
     await store.dispatch(
       advisoryApi.endpoints.updateLlmSubsystemState.initiate({
         enabled: true,
         triggerMode: "manual",
-      }),
+      })
     );
     await store.dispatch(
-      advisoryApi.endpoints.requestWatchlistBrief.initiate({ symbols: ["AAPL", "MSFT"] }),
+      advisoryApi.endpoints.requestWatchlistBrief.initiate({
+        symbols: ["AAPL", "MSFT"],
+      })
     );
     await store.dispatch(advisoryApi.endpoints.triggerWorker.initiate());
 
+    expect(calls.some((c) => c.url.includes("/advisory/AAPL%2FUS") && c.method === "GET")).toBe(
+      true
+    );
+    expect(calls.some((c) => c.url.includes("/advisory/request") && c.method === "POST")).toBe(
+      true
+    );
+    expect(calls.some((c) => c.url.includes("/advisory/admin/state") && c.method === "GET")).toBe(
+      true
+    );
+    expect(calls.some((c) => c.url.includes("/advisory/admin/state") && c.method === "PUT")).toBe(
+      true
+    );
     expect(
-      calls.some((c) => c.url.includes("/advisory/AAPL%2FUS") && c.method === "GET"),
+      calls.some((c) => c.url.includes("/advisory/admin/watchlist-brief") && c.method === "POST")
     ).toBe(true);
     expect(
-      calls.some((c) => c.url.includes("/advisory/request") && c.method === "POST"),
-    ).toBe(true);
-    expect(
-      calls.some((c) => c.url.includes("/advisory/admin/state") && c.method === "GET"),
-    ).toBe(true);
-    expect(
-      calls.some((c) => c.url.includes("/advisory/admin/state") && c.method === "PUT"),
-    ).toBe(true);
-    expect(
-      calls.some(
-        (c) => c.url.includes("/advisory/admin/watchlist-brief") && c.method === "POST",
-      ),
-    ).toBe(true);
-    expect(
-      calls.some((c) => c.url.includes("/advisory/admin/trigger-worker") && c.method === "POST"),
+      calls.some((c) => c.url.includes("/advisory/admin/trigger-worker") && c.method === "POST")
     ).toBe(true);
   });
 });

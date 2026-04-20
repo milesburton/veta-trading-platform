@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { COLOR } from "../../tokens";
-import {
-  collapseSmallTiles,
-  pctToColor,
-  squarify,
-  tileTextColor,
-} from "../MarketHeatmap";
+import { collapseSmallTiles, pctToColor, squarify, tileTextColor } from "../MarketHeatmap";
 
 describe("MarketHeatmap helpers", () => {
   it("maps percentage bands to heat colors", () => {

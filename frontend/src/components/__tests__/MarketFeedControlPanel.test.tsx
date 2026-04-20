@@ -98,7 +98,7 @@ function renderPanel(role: "admin" | "trader" = "admin") {
   render(
     <Provider store={store}>
       <MarketFeedControlPanel />
-    </Provider>,
+    </Provider>
   );
 }
 

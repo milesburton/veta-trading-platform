@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InstrumentAnalysisPanel } from "../InstrumentAnalysisPanel";
 
 let selectedAsset = "";
-let appState: any = {
+let appState: Record<string, unknown> = {
   intelligence: {
     signals: {},
     features: {},
@@ -11,9 +11,7 @@ let appState: any = {
 };
 
 vi.mock("recharts", () => {
-  const Mock = ({ children }: { children?: React.ReactNode }) => (
-    <div>{children}</div>
-  );
+  const Mock = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
   return {
     ResponsiveContainer: Mock,
     ComposedChart: Mock,
@@ -35,9 +33,7 @@ vi.mock("../../store/hooks.ts", () => ({
 }));
 
 vi.mock("../AdvisoryPanel.tsx", () => ({
-  AdvisoryPanel: ({ symbol }: { symbol: string }) => (
-    <div>advisory-{symbol}</div>
-  ),
+  AdvisoryPanel: ({ symbol }: { symbol: string }) => <div>advisory-{symbol}</div>,
 }));
 
 describe("InstrumentAnalysisPanel", () => {
@@ -55,9 +51,7 @@ describe("InstrumentAnalysisPanel", () => {
   it("shows waiting state when no symbol is selected", () => {
     render(<InstrumentAnalysisPanel />);
 
-    expect(
-      screen.getByText(/waiting for symbol selection/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/waiting for symbol selection/i)).toBeInTheDocument();
   });
 
   it("renders signal/features and backtest frames", async () => {
@@ -104,8 +98,8 @@ describe("InstrumentAnalysisPanel", () => {
             signal: { score: 0.4, direction: "long", confidence: 0.9 },
           },
         ]),
-        { status: 200 },
-      ),
+        { status: 200 }
+      )
     );
 
     render(<InstrumentAnalysisPanel />);
@@ -127,9 +121,7 @@ describe("InstrumentAnalysisPanel", () => {
       },
     };
 
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response("boom", { status: 500 }),
-    );
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("boom", { status: 500 }));
 
     render(<InstrumentAnalysisPanel />);
     fireEvent.click(screen.getByRole("button", { name: /Run Backtest/i }));

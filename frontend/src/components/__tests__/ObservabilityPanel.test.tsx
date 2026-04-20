@@ -34,7 +34,7 @@ function renderPanel(events: ObsEvent[] = []) {
   return render(
     <Provider store={makeStore(events)}>
       <ObservabilityPanel />
-    </Provider>,
+    </Provider>
   );
 }
 
@@ -118,7 +118,7 @@ describe("ObservabilityPanel – Export button", () => {
 describe("ObservabilityPanel – event cap", () => {
   it("renders at most 100 events in the list", () => {
     const events: ObsEvent[] = Array.from({ length: 150 }, (_, i) =>
-      makeEvent({ type: `event_${i}`, ts: Date.now() + i }),
+      makeEvent({ type: `event_${i}`, ts: Date.now() + i })
     );
     renderPanel(events);
     clickEventsTab();
@@ -144,7 +144,7 @@ describe("ObservabilityPanel – Summary tab", () => {
 describe("ObservabilityPanel – Trades tab", () => {
   function makeOrder(
     id: string,
-    status: "filled" | "working" | "pending",
+    status: "filled" | "working" | "pending"
   ): import("../../types").OrderRecord {
     return {
       id,
@@ -157,7 +157,7 @@ describe("ObservabilityPanel – Trades tab", () => {
       strategy: "TWAP",
       status,
       filled: status === "filled" ? 100 : 0,
-      algoParams: { strategy: "TWAP" },
+      algoParams: { strategy: "TWAP", numSlices: 2, participationCap: 0.1 },
       children:
         status === "filled"
           ? [
@@ -197,7 +197,7 @@ describe("ObservabilityPanel – Trades tab", () => {
     return render(
       <Provider store={makeStoreWithOrders(orders)}>
         <ObservabilityPanel />
-      </Provider>,
+      </Provider>
     );
   }
 
@@ -220,10 +220,7 @@ describe("ObservabilityPanel – Trades tab", () => {
   });
 
   it("shows Fill Rate stat on Summary tab with mixed orders", () => {
-    renderPanelWithOrders([
-      makeOrder("o1", "filled"),
-      makeOrder("o2", "working"),
-    ]);
+    renderPanelWithOrders([makeOrder("o1", "filled"), makeOrder("o2", "working")]);
     expect(screen.getByText(/Filled/i)).toBeInTheDocument();
     expect(screen.getByText(/Active/i)).toBeInTheDocument();
   });

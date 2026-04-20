@@ -3,8 +3,8 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authSlice } from "../../store/authSlice";
-import type { SellSideRfq } from "../rfq/shared";
 import { ClientRfqPanel } from "../ClientRfqPanel";
+import type { SellSideRfq } from "../rfq/shared";
 
 function makeStore() {
   return configureStore({
@@ -14,7 +14,7 @@ function makeStore() {
         user: {
           id: "client-1",
           name: "Client One",
-          role: "trader",
+          role: "trader" as const,
           avatar_emoji: "C",
         },
         limits: {
@@ -34,7 +34,7 @@ function renderPanel() {
   render(
     <Provider store={makeStore()}>
       <ClientRfqPanel />
-    </Provider>,
+    </Provider>
   );
 }
 
@@ -63,7 +63,7 @@ afterEach(() => {
 describe("ClientRfqPanel", () => {
   it("submits an RFQ and shows success feedback", async () => {
     const fetchMock = vi
-      .spyOn(global, "fetch")
+      .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ rfqs: [] }),
@@ -105,7 +105,7 @@ describe("ClientRfqPanel", () => {
             quantity: 250,
             limitPrice: 101.25,
           }),
-        }),
+        })
       );
     });
 
@@ -113,7 +113,7 @@ describe("ClientRfqPanel", () => {
   });
 
   it("shows API error feedback for failed submit", async () => {
-    vi.spyOn(global, "fetch")
+    vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ rfqs: [] }),
@@ -134,7 +134,7 @@ describe("ClientRfqPanel", () => {
 
   it("renders confirmation actions and sends confirm/reject", async () => {
     const fetchMock = vi
-      .spyOn(global, "fetch")
+      .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -176,7 +176,7 @@ describe("ClientRfqPanel", () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/gateway/rfq/sellside/rfq-confirm/confirm",
-        expect.objectContaining({ method: "PUT" }),
+        expect.objectContaining({ method: "PUT" })
       );
     });
 
@@ -185,7 +185,7 @@ describe("ClientRfqPanel", () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/gateway/rfq/sellside/rfq-confirm/reject",
-        expect.objectContaining({ method: "PUT" }),
+        expect.objectContaining({ method: "PUT" })
       );
     });
   });

@@ -55,9 +55,7 @@ describe("patchTabConfig", () => {
     const nodes = [
       {
         type: "tabset",
-        children: [
-          { type: "tab", id: "panel-a", config: { panelType: "news" } },
-        ],
+        children: [{ type: "tab", id: "panel-a", config: { panelType: "news" } }],
       },
     ] as unknown as Array<Record<string, unknown>>;
 

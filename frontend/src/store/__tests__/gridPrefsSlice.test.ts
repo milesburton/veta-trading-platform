@@ -5,9 +5,9 @@ import {
   loadGridPrefs,
   resetGrid,
   setAllPrefs,
+  setCfRules,
   setColumnOrder,
   setColumnWidth,
-  setCfRules,
   setFilterExpr,
   setFilters,
   setSort,
@@ -27,10 +27,7 @@ describe("gridPrefsSlice – setFilters", () => {
         value: "BUY",
       },
     ];
-    const state = reducer(
-      initial,
-      setFilters({ gridId: "orderBlotter", filters }),
-    );
+    const state = reducer(initial, setFilters({ gridId: "orderBlotter", filters }));
     expect(state.orderBlotter.filters).toHaveLength(1);
     expect(state.executions.filters).toHaveLength(0);
   });
@@ -44,10 +41,7 @@ describe("gridPrefsSlice – setFilters", () => {
         value: "AAPL",
       },
     ];
-    const state = reducer(
-      initial,
-      setFilters({ gridId: "executions", filters }),
-    );
+    const state = reducer(initial, setFilters({ gridId: "executions", filters }));
     expect(state.executions.filters).toHaveLength(1);
     expect(state.orderBlotter.filters).toHaveLength(0);
   });
@@ -58,14 +52,14 @@ describe("gridPrefsSlice – setFilters", () => {
       setFilters({
         gridId: "orderBlotter",
         filters: [{ id: "a", field: "side", op: "=", value: "BUY" }],
-      }),
+      })
     );
     const step2 = reducer(
       step1,
       setFilters({
         gridId: "orderBlotter",
         filters: [{ id: "b", field: "asset", op: "=", value: "AAPL" }],
-      }),
+      })
     );
     expect(step2.orderBlotter.filters).toHaveLength(1);
     expect(step2.orderBlotter.filters[0].id).toBe("b");
@@ -74,10 +68,7 @@ describe("gridPrefsSlice – setFilters", () => {
 
 describe("gridPrefsSlice – setSort", () => {
   it("sets sort field and direction", () => {
-    const state = reducer(
-      initial,
-      setSort({ gridId: "orderBlotter", field: "asset", dir: "asc" }),
-    );
+    const state = reducer(initial, setSort({ gridId: "orderBlotter", field: "asset", dir: "asc" }));
     expect(state.orderBlotter.sortField).toBe("asset");
     expect(state.orderBlotter.sortDir).toBe("asc");
   });
@@ -85,12 +76,9 @@ describe("gridPrefsSlice – setSort", () => {
   it("clears sort with null", () => {
     const withSort = reducer(
       initial,
-      setSort({ gridId: "orderBlotter", field: "asset", dir: "asc" }),
+      setSort({ gridId: "orderBlotter", field: "asset", dir: "asc" })
     );
-    const cleared = reducer(
-      withSort,
-      setSort({ gridId: "orderBlotter", field: null, dir: null }),
-    );
+    const cleared = reducer(withSort, setSort({ gridId: "orderBlotter", field: null, dir: null }));
     expect(cleared.orderBlotter.sortField).toBeNull();
     expect(cleared.orderBlotter.sortDir).toBeNull();
   });
@@ -98,7 +86,7 @@ describe("gridPrefsSlice – setSort", () => {
   it("does not affect the other grid", () => {
     const state = reducer(
       initial,
-      setSort({ gridId: "executions", field: "strategy", dir: "desc" }),
+      setSort({ gridId: "executions", field: "strategy", dir: "desc" })
     );
     expect(state.orderBlotter.sortField).toBeNull();
   });
@@ -127,10 +115,7 @@ describe("gridPrefsSlice – setCfRules", () => {
         style: { bg: "bg-emerald-900/40" },
       },
     ];
-    const state = reducer(
-      initial,
-      setCfRules({ gridId: "orderBlotter", rules }),
-    );
+    const state = reducer(initial, setCfRules({ gridId: "orderBlotter", rules }));
     expect(state.orderBlotter.cfRules).toHaveLength(1);
     expect(state.executions.cfRules).toHaveLength(0);
   });
@@ -153,10 +138,7 @@ describe("gridPrefsSlice – column and expression reducers", () => {
       ],
     };
 
-    const state = reducer(
-      initial,
-      setFilterExpr({ gridId: "executions", expr }),
-    );
+    const state = reducer(initial, setFilterExpr({ gridId: "executions", expr }));
     expect(state.executions.filterExpr).toEqual(expr);
     expect(state.orderBlotter.filterExpr.rules).toHaveLength(0);
   });
@@ -164,7 +146,7 @@ describe("gridPrefsSlice – column and expression reducers", () => {
   it("sets column width and order independently", () => {
     const withWidth = reducer(
       initial,
-      setColumnWidth({ gridId: "orderBlotter", key: "asset", width: 180 }),
+      setColumnWidth({ gridId: "orderBlotter", key: "asset", width: 180 })
     );
     expect(withWidth.orderBlotter.columnWidths.asset).toBe(180);
 
@@ -173,13 +155,9 @@ describe("gridPrefsSlice – column and expression reducers", () => {
       setColumnOrder({
         gridId: "orderBlotter",
         order: ["side", "asset", "quantity"],
-      }),
+      })
     );
-    expect(withOrder.orderBlotter.columnOrder).toEqual([
-      "side",
-      "asset",
-      "quantity",
-    ]);
+    expect(withOrder.orderBlotter.columnOrder).toEqual(["side", "asset", "quantity"]);
     expect(withOrder.executions.columnOrder).toEqual([]);
   });
 });
@@ -192,9 +170,9 @@ describe("gridPrefsSlice – resetGrid", () => {
         setFilters({
           gridId: "orderBlotter",
           filters: [{ id: "x", field: "side", op: "=", value: "BUY" }],
-        }),
+        })
       ),
-      setSort({ gridId: "orderBlotter", field: "asset", dir: "asc" }),
+      setSort({ gridId: "orderBlotter", field: "asset", dir: "asc" })
     );
     const cleared = reducer(withData, resetGrid({ gridId: "orderBlotter" }));
     expect(cleared.orderBlotter.filters).toHaveLength(0);
@@ -208,7 +186,7 @@ describe("gridPrefsSlice – resetGrid", () => {
       setFilters({
         gridId: "executions",
         filters: [{ id: "e", field: "side", op: "=", value: "SELL" }],
-      }),
+      })
     );
     const cleared = reducer(withData, resetGrid({ gridId: "orderBlotter" }));
     expect(cleared.executions.filters).toHaveLength(1);
@@ -245,7 +223,7 @@ describe("gridPrefsSlice – setAllPrefs", () => {
   it("only hydrates the grids present in the payload", () => {
     const withData = reducer(
       initial,
-      setSort({ gridId: "executions", field: "strategy", dir: "asc" }),
+      setSort({ gridId: "executions", field: "strategy", dir: "asc" })
     );
     const partial: AllGridPrefs = { orderBlotter: { ...initial.orderBlotter } };
     const state = reducer(withData, setAllPrefs(partial));
@@ -292,7 +270,7 @@ describe("gridPrefsSlice – loadGridPrefs reducer lifecycle", () => {
 
     const rejected = reducer(
       pending,
-      loadGridPrefs.rejected(new Error("fail"), "req-1", undefined),
+      loadGridPrefs.rejected(new Error("fail"), "req-1", undefined)
     );
     expect(rejected.loading).toBe(false);
   });
@@ -305,10 +283,7 @@ describe("gridPrefsSlice – loadGridPrefs reducer lifecycle", () => {
       },
     };
 
-    const state = reducer(
-      initial,
-      loadGridPrefs.fulfilled(payload, "req-2", undefined),
-    );
+    const state = reducer(initial, loadGridPrefs.fulfilled(payload, "req-2", undefined));
     expect(state.loading).toBe(false);
     expect(state.executions.filters).toHaveLength(1);
     expect(state.executions.filters[0].value).toBe("MSFT");
@@ -317,12 +292,9 @@ describe("gridPrefsSlice – loadGridPrefs reducer lifecycle", () => {
   it("does not overwrite state when fulfilled payload is null", () => {
     const withSort = reducer(
       initial,
-      setSort({ gridId: "executions", field: "strategy", dir: "desc" }),
+      setSort({ gridId: "executions", field: "strategy", dir: "desc" })
     );
-    const state = reducer(
-      withSort,
-      loadGridPrefs.fulfilled(null, "req-3", undefined),
-    );
+    const state = reducer(withSort, loadGridPrefs.fulfilled(null, "req-3", undefined));
     expect(state.executions.sortField).toBe("strategy");
     expect(state.executions.sortDir).toBe("desc");
   });

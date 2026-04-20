@@ -1,13 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { llmStateReceived, llmSubsystemSlice } from "../llmSubsystemSlice";
 import type { LlmSubsystemStatus } from "../llmSubsystemSlice";
+import { llmStateReceived, llmSubsystemSlice } from "../llmSubsystemSlice";
 
 const { reducer } = llmSubsystemSlice;
 const initialState = { status: null, lastUpdated: null };
 
-function makeStatus(
-  overrides: Partial<LlmSubsystemStatus> = {},
-): LlmSubsystemStatus {
+function makeStatus(overrides: Partial<LlmSubsystemStatus> = {}): LlmSubsystemStatus {
   return {
     state: "armed",
     policy: {
@@ -48,10 +46,7 @@ describe("llmSubsystemSlice", () => {
   });
 
   it("overwrites previous status on subsequent updates", () => {
-    let state = reducer(
-      initialState,
-      llmStateReceived(makeStatus({ state: "armed" })),
-    );
+    let state = reducer(initialState, llmStateReceived(makeStatus({ state: "armed" })));
     state = reducer(state, llmStateReceived(makeStatus({ state: "cooldown" })));
     expect(state.status?.state).toBe("cooldown");
   });

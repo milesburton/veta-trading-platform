@@ -23,7 +23,7 @@ function makeWrapper(
   context: {
     incoming: 1 | 2 | 3 | 4 | 5 | 6 | null;
     outgoing: 1 | 2 | 3 | 4 | 5 | 6 | null;
-  },
+  }
 ) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
@@ -50,7 +50,7 @@ describe("useChannelIn", () => {
       channelsSlice.actions.channelUpdated({
         channel: 2,
         patch: { selectedAsset: "MSFT", selectedOrderId: "ord-2" },
-      }),
+      })
     );
 
     const { result } = renderHook(() => useChannelIn(), {

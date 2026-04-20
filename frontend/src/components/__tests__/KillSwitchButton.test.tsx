@@ -4,9 +4,24 @@ import { KillSwitchButton } from "../KillSwitchButton";
 
 const dispatch = vi.fn();
 const killOrdersThunk = vi.fn((payload) => ({ type: "orders/kill", payload }));
-const resumeOrdersThunk = vi.fn((payload) => ({ type: "orders/resume", payload }));
+const resumeOrdersThunk = vi.fn((payload) => ({
+  type: "orders/resume",
+  payload,
+}));
 
-let mockState: any = {};
+type MockState = {
+  auth: { user: { id: string; role: string } };
+  market: { assets: Array<{ symbol: string }> };
+  orders: { orders: Array<{ userId?: string }> };
+  killSwitch: { blocks: Array<Record<string, unknown>> };
+};
+
+let mockState: MockState = {
+  auth: { user: { id: "", role: "" } },
+  market: { assets: [] },
+  orders: { orders: [] },
+  killSwitch: { blocks: [] },
+};
 
 vi.mock("../../store/hooks.ts", () => ({
   useAppDispatch: () => dispatch,
@@ -15,7 +30,7 @@ vi.mock("../../store/hooks.ts", () => ({
 
 vi.mock("../../store/ordersSlice.ts", async () => {
   const actual = await vi.importActual<typeof import("../../store/ordersSlice.ts")>(
-    "../../store/ordersSlice.ts",
+    "../../store/ordersSlice.ts"
   );
   return {
     ...actual,
@@ -49,13 +64,16 @@ describe("KillSwitchButton", () => {
     fireEvent.click(screen.getByTestId("kill-switch-confirm-btn"));
 
     await waitFor(() => {
-      expect(killOrdersThunk).toHaveBeenCalledWith({ scope: "symbol", scopeValue: "AAPL" });
+      expect(killOrdersThunk).toHaveBeenCalledWith({
+        scope: "symbol",
+        scopeValue: "AAPL",
+      });
     });
 
     expect(
       dispatch.mock.calls.some(
-        (c) => c[0]?.type === "killSwitch/blockAdded" && c[0]?.payload?.scope === "symbol",
-      ),
+        (c) => c[0]?.type === "killSwitch/blockAdded" && c[0]?.payload?.scope === "symbol"
+      )
     ).toBe(true);
   });
 
@@ -82,7 +100,7 @@ describe("KillSwitchButton", () => {
     });
 
     expect(dispatch.mock.calls.some((c) => c[0]?.type === "killSwitch/allBlocksCleared")).toBe(
-      true,
+      true
     );
   });
 
@@ -102,8 +120,6 @@ describe("KillSwitchButton", () => {
     fireEvent.click(screen.getByTestId("kill-switch-btn"));
     fireEvent.click(screen.getByRole("button", { name: /Remove block/i }));
 
-    expect(
-      dispatch.mock.calls.some((c) => c[0]?.type === "killSwitch/blockRemoved"),
-    ).toBe(true);
+    expect(dispatch.mock.calls.some((c) => c[0]?.type === "killSwitch/blockRemoved")).toBe(true);
   });
 });

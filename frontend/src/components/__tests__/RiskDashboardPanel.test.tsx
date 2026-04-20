@@ -62,7 +62,7 @@ function renderPanel(
     threshold: number;
     firedAt: number;
     expiresAt: number;
-  }> = [],
+  }> = []
 ) {
   const store = configureStore({
     reducer: { breakers: breakersSlice.reducer },
@@ -77,7 +77,7 @@ function renderPanel(
   render(
     <Provider store={store}>
       <RiskDashboardPanel />
-    </Provider>,
+    </Provider>
   );
 }
 
@@ -177,9 +177,7 @@ describe("RiskDashboardPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /Apply/i }));
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/maxDailyLoss must be negative/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/maxDailyLoss must be negative/i)).toBeInTheDocument();
     });
     expect(updateRiskConfig).not.toHaveBeenCalled();
   });
@@ -197,7 +195,7 @@ describe("RiskDashboardPanel", () => {
         expect.objectContaining({
           maxGrossNotional: 2_000_000,
           maxDailyLoss: -50_000,
-        }),
+        })
       );
     });
   });

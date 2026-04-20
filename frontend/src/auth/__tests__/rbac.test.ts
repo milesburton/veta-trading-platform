@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  AUTH_ROLES,
-  ROLE_LABELS,
-  NON_TRADING_ROLES,
-  canSubmitOrders,
-} from "../rbac";
+import { AUTH_ROLES, canSubmitOrders, NON_TRADING_ROLES, ROLE_LABELS } from "../rbac";
 
 describe("auth/rbac", () => {
   describe("AUTH_ROLES", () => {

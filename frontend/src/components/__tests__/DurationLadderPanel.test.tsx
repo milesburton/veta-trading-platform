@@ -38,9 +38,7 @@ vi.mock("../../store/analyticsApi.ts", () => ({
 }));
 
 vi.mock("recharts", () => {
-  const MockContainer = ({ children }: { children?: React.ReactNode }) => (
-    <div>{children}</div>
-  );
+  const MockContainer = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
 
   return {
     ResponsiveContainer: MockContainer,
@@ -104,9 +102,7 @@ describe("DurationLadderPanel", () => {
     render(<DurationLadderPanel />);
 
     expect(screen.getByRole("button", { name: /Computing/i })).toBeDisabled();
-    expect(
-      screen.getByText(/Failed to compute — check analytics service/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Failed to compute — check analytics service/i)).toBeInTheDocument();
   });
 
   it("renders the computed portfolio summary and tenor ladder", () => {

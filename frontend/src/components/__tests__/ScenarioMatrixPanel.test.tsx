@@ -5,10 +5,7 @@ import { ScenarioMatrixPanel } from "../ScenarioMatrixPanel";
 const getScenario = vi.fn();
 
 vi.mock("../../store/analyticsApi.ts", () => ({
-  useGetScenarioMutation: () => [
-    getScenario,
-    { isLoading: false, error: null },
-  ],
+  useGetScenarioMutation: () => [getScenario, { isLoading: false, error: null }],
 }));
 
 vi.mock("../../store/selectors.ts", () => ({
@@ -44,7 +41,7 @@ function makeCells() {
       mean: 10,
       p75: 11,
       p95: 12,
-    })),
+    }))
   );
 }
 
@@ -92,7 +89,7 @@ describe("ScenarioMatrixPanel", () => {
           spotShocks: [-0.2, -0.1, -0.05, 0, 0.05, 0.1, 0.2],
           volShocks: [-0.2, -0.1, 0, 0.1, 0.2],
           paths: 1000,
-        }),
+        })
       );
     });
   });

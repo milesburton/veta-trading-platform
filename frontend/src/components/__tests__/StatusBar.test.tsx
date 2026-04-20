@@ -17,8 +17,7 @@ import { DashboardContext, DEFAULT_LAYOUT } from "../DashboardLayout";
 import { StatusBar } from "../StatusBar";
 
 vi.mock("../../store/servicesApi", async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import("../../store/servicesApi")>();
+  const original = await importOriginal<typeof import("../../store/servicesApi")>();
   return {
     ...original,
     useGetServiceHealthQuery: () => ({
@@ -47,8 +46,7 @@ function makeStore(connected: boolean) {
       theme: themeSlice.reducer,
       [servicesApi.reducerPath]: servicesApi.reducer,
     },
-    middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(servicesApi.middleware),
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(servicesApi.middleware),
     preloadedState: {
       market: {
         assets: [],
@@ -87,7 +85,7 @@ function renderBar(connected: boolean) {
       >
         <StatusBar />
       </DashboardContext.Provider>
-    </Provider>,
+    </Provider>
   );
 }
 
@@ -103,9 +101,7 @@ import { alertAdded } from "../../store/alertsSlice";
 describe("StatusBar – connected state", () => {
   it("does not show disconnected banner when connected", () => {
     renderBar(true);
-    expect(
-      screen.queryByTitle(/Gateway disconnected/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/Gateway disconnected/i)).not.toBeInTheDocument();
   });
 });
 
@@ -130,7 +126,7 @@ describe("StatusBar – alert badge", () => {
         source: "order",
         message: "Test alert",
         ts: Date.now(),
-      }),
+      })
     );
     render(
       <Provider store={store}>
@@ -153,7 +149,7 @@ describe("StatusBar – alert badge", () => {
         >
           <StatusBar />
         </DashboardContext.Provider>
-      </Provider>,
+      </Provider>
     );
     expect(screen.getByText("1")).toBeInTheDocument();
   });

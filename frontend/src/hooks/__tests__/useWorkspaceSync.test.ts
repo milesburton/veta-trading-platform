@@ -25,20 +25,20 @@ describe("useWorkspaceSync helpers", () => {
       ok: true,
       json: async () => ({
         theme: "dark",
-        workspaces: [{ id: "ws-1", name: "Main", emoji: "M" }],
+        workspaces: [{ id: "ws-1", name: "Main" }],
         layouts: { "ws-1": { layout: { type: "row", children: [] } } },
       }),
     });
 
     const loaded = await loadWorkspacePrefs();
     expect(loaded).toEqual({
-      workspaces: [{ id: "ws-1", name: "Main", emoji: "M" }],
+      workspaces: [{ id: "ws-1", name: "Main" }],
       layouts: { "ws-1": { layout: { type: "row", children: [] } } },
     });
 
     fetchMock.mockResolvedValueOnce({ ok: true });
     await saveWorkspacePrefs({
-      workspaces: [{ id: "ws-2", name: "Desk", emoji: "D" }],
+      workspaces: [{ id: "ws-2", name: "Desk" }],
       layouts: { "ws-2": { layout: { type: "row", children: [] } } },
     });
 
@@ -46,7 +46,7 @@ describe("useWorkspaceSync helpers", () => {
     const body = JSON.parse(String(options.body));
     expect(body).toMatchObject({
       theme: "dark",
-      workspaces: [{ id: "ws-2", name: "Desk", emoji: "D" }],
+      workspaces: [{ id: "ws-2", name: "Desk" }],
     });
   });
 
@@ -86,9 +86,7 @@ describe("useWorkspaceSync helpers", () => {
       ok: true,
       json: async () => [{ id: "shared-1", name: "Shared" }],
     });
-    await expect(listSharedWorkspaces()).resolves.toEqual([
-      { id: "shared-1", name: "Shared" },
-    ]);
+    await expect(listSharedWorkspaces()).resolves.toEqual([{ id: "shared-1", name: "Shared" }]);
 
     fetchMock.mockResolvedValueOnce({ ok: false });
     await expect(listSharedWorkspaces()).resolves.toEqual([]);
@@ -121,14 +119,14 @@ describe("useWorkspaceSync helpers", () => {
     await expect(
       publishSharedWorkspace("Desk", "Desc", {
         layout: { type: "row", children: [] },
-      }),
+      })
     ).resolves.toBe("new-id");
 
     fetchMock.mockResolvedValueOnce({ ok: false });
     await expect(
       publishSharedWorkspace("Desk", "Desc", {
         layout: { type: "row", children: [] },
-      }),
+      })
     ).resolves.toBeNull();
 
     fetchMock.mockResolvedValueOnce({ ok: true });

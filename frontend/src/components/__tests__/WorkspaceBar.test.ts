@@ -1,12 +1,20 @@
-import { act, renderHook } from "@testing-library/react";
-import { afterEach, describe, expect, test } from "vitest";
+import { configureStore } from "@reduxjs/toolkit";
+import { act, render, renderHook, screen } from "@testing-library/react";
+import { type ComponentType, createElement, type ReactNode } from "react";
+import { Provider } from "react-redux";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Workspace } from "../WorkspaceBar";
 import {
   defaultWorkspaceForStyle,
   reconcilePresetWorkspaces,
   seedWorkspaces,
   useWorkspaces,
+  WorkspaceSidebar,
 } from "../WorkspaceBar";
+
+vi.mock("../SharedWorkspaceBrowser.tsx", () => ({
+  SharedWorkspaceBrowser: () => null,
+}));
 
 afterEach(() => {
   window.history.replaceState(null, "", "/");
@@ -315,7 +323,11 @@ describe("useWorkspaces", () => {
     const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
 
     act(() => {
-      window.dispatchEvent(new PopStateEvent("popstate", { state: { workspaceId: "ws-research" } }));
+      window.dispatchEvent(
+        new PopStateEvent("popstate", {
+          state: { workspaceId: "ws-research" },
+        })
+      );
     });
     expect(result.current.activeId).toBe("ws-research");
 
@@ -323,5 +335,38 @@ describe("useWorkspaces", () => {
       window.dispatchEvent(new PopStateEvent("popstate", { state: { workspaceId: "ws-missing" } }));
     });
     expect(result.current.activeId).toBe("ws-research");
+  });
+});
+
+describe("WorkspaceSidebar", () => {
+  test("renders workspace names and add button", () => {
+    const store = configureStore({
+      reducer: {
+        auth: (state = { user: { id: "u1", role: "trader" } }) => state,
+      },
+    });
+    const workspaces = [
+      { id: "ws-1", name: "Trading", locked: true },
+      { id: "ws-2", name: "Research" },
+    ];
+
+    render(
+      createElement(
+        Provider as unknown as ComponentType<{ store: typeof store; children?: ReactNode }>,
+        { store },
+        createElement(WorkspaceSidebar, {
+          activeId: "ws-1",
+          onSelect: vi.fn(),
+          onWorkspacesChange: vi.fn(),
+          workspaces,
+          layouts: {},
+          onCloneWorkspace: vi.fn(),
+        })
+      )
+    );
+
+    expect(screen.getByText("Trading")).toBeInTheDocument();
+    expect(screen.getByText("Research")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /add new workspace/i })).toBeInTheDocument();
   });
 });

@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { alertsSlice } from "../../store/alertsSlice";
 import { observabilitySlice } from "../../store/observabilitySlice";
 import { ordersSlice } from "../../store/ordersSlice";
+import type { ObsEvent, OrderRecord, Strategy } from "../../types";
 import { ThroughputGaugesPanel } from "../ThroughputGaugesPanel";
 
 vi.mock("recharts", () => {
@@ -18,7 +19,13 @@ vi.mock("recharts", () => {
   };
 });
 
-function makeOrder(id: string, submittedAt: number, strategy = "TWAP", filledChildren = 0, totalChildren = 0) {
+function makeOrder(
+  id: string,
+  submittedAt: number,
+  strategy: Strategy = "TWAP",
+  filledChildren = 0,
+  totalChildren = 0
+): OrderRecord {
   return {
     id,
     submittedAt,
@@ -40,12 +47,12 @@ function makeOrder(id: string, submittedAt: number, strategy = "TWAP", filledChi
       limitPrice: 100,
       status: i < filledChildren ? "filled" : "working",
       submittedAt,
-      filledQty: i < filledChildren ? 10 : 0,
+      filled: i < filledChildren ? 10 : 0,
     })),
   };
 }
 
-function renderPanel({ orders, events }: { orders: unknown[]; events: unknown[] }) {
+function renderPanel({ orders, events }: { orders: OrderRecord[]; events: ObsEvent[] }) {
   const store = configureStore({
     reducer: {
       orders: ordersSlice.reducer,
@@ -62,7 +69,7 @@ function renderPanel({ orders, events }: { orders: unknown[]; events: unknown[] 
   render(
     <Provider store={store}>
       <ThroughputGaugesPanel />
-    </Provider>,
+    </Provider>
   );
 
   return store;

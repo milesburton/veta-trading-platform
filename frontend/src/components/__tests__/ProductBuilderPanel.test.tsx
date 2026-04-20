@@ -19,13 +19,11 @@ describe("ProductBuilderPanel", () => {
   });
 
   it("validates target notional before saving", async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(JSON.stringify({ productId: "p-1", state: "draft" }), {
-          status: 200,
-        }),
-      );
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ productId: "p-1", state: "draft" }), {
+        status: 200,
+      })
+    );
 
     render(<ProductBuilderPanel />);
 
@@ -39,42 +37,33 @@ describe("ProductBuilderPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /Save Draft/i }));
 
     expect(
-      await screen.findByText(/Target notional must be a positive number/i),
+      await screen.findByText(/Target notional must be a positive number/i)
     ).toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("creates draft, structures, and issues a product", async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockImplementation(async (input, init) => {
-        const url = String(input);
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
 
-        if (url.endsWith("/api/gateway/products") && init?.method === "POST") {
-          return new Response(
-            JSON.stringify({ productId: "p-42", state: "draft" }),
-            { status: 200 },
-          );
-        }
-        if (url.includes("/structure") && init?.method === "PUT") {
-          return new Response(
-            JSON.stringify({ productId: "p-42", state: "structured" }),
-            {
-              status: 200,
-            },
-          );
-        }
-        if (url.includes("/issue") && init?.method === "PUT") {
-          return new Response(
-            JSON.stringify({ productId: "p-42", state: "issued" }),
-            { status: 200 },
-          );
-        }
-
-        return new Response(JSON.stringify({ error: "unexpected request" }), {
-          status: 500,
+      if (url.endsWith("/api/gateway/products") && init?.method === "POST") {
+        return new Response(JSON.stringify({ productId: "p-42", state: "draft" }), { status: 200 });
+      }
+      if (url.includes("/structure") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ productId: "p-42", state: "structured" }), {
+          status: 200,
         });
+      }
+      if (url.includes("/issue") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ productId: "p-42", state: "issued" }), {
+          status: 200,
+        });
+      }
+
+      return new Response(JSON.stringify({ error: "unexpected request" }), {
+        status: 500,
       });
+    });
 
     render(<ProductBuilderPanel />);
 
@@ -91,17 +80,13 @@ describe("ProductBuilderPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /\+ Add/i }));
 
     fireEvent.click(screen.getByRole("button", { name: /Save Draft/i }));
-    expect(
-      await screen.findByText(/Draft product p-42 created/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Draft product p-42 created/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /^Structure$/i }));
     expect(await screen.findByText(/Product structured/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /^Issue$/i }));
-    expect(
-      await screen.findByText(/Product issued and visible to clients/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Product issued and visible to clients/i)).toBeInTheDocument();
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledTimes(3);

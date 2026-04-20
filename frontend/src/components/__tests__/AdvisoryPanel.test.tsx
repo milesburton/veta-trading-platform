@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AdvisoryEntry } from "../../store/advisorySlice";
 import { advisorySlice } from "../../store/advisorySlice";
 import { AdvisoryPanel } from "../AdvisoryPanel";
 
@@ -11,7 +12,7 @@ vi.mock("../../store/advisoryApi.ts", () => ({
   useRequestAdvisoryMutation: () => [requestAdvisory, { isLoading: false }],
 }));
 
-function renderPanel(bySymbol: Record<string, unknown> = {}) {
+function renderPanel(bySymbol: Record<string, AdvisoryEntry> = {}) {
   const store = configureStore({
     reducer: { advisory: advisorySlice.reducer },
     preloadedState: {
@@ -24,7 +25,7 @@ function renderPanel(bySymbol: Record<string, unknown> = {}) {
   render(
     <Provider store={store}>
       <AdvisoryPanel symbol="AAPL" />
-    </Provider>,
+    </Provider>
   );
 }
 
@@ -40,9 +41,7 @@ describe("AdvisoryPanel", () => {
     renderPanel();
 
     expect(screen.getByText(/AI Advisory/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Get Advisory/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Get Advisory/i })).toBeInTheDocument();
     expect(screen.getByText(/Not financial advice/i)).toBeInTheDocument();
   });
 
@@ -54,9 +53,7 @@ describe("AdvisoryPanel", () => {
     renderPanel();
     fireEvent.click(screen.getByRole("button", { name: /Get Advisory/i }));
 
-    expect(
-      await screen.findByText(/recent advisory job already exists/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/recent advisory job already exists/i)).toBeInTheDocument();
   });
 
   it("renders ready note and refreshes advisory", async () => {
@@ -82,9 +79,7 @@ describe("AdvisoryPanel", () => {
       },
     });
 
-    expect(
-      screen.getByText(/Consider reducing position size/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Consider reducing position size/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Refresh/i }));
 
     await waitFor(() => {

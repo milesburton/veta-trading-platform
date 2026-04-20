@@ -1,8 +1,10 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChildOrder, OrderRecord } from "../../types";
 import {
+  cancelOrdersThunk,
   childAdded,
   fillReceived,
+  killOrdersThunk,
   limitOrdersChecked,
   orderAdded,
   orderCancelled,
@@ -10,8 +12,6 @@ import {
   ordersSlice,
   setGatewayWs,
   submitOrderThunk,
-  killOrdersThunk,
-  cancelOrdersThunk,
 } from "../ordersSlice";
 
 const { reducer } = ordersSlice;
@@ -57,30 +57,21 @@ describe("ordersSlice – orderPatched", () => {
   it("patches a matching order", () => {
     const order = makeOrder({ status: "pending" });
     let state = reducer(initial, orderAdded(order));
-    state = reducer(
-      state,
-      orderPatched({ id: "order-1", patch: { status: "working" } }),
-    );
+    state = reducer(state, orderPatched({ id: "order-1", patch: { status: "working" } }));
     expect(state.orders[0].status).toBe("working");
   });
 
   it("ignores patch for unknown id", () => {
     const order = makeOrder();
     let state = reducer(initial, orderAdded(order));
-    state = reducer(
-      state,
-      orderPatched({ id: "unknown-id", patch: { status: "filled" } }),
-    );
+    state = reducer(state, orderPatched({ id: "unknown-id", patch: { status: "filled" } }));
     expect(state.orders[0].status).toBe("pending");
   });
 
   it("patches filled quantity", () => {
     const order = makeOrder({ filled: 0, quantity: 100 });
     let state = reducer(initial, orderAdded(order));
-    state = reducer(
-      state,
-      orderPatched({ id: "order-1", patch: { filled: 50 } }),
-    );
+    state = reducer(state, orderPatched({ id: "order-1", patch: { filled: 50 } }));
     expect(state.orders[0].filled).toBe(50);
   });
 });
@@ -116,14 +107,8 @@ describe("ordersSlice – childAdded", () => {
   it("can add multiple children", () => {
     const order = makeOrder();
     let state = reducer(initial, orderAdded(order));
-    state = reducer(
-      state,
-      childAdded({ parentId: "order-1", child: { ...child, id: "c1" } }),
-    );
-    state = reducer(
-      state,
-      childAdded({ parentId: "order-1", child: { ...child, id: "c2" } }),
-    );
+    state = reducer(state, childAdded({ parentId: "order-1", child: { ...child, id: "c1" } }));
+    state = reducer(state, childAdded({ parentId: "order-1", child: { ...child, id: "c2" } }));
     expect(state.orders[0].children).toHaveLength(2);
   });
 });
@@ -224,7 +209,7 @@ describe("ordersSlice – fillReceived", () => {
         filledQty: 40,
         avgFillPrice: 150,
         leavesQty: 60,
-      }),
+      })
     );
     expect(state.orders[0].filled).toBe(40);
     expect(state.orders[0].status).toBe("working");
@@ -240,7 +225,7 @@ describe("ordersSlice – fillReceived", () => {
         filledQty: 40,
         avgFillPrice: 150,
         leavesQty: 0,
-      }),
+      })
     );
     expect(state.orders[0].filled).toBe(100);
     expect(state.orders[0].status).toBe("filled");
@@ -256,7 +241,7 @@ describe("ordersSlice – fillReceived", () => {
         filledQty: 10,
         avgFillPrice: 150,
         leavesQty: 90,
-      }),
+      })
     );
     expect(state.orders[0].filled).toBe(0);
   });
@@ -280,7 +265,7 @@ describe("ordersSlice – orderCancelled", () => {
 
 describe("ordersSlice – MAX_ORDERS cap", () => {
   it("trims orders list to 500 entries", () => {
-    let state = initial;
+    let state = reducer(undefined, { type: "@@INIT" });
     for (let i = 0; i < 502; i++) {
       state = reducer(state, orderAdded(makeOrder({ id: `order-${i}` })));
     }
@@ -317,11 +302,7 @@ describe("ordersSlice – submitOrderThunk", () => {
       algoParams: { strategy: "LIMIT" },
     };
 
-    await submitOrderThunk(trade as never)(
-      thunkDispatch as never,
-      getState as never,
-      undefined,
-    );
+    await submitOrderThunk(trade as never)(thunkDispatch as never, getState as never, undefined);
 
     expect(mockWs.send).toHaveBeenCalled();
     const sent = JSON.parse(mockWs.send.mock.calls[0][0]);
@@ -346,15 +327,9 @@ describe("ordersSlice – submitOrderThunk", () => {
       algoParams: { strategy: "LIMIT" },
     };
 
-    await submitOrderThunk(trade as never)(
-      thunkDispatch as never,
-      getState as never,
-      undefined,
-    );
+    await submitOrderThunk(trade as never)(thunkDispatch as never, getState as never, undefined);
 
-    const orderAddedAction = dispatched.find((a) =>
-      orderAdded.match(a as { type: string }),
-    );
+    const orderAddedAction = dispatched.find((a) => orderAdded.match(a as { type: string }));
     expect(orderAddedAction).toBeDefined();
     expect(mockWs.send).not.toHaveBeenCalled();
   });
@@ -374,11 +349,7 @@ describe("ordersSlice – killOrdersThunk", () => {
     const mockWs = { readyState: 1, send: vi.fn() };
     setGatewayWs(mockWs as unknown as WebSocket);
 
-    await killOrdersThunk({ scope: "all" })(
-      vi.fn() as never,
-      vi.fn() as never,
-      undefined,
-    );
+    await killOrdersThunk({ scope: "all" })(vi.fn() as never, vi.fn() as never, undefined);
 
     const sent = JSON.parse(mockWs.send.mock.calls[0][0]);
     expect(sent.type).toBe("killOrders");
@@ -392,11 +363,7 @@ describe("ordersSlice – cancelOrdersThunk", () => {
     const mockWs = { readyState: 1, send: vi.fn() };
     setGatewayWs(mockWs as unknown as WebSocket);
 
-    await cancelOrdersThunk(["ord-1", "ord-2"])(
-      vi.fn() as never,
-      vi.fn() as never,
-      undefined,
-    );
+    await cancelOrdersThunk(["ord-1", "ord-2"])(vi.fn() as never, vi.fn() as never, undefined);
 
     const sent = JSON.parse(mockWs.send.mock.calls[0][0]);
     expect(sent.type).toBe("cancelOrders");

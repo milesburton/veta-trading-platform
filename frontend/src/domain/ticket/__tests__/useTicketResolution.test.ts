@@ -2,8 +2,8 @@ import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { SessionState } from "../../market/market-session";
 import * as resolver from "../resolve-ticket";
-import { useTicketResolution } from "../useTicketResolution";
 import type { TicketContext } from "../ticket-types";
+import { useTicketResolution } from "../useTicketResolution";
 
 const CONTINUOUS_SESSION: SessionState = {
   phase: "CONTINUOUS",
@@ -80,12 +80,10 @@ describe("useTicketResolution", () => {
       ({ ctx }: { ctx: TicketContext }) => useTicketResolution(ctx),
       {
         initialProps: { ctx: base },
-      },
+      }
     );
 
     const first = result.current;
-    const callsAfterFirstRender = spy.mock.calls.length;
-
     const next: TicketContext = {
       ...base,
       limits: { ...base.limits },
@@ -112,7 +110,7 @@ describe("useTicketResolution", () => {
       ({ ctx }: { ctx: TicketContext }) => useTicketResolution(ctx),
       {
         initialProps: { ctx: base },
-      },
+      }
     );
 
     const first = result.current;

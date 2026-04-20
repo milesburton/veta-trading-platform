@@ -59,7 +59,7 @@ describe("AlertList", () => {
         onFilter={() => {}}
         sourceFilter={null}
         onSourceFilter={() => {}}
-      />,
+      />
     );
 
     expect(screen.getByText(/Exchange down/i)).toBeInTheDocument();
@@ -76,17 +76,17 @@ describe("AlertList", () => {
         onFilter={() => {}}
         sourceFilter={null}
         onSourceFilter={() => {}}
-      />,
+      />
     );
 
     fireEvent.click(screen.getAllByTestId("mute-similar-btn")[0]);
     fireEvent.click(screen.getAllByTitle(/Dismiss/i)[0]);
 
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "alerts/muteRuleAdded" }),
+      expect.objectContaining({ type: "alerts/muteRuleAdded" })
     );
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "alerts/alertDismissed" }),
+      expect.objectContaining({ type: "alerts/alertDismissed" })
     );
   });
 });
@@ -113,7 +113,7 @@ describe("AlertDrawer", () => {
     fireEvent.click(screen.getByText(/Dismiss all/i));
 
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "alerts/allAlertsDismissed" }),
+      expect.objectContaining({ type: "alerts/allAlertsDismissed" })
     );
   });
 });

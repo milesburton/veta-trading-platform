@@ -15,7 +15,7 @@ function installRelativeRequestSupport() {
         }
         super(input, init);
       }
-    },
+    }
   );
 }
 
@@ -57,120 +57,78 @@ describe("analyticsApi", () => {
         url: urlOf(input),
         method: methodOf(input, init),
       });
-      return new Response(
-        JSON.stringify({ ok: true, rows: [], total: 0, evalMs: 0 }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ ok: true, rows: [], total: 0, evalMs: 0 }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     });
 
     const store = createStore();
 
-    await store.dispatch(
-      analyticsApi.endpoints.getQuote.initiate({ symbol: "AAPL" } as never),
-    );
-    await store.dispatch(
-      analyticsApi.endpoints.getScenario.initiate({ symbol: "AAPL" } as never),
-    );
+    await store.dispatch(analyticsApi.endpoints.getQuote.initiate({ symbol: "AAPL" } as never));
+    await store.dispatch(analyticsApi.endpoints.getScenario.initiate({ symbol: "AAPL" } as never));
     await store.dispatch(
       analyticsApi.endpoints.getRecommendations.initiate({
         symbol: "AAPL",
-      } as never),
+      } as never)
     );
     await store.dispatch(
       analyticsApi.endpoints.getGreeksSurface.initiate({
         symbol: "AAPL",
         expirySecs: 120,
-      }),
+      })
     );
     await store.dispatch(analyticsApi.endpoints.getVolProfile.initiate("AAPL"));
-    await store.dispatch(
-      analyticsApi.endpoints.getBondPrice.initiate({ isin: "X" } as never),
-    );
-    await store.dispatch(
-      analyticsApi.endpoints.getYieldCurve.initiate({} as never),
-    );
+    await store.dispatch(analyticsApi.endpoints.getBondPrice.initiate({ isin: "X" } as never));
+    await store.dispatch(analyticsApi.endpoints.getYieldCurve.initiate({} as never));
     await store.dispatch(
       analyticsApi.endpoints.getPriceFan.initiate({
         symbol: "AAPL",
         steps: 12,
         stepSecs: 60,
         paths: 100,
-      }),
+      })
     );
-    await store.dispatch(
-      analyticsApi.endpoints.getSpreadAnalysis.initiate({} as never),
-    );
-    await store.dispatch(
-      analyticsApi.endpoints.getDurationLadder.initiate({ positions: [] }),
-    );
+    await store.dispatch(analyticsApi.endpoints.getSpreadAnalysis.initiate({} as never));
+    await store.dispatch(analyticsApi.endpoints.getDurationLadder.initiate({ positions: [] }));
     await store.dispatch(analyticsApi.endpoints.getVolSurface.initiate("AAPL"));
 
+    expect(calls.some((c) => c.url.includes("/analytics/quote") && c.method === "POST")).toBe(true);
+    expect(calls.some((c) => c.url.includes("/analytics/scenario") && c.method === "POST")).toBe(
+      true
+    );
+    expect(calls.some((c) => c.url.includes("/analytics/recommend") && c.method === "POST")).toBe(
+      true
+    );
     expect(
       calls.some(
-        (c) => c.url.includes("/analytics/quote") && c.method === "POST",
-      ),
+        (c) => c.url.includes("/analytics/greeks-surface/AAPL?expirySecs=120") && c.method === "GET"
+      )
     ).toBe(true);
     expect(
-      calls.some(
-        (c) => c.url.includes("/analytics/scenario") && c.method === "POST",
-      ),
+      calls.some((c) => c.url.includes("/analytics/vol-profile/AAPL") && c.method === "GET")
     ).toBe(true);
-    expect(
-      calls.some(
-        (c) => c.url.includes("/analytics/recommend") && c.method === "POST",
-      ),
-    ).toBe(true);
+    expect(calls.some((c) => c.url.includes("/analytics/bond-price") && c.method === "POST")).toBe(
+      true
+    );
+    expect(calls.some((c) => c.url.includes("/analytics/yield-curve") && c.method === "POST")).toBe(
+      true
+    );
     expect(
       calls.some(
         (c) =>
-          c.url.includes("/analytics/greeks-surface/AAPL?expirySecs=120") &&
-          c.method === "GET",
-      ),
+          c.url.includes("/analytics/price-fan/AAPL?steps=12&stepSecs=60&paths=100") &&
+          c.method === "GET"
+      )
     ).toBe(true);
     expect(
-      calls.some(
-        (c) =>
-          c.url.includes("/analytics/vol-profile/AAPL") && c.method === "GET",
-      ),
+      calls.some((c) => c.url.includes("/analytics/spread-analysis") && c.method === "POST")
     ).toBe(true);
     expect(
-      calls.some(
-        (c) => c.url.includes("/analytics/bond-price") && c.method === "POST",
-      ),
+      calls.some((c) => c.url.includes("/analytics/duration-ladder") && c.method === "POST")
     ).toBe(true);
     expect(
-      calls.some(
-        (c) => c.url.includes("/analytics/yield-curve") && c.method === "POST",
-      ),
-    ).toBe(true);
-    expect(
-      calls.some(
-        (c) =>
-          c.url.includes(
-            "/analytics/price-fan/AAPL?steps=12&stepSecs=60&paths=100",
-          ) && c.method === "GET",
-      ),
-    ).toBe(true);
-    expect(
-      calls.some(
-        (c) =>
-          c.url.includes("/analytics/spread-analysis") && c.method === "POST",
-      ),
-    ).toBe(true);
-    expect(
-      calls.some(
-        (c) =>
-          c.url.includes("/analytics/duration-ladder") && c.method === "POST",
-      ),
-    ).toBe(true);
-    expect(
-      calls.some(
-        (c) =>
-          c.url.includes("/analytics/vol-surface/AAPL") && c.method === "GET",
-      ),
+      calls.some((c) => c.url.includes("/analytics/vol-surface/AAPL") && c.method === "GET")
     ).toBe(true);
   });
 });

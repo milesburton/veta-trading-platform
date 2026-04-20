@@ -16,12 +16,8 @@ describe("PopOutPlaceholder", () => {
   it("renders placeholder text and restore button", () => {
     render(<PopOutPlaceholder panelId={"order-ticket" as never} />);
 
-    expect(
-      screen.getByText(/Panel open in external window/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Restore here/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Panel open in external window/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Restore here/i })).toBeInTheDocument();
   });
 
   it("dispatches panelClosed action on restore", () => {
@@ -33,7 +29,7 @@ describe("PopOutPlaceholder", () => {
       expect.objectContaining({
         type: "windows/panelClosed",
         payload: { panelId: "order-ticket" },
-      }),
+      })
     );
   });
 });

@@ -42,16 +42,14 @@ function renderPanel(orders: OrderRecord[]) {
   render(
     <Provider store={makeStore(orders)}>
       <AlgoLeaderboardPanel />
-    </Provider>,
+    </Provider>
   );
 }
 
 describe("AlgoLeaderboardPanel", () => {
   it("shows empty state when there are no recent orders", () => {
     renderPanel([]);
-    expect(
-      screen.getByText(/No order data in last 5 minutes/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/No order data in last 5 minutes/i)).toBeInTheDocument();
   });
 
   it("renders strategy rows with order counts and fill rate", () => {

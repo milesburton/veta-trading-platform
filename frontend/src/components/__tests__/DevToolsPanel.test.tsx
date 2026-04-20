@@ -28,7 +28,12 @@ function renderPanel() {
         muteRules: [],
       },
       auth: {
-        user: { id: "alice", name: "Alice", role: "admin", avatar_emoji: "🧪" },
+        user: {
+          id: "alice",
+          name: "Alice",
+          role: "admin" as const,
+          avatar_emoji: "🧪",
+        },
         limits: {
           max_order_qty: 10000,
           max_daily_notional: 1000000,
@@ -36,7 +41,7 @@ function renderPanel() {
           allowed_desks: ["equity"],
           dark_pool_access: false,
         },
-        status: "authenticated",
+        status: "authenticated" as const,
       },
       market: {
         assets: [],
@@ -47,7 +52,7 @@ function renderPanel() {
         candlesReady: {},
         orderBook: {},
         connected: true,
-        sessionPhase: "CONTINUOUS",
+        sessionPhase: "CONTINUOUS" as const,
       },
     },
   });
@@ -55,7 +60,7 @@ function renderPanel() {
   render(
     <Provider store={store}>
       <DevToolsPanel />
-    </Provider>,
+    </Provider>
   );
 
   return store;
@@ -88,9 +93,16 @@ describe("DevToolsPanel", () => {
   });
 
   it("runs quick trade injection and load test actions", async () => {
-    runDemoDay.mockResolvedValue({ data: { submitted: 50, scenario: "standard", elapsedMs: 500 } });
+    runDemoDay.mockResolvedValue({
+      data: { submitted: 50, scenario: "standard", elapsedMs: 500 },
+    });
     runLoadTest.mockResolvedValue({
-      data: { submitted: 33, strategy: "TWAP", symbols: ["AAPL"], elapsedMs: 400 },
+      data: {
+        submitted: 33,
+        strategy: "TWAP",
+        symbols: ["AAPL"],
+        elapsedMs: 400,
+      },
     });
 
     renderPanel();
@@ -101,8 +113,12 @@ describe("DevToolsPanel", () => {
     });
     expect(await screen.findByText(/Injected 50 orders/i)).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText(/Orders/i), { target: { value: "33" } });
-    fireEvent.change(screen.getByLabelText(/Strategy/i), { target: { value: "TWAP" } });
+    fireEvent.change(screen.getByLabelText(/Orders/i), {
+      target: { value: "33" },
+    });
+    fireEvent.change(screen.getByLabelText(/Strategy/i), {
+      target: { value: "TWAP" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /^Run$/i }));
 
     await waitFor(() => {

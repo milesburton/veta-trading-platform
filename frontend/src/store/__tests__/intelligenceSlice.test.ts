@@ -21,7 +21,7 @@ describe("intelligenceSlice", () => {
         confidence: 0.8,
         factors: [],
         ts: 1,
-      }),
+      })
     );
 
     state = reducer(
@@ -36,7 +36,7 @@ describe("intelligenceSlice", () => {
         eventScore: 1,
         newsVelocity: 1,
         sentimentDelta: 1,
-      }),
+      })
     );
 
     expect(state.signals.AAPL.score).toBe(0.7);
@@ -55,7 +55,7 @@ describe("intelligenceSlice", () => {
           factors: [],
           ts: 1,
         },
-      ]),
+      ])
     );
 
     state = reducer(
@@ -77,7 +77,7 @@ describe("intelligenceSlice", () => {
           factors: [],
           ts: 2,
         },
-      ]),
+      ])
     );
 
     state = reducer(
@@ -94,7 +94,7 @@ describe("intelligenceSlice", () => {
           newsVelocity: 0.7,
           sentimentDelta: 0.8,
         },
-      ]),
+      ])
     );
 
     expect(state.signals.AAPL.score).toBe(0.9);
@@ -116,7 +116,7 @@ describe("intelligenceSlice", () => {
           signalScore: i,
           confidence: 0.5,
           ts: i,
-        }),
+        })
       );
     }
 

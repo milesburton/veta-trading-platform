@@ -22,7 +22,7 @@ function submitPanelForm() {
   fireEvent.submit(form);
 }
 
-function renderPanel(role: "admin" | "user" = "admin") {
+function renderPanel(role: "admin" | "viewer" = "admin") {
   const store = configureStore({
     reducer: { auth: authSlice.reducer },
     preloadedState: {
@@ -40,7 +40,7 @@ function renderPanel(role: "admin" | "user" = "admin") {
           allowed_desks: ["equity"],
           dark_pool_access: false,
         },
-        status: "authenticated",
+        status: "authenticated" as const,
       },
     },
   });
@@ -48,7 +48,7 @@ function renderPanel(role: "admin" | "user" = "admin") {
   render(
     <Provider store={store}>
       <LoadTestPanel />
-    </Provider>,
+    </Provider>
   );
 }
 
@@ -58,12 +58,10 @@ describe("LoadTestPanel", () => {
   });
 
   it("blocks non-admin users", () => {
-    renderPanel("user");
+    renderPanel("viewer");
 
     expect(screen.getByText(/Admin access required/i)).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /Run Load Test/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Run Load Test/i })).not.toBeInTheDocument();
   });
 
   it("submits normalized form values and renders the job summary", async () => {

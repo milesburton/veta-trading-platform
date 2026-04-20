@@ -5,7 +5,25 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { alertsSlice } from "../../store/alertsSlice";
 import { ServiceHealthPanel } from "../ServiceHealthPanel";
 
-const state = {
+const state: {
+  byService: Record<string, { kind: "ok" | "error"; version: string }>;
+  systemMetrics: {
+    disk: {
+      total_gb: number;
+      used_gb: number;
+      free_gb: number;
+      used_pct: number;
+    };
+    diskStatus: "ok" | "critical" | "unavailable";
+    diskWarnPct: number;
+    memory: {
+      rss_mb: number;
+      heap_used_mb: number;
+      heap_total_mb: number;
+      external_mb: number;
+    };
+  };
+} = {
   byService: {
     OMS: { kind: "ok" as const, version: "1.2.3" },
     Gateway: { kind: "error" as const, version: "—" },
@@ -58,10 +76,7 @@ vi.mock("../../store/servicesApi.ts", () => ({
   }) => {
     const item = state.byService[name as keyof typeof state.byService];
     if (!item || item.kind === "error") {
-      if (
-        !stableQueryResults[name] ||
-        stableQueryResults[name].signature !== "error"
-      ) {
+      if (!stableQueryResults[name] || stableQueryResults[name].signature !== "error") {
         stableQueryResults[name] = {
           signature: "error",
           data: undefined,
@@ -71,10 +86,7 @@ vi.mock("../../store/servicesApi.ts", () => ({
       return stableQueryResults[name];
     }
     const signature = `ok:${item.version}`;
-    if (
-      !stableQueryResults[name] ||
-      stableQueryResults[name].signature !== signature
-    ) {
+    if (!stableQueryResults[name] || stableQueryResults[name].signature !== signature) {
       stableQueryResults[name] = {
         signature,
         data: {
@@ -101,7 +113,7 @@ function renderPanel() {
   render(
     <Provider store={store}>
       <ServiceHealthPanel />
-    </Provider>,
+    </Provider>
   );
 }
 

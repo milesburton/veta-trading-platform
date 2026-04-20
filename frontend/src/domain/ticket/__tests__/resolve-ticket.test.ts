@@ -105,9 +105,7 @@ function makeCtx(overrides: Partial<TicketContext> = {}): TicketContext {
   };
 }
 
-function withDraft(
-  overrides: Partial<TicketContext["draft"]>,
-): Partial<TicketContext> {
+function withDraft(overrides: Partial<TicketContext["draft"]>): Partial<TicketContext> {
   return { draft: { ...makeCtx().draft, ...overrides } };
 }
 
@@ -138,25 +136,15 @@ describe("resolveTicket", () => {
     });
 
     it("allows trader users", () => {
-      expect(resolveTicket(makeCtx({ userRole: "trader" })).roleLocked).toBe(
-        false,
-      );
+      expect(resolveTicket(makeCtx({ userRole: "trader" })).roleLocked).toBe(false);
     });
   });
 
   describe("static validation", () => {
     it.each([
       ["quantity is zero", withDraft({ quantity: 0 }), "qty-positive"],
-      [
-        "limit price is zero for equity",
-        withDraft({ limitPrice: 0 }),
-        "price-positive",
-      ],
-      [
-        "duration is zero",
-        withDraft({ expiresAtSecs: 0 }),
-        "duration-positive",
-      ],
+      ["limit price is zero for equity", withDraft({ limitPrice: 0 }), "price-positive"],
+      ["duration is zero", withDraft({ expiresAtSecs: 0 }), "duration-positive"],
       [
         "symbol is empty",
         { instrument: { ...makeCtx().instrument, symbol: "" } },
@@ -173,7 +161,7 @@ describe("resolveTicket", () => {
           instrument: { ...makeCtx().instrument, instrumentType: "option" },
           option: VALID_OPTION,
           ...withDraft({ limitPrice: 0 }),
-        }),
+        })
       );
       expect(r.errors.some((d) => d.ruleId === "price-positive")).toBe(false);
     });
@@ -185,15 +173,10 @@ describe("resolveTicket", () => {
       [10_000, 189.5, "qty-exceeds-limit", false],
       [5_000, 300, "notional-exceeds-limit", true],
       [3_333, 300, "notional-exceeds-limit", false],
-    ] as const)(
-      "qty=%d price=%d → %s present=%s",
-      (qty, price, ruleId, expected) => {
-        const r = resolveTicket(
-          makeCtx(withDraft({ quantity: qty, limitPrice: price })),
-        );
-        expect(r.errors.some((d) => d.ruleId === ruleId)).toBe(expected);
-      },
-    );
+    ] as const)("qty=%d price=%d → %s present=%s", (qty, price, ruleId, expected) => {
+      const r = resolveTicket(makeCtx(withDraft({ quantity: qty, limitPrice: price })));
+      expect(r.errors.some((d) => d.ruleId === ruleId)).toBe(expected);
+    });
   });
 
   describe("lot size", () => {
@@ -202,12 +185,10 @@ describe("resolveTicket", () => {
         makeCtx({
           instrument: { ...makeCtx().instrument, lotSize: 100 },
           ...withDraft({ quantity: 150 }),
-        }),
+        })
       );
       expect(r.warnings.some((d) => d.ruleId === "lot-size")).toBe(true);
-      expect(
-        r.warnings.find((d) => d.ruleId === "lot-size")?.message,
-      ).toContain("200");
+      expect(r.warnings.find((d) => d.ruleId === "lot-size")?.message).toContain("200");
       expect(r.canSubmit).toBe(true);
     });
 
@@ -216,7 +197,7 @@ describe("resolveTicket", () => {
         makeCtx({
           instrument: { ...makeCtx().instrument, lotSize: 100 },
           ...withDraft({ quantity: 200 }),
-        }),
+        })
       );
       expect(r.warnings.some((d) => d.ruleId === "lot-size")).toBe(false);
     });
@@ -228,9 +209,7 @@ describe("resolveTicket", () => {
       ["TWAP", false],
     ] as const)("strategy %s → error=%s", (strategy, expectError) => {
       const r = resolveTicket(makeCtx(withDraft({ strategy })));
-      expect(r.errors.some((d) => d.ruleId === "strategy-not-permitted")).toBe(
-        expectError,
-      );
+      expect(r.errors.some((d) => d.ruleId === "strategy-not-permitted")).toBe(expectError);
     });
   });
 
@@ -247,11 +226,9 @@ describe("resolveTicket", () => {
               issuedAt: Date.now(),
             },
           ],
-        }),
+        })
       );
-      expect(r.errors.some((d) => d.ruleId === "kill-switch-blocked")).toBe(
-        true,
-      );
+      expect(r.errors.some((d) => d.ruleId === "kill-switch-blocked")).toBe(true);
       expect(r.canSubmit).toBe(false);
     });
 
@@ -267,11 +244,9 @@ describe("resolveTicket", () => {
               issuedAt: Date.now(),
             },
           ],
-        }),
+        })
       );
-      expect(r.errors.some((d) => d.ruleId === "kill-switch-blocked")).toBe(
-        true,
-      );
+      expect(r.errors.some((d) => d.ruleId === "kill-switch-blocked")).toBe(true);
     });
 
     it("does NOT block symbol-scoped kill for different asset", () => {
@@ -287,11 +262,9 @@ describe("resolveTicket", () => {
               issuedAt: Date.now(),
             },
           ],
-        }),
+        })
       );
-      expect(r.errors.some((d) => d.ruleId === "kill-switch-blocked")).toBe(
-        false,
-      );
+      expect(r.errors.some((d) => d.ruleId === "kill-switch-blocked")).toBe(false);
     });
 
     it("ignores expired kill blocks", () => {
@@ -307,11 +280,9 @@ describe("resolveTicket", () => {
               resumeAt: Date.now() - 1_000,
             },
           ],
-        }),
+        })
       );
-      expect(r.errors.some((d) => d.ruleId === "kill-switch-blocked")).toBe(
-        false,
-      );
+      expect(r.errors.some((d) => d.ruleId === "kill-switch-blocked")).toBe(false);
     });
   });
 
@@ -319,22 +290,17 @@ describe("resolveTicket", () => {
     it.each([
       ["bond", ["equity"], true],
       ["option", ["equity", "derivatives"], false],
-    ] as const)(
-      "instrumentType=%s desks=%j → denied=%s",
-      (instrumentType, desks, expectDenied) => {
-        const r = resolveTicket(
-          makeCtx({
-            instrument: { ...makeCtx().instrument, instrumentType },
-            limits: { ...DEFAULT_LIMITS, allowed_desks: [...desks] },
-            ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
-            ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
-          }),
-        );
-        expect(r.errors.some((d) => d.ruleId === "desk-access-denied")).toBe(
-          expectDenied,
-        );
-      },
-    );
+    ] as const)("instrumentType=%s desks=%j → denied=%s", (instrumentType, desks, expectDenied) => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType },
+          limits: { ...DEFAULT_LIMITS, allowed_desks: [...desks] },
+          ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
+          ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
+        })
+      );
+      expect(r.errors.some((d) => d.ruleId === "desk-access-denied")).toBe(expectDenied);
+    });
   });
 
   describe("instrument spec validation", () => {
@@ -363,7 +329,7 @@ describe("resolveTicket", () => {
             allowed_desks: ["equity", "derivatives"],
           },
           option: { optionType: "call", ...optionOverrides },
-        }),
+        })
       );
       expect(r.errors.some((d) => d.ruleId === ruleId)).toBe(true);
     });
@@ -380,7 +346,7 @@ describe("resolveTicket", () => {
             isFetching: false,
             hasBondDef: false,
           },
-        }),
+        })
       );
       expect(r.errors.some((d) => d.ruleId === "bond-def-missing")).toBe(true);
     });
@@ -400,11 +366,9 @@ describe("resolveTicket", () => {
             hasQuote: false,
             isFetching: true,
           },
-        }),
+        })
       );
-      expect(
-        r.diagnostics.some((d) => d.ruleId === "option-quote-fetching"),
-      ).toBe(true);
+      expect(r.diagnostics.some((d) => d.ruleId === "option-quote-fetching")).toBe(true);
     });
   });
 
@@ -414,24 +378,21 @@ describe("resolveTicket", () => {
       [false, 10_000, "equity", false],
       [true, 9_999, "equity", false],
       [true, 10_000, "bond", false],
-    ] as const)(
-      "access=%s qty=%d type=%s → eligible=%s",
-      (access, qty, type, expected) => {
-        const r = resolveTicket(
-          makeCtx({
-            limits: {
-              ...DEFAULT_LIMITS,
-              dark_pool_access: access,
-              allowed_desks: ["equity", "fi"],
-            },
-            ...withDraft({ quantity: qty }),
-            instrument: { ...makeCtx().instrument, instrumentType: type },
-            ...(type === "bond" ? { bond: VALID_BOND } : {}),
-          }),
-        );
-        expect(r.darkPoolEligible).toBe(expected);
-      },
-    );
+    ] as const)("access=%s qty=%d type=%s → eligible=%s", (access, qty, type, expected) => {
+      const r = resolveTicket(
+        makeCtx({
+          limits: {
+            ...DEFAULT_LIMITS,
+            dark_pool_access: access,
+            allowed_desks: ["equity", "fi"],
+          },
+          ...withDraft({ quantity: qty }),
+          instrument: { ...makeCtx().instrument, instrumentType: type },
+          ...(type === "bond" ? { bond: VALID_BOND } : {}),
+        })
+      );
+      expect(r.darkPoolEligible).toBe(expected);
+    });
   });
 
   describe("field visibility", () => {
@@ -451,7 +412,7 @@ describe("resolveTicket", () => {
           },
           ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
           ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
-        }),
+        })
       );
       expect(r[field as keyof typeof r]).toBe(expected);
     });
@@ -461,12 +422,8 @@ describe("resolveTicket", () => {
     it("lists all 9 strategies with correct enabled state", () => {
       const r = resolveTicket(makeCtx());
       expect(r.strategyOptions).toHaveLength(9);
-      expect(r.strategyOptions.find((s) => s.value === "TWAP")?.enabled).toBe(
-        true,
-      );
-      expect(
-        r.strategyOptions.find((s) => s.value === "ICEBERG")?.enabled,
-      ).toBe(false);
+      expect(r.strategyOptions.find((s) => s.value === "TWAP")?.enabled).toBe(true);
+      expect(r.strategyOptions.find((s) => s.value === "ICEBERG")?.enabled).toBe(false);
     });
   });
 
@@ -478,7 +435,7 @@ describe("resolveTicket", () => {
             ...DEFAULT_LIMITS,
             allowed_desks: ["equity", "derivatives", "fi"],
           },
-        }),
+        })
       );
       expect(r.availableInstrumentTypes).toContain("equity");
       expect(r.availableInstrumentTypes).toContain("option");
@@ -493,9 +450,7 @@ describe("resolveTicket", () => {
       [0, 189.5, null],
       [100, 0, null],
     ] as const)("qty=%d price=%d → notional=%s", (qty, price, expected) => {
-      const r = resolveTicket(
-        makeCtx(withDraft({ quantity: qty, limitPrice: price })),
-      );
+      const r = resolveTicket(makeCtx(withDraft({ quantity: qty, limitPrice: price })));
       if (expected === null) {
         expect(r.notional).toBeNull();
       } else {
@@ -508,7 +463,7 @@ describe("resolveTicket", () => {
         makeCtx({
           instrument: { ...makeCtx().instrument, orderBookMid: 189.0 },
           ...withDraft({ limitPrice: 190.0, side: "BUY" }),
-        }),
+        })
       );
       expect(r.arrivalSlippageBps).toBeCloseTo(52.9, 0);
     });
@@ -518,7 +473,7 @@ describe("resolveTicket", () => {
         makeCtx({
           instrument: { ...makeCtx().instrument, orderBookMid: 189.0 },
           ...withDraft({ limitPrice: 190.0, side: "SELL" }),
-        }),
+        })
       );
       expect(r.arrivalSlippageBps).toBeLessThan(0);
     });
@@ -527,7 +482,7 @@ describe("resolveTicket", () => {
       const noMid = resolveTicket(
         makeCtx({
           instrument: { ...makeCtx().instrument, orderBookMid: undefined },
-        }),
+        })
       );
       expect(noMid.arrivalSlippageBps).toBeNull();
 
@@ -539,7 +494,7 @@ describe("resolveTicket", () => {
             allowed_desks: ["equity", "derivatives"],
           },
           option: VALID_OPTION,
-        }),
+        })
       );
       expect(option.arrivalSlippageBps).toBeNull();
     });
@@ -547,9 +502,7 @@ describe("resolveTicket", () => {
 
   describe("submit block reason", () => {
     it("uses the first error message when submission is blocked", () => {
-      const r = resolveTicket(
-        makeCtx(withDraft({ quantity: 0, limitPrice: 0 })),
-      );
+      const r = resolveTicket(makeCtx(withDraft({ quantity: 0, limitPrice: 0 })));
       expect(r.canSubmit).toBe(false);
       expect(r.errors.length).toBeGreaterThan(0);
       expect(r.submitBlockReason).toBe(r.errors[0].message);
@@ -561,32 +514,27 @@ describe("resolveTicket", () => {
       ["option", "Contracts", "(1 contract = 100 shares)"],
       ["equity", "Quantity", "(shares)"],
       ["bond", "Quantity", "(bonds)"],
-    ] as const)(
-      "%s → label=%s subLabel=%s",
-      (instrumentType, expectedLabel, expectedSub) => {
-        const r = resolveTicket(
-          makeCtx({
-            instrument: { ...makeCtx().instrument, instrumentType },
-            limits: {
-              ...DEFAULT_LIMITS,
-              allowed_desks: ["equity", "derivatives", "fi"],
-            },
-            ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
-            ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
-          }),
-        );
-        expect(r.quantityLabel).toBe(expectedLabel);
-        expect(r.quantitySubLabel).toBe(expectedSub);
-      },
-    );
+    ] as const)("%s → label=%s subLabel=%s", (instrumentType, expectedLabel, expectedSub) => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, instrumentType },
+          limits: {
+            ...DEFAULT_LIMITS,
+            allowed_desks: ["equity", "derivatives", "fi"],
+          },
+          ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
+          ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
+        })
+      );
+      expect(r.quantityLabel).toBe(expectedLabel);
+      expect(r.quantitySubLabel).toBe(expectedSub);
+    });
   });
 
   describe("canSubmit composite", () => {
     it("true with valid inputs, false with errors, true with only warnings", () => {
       expect(resolveTicket(makeCtx()).canSubmit).toBe(true);
-      expect(resolveTicket(makeCtx(withDraft({ quantity: 0 }))).canSubmit).toBe(
-        false,
-      );
+      expect(resolveTicket(makeCtx(withDraft({ quantity: 0 }))).canSubmit).toBe(false);
 
       const warningCtx = makeCtx({
         instrument: { ...makeCtx().instrument, lotSize: 100 },
@@ -611,7 +559,7 @@ describe("resolveTicket", () => {
             phase: phase as "HALTED" | "CLOSED",
             phaseLabel: phase === "HALTED" ? "Trading Halted" : "Market Closed",
           },
-        }),
+        })
       );
       expect(r.canSubmit).toBe(false);
       expect(r.sessionAllowsEntry).toBe(false);
@@ -623,23 +571,19 @@ describe("resolveTicket", () => {
         makeCtx({
           session: AUCTION_SESSION,
           ...withDraft({ strategy: "TWAP" }),
-        }),
+        })
       );
-      expect(
-        twapResult.errors.some(
-          (d) => d.ruleId === "session.strategy-not-supported",
-        ),
-      ).toBe(true);
+      expect(twapResult.errors.some((d) => d.ruleId === "session.strategy-not-supported")).toBe(
+        true
+      );
 
       const limitResult = resolveTicket(
         makeCtx({
           session: AUCTION_SESSION,
           ...withDraft({ strategy: "LIMIT" }),
-        }),
+        })
       );
-      expect(
-        limitResult.errors.filter((d) => d.ruleId.startsWith("session.")),
-      ).toHaveLength(0);
+      expect(limitResult.errors.filter((d) => d.ruleId.startsWith("session."))).toHaveLength(0);
     });
 
     it("shows info diagnostic during auction and pre-open", () => {
@@ -653,13 +597,9 @@ describe("resolveTicket", () => {
         makeCtx({
           session: closingAuction,
           ...withDraft({ strategy: "LIMIT" }),
-        }),
+        })
       );
-      expect(
-        auctionResult.diagnostics.some(
-          (d) => d.ruleId === "session.auction-info",
-        ),
-      ).toBe(true);
+      expect(auctionResult.diagnostics.some((d) => d.ruleId === "session.auction-info")).toBe(true);
 
       const preOpen: SessionState = {
         ...AUCTION_SESSION,
@@ -667,26 +607,20 @@ describe("resolveTicket", () => {
         phaseLabel: "Pre-Open",
       };
       const preOpenResult = resolveTicket(
-        makeCtx({ session: preOpen, ...withDraft({ strategy: "LIMIT" }) }),
+        makeCtx({ session: preOpen, ...withDraft({ strategy: "LIMIT" }) })
       );
-      expect(
-        preOpenResult.diagnostics.some(
-          (d) => d.ruleId === "session.pre-open-info",
-        ),
-      ).toBe(true);
+      expect(preOpenResult.diagnostics.some((d) => d.ruleId === "session.pre-open-info")).toBe(
+        true
+      );
     });
 
     it("disables non-LIMIT strategies in dropdown during auction", () => {
       const r = resolveTicket(makeCtx({ session: AUCTION_SESSION }));
-      expect(r.strategyOptions.find((s) => s.value === "TWAP")?.enabled).toBe(
-        false,
+      expect(r.strategyOptions.find((s) => s.value === "TWAP")?.enabled).toBe(false);
+      expect(r.strategyOptions.find((s) => s.value === "TWAP")?.disabledReason).toContain(
+        "Opening Auction"
       );
-      expect(
-        r.strategyOptions.find((s) => s.value === "TWAP")?.disabledReason,
-      ).toContain("Opening Auction");
-      expect(r.strategyOptions.find((s) => s.value === "LIMIT")?.enabled).toBe(
-        true,
-      );
+      expect(r.strategyOptions.find((s) => s.value === "LIMIT")?.enabled).toBe(true);
     });
 
     it("skips session rules for options", () => {
@@ -699,26 +633,20 @@ describe("resolveTicket", () => {
           },
           session: HALTED_SESSION,
           option: VALID_OPTION,
-        }),
+        })
       );
-      expect(r.errors.some((d) => d.ruleId === "session.entry-blocked")).toBe(
-        false,
-      );
+      expect(r.errors.some((d) => d.ruleId === "session.entry-blocked")).toBe(false);
     });
 
     it("exposes marketPhaseLabel", () => {
-      expect(resolveTicket(makeCtx()).marketPhaseLabel).toBe(
-        "Continuous Trading",
-      );
+      expect(resolveTicket(makeCtx()).marketPhaseLabel).toBe("Continuous Trading");
     });
   });
 
   describe("venue rules", () => {
     it("no errors when no venue selected", () => {
       expect(
-        resolveTicket(makeCtx()).errors.filter((d) =>
-          d.ruleId.startsWith("venue."),
-        ),
+        resolveTicket(makeCtx()).errors.filter((d) => d.ruleId.startsWith("venue."))
       ).toHaveLength(0);
     });
 
@@ -734,45 +662,34 @@ describe("resolveTicket", () => {
             ...DEFAULT_LIMITS,
             allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG"],
           },
-        }),
+        })
       );
       expect(r.errors.some((d) => d.ruleId === ruleId)).toBe(true);
     });
 
     it("blocks dark pool during halt", () => {
-      const r = resolveTicket(
-        makeCtx({ selectedVenue: "DARK1", session: HALTED_SESSION }),
-      );
+      const r = resolveTicket(makeCtx({ selectedVenue: "DARK1", session: HALTED_SESSION }));
       expect(r.errors.some((d) => d.ruleId === "venue.dark-halted")).toBe(true);
     });
 
     it("blocks market orders on IEX", () => {
-      const r = resolveTicket(
-        makeCtx({ selectedVenue: "IEX", ...withDraft({ limitPrice: 0 }) }),
-      );
-      expect(r.errors.some((d) => d.ruleId === "venue.no-market-orders")).toBe(
-        true,
-      );
+      const r = resolveTicket(makeCtx({ selectedVenue: "IEX", ...withDraft({ limitPrice: 0 }) }));
+      expect(r.errors.some((d) => d.ruleId === "venue.no-market-orders")).toBe(true);
     });
 
     it.each([
       [5_000, true],
       [10_000, false],
-    ] as const)(
-      "dark pool qty=%d → min-quantity error=%s",
-      (qty, expectError) => {
-        const r = resolveTicket(
-          makeCtx({
-            selectedVenue: "DARK1",
-            ...withDraft({ quantity: qty }),
-            limits: { ...DEFAULT_LIMITS, dark_pool_access: true },
-          }),
-        );
-        expect(r.errors.some((d) => d.ruleId === "venue.min-quantity")).toBe(
-          expectError,
-        );
-      },
-    );
+    ] as const)("dark pool qty=%d → min-quantity error=%s", (qty, expectError) => {
+      const r = resolveTicket(
+        makeCtx({
+          selectedVenue: "DARK1",
+          ...withDraft({ quantity: qty }),
+          limits: { ...DEFAULT_LIMITS, dark_pool_access: true },
+        })
+      );
+      expect(r.errors.some((d) => d.ruleId === "venue.min-quantity")).toBe(expectError);
+    });
 
     it("warns about non-auction venue during auction", () => {
       const r = resolveTicket(
@@ -780,11 +697,9 @@ describe("resolveTicket", () => {
           selectedVenue: "BATS",
           session: AUCTION_SESSION,
           ...withDraft({ strategy: "LIMIT" }),
-        }),
+        })
       );
-      expect(
-        r.warnings.some((d) => d.ruleId === "venue.no-auction-support"),
-      ).toBe(true);
+      expect(r.warnings.some((d) => d.ruleId === "venue.no-auction-support")).toBe(true);
     });
   });
 
@@ -794,18 +709,11 @@ describe("resolveTicket", () => {
       [10, "spread.wide", false, "spread.exceeds-max", false],
       [75, "spread.wide", true, "spread.exceeds-max", false],
       [250, "spread.wide", false, "spread.exceeds-max", true],
-    ] as const)(
-      "spreadBps=%s → wide=%s, blocked=%s",
-      (bps, _wideId, expectWide, _blockId, expectBlock) => {
-        const r = resolveTicket(makeCtx({ spreadBps: bps }));
-        expect(r.warnings.some((d) => d.ruleId === "spread.wide")).toBe(
-          expectWide,
-        );
-        expect(r.errors.some((d) => d.ruleId === "spread.exceeds-max")).toBe(
-          expectBlock,
-        );
-      },
-    );
+    ] as const)("spreadBps=%s → wide=%s, blocked=%s", (bps, _wideId, expectWide, _blockId, expectBlock) => {
+      const r = resolveTicket(makeCtx({ spreadBps: bps }));
+      expect(r.warnings.some((d) => d.ruleId === "spread.wide")).toBe(expectWide);
+      expect(r.errors.some((d) => d.ruleId === "spread.exceeds-max")).toBe(expectBlock);
+    });
 
     it("skips spread check for bonds", () => {
       const r = resolveTicket(
@@ -814,11 +722,9 @@ describe("resolveTicket", () => {
           limits: { ...DEFAULT_LIMITS, allowed_desks: ["equity", "fi"] },
           spreadBps: 300,
           bond: VALID_BOND,
-        }),
+        })
       );
-      expect(
-        r.diagnostics.filter((d) => d.ruleId.startsWith("spread.")),
-      ).toHaveLength(0);
+      expect(r.diagnostics.filter((d) => d.ruleId.startsWith("spread."))).toHaveLength(0);
     });
   });
 
@@ -830,23 +736,16 @@ describe("resolveTicket", () => {
       [185.0, 189.5, true, false],
       [200.0, 189.5, false, true],
       [179.0, 189.5, false, true],
-    ] as const)(
-      "limitPrice=%d market=%s → warning=%s error=%s",
-      (limitPrice, currentPrice, expectWarning, expectError) => {
-        const r = resolveTicket(
-          makeCtx({
-            instrument: { ...makeCtx().instrument, currentPrice },
-            ...withDraft({ limitPrice }),
-          }),
-        );
-        expect(
-          r.warnings.some((d) => d.ruleId === "price-collar.deviation"),
-        ).toBe(expectWarning);
-        expect(
-          r.errors.some((d) => d.ruleId === "price-collar.exceeds-max"),
-        ).toBe(expectError);
-      },
-    );
+    ] as const)("limitPrice=%d market=%s → warning=%s error=%s", (limitPrice, currentPrice, expectWarning, expectError) => {
+      const r = resolveTicket(
+        makeCtx({
+          instrument: { ...makeCtx().instrument, currentPrice },
+          ...withDraft({ limitPrice }),
+        })
+      );
+      expect(r.warnings.some((d) => d.ruleId === "price-collar.deviation")).toBe(expectWarning);
+      expect(r.errors.some((d) => d.ruleId === "price-collar.exceeds-max")).toBe(expectError);
+    });
 
     it("skips for options", () => {
       const r = resolveTicket(
@@ -862,11 +761,9 @@ describe("resolveTicket", () => {
           },
           option: VALID_OPTION,
           ...withDraft({ limitPrice: 200 }),
-        }),
+        })
       );
-      expect(
-        r.diagnostics.filter((d) => d.ruleId.startsWith("price-collar.")),
-      ).toHaveLength(0);
+      expect(r.diagnostics.filter((d) => d.ruleId.startsWith("price-collar."))).toHaveLength(0);
     });
 
     it("skips when no market price", () => {
@@ -874,11 +771,9 @@ describe("resolveTicket", () => {
         makeCtx({
           instrument: { ...makeCtx().instrument, currentPrice: undefined },
           ...withDraft({ limitPrice: 200 }),
-        }),
+        })
       );
-      expect(
-        r.diagnostics.filter((d) => d.ruleId.startsWith("price-collar.")),
-      ).toHaveLength(0);
+      expect(r.diagnostics.filter((d) => d.ruleId.startsWith("price-collar."))).toHaveLength(0);
     });
   });
 
@@ -913,7 +808,7 @@ describe("resolveTicket", () => {
           },
           ...(instrumentType === "option" ? { option: VALID_OPTION } : {}),
           ...(instrumentType === "bond" ? { bond: VALID_BOND } : {}),
-        }),
+        })
       );
       for (const [field, visible] of Object.entries(expectations)) {
         expect(r.resolvedFields[field].visible).toBe(visible);
@@ -931,10 +826,9 @@ describe("resolveTicket", () => {
     it("strategy field has options, tif has 4 options", () => {
       const r = resolveTicket(makeCtx());
       expect(r.resolvedFields.strategy.options).toBeDefined();
-      expect(
-        r.resolvedFields.strategy.options?.find((o) => o.value === "LIMIT")
-          ?.disabled,
-      ).toBe(false);
+      expect(r.resolvedFields.strategy.options?.find((o) => o.value === "LIMIT")?.disabled).toBe(
+        false
+      );
       expect(r.resolvedFields.tif.options).toHaveLength(4);
       expect(r.resolvedFields.tif.options?.map((o) => o.value)).toEqual([
         "DAY",
@@ -956,9 +850,7 @@ describe("resolveTicket", () => {
     });
 
     it("origin tracks dirty fields", () => {
-      const r = resolveTicket(
-        makeCtx({ dirtyFields: new Set(["quantity", "limitPrice"]) }),
-      );
+      const r = resolveTicket(makeCtx({ dirtyFields: new Set(["quantity", "limitPrice"]) }));
       expect(r.resolvedFields.quantity.origin).toBe("user");
       expect(r.resolvedFields.limitPrice.origin).toBe("user");
       expect(r.resolvedFields.side.origin).toBe("default");

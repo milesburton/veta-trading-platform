@@ -13,9 +13,7 @@ const gridPrefsState = {
   },
 };
 
-let resizeCallback:
-  | ((entries: Array<{ contentRect: { height: number } }>) => void)
-  | null = null;
+let resizeCallback: ((entries: Array<{ contentRect: { height: number } }>) => void) | null = null;
 const observe = vi.fn();
 const disconnect = vi.fn();
 
@@ -24,14 +22,11 @@ vi.mock("../../store/gridApi.ts", () => ({
 }));
 
 vi.mock("../../store/hooks.ts", () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) =>
-    selector(gridPrefsState),
+  useAppSelector: (selector: (state: unknown) => unknown) => selector(gridPrefsState),
 }));
 
 class MockResizeObserver {
-  constructor(
-    cb: (entries: Array<{ contentRect: { height: number } }>) => void,
-  ) {
+  constructor(cb: (entries: Array<{ contentRect: { height: number } }>) => void) {
     resizeCallback = cb;
   }
 

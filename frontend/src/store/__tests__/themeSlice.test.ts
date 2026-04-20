@@ -82,9 +82,7 @@ describe("themeSlice", () => {
   });
 
   it("saveTheme still writes theme when initial fetch throws", async () => {
-    fetchMock
-      .mockRejectedValueOnce(new Error("offline"))
-      .mockResolvedValueOnce({ ok: true });
+    fetchMock.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce({ ok: true });
 
     const thunk = saveTheme("high-contrast");
     const result = await thunk(vi.fn(), vi.fn(), undefined);

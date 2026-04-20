@@ -7,12 +7,10 @@ let channelIn = {
   selectedOrderId: null as string | null,
   selectedAsset: null as string | null,
 };
-let rows: any[] = [];
+let rows: unknown[] = [];
 
 vi.mock("recharts", () => {
-  const Mock = ({ children }: { children?: React.ReactNode }) => (
-    <div>{children}</div>
-  );
+  const Mock = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
   return {
     ResponsiveContainer: Mock,
     LineChart: Mock,
@@ -69,9 +67,7 @@ vi.mock("../grid/CfRuleEditor.tsx", () => ({
   CfRuleEditor: () => <div>cf-editor</div>,
 }));
 vi.mock("../grid/ResizableHeader.tsx", () => ({
-  ResizableHeader: ({ children }: { children: React.ReactNode }) => (
-    <th>{children}</th>
-  ),
+  ResizableHeader: ({ children }: { children: React.ReactNode }) => <th>{children}</th>,
 }));
 vi.mock("../PopOutButton.tsx", () => ({
   PopOutButton: () => <button type="button">pop</button>,

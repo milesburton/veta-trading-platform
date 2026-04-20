@@ -15,7 +15,7 @@ function installRelativeRequestSupport() {
         }
         super(input, init);
       }
-    },
+    }
   );
 }
 
@@ -54,13 +54,10 @@ describe("replayApi", () => {
     const calls: Array<{ url: string; method: string }> = [];
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
       calls.push({ url: urlOf(input), method: methodOf(input, init) });
-      return new Response(
-        JSON.stringify({ ok: true, sessions: [], total: 0, events: [] }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ ok: true, sessions: [], total: 0, events: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     });
 
     const store = createStore();
@@ -70,59 +67,34 @@ describe("replayApi", () => {
       replayApi.endpoints.updateReplayConfig.initiate({
         enabled: true,
         userId: "u1",
-      }),
+      })
     );
-    await store.dispatch(
-      replayApi.endpoints.listSessions.initiate({ limit: 10, offset: 20 }),
-    );
-    await store.dispatch(
-      replayApi.endpoints.createSession.initiate({ id: "s1", userId: "u1" }),
-    );
+    await store.dispatch(replayApi.endpoints.listSessions.initiate({ limit: 10, offset: 20 }));
+    await store.dispatch(replayApi.endpoints.createSession.initiate({ id: "s1", userId: "u1" }));
     await store.dispatch(replayApi.endpoints.endSession.initiate("s1"));
     await store.dispatch(
       replayApi.endpoints.uploadChunk.initiate({
         sessionId: "s1",
         seq: 1,
         events: [{ a: 1 }],
-      }),
+      })
     );
     await store.dispatch(replayApi.endpoints.getSessionEvents.initiate("s1"));
     await store.dispatch(replayApi.endpoints.deleteSession.initiate("s1"));
 
+    expect(calls.some((c) => c.url.endsWith("/config") && c.method === "GET")).toBe(true);
+    expect(calls.some((c) => c.url.endsWith("/config") && c.method === "PUT")).toBe(true);
     expect(
-      calls.some((c) => c.url.endsWith("/config") && c.method === "GET"),
+      calls.some((c) => c.url.includes("/sessions?limit=10&offset=20") && c.method === "GET")
     ).toBe(true);
-    expect(
-      calls.some((c) => c.url.endsWith("/config") && c.method === "PUT"),
-    ).toBe(true);
-    expect(
-      calls.some(
-        (c) =>
-          c.url.includes("/sessions?limit=10&offset=20") && c.method === "GET",
-      ),
-    ).toBe(true);
-    expect(
-      calls.some((c) => c.url.endsWith("/sessions") && c.method === "POST"),
-    ).toBe(true);
-    expect(
-      calls.some(
-        (c) => c.url.endsWith("/sessions/s1/end") && c.method === "PUT",
-      ),
-    ).toBe(true);
-    expect(
-      calls.some(
-        (c) => c.url.endsWith("/sessions/s1/chunks") && c.method === "POST",
-      ),
-    ).toBe(true);
-    expect(
-      calls.some(
-        (c) => c.url.endsWith("/sessions/s1/events") && c.method === "GET",
-      ),
-    ).toBe(true);
-    expect(
-      calls.some(
-        (c) => c.url.endsWith("/sessions/s1") && c.method === "DELETE",
-      ),
-    ).toBe(true);
+    expect(calls.some((c) => c.url.endsWith("/sessions") && c.method === "POST")).toBe(true);
+    expect(calls.some((c) => c.url.endsWith("/sessions/s1/end") && c.method === "PUT")).toBe(true);
+    expect(calls.some((c) => c.url.endsWith("/sessions/s1/chunks") && c.method === "POST")).toBe(
+      true
+    );
+    expect(calls.some((c) => c.url.endsWith("/sessions/s1/events") && c.method === "GET")).toBe(
+      true
+    );
+    expect(calls.some((c) => c.url.endsWith("/sessions/s1") && c.method === "DELETE")).toBe(true);
   });
 });

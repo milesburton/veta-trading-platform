@@ -2,7 +2,9 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SignalExplainabilityPanel } from "../SignalExplainabilityPanel";
 
-let mockChannelData: { selectedAsset: string } | null = { selectedAsset: "AAPL" };
+let mockChannelData: { selectedAsset: string } | null = {
+  selectedAsset: "AAPL",
+};
 
 vi.mock("../../hooks/useChannelIn.ts", () => ({
   useChannelIn: () => mockChannelData ?? { selectedAsset: "" },

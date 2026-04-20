@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SortableHeader } from "../grid/SortableHeader";
 
 const dispatch = vi.fn();
-const state = {
+const state: {
+  gridPrefs: {
+    orderBlotter: { sortField: string | null; sortDir: "asc" | "desc" | null };
+  };
+} = {
   gridPrefs: {
     orderBlotter: { sortField: null, sortDir: null },
   },
@@ -31,12 +35,13 @@ describe("SortableHeader", () => {
             </SortableHeader>
           </tr>
         </thead>
-      </table>,
+      </table>
     );
 
-    expect(
-      screen.getByRole("columnheader", { name: /Price/i }),
-    ).toHaveAttribute("aria-sort", "none");
+    expect(screen.getByRole("columnheader", { name: /Price/i })).toHaveAttribute(
+      "aria-sort",
+      "none"
+    );
   });
 
   it("dispatches ascending sort then save prefs on click", () => {
@@ -49,7 +54,7 @@ describe("SortableHeader", () => {
             </SortableHeader>
           </tr>
         </thead>
-      </table>,
+      </table>
     );
 
     fireEvent.click(screen.getByRole("columnheader", { name: /Price/i }));
@@ -58,7 +63,7 @@ describe("SortableHeader", () => {
       expect.objectContaining({
         type: "gridPrefs/setSort",
         payload: { gridId: "orderBlotter", field: "price", dir: "asc" },
-      }),
+      })
     );
     expect(typeof dispatch.mock.calls[1][0]).toBe("function");
   });
@@ -76,7 +81,7 @@ describe("SortableHeader", () => {
             </SortableHeader>
           </tr>
         </thead>
-      </table>,
+      </table>
     );
 
     fireEvent.click(screen.getByRole("columnheader", { name: /Price/i }));
@@ -84,7 +89,7 @@ describe("SortableHeader", () => {
       expect.objectContaining({
         type: "gridPrefs/setSort",
         payload: { gridId: "orderBlotter", field: "price", dir: "desc" },
-      }),
+      })
     );
 
     dispatch.mockReset();
@@ -99,7 +104,7 @@ describe("SortableHeader", () => {
             </SortableHeader>
           </tr>
         </thead>
-      </table>,
+      </table>
     );
 
     fireEvent.click(screen.getByRole("columnheader", { name: /Price/i }));
@@ -107,7 +112,7 @@ describe("SortableHeader", () => {
       expect.objectContaining({
         type: "gridPrefs/setSort",
         payload: { gridId: "orderBlotter", field: null, dir: null },
-      }),
+      })
     );
   });
 });

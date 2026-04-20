@@ -4,17 +4,17 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  availableInstrumentTypes,
+  checkDarkPoolEligible,
   checkPreTradeRisk,
-  shouldTriggerRiskCheck,
-  STRATEGY_OPTIONS,
+  checkRoleLocked,
+  deriveDesk,
   FIELD_REGISTRY,
   FK,
   getFieldDef,
   resolveTicket,
-  checkDarkPoolEligible,
-  availableInstrumentTypes,
-  deriveDesk,
-  checkRoleLocked,
+  STRATEGY_OPTIONS,
+  shouldTriggerRiskCheck,
 } from "../index";
 
 describe("domain/ticket barrel – function availability", () => {

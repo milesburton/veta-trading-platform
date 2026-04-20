@@ -5,13 +5,13 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  isAuction,
-  isStrategyAllowedInSession,
-  resolveSession,
   buildSessionSchedule,
+  isAuction,
   isEarlyClose,
   isHoliday,
+  isStrategyAllowedInSession,
   resolvePhaseFromMinute,
+  resolveSession,
   totalTradingMinutes,
   US_EQUITY_CALENDAR,
 } from "../index";

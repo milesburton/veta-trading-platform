@@ -15,7 +15,7 @@ function installRelativeRequestSupport() {
         }
         super(input, init);
       }
-    },
+    }
   );
 }
 
@@ -72,7 +72,7 @@ describe("userApi", () => {
         scope: "s",
         code_challenge: "x",
         code_challenge_method: "S256",
-      }),
+      })
     );
     await store.dispatch(
       userApi.endpoints.exchangeOAuthCode.initiate({
@@ -81,14 +81,14 @@ describe("userApi", () => {
         grant_type: "authorization_code",
         redirect_uri: "r",
         code_verifier: "v",
-      }),
+      })
     );
     await store.dispatch(
       userApi.endpoints.registerOAuthUser.initiate({
         username: "x",
         name: "y",
         password: "z",
-      }),
+      })
     );
     await store.dispatch(userApi.endpoints.deleteSession.initiate());
     await store.dispatch(userApi.endpoints.getUsers.initiate());
@@ -99,43 +99,21 @@ describe("userApi", () => {
         max_order_qty: 1,
         max_daily_notional: 2,
         allowed_strategies: ["TWAP"],
-      }),
+      })
     );
     await store.dispatch(userApi.endpoints.getDemoPersonas.initiate());
 
+    expect(calls.some((c) => c.url.includes("/oauth/authorize") && c.method === "POST")).toBe(true);
+    expect(calls.some((c) => c.url.includes("/oauth/token") && c.method === "POST")).toBe(true);
+    expect(calls.some((c) => c.url.includes("/oauth/register") && c.method === "POST")).toBe(true);
+    expect(calls.some((c) => c.url.endsWith("/sessions") && c.method === "DELETE")).toBe(true);
+    expect(calls.some((c) => c.url.endsWith("/users") && c.method === "GET")).toBe(true);
     expect(
-      calls.some(
-        (c) => c.url.includes("/oauth/authorize") && c.method === "POST",
-      ),
+      calls.some((c) => c.url.includes("/users/user%2Fa%20b/limits") && c.method === "GET")
     ).toBe(true);
     expect(
-      calls.some((c) => c.url.includes("/oauth/token") && c.method === "POST"),
+      calls.some((c) => c.url.includes("/users/user%2Fa%20b/limits") && c.method === "PUT")
     ).toBe(true);
-    expect(
-      calls.some(
-        (c) => c.url.includes("/oauth/register") && c.method === "POST",
-      ),
-    ).toBe(true);
-    expect(
-      calls.some((c) => c.url.endsWith("/sessions") && c.method === "DELETE"),
-    ).toBe(true);
-    expect(
-      calls.some((c) => c.url.endsWith("/users") && c.method === "GET"),
-    ).toBe(true);
-    expect(
-      calls.some(
-        (c) =>
-          c.url.includes("/users/user%2Fa%20b/limits") && c.method === "GET",
-      ),
-    ).toBe(true);
-    expect(
-      calls.some(
-        (c) =>
-          c.url.includes("/users/user%2Fa%20b/limits") && c.method === "PUT",
-      ),
-    ).toBe(true);
-    expect(
-      calls.some((c) => c.url.endsWith("/personas") && c.method === "GET"),
-    ).toBe(true);
+    expect(calls.some((c) => c.url.endsWith("/personas") && c.method === "GET")).toBe(true);
   });
 });

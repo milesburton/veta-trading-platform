@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Alert } from "../../store/alertsSlice";
 import { alertsSlice } from "../../store/alertsSlice";
 import { observabilitySlice } from "../../store/observabilitySlice";
 import { ordersSlice } from "../../store/ordersSlice";
@@ -13,9 +14,7 @@ const byService: Record<string, { ok: boolean; version: string }> = {
 };
 
 vi.mock("recharts", () => {
-  const Mock = ({ children }: { children?: React.ReactNode }) => (
-    <div>{children}</div>
-  );
+  const Mock = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
   return {
     ResponsiveContainer: Mock,
     LineChart: Mock,
@@ -47,7 +46,7 @@ vi.mock("../../store/servicesApi.ts", () => ({
   },
 }));
 
-function renderPanel(preloadedAlerts: any[] = []) {
+function renderPanel(preloadedAlerts: Alert[] = []) {
   const store = configureStore({
     reducer: {
       orders: ordersSlice.reducer,
@@ -64,7 +63,7 @@ function renderPanel(preloadedAlerts: any[] = []) {
   render(
     <Provider store={store}>
       <EstateOverviewPanel />
-    </Provider>,
+    </Provider>
   );
 
   return store;

@@ -64,7 +64,7 @@ function renderPanel(role: "admin" | "trader" = "admin") {
   render(
     <Provider store={makeStore(role)}>
       <MarketDataSourcesPanel />
-    </Provider>,
+    </Provider>
   );
 }
 
@@ -142,12 +142,8 @@ describe("MarketDataSourcesPanel", () => {
     renderPanel("admin");
 
     const selects = screen.getAllByRole("combobox");
-    const aaplSelect = selects.find(
-      (s) => (s as HTMLSelectElement).value === "polygon",
-    );
-    const msftSelect = selects.find(
-      (s) => (s as HTMLSelectElement).value === "synthetic",
-    );
+    const aaplSelect = selects.find((s) => (s as HTMLSelectElement).value === "polygon");
+    const msftSelect = selects.find((s) => (s as HTMLSelectElement).value === "synthetic");
 
     expect(aaplSelect).toBeTruthy();
     expect(msftSelect).toBeTruthy();
@@ -169,9 +165,7 @@ describe("MarketDataSourcesPanel", () => {
   it("reset all to synthetic then save removes existing overrides", async () => {
     renderPanel("admin");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /Reset All to Synthetic/i }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /Reset All to Synthetic/i }));
     fireEvent.click(screen.getByRole("button", { name: /Save Changes/i }));
 
     await waitFor(() => {
@@ -182,11 +176,9 @@ describe("MarketDataSourcesPanel", () => {
   it("hides admin controls for non-admin users", () => {
     renderPanel("trader");
 
+    expect(screen.queryByRole("button", { name: /Save Changes/i })).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /Save Changes/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /Reset All to Synthetic/i }),
+      screen.queryByRole("button", { name: /Reset All to Synthetic/i })
     ).not.toBeInTheDocument();
     expect(screen.queryAllByRole("combobox")).toHaveLength(0);
   });

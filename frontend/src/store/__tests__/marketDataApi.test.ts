@@ -66,20 +66,20 @@ describe("marketDataApi", () => {
     await store.dispatch(marketDataApi.endpoints.getOverrides.initiate());
     await store.dispatch(
       marketDataApi.endpoints.setOverrides.initiate({
-        "AAPL": "IEX",
+        AAPL: "IEX",
       })
     );
     await store.dispatch(marketDataApi.endpoints.toggleFeed.initiate("feed-1"));
 
-    expect(
-      calls.some((c) => c.url.includes("/market-data/sources") && c.method === "GET")
-    ).toBe(true);
-    expect(
-      calls.some((c) => c.url.includes("/market-data/overrides") && c.method === "GET")
-    ).toBe(true);
-    expect(
-      calls.some((c) => c.url.includes("/market-data/overrides") && c.method === "PUT")
-    ).toBe(true);
+    expect(calls.some((c) => c.url.includes("/market-data/sources") && c.method === "GET")).toBe(
+      true
+    );
+    expect(calls.some((c) => c.url.includes("/market-data/overrides") && c.method === "GET")).toBe(
+      true
+    );
+    expect(calls.some((c) => c.url.includes("/market-data/overrides") && c.method === "PUT")).toBe(
+      true
+    );
     expect(
       calls.some((c) => c.url.includes("/market-data/sources/feed-1/toggle") && c.method === "POST")
     ).toBe(true);

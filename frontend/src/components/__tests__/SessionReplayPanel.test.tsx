@@ -2,10 +2,10 @@ import { configureStore } from "@reduxjs/toolkit";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SessionReplayPanel } from "../SessionReplayPanel";
 import { type AuthUser, authSlice } from "../../store/authSlice";
 import type { ReplayConfig, ReplaySession } from "../../store/replayApi";
 import { windowSlice } from "../../store/windowSlice";
+import { SessionReplayPanel } from "../SessionReplayPanel";
 
 const ADMIN_USER: AuthUser = {
   id: "u-admin",
@@ -82,9 +82,7 @@ function makeStore(user: AuthUser | null = ADMIN_USER) {
           allowed_desks: ["equity"],
           dark_pool_access: false,
         },
-        status: user
-          ? ("authenticated" as const)
-          : ("unauthenticated" as const),
+        status: user ? ("authenticated" as const) : ("unauthenticated" as const),
       },
     },
   });
@@ -95,7 +93,7 @@ function renderPanel(user: AuthUser | null = ADMIN_USER) {
   return render(
     <Provider store={store}>
       <SessionReplayPanel />
-    </Provider>,
+    </Provider>
   );
 }
 
@@ -113,9 +111,7 @@ afterEach(() => {
 describe("SessionReplayPanel — empty state, recording disabled", () => {
   it("shows message to enable recording when no sessions exist", () => {
     renderPanel();
-    expect(
-      screen.getByText(/No recorded sessions\. Enable recording/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/No recorded sessions\. Enable recording/i)).toBeInTheDocument();
   });
 
   it("renders the Session Replay header", () => {
@@ -136,9 +132,7 @@ describe("SessionReplayPanel — recording enabled, no sessions", () => {
   it("shows recording active message", () => {
     renderPanel();
     expect(
-      screen.getByText(
-        /Recording is active\. Sessions will appear here once completed\./i,
-      ),
+      screen.getByText(/Recording is active\. Sessions will appear here once completed\./i)
     ).toBeInTheDocument();
   });
 });
@@ -228,9 +222,7 @@ describe("SessionReplayPanel — REC indicator", () => {
 describe("SessionReplayPanel — play button", () => {
   it("play button is disabled for live sessions (no endedAt)", () => {
     mockSessions = {
-      sessions: [
-        makeSession({ id: "live-1", endedAt: null, durationMs: null }),
-      ],
+      sessions: [makeSession({ id: "live-1", endedAt: null, durationMs: null })],
       total: 1,
     };
     renderPanel();

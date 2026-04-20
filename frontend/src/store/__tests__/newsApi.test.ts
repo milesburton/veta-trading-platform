@@ -62,7 +62,12 @@ describe("newsApi", () => {
 
     const store = createStore();
 
-    await store.dispatch(newsApi.endpoints.getNewsBySymbol.initiate({ symbol: "AAPL/USD", limit: 25 }));
+    await store.dispatch(
+      newsApi.endpoints.getNewsBySymbol.initiate({
+        symbol: "AAPL/USD",
+        limit: 25,
+      })
+    );
     await store.dispatch(newsApi.endpoints.getNewsSources.initiate());
     await store.dispatch(newsApi.endpoints.toggleNewsSource.initiate("src/1"));
     await store.dispatch(
@@ -83,17 +88,13 @@ describe("newsApi", () => {
     await store.dispatch(newsApi.endpoints.deleteNewsSource.initiate("src/1"));
 
     expect(
-      calls.some(
-        (c) => c.url.includes("/news?symbol=AAPL%2FUSD&limit=25") && c.method === "GET"
-      )
+      calls.some((c) => c.url.includes("/news?symbol=AAPL%2FUSD&limit=25") && c.method === "GET")
     ).toBe(true);
     expect(calls.some((c) => c.url.includes("/sources") && c.method === "GET")).toBe(true);
-    expect(calls.some((c) => c.url.includes("/sources/src%2F1/toggle") && c.method === "POST")).toBe(
-      true
-    );
     expect(
-      calls.some((c) => c.url.match(/\/sources$/) && c.method === "POST")
+      calls.some((c) => c.url.includes("/sources/src%2F1/toggle") && c.method === "POST")
     ).toBe(true);
+    expect(calls.some((c) => c.url.match(/\/sources$/) && c.method === "POST")).toBe(true);
     expect(calls.some((c) => c.url.includes("/sources/src%2F1") && c.method === "PUT")).toBe(true);
     expect(calls.some((c) => c.url.includes("/sources/src%2F1") && c.method === "DELETE")).toBe(
       true

@@ -48,7 +48,7 @@ function renderBrowser(role: "admin" | "trader" = "admin") {
   render(
     <Provider store={makeStore(role)}>
       <SharedWorkspaceBrowser onClose={onClose} onClone={onClone} />
-    </Provider>,
+    </Provider>
   );
   return { onClose, onClone };
 }
@@ -120,7 +120,7 @@ describe("SharedWorkspaceBrowser", () => {
       expect(fetchSharedWorkspace).toHaveBeenCalledWith("ws-1");
       expect(onClone).toHaveBeenCalledWith(
         "Macro Desk",
-        expect.objectContaining({ layout: expect.any(Object) }),
+        expect.objectContaining({ layout: expect.any(Object) })
       );
     });
   });
@@ -142,9 +142,7 @@ describe("SharedWorkspaceBrowser", () => {
     await screen.findByText("Macro Desk");
 
     // Trader can still clone but should not see delete buttons
-    expect(
-      screen.getAllByRole("button", { name: /Clone/i }).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: /Clone/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "✕" })).not.toBeInTheDocument();
   });
 });

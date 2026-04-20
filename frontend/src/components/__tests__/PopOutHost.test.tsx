@@ -9,9 +9,7 @@ import { uiSlice } from "../../store/uiSlice";
 import { PopOutHost } from "../PopOutHost";
 
 vi.mock("../MarketLadder.tsx", () => ({
-  MarketLadder: () => (
-    <div data-testid="market-ladder-panel">Market Ladder Panel</div>
-  ),
+  MarketLadder: () => <div data-testid="market-ladder-panel">Market Ladder Panel</div>,
 }));
 
 vi.mock("../DashboardLayout.tsx", () => ({
@@ -77,12 +75,8 @@ function renderHost(panelType: string) {
 
   render(
     <Provider store={store}>
-      <PopOutHost
-        instanceId="panel-1"
-        panelType={panelType}
-        layoutKey="layout-test"
-      />
-    </Provider>,
+      <PopOutHost instanceId="panel-1" panelType={panelType} layoutKey="layout-test" />
+    </Provider>
   );
 }
 
@@ -99,7 +93,7 @@ describe("PopOutHost", () => {
             incoming: 1,
           },
         ],
-      }),
+      })
     );
 
     renderHost("market-ladder");

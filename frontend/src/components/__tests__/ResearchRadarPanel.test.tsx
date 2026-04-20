@@ -13,12 +13,8 @@ let mockState: {
 };
 
 vi.mock("recharts", () => {
-  const Mock = ({ children }: { children?: React.ReactNode }) => (
-    <div>{children}</div>
-  );
-  const Scatter = ({ children }: { children?: React.ReactNode }) => (
-    <div>{children}</div>
-  );
+  const Mock = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
+  const Scatter = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
 
   return {
     ResponsiveContainer: Mock,
@@ -39,8 +35,7 @@ vi.mock("../../hooks/useChannelOut.ts", () => ({
 }));
 
 vi.mock("../../store/hooks.ts", () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) =>
-    selector(mockState),
+  useAppSelector: (selector: (state: unknown) => unknown) => selector(mockState),
 }));
 
 describe("ResearchRadarPanel", () => {
@@ -94,9 +89,7 @@ describe("ResearchRadarPanel", () => {
     render(<ResearchRadarPanel />);
 
     expect(screen.getByText(/Signal Radar/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /All \(3\)/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /All \(3\)/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Short \(1\)/i }));
     expect(screen.queryByText("AAPL")).not.toBeInTheDocument();
