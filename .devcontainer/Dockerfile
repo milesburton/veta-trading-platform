@@ -18,6 +18,7 @@ USER root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        xvfb libgtk-3-0 libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth libgbm-dev \
+    && npm install -g @anthropic-ai/claude-code \
     && rm -rf /var/lib/apt/lists/*
 USER deno
 

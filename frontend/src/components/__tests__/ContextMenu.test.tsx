@@ -1,7 +1,13 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+} from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ContextMenuEntry } from "../ContextMenu";
-import { ContextMenu } from "../ContextMenu";
+import { ContextMenu, useContextMenu } from "../ContextMenu";
 
 const baseItems: ContextMenuEntry[] = [
   { label: "Copy symbol", icon: "⎘", onClick: vi.fn() },
@@ -21,7 +27,7 @@ function renderMenu(overrides?: {
       x={overrides?.x ?? 100}
       y={overrides?.y ?? 100}
       onClose={onClose}
-    />
+    />,
   );
   return { onClose };
 }
@@ -109,5 +115,56 @@ describe("ContextMenu – interactions", () => {
     const menu = screen.getByRole("menu");
     fireEvent.mouseDown(menu);
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("clamps menu position so it stays inside viewport", () => {
+    renderMenu({ x: 10_000, y: 10_000 });
+    const menu = screen.getByRole("menu");
+    expect(menu.style.left).not.toBe("10000px");
+    expect(menu.style.top).not.toBe("10000px");
+  });
+
+  it("renders shortcut and icon when provided", () => {
+    renderMenu({
+      items: [
+        { label: "Duplicate", icon: "⎘", shortcut: "Cmd+D", onClick: vi.fn() },
+      ],
+    });
+    expect(screen.getByText("Duplicate")).toBeInTheDocument();
+    expect(screen.getByText("Cmd+D")).toBeInTheDocument();
+    expect(screen.getByText("⎘")).toBeInTheDocument();
+  });
+});
+
+describe("useContextMenu", () => {
+  it("opens and closes menu state", () => {
+    const { result } = renderHook(() => useContextMenu());
+
+    const event = {
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn(),
+      clientX: 42,
+      clientY: 24,
+    } as unknown as {
+      preventDefault: () => void;
+      stopPropagation: () => void;
+      clientX: number;
+      clientY: number;
+    };
+
+    act(() => {
+      result.current.openMenu(event, [{ label: "Copy", onClick: vi.fn() }]);
+    });
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(event.stopPropagation).toHaveBeenCalled();
+    expect(result.current.menu.value?.x).toBe(42);
+    expect(result.current.menu.value?.y).toBe(24);
+    expect(result.current.menu.value?.items).toHaveLength(1);
+
+    act(() => {
+      result.current.closeMenu();
+    });
+    expect(result.current.menu.value).toBeNull();
   });
 });

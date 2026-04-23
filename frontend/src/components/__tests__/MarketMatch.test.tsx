@@ -1,7 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChannelContext } from "../../contexts/ChannelContext";
 import { channelsSlice } from "../../store/channelsSlice";
 import { gridPrefsSlice } from "../../store/gridPrefsSlice";
@@ -12,6 +12,10 @@ import { uiSlice } from "../../store/uiSlice";
 import { windowSlice } from "../../store/windowSlice";
 import type { ObsEvent, Strategy } from "../../types";
 import { MarketMatch } from "../MarketMatch";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function makeStore(events: ObsEvent[] = [], channelAsset?: string) {
   return configureStore({
@@ -76,7 +80,7 @@ function renderMatch(events: ObsEvent[] = [], channelAsset?: string) {
       >
         <MarketMatch />
       </ChannelContext.Provider>
-    </Provider>
+    </Provider>,
   );
   return store;
 }
@@ -196,7 +200,10 @@ describe("MarketMatch – stats bar", () => {
 
 describe("MarketMatch – channel filter", () => {
   it("filters fills to selected asset only", () => {
-    renderMatch([makeFillEvent({ asset: "AAPL" }), makeFillEvent({ asset: "MSFT" })], "AAPL");
+    renderMatch(
+      [makeFillEvent({ asset: "AAPL" }), makeFillEvent({ asset: "MSFT" })],
+      "AAPL",
+    );
     expect(screen.getByText("1 fills")).toBeInTheDocument();
   });
 
@@ -214,5 +221,50 @@ describe("MarketMatch – table headers", () => {
     expect(screen.getByText("Asset")).toBeInTheDocument();
     expect(screen.getByText("Qty")).toBeInTheDocument();
     expect(screen.getByText("Fill Px")).toBeInTheDocument();
+  });
+});
+
+describe("MarketMatch – context menu and fallbacks", () => {
+  it("opens fill context menu and copies symbol", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+
+    renderMatch([makeFillEvent({ asset: "AAPL" })]);
+
+    fireEvent.contextMenu(screen.getByTestId("fill-row"));
+    fireEvent.click(screen.getByText("Copy symbol: AAPL"));
+    expect(writeText).toHaveBeenCalledWith("AAPL");
+  });
+
+  it("shows em dash placeholders when optional fields are missing", () => {
+    renderMatch([
+      makeFillEvent({
+        venue: undefined,
+        liquidityFlag: undefined,
+        commissionUSD: undefined,
+        counterparty: undefined,
+        marketImpactBps: undefined,
+      }),
+    ]);
+
+    expect(screen.getAllByText("—").length).toBeGreaterThan(2);
+  });
+
+  it("formats large quantity into K suffix", () => {
+    renderMatch([makeFillEvent({ filledQty: 12_500 })]);
+    expect(screen.getAllByText("12.5K").length).toBeGreaterThan(0);
+  });
+
+  it("formats very large quantity into M suffix", () => {
+    renderMatch([makeFillEvent({ filledQty: 2_500_000 })]);
+    expect(screen.getAllByText("2.50M").length).toBeGreaterThan(0);
+  });
+
+  it("shows No fills for selected channel asset when filter excludes events", () => {
+    renderMatch([makeFillEvent({ asset: "AAPL" })], "NVDA");
+    expect(screen.getByText(/No fills for NVDA/i)).toBeInTheDocument();
   });
 });
