@@ -1,10 +1,5 @@
-import {
-  act,
-  fireEvent,
-  render,
-  renderHook,
-  screen,
-} from "@testing-library/react";
+import { act, fireEvent, render, renderHook, screen } from "@testing-library/react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { ContextMenuEntry } from "../ContextMenu";
 import { ContextMenu, useContextMenu } from "../ContextMenu";
@@ -27,7 +22,7 @@ function renderMenu(overrides?: {
       x={overrides?.x ?? 100}
       y={overrides?.y ?? 100}
       onClose={onClose}
-    />,
+    />
   );
   return { onClose };
 }
@@ -126,9 +121,7 @@ describe("ContextMenu – interactions", () => {
 
   it("renders shortcut and icon when provided", () => {
     renderMenu({
-      items: [
-        { label: "Duplicate", icon: "⎘", shortcut: "Cmd+D", onClick: vi.fn() },
-      ],
+      items: [{ label: "Duplicate", icon: "⎘", shortcut: "Cmd+D", onClick: vi.fn() }],
     });
     expect(screen.getByText("Duplicate")).toBeInTheDocument();
     expect(screen.getByText("Cmd+D")).toBeInTheDocument();
@@ -145,12 +138,7 @@ describe("useContextMenu", () => {
       stopPropagation: vi.fn(),
       clientX: 42,
       clientY: 24,
-    } as unknown as {
-      preventDefault: () => void;
-      stopPropagation: () => void;
-      clientX: number;
-      clientY: number;
-    };
+    } as unknown as ReactMouseEvent;
 
     act(() => {
       result.current.openMenu(event, [{ label: "Copy", onClick: vi.fn() }]);

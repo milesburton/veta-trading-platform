@@ -80,7 +80,7 @@ function renderMatch(events: ObsEvent[] = [], channelAsset?: string) {
       >
         <MarketMatch />
       </ChannelContext.Provider>
-    </Provider>,
+    </Provider>
   );
   return store;
 }
@@ -200,10 +200,7 @@ describe("MarketMatch – stats bar", () => {
 
 describe("MarketMatch – channel filter", () => {
   it("filters fills to selected asset only", () => {
-    renderMatch(
-      [makeFillEvent({ asset: "AAPL" }), makeFillEvent({ asset: "MSFT" })],
-      "AAPL",
-    );
+    renderMatch([makeFillEvent({ asset: "AAPL" }), makeFillEvent({ asset: "MSFT" })], "AAPL");
     expect(screen.getByText("1 fills")).toBeInTheDocument();
   });
 

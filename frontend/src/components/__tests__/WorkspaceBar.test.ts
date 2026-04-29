@@ -1,12 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
-import {
-  act,
-  fireEvent,
-  render,
-  renderHook,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
+import type { IJsonModel } from "flexlayout-react";
 import { type ComponentType, createElement, type ReactNode } from "react";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -22,8 +16,7 @@ import {
 const publishSharedWorkspaceMock = vi.fn();
 
 vi.mock("../../hooks/useWorkspaceSync.ts", () => ({
-  publishSharedWorkspace: (...args: unknown[]) =>
-    publishSharedWorkspaceMock(...args),
+  publishSharedWorkspace: (...args: unknown[]) => publishSharedWorkspaceMock(...args),
 }));
 
 vi.mock("../SharedWorkspaceBrowser.tsx", () => ({
@@ -37,20 +30,15 @@ vi.mock("../SharedWorkspaceBrowser.tsx", () => ({
     createElement(
       "div",
       { "data-testid": "shared-workspace-browser" },
-      createElement(
-        "button",
-        { onClick: onClose, type: "button" },
-        "close-browser",
-      ),
+      createElement("button", { onClick: onClose, type: "button" }, "close-browser"),
       createElement(
         "button",
         {
-          onClick: () =>
-            onClone("Cloned Workspace", { layout: { type: "row" } }),
+          onClick: () => onClone("Cloned Workspace", { layout: { type: "row" } }),
           type: "button",
         },
-        "clone-from-browser",
-      ),
+        "clone-from-browser"
+      )
     ),
 }));
 
@@ -73,9 +61,7 @@ function renderSidebar(overrides?: {
 }) {
   const store = configureStore({
     reducer: {
-      auth: (
-        state = { user: { id: "u1", role: overrides?.role ?? "trader" } },
-      ) => state,
+      auth: (state = { user: { id: "u1", role: overrides?.role ?? "trader" } }) => state,
     },
   });
 
@@ -103,13 +89,13 @@ function renderSidebar(overrides?: {
       { store },
       createElement(WorkspaceSidebar, {
         activeId: overrides?.activeId ?? "ws-1",
-        onSelect,
-        onWorkspacesChange,
+        onSelect: onSelect as (id: string) => void,
+        onWorkspacesChange: onWorkspacesChange as (ws: Workspace[]) => void,
         workspaces: overrides?.workspaces ?? defaultWorkspaces,
         layouts: layouts as never,
-        onCloneWorkspace,
-      }),
-    ),
+        onCloneWorkspace: onCloneWorkspace as (id: string, model: IJsonModel) => void,
+      })
+    )
   );
 
   return { onSelect, onWorkspacesChange, onCloneWorkspace };
@@ -164,10 +150,7 @@ describe("seedWorkspaces", () => {
 describe("reconcilePresetWorkspaces", () => {
   test("returns unchanged list when all presets are present", () => {
     const { workspaces, layouts } = seedWorkspaces();
-    const { workspaces: out, restored } = reconcilePresetWorkspaces(
-      workspaces,
-      layouts,
-    );
+    const { workspaces: out, restored } = reconcilePresetWorkspaces(workspaces, layouts);
     expect(restored).toHaveLength(0);
     expect(out.map((w) => w.id)).toEqual(workspaces.map((w) => w.id));
   });
@@ -176,7 +159,7 @@ describe("reconcilePresetWorkspaces", () => {
     const { workspaces, layouts } = seedWorkspaces();
     const withoutAlgo = workspaces.filter((w) => w.id !== "ws-algo");
     const withoutAlgoLayouts = Object.fromEntries(
-      Object.entries(layouts).filter(([k]) => k !== "ws-algo"),
+      Object.entries(layouts).filter(([k]) => k !== "ws-algo")
     );
 
     const {
@@ -194,13 +177,10 @@ describe("reconcilePresetWorkspaces", () => {
     const { workspaces, layouts } = seedWorkspaces();
     const withoutAlgo = workspaces.filter((w) => w.id !== "ws-algo");
     const withoutAlgoLayouts = Object.fromEntries(
-      Object.entries(layouts).filter(([k]) => k !== "ws-algo"),
+      Object.entries(layouts).filter(([k]) => k !== "ws-algo")
     );
 
-    const { workspaces: out } = reconcilePresetWorkspaces(
-      withoutAlgo,
-      withoutAlgoLayouts,
-    );
+    const { workspaces: out } = reconcilePresetWorkspaces(withoutAlgo, withoutAlgoLayouts);
     const ids = out.map((w) => w.id);
 
     expect(ids.indexOf("ws-algo")).toBeGreaterThan(ids.indexOf("ws-trading"));
@@ -211,13 +191,10 @@ describe("reconcilePresetWorkspaces", () => {
     const { workspaces, layouts } = seedWorkspaces();
     const withoutAlgo = workspaces.filter((w) => w.id !== "ws-algo");
     const withoutAlgoLayouts = Object.fromEntries(
-      Object.entries(layouts).filter(([k]) => k !== "ws-algo"),
+      Object.entries(layouts).filter(([k]) => k !== "ws-algo")
     );
 
-    const { workspaces: out } = reconcilePresetWorkspaces(
-      withoutAlgo,
-      withoutAlgoLayouts,
-    );
+    const { workspaces: out } = reconcilePresetWorkspaces(withoutAlgo, withoutAlgoLayouts);
     const restored = out.find((w) => w.id === "ws-algo");
     expect(restored?.locked).toBe(true);
   });
@@ -234,10 +211,7 @@ describe("reconcilePresetWorkspaces", () => {
       "ws-trading": seedWorkspaces().layouts["ws-trading"],
     };
 
-    const { workspaces: out, restored } = reconcilePresetWorkspaces(
-      saved,
-      savedLayouts,
-    );
+    const { workspaces: out, restored } = reconcilePresetWorkspaces(saved, savedLayouts);
 
     expect(restored).toEqual([
       "Algo",
@@ -271,10 +245,7 @@ describe("reconcilePresetWorkspaces", () => {
     const custom: Workspace = { id: "ws-custom-1", name: "My Setup" };
     const withCustom = [...workspaces, custom];
 
-    const { workspaces: out, restored } = reconcilePresetWorkspaces(
-      withCustom,
-      layouts,
-    );
+    const { workspaces: out, restored } = reconcilePresetWorkspaces(withCustom, layouts);
 
     expect(restored).toHaveLength(0);
     expect(out.map((w) => w.id)).toContain("ws-custom-1");
@@ -282,10 +253,7 @@ describe("reconcilePresetWorkspaces", () => {
 
   test("does not modify existing layouts when nothing is restored", () => {
     const { workspaces, layouts } = seedWorkspaces();
-    const { layouts: outLayouts } = reconcilePresetWorkspaces(
-      workspaces,
-      layouts,
-    );
+    const { layouts: outLayouts } = reconcilePresetWorkspaces(workspaces, layouts);
     expect(outLayouts).toEqual(layouts);
   });
 
@@ -293,13 +261,13 @@ describe("reconcilePresetWorkspaces", () => {
     const { workspaces, layouts } = seedWorkspaces("admin");
     const withoutOverview = workspaces.filter((w) => w.id !== "ws-overview");
     const withoutOverviewLayouts = Object.fromEntries(
-      Object.entries(layouts).filter(([k]) => k !== "ws-overview"),
+      Object.entries(layouts).filter(([k]) => k !== "ws-overview")
     );
 
     const { workspaces: out, restored } = reconcilePresetWorkspaces(
       withoutOverview,
       withoutOverviewLayouts,
-      "admin",
+      "admin"
     );
 
     expect(restored).toEqual(["Overview"]);
@@ -362,13 +330,10 @@ describe("Workspace userLocked field", () => {
     const { workspaces, layouts } = seedWorkspaces();
     const withoutAlgo = workspaces.filter((w) => w.id !== "ws-algo");
     const withoutAlgoLayouts = Object.fromEntries(
-      Object.entries(layouts).filter(([k]) => k !== "ws-algo"),
+      Object.entries(layouts).filter(([k]) => k !== "ws-algo")
     );
 
-    const { workspaces: out } = reconcilePresetWorkspaces(
-      withoutAlgo,
-      withoutAlgoLayouts,
-    );
+    const { workspaces: out } = reconcilePresetWorkspaces(withoutAlgo, withoutAlgoLayouts);
     const restored = out.find((w) => w.id === "ws-algo");
     expect(restored?.userLocked).toBeUndefined();
     expect(restored?.locked).toBe(true);
@@ -378,9 +343,7 @@ describe("Workspace userLocked field", () => {
 describe("defaultWorkspaceForStyle", () => {
   test("prefers mapped workspace when available", () => {
     const { workspaces } = seedWorkspaces();
-    expect(defaultWorkspaceForStyle("derivatives_high_touch", workspaces)).toBe(
-      "ws-options",
-    );
+    expect(defaultWorkspaceForStyle("derivatives_high_touch", workspaces)).toBe("ws-options");
   });
 
   test("falls back to first workspace when preferred is unavailable", () => {
@@ -415,12 +378,10 @@ describe("useWorkspaces", () => {
     });
 
     expect(result.current.activeId).toBe("ws-analysis");
-    expect(new URLSearchParams(window.location.search).get("ws")).toBe(
-      "ws-analysis",
+    expect(new URLSearchParams(window.location.search).get("ws")).toBe("ws-analysis");
+    expect((window.history.state as { workspaceId?: string } | null)?.workspaceId).toBe(
+      "ws-analysis"
     );
-    expect(
-      (window.history.state as { workspaceId?: string } | null)?.workspaceId,
-    ).toBe("ws-analysis");
   });
 
   test("setWorkspaces resets active id when current id is removed", () => {
@@ -431,9 +392,7 @@ describe("useWorkspaces", () => {
     });
     expect(result.current.activeId).toBe("ws-overview");
 
-    const trimmed = result.current.workspaces.filter(
-      (w) => w.id !== "ws-overview",
-    );
+    const trimmed = result.current.workspaces.filter((w) => w.id !== "ws-overview");
     act(() => {
       result.current.setWorkspaces(trimmed);
     });
@@ -448,15 +407,13 @@ describe("useWorkspaces", () => {
       window.dispatchEvent(
         new PopStateEvent("popstate", {
           state: { workspaceId: "ws-research" },
-        }),
+        })
       );
     });
     expect(result.current.activeId).toBe("ws-research");
 
     act(() => {
-      window.dispatchEvent(
-        new PopStateEvent("popstate", { state: { workspaceId: "ws-missing" } }),
-      );
+      window.dispatchEvent(new PopStateEvent("popstate", { state: { workspaceId: "ws-missing" } }));
     });
     expect(result.current.activeId).toBe("ws-research");
   });
@@ -468,9 +425,7 @@ describe("WorkspaceSidebar", () => {
 
     expect(screen.getByText("Trading")).toBeInTheDocument();
     expect(screen.getByText("Research")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /add new workspace/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /add new workspace/i })).toBeInTheDocument();
   });
 
   test("adds a workspace and selects it", () => {
@@ -514,9 +469,7 @@ describe("WorkspaceSidebar", () => {
       ],
     });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Lock workspace Research" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Lock workspace Research" }));
     const next = onWorkspacesChange.mock.calls[0]?.[0] as Workspace[];
     expect(next.find((w) => w.id === "ws-2")?.userLocked).toBe(true);
   });
@@ -529,9 +482,7 @@ describe("WorkspaceSidebar", () => {
       ],
     });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Unlock workspace Research" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Unlock workspace Research" }));
     const next = onWorkspacesChange.mock.calls[0]?.[0] as Workspace[];
     expect(next.find((w) => w.id === "ws-2")?.userLocked).toBe(false);
   });
@@ -545,9 +496,7 @@ describe("WorkspaceSidebar", () => {
       ],
     });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Delete workspace Research" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Delete workspace Research" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
     expect(onWorkspacesChange).toHaveBeenCalledTimes(1);
@@ -569,9 +518,7 @@ describe("WorkspaceSidebar", () => {
       },
     });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Share workspace Research" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Share workspace Research" }));
     fireEvent.change(screen.getByPlaceholderText(/add a description/i), {
       target: { value: "Morning setup" },
     });
@@ -581,21 +528,17 @@ describe("WorkspaceSidebar", () => {
       expect(publishSharedWorkspaceMock).toHaveBeenCalledWith(
         "Research",
         "Morning setup",
-        expect.any(Object),
+        expect.any(Object)
       );
     });
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("?shared=shared-123"),
-    );
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("?shared=shared-123"));
     expect(await screen.findByText("Link copied!")).toBeInTheDocument();
   });
 
   test("browse shared workspaces supports clone callback", () => {
     const { onSelect, onWorkspacesChange, onCloneWorkspace } = renderSidebar();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /browse shared workspaces/i }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /browse shared workspaces/i }));
     expect(screen.getByTestId("shared-workspace-browser")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("clone-from-browser"));

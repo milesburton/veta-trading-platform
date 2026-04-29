@@ -35,7 +35,6 @@
     "npm:recharts@^2.12.7": "2.15.4_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:tailwindcss@^3.4.6": "3.4.19_postcss@8.5.6_jiti@1.21.7",
     "npm:typescript@^5.5.3": "5.9.3",
-    "npm:uuid@10": "10.0.0",
     "npm:vite-plugin-electron-renderer@~0.14.6": "0.14.6",
     "npm:vite-plugin-electron@~0.28.8": "0.28.8_vite-plugin-electron-renderer@0.14.6",
     "npm:vitest@^4.0.18": "4.0.18_jsdom@28.1.0"
@@ -4456,7 +4455,7 @@
         "npm:storybook@^8.6.18",
         "npm:tailwindcss@^3.4.6",
         "npm:typescript@^5.5.3",
-        "npm:uuid@10",
+        "npm:uuid@14",
         "npm:vite-plugin-electron-renderer@~0.14.6",
         "npm:vite-plugin-electron@~0.28.8",
         "npm:vite@^7.3.2",
