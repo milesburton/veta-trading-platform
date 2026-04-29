@@ -158,8 +158,8 @@ jobs:
               echo "Frontend test badge push attempt $i failed, retrying..."
               sleep 2
             done
-            echo "::error::Failed to publish frontend test badge after 3 attempts"
-            exit 1
+            echo "⚠️ Failed to publish frontend test badge after 3 attempts (likely branch protection) — treating as non-fatal"
+            exit 0
           fi
 
   coverage-badges:
@@ -217,8 +217,8 @@ jobs:
               echo "Coverage badge push attempt $i failed, retrying..."
               sleep 2
             done
-            echo "::error::Failed to publish coverage badges after 3 attempts"
-            exit 1
+            echo "⚠️ Failed to publish coverage badges after 3 attempts (likely branch protection) — treating as non-fatal"
+            exit 0
           fi
 
   integration:
