@@ -1,0 +1,64 @@
+---
+import { fileUrl, loadRegion } from "../lib/sourceLoader";
+
+interface Props {
+  path: string;
+  region?: string;
+  line?: number;
+  label?: string;
+}
+
+const { path, region, line, label } = Astro.props;
+
+let url: string;
+let resolvedLabel: string;
+
+if (region) {
+  const found = await loadRegion(path, region);
+  url = found.url;
+  resolvedLabel = label ?? `${path}:${found.startLine}-${found.endLine}`;
+} else {
+  url = fileUrl(path, line);
+  resolvedLabel = label ?? (line ? `${path}:${line}` : path);
+}
+---
+
+<a class="source-link" href={url} target="_blank" rel="noopener">
+  <svg
+    aria-hidden="true"
+    width="14"
+    height="14"
+    viewBox="0 0 16 16"
+    fill="currentColor"
+  >
+    <path
+      d="M6.83 4.89 1.72 10l5.11 5.11 1.42-1.42L4.55 10l3.7-3.69-1.42-1.42Zm2.34 0L7.75 6.31 11.45 10l-3.7 3.69 1.42 1.42L14.28 10 9.17 4.89Z"
+    ></path>
+  </svg>
+  <span>{resolvedLabel}</span>
+</a>
+
+<style>
+  .source-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    padding: 0.1em 0.45em;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.3em;
+    font-family: var(--sl-font-mono);
+    font-size: 0.85em;
+    color: var(--sl-color-text);
+    text-decoration: none;
+    background: var(--sl-color-gray-6);
+    line-height: 1.4;
+  }
+  .source-link:hover {
+    background: var(--sl-color-gray-5);
+    border-color: var(--sl-color-accent);
+  }
+  .source-link svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+</style>

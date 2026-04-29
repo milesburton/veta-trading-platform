@@ -1,0 +1,85 @@
+---
+title: Source References
+description: How to link doc pages to source code.
+---
+
+import Source from "../../../components/Source.astro";
+import CodeBlock from "../../../components/CodeBlock.astro";
+
+Doc pages link to source code through two MDX components: `<Source>` for inline links and `<CodeBlock>` for embedded code. Both validate at build time — if a referenced file or region is missing, the build fails.
+
+## Inline links — `<Source>`
+
+Use `<Source>` to point at a file, a line, or a named region.
+
+### Whole file
+
+```mdx
+<Source path="backend/src/oms/oms-server.ts" label="OMS" />
+```
+
+Renders: <Source path="backend/src/oms/oms-server.ts" label="OMS" />
+
+### Specific line
+
+```mdx
+<Source path="backend/src/oms/oms-server.ts" line={1} />
+```
+
+Renders: <Source path="backend/src/oms/oms-server.ts" line={1} />
+
+### Named region
+
+```mdx
+<Source path="backend/src/schemas/orders.ts" region="docs:order-new-schema" />
+```
+
+Renders: <Source path="backend/src/schemas/orders.ts" region="docs:order-new-schema" />
+
+The label defaults to `path:start-end`. Pass `label` to override.
+
+## Embedded code — `<CodeBlock>`
+
+Use `<CodeBlock>` when the actual code is the point — schemas, formulas, topic constants, type definitions.
+
+```mdx
+<CodeBlock
+  path="backend/src/schemas/orders.ts"
+  region="docs:order-new-schema"
+  title="Order submission schema"
+/>
+```
+
+Renders:
+
+<CodeBlock path="backend/src/schemas/orders.ts" region="docs:order-new-schema" title="Order submission schema" />
+
+`<CodeBlock>` requires a region — pinning by line number is too brittle for embedded code.
+
+## Region markers
+
+Mark a code block in the source file with a line comment:
+
+```ts
+// #region docs:order-new-schema
+export const OrderNewSchema = z.object({ /* ... */ });
+export type OrderNew = z.infer<typeof OrderNewSchema>;
+// #endregion docs:order-new-schema
+```
+
+Conventions:
+
+- Prefix every region ID with `docs:` so they don't collide with editor folding regions.
+- Both `//` and `#` line-comment styles are supported (TypeScript, JavaScript, shell, Python, YAML).
+- Region bodies are dedented automatically.
+- A region must contain at least one line of content; empty regions fail the build.
+
+## Pinning to a release
+
+By default, links resolve against `main`. To pin a build to a specific commit or tag, set `DOCS_GIT_REF` before building:
+
+```bash
+DOCS_GIT_REF=v1.19.3 npm run build
+```
+
+Used by tagged-release deploys so historical doc snapshots stay accurate.

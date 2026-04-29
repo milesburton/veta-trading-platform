@@ -40,6 +40,7 @@ const OptionSpecSchema = z.object({
 
 const AlgoParamsSchema = z.record(z.string(), z.unknown());
 
+// #region docs:order-new-schema
 export const OrderNewSchema = z.object({
   clientOrderId: ClientOrderIdSchema.optional(),
   orderId: OrderIdSchema.optional(),
@@ -59,6 +60,7 @@ export const OrderNewSchema = z.object({
   ts: TimestampMsSchema.optional(),
 });
 export type OrderNew = z.infer<typeof OrderNewSchema>;
+// #endregion docs:order-new-schema
 
 export const OrderSubmittedSchema = z.object({
   orderId: OrderIdSchema,

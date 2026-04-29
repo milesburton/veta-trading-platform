@@ -1,0 +1,41 @@
+---
+import { Code } from "@astrojs/starlight/components";
+import { detectLanguage, loadRegion } from "../lib/sourceLoader";
+
+interface Props {
+  path: string;
+  region: string;
+  title?: string;
+}
+
+const { path, region, title } = Astro.props;
+const found = await loadRegion(path, region);
+const lang = detectLanguage(path);
+const caption = title ?? `${path}:${found.startLine}-${found.endLine}`;
+---
+
+<figure class="code-source">
+  <Code code={found.body} lang={lang as any} />
+  <figcaption>
+    <a href={found.url} target="_blank" rel="noopener">{caption} ↗</a>
+  </figcaption>
+</figure>
+
+<style>
+  .code-source {
+    margin: 1.5em 0;
+  }
+  .code-source figcaption {
+    margin-top: 0.4em;
+    font-family: var(--sl-font-mono);
+    font-size: 0.8em;
+    text-align: right;
+  }
+  .code-source figcaption a {
+    color: var(--sl-color-text-accent);
+    text-decoration: none;
+  }
+  .code-source figcaption a:hover {
+    text-decoration: underline;
+  }
+</style>
