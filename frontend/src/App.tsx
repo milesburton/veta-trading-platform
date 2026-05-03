@@ -9,6 +9,7 @@ import {
   makeAdminModel,
   makeClearModel,
 } from "./components/DashboardLayout.tsx";
+import { DrawersProvider } from "./components/drawers/DrawersContext.tsx";
 import { LoginPage } from "./components/LoginPage.tsx";
 import { StartupOverlay } from "./components/StartupOverlay.tsx";
 import { AppHeader, WorkspaceToolbar } from "./components/StatusBar.tsx";
@@ -393,97 +394,100 @@ function TradingApp() {
 
   return (
     <TradingProvider>
-      <div
-        data-testid="trading-app"
-        data-theme={theme}
-        className="flex flex-col h-screen bg-gray-950 text-gray-100 overflow-hidden"
-      >
-        <AppHeader />
+      <DrawersProvider>
+        <div
+          data-testid="trading-app"
+          data-theme={theme}
+          className="flex flex-col h-screen bg-gray-950 text-gray-100 overflow-hidden"
+        >
+          <AppHeader />
 
-        {latestCritical && (
-          <div className="flex items-center gap-3 px-4 py-2 bg-red-950 border-b border-red-800 text-sm text-red-200 shrink-0">
-            <span className="font-bold text-red-400 shrink-0">⚠ CRITICAL</span>
-            <span className="flex-1 truncate">{latestCritical.message}</span>
-            {latestCritical.detail && (
-              <span className="text-red-400 text-xs shrink-0">{latestCritical.detail}</span>
-            )}
-            <button
-              type="button"
-              onClick={() => dispatch(alertDismissed(latestCritical.id))}
-              className="shrink-0 text-red-500 hover:text-red-300 text-lg leading-none transition-colors"
+          {latestCritical && (
+            <div className="flex items-center gap-3 px-4 py-2 bg-red-950 border-b border-red-800 text-sm text-red-200 shrink-0">
+              <span className="font-bold text-red-400 shrink-0">⚠ CRITICAL</span>
+              <span className="flex-1 truncate">{latestCritical.message}</span>
+              {latestCritical.detail && (
+                <span className="text-red-400 text-xs shrink-0">{latestCritical.detail}</span>
+              )}
+              <button
+                type="button"
+                onClick={() => dispatch(alertDismissed(latestCritical.id))}
+                className="shrink-0 text-red-500 hover:text-red-300 text-lg leading-none transition-colors"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {cloneBanner.value && (
+            <div className="flex items-center gap-3 px-4 py-2 bg-emerald-950 border-b border-emerald-800 text-sm text-emerald-200 shrink-0">
+              <span>
+                <span className="font-semibold">{cloneBanner.value.ownerName}</span> shared
+                workspace{" "}
+                <span className="font-semibold">&ldquo;{cloneBanner.value.name}&rdquo;</span> —
+                clone it into your account?
+              </span>
+              <button
+                type="button"
+                onClick={cloneSharedWorkspace}
+                className="px-2.5 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-medium transition-colors"
+              >
+                Clone
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  cloneBanner.value = null;
+                }}
+                className="px-2 py-0.5 rounded text-emerald-500 hover:text-emerald-300 text-xs transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          <div className="flex flex-1 min-h-0">
+            <DashboardProvider
+              key={`${userId}:${activeId}`}
+              model={activeModel}
+              onModelChange={handleModelChange}
             >
-              ×
-            </button>
+              <WorkspaceSidebar
+                workspaces={workspaces}
+                activeId={activeId}
+                onSelect={handleSelect}
+                onWorkspacesChange={handleWorkspacesChange}
+                layouts={layouts}
+                onCloneWorkspace={(wsId, model) => {
+                  const newModel = Model.fromJson(model);
+                  setLayouts((prev) => {
+                    const next = { ...prev, [wsId]: newModel };
+                    savePrefs(workspaces, next);
+                    return next;
+                  });
+                }}
+              />
+              <div className="flex flex-col flex-1 min-w-0 min-h-0">
+                <WorkspaceToolbar />
+                <div className="flex-1 relative min-h-0">
+                  <DashboardLayout />
+                </div>
+              </div>
+            </DashboardProvider>
           </div>
-        )}
 
-        {cloneBanner.value && (
-          <div className="flex items-center gap-3 px-4 py-2 bg-emerald-950 border-b border-emerald-800 text-sm text-emerald-200 shrink-0">
-            <span>
-              <span className="font-semibold">{cloneBanner.value.ownerName}</span> shared workspace{" "}
-              <span className="font-semibold">&ldquo;{cloneBanner.value.name}&rdquo;</span> — clone
-              it into your account?
-            </span>
-            <button
-              type="button"
-              onClick={cloneSharedWorkspace}
-              className="px-2.5 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-medium transition-colors"
-            >
-              Clone
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                cloneBanner.value = null;
-              }}
-              className="px-2 py-0.5 rounded text-emerald-500 hover:text-emerald-300 text-xs transition-colors"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-
-        <div className="flex flex-1 min-h-0">
-          <DashboardProvider
-            key={`${userId}:${activeId}`}
-            model={activeModel}
-            onModelChange={handleModelChange}
-          >
-            <WorkspaceSidebar
-              workspaces={workspaces}
-              activeId={activeId}
-              onSelect={handleSelect}
-              onWorkspacesChange={handleWorkspacesChange}
-              layouts={layouts}
-              onCloneWorkspace={(wsId, model) => {
-                const newModel = Model.fromJson(model);
-                setLayouts((prev) => {
-                  const next = { ...prev, [wsId]: newModel };
-                  savePrefs(workspaces, next);
-                  return next;
-                });
+          {criticalAlerts.length > 0 && (
+            <div
+              data-testid="critical-overlay"
+              className="fixed inset-0 z-30 pointer-events-none border-2 border-red-600/40 animate-pulse"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, transparent 50%, rgba(127,29,29,0.12) 100%)",
               }}
             />
-            <div className="flex flex-col flex-1 min-w-0 min-h-0">
-              <WorkspaceToolbar />
-              <div className="flex-1 relative min-h-0">
-                <DashboardLayout />
-              </div>
-            </div>
-          </DashboardProvider>
+          )}
         </div>
-
-        {criticalAlerts.length > 0 && (
-          <div
-            data-testid="critical-overlay"
-            className="fixed inset-0 z-30 pointer-events-none border-2 border-red-600/40 animate-pulse"
-            style={{
-              background:
-                "radial-gradient(ellipse at center, transparent 50%, rgba(127,29,29,0.12) 100%)",
-            }}
-          />
-        )}
-      </div>
+      </DrawersProvider>
     </TradingProvider>
   );
 }

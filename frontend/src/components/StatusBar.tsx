@@ -18,11 +18,13 @@ import { selectOrderTicketWindowSize } from "../store/uiSlice.ts";
 import { useDeleteSessionMutation } from "../store/userApi.ts";
 import type { ServiceHealth } from "../types.ts";
 import { openOrderTicketWindow } from "../utils/orderTicketWindow.ts";
-import { AlertDrawer } from "./AlertDrawer.tsx";
+import { ALERTS_DRAWER_ID, AlertDrawer } from "./AlertDrawer.tsx";
 import { BuildInfo } from "./BuildInfo.tsx";
 import { ComponentPicker } from "./ComponentPicker.tsx";
 import { useDashboard } from "./dashboard/DashboardContext.tsx";
 import type { TabChannelConfig } from "./dashboard/panelRegistry.ts";
+import { DATA_DEPTH_DRAWER_ID, DataDepthDrawer } from "./drawers/DataDepthDrawer.tsx";
+import { useDrawers } from "./drawers/DrawersContext.tsx";
 import { KillSwitchButton } from "./KillSwitchButton.tsx";
 import { ServiceStatus } from "./ServiceStatus.tsx";
 import { TemplatePicker } from "./TemplatePicker.tsx";
@@ -207,7 +209,8 @@ function ThemeSwitcher() {
 
 function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
   const dispatch = useAppDispatch();
-  const drawerOpen = useSignal(false);
+  const { open, close, isOpen } = useDrawers();
+  const drawerOpen = isOpen(ALERTS_DRAWER_ID);
   const alertCount = useAppSelector(selectAlertCount);
   const highestSeverity = useAppSelector(selectHighestSeverity);
   const prevServiceStates = useRef<Record<string, string>>({});
@@ -272,7 +275,7 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
         type="button"
         onClick={() => {
           if (isPinned) focusAlertsTab();
-          else drawerOpen.value = true;
+          else open(ALERTS_DRAWER_ID);
         }}
         title={isPinned ? "Jump to Alerts panel" : "Alert Centre"}
         data-testid="alert-bell-btn"
@@ -285,13 +288,7 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
           </span>
         )}
       </button>
-      {drawerOpen.value && !isPinned && (
-        <AlertDrawer
-          onClose={() => {
-            drawerOpen.value = false;
-          }}
-        />
-      )}
+      {drawerOpen && !isPinned && <AlertDrawer onClose={() => close(ALERTS_DRAWER_ID)} />}
     </>
   );
 }
@@ -386,6 +383,8 @@ function dataQualityLabel(days: number): { label: string; color: string; dotColo
 
 function DataDepthIndicator() {
   const { data, isLoading } = useGetDataDepthQuery(undefined, { pollingInterval: 30_000 });
+  const { toggle, isOpen } = useDrawers();
+  const drawerOpen = isOpen(DATA_DEPTH_DRAWER_ID);
 
   if (isLoading || !data) {
     return (
@@ -410,18 +409,22 @@ function DataDepthIndicator() {
     `Min depth: ${label}`,
     `Avg depth: ${Math.round(data.avgDays)}d`,
     ...warnings,
+    "Click for per-symbol detail",
   ].join("\n");
 
   return (
-    <span
+    <button
+      type="button"
       data-testid="data-depth"
       title={tooltip}
-      className={`flex items-center gap-1.5 text-[10px] tabular-nums ${color}`}
+      onClick={() => toggle(DATA_DEPTH_DRAWER_ID)}
+      aria-pressed={drawerOpen}
+      className={`flex items-center gap-1.5 text-[10px] tabular-nums hover:text-gray-200 transition-colors ${color}`}
     >
       <span className="text-gray-500">Market Data</span>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
       {data.totalSymbols} sym · {label}
-    </span>
+    </button>
   );
 }
 
@@ -564,6 +567,7 @@ export function AppHeader() {
           )}
         </div>
       </div>
+      <DataDepthDrawer />
     </div>
   );
 }

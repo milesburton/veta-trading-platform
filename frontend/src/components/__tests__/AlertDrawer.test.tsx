@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AlertDrawer, AlertList } from "../AlertDrawer";
+import { ALERTS_DRAWER_ID, AlertDrawer, AlertList } from "../AlertDrawer";
+import { DrawersProvider, useDrawers } from "../drawers/DrawersContext";
 
 const dispatch = vi.fn();
 const addPanel = vi.fn();
@@ -91,6 +93,22 @@ describe("AlertList", () => {
   });
 });
 
+function renderOpenAlertDrawer(onClose: () => void) {
+  function Opener() {
+    const { open } = useDrawers();
+    useEffect(() => {
+      open(ALERTS_DRAWER_ID);
+    }, [open]);
+    return null;
+  }
+  return render(
+    <DrawersProvider>
+      <Opener />
+      <AlertDrawer onClose={onClose} />
+    </DrawersProvider>
+  );
+}
+
 describe("AlertDrawer", () => {
   beforeEach(() => {
     dispatch.mockReset();
@@ -99,7 +117,7 @@ describe("AlertDrawer", () => {
 
   it("pins alerts panel and closes drawer", () => {
     const onClose = vi.fn();
-    render(<AlertDrawer onClose={onClose} />);
+    renderOpenAlertDrawer(onClose);
 
     fireEvent.click(screen.getByTitle(/Pin to dashboard/i));
 
@@ -108,7 +126,7 @@ describe("AlertDrawer", () => {
   });
 
   it("dismisses all alerts from header action", () => {
-    render(<AlertDrawer onClose={() => {}} />);
+    renderOpenAlertDrawer(() => {});
 
     fireEvent.click(screen.getByText(/Dismiss all/i));
 

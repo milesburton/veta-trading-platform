@@ -9,6 +9,9 @@ import {
 } from "../store/alertsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { useDashboard } from "./dashboard/DashboardContext.tsx";
+import { Drawer } from "./drawers/Drawer.tsx";
+
+export const ALERTS_DRAWER_ID = "alerts";
 
 function relativeTime(ts: number): string {
   const diff = Math.floor((Date.now() - ts) / 1000);
@@ -214,63 +217,49 @@ export function AlertDrawer({ onClose }: Props) {
   const { activePanelIds, addPanel } = useDashboard();
   const isPinned = activePanelIds.has("alerts");
 
-  return (
+  const headerActions = (
     <>
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: drawer backdrop */}
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: ESC handled by close button */}
-      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
-
-      <div className="fixed top-0 right-0 h-full w-96 z-50 flex flex-col bg-gray-900 border-l border-gray-800 shadow-2xl">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
-          <span className="text-sm font-semibold text-gray-200">Alert Centre</span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              title={isPinned ? "Alerts panel is open in dashboard" : "Pin to dashboard"}
-              onClick={() => {
-                if (!isPinned) {
-                  addPanel("alerts");
-                  onClose();
-                }
-              }}
-              className={`flex items-center justify-center w-5 h-5 rounded transition-colors ${
-                isPinned ? "text-amber-400 cursor-default" : "text-gray-600 hover:text-gray-300"
-              }`}
-              style={{ fontSize: "11px", lineHeight: 1 }}
-            >
-              {isPinned ? "◈" : "◇"}
-            </button>
-            {alerts.length > 0 && (
-              <button
-                type="button"
-                onClick={() => dispatch(allAlertsDismissed())}
-                className="text-[11px] text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                Dismiss all
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-300 text-lg leading-none"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
-        <AlertList
-          alerts={alerts}
-          filter={filter.value}
-          onFilter={(f) => {
-            filter.value = f;
-          }}
-          sourceFilter={sourceFilter.value}
-          onSourceFilter={(s) => {
-            sourceFilter.value = s;
-          }}
-        />
-      </div>
+      <button
+        type="button"
+        title={isPinned ? "Alerts panel is open in dashboard" : "Pin to dashboard"}
+        onClick={() => {
+          if (!isPinned) {
+            addPanel("alerts");
+            onClose();
+          }
+        }}
+        className={`flex items-center justify-center w-5 h-5 rounded transition-colors ${
+          isPinned ? "text-amber-400 cursor-default" : "text-gray-600 hover:text-gray-300"
+        }`}
+        style={{ fontSize: "11px", lineHeight: 1 }}
+      >
+        {isPinned ? "◈" : "◇"}
+      </button>
+      {alerts.length > 0 && (
+        <button
+          type="button"
+          onClick={() => dispatch(allAlertsDismissed())}
+          className="text-[11px] text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          Dismiss all
+        </button>
+      )}
     </>
+  );
+
+  return (
+    <Drawer id={ALERTS_DRAWER_ID} title="Alert Centre" headerActions={headerActions}>
+      <AlertList
+        alerts={alerts}
+        filter={filter.value}
+        onFilter={(f) => {
+          filter.value = f;
+        }}
+        sourceFilter={sourceFilter.value}
+        onSourceFilter={(s) => {
+          sourceFilter.value = s;
+        }}
+      />
+    </Drawer>
   );
 }
