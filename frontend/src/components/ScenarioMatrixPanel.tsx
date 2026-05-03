@@ -362,7 +362,9 @@ export function ScenarioMatrixPanel() {
               </thead>
               <tbody>
                 {result.value.cells.map((row, si) => {
-                  const spotPct = result.value!.spotShocks[si];
+                  const r0 = result.value;
+                  if (!r0) return null;
+                  const spotPct = r0.spotShocks[si];
                   return (
                     <tr key={spotPct}>
                       <td className="text-[9px] text-gray-500 pr-2 font-semibold">

@@ -12,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@shared": path.resolve(__dirname, "../shared"),
+      "@veta/frontend": path.resolve(__dirname, "src"),
     },
   },
   test: {

@@ -145,11 +145,11 @@ export function OptionPricingPanel() {
   }
 
   const sensitivityData = useMemo(() => {
-    if (!result.value) return [];
-    const T = result.value.expirySecs / (365 * 86400);
+    const r0 = result.value;
+    if (!r0) return [];
+    const T = r0.expirySecs / (365 * 86400);
     const r = 0.05;
     return Array.from({ length: 25 }, (_, i) => {
-      const r0 = result.value!;
       const S = r0.spotPrice * (0.7 + i * (0.6 / 24));
       const { delta, gamma, theta, vega } = bsGreeks(
         r0.optionType,

@@ -18,7 +18,8 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["../shared/*"]
+      "@shared/*": ["../shared/*"],
+      "@veta/frontend/*": ["./src/*"]
     }
   },
   "include": ["src", "../shared"]

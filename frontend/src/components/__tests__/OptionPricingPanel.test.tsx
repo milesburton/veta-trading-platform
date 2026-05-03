@@ -102,4 +102,16 @@ describe("OptionPricingPanel", () => {
     expect(screen.getByText(/Δ Delta/i)).toBeInTheDocument();
     expect(screen.getByText(/Γ Gamma/i)).toBeInTheDocument();
   });
+
+  it("renders the Greeks-vs-spot sensitivity section after a quote arrives", async () => {
+    render(<OptionPricingPanel />);
+    fireEvent.click(screen.getByTestId("get-quote-btn"));
+    await screen.findByTestId("quote-result");
+    expect(screen.getByText(/Greeks vs Spot/i)).toBeInTheDocument();
+  });
+
+  it("does not render the sensitivity section before a quote", () => {
+    render(<OptionPricingPanel />);
+    expect(screen.queryByText(/Greeks vs Spot/i)).not.toBeInTheDocument();
+  });
 });

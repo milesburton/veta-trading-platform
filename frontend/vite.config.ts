@@ -57,6 +57,7 @@ export default defineConfig(async ({ mode }) => {
     resolve: {
       alias: {
         "@shared": path.resolve(__dirname, "../shared"),
+        "@veta/frontend": path.resolve(__dirname, "src"),
       },
     },
     ...(isElectronMode ? {} : {

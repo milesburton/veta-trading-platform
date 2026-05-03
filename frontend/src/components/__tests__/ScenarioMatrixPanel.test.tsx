@@ -103,4 +103,23 @@ describe("ScenarioMatrixPanel", () => {
     expect(screen.getByText(/Gain/i)).toBeInTheDocument();
     expect(screen.getByText(/Loss/i)).toBeInTheDocument();
   });
+
+  it("renders one row per spot shock with the percent label", async () => {
+    render(<ScenarioMatrixPanel />);
+    fireEvent.click(screen.getByTestId("run-scenario-btn"));
+    const table = await screen.findByTestId("scenario-table");
+    const rows = table.querySelectorAll("tbody > tr");
+    expect(rows).toHaveLength(7);
+    expect(screen.getAllByText(/-20%/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/\+20%/).length).toBeGreaterThan(0);
+  });
+
+  it("switches metrics when a metric button is clicked", async () => {
+    render(<ScenarioMatrixPanel />);
+    fireEvent.click(screen.getByTestId("run-scenario-btn"));
+    await screen.findByTestId("scenario-table");
+    const meanButtons = screen.getAllByText(/Mean/i);
+    fireEvent.click(meanButtons[0]);
+    expect(screen.getByTestId("scenario-table")).toBeInTheDocument();
+  });
 });
