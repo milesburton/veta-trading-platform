@@ -126,19 +126,42 @@ out of our hands.
 
 ## Migration runbook (UAT)
 
-When this hardening rolls out via Watchtower's auto-update, existing
-named volumes on UAT may have root-owned contents that the new non-root
-services cannot write to. The following steps must run **before** the
-new image set is pulled:
+:::caution[Required step — without this, four services crash on first start]
+The hardening pass moves the Deno trading services to UID 1000 inside their
+containers. Existing named volumes on UAT contain root-owned files that the
+new non-root services cannot write to. **Watchtower will pull the new images
+automatically within five minutes of the next CI build**, so the migration
+must be run before that pull, or Watchtower must be paused first.
+
+Affected volumes / services:
+
+- `veta_market-data-state` — `market-data`
+- `veta_feature-engine-data` — `feature-engine`
+- `veta_signal-engine-data` — `signal-engine`
+- `veta_llm-advisory-data` — `llm-advisory`
+
+Symptom of skipping the migration: the four services above appear as
+`Restarting` in `docker ps`, and their logs show
+`Permission denied` or `Read-only file system`.
+:::
+
+The safest sequence is to pause Watchtower, run the migration, restart the
+stack, then resume Watchtower:
 
 ```bash
 ssh miles@<uat-ip>
 cd /opt/stacks/veta
+git pull
+
+docker stop veta-watchtower
+
 ./scripts/fix-uat-permissions.sh
 
 docker compose -f compose.yml -f compose.prod.yml down
 docker compose -f compose.yml -f compose.prod.yml pull
 docker compose -f compose.yml -f compose.prod.yml up -d
+
+docker start veta-watchtower
 ```
 
 To schedule disk-prune (replacing the in-container pruning that was
