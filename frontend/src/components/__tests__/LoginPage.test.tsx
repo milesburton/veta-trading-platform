@@ -133,7 +133,7 @@ describe("LoginPage", () => {
     renderLogin({ buildDate: "2026-03-08", commitSha: "abc1234deadbeef" });
 
     expect(screen.getByText(/Miles Burton/)).toBeInTheDocument();
-    expect(screen.getByText("GitHub")).toHaveAttribute(
+    expect(screen.getByTitle("View source on GitHub")).toHaveAttribute(
       "href",
       "https://github.com/milesburton/veta-trading-platform"
     );
@@ -145,7 +145,7 @@ describe("LoginPage", () => {
   test("renders footer with author when build info props omitted", () => {
     renderLogin();
     expect(screen.getByText(/Miles Burton/)).toBeInTheDocument();
-    expect(screen.getByText("GitHub")).toBeInTheDocument();
+    expect(screen.getByTitle("View source on GitHub")).toBeInTheDocument();
   });
 
   test("does not render platform status section", () => {
