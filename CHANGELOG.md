@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.20.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.19.3...veta-trading-platform-v1.20.0) (2026-05-03)
+
+
+### Features
+
+* **journal:** capture pipeline latency and expose /metrics/latency ([a9e3c96](https://github.com/milesburton/veta-trading-platform/commit/a9e3c96d90ee9aa2bb54a8f24632a6a5070bfb67))
+* **load-test:** generate flowable orders + add p99 latency assertion ([a83fb23](https://github.com/milesburton/veta-trading-platform/commit/a83fb23ef0121b234566cea83200e58441b82970))
+* **loadtest:** add k6 + Grafana dashboard for pipeline load testing ([a53b579](https://github.com/milesburton/veta-trading-platform/commit/a53b57961f76a0896a54c2bdc67a5920989c8e46))
+* **ui:** pinnable Market Data Depth — drawer + dashboard panel ([1b3c8c2](https://github.com/milesburton/veta-trading-platform/commit/1b3c8c278724fca14770448d5668604baa48a0ab))
+* **ui:** stackable drawers with DataDepth detail panel ([a4f5d30](https://github.com/milesburton/veta-trading-platform/commit/a4f5d30c9d6acc5df8708590ac7088ca79c6956d))
+
+
+### Bug Fixes
+
+* build-info display, login cleanup, gateway proxy gaps ([e49cc95](https://github.com/milesburton/veta-trading-platform/commit/e49cc955c078f853caefa46b5b5845fad675198c))
+* **frontend:** restore biome formatting and fix typecheck errors in tests ([0ba71f4](https://github.com/milesburton/veta-trading-platform/commit/0ba71f4e8142ff75b4492259f60bac13ecf3da77))
+* remove personal email default and correct Traefik deployment filter ([dbff9a2](https://github.com/milesburton/veta-trading-platform/commit/dbff9a2c1fc64d20915339a45ea4d25f2188a0c9))
+
 ## [1.19.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.19.2...veta-trading-platform-v1.19.3) (2026-04-18)
 
 
