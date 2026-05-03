@@ -153,7 +153,7 @@ Deno.test("[load] 100-order burst: all orders appear in journal within 30s", asy
           rules: [{
             kind: "rule",
             id: "r1",
-            field: "clientOrderId",
+            field: "id",
             op: "contains",
             value: jobId,
           }],
@@ -247,7 +247,7 @@ Deno.test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
             {
               kind: "rule",
               id: "r1",
-              field: "clientOrderId",
+              field: "id",
               op: "contains",
               value: jobId,
             },
@@ -338,7 +338,7 @@ Deno.test("[load] pipeline latency: 90% of orders visible in journal within SLA 
           rules: [{
             kind: "rule",
             id: "r1",
-            field: "clientOrderId",
+            field: "id",
             op: "contains",
             value: jobId,
           }],
@@ -368,6 +368,57 @@ Deno.test("[load] pipeline latency: 90% of orders visible in journal within SLA 
   assert(
     elapsed <= SLA_PIPELINE_LATENCY_MS,
     `Pipeline latency ${elapsed}ms exceeds SLA of ${SLA_PIPELINE_LATENCY_MS}ms`,
+  );
+});
+
+Deno.test("[load] LIMIT pipeline percentiles within budget after 100-order burst", async () => {
+  const ORDER_COUNT = 100;
+  const SETTLE_MS = 90_000;
+  const SUBMITTED_TO_FILLED_P99_BUDGET_MS = 2_000;
+  const SUBMITTED_TO_ARRIVED_P99_BUDGET_MS = 250;
+  const MIN_SAMPLE_FRACTION = 0.6;
+
+  const token = await loginAsAdmin();
+  const result = await triggerLoadTest(token, {
+    orderCount: ORDER_COUNT,
+    strategy: "LIMIT",
+  });
+  assertEquals(result.submitted, ORDER_COUNT);
+
+  await new Promise((r) => setTimeout(r, SETTLE_MS));
+
+  const res = await fetch(
+    `${JOURNAL_URL}/metrics/latency?windowMs=${SETTLE_MS + 30_000}`,
+    { signal: t(10_000) },
+  );
+  assertEquals(res.status, 200);
+  const m = await res.json() as {
+    sampleSize: number;
+    stages: Record<string, { count: number; p50: number; p95: number; p99: number; max: number }>;
+  };
+
+  const minSamples = Math.ceil(ORDER_COUNT * MIN_SAMPLE_FRACTION);
+  assert(
+    m.sampleSize >= minSamples,
+    `sampleSize ${m.sampleSize} below minimum ${minSamples} (${ORDER_COUNT} submitted)`,
+  );
+
+  const filled = m.stages.submittedToFilled;
+  assert(
+    filled.count >= minSamples,
+    `submittedToFilled.count ${filled.count} below minimum ${minSamples}`,
+  );
+  assert(
+    filled.p99 <= SUBMITTED_TO_FILLED_P99_BUDGET_MS,
+    `submittedToFilled.p99 = ${filled.p99}ms exceeds budget ${SUBMITTED_TO_FILLED_P99_BUDGET_MS}ms ` +
+      `(p50=${filled.p50}ms p95=${filled.p95}ms max=${filled.max}ms)`,
+  );
+
+  const arrived = m.stages.submittedToArrived;
+  assert(
+    arrived.p99 <= SUBMITTED_TO_ARRIVED_P99_BUDGET_MS,
+    `submittedToArrived.p99 = ${arrived.p99}ms exceeds budget ${SUBMITTED_TO_ARRIVED_P99_BUDGET_MS}ms ` +
+      `(journal ingestion lag — bus or DB write batcher saturated?)`,
   );
 });
 

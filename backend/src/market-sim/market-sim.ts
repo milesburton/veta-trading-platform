@@ -312,6 +312,12 @@ Deno.serve({ port: PORT }, (req) => {
     });
   }
 
+  if (url.pathname === "/prices" && req.method === "GET") {
+    return new Response(JSON.stringify({ ...marketData }), {
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  }
+
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }

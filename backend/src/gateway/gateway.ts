@@ -1551,28 +1551,58 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const strategy = body.strategy ?? "LIMIT";
     const jobId = `load-${Date.now()}`;
 
-    const LOAD_TEST_USER_ID = Deno.env.get("LOAD_TEST_USER_ID") ?? "alice";
-    const LOAD_TEST_USER_ROLE = "trader";
+    const LOAD_TEST_USERS = (Deno.env.get("LOAD_TEST_USER_IDS") ??
+      "alice,amelia,bob,dave").split(",").map((s) => s.trim()).filter(Boolean);
+    const ORDERS_PER_SECOND_PER_USER = Number(
+      Deno.env.get("LOAD_TEST_ORDERS_PER_SEC_PER_USER") ?? "5",
+    );
 
-    await Promise.all(
-      Array.from({ length: orderCount }, (_, i) => {
+    let prices: Record<string, number> = {};
+    try {
+      const res = await fetch(`${MARKET_SIM_URL}/prices`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (res.ok) prices = await res.json() as Record<string, number>;
+    } catch {
+      // non-fatal: fall back to symbol-keyed defaults below
+    }
+
+    const FALLBACK_REF: Record<string, number> = {
+      AAPL: 180, MSFT: 420, GOOGL: 170, AMZN: 200, TSLA: 250,
+    };
+    const refPrice = (sym: string) =>
+      prices[sym] ?? FALLBACK_REF[sym] ?? 100;
+
+    const stride = 1000 / (ORDERS_PER_SECOND_PER_USER * LOAD_TEST_USERS.length);
+    (async () => {
+      for (let i = 0; i < orderCount; i++) {
         const symbol = symbols[i % symbols.length];
         const side = i % 2 === 0 ? "BUY" : "SELL";
-        return producer.send("orders.new", {
+        const userId = LOAD_TEST_USERS[i % LOAD_TEST_USERS.length];
+        const mid = refPrice(symbol);
+        const limitPrice = side === "BUY"
+          ? Number((mid * 1.02).toFixed(2))
+          : Number((mid * 0.98).toFixed(2));
+
+        producer.send("orders.new", {
           clientOrderId: `${jobId}-${i}`,
           asset: symbol,
           side,
           quantity: 10 + (i % 90),
-          limitPrice: side === "BUY" ? 99_999 : 1,
+          limitPrice,
           expiresAt: 300,
           strategy,
           algoParams: { strategy },
-          userId: LOAD_TEST_USER_ID,
-          userRole: LOAD_TEST_USER_ROLE,
+          userId,
+          userRole: "trader",
           _loadTestJobId: jobId,
-        });
-      }),
-    );
+        }).catch(() => {});
+
+        if (i + 1 < orderCount && stride > 0) {
+          await new Promise((r) => setTimeout(r, stride));
+        }
+      }
+    })();
 
     publishAccessEvent({
       action: "http_request",
@@ -1582,7 +1612,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     });
 
     return new Response(
-      JSON.stringify({ jobId, submitted: orderCount, symbols, strategy }),
+      JSON.stringify({ jobId, submitted: orderCount, symbols, strategy, paced: true }),
       { status: 202, headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
     );
   }
