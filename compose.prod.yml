@@ -529,6 +529,8 @@ services:
       - "com.centurylinklabs.watchtower.enable=false"
 
   # Watchtower — auto-updates services labelled with watchtower.enable=true
+  # The Docker socket mount is required and is the residual privileged surface
+  # on the UAT deployment. See docs platform/security.md for the threat model.
   watchtower:
     image: containrrr/watchtower:latest
     restart: unless-stopped
@@ -536,6 +538,10 @@ services:
       - trading-net
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       WATCHTOWER_LABEL_ENABLE: "true"
       WATCHTOWER_POLL_INTERVAL: "300"

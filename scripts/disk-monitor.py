@@ -3,20 +3,19 @@
 disk-monitor: HTTP health endpoint for host disk usage.
 
 Returns 200 when disk < WARN_PCT, 503 when >= WARN_PCT.
-Auto-prunes dangling Docker images when disk >= PRUNE_PCT.
+Read-only by design: the container has no Docker socket access and no
+host filesystem write access. Image pruning is a separate concern,
+handled by an out-of-band host cron (see scripts/host-prune.sh).
 
-Deploy: mounted into veta-disk-monitor container via compose.yml.
 Poll on port 8099, path /health (keyword: "ok").
 """
 import http.server
 import json
 import os
 import shutil
-import subprocess
 import time
 
 WARN_PCT = int(os.getenv("WARN_PCT", "85"))
-PRUNE_PCT = int(os.getenv("PRUNE_PCT", "90"))
 
 
 def get_disk() -> dict:
@@ -30,32 +29,18 @@ def get_disk() -> dict:
     }
 
 
-def maybe_prune(pct: float) -> None:
-    if pct >= PRUNE_PCT:
-        try:
-            subprocess.run(
-                ["docker", "image", "prune", "-f"],
-                capture_output=True,
-                timeout=60,
-            )
-        except Exception:
-            pass
-
-
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass
 
     def do_GET(self):
         disk = get_disk()
-        maybe_prune(disk["used_pct"])
         ok = disk["used_pct"] < WARN_PCT
         body = json.dumps(
             {
                 "status": "ok" if ok else "critical",
                 "disk": disk,
                 "warn_pct": WARN_PCT,
-                "prune_pct": PRUNE_PCT,
                 "ts": int(time.time()),
             }
         ).encode()
@@ -67,5 +52,5 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"[disk-monitor] listening on :8099  warn={WARN_PCT}%  prune={PRUNE_PCT}%")
+    print(f"[disk-monitor] listening on :8099  warn={WARN_PCT}%")
     http.server.HTTPServer(("", 8099), Handler).serve_forever()
