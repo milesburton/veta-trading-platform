@@ -1,4 +1,4 @@
-# Production override — homelab
+# UAT override — internal Dockge-managed VM
 # Usage: docker compose -f compose.yml -f compose.prod.yml up -d
 
 x-prod-image: &prod-defaults

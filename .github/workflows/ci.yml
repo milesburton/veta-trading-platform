@@ -820,7 +820,7 @@ jobs:
           build-args: |
             BASE_TAG=${{ needs.docker-base.outputs.base-tag }}
             COMMIT_SHA=${{ github.sha }}
-            VITE_DEPLOYMENT=homelab
+            VITE_DEPLOYMENT=uat
             VITE_COMMIT_SHA=${{ github.sha }}
             VITE_BUILD_DATE=${{ github.run_started_at }}
           cache-from: type=gha

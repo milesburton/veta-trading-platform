@@ -1068,7 +1068,7 @@ Fly.io terminates TLS at the edge. `auto_start_machines=false`, `auto_stop_machi
 | `DOMAIN` | Primary domain for Traefik `Host()` matchers |
 | `ACME_EMAIL` | Let's Encrypt registration email |
 | `COMMIT_SHA` | Git SHA (set by CI) — appears in `/health` version field |
-| `VITE_DEPLOYMENT` | `local` \| `fly` — controls which services appear in Estate Overview |
+| `VITE_DEPLOYMENT` | `local` \| `uat` \| `fly` — controls which services appear in Estate Overview |
 | `LLM_ENABLED` | `true` to activate LLM advisory (requires Ollama) |
 | `ALPHA_VANTAGE_API_KEY` | Optional — enables live Alpha Vantage price feeds |
 

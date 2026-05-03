@@ -115,7 +115,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "risk-dashboard": "Risk Dashboard (firm-wide P&L)",
   "my-positions": "My Positions (live book)",
   "symbol-search": "Symbol Search (find instruments)",
-  "dev-tools": "Dev Tools (homelab debugging)",
+  "dev-tools": "Dev Tools (UAT debugging)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {

@@ -224,7 +224,7 @@ services:
       context: .
       dockerfile: docker/frontend/Dockerfile
       args:
-        VITE_DEPLOYMENT: ${VITE_DEPLOYMENT:-homelab}
+        VITE_DEPLOYMENT: ${VITE_DEPLOYMENT:-local}
         VITE_BUILD_DATE: ${BUILD_DATE:-dev}
     mem_limit: 128m
     networks:

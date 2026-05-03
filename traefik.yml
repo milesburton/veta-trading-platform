@@ -1,13 +1,13 @@
 # Traefik v3 static configuration
-# Used across all environments: local Docker, homelab, Fly.io
+# Used across all environments: local Docker, UAT, Fly.io
 # TLS is activated per-router via compose.prod.yml labels (certresolver=letsencrypt)
 # Fly.io: TLS termination happens at the Fly edge; internal Traefik uses :80 only
 
 api:
   dashboard: true
-  insecure: true # Dashboard on :8888 — restrict with auth middleware in prod if needed
+  insecure: true
 
-ping: {} # Used by homelab health checks
+ping: {}
 
 entryPoints:
   web:
