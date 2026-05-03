@@ -11,8 +11,6 @@ import type {
 
 const HISTORY_LENGTH = 60;
 const MAX_CANDLES = 120;
-// Market-sim broadcasts per-minute volume on every tick (240 ticks/min).
-// Divide by this to get per-tick volume so candle volumes match the candle-store.
 const TICKS_PER_MINUTE = 240;
 const INTERVALS: { key: "1m" | "5m"; ms: number }[] = [
   { key: "1m", ms: 60_000 },

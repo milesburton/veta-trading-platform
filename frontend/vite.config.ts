@@ -137,10 +137,6 @@ export default defineConfig(async ({ mode }) => {
             target: "http://localhost:5009",
             rewrite: (path) => path.replace(/^\/api\/journal/, ""),
           },
-          "/api/candle-store": {
-            target: "http://localhost:5010",
-            rewrite: (path) => path.replace(/^\/api\/candle-store/, ""),
-          },
           "/api/fix-archive": {
             target: "http://localhost:5012",
             rewrite: (path) => path.replace(/^\/api\/fix-archive/, ""),
