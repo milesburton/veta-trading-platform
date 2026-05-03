@@ -8,6 +8,7 @@ import { BasketOrderPanel } from "../BasketOrderPanel.tsx";
 // CandlestickChart and MarketDepth are handled as special cases in DashboardLayout (need props from channel context)
 import { ChildOrdersPanel } from "../ChildOrdersPanel.tsx";
 import { ClientRfqPanel } from "../ClientRfqPanel.tsx";
+import { DataDepthPanel } from "../DataDepthPanel.tsx";
 import { DecisionLog } from "../DecisionLog.tsx";
 import { DemoDayPanel } from "../DemoDayPanel.tsx";
 import { DevToolsPanel } from "../DevToolsPanel.tsx";
@@ -111,3 +112,4 @@ registerPanel("risk-dashboard", RiskDashboardPanel);
 registerPanel("my-positions", MyPositionsPanel);
 registerPanel("symbol-search", SymbolSearchBar);
 registerPanel("dev-tools", DevToolsPanel);
+registerPanel("data-depth", DataDepthPanel);

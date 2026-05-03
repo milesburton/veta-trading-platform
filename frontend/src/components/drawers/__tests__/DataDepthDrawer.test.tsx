@@ -1,11 +1,21 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { useEffect } from "react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 import { servicesApi } from "../../../store/servicesApi";
 import { DATA_DEPTH_DRAWER_ID, DataDepthDrawer } from "../DataDepthDrawer";
 import { DrawersProvider, useDrawers } from "../DrawersContext";
+
+const mockAddPanel = vi.fn();
+const mockActivePanelIds = new Set<string>();
+
+vi.mock("../../dashboard/DashboardContext.tsx", () => ({
+  useDashboard: () => ({
+    activePanelIds: mockActivePanelIds,
+    addPanel: mockAddPanel,
+  }),
+}));
 
 const sampleResponse = {
   totalSymbols: 3,
@@ -79,5 +89,13 @@ describe("DataDepthDrawer", () => {
     expect(
       screen.getByText(/Scenario analysis and volatility estimates are unreliable/i)
     ).toBeInTheDocument();
+  });
+
+  it("pin button adds the data-depth panel to the dashboard", () => {
+    mockAddPanel.mockReset();
+    mockActivePanelIds.clear();
+    renderOpen();
+    fireEvent.click(screen.getByTestId("data-depth-pin-btn"));
+    expect(mockAddPanel).toHaveBeenCalledWith("data-depth");
   });
 });

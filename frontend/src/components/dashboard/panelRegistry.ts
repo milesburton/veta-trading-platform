@@ -62,6 +62,7 @@ export const PANEL_IDS = [
   "my-positions",
   "symbol-search",
   "dev-tools",
+  "data-depth",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -116,6 +117,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "my-positions": "My Positions (live book)",
   "symbol-search": "Symbol Search (find instruments)",
   "dev-tools": "Dev Tools (UAT debugging)",
+  "data-depth": "Market Data Depth (per-symbol history)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -203,7 +205,9 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "my-positions": "Your open positions with live mark-to-market P&L",
   "symbol-search": "Search by symbol, RIC, BBG ticker, ISIN, or paste a Bloomberg trade",
   "dev-tools":
-    "Homelab debugging toolkit — fire test alerts (all severities), inject demo trades, run load tests, manage mute rules, and inspect connection state",
+    "UAT debugging toolkit — fire test alerts (all severities), inject demo trades, run load tests, manage mute rules, and inspect connection state",
+  "data-depth":
+    "Per-symbol market data depth — sortable list of all tracked symbols with candle count, span days, and warning thresholds",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -231,6 +235,7 @@ export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
   "my-positions",
   "symbol-search",
   "dev-tools",
+  "data-depth",
 ]);
 
 export interface TabChannelConfig {
@@ -290,6 +295,7 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "my-positions": { out: false, in: false },
   "symbol-search": { out: true, in: false },
   "dev-tools": { out: false, in: false },
+  "data-depth": { out: false, in: false },
 };
 
 export type TradingStyle =
@@ -537,6 +543,7 @@ export const PANEL_PERMISSIONS: Record<PanelId, ReadonlySet<AuthRole>> = {
     "viewer",
   ]),
   "dev-tools": new Set<AuthRole>(["admin"]),
+  "data-depth": new Set<AuthRole>(DESK_ROLES),
 };
 
 export const PANEL_TRADING_STYLES: Partial<Record<PanelId, ReadonlySet<TradingStyle>>> = {
