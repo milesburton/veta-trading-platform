@@ -15,6 +15,11 @@ vi.mock("../../store/servicesApi", async (importOriginal) => {
   };
 });
 
+const sha256AsyncMock = vi.fn(async (_data: Uint8Array) => new Uint8Array(32).fill(1));
+vi.mock("../../lib/sha256", () => ({
+  sha256Async: (data: Uint8Array) => sha256AsyncMock(data),
+}));
+
 const mockAuthorizeOAuth =
   vi.fn<() => Promise<{ data?: { code: string }; error?: { status: number } }>>();
 const mockExchangeOAuthCode =
@@ -154,8 +159,20 @@ describe("LoginPage", () => {
     fireEvent.change(screen.getByTestId("oauth-username"), { target: { value: "bad" } });
     fireEvent.change(screen.getByTestId("oauth-password"), { target: { value: "wrong" } });
     fireEvent.click(screen.getByTestId("oauth-submit"));
-    // The mutation hook is mocked with error: undefined so error display only triggers
-    // when localError is set; this test confirms no silent failures by checking submit still works.
     await waitFor(() => expect(mockAuthorizeOAuth).toHaveBeenCalled());
+  });
+
+  test("surfaces a visible error when PKCE generation throws", async () => {
+    sha256AsyncMock.mockRejectedValueOnce(new Error("crypto.subtle is undefined"));
+    renderLogin();
+    fireEvent.change(screen.getByTestId("oauth-username"), { target: { value: "alice" } });
+    fireEvent.change(screen.getByTestId("oauth-password"), {
+      target: { value: "veta-dev-passcode" },
+    });
+    fireEvent.click(screen.getByTestId("oauth-submit"));
+    await waitFor(() =>
+      expect(screen.getByTestId("login-error")).toHaveTextContent(/crypto.subtle is undefined/)
+    );
+    expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
   });
 });

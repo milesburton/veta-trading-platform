@@ -152,7 +152,7 @@ const THEME_OPTIONS: { id: Theme; label: string }[] = [
   { id: "high-contrast", label: "High Contrast" },
 ];
 
-function ThemeSwitcher() {
+export function ThemeSwitcher() {
   const dispatch = useAppDispatch();
   const theme = useAppSelector((s) => s.theme.theme);
   const open = useSignal(false);

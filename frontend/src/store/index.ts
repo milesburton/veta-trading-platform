@@ -17,6 +17,7 @@ import { llmSubsystemSlice } from "./llmSubsystemSlice.ts";
 import { marketDataApi } from "./marketDataApi.ts";
 import { marketSlice } from "./marketSlice.ts";
 import { alertsMiddleware } from "./middleware/alertsMiddleware.ts";
+import { errorTransportMiddleware } from "./middleware/errorTransportMiddleware.ts";
 import { gatewayMiddleware } from "./middleware/gatewayMiddleware.ts";
 import { simulationMiddleware } from "./middleware/simulationMiddleware.ts";
 import { versionWatchMiddleware } from "./middleware/versionWatchMiddleware.ts";
@@ -78,6 +79,7 @@ export const store = configureStore({
       .concat(alertsMiddleware)
       .concat(simulationMiddleware.middleware)
       .concat(versionWatchMiddleware)
+      .concat(errorTransportMiddleware)
       .concat(createBroadcastChannelMiddleware()),
 });
 

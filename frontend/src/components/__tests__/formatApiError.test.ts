@@ -12,9 +12,7 @@ describe("formatApiError", () => {
   });
 
   it("uses data.error if present", () => {
-    expect(formatApiError({ data: { error: "user_locked" } })).toBe(
-      "Sign in failed: user_locked"
-    );
+    expect(formatApiError({ data: { error: "user_locked" } })).toBe("Sign in failed: user_locked");
   });
 
   it("uses data.message when data.error absent", () => {

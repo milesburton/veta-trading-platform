@@ -27,16 +27,15 @@ const alerts = [
   },
 ] as const;
 
+const mockState: { alerts: typeof alerts; muteRules: unknown[] } = {
+  alerts,
+  muteRules: [],
+};
+
 vi.mock("../../store/hooks.ts", () => ({
   useAppDispatch: () => dispatch,
   useAppSelector: (selector: (state: unknown) => unknown) => {
-    const state = {
-      alerts: {
-        alerts,
-        muteRules: [],
-      },
-    };
-    return selector(state);
+    return selector({ alerts: mockState });
   },
 }));
 
@@ -91,6 +90,178 @@ describe("AlertList", () => {
       expect.objectContaining({ type: "alerts/alertDismissed" })
     );
   });
+
+  it("severity filter hides non-matching alerts", () => {
+    render(
+      <AlertList
+        alerts={[...alerts]}
+        filter="CRITICAL"
+        onFilter={() => {}}
+        sourceFilter={null}
+        onSourceFilter={() => {}}
+      />
+    );
+    expect(screen.getByText(/Exchange down/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Workspace saved/i)).not.toBeInTheDocument();
+  });
+
+  it("source filter hides non-matching alerts", () => {
+    render(
+      <AlertList
+        alerts={[...alerts]}
+        filter="ALL"
+        onFilter={() => {}}
+        sourceFilter="workspace"
+        onSourceFilter={() => {}}
+      />
+    );
+    expect(screen.queryByText(/Exchange down/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Workspace saved/i)).toBeInTheDocument();
+  });
+
+  it("clicking the active source toggles it off", () => {
+    const onSourceFilter = vi.fn();
+    render(
+      <AlertList
+        alerts={[...alerts]}
+        filter="ALL"
+        onFilter={() => {}}
+        sourceFilter="service"
+        onSourceFilter={onSourceFilter}
+      />
+    );
+    fireEvent.click(screen.getByTestId("source-filter-service"));
+    expect(onSourceFilter).toHaveBeenCalledWith(null);
+  });
+
+  it("clicking a different source switches to it", () => {
+    const onSourceFilter = vi.fn();
+    render(
+      <AlertList
+        alerts={[...alerts]}
+        filter="ALL"
+        onFilter={() => {}}
+        sourceFilter="service"
+        onSourceFilter={onSourceFilter}
+      />
+    );
+    fireEvent.click(screen.getByTestId("source-filter-workspace"));
+    expect(onSourceFilter).toHaveBeenCalledWith("workspace");
+  });
+
+  it("clicking All Sources resets to null", () => {
+    const onSourceFilter = vi.fn();
+    render(
+      <AlertList
+        alerts={[...alerts]}
+        filter="ALL"
+        onFilter={() => {}}
+        sourceFilter="service"
+        onSourceFilter={onSourceFilter}
+      />
+    );
+    fireEvent.click(screen.getByTestId("source-filter-all"));
+    expect(onSourceFilter).toHaveBeenCalledWith(null);
+  });
+
+  it("severity buttons call onFilter with the chosen value", () => {
+    const onFilter = vi.fn();
+    render(
+      <AlertList
+        alerts={[...alerts]}
+        filter="ALL"
+        onFilter={onFilter}
+        sourceFilter={null}
+        onSourceFilter={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByTestId("severity-filter-WARNING"));
+    expect(onFilter).toHaveBeenCalledWith("WARNING");
+  });
+
+  it("renders empty state when filter excludes all alerts", () => {
+    render(
+      <AlertList
+        alerts={[...alerts]}
+        filter="WARNING"
+        onFilter={() => {}}
+        sourceFilter={null}
+        onSourceFilter={() => {}}
+      />
+    );
+    expect(screen.getByText(/No alerts/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("alert-row")).not.toBeInTheDocument();
+  });
+
+  it("footer shows total count when nothing is filtered", () => {
+    render(
+      <AlertList
+        alerts={[...alerts]}
+        filter="ALL"
+        onFilter={() => {}}
+        sourceFilter={null}
+        onSourceFilter={() => {}}
+      />
+    );
+    expect(screen.getByText(/2 alerts$/)).toBeInTheDocument();
+  });
+
+  it("footer shows X of Y when a filter is active", () => {
+    render(
+      <AlertList
+        alerts={[...alerts]}
+        filter="CRITICAL"
+        onFilter={() => {}}
+        sourceFilter={null}
+        onSourceFilter={() => {}}
+      />
+    );
+    expect(screen.getByText(/1 of 2/)).toBeInTheDocument();
+  });
+
+  it("renders mute-rule count when rules exist", () => {
+    mockState.muteRules = [{ source: "service", severity: "CRITICAL" }];
+    try {
+      render(
+        <AlertList
+          alerts={[...alerts]}
+          filter="ALL"
+          onFilter={() => {}}
+          sourceFilter={null}
+          onSourceFilter={() => {}}
+        />
+      );
+      expect(screen.getByText(/1 mute rule active/)).toBeInTheDocument();
+    } finally {
+      mockState.muteRules = [];
+    }
+  });
+
+  it("pluralises the mute-rule count", () => {
+    mockState.muteRules = [
+      { source: "service", severity: "CRITICAL" },
+      { source: "algo", severity: "WARNING" },
+    ];
+    try {
+      render(
+        <AlertList
+          alerts={[...alerts]}
+          filter="ALL"
+          onFilter={() => {}}
+          sourceFilter={null}
+          onSourceFilter={() => {}}
+        />
+      );
+      expect(screen.getByText(/2 mute rules active/)).toBeInTheDocument();
+    } finally {
+      mockState.muteRules = [];
+    }
+  });
+
+  it("does not render source filter row when onSourceFilter is omitted", () => {
+    render(<AlertList alerts={[...alerts]} filter="ALL" onFilter={() => {}} />);
+    expect(screen.queryByTestId("source-filter-all")).not.toBeInTheDocument();
+  });
 });
 
 function renderOpenAlertDrawer(onClose: () => void) {
@@ -133,5 +304,15 @@ describe("AlertDrawer", () => {
     expect(dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "alerts/allAlertsDismissed" })
     );
+  });
+
+  it("hides the Dismiss all button when there are no alerts", () => {
+    mockState.alerts = [] as unknown as typeof alerts;
+    try {
+      renderOpenAlertDrawer(() => {});
+      expect(screen.queryByText(/Dismiss all/i)).not.toBeInTheDocument();
+    } finally {
+      mockState.alerts = alerts;
+    }
   });
 });

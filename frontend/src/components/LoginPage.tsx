@@ -1,6 +1,8 @@
 import { useSignal } from "@preact/signals-react";
+import { sha256Async } from "../lib/sha256.ts";
 import { setUser } from "../store/authSlice.ts";
 import { useAppDispatch } from "../store/hooks.ts";
+import { reportError } from "../store/observabilitySlice.ts";
 import { useAuthorizeOAuthMutation, useExchangeOAuthCodeMutation } from "../store/userApi.ts";
 import { BuildInfo } from "./BuildInfo.tsx";
 import { DemoPersonas } from "./DemoPersonas.tsx";
@@ -23,10 +25,10 @@ function createCodeVerifier(): string {
 
 async function createPkcePair(): Promise<{ verifier: string; challenge: string }> {
   const verifier = createCodeVerifier();
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  const digest = await sha256Async(new TextEncoder().encode(verifier));
   return {
     verifier,
-    challenge: base64UrlEncode(new Uint8Array(digest)),
+    challenge: base64UrlEncode(digest),
   };
 }
 
@@ -54,9 +56,9 @@ function AppFooter({ buildDate, commitSha }: { buildDate?: string; commitSha?: s
   return (
     <div
       data-testid="login-build-info"
-      className="flex items-center justify-between px-6 py-2 text-[10px] text-gray-700 tabular-nums border-t border-gray-800/50"
+      className="flex items-center justify-between gap-6 w-full px-6 py-2 text-[10px] text-gray-700 tabular-nums border-t border-gray-800/50"
     >
-      <span>VETA &middot; Miles Burton</span>
+      <span className="shrink-0">VETA &middot; Miles Burton</span>
       <span className="flex items-center gap-4">
         <BuildInfo
           buildDate={buildDate}
@@ -111,33 +113,45 @@ export function LoginPage({ buildDate, commitSha }: LoginPageProps = {}) {
       return;
     }
 
-    const pkce = await createPkcePair();
-    const authorizeResult = await authorizeOAuth({
-      client_id: OAUTH_CLIENT_ID,
-      username: normalizedUsername,
-      password: password.value,
-      redirect_uri: OAUTH_REDIRECT_URI,
-      response_type: "code",
-      scope: OAUTH_SCOPE,
-      code_challenge: pkce.challenge,
-      code_challenge_method: "S256",
-    });
+    try {
+      const pkce = await createPkcePair();
+      const authorizeResult = await authorizeOAuth({
+        client_id: OAUTH_CLIENT_ID,
+        username: normalizedUsername,
+        password: password.value,
+        redirect_uri: OAUTH_REDIRECT_URI,
+        response_type: "code",
+        scope: OAUTH_SCOPE,
+        code_challenge: pkce.challenge,
+        code_challenge_method: "S256",
+      });
 
-    if (!("data" in authorizeResult) || !authorizeResult.data) return;
+      if (!("data" in authorizeResult) || !authorizeResult.data) return;
 
-    const tokenResult = await exchangeOAuthCode({
-      client_id: OAUTH_CLIENT_ID,
-      code: authorizeResult.data.code,
-      grant_type: "authorization_code",
-      redirect_uri: OAUTH_REDIRECT_URI,
-      code_verifier: pkce.verifier,
-    });
+      const tokenResult = await exchangeOAuthCode({
+        client_id: OAUTH_CLIENT_ID,
+        code: authorizeResult.data.code,
+        grant_type: "authorization_code",
+        redirect_uri: OAUTH_REDIRECT_URI,
+        code_verifier: pkce.verifier,
+      });
 
-    if ("data" in tokenResult && tokenResult.data?.user) {
-      dispatch(setUser(tokenResult.data.user));
-    } else if ("data" in tokenResult) {
-      localError.value =
-        "Sign in succeeded but no user profile was returned. Contact an administrator.";
+      if ("data" in tokenResult && tokenResult.data?.user) {
+        dispatch(setUser(tokenResult.data.user));
+      } else if ("data" in tokenResult) {
+        localError.value =
+          "Sign in succeeded but no user profile was returned. Contact an administrator.";
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      localError.value = `Sign in failed: ${message}`;
+      dispatch(
+        reportError({
+          message: `Login failed: ${message}`,
+          source: "LoginPage",
+          stack: err instanceof Error ? err.stack : undefined,
+        })
+      );
     }
   }
 
