@@ -17,14 +17,12 @@ primary_region = "iad"
 [deploy]
   strategy = "immediate"
 
-# Gateway is the HTTP entry point — all traffic hits port 5011.
-# Frontend static files served from gateway's / catch-all.
 [http_service]
   internal_port = 5011
   force_https = true
-  auto_start_machines = true
+  auto_start_machines = false
   auto_stop_machines = "suspend"
-  min_machines_running = 1
+  min_machines_running = 0
 
   [[http_service.checks]]
     grace_period = "120s"
