@@ -1,18 +1,20 @@
-# shared/
+# Shared Type Definitions
 
-Plain TypeScript types imported by **both backend (Deno) and frontend (Vite + TS)**.
+[![CI](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 
-## Rules
+This directory contains TypeScript definitions shared by both backend (Deno) and frontend (Vite + TypeScript) modules.
 
-- **No runtime code.** Types and const arrays only. No Zod, no functions, no classes.
-- **No dependencies.** These files must compile with zero imports from `backend/`, `frontend/`, or any npm package other than TS itself.
-- **Single source of truth.** If a value appears both here and elsewhere, this directory wins. Delete the duplicate.
+## Standards
 
-## How it's imported
+- No runtime logic. Only types and constant arrays are permitted.
+- No external dependencies. Files must compile without imports from `backend/`, `frontend/`, or third-party packages.
+- Single source of truth. Shared primitives must be defined here and reused elsewhere.
 
-- Backend: `import { OrderSide } from "@veta/primitives"` (via [deno.json](../deno.json) import map)
-- Frontend: `import type { OrderSide } from "@shared/primitives"` (via [frontend/tsconfig.json](../frontend/tsconfig.json) `paths` + [frontend/vite.config.ts](../frontend/vite.config.ts) `resolve.alias`)
+## Import paths
 
-## Zod wrappers
+- Backend imports use `@veta/primitives` via [deno.json](../deno.json).
+- Frontend imports use `@shared/primitives` via [frontend/tsconfig.json](../frontend/tsconfig.json) and [frontend/vite.config.ts](../frontend/vite.config.ts).
 
-The backend mirrors each type as a Zod schema in [backend/src/schemas/primitives.ts](../backend/src/schemas/primitives.ts), using `satisfies z.ZodType<T>` so the two representations cannot drift.
+## Schema alignment
+
+Backend schema mirrors are maintained in [backend/src/schemas/primitives.ts](../backend/src/schemas/primitives.ts), with `satisfies z.ZodType<T>` used to keep schema and type definitions aligned.

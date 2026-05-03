@@ -17,13 +17,13 @@
 VETA is a simulation-first equities and fixed income trading platform designed for realistic paper-trading and market-structure analysis.
 
 <p align="center">
-  <a href="https://milesburton.github.io/veta-trading-platform/"><strong>View Documentation</strong></a>
+  <a href="docs/site/src/content/docs/index.mdx"><strong>View Documentation</strong></a>
   &nbsp;&middot;&nbsp;
   <a href="https://veta-trading.fly.dev/">Live Demo</a>
   &nbsp;&middot;&nbsp;
-  <a href="https://milesburton.github.io/veta-trading-platform/guides/overview/">Getting Started</a>
+  <a href="docs/site/src/content/docs/guides/overview.md">Getting Started</a>
   &nbsp;&middot;&nbsp;
-  <a href="https://milesburton.github.io/veta-trading-platform/platform/screenshots/">Screenshots</a>
+  <a href="docs/site/src/content/docs/platform/screenshots.mdx">Screenshots</a>
 </p>
 
 <p align="center">
@@ -32,7 +32,25 @@ VETA is a simulation-first equities and fixed income trading platform designed f
 
 ## What's in this repo
 
-- **Trading pipeline** — market simulator, OMS, EMS, journal, FIX, nine algos, analytics services. See the [Service Map](https://milesburton.github.io/veta-trading-platform/platform/services/).
+- **Trading pipeline** — market simulator, OMS, EMS, journal, FIX, nine algos, analytics services. See the [Service Map](docs/site/src/content/docs/platform/services.md).
 - **Frontend** — React + Redux trading UI in [`frontend/`](frontend/), bundled by Vite, packaged by Electron.
-- **Supporting services** — Grafana / Prometheus / Loki / Tempo (LGTM stack), Traefik ingress, k6 load tests, kafka-relay, Watchtower auto-update. See [Supporting Services](https://milesburton.github.io/veta-trading-platform/platform/supporting-services/).
+- **Supporting services** — Grafana / Prometheus / Loki / Tempo (LGTM stack), Traefik ingress, k6 load tests, kafka-relay, Watchtower auto-update. See [Supporting Services](docs/site/src/content/docs/platform/supporting-services.md).
 - **Documentation** — Astro / Starlight site under [`docs/site/`](docs/site/), deployed to GitHub Pages.
+
+## ★ Key documents
+
+- [★ Documentation index](docs/site/src/content/docs/index.mdx)
+- [★ Tech stack](docs/site/src/content/docs/reference/tech-stack.mdx)
+- [★ Changelog](CHANGELOG.md)
+
+## Docs by audience
+
+- User docs: [Placing orders](docs/site/src/content/docs/user-guide/placing-orders.md)
+  - A concise path for day-to-day trading actions.
+  - Next page: [Managing orders](docs/site/src/content/docs/user-guide/managing-orders.md)
+- Developer docs: [Contributing](docs/site/src/content/docs/development/contributing.md)
+  - Standards and workflow for implementation changes.
+  - Next page: [Testing](docs/site/src/content/docs/development/testing.md)
+- Support docs: [Supporting services](docs/site/src/content/docs/platform/supporting-services.md)
+  - Operational runbook material for platform reliability.
+  - Next page: [Risk controls](docs/site/src/content/docs/platform/risk.md)

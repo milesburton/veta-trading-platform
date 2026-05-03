@@ -49,3 +49,10 @@ test(replay): add unit tests for session replay panel
 - Release Please auto-generates version bumps and changelogs
 - Dependabot auto-merges patch-level dependency updates
 - CI must be green before merge (integration tests are `continue-on-error` for known flaky strategies)
+
+## Documentation standards
+
+- Use British English spelling and grammar.
+- Use a professional, direct tone. Avoid conversational or jovial phrasing.
+- Mark key documents with a leading star in curated document lists.
+- Do not use ASCII-art diagrams; use the agreed graphics approach.

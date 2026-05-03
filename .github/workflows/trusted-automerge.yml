@@ -1,4 +1,4 @@
-name: Trusted PR Auto-Approve and Merge
+name: PR Auto-Approve and Auto-Merge
 
 on:
   pull_request_target:
@@ -11,9 +11,9 @@ permissions:
 jobs:
   trusted-automerge:
     if: >-
-      github.event.pull_request.user.login == 'milesburton' ||
-      github.event.pull_request.user.login == 'dependabot[bot]' ||
-      github.event.pull_request.user.login == 'app/dependabot'
+      !github.event.pull_request.draft &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Auto approve trusted PR
@@ -21,11 +21,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Attempt admin merge (bypass when permitted)
+      - name: Enable auto-merge once checks pass
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          gh pr merge "$PR_URL" --squash --delete-branch --admin || \
-          gh pr merge "$PR_URL" --merge --delete-branch --admin || \
-          gh pr merge "$PR_URL" --auto --squash --delete-branch
+          gh pr merge "$PR_URL" --auto --squash --delete-branch || \
+          gh pr merge "$PR_URL" --auto --merge --delete-branch

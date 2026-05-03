@@ -60,7 +60,7 @@ Trading style is enforced at the panel level:
 
 - **Low-touch traders** cannot open the manual Order Ticket — they use the Algo Monitor workspace
 - **High-touch traders** cannot open the Algo Monitor — they use the Trading workspace
-- **FI voice traders** see yield curve, duration ladder, and spread analysis panels that equity traders don't
+- **FI voice traders** see yield curve, duration ladder, and spread analysis panels that equity traders do not
 - **Derivatives traders** get vol surface, greeks, option pricing, and scenario matrix panels
 - **Default workspaces** follow the style: high-touch lands on Trading, low-touch on Algo, FI voice on FI Trading, derivatives on Options
 

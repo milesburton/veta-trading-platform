@@ -6,6 +6,13 @@
 
 ---
 
+## ★ Key documents
+
+- [★ Documentation index](site/src/content/docs/index.mdx)
+- [★ Changelog](../CHANGELOG.md)
+
+---
+
 ## Table of Contents
 
 1. [System Overview](#1-system-overview)
@@ -189,7 +196,7 @@ All inter-service communication uses Redpanda (Kafka-compatible) at port 9092.
    f. notional (qty × limitPrice) ≤ max_daily_notional
 5. OMS publishes orders.submitted + orders.routed
 6. Matching algo service picks up orders.routed (filtered by strategy tag)
-7. Algo publishes orders.child when it's time to execute a slice
+7. Algo publishes orders.child when it is time to execute a slice
 8. EMS fills the slice:
    - Picks venue (XNAS, XNYS, ARCX, …)
    - Picks counterparty MPID
@@ -1215,7 +1222,7 @@ npm run test:electron   # Playwright Electron E2E
 
 ## 23. Troubleshooting
 
-### Service won't start
+### Service will not start
 
 ```bash
 # Check supervisord status
@@ -1259,9 +1266,9 @@ curl http://localhost:5011/me   # shows role + limits in the response
 ```
 Admin/compliance roles cannot trade. `max_order_qty: 0` or `max_daily_notional: 0` will block all orders.
 
-### Electron: window doesn't appear in CI
+### Electron: window does not appear in CI
 
-The Electron job uses `continue-on-error: true`. The underlying issue is `--disable-gpu` preventing the `ready-to-show` event. The `show: isTest` flag in `main.ts` works around this in most environments. If the window still doesn't appear, check xvfb is running (`DISPLAY=:99`).
+The Electron job uses `continue-on-error: true`. The underlying issue is `--disable-gpu` preventing the `ready-to-show` event. The `show: isTest` flag in `main.ts` works around this in most environments. If the window still does not appear, check xvfb is running (`DISPLAY=:99`).
 
 ### FlexLayout tab not clickable (Playwright tests)
 

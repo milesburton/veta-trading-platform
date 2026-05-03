@@ -26,7 +26,7 @@ The `canAccessPanel(panelId, role, tradingStyle)` function is the single source 
 
 ## Enforcement points
 
-1. **Frontend ComponentPicker**: panel not shown if role/style doesn't match
+1. **Frontend ComponentPicker**: panel not shown if role/style does not match
 2. **Frontend DashboardLayout factory**: unauthorized panel renders denial message
 3. **Frontend Order Ticket role-check**: blocks order submission with per-role/per-style messages
 4. **Backend OMS**: rejects orders from non-trader roles

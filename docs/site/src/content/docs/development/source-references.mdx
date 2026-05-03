@@ -69,7 +69,7 @@ export type OrderNew = z.infer<typeof OrderNewSchema>;
 
 Conventions:
 
-- Prefix every region ID with `docs:` so they don't collide with editor folding regions.
+- Prefix every region ID with `docs:` so they do not collide with editor folding regions.
 - Both `//` and `#` line-comment styles are supported (TypeScript, JavaScript, shell, Python, YAML).
 - Region bodies are dedented automatically.
 - A region must contain at least one line of content; empty regions fail the build.

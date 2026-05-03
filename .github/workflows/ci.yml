@@ -135,6 +135,37 @@ jobs:
             echo "value=${PCT}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Enforce frontend coverage threshold (>=80%)
+        run: |
+          python3 - <<'PY'
+          import json
+          import sys
+
+          with open('frontend/coverage/coverage-summary.json', encoding='utf-8') as f:
+            summary = json.load(f)
+
+          total = summary.get('total', {})
+          threshold = 80.0
+          metrics = {
+            'lines': float(total.get('lines', {}).get('pct', 0.0) or 0.0),
+            'functions': float(total.get('functions', {}).get('pct', 0.0) or 0.0),
+            'branches': float(total.get('branches', {}).get('pct', 0.0) or 0.0),
+            'statements': float(total.get('statements', {}).get('pct', 0.0) or 0.0),
+          }
+
+          print('Frontend coverage summary: ' + ', '.join(f"{k}={v:.1f}%" for k, v in metrics.items()))
+          failed = [f"{k}={v:.1f}%" for k, v in metrics.items() if v < threshold]
+          if failed:
+            print(
+              f"Coverage gate failed: minimum {threshold:.1f}% required for lines/functions/branches/statements. "
+              f"Below threshold: {', '.join(failed)}",
+              file=sys.stderr,
+            )
+            sys.exit(1)
+
+          print(f"Coverage gate passed: all metrics are >= {threshold:.1f}%")
+          PY
+
       - name: Commit frontend test badge
         if: github.ref == 'refs/heads/main'
         run: |
