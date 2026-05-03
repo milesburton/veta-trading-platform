@@ -1,5 +1,6 @@
 import { useSignal } from "@preact/signals-react";
 import { useEffect, useRef } from "react";
+import { BuildInfo } from "./BuildInfo.tsx";
 
 interface ReadyServices {
   marketSim: boolean;
@@ -234,9 +235,12 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
         className="flex items-center justify-between w-full px-6 py-2 text-[10px] text-gray-700 tabular-nums border-t border-gray-800/50"
       >
         <span>VETA &middot; Miles Burton</span>
-        <span className="flex items-center gap-3">
-          {commitSha && <span>v{commitSha}</span>}
-          {!commitSha && buildDate && <span>{buildDate}</span>}
+        <span className="flex items-center gap-4">
+          <BuildInfo
+            buildDate={buildDate}
+            commitSha={commitSha}
+            className="text-[10px] text-gray-700 tabular-nums"
+          />
           <a
             href="https://github.com/milesburton/veta-trading-platform"
             target="_blank"

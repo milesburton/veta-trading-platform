@@ -1815,6 +1815,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "observability":        `http://localhost:${Deno.env.get("OBSERVABILITY_PORT") ?? "5007"}`,
     "journal":              JOURNAL_URL,
     "fix-archive":          `http://localhost:${Deno.env.get("FIX_ARCHIVE_PORT") ?? "5012"}`,
+    "fix-gateway":          `http://localhost:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`,
+    "kafka-relay":          `http://localhost:${Deno.env.get("OBSERVABILITY_PORT") ?? "5007"}`,
     "user-service":         USER_SERVICE_URL,
     "news-aggregator":      `http://localhost:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`,
     "analytics":            ANALYTICS_URL,

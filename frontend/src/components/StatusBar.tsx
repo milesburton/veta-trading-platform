@@ -19,6 +19,7 @@ import { useDeleteSessionMutation } from "../store/userApi.ts";
 import type { ServiceHealth } from "../types.ts";
 import { openOrderTicketWindow } from "../utils/orderTicketWindow.ts";
 import { AlertDrawer } from "./AlertDrawer.tsx";
+import { BuildInfo } from "./BuildInfo.tsx";
 import { ComponentPicker } from "./ComponentPicker.tsx";
 import { useDashboard } from "./dashboard/DashboardContext.tsx";
 import type { TabChannelConfig } from "./dashboard/panelRegistry.ts";
@@ -327,8 +328,9 @@ function DataFreshness() {
       <span
         data-testid="feed-status"
         title="Gateway disconnected — all data sources offline"
-        className="flex items-center gap-1 text-[10px] text-red-400 tabular-nums"
+        className="flex items-center gap-1.5 text-[10px] text-red-400 tabular-nums"
       >
+        <span className="text-gray-500">Feed</span>
         <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
         disconnected
       </span>
@@ -355,8 +357,9 @@ function DataFreshness() {
     <span
       data-testid="feed-status"
       title={`Data sources — ${tooltip}`}
-      className={`flex items-center gap-1 text-[10px] tabular-nums ${textClass}`}
+      className={`flex items-center gap-1.5 text-[10px] tabular-nums ${textClass}`}
     >
+      <span className="text-gray-500">Feed</span>
       <span
         className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass} ${
           allLive ? "animate-pulse" : ""
@@ -385,7 +388,12 @@ function DataDepthIndicator() {
   const { data, isLoading } = useGetDataDepthQuery(undefined, { pollingInterval: 30_000 });
 
   if (isLoading || !data) {
-    return <span className="text-[10px] text-gray-600 tabular-nums">data: –</span>;
+    return (
+      <span className="flex items-center gap-1.5 text-[10px] text-gray-600 tabular-nums">
+        <span className="text-gray-500">Market Data</span>
+        <span>–</span>
+      </span>
+    );
   }
 
   const { label, color, dotColor } = dataQualityLabel(data.minDays);
@@ -408,8 +416,9 @@ function DataDepthIndicator() {
     <span
       data-testid="data-depth"
       title={tooltip}
-      className={`flex items-center gap-1 text-[10px] tabular-nums ${color}`}
+      className={`flex items-center gap-1.5 text-[10px] tabular-nums ${color}`}
     >
+      <span className="text-gray-500">Market Data</span>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
       {data.totalSymbols} sym · {label}
     </span>
@@ -513,6 +522,11 @@ export function AppHeader() {
           <div data-testid="kill-switch-wrapper">
             <KillSwitchButton />
           </div>
+          <BuildInfo
+            buildDate={import.meta.env.VITE_BUILD_DATE}
+            commitSha={import.meta.env.VITE_COMMIT_SHA}
+            className="text-[10px] text-gray-600 tabular-nums"
+          />
           <span className="tabular-nums text-gray-500">{time.value}</span>
           {user && (
             <div className="flex items-center gap-2 pl-3 border-l border-gray-800">
