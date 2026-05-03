@@ -1048,36 +1048,10 @@ docker compose -f compose.yml -f compose.prod.yml logs -f gateway
 
 ## 19. Deployment
 
-### Homelab (self-hosted Proxmox VM)
-
-- **VM**: 8 vCPU / 20 GB RAM, 192.168.1.245
-- **URL**: `http://veta.home` (add `192.168.1.245 veta.home` to `/etc/hosts`)
-- **Stack location**: `/opt/stacks/veta/` (Dockge-managed)
-- **Images**: `ghcr.io/milesburton/veta-trading-platform/<service>:latest`
-
-```bash
-# On the homelab VM — first-time setup
-mkdir -p /opt/stacks/veta && cd /opt/stacks/veta
-cat > .env <<EOF
-ACME_EMAIL=miles@mnetcs.com
-DOMAIN=veta.home
-COMMIT_SHA=latest
-EOF
-
-docker compose -f compose.yml -f compose.prod.yml pull
-docker compose -f compose.yml -f compose.prod.yml up -d
-```
-
-**Auto-updates**: Watchtower polls GHCR every 5 minutes; new images are live within ~5 minutes of CI completing.
-
-**Traefik dashboard**: `http://veta.home:8888/dashboard/`
-
-**Disk monitor**: `http://veta.home:8099/health` — keyword `ok`, prunes dangling images at >90% disk.
-
 ### Fly.io (cloud demo)
 
 - **URL**: `https://veta-trading.fly.dev`
-- **Deploy**: GitHub Actions → `workflow_dispatch` on the Deploy workflow; or manually:
+- **Deploy**: GitHub Actions auto-deploys on push to `main`; or manually:
 
 ```bash
 flyctl deploy --remote-only \
@@ -1085,7 +1059,7 @@ flyctl deploy --remote-only \
   --build-arg VITE_BUILD_DATE=$(date -u +%Y-%m-%d)
 ```
 
-Fly.io terminates TLS at the edge. `min_machines_running=1`, `auto_stop_machines=suspend`.
+Fly.io terminates TLS at the edge. `auto_start_machines=false`, `auto_stop_machines=suspend`, `min_machines_running=0` — machines must be started manually after a deploy.
 
 ### Required Environment Variables
 
@@ -1094,7 +1068,7 @@ Fly.io terminates TLS at the edge. `min_machines_running=1`, `auto_stop_machines
 | `DOMAIN` | Primary domain for Traefik `Host()` matchers |
 | `ACME_EMAIL` | Let's Encrypt registration email |
 | `COMMIT_SHA` | Git SHA (set by CI) — appears in `/health` version field |
-| `VITE_DEPLOYMENT` | `local` \| `homelab` \| `fly` — controls which services appear in Estate Overview |
+| `VITE_DEPLOYMENT` | `local` \| `fly` — controls which services appear in Estate Overview |
 | `LLM_ENABLED` | `true` to activate LLM advisory (requires Ollama) |
 | `ALPHA_VANTAGE_API_KEY` | Optional — enables live Alpha Vantage price feeds |
 

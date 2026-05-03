@@ -1,6 +1,6 @@
 ---
 title: Deployment
-description: How to deploy VETA to Fly.io, homelab, or locally.
+description: How to deploy VETA to Fly.io or locally.
 sidebar:
   order: 7
 ---
@@ -18,16 +18,10 @@ flyctl deploy --dockerfile Dockerfile.fly --remote-only \
 The CI workflow auto-deploys on push to `main` with:
 - 3-attempt retry on `flyctl deploy`
 - Version verification (accepts any of the last 5 commit SHAs)
-- Smoke tests against the live deployment
+- Smoke tests against the live deployment when a machine is running
 - Concurrency control (one deploy at a time)
 
-## Homelab (self-hosted)
-
-Docker Compose with per-service containers, Traefik reverse proxy, and Watchtower auto-updates.
-
-- Stack: `/opt/stacks/veta/compose.yml`
-- Image: `ghcr.io/milesburton/veta-trading-platform:latest`
-- Watchtower polls GHCR every 5 minutes
+`fly.toml` sets `auto_start_machines=false`, `auto_stop_machines=suspend`, and `min_machines_running=0`. After a deploy the new image is rolled but machines remain stopped; start them manually with `flyctl machine start <id>`.
 
 ## Local development
 
