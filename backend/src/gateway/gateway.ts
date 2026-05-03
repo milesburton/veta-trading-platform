@@ -1551,6 +1551,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const strategy = body.strategy ?? "LIMIT";
     const jobId = `load-${Date.now()}`;
 
+    const LOAD_TEST_USER_ID = Deno.env.get("LOAD_TEST_USER_ID") ?? "alice";
+    const LOAD_TEST_USER_ROLE = "trader";
+
     await Promise.all(
       Array.from({ length: orderCount }, (_, i) => {
         const symbol = symbols[i % symbols.length];
@@ -1564,8 +1567,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           expiresAt: 300,
           strategy,
           algoParams: { strategy },
-          userId: auth.user.id,
-          userRole: auth.user.role,
+          userId: LOAD_TEST_USER_ID,
+          userRole: LOAD_TEST_USER_ROLE,
           _loadTestJobId: jobId,
         });
       }),

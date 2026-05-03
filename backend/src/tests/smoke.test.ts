@@ -419,6 +419,31 @@ Deno.test("[journal] GET /orders returns array", async () => {
   assert(Array.isArray(await res.json()), "orders must be an array");
 });
 
+Deno.test("[journal] GET /metrics/latency returns stage percentile shape", async () => {
+  const res = await fetch(`${JOURNAL_URL}/metrics/latency?windowMs=60000`, {
+    signal: timeout(5_000),
+  });
+  assertEquals(res.status, 200);
+  const body = await res.json() as {
+    windowMs: number;
+    queriedAt: number;
+    sampleSize: number;
+    stages: Record<string, { count: number; p50: number; p95: number; p99: number; max: number }>;
+  };
+  assertEquals(body.windowMs, 60_000);
+  assertEquals(typeof body.queriedAt, "number");
+  assertEquals(typeof body.sampleSize, "number");
+  for (const stage of ["submittedToRouted", "routedToChild", "childToFilled", "submittedToFilled", "submittedToArrived"]) {
+    const s = body.stages[stage];
+    assertExists(s, `stages.${stage} missing`);
+    assertEquals(typeof s.count, "number");
+    assertEquals(typeof s.p50, "number");
+    assertEquals(typeof s.p95, "number");
+    assertEquals(typeof s.p99, "number");
+    assertEquals(typeof s.max, "number");
+  }
+});
+
 Deno.test("[journal] POST /grid/query orderBlotter returns rows + total + evalMs", async () => {
   const res = await fetch(`${JOURNAL_URL}/grid/query`, {
     method: "POST",
