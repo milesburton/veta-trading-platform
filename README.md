@@ -30,13 +30,6 @@ VETA is a simulation-first equities and fixed income trading platform designed f
   <img src="docs/screenshots/01-trading-dashboard.png" alt="Trading Dashboard" width="800" />
 </p>
 
-## What's in this repo
-
-- **Trading pipeline** — market simulator, OMS, EMS, journal, FIX, nine algos, analytics services. See the [Service Map](docs/site/src/content/docs/platform/services.md).
-- **Frontend** — React + Redux trading UI in [`frontend/`](frontend/), bundled by Vite, packaged by Electron.
-- **Supporting services** — Grafana / Prometheus / Loki / Tempo (LGTM stack), Traefik ingress, k6 load tests, kafka-relay, Watchtower auto-update. See [Supporting Services](docs/site/src/content/docs/platform/supporting-services.md).
-- **Documentation** — Astro / Starlight site under [`docs/site/`](docs/site/), deployed to GitHub Pages.
-
 ## ★ Key documents
 
 - [★ Documentation index](docs/site/src/content/docs/index.mdx)
