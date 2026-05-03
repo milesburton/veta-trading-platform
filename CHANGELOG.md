@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.20.0...veta-trading-platform-v1.20.1) (2026-05-03)
+
+
+### Bug Fixes
+
+* **login:** unblock sign-in on insecure origins; surface and transport errors ([51cec86](https://github.com/milesburton/veta-trading-platform/commit/51cec86611d6f0fdb0c37627b21c3dbe81db042a))
+
 ## [1.20.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.19.3...veta-trading-platform-v1.20.0) (2026-05-03)
 
 
