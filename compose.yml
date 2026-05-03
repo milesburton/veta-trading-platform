@@ -1468,3 +1468,30 @@ services:
     labels:
       - "traefik.enable=false"
       - "com.centurylinklabs.watchtower.enable=false"
+
+  # ── k6 (load testing, run-once, profile-gated) ────────────────────────────
+  # Run with: docker compose --profile loadtest run --rm k6
+  # Requires: K6_TOKEN env var set on the host (admin OAuth access token).
+  # Optional: BASE_URL overrides target (default http://gateway:5011).
+  # If the LGTM stack is running on the host, k6 writes percentile metrics
+  # to Prometheus at host.docker.internal:9090; otherwise the run still
+  # completes and Grafana shows nothing.
+  k6:
+    image: grafana/k6:0.55.0
+    profiles: [loadtest]
+    networks:
+      - trading-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./k6:/scripts:ro
+    environment:
+      BASE_URL: ${BASE_URL:-http://gateway:5011}
+      K6_TOKEN: ${K6_TOKEN:-}
+      K6_PROMETHEUS_RW_SERVER_URL: ${K6_PROMETHEUS_RW_SERVER_URL:-http://host.docker.internal:9090/api/v1/write}
+      K6_PROMETHEUS_RW_TREND_STATS: "p(50),p(90),p(95),p(99),min,max"
+    command:
+      - run
+      - --out
+      - experimental-prometheus-rw
+      - /scripts/baseline-limit.js
