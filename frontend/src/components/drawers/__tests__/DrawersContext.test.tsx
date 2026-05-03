@@ -1,5 +1,6 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { Drawer } from "../Drawer";
 import { DrawersProvider, useDrawers } from "../DrawersContext";
 
 function Probe() {
@@ -86,5 +87,74 @@ describe("DrawersContext", () => {
     act(() => screen.getByTestId("open-data-depth").click());
     act(() => screen.getByTestId("close-all").click());
     expect(screen.getByTestId("state").textContent).toBe("");
+  });
+});
+
+describe("Drawer (ESC + backdrop)", () => {
+  function renderTwoStackedDrawers() {
+    function Opener() {
+      const { open } = useDrawers();
+      return (
+        <button
+          type="button"
+          data-testid="open-both"
+          onClick={() => {
+            open("alerts");
+            open("data-depth");
+          }}
+        >
+          open both
+        </button>
+      );
+    }
+    return render(
+      <DrawersProvider>
+        <Opener />
+        <Drawer id="alerts" title="Alerts">
+          alerts body
+        </Drawer>
+        <Drawer id="data-depth" title="Market Data Depth">
+          data depth body
+        </Drawer>
+      </DrawersProvider>
+    );
+  }
+
+  it("ESC closes every open drawer", () => {
+    renderTwoStackedDrawers();
+    act(() => screen.getByTestId("open-both").click());
+
+    expect(screen.getByTestId("drawer-alerts")).toBeInTheDocument();
+    expect(screen.getByTestId("drawer-data-depth")).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.keyDown(window, { key: "Escape" });
+    });
+
+    expect(screen.queryByTestId("drawer-alerts")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("drawer-data-depth")).not.toBeInTheDocument();
+  });
+
+  it("only the frontmost drawer renders the backdrop", () => {
+    renderTwoStackedDrawers();
+    act(() => screen.getByTestId("open-both").click());
+
+    const backdrops = document.querySelectorAll('[aria-label="Close drawer"]');
+    expect(backdrops).toHaveLength(1);
+  });
+
+  it("close-button on a non-frontmost drawer removes only that drawer", () => {
+    renderTwoStackedDrawers();
+    act(() => screen.getByTestId("open-both").click());
+
+    const alertsDrawer = screen.getByTestId("drawer-alerts");
+    const closeButton = alertsDrawer.querySelector('[aria-label="Close"]');
+    expect(closeButton).not.toBeNull();
+    act(() => {
+      fireEvent.click(closeButton as HTMLElement);
+    });
+
+    expect(screen.queryByTestId("drawer-alerts")).not.toBeInTheDocument();
+    expect(screen.getByTestId("drawer-data-depth")).toBeInTheDocument();
   });
 });

@@ -381,7 +381,7 @@ function dataQualityLabel(days: number): { label: string; color: string; dotColo
   };
 }
 
-function DataDepthIndicator() {
+export function DataDepthIndicator() {
   const { data, isLoading } = useGetDataDepthQuery(undefined, { pollingInterval: 30_000 });
   const { toggle, isOpen } = useDrawers();
   const drawerOpen = isOpen(DATA_DEPTH_DRAWER_ID);

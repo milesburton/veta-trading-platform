@@ -30,7 +30,7 @@ async function createPkcePair(): Promise<{ verifier: string; challenge: string }
   };
 }
 
-function formatApiError(err: unknown): string {
+export function formatApiError(err: unknown): string {
   if (!err || typeof err !== "object") return "Sign in failed. Check your username and passcode.";
   const errObj = err as { status?: unknown; data?: { error?: string; message?: string } };
   const data = errObj.data;
