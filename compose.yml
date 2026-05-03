@@ -1485,13 +1485,16 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./k6:/scripts:ro
+      - ./docs/site/src/data/loadtest:/output
     environment:
       BASE_URL: ${BASE_URL:-http://gateway:5011}
       K6_TOKEN: ${K6_TOKEN:-}
+      RUN_LABEL: ${RUN_LABEL:-baseline-limit}
       K6_PROMETHEUS_RW_SERVER_URL: ${K6_PROMETHEUS_RW_SERVER_URL:-http://host.docker.internal:9090/api/v1/write}
       K6_PROMETHEUS_RW_TREND_STATS: "p(50),p(90),p(95),p(99),min,max"
     command:
       - run
       - --out
       - experimental-prometheus-rw
+      - --summary-trend-stats=p(50),p(95),p(99),avg,max,min,med
       - /scripts/baseline-limit.js

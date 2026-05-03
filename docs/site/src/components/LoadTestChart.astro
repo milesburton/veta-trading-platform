@@ -1,0 +1,217 @@
+---
+interface Stage {
+  p50: number;
+  p95: number;
+  p99: number;
+  max: number;
+}
+interface Scenario {
+  label: string;
+  sampleSize: number;
+  stages: Record<string, Stage>;
+}
+interface RunData {
+  runDate: string;
+  scenarios: Scenario[];
+}
+
+interface Props {
+  data: RunData;
+  stage: string;
+  title?: string;
+  unit?: string;
+}
+
+const { data, stage, title, unit = "ms" } = Astro.props;
+
+const groups = data.scenarios.map((s) => ({
+  label: s.label,
+  p50: s.stages[stage]?.p50 ?? 0,
+  p95: s.stages[stage]?.p95 ?? 0,
+  p99: s.stages[stage]?.p99 ?? 0,
+}));
+
+const allValues = groups.flatMap((g) => [g.p50, g.p95, g.p99]);
+const maxVal = Math.max(...allValues, 1);
+const yTickStep = niceStep(maxVal);
+const yMax = Math.ceil(maxVal / yTickStep) * yTickStep;
+
+function niceStep(max: number): number {
+  const target = max / 5;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(target)));
+  const normalized = target / magnitude;
+  if (normalized < 1.5) return magnitude;
+  if (normalized < 3) return 2 * magnitude;
+  if (normalized < 7) return 5 * magnitude;
+  return 10 * magnitude;
+}
+
+const svgWidth = 640;
+const svgHeight = 320;
+const margin = { top: 20, right: 20, bottom: 50, left: 50 };
+const chartW = svgWidth - margin.left - margin.right;
+const chartH = svgHeight - margin.top - margin.bottom;
+const groupWidth = chartW / groups.length;
+const barWidth = (groupWidth * 0.7) / 3;
+const groupGap = groupWidth * 0.3;
+
+const yTicks: number[] = [];
+for (let v = 0; v <= yMax; v += yTickStep) yTicks.push(v);
+
+const seriesColors = {
+  p50: "var(--chart-p50, #2c8aef)",
+  p95: "var(--chart-p95, #f59e0b)",
+  p99: "var(--chart-p99, #ef4444)",
+};
+---
+
+<figure class="loadtest-chart">
+  {title && <figcaption>{title}</figcaption>}
+
+  <svg
+    viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+    role="img"
+    aria-label={title ?? `Latency chart for ${stage}`}
+  >
+    {yTicks.map((tick) => {
+      const y = margin.top + chartH - (tick / yMax) * chartH;
+      return (
+        <g>
+          <line
+            x1={margin.left}
+            x2={margin.left + chartW}
+            y1={y}
+            y2={y}
+            stroke="var(--sl-color-gray-5)"
+            stroke-width="1"
+            stroke-dasharray={tick === 0 ? "" : "2,3"}
+          />
+          <text
+            x={margin.left - 8}
+            y={y + 4}
+            text-anchor="end"
+            font-size="11"
+            fill="var(--sl-color-text-accent)"
+          >
+            {tick}
+          </text>
+        </g>
+      );
+    })}
+
+    <text
+      x={margin.left - 38}
+      y={margin.top + chartH / 2}
+      transform={`rotate(-90, ${margin.left - 38}, ${margin.top + chartH / 2})`}
+      text-anchor="middle"
+      font-size="11"
+      fill="var(--sl-color-text-accent)"
+    >
+      Latency ({unit})
+    </text>
+
+    {groups.map((g, i) => {
+      const xBase = margin.left + groupWidth * i + groupGap / 2;
+      const series = [
+        { key: "p50", val: g.p50, label: "p50" },
+        { key: "p95", val: g.p95, label: "p95" },
+        { key: "p99", val: g.p99, label: "p99" },
+      ];
+      return (
+        <g>
+          {series.map((s, j) => {
+            const x = xBase + j * barWidth;
+            const h = (s.val / yMax) * chartH;
+            const y = margin.top + chartH - h;
+            return (
+              <g>
+                <rect
+                  x={x}
+                  y={y}
+                  width={barWidth - 2}
+                  height={h}
+                  fill={seriesColors[s.key as keyof typeof seriesColors]}
+                  rx="2"
+                >
+                  <title>{`${g.label} ${s.label}: ${s.val} ${unit}`}</title>
+                </rect>
+                <text
+                  x={x + (barWidth - 2) / 2}
+                  y={y - 4}
+                  text-anchor="middle"
+                  font-size="10"
+                  fill="var(--sl-color-text)"
+                >
+                  {s.val}
+                </text>
+              </g>
+            );
+          })}
+          <text
+            x={xBase + (barWidth * 3) / 2}
+            y={margin.top + chartH + 18}
+            text-anchor="middle"
+            font-size="12"
+            fill="var(--sl-color-text)"
+            font-weight="500"
+          >
+            {g.label}
+          </text>
+        </g>
+      );
+    })}
+  </svg>
+
+  <ul class="legend" aria-label="Legend">
+    <li>
+      <span class="swatch" style={`background:${seriesColors.p50}`}></span>p50
+    </li>
+    <li>
+      <span class="swatch" style={`background:${seriesColors.p95}`}></span>p95
+    </li>
+    <li>
+      <span class="swatch" style={`background:${seriesColors.p99}`}></span>p99
+    </li>
+  </ul>
+</figure>
+
+<style>
+  .loadtest-chart {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    background: var(--sl-color-bg-nav);
+  }
+  .loadtest-chart figcaption {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--sl-color-text);
+  }
+  .loadtest-chart svg {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+  }
+  .legend {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0 0 0;
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    font-size: 0.85em;
+    color: var(--sl-color-text-accent);
+  }
+  .legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+  }
+  .swatch {
+    display: inline-block;
+    width: 0.9em;
+    height: 0.9em;
+    border-radius: 0.15em;
+  }
+</style>

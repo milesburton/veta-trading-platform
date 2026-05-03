@@ -1,0 +1,16 @@
+scenario,sampleSize,stage,p50_ms,p95_ms,p99_ms,max_ms
+100 orders,100,submittedToRouted,0,0,0,0
+100 orders,100,routedToChild,143,254,266,269
+100 orders,100,childToFilled,15,27,34,38
+100 orders,100,submittedToFilled,158,277,291,293
+100 orders,100,submittedToArrived,2,6,11,13
+250 orders,250,submittedToRouted,0,0,0,0
+250 orders,250,routedToChild,143,257,263,267
+250 orders,250,childToFilled,13,22,25,26
+250 orders,250,submittedToFilled,157,278,288,289
+250 orders,250,submittedToArrived,2,5,9,15
+500 orders,500,submittedToRouted,0,0,0,0
+500 orders,500,routedToChild,142,254,263,267
+500 orders,500,childToFilled,13,21,23,25
+500 orders,500,submittedToFilled,155,274,283,287
+500 orders,500,submittedToArrived,2,6,10,22

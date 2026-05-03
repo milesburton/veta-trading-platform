@@ -1,0 +1,57 @@
+{
+  "runDate": "2026-05-03",
+  "runner": "deno-scaling-driver",
+  "runnerNotes": "Pre-k6 measurement using a Deno script that drove gateway POST /load-test at three order counts and queried journal /metrics/latency for end-to-end pipeline percentiles. Captures the full submit→fill path, not just HTTP RTT.",
+  "target": "http://localhost:5011 (deno-local services, dockerized postgres+redpanda)",
+  "config": {
+    "riskEngineEnabled": false,
+    "userPool": ["alice", "amelia", "bob", "dave"],
+    "ordersPerSecondPerUser": 5,
+    "marketSimTickIntervalMs": 250
+  },
+  "scenarios": [
+    {
+      "label": "100 orders",
+      "orderCount": 100,
+      "sampleSize": 100,
+      "stages": {
+        "submittedToRouted": { "p50": 0, "p95": 0, "p99": 0, "max": 0 },
+        "routedToChild":     { "p50": 143, "p95": 254, "p99": 266, "max": 269 },
+        "childToFilled":     { "p50": 15,  "p95": 27,  "p99": 34,  "max": 38 },
+        "submittedToFilled": { "p50": 158, "p95": 277, "p99": 291, "max": 293 },
+        "submittedToArrived":{ "p50": 2,   "p95": 6,   "p99": 11,  "max": 13 }
+      }
+    },
+    {
+      "label": "250 orders",
+      "orderCount": 250,
+      "sampleSize": 250,
+      "stages": {
+        "submittedToRouted": { "p50": 0, "p95": 0, "p99": 0, "max": 0 },
+        "routedToChild":     { "p50": 143, "p95": 257, "p99": 263, "max": 267 },
+        "childToFilled":     { "p50": 13,  "p95": 22,  "p99": 25,  "max": 26 },
+        "submittedToFilled": { "p50": 157, "p95": 278, "p99": 288, "max": 289 },
+        "submittedToArrived":{ "p50": 2,   "p95": 5,   "p99": 9,   "max": 15 }
+      }
+    },
+    {
+      "label": "500 orders",
+      "orderCount": 500,
+      "sampleSize": 500,
+      "stages": {
+        "submittedToRouted": { "p50": 0, "p95": 0, "p99": 0, "max": 0 },
+        "routedToChild":     { "p50": 142, "p95": 254, "p99": 263, "max": 267 },
+        "childToFilled":     { "p50": 13,  "p95": 21,  "p99": 23,  "max": 25 },
+        "submittedToFilled": { "p50": 155, "p95": 274, "p99": 283, "max": 287 },
+        "submittedToArrived":{ "p50": 2,   "p95": 6,   "p99": 10,  "max": 22 }
+      }
+    }
+  ],
+  "findings": [
+    "Pipeline latency is FLAT across 5x scaling (100→500 orders): p99 submittedToFilled holds at ~283-291ms regardless of concurrent order count.",
+    "The dominant cost is the 250ms market-sim tick interval. routedToChild p99 (~263-266ms) ≈ tick cadence — orders wait for the next tick to be evaluated.",
+    "Per-tick algo iteration is NOT the bottleneck at this scale. The predicate-index optimisation hypothesis from earlier architectural discussion was tested and falsified.",
+    "Journal ingestion (submittedToArrived) consistently sub-25ms p99, confirming the write batcher (50ms flush, 20-row batches) is well-sized.",
+    "EMS execution (childToFilled) actually IMPROVED with scale — p99 dropped from 34ms to 23ms across runs (likely warmup/JIT effects)."
+  ]
+}
