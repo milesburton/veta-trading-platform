@@ -67,6 +67,15 @@ describe("usePopOut – initial state", () => {
     });
     expect(result.current.isPopOut).toBe(false);
   });
+
+  it("falls back to ChannelContext instanceId when overrideId is not provided", () => {
+    const store = makeStore();
+    const { result } = renderHook(() => usePopOut(), {
+      wrapper: wrapper(store),
+    });
+    // ChannelContext supplies "unknown" — isPopOut starts false
+    expect(result.current.isPopOut).toBe(false);
+  });
 });
 
 describe("usePopOut – popOut()", () => {

@@ -96,5 +96,13 @@ describe("newsSlice", () => {
       );
       expect(state.bySymbol.AAPL).toHaveLength(2);
     });
+
+    it("caps at 50 items after a large batch", () => {
+      const items = Array.from({ length: 75 }, (_, i) =>
+        makeItem({ id: `bulk-${i}`, publishedAt: i })
+      );
+      const state = reducer(undefined, newsBatchReceived(items));
+      expect(state.bySymbol.AAPL).toHaveLength(50);
+    });
   });
 });

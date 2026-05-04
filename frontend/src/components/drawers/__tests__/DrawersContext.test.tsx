@@ -135,6 +135,20 @@ describe("Drawer (ESC + backdrop)", () => {
     expect(screen.queryByTestId("drawer-data-depth")).not.toBeInTheDocument();
   });
 
+  it("non-Escape keys do not close drawers", () => {
+    renderTwoStackedDrawers();
+    act(() => screen.getByTestId("open-both").click());
+
+    act(() => {
+      fireEvent.keyDown(window, { key: "Enter" });
+      fireEvent.keyDown(window, { key: "a" });
+      fireEvent.keyDown(window, { key: "ArrowDown" });
+    });
+
+    expect(screen.getByTestId("drawer-alerts")).toBeInTheDocument();
+    expect(screen.getByTestId("drawer-data-depth")).toBeInTheDocument();
+  });
+
   it("only the frontmost drawer renders the backdrop", () => {
     renderTwoStackedDrawers();
     act(() => screen.getByTestId("open-both").click());
