@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.1...veta-trading-platform-v1.22.2) (2026-05-04)
+
+
+### Bug Fixes
+
+* ems test now exercises production code; lint script no longer runs tests ([bec7bf7](https://github.com/milesburton/veta-trading-platform/commit/bec7bf789d6af8132d5281973e6c11adbed2cac5))
+
 ## [1.22.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.0...veta-trading-platform-v1.22.1) (2026-05-04)
 
 
