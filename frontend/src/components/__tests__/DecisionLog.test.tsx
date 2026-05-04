@@ -443,4 +443,88 @@ describe("DecisionLog – defensive rendering", () => {
     fireEvent.click(screen.getByLabelText(/Heartbeats/i));
     expect(screen.getByText("Heartbeat")).toBeInTheDocument();
   });
+
+  it("renders heartbeat with start event", () => {
+    renderLog([
+      {
+        type: "algo.heartbeat",
+        ts: 1_700_000_016_000,
+        payload: { algo: "TWAP", asset: "AAPL", event: "start", numSlices: 8 },
+      },
+    ]);
+    fireEvent.click(screen.getByLabelText(/Heartbeats/i));
+    expect(screen.getByText(/started/)).toBeInTheDocument();
+  });
+
+  it("renders heartbeat with complete event", () => {
+    renderLog([
+      {
+        type: "algo.heartbeat",
+        ts: 1_700_000_017_000,
+        payload: {
+          algo: "VWAP",
+          asset: "MSFT",
+          event: "complete",
+          avgFillPrice: 300.5,
+        },
+      },
+    ]);
+    fireEvent.click(screen.getByLabelText(/Heartbeats/i));
+    expect(screen.getByText(/complete/)).toBeInTheDocument();
+  });
+
+  it("renders heartbeat with pendingOrders fallback", () => {
+    renderLog([
+      {
+        type: "algo.heartbeat",
+        ts: 1_700_000_018_000,
+        payload: { algo: "POV", asset: "AAPL", pendingOrders: 3 },
+      },
+    ]);
+    fireEvent.click(screen.getByLabelText(/Heartbeats/i));
+    expect(screen.getByText(/3 active/)).toBeInTheDocument();
+  });
+
+  it("renders submitted event without algo, side, qty", () => {
+    renderLog([
+      {
+        type: "orders.submitted",
+        ts: 1_700_000_019_000,
+        payload: { asset: "AAPL", price: 150 },
+      },
+    ]);
+    expect(screen.getByText("Submitted")).toBeInTheDocument();
+  });
+
+  it("renders child event without sliceIndex (no [n/m] tag)", () => {
+    renderLog([
+      {
+        type: "orders.child",
+        ts: 1_700_000_020_500,
+        payload: {
+          algo: "TWAP",
+          asset: "AAPL",
+          side: "BUY",
+          qty: 50,
+        },
+      },
+    ]);
+    expect(screen.getByText("Slice")).toBeInTheDocument();
+  });
+
+  it("renders filled event without progress totals", () => {
+    renderLog([
+      {
+        type: "orders.filled",
+        ts: 1_700_000_021_500,
+        payload: {
+          algo: "TWAP",
+          asset: "AAPL",
+          filledQty: 50,
+          avgFillPrice: 150,
+        },
+      },
+    ]);
+    expect(screen.getByText("Filled")).toBeInTheDocument();
+  });
 });

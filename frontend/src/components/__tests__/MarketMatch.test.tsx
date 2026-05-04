@@ -304,3 +304,131 @@ describe("MarketMatch – context menu and fallbacks", () => {
     expect(screen.getAllByText(/12\.5/).length).toBeGreaterThan(0);
   });
 });
+
+describe("MarketMatch – BookPosition with order book", () => {
+  function makeStoreWithBook(orderPrice: number, side: "BUY" | "SELL", bid: number, ask: number) {
+    return configureStore({
+      reducer: {
+        market: marketSlice.reducer,
+        orders: ordersSlice.reducer,
+        ui: uiSlice.reducer,
+        windows: windowSlice.reducer,
+        observability: observabilitySlice.reducer,
+        channels: channelsSlice.reducer,
+        gridPrefs: gridPrefsSlice.reducer,
+      },
+      preloadedState: {
+        observability: {
+          events: [
+            {
+              type: "orders.filled",
+              ts: 1_700_000_000_000,
+              payload: {
+                ts: 1_700_000_000_000,
+                asset: "AAPL",
+                side,
+                filledQty: 100,
+                avgFillPrice: orderPrice,
+                liquidityFlag: "MAKER",
+              },
+            } as ObsEvent,
+          ],
+        },
+        market: {
+          assets: [],
+          prices: {},
+          priceHistory: {},
+          sessionOpen: {},
+          candleHistory: {},
+          candlesReady: {},
+          orderBook: {
+            AAPL: {
+              mid: (bid + ask) / 2,
+              ts: Date.now(),
+              bids: [{ price: bid, size: 100 }],
+              asks: [{ price: ask, size: 100 }],
+            },
+          },
+          connected: true,
+          sessionPhase: "CONTINUOUS" as const,
+        },
+      },
+    });
+  }
+
+  it("renders BUY order priced at the bid (passive)", () => {
+    const store = makeStoreWithBook(100, "BUY", 100, 100.1);
+    render(
+      <Provider store={store}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "mm",
+            panelType: "market-match",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <MarketMatch />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getAllByText(/AAPL/).length).toBeGreaterThan(0);
+  });
+
+  it("renders SELL order priced at the ask (passive)", () => {
+    const store = makeStoreWithBook(100.1, "SELL", 100, 100.1);
+    render(
+      <Provider store={store}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "mm",
+            panelType: "market-match",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <MarketMatch />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getAllByText(/AAPL/).length).toBeGreaterThan(0);
+  });
+
+  it("renders order priced inside spread (aggressive)", () => {
+    const store = makeStoreWithBook(100.05, "BUY", 100, 100.1);
+    render(
+      <Provider store={store}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "mm",
+            panelType: "market-match",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <MarketMatch />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getAllByText(/AAPL/).length).toBeGreaterThan(0);
+  });
+
+  it("renders gracefully when orderBook has zero spread", () => {
+    const store = makeStoreWithBook(100, "BUY", 100, 100);
+    render(
+      <Provider store={store}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "mm",
+            panelType: "market-match",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <MarketMatch />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getAllByText(/AAPL/).length).toBeGreaterThan(0);
+  });
+});

@@ -565,6 +565,73 @@ describe("OrderTicket – preview slippage variants", () => {
   });
 });
 
+describe("OrderTicket – channel incoming asset", () => {
+  it("uses incoming-channel selectedAsset to drive asset selection", () => {
+    const testStore = configureStore({
+      reducer: {
+        auth: authSlice.reducer,
+        market: marketSlice.reducer,
+        orders: ordersSlice.reducer,
+        ui: uiSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        killSwitch: killSwitchSlice.reducer,
+      },
+      preloadedState: {
+        auth: {
+          user: { id: "alice", name: "Alice", role: "trader" as const, avatar_emoji: "🙂" },
+          limits: {
+            max_order_qty: 10_000,
+            max_daily_notional: 1_000_000,
+            allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+            allowed_desks: ["equity", "fi", "derivatives"],
+            dark_pool_access: false,
+          },
+          status: "authenticated" as const,
+        },
+        market: {
+          assets,
+          prices,
+          priceHistory: {},
+          sessionOpen: {},
+          candleHistory: {},
+          candlesReady: {},
+          connected: true,
+          orderBook: {},
+          sessionPhase: "CONTINUOUS" as const,
+        },
+        channels: {
+          data: {
+            1: { selectedAsset: "MSFT", selectedOrderId: null },
+            2: { selectedAsset: null, selectedOrderId: null },
+            3: { selectedAsset: null, selectedOrderId: null },
+            4: { selectedAsset: null, selectedOrderId: null },
+            5: { selectedAsset: null, selectedOrderId: null },
+            6: { selectedAsset: null, selectedOrderId: null },
+          },
+        },
+      },
+    });
+    render(
+      <Provider store={testStore}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "x",
+            panelType: "order-ticket",
+            outgoing: null,
+            incoming: 1,
+          }}
+        >
+          <TradingProvider>
+            <OrderTicket />
+          </TradingProvider>
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getByTestId("order-ticket-panel")).toBeInTheDocument();
+  });
+});
+
 describe("OrderTicket – channel asset switching", () => {
   it("selecting an FX asset switches instrument type", () => {
     const fxAssets: AssetDef[] = [
@@ -917,5 +984,11 @@ describe("OrderTicket – instrument tabs (bond / fx)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Bond" }));
     fireEvent.click(screen.getByRole("button", { name: "Equity" }));
     expect(screen.getByLabelText(/Limit Price/i)).toBeInTheDocument();
+  });
+
+  it("Bond mode shows hint about LIMIT strategy", () => {
+    renderTicket();
+    fireEvent.click(screen.getByRole("button", { name: "Bond" }));
+    expect(screen.getByText(/Bond orders always use LIMIT/i)).toBeInTheDocument();
   });
 });

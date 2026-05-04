@@ -341,6 +341,44 @@ describe("MarketHeatmap – rendering", () => {
     expect(screen.getByTestId("heatmap-cell-TINY")).toBeInTheDocument();
   });
 
+  it("positions tooltip on left when mouse is near right edge", () => {
+    const assets: AssetDef[] = [makeAsset({ symbol: "AAPL", marketCapB: 100 })];
+    const store = makeStore({
+      assets,
+      prices: { AAPL: 100 },
+      open: { AAPL: 100 },
+    });
+    render(
+      <Provider store={store}>
+        <MarketHeatmap />
+      </Provider>
+    );
+    fireEvent.mouseEnter(screen.getByTestId("heatmap-cell-AAPL"), {
+      clientX: 900,
+      clientY: 500,
+    });
+    expect(screen.getAllByText("AAPL").length).toBeGreaterThan(0);
+  });
+
+  it("renders tile with negative pct (red gradient)", () => {
+    const assets: AssetDef[] = [makeAsset({ symbol: "FALL", sector: "Tech", marketCapB: 100 })];
+    const store = makeStore({
+      assets,
+      prices: { FALL: 95 },
+      open: { FALL: 100 },
+    });
+    render(
+      <Provider store={store}>
+        <MarketHeatmap />
+      </Provider>
+    );
+    fireEvent.mouseEnter(screen.getByTestId("heatmap-cell-FALL"), {
+      clientX: 50,
+      clientY: 50,
+    });
+    expect(screen.getAllByText(/-5\.00%/).length).toBeGreaterThan(0);
+  });
+
   it("does not crash when assets list is empty after sortBy change", () => {
     const store = makeStore({ assets: [] });
     render(

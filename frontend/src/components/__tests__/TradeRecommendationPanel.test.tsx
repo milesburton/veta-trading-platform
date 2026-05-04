@@ -139,6 +139,70 @@ describe("TradeRecommendationPanel", () => {
     expect(await screen.findByText(/PUT/i)).toBeInTheDocument();
   });
 
+  it("renders recommendation with NEUTRAL signal (mid score)", async () => {
+    getRecommendations.mockReturnValue({
+      unwrap: () =>
+        Promise.resolve({
+          symbol: "AAPL",
+          spotPrice: 150,
+          impliedVol: 0.25,
+          recommendations: [
+            {
+              optionType: "call",
+              strike: 150,
+              expirySecs: 14 * 86400,
+              price: 2,
+              score: 10,
+              signalStrength: "NEUTRAL",
+              reasons: ["NEUTRAL"],
+              greeks: { delta: 0.5, gamma: 0.02, theta: -0.04, vega: 0.1, rho: 0.02 },
+              impliedVol: 0.24,
+              scoringMode: "vol-driven",
+              signalScore: 0.05,
+              signalConfidence: 0.5,
+              signalDirection: "neutral",
+            },
+          ],
+          computedAt: Date.now(),
+        }),
+    });
+    render(<TradeRecommendationPanel />);
+    fireEvent.click(screen.getByTestId("refresh-recommendations-btn"));
+    expect((await screen.findAllByText(/NEUTRAL/i)).length).toBeGreaterThan(0);
+  });
+
+  it("renders recommendation with deeply negative score", async () => {
+    getRecommendations.mockReturnValue({
+      unwrap: () =>
+        Promise.resolve({
+          symbol: "AAPL",
+          spotPrice: 150,
+          impliedVol: 0.4,
+          recommendations: [
+            {
+              optionType: "put",
+              strike: 145,
+              expirySecs: 7 * 86400,
+              price: 1,
+              score: -75,
+              signalStrength: "STRONG_SELL",
+              reasons: ["momentum:-0.8"],
+              greeks: { delta: -0.6, gamma: 0.03, theta: -0.04, vega: 0.1, rho: -0.01 },
+              impliedVol: 0.4,
+              scoringMode: "signal-driven",
+              signalScore: -0.8,
+              signalConfidence: 0.9,
+              signalDirection: "short",
+            },
+          ],
+          computedAt: Date.now(),
+        }),
+    });
+    render(<TradeRecommendationPanel />);
+    fireEvent.click(screen.getByTestId("refresh-recommendations-btn"));
+    expect(await screen.findByTestId("recommendation-row")).toBeInTheDocument();
+  });
+
   it("displays an empty-recommendations state", async () => {
     getRecommendations.mockReturnValue({
       unwrap: () =>
