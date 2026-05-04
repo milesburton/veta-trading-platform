@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.22.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.3...veta-trading-platform-v1.22.4) (2026-05-04)
+
+
+### Bug Fixes
+
+* **docs:** mermaid 11 needs loose securityLevel for HTML labels ([5b40647](https://github.com/milesburton/veta-trading-platform/commit/5b406474f9975dfedf89b390053a567e399dce31))
+* **docs:** mermaid follows Starlight theme + re-renders on toggle ([d1f445a](https://github.com/milesburton/veta-trading-platform/commit/d1f445abbc865caac07d1f8fb3273d4a06dd0117))
+* **login:** make degraded overlay background fully opaque ([24b00d1](https://github.com/milesburton/veta-trading-platform/commit/24b00d185fff54998e935dd2d92e87435b5aad39))
+
 ## [1.22.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.2...veta-trading-platform-v1.22.3) (2026-05-04)
 
 
