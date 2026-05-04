@@ -4,10 +4,11 @@ import react from "@astrojs/react";
 import starlight from "@astrojs/starlight";
 
 const frontendSrc = fileURLToPath(new URL("../../frontend/src", import.meta.url));
+const docsBase = "/veta-trading-platform";
 
 export default defineConfig({
   site: "https://milesburton.github.io",
-  base: "/veta-trading-platform",
+  base: docsBase,
   vite: {
     resolve: {
       alias: {
@@ -63,6 +64,14 @@ export default defineConfig({
         Footer: "./src/components/Footer.astro",
       },
       head: [
+        {
+          tag: "link",
+          attrs: {
+            rel: "icon",
+            href: `${docsBase}/favicon.ico`,
+            sizes: "any",
+          },
+        },
         {
           tag: "script",
           attrs: { type: "module" },
