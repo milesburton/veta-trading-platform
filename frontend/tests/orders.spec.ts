@@ -29,7 +29,9 @@ const optionsTest = base.extend<OptionsFixtures>({
     const app = new AppPage(page);
     await app.gotoAsTrader();
     app.gateway.sendMarketUpdate({ AAPL: AAPL_PRICE, MSFT: 421.0, GOOGL: 175.25 });
-    await page.waitForSelector('[data-testid="app-header"]', { timeout: 10_000 });
+    // workspace-toolbar (not app-header) marks "dashboard is mounted":
+    // app-header is now also present on the login page.
+    await page.waitForSelector('[data-testid="workspace-toolbar"]', { timeout: 10_000 });
     await use(app);
   },
   gateway: async ({ app }, use) => {
