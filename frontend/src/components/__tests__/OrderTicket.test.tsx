@@ -565,6 +565,87 @@ describe("OrderTicket – preview slippage variants", () => {
   });
 });
 
+describe("OrderTicket – FX & Commodity tabs", () => {
+  function renderWithDesks(desks: string[]) {
+    const testStore = configureStore({
+      reducer: {
+        auth: authSlice.reducer,
+        market: marketSlice.reducer,
+        orders: ordersSlice.reducer,
+        ui: uiSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        killSwitch: killSwitchSlice.reducer,
+      },
+      preloadedState: {
+        auth: {
+          user: { id: "alice", name: "Alice", role: "trader" as const, avatar_emoji: "🙂" },
+          limits: {
+            max_order_qty: 10_000,
+            max_daily_notional: 1_000_000,
+            allowed_strategies: ["LIMIT"],
+            allowed_desks: desks,
+            dark_pool_access: false,
+          },
+          status: "authenticated" as const,
+        },
+        market: {
+          assets,
+          prices,
+          priceHistory: {},
+          sessionOpen: {},
+          candleHistory: {},
+          candlesReady: {},
+          connected: true,
+          orderBook: {},
+          sessionPhase: "CONTINUOUS" as const,
+        },
+      },
+    });
+    render(
+      <Provider store={testStore}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "x",
+            panelType: "order-ticket",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <TradingProvider>
+            <OrderTicket />
+          </TradingProvider>
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    return testStore;
+  }
+
+  it("renders FX tab when user has fx desk", () => {
+    renderWithDesks(["fx", "equity"]);
+    expect(screen.getByRole("button", { name: "FX" })).toBeInTheDocument();
+  });
+
+  it("clicking FX tab switches instrument type", () => {
+    renderWithDesks(["fx", "equity"]);
+    const fxBtn = screen.getByRole("button", { name: "FX" });
+    fireEvent.click(fxBtn);
+    expect(fxBtn).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("renders Commodity (Futures) tab when user has commodities desk", () => {
+    renderWithDesks(["commodities", "equity"]);
+    expect(screen.getByRole("button", { name: /Futures/ })).toBeInTheDocument();
+  });
+
+  it("clicking Futures tab switches instrument type", () => {
+    renderWithDesks(["commodities", "equity"]);
+    const futuresBtn = screen.getByRole("button", { name: /Futures/ });
+    fireEvent.click(futuresBtn);
+    expect(futuresBtn).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
 describe("OrderTicket – submit advanced strategies (trader with full perms)", () => {
   function renderAdmin() {
     const testStore = configureStore({

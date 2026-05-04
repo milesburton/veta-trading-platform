@@ -220,6 +220,60 @@ describe("EstateOverviewPanel", () => {
     expect(screen.queryByText(/Order rejected/)).not.toBeInTheDocument();
   });
 
+  it("renders critical fill-rate (low fill, lots of orders)", () => {
+    const now = Date.now();
+    // 10 orders with 1 fill out of 10 children → 10% fill rate (< CRIT 30)
+    const orders = Array.from({ length: 10 }, (_, i) => ({
+      id: `o${i}`,
+      submittedAt: now - i * 100,
+      asset: "AAPL",
+      side: "BUY" as const,
+      quantity: 100,
+      limitPrice: 150,
+      expiresAt: now + 60_000,
+      strategy: "TWAP" as const,
+      status: "working" as const,
+      filled: i === 0 ? 100 : 0,
+      algoParams: { strategy: "TWAP" as const, numSlices: 4, participationCap: 25 },
+      children: [
+        {
+          id: `c${i}`,
+          parentId: `o${i}`,
+          asset: "AAPL",
+          side: "BUY" as const,
+          quantity: 100,
+          limitPrice: 150,
+          status: i === 0 ? ("filled" as const) : ("working" as const),
+          filled: i === 0 ? 100 : 0,
+          submittedAt: now - i * 100,
+        },
+      ],
+    }));
+    renderPanel([], orders);
+    expect(screen.getByText(/Estate Overview/i)).toBeInTheDocument();
+  });
+
+  it("renders order-flood threshold (many orders/min)", () => {
+    const now = Date.now();
+    // 250 orders within 60s → > ORDER_FLOOD (200)
+    const orders = Array.from({ length: 250 }, (_, i) => ({
+      id: `flood-${i}`,
+      submittedAt: now - i * 100,
+      asset: "AAPL",
+      side: "BUY" as const,
+      quantity: 100,
+      limitPrice: 150,
+      expiresAt: now + 60_000,
+      strategy: "TWAP" as const,
+      status: "working" as const,
+      filled: 0,
+      algoParams: { strategy: "TWAP" as const, numSlices: 4, participationCap: 25 },
+      children: [],
+    }));
+    renderPanel([], orders);
+    expect(screen.getByText(/Estate Overview/i)).toBeInTheDocument();
+  });
+
   it("renders timeline events when present", () => {
     const events = [
       {

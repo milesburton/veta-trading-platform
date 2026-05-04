@@ -104,4 +104,22 @@ describe("PanelMenu", () => {
       expect(store.getState().windows.dialogs["panel-123"]?.open).toBe(false);
     });
   });
+
+  it("clicking outside closes menu", () => {
+    renderMenu();
+    fireEvent.click(screen.getByRole("button", { name: /Panel actions/i }));
+    expect(screen.getByRole("menu", { name: /Panel actions menu/i })).toBeInTheDocument();
+    fireEvent.mouseDown(document.body);
+    // No throw — backdrop click handled
+    expect(screen.queryByRole("menu", { name: /Panel actions menu/i })).not.toBeInTheDocument();
+  });
+
+  it("popup that closes immediately doesn't remove tab", async () => {
+    const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+    renderMenu();
+    fireEvent.click(screen.getByRole("button", { name: /Panel actions/i }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /New window/i }));
+    expect(openSpy).toHaveBeenCalled();
+    expect(removeTabById).not.toHaveBeenCalled();
+  });
 });
