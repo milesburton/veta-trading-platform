@@ -14,7 +14,7 @@
 [![Combined coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/combined-coverage.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 [![Docker build](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=docker%20build&logo=docker)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 
-VETA is a simulation-first equities and fixed income trading platform designed for realistic paper-trading and market-structure analysis.
+VETA is a simulation-first equities and fixed-income trading platform designed for realistic paper-trading and market-structure analysis.
 
 <p align="center">
   <a href="docs/site/src/content/docs/index.mdx"><strong>View Documentation</strong></a>
