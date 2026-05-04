@@ -236,6 +236,28 @@ describe("MarketLadder – row interaction", () => {
   });
 });
 
+describe("MarketLadder – context menu and interactions", () => {
+  it("right-click opens context menu and Copy symbol writes to clipboard", () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    renderLadder();
+    fireEvent.contextMenu(screen.getByTestId("asset-row-AAPL"));
+    fireEvent.click(screen.getByText(/Copy symbol/));
+    expect(writeText).toHaveBeenCalledWith("AAPL");
+  });
+
+  it("right-click select asset action", () => {
+    renderLadder();
+    fireEvent.contextMenu(screen.getByTestId("asset-row-AAPL"));
+    fireEvent.click(screen.getByText(/Select asset|Deselect/));
+    // No throw — function exercised
+    expect(screen.getByTestId("asset-row-AAPL")).toBeInTheDocument();
+  });
+});
+
 describe("MarketLadder – sort and selected state", () => {
   it("clicking a sortable column header changes sort", () => {
     renderLadder();

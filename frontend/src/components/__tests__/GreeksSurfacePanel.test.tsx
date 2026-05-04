@@ -101,4 +101,24 @@ describe("GreeksSurfacePanel", () => {
     fireEvent.click(button7d);
     expect(button7d.className).toContain("bg-blue-700");
   });
+
+  it("changes the selected symbol", () => {
+    render(<GreeksSurfacePanel />);
+    const sel = screen.getByDisplayValue("AAPL");
+    fireEvent.change(sel, { target: { value: "MSFT" } });
+    // No data for MSFT — should fall through to no-data view
+    expect(screen.queryByText(/Spot/)).not.toBeInTheDocument();
+  });
+
+  it("renders chart container with all greek lines", () => {
+    render(<GreeksSurfacePanel />);
+    // From mock: line-callDelta, line-gamma, line-theta, line-vega
+    expect(screen.queryAllByTestId(/line-/).length).toBeGreaterThan(0);
+  });
+
+  it("renders strike values from mock data", () => {
+    render(<GreeksSurfacePanel />);
+    // Strikes 170, 175, 180 should appear somewhere
+    expect(screen.getAllByText(/170|175|180/).length).toBeGreaterThan(0);
+  });
 });

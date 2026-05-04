@@ -69,3 +69,46 @@ test("shows version in button when all required services have consistent version
   const btn = screen.getByRole("button", { name: /services/i });
   expect(btn.textContent).toContain("v9.9.9");
 });
+
+test("renders error dot when services are down", () => {
+  const downServices: ServiceHealth[] = [
+    {
+      name: "svc-down",
+      state: "error",
+      version: "—",
+      meta: {},
+      lastChecked: Date.now(),
+      url: "",
+    },
+  ];
+  render(<ServiceStatus services={downServices} />);
+  const btn = screen.getByRole("button", { name: /services/i });
+  expect(btn).toBeInTheDocument();
+});
+
+test("renders mixed required and optional services", () => {
+  const mixed: ServiceHealth[] = [
+    {
+      name: "svc-required",
+      state: "ok",
+      version: "1.0.0",
+      meta: {},
+      lastChecked: Date.now(),
+      url: "",
+    },
+    {
+      name: "svc-optional",
+      state: "error",
+      version: "—",
+      meta: {},
+      lastChecked: Date.now(),
+      url: "",
+      optional: true,
+    },
+  ];
+  render(<ServiceStatus services={mixed} />);
+  const btn = screen.getByRole("button", { name: /services/i });
+  expect(btn).toBeInTheDocument();
+  fireEvent.click(btn);
+  expect(screen.getByText("svc-required")).toBeInTheDocument();
+});

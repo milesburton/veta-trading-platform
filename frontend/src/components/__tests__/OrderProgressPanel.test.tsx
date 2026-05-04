@@ -145,4 +145,71 @@ describe("OrderProgressPanel", () => {
     );
     expect(screen.getByText("abcdef12")).toBeInTheDocument();
   });
+
+  it("renders SELL order side", () => {
+    renderPanel([makeOrder({ id: "order-sell", side: "SELL" })], "order-sell");
+    // SELL might render in label, badge, or aria-label
+    expect(screen.getAllByText(/SELL/i).length).toBeGreaterThan(0);
+  });
+
+  it("renders expired order without crash", () => {
+    renderPanel([makeOrder({ id: "order-exp", status: "expired", filled: 30 })], "order-exp");
+    expect(screen.getByText(/AAPL/)).toBeInTheDocument();
+  });
+
+  it("renders order with empty children list", () => {
+    renderPanel([makeOrder({ id: "order-empty", filled: 0, children: [] })], "order-empty");
+    expect(screen.getByText("0%")).toBeInTheDocument();
+  });
+
+  it("renders LIMIT strategy order", () => {
+    renderPanel(
+      [
+        makeOrder({
+          id: "order-limit",
+          strategy: "LIMIT",
+          algoParams: { strategy: "LIMIT" },
+        }),
+      ],
+      "order-limit"
+    );
+    expect(screen.getByText("LIMIT")).toBeInTheDocument();
+  });
+
+  it("renders multiple slice children", () => {
+    const order = makeOrder({
+      id: "order-multi",
+      filled: 100,
+      quantity: 100,
+      status: "filled",
+      children: [
+        {
+          id: "c1",
+          parentId: "order-multi",
+          asset: "AAPL",
+          side: "BUY",
+          quantity: 50,
+          limitPrice: 150,
+          status: "filled",
+          filled: 50,
+          avgFillPrice: 150,
+          submittedAt: now - 5000,
+        },
+        {
+          id: "c2",
+          parentId: "order-multi",
+          asset: "AAPL",
+          side: "BUY",
+          quantity: 50,
+          limitPrice: 151,
+          status: "filled",
+          filled: 50,
+          avgFillPrice: 151,
+          submittedAt: now,
+        },
+      ],
+    });
+    renderPanel([order], "order-multi");
+    expect(screen.getByText(/Slice fills/i)).toBeInTheDocument();
+  });
 });
