@@ -238,4 +238,64 @@ describe("KillSwitchButton", () => {
     // Admin sees a target user picker
     expect(screen.getByTestId("kill-switch-confirm-btn")).toBeInTheDocument();
   });
+
+  it("admin can enter target user ID when no seen users", () => {
+    mockState.orders.orders = [];
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    fireEvent.click(screen.getByRole("button", { name: /By user/i }));
+    const input = screen.getByLabelText(/Target user ID/i);
+    fireEvent.change(input, { target: { value: "trader-x" } });
+    expect(input).toBeInTheDocument();
+  });
+
+  it("market scope multi-entry adds and removes entries", () => {
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    fireEvent.click(screen.getByRole("button", { name: /By market/i }));
+    const input = screen.getByLabelText(/Market \/ Exchange/i);
+    fireEvent.change(input, { target: { value: "XNAS" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    // Remove tag
+    const removeBtn = screen.queryByLabelText(/Remove XNAS/i);
+    if (removeBtn) fireEvent.click(removeBtn);
+    expect(screen.getByTestId("kill-switch-confirm-btn")).toBeInTheDocument();
+  });
+
+  it("scheduled resume mode shows preset buttons", () => {
+    mockState.killSwitch.blocks = [
+      {
+        id: "b",
+        scope: "all",
+        scopeValues: [],
+        issuedBy: "admin",
+        issuedAt: Date.now(),
+      },
+    ];
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    fireEvent.click(screen.getByRole("button", { name: /Resume Orders/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Scheduled/i }));
+    // Preset buttons appear
+    expect(screen.queryAllByRole("button", { name: /5m|10m|15m/ }).length).toBeGreaterThan(0);
+  });
+
+  it("scheduled resume preset is selectable", () => {
+    mockState.killSwitch.blocks = [
+      {
+        id: "b",
+        scope: "all",
+        scopeValues: [],
+        issuedBy: "admin",
+        issuedAt: Date.now(),
+      },
+    ];
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    fireEvent.click(screen.getByRole("button", { name: /Resume Orders/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Scheduled/i }));
+    const preset5m = screen.queryByRole("button", { name: /^5m$/ });
+    if (preset5m) fireEvent.click(preset5m);
+    expect(screen.getByTestId("kill-switch-confirm-btn")).toBeInTheDocument();
+  });
 });

@@ -54,7 +54,10 @@ function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
   };
 }
 
-function makeStore() {
+function makeStore(
+  role: "trader" | "admin" | "risk-manager" | "desk-head" = "trader",
+  userId = "alice"
+) {
   return configureStore({
     reducer: {
       auth: authSlice.reducer,
@@ -63,6 +66,19 @@ function makeStore() {
       channels: channelsSlice.reducer,
       ui: uiSlice.reducer,
       gridPrefs: gridPrefsSlice.reducer,
+    },
+    preloadedState: {
+      auth: {
+        user: { id: userId, name: userId, role, avatar_emoji: "🙂" },
+        limits: {
+          max_order_qty: 10000,
+          max_daily_notional: 1_000_000,
+          allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+          allowed_desks: ["equity"],
+          dark_pool_access: false,
+        },
+        status: "authenticated" as const,
+      },
     },
   });
 }
@@ -461,6 +477,55 @@ describe("OrderBlotter – context menu actions", () => {
     fireEvent.contextMenu(screen.getByText("AAPL"));
     fireEvent.click(screen.getByText(/Select & broadcast/));
     expect(screen.getByText("AAPL")).toBeInTheDocument();
+  });
+
+  it("admin can manage any user's order", () => {
+    mockUseGridQuery.mockReturnValue(
+      defaultQueryResult([
+        makeOrder({ id: "o-other", asset: "AAPL", status: "working", userId: "trader-bob" }),
+      ])
+    );
+    render(
+      <Provider store={makeStore("admin", "admin-1")}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "order-blotter",
+            panelType: "order-blotter",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <OrderBlotter />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    expect(screen.getAllByText(/Hold/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Cancel/i).length).toBeGreaterThan(0);
+  });
+
+  it("risk-manager can manage any user's order", () => {
+    mockUseGridQuery.mockReturnValue(
+      defaultQueryResult([
+        makeOrder({ id: "o-other2", asset: "AAPL", status: "working", userId: "trader-bob" }),
+      ])
+    );
+    render(
+      <Provider store={makeStore("risk-manager", "risk-1")}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "order-blotter",
+            panelType: "order-blotter",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <OrderBlotter />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    expect(screen.getAllByText(/Hold/i).length).toBeGreaterThan(0);
   });
 });
 
