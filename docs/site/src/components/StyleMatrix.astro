@@ -1,0 +1,158 @@
+---
+import data from "../data/panel-matrix.json";
+
+const STYLE_LABELS: Record<string, { label: string; group: "equity" | "fi" | "fx" | "cmdty" | "deriv" | "oversight" }> = {
+  high_touch: { label: "High touch", group: "equity" },
+  low_touch: { label: "Low touch", group: "equity" },
+  fi_voice: { label: "FI voice", group: "fi" },
+  fx_electronic: { label: "FX electronic", group: "fx" },
+  commodities_voice: { label: "Commodities", group: "cmdty" },
+  derivatives_high_touch: { label: "Deriv high touch", group: "deriv" },
+  derivatives_low_touch: { label: "Deriv low touch", group: "deriv" },
+  oversight: { label: "Oversight", group: "oversight" },
+};
+
+const groupColours: Record<string, string> = {
+  equity: "#34d399",
+  fi: "#60a5fa",
+  fx: "#a78bfa",
+  cmdty: "#fb923c",
+  deriv: "#f87171",
+  oversight: "#94a3b8",
+};
+
+function splitTitle(title: string): { name: string; detail?: string } {
+  const m = title.match(/^(.+?)\s+\((.+)\)$/);
+  if (m) return { name: m[1], detail: m[2] };
+  return { name: title };
+}
+
+const styles = data.styles.map((id: string) => ({
+  id,
+  ...(STYLE_LABELS[id] ?? { label: id, group: "equity" as const }),
+}));
+---
+
+<div class="style-matrix-wrap">
+  <table class="style-matrix">
+    <thead>
+      <tr>
+        <th class="panel-col">Panel</th>
+        {styles.map((s) => (
+          <th class="style-col" style={`--group-color: ${groupColours[s.group]}`}>
+            <span class="style-label">{s.label}</span>
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {data.panels.map((p) => {
+        const { name, detail } = splitTitle(p.title);
+        const allowed = new Set(p.allowed);
+        return (
+          <tr>
+            <th scope="row" class="panel-col">
+              <span class="panel-name">{name}</span>
+              {detail && <span class="panel-detail">{detail}</span>}
+            </th>
+            {styles.map((s) => {
+              const ok = allowed.has(s.id);
+              return (
+                <td
+                  class:list={["cell", { allowed: ok, denied: !ok }]}
+                  aria-label={`${name}: ${ok ? "allowed" : "denied"} for ${s.label}`}
+                  style={`--group-color: ${groupColours[s.group]}`}
+                >
+                  {ok ? (
+                    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                      <path d="M5 12l4 4L19 7" stroke="currentColor" stroke-width="2.75" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  ) : (
+                    <span class="dash" aria-hidden="true">—</span>
+                  )}
+                </td>
+              );
+            })}
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .style-matrix-wrap {
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 8px;
+    background: var(--sl-color-bg-sidebar);
+  }
+  .style-matrix {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.825rem;
+    margin: 0;
+  }
+  .style-matrix th,
+  .style-matrix td {
+    padding: 0.5rem 0.75rem;
+    border: none;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .style-matrix thead th {
+    border-bottom: 2px solid var(--sl-color-gray-5);
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sl-color-gray-2);
+    white-space: nowrap;
+    padding-top: 0.75rem;
+    padding-bottom: 0.5rem;
+  }
+  .style-matrix thead th.style-col {
+    border-bottom: 3px solid var(--group-color);
+  }
+  .style-matrix tbody tr {
+    border-top: 1px solid var(--sl-color-gray-6);
+  }
+  .style-matrix tbody tr:hover {
+    background: rgba(148, 163, 184, 0.06);
+  }
+  .panel-col {
+    text-align: left !important;
+    white-space: nowrap;
+    min-width: 12rem;
+    position: sticky;
+    left: 0;
+    background: var(--sl-color-bg-sidebar);
+    z-index: 1;
+  }
+  .panel-name {
+    display: block;
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+  .panel-detail {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--sl-color-gray-3);
+    margin-top: 0.1rem;
+  }
+  .cell {
+    width: 3rem;
+    height: 2.25rem;
+  }
+  .cell.allowed {
+    color: var(--group-color);
+  }
+  .cell.allowed svg {
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .cell.denied .dash {
+    color: var(--sl-color-gray-5);
+  }
+</style>

@@ -3,101 +3,47 @@ title: Supporting Services
 description: Ingress, load testing and infrastructure utilities that surround the trading pipeline.
 ---
 
-import Svc from "../../../components/Svc.astro";
+import { CardGrid, LinkCard } from "@astrojs/starlight/components";
 
-The [Service Map](../services/) catalogues the trading pipeline itself —
-<Svc name="market-sim" />, <Svc name="oms" />, <Svc name="ems" />, algos, <Svc name="journal" />, FIX, and the analytics services. This
-page covers the supporting infrastructure that surrounds it: ingress, load
-testing, and operational utilities. Metrics/logs/traces have moved to their
-own [Observability page](../observability/).
+The [Service Map](../services/) catalogues the trading pipeline itself — market sim, OMS, EMS, algos, journal, FIX, and the analytics services. This section covers the supporting infrastructure that surrounds it: ingress, load testing, and operational utilities. Metrics/logs/traces have moved to their own [Observability page](../observability/).
 
-## Traefik (port 80, dashboard 8888)
-
-Ingress proxy. Routes are declared via Docker labels on each service:
-`/api/<service>/...` is dispatched by `PathPrefix` rules to the matching
-backend container. Traefik does **not** match on `Host` headers, so any
-hostname or IP that resolves to the host works.
-
-In UAT, Let's Encrypt is the cert resolver (the `ACME_EMAIL` env var must
-be set). On Fly.io, TLS terminates at the Fly edge and Traefik runs in
-plain-HTTP mode. Locally, no TLS is needed.
-
-The dashboard is exposed at `http://<host>:8888/dashboard/` and is included
-in the Service Health panel only on `local` and `uat` deployments.
-
-## k6 load testing
-
-Load scenarios live in [`k6/`](https://github.com/milesburton/veta-trading-platform/tree/main/k6).
-The harness runs as a one-shot Compose service:
-
-```bash
-docker compose --profile loadtest run --rm k6
-```
-
-Each scenario writes per-iteration metrics to Prometheus via remote-write
-and a structured JSON + CSV summary to
-`docs/site/src/data/loadtest/<date>.{json,csv}`. The
-[Performance reference page](../../reference/performance/) renders the most
-recent dataset; future runs append new dated files.
-
-Authentication currently uses a pre-issued admin token passed as the
-`K6_TOKEN` env var. A future revision can move OAuth into k6's `setup()`
-to exercise the full sign-in path under load.
-
-## Disk monitor (port 8099)
-
-A small Python container that exposes `/health` reporting host disk usage,
-auto-prunes dangling Docker images when disk crosses `PRUNE_PCT` (default
-90%), and returns 503 when usage crosses `WARN_PCT` (default 85%). Useful
-for Uptime Kuma checks and as a guard against image accumulation on
-long-running deployments.
-
-Mounted at `/host` read-only inside the container so it sees the host
-filesystem rather than the container's overlay.
-
-## db-migrate (run-once)
-
-Applies SQL migrations from `backend/db/migrations/` to the Postgres
-instance on container start, then exits. Idempotent: every migration uses
-`CREATE TABLE IF NOT EXISTS` / `ON CONFLICT DO NOTHING` patterns and is
-recorded in `public.schema_migrations`.
-
-The other services that depend on Postgres (`oms`, `journal`, `user-service`)
-declare `depends_on: db-migrate: condition: service_completed_successfully`,
-so they wait for migrations before starting.
-
-## Redpanda console (optional)
-
-`redpanda-console` (Apache Kafka UI) ships with the Compose stack as an
-optional debugging aid. It exposes `:8080` and provides a topic browser,
-consumer-group inspector, and live message tail. Useful for confirming
-event flow during integration debugging; not required for the platform to
-run.
-
-## Watchtower (UAT only)
-
-The internal UAT deployment runs `containrrr/watchtower` in
-label-enable mode. Containers tagged with
-`com.centurylinklabs.watchtower.enable=true` are pulled and restarted
-automatically when CI publishes a new `:latest` image to GHCR — typically
-within five minutes of a merge to `main`.
-
-## flyctl (dev container)
-
-The dev container ships with `flyctl` preinstalled at a pinned version
-(`FLYCTL_VERSION` in `.devcontainer/Dockerfile`). The host's `~/.fly`
-directory is bind-mounted into the container so that `flyctl auth login`
-on the host persists across container rebuilds — no need to reauthenticate
-per session.
-
-`post-start.sh` reports the current auth status on container start and
-warns if the runtime `flyctl` differs from the version baked into the
-image (usually because a host-installed binary is shadowing the system
-one).
-
-See the [Fly auth docs](https://fly.io/docs/flyctl/auth-login/) for first-time
-setup. Once authenticated on the host, the dev container picks the credentials
-up automatically.
+<CardGrid>
+  <LinkCard
+    title="Traefik"
+    href="/veta-trading-platform/platform/supporting/traefik/"
+    description="Ingress proxy that fronts every backend service."
+  />
+  <LinkCard
+    title="k6 load testing"
+    href="/veta-trading-platform/platform/supporting/k6-load-testing/"
+    description="Synthetic load harness that drives orders through the full pipeline."
+  />
+  <LinkCard
+    title="Disk monitor"
+    href="/veta-trading-platform/platform/supporting/disk-monitor/"
+    description="Auto-pruning host-disk watcher used by Uptime Kuma."
+  />
+  <LinkCard
+    title="db-migrate"
+    href="/veta-trading-platform/platform/supporting/db-migrate/"
+    description="One-shot Postgres migration runner."
+  />
+  <LinkCard
+    title="Redpanda console"
+    href="/veta-trading-platform/platform/supporting/redpanda-console/"
+    description="Optional Kafka UI for debugging the message bus."
+  />
+  <LinkCard
+    title="Watchtower"
+    href="/veta-trading-platform/platform/supporting/watchtower/"
+    description="Auto-updates UAT containers when CI publishes a new image."
+  />
+  <LinkCard
+    title="flyctl in the dev container"
+    href="/veta-trading-platform/platform/supporting/flyctl/"
+    description="Pinned flyctl with host-shared credentials for the Fly.io demo deploy."
+  />
+</CardGrid>
 
 ## Where to run what
 
@@ -107,7 +53,4 @@ up automatically.
 | `uat` (private VM) | yes | yes | manual | yes |
 | `fly` (public demo) | monolith | no | manual against URL | no |
 
-LGTM and k6 are deliberately optional locally — they add real overhead and
-the platform runs fine without them. Bring them up when you are
-investigating performance, debugging event flow, or generating data for
-the performance docs.
+LGTM and k6 are deliberately optional locally — they add real overhead and the platform runs fine without them. Bring them up when you are investigating performance, debugging event flow, or generating data for the performance docs.

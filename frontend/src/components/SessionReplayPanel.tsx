@@ -137,6 +137,30 @@ function SessionRow({
   onDelete: (id: string) => void;
   isAdmin: boolean;
 }) {
+  const downloading = useSignal(false);
+
+  async function handleDownload() {
+    if (downloading.value) return;
+    downloading.value = true;
+    try {
+      const url = `/api/replay/sessions/${encodeURIComponent(session.id)}/events`;
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date(session.startedAt).toISOString().replace(/[:.]/g, "-");
+      a.href = objectUrl;
+      a.download = `replay-${session.userName ?? session.userId}-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+    } finally {
+      downloading.value = false;
+    }
+  }
+
   return (
     <tr className="border-t border-gray-800/50 hover:bg-gray-800/30 transition-colors">
       <td className="px-3 py-1.5 text-gray-300">{session.userName ?? session.userId}</td>
@@ -162,6 +186,15 @@ function SessionRow({
           className="text-sky-400 hover:text-sky-300 disabled:text-gray-600 disabled:cursor-not-allowed mr-2"
         >
           Play
+        </button>
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={!session.endedAt || downloading.value}
+          title="Download rrweb events as JSON"
+          className="text-emerald-400/80 hover:text-emerald-300 disabled:text-gray-600 disabled:cursor-not-allowed mr-2"
+        >
+          {downloading.value ? "..." : "Download"}
         </button>
         {isAdmin && (
           <button

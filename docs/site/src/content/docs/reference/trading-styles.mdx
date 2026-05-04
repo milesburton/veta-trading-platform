@@ -1,0 +1,27 @@
+---
+title: Trading Styles
+description: The 8 trading styles and which panels each can access.
+---
+
+import StyleMatrix from "../../../components/StyleMatrix.astro";
+
+Every trader has exactly one trading style. The style determines which panels they can access.
+
+## Style → panel matrix
+
+<StyleMatrix />
+
+Panels not listed (market-ladder, candle-chart, news, blotter, etc.) are accessible to all trading styles.
+
+## Default workspaces
+
+| Style | Default workspace |
+|-------|-------------------|
+| `high_touch` | Trading |
+| `low_touch` | Algo |
+| `fi_voice` | FI Trading |
+| `fx_electronic` | Algo |
+| `commodities_voice` | Commodities |
+| `derivatives_high_touch` | Options |
+| `derivatives_low_touch` | Algo |
+| `oversight` | Trading |

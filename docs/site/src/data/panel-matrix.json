@@ -1,0 +1,141 @@
+{
+  "styles": [
+    "high_touch",
+    "low_touch",
+    "fi_voice",
+    "fx_electronic",
+    "commodities_voice",
+    "derivatives_high_touch",
+    "derivatives_low_touch",
+    "oversight"
+  ],
+  "panels": [
+    {
+      "id": "algo-leaderboard",
+      "title": "Algo Leaderboard (strategy performance)",
+      "allowed": [
+        "low_touch",
+        "fx_electronic",
+        "derivatives_low_touch",
+        "oversight"
+      ]
+    },
+    {
+      "id": "algo-monitor",
+      "title": "Algo Monitor (strategy status)",
+      "allowed": [
+        "low_touch",
+        "fx_electronic",
+        "derivatives_low_touch",
+        "oversight"
+      ]
+    },
+    {
+      "id": "basket-order",
+      "title": "Basket Order (multi-leg)",
+      "allowed": [
+        "high_touch"
+      ]
+    },
+    {
+      "id": "decision-log",
+      "title": "Decision Log (algo audit trail)",
+      "allowed": [
+        "low_touch",
+        "fx_electronic",
+        "derivatives_low_touch",
+        "oversight"
+      ]
+    },
+    {
+      "id": "duration-ladder",
+      "title": "Duration Ladder (DV01 by tenor)",
+      "allowed": [
+        "fi_voice",
+        "oversight"
+      ]
+    },
+    {
+      "id": "greeks-surface",
+      "title": "Greeks Surface (strike profile)",
+      "allowed": [
+        "derivatives_high_touch",
+        "derivatives_low_touch",
+        "oversight"
+      ]
+    },
+    {
+      "id": "option-pricing",
+      "title": "Option Pricing (Black-Scholes)",
+      "allowed": [
+        "derivatives_high_touch",
+        "derivatives_low_touch",
+        "oversight"
+      ]
+    },
+    {
+      "id": "order-ticket",
+      "title": "Order Ticket (place trades)",
+      "allowed": [
+        "high_touch",
+        "fx_electronic",
+        "derivatives_high_touch",
+        "fi_voice",
+        "commodities_voice"
+      ]
+    },
+    {
+      "id": "price-fan",
+      "title": "Price Fan (GBM projection)",
+      "allowed": [
+        "fi_voice",
+        "commodities_voice",
+        "oversight"
+      ]
+    },
+    {
+      "id": "scenario-matrix",
+      "title": "Scenario Matrix (spot/vol shocks)",
+      "allowed": [
+        "derivatives_high_touch",
+        "derivatives_low_touch",
+        "oversight"
+      ]
+    },
+    {
+      "id": "spread-analysis",
+      "title": "Spread Analysis (G/Z/OAS)",
+      "allowed": [
+        "fi_voice",
+        "oversight"
+      ]
+    },
+    {
+      "id": "vol-surface",
+      "title": "Vol Surface (implied vol smile)",
+      "allowed": [
+        "derivatives_high_touch",
+        "derivatives_low_touch",
+        "fi_voice",
+        "oversight"
+      ]
+    },
+    {
+      "id": "vol-profile",
+      "title": "Volatility Profile (EWMA trend)",
+      "allowed": [
+        "derivatives_high_touch",
+        "derivatives_low_touch",
+        "oversight"
+      ]
+    },
+    {
+      "id": "yield-curve",
+      "title": "Yield Curve (Nelson-Siegel)",
+      "allowed": [
+        "fi_voice",
+        "oversight"
+      ]
+    }
+  ]
+}

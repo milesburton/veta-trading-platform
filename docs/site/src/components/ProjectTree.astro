@@ -1,0 +1,225 @@
+---
+type Node =
+  | { kind: "dir"; name: string; note?: string; group?: string; children: Node[] }
+  | { kind: "file"; name: string; note?: string; group?: string };
+
+const tree: Node = {
+  kind: "dir",
+  name: "veta-trading-platform/",
+  children: [
+    {
+      kind: "dir",
+      name: "backend/",
+      group: "backend",
+      children: [
+        { kind: "dir", name: "db/migrations/", note: "PostgreSQL migrations (0001-0013)", group: "backend", children: [] },
+        {
+          kind: "dir",
+          name: "src/",
+          group: "backend",
+          children: [
+            {
+              kind: "dir",
+              name: "lib/",
+              note: "Shared utilities (@veta/*)",
+              group: "shared",
+              children: [
+                { kind: "file", name: "http.ts", note: "CORS, json(), corsOptions()" },
+                { kind: "file", name: "auth.ts", note: "getCookieToken()" },
+                { kind: "file", name: "db.ts", note: "PostgreSQL pool instances" },
+                { kind: "file", name: "messaging.ts", note: "Redpanda producer/consumer" },
+                { kind: "file", name: "marketSimClient.ts" },
+                { kind: "file", name: "gridQuery.ts" },
+                { kind: "file", name: "settlement.ts" },
+                { kind: "file", name: "timeScale.ts" },
+              ],
+            },
+            {
+              kind: "dir",
+              name: "types/",
+              note: "Shared type definitions",
+              group: "shared",
+              children: [
+                { kind: "file", name: "orders.ts", note: "RoutedOrder, FillEvent" },
+                { kind: "file", name: "intelligence.ts" },
+                { kind: "file", name: "llm-advisory.ts" },
+                { kind: "file", name: "types.ts", note: "Trade" },
+              ],
+            },
+            { kind: "dir", name: "algo/", note: "9 algo strategy services", group: "service", children: [] },
+            { kind: "dir", name: "analytics/", note: "Black-Scholes, Monte Carlo", group: "service", children: [] },
+            { kind: "dir", name: "gateway/", note: "API Gateway (BFF)", group: "service", children: [] },
+            { kind: "dir", name: "oms/", note: "Order Management System", group: "service", children: [] },
+            { kind: "dir", name: "ems/", note: "Execution Management System", group: "service", children: [] },
+            { kind: "dir", name: "risk-engine/", note: "Pre-trade risk checks", group: "service", children: [] },
+            { kind: "dir", name: "journal/", note: "Trade lifecycle journal", group: "service", children: [] },
+            { kind: "dir", name: "replay/", note: "Session replay service", group: "service", children: [] },
+            { kind: "dir", name: "user-service/", note: "OAuth2, RBAC", group: "service", children: [] },
+            { kind: "dir", name: "market-sim/", note: "Market data simulator", group: "service", children: [] },
+            { kind: "dir", name: "fix/", note: "FIX 4.2 exchange + archive", group: "service", children: [] },
+            { kind: "dir", name: "tests/", note: "Unit, integration, smoke tests", group: "tests", children: [] },
+          ],
+        },
+      ],
+    },
+    {
+      kind: "dir",
+      name: "frontend/",
+      group: "frontend",
+      children: [
+        {
+          kind: "dir",
+          name: "src/",
+          group: "frontend",
+          children: [
+            { kind: "dir", name: "auth/", note: "RBAC (rbac.ts)", children: [] },
+            { kind: "dir", name: "components/", note: "React components (50+ panels)", children: [
+              { kind: "dir", name: "dashboard/", note: "Panel registry, layout models", children: [] },
+            ] },
+            { kind: "dir", name: "domain/", note: "Business logic (ticket rules)", children: [] },
+            { kind: "dir", name: "hooks/", note: "Custom React hooks", children: [] },
+            { kind: "dir", name: "lib/", note: "Session recorder (rrweb)", children: [] },
+            { kind: "dir", name: "store/", note: "Redux slices + RTK Query APIs", children: [] },
+            { kind: "dir", name: "types/", note: "Frontend type definitions", children: [] },
+            { kind: "dir", name: "utils/", note: "Shared formatters", children: [] },
+          ],
+        },
+        { kind: "dir", name: "tests/", note: "Playwright E2E tests", group: "tests", children: [
+          { kind: "dir", name: "helpers/", note: "GatewayMock, page objects", group: "tests", children: [] },
+        ] },
+        { kind: "dir", name: "tests-electron/", note: "Electron E2E tests", group: "tests", children: [] },
+      ],
+    },
+    {
+      kind: "dir",
+      name: "docs/",
+      group: "docs",
+      children: [
+        { kind: "dir", name: "site/", note: "Astro + Starlight docs site", group: "docs", children: [] },
+        { kind: "dir", name: "screenshots/", note: "Auto-generated UI screenshots", group: "docs", children: [] },
+        { kind: "dir", name: "badges/", note: "CI badge JSON files", group: "docs", children: [] },
+      ],
+    },
+    { kind: "file", name: "deno.json", note: "Import map + tasks", group: "config" },
+    { kind: "file", name: "supervisord.conf", note: "Local dev process manager", group: "config" },
+    { kind: "file", name: "supervisord.fly.conf", note: "Fly.io process manager", group: "config" },
+    { kind: "file", name: "Dockerfile.fly", note: "Fly.io monolith image", group: "config" },
+    { kind: "file", name: "fly.toml", note: "Fly.io deployment config", group: "config" },
+  ],
+};
+
+const groupColours: Record<string, string> = {
+  backend: "#34d399",
+  frontend: "#60a5fa",
+  shared: "#fbbf24",
+  service: "#34d399",
+  tests: "#a78bfa",
+  docs: "#fb923c",
+  config: "#94a3b8",
+};
+
+function flatten(node: Node, depth: number, isLast: boolean[], inheritGroup?: string): { name: string; note?: string; group?: string; depth: number; isLast: boolean[]; isDir: boolean }[] {
+  const group = node.group ?? inheritGroup;
+  const out: { name: string; note?: string; group?: string; depth: number; isLast: boolean[]; isDir: boolean }[] = [
+    { name: node.name, note: node.note, group, depth, isLast: [...isLast], isDir: node.kind === "dir" },
+  ];
+  if (node.kind === "dir") {
+    for (let i = 0; i < node.children.length; i++) {
+      const child = node.children[i];
+      const last = i === node.children.length - 1;
+      out.push(...flatten(child, depth + 1, [...isLast, last], group));
+    }
+  }
+  return out;
+}
+
+const rows = flatten(tree, 0, []);
+
+function prefix(isLast: boolean[]): string {
+  if (isLast.length === 0) return "";
+  let s = "";
+  for (let i = 0; i < isLast.length - 1; i++) {
+    s += isLast[i] ? "  " : "│ ";
+  }
+  s += isLast[isLast.length - 1] ? "└─" : "├─";
+  return s;
+}
+---
+
+<div class="project-tree">
+  {rows.map((row) => (
+    <div class={`row${row.isDir ? " is-dir" : ""}`}>
+      <span class="prefix">{prefix(row.isLast)}</span>
+      <span class="name" style={row.group ? `--group-color: ${groupColours[row.group]}` : ""}>{row.name}</span>
+      {row.note && <span class="note">{row.note}</span>}
+    </div>
+  ))}
+</div>
+
+<div class="legend">
+  {Object.entries(groupColours).filter(([k]) => k !== "service").map(([k, c]) => (
+    <span class="legend-item">
+      <span class="dot" style={`background: ${c}`}></span>
+      {k}
+    </span>
+  ))}
+</div>
+
+<style>
+  .project-tree {
+    font-family: var(--__sl-font-mono, ui-monospace, monospace);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    background: var(--sl-color-bg-sidebar);
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    margin: 1.25rem 0 0.75rem;
+  }
+  .row {
+    display: flex;
+    gap: 0.6rem;
+    align-items: baseline;
+    padding: 0.05rem 0;
+    white-space: nowrap;
+  }
+  .row.is-dir .name {
+    font-weight: 600;
+  }
+  .prefix {
+    color: var(--sl-color-gray-4);
+    white-space: pre;
+  }
+  .name {
+    color: var(--group-color, var(--sl-color-white));
+  }
+  .note {
+    color: var(--sl-color-gray-3);
+    font-size: 0.74rem;
+    font-style: italic;
+  }
+  .note::before { content: "— "; }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    padding: 0 0.25rem;
+    font-size: 0.72rem;
+    color: var(--sl-color-gray-3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .dot {
+    display: inline-block;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 9999px;
+  }
+</style>

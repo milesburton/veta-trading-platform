@@ -12,10 +12,8 @@ const registryPath = path.join(
 );
 const targetPath = path.resolve(
   docsSiteRoot,
-  "src/content/docs/reference/trading-styles.md",
+  "src/data/panel-matrix.json",
 );
-const BEGIN = "<!-- BEGIN GENERATED panel-matrix";
-const END = "<!-- END GENERATED panel-matrix -->";
 
 const src = fs.readFileSync(registryPath, "utf8");
 
@@ -86,7 +84,7 @@ function parsePanelStyles(text) {
       styleList.push(stMatch[1]);
       stMatch = stRe.exec(match[2]);
     }
-    result[panelId] = new Set(styleList);
+    result[panelId] = styleList;
     match = entryRe.exec(body);
   }
   return result;
@@ -100,30 +98,17 @@ const panelIds = Object.keys(panelStyles).sort((a, b) =>
   (titles[a] ?? a).localeCompare(titles[b] ?? b),
 );
 
-const headerRow = `| Panel | ${tradingStyles.join(" | ")} |`;
-const separatorRow = `|-------|${tradingStyles.map(() => "----").join("|")}|`;
+const data = {
+  styles: tradingStyles,
+  panels: panelIds.map((id) => ({
+    id,
+    title: titles[id] ?? id,
+    allowed: panelStyles[id],
+  })),
+};
 
-const rows = [headerRow, separatorRow];
-for (const id of panelIds) {
-  const allowed = panelStyles[id];
-  const cells = tradingStyles.map((s) => (allowed.has(s) ? "Yes" : "No"));
-  const title = titles[id] ?? id;
-  rows.push(`| ${title} | ${cells.join(" | ")} |`);
-}
-
-const table = rows.join("\n");
-
-const existing = fs.readFileSync(targetPath, "utf8");
-const beginIdx = existing.indexOf(BEGIN);
-const endIdx = existing.indexOf(END);
-if (beginIdx === -1 || endIdx === -1) {
-  throw new Error(
-    `Markers '${BEGIN} … ${END}' not found in ${path.relative(repoRoot, targetPath)}`,
-  );
-}
-const beginLineEnd = existing.indexOf("\n", beginIdx);
-const updated = `${existing.slice(0, beginLineEnd + 1)}\n${table}\n\n${existing.slice(endIdx)}`;
-fs.writeFileSync(targetPath, updated);
+fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+fs.writeFileSync(targetPath, JSON.stringify(data, null, 2) + "\n");
 
 console.log(
   `Updated ${path.relative(repoRoot, targetPath)} (${panelIds.length} panels × ${tradingStyles.length} styles)`,

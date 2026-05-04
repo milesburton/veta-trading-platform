@@ -9,29 +9,40 @@ Every push to any branch triggers the CI workflow. Pushes to `main` additionally
 
 ## Pipeline diagram
 
-```
-Push to any branch:
+```mermaid
+flowchart LR
+  Push["Push (any branch)"]:::trigger
 
-lint-and-test ─────┬──→ integration (15 min)
-                   │    ├─ service contracts
-                   │    ├─ algo strategies (retry)
-                   │    ├─ intelligence pipeline
-                   │    ├─ journal HTTP
-                   │    ├─ market-data HTTP
-                   │    └─ smoke tests (87+)
-                   │
-frontend ──────────┼──→ playwright-ui (5 min, parallel)
-                   ├──→ screenshots (1.5 min, parallel)
-                   ├──→ electron (6 min, parallel)
-                   └──→ docker-base → 34 service images (parallel)
+  Push --> Lint["lint-and-test<br/><i>~30s</i>"]:::test
+  Push --> Frontend["frontend<br/><i>~70s</i>"]:::test
 
-Push to main only:
-  → Deploy to Fly.io (with smoke tests)
-  → Deploy GitHub Pages (Astro build)
-  → Release Please (version bump PR)
-  → Coverage + test-count badges committed
-  → Screenshots committed
+  Lint --> Integration["integration<br/><i>~15 min</i>"]:::heavy
+
+  Frontend --> Playwright["playwright-ui<br/><i>~5 min</i>"]:::parallel
+  Frontend --> Screenshots["screenshots<br/><i>~1.5 min</i>"]:::parallel
+  Frontend --> Electron["electron<br/><i>~6 min</i>"]:::parallel
+  Frontend --> DockerBase["docker-base"]:::parallel
+
+  DockerBase --> DockerMatrix["34 service images<br/><i>matrix</i>"]:::parallel
+
+  Integration --> MainCheck{"branch = main?"}:::decision
+  Playwright --> MainCheck
+  DockerMatrix --> MainCheck
+
+  MainCheck -- "yes" --> FlyDeploy["Deploy to Fly.io"]:::deploy
+  MainCheck -- "yes" --> Pages["Deploy GitHub Pages"]:::deploy
+  MainCheck -- "yes" --> Release["Release Please PR"]:::deploy
+  MainCheck -- "yes" --> Badges["Commit badges &<br/>screenshots"]:::deploy
+
+  classDef trigger fill:#0ea5e9,stroke:#0284c7,color:#fff
+  classDef test fill:#22c55e,stroke:#16a34a,color:#000
+  classDef heavy fill:#a78bfa,stroke:#8b5cf6,color:#000
+  classDef parallel fill:#f59e0b,stroke:#d97706,color:#000
+  classDef decision fill:#64748b,stroke:#475569,color:#fff
+  classDef deploy fill:#f472b6,stroke:#ec4899,color:#000
 ```
+
+Integration covers service contracts, algo strategies (retry), the intelligence pipeline, journal HTTP, market-data HTTP, and smoke tests (87+). Playwright/screenshots/Electron/Docker builds run in parallel with integration — they only wait on the frontend job, not the 15-minute integration suite.
 
 ## Parallelisation
 

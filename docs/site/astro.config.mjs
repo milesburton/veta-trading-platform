@@ -94,7 +94,20 @@ export default defineConfig({
               label: "Operations",
               items: [
                 { label: "Observability", slug: "platform/observability" },
-                { label: "Supporting services", slug: "platform/supporting-services" },
+                {
+                  label: "Supporting services",
+                  collapsed: true,
+                  items: [
+                    { label: "Overview", slug: "platform/supporting-services" },
+                    { label: "Traefik", slug: "platform/supporting/traefik" },
+                    { label: "k6 load testing", slug: "platform/supporting/k6-load-testing" },
+                    { label: "Disk monitor", slug: "platform/supporting/disk-monitor" },
+                    { label: "db-migrate", slug: "platform/supporting/db-migrate" },
+                    { label: "Redpanda console", slug: "platform/supporting/redpanda-console" },
+                    { label: "Watchtower", slug: "platform/supporting/watchtower" },
+                    { label: "flyctl", slug: "platform/supporting/flyctl" },
+                  ],
+                },
                 { label: "Security posture", slug: "platform/security" },
                 { label: "Screenshots", slug: "platform/screenshots" },
               ],
@@ -261,6 +274,62 @@ export default defineConfig({
             bind();
             // Re-bind when Starlight swaps content via client navigation.
             new MutationObserver(bind).observe(document.body, { childList: true, subtree: true });
+          `,
+        },
+        {
+          tag: "script",
+          attrs: { type: "module" },
+          content: `
+            // Hyperlink copy: clicking any heading anchor or external link in
+            // the markdown content copies the URL to the clipboard, with a
+            // brief inline toast confirming the copy. Normal navigation still
+            // happens for non-anchor links via shift/ctrl/cmd-click.
+            const HEADING_SELECTOR = ".sl-markdown-content :is(h2, h3, h4, h5, h6)";
+
+            function showToast(target, message) {
+              const toast = document.createElement("span");
+              toast.className = "veta-copy-toast";
+              toast.textContent = message;
+              target.appendChild(toast);
+              requestAnimationFrame(() => toast.classList.add("is-visible"));
+              setTimeout(() => {
+                toast.classList.remove("is-visible");
+                setTimeout(() => toast.remove(), 200);
+              }, 1300);
+            }
+
+            async function copy(text) {
+              try {
+                await navigator.clipboard.writeText(text);
+                return true;
+              } catch {
+                return false;
+              }
+            }
+
+            function bindHeadingCopy() {
+              for (const heading of document.querySelectorAll(HEADING_SELECTOR)) {
+                if (!heading.id || heading.dataset.copyBound === "1") continue;
+                heading.dataset.copyBound = "1";
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "veta-anchor-copy";
+                btn.setAttribute("aria-label", "Copy link to this section");
+                btn.title = "Copy link";
+                btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+                btn.addEventListener("click", async (e) => {
+                  e.preventDefault();
+                  const url = new URL(window.location.href);
+                  url.hash = heading.id;
+                  const ok = await copy(url.toString());
+                  showToast(heading, ok ? "Copied" : "Press ⌘C");
+                });
+                heading.appendChild(btn);
+              }
+            }
+
+            bindHeadingCopy();
+            new MutationObserver(bindHeadingCopy).observe(document.body, { childList: true, subtree: true });
           `,
         },
       ],
