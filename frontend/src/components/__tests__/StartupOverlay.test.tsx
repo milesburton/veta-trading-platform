@@ -137,6 +137,26 @@ describe("StartupOverlay", () => {
     expect(footer).toHaveTextContent("Miles Burton");
   });
 
+  test("renders inline version above the service list when commitSha is provided", () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(NOT_READY_RESPONSE), { status: 200 })
+    );
+    render(<StartupOverlay onReady={vi.fn()} buildDate="2026-03-08" commitSha="abc1234def" />);
+
+    const inline = screen.getByTestId("startup-version");
+    expect(inline).toHaveTextContent("vabc1234");
+    expect(inline).toHaveTextContent("2026-03-08");
+  });
+
+  test("hides inline version when commitSha is omitted", () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(NOT_READY_RESPONSE), { status: 200 })
+    );
+    render(<StartupOverlay onReady={vi.fn()} />);
+
+    expect(screen.queryByTestId("startup-version")).not.toBeInTheDocument();
+  });
+
   test("renders footer with author and github link when props omitted", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify(NOT_READY_RESPONSE), { status: 200 })

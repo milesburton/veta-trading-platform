@@ -262,6 +262,97 @@ describe("AlertList", () => {
     render(<AlertList alerts={[...alerts]} filter="ALL" onFilter={() => {}} />);
     expect(screen.queryByTestId("source-filter-all")).not.toBeInTheDocument();
   });
+
+  it("renders ×N count badge on deduped alerts", () => {
+    const dedupedAlerts = [
+      {
+        id: "d-1",
+        severity: "WARNING" as const,
+        source: "algo" as const,
+        message: "Algo TWAP gap",
+        ts: Date.now() - 30_000,
+        lastTs: Date.now() - 1_000,
+        count: 7,
+        dismissed: false,
+      },
+    ];
+    render(
+      <AlertList
+        alerts={dedupedAlerts}
+        filter="ALL"
+        onFilter={() => {}}
+        sourceFilter={null}
+        onSourceFilter={() => {}}
+      />
+    );
+    expect(screen.getByTestId("alert-count")).toHaveTextContent("×7");
+    expect(screen.getByText(/last/)).toBeInTheDocument();
+    expect(screen.getByText(/first/)).toBeInTheDocument();
+  });
+
+  it("caps ×N display at 99+", () => {
+    const dedupedAlerts = [
+      {
+        id: "d-2",
+        severity: "WARNING" as const,
+        source: "algo" as const,
+        message: "Algo TWAP gap",
+        ts: Date.now(),
+        count: 250,
+        dismissed: false,
+      },
+    ];
+    render(
+      <AlertList
+        alerts={dedupedAlerts}
+        filter="ALL"
+        onFilter={() => {}}
+        sourceFilter={null}
+        onSourceFilter={() => {}}
+      />
+    );
+    expect(screen.getByTestId("alert-count")).toHaveTextContent("×99+");
+  });
+
+  it("renders 'caused by' line when relatedTopic is set", () => {
+    const causedAlerts = [
+      {
+        id: "c-1",
+        severity: "WARNING" as const,
+        source: "order" as const,
+        message: "Order rejected",
+        ts: Date.now(),
+        relatedTopic: "orders.rejected",
+        relatedEventId: "ord-99",
+        dismissed: false,
+      },
+    ];
+    render(
+      <AlertList
+        alerts={causedAlerts}
+        filter="ALL"
+        onFilter={() => {}}
+        sourceFilter={null}
+        onSourceFilter={() => {}}
+      />
+    );
+    const line = screen.getByTestId("alert-caused-by");
+    expect(line).toHaveTextContent("orders.rejected");
+    expect(line).toHaveTextContent("ord-99");
+  });
+
+  it("does not render 'caused by' when no related context is set", () => {
+    render(
+      <AlertList
+        alerts={[...alerts]}
+        filter="ALL"
+        onFilter={() => {}}
+        sourceFilter={null}
+        onSourceFilter={() => {}}
+      />
+    );
+    expect(screen.queryByTestId("alert-caused-by")).not.toBeInTheDocument();
+  });
 });
 
 function renderOpenAlertDrawer(onClose: () => void) {
