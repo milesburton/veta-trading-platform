@@ -202,8 +202,8 @@ const SERVICES_ALL: {
     category: "infra",
     description: "Reverse proxy & load balancer dashboard",
     port: 8888,
-    alertOnDeployments: ["uat", "local"],
-    showOnDeployments: ["uat", "local"],
+    alertOnDeployments: ["local"],
+    showOnDeployments: ["local"],
   },
   {
     name: "Kafka Relay",
