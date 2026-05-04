@@ -68,6 +68,8 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
           message: `Kill switch activated — ${scopeDetail}`,
           detail: `Issued by ${b.issuedBy}`,
           ts: b.issuedAt,
+          relatedTopic: "orders.kill",
+          relatedAt: b.issuedAt,
         })
       );
     }
@@ -79,6 +81,7 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
           source: "kill-switch",
           message: "Kill switch cleared — trading resumed",
           ts: Date.now(),
+          relatedTopic: "orders.resume",
         })
       );
     }
@@ -88,8 +91,12 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
         alertAdded({
           severity: "WARNING",
           source: "order",
-          message: `Order rejected: ${action.payload.id}`,
+          message: "Order rejected by risk engine",
+          detail: action.payload.id,
           ts: Date.now(),
+          relatedEventId: action.payload.id,
+          relatedTopic: "orders.rejected",
+          relatedAt: Date.now(),
         })
       );
     }

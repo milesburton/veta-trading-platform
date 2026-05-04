@@ -137,4 +137,32 @@ describe("alertsSlice — dedupe", () => {
     expect(state.alerts[0].count).toBe(2);
     expect(state.alerts[1].message).toBe("newer");
   });
+
+  it("re-firing clears the acknowledged flag so the toast resurfaces", () => {
+    const t0 = 1_700_000_000_000;
+    let state = reducer(undefined, alertAdded({ ...BASE_ALERT, ts: t0 }));
+    state = reducer(state, alertsSlice.actions.alertAcknowledged(state.alerts[0].id));
+    expect(state.alerts[0].acknowledged).toBe(true);
+    state = reducer(state, alertAdded({ ...BASE_ALERT, ts: t0 + 5_000 }));
+    expect(state.alerts[0].count).toBe(2);
+    expect(state.alerts[0].acknowledged).toBe(false);
+  });
+});
+
+describe("alertsSlice — acknowledged + toast queue", () => {
+  it("alertAcknowledged sets the flag without dismissing", () => {
+    let state = reducer(undefined, alertAdded(BASE_ALERT));
+    const id = state.alerts[0].id;
+    state = reducer(state, alertsSlice.actions.alertAcknowledged(id));
+    expect(state.alerts[0].acknowledged).toBe(true);
+    expect(state.alerts[0].dismissed).toBe(false);
+  });
+
+  it("alertDismissed also acknowledges", () => {
+    let state = reducer(undefined, alertAdded(BASE_ALERT));
+    const id = state.alerts[0].id;
+    state = reducer(state, alertsSlice.actions.alertDismissed(id));
+    expect(state.alerts[0].dismissed).toBe(true);
+    expect(state.alerts[0].acknowledged).toBe(true);
+  });
 });

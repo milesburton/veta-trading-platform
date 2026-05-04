@@ -375,14 +375,16 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             algoLastSeen[hb.algo] = now;
             storeAPI.dispatch(feedReceived("algo"));
             if (prev && now - prev > ALGO_HEARTBEAT_TIMEOUT_MS) {
+              const gapSeconds = Math.round((now - prev) / 1000);
               storeAPI.dispatch(
                 alertAdded({
                   severity: "WARNING",
                   source: "algo",
-                  message: `Algo ${hb.algo} heartbeat resumed after ${Math.round(
-                    (now - prev) / 1000
-                  )}s gap`,
+                  message: `Algo ${hb.algo} heartbeat gap detected`,
+                  detail: `Last seen ${gapSeconds}s ago — heartbeat resumed`,
                   ts: now,
+                  relatedTopic: "algo.heartbeat",
+                  relatedAt: prev,
                 })
               );
             }

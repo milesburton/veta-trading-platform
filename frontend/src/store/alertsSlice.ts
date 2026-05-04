@@ -17,6 +17,14 @@ export interface Alert {
   /** Number of times this dedupe-key has fired in the dedupe window. Defaults to 1. */
   count?: number;
   dismissed: boolean;
+  /** True once the user has seen this in the toast. Drives the toast's unread queue. */
+  acknowledged?: boolean;
+  /** Originating cause: the bus/journal event that triggered this alert. */
+  relatedEventId?: string;
+  /** Bus topic the related event came from (e.g. "orders.rejected"). */
+  relatedTopic?: string;
+  /** Timestamp of the related event. Often equal to ts but can differ when alerts are derived from older events. */
+  relatedAt?: number;
 }
 
 export interface MuteRule {
@@ -77,7 +85,11 @@ export const alertsSlice = createSlice({
         const existing = state.alerts[matchIdx];
         existing.count = (existing.count ?? 1) + 1;
         existing.lastTs = incoming.ts;
+        existing.acknowledged = false;
         if (incoming.detail) existing.detail = incoming.detail;
+        if (incoming.relatedEventId) existing.relatedEventId = incoming.relatedEventId;
+        if (incoming.relatedTopic) existing.relatedTopic = incoming.relatedTopic;
+        if (incoming.relatedAt !== undefined) existing.relatedAt = incoming.relatedAt;
         if (matchIdx > 0) {
           state.alerts.splice(matchIdx, 1);
           state.alerts.unshift(existing);
@@ -98,10 +110,23 @@ export const alertsSlice = createSlice({
     },
     alertDismissed(state, action: PayloadAction<string>) {
       const a = state.alerts.find((x) => x.id === action.payload);
-      if (a) a.dismissed = true;
+      if (a) {
+        a.dismissed = true;
+        a.acknowledged = true;
+      }
     },
     allAlertsDismissed(state) {
-      for (const a of state.alerts) a.dismissed = true;
+      for (const a of state.alerts) {
+        a.dismissed = true;
+        a.acknowledged = true;
+      }
+    },
+    alertAcknowledged(state, action: PayloadAction<string>) {
+      const a = state.alerts.find((x) => x.id === action.payload);
+      if (a) a.acknowledged = true;
+    },
+    allAlertsAcknowledged(state) {
+      for (const a of state.alerts) a.acknowledged = true;
     },
     alertsLoaded(state, action: PayloadAction<Alert[]>) {
       state.alerts = action.payload.slice(0, MAX_ALERTS).map((a) => ({
@@ -130,8 +155,10 @@ export const alertsSlice = createSlice({
 });
 
 export const {
+  alertAcknowledged,
   alertAdded,
   alertDismissed,
+  allAlertsAcknowledged,
   allAlertsDismissed,
   alertsLoaded,
   purgeServiceAlerts,
@@ -151,6 +178,11 @@ export const selectActiveAlerts = createSelector(
 
 export const selectCriticalAlerts = createSelector(selectActiveAlerts, (alerts) =>
   alerts.filter((a) => a.severity === "CRITICAL")
+);
+
+/** Alerts the user has not yet acknowledged in the toast. INFO is excluded. */
+export const selectToastQueue = createSelector(selectActiveAlerts, (alerts) =>
+  alerts.filter((a) => !a.acknowledged && a.severity !== "INFO")
 );
 
 export const selectAlertCount = createSelector(

@@ -143,10 +143,19 @@ describe("alertsMiddleware", () => {
       const { dispatched, invoke } = createHarness();
       invoke(orderPatched({ id: "ord-99", patch: { status: "rejected" } }));
       const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
-        payload: { severity: string; message: string };
+        payload: {
+          severity: string;
+          message: string;
+          detail?: string;
+          relatedEventId?: string;
+          relatedTopic?: string;
+        };
       };
       expect(alert?.payload.severity).toBe("WARNING");
-      expect(alert?.payload.message).toContain("ord-99");
+      expect(alert?.payload.message).toContain("rejected");
+      expect(alert?.payload.detail).toBe("ord-99");
+      expect(alert?.payload.relatedEventId).toBe("ord-99");
+      expect(alert?.payload.relatedTopic).toBe("orders.rejected");
     });
 
     it("does NOT alert for non-rejected patches", () => {

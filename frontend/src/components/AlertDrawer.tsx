@@ -168,6 +168,20 @@ export function AlertList({
                     {alert.detail && (
                       <div className="text-[11px] text-gray-500 mt-0.5">{alert.detail}</div>
                     )}
+                    {(alert.relatedTopic || alert.relatedEventId) && (
+                      <div
+                        className="text-[10px] text-gray-500 mt-0.5 font-mono"
+                        data-testid="alert-caused-by"
+                      >
+                        caused by —{" "}
+                        {[
+                          alert.relatedTopic && `topic: ${alert.relatedTopic}`,
+                          alert.relatedEventId && `event: ${alert.relatedEventId}`,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    )}
                     <div className="text-[10px] text-gray-600 mt-0.5">
                       {(alert.count ?? 1) > 1
                         ? `last ${relativeTime(alert.lastTs ?? alert.ts)} · first ${relativeTime(alert.ts)}`

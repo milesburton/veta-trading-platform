@@ -3,6 +3,7 @@ import type { IJsonModel } from "flexlayout-react";
 import { Model } from "flexlayout-react";
 import type { ReactNode } from "react";
 import { Component, useCallback, useEffect, useRef, useState } from "react";
+import { AlertToast } from "./components/AlertToast.tsx";
 import {
   DashboardLayout,
   DashboardProvider,
@@ -32,7 +33,6 @@ import {
   alertDismissed,
   alertsLoaded,
   purgeServiceAlerts,
-  selectActiveAlerts,
   selectCriticalAlerts,
 } from "./store/alertsSlice.ts";
 import type { AuthUser } from "./store/authSlice.ts";
@@ -45,59 +45,6 @@ import { loadUiPrefs } from "./store/uiSlice.ts";
 
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway";
 const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL ?? "/api/user-service";
-
-const TOAST_EPOCH = Date.now();
-
-function ToastHost() {
-  const alerts = useAppSelector(selectActiveAlerts);
-  const dispatch = useAppDispatch();
-  const shown = useSignal<Set<string>>(new Set());
-
-  const toastable = alerts.filter(
-    (a) =>
-      (a.severity === "WARNING" || a.severity === "INFO") &&
-      a.source !== "service" &&
-      !shown.value.has(a.id) &&
-      a.ts >= TOAST_EPOCH
-  );
-
-  useEffect(() => {
-    for (const a of toastable) {
-      shown.value = new Set([...shown.value, a.id]);
-      const id = a.id;
-      setTimeout(() => dispatch(alertDismissed(id)), 6000);
-    }
-  }, [toastable, dispatch, shown]);
-
-  const visible = alerts.filter(
-    (a) => (a.severity === "WARNING" || a.severity === "INFO") && shown.value.has(a.id)
-  );
-
-  if (visible.length === 0) return null;
-  return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center pointer-events-none">
-      {visible.map((a) => (
-        <div
-          key={a.id}
-          className={`flex items-center gap-3 text-xs px-4 py-2 rounded shadow-lg pointer-events-auto border ${
-            a.severity === "WARNING"
-              ? "bg-amber-900 border-amber-700 text-amber-200"
-              : "bg-gray-800 border-gray-700 text-gray-300"
-          }`}
-        >
-          <span>{a.message}</span>
-          <button
-            type="button"
-            onClick={() => dispatch(alertDismissed(a.id))}
-            className="opacity-60 hover:opacity-100 leading-none"
-          >
-            ×
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolean }> {
   state = { crashed: false };
@@ -539,7 +486,7 @@ export default function App() {
           <TradingApp />
         </AuthGate>
       )}
-      <ToastHost />
+      <AlertToast />
       <EnvironmentOverlay />
     </ErrorBoundary>
   );
