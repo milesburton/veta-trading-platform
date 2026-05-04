@@ -257,10 +257,8 @@ describe("StatusBar – theme switcher", () => {
 });
 
 describe("StatusBar – update banner", () => {
-  it("renders update banner when ui.updateAvailable is set", () => {
-    const store = makeStore(true);
-    store.dispatch({ type: "ui/setUpdateAvailable", payload: true });
-    render(
+  function renderBanner(store: ReturnType<typeof makeStore>) {
+    return render(
       <Provider store={store}>
         <DashboardContext.Provider
           value={{
@@ -283,7 +281,25 @@ describe("StatusBar – update banner", () => {
         </DashboardContext.Provider>
       </Provider>
     );
+  }
+
+  it("renders update banner when ui.updateAvailable is set", () => {
+    const store = makeStore(true);
+    store.dispatch({ type: "ui/setUpdateAvailable", payload: true });
+    renderBanner(store);
     expect(screen.getByTestId("update-banner")).toBeInTheDocument();
+    expect(screen.getByTestId("reload-btn")).toHaveTextContent(/Reload now/i);
+    expect(screen.getByTestId("reload-later-btn")).toHaveTextContent(/Later/i);
+  });
+
+  it("Later button dismisses the update banner without reloading", () => {
+    const store = makeStore(true);
+    store.dispatch({ type: "ui/setUpdateAvailable", payload: true });
+    renderBanner(store);
+    expect(screen.getByTestId("update-banner")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("reload-later-btn"));
+    expect(screen.queryByTestId("update-banner")).not.toBeInTheDocument();
+    expect(store.getState().ui.updateAvailable).toBe(false);
   });
 });
 

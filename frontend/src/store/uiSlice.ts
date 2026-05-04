@@ -93,6 +93,9 @@ export const uiSlice = createSlice({
     setUpdateAvailable(state) {
       state.updateAvailable = true;
     },
+    dismissUpdateAvailable(state) {
+      state.updateAvailable = false;
+    },
     setUpgradeStatus(state, action: PayloadAction<UpgradeStatus>) {
       state.upgradeStatus = action.payload;
     },
@@ -120,6 +123,7 @@ export const {
   hideShortcuts,
   setSelectedAsset,
   setUpdateAvailable,
+  dismissUpdateAvailable,
   setUpgradeStatus,
   setOptionPrefill,
 } = uiSlice.actions;

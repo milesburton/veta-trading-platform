@@ -14,7 +14,7 @@ import {
 } from "../store/servicesApi.ts";
 import type { Theme } from "../store/themeSlice.ts";
 import { saveTheme, setTheme } from "../store/themeSlice.ts";
-import { selectOrderTicketWindowSize } from "../store/uiSlice.ts";
+import { dismissUpdateAvailable, selectOrderTicketWindowSize } from "../store/uiSlice.ts";
 import { useDeleteSessionMutation } from "../store/userApi.ts";
 import type { ServiceHealth } from "../types.ts";
 import { openOrderTicketWindow } from "../utils/orderTicketWindow.ts";
@@ -504,14 +504,24 @@ export function AppHeader() {
           data-testid="update-banner"
           className="flex items-center justify-center gap-3 px-4 py-1.5 bg-amber-900/60 border-b border-amber-700/60 text-xs text-amber-300"
         >
-          <span>A new version is available.</span>
+          <span>
+            A new version is available. Reload when convenient — your session will be preserved.
+          </span>
           <button
             type="button"
             onClick={() => window.location.reload()}
             data-testid="reload-btn"
             className="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-medium transition-colors"
           >
-            Reload
+            Reload now
+          </button>
+          <button
+            type="button"
+            onClick={() => dispatch(dismissUpdateAvailable())}
+            data-testid="reload-later-btn"
+            className="px-2 py-0.5 rounded border border-amber-700/60 hover:border-amber-500 text-amber-200 font-medium transition-colors"
+          >
+            Later
           </button>
         </div>
       )}

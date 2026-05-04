@@ -8,6 +8,13 @@ const POLL_INTERVAL_MS = 30_000;
 export const versionWatchMiddleware: Middleware = (storeAPI) => {
   const backendBaseline = new Map<string, string>();
   let frontendHash: string | null = null;
+  let lastNotifiedKey: string | null = null;
+
+  function notifyOnce(key: string) {
+    if (lastNotifiedKey === key) return;
+    lastNotifiedKey = key;
+    storeAPI.dispatch(setUpdateAvailable());
+  }
 
   async function checkFrontendVersion() {
     try {
@@ -17,14 +24,13 @@ export const versionWatchMiddleware: Middleware = (storeAPI) => {
       if (frontendHash === null) {
         frontendHash = hash;
       } else if (frontendHash !== hash) {
-        storeAPI.dispatch(setUpdateAvailable());
+        notifyOnce(`frontend:${hash}`);
       }
     } catch {
       // network unavailable — skip
     }
   }
 
-  // Start polling once the middleware is initialised
   setInterval(checkFrontendVersion, POLL_INTERVAL_MS);
   checkFrontendVersion();
 
@@ -40,7 +46,8 @@ export const versionWatchMiddleware: Middleware = (storeAPI) => {
       if (known === undefined) {
         backendBaseline.set(svc.name, svc.version);
       } else if (known !== svc.version) {
-        storeAPI.dispatch(setUpdateAvailable());
+        backendBaseline.set(svc.name, svc.version);
+        notifyOnce(`backend:${svc.name}:${svc.version}`);
       }
     }
 
