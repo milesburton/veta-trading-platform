@@ -59,6 +59,9 @@ export default defineConfig({
         },
       ],
       customCss: ["./src/styles/tailwind.css", "./src/styles/custom.css"],
+      components: {
+        Footer: "./src/components/Footer.astro",
+      },
       head: [
         {
           tag: "script",

@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "predev": "node scripts/generate-tech-stack.mjs",
+    "predev": "node scripts/generate-tech-stack.mjs && node scripts/generate-build-info.mjs",
     "dev": "astro dev",
-    "prebuild": "node scripts/generate-tech-stack.mjs",
+    "prebuild": "node scripts/generate-tech-stack.mjs && node scripts/generate-build-info.mjs",
     "build": "astro build",
     "preview": "astro preview"
   },
