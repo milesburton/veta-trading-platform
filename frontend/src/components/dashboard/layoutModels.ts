@@ -3,7 +3,7 @@ import type { TabChannelConfig } from "./panelRegistry.ts";
 import { PANEL_TITLES } from "./panelRegistry.ts";
 
 export const STORAGE_KEY_PREFIX = "dashboard-layout";
-export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v23`;
+export const STORAGE_KEY = `${STORAGE_KEY_PREFIX}-v24`;
 
 export function makeDefaultModel(): IJsonModel {
   return {
@@ -12,7 +12,7 @@ export function makeDefaultModel(): IJsonModel {
       tabEnableRename: false,
       tabSetEnableMaximize: true,
       tabSetEnableDeleteWhenEmpty: true,
-      tabSetEnableSingleTabStretch: false,
+      tabSetEnableSingleTabStretch: true,
       splitterSize: 4,
       splitterExtra: 4,
     },
@@ -217,27 +217,39 @@ export function makeExecutionModel(): IJsonModel {
           ],
         },
         {
-          type: "tabset",
+          type: "row",
           weight: 35,
           children: [
             {
-              type: "tab",
-              id: "order-blotter",
-              name: PANEL_TITLES["order-blotter"],
-              component: "order-blotter",
-              config: {
-                panelType: "order-blotter",
-                outgoing: 2,
-              } satisfies TabChannelConfig,
+              type: "tabset",
+              weight: 60,
+              children: [
+                {
+                  type: "tab",
+                  id: "order-blotter",
+                  name: PANEL_TITLES["order-blotter"],
+                  component: "order-blotter",
+                  config: {
+                    panelType: "order-blotter",
+                    outgoing: 2,
+                  } satisfies TabChannelConfig,
+                },
+              ],
             },
             {
-              type: "tab",
-              id: "my-positions",
-              name: PANEL_TITLES["my-positions"],
-              component: "my-positions",
-              config: {
-                panelType: "my-positions",
-              } satisfies TabChannelConfig,
+              type: "tabset",
+              weight: 40,
+              children: [
+                {
+                  type: "tab",
+                  id: "my-positions",
+                  name: PANEL_TITLES["my-positions"],
+                  component: "my-positions",
+                  config: {
+                    panelType: "my-positions",
+                  } satisfies TabChannelConfig,
+                },
+              ],
             },
           ],
         },
@@ -363,7 +375,7 @@ export function makeAnalysisModel(): IJsonModel {
           children: [
             {
               type: "tabset",
-              weight: 60,
+              weight: 50,
               children: [
                 {
                   type: "tab",
@@ -378,49 +390,75 @@ export function makeAnalysisModel(): IJsonModel {
               ],
             },
             {
-              type: "tabset",
-              weight: 40,
+              type: "row",
+              weight: 50,
               children: [
                 {
-                  type: "tab",
-                  id: "market-depth",
-                  name: PANEL_TITLES["market-depth"],
-                  component: "market-depth",
-                  config: {
-                    panelType: "market-depth",
-                    incoming: 1,
-                  } satisfies TabChannelConfig,
+                  type: "tabset",
+                  weight: 50,
+                  children: [
+                    {
+                      type: "tab",
+                      id: "market-depth",
+                      name: PANEL_TITLES["market-depth"],
+                      component: "market-depth",
+                      config: {
+                        panelType: "market-depth",
+                        incoming: 1,
+                      } satisfies TabChannelConfig,
+                    },
+                  ],
                 },
                 {
-                  type: "tab",
-                  id: "price-fan",
-                  name: PANEL_TITLES["price-fan"],
-                  component: "price-fan",
-                  config: { panelType: "price-fan" } satisfies TabChannelConfig,
+                  type: "tabset",
+                  weight: 50,
+                  children: [
+                    {
+                      type: "tab",
+                      id: "price-fan",
+                      name: PANEL_TITLES["price-fan"],
+                      component: "price-fan",
+                      config: {
+                        panelType: "price-fan",
+                      } satisfies TabChannelConfig,
+                    },
+                  ],
                 },
               ],
             },
           ],
         },
         {
-          type: "tabset",
+          type: "row",
           weight: 30,
           children: [
             {
-              type: "tab",
-              id: "news",
-              name: PANEL_TITLES.news,
-              component: "news",
-              config: { panelType: "news" } satisfies TabChannelConfig,
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "news",
+                  name: PANEL_TITLES.news,
+                  component: "news",
+                  config: { panelType: "news" } satisfies TabChannelConfig,
+                },
+              ],
             },
             {
-              type: "tab",
-              id: "trade-recommendation",
-              name: PANEL_TITLES["trade-recommendation"],
-              component: "trade-recommendation",
-              config: {
-                panelType: "trade-recommendation",
-              } satisfies TabChannelConfig,
+              type: "tabset",
+              weight: 50,
+              children: [
+                {
+                  type: "tab",
+                  id: "trade-recommendation",
+                  name: PANEL_TITLES["trade-recommendation"],
+                  component: "trade-recommendation",
+                  config: {
+                    panelType: "trade-recommendation",
+                  } satisfies TabChannelConfig,
+                },
+              ],
             },
           ],
         },
