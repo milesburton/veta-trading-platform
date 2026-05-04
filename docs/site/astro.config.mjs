@@ -78,13 +78,26 @@ export default defineConfig({
           content: `
             import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
             mermaid.initialize({ startOnLoad: false, theme: "dark" });
-            document.querySelectorAll('pre[data-language="mermaid"]').forEach((pre) => {
+
+            function extractMermaidSource(pre) {
+              const lineNodes = pre.querySelectorAll(".ec-line .code");
+              if (lineNodes.length > 0) {
+                return Array.from(lineNodes)
+                  .map((line) => (line.textContent ?? "").replace(/\u00a0/g, " "))
+                  .join("\\n")
+                  .trim();
+              }
               const code = pre.querySelector("code");
-              if (!code) return;
+              return (code?.textContent ?? "").replace(/\u00a0/g, " ").trim();
+            }
+
+            document.querySelectorAll('pre[data-language="mermaid"]').forEach((pre) => {
+              const source = extractMermaidSource(pre);
+              if (!source) return;
               const figure = pre.closest("figure") || pre.closest(".expressive-code") || pre;
               const div = document.createElement("div");
               div.classList.add("mermaid");
-              div.textContent = code.textContent;
+              div.textContent = source;
               figure.replaceWith(div);
             });
             await mermaid.run();
