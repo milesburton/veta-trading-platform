@@ -77,6 +77,7 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
           <button
             type="button"
             onClick={onClose}
+            title="Close shared workspaces"
             className="text-gray-500 hover:text-gray-300 text-lg leading-none"
           >
             ×
@@ -134,6 +135,9 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
                       type="button"
                       disabled={cloningId.value === entry.id}
                       onClick={() => handleClone(entry)}
+                      title={
+                        cloningId.value === entry.id ? "Cloning workspace" : `Clone ${entry.name}`
+                      }
                       className="text-[11px] px-2.5 py-1 rounded bg-emerald-800 hover:bg-emerald-700 text-emerald-200 transition-colors disabled:opacity-50"
                     >
                       {cloningId.value === entry.id ? "Cloning…" : "Clone"}

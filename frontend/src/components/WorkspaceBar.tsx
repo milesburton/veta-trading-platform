@@ -398,7 +398,7 @@ export function WorkspaceSidebar({
                 onClick={() => {
                   browseOpen.value = true;
                 }}
-                className="flex items-center justify-center w-7 h-full shrink-0 text-gray-600 hover:text-gray-300 transition-colors text-sm"
+                className="flex items-center justify-center w-7 h-full shrink-0 text-emerald-600 hover:text-emerald-400 transition-colors text-sm"
               >
                 ⊞
               </button>
@@ -465,6 +465,7 @@ export function WorkspaceSidebar({
                         </span>
                         <button
                           type="button"
+                          title="Cancel delete"
                           onClick={() => {
                             confirmDeleteId.value = null;
                           }}
@@ -474,6 +475,7 @@ export function WorkspaceSidebar({
                         </button>
                         <button
                           type="button"
+                          title={`Confirm delete ${ws.name}`}
                           onClick={() => {
                             confirmDeleteId.value = null;
                             removeWorkspace(ws.id);
@@ -743,6 +745,7 @@ export function WorkspaceSidebar({
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
+                title="Cancel sharing"
                 onClick={() => {
                   shareDialog.value = null;
                 }}
@@ -752,6 +755,7 @@ export function WorkspaceSidebar({
               </button>
               <button
                 type="button"
+                title="Share workspace and copy link"
                 onClick={confirmShare}
                 className="px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-xs transition-colors"
               >

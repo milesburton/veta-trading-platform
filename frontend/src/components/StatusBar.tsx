@@ -337,13 +337,18 @@ function DataFreshness() {
   }
 
   const sources = Object.entries(lastSeenAt) as [string, number | null][];
-  const ages = sources.map(([, ts]) => (ts === null ? null : now.value - ts));
-  const anyDead = ages.some((a) => a === null || a > FEED_DEAD_MS);
-  const anyStale = ages.some((a) => a !== null && a > FEED_STALE_MS);
-  const allLive = !anyDead && !anyStale;
+  const marketTs = lastSeenAt.market;
+  const marketAge = marketTs === null ? null : now.value - marketTs;
+  const marketDead = marketAge === null || marketAge > FEED_DEAD_MS;
+  const marketSlow = marketAge !== null && marketAge > FEED_STALE_MS;
+  const live = !marketDead && !marketSlow;
 
-  const dotClass = anyDead ? "bg-red-500" : anyStale ? "bg-amber-400" : "bg-emerald-500";
-  const textClass = anyDead ? "text-red-400" : anyStale ? "text-amber-400" : "text-emerald-400";
+  const dotClass = marketDead ? "bg-red-500" : marketSlow ? "bg-amber-400" : "bg-emerald-500";
+  const textClass = marketDead
+    ? "text-red-400"
+    : marketSlow
+      ? "text-amber-400"
+      : "text-emerald-400";
 
   const tooltip = sources
     .map(([key, ts]) => {
@@ -355,16 +360,14 @@ function DataFreshness() {
   return (
     <span
       data-testid="feed-status"
-      title={`Data sources — ${tooltip}`}
+      title={`Market data drives the headline. Other feeds are event-driven and only update when activity occurs.\n${tooltip}`}
       className={`flex items-center gap-1.5 text-[10px] tabular-nums ${textClass}`}
     >
       <span className="text-gray-500">Feed</span>
       <span
-        className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass} ${
-          allLive ? "animate-pulse" : ""
-        }`}
+        className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass} ${live ? "animate-pulse" : ""}`}
       />
-      {anyDead ? "stale" : anyStale ? "slow" : "live"}
+      {marketDead ? "stale" : marketSlow ? "slow" : "live"}
     </span>
   );
 }
