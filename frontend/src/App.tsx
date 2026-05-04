@@ -10,6 +10,7 @@ import {
   makeClearModel,
 } from "./components/DashboardLayout.tsx";
 import { DrawersProvider } from "./components/drawers/DrawersContext.tsx";
+import { EnvironmentOverlay } from "./components/EnvironmentOverlay.tsx";
 import { LoginPage } from "./components/LoginPage.tsx";
 import { StartupOverlay } from "./components/StartupOverlay.tsx";
 import { AppHeader, WorkspaceToolbar } from "./components/StatusBar.tsx";
@@ -539,6 +540,7 @@ export default function App() {
         </AuthGate>
       )}
       <ToastHost />
+      <EnvironmentOverlay />
     </ErrorBoundary>
   );
 }

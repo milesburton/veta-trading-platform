@@ -367,6 +367,19 @@ function DataFreshness() {
   );
 }
 
+function EnvironmentBadge() {
+  if (DEPLOYMENT !== "local") return null;
+  return (
+    <span
+      data-testid="env-badge"
+      title="Local development build"
+      className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold uppercase tracking-wider bg-sky-900/50 text-sky-400 border border-sky-800"
+    >
+      local
+    </span>
+  );
+}
+
 const DATA_DEPTH_THRESHOLDS = { good: 7, limited: 1 };
 
 function dataQualityLabel(days: number): { label: string; color: string; dotColor: string } {
@@ -488,6 +501,7 @@ export function AppHeader() {
           <span className="text-emerald-400 font-bold tracking-widest uppercase text-[11px]">
             VETA Trading Platform
           </span>
+          <EnvironmentBadge />
           {user?.role === "trader" && (
             <button
               type="button"
