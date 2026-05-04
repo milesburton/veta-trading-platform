@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.20.1...veta-trading-platform-v1.21.0) (2026-05-04)
+
+
+### Features
+
+* **ui:** environment watermark on UAT, subtle LOCAL badge in dev ([1da2bce](https://github.com/milesburton/veta-trading-platform/commit/1da2bcec6e1ecceda34bc2774fd0fa40d8cdf007))
+
 ## [1.20.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.20.0...veta-trading-platform-v1.20.1) (2026-05-03)
 
 
