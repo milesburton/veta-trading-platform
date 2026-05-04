@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.0...veta-trading-platform-v1.22.1) (2026-05-04)
+
+
+### Bug Fixes
+
+* **login:** improve degraded overlay readability and reduce flicker ([53e48dd](https://github.com/milesburton/veta-trading-platform/commit/53e48ddb267daf893d7cd9d5b97dc4359930e6d8))
+
 ## [1.22.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.21.0...veta-trading-platform-v1.22.0) (2026-05-04)
 
 
