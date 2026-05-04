@@ -1,0 +1,48 @@
+---
+title: AssetSelector
+description: Search-as-you-type asset picker with live price display.
+---
+
+import AssetSelectorDemo from "../../../../components/demos/AssetSelectorDemo.tsx";
+import Source from "../../../../components/Source.astro";
+
+A controlled search-as-you-type dropdown for picking an asset from a list, with the current market price displayed inline. Used inside the order ticket and a few panels.
+
+## Live demo
+
+Try typing `AA`, `JPM`, or `EUR` — clicking a row in the dropdown calls `onSelect`.
+
+<div className="not-content" style={{ padding: "1rem", background: "#0f172a", borderRadius: "8px" }}>
+  <AssetSelectorDemo client:load />
+</div>
+
+## Props
+
+| Prop | Type | Description |
+| --- | --- | --- |
+| `assets` | `AssetDef[]` | The full pool to search over. Filtered case-insensitively against `symbol`. |
+| `value` | `string` | The current text in the search box (controlled). |
+| `onChange` | `(v: string) => void` | Called as the user types. |
+| `onSelect` | `(symbol: string) => void` | Called when the user clicks a row in the dropdown. |
+| `prices` | `MarketPrices` | Map of `{ [symbol]: price }`. The price for the selected/typed symbol is shown inline. |
+| `inputRef` | `RefObject<HTMLInputElement>?` | Optional ref for focus management. |
+
+## Import
+
+```tsx
+import { AssetSelector } from "../components/AssetSelector";
+
+const [value, setValue] = useState("");
+
+<AssetSelector
+  assets={allAssets}
+  value={value}
+  onChange={setValue}
+  onSelect={(sym) => placeOrder(sym)}
+  prices={livePrices}
+/>
+```
+
+## Source
+
+<Source path="frontend/src/components/AssetSelector.tsx" label="AssetSelector.tsx" />

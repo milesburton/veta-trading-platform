@@ -1,0 +1,38 @@
+---
+title: BuildInfo
+description: Compact display of commit SHA and build date for footer/header use.
+---
+
+import { BuildInfo } from "@veta/frontend/components/BuildInfo";
+import Source from "../../../../components/Source.astro";
+
+Tiny component used in headers and footers to surface the build's commit SHA and date. Shows nothing if neither is provided — drop-in safe.
+
+## Live demo
+
+<div className="not-content" style={{ display: "flex", flexDirection: "column", gap: "0.75rem", padding: "1rem", background: "#0f172a", borderRadius: "8px" }}>
+  <div><BuildInfo client:load buildDate="2026-05-04" commitSha="824da2b94f1e5d6c7a3b" /></div>
+  <div><BuildInfo client:load commitSha="824da2b94f1e5d6c7a3b" /></div>
+  <div><BuildInfo client:load buildDate="2026-05-04" /></div>
+  <div style={{ color: "#64748b" }}>↑ third row above is also valid: with no props it renders nothing.</div>
+</div>
+
+## Props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `buildDate` | `string?` | — | ISO date or any human-readable date. Optional. |
+| `commitSha` | `string?` | — | Full or short SHA — only the first 7 chars are shown. Optional. |
+| `className` | `string?` | `text-[10px] text-gray-500 tabular-nums` | Override styling entirely. |
+
+## Import
+
+```tsx
+import { BuildInfo } from "../components/BuildInfo";
+
+<BuildInfo buildDate="2026-05-04" commitSha={import.meta.env.VITE_COMMIT_SHA} />
+```
+
+## Source
+
+<Source path="frontend/src/components/BuildInfo.tsx" label="BuildInfo.tsx" />

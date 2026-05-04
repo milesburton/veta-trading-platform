@@ -1,0 +1,76 @@
+---
+title: ContextMenu
+description: Right-click menu primitive with separators, icons, shortcuts, danger actions.
+---
+
+import ContextMenuDemo from "../../../../components/demos/ContextMenuDemo.tsx";
+import Source from "../../../../components/Source.astro";
+
+A pure-display context menu used across panels and the dashboard. Renders into a portal anchored at `(x, y)`, clamps to the viewport, and closes on outside click or **Esc**. Supports icons, keyboard shortcuts, danger styling, disabled rows, and labelled separator groups.
+
+The companion `useContextMenu()` hook (in the same file) wires up open/close state with signals — but the component itself is pure props, so you can hook it up to any state source.
+
+## Live demo
+
+<div className="not-content" style={{ padding: "1rem", background: "#0f172a", borderRadius: "8px" }}>
+  <ContextMenuDemo client:load />
+</div>
+
+## Props
+
+| Prop | Type | Description |
+| --- | --- | --- |
+| `items` | `ContextMenuEntry[]` | Menu rows — either an action (`label`, `onClick`, etc.) or a separator. |
+| `x` | `number` | Viewport X coordinate to anchor the menu at. Will be clamped if it would overflow. |
+| `y` | `number` | Viewport Y coordinate to anchor the menu at. Will be clamped if it would overflow. |
+| `onClose` | `() => void` | Called when the menu should close (outside click / Esc / item clicked). |
+
+`ContextMenuEntry` shape:
+
+```ts
+type ContextMenuEntry = ContextMenuItem | ContextMenuSeparator;
+
+interface ContextMenuItem {
+  label: string;
+  onClick: () => void;
+  icon?: string;       // emoji or single char
+  shortcut?: string;   // e.g. "⌘O", "⌫"
+  danger?: boolean;    // red text + red hover bg
+  disabled?: boolean;
+  title?: string;      // tooltip
+}
+
+interface ContextMenuSeparator {
+  separator: true;
+  label?: string;      // optional group heading rendered before the rule
+}
+```
+
+## Import
+
+```tsx
+import { ContextMenu, useContextMenu } from "../components/ContextMenu";
+
+const { menu, openMenu, closeMenu } = useContextMenu();
+
+<div onContextMenu={(e) => openMenu(e, [
+  { label: "Open", onClick: handleOpen },
+  { separator: true },
+  { label: "Delete", danger: true, onClick: handleDelete },
+])}>
+  Right-click me
+</div>
+
+{menu.value && (
+  <ContextMenu
+    items={menu.value.items}
+    x={menu.value.x}
+    y={menu.value.y}
+    onClose={closeMenu}
+  />
+)}
+```
+
+## Source
+
+<Source path="frontend/src/components/ContextMenu.tsx" label="ContextMenu.tsx" />

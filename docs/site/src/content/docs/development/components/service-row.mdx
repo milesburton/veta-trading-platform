@@ -1,0 +1,67 @@
+---
+title: ServiceRow
+description: Table row rendering a single service's health, version and meta.
+---
+
+import { ServiceRow } from "@veta/frontend/components/ServiceRow";
+import Source from "../../../../components/Source.astro";
+
+Renders one row of the Service Health table — a status dot, the service name (optionally a link), an `ok / error / unavailable` label, the version, and a meta blurb. Optional services that are erroring are shown in a faded "unavailable" style instead of red.
+
+## Live demo
+
+<div className="not-content" style={{ padding: "1rem", background: "#0f172a", borderRadius: "8px", overflowX: "auto" }}>
+  <table className="w-full text-xs" style={{ minWidth: "600px", color: "#e2e8f0" }}>
+    <thead>
+      <tr style={{ textAlign: "left", color: "#94a3b8", borderBottom: "1px solid #1f2937" }}>
+        <th className="px-3 py-2">Service</th>
+        <th className="px-3 py-2">State</th>
+        <th className="px-3 py-2">Version</th>
+        <th className="px-3 py-2">Meta</th>
+      </tr>
+    </thead>
+    <tbody>
+      <ServiceRow client:load svc={{ name: "oms", state: "ok", version: "1.21.0", meta: { uptime: "3h12m" }, link: "https://example.com", lastChecked: Date.now() }} />
+      <ServiceRow client:load svc={{ name: "ems", state: "ok", version: "1.21.0", meta: { orders: 42 }, lastChecked: Date.now() }} />
+      <ServiceRow client:load svc={{ name: "market-sim", state: "error", version: "1.20.5", meta: {}, lastChecked: Date.now() }} />
+      <ServiceRow client:load svc={{ name: "fix-gateway", state: "error", version: "—", meta: {}, optional: true, lastChecked: Date.now() }} />
+      <ServiceRow client:load svc={{ name: "analytics", state: "unknown", version: "—", meta: {}, lastChecked: Date.now() }} />
+    </tbody>
+  </table>
+</div>
+
+## Props
+
+| Prop | Type | Description |
+| --- | --- | --- |
+| `svc` | `ServiceHealth` | Required. See type definition below. |
+
+`ServiceHealth` shape:
+
+```ts
+interface ServiceHealth {
+  name: string;
+  state: "ok" | "error" | "unknown";
+  version: string;
+  meta: Record<string, string | number>;
+  lastChecked?: number;  // unix ms
+  link?: string;
+  optional?: boolean;     // if true, error → "unavailable" instead of red
+}
+```
+
+## Import
+
+```tsx
+import { ServiceRow } from "../components/ServiceRow";
+
+<table>
+  <tbody>
+    {services.map((svc) => <ServiceRow key={svc.name} svc={svc} />)}
+  </tbody>
+</table>
+```
+
+## Source
+
+<Source path="frontend/src/components/ServiceRow.tsx" label="ServiceRow.tsx" />

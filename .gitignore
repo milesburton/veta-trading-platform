@@ -12,7 +12,6 @@ frontend/test-results/
 frontend/playwright-report/
 frontend/dist-app/
 frontend/dist-electron/
-frontend/storybook-static/
 .claude/worktrees/
 .jscpd-report/
 .jscpd-report-post/

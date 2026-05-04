@@ -9,11 +9,20 @@ Every page below imports the **live React component** from [frontend/src](../../
 
 ## Primitives
 
+### Status & display
+
 - [StatusDot](status-dot/) — coloured dot used to indicate service / health state.
+- [ServiceRow](service-row/) — table row for one service's health, version, and meta.
+- [BuildInfo](build-info/) — compact commit-SHA + build-date pill for headers and footers.
+
+### Inputs & menus
+
+- [AssetSelector](asset-selector/) — search-as-you-type asset picker with live price.
+- [ContextMenu](context-menu/) — right-click menu with separators, icons, shortcuts, and danger actions.
 
 ## Adding a new primitive
 
-1. Make sure the component is **props-only** (no Redux, no fetch, no signals from a global store). If it isn't, lift the data dependency into props or wrap it with a thin demo adapter — the kitchen sink only catalogues things a developer can drop in without reading half the codebase.
+1. Make sure the component is **props-only** (no Redux, no fetch, no signals from a global store). If the data dependency is small you can wrap it with a thin demo adapter under [docs/site/src/components/demos/](../../../../components/demos/) — but the kitchen sink should only catalogue things a developer can drop in without reading half the codebase.
 2. Add the component's source path to the `content` array in [docs/site/tailwind.config.cjs](../../../../tailwind.config.cjs) so its Tailwind classes get generated in the docs bundle.
 3. Create a new page under [src/content/docs/development/components/](./) following the [StatusDot](status-dot/) page as a template: live demo (with `client:load`), props table, import line, source link.
 4. Add the page to the **Primitives** list above.

@@ -25,7 +25,6 @@ const coreLinks = {
   vitest: "https://vitest.dev/",
   playwright: "https://playwright.dev/",
   electron: "https://www.electronjs.org/",
-  storybook: "https://storybook.js.org/",
   astro: "https://astro.build/",
   "@astrojs/starlight": "https://starlight.astro.build/",
   tailwindcss: "https://tailwindcss.com/",
