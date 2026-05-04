@@ -77,6 +77,14 @@ export default defineConfig({
           tag: "link",
           attrs: {
             rel: "icon",
+            type: "image/svg+xml",
+            href: `${docsBase}/favicon.svg`,
+          },
+        },
+        {
+          tag: "link",
+          attrs: {
+            rel: "alternate icon",
             href: `${docsBase}/favicon.ico`,
             sizes: "any",
           },

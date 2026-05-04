@@ -127,16 +127,43 @@ export function AnalysisPanel() {
                       title={item.sentiment}
                     />
                     <div className="flex-1 min-w-0">
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-[12px] leading-snug text-gray-200 hover:text-white transition-colors line-clamp-2"
-                      >
-                        {item.headline}
-                      </a>
+                      {item.url ? (
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-testid="news-link"
+                          title={`Open original article on ${item.source}`}
+                          className="group inline-flex items-baseline gap-1 text-[12px] leading-snug text-gray-200 hover:text-emerald-300 transition-colors line-clamp-2"
+                        >
+                          <span className="underline decoration-dotted underline-offset-2 decoration-gray-600 group-hover:decoration-emerald-400">
+                            {item.headline}
+                          </span>
+                          <span
+                            aria-hidden="true"
+                            className="shrink-0 text-[9px] text-gray-500 group-hover:text-emerald-400"
+                          >
+                            ↗
+                          </span>
+                        </a>
+                      ) : (
+                        <span className="block text-[12px] leading-snug text-gray-200 line-clamp-2">
+                          {item.headline}
+                        </span>
+                      )}
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="text-[10px] text-gray-600">{item.source}</span>
+                        {item.url ? (
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-gray-500 hover:text-emerald-400 transition-colors"
+                          >
+                            {item.source}
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-gray-600">{item.source}</span>
+                        )}
                         <span className="text-[10px] text-gray-700">·</span>
                         <span className="text-[10px] text-gray-600 tabular-nums">
                           {relativeTime(item.publishedAt)}
