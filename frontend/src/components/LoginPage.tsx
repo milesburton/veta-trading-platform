@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals-react";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { sha256Async } from "../lib/sha256.ts";
 import { setUser } from "../store/authSlice.ts";
 import { useAppDispatch } from "../store/hooks.ts";
@@ -34,7 +34,7 @@ const DegradedServicesOverlayCard = memo(function DegradedServicesOverlayCard({
   return (
     <div
       data-testid="degraded-services-overlay"
-      className="absolute inset-0 z-10 rounded-lg border border-amber-700/60 bg-gray-950 p-5 shadow-2xl"
+      className="absolute inset-0 z-[110] rounded-lg border border-amber-700/60 bg-gray-900 p-5 shadow-2xl ring-1 ring-amber-700/30"
     >
       <div className="flex h-full flex-col justify-between gap-4">
         <div className="flex items-start gap-3">
@@ -88,19 +88,21 @@ function DegradedServicesOverlay() {
     setStableState(latest);
   }, [latest]);
 
-  if (!stableState.anyPolled || stableState.degradedCount === 0 || dismissed.value) return null;
-
-  function openServicesDropdown() {
+  const openServicesDropdown = useCallback(() => {
     document.querySelector<HTMLButtonElement>('[data-testid="services-status-btn"]')?.click();
-  }
+  }, []);
+
+  const onDismiss = useCallback(() => {
+    dismissed.value = true;
+  }, [dismissed]);
+
+  if (!stableState.anyPolled || stableState.degradedCount === 0 || dismissed.value) return null;
 
   return (
     <DegradedServicesOverlayCard
       degradedCount={stableState.degradedCount}
       onViewDetails={openServicesDropdown}
-      onDismiss={() => {
-        dismissed.value = true;
-      }}
+      onDismiss={onDismiss}
     />
   );
 }
