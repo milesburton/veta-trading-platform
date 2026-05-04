@@ -77,12 +77,23 @@ export default defineConfig({
           attrs: { type: "module" },
           content: `
             import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-            mermaid.initialize({
-              startOnLoad: false,
-              theme: "dark",
-              securityLevel: "loose",
-              flowchart: { htmlLabels: true },
-            });
+
+            function resolveTheme() {
+              const attr = document.documentElement.dataset.theme;
+              if (attr === "light") return "default";
+              if (attr === "dark") return "dark";
+              return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default";
+            }
+
+            function configure() {
+              mermaid.initialize({
+                startOnLoad: false,
+                theme: resolveTheme(),
+                securityLevel: "loose",
+                flowchart: { htmlLabels: true },
+              });
+            }
+            configure();
 
             function extractMermaidSource(pre) {
               const lineNodes = pre.querySelectorAll(".ec-line .code");
@@ -96,6 +107,8 @@ export default defineConfig({
               return (code?.textContent ?? "").replace(/\u00a0/g, " ").trim();
             }
 
+            const sources = new WeakMap();
+
             document.querySelectorAll('pre[data-language="mermaid"]').forEach((pre) => {
               const source = extractMermaidSource(pre);
               if (!source) return;
@@ -103,9 +116,32 @@ export default defineConfig({
               const div = document.createElement("div");
               div.classList.add("mermaid");
               div.textContent = source;
+              sources.set(div, source);
               figure.replaceWith(div);
             });
             await mermaid.run();
+
+            async function rerenderAll() {
+              configure();
+              const nodes = document.querySelectorAll(".mermaid");
+              for (const node of nodes) {
+                const src = sources.get(node);
+                if (!src) continue;
+                node.removeAttribute("data-processed");
+                node.innerHTML = src;
+              }
+              await mermaid.run({ nodes });
+            }
+
+            const observer = new MutationObserver((mutations) => {
+              for (const m of mutations) {
+                if (m.type === "attributes" && m.attributeName === "data-theme") {
+                  rerenderAll();
+                  return;
+                }
+              }
+            });
+            observer.observe(document.documentElement, { attributes: true });
           `,
         },
       ],
