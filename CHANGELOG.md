@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.22.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.5...veta-trading-platform-v1.22.6) (2026-05-04)
+
+
+### Bug Fixes
+
+* **docs:** alias react / react-dom / signals-react to docs/site copies ([a5d5b1a](https://github.com/milesburton/veta-trading-platform/commit/a5d5b1a4c5c130a005b7eac76e2c5ae66a61bda3))
+* **login:** degraded overlay contrast + stop re-rendering every health poll ([168ad68](https://github.com/milesburton/veta-trading-platform/commit/168ad68c146a55dd957cd36d6b999efd5c62332f))
+
 ## [1.22.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.4...veta-trading-platform-v1.22.5) (2026-05-04)
 
 
