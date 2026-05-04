@@ -145,6 +145,8 @@ function useAllServiceHealth(): ServiceHealth[] {
   });
 }
 
+export { useAllServiceHealth };
+
 const THEME_OPTIONS: { id: Theme; label: string }[] = [
   { id: "dark", label: "Dark" },
   { id: "darker", label: "OLED" },

@@ -47,6 +47,7 @@ export function ServiceStatus({ services }: Props) {
     <div className="relative">
       <button
         type="button"
+        data-testid="services-status-btn"
         onClick={() => {
           open.value = !open.value;
         }}
@@ -110,9 +111,9 @@ export function ServiceStatus({ services }: Props) {
             <table className="w-full table-fixed">
               <thead>
                 <tr className="text-gray-500 border-b border-gray-800">
-                  <th className="text-left px-3 py-2 w-[35%]">Service</th>
-                  <th className="text-left px-3 py-2 w-[15%]">Status</th>
-                  <th className="text-left px-3 py-2 w-[20%]">Version</th>
+                  <th className="text-left px-3 py-2 w-[33%]">Service</th>
+                  <th className="text-left px-3 py-2 w-[14%]">Status</th>
+                  <th className="text-left px-3 py-2 w-[23%]">Version</th>
                   <th className="text-left px-3 py-2 w-[30%]">Info</th>
                 </tr>
               </thead>

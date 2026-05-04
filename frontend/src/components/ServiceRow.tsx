@@ -11,6 +11,15 @@ export function ServiceRow({ svc }: { svc: ServiceHealth }) {
     return <span className="text-gray-500">—</span>;
   }
 
+  const info =
+    Object.entries(svc.meta).length > 0
+      ? Object.entries(svc.meta)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(", ")
+      : svc.lastChecked
+        ? new Date(svc.lastChecked).toLocaleTimeString()
+        : "—";
+
   return (
     <tr className={`border-b border-gray-800/40 ${unavailable ? "opacity-40" : ""}`}>
       <td className="px-3 py-2 max-w-0 truncate">
@@ -22,24 +31,27 @@ export function ServiceRow({ svc }: { svc: ServiceHealth }) {
               target="_blank"
               rel="noreferrer"
               className="text-gray-200 hover:text-emerald-400 transition-colors underline-offset-2 hover:underline truncate"
+              title={svc.name}
             >
               {svc.name}
             </a>
           ) : (
-            <span className="text-gray-200 truncate">{svc.name}</span>
+            <span className="text-gray-200 truncate" title={svc.name}>
+              {svc.name}
+            </span>
           )}
         </span>
       </td>
       <td className="px-3 py-2 whitespace-nowrap">{label(svc.state)}</td>
-      <td className="px-3 py-2 font-mono text-gray-400 whitespace-nowrap">{svc.version}</td>
-      <td className="px-3 py-2 text-gray-500 truncate max-w-0 tabular-nums">
-        {Object.entries(svc.meta).length > 0
-          ? Object.entries(svc.meta)
-              .map(([k, v]) => `${k}: ${v}`)
-              .join(", ")
-          : svc.lastChecked
-            ? new Date(svc.lastChecked).toLocaleTimeString()
-            : "—"}
+      <td className="px-3 py-2 max-w-0 font-mono text-gray-400">
+        <span className="block truncate" title={svc.version}>
+          {svc.version}
+        </span>
+      </td>
+      <td className="px-3 py-2 max-w-0 text-gray-500 tabular-nums">
+        <span className="block truncate" title={info}>
+          {info}
+        </span>
       </td>
     </tr>
   );

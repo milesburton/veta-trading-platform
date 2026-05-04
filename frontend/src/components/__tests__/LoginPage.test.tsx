@@ -12,6 +12,7 @@ import { LoginPage } from "../LoginPage";
 // auth form behaviour.
 vi.mock("../StatusBar", () => ({
   AppHeader: () => <div data-testid="app-header-mock" />,
+  useAllServiceHealth: () => [],
 }));
 
 vi.mock("../../store/servicesApi", async (importOriginal) => {
@@ -165,5 +166,162 @@ describe("LoginPage", () => {
       expect(screen.getByTestId("login-error")).toHaveTextContent(/crypto.subtle is undefined/)
     );
     expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
+  });
+});
+
+describe("LoginPage – DegradedServicesOverlay", () => {
+  const { useAllServiceHealth } = vi.hoisted(() => ({
+    useAllServiceHealth: vi.fn(() => [] as import("../../types").ServiceHealth[]),
+  }));
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Override the StatusBar mock to control useAllServiceHealth per-test
+    vi.mock("../StatusBar", () => ({
+      AppHeader: () => <div data-testid="app-header-mock" />,
+      useAllServiceHealth,
+    }));
+  });
+
+  function makeServicesHealthy(): import("../../types").ServiceHealth[] {
+    return [
+      {
+        name: "Gateway",
+        state: "ok",
+        version: "1.0.0",
+        meta: {},
+        lastChecked: Date.now(),
+        url: "",
+        optional: false,
+      },
+      {
+        name: "EMS",
+        state: "ok",
+        version: "1.0.0",
+        meta: {},
+        lastChecked: Date.now(),
+        url: "",
+        optional: false,
+      },
+    ];
+  }
+
+  function makeDegradedServices(count = 2): import("../../types").ServiceHealth[] {
+    return [
+      {
+        name: "Gateway",
+        state: "error",
+        version: "—",
+        meta: {},
+        lastChecked: Date.now(),
+        url: "",
+        optional: false,
+      },
+      {
+        name: "EMS",
+        state: "error",
+        version: "—",
+        meta: {},
+        lastChecked: Date.now(),
+        url: "",
+        optional: false,
+      },
+      ...Array.from({ length: count - 2 }, (_, i) => ({
+        name: `Service${i}`,
+        state: "ok" as const,
+        version: "1.0.0",
+        meta: {},
+        lastChecked: Date.now(),
+        url: "",
+        optional: false,
+      })),
+    ];
+  }
+
+  test("does not show overlay when all services are healthy", () => {
+    useAllServiceHealth.mockReturnValue(makeServicesHealthy());
+    renderLogin();
+    expect(screen.queryByTestId("degraded-services-overlay")).not.toBeInTheDocument();
+  });
+
+  test("does not show overlay when services are still loading (all unknown)", () => {
+    useAllServiceHealth.mockReturnValue([
+      {
+        name: "Gateway",
+        state: "unknown",
+        version: "—",
+        meta: {},
+        lastChecked: null,
+        url: "",
+        optional: false,
+      },
+    ]);
+    renderLogin();
+    expect(screen.queryByTestId("degraded-services-overlay")).not.toBeInTheDocument();
+  });
+
+  test("shows overlay when required services are degraded", () => {
+    useAllServiceHealth.mockReturnValue(makeDegradedServices(2));
+    renderLogin();
+    expect(screen.getByTestId("degraded-services-overlay")).toBeInTheDocument();
+    expect(screen.getByText(/2 required services are offline/)).toBeInTheDocument();
+  });
+
+  test("shows singular message for exactly 1 degraded service", () => {
+    useAllServiceHealth.mockReturnValue([
+      {
+        name: "Gateway",
+        state: "error",
+        version: "—",
+        meta: {},
+        lastChecked: Date.now(),
+        url: "",
+        optional: false,
+      },
+      {
+        name: "EMS",
+        state: "ok",
+        version: "1.0.0",
+        meta: {},
+        lastChecked: Date.now(),
+        url: "",
+        optional: false,
+      },
+    ]);
+    renderLogin();
+    expect(screen.getByText(/1 required service is offline/)).toBeInTheDocument();
+  });
+
+  test("overlay is dismissed when Sign in anyway is clicked", () => {
+    useAllServiceHealth.mockReturnValue(makeDegradedServices(2));
+    renderLogin();
+    expect(screen.getByTestId("degraded-services-overlay")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("degraded-dismiss"));
+    expect(screen.queryByTestId("degraded-services-overlay")).not.toBeInTheDocument();
+  });
+
+  test("does not show overlay for optional services in error state", () => {
+    useAllServiceHealth.mockReturnValue([
+      {
+        name: "Traefik",
+        state: "error",
+        version: "—",
+        meta: {},
+        lastChecked: Date.now(),
+        url: "",
+        optional: true,
+      },
+      {
+        name: "Gateway",
+        state: "ok",
+        version: "1.0.0",
+        meta: {},
+        lastChecked: Date.now(),
+        url: "",
+        optional: false,
+      },
+    ]);
+    renderLogin();
+    expect(screen.queryByTestId("degraded-services-overlay")).not.toBeInTheDocument();
   });
 });

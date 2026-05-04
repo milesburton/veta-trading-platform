@@ -5,7 +5,67 @@ import { useAppDispatch } from "../store/hooks.ts";
 import { reportError } from "../store/observabilitySlice.ts";
 import { useAuthorizeOAuthMutation, useExchangeOAuthCodeMutation } from "../store/userApi.ts";
 import { DemoPersonas } from "./DemoPersonas.tsx";
-import { AppHeader } from "./StatusBar.tsx";
+import { AppHeader, useAllServiceHealth } from "./StatusBar.tsx";
+
+function DegradedServicesOverlay() {
+  const services = useAllServiceHealth();
+  const dismissed = useSignal(false);
+
+  // Only show once at least one service has been polled (avoids flash on initial load)
+  const anyPolled = services.some((s) => s.state !== "unknown");
+  const degradedCount = services.filter((s) => !s.optional && s.state === "error").length;
+
+  if (!anyPolled || degradedCount === 0 || dismissed.value) return null;
+
+  function openServicesDropdown() {
+    document.querySelector<HTMLButtonElement>('[data-testid="services-status-btn"]')?.click();
+  }
+
+  return (
+    <div
+      data-testid="degraded-services-overlay"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+    >
+      <div className="w-full max-w-sm mx-4 rounded-lg border border-amber-700/60 bg-gray-900 shadow-2xl p-6 flex flex-col gap-4">
+        <div className="flex items-start gap-3">
+          <span className="text-amber-400 text-xl leading-none mt-0.5" aria-hidden="true">
+            ⚠
+          </span>
+          <div>
+            <h2 className="text-sm font-semibold text-amber-300">Platform degraded</h2>
+            <p className="mt-1 text-xs text-gray-400 leading-relaxed">
+              {degradedCount === 1
+                ? "1 required service is offline."
+                : `${degradedCount} required services are offline.`}{" "}
+              Some features may be unavailable.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <button
+            type="button"
+            data-testid="degraded-view-details"
+            onClick={openServicesDropdown}
+            className="text-xs text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+          >
+            View details ↑
+          </button>
+          <button
+            type="button"
+            data-testid="degraded-dismiss"
+            onClick={() => {
+              dismissed.value = true;
+            }}
+            className="px-3 py-1.5 rounded border border-gray-600 bg-gray-800 text-xs text-gray-300 hover:bg-gray-700 hover:text-gray-100 transition-colors"
+          >
+            Sign in anyway
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const OAUTH_CLIENT_ID = import.meta.env.VITE_OAUTH_CLIENT_ID ?? "veta-web";
 const OAUTH_REDIRECT_URI = import.meta.env.VITE_OAUTH_REDIRECT_URI ?? "postmessage";
@@ -116,6 +176,7 @@ export function LoginPage() {
   return (
     <div data-testid="login-page" className="h-screen flex flex-col bg-gray-950">
       <AppHeader />
+      <DegradedServicesOverlay />
 
       <main className="flex-1 overflow-auto flex items-center justify-center px-6 py-8">
         <div className="w-full max-w-md flex flex-col gap-6">
