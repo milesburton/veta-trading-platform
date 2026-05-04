@@ -3,108 +3,18 @@ import {
   assertAlmostEquals,
   assertEquals,
 } from "jsr:@std/assert@0.217";
-
-// Pure logic extracted from ems-server.ts for unit testing.
-// The EMS service itself requires Redpanda; these tests cover the fill model math.
-
-const VENUES = [
-  { mic: "XNAS", weight: 30 },
-  { mic: "XNYS", weight: 25 },
-  { mic: "ARCX", weight: 15 },
-  { mic: "BATS", weight: 12 },
-  { mic: "EDGX", weight: 8 },
-  { mic: "IEX", weight: 6 },
-  { mic: "MEMX", weight: 4 },
-] as const;
-type VenueMIC = (typeof VENUES)[number]["mic"];
-
-const VENUE_SPREAD_MULT: Record<string, number> = {
-  XNAS: 1.00,
-  ARCX: 1.08,
-  BATS: 0.95,
-  EDGX: 0.98,
-  IEX: 1.02,
-  MEMX: 0.97,
-  XNYS: 1.05,
-};
-const VENUE_DEPTH_MULT: Record<string, number> = {
-  XNAS: 1.00,
-  ARCX: 0.85,
-  BATS: 0.90,
-  EDGX: 0.75,
-  IEX: 0.95,
-  MEMX: 0.65,
-  XNYS: 1.20,
-};
-
-const PARTICIPATION_CAP = 0.20;
-const IMPACT_PER_1000 = 1.0;
-const COMMISSION_PER_SHARE = 0.005;
-const SEC_FEE_RATE = 0.000008;
-const FINRA_TAF_PER_SHARE = 0.000119;
-
-function computeFill(
-  qty: number,
-  tickVolume: number,
-  venue: VenueMIC,
-): { filledQty: number; remainingQty: number } {
-  const depthMult = VENUE_DEPTH_MULT[venue] ?? 1.0;
-  const maxFill = Math.floor(tickVolume * PARTICIPATION_CAP * depthMult);
-  const filledQty = Math.min(qty, maxFill);
-  return { filledQty, remainingQty: qty - filledQty };
-}
-
-function computeImpact(
-  filledQty: number,
-  venue: VenueMIC,
-  side: "BUY" | "SELL",
-  midPrice: number,
-): number {
-  const spreadMult = VENUE_SPREAD_MULT[venue] ?? 1.0;
-  const impactBps = (filledQty / 1_000) * IMPACT_PER_1000 * spreadMult;
-  const impactFactor = side === "BUY"
-    ? 1 + impactBps / 10_000
-    : 1 - impactBps / 10_000;
-  return parseFloat((midPrice * impactFactor).toFixed(4));
-}
-
-function computeFees(
-  filledQty: number,
-  avgFillPrice: number,
-  side: "BUY" | "SELL",
-  liquidityFlag: "MAKER" | "TAKER" | "CROSS",
-): {
-  commissionUSD: number;
-  secFeeUSD: number;
-  finraTafUSD: number;
-  totalFeeUSD: number;
-} {
-  const commissionPerShare = liquidityFlag === "MAKER"
-    ? -0.002
-    : COMMISSION_PER_SHARE;
-  const commissionUSD = parseFloat((filledQty * commissionPerShare).toFixed(2));
-  const notional = filledQty * avgFillPrice;
-  const secFeeUSD = side === "SELL"
-    ? parseFloat((notional * SEC_FEE_RATE).toFixed(4))
-    : 0;
-  const finraTafUSD = side === "SELL"
-    ? parseFloat(Math.min(filledQty * FINRA_TAF_PER_SHARE, 5.95).toFixed(4))
-    : 0;
-  const totalFeeUSD = parseFloat(
-    (commissionUSD + secFeeUSD + finraTafUSD).toFixed(4),
-  );
-  return { commissionUSD, secFeeUSD, finraTafUSD, totalFeeUSD };
-}
-
-function pickWeightedVenue(rand: number): VenueMIC {
-  const total = VENUES.reduce((s, v) => s + v.weight, 0);
-  let cumulativeWeight = rand * total;
-  for (const v of VENUES) {
-    cumulativeWeight -= v.weight;
-    if (cumulativeWeight <= 0) return v.mic;
-  }
-  return VENUES[0].mic;
-}
+import {
+  computeFees,
+  computeFill,
+  computeImpact,
+  execId,
+  FINRA_TAF_PER_SHARE,
+  PARTICIPATION_CAP_DEFAULT as PARTICIPATION_CAP,
+  pickWeightedVenue,
+  SEC_FEE_RATE,
+  VENUE_DEPTH_MULT,
+  VENUES,
+} from "../ems/fill-math.ts";
 
 // ── Venue fill capacity ───────────────────────────────────────────────────────
 
@@ -255,10 +165,6 @@ Deno.test("[ems/venue] deterministic at boundary: rand=0 selects first venue aft
 });
 
 // ── exec ID sequencing ────────────────────────────────────────────────────────
-
-function execId(seq: number): string {
-  return `EX${String(seq).padStart(8, "0")}`;
-}
 
 Deno.test("[ems/execId] format is EX followed by 8 zero-padded digits", () => {
   assertEquals(execId(1), "EX00000001");
