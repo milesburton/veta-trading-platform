@@ -45,4 +45,24 @@ describe("sha256Async", () => {
     const fromSync = sha256(data);
     expect(toHex(fromAsync)).toBe(toHex(fromSync));
   });
+
+  it("falls back to JS implementation when crypto.subtle is unavailable", async () => {
+    const realDigest = globalThis.crypto.subtle.digest;
+    // Override digest to undefined via property descriptor
+    Object.defineProperty(globalThis.crypto.subtle, "digest", {
+      value: undefined,
+      configurable: true,
+      writable: true,
+    });
+    try {
+      const out = await sha256Async(new TextEncoder().encode("abc"));
+      expect(toHex(out)).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+    } finally {
+      Object.defineProperty(globalThis.crypto.subtle, "digest", {
+        value: realDigest,
+        configurable: true,
+        writable: true,
+      });
+    }
+  });
 });

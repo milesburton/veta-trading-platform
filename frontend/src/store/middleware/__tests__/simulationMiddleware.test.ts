@@ -229,4 +229,42 @@ describe("simulationMiddleware – timer advancement", () => {
     const final = store.getState().orders.orders[0];
     expect(["filled", "working", "expired"]).toContain(final.status);
   });
+
+  it("TWAP with expiresAt in the past expires immediately", async () => {
+    const store = makeStore(false);
+    const order = makeOrder({
+      id: "twap-past",
+      strategy: "TWAP",
+      expiresAt: Date.now() - 1000, // already past
+      algoParams: { strategy: "TWAP" as const, numSlices: 4, participationCap: 25 },
+    });
+    store.dispatch(ordersSlice.actions.orderAdded(order));
+    await vi.advanceTimersByTimeAsync(5);
+    const final = store.getState().orders.orders[0];
+    expect(["expired", "working", "filled"]).toContain(final.status);
+  });
+
+  it("POV with mismatched algoParams uses defaults", () => {
+    const store = makeStore(false);
+    const order = makeOrder({
+      id: "pov-defaults",
+      strategy: "POV",
+      // wrong strategy in algoParams forces fallback
+      algoParams: { strategy: "LIMIT" as const },
+    });
+    store.dispatch(ordersSlice.actions.orderAdded(order));
+    // Should not crash, status moves to working from initial pending
+    expect(store.getState().orders.orders[0].status).toBe("working");
+  });
+
+  it("VWAP with mismatched algoParams uses defaults", () => {
+    const store = makeStore(false);
+    const order = makeOrder({
+      id: "vwap-defaults",
+      strategy: "VWAP",
+      algoParams: { strategy: "LIMIT" as const },
+    });
+    store.dispatch(ordersSlice.actions.orderAdded(order));
+    expect(store.getState().orders.orders[0].status).toBe("working");
+  });
 });

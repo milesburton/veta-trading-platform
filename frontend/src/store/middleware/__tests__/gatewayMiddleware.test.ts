@@ -250,6 +250,34 @@ describe("gatewayMiddleware – orderEvent dispatch", () => {
     const d = send("orders.expired", {});
     expect(d.find((a) => a.type === "orders/orderPatched")).toBeFalsy();
   });
+
+  it("orders.child applies defaults when fields are missing", () => {
+    const d = send("orders.child", {
+      parentOrderId: "p",
+      childId: "c",
+      // no clientOrderId, asset, side, quantity, limitPrice, ts
+    });
+    expect(d.find((a) => a.type === "orders/childAdded")).toBeTruthy();
+  });
+
+  it("orders.filled applies defaults when fields are missing", () => {
+    const d = send("orders.filled", {
+      parentOrderId: "p",
+      filledQty: 5,
+      // no avgFillPrice, no remainingQty
+    });
+    expect(d.find((a) => a.type === "orders/fillReceived")).toBeTruthy();
+  });
+
+  it("orders.filled with childId applies defaults", () => {
+    const d = send("orders.filled", {
+      parentOrderId: "p",
+      filledQty: 5,
+      childId: "c",
+      // no asset, side, ts, etc.
+    });
+    expect(d.filter((a) => a.type === "orders/childAdded").length).toBeGreaterThan(0);
+  });
 });
 
 describe("gatewayMiddleware – marketUpdate edge cases", () => {

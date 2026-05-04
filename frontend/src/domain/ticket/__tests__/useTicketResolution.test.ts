@@ -127,4 +127,76 @@ describe("useTicketResolution", () => {
     expect(result.current).not.toBe(first);
     expect(spy.mock.calls.length).toBeGreaterThan(callsAfterFirstRender);
   });
+
+  it.each([
+    ["userId", { userId: "user-2" }],
+    ["userRole", { userRole: "admin" as const }],
+    ["session.phase", { session: { ...CONTINUOUS_SESSION, phase: "AUCTION" as const } }],
+    ["session.allowsOrderEntry", { session: { ...CONTINUOUS_SESSION, allowsOrderEntry: false } }],
+    ["selectedVenue", { selectedVenue: "DARK" as never }],
+    ["spreadBps", { spreadBps: 10 }],
+    [
+      "limits.max_order_qty",
+      {
+        limits: {
+          max_order_qty: 99999,
+          max_daily_notional: 1_000_000,
+          allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+          allowed_desks: ["equity"],
+          dark_pool_access: false,
+        },
+      },
+    ],
+    [
+      "instrument.symbol",
+      {
+        instrument: {
+          instrumentType: "equity" as const,
+          symbol: "MSFT",
+          lotSize: 1,
+          currentPrice: 300,
+          orderBookMid: 300,
+        },
+      },
+    ],
+    [
+      "option.strike",
+      {
+        option: {
+          optionType: "call" as const,
+          strike: 150,
+          expirySecs: 0,
+          hasQuote: false,
+          isFetching: false,
+        },
+      },
+    ],
+    [
+      "bond.symbol",
+      {
+        bond: {
+          symbol: "UST10Y",
+          yieldPct: 0,
+          hasQuote: false,
+          isFetching: false,
+          hasBondDef: false,
+        },
+      },
+    ],
+  ])("recomputes when %s changes", (_label, override) => {
+    const spy = vi.spyOn(resolver, "resolveTicket");
+    spy.mockClear();
+    const base = makeCtx();
+    const { result, rerender } = renderHook(
+      ({ ctx }: { ctx: TicketContext }) => useTicketResolution(ctx),
+      { initialProps: { ctx: base } }
+    );
+    const first = result.current;
+    const callsAfter1 = spy.mock.calls.length;
+
+    rerender({ ctx: { ...base, ...(override as Partial<TicketContext>) } });
+
+    expect(result.current).not.toBe(first);
+    expect(spy.mock.calls.length).toBeGreaterThan(callsAfter1);
+  });
 });

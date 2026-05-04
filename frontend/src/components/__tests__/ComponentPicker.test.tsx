@@ -52,15 +52,17 @@ function renderPicker(overrides?: {
   addPanel?: (id: PanelId) => void;
   removePanel?: (id: PanelId) => void;
   resetLayout?: () => void;
+  store?: ReturnType<typeof makeStore>;
 }) {
   const defaultActive = new Set(DEFAULT_LAYOUT.map((l) => l.i as PanelId));
   const addPanel = overrides?.addPanel ?? vi.fn();
   const removePanel = overrides?.removePanel ?? vi.fn();
   const resetLayout = overrides?.resetLayout ?? vi.fn();
   const activePanelIds = overrides?.activePanelIds ?? defaultActive;
+  const store = overrides?.store ?? makeStore();
 
   const utils = render(
-    <Provider store={makeStore()}>
+    <Provider store={store}>
       <DashboardContext.Provider
         value={{
           layout: DEFAULT_LAYOUT,
@@ -219,5 +221,11 @@ describe("ComponentPicker – add panels", () => {
     const btn = getPickerBtn("Order Ticket");
     if (btn) fireEvent.click(btn);
     expect(addPanel).not.toHaveBeenCalled();
+  });
+
+  it("admin user sees 'mission control' tag on admin panel option", () => {
+    renderPicker({ store: makeStore("admin"), activePanelIds: new Set([]) });
+    openDropdown();
+    expect(screen.getAllByText(/mission control/i).length).toBeGreaterThan(0);
   });
 });
