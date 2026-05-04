@@ -1029,6 +1029,12 @@ jobs:
             file: docker/ccp-service/Dockerfile
           - service: rfq-service
             file: docker/rfq-service/Dockerfile
+          - service: product-service
+            file: docker/product-service/Dockerfile
+          - service: replay-service
+            file: docker/replay-service/Dockerfile
+          - service: risk-engine
+            file: docker/risk-engine/Dockerfile
           - service: db-migrate
             file: docker/db-migrate/Dockerfile
     steps:

@@ -484,6 +484,48 @@ services:
       - "traefik.http.routers.rfq-service.priority=10"
       - "com.centurylinklabs.watchtower.enable=true"
 
+  product-service:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/product-service:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.product-service.rule=PathPrefix(`/api/product-service`)"
+      - "traefik.http.routers.product-service.entrypoints=web"
+      - "traefik.http.routers.product-service.middlewares=product-service-strip"
+      - "traefik.http.services.product-service.loadbalancer.server.port=5030"
+      - "traefik.http.routers.product-service.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  replay-service:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/replay-service:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.replay-service.rule=PathPrefix(`/api/replay`)"
+      - "traefik.http.routers.replay-service.entrypoints=web"
+      - "traefik.http.routers.replay-service.middlewares=replay-service-strip"
+      - "traefik.http.services.replay-service.loadbalancer.server.port=5031"
+      - "traefik.http.routers.replay-service.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  risk-engine:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/risk-engine:latest
+    build: !reset null
+    profiles: !reset []
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.risk-engine.rule=PathPrefix(`/api/risk-engine`)"
+      - "traefik.http.routers.risk-engine.entrypoints=web"
+      - "traefik.http.routers.risk-engine.middlewares=risk-engine-strip"
+      - "traefik.http.services.risk-engine.loadbalancer.server.port=5032"
+      - "traefik.http.routers.risk-engine.priority=10"
+      - "com.centurylinklabs.watchtower.enable=true"
+
   gateway:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/gateway:latest

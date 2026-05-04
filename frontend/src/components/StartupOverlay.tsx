@@ -187,6 +187,15 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
                   ? "Initialising trading services — usually takes 30–60 seconds"
                   : "Platform is running — some services are not yet responding"}
               </div>
+              {commitSha && (
+                <div
+                  data-testid="startup-version"
+                  className="mt-1 text-[10px] font-mono text-gray-500 tabular-nums"
+                >
+                  v{commitSha.slice(0, 7)}
+                  {buildDate && <span className="ml-2 text-gray-600">{buildDate}</span>}
+                </div>
+              )}
             </div>
           </div>
 
