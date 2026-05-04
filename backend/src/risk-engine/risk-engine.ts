@@ -3,14 +3,20 @@ import { corsOptions, json, parseBody } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer, type MsgProducer } from "@veta/messaging";
 import {
-  type CheckRequest,
   CheckRequestSchema,
-  type CheckResult,
   type RiskConfig,
   RiskConfigUpdateSchema,
   TestPositionSchema,
   TestTickSchema,
 } from "@veta/schemas/risk";
+import {
+  type Position,
+  type RecentOrder,
+  type RiskState,
+  runChecks,
+  userTotalPnl,
+  type WorkingOrder,
+} from "./checks.ts";
 
 const PORT = Number(Deno.env.get("RISK_ENGINE_PORT")) || 5_032;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -51,242 +57,22 @@ let breakerFireCount = 0;
 let breakerProducer: MsgProducer | null = null;
 
 const activeOrderCounts: Map<string, number> = new Map();
-
-interface WorkingOrder {
-  userId: string;
-  symbol: string;
-  side: "BUY" | "SELL";
-  orderId: string;
-}
 const workingOrders: WorkingOrder[] = [];
-
 const rateBuckets: Map<string, { tokens: number; lastRefill: number }> = new Map();
-
-interface Position {
-  symbol: string;
-  netQty: number;
-  avgPrice: number;
-  costBasis: number;
-  realisedPnl: number;
-  fillCount: number;
-}
 const positions: Map<string, Map<string, Position>> = new Map();
-
-interface RecentOrder {
-  userId: string;
-  symbol: string;
-  side: string;
-  quantity: number;
-  limitPrice: number;
-  ts: number;
-}
 const recentOrders: RecentOrder[] = [];
-const MAX_RECENT = 500;
 
-function pruneRecent() {
-  const cutoff = Date.now() - 5_000;
-  while (recentOrders.length > 0 && recentOrders[0].ts < cutoff) {
-    recentOrders.shift();
-  }
-  while (recentOrders.length > MAX_RECENT) {
-    recentOrders.shift();
-  }
-}
-
-function checkFatFingerPrice(req: CheckRequest): { code: string; message: string } | null {
-  const mid = prices[req.symbol];
-  if (!mid || mid <= 0) return null;
-
-  const deviation = Math.abs(req.limitPrice - mid) / mid;
-  const threshold = config.fatFingerPct / 100;
-
-  if (deviation > threshold) {
-    const pct = (deviation * 100).toFixed(1);
-    const dir = req.limitPrice > mid ? "above" : "below";
-    return {
-      code: "FAT_FINGER_PRICE",
-      message: `Limit price ${req.limitPrice.toFixed(2)} is ${pct}% ${dir} mid ${mid.toFixed(2)} (threshold: ${config.fatFingerPct}%)`,
-    };
-  }
-  return null;
-}
-
-function checkDuplicateOrder(req: CheckRequest): { code: string; message: string } | null {
-  pruneRecent();
-  const now = Date.now();
-  const cutoff = now - config.duplicateWindowMs;
-
-  for (const r of recentOrders) {
-    if (
-      r.ts >= cutoff &&
-      r.userId === req.userId &&
-      r.symbol === req.symbol &&
-      r.side === req.side &&
-      r.quantity === req.quantity &&
-      r.limitPrice === req.limitPrice
-    ) {
-      return {
-        code: "DUPLICATE_ORDER",
-        message: `Duplicate order detected: ${req.side} ${req.quantity} ${req.symbol} @ ${req.limitPrice} within ${config.duplicateWindowMs}ms`,
-      };
-    }
-  }
-
-  recentOrders.push({
-    userId: req.userId,
-    symbol: req.symbol,
-    side: req.side,
-    quantity: req.quantity,
-    limitPrice: req.limitPrice,
-    ts: now,
-  });
-
-  return null;
-}
-
-function checkMaxOpenOrders(req: CheckRequest): { code: string; message: string } | null {
-  const count = activeOrderCounts.get(req.userId) ?? 0;
-  if (count >= config.maxOpenOrders) {
-    return {
-      code: "MAX_OPEN_ORDERS",
-      message: `User ${req.userId} has ${count} active orders (limit: ${config.maxOpenOrders})`,
-    };
-  }
-  return null;
-}
-
-function checkSelfCross(req: CheckRequest): { code: string; message: string } | null {
-  const oppositeSide = req.side === "BUY" ? "SELL" : "BUY";
-  const conflict = workingOrders.find(
-    (o) => o.userId === req.userId && o.symbol === req.symbol && o.side === oppositeSide,
-  );
-  if (conflict) {
-    return {
-      code: "SELF_CROSS",
-      message: `Self-cross: you have a working ${oppositeSide} on ${req.symbol} (${conflict.orderId}) — submitting a ${req.side} would cross your own order`,
-    };
-  }
-  return null;
-}
-
-function checkOrderSizeVsAdv(req: CheckRequest): { code: string; message: string } | null {
-  const adv = volumes[req.symbol];
-  if (!adv || adv <= 0) return null;
-
-  const pctOfAdv = (req.quantity / adv) * 100;
-  if (pctOfAdv > config.maxAdvPct) {
-    return {
-      code: "ORDER_SIZE_VS_ADV",
-      message: `Order quantity ${req.quantity.toLocaleString()} is ${pctOfAdv.toFixed(1)}% of ADV ${adv.toLocaleString()} (limit: ${config.maxAdvPct}%)`,
-    };
-  }
-  return null;
-}
-
-function checkRateLimit(req: CheckRequest): { code: string; message: string } | null {
-  const now = Date.now();
-  let bucket = rateBuckets.get(req.userId);
-  if (!bucket) {
-    bucket = { tokens: config.maxOrdersPerSecond, lastRefill: now };
-    rateBuckets.set(req.userId, bucket);
-  }
-
-  const elapsed = (now - bucket.lastRefill) / 1_000;
-  bucket.tokens = Math.min(config.maxOrdersPerSecond, bucket.tokens + elapsed * config.maxOrdersPerSecond);
-  bucket.lastRefill = now;
-
-  if (bucket.tokens < 1) {
-    return {
-      code: "RATE_LIMIT",
-      message: `Rate limit exceeded: max ${config.maxOrdersPerSecond} orders/second for user ${req.userId}`,
-    };
-  }
-
-  bucket.tokens -= 1;
-  return null;
-}
-
-function checkPositionNotional(req: CheckRequest): { code: string; message: string } | null {
-  const proposed = orderNotional(req);
-  const current = userGrossNotional(req.userId);
-  const postTrade = current + proposed;
-  if (postTrade > config.maxGrossNotional) {
-    return {
-      code: "POSITION_NOTIONAL_LIMIT",
-      message: `Gross notional post-trade $${postTrade.toFixed(0)} would exceed limit $${
-        config.maxGrossNotional.toFixed(0)
-      }`,
-    };
-  }
-  return null;
-}
-
-function checkDailyPnlStop(req: CheckRequest): { code: string; message: string } | null {
-  const pnl = userTotalPnl(req.userId);
-  if (pnl <= config.maxDailyLoss) {
-    fireUserPnlBreaker(req.userId, pnl);
-    return {
-      code: "DAILY_LOSS_STOP",
-      message: `User P&L $${pnl.toFixed(2)} at/beyond loss limit $${config.maxDailyLoss.toFixed(2)}`,
-    };
-  }
-  return null;
-}
-
-function checkConcentration(req: CheckRequest): { code: string; message: string } | null {
-  const proposed = orderNotional(req);
-  const currentSymbol = userSymbolNotional(req.userId, req.symbol);
-  const currentGross = userGrossNotional(req.userId);
-  const postSymbol = currentSymbol + proposed;
-  const postGross = currentGross + proposed;
-  if (postGross <= 0) return null;
-  const pct = (postSymbol / postGross) * 100;
-  if (pct > config.maxConcentrationPct) {
-    return {
-      code: "CONCENTRATION_LIMIT",
-      message: `Post-trade concentration in ${req.symbol} would be ${pct.toFixed(1)}% (limit ${config.maxConcentrationPct}%)`,
-    };
-  }
-  return null;
-}
-
-function runChecks(req: CheckRequest): CheckResult {
-  const reasons: string[] = [];
-  const warnings: string[] = [];
-
-  const fatFinger = checkFatFingerPrice(req);
-  if (fatFinger) reasons.push(`[${fatFinger.code}] ${fatFinger.message}`);
-
-  const duplicate = checkDuplicateOrder(req);
-  if (duplicate) reasons.push(`[${duplicate.code}] ${duplicate.message}`);
-
-  const maxOrders = checkMaxOpenOrders(req);
-  if (maxOrders) reasons.push(`[${maxOrders.code}] ${maxOrders.message}`);
-
-  const selfCross = checkSelfCross(req);
-  if (selfCross) reasons.push(`[${selfCross.code}] ${selfCross.message}`);
-
-  const advCheck = checkOrderSizeVsAdv(req);
-  if (advCheck) reasons.push(`[${advCheck.code}] ${advCheck.message}`);
-
-  const rateLimit = checkRateLimit(req);
-  if (rateLimit) reasons.push(`[${rateLimit.code}] ${rateLimit.message}`);
-
-  const posLimit = checkPositionNotional(req);
-  if (posLimit) reasons.push(`[${posLimit.code}] ${posLimit.message}`);
-
-  const pnlStop = checkDailyPnlStop(req);
-  if (pnlStop) reasons.push(`[${pnlStop.code}] ${pnlStop.message}`);
-
-  const conc = checkConcentration(req);
-  if (conc) reasons.push(`[${conc.code}] ${conc.message}`);
-
-  return {
-    allowed: reasons.length === 0,
-    reasons,
-    warnings,
-  };
-}
+const riskState: RiskState = {
+  config,
+  prices,
+  volumes,
+  recentOrders,
+  activeOrderCounts,
+  workingOrders,
+  rateBuckets,
+  positions,
+  onPnlBreaker: (userId, observedPnl) => fireUserPnlBreaker(userId, observedPnl),
+};
 
 async function fetchPrices(): Promise<void> {
   try {
@@ -520,7 +306,7 @@ function evaluateMarketMoveBreaker(): void {
 
 function evaluateUserPnlBreakers(): void {
   for (const userId of positions.keys()) {
-    const pnl = userTotalPnl(userId);
+    const pnl = userTotalPnl(riskState, userId);
     if (pnl <= config.maxDailyLoss) fireUserPnlBreaker(userId, pnl);
   }
 }
@@ -559,44 +345,6 @@ function consumeMarketTicks(): void {
       });
     })
     .catch(() => {});
-}
-
-function markPriceFor(symbol: string, fallback: number): number {
-  const p = prices[symbol];
-  return p && p > 0 ? p : fallback;
-}
-
-function userGrossNotional(userId: string): number {
-  const userPositions = positions.get(userId);
-  if (!userPositions) return 0;
-  let total = 0;
-  for (const p of userPositions.values()) {
-    total += Math.abs(p.netQty * markPriceFor(p.symbol, p.avgPrice));
-  }
-  return total;
-}
-
-function userTotalPnl(userId: string): number {
-  const userPositions = positions.get(userId);
-  if (!userPositions) return 0;
-  let total = 0;
-  for (const p of userPositions.values()) {
-    const mark = markPriceFor(p.symbol, p.avgPrice);
-    total += p.realisedPnl + p.netQty * (mark - p.avgPrice);
-  }
-  return total;
-}
-
-function userSymbolNotional(userId: string, symbol: string): number {
-  const userPositions = positions.get(userId);
-  if (!userPositions) return 0;
-  const p = userPositions.get(symbol);
-  if (!p) return 0;
-  return Math.abs(p.netQty * markPriceFor(p.symbol, p.avgPrice));
-}
-
-function orderNotional(req: CheckRequest): number {
-  return req.quantity * req.limitPrice;
 }
 
 function formatPosition(p: Position) {
@@ -788,7 +536,7 @@ Deno.serve({ port: PORT }, async (req) => {
   if (path === "/check" && req.method === "POST") {
     const parsed = await parseBody(req, CheckRequestSchema);
     if (!parsed.ok) return parsed.res;
-    const result = runChecks(parsed.data);
+    const result = runChecks(riskState, parsed.data);
     return json(result);
   }
 
