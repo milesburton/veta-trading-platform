@@ -34,7 +34,7 @@ const DegradedServicesOverlayCard = memo(function DegradedServicesOverlayCard({
   return (
     <div
       data-testid="degraded-services-overlay"
-      className="absolute inset-0 z-10 rounded-lg border border-amber-700/60 bg-gray-950/98 p-5 shadow-2xl"
+      className="absolute inset-0 z-10 rounded-lg border border-amber-700/60 bg-gray-950 p-5 shadow-2xl"
     >
       <div className="flex h-full flex-col justify-between gap-4">
         <div className="flex items-start gap-3">
