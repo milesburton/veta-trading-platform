@@ -3,7 +3,9 @@ title: API Gateway
 description: The Gateway is the sole entry point for all browser traffic.
 ---
 
-The Gateway (port 5011) is the sole entry point for all browser traffic. All routes require a valid `veta_user` session cookie except `/health` and `/ready`.
+import Svc from "../../../components/Svc.astro";
+
+The <Svc name="gateway" /> (port 5011) is the sole entry point for all browser traffic. All routes require a valid `veta_user` session cookie except `/health` and `/ready`.
 
 ## Health & readiness
 

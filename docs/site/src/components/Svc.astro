@@ -1,0 +1,86 @@
+---
+import { Code } from "@astrojs/starlight/components";
+
+interface Props {
+  /** Service slug as it appears in supervisord (e.g. "risk-engine", "user-service"). */
+  name: string;
+  /** Optional display label override. Defaults to a Title-Cased form of `name`. */
+  label?: string;
+  /** Set to true to render as inline code instead of plain text. */
+  code?: boolean;
+}
+
+const { name, label, code = false } = Astro.props;
+
+const SLUG_TO_LABEL: Record<string, string> = {
+  "market-sim": "Market Simulator",
+  "ems": "EMS",
+  "oms": "OMS",
+  "algo-trader": "LIMIT Algo",
+  "twap-algo": "TWAP Algo",
+  "pov-algo": "POV Algo",
+  "vwap-algo": "VWAP Algo",
+  "iceberg-algo": "ICEBERG Algo",
+  "sniper-algo": "SNIPER Algo",
+  "arrival-price-algo": "ARRIVAL_PRICE Algo",
+  "is-algo": "IS Algo",
+  "momentum-algo": "MOMENTUM Algo",
+  "kafka-relay": "Kafka Relay",
+  "user-service": "User Service",
+  "journal": "Journal",
+  "gateway": "Gateway (BFF)",
+  "fix-archive": "FIX Archive",
+  "fix-exchange": "FIX Exchange",
+  "fix-gateway": "FIX Gateway",
+  "analytics": "Analytics",
+  "market-data-service": "Market Data",
+  "market-data-adapters": "Market Data Adapters",
+  "feature-engine": "Feature Engine",
+  "signal-engine": "Signal Engine",
+  "recommendation-engine": "Recommendation Engine",
+  "scenario-engine": "Scenario Engine",
+  "news-aggregator": "News Aggregator",
+  "llm-advisory-orchestrator": "LLM Advisory Orchestrator",
+  "llm-worker": "LLM Worker",
+  "dark-pool": "Dark Pool",
+  "ccp-service": "CCP",
+  "rfq-service": "RFQ",
+  "product-service": "Product Service",
+  "replay-service": "Session Replay",
+  "risk-engine": "Risk Engine",
+};
+
+const display =
+  label ??
+  SLUG_TO_LABEL[name] ??
+  name.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+const docsBase = "/veta-trading-platform";
+const href = `${docsBase}/platform/services/`;
+const tooltip = `${display} — see services map`;
+---
+
+{code ? (
+  <a class="veta-svc-link veta-svc-link--code" href={href} title={tooltip}>
+    <Code code={name} lang="text" inline />
+  </a>
+) : (
+  <a class="veta-svc-link" href={href} title={tooltip}>{display}</a>
+)}
+
+<style is:global>
+  .veta-svc-link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: var(--sl-color-gray-4);
+    text-underline-offset: 2px;
+  }
+  .veta-svc-link:hover {
+    color: var(--sl-color-text-accent);
+    text-decoration-color: var(--sl-color-text-accent);
+  }
+  .veta-svc-link--code code {
+    color: inherit !important;
+  }
+</style>

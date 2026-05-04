@@ -3,8 +3,10 @@ title: Supporting Services
 description: Observability, ingress, load testing and infrastructure that surrounds the trading pipeline.
 ---
 
+import Svc from "../../../components/Svc.astro";
+
 The [Service Map](../services/) catalogues the trading pipeline itself —
-market-sim, OMS, EMS, algos, journal, FIX, and the analytics services. This
+<Svc name="market-sim" />, <Svc name="oms" />, <Svc name="ems" />, algos, <Svc name="journal" />, FIX, and the analytics services. This
 page covers the supporting infrastructure: how the platform is observed, how
 ingress is routed, how it is load-tested, and the operational utilities that
 keep it running.

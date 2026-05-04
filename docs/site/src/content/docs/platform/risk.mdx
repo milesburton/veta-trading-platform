@@ -3,9 +3,11 @@ title: Risk Controls
 description: Pre-trade risk engine with 6 real-time checks and live position tracking.
 ---
 
+import Svc from "../../../components/Svc.astro";
+
 ## Pre-trade risk engine (port 5032)
 
-The OMS calls `POST /check` on the risk-engine synchronously before routing every order. If any check fails, the order is **rejected** with a specific reason code. If the risk-engine is unreachable (3s timeout), the order is rejected — real firms sooner halt trading than bypass pre-trade risk.
+The <Svc name="oms" /> calls `POST /check` on the <Svc name="risk-engine" /> synchronously before routing every order. If any check fails, the order is **rejected** with a specific reason code. If the <Svc name="risk-engine" /> is unreachable (3s timeout), the order is rejected — real firms sooner halt trading than bypass pre-trade risk.
 
 ### Checks
 
@@ -34,7 +36,7 @@ All thresholds are runtime-editable via `PUT /config` with no restart:
 
 ## Live positions
 
-The risk-engine tracks positions from `orders.filled` bus events in real-time.
+The <Svc name="risk-engine" /> tracks positions from `orders.filled` bus events in real-time.
 
 - `GET /positions/:userId` — per-symbol: net qty, avg price, mark price, unrealised/realised/total P&L
 - `GET /positions` — all users' positions
