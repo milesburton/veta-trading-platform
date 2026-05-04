@@ -16,6 +16,18 @@ sidebar:
 | Smoke | `deno task test:smoke` | 87+ tests — all service health checks, OAuth flow, order lifecycle, risk-engine |
 | Playwright E2E | `cd frontend && npx playwright test` | 89+ tests — auth, orders, market data, FI, algo, session replay, observability |
 | Electron E2E | `cd frontend && npm run test:electron` | Desktop app — window, startup, contextBridge, pop-out |
+| Visual anomalies | `cd frontend && npx playwright test tests/visual-anomalies.spec.ts` | DOM-overflow + axe-core a11y/contrast scan across login + key workspaces |
+
+## Visual anomalies
+
+`tests/visual-anomalies.spec.ts` is a non-gating informational suite that walks a small set of scenarios (login, trader dashboard, admin dashboard) and reports two classes of issue:
+
+- **DOM overflows** — flags any visible element where `scrollWidth > clientWidth` (or vertical equivalent) while the parent has `overflow: hidden`. Catches text clipping, badge truncation, container sizing bugs that don't show up in pixel-diff screenshot regression because they look the same as the previous broken state. Filters out `sr-only` (legitimate visually-hidden a11y text) and elements with `clip` / `clip-path`.
+- **axe-core violations** — runs `@axe-core/playwright` and surfaces colour-contrast, ARIA misuse, link-distinguishability, and other WCAG issues. The `region` rule is disabled because Starlight pages don't fit it.
+
+Output is written to `docs/visual-anomalies/report.json` (gitignored — regenerated per run). On pull requests the [`pr-visual-anomalies` job](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/ci.yml) uploads the report as an artefact and posts a summary comment.
+
+To extend the spec, add a new `test()` block that drives the page to the state you want to inspect, then call `captureAnomalies(page, "scenario-name")`. Keep the set small — every added scenario is ~3-5s of CI time.
 
 ## Coverage
 

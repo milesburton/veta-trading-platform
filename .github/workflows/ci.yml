@@ -693,6 +693,104 @@ jobs:
           body: ${{ steps.body.outputs.body }}
           edit-mode: replace
 
+  pr-visual-anomalies:
+    name: PR visual anomalies
+    runs-on: ubuntu-latest
+    needs: [frontend]
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Cache npm and Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.npm
+            ~/.cache/ms-playwright
+          key: npm-playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
+          restore-keys: |
+            npm-playwright-${{ runner.os }}-
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run visual anomaly checks
+        working-directory: frontend
+        run: npx playwright test tests/visual-anomalies.spec.ts --reporter=list
+        env:
+          CI: true
+
+      - name: Build comment body
+        id: body
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          REPORT=docs/visual-anomalies/report.json
+          {
+            echo 'body<<EOF'
+            echo '<!-- pr-visual-anomalies-bot -->'
+            echo '## 🔍 Visual anomaly check'
+            echo ''
+            if [ ! -f "$REPORT" ]; then
+              echo '_No report produced — the spec may have failed before writing._'
+            else
+              total_overflows=$(jq '[.reports[].overflows | length] | add // 0' "$REPORT")
+              total_axe=$(jq '[.reports[].axe[].nodeCount] | add // 0' "$REPORT")
+              if [ "$total_overflows" = "0" ] && [ "$total_axe" = "0" ]; then
+                echo '_Clean — no overflows and no axe-core violations across the checked scenarios._'
+              else
+                echo "**Found $total_overflows overflow(s) and $total_axe axe violation node(s) across $(jq '.scenarios | length' "$REPORT") scenarios.**"
+                echo ''
+                echo '| Scenario | Overflows | Axe rules (impact / nodes) |'
+                echo '| --- | --- | --- |'
+                jq -r '.reports[] | "| \(.scenario) | \(.overflows | length) | \(if (.axe | length) == 0 then "—" else (.axe | map("\(.id) (\(.impact // "none")/\(.nodeCount))") | join(", ")) end) |"' "$REPORT"
+                echo ''
+                echo "[Download full report →]($RUN_URL#artifacts)"
+              fi
+            fi
+            echo ''
+            echo "<sub>Generated from visual-anomalies.spec.ts · run [\`${GITHUB_RUN_ID}\`]($RUN_URL)</sub>"
+            echo 'EOF'
+          } >>"$GITHUB_OUTPUT"
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-visual-anomalies-${{ github.event.pull_request.number }}
+          path: docs/visual-anomalies/
+          retention-days: 14
+
+      - name: Find existing comment
+        id: find-comment
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: github-actions[bot]
+          body-includes: '<!-- pr-visual-anomalies-bot -->'
+
+      - name: Upsert PR comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.body.outputs.body }}
+          edit-mode: replace
+
   electron:
     name: Electron build & E2E tests
     runs-on: ubuntu-latest
