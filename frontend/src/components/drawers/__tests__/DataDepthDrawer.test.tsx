@@ -98,4 +98,42 @@ describe("DataDepthDrawer", () => {
     fireEvent.click(screen.getByTestId("data-depth-pin-btn"));
     expect(mockAddPanel).toHaveBeenCalledWith("data-depth");
   });
+
+  it("renders 'good' (>=7 days) without warning banner", () => {
+    sampleResponse.minDays = 14;
+    sampleResponse.avgDays = 30;
+    renderOpen();
+    expect(
+      screen.queryByText(/Scenario analysis and volatility estimates are unreliable/i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Analytics accuracy is limited/i)).not.toBeInTheDocument();
+    sampleResponse.minDays = 0.04;
+  });
+
+  it("renders 'limited' (1-7 days) warning banner", () => {
+    sampleResponse.minDays = 3;
+    renderOpen();
+    expect(screen.getByText(/Analytics accuracy is limited/i)).toBeInTheDocument();
+    sampleResponse.minDays = 0.04;
+  });
+
+  it("formats span in days for >=1d entries", () => {
+    sampleResponse.symbols[0].spanDays = 7.5;
+    renderOpen();
+    expect(screen.getByText(/7\.5d/)).toBeInTheDocument();
+  });
+
+  it("formats span in hours for <1d entries", () => {
+    sampleResponse.symbols[0].spanDays = 0.5;
+    renderOpen();
+    expect(screen.getByText(/12h/)).toBeInTheDocument();
+    sampleResponse.symbols[0].spanDays = 7.5;
+  });
+
+  it("formats span as 'none' when 0 days", () => {
+    sampleResponse.symbols[0].spanDays = 0;
+    renderOpen();
+    expect(screen.getAllByText(/none/i).length).toBeGreaterThan(0);
+    sampleResponse.symbols[0].spanDays = 7.5;
+  });
 });
