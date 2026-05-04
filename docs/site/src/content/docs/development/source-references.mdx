@@ -52,7 +52,11 @@ Use `<CodeBlock>` when the actual code is the point — schemas, formulas, topic
 
 Renders:
 
-<CodeBlock path="backend/src/schemas/orders.ts" region="docs:order-new-schema" title="Order submission schema" />
+<CodeBlock
+  path="backend/src/schemas/orders.ts"
+  region="docs:order-new-schema"
+  title="Order submission schema"
+/>
 
 `<CodeBlock>` requires a region — pinning by line number is too brittle for embedded code.
 
@@ -62,7 +66,9 @@ Mark a code block in the source file with a line comment:
 
 ```ts
 // #region docs:order-new-schema
-export const OrderNewSchema = z.object({ /* ... */ });
+export const OrderNewSchema = z.object({
+  /* ... */
+});
 export type OrderNew = z.infer<typeof OrderNewSchema>;
 // #endregion docs:order-new-schema
 ```

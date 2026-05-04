@@ -1,0 +1,42 @@
+---
+title: StatusDot
+description: Coloured dot used to indicate service or health state.
+---
+
+import { StatusDot } from "@veta/frontend/components/StatusDot";
+import Source from "../../../../components/Source.astro";
+
+A small inline dot used throughout the app to indicate the health of a service, connection or job — green for OK, red for error, grey for unknown.
+
+## Live demo
+
+<div className="not-content" style={{ display: "flex", gap: "1.5rem", alignItems: "center", padding: "1rem", background: "#0f172a", borderRadius: "8px" }}>
+  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", color: "#e2e8f0" }}>
+    <StatusDot client:load state="ok" /> ok
+  </span>
+  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", color: "#e2e8f0" }}>
+    <StatusDot client:load state="error" /> error
+  </span>
+  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", color: "#e2e8f0" }}>
+    <StatusDot client:load state="unknown" /> unknown
+  </span>
+</div>
+
+## Props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `state` | `"ok" \| "error" \| "unknown"` | — | Required. Drives the dot colour and glow. |
+| `className` | `string` | `""` | Extra Tailwind classes — e.g. spacing, larger size. |
+
+## Import
+
+```tsx
+import { StatusDot } from "../components/StatusDot";
+
+<StatusDot state="ok" />
+```
+
+## Source
+
+<Source path="frontend/src/components/StatusDot.tsx" label="StatusDot.tsx" />

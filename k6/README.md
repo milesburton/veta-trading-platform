@@ -19,7 +19,7 @@ metrics to Prometheus for visualisation in Grafana.
 2. **LGTM observability stack running** (for live dashboard):
    `docker compose -f observability/docker-compose.lgtm.yml up -d`
 3. **Admin token in `K6_TOKEN`**: this scenario currently uses a pre-issued
-  token instead of running OAuth per VU.
+   token instead of running OAuth per VU.
 
    ```bash
    # In a terminal that has 1Password CLI / similar set up:
@@ -43,7 +43,7 @@ metrics to Prometheus for visualisation in Grafana.
    export K6_TOKEN
    ```
 
-  A future revision can move this into k6 `setup()` to perform OAuth directly.
+A future revision can move this into k6 `setup()` to perform OAuth directly.
 
 ## Execution
 
@@ -79,11 +79,13 @@ for alternatives such as `constant-arrival-rate` when fixed RPS is required.
 ## Scope
 
 Measures:
+
 - Gateway HTTP RTT for the `/load-test` POST (request → 202)
 - Gateway throughput in requests/sec
 - Error rate
 
 Does not measure:
+
 - End-to-end pipeline latency (submit → fill). For that, hit
   `journal /metrics/latency?windowMs=N` separately or use the existing
   `deno task test:load`.

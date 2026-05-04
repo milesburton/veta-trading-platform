@@ -1,0 +1,19 @@
+---
+title: Component Kitchen Sink
+description: Live catalogue of reusable React primitives shipped by the VETA frontend.
+---
+
+This catalogue answers one question: **"Is there already a primitive in the platform for what I want to build, or do I need to reach for an external library?"**
+
+Every page below imports the **live React component** from [frontend/src](../../../../../frontend/src/) — there is no separate copy and no Storybook. If the demo renders, the component works; if it stops working, the docs build fails. That's the whole point of coupling docs to the app.
+
+## Primitives
+
+- [StatusDot](status-dot/) — coloured dot used to indicate service / health state.
+
+## Adding a new primitive
+
+1. Make sure the component is **props-only** (no Redux, no fetch, no signals from a global store). If it isn't, lift the data dependency into props or wrap it with a thin demo adapter — the kitchen sink only catalogues things a developer can drop in without reading half the codebase.
+2. Add the component's source path to the `content` array in [docs/site/tailwind.config.cjs](../../../../tailwind.config.cjs) so its Tailwind classes get generated in the docs bundle.
+3. Create a new page under [src/content/docs/development/components/](./) following the [StatusDot](status-dot/) page as a template: live demo (with `client:load`), props table, import line, source link.
+4. Add the page to the **Primitives** list above.

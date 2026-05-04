@@ -170,7 +170,8 @@ function renderPackageTable(title, sourcePath, packageMap) {
 
   const rows = entries
     .map(([name, version]) => {
-      const explicit = coreLinks[name] || coreLinks[name.replace(/^@[^/]+\//, "")];
+      const explicit =
+        coreLinks[name] || coreLinks[name.replace(/^@[^/]+\//, "")];
       const link = explicit || npmLink(name);
       return `| [${name}](${link}) | \`${version}\` |`;
     })
@@ -268,10 +269,26 @@ function generate() {
     `Generated at: \`${generatedAt}\`.`,
     "",
     renderCoreTechnologies(),
-    renderPackageTable("Backend and workspace packages", relToRepo(rootPackagePath), rootPackages),
-    renderPackageTable("Frontend packages", relToRepo(frontendPackagePath), frontendPackages),
-    renderPackageTable("Docs site packages", relToRepo(docsPackagePath), docsPackages),
-    renderPackageTable("Deno npm imports", relToRepo(denoJsonPath), denoPackages),
+    renderPackageTable(
+      "Backend and workspace packages",
+      relToRepo(rootPackagePath),
+      rootPackages,
+    ),
+    renderPackageTable(
+      "Frontend packages",
+      relToRepo(frontendPackagePath),
+      frontendPackages,
+    ),
+    renderPackageTable(
+      "Docs site packages",
+      relToRepo(docsPackagePath),
+      docsPackages,
+    ),
+    renderPackageTable(
+      "Deno npm imports",
+      relToRepo(denoJsonPath),
+      denoPackages,
+    ),
     renderImageTable(imageSet, composePaths.map(relToRepo)),
   ].join("\n");
 

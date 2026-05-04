@@ -5,22 +5,23 @@ description: Role-based access control for panels, orders, and admin functions.
 
 ## Roles
 
-| Role | Can trade | Can admin | Panel access |
-|------|-----------|-----------|-------------|
-| `trader` | Yes | No | Style-dependent (see Trading Styles) |
-| `desk-head` | No | No | Read-only cross-desk oversight |
-| `risk-manager` | No | No | Read-only all desks + session replay |
-| `admin` | No | Yes | Everything except order-ticket |
-| `compliance` | No | No | Read-only + session replay |
-| `sales` | No | No | Sales workbench, market data |
-| `external-client` | No | No | Client RFQ only |
-| `viewer` | No | No | Market data + analytics read-only |
+| Role              | Can trade | Can admin | Panel access                         |
+| ----------------- | --------- | --------- | ------------------------------------ |
+| `trader`          | Yes       | No        | Style-dependent (see Trading Styles) |
+| `desk-head`       | No        | No        | Read-only cross-desk oversight       |
+| `risk-manager`    | No        | No        | Read-only all desks + session replay |
+| `admin`           | No        | Yes       | Everything except order-ticket       |
+| `compliance`      | No        | No        | Read-only + session replay           |
+| `sales`           | No        | No        | Sales workbench, market data         |
+| `external-client` | No        | No        | Client RFQ only                      |
+| `viewer`          | No        | No        | Market data + analytics read-only    |
 
 ## Panel permissions
 
 Every panel has a `PANEL_PERMISSIONS` entry defining which roles can access it, and an optional `PANEL_TRADING_STYLES` entry further restricting trader access by style.
 
 The `canAccessPanel(panelId, role, tradingStyle)` function is the single source of truth, used by:
+
 - **ComponentPicker** — filters the "Add Panel" dropdown
 - **DashboardLayout factory** — renders "no permission" message for unauthorized panels in saved layouts
 

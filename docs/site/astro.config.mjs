@@ -1,9 +1,22 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "astro/config";
+import react from "@astrojs/react";
 import starlight from "@astrojs/starlight";
+
+const frontendSrc = fileURLToPath(new URL("../../frontend/src", import.meta.url));
+
 export default defineConfig({
   site: "https://milesburton.github.io",
   base: "/veta-trading-platform",
+  vite: {
+    resolve: {
+      alias: {
+        "@veta/frontend": frontendSrc,
+      },
+    },
+  },
   integrations: [
+    react(),
     starlight({
       title: "VETA Trading Platform",
       description:
@@ -45,7 +58,7 @@ export default defineConfig({
           autogenerate: { directory: "reference" },
         },
       ],
-      customCss: ["./src/styles/custom.css"],
+      customCss: ["./src/styles/tailwind.css", "./src/styles/custom.css"],
       head: [
         {
           tag: "script",
