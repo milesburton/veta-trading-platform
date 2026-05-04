@@ -140,4 +140,56 @@ describe("ProductBookPanel", () => {
       expect(screen.queryByText(/Income Note/i)).not.toBeInTheDocument();
     });
   });
+
+  it("handles sell error", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.startsWith("/api/gateway/products?")) {
+        return new Response(JSON.stringify([issuedProduct]), { status: 200 });
+      }
+      if (url.includes("/sell") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ error: "sell denied" }), { status: 500 });
+      }
+      return new Response("{}", { status: 500 });
+    });
+    render(<ProductBookPanel />);
+    await screen.findByText(/Income Note/i);
+    fireEvent.click(screen.getByText(/Income Note/i));
+    fireEvent.click(screen.getByRole("button", { name: /^Sell$/i }));
+    expect(await screen.findByText(/sell denied/i)).toBeInTheDocument();
+  });
+
+  it("handles network error during sell", async () => {
+    let callIdx = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+      callIdx++;
+      if (callIdx === 1) {
+        return new Response(JSON.stringify([issuedProduct]), { status: 200 });
+      }
+      throw new Error("network down");
+    });
+    render(<ProductBookPanel />);
+    await screen.findByText(/Income Note/i);
+    fireEvent.click(screen.getByText(/Income Note/i));
+    fireEvent.click(screen.getByRole("button", { name: /^Sell$/i }));
+    expect(await screen.findByText(/network down/i)).toBeInTheDocument();
+  });
+
+  it("handles request-quote error for external client", async () => {
+    role = "external-client";
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.startsWith("/api/gateway/products?")) {
+        return new Response(JSON.stringify([issuedProduct]), { status: 200 });
+      }
+      if (url.includes("/api/gateway/rfq/sellside") && init?.method === "POST") {
+        return new Response(JSON.stringify({ error: "quote failed" }), { status: 500 });
+      }
+      return new Response("{}", { status: 500 });
+    });
+    render(<ProductBookPanel />);
+    await screen.findByText(/Income Note/i);
+    fireEvent.click(screen.getByRole("button", { name: /Request Quote/i }));
+    expect(await screen.findByText(/quote failed/i)).toBeInTheDocument();
+  });
 });

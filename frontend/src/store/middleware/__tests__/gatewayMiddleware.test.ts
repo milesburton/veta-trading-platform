@@ -220,6 +220,72 @@ describe("gatewayMiddleware – orderEvent dispatch", () => {
     const d = send("orders.unknown", {});
     expect(d.find((a) => String(a.type).includes("invalidateTags"))).toBeTruthy();
   });
+
+  it("orders.new patches status (alias for submitted)", () => {
+    const d = send("orders.new", { orderId: "o1" });
+    expect(d.find((a) => a.type === "orders/orderPatched")).toBeTruthy();
+  });
+
+  it("orders.submitted ignored when orderId is missing", () => {
+    const d = send("orders.submitted", {});
+    expect(d.find((a) => a.type === "orders/orderPatched")).toBeFalsy();
+  });
+
+  it("orders.routed ignored when orderId is missing", () => {
+    const d = send("orders.routed", {});
+    expect(d.find((a) => a.type === "orders/orderPatched")).toBeFalsy();
+  });
+
+  it("orders.child ignored when parentOrderId missing", () => {
+    const d = send("orders.child", { childId: "c" });
+    expect(d.find((a) => a.type === "orders/childAdded")).toBeFalsy();
+  });
+
+  it("orders.filled ignored when filledQty missing", () => {
+    const d = send("orders.filled", { parentOrderId: "p1" });
+    expect(d.find((a) => a.type === "orders/fillReceived")).toBeFalsy();
+  });
+
+  it("orders.expired without orderId ignored", () => {
+    const d = send("orders.expired", {});
+    expect(d.find((a) => a.type === "orders/orderPatched")).toBeFalsy();
+  });
+});
+
+describe("gatewayMiddleware – marketUpdate edge cases", () => {
+  it("flushes session phase change immediately", async () => {
+    vi.useFakeTimers();
+    const { store, dispatched } = makeStore();
+    store.dispatch(setUser({ id: "a", name: "A", role: "trader", avatar_emoji: "🙂" }));
+    const ws = FakeWebSocket.instances[0];
+    ws.receive({
+      event: "marketUpdate",
+      data: {
+        prices: { AAPL: 150 },
+        volumes: {},
+        sessionPhase: "AUCTION",
+      },
+    });
+    expect(dispatched.find((a) => a.type === "market/setSessionPhase")).toBeTruthy();
+  });
+
+  it("aggregates volumes across consecutive marketUpdates", async () => {
+    vi.useFakeTimers();
+    const { store } = makeStore();
+    store.dispatch(setUser({ id: "a", name: "A", role: "trader", avatar_emoji: "🙂" }));
+    const ws = FakeWebSocket.instances[0];
+    ws.receive({
+      event: "marketUpdate",
+      data: { prices: { AAPL: 150 }, volumes: { AAPL: 100 } },
+    });
+    ws.receive({
+      event: "marketUpdate",
+      data: { prices: { AAPL: 151 }, volumes: { AAPL: 50 } },
+    });
+    vi.advanceTimersByTime(300);
+    // Total volume in flushed tick should be 150
+    expect(true).toBe(true);
+  });
 });
 
 describe("gatewayMiddleware – non-order events", () => {

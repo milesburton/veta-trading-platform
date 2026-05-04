@@ -263,4 +263,83 @@ describe("ExpressionBuilder", () => {
     fireEvent.change(valueInput, { target: { value: "200" } });
     expect(onChange).toHaveBeenCalled();
   });
+
+  it("renders nested group node with delete button", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilderInline
+        fields={[...fields]}
+        value={{
+          kind: "group",
+          id: "outer",
+          join: "AND",
+          rules: [
+            {
+              kind: "group",
+              id: "inner",
+              join: "OR",
+              rules: [{ kind: "rule", id: "r1", field: "symbol", op: "=", value: "X" }],
+            },
+          ],
+        }}
+        onChange={onChange}
+      />
+    );
+    const removeBtn = screen.getByLabelText(/Remove group/i);
+    fireEvent.click(removeBtn);
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it("toggling join in nested group propagates", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilderInline
+        fields={[...fields]}
+        value={{
+          kind: "group",
+          id: "outer",
+          join: "AND",
+          rules: [
+            {
+              kind: "group",
+              id: "inner",
+              join: "OR",
+              rules: [{ kind: "rule", id: "r1", field: "symbol", op: "=", value: "X" }],
+            },
+          ],
+        }}
+        onChange={onChange}
+      />
+    );
+    // Click the OR pill (inner group's join)
+    const orBtn = screen.queryAllByRole("button", { name: "OR" })[0];
+    fireEvent.click(orBtn);
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it("changing rule in nested group triggers nested onChange", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilderInline
+        fields={[...fields]}
+        value={{
+          kind: "group",
+          id: "outer",
+          join: "AND",
+          rules: [
+            {
+              kind: "group",
+              id: "inner",
+              join: "OR",
+              rules: [{ kind: "rule", id: "r1", field: "symbol", op: "=", value: "X" }],
+            },
+          ],
+        }}
+        onChange={onChange}
+      />
+    );
+    const valueInput = screen.getByPlaceholderText(/value/);
+    fireEvent.change(valueInput, { target: { value: "AAPL" } });
+    expect(onChange).toHaveBeenCalled();
+  });
 });

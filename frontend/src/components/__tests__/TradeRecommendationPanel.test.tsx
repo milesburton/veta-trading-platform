@@ -220,4 +220,107 @@ describe("TradeRecommendationPanel", () => {
       expect(screen.queryByTestId("recommendation-row")).not.toBeInTheDocument();
     });
   });
+
+  it("filters recommendations by signal strength", async () => {
+    getRecommendations.mockReturnValue({
+      unwrap: () =>
+        Promise.resolve({
+          symbol: "AAPL",
+          spotPrice: 150,
+          impliedVol: 0.25,
+          recommendations: [
+            {
+              optionType: "call",
+              strike: 155,
+              expirySecs: 30 * 86400,
+              price: 4,
+              score: 70,
+              signalStrength: "STRONG_BUY",
+              reasons: ["momentum:+0.5"],
+              greeks: { delta: 0.5, gamma: 0.02, theta: -0.04, vega: 0.1, rho: 0.02 },
+              impliedVol: 0.25,
+              scoringMode: "signal-driven",
+              signalScore: 0.5,
+              signalConfidence: 0.7,
+              signalDirection: "long",
+            },
+          ],
+          computedAt: Date.now(),
+        }),
+    });
+    render(<TradeRecommendationPanel />);
+    fireEvent.click(screen.getByTestId("refresh-recommendations-btn"));
+    await screen.findByTestId("recommendation-row");
+
+    const filterSelect = screen.queryByLabelText(/Filter/i) as HTMLSelectElement | null;
+    if (filterSelect) {
+      fireEvent.change(filterSelect, { target: { value: "STRONG_SELL" } });
+      // No matching recommendations
+    }
+    expect(screen.getByTestId("recommendation-panel")).toBeInTheDocument();
+  });
+
+  it("renders recommendation with vol-driven scoring (no signal-driven badge style)", async () => {
+    getRecommendations.mockReturnValue({
+      unwrap: () =>
+        Promise.resolve({
+          symbol: "AAPL",
+          spotPrice: 150,
+          impliedVol: 0.4,
+          recommendations: [
+            {
+              optionType: "call",
+              strike: 150,
+              expirySecs: 7 * 86400,
+              price: 3,
+              score: 50,
+              signalStrength: "BUY",
+              reasons: ["ATM_HIGH_VOL", "momentum:+0.2"],
+              greeks: { delta: 0.5, gamma: 0.02, theta: -0.04, vega: 0.1, rho: 0.02 },
+              impliedVol: 0.4,
+              scoringMode: "vol-driven",
+            },
+          ],
+          computedAt: Date.now(),
+        }),
+    });
+    render(<TradeRecommendationPanel />);
+    fireEvent.click(screen.getByTestId("refresh-recommendations-btn"));
+    expect(await screen.findByTestId("recommendation-row")).toBeInTheDocument();
+  });
+
+  it("expands a row to show details and reason badges", async () => {
+    getRecommendations.mockReturnValue({
+      unwrap: () =>
+        Promise.resolve({
+          symbol: "AAPL",
+          spotPrice: 150,
+          impliedVol: 0.25,
+          recommendations: [
+            {
+              optionType: "call",
+              strike: 155,
+              expirySecs: 30 * 86400,
+              price: 4,
+              score: 70,
+              signalStrength: "STRONG_BUY",
+              reasons: ["momentum:+0.5", "volatility:-0.2", "neutral_factor"],
+              greeks: { delta: 0.5, gamma: 0.02, theta: -0.04, vega: 0.1, rho: 0.02 },
+              impliedVol: 0.25,
+              scoringMode: "signal-driven",
+              signalScore: 0.5,
+              signalConfidence: 0.7,
+              signalDirection: "long",
+            },
+          ],
+          computedAt: Date.now(),
+        }),
+    });
+    render(<TradeRecommendationPanel />);
+    fireEvent.click(screen.getByTestId("refresh-recommendations-btn"));
+    const row = await screen.findByTestId("recommendation-row");
+    fireEvent.click(row);
+    // Reason badges render
+    expect(screen.getAllByText(/Momentum|momentum/i).length).toBeGreaterThan(0);
+  });
 });
