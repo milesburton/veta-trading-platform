@@ -494,5 +494,3 @@ export function StrategyParams({
 
   return null;
 }
-
-export default StrategyParams;

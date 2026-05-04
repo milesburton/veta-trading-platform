@@ -13,8 +13,6 @@ frontend/playwright-report/
 frontend/dist-app/
 frontend/dist-electron/
 .claude/worktrees/
-.jscpd-report/
-.jscpd-report-post/
 .vite/
 test-results/
 docs/site/public/screenshots/

@@ -30,5 +30,3 @@ export type {
   TicketContext,
   TicketResolution,
 } from "./ticket-types";
-export { useAsyncRisk } from "./useAsyncRisk";
-export { useTicketResolution } from "./useTicketResolution";

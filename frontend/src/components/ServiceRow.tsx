@@ -56,5 +56,3 @@ export function ServiceRow({ svc }: { svc: ServiceHealth }) {
     </tr>
   );
 }
-
-export default ServiceRow;

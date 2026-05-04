@@ -69,5 +69,3 @@ export function AssetSelector({ assets, value, onChange, onSelect, inputRef, pri
     </div>
   );
 }
-
-export default AssetSelector;

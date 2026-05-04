@@ -107,13 +107,6 @@ export const selectActiveAlerts = createSelector(
     alerts.filter((a) => !a.dismissed && !muteRules.some((rule) => alertMatchesMuteRule(a, rule)))
 );
 
-export const selectAllUnmutedAlerts = createSelector(
-  (s: RootState) => s.alerts.alerts,
-  (s: RootState) => s.alerts.muteRules,
-  (alerts, muteRules) =>
-    alerts.filter((a) => !muteRules.some((rule) => alertMatchesMuteRule(a, rule)))
-);
-
 export const selectCriticalAlerts = createSelector(selectActiveAlerts, (alerts) =>
   alerts.filter((a) => a.severity === "CRITICAL")
 );

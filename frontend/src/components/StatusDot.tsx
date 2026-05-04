@@ -9,5 +9,3 @@ export function StatusDot({ state, className = "" }: { state: ServiceState; clas
 
   return <span className={`inline-block w-1.5 h-1.5 rounded-full ${cls(state)} ${className}`} />;
 }
-
-export default StatusDot;

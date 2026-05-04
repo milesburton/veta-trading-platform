@@ -624,7 +624,3 @@ export function canAccessPanel(
 
   return true;
 }
-
-export function isDeskRole(role: AuthRole | undefined): boolean {
-  return role !== undefined && DESK_ROLES.includes(role);
-}

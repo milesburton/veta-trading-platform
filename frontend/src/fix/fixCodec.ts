@@ -60,12 +60,6 @@ export const ExecType = {
   Fill: "F",
   Canceled: "4",
 } as const;
-export const OrdStatus = {
-  New: "0",
-  PartiallyFilled: "1",
-  Filled: "2",
-  Canceled: "4",
-} as const;
 export const EncryptMethod = { None: "0" } as const;
 
 export function encode(tags: [number, string | number][]): string {
