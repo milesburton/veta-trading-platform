@@ -61,7 +61,7 @@ export function DemoPersonas({ onSelect }: DemoPersonasProps) {
         <span className="font-medium tracking-wide uppercase text-[11px] text-gray-400">
           Demo personas
         </span>
-        <span className="text-gray-600 text-xs">{expanded.value ? "▾ hide" : "▸ show list"}</span>
+        <span className="text-gray-500 text-xs">{expanded.value ? "▾ hide" : "▸ show list"}</span>
       </button>
 
       {expanded.value && (

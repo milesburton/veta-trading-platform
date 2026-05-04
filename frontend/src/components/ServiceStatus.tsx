@@ -60,7 +60,7 @@ export function ServiceStatus({ services }: Props) {
             {okCount}/{totalCount}
           </span>
           {consistent && version && (
-            <span className="ml-1 font-mono text-gray-600">v{version}</span>
+            <span className="ml-1 font-mono text-gray-500">v{version}</span>
           )}
         </span>
       </button>

@@ -182,104 +182,106 @@ const Row = memo(function Row({
   const accentColour = isSelected ? (channelHex ?? "#34d399") : undefined;
 
   return (
-    <button
-      type="button"
-      data-testid={`asset-row-${asset.symbol}`}
-      style={{
-        ...style,
-        borderLeft: isSelected ? `3px solid ${accentColour}` : "3px solid transparent",
-      }}
-      {...ariaAttributes}
-      className={`w-full flex items-center border-b border-gray-800/40 cursor-pointer transition-colors text-xs bg-transparent text-left ${
-        isSelected ? "bg-gray-800/60" : "hover:bg-gray-800/30"
-      }`}
-      onMouseDown={(e) => {
-        e.preventDefault();
-      }}
-      onClick={handleSelect}
-      onContextMenu={(e) => onContextMenu(e, asset.symbol)}
-      aria-pressed={isSelected}
-      aria-label={`${asset.symbol} — ${asset.sector}. Bid ${
-        price > 0 ? formatPrice(asset.symbol, bid) : "unavailable"
-      }, Ask ${price > 0 ? formatPrice(asset.symbol, ask) : "unavailable"}, Last ${
-        price > 0 ? formatPrice(asset.symbol, price) : "unavailable"
-      }, change ${
-        price > 0 ? `${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%` : "unavailable"
-      }. ${isSelected ? "Selected — click to deselect" : "Click to select and view in chart"}`}
-      title={
-        isSelected
-          ? "Click again to deselect"
-          : "Click to select and view in chart, order ticket, and market depth"
-      }
-    >
-      <div style={{ width: colWidths.symbol ?? 90 }} className="px-3 flex-shrink-0">
-        <div
-          className="font-semibold leading-tight"
-          style={{
-            color: isSelected ? (accentColour ?? "#34d399") : "#e5e7eb",
-          }}
-        >
-          {asset.symbol}
-        </div>
-        <div className="text-gray-600 text-[9px] leading-tight truncate">{asset.sector}</div>
-        {asset.beta !== undefined && (
-          <div className="text-gray-700 text-[9px] leading-tight">
-            β{asset.beta.toFixed(2)}
-            {asset.marketCapB !== undefined && (
-              <span className="ml-1">
-                {asset.marketCapB >= 1000
-                  ? `${(asset.marketCapB / 1000).toFixed(1)}T`
-                  : `${asset.marketCapB.toFixed(0)}B`}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-      <div style={{ width: colWidths.bid ?? 64 }} className="text-right px-2 flex-shrink-0">
-        <div className="text-sky-400 tabular-nums text-[10px]">
-          {price > 0 ? formatPrice(asset.symbol, bid) : "—"}
-        </div>
-        {price > 0 && (
-          <div className="text-gray-700 text-[9px] tabular-nums">{spreadBps.toFixed(1)}bp</div>
-        )}
-      </div>
-      <div
-        style={{ width: colWidths.ask ?? 64 }}
-        className="text-right px-2 text-red-400 tabular-nums flex-shrink-0"
-      >
-        {price > 0 ? formatPrice(asset.symbol, ask) : "—"}
-      </div>
-      <div style={{ width: colWidths.last ?? 64 }} className="text-right px-2 flex-shrink-0">
-        {price > 0 ? (
-          <PriceFlash value={price} asset={asset.symbol} />
-        ) : (
-          <span className="text-gray-600">—</span>
-        )}
-      </div>
-      <div
-        style={{ width: colWidths.change ?? 56 }}
-        className={`text-right px-2 tabular-nums flex-shrink-0 ${
-          changePos ? "text-emerald-400" : "text-red-400"
+    <div {...ariaAttributes} style={style}>
+      <button
+        type="button"
+        data-testid={`asset-row-${asset.symbol}`}
+        style={{
+          width: "100%",
+          height: "100%",
+          borderLeft: isSelected ? `3px solid ${accentColour}` : "3px solid transparent",
+        }}
+        className={`flex items-center border-b border-gray-800/40 cursor-pointer transition-colors text-xs bg-transparent text-left ${
+          isSelected ? "bg-gray-800/60" : "hover:bg-gray-800/30"
         }`}
+        onMouseDown={(e) => {
+          e.preventDefault();
+        }}
+        onClick={handleSelect}
+        onContextMenu={(e) => onContextMenu(e, asset.symbol)}
+        aria-pressed={isSelected}
+        aria-label={`${asset.symbol} — ${asset.sector}. Bid ${
+          price > 0 ? formatPrice(asset.symbol, bid) : "unavailable"
+        }, Ask ${price > 0 ? formatPrice(asset.symbol, ask) : "unavailable"}, Last ${
+          price > 0 ? formatPrice(asset.symbol, price) : "unavailable"
+        }, change ${
+          price > 0 ? `${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%` : "unavailable"
+        }. ${isSelected ? "Selected — click to deselect" : "Click to select and view in chart"}`}
+        title={
+          isSelected
+            ? "Click again to deselect"
+            : "Click to select and view in chart, order ticket, and market depth"
+        }
       >
-        {price > 0 ? `${changePos ? "+" : ""}${changePct.toFixed(2)}%` : "—"}
-      </div>
-      <div className="flex-1 flex items-center justify-end pr-2 gap-1.5">
-        {isSelected && accentColour && (
-          <span
-            className="text-[8px] font-mono font-bold px-1 py-0.5 rounded leading-none"
+        <div style={{ width: colWidths.symbol ?? 90 }} className="px-3 flex-shrink-0">
+          <div
+            className="font-semibold leading-tight"
             style={{
-              color: accentColour,
-              backgroundColor: `${accentColour}22`,
-              border: `1px solid ${accentColour}55`,
+              color: isSelected ? (accentColour ?? "#34d399") : "#e5e7eb",
             }}
           >
-            → {channelHex ? "linked" : "ch"}
-          </span>
-        )}
-        {history.length > 1 ? <Sparkline data={history.slice(-30)} /> : null}
-      </div>
-    </button>
+            {asset.symbol}
+          </div>
+          <div className="text-gray-600 text-[9px] leading-tight truncate">{asset.sector}</div>
+          {asset.beta !== undefined && (
+            <div className="text-gray-700 text-[9px] leading-tight">
+              β{asset.beta.toFixed(2)}
+              {asset.marketCapB !== undefined && (
+                <span className="ml-1">
+                  {asset.marketCapB >= 1000
+                    ? `${(asset.marketCapB / 1000).toFixed(1)}T`
+                    : `${asset.marketCapB.toFixed(0)}B`}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <div style={{ width: colWidths.bid ?? 64 }} className="text-right px-2 flex-shrink-0">
+          <div className="text-sky-400 tabular-nums text-[10px]">
+            {price > 0 ? formatPrice(asset.symbol, bid) : "—"}
+          </div>
+          {price > 0 && (
+            <div className="text-gray-700 text-[9px] tabular-nums">{spreadBps.toFixed(1)}bp</div>
+          )}
+        </div>
+        <div
+          style={{ width: colWidths.ask ?? 64 }}
+          className="text-right px-2 text-red-400 tabular-nums flex-shrink-0"
+        >
+          {price > 0 ? formatPrice(asset.symbol, ask) : "—"}
+        </div>
+        <div style={{ width: colWidths.last ?? 64 }} className="text-right px-2 flex-shrink-0">
+          {price > 0 ? (
+            <PriceFlash value={price} asset={asset.symbol} />
+          ) : (
+            <span className="text-gray-600">—</span>
+          )}
+        </div>
+        <div
+          style={{ width: colWidths.change ?? 56 }}
+          className={`text-right px-2 tabular-nums flex-shrink-0 ${
+            changePos ? "text-emerald-400" : "text-red-400"
+          }`}
+        >
+          {price > 0 ? `${changePos ? "+" : ""}${changePct.toFixed(2)}%` : "—"}
+        </div>
+        <div className="flex-1 flex items-center justify-end pr-2 gap-1.5">
+          {isSelected && accentColour && (
+            <span
+              className="text-[8px] font-mono font-bold px-1 py-0.5 rounded leading-none"
+              style={{
+                color: accentColour,
+                backgroundColor: `${accentColour}22`,
+                border: `1px solid ${accentColour}55`,
+              }}
+            >
+              → {channelHex ? "linked" : "ch"}
+            </span>
+          )}
+          {history.length > 1 ? <Sparkline data={history.slice(-30)} /> : null}
+        </div>
+      </button>
+    </div>
   );
 });
 

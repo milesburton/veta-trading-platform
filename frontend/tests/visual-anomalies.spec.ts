@@ -58,6 +58,10 @@ async function captureAnomalies(
         v.nodes[0]?.target?.[0] !== undefined
           ? String(v.nodes[0].target[0])
           : undefined,
+      targets: v.nodes.slice(0, 5).map((n) => ({
+        selector: String(n.target?.[0] ?? ""),
+        html: n.html?.slice(0, 200) ?? "",
+      })),
     })),
   };
   reports.push(report);
@@ -105,5 +109,29 @@ test.describe("visual anomalies (informational, non-gating)", () => {
     await page.waitForTimeout(500);
     const r = await captureAnomalies(page, "admin-dashboard");
     expect(r.scenario).toBe("admin-dashboard");
+  });
+
+  test("algo trader dashboard", async ({ page }) => {
+    const app = new AppPage(page);
+    await app.gotoAsAlgoTrader();
+    await page.waitForTimeout(500);
+    const r = await captureAnomalies(page, "algo-trader-dashboard");
+    expect(r.scenario).toBe("algo-trader-dashboard");
+  });
+
+  test("fixed-income trader dashboard", async ({ page }) => {
+    const app = new AppPage(page);
+    await app.gotoAsFiTrader();
+    await page.waitForTimeout(500);
+    const r = await captureAnomalies(page, "fi-trader-dashboard");
+    expect(r.scenario).toBe("fi-trader-dashboard");
+  });
+
+  test("research analyst dashboard", async ({ page }) => {
+    const app = new AppPage(page);
+    await app.gotoAsAnalyst();
+    await page.waitForTimeout(500);
+    const r = await captureAnomalies(page, "analyst-dashboard");
+    expect(r.scenario).toBe("analyst-dashboard");
   });
 });

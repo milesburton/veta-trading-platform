@@ -528,7 +528,6 @@ export function MarketHeatmap() {
               ? `${drilldown.value} sector heatmap`
               : "Market heatmap — sector treemap coloured by % price change"
           }
-          role="img"
         >
           <rect x={0} y={0} width={cw} height={ch} fill={COLOR.HEAT_BG} />
 

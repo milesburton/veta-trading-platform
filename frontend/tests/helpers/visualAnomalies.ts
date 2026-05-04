@@ -16,6 +16,7 @@ export interface AxeViolation {
   helpUrl: string;
   nodeCount: number;
   sampleSelector?: string;
+  targets?: Array<{ selector: string; html: string }>;
 }
 
 export interface AnomalyReport {
