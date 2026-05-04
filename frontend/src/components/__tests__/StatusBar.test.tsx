@@ -63,6 +63,13 @@ function makeStore(connected: boolean) {
   });
 }
 
+function authenticateStore(store: ReturnType<typeof makeStore>) {
+  store.dispatch({
+    type: "auth/setUser",
+    payload: { id: "alice", name: "Alice", role: "trader", avatar_emoji: "👩" },
+  });
+}
+
 function renderBar(connected: boolean) {
   return render(
     <Provider store={makeStore(connected)}>
@@ -120,6 +127,7 @@ describe("StatusBar – disconnected state", () => {
 describe("StatusBar – alert badge", () => {
   it("shows alert count when there are alerts", () => {
     const store = makeStore(true);
+    authenticateStore(store);
     store.dispatch(
       alertAdded({
         severity: "WARNING",
@@ -156,6 +164,7 @@ describe("StatusBar – alert badge", () => {
 
   it("shows '99+' when there are more than 99 alerts", () => {
     const store = makeStore(true);
+    authenticateStore(store);
     for (let i = 0; i < 105; i++) {
       store.dispatch(
         alertAdded({
@@ -195,7 +204,9 @@ describe("StatusBar – alert badge", () => {
 
 describe("StatusBar – theme switcher", () => {
   it("opens theme dropdown when Theme button clicked", () => {
-    renderBar(true);
+    const store = makeStore(true);
+    authenticateStore(store);
+    renderWithStore(store);
     const btn = screen.getByText("Theme");
     fireEvent.click(btn);
     expect(screen.getByText("Dark")).toBeInTheDocument();
@@ -206,6 +217,7 @@ describe("StatusBar – theme switcher", () => {
 
   it("changes theme when an option is clicked", () => {
     const store = makeStore(true);
+    authenticateStore(store);
     render(
       <Provider store={store}>
         <DashboardContext.Provider
@@ -235,7 +247,9 @@ describe("StatusBar – theme switcher", () => {
   });
 
   it("closes theme dropdown when backdrop is clicked", () => {
-    renderBar(true);
+    const store = makeStore(true);
+    authenticateStore(store);
+    renderWithStore(store);
     fireEvent.click(screen.getByText("Theme"));
     fireEvent.click(screen.getByLabelText(/Close theme picker/i));
     expect(screen.queryByText("OLED")).not.toBeInTheDocument();
@@ -369,6 +383,7 @@ function renderWithStore(store: ReturnType<typeof makeStore>) {
 describe("StatusBar – alert button interactions", () => {
   it("clicking alert button opens drawer", () => {
     const store = makeStore(true);
+    authenticateStore(store);
     renderWithStore(store);
     const btn = screen.getByTestId("alert-bell-btn");
     fireEvent.click(btn);

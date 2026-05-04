@@ -532,10 +532,14 @@ export function AppHeader() {
             </svg>
             <span className="sr-only">View source on GitHub</span>
           </a>
-          <div data-testid="theme-selector">
-            <ThemeSwitcher />
-          </div>
-          <AlertCentreButton services={services} />
+          {user && (
+            <>
+              <div data-testid="theme-selector">
+                <ThemeSwitcher />
+              </div>
+              <AlertCentreButton services={services} />
+            </>
+          )}
           <div data-testid="kill-switch-wrapper">
             <KillSwitchButton />
           </div>
