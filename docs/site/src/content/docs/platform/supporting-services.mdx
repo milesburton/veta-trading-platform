@@ -1,52 +1,15 @@
 ---
 title: Supporting Services
-description: Observability, ingress, load testing and infrastructure that surrounds the trading pipeline.
+description: Ingress, load testing and infrastructure utilities that surround the trading pipeline.
 ---
 
 import Svc from "../../../components/Svc.astro";
 
 The [Service Map](../services/) catalogues the trading pipeline itself —
 <Svc name="market-sim" />, <Svc name="oms" />, <Svc name="ems" />, algos, <Svc name="journal" />, FIX, and the analytics services. This
-page covers the supporting infrastructure: how the platform is observed, how
-ingress is routed, how it is load-tested, and the operational utilities that
-keep it running.
-
-## Observability stack (LGTM)
-
-A separate Compose stack at `observability/docker-compose.lgtm.yml` provides
-metrics, logs and traces. It is independent of the trading stack and can run
-on the same host or be pointed at a remote one.
-
-| Container | Image | Port | Role |
-|-----------|-------|------|------|
-| `lgtm-grafana` | `grafana/grafana:11.4.0` | 3000 | Dashboards, alerting, datasource UI |
-| `lgtm-prometheus` | `prom/prometheus:v3.1.0` | 9090 | Time-series metrics; remote-write enabled |
-| `lgtm-loki` | `grafana/loki:3.3.2` | 3100 | Log aggregation |
-| `lgtm-tempo` | `grafana/tempo:2.7.1` | 3200 / 4319 | Distributed traces |
-| `lgtm-alloy` | `grafana/alloy:v1.7.0` | 12345 | Log + metric collector; tails service stdout |
-
-Grafana is provisioned with the three datasources and a `Trading` folder
-containing both the project-specific dashboard and the official k6
-Prometheus dashboard.
-
-```bash
-docker compose -f observability/docker-compose.lgtm.yml up -d
-```
-
-Open `http://localhost:3000` once the stack is up. Anonymous read access is
-enabled for local development; production deployments should add auth.
-
-## kafka-relay (port 5007)
-
-A small Deno service that subscribes to every Redpanda topic the platform
-emits and forwards each event as a JSON line to stdout. Grafana Alloy tails
-those lines and ships them to Loki, giving Grafana a unified log search
-across the entire trading pipeline.
-
-The relay also exposes `POST /events/batch` for the frontend. The browser's
-[error transport middleware](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/store/middleware/errorTransportMiddleware.ts)
-posts uncaught errors here, so client-side failures show up in Loki
-alongside backend events.
+page covers the supporting infrastructure that surrounds it: ingress, load
+testing, and operational utilities. Metrics/logs/traces have moved to their
+own [Observability page](../observability/).
 
 ## Traefik (port 80, dashboard 8888)
 

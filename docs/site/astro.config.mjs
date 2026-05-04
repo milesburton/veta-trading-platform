@@ -49,23 +49,82 @@ export default defineConfig({
       sidebar: [
         {
           label: "Getting Started",
-          autogenerate: { directory: "guides" },
+          items: [
+            { label: "Overview", slug: "guides/overview" },
+            { label: "Quick start", slug: "guides/quick-start" },
+            { label: "Personas", slug: "guides/personas" },
+          ],
         },
         {
           label: "User Guide",
-          autogenerate: { directory: "user-guide" },
+          items: [
+            {
+              label: "Trading",
+              items: [
+                { label: "Placing orders", slug: "user-guide/placing-orders" },
+                { label: "Managing orders", slug: "user-guide/managing-orders" },
+                { label: "Algo trading", slug: "user-guide/algo-trading" },
+                { label: "Risk controls", slug: "user-guide/risk-controls" },
+              ],
+            },
+            {
+              label: "Markets",
+              items: [
+                { label: "Market monitoring", slug: "user-guide/market-monitoring" },
+                { label: "Finding instruments", slug: "user-guide/finding-instruments" },
+                { label: "Fixed income", slug: "user-guide/fixed-income" },
+              ],
+            },
+            { label: "Admin tools", slug: "user-guide/admin-tools" },
+          ],
         },
         {
           label: "Platform",
-          autogenerate: { directory: "platform" },
+          items: [
+            {
+              label: "How it works",
+              items: [
+                { label: "Architecture", slug: "platform/architecture" },
+                { label: "Service map", slug: "platform/services" },
+                { label: "Algo strategies", slug: "platform/algos" },
+                { label: "Risk controls", slug: "platform/risk" },
+              ],
+            },
+            {
+              label: "Operations",
+              items: [
+                { label: "Observability", slug: "platform/observability" },
+                { label: "Supporting services", slug: "platform/supporting-services" },
+                { label: "Security posture", slug: "platform/security" },
+                { label: "Screenshots", slug: "platform/screenshots" },
+              ],
+            },
+          ],
         },
         {
           label: "Development",
-          autogenerate: { directory: "development" },
+          items: [
+            { label: "Coding approach", slug: "development/coding-approach" },
+            { label: "Project structure", slug: "development/structure" },
+            { label: "Testing", slug: "development/testing" },
+            { label: "CI / CD", slug: "development/ci-cd" },
+            { label: "Deployment", slug: "development/deployment" },
+            { label: "Shared modules", slug: "development/shared-modules" },
+            { label: "Source references", slug: "development/source-references" },
+            { label: "Contributing", slug: "development/contributing" },
+            { label: "Roadmap", slug: "development/roadmap" },
+          ],
         },
         {
           label: "Reference",
-          autogenerate: { directory: "reference" },
+          items: [
+            { label: "API gateway", slug: "reference/api-gateway" },
+            { label: "RBAC & permissions", slug: "reference/rbac" },
+            { label: "Trading styles", slug: "reference/trading-styles" },
+            { label: "Migrations", slug: "reference/migrations" },
+            { label: "Performance", slug: "reference/performance" },
+            { label: "Tech stack", slug: "reference/tech-stack" },
+          ],
         },
       ],
       customCss: ["./src/styles/tailwind.css", "./src/styles/custom.css"],
