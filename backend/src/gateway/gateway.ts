@@ -3,6 +3,12 @@ import { getCookieToken } from "@veta/auth";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { serveDir } from "jsr:@std/http@1.0.25/file-server";
+import {
+  handleHealth,
+  handleSystemStatus,
+  makeMarketSimWsProxy,
+} from "./system-status.ts";
+import { proxyGet, proxyPost, proxyPut } from "./proxy.ts";
 
 const PORT = Number(Deno.env.get("GATEWAY_PORT")) || 5_011;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -371,80 +377,6 @@ function startConsumers(): void {
 
 await startConsumers();
 
-async function proxyPost(internalUrl: string, req: Request): Promise<Response> {
-  try {
-    const body = await req.text();
-    const res = await fetch(internalUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-      signal: AbortSignal.timeout(15_000),
-    });
-    const resBody = await res.arrayBuffer();
-    const headers: Record<string, string> = {
-      "Content-Type": res.headers.get("Content-Type") ?? "application/json",
-      ...CORS_HEADERS,
-    };
-    const setCookie = res.headers.get("set-cookie");
-    if (setCookie) headers["Set-Cookie"] = setCookie;
-    return new Response(resBody, { status: res.status, headers });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 502,
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-    });
-  }
-}
-
-async function proxyPut(internalUrl: string, req: Request): Promise<Response> {
-  try {
-    const body = await req.text();
-    const res = await fetch(internalUrl, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body,
-      signal: AbortSignal.timeout(8_000),
-    });
-    const resBody = await res.arrayBuffer();
-    return new Response(resBody, {
-      status: res.status,
-      headers: {
-        "Content-Type": res.headers.get("Content-Type") ?? "application/json",
-        ...CORS_HEADERS,
-      },
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 502,
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-    });
-  }
-}
-
-async function proxyGet(internalUrl: string, req: Request): Promise<Response> {
-  const src = new URL(req.url);
-  const target = new URL(internalUrl);
-  target.search = src.search;
-  try {
-    const res = await fetch(target.toString(), {
-      method: req.method,
-      signal: AbortSignal.timeout(8_000),
-    });
-    const body = await res.arrayBuffer();
-    return new Response(body, {
-      status: res.status,
-      headers: {
-        "Content-Type": res.headers.get("Content-Type") ?? "application/json",
-        ...CORS_HEADERS,
-      },
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 502,
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-    });
-  }
-}
 
 type OrderSpec = {
   asset: string; side: "BUY" | "SELL"; quantity: number;
@@ -576,10 +508,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({ service: "gateway", version: VERSION, status: "ok" }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return handleHealth(VERSION);
   }
 
   if (path === "/ready" && req.method === "GET") {
@@ -620,51 +549,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/system" && req.method === "GET") {
-    let disk: { total: number; used: number; available: number; percentUsed: number } | null = null;
-    let diskStatus = "unavailable";
-    try {
-      const proc = new Deno.Command("df", {
-        args: ["-Pk", "/"],
-        stdout: "piped",
-        stderr: "null",
-      });
-      const { code, stdout } = await proc.output();
-      if (code === 0) {
-        const lines = new TextDecoder().decode(stdout).trim().split("\n");
-        if (lines.length >= 2) {
-          const cols = lines[1].split(/\s+/);
-          const totalKb = Number(cols[1]);
-          const usedKb = Number(cols[2]);
-          const availKb = Number(cols[3]);
-          if (totalKb > 0) {
-            disk = {
-              total: totalKb * 1024,
-              used: usedKb * 1024,
-              available: availKb * 1024,
-              percentUsed: (usedKb / totalKb) * 100,
-            };
-            diskStatus = disk.percentUsed > 95 ? "critical" : disk.percentUsed > 85 ? "warning" : "ok";
-          }
-        }
-      }
-    } catch {
-      // best-effort — df may not be available in some environments
-    }
-    const mem = Deno.memoryUsage();
-    return new Response(
-      JSON.stringify({
-        disk,
-        diskStatus,
-        diskWarnPct: 85,
-        memory: {
-          rss_mb: Math.round(mem.rss / 1_048_576),
-          heap_used_mb: Math.round(mem.heapUsed / 1_048_576),
-          heap_total_mb: Math.round(mem.heapTotal / 1_048_576),
-          external_mb: Math.round(mem.external / 1_048_576),
-        },
-      }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return handleSystemStatus();
   }
 
   if (path === "/upgrade-status" && req.method === "PUT") {
@@ -686,18 +571,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/ws/market-sim") {
-    if (req.headers.get("upgrade") !== "websocket") {
-      return new Response("Expected WebSocket upgrade", { status: 426 });
-    }
-    const { socket: client, response } = Deno.upgradeWebSocket(req);
-    const upstream = new WebSocket(`ws://localhost:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`);
-    upstream.onmessage = (ev) => { try { if (client.readyState === WebSocket.OPEN) client.send(ev.data); } catch { /* ignore */ } };
-    upstream.onclose = () => { try { client.close(); } catch { /* ignore */ } };
-    upstream.onerror = () => { try { client.close(); } catch { /* ignore */ } };
-    client.onmessage = (ev) => { try { if (upstream.readyState === WebSocket.OPEN) upstream.send(ev.data); } catch { /* ignore */ } };
-    client.onclose = () => { try { upstream.close(); } catch { /* ignore */ } };
-    client.onerror = () => { try { upstream.close(); } catch { /* ignore */ } };
-    return response;
+    return makeMarketSimWsProxy(
+      req,
+      Number(Deno.env.get("MARKET_SIM_PORT") ?? "5000"),
+    );
   }
 
   if (path === "/ws" || path === "/ws/gateway") {
