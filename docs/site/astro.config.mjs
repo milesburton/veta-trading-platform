@@ -3,10 +3,14 @@ import { defineConfig } from "astro/config";
 import react from "@astrojs/react";
 import starlight from "@astrojs/starlight";
 
-const frontendSrc = fileURLToPath(new URL("../../frontend/src", import.meta.url));
+const frontendSrc = fileURLToPath(
+  new URL("../../frontend/src", import.meta.url),
+);
 const docsBase = "/veta-trading-platform";
 
-const docsNodeModules = fileURLToPath(new URL("./node_modules", import.meta.url));
+const docsNodeModules = fileURLToPath(
+  new URL("./node_modules", import.meta.url),
+);
 
 export default defineConfig({
   site: "https://milesburton.github.io",
