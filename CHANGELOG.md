@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.22.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.21.0...veta-trading-platform-v1.22.0) (2026-05-04)
+
+
+### Features
+
+* add degraded services overlay on login page ([774bd60](https://github.com/milesburton/veta-trading-platform/commit/774bd60e8847929c4b272d4138d40779f428a626))
+
+
+### Bug Fixes
+
+* **frontend:** a11y violations surfaced by visual-anomaly check ([4872743](https://github.com/milesburton/veta-trading-platform/commit/4872743f59a8f75aa5c32ccd38fd19adfb714996))
+* **frontend:** a11y violations surfaced by visual-anomaly check (part 2) ([8ce102f](https://github.com/milesburton/veta-trading-platform/commit/8ce102fc40404daaa3c6986df6f8f933599c6499))
+
 ## [1.21.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.20.1...veta-trading-platform-v1.21.0) (2026-05-04)
 
 
