@@ -161,12 +161,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   if (status === "unauthenticated") {
-    return (
-      <LoginPage
-        buildDate={import.meta.env.VITE_BUILD_DATE}
-        commitSha={import.meta.env.VITE_COMMIT_SHA}
-      />
-    );
+    return <LoginPage />;
   }
 
   return <>{children}</>;

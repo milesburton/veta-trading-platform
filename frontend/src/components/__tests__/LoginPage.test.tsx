@@ -7,6 +7,13 @@ import { servicesApi } from "../../store/servicesApi";
 import { userApi } from "../../store/userApi";
 import { LoginPage } from "../LoginPage";
 
+// LoginPage now embeds the shared <AppHeader />. The chrome itself is tested
+// in StatusBar.test.tsx; here we mock it so these tests stay focused on the
+// auth form behaviour.
+vi.mock("../StatusBar", () => ({
+  AppHeader: () => <div data-testid="app-header-mock" />,
+}));
+
 vi.mock("../../store/servicesApi", async (importOriginal) => {
   const original = await importOriginal<typeof import("../../store/servicesApi")>();
   return {
@@ -51,10 +58,10 @@ function makeStore() {
   });
 }
 
-function renderLogin(props: { buildDate?: string; commitSha?: string } = {}, store = makeStore()) {
+function renderLogin(store = makeStore()) {
   const result = render(
     <Provider store={store}>
-      <LoginPage {...props} />
+      <LoginPage />
     </Provider>
   );
   return { ...result, store };
@@ -76,10 +83,10 @@ describe("LoginPage", () => {
     });
   });
 
-  test("renders brand, sign-in heading, and credential fields", () => {
+  test("embeds the shared app header and renders the credential form", () => {
     renderLogin();
 
-    expect(screen.getByTestId("brand-title")).toHaveTextContent("VETA");
+    expect(screen.getByTestId("app-header-mock")).toBeInTheDocument();
     expect(screen.getByTestId("login-heading")).toHaveTextContent("Sign in");
     expect(screen.getByTestId("oauth-username")).toBeInTheDocument();
     expect(screen.getByTestId("oauth-password")).toBeInTheDocument();
@@ -129,28 +136,12 @@ describe("LoginPage", () => {
     await waitFor(() => expect(mockExchangeOAuthCode).toHaveBeenCalled());
   });
 
-  test("renders footer with short SHA, build date, and GitHub link", () => {
-    renderLogin({ buildDate: "2026-03-08", commitSha: "abc1234deadbeef" });
-
-    expect(screen.getByText(/Miles Burton/)).toBeInTheDocument();
-    expect(screen.getByTitle("View source on GitHub")).toHaveAttribute(
-      "href",
-      "https://github.com/milesburton/veta-trading-platform"
-    );
-    expect(screen.getByText(/vabc1234/)).toBeInTheDocument();
-    expect(screen.getByText(/2026-03-08/)).toBeInTheDocument();
-    expect(screen.queryByText("Alert Ops")).not.toBeInTheDocument();
-  });
-
-  test("renders footer with author when build info props omitted", () => {
+  test("does not duplicate footer chrome — build info lives in the shared AppHeader", () => {
     renderLogin();
-    expect(screen.getByText(/Miles Burton/)).toBeInTheDocument();
-    expect(screen.getByTitle("View source on GitHub")).toBeInTheDocument();
-  });
-
-  test("does not render platform status section", () => {
-    renderLogin();
-    expect(screen.queryByTestId("platform-status")).not.toBeInTheDocument();
+    // Build info, GitHub link, and author attribution are now part of AppHeader,
+    // mocked above. The login layout itself adds no footer.
+    expect(screen.queryByText(/Miles Burton/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("login-build-info")).not.toBeInTheDocument();
   });
 
   test("shows specific error when OAuth returns 401", async () => {
