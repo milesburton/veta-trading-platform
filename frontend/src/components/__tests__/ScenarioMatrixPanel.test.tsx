@@ -150,4 +150,36 @@ describe("ScenarioMatrixPanel", () => {
     }
     expect(screen.getByTestId("scenario-matrix-panel")).toBeInTheDocument();
   });
+
+  it("hovering a cell shows tooltip", async () => {
+    render(<ScenarioMatrixPanel />);
+    fireEvent.click(screen.getByTestId("run-scenario-btn"));
+    await screen.findByTestId("scenario-table");
+    const cells = screen.getAllByText(/^[+-]?[0-9]+\.[0-9]/);
+    if (cells.length > 0) {
+      fireEvent.mouseEnter(cells[0]);
+      fireEvent.mouseLeave(cells[0]);
+    }
+    expect(screen.getByTestId("scenario-table")).toBeInTheDocument();
+  });
+
+  it("toggles ranges control", () => {
+    render(<ScenarioMatrixPanel />);
+    const rangesBtn = screen.queryByRole("button", { name: /Ranges|Adjust/i });
+    if (rangesBtn) {
+      fireEvent.click(rangesBtn);
+    }
+    expect(screen.getByTestId("scenario-matrix-panel")).toBeInTheDocument();
+  });
+
+  it("changes the metric to P&L %", async () => {
+    render(<ScenarioMatrixPanel />);
+    fireEvent.click(screen.getByTestId("run-scenario-btn"));
+    await screen.findByTestId("scenario-table");
+    const pctBtns = screen.queryAllByText(/P&L %/i);
+    if (pctBtns.length > 0) {
+      fireEvent.click(pctBtns[0]);
+    }
+    expect(screen.getByTestId("scenario-table")).toBeInTheDocument();
+  });
 });

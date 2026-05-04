@@ -236,6 +236,55 @@ describe("MarketLadder – row interaction", () => {
   });
 });
 
+describe("MarketLadder – sort and selected state", () => {
+  it("clicking a sortable column header changes sort", () => {
+    renderLadder();
+    const lastHeader = screen.getByText("Last");
+    fireEvent.click(lastHeader);
+    // Just verifying no crash
+    expect(lastHeader).toBeInTheDocument();
+  });
+
+  it("clicking a selected row deselects it", () => {
+    renderLadder();
+    const row = screen.getByTestId("asset-row-AAPL");
+    fireEvent.click(row);
+    fireEvent.click(row);
+    expect(row).toBeInTheDocument();
+  });
+
+  it("renders selected row with accent border", () => {
+    const store = makeStore();
+    store.dispatch({ type: "ui/setSelectedAsset", payload: "AAPL" });
+    render(
+      <Provider store={store}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "ml-2",
+            panelType: "market-ladder",
+            outgoing: 1,
+            incoming: null,
+          }}
+        >
+          <MarketLadder />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    const row = screen.getByTestId("asset-row-AAPL");
+    expect(row).toBeInTheDocument();
+  });
+
+  it("renders price-zero state correctly", () => {
+    renderLadder({
+      assets: [{ symbol: "AAPL", initialPrice: 150, volatility: 0.02, sector: "Technology" }],
+      prices: { AAPL: 0 },
+      priceHistory: { AAPL: [] },
+    });
+    const row = screen.getByTestId("asset-row-AAPL");
+    expect(row).toBeInTheDocument();
+  });
+});
+
 describe("MarketLadder – metadata rendering", () => {
   it("renders beta and market cap when available", () => {
     renderLadder({

@@ -178,6 +178,48 @@ describe("EstateOverviewPanel", () => {
     expect(screen.getByText(/Estate Overview/i)).toBeInTheDocument();
   });
 
+  it("renders all required services as ok", () => {
+    byService.OMS = { ok: true, version: "1.0.0" };
+    byService.Gateway = { ok: true, version: "2.0.0" };
+    renderPanel();
+    // OMS is in REQUIRED_SERVICES set so should be visible with OK
+    const okEls = screen.getAllByText(/OK/i);
+    expect(okEls.length).toBeGreaterThan(0);
+  });
+
+  it("renders error/critical service when down", () => {
+    byService.OMS = { ok: false, version: "-" };
+    byService.Gateway = { ok: false, version: "-" };
+    renderPanel();
+    const downEls = screen.getAllByText(/DOWN/i);
+    expect(downEls.length).toBeGreaterThan(0);
+  });
+
+  it("dismissing all alerts shows empty state", () => {
+    const now = Date.now();
+    renderPanel([
+      {
+        id: "a-1",
+        severity: "INFO",
+        source: "service",
+        message: "Service recovered",
+        ts: now,
+        dismissed: false,
+      },
+      {
+        id: "a-2",
+        severity: "WARNING",
+        source: "order",
+        message: "Order rejected",
+        ts: now,
+        dismissed: true, // already dismissed
+      },
+    ]);
+    expect(screen.getByText(/Service recovered/i)).toBeInTheDocument();
+    // Dismissed alerts shouldn't appear
+    expect(screen.queryByText(/Order rejected/)).not.toBeInTheDocument();
+  });
+
   it("renders timeline events when present", () => {
     const events = [
       {

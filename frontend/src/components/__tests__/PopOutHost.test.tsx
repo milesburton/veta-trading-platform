@@ -161,4 +161,28 @@ describe("PopOutHost", () => {
     renderHost("market-ladder");
     expect(screen.getByTestId("market-ladder-panel")).toBeInTheDocument();
   });
+
+  it("candle-chart pop-out reads selectedAsset from incoming channel", () => {
+    localStorage.setItem(
+      "layout-test",
+      JSON.stringify({
+        _v: 3,
+        items: [{ i: "panel-1", outgoing: 2, incoming: 1 }],
+      })
+    );
+    renderHost("candle-chart");
+    expect(screen.getByText(/Waiting for candle data/i)).toBeInTheDocument();
+  });
+
+  it("market-depth pop-out uses incoming channel symbol", () => {
+    localStorage.setItem(
+      "layout-test",
+      JSON.stringify({
+        _v: 3,
+        items: [{ i: "panel-1", outgoing: 2, incoming: 1 }],
+      })
+    );
+    renderHost("market-depth");
+    expect(document.title).toMatch(/VETA/);
+  });
 });

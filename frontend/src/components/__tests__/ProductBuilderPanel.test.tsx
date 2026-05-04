@@ -168,6 +168,57 @@ describe("ProductBuilderPanel", () => {
     void callIdx;
   });
 
+  it("handles issue error after structure success", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/api/gateway/products") && init?.method === "POST") {
+        return new Response(JSON.stringify({ productId: "p-1", state: "draft" }), { status: 200 });
+      }
+      if (url.includes("/structure") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ productId: "p-1", state: "structured" }), {
+          status: 200,
+        });
+      }
+      if (url.includes("/issue") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ error: "issue failed" }), { status: 500 });
+      }
+      return new Response(JSON.stringify({}), { status: 500 });
+    });
+
+    render(<ProductBuilderPanel />);
+    fireEvent.change(screen.getByLabelText(/Product Name/i), {
+      target: { value: "Test" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Symbol$/i), {
+      target: { value: "AAPL" },
+    });
+    fireEvent.change(screen.getByLabelText(/Weight %/i), {
+      target: { value: "100" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /\+ Add/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /Save Draft/i }));
+    await screen.findByText(/Draft product/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Structure$/i }));
+    await screen.findByText(/Product structured/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Issue$/i }));
+    await screen.findByText(/issue failed/i);
+  });
+
+  it("warns when total weight is not 100%", () => {
+    render(<ProductBuilderPanel />);
+    fireEvent.change(screen.getByLabelText(/^Symbol$/i), {
+      target: { value: "AAPL" },
+    });
+    fireEvent.change(screen.getByLabelText(/Weight %/i), {
+      target: { value: "50" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /\+ Add/i }));
+    expect(screen.getByText(/must equal 100%/i)).toBeInTheDocument();
+  });
+
   it("handles network error during save", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network down"));
     render(<ProductBuilderPanel />);

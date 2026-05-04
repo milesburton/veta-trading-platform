@@ -372,6 +372,64 @@ describe("OrderBlotter – status variants", () => {
   });
 });
 
+describe("OrderBlotter – formatting paths", () => {
+  it("formats commission across child fills", () => {
+    renderBlotter([
+      makeOrder({
+        id: "o1",
+        children: [
+          {
+            id: "c1",
+            parentId: "o1",
+            asset: "AAPL",
+            side: "BUY",
+            quantity: 50,
+            limitPrice: 150,
+            status: "filled",
+            filled: 50,
+            commissionUSD: 0.25,
+            submittedAt: now,
+          },
+          {
+            id: "c2",
+            parentId: "o1",
+            asset: "AAPL",
+            side: "BUY",
+            quantity: 50,
+            limitPrice: 150,
+            status: "filled",
+            filled: 50,
+            commissionUSD: 0.5,
+            submittedAt: now,
+          },
+        ],
+      }),
+    ]);
+    expect(screen.getAllByText(/0\.75/).length).toBeGreaterThan(0);
+  });
+
+  it("formats FX symbol prices to 4 decimals", () => {
+    renderBlotter([
+      makeOrder({
+        id: "o-fx",
+        asset: "EUR/USD",
+        limitPrice: 1.1234,
+      }),
+    ]);
+    expect(screen.getByText("1.1234")).toBeInTheDocument();
+  });
+
+  it("renders shows '—' for empty commission", () => {
+    renderBlotter([
+      makeOrder({
+        id: "o-empty",
+        children: [],
+      }),
+    ]);
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+  });
+});
+
 describe("OrderBlotter – child fills", () => {
   it("computes average fill price across child fills", () => {
     renderBlotter([

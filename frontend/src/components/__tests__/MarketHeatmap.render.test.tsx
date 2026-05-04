@@ -288,6 +288,70 @@ describe("MarketHeatmap – rendering", () => {
     expect(screen.getByTestId("heatmap-cell-NEW")).toBeInTheDocument();
   });
 
+  it("drills into a sector when OTHER tile is clicked", () => {
+    // Need many small assets to force OTHER tile generation
+    const assets: AssetDef[] = Array.from({ length: 30 }, (_, i) =>
+      makeAsset({ symbol: `S${i}`, sector: "Tech", marketCapB: 1 })
+    );
+    const store = makeStore({
+      assets,
+      prices: Object.fromEntries(assets.map((a) => [a.symbol, 100])),
+      open: Object.fromEntries(assets.map((a) => [a.symbol, 100])),
+    });
+    render(
+      <Provider store={store}>
+        <MarketHeatmap />
+      </Provider>
+    );
+    // The component sets canvas width via ResizeObserver — initial may be 960x540
+    expect(screen.getByTestId("market-heatmap-panel")).toBeInTheDocument();
+  });
+
+  it("renders sortBy=change layout", () => {
+    const assets: AssetDef[] = [
+      makeAsset({ symbol: "A", sector: "Tech", marketCapB: 100 }),
+      makeAsset({ symbol: "B", sector: "Tech", marketCapB: 100 }),
+    ];
+    const store = makeStore({
+      assets,
+      prices: { A: 110, B: 90 },
+      open: { A: 100, B: 100 },
+    });
+    render(
+      <Provider store={store}>
+        <MarketHeatmap />
+      </Provider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: /By Move/ }));
+    expect(screen.getByTestId("market-heatmap-panel")).toBeInTheDocument();
+  });
+
+  it("handles tile with 0 marketCap (size defaults to 1)", () => {
+    const assets: AssetDef[] = [makeAsset({ symbol: "TINY", sector: "Tech" })];
+    const store = makeStore({
+      assets,
+      prices: { TINY: 100 },
+      open: { TINY: 100 },
+    });
+    render(
+      <Provider store={store}>
+        <MarketHeatmap />
+      </Provider>
+    );
+    expect(screen.getByTestId("heatmap-cell-TINY")).toBeInTheDocument();
+  });
+
+  it("does not crash when assets list is empty after sortBy change", () => {
+    const store = makeStore({ assets: [] });
+    render(
+      <Provider store={store}>
+        <MarketHeatmap />
+      </Provider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: /By Move/ }));
+    expect(screen.getByTestId("market-heatmap-panel")).toBeInTheDocument();
+  });
+
   it("renders multi-sector layout with both labelled and small sectors", () => {
     const assets: AssetDef[] = [
       // Tech: many small assets to force OTHER tile

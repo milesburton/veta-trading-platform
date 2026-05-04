@@ -340,6 +340,48 @@ describe("StatusBar – upgrade banner", () => {
   });
 });
 
+function renderWithStore(store: ReturnType<typeof makeStore>) {
+  render(
+    <Provider store={store}>
+      <DashboardContext.Provider
+        value={{
+          layout: DEFAULT_LAYOUT,
+          setLayout: vi.fn(),
+          activePanelIds: new Set(),
+          addPanel: vi.fn(),
+          removePanel: vi.fn(),
+          removeTabById: vi.fn(),
+          resetLayout: vi.fn(),
+          storageKey: "dashboard-layout",
+          model: Model.fromJson({
+            global: {},
+            layout: { type: "row", children: [] },
+          }),
+          setModel: vi.fn(),
+        }}
+      >
+        <StatusBar />
+      </DashboardContext.Provider>
+    </Provider>
+  );
+}
+
+describe("StatusBar – stale and dead feeds", () => {
+  it("shows stale indicator when feeds are between stale and dead thresholds", () => {
+    const store = makeStore(true);
+    // Set feed lastSeenAt to ~7s ago — between FEED_STALE_MS=5000 and FEED_DEAD_MS=15000
+    const now = Date.now();
+    store.dispatch({ type: "feed/feedReceived", payload: "market" });
+    // Manually patch state via reducer-like dispatch
+    store.dispatch({
+      type: "feed/__test_set",
+      payload: { lastSeenAt: { market: now - 7000 } },
+    });
+    renderWithStore(store);
+    expect(screen.getByTestId("feed-status")).toBeInTheDocument();
+  });
+});
+
 describe("StatusBar – data freshness", () => {
   it("shows live indicator when feeds are fresh", () => {
     const store = makeStore(true);

@@ -12,7 +12,7 @@ import { windowSlice } from "../../store/windowSlice";
 import type { ObsEvent, Strategy } from "../../types";
 import { DecisionLog } from "../DecisionLog";
 
-function makeStore(events: ObsEvent[] = [], channelAsset?: string) {
+function makeStore(events: ObsEvent[] = [], channelAsset?: string, channelOrderId?: string) {
   return configureStore({
     reducer: {
       market: marketSlice.reducer,
@@ -36,7 +36,7 @@ function makeStore(events: ObsEvent[] = [], channelAsset?: string) {
       },
       channels: {
         data: {
-          1: { selectedAsset: channelAsset ?? null, selectedOrderId: null },
+          1: { selectedAsset: channelAsset ?? null, selectedOrderId: channelOrderId ?? null },
           2: { selectedAsset: null, selectedOrderId: null },
           3: { selectedAsset: null, selectedOrderId: null },
           4: { selectedAsset: null, selectedOrderId: null },
@@ -48,9 +48,9 @@ function makeStore(events: ObsEvent[] = [], channelAsset?: string) {
   });
 }
 
-function renderLog(events: ObsEvent[] = [], channelAsset?: string) {
-  const store = makeStore(events, channelAsset);
-  const incoming = channelAsset ? 1 : null;
+function renderLog(events: ObsEvent[] = [], channelAsset?: string, channelOrderId?: string) {
+  const store = makeStore(events, channelAsset, channelOrderId);
+  const incoming = channelAsset || channelOrderId ? 1 : null;
   render(
     <Provider store={store}>
       <ChannelContext.Provider
@@ -321,9 +321,31 @@ describe("DecisionLog – context menu and channel filtering", () => {
         orderId: "ord-002",
       },
     };
-    // Use channelAsset slot for orderId filter (we mock channelIn through store directly)
-    renderLog([targetEvent, otherEvent]);
-    expect(screen.getAllByText(/AAPL|MSFT/).length).toBeGreaterThan(0);
+    renderLog([targetEvent, otherEvent], undefined, "ord-001");
+    expect(screen.getByText("1 events")).toBeInTheDocument();
+  });
+
+  it("matches child events to parent order id filter", () => {
+    const childEvent: ObsEvent = {
+      type: "orders.child",
+      ts: 1_700_000_022_000,
+      payload: {
+        algo: "TWAP",
+        asset: "AAPL",
+        side: "BUY",
+        qty: 25,
+        price: 150,
+        parentOrderId: "ord-001",
+        childId: "child-1",
+      },
+    };
+    renderLog([childEvent], undefined, "ord-001");
+    expect(screen.getByText("1 events")).toBeInTheDocument();
+  });
+
+  it("shows 'No events for this order yet' when filtering by orderId with no matches", () => {
+    renderLog([], undefined, "ord-missing");
+    expect(screen.getByText(/No events for this order yet/i)).toBeInTheDocument();
   });
 
   it("ignores events with unknown topic types", () => {
