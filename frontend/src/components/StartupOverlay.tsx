@@ -159,94 +159,98 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
   const isBooting = mode.value === "booting";
 
   return (
-    <div
-      data-testid="startup-overlay"
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-950 gap-6"
-    >
-      <div className="flex flex-col items-center gap-4">
-        <div className="flex flex-col items-center gap-1">
-          <div
-            data-testid="brand-title"
-            className="text-4xl font-bold text-gray-100 tracking-tight"
-          >
-            VETA
+    <div data-testid="startup-overlay" className="fixed inset-0 z-50 flex flex-col bg-gray-950">
+      <div className="flex flex-1 items-center justify-center px-6 py-8">
+        <div className="w-full max-w-4xl">
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-1">
+              <div
+                data-testid="brand-title"
+                className="text-4xl font-bold text-gray-100 tracking-tight"
+              >
+                VETA
+              </div>
+              <div className="text-xs font-medium text-emerald-400 tracking-widest uppercase">
+                Trading Platform
+              </div>
+            </div>
+            <div className="h-6 w-px bg-gray-700" />
+            <div className="flex flex-col items-center gap-1">
+              <div data-testid="startup-status" className="text-sm font-medium text-gray-200">
+                {isBooting ? "Starting up" : "Waiting for services to respond"}
+              </div>
+              <div className="text-xs text-gray-400">
+                {isBooting
+                  ? "Initialising trading services — usually takes 30–60 seconds"
+                  : "Platform is running — some services are not yet responding"}
+              </div>
+            </div>
           </div>
-          <div className="text-xs font-medium text-emerald-500 tracking-widest uppercase">
-            Trading Platform
+
+          {/* Service checklist */}
+          <div className="mt-6 overflow-x-auto rounded-lg border border-gray-800 bg-gray-900/65 p-4 sm:p-5">
+            <table className="w-full border-collapse text-sm">
+              <tbody>
+                {SERVICE_ORDER.map((key) => {
+                  const up = services.value?.[key];
+                  return (
+                    <tr key={key} data-testid={`service-indicator-${key}`}>
+                      <td className="w-6 pr-3 py-0.5 align-middle">
+                        <span
+                          className={`inline-block w-2 h-2 rounded-full ${
+                            up ? "bg-emerald-400" : "bg-gray-600 animate-pulse"
+                          }`}
+                        />
+                      </td>
+                      <td
+                        className={`pr-6 py-0.5 align-middle whitespace-nowrap font-medium ${
+                          up ? "text-gray-200" : "text-gray-500"
+                        }`}
+                      >
+                        {SERVICE_LABELS[key]}
+                      </td>
+                      <td className="py-0.5 align-middle text-[11px] text-gray-400">
+                        {SERVICE_DESCRIPTIONS[key]}
+                      </td>
+                      <td className="pl-4 py-0.5 align-middle text-[10px] text-gray-500 whitespace-nowrap">
+                        {up ? "ready" : ""}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Progress summary */}
+          <div className="mt-6 flex flex-col items-center gap-2 text-gray-400">
+            <div className="text-xs">
+              {upCount} / {totalCount} services ready
+            </div>
+            <div data-testid="startup-elapsed" className="text-xs tabular-nums text-gray-500">
+              {timeStr} elapsed
+            </div>
           </div>
         </div>
-        <div className="w-px h-6 bg-gray-800" />
-        <div className="flex flex-col items-center gap-1">
-          <div data-testid="startup-status" className="text-sm font-medium text-gray-300">
-            {isBooting ? "Starting up" : "Waiting for services to respond"}
-          </div>
-          <div className="text-xs text-gray-600">
-            {isBooting
-              ? "Initialising trading services — usually takes 30–60 seconds"
-              : "Platform is running — some services are not yet responding"}
-          </div>
-        </div>
-      </div>
-
-      {/* Service checklist */}
-      <table className="border-collapse text-sm">
-        <tbody>
-          {SERVICE_ORDER.map((key) => {
-            const up = services.value?.[key];
-            return (
-              <tr key={key} data-testid={`service-indicator-${key}`}>
-                <td className="pr-3 py-0.5 align-middle">
-                  <span
-                    className={`inline-block w-2 h-2 rounded-full ${
-                      up ? "bg-emerald-400" : "bg-gray-600 animate-pulse"
-                    }`}
-                  />
-                </td>
-                <td
-                  className={`pr-6 py-0.5 align-middle whitespace-nowrap ${
-                    up ? "text-gray-300" : "text-gray-500"
-                  }`}
-                >
-                  {SERVICE_LABELS[key]}
-                </td>
-                <td className="py-0.5 align-middle text-[11px] text-gray-600 max-w-sm">
-                  {SERVICE_DESCRIPTIONS[key]}
-                </td>
-                <td className="pl-4 py-0.5 align-middle text-[10px] text-gray-600 whitespace-nowrap">
-                  {up ? "ready" : ""}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      {/* Progress summary */}
-      <div className="text-xs text-gray-600">
-        {upCount} / {totalCount} services ready
-      </div>
-
-      <div data-testid="startup-elapsed" className="text-xs text-gray-600 tabular-nums">
-        {timeStr} elapsed
       </div>
 
       <div
         data-testid="startup-build-info"
-        className="w-full max-w-3xl border-t border-gray-800/50 pt-2"
+        className="w-full border-t border-gray-800/60 bg-gray-950/95"
       >
-        <div className="mx-auto flex w-full items-center justify-between gap-3 px-4 text-[9px] text-gray-700 tabular-nums sm:text-[10px]">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-6 py-2 text-[9px] text-gray-600 tabular-nums sm:text-[10px]">
           <span className="whitespace-nowrap">VETA &middot; Miles Burton</span>
           <span className="flex items-center gap-3">
             <BuildInfo
               buildDate={buildDate}
               commitSha={commitSha}
-              className="text-[10px] text-gray-700 tabular-nums"
+              className="text-[10px] text-gray-600 tabular-nums"
             />
             <a
               href="https://github.com/milesburton/veta-trading-platform"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-600 hover:text-gray-400 transition-colors"
+              className="text-gray-500 hover:text-gray-300 transition-colors"
             >
               GitHub
             </a>
