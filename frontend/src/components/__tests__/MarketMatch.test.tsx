@@ -264,4 +264,43 @@ describe("MarketMatch – context menu and fallbacks", () => {
     renderMatch([makeFillEvent({ asset: "AAPL" })], "NVDA");
     expect(screen.getByText(/No fills for NVDA/i)).toBeInTheDocument();
   });
+
+  it("context menu copies fill price", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    renderMatch([makeFillEvent({ avgFillPrice: 155.5 })]);
+    fireEvent.contextMenu(screen.getByTestId("fill-row"));
+    fireEvent.click(screen.getByText(/Copy fill price/i));
+    expect(writeText).toHaveBeenCalledWith("155.50");
+  });
+
+  it("context menu copies order id when present", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    renderMatch([makeFillEvent({ parentOrderId: "ord-001" })]);
+    fireEvent.contextMenu(screen.getByTestId("fill-row"));
+    fireEvent.click(screen.getByText(/Copy order ID/i));
+    expect(writeText).toHaveBeenCalledWith("ord-001");
+  });
+
+  it("renders FX symbols with 4-decimal precision", () => {
+    renderMatch([
+      makeFillEvent({
+        asset: "EUR/USD",
+        avgFillPrice: 1.1234,
+      }),
+    ]);
+    expect(screen.getByText("1.1234")).toBeInTheDocument();
+  });
+
+  it("formats fractional quantity with one decimal", () => {
+    renderMatch([makeFillEvent({ filledQty: 12.5 })]);
+    expect(screen.getAllByText(/12\.5/).length).toBeGreaterThan(0);
+  });
 });

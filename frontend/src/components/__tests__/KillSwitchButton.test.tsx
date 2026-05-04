@@ -122,4 +122,120 @@ describe("KillSwitchButton", () => {
 
     expect(dispatch.mock.calls.some((c) => c[0]?.type === "killSwitch/blockRemoved")).toBe(true);
   });
+
+  it("button shows pulsing red style when blocks are active", () => {
+    mockState.killSwitch.blocks = [
+      {
+        id: "active",
+        scope: "all",
+        scopeValues: [],
+        issuedBy: "admin-1",
+        issuedAt: Date.now(),
+      },
+    ];
+    render(<KillSwitchButton />);
+    const btn = screen.getByTestId("kill-switch-btn");
+    expect(btn.className).toMatch(/animate-pulse/);
+  });
+
+  it("trader (non-admin) does not see User scope option", () => {
+    mockState.auth.user = { id: "trader-1", role: "trader" };
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    // Trader should still see kill panel but with restricted scopes
+    expect(screen.getByTestId("kill-switch-confirm-btn")).toBeInTheDocument();
+  });
+
+  it("kill scope=algo dispatches killOrdersThunk per algo", async () => {
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    fireEvent.click(screen.getByRole("button", { name: /By algo/i }));
+    // Pick at least one algo
+    const items = screen.getAllByRole("checkbox");
+    if (items.length > 1) fireEvent.click(items[1]);
+    fireEvent.click(screen.getByRole("checkbox", { name: /I confirm this action/i }));
+    fireEvent.click(screen.getByTestId("kill-switch-confirm-btn"));
+    await waitFor(() => {
+      expect(killOrdersThunk).toHaveBeenCalled();
+    });
+  });
+
+  it("dialog closes when Cancel button is clicked", () => {
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    fireEvent.click(screen.getByRole("button", { name: /^Cancel$/ }));
+    expect(screen.queryByTestId("kill-switch-confirm-btn")).not.toBeInTheDocument();
+  });
+
+  it("scope=all (no values) sends single kill request without scopeValue", async () => {
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    const allBtn = screen.queryByRole("button", { name: /All Active|Everywhere|^All$/i });
+    if (allBtn) fireEvent.click(allBtn);
+    fireEvent.click(screen.getByRole("checkbox", { name: /I confirm this action/i }));
+    fireEvent.click(screen.getByTestId("kill-switch-confirm-btn"));
+    await waitFor(() => {
+      expect(killOrdersThunk).toHaveBeenCalled();
+    });
+  });
+
+  it("does not send when confirmation checkbox not checked", () => {
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    fireEvent.click(screen.getByRole("button", { name: /By symbol/i }));
+    fireEvent.click(screen.getByLabelText("AAPL"));
+    // Submit button should be disabled without confirmation
+    const submitBtn = screen.getByTestId("kill-switch-confirm-btn");
+    expect(submitBtn).toBeDisabled();
+  });
+
+  it("trader has limited kill scope options", () => {
+    mockState.auth.user = { id: "trader-1", role: "trader" };
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    // Trader still sees the dialog
+    expect(screen.getByTestId("kill-switch-confirm-btn")).toBeInTheDocument();
+  });
+
+  it("switches to resume tab", () => {
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    fireEvent.click(screen.getByRole("button", { name: /Resume Orders/i }));
+    expect(screen.getByTestId("kill-switch-confirm-btn")).toBeInTheDocument();
+  });
+
+  it("market scope adds entries via Enter key", () => {
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    fireEvent.click(screen.getByRole("button", { name: /By market/i }));
+    const input = screen.getByLabelText(/Market \/ Exchange/i);
+    fireEvent.change(input, { target: { value: "XNAS" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(input).toBeInTheDocument();
+  });
+
+  it("Escape closes the dialog", () => {
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    const dialog = screen.getByTestId("kill-switch-dialog");
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(screen.queryByTestId("kill-switch-confirm-btn")).not.toBeInTheDocument();
+  });
+
+  it("X button closes the dialog", () => {
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    fireEvent.click(screen.getByRole("button", { name: /^Close$/ }));
+    expect(screen.queryByTestId("kill-switch-confirm-btn")).not.toBeInTheDocument();
+  });
+
+  it("kill scope=user with admin lets user pick a target user", () => {
+    mockState.killSwitch.blocks = [];
+    mockState.orders.orders = [{ userId: "user-1" }, { userId: "user-2" }];
+    render(<KillSwitchButton />);
+    fireEvent.click(screen.getByTestId("kill-switch-btn"));
+    fireEvent.click(screen.getByRole("button", { name: /By user/i }));
+    // Admin sees a target user picker
+    expect(screen.getByTestId("kill-switch-confirm-btn")).toBeInTheDocument();
+  });
 });

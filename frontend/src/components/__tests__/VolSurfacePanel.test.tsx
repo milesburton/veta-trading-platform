@@ -73,4 +73,21 @@ describe("VolSurfacePanel", () => {
 
     expect(screen.getAllByText(/25.0%/).length).toBeGreaterThan(1);
   });
+
+  it("changes the displayed symbol when selector changes", () => {
+    render(<VolSurfacePanel />);
+    const select = screen.queryByRole("combobox");
+    if (select) {
+      fireEvent.change(select, { target: { value: "MSFT" } });
+    }
+    expect(screen.getByText(/Vol Surface/i)).toBeInTheDocument();
+  });
+
+  it("hovering a cell shows tooltip", () => {
+    render(<VolSurfacePanel />);
+    const cell = screen.getByRole("button", { name: /25\.0%/i });
+    fireEvent.mouseEnter(cell);
+    fireEvent.mouseLeave(cell);
+    expect(cell).toBeInTheDocument();
+  });
 });

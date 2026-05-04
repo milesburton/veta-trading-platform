@@ -120,4 +120,147 @@ describe("ExpressionBuilder", () => {
     expect(saveGridPrefs).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("renders 'between' two-input editor for number fields", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilderInline
+        fields={[...fields]}
+        value={{
+          kind: "group",
+          id: "g",
+          join: "AND",
+          rules: [
+            {
+              kind: "rule",
+              id: "r1",
+              field: "qty",
+              op: "between",
+              value: [10, 50],
+            },
+          ],
+        }}
+        onChange={onChange}
+      />
+    );
+    const inputs = screen.getAllByPlaceholderText(/From|To/i);
+    expect(inputs.length).toBe(2);
+    fireEvent.change(inputs[0], { target: { value: "20" } });
+    fireEvent.change(inputs[1], { target: { value: "100" } });
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it("removes a rule with the × button", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilderInline
+        fields={[...fields]}
+        value={{
+          kind: "group",
+          id: "g",
+          join: "AND",
+          rules: [{ kind: "rule", id: "r1", field: "symbol", op: "=", value: "AAPL" }],
+        }}
+        onChange={onChange}
+      />
+    );
+    fireEvent.click(screen.getByLabelText(/Remove rule/));
+    const last = onChange.mock.calls[onChange.mock.calls.length - 1][0];
+    expect(last.rules).toHaveLength(0);
+  });
+
+  it("changes field operator", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilderInline
+        fields={[...fields]}
+        value={{
+          kind: "group",
+          id: "g",
+          join: "AND",
+          rules: [{ kind: "rule", id: "r1", field: "qty", op: "=", value: 10 }],
+        }}
+        onChange={onChange}
+      />
+    );
+    const opSelects = screen.getAllByRole("combobox");
+    fireEvent.change(opSelects[1], { target: { value: ">" } });
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it("toggles enum option for IN operator", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilderInline
+        fields={[...fields]}
+        value={{
+          kind: "group",
+          id: "g",
+          join: "AND",
+          rules: [{ kind: "rule", id: "r1", field: "status", op: "in", value: ["OPEN"] }],
+        }}
+        onChange={onChange}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "OPEN" }));
+    expect(onChange).toHaveBeenCalled();
+    // Add DONE
+    fireEvent.click(screen.getByRole("button", { name: "DONE" }));
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it("changes field key, resetting op and value", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilderInline
+        fields={[...fields]}
+        value={{
+          kind: "group",
+          id: "g",
+          join: "AND",
+          rules: [{ kind: "rule", id: "r1", field: "symbol", op: "=", value: "AAPL" }],
+        }}
+        onChange={onChange}
+      />
+    );
+    const fieldSelects = screen.getAllByRole("combobox");
+    fireEvent.change(fieldSelects[0], { target: { value: "qty" } });
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it("hides value input for is_null operator", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilderInline
+        fields={[...fields]}
+        value={{
+          kind: "group",
+          id: "g",
+          join: "AND",
+          rules: [{ kind: "rule", id: "r1", field: "symbol", op: "is_null", value: "" }],
+        }}
+        onChange={onChange}
+      />
+    );
+    expect(screen.queryByPlaceholderText(/value/)).not.toBeInTheDocument();
+  });
+
+  it("renders number input for number-typed field", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilderInline
+        fields={[...fields]}
+        value={{
+          kind: "group",
+          id: "g",
+          join: "AND",
+          rules: [{ kind: "rule", id: "r1", field: "qty", op: "=", value: 100 }],
+        }}
+        onChange={onChange}
+      />
+    );
+    const valueInput = screen.getByPlaceholderText(/value/);
+    fireEvent.change(valueInput, { target: { value: "200" } });
+    expect(onChange).toHaveBeenCalled();
+  });
 });

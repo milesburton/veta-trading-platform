@@ -141,4 +141,39 @@ describe("MarketFeedControlPanel", () => {
 
     expect(screen.getByText(/No symbols match/i)).toBeInTheDocument();
   });
+
+  it("shows resume button for paused feed", () => {
+    apiState.sources[1].active = false;
+    renderPanel("admin");
+    expect(screen.getByRole("button", { name: /Resume Feed/i })).toBeInTheDocument();
+  });
+
+  it("renders unavailable label for disabled source", () => {
+    apiState.sources[1].enabled = false;
+    apiState.sources[1].apiKeyConfigured = false;
+    renderPanel("admin");
+    expect(screen.getByText(/unavailable/i)).toBeInTheDocument();
+    apiState.sources[1].enabled = true;
+    apiState.sources[1].apiKeyConfigured = true;
+  });
+
+  it("trader does not see pause/resume buttons", () => {
+    renderPanel("trader");
+    expect(screen.queryByRole("button", { name: /Pause Feed/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Resume Feed/i })).not.toBeInTheDocument();
+  });
+
+  it("renders 'API key not set' when source needs key", () => {
+    apiState.sources[1].apiKeyConfigured = false;
+    renderPanel("admin");
+    expect(screen.getByText(/API key not set/i)).toBeInTheDocument();
+    apiState.sources[1].apiKeyConfigured = true;
+  });
+
+  it("shows loading state when sources are loading", () => {
+    apiState.loading = true;
+    renderPanel("admin");
+    expect(screen.queryByText(/0 on external/)).toBeNull();
+    apiState.loading = false;
+  });
 });

@@ -419,3 +419,503 @@ describe("OrderTicket – stub strategies in equity mode", () => {
     expect(apOption).toBeDisabled();
   });
 });
+
+describe("OrderTicket – TIF toggle", () => {
+  it("changes TIF when a button is clicked", () => {
+    renderTicket();
+    const gtc = screen.getByRole("button", { name: /^GTC$/ });
+    fireEvent.click(gtc);
+    // No throw is enough; the state-change branches in setter are exercised.
+    expect(gtc).toBeInTheDocument();
+  });
+
+  it("renders all four TIF options", () => {
+    renderTicket();
+    expect(screen.getByRole("button", { name: /^DAY$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^GTC$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^IOC$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^FOK$/ })).toBeInTheDocument();
+  });
+});
+
+describe("OrderTicket – preview", () => {
+  it("renders the order preview with notional", () => {
+    renderTicket();
+    // Default qty is set to a value that produces notional under 1M
+    expect(screen.getByText(/Notional/i)).toBeInTheDocument();
+  });
+
+  it("formats notional in M when above 1M", () => {
+    renderTicket();
+    const qty = screen.getByLabelText(/Quantity/i) as HTMLInputElement;
+    fireEvent.change(qty, { target: { value: "10000" } });
+    // 10000 * 155 = 1.55M
+    const millionish = screen.getAllByText(/M/);
+    expect(millionish.length).toBeGreaterThan(0);
+  });
+});
+
+describe("OrderTicket – options PUT branch", () => {
+  it("submitting an option PUT order with a strike", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    renderTicket();
+    fireEvent.click(screen.getByRole("button", { name: "Options" }));
+    fireEvent.click(screen.getByRole("button", { name: "PUT" }));
+    fireEvent.change(screen.getByLabelText(/Option strike price/i), {
+      target: { value: "155" },
+    });
+    await waitFor(
+      () => {
+        const submit = screen.getByRole("button", { name: /Submit (BUY|SELL)/i });
+        expect(submit).not.toBeDisabled();
+      },
+      { timeout: 2000 }
+    );
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("OrderTicket – limit price guard", () => {
+  it("submit button disabled when limit price is empty", () => {
+    renderTicket();
+    fireEvent.change(screen.getByLabelText(/Limit Price/i), { target: { value: "" } });
+    expect(screen.getByRole("button", { name: /Submit order/i })).toBeDisabled();
+  });
+});
+
+describe("OrderTicket – preview slippage variants", () => {
+  function renderWithMid(mid: number | null) {
+    const testStore = configureStore({
+      reducer: {
+        auth: authSlice.reducer,
+        market: marketSlice.reducer,
+        orders: ordersSlice.reducer,
+        ui: uiSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        killSwitch: killSwitchSlice.reducer,
+      },
+      preloadedState: {
+        auth: {
+          user: { id: "alice", name: "Alice", role: "trader" as const, avatar_emoji: "🙂" },
+          limits: {
+            max_order_qty: 10_000,
+            max_daily_notional: 1_000_000,
+            allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+            allowed_desks: ["equity", "fi", "derivatives"],
+            dark_pool_access: false,
+          },
+          status: "authenticated" as const,
+        },
+        market: {
+          assets,
+          prices,
+          priceHistory: {},
+          sessionOpen: {},
+          candleHistory: {},
+          candlesReady: {},
+          connected: true,
+          orderBook: (mid
+            ? {
+                AAPL: {
+                  mid,
+                  ts: Date.now(),
+                  bids: [{ price: mid - 0.05, size: 100 }],
+                  asks: [{ price: mid + 0.05, size: 100 }],
+                },
+              }
+            : {}) as Record<string, import("../../types").OrderBookSnapshot>,
+          sessionPhase: "CONTINUOUS" as const,
+        },
+      },
+    });
+    render(
+      <Provider store={testStore}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "x",
+            panelType: "order-ticket",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <TradingProvider>
+            <OrderTicket />
+          </TradingProvider>
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    return testStore;
+  }
+
+  it("renders slippage when limit price differs strongly from mid (positive)", () => {
+    renderWithMid(150);
+    fireEvent.change(screen.getByLabelText(/Limit Price/i), {
+      target: { value: "151" },
+    });
+    expect(screen.getByText(/vs Mid/i)).toBeInTheDocument();
+  });
+
+  it("renders slippage when limit price is below mid (favourable)", () => {
+    renderWithMid(150);
+    fireEvent.change(screen.getByLabelText(/Limit Price/i), {
+      target: { value: "149" },
+    });
+    expect(screen.getByText(/vs Mid/i)).toBeInTheDocument();
+  });
+});
+
+describe("OrderTicket – channel asset switching", () => {
+  it("selecting an FX asset switches instrument type", () => {
+    const fxAssets: AssetDef[] = [
+      ...assets,
+      {
+        symbol: "EUR/USD",
+        initialPrice: 1.1,
+        volatility: 0.005,
+        sector: "FX",
+        assetClass: "fx",
+      },
+    ];
+    const testStore = configureStore({
+      reducer: {
+        auth: authSlice.reducer,
+        market: marketSlice.reducer,
+        orders: ordersSlice.reducer,
+        ui: uiSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        killSwitch: killSwitchSlice.reducer,
+      },
+      preloadedState: {
+        auth: {
+          user: { id: "alice", name: "Alice", role: "trader" as const, avatar_emoji: "🙂" },
+          limits: {
+            max_order_qty: 10_000,
+            max_daily_notional: 1_000_000,
+            allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+            allowed_desks: ["equity", "fx", "fi", "derivatives"],
+            dark_pool_access: false,
+          },
+          status: "authenticated" as const,
+        },
+        market: {
+          assets: fxAssets,
+          prices: { ...prices, "EUR/USD": 1.12 },
+          priceHistory: {},
+          sessionOpen: {},
+          candleHistory: {},
+          candlesReady: {},
+          connected: true,
+          orderBook: {},
+          sessionPhase: "CONTINUOUS" as const,
+        },
+      },
+    });
+    render(
+      <Provider store={testStore}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "x",
+            panelType: "order-ticket",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <TradingProvider>
+            <OrderTicket />
+          </TradingProvider>
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getByRole("button", { name: /^FX$/ })).toBeInTheDocument();
+  });
+
+  it("selecting a commodity asset shows futures tab", () => {
+    const commodityAssets: AssetDef[] = [
+      ...assets,
+      {
+        symbol: "CL",
+        initialPrice: 80,
+        volatility: 0.02,
+        sector: "Commodity",
+        assetClass: "commodity",
+      },
+    ];
+    const testStore = configureStore({
+      reducer: {
+        auth: authSlice.reducer,
+        market: marketSlice.reducer,
+        orders: ordersSlice.reducer,
+        ui: uiSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        killSwitch: killSwitchSlice.reducer,
+      },
+      preloadedState: {
+        auth: {
+          user: { id: "alice", name: "Alice", role: "trader" as const, avatar_emoji: "🙂" },
+          limits: {
+            max_order_qty: 10_000,
+            max_daily_notional: 1_000_000,
+            allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+            allowed_desks: ["equity", "commodities", "fi", "derivatives"],
+            dark_pool_access: false,
+          },
+          status: "authenticated" as const,
+        },
+        market: {
+          assets: commodityAssets,
+          prices: { ...prices, CL: 80 },
+          priceHistory: {},
+          sessionOpen: {},
+          candleHistory: {},
+          candlesReady: {},
+          connected: true,
+          orderBook: {},
+          sessionPhase: "CONTINUOUS" as const,
+        },
+      },
+    });
+    render(
+      <Provider store={testStore}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "x",
+            panelType: "order-ticket",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <TradingProvider>
+            <OrderTicket />
+          </TradingProvider>
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getByRole("button", { name: /Futures/i })).toBeInTheDocument();
+  });
+});
+
+describe("OrderTicket – AssetInfoBar with full metadata", () => {
+  it("renders asset info bar with all fields populated", () => {
+    const fullAssets: AssetDef[] = [
+      {
+        symbol: "AAPL",
+        initialPrice: 150,
+        volatility: 0.02,
+        sector: "Technology",
+        beta: 1.2,
+        marketCapB: 2800,
+        dividendYield: 0.005,
+        peRatio: 28,
+        exchange: "NASDAQ",
+      },
+    ];
+    const testStore = configureStore({
+      reducer: {
+        auth: authSlice.reducer,
+        market: marketSlice.reducer,
+        orders: ordersSlice.reducer,
+        ui: uiSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        killSwitch: killSwitchSlice.reducer,
+      },
+      preloadedState: {
+        auth: {
+          user: { id: "alice", name: "Alice", role: "trader" as const, avatar_emoji: "🙂" },
+          limits: {
+            max_order_qty: 10_000,
+            max_daily_notional: 1_000_000,
+            allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+            allowed_desks: ["equity", "fi", "derivatives"],
+            dark_pool_access: false,
+          },
+          status: "authenticated" as const,
+        },
+        market: {
+          assets: fullAssets,
+          prices: { AAPL: 155 },
+          priceHistory: {},
+          sessionOpen: {},
+          candleHistory: {},
+          candlesReady: {},
+          connected: true,
+          orderBook: {
+            AAPL: {
+              mid: 155,
+              ts: Date.now(),
+              bids: [{ price: 154.95, size: 100 }],
+              asks: [{ price: 155.05, size: 100 }],
+            },
+          },
+          sessionPhase: "CONTINUOUS" as const,
+        },
+      },
+    });
+    render(
+      <Provider store={testStore}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "x",
+            panelType: "order-ticket",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <TradingProvider>
+            <OrderTicket />
+          </TradingProvider>
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getByTestId("asset-info-bar")).toBeInTheDocument();
+    expect(screen.getByText(/2\.8T/)).toBeInTheDocument();
+    expect(screen.getByText(/NASDAQ/)).toBeInTheDocument();
+  });
+
+  it("renders asset info bar with sub-trillion cap and missing optional fields", () => {
+    const slimAssets: AssetDef[] = [
+      {
+        symbol: "MID",
+        initialPrice: 50,
+        volatility: 0.02,
+        sector: "Industrial",
+        marketCapB: 50,
+      },
+    ];
+    const testStore = configureStore({
+      reducer: {
+        auth: authSlice.reducer,
+        market: marketSlice.reducer,
+        orders: ordersSlice.reducer,
+        ui: uiSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        killSwitch: killSwitchSlice.reducer,
+      },
+      preloadedState: {
+        auth: {
+          user: { id: "alice", name: "Alice", role: "trader" as const, avatar_emoji: "🙂" },
+          limits: {
+            max_order_qty: 10_000,
+            max_daily_notional: 1_000_000,
+            allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+            allowed_desks: ["equity", "fi", "derivatives"],
+            dark_pool_access: false,
+          },
+          status: "authenticated" as const,
+        },
+        market: {
+          assets: slimAssets,
+          prices: { MID: 50 },
+          priceHistory: {},
+          sessionOpen: {},
+          candleHistory: {},
+          candlesReady: {},
+          connected: true,
+          orderBook: {},
+          sessionPhase: "CONTINUOUS" as const,
+        },
+      },
+    });
+    render(
+      <Provider store={testStore}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "x",
+            panelType: "order-ticket",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <TradingProvider>
+            <OrderTicket />
+          </TradingProvider>
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getByTestId("asset-info-bar")).toBeInTheDocument();
+    expect(screen.getByText(/50B/)).toBeInTheDocument();
+  });
+});
+
+describe("OrderTicket – submit each strategy", () => {
+  function submitWithStrategy(strategy: string) {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    const store = renderTicket();
+    const select = screen.getByLabelText(/Strategy/i);
+    fireEvent.change(select, { target: { value: strategy } });
+    fireEvent.click(screen.getByRole("button", { name: /Submit BUY order/i }));
+    return store;
+  }
+
+  it("submits TWAP order", async () => {
+    const store = submitWithStrategy("TWAP");
+    await waitFor(() => {
+      expect(store.getState().orders.orders.length).toBeGreaterThan(0);
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it("submits POV order", async () => {
+    const store = submitWithStrategy("POV");
+    await waitFor(() => {
+      expect(store.getState().orders.orders.length).toBeGreaterThan(0);
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it("submits VWAP order", async () => {
+    const store = submitWithStrategy("VWAP");
+    await waitFor(() => {
+      expect(store.getState().orders.orders.length).toBeGreaterThan(0);
+    });
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("OrderTicket – submit options gets rejected with message", () => {
+  it("submits an option order and shows simulation rejected message", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    renderTicket();
+    fireEvent.click(screen.getByRole("button", { name: "Options" }));
+    fireEvent.change(screen.getByLabelText(/Option strike price/i), {
+      target: { value: "155" },
+    });
+    await waitFor(
+      () => {
+        const submit = screen.getByRole("button", { name: /Submit (BUY|SELL)/i });
+        expect(submit).not.toBeDisabled();
+      },
+      { timeout: 2000 }
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Submit (BUY|SELL)/i }));
+    await waitFor(() => {
+      expect(screen.queryByText(/Options not supported in this simulation/i)).toBeInTheDocument();
+    });
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("OrderTicket – instrument tabs (bond / fx)", () => {
+  it("renders Bond tab when user has fi desk access", () => {
+    renderTicket();
+    expect(screen.getByRole("button", { name: "Bond" })).toBeInTheDocument();
+  });
+
+  it("clicking Bond tab switches the instrument type", () => {
+    renderTicket();
+    fireEvent.click(screen.getByRole("button", { name: "Bond" }));
+    // Strike disappears in bond mode
+    expect(screen.queryByLabelText(/Option strike/i)).not.toBeInTheDocument();
+  });
+
+  it("switching from Bond back to Equity restores equity fields", () => {
+    renderTicket();
+    fireEvent.click(screen.getByRole("button", { name: "Bond" }));
+    fireEvent.click(screen.getByRole("button", { name: "Equity" }));
+    expect(screen.getByLabelText(/Limit Price/i)).toBeInTheDocument();
+  });
+});

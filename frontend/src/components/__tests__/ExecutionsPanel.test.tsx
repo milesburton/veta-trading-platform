@@ -145,4 +145,93 @@ describe("ExecutionsPanel", () => {
     fireEvent.click(screen.getByTestId("execution-row"));
     expect(screen.getByText(/No fills recorded/i)).toBeInTheDocument();
   });
+
+  it("renders an order with multiple child fills", () => {
+    rows = [
+      {
+        id: "o-4",
+        submittedAt: Date.now(),
+        asset: "AAPL",
+        side: "BUY",
+        strategy: "TWAP",
+        status: "working",
+        quantity: 200,
+        filled: 100,
+        limitPrice: 150,
+        children: [
+          {
+            id: "ch1",
+            parentId: "o-4",
+            asset: "AAPL",
+            side: "BUY",
+            quantity: 50,
+            limitPrice: 150,
+            status: "filled",
+            filled: 50,
+            avgFillPrice: 150,
+            commissionUSD: 0.25,
+            submittedAt: Date.now(),
+            venue: "NASDAQ" as never,
+            counterparty: "MM-1",
+            liquidityFlag: "MAKER" as never,
+          },
+          {
+            id: "ch2",
+            parentId: "o-4",
+            asset: "AAPL",
+            side: "BUY",
+            quantity: 50,
+            limitPrice: 151,
+            status: "filled",
+            filled: 50,
+            avgFillPrice: 151,
+            commissionUSD: 0.25,
+            submittedAt: Date.now(),
+            venue: "NYSE" as never,
+            counterparty: "MM-2",
+            liquidityFlag: "TAKER" as never,
+          },
+        ],
+      },
+    ];
+
+    render(<ExecutionsPanel />);
+    fireEvent.click(screen.getByTestId("execution-row"));
+    // detail panel should render
+    expect(screen.queryByText(/No fills recorded/i)).not.toBeInTheDocument();
+  });
+
+  it("renders filled SELL order", () => {
+    rows = [
+      {
+        id: "o-5",
+        submittedAt: Date.now(),
+        asset: "TSLA",
+        side: "SELL",
+        strategy: "POV",
+        status: "filled",
+        quantity: 100,
+        filled: 100,
+        limitPrice: 200,
+        children: [
+          {
+            id: "ch3",
+            parentId: "o-5",
+            asset: "TSLA",
+            side: "SELL",
+            quantity: 100,
+            limitPrice: 200,
+            status: "filled",
+            filled: 100,
+            avgFillPrice: 199.5,
+            commissionUSD: 0.5,
+            submittedAt: Date.now(),
+          },
+        ],
+      },
+    ];
+    render(<ExecutionsPanel />);
+    expect(screen.getByText("TSLA")).toBeInTheDocument();
+    expect(screen.getByText("SELL")).toBeInTheDocument();
+  });
 });

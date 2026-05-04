@@ -310,3 +310,102 @@ describe("OrderBlotter – loading state", () => {
     expect(screen.getByText(/Loading/i)).toBeInTheDocument();
   });
 });
+
+describe("OrderBlotter – row selection", () => {
+  it("clicking a row dispatches selection without throwing", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL" }), makeOrder({ id: "o2", asset: "MSFT" })]);
+    const aapl = screen.getByText("AAPL");
+    expect(() => fireEvent.click(aapl)).not.toThrow();
+  });
+
+  it("ctrl-click does not throw", () => {
+    renderBlotter([makeOrder({ id: "o1" })]);
+    const cell = screen.getByText("AAPL");
+    expect(() => fireEvent.click(cell, { ctrlKey: true })).not.toThrow();
+  });
+
+  it("shift-click does not throw", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL" }), makeOrder({ id: "o2", asset: "MSFT" })]);
+    fireEvent.click(screen.getByText("AAPL"));
+    expect(() => fireEvent.click(screen.getByText("MSFT"), { shiftKey: true })).not.toThrow();
+  });
+
+  it("right-clicking a row opens the context menu", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL" })]);
+    const cell = screen.getByText("AAPL");
+    fireEvent.contextMenu(cell);
+    expect(screen.getByText(/Select & broadcast/i)).toBeInTheDocument();
+  });
+
+  it("context menu has actionable entries when an active order is right-clicked", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL", status: "working" })]);
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    expect(screen.getByText(/Select & broadcast/i)).toBeInTheDocument();
+    expect(screen.getByText(/Copy order ID/i)).toBeInTheDocument();
+  });
+});
+
+describe("OrderBlotter – status variants", () => {
+  it("renders filled status badge", () => {
+    renderBlotter([makeOrder({ id: "o1", status: "filled", filled: 100, quantity: 100 })]);
+    expect(screen.getByText("filled")).toBeInTheDocument();
+  });
+
+  it("renders rejected status badge", () => {
+    renderBlotter([makeOrder({ id: "o1", status: "rejected" })]);
+    expect(screen.getByText("rejected")).toBeInTheDocument();
+  });
+
+  it("renders cancelled status badge", () => {
+    renderBlotter([makeOrder({ id: "o1", status: "cancelled" })]);
+    expect(screen.getByText("cancelled")).toBeInTheDocument();
+  });
+
+  it("renders expired status badge", () => {
+    renderBlotter([makeOrder({ id: "o1", status: "expired" })]);
+    expect(screen.getByText("expired")).toBeInTheDocument();
+  });
+
+  it("renders held status badge", () => {
+    renderBlotter([makeOrder({ id: "o1", status: "held" })]);
+    expect(screen.getByText("held")).toBeInTheDocument();
+  });
+});
+
+describe("OrderBlotter – child fills", () => {
+  it("computes average fill price across child fills", () => {
+    renderBlotter([
+      makeOrder({
+        id: "o1",
+        filled: 100,
+        children: [
+          {
+            id: "c1",
+            parentId: "o1",
+            asset: "AAPL",
+            side: "BUY",
+            quantity: 50,
+            limitPrice: 150,
+            status: "filled",
+            filled: 50,
+            avgFillPrice: 150,
+            submittedAt: now,
+          },
+          {
+            id: "c2",
+            parentId: "o1",
+            asset: "AAPL",
+            side: "BUY",
+            quantity: 50,
+            limitPrice: 152,
+            status: "filled",
+            filled: 50,
+            avgFillPrice: 152,
+            submittedAt: now,
+          },
+        ],
+      }),
+    ]);
+    expect(screen.getByText("151.0000")).toBeInTheDocument();
+  });
+});

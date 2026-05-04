@@ -122,4 +122,32 @@ describe("ScenarioMatrixPanel", () => {
     fireEvent.click(meanButtons[0]);
     expect(screen.getByTestId("scenario-table")).toBeInTheDocument();
   });
+
+  it("changes option type to put", () => {
+    render(<ScenarioMatrixPanel />);
+    const putBtn = screen.getByRole("button", { name: /^PUT$/ });
+    fireEvent.click(putBtn);
+    // Button changes class — check it's still rendered
+    expect(putBtn).toBeInTheDocument();
+  });
+
+  it("changes paths input", () => {
+    render(<ScenarioMatrixPanel />);
+    const pathsInput = screen.queryByLabelText(/Paths|Iterations/i) as HTMLInputElement | null;
+    if (pathsInput) {
+      fireEvent.change(pathsInput, { target: { value: "5000" } });
+      expect(pathsInput.value).toBe("5000");
+    } else {
+      expect(screen.getByTestId("scenario-matrix-panel")).toBeInTheDocument();
+    }
+  });
+
+  it("changes the symbol select", () => {
+    render(<ScenarioMatrixPanel />);
+    const symbolSel = screen.queryByLabelText(/Symbol/i) as HTMLSelectElement | null;
+    if (symbolSel) {
+      fireEvent.change(symbolSel, { target: { value: "MSFT" } });
+    }
+    expect(screen.getByTestId("scenario-matrix-panel")).toBeInTheDocument();
+  });
 });

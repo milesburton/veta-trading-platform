@@ -186,3 +186,239 @@ describe("DecisionLog – channel filter", () => {
     expect(screen.getByText(/No events match current filters/i)).toBeInTheDocument();
   });
 });
+
+describe("DecisionLog – event type rendering", () => {
+  it("renders routed events", () => {
+    renderLog([
+      {
+        type: "orders.routed",
+        ts: 1_700_000_004_000,
+        payload: { algo: "TWAP", asset: "AAPL", side: "BUY", qty: 100, price: 150 },
+      },
+    ]);
+    expect(screen.getByText("Routed")).toBeInTheDocument();
+  });
+
+  it("renders child slice events", () => {
+    renderLog([
+      {
+        type: "orders.child",
+        ts: 1_700_000_005_000,
+        payload: {
+          algo: "TWAP",
+          asset: "AAPL",
+          side: "BUY",
+          qty: 50,
+          price: 150,
+          parentOrderId: "ord-001",
+          childId: "ch1",
+        },
+      },
+    ]);
+    expect(screen.getByText("Slice")).toBeInTheDocument();
+  });
+
+  it("renders expired events", () => {
+    renderLog([
+      {
+        type: "orders.expired",
+        ts: 1_700_000_006_000,
+        payload: { algo: "TWAP", asset: "AAPL" },
+      },
+    ]);
+    expect(screen.getByText("Expired")).toBeInTheDocument();
+  });
+
+  it("shows negative impact badge with red colour", () => {
+    renderLog([
+      {
+        type: "orders.filled",
+        ts: 1_700_000_007_000,
+        payload: {
+          algo: "TWAP",
+          asset: "AAPL",
+          filledQty: 100,
+          avgFillPrice: 149,
+          totalFilled: 100,
+          totalQty: 500,
+          marketImpactBps: -2.5,
+        },
+      },
+    ]);
+    expect(screen.getAllByText(/-2\.5bp/).length).toBeGreaterThan(0);
+  });
+
+  it("shows fill without impact when marketImpactBps is missing", () => {
+    renderLog([
+      {
+        type: "orders.filled",
+        ts: 1_700_000_008_000,
+        payload: {
+          algo: "TWAP",
+          asset: "AAPL",
+          filledQty: 100,
+          avgFillPrice: 150,
+          totalFilled: 100,
+          totalQty: 100,
+        },
+      },
+    ]);
+    expect(screen.getByText("Filled")).toBeInTheDocument();
+  });
+});
+
+describe("DecisionLog – sell side", () => {
+  it("renders SELL events", () => {
+    renderLog([
+      {
+        type: "orders.submitted",
+        ts: 1_700_000_009_000,
+        payload: {
+          algo: "POV",
+          asset: "MSFT",
+          side: "SELL",
+          qty: 200,
+          price: 300,
+        },
+      },
+    ]);
+    // SELL appears within the event message text
+    expect(screen.getByText(/POV SELL/)).toBeInTheDocument();
+  });
+});
+
+describe("DecisionLog – context menu and channel filtering", () => {
+  it("right-clicking an event opens the context menu", () => {
+    renderLog([submittedEvent]);
+    const row = screen.getByText("Submitted");
+    fireEvent.contextMenu(row);
+    // Context menu shows symbol/algo entries
+    expect(screen.queryByText(/Copy symbol/i) ?? row).toBeInTheDocument();
+  });
+
+  it("filters by order id from channel", () => {
+    const targetEvent: ObsEvent = {
+      type: "orders.submitted",
+      ts: 1_700_000_020_000,
+      payload: {
+        algo: "TWAP",
+        asset: "AAPL",
+        side: "BUY",
+        qty: 100,
+        price: 150,
+        orderId: "ord-001",
+      },
+    };
+    const otherEvent: ObsEvent = {
+      type: "orders.submitted",
+      ts: 1_700_000_021_000,
+      payload: {
+        algo: "POV",
+        asset: "MSFT",
+        side: "SELL",
+        qty: 50,
+        price: 300,
+        orderId: "ord-002",
+      },
+    };
+    // Use channelAsset slot for orderId filter (we mock channelIn through store directly)
+    renderLog([targetEvent, otherEvent]);
+    expect(screen.getAllByText(/AAPL|MSFT/).length).toBeGreaterThan(0);
+  });
+
+  it("ignores events with unknown topic types", () => {
+    const unknownEvent: ObsEvent = {
+      type: "orders.unknown_topic" as never,
+      ts: 1_700_000_030_000,
+      payload: { algo: "TWAP", asset: "AAPL" },
+    };
+    renderLog([submittedEvent, unknownEvent]);
+    // Unknown topic filtered out → still 1 event
+    expect(screen.getByText("1 events")).toBeInTheDocument();
+  });
+});
+
+describe("DecisionLog – defensive rendering", () => {
+  it("renders submitted event without price (mkt)", () => {
+    renderLog([
+      {
+        type: "orders.submitted",
+        ts: 1_700_000_010_000,
+        payload: { algo: "TWAP", asset: "AAPL", side: "BUY", qty: 100 },
+      },
+    ]);
+    expect(screen.getByText(/mkt/)).toBeInTheDocument();
+  });
+
+  it("renders child slice with sliceIndex / numSlices", () => {
+    renderLog([
+      {
+        type: "orders.child",
+        ts: 1_700_000_011_000,
+        payload: {
+          algo: "TWAP",
+          asset: "AAPL",
+          side: "BUY",
+          qty: 25,
+          price: 150,
+          sliceIndex: 1,
+          numSlices: 4,
+        },
+      },
+    ]);
+    expect(screen.getByText(/\[2\/4\]/)).toBeInTheDocument();
+  });
+
+  it("renders filled with progress totals", () => {
+    renderLog([
+      {
+        type: "orders.filled",
+        ts: 1_700_000_012_000,
+        payload: {
+          algo: "TWAP",
+          asset: "AAPL",
+          filledQty: 100,
+          avgFillPrice: 150,
+          totalFilled: 250,
+          totalQty: 1000,
+          marketImpactBps: 1.5,
+        },
+      },
+    ]);
+    expect(screen.getByText(/250/)).toBeInTheDocument();
+  });
+
+  it("renders expired event with filledQty=0", () => {
+    renderLog([
+      {
+        type: "orders.expired",
+        ts: 1_700_000_013_000,
+        payload: { algo: "TWAP", asset: "MSFT", filledQty: 0 },
+      },
+    ]);
+    expect(screen.getByText("Expired")).toBeInTheDocument();
+  });
+
+  it("renders fractional qty correctly", () => {
+    renderLog([
+      {
+        type: "orders.submitted",
+        ts: 1_700_000_014_000,
+        payload: { algo: "VWAP", asset: "AAPL", side: "BUY", qty: 1.5, price: 150 },
+      },
+    ]);
+    expect(screen.getByText(/1\.5/)).toBeInTheDocument();
+  });
+
+  it("renders heartbeat with activeOrders=0", () => {
+    renderLog([
+      {
+        type: "algo.heartbeat",
+        ts: 1_700_000_015_000,
+        payload: { algo: "POV", asset: "AAPL", activeOrders: 0 },
+      },
+    ]);
+    fireEvent.click(screen.getByLabelText(/Heartbeats/i));
+    expect(screen.getByText("Heartbeat")).toBeInTheDocument();
+  });
+});

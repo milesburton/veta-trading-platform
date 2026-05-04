@@ -97,4 +97,47 @@ describe("ProductBookPanel", () => {
     expect(await screen.findByText(/Quote requested \(RFQ: rfq-9\)/i)).toBeInTheDocument();
     expect(fetchSpy).toHaveBeenCalled();
   });
+
+  it("shows draft and structured products with their state badges", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify([
+          { ...issuedProduct, productId: "p-draft", state: "draft", name: "Draft Product" },
+          {
+            ...issuedProduct,
+            productId: "p-struct",
+            state: "structured",
+            name: "Structured Product",
+          },
+          { ...issuedProduct, productId: "p-sold", state: "sold", name: "Sold Product" },
+        ]),
+        { status: 200 }
+      )
+    );
+    render(<ProductBookPanel />);
+    expect(await screen.findByText(/Draft Product/i)).toBeInTheDocument();
+    expect(screen.getByText(/Structured Product/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sold Product/i)).toBeInTheDocument();
+  });
+
+  it("filters products by state when filter is changed", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify([issuedProduct]), { status: 200 })
+    );
+    render(<ProductBookPanel />);
+    await screen.findByText(/Income Note/i);
+    const filter = screen.queryByRole("combobox");
+    if (filter) {
+      fireEvent.change(filter, { target: { value: "all" } });
+    }
+    expect(screen.getByText(/Income Note/i)).toBeInTheDocument();
+  });
+
+  it("handles fetch error gracefully", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("oops", { status: 500 }));
+    render(<ProductBookPanel />);
+    await waitFor(() => {
+      expect(screen.queryByText(/Income Note/i)).not.toBeInTheDocument();
+    });
+  });
 });

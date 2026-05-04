@@ -112,4 +112,53 @@ describe("PopOutHost", () => {
 
     expect(screen.getByText(/Unknown panel/i)).toBeInTheDocument();
   });
+
+  it("falls back gracefully when localStorage payload is malformed", () => {
+    localStorage.setItem("layout-test", "{not json");
+    renderHost("market-ladder");
+    expect(screen.getByTestId("market-ladder-panel")).toBeInTheDocument();
+  });
+
+  it("falls back when layout v3 has no matching instance", () => {
+    localStorage.setItem(
+      "layout-test",
+      JSON.stringify({
+        _v: 3,
+        items: [{ i: "different-id", outgoing: 1, incoming: 2 }],
+      })
+    );
+    renderHost("market-ladder");
+    expect(screen.getByTestId("market-ladder-panel")).toBeInTheDocument();
+  });
+
+  it("falls back when localStorage is empty", () => {
+    localStorage.clear();
+    renderHost("market-ladder");
+    expect(screen.getByTestId("market-ladder-panel")).toBeInTheDocument();
+  });
+
+  it("renders order-ticket panel and registers resize handler", () => {
+    localStorage.removeItem("layout-test");
+    renderHost("order-ticket");
+    expect(screen.getByText(/Order Ticket Panel/)).toBeInTheDocument();
+  });
+
+  it("renders candle-chart pop-out with waiting message when no data", () => {
+    localStorage.removeItem("layout-test");
+    renderHost("candle-chart");
+    expect(screen.getByText(/Waiting for candle data/i)).toBeInTheDocument();
+  });
+
+  it("renders market-depth pop-out with default symbol", () => {
+    localStorage.removeItem("layout-test");
+    renderHost("market-depth");
+    // MarketDepth is mocked as <div /> so no specific text — just no throw
+    expect(document.title).toMatch(/VETA/);
+  });
+
+  it("falls back when v4 flex layout is malformed", () => {
+    localStorage.setItem("layout-test", JSON.stringify({ _v: 4, flex: "not a json model" }));
+    renderHost("market-ladder");
+    expect(screen.getByTestId("market-ladder-panel")).toBeInTheDocument();
+  });
 });

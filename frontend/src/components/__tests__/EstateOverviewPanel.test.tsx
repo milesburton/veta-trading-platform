@@ -46,7 +46,11 @@ vi.mock("../../store/servicesApi.ts", () => ({
   },
 }));
 
-function renderPanel(preloadedAlerts: Alert[] = []) {
+function renderPanel(
+  preloadedAlerts: Alert[] = [],
+  ordersOverride?: ReturnType<typeof ordersSlice.reducer> extends { orders: infer T } ? T : never,
+  events: { type: string; ts: number; payload: Record<string, unknown> }[] = []
+) {
   const store = configureStore({
     reducer: {
       orders: ordersSlice.reducer,
@@ -54,8 +58,8 @@ function renderPanel(preloadedAlerts: Alert[] = []) {
       alerts: alertsSlice.reducer,
     },
     preloadedState: {
-      orders: { orders: [], lastSubmittedOrderId: null },
-      observability: { events: [] },
+      orders: { orders: ordersOverride ?? [], lastSubmittedOrderId: null },
+      observability: { events },
       alerts: { alerts: preloadedAlerts, muteRules: [] },
     },
   });
@@ -104,5 +108,97 @@ describe("EstateOverviewPanel", () => {
     if (!row) throw new Error("expected alert row");
     fireEvent.click(within(row).getByRole("button", { name: /dismiss/i }));
     expect(screen.queryByText(/Order flood detected/i)).not.toBeInTheDocument();
+  });
+
+  it("renders critical alert with red styling", () => {
+    renderPanel([
+      {
+        id: "a-2",
+        severity: "CRITICAL",
+        source: "service",
+        message: "Database offline",
+        ts: Date.now(),
+        dismissed: false,
+      },
+    ]);
+    expect(screen.getByText(/Database offline/)).toBeInTheDocument();
+  });
+
+  it("renders info alert", () => {
+    renderPanel([
+      {
+        id: "a-3",
+        severity: "INFO",
+        source: "service",
+        message: "Service recovered",
+        ts: Date.now(),
+        dismissed: false,
+      },
+    ]);
+    expect(screen.getByText(/Service recovered/)).toBeInTheDocument();
+  });
+
+  it("OK service is reflected in the table", () => {
+    byService.OMS = { ok: true, version: "1.0.0" };
+    byService.Gateway = { ok: true, version: "2.1.0" };
+    renderPanel();
+    const okEls = screen.getAllByText(/OK/i);
+    expect(okEls.length).toBeGreaterThan(0);
+  });
+
+  it("renders metrics and sparkline when there are recent orders", () => {
+    const now = Date.now();
+    const orders = Array.from({ length: 10 }, (_, i) => ({
+      id: `o${i}`,
+      submittedAt: now - i * 1000,
+      asset: "AAPL",
+      side: "BUY" as const,
+      quantity: 100,
+      limitPrice: 150,
+      expiresAt: now + 60_000,
+      strategy: "TWAP" as const,
+      status: "working" as const,
+      filled: 50,
+      algoParams: { strategy: "TWAP" as const, numSlices: 4, participationCap: 25 },
+      children: [
+        {
+          id: `c${i}`,
+          parentId: `o${i}`,
+          asset: "AAPL",
+          side: "BUY" as const,
+          quantity: 50,
+          limitPrice: 150,
+          status: "filled" as const,
+          filled: 50,
+          submittedAt: now - i * 1000,
+        },
+      ],
+    }));
+    renderPanel([], orders);
+    expect(screen.getByText(/Estate Overview/i)).toBeInTheDocument();
+  });
+
+  it("renders timeline events when present", () => {
+    const events = [
+      {
+        type: "orders.submitted",
+        ts: Date.now() - 1000,
+        payload: { algo: "TWAP", asset: "AAPL", side: "BUY", qty: 100, price: 150 },
+      },
+      {
+        type: "orders.filled",
+        ts: Date.now() - 500,
+        payload: {
+          algo: "TWAP",
+          asset: "AAPL",
+          filledQty: 100,
+          avgFillPrice: 150,
+          totalFilled: 100,
+          totalQty: 100,
+        },
+      },
+    ];
+    renderPanel([], [], events);
+    expect(screen.queryByText(/No events yet/i)).not.toBeInTheDocument();
   });
 });

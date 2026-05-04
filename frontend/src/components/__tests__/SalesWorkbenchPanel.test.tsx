@@ -178,4 +178,37 @@ describe("SalesWorkbenchPanel", () => {
 
     expect(await screen.findByText("cannot route")).toBeInTheDocument();
   });
+
+  it("shows minute age for older RFQs", async () => {
+    const oldRfq = makeRfq({ createdAt: Date.now() - 5 * 60_000 });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ rfqs: [oldRfq] }),
+    } as Response);
+    renderPanel();
+    await screen.findByText(/^5m$/);
+    expect(screen.getByText(/^5m$/)).toBeInTheDocument();
+  });
+
+  it("shows hour age for very old RFQs", async () => {
+    const oldRfq = makeRfq({ createdAt: Date.now() - 2 * 3_600_000 });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ rfqs: [oldRfq] }),
+    } as Response);
+    renderPanel();
+    await screen.findByText(/^2h$/);
+    expect(screen.getByText(/^2h$/)).toBeInTheDocument();
+  });
+
+  it("renders empty state when no RFQs", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ rfqs: [] }),
+    } as Response);
+    renderPanel();
+    await waitFor(() => {
+      expect(screen.queryByText("rfq-1")).not.toBeInTheDocument();
+    });
+  });
 });

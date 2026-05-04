@@ -207,6 +207,101 @@ describe("AlgoMonitor – Needs Action tab", () => {
     expect(screen.queryByRole("button", { name: /Trade at Last/i })).not.toBeInTheDocument();
   });
 
+  it("expands a filled order to show perf card with maker liquidity", () => {
+    const order = makeOrder({
+      id: "perf-1",
+      status: "filled",
+      filled: 100,
+      quantity: 100,
+      side: "BUY",
+      limitPrice: 150,
+      children: [
+        {
+          id: "ch1",
+          parentId: "perf-1",
+          asset: "AAPL",
+          side: "BUY",
+          quantity: 100,
+          limitPrice: 150,
+          status: "filled",
+          filled: 100,
+          avgFillPrice: 149,
+          commissionUSD: -0.1,
+          submittedAt: now,
+          liquidityFlag: "MAKER",
+        },
+      ],
+    });
+    renderMonitor([order]);
+    fireEvent.click(screen.getByTestId("history-tab"));
+    const aapl = screen.getByText("AAPL");
+    fireEvent.click(aapl);
+    expect(screen.getAllByText(/Avg Fill/i).length).toBeGreaterThan(0);
+  });
+
+  it("expands a SELL filled order with taker liquidity", () => {
+    const order = makeOrder({
+      id: "perf-2",
+      status: "filled",
+      filled: 100,
+      quantity: 100,
+      side: "SELL",
+      limitPrice: 200,
+      asset: "MSFT",
+      children: [
+        {
+          id: "ch2",
+          parentId: "perf-2",
+          asset: "MSFT",
+          side: "SELL",
+          quantity: 100,
+          limitPrice: 200,
+          status: "filled",
+          filled: 100,
+          avgFillPrice: 199,
+          commissionUSD: 0.5,
+          submittedAt: now,
+          liquidityFlag: "TAKER",
+        },
+      ],
+    });
+    renderMonitor([order]);
+    fireEvent.click(screen.getByTestId("history-tab"));
+    fireEvent.click(screen.getByText("MSFT"));
+    expect(screen.getAllByText(/Mkt Impact/i).length).toBeGreaterThan(0);
+  });
+
+  it("expands order with CROSS liquidity flag", () => {
+    const order = makeOrder({
+      id: "perf-3",
+      status: "filled",
+      filled: 100,
+      quantity: 100,
+      side: "BUY",
+      asset: "GOOGL",
+      children: [
+        {
+          id: "ch3",
+          parentId: "perf-3",
+          asset: "GOOGL",
+          side: "BUY",
+          quantity: 100,
+          limitPrice: 150,
+          status: "filled",
+          filled: 100,
+          avgFillPrice: 150,
+          commissionUSD: 0.1,
+          submittedAt: now,
+          liquidityFlag: "CROSS",
+        },
+      ],
+    });
+    renderMonitor([order]);
+    fireEvent.click(screen.getByTestId("history-tab"));
+    fireEvent.click(screen.getByText("GOOGL"));
+    expect(screen.getAllByText(/CROSS/i).length).toBeGreaterThan(0);
+  });
+
   it("dispatches submitOrderThunk when Trade at Last is clicked", () => {
     const order = makeOrder({
       id: "o1",

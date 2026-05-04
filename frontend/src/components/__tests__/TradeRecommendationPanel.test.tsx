@@ -106,4 +106,54 @@ describe("TradeRecommendationPanel", () => {
     expect(screen.getByText(/Signal: \+0.720/i)).toBeInTheDocument();
     expect(screen.getAllByText(/signal-driven/i).length).toBeGreaterThan(0);
   });
+
+  it("renders PUT recommendation with strong sell signal", async () => {
+    getRecommendations.mockReturnValue({
+      unwrap: () =>
+        Promise.resolve({
+          symbol: "AAPL",
+          spotPrice: 150,
+          impliedVol: 0.3,
+          recommendations: [
+            {
+              optionType: "put",
+              strike: 145,
+              expirySecs: 7 * 86400,
+              price: 1.5,
+              score: 60,
+              signalStrength: "STRONG_SELL",
+              reasons: ["momentum:-0.4"],
+              greeks: { delta: -0.42, gamma: 0.03, theta: -0.05, vega: 0.1, rho: -0.01 },
+              impliedVol: 0.28,
+              scoringMode: "vol-driven",
+              signalScore: -0.5,
+              signalConfidence: 0.7,
+              signalDirection: "short",
+            },
+          ],
+          computedAt: Date.now(),
+        }),
+    });
+    render(<TradeRecommendationPanel />);
+    fireEvent.click(screen.getByTestId("refresh-recommendations-btn"));
+    expect(await screen.findByText(/PUT/i)).toBeInTheDocument();
+  });
+
+  it("displays an empty-recommendations state", async () => {
+    getRecommendations.mockReturnValue({
+      unwrap: () =>
+        Promise.resolve({
+          symbol: "AAPL",
+          spotPrice: 150,
+          impliedVol: 0.25,
+          recommendations: [],
+          computedAt: Date.now(),
+        }),
+    });
+    render(<TradeRecommendationPanel />);
+    fireEvent.click(screen.getByTestId("refresh-recommendations-btn"));
+    await waitFor(() => {
+      expect(screen.queryByTestId("recommendation-row")).not.toBeInTheDocument();
+    });
+  });
 });

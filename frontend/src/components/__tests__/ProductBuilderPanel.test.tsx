@@ -92,4 +92,96 @@ describe("ProductBuilderPanel", () => {
       expect(fetchSpy).toHaveBeenCalledTimes(3);
     });
   });
+
+  it("ignores invalid leg additions (empty symbol or zero weight)", () => {
+    render(<ProductBuilderPanel />);
+    fireEvent.click(screen.getByRole("button", { name: /\+ Add/i }));
+    expect(screen.getByText(/Legs/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/^Symbol$/i), {
+      target: { value: "AAPL" },
+    });
+    fireEvent.change(screen.getByLabelText(/Weight %/i), {
+      target: { value: "0" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /\+ Add/i }));
+    // No leg added — still empty legs list
+    expect(screen.getByText(/Legs/i)).toBeInTheDocument();
+  });
+
+  it("Save Draft button is disabled when name is empty", () => {
+    render(<ProductBuilderPanel />);
+    expect(screen.getByRole("button", { name: /Save Draft/i })).toBeDisabled();
+  });
+
+  it("handles save error gracefully", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ error: "server error" }), { status: 500 })
+    );
+    render(<ProductBuilderPanel />);
+    fireEvent.change(screen.getByLabelText(/Product Name/i), {
+      target: { value: "Test" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Symbol$/i), {
+      target: { value: "AAPL" },
+    });
+    fireEvent.change(screen.getByLabelText(/Weight %/i), {
+      target: { value: "100" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /\+ Add/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save Draft/i }));
+    await waitFor(() => {
+      expect(screen.queryByText(/Draft product/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it("handles structure error after successful draft save", async () => {
+    let callIdx = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      callIdx++;
+      if (url.endsWith("/api/gateway/products") && init?.method === "POST") {
+        return new Response(JSON.stringify({ productId: "p-1", state: "draft" }), { status: 200 });
+      }
+      if (url.includes("/structure") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ error: "structuring failed" }), { status: 500 });
+      }
+      return new Response(JSON.stringify({}), { status: 500 });
+    });
+
+    render(<ProductBuilderPanel />);
+    fireEvent.change(screen.getByLabelText(/Product Name/i), {
+      target: { value: "Test" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Symbol$/i), {
+      target: { value: "AAPL" },
+    });
+    fireEvent.change(screen.getByLabelText(/Weight %/i), {
+      target: { value: "100" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /\+ Add/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save Draft/i }));
+    await screen.findByText(/Draft product/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Structure$/i }));
+    await screen.findByText(/structuring failed/i);
+    void callIdx;
+  });
+
+  it("handles network error during save", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network down"));
+    render(<ProductBuilderPanel />);
+    fireEvent.change(screen.getByLabelText(/Product Name/i), {
+      target: { value: "Test" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Symbol$/i), {
+      target: { value: "AAPL" },
+    });
+    fireEvent.change(screen.getByLabelText(/Weight %/i), {
+      target: { value: "100" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /\+ Add/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save Draft/i }));
+    await screen.findByText(/network down/);
+  });
 });

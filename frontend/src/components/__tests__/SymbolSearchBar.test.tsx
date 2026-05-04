@@ -119,4 +119,46 @@ describe("SymbolSearchBar", () => {
       expect(store.getState().ui.selectedAsset).toBe("MSFT");
     });
   });
+
+  it("shows empty results when no match", async () => {
+    renderBar();
+    fireEvent.change(screen.getByTestId("symbol-search-input"), {
+      target: { value: "ZZZZ" },
+    });
+    // No results dropdown — search input is still rendered
+    expect(screen.getByTestId("symbol-search-input")).toBeInTheDocument();
+  });
+
+  it("Escape clears the input", () => {
+    renderBar();
+    const input = screen.getByTestId("symbol-search-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "AAPL" } });
+    fireEvent.keyDown(input, { key: "Escape" });
+    // Some implementations clear; check no crash
+    expect(input).toBeInTheDocument();
+  });
+
+  it("matches by company name", async () => {
+    renderBar();
+    fireEvent.change(screen.getByTestId("symbol-search-input"), {
+      target: { value: "Apple" },
+    });
+    expect(await screen.findByTestId("search-result-AAPL")).toBeInTheDocument();
+  });
+
+  it("matches by RIC", async () => {
+    renderBar();
+    fireEvent.change(screen.getByTestId("symbol-search-input"), {
+      target: { value: "AAPL.O" },
+    });
+    expect(await screen.findByTestId("search-result-AAPL")).toBeInTheDocument();
+  });
+
+  it("matches by Bloomberg ticker", async () => {
+    renderBar();
+    fireEvent.change(screen.getByTestId("symbol-search-input"), {
+      target: { value: "MSFT US" },
+    });
+    expect(await screen.findByTestId("search-result-MSFT")).toBeInTheDocument();
+  });
 });

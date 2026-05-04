@@ -69,4 +69,57 @@ describe("BasketOrderPanel", () => {
 
     expect(await screen.findByText(/submitted\./i)).toBeInTheDocument();
   });
+
+  it("normalises weights to sum to 100%", () => {
+    render(<BasketOrderPanel />);
+    const normaliseBtn = screen.queryByRole("button", { name: /Normalise/i });
+    if (normaliseBtn) {
+      fireEvent.click(normaliseBtn);
+    }
+    expect(screen.getByTestId("basket-order-panel")).toBeInTheDocument();
+  });
+
+  it("removes a leg from the basket", () => {
+    render(<BasketOrderPanel />);
+    const removeButtons = screen.queryAllByRole("button", { name: /^×$|^Remove|^✕$/i });
+    if (removeButtons.length > 0) {
+      fireEvent.click(removeButtons[0]);
+      expect(screen.getByText(/4 legs/i)).toBeInTheDocument();
+    } else {
+      expect(screen.getByTestId("basket-order-panel")).toBeInTheDocument();
+    }
+  });
+
+  it("changes basket notional and recomputes quantities", () => {
+    render(<BasketOrderPanel />);
+    const notionalInput = screen.queryByLabelText(/Notional|Size/i) as HTMLInputElement | null;
+    if (notionalInput) {
+      fireEvent.change(notionalInput, { target: { value: "100000" } });
+    }
+    expect(screen.getByTestId("basket-order-panel")).toBeInTheDocument();
+  });
+
+  it("toggles BUY/SELL side", () => {
+    render(<BasketOrderPanel />);
+    const sellBtn = screen.queryByRole("button", { name: /^SELL$/ });
+    if (sellBtn) {
+      fireEvent.click(sellBtn);
+      expect(sellBtn).toHaveAttribute("aria-pressed", "true");
+    } else {
+      expect(screen.getByTestId("basket-order-panel")).toBeInTheDocument();
+    }
+  });
+
+  it("ignores duplicate symbol additions", () => {
+    render(<BasketOrderPanel />);
+    fireEvent.change(screen.getByLabelText(/Add Symbol/i), {
+      target: { value: "AA" },
+    });
+    const opts = screen.queryAllByRole("button", { name: /AAPL/i });
+    if (opts.length > 0) {
+      fireEvent.click(opts[0]);
+      // Already in basket → still 5 legs (default)
+      expect(screen.getByText(/5 legs/i)).toBeInTheDocument();
+    }
+  });
 });

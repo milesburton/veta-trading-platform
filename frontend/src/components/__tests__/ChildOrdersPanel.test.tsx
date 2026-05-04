@@ -104,4 +104,61 @@ describe("ChildOrdersPanel", () => {
       selectedOrderId: "child-1-abcdef123456",
     });
   });
+
+  it("renders multiple child rows with different statuses", () => {
+    rows = [
+      {
+        id: "parent-1",
+        asset: "AAPL",
+        side: "BUY",
+        quantity: 1000,
+        children: [
+          {
+            id: "child-2-aaaaaa",
+            submittedAt: Date.now() - 5000,
+            quantity: 100,
+            limitPrice: 150,
+            filled: 0,
+            status: "working",
+          },
+          {
+            id: "child-3-bbbbbb",
+            submittedAt: Date.now() - 10000,
+            quantity: 100,
+            limitPrice: 150,
+            filled: 100,
+            avgFillPrice: 149.95,
+            status: "filled",
+            venue: "NYSE",
+            liquidityFlag: "TAKER",
+          },
+          {
+            id: "child-4-cccccc",
+            submittedAt: Date.now() - 15000,
+            quantity: 100,
+            limitPrice: 150,
+            filled: 0,
+            status: "rejected",
+          },
+        ],
+      },
+    ];
+    render(<ChildOrdersPanel />);
+    expect(screen.getByText(/working/i)).toBeInTheDocument();
+    expect(screen.getByText(/rejected/i)).toBeInTheDocument();
+  });
+
+  it("handles SELL parent and renders correct header", () => {
+    rows = [
+      {
+        id: "parent-1",
+        asset: "MSFT",
+        side: "SELL",
+        quantity: 50,
+        children: [],
+      },
+    ];
+    render(<ChildOrdersPanel />);
+    expect(screen.getByText(/MSFT SELL 50/i)).toBeInTheDocument();
+  });
 });

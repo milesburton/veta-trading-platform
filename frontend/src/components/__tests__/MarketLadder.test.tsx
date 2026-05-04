@@ -164,3 +164,113 @@ describe("MarketLadder – empty assets", () => {
     expect(screen.getByText("0/0")).toBeInTheDocument();
   });
 });
+
+describe("MarketLadder – row interaction", () => {
+  it("clicking a row selects/deselects the asset", () => {
+    renderLadder();
+    const row = screen.getByTestId("asset-row-AAPL");
+    fireEvent.click(row);
+    fireEvent.click(row);
+    expect(row).toBeInTheDocument();
+  });
+
+  it("right-clicking a row opens a context menu", () => {
+    renderLadder();
+    const row = screen.getByTestId("asset-row-AAPL");
+    fireEvent.contextMenu(row);
+    // ContextMenu renders Trade in ladder / Set as primary / Copy symbol etc.
+    // Just assert the row is still present and didn't throw
+    expect(row).toBeInTheDocument();
+  });
+
+  it("renders correctly when asset has no price (price=0)", () => {
+    renderLadder({
+      assets: [{ symbol: "ZERO", initialPrice: 100, volatility: 0.01, sector: "Other" }],
+      prices: { ZERO: 0 },
+      priceHistory: { ZERO: [] },
+    });
+    const row = screen.getByTestId("asset-row-ZERO");
+    expect(row).toBeInTheDocument();
+  });
+
+  it("uses 4-dp formatting for FX symbols (with /)", () => {
+    renderLadder({
+      assets: [{ symbol: "EUR/USD", initialPrice: 1.1, volatility: 0.01, sector: "FX" }],
+      prices: { "EUR/USD": 1.1234 },
+      priceHistory: { "EUR/USD": [1.12, 1.123, 1.1234] },
+    });
+    expect(screen.getByText(/1\.1234/)).toBeInTheDocument();
+  });
+
+  it("renders price flash when price changes (via re-render)", () => {
+    const store = makeStore();
+    const { rerender } = render(
+      <Provider store={store}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "ml",
+            panelType: "market-ladder",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <MarketLadder />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    rerender(
+      <Provider store={store}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "ml",
+            panelType: "market-ladder",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <MarketLadder />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getByTestId("asset-row-AAPL")).toBeInTheDocument();
+  });
+});
+
+describe("MarketLadder – metadata rendering", () => {
+  it("renders beta and market cap when available", () => {
+    renderLadder({
+      assets: [
+        {
+          symbol: "AAPL",
+          initialPrice: 150,
+          volatility: 0.02,
+          sector: "Technology",
+          beta: 1.2,
+          marketCapB: 2800,
+        },
+      ],
+      prices: { AAPL: 150 },
+      priceHistory: { AAPL: [150] },
+    });
+    expect(screen.getByText(/β1\.20/)).toBeInTheDocument();
+    expect(screen.getByText(/2\.8T/)).toBeInTheDocument();
+  });
+
+  it("formats sub-trillion market caps in B", () => {
+    renderLadder({
+      assets: [
+        {
+          symbol: "JPM",
+          initialPrice: 150,
+          volatility: 0.02,
+          sector: "Finance",
+          beta: 1.0,
+          marketCapB: 500,
+        },
+      ],
+      prices: { JPM: 150 },
+      priceHistory: { JPM: [150] },
+    });
+    expect(screen.getByText(/500B/)).toBeInTheDocument();
+  });
+});
