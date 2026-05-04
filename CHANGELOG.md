@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.22.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.2...veta-trading-platform-v1.22.3) (2026-05-04)
+
+
+### Bug Fixes
+
+* **docs:** make Mermaid parsing robust in architecture page ([75cc226](https://github.com/milesburton/veta-trading-platform/commit/75cc2263c8dc383d42ac778e546931c26d461295))
+* **frontend:** restore compact startup overlay footer layout ([ed82f4c](https://github.com/milesburton/veta-trading-platform/commit/ed82f4ca1ba527c278ef4196531a454af3cbe0a1))
+
 ## [1.22.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.1...veta-trading-platform-v1.22.2) (2026-05-04)
 
 
