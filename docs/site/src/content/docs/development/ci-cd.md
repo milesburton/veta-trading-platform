@@ -23,7 +23,7 @@ lint-and-test ─────┬──→ integration (15 min)
 frontend ──────────┼──→ playwright-ui (5 min, parallel)
                    ├──→ screenshots (1.5 min, parallel)
                    ├──→ electron (6 min, parallel)
-                   └──→ docker-base → 27 service images (parallel)
+                   └──→ docker-base → 34 service images (parallel)
 
 Push to main only:
   → Deploy to Fly.io (with smoke tests)
@@ -37,7 +37,7 @@ Push to main only:
 
 Playwright, screenshots, Electron, and Docker builds run **in parallel with** integration tests. They only depend on the frontend job (~70 seconds), not the 15-minute integration suite. This saves ~10-12 minutes off the critical path.
 
-GitHub Pro provides 20 concurrent jobs — we use up to 35 matrix slots (27 Docker builds run in a matrix) but they queue efficiently.
+GitHub Pro provides 20 concurrent jobs — we use up to 40 matrix slots (34 Docker builds run in a matrix) but they queue efficiently.
 
 ## What each job does
 
@@ -58,7 +58,7 @@ GitHub Pro provides 20 concurrent jobs — we use up to 35 matrix slots (27 Dock
 ### integration (~15 minutes)
 
 - Starts PostgreSQL, Redpanda, and all 30+ services
-- Runs database migrations (0001–0012)
+- Runs database migrations (0001–0013)
 - Waits for all services to be healthy (port polling)
 - Waits for market-sim to produce prices
 - Waits for risk-engine to have prices tracked
@@ -75,9 +75,9 @@ GitHub Pro provides 20 concurrent jobs — we use up to 35 matrix slots (27 Dock
 
 ### docker-services (~3-5 minutes per image, parallel)
 
-- Builds 27 individual service Docker images
+- Builds 34 individual service Docker images
 - Pushes to GHCR (`ghcr.io/milesburton/veta-trading-platform/<service>:latest`)
-- Matrix build: all 27 run simultaneously
+- Matrix build: all 34 run simultaneously
 
 ## Deployment on change
 

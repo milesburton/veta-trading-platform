@@ -24,7 +24,7 @@ const LIMIT_ALGO_URL = `http://${Deno.env.get("LIMIT_ALGO_HOST") ?? "localhost"}
 const TWAP_ALGO_URL = `http://${Deno.env.get("TWAP_ALGO_HOST") ?? "localhost"}:${Deno.env.get("TWAP_ALGO_PORT") ?? "5004"}`;
 const POV_ALGO_URL = `http://${Deno.env.get("POV_ALGO_HOST") ?? "localhost"}:${Deno.env.get("POV_ALGO_PORT") ?? "5005"}`;
 const VWAP_ALGO_URL = `http://${Deno.env.get("VWAP_ALGO_HOST") ?? "localhost"}:${Deno.env.get("VWAP_ALGO_PORT") ?? "5006"}`;
-const OBSERVABILITY_URL = `http://${Deno.env.get("OBSERVABILITY_HOST") ?? "localhost"}:${Deno.env.get("OBSERVABILITY_PORT") ?? "5007"}`;
+const KAFKA_RELAY_URL = `http://${Deno.env.get("KAFKA_RELAY_HOST") ?? "localhost"}:${Deno.env.get("KAFKA_RELAY_PORT") ?? "5007"}`;
 const FIX_ARCHIVE_URL = `http://${Deno.env.get("FIX_ARCHIVE_HOST") ?? "localhost"}:${Deno.env.get("FIX_ARCHIVE_PORT") ?? "5012"}`;
 const ICEBERG_ALGO_URL = `http://${Deno.env.get("ICEBERG_ALGO_HOST") ?? "localhost"}:${Deno.env.get("ICEBERG_ALGO_PORT") ?? "5021"}`;
 const SNIPER_ALGO_URL = `http://${Deno.env.get("SNIPER_ALGO_HOST") ?? "localhost"}:${Deno.env.get("SNIPER_ALGO_PORT") ?? "5022"}`;
@@ -541,7 +541,7 @@ async function refreshHealth(): Promise<void> {
     bus,
   ] = await Promise.all([
     chk(MARKET_SIM_URL), chk(EMS_URL), chk(OMS_URL), chk(JOURNAL_URL), chk(USER_SERVICE_URL),
-    chk(FIX_ARCHIVE_URL), chk(FIX_GATEWAY_URL), chk(OBSERVABILITY_URL),
+    chk(FIX_ARCHIVE_URL), chk(FIX_GATEWAY_URL), chk(KAFKA_RELAY_URL),
     chk(LIMIT_ALGO_URL), chk(TWAP_ALGO_URL), chk(POV_ALGO_URL), chk(VWAP_ALGO_URL),
     chk(ICEBERG_ALGO_URL), chk(SNIPER_ALGO_URL), chk(ARRIVAL_PRICE_ALGO_URL), chk(MOMENTUM_ALGO_URL), chk(IS_ALGO_URL),
     chk(DARK_POOL_URL), chk(CCP_SERVICE_URL), chk(RFQ_SERVICE_URL), chk(PRODUCT_SERVICE_URL),
@@ -549,7 +549,7 @@ async function refreshHealth(): Promise<void> {
     chk(RECOMMENDATION_ENGINE_URL), chk(SCENARIO_ENGINE_URL), chk(NEWS_AGGREGATOR_URL), chk(LLM_ADVISORY_URL),
     chk(REPLAY_URL),
     chk(RISK_ENGINE_URL),
-    chk(OBSERVABILITY_URL),
+    chk(KAFKA_RELAY_URL),
   ]);
   cachedHealth = {
     marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
@@ -1812,11 +1812,11 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "twap-algo":            `http://localhost:${Deno.env.get("TWAP_ALGO_PORT") ?? "5004"}`,
     "pov-algo":             `http://localhost:${Deno.env.get("POV_ALGO_PORT") ?? "5005"}`,
     "vwap-algo":            `http://localhost:${Deno.env.get("VWAP_ALGO_PORT") ?? "5006"}`,
-    "observability":        `http://localhost:${Deno.env.get("OBSERVABILITY_PORT") ?? "5007"}`,
+    "observability":        `http://localhost:${Deno.env.get("KAFKA_RELAY_PORT") ?? "5007"}`,
     "journal":              JOURNAL_URL,
     "fix-archive":          `http://localhost:${Deno.env.get("FIX_ARCHIVE_PORT") ?? "5012"}`,
     "fix-gateway":          `http://localhost:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`,
-    "kafka-relay":          `http://localhost:${Deno.env.get("OBSERVABILITY_PORT") ?? "5007"}`,
+    "kafka-relay":          `http://localhost:${Deno.env.get("KAFKA_RELAY_PORT") ?? "5007"}`,
     "user-service":         USER_SERVICE_URL,
     "news-aggregator":      `http://localhost:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`,
     "analytics":            ANALYTICS_URL,

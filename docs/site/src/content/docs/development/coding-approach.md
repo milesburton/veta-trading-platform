@@ -52,7 +52,7 @@ The project enforces testing at four levels, each catching different classes of 
 ### Smoke tests (production-like)
 
 - 87+ tests run against the deployed Fly.io instance after every deploy.
-- Health checks for all 32 services.
+- Health checks for all backend services.
 - Full OAuth login flow with browser-style headers.
 - Order lifecycle: submit → fill or expire within timeout.
 - Risk-engine CRUD: create session, upload chunks, query events, delete.

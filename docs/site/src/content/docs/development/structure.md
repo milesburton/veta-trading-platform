@@ -8,7 +8,7 @@ sidebar:
 ```
 veta-trading-platform/
 ├── backend/
-│   ├── db/migrations/       # PostgreSQL migrations (0001-0012)
+│   ├── db/migrations/       # PostgreSQL migrations (0001-0013)
 │   ├── src/
 │   │   ├── lib/             # Shared utilities (@veta/*)
 │   │   │   ├── http.ts      # CORS, json(), corsOptions()

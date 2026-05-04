@@ -7,7 +7,7 @@ Every trader has exactly one trading style. The style determines which panels th
 
 ## Style → panel matrix
 
-| Panel | high_touch | low_touch | fi_voice | fx_electronic | commodities_voice | derivs_high_touch | derivs_low_touch | oversight |
+| Panel | high_touch | low_touch | fi_voice | fx_electronic | commodities_voice | derivatives_high_touch | derivatives_low_touch | oversight |
 |-------|-----------|-----------|----------|--------------|------------------|------------------|-----------------|-----------|
 | Order Ticket | Yes | No | Yes | Yes | Yes | Yes | No | No |
 | Basket Order | Yes | No | No | No | No | No | No | No |
@@ -18,6 +18,7 @@ Every trader has exactly one trading style. The style determines which panels th
 | Duration Ladder | No | No | Yes | No | No | No | No | Yes |
 | Spread Analysis | No | No | Yes | No | No | No | No | Yes |
 | Vol Surface | No | No | Yes | No | No | Yes | Yes | Yes |
+| Vol Profile | No | No | No | No | No | Yes | Yes | Yes |
 | Greeks Surface | No | No | No | No | No | Yes | Yes | Yes |
 | Option Pricing | No | No | No | No | No | Yes | Yes | Yes |
 | Scenario Matrix | No | No | No | No | No | Yes | Yes | Yes |

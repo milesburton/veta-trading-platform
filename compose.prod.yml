@@ -211,18 +211,18 @@ services:
       - "traefik.http.routers.is-algo.priority=10"
       - "com.centurylinklabs.watchtower.enable=true"
 
-  observability:
+  kafka-relay:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/observability:latest
     build: !reset null
     profiles: !reset []
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.observability.rule=PathPrefix(`/api/kafka-relay`) || PathPrefix(`/api/observability`)"
-      - "traefik.http.routers.observability.entrypoints=web"
-      - "traefik.http.routers.observability.middlewares=observability-strip"
-      - "traefik.http.services.observability.loadbalancer.server.port=5007"
-      - "traefik.http.routers.observability.priority=10"
+      - "traefik.http.routers.kafka-relay.rule=PathPrefix(`/api/kafka-relay`) || PathPrefix(`/api/observability`)"
+      - "traefik.http.routers.kafka-relay.entrypoints=web"
+      - "traefik.http.routers.kafka-relay.middlewares=kafka-relay-strip"
+      - "traefik.http.services.kafka-relay.loadbalancer.server.port=5007"
+      - "traefik.http.routers.kafka-relay.priority=10"
       - "com.centurylinklabs.watchtower.enable=true"
 
   user-service:

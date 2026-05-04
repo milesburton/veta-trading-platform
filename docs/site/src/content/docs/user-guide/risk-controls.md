@@ -12,10 +12,10 @@ Every order passes through the risk engine before reaching the market. Six check
 | Check | Description |
 |-------|-------------|
 | Fat-finger collar | Rejects orders where the limit price deviates > 5% from the current market price |
-| Duplicate detection | Blocks identical orders submitted within 5 seconds |
+| Duplicate detection | Blocks identical orders submitted within 500 ms |
 | Self-cross prevention | Prevents a trader from having both a buy and sell order on the same instrument |
 | Rate limiting | Caps order submission rate per trader (default: 10/sec) |
-| ADV check | Rejects single orders exceeding 25% of average daily volume |
+| ADV check | Rejects single orders exceeding 10% of average daily volume |
 | Max open orders | Limits the number of concurrent active orders per trader |
 
 If the risk engine is unavailable, orders are **blocked, not bypassed** (hard-fail on outage).

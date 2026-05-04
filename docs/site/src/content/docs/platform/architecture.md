@@ -65,12 +65,14 @@ graph TB
         DARK["Dark Pool :5027"]:::fix
         CCP["CCP :5028<br/><i>Central clearing</i>"]:::fix
         RFQ["RFQ :5029<br/><i>Request for quote</i>"]:::fix
+        PRODUCT["Product Service :5030<br/><i>Structured products</i>"]:::fix
     end
 
     subgraph Support["Support Services"]
         NEWS["News :5013<br/><i>Sentiment scoring</i>"]:::support
         LLM["LLM Advisory :5024<br/><i>Ollama</i>"]:::support
-        OBS["Observability :5007"]:::support
+        LLMW["LLM Worker :5033<br/><i>Inference worker</i>"]:::support
+        KRELAY["Kafka Relay :5007<br/><i>HTTP→Kafka</i>"]:::support
     end
 
     FE <-->|"WebSocket + HTTP"| GW
@@ -85,8 +87,8 @@ graph TB
     GW -->|"auth validate"| USER
     KAFKA --- MSIM
     KAFKA --- ANA & FE_ENG & SIG & REC & SCEN
-    KAFKA --- NEWS & LLM & OBS
-    KAFKA --- DARK & CCP & RFQ
+    KAFKA --- NEWS & LLM & LLMW & KRELAY
+    KAFKA --- DARK & CCP & RFQ & PRODUCT
     KAFKA --- MDS & MDA
     KAFKA --- REPLAY
 
@@ -115,8 +117,8 @@ graph TB
 | 🟣 Violet | Market Data | Market Sim, Market Data, Adapters |
 | 🟠 Orange | Analytics | Analytics, Feature/Signal/Recommendation/Scenario engines |
 | 🟢 Teal | Storage | Journal, FIX Archive, User Service, Session Replay |
-| 🩷 Pink | Microstructure | FIX Exchange, Dark Pool, CCP, RFQ |
-| ⚪ Grey | Support | News, LLM Advisory, Observability |
+| 🩷 Pink | Microstructure | FIX Exchange, Dark Pool, CCP, RFQ, Product Service |
+| ⚪ Grey | Support | News, LLM Advisory, LLM Worker, Kafka Relay |
 
 ## Order flow
 

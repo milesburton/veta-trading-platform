@@ -12,7 +12,7 @@ description: Every backend service, its port, and what it does.
 | 5004 | TWAP Algo | `twap-algo` | Time-weighted average price slicing |
 | 5005 | POV Algo | `pov-algo` | Percent-of-volume participation |
 | 5006 | VWAP Algo | `vwap-algo` | Volume-weighted average price |
-| 5007 | Observability | `observability` | Kafka relay for event logging |
+| 5007 | Kafka Relay | `kafka-relay` | HTTP→Kafka relay for browser/event ingestion |
 | 5008 | User Service | `user-service` | OAuth2, RBAC, session management |
 | 5009 | Journal | `journal` | PostgreSQL trade lifecycle store |
 | 5011 | Gateway (BFF) | `gateway` | WebSocket hub, HTTP proxy, auth |
@@ -28,12 +28,14 @@ description: Every backend service, its port, and what it does.
 | 5021 | ICEBERG Algo | `iceberg-algo` | Hidden order iceberg execution |
 | 5022 | SNIPER Algo | `sniper-algo` | Multi-venue smart order routing |
 | 5023 | ARRIVAL_PRICE Algo | `arrival-price-algo` | Arrival price benchmark execution |
-| 5024 | LLM Advisory | `llm-advisory` | Natural language trade commentary (Ollama) |
+| 5024 | LLM Advisory Orchestrator | `llm-advisory-orchestrator` | Natural language trade commentary (Ollama) |
 | 5025 | MOMENTUM Algo | `momentum-algo` | EMA crossover signal-driven |
 | 5026 | IS Algo | `is-algo` | Implementation shortfall minimisation |
 | 5027 | Dark Pool | `dark-pool` | Simulated dark pool crossing network |
 | 5028 | CCP | `ccp-service` | Central counterparty clearing |
 | 5029 | RFQ | `rfq-service` | Request for quote workflow |
+| 5030 | Product Service | `product-service` | Structured product builder (CDO-like multi-leg baskets) |
 | 5031 | Session Replay | `replay-service` | rrweb session recording and playback |
 | 5032 | Risk Engine | `risk-engine` | Pre-trade risk checks (6 checks) |
+| 5033 | LLM Worker | `llm-worker` | LLM inference worker (job queue consumer) |
 | 9880 | FIX Exchange | `fix-exchange` | Simulated FIX 4.2 matching engine |

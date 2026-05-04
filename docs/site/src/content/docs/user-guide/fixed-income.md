@@ -15,7 +15,7 @@ FI traders (trading style: `fi_voice`) land on the **FI Trading** workspace by d
 - Duration Ladder panel
 - Vol Surface panel
 
-Navigate to this workspace via `?ws=ws-fi-analysis` or select it from the workspace picker.
+Navigate to this workspace via `?ws=ws-fi-trading` or select it from the workspace picker. A separate `ws-fi-analysis` workspace is available for deeper credit and curve research.
 
 ## Yield Curve
 

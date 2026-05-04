@@ -12,7 +12,7 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer } from "../backend/src/lib/messaging.ts";
 
-const PORT = Number(Deno.env.get("OBSERVABILITY_PORT")) || 5007;
+const PORT = Number(Deno.env.get("KAFKA_RELAY_PORT")) || 5007;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 // ── Kafka topic groups (same as old observability-server.ts) ──────────────────

@@ -427,8 +427,8 @@ services:
       EMS_PORT: "5001"
       MARKET_SIM_HOST: market-sim
       MARKET_SIM_PORT: "5000"
-      OBSERVABILITY_HOST: observability
-      OBSERVABILITY_PORT: "5007"
+      KAFKA_RELAY_HOST: kafka-relay
+      KAFKA_RELAY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5003/health || exit 1"]
@@ -466,8 +466,8 @@ services:
       MARKET_SIM_HOST: market-sim
       MARKET_SIM_PORT: "5000"
       TWAP_INTERVAL_MS: "5000"
-      OBSERVABILITY_HOST: observability
-      OBSERVABILITY_PORT: "5007"
+      KAFKA_RELAY_HOST: kafka-relay
+      KAFKA_RELAY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5004/health || exit 1"]
@@ -507,8 +507,8 @@ services:
       POV_PERCENTAGE: "10"
       POV_MIN_SLICE: "10"
       POV_MAX_SLICE: "5000"
-      OBSERVABILITY_HOST: observability
-      OBSERVABILITY_PORT: "5007"
+      KAFKA_RELAY_HOST: kafka-relay
+      KAFKA_RELAY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5005/health || exit 1"]
@@ -546,8 +546,8 @@ services:
       MARKET_SIM_HOST: market-sim
       MARKET_SIM_PORT: "5000"
       VWAP_WINDOW_TICKS: "20"
-      OBSERVABILITY_HOST: observability
-      OBSERVABILITY_PORT: "5007"
+      KAFKA_RELAY_HOST: kafka-relay
+      KAFKA_RELAY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5006/health || exit 1"]
@@ -584,8 +584,8 @@ services:
       MARKET_SIM_PORT: "5000"
       EMS_HOST: ems
       EMS_PORT: "5001"
-      OBSERVABILITY_HOST: observability
-      OBSERVABILITY_PORT: "5007"
+      KAFKA_RELAY_HOST: kafka-relay
+      KAFKA_RELAY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5021/health || exit 1"]
@@ -622,8 +622,8 @@ services:
       MARKET_SIM_PORT: "5000"
       EMS_HOST: ems
       EMS_PORT: "5001"
-      OBSERVABILITY_HOST: observability
-      OBSERVABILITY_PORT: "5007"
+      KAFKA_RELAY_HOST: kafka-relay
+      KAFKA_RELAY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5022/health || exit 1"]
@@ -660,8 +660,8 @@ services:
       MARKET_SIM_PORT: "5000"
       EMS_HOST: ems
       EMS_PORT: "5001"
-      OBSERVABILITY_HOST: observability
-      OBSERVABILITY_PORT: "5007"
+      KAFKA_RELAY_HOST: kafka-relay
+      KAFKA_RELAY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5023/health || exit 1"]
@@ -698,8 +698,8 @@ services:
       MARKET_SIM_PORT: "5000"
       EMS_HOST: ems
       EMS_PORT: "5001"
-      OBSERVABILITY_HOST: observability
-      OBSERVABILITY_PORT: "5007"
+      KAFKA_RELAY_HOST: kafka-relay
+      KAFKA_RELAY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5025/health || exit 1"]
@@ -736,8 +736,8 @@ services:
       MARKET_SIM_PORT: "5000"
       EMS_HOST: ems
       EMS_PORT: "5001"
-      OBSERVABILITY_HOST: observability
-      OBSERVABILITY_PORT: "5007"
+      KAFKA_RELAY_HOST: kafka-relay
+      KAFKA_RELAY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5026/health || exit 1"]
@@ -860,8 +860,8 @@ services:
       - "traefik.http.services.dark-pool.loadbalancer.server.port=5027"
       - "traefik.http.routers.dark-pool.priority=10"
 
-  # ── Observability / Kafka Relay ────────────────────────────────────────────
-  observability:
+  # ── Kafka Relay (HTTP→Kafka bridge for browser/event ingestion) ────────────
+  kafka-relay:
     <<: *deno-service
     profiles: [trading]
     command: ["deno", "run", "--allow-all", "/app/observability/kafka-relay.ts"]
@@ -869,7 +869,7 @@ services:
       redpanda:
         condition: service_healthy
     environment:
-      OBSERVABILITY_PORT: "5007"
+      KAFKA_RELAY_PORT: "5007"
       REDPANDA_BROKERS: redpanda:9092
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5007/health || exit 1"]
@@ -879,12 +879,12 @@ services:
       start_period: 20s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.observability.rule=PathPrefix(`/api/kafka-relay`) || PathPrefix(`/api/observability`)"
-      - "traefik.http.routers.observability.entrypoints=web,websecure"
-      - "traefik.http.routers.observability.middlewares=observability-strip"
-      - "traefik.http.middlewares.observability-strip.stripprefix.prefixes=/api/kafka-relay,/api/observability"
-      - "traefik.http.services.observability.loadbalancer.server.port=5007"
-      - "traefik.http.routers.observability.priority=10"
+      - "traefik.http.routers.kafka-relay.rule=PathPrefix(`/api/kafka-relay`) || PathPrefix(`/api/observability`)"
+      - "traefik.http.routers.kafka-relay.entrypoints=web,websecure"
+      - "traefik.http.routers.kafka-relay.middlewares=kafka-relay-strip"
+      - "traefik.http.middlewares.kafka-relay-strip.stripprefix.prefixes=/api/kafka-relay,/api/observability"
+      - "traefik.http.services.kafka-relay.loadbalancer.server.port=5007"
+      - "traefik.http.routers.kafka-relay.priority=10"
 
   # ── User Service ───────────────────────────────────────────────────────────
   user-service:
@@ -1427,8 +1427,8 @@ services:
       POV_ALGO_PORT: "5005"
       VWAP_ALGO_HOST: vwap-algo
       VWAP_ALGO_PORT: "5006"
-      OBSERVABILITY_HOST: observability
-      OBSERVABILITY_PORT: "5007"
+      KAFKA_RELAY_HOST: kafka-relay
+      KAFKA_RELAY_PORT: "5007"
       USER_SERVICE_HOST: user-service
       USER_SERVICE_PORT: "5008"
       JOURNAL_HOST: journal

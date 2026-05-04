@@ -22,6 +22,10 @@ Planned features and improvements, roughly prioritised. Complexity is in story p
 | No-any enforcement | `noExplicitAny: "error"` in biome — builds fail on any usage | 2 |
 | Signals-first migration | All 80+ useState calls migrated to useSignal (8 remain for React interop) | 5 |
 | Type system strengthening | OrderSide, branded IDs, ObsEventType union, OrderFillPayload, tightened FillEvent | 5 |
+| Electron desktop app | Native menus, pop-out panels, dual-stack (web + desktop) shipping in CI | 8 |
+| Load / performance testing | k6 baseline + per-stage latency capture; 100→500 order scaling dataset published | 5 |
+| Visual anomaly check (a11y + overflow) | Playwright + axe-core scan across login + 5 role dashboards, PR-comment artefact | 5 |
+| Component kitchen sink in Astro | Live React primitives in docs site replacing Storybook | 5 |
 
 ## High priority
 
@@ -41,8 +45,6 @@ Planned features and improvements, roughly prioritised. Complexity is in story p
 | Audit trail panel | Compliance/admin view showing every state change for an order with timestamps | 5 |
 | Watchlist panel | Persistent symbol lists with live prices and configurable columns | 5 |
 | Shared DataGrid component | Extract a common grid with consistent column formatting, sorting, filtering, and row styling | 5 |
-| Electron integration | Wrap the frontend as a desktop app with native menus and pop-out panels | 8 |
-| Load / performance testing | Stress-test the full pipeline to measure throughput limits and find bottlenecks | 5 |
 | Per-service architecture pages | Clickable Mermaid nodes linking to dedicated pages showing internals and key functions | 5 |
 | Progressive branded ID adoption | Apply OrderId, UserId, ChildOrderId brands to interface fields and creation sites | 5 |
 
