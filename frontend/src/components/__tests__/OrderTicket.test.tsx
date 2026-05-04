@@ -565,6 +565,126 @@ describe("OrderTicket – preview slippage variants", () => {
   });
 });
 
+describe("OrderTicket – submit advanced strategies (trader with full perms)", () => {
+  function renderAdmin() {
+    const testStore = configureStore({
+      reducer: {
+        auth: authSlice.reducer,
+        market: marketSlice.reducer,
+        orders: ordersSlice.reducer,
+        ui: uiSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        killSwitch: killSwitchSlice.reducer,
+      },
+      preloadedState: {
+        auth: {
+          user: { id: "trader", name: "Trader", role: "trader" as const, avatar_emoji: "👩" },
+          limits: {
+            max_order_qty: 10_000_000,
+            max_daily_notional: 100_000_000,
+            allowed_strategies: [
+              "LIMIT",
+              "TWAP",
+              "POV",
+              "VWAP",
+              "ICEBERG",
+              "SNIPER",
+              "ARRIVAL_PRICE",
+              "IS",
+              "MOMENTUM",
+            ],
+            allowed_desks: ["equity", "fi", "derivatives"],
+            dark_pool_access: true,
+          },
+          status: "authenticated" as const,
+        },
+        market: {
+          assets,
+          prices,
+          priceHistory: {},
+          sessionOpen: {},
+          candleHistory: {},
+          candlesReady: {},
+          connected: true,
+          orderBook: {},
+          sessionPhase: "CONTINUOUS" as const,
+        },
+      },
+    });
+    render(
+      <Provider store={testStore}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "x",
+            panelType: "order-ticket",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <TradingProvider>
+            <OrderTicket />
+          </TradingProvider>
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    return testStore;
+  }
+
+  function submitWithStrategy(strategy: string) {
+    const store = renderAdmin();
+    const sel = screen.getByLabelText(/Strategy/i);
+    fireEvent.change(sel, { target: { value: strategy } });
+    fireEvent.click(screen.getByRole("button", { name: /Submit BUY order/i }));
+    return store;
+  }
+
+  it("submits ICEBERG order", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    const store = submitWithStrategy("ICEBERG");
+    await waitFor(() => {
+      expect(store.getState().orders.orders.length).toBeGreaterThan(0);
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it("submits SNIPER order", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    const store = submitWithStrategy("SNIPER");
+    await waitFor(() => {
+      expect(store.getState().orders.orders.length).toBeGreaterThan(0);
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it("submits ARRIVAL_PRICE order", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    const store = submitWithStrategy("ARRIVAL_PRICE");
+    await waitFor(() => {
+      expect(store.getState().orders.orders.length).toBeGreaterThan(0);
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it("submits IS order", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    const store = submitWithStrategy("IS");
+    await waitFor(() => {
+      expect(store.getState().orders.orders.length).toBeGreaterThan(0);
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it("submits MOMENTUM order", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    const store = submitWithStrategy("MOMENTUM");
+    await waitFor(() => {
+      expect(store.getState().orders.orders.length).toBeGreaterThan(0);
+    });
+    vi.unstubAllGlobals();
+  });
+});
+
 describe("OrderTicket – channel incoming asset", () => {
   it("uses incoming-channel selectedAsset to drive asset selection", () => {
     const testStore = configureStore({

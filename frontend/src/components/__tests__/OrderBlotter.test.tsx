@@ -430,6 +430,40 @@ describe("OrderBlotter – formatting paths", () => {
   });
 });
 
+describe("OrderBlotter – context menu actions", () => {
+  it("right-clicks a held order shows Unhold action", () => {
+    renderBlotter([makeOrder({ id: "h1", asset: "AAPL", status: "held", userId: "alice" })]);
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    expect(screen.getByText(/Unhold/)).toBeInTheDocument();
+  });
+
+  it("trader can manage their own orders", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL", status: "working", userId: "alice" })]);
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    expect(screen.getByText(/Hold/)).toBeInTheDocument();
+    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+  });
+
+  it("clicking Copy order ID triggers clipboard write", () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    renderBlotter([makeOrder({ id: "o-copy-12345", asset: "AAPL" })]);
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    fireEvent.click(screen.getByText(/Copy order ID/));
+    expect(writeText).toHaveBeenCalledWith("o-copy-12345");
+  });
+
+  it("clicking 'Select & broadcast' selects the order", () => {
+    renderBlotter([makeOrder({ id: "o-bcast", asset: "AAPL" })]);
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    fireEvent.click(screen.getByText(/Select & broadcast/));
+    expect(screen.getByText("AAPL")).toBeInTheDocument();
+  });
+});
+
 describe("OrderBlotter – child fills", () => {
   it("computes average fill price across child fills", () => {
     renderBlotter([

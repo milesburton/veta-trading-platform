@@ -201,6 +201,95 @@ describe("ExecutionsPanel", () => {
     expect(screen.queryByText(/No fills recorded/i)).not.toBeInTheDocument();
   });
 
+  it("renders order with high adverse impact", () => {
+    rows = [
+      {
+        id: "o-impact",
+        submittedAt: Date.now(),
+        asset: "AAPL",
+        side: "BUY" as const,
+        strategy: "TWAP",
+        status: "working",
+        quantity: 100,
+        filled: 100,
+        limitPrice: 100,
+        children: [
+          {
+            id: "ch-imp1",
+            parentId: "o-impact",
+            asset: "AAPL",
+            side: "BUY",
+            quantity: 100,
+            limitPrice: 100,
+            status: "filled",
+            filled: 100,
+            avgFillPrice: 105,
+            commissionUSD: 0.5,
+            liquidityFlag: "TAKER",
+            submittedAt: Date.now(),
+          },
+        ],
+      },
+    ];
+    render(<ExecutionsPanel />);
+    fireEvent.click(screen.getByTestId("execution-row"));
+    expect(screen.queryByText(/No fills recorded/i)).not.toBeInTheDocument();
+  });
+
+  it("renders order with negative impact (favourable)", () => {
+    rows = [
+      {
+        id: "o-fav",
+        submittedAt: Date.now(),
+        asset: "MSFT",
+        side: "SELL" as const,
+        strategy: "POV",
+        status: "working",
+        quantity: 50,
+        filled: 50,
+        limitPrice: 200,
+        children: [
+          {
+            id: "ch-fav1",
+            parentId: "o-fav",
+            asset: "MSFT",
+            side: "SELL",
+            quantity: 50,
+            limitPrice: 200,
+            status: "filled",
+            filled: 50,
+            avgFillPrice: 205, // selling above limit (favourable)
+            commissionUSD: -0.1, // maker rebate
+            liquidityFlag: "MAKER",
+            submittedAt: Date.now(),
+          },
+        ],
+      },
+    ];
+    render(<ExecutionsPanel />);
+    fireEvent.click(screen.getByTestId("execution-row"));
+    expect(screen.queryByText(/No fills recorded/i)).not.toBeInTheDocument();
+  });
+
+  it("renders expired order", () => {
+    rows = [
+      {
+        id: "o-exp",
+        submittedAt: Date.now(),
+        asset: "AAPL",
+        side: "BUY" as const,
+        strategy: "TWAP",
+        status: "expired",
+        quantity: 100,
+        filled: 0,
+        limitPrice: 150,
+        children: [],
+      },
+    ];
+    render(<ExecutionsPanel />);
+    expect(screen.getByText("AAPL")).toBeInTheDocument();
+  });
+
   it("renders filled SELL order", () => {
     rows = [
       {

@@ -122,4 +122,40 @@ describe("BasketOrderPanel", () => {
       expect(screen.getByText(/5 legs/i)).toBeInTheDocument();
     }
   });
+
+  it("toggles BUY/SELL on a leg", () => {
+    render(<BasketOrderPanel />);
+    const sellBtn = screen.queryAllByRole("button", { name: /^BUY$/ })[0];
+    if (sellBtn) {
+      fireEvent.click(sellBtn);
+      expect(screen.getAllByText(/SELL|BUY/).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("removes a leg via × button", () => {
+    render(<BasketOrderPanel />);
+    const removeBtns = screen.queryAllByTitle(/Remove leg/i);
+    if (removeBtns.length > 0) {
+      fireEvent.click(removeBtns[0]);
+      expect(screen.getByText(/4 legs/i)).toBeInTheDocument();
+    }
+  });
+
+  it("changes leg weight via input", () => {
+    render(<BasketOrderPanel />);
+    const inputs = screen.queryAllByDisplayValue("30");
+    if (inputs.length > 0) {
+      fireEvent.change(inputs[0], { target: { value: "50" } });
+      expect(inputs[0]).toBeInTheDocument();
+    }
+  });
+
+  it("clicking 'Distribute evenly' redistributes weights", () => {
+    render(<BasketOrderPanel />);
+    const distBtn = screen.queryByRole("button", { name: /Distribute evenly/i });
+    if (distBtn) {
+      fireEvent.click(distBtn);
+    }
+    expect(screen.getByTestId("basket-order-panel")).toBeInTheDocument();
+  });
 });

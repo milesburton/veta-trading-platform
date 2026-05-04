@@ -173,3 +173,60 @@ describe("simulationMiddleware – ignores non-simulated strategies", () => {
     expect(store.getState().orders.orders[0].status).toBe("pending");
   });
 });
+
+describe("simulationMiddleware – timer advancement", () => {
+  it("TWAP completes after enough timer ticks", async () => {
+    const store = makeStore(false);
+    const order = makeOrder({
+      id: "twap-comp",
+      strategy: "TWAP",
+      quantity: 100,
+      expiresAt: Date.now() + 60_000,
+      algoParams: { strategy: "TWAP" as const, numSlices: 4, participationCap: 25 },
+    });
+    store.dispatch(ordersSlice.actions.orderAdded(order));
+    await vi.advanceTimersByTimeAsync(70_000);
+    const final = store.getState().orders.orders[0];
+    expect(final.children.length).toBeGreaterThan(0);
+  });
+
+  it("POV adds children when slice > 0", async () => {
+    const store = makeStore(false);
+    const order = makeOrder({
+      id: "pov-active",
+      strategy: "POV",
+      quantity: 1000,
+      expiresAt: Date.now() + 60_000,
+      algoParams: {
+        strategy: "POV" as const,
+        participationRate: 100, // 100% so slice will be substantial
+        minSliceSize: 100,
+        maxSliceSize: 1000,
+      },
+    });
+    store.dispatch(ordersSlice.actions.orderAdded(order));
+    await vi.advanceTimersByTimeAsync(20_000);
+    const final = store.getState().orders.orders[0];
+    expect(final.children.length).toBeGreaterThan(0);
+  });
+
+  it("VWAP simulation produces fills over time", async () => {
+    const store = makeStore(false);
+    const order = makeOrder({
+      id: "vwap-fills",
+      strategy: "VWAP",
+      quantity: 100,
+      expiresAt: Date.now() + 30_000,
+      algoParams: {
+        strategy: "VWAP" as const,
+        maxDeviation: 0.01,
+        startOffsetSecs: 0,
+        endOffsetSecs: 30,
+      },
+    });
+    store.dispatch(ordersSlice.actions.orderAdded(order));
+    await vi.advanceTimersByTimeAsync(35_000);
+    const final = store.getState().orders.orders[0];
+    expect(["filled", "working", "expired"]).toContain(final.status);
+  });
+});

@@ -59,4 +59,61 @@ describe("MarketHeatmap helpers", () => {
     expect(out[0].isOther).toBe(true);
     expect(out[0].otherCount).toBe(4);
   });
+
+  it("returns empty when all sizes are zero", () => {
+    const items = [{ symbol: "A", sector: "T", pct: 0, size: 0 }];
+    expect(squarify(items, { x: 0, y: 0, w: 100, h: 100 })).toEqual([]);
+  });
+
+  it("returns items unchanged when all tiles fit comfortably", () => {
+    const items = [
+      { symbol: "A", sector: "T", pct: 1, size: 100 },
+      { symbol: "B", sector: "T", pct: 2, size: 50 },
+    ];
+    const out = collapseSmallTiles(items, { x: 0, y: 0, w: 200, h: 200 }, "T");
+    expect(out).toHaveLength(2);
+    expect(out[0].isOther).toBeUndefined();
+  });
+
+  it("handles negative sectorPct in OTHER tile", () => {
+    const items = [
+      { symbol: "A", sector: "Tech", pct: -2, size: 10 },
+      { symbol: "B", sector: "Tech", pct: -3, size: 10 },
+    ];
+    const out = collapseSmallTiles(items, { x: 0, y: 0, w: 5, h: 5 }, "Tech");
+    expect(out).toHaveLength(1);
+    expect(out[0].pct).toBeLessThan(0);
+  });
+
+  it("handles tall narrow bounds (w < h)", () => {
+    const items = [
+      { symbol: "A", sector: "T", pct: 1, size: 5 },
+      { symbol: "B", sector: "T", pct: 2, size: 3 },
+      { symbol: "C", sector: "T", pct: -1, size: 2 },
+    ];
+    const out = squarify(items, { x: 0, y: 0, w: 30, h: 100 });
+    expect(out).toHaveLength(items.length);
+    for (const t of out) {
+      expect(t.w).toBeGreaterThan(0);
+      expect(t.h).toBeGreaterThan(0);
+    }
+  });
+
+  it("handles wide flat bounds (w > h)", () => {
+    const items = [
+      { symbol: "A", sector: "T", pct: 1, size: 5 },
+      { symbol: "B", sector: "T", pct: 2, size: 3 },
+      { symbol: "C", sector: "T", pct: -1, size: 2 },
+    ];
+    const out = squarify(items, { x: 0, y: 0, w: 200, h: 30 });
+    expect(out).toHaveLength(items.length);
+  });
+
+  it("text color for very negative pct", () => {
+    expect(tileTextColor(-3)).toBe(COLOR.HEAT_TEXT_DEFAULT);
+  });
+
+  it("text color for very positive pct", () => {
+    expect(tileTextColor(5)).toBe(COLOR.HEAT_TEXT_DEFAULT);
+  });
 });
