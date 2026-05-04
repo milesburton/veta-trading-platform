@@ -77,7 +77,12 @@ export default defineConfig({
           attrs: { type: "module" },
           content: `
             import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-            mermaid.initialize({ startOnLoad: false, theme: "dark" });
+            mermaid.initialize({
+              startOnLoad: false,
+              theme: "dark",
+              securityLevel: "loose",
+              flowchart: { htmlLabels: true },
+            });
 
             function extractMermaidSource(pre) {
               const lineNodes = pre.querySelectorAll(".ec-line .code");
