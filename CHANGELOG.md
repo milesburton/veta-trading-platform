@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.22.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.4...veta-trading-platform-v1.22.5) (2026-05-04)
+
+
+### Bug Fixes
+
+* **docs:** add @preact/signals-react so Pages deploy can build ([c89541d](https://github.com/milesburton/veta-trading-platform/commit/c89541dad8f31963c04278f1686ff9dac4ef58f4))
+* **startup:** restore standalone startup page layout ([44b247e](https://github.com/milesburton/veta-trading-platform/commit/44b247e48879198cec5b3b860611bed1750243f5))
+
 ## [1.22.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.3...veta-trading-platform-v1.22.4) (2026-05-04)
 
 
