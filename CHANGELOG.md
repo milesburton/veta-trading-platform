@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.23.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.6...veta-trading-platform-v1.23.0) (2026-05-04)
+
+
+### Features
+
+* **a11y:** add tooltip titles across all table headers and form controls ([0fb1afe](https://github.com/milesburton/veta-trading-platform/commit/0fb1afe4e802798f9384c80d9107af2f84e75b83))
+* **alerts:** bottom-right toast with prev/next, plus "caused by" context ([56feab0](https://github.com/milesburton/veta-trading-platform/commit/56feab0b00b8fde1817791427d5b33c16f86cc63))
+* **alerts:** dedupe alerts within 30s window + bump heartbeat threshold ([f1e9ab1](https://github.com/milesburton/veta-trading-platform/commit/f1e9ab18dc0189cd1031edce4a1e823f22d82325))
+* **docs:** click any image to open it full-screen (lightbox) ([07ebade](https://github.com/milesburton/veta-trading-platform/commit/07ebade18035cfc8501566b607a5e38bd8d18c2f))
+* **frontend:** hide tab strip on single-tab tabsets, split multi-tab defaults ([ac36320](https://github.com/milesburton/veta-trading-platform/commit/ac36320fc175435c283205f9a9313dd5ca7306b5))
+* **frontend:** make update banner dismissable, reassure session is preserved ([78cab6b](https://github.com/milesburton/veta-trading-platform/commit/78cab6ba16acdd21783bdc118e8afa9d68f3bd84))
+* **homelab:** wire risk-engine, replay-service, product-service for compose ([789280c](https://github.com/milesburton/veta-trading-platform/commit/789280c7f0814a018ce827a8df0a1e202f45cbab))
+* **news:** make the news-feed source link more obvious ([082e808](https://github.com/milesburton/veta-trading-platform/commit/082e808c03097fbb401a3e509c25dd02221bd428))
+
+
+### Bug Fixes
+
+* **db:** record applied migrations from migrate.ts, not the SQL files ([dc95f00](https://github.com/milesburton/veta-trading-platform/commit/dc95f0042c58f52e59ebad6e845abebf5de9b7e1))
+* **docs:** use the candlestick favicon to match the main app ([082e808](https://github.com/milesburton/veta-trading-platform/commit/082e808c03097fbb401a3e509c25dd02221bd428))
+* **frontend:** hide Traefik from service health on UAT, only show locally ([5c66fd2](https://github.com/milesburton/veta-trading-platform/commit/5c66fd238fea03c0531107fe43381a9163670516))
+* **homelab:** let Watchtower pull and re-run db-migrate on new images ([b2815b8](https://github.com/milesburton/veta-trading-platform/commit/b2815b848c812563c159b74851d8af791372a185))
+* **workspaces:** align shared icon color and add button tooltips ([4a7ce69](https://github.com/milesburton/veta-trading-platform/commit/4a7ce693050a669b03781fcc937622f0ea1f1261))
+
 ## [1.22.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.5...veta-trading-platform-v1.22.6) (2026-05-04)
 
 
