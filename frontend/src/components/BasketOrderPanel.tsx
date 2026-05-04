@@ -257,12 +257,36 @@ export function BasketOrderPanel() {
             <table className="w-full text-[10px] border-collapse">
               <thead>
                 <tr className="bg-gray-800/80 text-gray-500 text-left">
-                  <th className="px-2 py-1.5 font-normal">Symbol</th>
-                  <th className="px-2 py-1.5 font-normal text-right">Wt %</th>
-                  <th className="px-2 py-1.5 font-normal text-right">Qty</th>
-                  <th className="px-2 py-1.5 font-normal text-right">Price</th>
-                  <th className="px-2 py-1.5 font-normal text-right">Notional</th>
-                  <th className="px-2 py-1.5 font-normal text-center">Side</th>
+                  <th className="px-2 py-1.5 font-normal" title="Instrument symbol">
+                    Symbol
+                  </th>
+                  <th
+                    className="px-2 py-1.5 font-normal text-right"
+                    title="Portfolio weight percentage"
+                  >
+                    Wt %
+                  </th>
+                  <th
+                    className="px-2 py-1.5 font-normal text-right"
+                    title="Computed share quantity"
+                  >
+                    Qty
+                  </th>
+                  <th className="px-2 py-1.5 font-normal text-right" title="Current market price">
+                    Price
+                  </th>
+                  <th
+                    className="px-2 py-1.5 font-normal text-right"
+                    title="Notional value (qty × price)"
+                  >
+                    Notional
+                  </th>
+                  <th
+                    className="px-2 py-1.5 font-normal text-center"
+                    title="Order direction for this leg"
+                  >
+                    Side
+                  </th>
                   <th className="px-1 py-1.5 font-normal" />
                 </tr>
               </thead>

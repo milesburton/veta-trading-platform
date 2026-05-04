@@ -112,3 +112,17 @@ test("renders mixed required and optional services", () => {
   fireEvent.click(btn);
   expect(screen.getByText("svc-required")).toBeInTheDocument();
 });
+
+test("shows tooltips on service table headers", () => {
+  render(<ServiceStatus services={services} />);
+  fireEvent.click(screen.getByRole("button", { name: /services/i }));
+
+  expect(screen.getByRole("columnheader", { name: "Service" })).toHaveAttribute(
+    "title",
+    "Backend service name"
+  );
+  expect(screen.getByRole("columnheader", { name: "Status" })).toHaveAttribute(
+    "title",
+    "Current health state"
+  );
+});

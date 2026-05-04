@@ -136,7 +136,10 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
           }
         } catch {
           if (!cancelled) {
-            services.value = { ...services.value, gateway: false } as ReadyServices;
+            services.value = {
+              ...services.value,
+              gateway: false,
+            } as ReadyServices;
           }
         }
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));

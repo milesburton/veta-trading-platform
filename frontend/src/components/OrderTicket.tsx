@@ -831,6 +831,7 @@ export function OrderTicket() {
               </label>
               <select
                 id="bondSymbol"
+                title="Select bond instrument to trade"
                 value={bondSymbol.value}
                 onChange={(e) => {
                   bondSymbol.value = e.target.value;
@@ -920,6 +921,7 @@ export function OrderTicket() {
                 type="number"
                 step="0.01"
                 min="0.01"
+                title="Annualized bond yield used to compute clean price"
                 value={bondYield.value}
                 onChange={(e) => {
                   bondYield.value = e.target.value;
@@ -1043,6 +1045,7 @@ export function OrderTicket() {
                 min="1"
                 step="0.5"
                 aria-label="Option strike price"
+                title="Strike price for the option contract"
                 value={optionStrike.value}
                 onChange={(e) => {
                   optionStrike.value = e.target.value;
@@ -1061,6 +1064,7 @@ export function OrderTicket() {
               <select
                 id="optionExpiry"
                 aria-label="Option expiry"
+                title="Time to expiry for the option contract"
                 value={optionExpiry.value}
                 onChange={(e) => {
                   optionExpiry.value = e.target.value;
@@ -1228,6 +1232,7 @@ export function OrderTicket() {
               step="0.0001"
               min="0"
               data-testid="limit-price-input"
+              title="Limit price for execution"
               value={limitPrice.value}
               onChange={(e) => {
                 limitPrice.value = e.target.value;

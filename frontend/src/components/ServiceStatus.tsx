@@ -111,10 +111,18 @@ export function ServiceStatus({ services }: Props) {
             <table className="w-full table-fixed">
               <thead>
                 <tr className="text-gray-500 border-b border-gray-800">
-                  <th className="text-left px-3 py-2 w-[33%]">Service</th>
-                  <th className="text-left px-3 py-2 w-[14%]">Status</th>
-                  <th className="text-left px-3 py-2 w-[23%]">Version</th>
-                  <th className="text-left px-3 py-2 w-[30%]">Info</th>
+                  <th className="text-left px-3 py-2 w-[33%]" title="Backend service name">
+                    Service
+                  </th>
+                  <th className="text-left px-3 py-2 w-[14%]" title="Current health state">
+                    Status
+                  </th>
+                  <th className="text-left px-3 py-2 w-[23%]" title="Reported service version">
+                    Version
+                  </th>
+                  <th className="text-left px-3 py-2 w-[30%]" title="Additional service metadata">
+                    Info
+                  </th>
                 </tr>
               </thead>
               <tbody>

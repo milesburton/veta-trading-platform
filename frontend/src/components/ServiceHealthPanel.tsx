@@ -274,16 +274,28 @@ export function ServiceHealthPanel() {
         <table className="w-full border-collapse">
           <thead className="sticky top-0 z-10 bg-gray-900 border-b border-gray-800">
             <tr>
-              <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+              <th
+                className="px-3 py-1.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                title="Backend service name"
+              >
                 Service
               </th>
-              <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+              <th
+                className="px-3 py-1.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                title="Current health state"
+              >
                 Status
               </th>
-              <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+              <th
+                className="px-3 py-1.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                title="Reported service version"
+              >
                 Version
               </th>
-              <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+              <th
+                className="px-3 py-1.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                title="Time of last health check"
+              >
                 Last Check
               </th>
             </tr>

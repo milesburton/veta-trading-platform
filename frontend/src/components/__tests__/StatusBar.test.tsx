@@ -463,7 +463,12 @@ describe("StatusBar – authenticated user", () => {
     const store = makeStore(true);
     store.dispatch({
       type: "auth/setUser",
-      payload: { id: "alice", name: "Alice", role: "trader", avatar_emoji: "👩" },
+      payload: {
+        id: "alice",
+        name: "Alice",
+        role: "trader",
+        avatar_emoji: "👩",
+      },
     });
     render(
       <Provider store={store}>

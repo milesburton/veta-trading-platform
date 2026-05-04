@@ -19,7 +19,11 @@ vi.mock("../../store/servicesApi", async (importOriginal) => {
   const original = await importOriginal<typeof import("../../store/servicesApi")>();
   return {
     ...original,
-    useGetServiceHealthQuery: () => ({ data: undefined, isLoading: true, isError: false }),
+    useGetServiceHealthQuery: () => ({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    }),
   };
 });
 
@@ -117,7 +121,9 @@ describe("LoginPage", () => {
       </Provider>
     );
 
-    fireEvent.change(screen.getByTestId("oauth-username"), { target: { value: "alice" } });
+    fireEvent.change(screen.getByTestId("oauth-username"), {
+      target: { value: "alice" },
+    });
     fireEvent.change(screen.getByTestId("oauth-password"), {
       target: { value: "veta-dev-passcode" },
     });
@@ -128,7 +134,9 @@ describe("LoginPage", () => {
 
   test("calls OAuth authorize and token endpoints on sign in", async () => {
     renderLogin();
-    fireEvent.change(screen.getByTestId("oauth-username"), { target: { value: "bob" } });
+    fireEvent.change(screen.getByTestId("oauth-username"), {
+      target: { value: "bob" },
+    });
     fireEvent.change(screen.getByTestId("oauth-password"), {
       target: { value: "veta-dev-passcode" },
     });
@@ -148,8 +156,12 @@ describe("LoginPage", () => {
   test("shows specific error when OAuth returns 401", async () => {
     mockAuthorizeOAuth.mockResolvedValue({ error: { status: 401 } } as never);
     renderLogin();
-    fireEvent.change(screen.getByTestId("oauth-username"), { target: { value: "bad" } });
-    fireEvent.change(screen.getByTestId("oauth-password"), { target: { value: "wrong" } });
+    fireEvent.change(screen.getByTestId("oauth-username"), {
+      target: { value: "bad" },
+    });
+    fireEvent.change(screen.getByTestId("oauth-password"), {
+      target: { value: "wrong" },
+    });
     fireEvent.click(screen.getByTestId("oauth-submit"));
     await waitFor(() => expect(mockAuthorizeOAuth).toHaveBeenCalled());
   });
@@ -157,7 +169,9 @@ describe("LoginPage", () => {
   test("surfaces a visible error when PKCE generation throws", async () => {
     sha256AsyncMock.mockRejectedValueOnce(new Error("crypto.subtle is undefined"));
     renderLogin();
-    fireEvent.change(screen.getByTestId("oauth-username"), { target: { value: "alice" } });
+    fireEvent.change(screen.getByTestId("oauth-username"), {
+      target: { value: "alice" },
+    });
     fireEvent.change(screen.getByTestId("oauth-password"), {
       target: { value: "veta-dev-passcode" },
     });

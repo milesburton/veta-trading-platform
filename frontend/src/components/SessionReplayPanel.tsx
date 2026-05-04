@@ -90,10 +90,18 @@ function SessionList({ onSelect }: { onSelect: (id: string) => void }) {
           <table className="w-full">
             <thead className="sticky top-0 bg-gray-900/95 backdrop-blur">
               <tr className="text-gray-500 text-left">
-                <th className="px-3 py-1.5 font-medium">User</th>
-                <th className="px-3 py-1.5 font-medium">Role</th>
-                <th className="px-3 py-1.5 font-medium">Started</th>
-                <th className="px-3 py-1.5 font-medium">Duration</th>
+                <th className="px-3 py-1.5 font-medium" title="User who recorded this session">
+                  User
+                </th>
+                <th className="px-3 py-1.5 font-medium" title="User role at time of recording">
+                  Role
+                </th>
+                <th className="px-3 py-1.5 font-medium" title="Session start time">
+                  Started
+                </th>
+                <th className="px-3 py-1.5 font-medium" title="Total session duration">
+                  Duration
+                </th>
                 <th className="px-3 py-1.5 font-medium" />
               </tr>
             </thead>

@@ -216,6 +216,12 @@ describe("OrderBlotter – sort headers", () => {
     const assetHeader = screen.getByRole("columnheader", { name: /asset/i });
     expect(() => fireEvent.click(assetHeader)).not.toThrow();
   });
+
+  it("shows tooltip text on column headers", () => {
+    renderBlotter([makeOrder()]);
+    const assetHeader = screen.getByRole("columnheader", { name: /asset/i });
+    expect(assetHeader).toHaveAttribute("title", "Instrument symbol");
+  });
 });
 
 describe("OrderBlotter – filter bar", () => {

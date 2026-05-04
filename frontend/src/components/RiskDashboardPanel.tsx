@@ -403,12 +403,33 @@ export function RiskDashboardPanel() {
             <thead className="sticky top-0 bg-gray-900/95 backdrop-blur">
               <tr className="text-gray-500 text-left text-[10px] uppercase tracking-wider">
                 <th className="px-3 py-1.5" />
-                <th className="px-3 py-1.5">Symbol</th>
-                <th className="px-3 py-1.5 text-right">Gross</th>
-                <th className="px-3 py-1.5 text-right">Net</th>
-                <th className="px-3 py-1.5 text-right">Unreal P&L</th>
-                <th className="px-3 py-1.5 text-right">Real P&L</th>
-                <th className="px-3 py-1.5 text-right">Total P&L</th>
+                <th className="px-3 py-1.5" title="Instrument symbol">
+                  Symbol
+                </th>
+                <th
+                  className="px-3 py-1.5 text-right"
+                  title="Gross position (absolute sum of all lots)"
+                >
+                  Gross
+                </th>
+                <th className="px-3 py-1.5 text-right" title="Net position (longs minus shorts)">
+                  Net
+                </th>
+                <th
+                  className="px-3 py-1.5 text-right"
+                  title="Unrealised profit and loss on open positions"
+                >
+                  Unreal P&L
+                </th>
+                <th
+                  className="px-3 py-1.5 text-right"
+                  title="Realised profit and loss from closed positions"
+                >
+                  Real P&L
+                </th>
+                <th className="px-3 py-1.5 text-right" title="Total P&L: unrealised + realised">
+                  Total P&L
+                </th>
               </tr>
             </thead>
             <tbody>

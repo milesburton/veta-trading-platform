@@ -197,10 +197,18 @@ export function AdminPanel() {
           <table data-testid="users-table" className="w-full text-left">
             <thead>
               <tr className="bg-gray-900 text-gray-500 text-[10px] uppercase tracking-wider">
-                <th className="px-3 py-2">User</th>
-                <th className="px-3 py-2">Max Order Qty</th>
-                <th className="px-3 py-2">Max Daily Notional</th>
-                <th className="px-3 py-2">Allowed Strategies</th>
+                <th className="px-3 py-2" title="Trader user account">
+                  User
+                </th>
+                <th className="px-3 py-2" title="Maximum single order quantity permitted">
+                  Max Order Qty
+                </th>
+                <th className="px-3 py-2" title="Maximum total notional traded per day">
+                  Max Daily Notional
+                </th>
+                <th className="px-3 py-2" title="Execution strategies this user may use">
+                  Allowed Strategies
+                </th>
                 {isAdmin && <th className="px-3 py-2" />}
               </tr>
             </thead>
@@ -222,15 +230,33 @@ export function AdminPanel() {
           <table data-testid="audit-table" className="w-full text-left text-[10px]">
             <thead>
               <tr className="bg-gray-900 text-gray-500 uppercase tracking-wider">
-                <th className="px-3 py-1.5">Time</th>
-                <th className="px-3 py-1.5">Event</th>
-                <th className="px-3 py-1.5">Algo</th>
-                <th className="px-3 py-1.5">Instrument</th>
-                <th className="px-3 py-1.5">Side</th>
-                <th className="px-3 py-1.5">Qty</th>
-                <th className="px-3 py-1.5">Limit Px</th>
-                <th className="px-3 py-1.5">Fill Px</th>
-                <th className="px-3 py-1.5">Filled</th>
+                <th className="px-3 py-1.5" title="Time the audit event was recorded">
+                  Time
+                </th>
+                <th className="px-3 py-1.5" title="Type of audit event">
+                  Event
+                </th>
+                <th className="px-3 py-1.5" title="Execution algorithm used">
+                  Algo
+                </th>
+                <th className="px-3 py-1.5" title="Instrument symbol">
+                  Instrument
+                </th>
+                <th className="px-3 py-1.5" title="Order direction: BUY or SELL">
+                  Side
+                </th>
+                <th className="px-3 py-1.5" title="Order quantity">
+                  Qty
+                </th>
+                <th className="px-3 py-1.5" title="Limit price submitted">
+                  Limit Px
+                </th>
+                <th className="px-3 py-1.5" title="Actual average fill price">
+                  Fill Px
+                </th>
+                <th className="px-3 py-1.5" title="Quantity filled so far">
+                  Filled
+                </th>
               </tr>
             </thead>
             <tbody>

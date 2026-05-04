@@ -224,14 +224,33 @@ export function ProductBookPanel() {
           <table className="w-full text-[10px] border-collapse">
             <thead>
               <tr className="bg-gray-800/60 text-gray-500 text-left sticky top-0">
-                <th className="px-2 py-1.5 font-normal">ID</th>
-                <th className="px-2 py-1.5 font-normal">Name</th>
-                <th className="px-2 py-1.5 font-normal">State</th>
-                <th className="px-2 py-1.5 font-normal text-right">Notional</th>
-                <th className="px-2 py-1.5 font-normal text-center">Legs</th>
-                <th className="px-2 py-1.5 font-normal">Created by</th>
-                <th className="px-2 py-1.5 font-normal">Issued</th>
-                <th className="px-2 py-1.5 font-normal">Actions</th>
+                <th className="px-2 py-1.5 font-normal" title="Unique product identifier">
+                  ID
+                </th>
+                <th className="px-2 py-1.5 font-normal" title="Product name">
+                  Name
+                </th>
+                <th className="px-2 py-1.5 font-normal" title="Lifecycle state of the product">
+                  State
+                </th>
+                <th className="px-2 py-1.5 font-normal text-right" title="Target notional value">
+                  Notional
+                </th>
+                <th
+                  className="px-2 py-1.5 font-normal text-center"
+                  title="Number of constituent legs"
+                >
+                  Legs
+                </th>
+                <th className="px-2 py-1.5 font-normal" title="User who created this product">
+                  Created by
+                </th>
+                <th className="px-2 py-1.5 font-normal" title="Date the product was issued">
+                  Issued
+                </th>
+                <th className="px-2 py-1.5 font-normal" title="Available actions for this product">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -343,11 +362,33 @@ export function ProductBookPanel() {
                           <table className="w-full border-collapse">
                             <thead>
                               <tr className="text-gray-600 text-left">
-                                <th className="pr-3 pb-0.5 font-normal">Leg ID</th>
-                                <th className="pr-3 pb-0.5 font-normal">Type</th>
-                                <th className="pr-3 pb-0.5 font-normal">Symbol</th>
-                                <th className="pr-3 pb-0.5 font-normal text-right">Weight</th>
-                                <th className="pr-3 pb-0.5 font-normal text-right">Qty</th>
+                                <th
+                                  className="pr-3 pb-0.5 font-normal"
+                                  title="Unique leg identifier"
+                                >
+                                  Leg ID
+                                </th>
+                                <th className="pr-3 pb-0.5 font-normal" title="Leg instrument type">
+                                  Type
+                                </th>
+                                <th
+                                  className="pr-3 pb-0.5 font-normal"
+                                  title="Instrument symbol for this leg"
+                                >
+                                  Symbol
+                                </th>
+                                <th
+                                  className="pr-3 pb-0.5 font-normal text-right"
+                                  title="Portfolio weight percentage for this leg"
+                                >
+                                  Weight
+                                </th>
+                                <th
+                                  className="pr-3 pb-0.5 font-normal text-right"
+                                  title="Computed quantity for this leg"
+                                >
+                                  Qty
+                                </th>
                               </tr>
                             </thead>
                             <tbody>

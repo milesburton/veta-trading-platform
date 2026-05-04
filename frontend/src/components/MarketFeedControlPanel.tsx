@@ -247,16 +247,28 @@ export function MarketFeedControlPanel() {
         <table className="w-full border-collapse">
           <thead className="sticky top-0 bg-gray-950 z-10">
             <tr className="border-b border-gray-800">
-              <th className="text-left px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium">
+              <th
+                className="text-left px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium"
+                title="Instrument ticker symbol"
+              >
                 Symbol
               </th>
-              <th className="text-left px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium">
+              <th
+                className="text-left px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium"
+                title="Exchange or venue providing the feed"
+              >
                 Exchange
               </th>
-              <th className="text-left px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium">
+              <th
+                className="text-left px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium"
+                title="Market data source adapter"
+              >
                 Source
               </th>
-              <th className="text-right px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium">
+              <th
+                className="text-right px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium"
+                title="Feed status: live or paused"
+              >
                 Status
               </th>
             </tr>

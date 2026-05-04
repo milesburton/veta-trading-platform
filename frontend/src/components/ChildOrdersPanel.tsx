@@ -11,6 +11,20 @@ import { formatTime } from "../utils/format.ts";
 import { CHANNEL_COLOURS } from "./DashboardLayout.tsx";
 import { ResizableHeader } from "./grid/ResizableHeader.tsx";
 
+const CHILD_COL_TOOLTIPS: Partial<Record<string, string>> = {
+  time: "Time the execution slice was submitted",
+  sliceId: "Unique identifier for this execution slice",
+  qty: "Slice quantity sent to the venue",
+  fillPx: "Average fill price for this slice",
+  filled: "Quantity filled on this slice",
+  venue: "Execution venue",
+  status: "Slice lifecycle status",
+  cpty: "Counterparty for this fill",
+  liq: "Liquidity flag: MAKER, TAKER, or CROSS",
+  comm: "Commission charged for this slice",
+  settle: "Settlement date",
+};
+
 const CHILD_COLS: ColDef[] = [
   { key: "time", label: "Time", type: "string", defaultWidth: 80 },
   { key: "sliceId", label: "Slice ID", type: "string", defaultWidth: 96 },
@@ -176,6 +190,7 @@ export function ChildOrdersPanel() {
                       dragKey.value = null;
                     }}
                     align={col.align}
+                    title={CHILD_COL_TOOLTIPS[col.key] ?? col.label}
                     className={`px-3 py-1.5 ${col.align === "right" ? "text-right" : "text-left"}`}
                   >
                     {col.label}

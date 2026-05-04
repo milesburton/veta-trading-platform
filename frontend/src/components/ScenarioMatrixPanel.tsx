@@ -347,7 +347,10 @@ export function ScenarioMatrixPanel() {
             >
               <thead>
                 <tr>
-                  <th className="text-[9px] text-gray-600 text-left pr-2 pb-1 font-normal">
+                  <th
+                    className="text-[9px] text-gray-600 text-left pr-2 pb-1 font-normal"
+                    title="Rows: spot price % shift. Columns: implied vol % shift"
+                  >
                     Spot ↓ / Vol →
                   </th>
                   {result.value.volShocks.map((vs) => (

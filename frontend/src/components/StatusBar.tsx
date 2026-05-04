@@ -387,11 +387,23 @@ function EnvironmentBadge() {
 
 const DATA_DEPTH_THRESHOLDS = { good: 7, limited: 1 };
 
-function dataQualityLabel(days: number): { label: string; color: string; dotColor: string } {
+function dataQualityLabel(days: number): {
+  label: string;
+  color: string;
+  dotColor: string;
+} {
   if (days >= DATA_DEPTH_THRESHOLDS.good)
-    return { label: `${Math.round(days)}d`, color: "text-emerald-400", dotColor: "bg-emerald-500" };
+    return {
+      label: `${Math.round(days)}d`,
+      color: "text-emerald-400",
+      dotColor: "bg-emerald-500",
+    };
   if (days >= DATA_DEPTH_THRESHOLDS.limited)
-    return { label: `${Math.round(days)}d`, color: "text-amber-400", dotColor: "bg-amber-400" };
+    return {
+      label: `${Math.round(days)}d`,
+      color: "text-amber-400",
+      dotColor: "bg-amber-400",
+    };
   return {
     label: days > 0 ? `${Math.round(days * 24)}h` : "none",
     color: "text-red-400",
@@ -400,7 +412,9 @@ function dataQualityLabel(days: number): { label: string; color: string; dotColo
 }
 
 export function DataDepthIndicator() {
-  const { data, isLoading } = useGetDataDepthQuery(undefined, { pollingInterval: 30_000 });
+  const { data, isLoading } = useGetDataDepthQuery(undefined, {
+    pollingInterval: 30_000,
+  });
   const { toggle, isOpen } = useDrawers();
   const drawerOpen = isOpen(DATA_DEPTH_DRAWER_ID);
 

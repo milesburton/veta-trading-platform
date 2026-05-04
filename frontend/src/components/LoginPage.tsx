@@ -123,7 +123,10 @@ function createCodeVerifier(): string {
   return base64UrlEncode(bytes);
 }
 
-async function createPkcePair(): Promise<{ verifier: string; challenge: string }> {
+async function createPkcePair(): Promise<{
+  verifier: string;
+  challenge: string;
+}> {
   const verifier = createCodeVerifier();
   const digest = await sha256Async(new TextEncoder().encode(verifier));
   return {
@@ -134,7 +137,10 @@ async function createPkcePair(): Promise<{ verifier: string; challenge: string }
 
 export function formatApiError(err: unknown): string {
   if (!err || typeof err !== "object") return "Sign in failed. Check your username and passcode.";
-  const errObj = err as { status?: unknown; data?: { error?: string; message?: string } };
+  const errObj = err as {
+    status?: unknown;
+    data?: { error?: string; message?: string };
+  };
   const data = errObj.data;
   if (data?.error) return `Sign in failed: ${data.error}`;
   if (data?.message) return `Sign in failed: ${data.message}`;

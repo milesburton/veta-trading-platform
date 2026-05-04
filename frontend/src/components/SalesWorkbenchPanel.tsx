@@ -139,14 +139,33 @@ export function SalesWorkbenchPanel() {
               <table className="w-full text-xs border-collapse">
                 <thead>
                   <tr className="text-gray-500 text-[10px] uppercase tracking-wider">
-                    <th className="text-left py-1 pr-2">RFQ ID</th>
-                    <th className="text-left py-1 pr-2">Client</th>
-                    <th className="text-left py-1 pr-2">Asset</th>
-                    <th className="text-left py-1 pr-2">Side</th>
-                    <th className="text-right py-1 pr-2">Qty</th>
-                    <th className="text-left py-1 pr-2">State</th>
-                    <th className="text-right py-1 pr-2">Age</th>
-                    <th className="text-left py-1">Action</th>
+                    <th className="text-left py-1 pr-2" title="Unique request-for-quote identifier">
+                      RFQ ID
+                    </th>
+                    <th className="text-left py-1 pr-2" title="Client who submitted the RFQ">
+                      Client
+                    </th>
+                    <th className="text-left py-1 pr-2" title="Instrument being quoted">
+                      Asset
+                    </th>
+                    <th className="text-left py-1 pr-2" title="Direction: BUY or SELL">
+                      Side
+                    </th>
+                    <th className="text-right py-1 pr-2" title="Requested quantity">
+                      Qty
+                    </th>
+                    <th className="text-left py-1 pr-2" title="Current RFQ lifecycle state">
+                      State
+                    </th>
+                    <th
+                      className="text-right py-1 pr-2"
+                      title="Time elapsed since the RFQ was received"
+                    >
+                      Age
+                    </th>
+                    <th className="text-left py-1" title="Available action for this RFQ">
+                      Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

@@ -130,6 +130,15 @@ describe("OrderTicket – rendering", () => {
     expect(screen.getByLabelText(/Limit Price/i)).toBeInTheDocument();
   });
 
+  it("adds explanatory tooltips to key order inputs", () => {
+    renderTicket();
+    expect(screen.getByLabelText(/Limit Price/i)).toHaveAttribute(
+      "title",
+      "Limit price for execution"
+    );
+    expect(screen.getByLabelText(/Quantity/i)).toHaveAttribute("title");
+  });
+
   it("renders expiry input", () => {
     renderTicket();
     expect(screen.getByLabelText(/Duration/i)).toBeInTheDocument();

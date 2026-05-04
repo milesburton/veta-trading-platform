@@ -101,6 +101,24 @@ const BLOTTER_COLS: ColDef[] = [
   { key: "settlementDate", label: "Settle", type: "string", defaultWidth: 64 },
 ];
 
+const BLOTTER_HEADER_TOOLTIPS: Partial<Record<ColDef["key"], string>> = {
+  submittedAt: "Time the parent order was submitted",
+  id: "Unique parent order identifier",
+  asset: "Instrument symbol",
+  side: "Order direction: BUY or SELL",
+  quantity: "Requested order quantity",
+  limitPrice: "Limit and average fill price",
+  strategy: "Execution strategy and venue",
+  status: "Current order lifecycle status",
+  desk: "Desk responsible for the order",
+  marketType: "Execution venue type",
+  userId: "User who booked the order",
+  counterparty: "Matched counterparty",
+  liquidityFlag: "Liquidity marker",
+  commission: "Estimated or charged commission",
+  settlementDate: "Settlement date",
+};
+
 function formatPrice(asset: string, price: number) {
   return asset.includes("/") ? price.toFixed(4) : price.toFixed(2);
 }
@@ -457,7 +475,7 @@ export function OrderBlotter() {
           <table className="w-full text-xs" data-testid="orders-table">
             <thead>
               <tr className="text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950">
-                <th className="w-8 px-1 py-2 text-center">
+                <th className="w-8 px-1 py-2 text-center" title="Select rows">
                   <input
                     type="checkbox"
                     data-testid="select-all-checkbox"
@@ -487,6 +505,7 @@ export function OrderBlotter() {
                     }}
                     onContextMenu={(e) => openHeaderCtxMenu(e, col.key, col.label)}
                     align={col.align}
+                    title={BLOTTER_HEADER_TOOLTIPS[col.key] ?? col.label}
                     className={`px-3 py-2 ${col.align === "right" ? "text-right" : "text-left"}`}
                   >
                     {col.label}
