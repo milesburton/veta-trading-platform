@@ -33,6 +33,6 @@ See [Architecture](/veta-trading-platform/platform/architecture/) for the full s
 
 Deno, TypeScript, React, Redux Toolkit, Tailwind CSS, FlexLayout, Vite, Electron, PostgreSQL, SQLite (WAL), Redpanda (Kafka), FIX 4.2, Playwright, Docker, Fly.io, Supervisord, AG Grid, rrweb, and Ollama.
 
-## ★ Key documents
+## Key documents
 
 For the curated key-document list, see the docs home page: [VETA documentation](/veta-trading-platform/).

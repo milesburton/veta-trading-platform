@@ -141,14 +141,6 @@ export default defineConfig({
           },
         },
         {
-          tag: "link",
-          attrs: {
-            rel: "alternate icon",
-            href: `${docsBase}/favicon.ico`,
-            sizes: "any",
-          },
-        },
-        {
           tag: "script",
           attrs: { type: "module" },
           content: `

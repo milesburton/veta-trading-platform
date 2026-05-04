@@ -7,7 +7,7 @@ sidebar:
 
 VETA follows a "works on my machine" approach: every developer environment is identical because the entire platform runs inside a Docker-based Dev Container. Every change goes through automated testing at four levels before it can reach production.
 
-## Dockerized development
+## Dockerised development
 
 The repository ships a `.devcontainer/devcontainer.json` that configures VS Code (or JetBrains) to build and run the full platform inside a container. This includes:
 

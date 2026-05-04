@@ -37,7 +37,7 @@ The runner used for this dataset is a Deno harness that drives `gateway POST /lo
 
 - Risk engine disabled. The concentration-limit rule rejects every user's first order in any symbol (post-trade ratio = 100% when the user has no holdings); seeding test positions is its own session.
 - Tick interval: {scaling.config.marketSimTickIntervalMs} ms (default).
-- Services co-located on a single dev workstation against a Dockerized Postgres + Redpanda. Production deployments may differ.
+- Services co-located on a single dev workstation against a Dockerised Postgres + Redpanda. Production deployments may differ.
 
 ## Results
 
