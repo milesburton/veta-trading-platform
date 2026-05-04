@@ -161,6 +161,57 @@ export default defineConfig({
             observer.observe(document.documentElement, { attributes: true });
           `,
         },
+        {
+          tag: "script",
+          attrs: { type: "module" },
+          content: `
+            // Lightbox: click any content image to open it full-screen.
+            // Click anywhere or press Esc to close.
+            const SELECTOR = ".sl-markdown-content img:not(.sl-no-zoom):not([data-no-zoom])";
+
+            function openLightbox(src, alt) {
+              const overlay = document.createElement("div");
+              overlay.className = "veta-lightbox";
+              overlay.setAttribute("role", "dialog");
+              overlay.setAttribute("aria-modal", "true");
+              overlay.setAttribute("aria-label", alt || "Image preview");
+              const img = document.createElement("img");
+              img.src = src;
+              img.alt = alt || "";
+              const closeBtn = document.createElement("button");
+              closeBtn.type = "button";
+              closeBtn.className = "veta-lightbox-close";
+              closeBtn.setAttribute("aria-label", "Close image preview");
+              closeBtn.textContent = "×";
+              overlay.append(img, closeBtn);
+              document.body.append(overlay);
+              document.body.style.overflow = "hidden";
+
+              function close() {
+                overlay.remove();
+                document.body.style.overflow = "";
+                document.removeEventListener("keydown", onKey);
+              }
+              function onKey(e) {
+                if (e.key === "Escape") close();
+              }
+              overlay.addEventListener("click", close);
+              document.addEventListener("keydown", onKey);
+            }
+
+            function bind() {
+              for (const img of document.querySelectorAll(SELECTOR)) {
+                if (img.dataset.lightboxBound === "1") continue;
+                img.dataset.lightboxBound = "1";
+                img.style.cursor = "zoom-in";
+                img.addEventListener("click", () => openLightbox(img.src, img.alt));
+              }
+            }
+            bind();
+            // Re-bind when Starlight swaps content via client navigation.
+            new MutationObserver(bind).observe(document.body, { childList: true, subtree: true });
+          `,
+        },
       ],
     }),
   ],
