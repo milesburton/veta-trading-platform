@@ -232,24 +232,26 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
 
       <div
         data-testid="startup-build-info"
-        className="flex items-center justify-between w-full px-6 py-2 text-[10px] text-gray-700 tabular-nums border-t border-gray-800/50"
+        className="w-full max-w-3xl border-t border-gray-800/50 pt-2"
       >
-        <span>VETA &middot; Miles Burton</span>
-        <span className="flex items-center gap-4">
-          <BuildInfo
-            buildDate={buildDate}
-            commitSha={commitSha}
-            className="text-[10px] text-gray-700 tabular-nums"
-          />
-          <a
-            href="https://github.com/milesburton/veta-trading-platform"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-600 hover:text-gray-400 transition-colors"
-          >
-            GitHub
-          </a>
-        </span>
+        <div className="mx-auto flex w-full items-center justify-between gap-3 px-4 text-[9px] text-gray-700 tabular-nums sm:text-[10px]">
+          <span className="whitespace-nowrap">VETA &middot; Miles Burton</span>
+          <span className="flex items-center gap-3">
+            <BuildInfo
+              buildDate={buildDate}
+              commitSha={commitSha}
+              className="text-[10px] text-gray-700 tabular-nums"
+            />
+            <a
+              href="https://github.com/milesburton/veta-trading-platform"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-600 hover:text-gray-400 transition-colors"
+            >
+              GitHub
+            </a>
+          </span>
+        </div>
       </div>
     </div>
   );
