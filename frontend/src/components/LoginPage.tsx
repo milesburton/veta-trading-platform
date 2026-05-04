@@ -1,30 +1,40 @@
 import { useSignal } from "@preact/signals-react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { sha256Async } from "../lib/sha256.ts";
 import { setUser } from "../store/authSlice.ts";
 import { useAppDispatch } from "../store/hooks.ts";
 import { reportError } from "../store/observabilitySlice.ts";
 import { useAuthorizeOAuthMutation, useExchangeOAuthCodeMutation } from "../store/userApi.ts";
+import type { ServiceHealth } from "../types.ts";
 import { DemoPersonas } from "./DemoPersonas.tsx";
 import { AppHeader, useAllServiceHealth } from "./StatusBar.tsx";
 
-function DegradedServicesOverlay() {
-  const services = useAllServiceHealth();
-  const dismissed = useSignal(false);
+interface DegradedOverlayState {
+  anyPolled: boolean;
+  degradedCount: number;
+  stateKey: string;
+}
 
-  // Only show once at least one service has been polled (avoids flash on initial load)
+function computeOverlayState(services: ServiceHealth[]): DegradedOverlayState {
   const anyPolled = services.some((s) => s.state !== "unknown");
   const degradedCount = services.filter((s) => !s.optional && s.state === "error").length;
+  const stateKey = services.map((s) => `${s.name}:${s.state}`).join("|");
+  return { anyPolled, degradedCount, stateKey };
+}
 
-  if (!anyPolled || degradedCount === 0 || dismissed.value) return null;
-
-  function openServicesDropdown() {
-    document.querySelector<HTMLButtonElement>('[data-testid="services-status-btn"]')?.click();
-  }
-
+const DegradedServicesOverlayCard = memo(function DegradedServicesOverlayCard({
+  degradedCount,
+  onViewDetails,
+  onDismiss,
+}: {
+  degradedCount: number;
+  onViewDetails: () => void;
+  onDismiss: () => void;
+}) {
   return (
     <div
       data-testid="degraded-services-overlay"
-      className="absolute inset-0 z-10 rounded-lg border border-amber-700/60 bg-gray-950/92 p-5 shadow-2xl backdrop-blur-sm"
+      className="absolute inset-0 z-10 rounded-lg border border-amber-700/60 bg-gray-950/98 p-5 shadow-2xl"
     >
       <div className="flex h-full flex-col justify-between gap-4">
         <div className="flex items-start gap-3">
@@ -46,7 +56,7 @@ function DegradedServicesOverlay() {
           <button
             type="button"
             data-testid="degraded-view-details"
-            onClick={openServicesDropdown}
+            onClick={onViewDetails}
             className="text-xs text-amber-400 underline underline-offset-2 transition-colors hover:text-amber-300"
           >
             View details ↑
@@ -54,9 +64,7 @@ function DegradedServicesOverlay() {
           <button
             type="button"
             data-testid="degraded-dismiss"
-            onClick={() => {
-              dismissed.value = true;
-            }}
+            onClick={onDismiss}
             className="rounded border border-gray-600 bg-gray-800 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-gray-700 hover:text-gray-100"
           >
             Sign in anyway
@@ -64,6 +72,36 @@ function DegradedServicesOverlay() {
         </div>
       </div>
     </div>
+  );
+});
+
+function DegradedServicesOverlay() {
+  const services = useAllServiceHealth();
+  const dismissed = useSignal(false);
+  const latest = useMemo(() => computeOverlayState(services), [services]);
+  const [stableState, setStableState] = useState<DegradedOverlayState>(latest);
+  const previousStateKey = useRef(latest.stateKey);
+
+  useEffect(() => {
+    if (latest.stateKey === previousStateKey.current) return;
+    previousStateKey.current = latest.stateKey;
+    setStableState(latest);
+  }, [latest]);
+
+  if (!stableState.anyPolled || stableState.degradedCount === 0 || dismissed.value) return null;
+
+  function openServicesDropdown() {
+    document.querySelector<HTMLButtonElement>('[data-testid="services-status-btn"]')?.click();
+  }
+
+  return (
+    <DegradedServicesOverlayCard
+      degradedCount={stableState.degradedCount}
+      onViewDetails={openServicesDropdown}
+      onDismiss={() => {
+        dismissed.value = true;
+      }}
+    />
   );
 }
 
