@@ -154,12 +154,25 @@ export function AlertList({
                       <span className="text-[10px] text-gray-500">
                         {SOURCE_LABELS[alert.source]}
                       </span>
+                      {(alert.count ?? 1) > 1 && (
+                        <span
+                          className="text-[10px] font-mono font-semibold text-amber-400 bg-amber-950/40 border border-amber-800/40 rounded px-1 leading-none py-0.5"
+                          data-testid="alert-count"
+                          title={`${alert.count} occurrences in this run`}
+                        >
+                          ×{(alert.count ?? 1) > 99 ? "99+" : alert.count}
+                        </span>
+                      )}
                     </div>
                     <div className="text-[12px] text-gray-200">{alert.message}</div>
                     {alert.detail && (
                       <div className="text-[11px] text-gray-500 mt-0.5">{alert.detail}</div>
                     )}
-                    <div className="text-[10px] text-gray-600 mt-0.5">{relativeTime(alert.ts)}</div>
+                    <div className="text-[10px] text-gray-600 mt-0.5">
+                      {(alert.count ?? 1) > 1
+                        ? `last ${relativeTime(alert.lastTs ?? alert.ts)} · first ${relativeTime(alert.ts)}`
+                        : relativeTime(alert.ts)}
+                    </div>
                   </div>
                   <div className="shrink-0 flex items-center gap-1 mt-0.5">
                     <button

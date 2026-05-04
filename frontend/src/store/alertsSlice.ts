@@ -12,6 +12,10 @@ export interface Alert {
   message: string;
   detail?: string;
   ts: number;
+  /** Last time this dedupe-key fired; equals ts on a non-deduped alert. */
+  lastTs?: number;
+  /** Number of times this dedupe-key has fired in the dedupe window. Defaults to 1. */
+  count?: number;
   dismissed: boolean;
 }
 
@@ -35,6 +39,12 @@ function alertMatchesMuteRule(alert: Alert, rule: MuteRule): boolean {
 }
 
 const MAX_ALERTS = 200;
+const DEDUPE_WINDOW_MS = 30_000;
+const DEDUPE_LOOKBACK = 10;
+
+function dedupeKey(a: Pick<Alert, "severity" | "source" | "message">): string {
+  return `${a.severity}:${a.source}:${a.message}`;
+}
 
 interface AlertsState {
   alerts: Alert[];
@@ -47,10 +57,38 @@ export const alertsSlice = createSlice({
   name: "alerts",
   initialState,
   reducers: {
-    alertAdded(state, action: PayloadAction<Omit<Alert, "id" | "dismissed">>) {
+    alertAdded(state, action: PayloadAction<Omit<Alert, "id" | "dismissed" | "lastTs" | "count">>) {
+      const incoming = action.payload;
+      const key = dedupeKey(incoming);
+      const cutoff = incoming.ts - DEDUPE_WINDOW_MS;
+      const lookbackEnd = Math.min(state.alerts.length, DEDUPE_LOOKBACK);
+      let matchIdx = -1;
+      for (let i = 0; i < lookbackEnd; i++) {
+        const a = state.alerts[i];
+        if (a.dismissed) continue;
+        const aTs = a.lastTs ?? a.ts;
+        if (aTs < cutoff) break;
+        if (dedupeKey(a) === key) {
+          matchIdx = i;
+          break;
+        }
+      }
+      if (matchIdx >= 0) {
+        const existing = state.alerts[matchIdx];
+        existing.count = (existing.count ?? 1) + 1;
+        existing.lastTs = incoming.ts;
+        if (incoming.detail) existing.detail = incoming.detail;
+        if (matchIdx > 0) {
+          state.alerts.splice(matchIdx, 1);
+          state.alerts.unshift(existing);
+        }
+        return;
+      }
       const alert: Alert = {
-        ...action.payload,
+        ...incoming,
         id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        lastTs: incoming.ts,
+        count: 1,
         dismissed: false,
       };
       state.alerts.unshift(alert);
@@ -66,7 +104,11 @@ export const alertsSlice = createSlice({
       for (const a of state.alerts) a.dismissed = true;
     },
     alertsLoaded(state, action: PayloadAction<Alert[]>) {
-      state.alerts = action.payload.slice(0, MAX_ALERTS);
+      state.alerts = action.payload.slice(0, MAX_ALERTS).map((a) => ({
+        ...a,
+        count: a.count ?? 1,
+        lastTs: a.lastTs ?? a.ts,
+      }));
     },
     purgeServiceAlerts(state) {
       state.alerts = state.alerts.filter((a) => a.source !== "service");

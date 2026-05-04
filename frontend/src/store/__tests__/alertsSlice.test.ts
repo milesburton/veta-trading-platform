@@ -87,3 +87,54 @@ describe("alertsSlice — source field", () => {
     expect(otherAlerts).toHaveLength(1);
   });
 });
+
+describe("alertsSlice — dedupe", () => {
+  it("identical alerts within window collapse into one with count", () => {
+    const t0 = 1_700_000_000_000;
+    let state = reducer(undefined, alertAdded({ ...BASE_ALERT, ts: t0 }));
+    state = reducer(state, alertAdded({ ...BASE_ALERT, ts: t0 + 5_000 }));
+    state = reducer(state, alertAdded({ ...BASE_ALERT, ts: t0 + 12_000 }));
+    expect(state.alerts).toHaveLength(1);
+    expect(state.alerts[0].count).toBe(3);
+    expect(state.alerts[0].ts).toBe(t0);
+    expect(state.alerts[0].lastTs).toBe(t0 + 12_000);
+  });
+
+  it("different message creates a separate alert", () => {
+    const t0 = 1_700_000_000_000;
+    let state = reducer(undefined, alertAdded({ ...BASE_ALERT, ts: t0, message: "a" }));
+    state = reducer(state, alertAdded({ ...BASE_ALERT, ts: t0 + 1_000, message: "b" }));
+    expect(state.alerts).toHaveLength(2);
+    expect(state.alerts[0].message).toBe("b");
+    expect(state.alerts[0].count).toBe(1);
+  });
+
+  it("alert outside the 30s dedupe window starts a fresh row", () => {
+    const t0 = 1_700_000_000_000;
+    let state = reducer(undefined, alertAdded({ ...BASE_ALERT, ts: t0 }));
+    state = reducer(state, alertAdded({ ...BASE_ALERT, ts: t0 + 31_000 }));
+    expect(state.alerts).toHaveLength(2);
+    expect(state.alerts[0].count).toBe(1);
+    expect(state.alerts[1].count).toBe(1);
+  });
+
+  it("dismissed alerts do not absorb new occurrences", () => {
+    const t0 = 1_700_000_000_000;
+    let state = reducer(undefined, alertAdded({ ...BASE_ALERT, ts: t0 }));
+    state = reducer(state, alertsSlice.actions.alertDismissed(state.alerts[0].id));
+    state = reducer(state, alertAdded({ ...BASE_ALERT, ts: t0 + 5_000 }));
+    expect(state.alerts).toHaveLength(2);
+    expect(state.alerts[0].count).toBe(1);
+    expect(state.alerts[0].dismissed).toBe(false);
+  });
+
+  it("re-firing brings the existing alert back to the top", () => {
+    const t0 = 1_700_000_000_000;
+    let state = reducer(undefined, alertAdded({ ...BASE_ALERT, ts: t0, message: "old" }));
+    state = reducer(state, alertAdded({ ...BASE_ALERT, ts: t0 + 1_000, message: "newer" }));
+    state = reducer(state, alertAdded({ ...BASE_ALERT, ts: t0 + 2_000, message: "old" }));
+    expect(state.alerts[0].message).toBe("old");
+    expect(state.alerts[0].count).toBe(2);
+    expect(state.alerts[1].message).toBe("newer");
+  });
+});

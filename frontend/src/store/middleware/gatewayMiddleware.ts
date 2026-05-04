@@ -66,7 +66,7 @@ const GATEWAY_WS_URL = import.meta.env.VITE_GATEWAY_WS_URL ?? `${_wsOrigin}/ws/g
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? `${_origin}/api/gateway`;
 
 const UI_TICK_INTERVAL_MS = 250;
-const ALGO_HEARTBEAT_TIMEOUT_MS = 10_000;
+const ALGO_HEARTBEAT_TIMEOUT_MS = 30_000;
 
 interface MarketUpdateData {
   prices: Record<string, number>;

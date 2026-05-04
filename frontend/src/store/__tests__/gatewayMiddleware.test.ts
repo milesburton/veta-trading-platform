@@ -477,7 +477,7 @@ describe("gatewayMiddleware", () => {
         }),
       } as MessageEvent);
 
-      vi.setSystemTime(new Date("2026-01-01T00:00:12.000Z"));
+      vi.setSystemTime(new Date("2026-01-01T00:00:35.000Z"));
       ws.onmessage?.({
         data: JSON.stringify({
           event: "algoHeartbeat",
