@@ -31,3 +31,6 @@ CREATE TABLE IF NOT EXISTS replay.config (
 
 INSERT INTO replay.config (id, recording_enabled) VALUES (1, false)
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.schema_migrations (version) VALUES ('0009_session_replay')
+  ON CONFLICT (version) DO NOTHING;

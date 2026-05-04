@@ -21,20 +21,21 @@ export function EnvironmentOverlay() {
           <pattern
             id="env-watermark"
             patternUnits="userSpaceOnUse"
-            width="420"
-            height="80"
+            width="780"
+            height="120"
             patternTransform="rotate(-30)"
           >
             <text
               x="0"
-              y="50"
+              y="60"
               fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
               fontWeight="700"
               fontSize="38"
               letterSpacing="6"
+              xmlSpace="preserve"
               fill="rgb(251 191 36)"
             >
-              UAT — NOT PRODUCTION
+              UAT — NOT PRODUCTION ·{"  "}
             </text>
           </pattern>
         </defs>

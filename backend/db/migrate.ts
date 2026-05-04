@@ -39,6 +39,10 @@ try {
     console.log(`  [apply] ${version}`);
     const sql = await Deno.readTextFile(join(migrationsDir, filename));
     await client.queryArray(sql);
+    await client.queryArray(
+      "INSERT INTO public.schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING",
+      [version],
+    );
     console.log(`  [done] ${version}`);
   }
 

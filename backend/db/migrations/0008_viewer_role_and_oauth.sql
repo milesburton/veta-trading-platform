@@ -13,3 +13,6 @@ INSERT INTO users.user_preferences (user_id, data)
 SELECT id, '{}'::jsonb FROM users.users
 WHERE id NOT IN (SELECT user_id FROM users.user_preferences)
 ON CONFLICT DO NOTHING;
+
+INSERT INTO public.schema_migrations (version) VALUES ('0008_viewer_role_and_oauth')
+  ON CONFLICT (version) DO NOTHING;
