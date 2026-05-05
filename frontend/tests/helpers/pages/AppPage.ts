@@ -90,7 +90,7 @@ export class AppPage {
   async waitForDashboard() {
     await this.waitForAppReady();
     await this.page
-      .locator(".flexlayout__tab_button")
+      .locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch")
       .first()
       .waitFor({ state: "visible", timeout: 15_000 });
   }
@@ -135,7 +135,7 @@ export class AppPage {
     tabTitle: string | RegExp,
   ): Promise<ReturnType<Page["locator"]>> {
     const btn = this.page
-      .locator(".flexlayout__tab_button", { hasText: tabTitle })
+      .locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: tabTitle })
       .first();
     const visible = await btn.isVisible().catch(() => false);
 

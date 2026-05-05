@@ -49,7 +49,7 @@ base.describe("Options workspace", () => {
     await page.waitForTimeout(400);
 
     await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Option Pricing/i }).first()
+      page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Option Pricing/i }).first()
     ).toBeVisible({ timeout: 8_000 });
   });
 });
@@ -64,7 +64,7 @@ base.describe("Research workspace", () => {
     await page.waitForTimeout(400);
 
     await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Research Radar|Signal Radar/i }).first()
+      page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Research Radar|Signal Radar/i }).first()
     ).toBeVisible({ timeout: 8_000 });
   });
 });
@@ -79,7 +79,7 @@ base.describe("Market feeds workspace", () => {
     await page.waitForTimeout(600);
 
     await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Market Heatmap/i }).first()
+      page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Market Heatmap/i }).first()
     ).toBeVisible({ timeout: 8_000 });
   });
 });
@@ -93,7 +93,7 @@ base.describe("Admin system-status workspace", () => {
     await page.waitForTimeout(400);
 
     await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Estate|Command Centre/i }).first()
+      page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Estate|Command Centre/i }).first()
     ).toBeVisible({ timeout: 8_000 });
   });
 });
@@ -101,7 +101,7 @@ base.describe("Admin system-status workspace", () => {
 adminTest.describe("Admin default workspace", () => {
   adminTest("Mission Control tab visible", async ({ app }) => {
     await expect(
-      app.page.locator(".flexlayout__tab_button", { hasText: /Mission Control/i }).first()
+      app.page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Mission Control/i }).first()
     ).toBeVisible({ timeout: 8_000 });
   });
 });
@@ -114,7 +114,7 @@ base.describe("FI workspace", () => {
     await page.waitForTimeout(400);
 
     await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Spread Analysis/i }).first()
+      page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Spread Analysis/i }).first()
     ).toBeVisible({ timeout: 8_000 });
   });
 
@@ -125,7 +125,7 @@ base.describe("FI workspace", () => {
     await page.waitForTimeout(400);
 
     await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Duration Ladder/i }).first()
+      page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Duration Ladder/i }).first()
     ).toBeVisible({ timeout: 8_000 });
   });
 });
