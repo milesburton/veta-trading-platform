@@ -1,0 +1,505 @@
+{
+  "uid": "veta-services-otel",
+  "title": "Service Performance (OTel)",
+  "description": "Per-service request rate, latency, errors, and resource usage — sourced from Deno's built-in OpenTelemetry instrumentation. All panels respect the service variable, so pick a service from the top to scope the view.",
+  "tags": ["veta", "otel", "services"],
+  "timezone": "browser",
+  "time": { "from": "now-15m", "to": "now" },
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "uid": "prometheus", "type": "prometheus" },
+        "query": { "query": "label_values(traces_spanmetrics_calls_total, service_name)", "refId": "Prom" },
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": { "selected": true, "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "span_name",
+        "label": "Span / route",
+        "type": "query",
+        "datasource": { "uid": "prometheus", "type": "prometheus" },
+        "query": { "query": "label_values(traces_spanmetrics_calls_total{service_name=~\"$service\"}, span_name)", "refId": "Prom" },
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": { "selected": true, "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Request volume",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Total request rate",
+      "description": "Requests per second across the selected service(s) over the last minute.",
+      "gridPos": { "x": 0, "y": 1, "w": 6, "h": 5 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(traces_spanmetrics_calls_total{service_name=~\"$service\"}[1m]))",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Error rate",
+      "description": "Spans with status code = ERROR, expressed as a percentage of total spans.",
+      "gridPos": { "x": 6, "y": 1, "w": 6, "h": 5 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.01 },
+              { "color": "red", "value": 0.05 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(traces_spanmetrics_calls_total{service_name=~\"$service\",status_code=\"STATUS_CODE_ERROR\"}[5m])) / clamp_min(sum(rate(traces_spanmetrics_calls_total{service_name=~\"$service\"}[5m])), 0.0001)",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "p99 latency",
+      "description": "99th-percentile span duration across the selected service(s).",
+      "gridPos": { "x": 12, "y": 1, "w": 6, "h": 5 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "red", "value": 2 }
+            ]
+          }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[5m])))",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Active services",
+      "description": "Number of distinct services emitting traces in the last minute.",
+      "gridPos": { "x": 18, "y": 1, "w": 6, "h": 5 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [
+        {
+          "expr": "count(count by (service_name) (rate(traces_spanmetrics_calls_total[1m]) > 0))",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Request rate by service",
+      "description": "Requests per second per service. Hover for breakdown.",
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10, "stacking": { "mode": "normal" } }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "mean"] } },
+      "targets": [
+        {
+          "expr": "sum by (service_name) (rate(traces_spanmetrics_calls_total{service_name=~\"$service\"}[1m]))",
+          "legendFormat": "{{service_name}}",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Error rate by service",
+      "description": "Errors per second per service.",
+      "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum", "lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "sum by (service_name) (rate(traces_spanmetrics_calls_total{service_name=~\"$service\",status_code=\"STATUS_CODE_ERROR\"}[1m]))",
+          "legendFormat": "{{service_name}}",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "type": "row",
+      "title": "Latency",
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "Latency p50 / p95 / p99",
+      "description": "Latency percentiles aggregated across the selected service(s).",
+      "gridPos": { "x": 0, "y": 15, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[5m])))",
+          "legendFormat": "p50",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[5m])))",
+          "legendFormat": "p95",
+          "refId": "B",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[5m])))",
+          "legendFormat": "p99",
+          "refId": "C",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "p99 latency by service",
+      "description": "99th-percentile latency broken down by service — slow services rise above the rest.",
+      "gridPos": { "x": 12, "y": 15, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth" }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["max", "lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum by (le, service_name) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[5m])))",
+          "legendFormat": "{{service_name}}",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+
+    {
+      "id": 3,
+      "type": "row",
+      "title": "Top operations",
+      "gridPos": { "x": 0, "y": 23, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "id": 40,
+      "type": "table",
+      "title": "Slowest operations (p95)",
+      "description": "Top 20 spans by p95 latency, across the selected service(s).",
+      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 9 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "left", "displayMode": "auto" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              { "id": "unit", "value": "s" },
+              { "id": "displayName", "value": "p95 latency" },
+              { "id": "custom.displayMode", "value": "gradient-gauge" }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true, "footer": { "show": false } },
+      "transformations": [
+        { "id": "merge", "options": {} },
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true, "exported_job": true, "tempo_service_name": true, "source": true, "span_kind": true, "status_code": true } } }
+      ],
+      "targets": [
+        {
+          "expr": "topk(20, histogram_quantile(0.95, sum by (le, service_name, span_name) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[5m]))))",
+          "format": "table",
+          "instant": true,
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "type": "table",
+      "title": "Highest-volume operations",
+      "description": "Top 20 spans by request rate.",
+      "gridPos": { "x": 12, "y": 24, "w": 12, "h": 9 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "left", "displayMode": "auto" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              { "id": "unit", "value": "reqps" },
+              { "id": "displayName", "value": "rate (rps)" },
+              { "id": "custom.displayMode", "value": "gradient-gauge" }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true, "footer": { "show": false } },
+      "transformations": [
+        { "id": "merge", "options": {} },
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true, "exported_job": true, "tempo_service_name": true, "source": true, "span_kind": true, "status_code": true } } }
+      ],
+      "targets": [
+        {
+          "expr": "topk(20, sum by (service_name, span_name) (rate(traces_spanmetrics_calls_total{service_name=~\"$service\"}[5m])))",
+          "format": "table",
+          "instant": true,
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "type": "row",
+      "title": "Resources",
+      "gridPos": { "x": 0, "y": 33, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "id": 50,
+      "type": "timeseries",
+      "title": "Heap memory used (Deno)",
+      "description": "process.runtime.deno.memory.heap.used per service. Rising-and-not-falling lines are leaks.",
+      "gridPos": { "x": 0, "y": 34, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] } },
+      "targets": [
+        {
+          "expr": "process_runtime_deno_memory_heap_used_bytes{service_name=~\"$service\"}",
+          "legendFormat": "{{service_name}}",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "type": "timeseries",
+      "title": "CPU time (Deno)",
+      "description": "Cumulative CPU time per service — use the rate() to read CPU usage.",
+      "gridPos": { "x": 12, "y": 34, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] } },
+      "targets": [
+        {
+          "expr": "rate(process_cpu_time_seconds_total{service_name=~\"$service\"}[1m])",
+          "legendFormat": "{{service_name}}",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+
+    {
+      "id": 5,
+      "type": "row",
+      "title": "Service interactions",
+      "gridPos": { "x": 0, "y": 42, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "id": 60,
+      "type": "timeseries",
+      "title": "Inter-service request rate",
+      "description": "Edges of the service graph — who calls whom, how often. Sourced from Tempo's service-graph processor.",
+      "gridPos": { "x": 0, "y": 43, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 0 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "mean"] } },
+      "targets": [
+        {
+          "expr": "sum by (client, server) (rate(traces_service_graph_request_total[1m]))",
+          "legendFormat": "{{client}} → {{server}}",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "type": "timeseries",
+      "title": "Inter-service p95 latency",
+      "description": "p95 latency for each call-pair in the service graph — useful for tracking which downstream calls dominate end-to-end latency.",
+      "gridPos": { "x": 12, "y": 43, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth" }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, client, server) (rate(traces_service_graph_request_server_seconds_bucket[5m])))",
+          "legendFormat": "{{client}} → {{server}}",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+
+    {
+      "id": 6,
+      "type": "row",
+      "title": "Logs",
+      "gridPos": { "x": 0, "y": 51, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "id": 70,
+      "type": "logs",
+      "title": "Recent logs (selected service)",
+      "description": "Last 200 log lines from the selected service(s). Click a TraceID link to jump straight into Tempo.",
+      "gridPos": { "x": 0, "y": 52, "w": 24, "h": 12 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "expr": "{service_name=~\"$service\"} | json | line_format \"{{.level | upper}} {{.msg}} {{if .err}}err={{.err}}{{end}}\"",
+          "refId": "A",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    }
+  ]
+}

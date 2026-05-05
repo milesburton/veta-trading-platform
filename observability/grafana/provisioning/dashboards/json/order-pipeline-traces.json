@@ -1,0 +1,183 @@
+{
+  "uid": "veta-order-pipeline-traces",
+  "title": "Order Pipeline (Traces)",
+  "description": "Trace-driven view of the order lifecycle. The platform's HTTP and Kafka hops both propagate trace context, so a single submitted order produces one connected trace from Gateway through OMS, Risk, Algo, EMS, and Journal. This dashboard surfaces the slowest, the failed, and the most active.",
+  "tags": ["veta", "otel", "orders", "traces"],
+  "timezone": "browser",
+  "time": { "from": "now-30m", "to": "now" },
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "End-to-end performance",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Order submission latency (gateway span p50/p95/p99)",
+      "description": "Latency of the gateway's order-submission span — what the user actually waited for.",
+      "gridPos": { "x": 0, "y": 1, "w": 12, "h": 9 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=\"gateway\",span_name=~\".*orders.*|.*submit.*\"}[5m])))",
+          "legendFormat": "p50",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=\"gateway\",span_name=~\".*orders.*|.*submit.*\"}[5m])))",
+          "legendFormat": "p95",
+          "refId": "B",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=\"gateway\",span_name=~\".*orders.*|.*submit.*\"}[5m])))",
+          "legendFormat": "p99",
+          "refId": "C",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Per-stage latency (p95)",
+      "description": "p95 latency for each pipeline service. Stages with rising lines are bottlenecks.",
+      "gridPos": { "x": 12, "y": 1, "w": 12, "h": 9 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, service_name) (rate(traces_spanmetrics_latency_bucket{service_name=~\"gateway|oms|risk-engine|ems|journal|limit-algo|twap-algo|pov-algo|vwap-algo\"}[5m])))",
+          "legendFormat": "{{service_name}}",
+          "refId": "A",
+          "datasource": { "uid": "prometheus", "type": "prometheus" }
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "type": "row",
+      "title": "Order flow (service graph)",
+      "gridPos": { "x": 0, "y": 10, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "id": 20,
+      "type": "nodeGraph",
+      "title": "Live service graph",
+      "description": "Auto-discovered call graph from trace data. Edge labels show requests/sec.",
+      "gridPos": { "x": 0, "y": 11, "w": 24, "h": 12 },
+      "datasource": { "uid": "tempo", "type": "tempo" },
+      "options": {},
+      "targets": [
+        {
+          "queryType": "serviceMap",
+          "refId": "A",
+          "datasource": { "uid": "tempo", "type": "tempo" }
+        }
+      ]
+    },
+
+    {
+      "id": 3,
+      "type": "row",
+      "title": "Errors and slow traces",
+      "gridPos": { "x": 0, "y": 23, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "id": 30,
+      "type": "table",
+      "title": "Recent error spans",
+      "description": "Spans with status=ERROR in the selected window. Click TraceID to open the full trace.",
+      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 10 },
+      "datasource": { "uid": "tempo", "type": "tempo" },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "queryType": "traceqlSearch",
+          "filters": [
+            { "id": "service-name", "operator": "=", "scope": "span", "tag": "status", "value": ["error"] }
+          ],
+          "limit": 50,
+          "refId": "A",
+          "datasource": { "uid": "tempo", "type": "tempo" }
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "type": "table",
+      "title": "Slowest traces (>500ms)",
+      "description": "Traces that took longer than 500ms end-to-end. The order pipeline target is sub-100ms.",
+      "gridPos": { "x": 12, "y": 24, "w": 12, "h": 10 },
+      "datasource": { "uid": "tempo", "type": "tempo" },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "queryType": "traceql",
+          "query": "{ trace:duration > 500ms }",
+          "limit": 50,
+          "refId": "A",
+          "datasource": { "uid": "tempo", "type": "tempo" }
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "type": "row",
+      "title": "Bus events",
+      "gridPos": { "x": 0, "y": 34, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "id": 40,
+      "type": "timeseries",
+      "title": "Order events from bus",
+      "description": "Order lifecycle events as observed by kafka-relay → Loki. Use this when traces are too detailed.",
+      "gridPos": { "x": 0, "y": 35, "w": 24, "h": 9 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "bars", "lineInterpolation": "stepAfter", "fillOpacity": 60 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "expr": "sum by (type) (count_over_time({service_name=\"kafka-relay\"} | json | type =~ \"orders\\\\.(submitted|filled|rejected|expired|cancelled)\" [30s]))",
+          "legendFormat": "{{type}}",
+          "refId": "A",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    }
+  ]
+}
