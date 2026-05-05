@@ -1,6 +1,5 @@
 import { useSignal } from "@preact/signals-react";
 import { useEffect, useRef } from "react";
-import { DEPLOYMENT } from "../store/servicesApi.ts";
 import { BuildInfo } from "./BuildInfo.tsx";
 
 interface ReadyServices {
@@ -249,7 +248,7 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
             <BuildInfo
               buildDate={buildDate}
               commitSha={commitSha}
-              env={DEPLOYMENT}
+              version={import.meta.env.VITE_APP_VERSION}
               className="text-[10px] text-gray-600 tabular-nums"
             />
             <a

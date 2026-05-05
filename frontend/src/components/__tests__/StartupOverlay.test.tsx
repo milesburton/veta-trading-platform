@@ -133,7 +133,7 @@ describe("StartupOverlay", () => {
     render(<StartupOverlay onReady={vi.fn()} buildDate="2026-03-08" commitSha="abc1234" />);
 
     const footer = screen.getByTestId("startup-build-info");
-    expect(footer).toHaveTextContent("vabc1234");
+    expect(footer).toHaveTextContent("abc1234");
     expect(footer).toHaveTextContent("Miles Burton");
   });
 
@@ -145,7 +145,7 @@ describe("StartupOverlay", () => {
 
     expect(screen.queryByTestId("startup-version")).not.toBeInTheDocument();
     const footer = screen.getByTestId("startup-build-info");
-    expect(footer).toHaveTextContent("vabc1234");
+    expect(footer).toHaveTextContent("abc1234");
     expect(footer).toHaveTextContent("2026-03-08");
   });
 

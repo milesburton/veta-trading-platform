@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
@@ -5,6 +6,16 @@ import react from "@vitejs/plugin-react";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isElectron = process.env.ELECTRON_BUILD === "1";
+
+function readPlatformVersion(): string {
+  try {
+    const root = path.resolve(__dirname, "..", "package.json");
+    const pkg = JSON.parse(readFileSync(root, "utf8"));
+    return typeof pkg.version === "string" ? pkg.version : "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
 
 export default defineConfig(async ({ mode }) => {
   const isElectronMode = isElectron || mode === "electron" ||
@@ -46,6 +57,9 @@ export default defineConfig(async ({ mode }) => {
       ),
       "import.meta.env.VITE_COMMIT_SHA": JSON.stringify(
         process.env.VITE_COMMIT_SHA ?? "dev",
+      ),
+      "import.meta.env.VITE_APP_VERSION": JSON.stringify(
+        process.env.VITE_APP_VERSION ?? readPlatformVersion(),
       ),
     },
     plugins: [

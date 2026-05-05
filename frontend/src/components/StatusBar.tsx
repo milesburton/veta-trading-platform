@@ -572,7 +572,31 @@ export function AppHeader() {
             <ServiceStatus services={services} />
           </div>
           <a
-            href="https://github.com/milesburton/equities-trading-simulator"
+            href="https://milesburton.github.io/veta-trading-platform/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open documentation site"
+            data-testid="docs-link"
+            className="text-gray-400 hover:text-gray-200 transition-colors"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+            <span className="sr-only">Open documentation</span>
+          </a>
+          <a
+            href="https://github.com/milesburton/veta-trading-platform"
             target="_blank"
             rel="noopener noreferrer"
             title="View source on GitHub"
@@ -597,7 +621,7 @@ export function AppHeader() {
           <BuildInfo
             buildDate={import.meta.env.VITE_BUILD_DATE}
             commitSha={import.meta.env.VITE_COMMIT_SHA}
-            env={DEPLOYMENT}
+            version={import.meta.env.VITE_APP_VERSION}
             className="px-2 py-0.5 rounded border border-gray-800 bg-gray-950/60 text-[10px] text-gray-400 tabular-nums"
           />
           <span className="tabular-nums text-gray-500">{time.value}</span>
