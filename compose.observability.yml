@@ -1,0 +1,52 @@
+# LGTM stack runs on its own bridge network so services reach Alloy via the
+# host gateway rather than joining its network.
+
+x-otel-env: &otel-env
+  OTEL_DENO: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_ENDPOINT:-http://host.docker.internal:4318}
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=${VITE_DEPLOYMENT:-local}
+
+x-otel-extra-hosts: &otel-extra-hosts
+  - "host.docker.internal:host-gateway"
+
+x-otel-overlay: &otel-overlay
+  environment: *otel-env
+  extra_hosts: *otel-extra-hosts
+
+services:
+  market-sim:        *otel-overlay
+  ems:               *otel-overlay
+  oms:               *otel-overlay
+  limit-algo:        *otel-overlay
+  twap-algo:         *otel-overlay
+  pov-algo:          *otel-overlay
+  vwap-algo:         *otel-overlay
+  iceberg-algo:      *otel-overlay
+  sniper-algo:       *otel-overlay
+  arrival-price-algo: *otel-overlay
+  momentum-algo:     *otel-overlay
+  is-algo:           *otel-overlay
+  rfq-service:       *otel-overlay
+  ccp-service:       *otel-overlay
+  product-service:   *otel-overlay
+  replay-service:    *otel-overlay
+  risk-engine:       *otel-overlay
+  dark-pool:         *otel-overlay
+  kafka-relay:       *otel-overlay
+  user-service:      *otel-overlay
+  journal:           *otel-overlay
+  fix-exchange:      *otel-overlay
+  fix-gateway:       *otel-overlay
+  fix-archive:       *otel-overlay
+  analytics:         *otel-overlay
+  market-data:       *otel-overlay
+  market-data-adapters: *otel-overlay
+  feature-engine:    *otel-overlay
+  signal-engine:     *otel-overlay
+  recommendation-engine: *otel-overlay
+  scenario-engine:   *otel-overlay
+  news-aggregator:   *otel-overlay
+  llm-advisory:      *otel-overlay
+  llm-worker:        *otel-overlay
+  gateway:           *otel-overlay

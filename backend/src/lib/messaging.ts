@@ -21,6 +21,7 @@ import {
   type Producer,
 } from "npm:kafkajs@2.2.4";
 import { logger } from "@veta/logger";
+import { injectTraceContext, withExtractedContext } from "./telemetry.ts";
 
 const LIB = { component: "messaging" };
 
@@ -98,9 +99,11 @@ export function createProducer(
         return;
       }
       try {
+        const headers: Record<string, string> = {};
+        await injectTraceContext(headers);
         await activeProducer.send({
           topic,
-          messages: [{ value: JSON.stringify(value) }],
+          messages: [{ value: JSON.stringify(value), headers }],
         });
       } catch (err) {
         logger.warn("producer send failed, reconnecting", {
@@ -186,23 +189,26 @@ export function createConsumer(
             } catch {
               return;
             }
-            for (const handler of handlers) {
-              try {
-                await Promise.race([
-                  handler(topic, parsed),
-                  new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error(`handler timeout (${HANDLER_TIMEOUT_MS}ms)`)), HANDLER_TIMEOUT_MS)
-                  ),
-                ]);
-              } catch (err) {
-                logger.warn("consumer handler slow/failed", {
-                  ...LIB,
-                  groupId,
-                  topic,
-                  err: err as Error,
-                });
+            const carrier: Record<string, unknown> = message.headers ?? {};
+            await withExtractedContext(carrier, async () => {
+              for (const handler of handlers) {
+                try {
+                  await Promise.race([
+                    handler(topic, parsed),
+                    new Promise((_, reject) =>
+                      setTimeout(() => reject(new Error(`handler timeout (${HANDLER_TIMEOUT_MS}ms)`)), HANDLER_TIMEOUT_MS)
+                    ),
+                  ]);
+                } catch (err) {
+                  logger.warn("consumer handler slow/failed", {
+                    ...LIB,
+                    groupId,
+                    topic,
+                    err: err as Error,
+                  });
+                }
               }
-            }
+            });
           },
         });
         activeConsumer = consumer;

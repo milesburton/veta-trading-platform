@@ -1,6 +1,7 @@
 {
   "imports": {
     "@veta/zod": "npm:zod@^3.23.8",
+    "@opentelemetry/api": "npm:@opentelemetry/api@^1.9.0",
     "@veta/primitives": "./shared/primitives.ts",
     "@veta/http": "./backend/src/lib/http.ts",
     "@veta/auth": "./backend/src/lib/auth.ts",

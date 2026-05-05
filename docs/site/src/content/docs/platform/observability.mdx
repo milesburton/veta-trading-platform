@@ -33,6 +33,34 @@ The platform's <Svc name="kafka-relay" /> subscribes to every Redpanda topic and
 
 The relay also exposes `POST /events/batch` for the frontend. The browser's [error transport middleware](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/store/middleware/errorTransportMiddleware.ts) posts uncaught errors here, so client-side failures show up in Loki alongside backend events.
 
+## OpenTelemetry tracing
+
+Every Deno service emits OTel traces and metrics when started with `OTEL_DENO=true`. The `compose.observability.yml` overlay enables this on the homelab and points each service at the Alloy collector:
+
+```bash
+docker compose -f compose.yml -f compose.prod.yml -f compose.observability.yml up -d
+```
+
+The overlay is opt-in — Fly and bare local development don't ship traces by default to keep the attack surface small and the bandwidth cost zero. Service names are auto-derived from the container hostname inside [`backend/src/lib/telemetry.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/telemetry.ts), so each service appears in Tempo without having to plumb `OTEL_SERVICE_NAME` into 35 compose blocks individually.
+
+Trace context propagates automatically:
+
+- **HTTP**: Deno's auto-instrumentation injects/extracts `traceparent` on every `fetch` and `Deno.serve` call. So an order flowing Gateway → OMS → Risk Engine → EMS shows up as one connected trace in Tempo.
+- **Kafka**: the producer in [`messaging.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/messaging.ts) injects `traceparent` into Kafka message headers; the consumer extracts it before invoking the handler. So the chain extends across every bus hop too — `orders.routed → orders.child → orders.filled` all appear in one trace.
+
+Custom business spans are added with the `withSpan()` helper:
+
+```ts
+import { withSpan } from "@veta/telemetry";
+
+await withSpan("score-signal", async (span) => {
+  span.setAttribute("symbol", symbol);
+  return scoreSignal(features);
+});
+```
+
+When `OTEL_DENO` is unset, `withSpan()` is a no-op zero-cost call — safe to leave in production code paths.
+
 ## Pipeline-stage latency
 
 The <Svc name="journal" /> service exposes `GET /metrics/latency` returning per-stage `p50`/`p95`/`p99` for the order pipeline (`gateway → bus → oms → routedToChild → emsAck → filled`). Recent baselines and how they were measured live on the [Performance page](../../reference/performance/).
