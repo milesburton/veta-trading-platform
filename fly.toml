@@ -12,8 +12,7 @@ primary_region = "iad"
   LLM_ENABLED = "false"
 
 [vm]
-  size = "shared-cpu-4x"
-  memory = "8gb"
+  size = "performance-8x"
 
 [deploy]
   strategy = "immediate"
