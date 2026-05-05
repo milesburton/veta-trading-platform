@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.24.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.23.0...veta-trading-platform-v1.24.0) (2026-05-05)
+
+
+### Features
+
+* **frontend:** client-side WebM rendering of replay sessions ([85d6d27](https://github.com/milesburton/veta-trading-platform/commit/85d6d27084eb95781d37250302a30ad29e02baa2))
+* surface deployment environment in title bar and beside every version ([5cdaed8](https://github.com/milesburton/veta-trading-platform/commit/5cdaed851973fca3a2aaaa9c0b949a2132516f1f))
+
+
+### Bug Fixes
+
+* **frontend:** match stretched flexlayout tab buttons in Playwright selectors ([bf0acab](https://github.com/milesburton/veta-trading-platform/commit/bf0acab3c4e27074880d1f6e6939937f1bd3e43d))
+
 ## [1.23.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.22.6...veta-trading-platform-v1.23.0) (2026-05-04)
 
 
