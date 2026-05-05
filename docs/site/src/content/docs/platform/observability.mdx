@@ -37,6 +37,14 @@ The relay also exposes `POST /events/batch` for the frontend. The browser's [err
 
 The <Svc name="journal" /> service exposes `GET /metrics/latency` returning per-stage `p50`/`p95`/`p99` for the order pipeline (`gateway → bus → oms → routedToChild → emsAck → filled`). Recent baselines and how they were measured live on the [Performance page](../../reference/performance/).
 
+## Session replay
+
+The <Svc name="replay-service" /> records full browser sessions via [rrweb](https://www.rrweb.io/) when an admin enables recording. Each row in the Session Replay panel offers three exports:
+
+- **Play** — open the rrweb player inline.
+- **JSON** — download the raw event stream (replays in any rrweb player).
+- **Video** — render a WebM in the browser using `MediaRecorder`. The renderer steps through the rrweb events, snapshots each frame at 10 fps, and encodes via VP9/VP8. Runs entirely client-side (no server-side ffmpeg or headless Chromium), which keeps the attack surface small at the cost of needing the operator's tab to stay open during render. WebM plays in every modern browser, Slack, and most video tools.
+
 ## Where to run what
 
 | Environment | Trading stack | LGTM stack | k6 | Watchtower |

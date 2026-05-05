@@ -138,6 +138,8 @@ function SessionRow({
   isAdmin: boolean;
 }) {
   const downloading = useSignal(false);
+  const renderingPct = useSignal<number | null>(null);
+  const renderAbort = useRef<AbortController | null>(null);
 
   async function handleDownload() {
     if (downloading.value) return;
@@ -158,6 +160,46 @@ function SessionRow({
       URL.revokeObjectURL(objectUrl);
     } finally {
       downloading.value = false;
+    }
+  }
+
+  async function handleRenderVideo() {
+    if (renderingPct.value !== null) {
+      renderAbort.current?.abort();
+      return;
+    }
+    renderingPct.value = 0;
+    const ctrl = new AbortController();
+    renderAbort.current = ctrl;
+    try {
+      const url = `/api/replay/sessions/${encodeURIComponent(session.id)}/events`;
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { events } = (await res.json()) as { events: import("@rrweb/types").eventWithTime[] };
+      const { renderReplayToWebM } = await import("../lib/replayVideoExport.ts");
+      const result = await renderReplayToWebM({
+        events,
+        signal: ctrl.signal,
+        onProgress: (p) => {
+          renderingPct.value = Math.round(p.percent);
+        },
+      });
+      const objectUrl = URL.createObjectURL(result.blob);
+      const a = document.createElement("a");
+      const stamp = new Date(session.startedAt).toISOString().replace(/[:.]/g, "-");
+      a.href = objectUrl;
+      a.download = `replay-${session.userName ?? session.userId}-${stamp}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        console.error("Render failed", err);
+      }
+    } finally {
+      renderingPct.value = null;
+      renderAbort.current = null;
     }
   }
 
@@ -194,7 +236,20 @@ function SessionRow({
           title="Download rrweb events as JSON"
           className="text-emerald-400/80 hover:text-emerald-300 disabled:text-gray-600 disabled:cursor-not-allowed mr-2"
         >
-          {downloading.value ? "..." : "Download"}
+          {downloading.value ? "..." : "JSON"}
+        </button>
+        <button
+          type="button"
+          onClick={handleRenderVideo}
+          disabled={!session.endedAt}
+          title={
+            renderingPct.value !== null
+              ? "Click to cancel rendering"
+              : "Render session as WebM video (runs in browser)"
+          }
+          className="text-emerald-400/80 hover:text-emerald-300 disabled:text-gray-600 disabled:cursor-not-allowed mr-2 tabular-nums"
+        >
+          {renderingPct.value !== null ? `${renderingPct.value}%` : "Video"}
         </button>
         {isAdmin && (
           <button
