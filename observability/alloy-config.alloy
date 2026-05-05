@@ -31,7 +31,7 @@ otelcol.processor.batch "default" {
 
 otelcol.exporter.otlphttp "tempo" {
   client {
-    endpoint = "http://tempo:3200/otlp"
+    endpoint = "http://tempo:4318"
   }
 }
 

@@ -35,19 +35,19 @@
       "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=\"gateway\",span_name=~\".*orders.*|.*submit.*\"}[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"gateway\",span_name=~\".*orders.*|.*submit.*\"}[5m])))",
           "legendFormat": "p50",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=\"gateway\",span_name=~\".*orders.*|.*submit.*\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"gateway\",span_name=~\".*orders.*|.*submit.*\"}[5m])))",
           "legendFormat": "p95",
           "refId": "B",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=\"gateway\",span_name=~\".*orders.*|.*submit.*\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"gateway\",span_name=~\".*orders.*|.*submit.*\"}[5m])))",
           "legendFormat": "p99",
           "refId": "C",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
@@ -71,8 +71,8 @@
       "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] } },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, service_name) (rate(traces_spanmetrics_latency_bucket{service_name=~\"gateway|oms|risk-engine|ems|journal|limit-algo|twap-algo|pov-algo|vwap-algo\"}[5m])))",
-          "legendFormat": "{{service_name}}",
+          "expr": "histogram_quantile(0.95, sum by (le, service) (rate(traces_spanmetrics_latency_bucket{service=~\"gateway|oms|risk-engine|ems|journal|limit-algo|twap-algo|pov-algo|vwap-algo\"}[5m])))",
+          "legendFormat": "{{service}}",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }

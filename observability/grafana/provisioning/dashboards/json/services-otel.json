@@ -17,7 +17,7 @@
         "label": "Service",
         "type": "query",
         "datasource": { "uid": "prometheus", "type": "prometheus" },
-        "query": { "query": "label_values(traces_spanmetrics_calls_total, service_name)", "refId": "Prom" },
+        "query": { "query": "label_values(traces_spanmetrics_calls_total, service)", "refId": "Prom" },
         "refresh": 2,
         "includeAll": true,
         "multi": true,
@@ -28,7 +28,7 @@
         "label": "Span / route",
         "type": "query",
         "datasource": { "uid": "prometheus", "type": "prometheus" },
-        "query": { "query": "label_values(traces_spanmetrics_calls_total{service_name=~\"$service\"}, span_name)", "refId": "Prom" },
+        "query": { "query": "label_values(traces_spanmetrics_calls_total{service=~\"$service\"}, span_name)", "refId": "Prom" },
         "refresh": 2,
         "includeAll": true,
         "multi": true,
@@ -66,7 +66,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(traces_spanmetrics_calls_total{service_name=~\"$service\"}[1m]))",
+          "expr": "sum(rate(traces_spanmetrics_calls_total{service=~\"$service\"}[1m]))",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
@@ -100,7 +100,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(traces_spanmetrics_calls_total{service_name=~\"$service\",status_code=\"STATUS_CODE_ERROR\"}[5m])) / clamp_min(sum(rate(traces_spanmetrics_calls_total{service_name=~\"$service\"}[5m])), 0.0001)",
+          "expr": "sum(rate(traces_spanmetrics_calls_total{service=~\"$service\",status_code=\"STATUS_CODE_ERROR\"}[5m])) / clamp_min(sum(rate(traces_spanmetrics_calls_total{service=~\"$service\"}[5m])), 0.0001)",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
@@ -130,7 +130,7 @@
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=~\"$service\"}[5m])))",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
@@ -153,7 +153,7 @@
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
       "targets": [
         {
-          "expr": "count(count by (service_name) (rate(traces_spanmetrics_calls_total[1m]) > 0))",
+          "expr": "count(count by (service) (rate(traces_spanmetrics_calls_total[1m]) > 0))",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
@@ -177,8 +177,8 @@
       "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "mean"] } },
       "targets": [
         {
-          "expr": "sum by (service_name) (rate(traces_spanmetrics_calls_total{service_name=~\"$service\"}[1m]))",
-          "legendFormat": "{{service_name}}",
+          "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{service=~\"$service\"}[1m]))",
+          "legendFormat": "{{service}}",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
@@ -201,8 +201,8 @@
       "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum", "lastNotNull"] } },
       "targets": [
         {
-          "expr": "sum by (service_name) (rate(traces_spanmetrics_calls_total{service_name=~\"$service\",status_code=\"STATUS_CODE_ERROR\"}[1m]))",
-          "legendFormat": "{{service_name}}",
+          "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{service=~\"$service\",status_code=\"STATUS_CODE_ERROR\"}[1m]))",
+          "legendFormat": "{{service}}",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
@@ -233,19 +233,19 @@
       "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=~\"$service\"}[5m])))",
           "legendFormat": "p50",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=~\"$service\"}[5m])))",
           "legendFormat": "p95",
           "refId": "B",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=~\"$service\"}[5m])))",
           "legendFormat": "p99",
           "refId": "C",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
@@ -269,8 +269,8 @@
       "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["max", "lastNotNull"] } },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (le, service_name) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[5m])))",
-          "legendFormat": "{{service_name}}",
+          "expr": "histogram_quantile(0.99, sum by (le, service) (rate(traces_spanmetrics_latency_bucket{service=~\"$service\"}[5m])))",
+          "legendFormat": "{{service}}",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
@@ -313,7 +313,7 @@
       ],
       "targets": [
         {
-          "expr": "topk(20, histogram_quantile(0.95, sum by (le, service_name, span_name) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[5m]))))",
+          "expr": "topk(20, histogram_quantile(0.95, sum by (le, service, span_name) (rate(traces_spanmetrics_latency_bucket{service=~\"$service\"}[5m]))))",
           "format": "table",
           "instant": true,
           "refId": "A",
@@ -348,7 +348,7 @@
       ],
       "targets": [
         {
-          "expr": "topk(20, sum by (service_name, span_name) (rate(traces_spanmetrics_calls_total{service_name=~\"$service\"}[5m])))",
+          "expr": "topk(20, sum by (service, span_name) (rate(traces_spanmetrics_calls_total{service=~\"$service\"}[5m])))",
           "format": "table",
           "instant": true,
           "refId": "A",
@@ -360,20 +360,20 @@
     {
       "id": 4,
       "type": "row",
-      "title": "Resources",
+      "title": "HTTP server",
       "gridPos": { "x": 0, "y": 33, "w": 24, "h": 1 },
       "collapsed": false
     },
     {
       "id": 50,
       "type": "timeseries",
-      "title": "Heap memory used (Deno)",
-      "description": "process.runtime.deno.memory.heap.used per service. Rising-and-not-falling lines are leaks.",
+      "title": "Active in-flight requests by service",
+      "description": "Per-service number of HTTP requests currently being handled by Deno.serve. Sustained high values point at a slow handler.",
       "gridPos": { "x": 0, "y": 34, "w": 12, "h": 8 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes",
+          "unit": "short",
           "color": { "mode": "palette-classic" },
           "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5 }
         }
@@ -381,8 +381,8 @@
       "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] } },
       "targets": [
         {
-          "expr": "process_runtime_deno_memory_heap_used_bytes{service_name=~\"$service\"}",
-          "legendFormat": "{{service_name}}",
+          "expr": "sum by (job) (http_server_active_requests)",
+          "legendFormat": "{{job}}",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
@@ -391,13 +391,13 @@
     {
       "id": 51,
       "type": "timeseries",
-      "title": "CPU time (Deno)",
-      "description": "Cumulative CPU time per service — use the rate() to read CPU usage.",
+      "title": "HTTP request body size by service",
+      "description": "Bytes received per second on inbound HTTP, broken out by service. Useful for spotting unusually chatty clients.",
       "gridPos": { "x": 12, "y": 34, "w": 12, "h": 8 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
+          "unit": "Bps",
           "color": { "mode": "palette-classic" },
           "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5 }
         }
@@ -405,8 +405,8 @@
       "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] } },
       "targets": [
         {
-          "expr": "rate(process_cpu_time_seconds_total{service_name=~\"$service\"}[1m])",
-          "legendFormat": "{{service_name}}",
+          "expr": "sum by (job) (rate(http_server_request_body_size_bytes_sum[1m]))",
+          "legendFormat": "{{job}}",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }

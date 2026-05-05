@@ -1,11 +1,18 @@
 ---
 title: Observability
-description: Metrics, logs and traces via the LGTM stack — independent of the trading platform.
+description: Metrics, logs and traces via the self-hosted LGTM stack on UAT.
 ---
 
+import { Aside } from "@astrojs/starlight/components";
 import Svc from "../../../components/Svc.astro";
 
 VETA emits metrics, logs and traces to a separate **LGTM** stack — Loki, Grafana, Tempo and Mimir/Prometheus, with Grafana Alloy collecting events. The trading stack runs fine without it; bring it up when investigating performance, debugging event flow, or generating data for the [Performance reference page](../../reference/performance/).
+
+<Aside type="caution" title="UAT only — not for production">
+The self-hosted LGTM stack and the OTel auto-instrumentation overlay described on this page are intended for the homelab/UAT environment. Production deployments should send OTLP to a managed observability vendor (Grafana Cloud, Honeycomb, Datadog, New Relic) rather than running their own collector + storage on the same host as the trading platform. Co-locating the observability backend with the workload it observes creates a noisy-neighbour failure mode where a metric spike crashes both the platform and the dashboard you would have used to diagnose it.
+
+The instrumentation itself — `OTEL_DENO=true`, the trace-propagating Kafka helpers, the `withSpan()` calls — works against any OTLP receiver. Only the receiver and storage choice changes.
+</Aside>
 
 ## LGTM stack
 
@@ -60,6 +67,19 @@ await withSpan("score-signal", async (span) => {
 ```
 
 When `OTEL_DENO` is unset, `withSpan()` is a no-op zero-cost call — safe to leave in production code paths.
+
+## Provisioned dashboards
+
+Grafana is auto-provisioned with the following dashboards under the **Trading** folder. They live in [`observability/grafana/provisioning/dashboards/`](https://github.com/milesburton/veta-trading-platform/tree/main/observability/grafana/provisioning/dashboards) and update on disk-change without a Grafana restart.
+
+| Dashboard | Source | What it shows |
+|-----------|--------|---------------|
+| **Trading Overview** | Loki via kafka-relay | Order pipeline counters, fill rate, algo heartbeat, service version table, live event feeds. Works without OTel — just needs the kafka-relay → Loki path. |
+| **Service Performance (OTel)** | Tempo span-metrics + Loki | Pan-platform request rate, error rate, latency p50/p95/p99 per service. Top-N tables of slowest and busiest spans. Service-scoped log panel at the bottom. |
+| **Order Pipeline (Traces)** | Tempo + Loki | Trace-driven view of the order lifecycle, including per-stage p95 latency across gateway/oms/risk/algos/ems/journal, a live nodeGraph from Tempo's service-graph processor, recent error and slow-trace tables. |
+| **k6 Prometheus** | Prometheus | Bundled k6 dashboard for load-test runs. |
+
+The two OTel dashboards depend on the `compose.observability.yml` overlay being active — without it there are no spans to render.
 
 ## Pipeline-stage latency
 
