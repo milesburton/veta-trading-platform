@@ -22,6 +22,7 @@ const tooltip = `Docs built ${
   rel="noopener"
   title={tooltip}
 >
+  <span class="veta-env">DOCS</span>
   <span class="veta-version">v{BUILD_INFO.version}</span>
   <span class="veta-sep">·</span>
   <span class="veta-sha">{BUILD_INFO.commitSha}</span>
@@ -50,6 +51,11 @@ const tooltip = `Docs built ${
   .veta-build-chip:hover {
     color: var(--sl-color-white);
     border-color: var(--sl-color-gray-3);
+  }
+  .veta-env {
+    color: var(--sl-color-text-accent);
+    font-weight: 700;
+    letter-spacing: 0.05em;
   }
   .veta-version {
     font-weight: 600;

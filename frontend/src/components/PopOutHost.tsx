@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import type { ChannelContextValue } from "../contexts/ChannelContext.tsx";
 import { ChannelContext, useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+import { DEPLOYMENT } from "../store/servicesApi.ts";
 import { saveOrderTicketWindowSize } from "../store/uiSlice.ts";
 import { AdminPanel } from "./AdminPanel.tsx";
 import { AlgoMonitor } from "./AlgoMonitor.tsx";
@@ -25,6 +26,13 @@ import { ObservabilityPanel } from "./ObservabilityPanel.tsx";
 import { OrderBlotter } from "./OrderBlotter.tsx";
 import { OrderProgressPanel } from "./OrderProgressPanel.tsx";
 import { OrderTicket } from "./OrderTicket.tsx";
+
+const ENV_TITLE_TAG: Record<string, string> = {
+  local: "[LOCAL]",
+  uat: "[UAT]",
+  fly: "[DEMO]",
+};
+const envTag = ENV_TITLE_TAG[DEPLOYMENT] ?? `[${DEPLOYMENT.toUpperCase()}]`;
 
 function CandleChartForPopOut() {
   const { incoming } = useChannelContext();
@@ -196,7 +204,7 @@ export function PopOutHost({
 
   useEffect(() => {
     const title = PANEL_TITLES[panelType as PanelId] ?? panelType;
-    document.title = `${title} — VETA`;
+    document.title = `${envTag} ${title} — VETA`;
   }, [panelType]);
 
   useEffect(() => {

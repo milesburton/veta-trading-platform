@@ -1,6 +1,17 @@
 import { useSignal } from "@preact/signals-react";
 import { useEffect, useRef } from "react";
+import { DEPLOYMENT } from "../store/servicesApi.ts";
 import { BuildInfo } from "./BuildInfo.tsx";
+
+const ENV_INLINE_TAG: Record<string, { label: string; cls: string }> = {
+  local: { label: "LOCAL", cls: "text-sky-400" },
+  uat: { label: "UAT", cls: "text-amber-300" },
+  fly: { label: "DEMO", cls: "text-emerald-300" },
+};
+const envInline = ENV_INLINE_TAG[DEPLOYMENT] ?? {
+  label: DEPLOYMENT.toUpperCase(),
+  cls: "text-gray-400",
+};
 
 interface ReadyServices {
   marketSim: boolean;
@@ -192,7 +203,8 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
                   data-testid="startup-version"
                   className="mt-1 text-[10px] font-mono text-gray-500 tabular-nums"
                 >
-                  v{commitSha.slice(0, 7)}
+                  <span className={`mr-2 font-semibold ${envInline.cls}`}>{envInline.label}</span>
+                  <span>v{commitSha.slice(0, 7)}</span>
                   {buildDate && <span className="ml-2 text-gray-600">{buildDate}</span>}
                 </div>
               )}
@@ -256,6 +268,7 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
             <BuildInfo
               buildDate={buildDate}
               commitSha={commitSha}
+              env={DEPLOYMENT}
               className="text-[10px] text-gray-600 tabular-nums"
             />
             <a

@@ -372,15 +372,37 @@ function DataFreshness() {
   );
 }
 
+const ENV_BADGE_STYLES: Record<string, { label: string; title: string; cls: string }> = {
+  local: {
+    label: "local",
+    title: "Local development build",
+    cls: "bg-sky-900/50 text-sky-400 border-sky-800",
+  },
+  uat: {
+    label: "uat",
+    title: "Internal UAT environment — not production",
+    cls: "bg-amber-900/50 text-amber-300 border-amber-800",
+  },
+  fly: {
+    label: "demo",
+    title: "Public Fly.io demo deployment",
+    cls: "bg-emerald-900/40 text-emerald-300 border-emerald-800",
+  },
+};
+
 function EnvironmentBadge() {
-  if (DEPLOYMENT !== "local") return null;
+  const style = ENV_BADGE_STYLES[DEPLOYMENT] ?? {
+    label: DEPLOYMENT,
+    title: `${DEPLOYMENT} deployment`,
+    cls: "bg-gray-800 text-gray-300 border-gray-700",
+  };
   return (
     <span
       data-testid="env-badge"
-      title="Local development build"
-      className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold uppercase tracking-wider bg-sky-900/50 text-sky-400 border border-sky-800"
+      title={style.title}
+      className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold uppercase tracking-wider border ${style.cls}`}
     >
-      local
+      {style.label}
     </span>
   );
 }
@@ -575,6 +597,7 @@ export function AppHeader() {
           <BuildInfo
             buildDate={import.meta.env.VITE_BUILD_DATE}
             commitSha={import.meta.env.VITE_COMMIT_SHA}
+            env={DEPLOYMENT}
             className="text-[10px] text-gray-500 tabular-nums"
           />
           <span className="tabular-nums text-gray-500">{time.value}</span>
