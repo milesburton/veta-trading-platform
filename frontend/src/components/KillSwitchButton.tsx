@@ -231,32 +231,41 @@ export function KillSwitchButton() {
 
   return (
     <>
-      {/* ── Header button ── */}
+      {/* ── Header button ──
+       * Only goes red when at least one block is active. In standby it's a
+       * neutral outline so it doesn't compete visually with real alerts. */}
       <button
         type="button"
         onClick={resetAndOpen}
         title={
           activeCount > 0
-            ? `Kill switch active — ${activeCount} block(s)`
-            : "Kill switch — cancel or resume active orders"
+            ? `Kill switch ACTIVE — ${activeCount} block(s) in force. Click to manage.`
+            : "Kill switch standby — click to cancel or resume orders. Action is audited."
         }
         data-testid="kill-switch-btn"
-        className={`flex items-center gap-1.5 px-2 py-1 rounded border font-semibold text-[11px] tracking-wide transition-all ${
+        className={`flex items-center gap-1.5 px-2.5 py-1 rounded border font-semibold text-[11px] tracking-wide transition-all ${
           activeCount > 0
             ? "border-red-500 bg-red-600 text-white animate-pulse"
-            : "border-red-700 bg-red-950/60 text-red-400 hover:bg-red-900/70 hover:border-red-500 hover:text-red-300"
+            : "border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:border-amber-700/70 hover:text-amber-300"
         }`}
         aria-label={
-          activeCount > 0 ? `Kill switch active, ${activeCount} block(s)` : "Open kill switch"
+          activeCount > 0 ? `Kill switch active, ${activeCount} block(s)` : "Kill switch standby"
         }
       >
-        <span aria-hidden="true">{activeCount > 0 ? "!" : "⚠"}</span>
-        Kill Switch
-        {activeCount > 0 && (
-          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white text-red-700 text-[9px] font-bold leading-none">
-            {activeCount}
-          </span>
-        )}
+        <span
+          aria-hidden="true"
+          className={`inline-block w-1.5 h-1.5 rounded-full ${
+            activeCount > 0 ? "bg-white animate-pulse" : "bg-gray-600"
+          }`}
+        />
+        <span>Kill Switch</span>
+        <span
+          className={`text-[9px] font-bold uppercase tracking-wider ${
+            activeCount > 0 ? "text-white" : "text-gray-500"
+          }`}
+        >
+          {activeCount > 0 ? `Active · ${activeCount}` : "Standby"}
+        </span>
       </button>
 
       {/* ── Dialog ── */}

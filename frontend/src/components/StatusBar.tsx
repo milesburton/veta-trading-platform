@@ -598,7 +598,7 @@ export function AppHeader() {
             buildDate={import.meta.env.VITE_BUILD_DATE}
             commitSha={import.meta.env.VITE_COMMIT_SHA}
             env={DEPLOYMENT}
-            className="text-[10px] text-gray-500 tabular-nums"
+            className="px-2 py-0.5 rounded border border-gray-800 bg-gray-950/60 text-[10px] text-gray-400 tabular-nums"
           />
           <span className="tabular-nums text-gray-500">{time.value}</span>
           {user && (
