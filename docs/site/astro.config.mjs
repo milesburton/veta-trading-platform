@@ -131,6 +131,7 @@ export default defineConfig({
         {
           label: "Reference",
           items: [
+            { label: "Glossary", slug: "reference/glossary" },
             { label: "API gateway", slug: "reference/api-gateway" },
             { label: "RBAC & permissions", slug: "reference/rbac" },
             { label: "Trading styles", slug: "reference/trading-styles" },

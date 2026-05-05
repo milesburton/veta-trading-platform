@@ -1,0 +1,12 @@
+---
+title: Glossary
+description: Searchable index of every domain term, acronym and service name the platform uses.
+---
+
+import Glossary from "../../../components/Glossary.astro";
+
+The trading platform leans on a lot of jargon — execution algorithms, options Greeks, fixed-income spreads, infrastructure components and observability primitives. This page is the single source of truth for what each term means in VETA specifically. Entries link to the source file when one exists, so "what does this term actually do in code" is one click away.
+
+The list is generated at build time from [`docs/site/src/data/glossary.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/docs/site/src/data/glossary.ts). Cross-references are validated during the docs build — a dangling `seeAlso` will fail the build rather than ship a broken link.
+
+<Glossary />
