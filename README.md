@@ -30,11 +30,11 @@ VETA is a simulation-first equities and fixed-income trading platform designed f
   <img src="docs/screenshots/01-trading-dashboard.png" alt="Trading Dashboard" width="800" />
 </p>
 
-## ★ Key documents
+## Key documents
 
-- [★ Documentation index](docs/site/src/content/docs/index.mdx)
-- [★ Tech stack](docs/site/src/content/docs/reference/tech-stack.mdx)
-- [★ Changelog](CHANGELOG.md)
+- [Documentation index](docs/site/src/content/docs/index.mdx)
+- [Tech stack](docs/site/src/content/docs/reference/tech-stack.mdx)
+- [Changelog](CHANGELOG.md)
 
 ## Docs by audience
 
