@@ -1,6 +1,6 @@
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { getCookieToken } from "@veta/auth";
-import { logger } from "@veta/logger";
+import { logger, registerLogSink } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { serveDir } from "jsr:@std/http@1.0.25/file-server";
 import {
@@ -18,6 +18,7 @@ import {
 import { handleAdminRoute } from "./routes/admin.ts";
 import { handleAlertsRoute } from "./routes/alerts.ts";
 import { handleAnalyticsRoute } from "./routes/analytics.ts";
+import { handleLogsRoute, recordLogLine } from "./routes/logs.ts";
 import { handleProxiedRoutes } from "./routes/proxied.ts";
 import { handleWebSocketRoute } from "./routes/websocket.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
@@ -26,6 +27,10 @@ import { makeValidateToken } from "./auth.ts";
 const PORT = Number(Deno.env.get("GATEWAY_PORT")) || 5_011;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const STARTED_AT = Date.now();
+
+registerLogSink((level, msg, raw) => {
+  recordLogLine({ service: "gateway", level, message: msg }, raw);
+});
 
 const MARKET_SIM_URL = `http://${Deno.env.get("MARKET_SIM_HOST") ?? "localhost"}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
 const JOURNAL_URL = `http://${Deno.env.get("JOURNAL_HOST") ?? "localhost"}:${Deno.env.get("JOURNAL_PORT") ?? "5009"}`;
@@ -476,6 +481,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   const adminResponse = await handleAdminRoute(req, path, gatewayContext);
   if (adminResponse) return adminResponse;
+
+  const logsResponse = await handleLogsRoute(req, path, gatewayContext);
+  if (logsResponse) return logsResponse;
 
 
   // Self-alias: /api/gateway/* → strip prefix and re-issue to gateway's own routes.

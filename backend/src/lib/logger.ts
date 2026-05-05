@@ -43,6 +43,20 @@ function serializeCtx(ctx: Ctx | undefined): Ctx {
   return out;
 }
 
+export interface LogSink {
+  (level: LogLevel, msg: string, line: string, ctx?: Ctx): void;
+}
+
+const sinks: LogSink[] = [];
+
+export function registerLogSink(sink: LogSink): () => void {
+  sinks.push(sink);
+  return () => {
+    const idx = sinks.indexOf(sink);
+    if (idx >= 0) sinks.splice(idx, 1);
+  };
+}
+
 function emit(level: LogLevel, msg: string, ctx?: Ctx): void {
   if (LEVEL_ORDER[level] < THRESHOLD) return;
   let line: string;
@@ -69,6 +83,13 @@ function emit(level: LogLevel, msg: string, ctx?: Ctx): void {
     Deno.stdout.writeSync(encoder.encode(line));
   } catch {
     // stdout may be unavailable in rare test scenarios; silently drop
+  }
+  for (const sink of sinks) {
+    try {
+      sink(level, msg, line.trimEnd(), ctx);
+    } catch {
+      // Sinks must not break the logger
+    }
   }
 }
 

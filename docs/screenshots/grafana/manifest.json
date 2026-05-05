@@ -1,0 +1,125 @@
+{
+  "capturedAt": "2026-05-05T20:10:39.409Z",
+  "dashboards": [
+    {
+      "uid": "veta-order-pipeline-traces",
+      "slug": "veta-order-pipeline-traces",
+      "title": "Order Pipeline (Traces)",
+      "description": "Trace-driven view of the order lifecycle. The platform's HTTP and Kafka hops both propagate trace context, so a single submitted order produces one connected trace from Gateway through OMS, Risk, Algo, EMS, and Journal. This dashboard surfaces the slowest, the failed, and the most active.",
+      "panels": [
+        {
+          "id": 10,
+          "title": "Order submission latency (gateway span p50/p95/p99)",
+          "description": "Latency of the gateway's order-submission span — what the user actually waited for.",
+          "file": "veta-order-pipeline-traces/10-order-submission-latency-gateway-span-p50-p95-p99.png"
+        },
+        {
+          "id": 11,
+          "title": "Per-stage latency (p95)",
+          "description": "p95 latency for each pipeline service. Stages with rising lines are bottlenecks.",
+          "file": "veta-order-pipeline-traces/11-per-stage-latency-p95.png"
+        },
+        {
+          "id": 40,
+          "title": "Order events from bus",
+          "description": "Order lifecycle events as observed by kafka-relay → Loki. Use this when traces are too detailed.",
+          "file": "veta-order-pipeline-traces/40-order-events-from-bus.png"
+        }
+      ]
+    },
+    {
+      "uid": "veta-services-otel",
+      "slug": "veta-services-otel",
+      "title": "Service Performance (OTel)",
+      "description": "Per-service request rate, latency, errors, and resource usage — sourced from Deno's built-in OpenTelemetry instrumentation. All panels respect the service variable, so pick a service from the top to scope the view.",
+      "panels": [
+        {
+          "id": 21,
+          "title": "Error rate by service",
+          "description": "Errors per second per service.",
+          "file": "veta-services-otel/21-error-rate-by-service.png"
+        },
+        {
+          "id": 51,
+          "title": "HTTP request body size by service",
+          "description": "Bytes received per second on inbound HTTP, broken out by service. Useful for spotting unusually chatty clients.",
+          "file": "veta-services-otel/51-http-request-body-size-by-service.png"
+        },
+        {
+          "id": 60,
+          "title": "Inter-service request rate",
+          "description": "Edges of the service graph — who calls whom, how often. Sourced from Tempo's service-graph processor.",
+          "file": "veta-services-otel/60-inter-service-request-rate.png"
+        },
+        {
+          "id": 61,
+          "title": "Inter-service p95 latency",
+          "description": "p95 latency for each call-pair in the service graph — useful for tracking which downstream calls dominate end-to-end latency.",
+          "file": "veta-services-otel/61-inter-service-p95-latency.png"
+        }
+      ]
+    },
+    {
+      "uid": "trading",
+      "slug": "trading",
+      "title": "Trading Overview",
+      "description": "",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Service Health",
+          "description": "",
+          "file": "trading/1-service-health.png"
+        },
+        {
+          "id": 2,
+          "title": "Order Pipeline — Submitted / Filled / Rejected / Expired",
+          "description": "",
+          "file": "trading/2-order-pipeline-submitted-filled-rejected-expired.png"
+        },
+        {
+          "id": 3,
+          "title": "HTTP Request Rate (req/s per service)",
+          "description": "",
+          "file": "trading/3-http-request-rate-req-s-per-service.png"
+        },
+        {
+          "id": 4,
+          "title": "HTTP Latency p99 (all services)",
+          "description": "",
+          "file": "trading/4-http-latency-p99-all-services.png"
+        },
+        {
+          "id": 5,
+          "title": "Algo Heartbeat Rate (beats/min per strategy)",
+          "description": "",
+          "file": "trading/5-algo-heartbeat-rate-beats-min-per-strategy.png"
+        },
+        {
+          "id": 6,
+          "title": "Order Funnel (selected window)",
+          "description": "Counts of orders at each lifecycle stage over the selected time window",
+          "file": "trading/6-order-funnel-selected-window.png"
+        },
+        {
+          "id": 7,
+          "title": "Fill Rate % (last 5 min)",
+          "description": "",
+          "file": "trading/7-fill-rate-last-5-min.png"
+        },
+        {
+          "id": 11,
+          "title": "Child Order & Fill Throughput (per min)",
+          "description": "",
+          "file": "trading/11-child-order-fill-throughput-per-min.png"
+        },
+        {
+          "id": 12,
+          "title": "Process Resident Memory (MB) per service",
+          "description": "",
+          "file": "trading/12-process-resident-memory-mb-per-service.png"
+        }
+      ]
+    }
+  ]
+}

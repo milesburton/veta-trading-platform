@@ -9,7 +9,8 @@
     "dev": "astro dev",
     "prebuild": "npm run generate",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "capture:grafana": "node scripts/capture-grafana-screenshots.mjs"
   },
   "keywords": [],
   "author": "",

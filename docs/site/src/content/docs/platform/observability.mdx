@@ -5,6 +5,7 @@ description: Metrics, logs and traces via the self-hosted LGTM stack on UAT.
 
 import { Aside } from "@astrojs/starlight/components";
 import Svc from "../../../components/Svc.astro";
+import GrafanaScreenshots from "../../../components/GrafanaScreenshots.astro";
 
 VETA emits metrics, logs and traces to a separate **LGTM** stack — Loki, Grafana, Tempo and Mimir/Prometheus, with Grafana Alloy collecting events. The trading stack runs fine without it; bring it up when investigating performance, debugging event flow, or generating data for the [Performance reference page](../../reference/performance/).
 
@@ -80,6 +81,23 @@ Grafana is auto-provisioned with the following dashboards under the **Trading** 
 | **k6 Prometheus** | Prometheus | Bundled k6 dashboard for load-test runs. |
 
 The two OTel dashboards depend on the `compose.observability.yml` overlay being active — without it there are no spans to render.
+
+### Live snapshots
+
+The screenshots below are captured directly from the homelab Grafana via its [image-renderer](https://grafana.com/docs/grafana/latest/setup-grafana/image-rendering/) by [`docs/site/scripts/capture-grafana-screenshots.mjs`](https://github.com/milesburton/veta-trading-platform/blob/main/docs/site/scripts/capture-grafana-screenshots.mjs). To refresh, run `npm run capture:grafana` from `docs/site/` against a host with the LGTM stack up. Click any panel for the full-resolution version.
+
+<GrafanaScreenshots />
+
+## In-app log search
+
+The trading UI's header has a **Logs** button that opens a drawer for searching backend log output without leaving the platform. It hits `GET /api/gateway/logs/query` with optional `service`, `level`, `q` (free-text), `since` (5m/15m/1h/6h) and `limit` parameters.
+
+The gateway resolves the query in this order:
+
+1. **Loki** if `LOKI_URL` is configured on the gateway (typical UAT setup) — the full LogQL search runs against every service's structured log stream.
+2. **In-process ring buffer** otherwise — the gateway records its own log lines into a 2,000-entry buffer via `registerLogSink()` so at least the gateway's view is searchable when no external log store is available. This is the Fly demo's mode.
+
+The route is gated to non-viewer roles. Logs may contain user identifiers and other sensitive context, so external-clients and viewers see a 403 when they hit the endpoint directly.
 
 ## Pipeline-stage latency
 

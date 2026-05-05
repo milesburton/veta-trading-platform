@@ -1,0 +1,161 @@
+---
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, "..", "..", "..", "..", "..");
+const manifestPath = path.resolve(repoRoot, "docs/screenshots/grafana/manifest.json");
+
+interface Panel {
+  id: number;
+  title: string;
+  description: string;
+  file: string;
+}
+interface Dashboard {
+  uid: string;
+  slug: string;
+  title: string;
+  description: string;
+  panels: Panel[];
+}
+interface Manifest {
+  capturedAt: string;
+  dashboards: Dashboard[];
+}
+
+const docsBase = "/veta-trading-platform";
+
+let manifest: Manifest | null = null;
+if (fs.existsSync(manifestPath)) {
+  manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+}
+
+const captured = manifest ? new Date(manifest.capturedAt) : null;
+const ageDays = captured ? Math.floor((Date.now() - captured.getTime()) / 86_400_000) : null;
+---
+
+{!manifest && (
+  <div class="grafana-empty">
+    <p>
+      No Grafana screenshots captured yet. Bring up the LGTM stack with the renderer
+      sidecar, then run <code>npm run capture:grafana</code> from <code>docs/site/</code>.
+    </p>
+  </div>
+)}
+
+{manifest && (
+  <div class="grafana-screenshots">
+    <p class="capture-meta">
+      Captured {ageDays === 0 ? "today" : `${ageDays} day${ageDays === 1 ? "" : "s"} ago`} from
+      the homelab LGTM stack — <time datetime={manifest.capturedAt}>{manifest.capturedAt}</time>.
+    </p>
+
+    {manifest.dashboards.map((dash) => (
+      <section class="grafana-dashboard">
+        <h2 id={`dash-${dash.slug}`}>{dash.title}</h2>
+        {dash.description && <p class="dashboard-description">{dash.description}</p>}
+        <div class="panel-grid">
+          {dash.panels.map((panel) => (
+            <figure class="panel-card">
+              <a href={`${docsBase}/screenshots/grafana/${panel.file}`} target="_blank" rel="noopener">
+                <img
+                  src={`${docsBase}/screenshots/grafana/${panel.file}`}
+                  alt={panel.title}
+                  loading="lazy"
+                />
+              </a>
+              <figcaption>
+                <strong>{panel.title}</strong>
+                {panel.description && <span>{panel.description}</span>}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+)}
+
+<style>
+  .grafana-empty {
+    border: 1px dashed var(--sl-color-gray-5);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    color: var(--sl-color-gray-3);
+    font-size: 0.9rem;
+  }
+  .grafana-empty code {
+    background: var(--sl-color-bg-sidebar);
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+
+  .capture-meta {
+    color: var(--sl-color-gray-3);
+    font-size: 0.8rem;
+    margin: 0 0 1.5rem;
+  }
+
+  .grafana-dashboard {
+    margin: 0 0 2.5rem;
+  }
+  .grafana-dashboard h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.05rem;
+  }
+  .dashboard-description {
+    margin: 0 0 1rem;
+    color: var(--sl-color-gray-3);
+    font-size: 0.85rem;
+  }
+
+  .panel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 1rem;
+  }
+
+  .panel-card {
+    margin: 0;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 8px;
+    background: var(--sl-color-bg-sidebar);
+    overflow: hidden;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .panel-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--sl-color-text-accent);
+  }
+
+  .panel-card a {
+    display: block;
+    line-height: 0;
+  }
+  .panel-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .panel-card figcaption {
+    padding: 0.6rem 0.85rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    border-top: 1px solid var(--sl-color-gray-6);
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .panel-card figcaption strong {
+    color: var(--sl-color-white);
+    font-weight: 600;
+  }
+  .panel-card figcaption span {
+    color: var(--sl-color-gray-3);
+    font-size: 0.74rem;
+  }
+</style>

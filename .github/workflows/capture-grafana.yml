@@ -1,0 +1,50 @@
+name: Capture Grafana screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      grafana_url:
+        description: "Grafana base URL reachable from the runner (e.g. https://grafana.example.com)"
+        required: true
+      grafana_user:
+        description: "Grafana basic-auth username"
+        required: false
+        default: "admin"
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    name: Capture and commit Grafana screenshots
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        working-directory: docs/site
+        run: npm ci
+
+      - name: Capture screenshots
+        working-directory: docs/site
+        env:
+          GRAFANA_URL: ${{ inputs.grafana_url }}
+          GRAFANA_USER: ${{ inputs.grafana_user }}
+          GRAFANA_PASS: ${{ secrets.GRAFANA_PASS }}
+        run: npm run capture:grafana
+
+      - name: Commit screenshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots/grafana
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "chore(docs): refresh Grafana screenshots"
+          git push

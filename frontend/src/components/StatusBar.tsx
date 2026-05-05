@@ -25,6 +25,7 @@ import { useDashboard } from "./dashboard/DashboardContext.tsx";
 import type { TabChannelConfig } from "./dashboard/panelRegistry.ts";
 import { DATA_DEPTH_DRAWER_ID, DataDepthDrawer } from "./drawers/DataDepthDrawer.tsx";
 import { useDrawers } from "./drawers/DrawersContext.tsx";
+import { LOGS_DRAWER_ID, LogsDrawer } from "./drawers/LogsDrawer.tsx";
 import { KillSwitchButton } from "./KillSwitchButton.tsx";
 import { ServiceStatus } from "./ServiceStatus.tsx";
 import { TemplatePicker } from "./TemplatePicker.tsx";
@@ -407,6 +408,30 @@ function EnvironmentBadge() {
   );
 }
 
+function LogsButton() {
+  const { toggle, isOpen } = useDrawers();
+  const open = isOpen(LOGS_DRAWER_ID);
+  return (
+    <button
+      type="button"
+      onClick={() => toggle(LOGS_DRAWER_ID)}
+      title="Open log search (Loki-backed when available, ring-buffered fallback otherwise)"
+      data-testid="logs-btn"
+      aria-pressed={open}
+      className={`flex items-center gap-1.5 px-2 py-1 rounded border font-semibold text-[11px] tracking-wide transition-all ${
+        open
+          ? "border-emerald-700 bg-emerald-900/30 text-emerald-300"
+          : "border-gray-700 bg-gray-800/60 text-gray-400 hover:border-emerald-700 hover:text-emerald-300"
+      }`}
+    >
+      <svg aria-hidden="true" viewBox="0 0 16 16" width="11" height="11" fill="currentColor">
+        <path d="M2 2h12v2H2zm0 5h12v2H2zm0 5h12v2H2z" />
+      </svg>
+      Logs
+    </button>
+  );
+}
+
 const DATA_DEPTH_THRESHOLDS = { good: 7, limited: 1 };
 
 function dataQualityLabel(days: number): {
@@ -612,6 +637,7 @@ export function AppHeader() {
               <div data-testid="theme-selector">
                 <ThemeSwitcher />
               </div>
+              <LogsButton />
               <AlertCentreButton services={services} />
             </>
           )}
@@ -662,6 +688,7 @@ export function AppHeader() {
         </div>
       </div>
       <DataDepthDrawer />
+      <LogsDrawer />
     </div>
   );
 }
