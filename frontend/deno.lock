@@ -4420,6 +4420,7 @@
         "npm:electron-builder@^26.8.1",
         "npm:electron@^39.8.5",
         "npm:flexlayout-react@~0.8.18",
+        "npm:html-to-image@^1.11.13",
         "npm:husky@^9.1.7",
         "npm:jsdom@^28.1.0",
         "npm:lightweight-charts@^5.1.0",

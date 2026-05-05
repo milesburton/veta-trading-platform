@@ -25,7 +25,7 @@ export interface RenderResult {
   height: number;
 }
 
-function pickMimeType(): { mimeType: string; ext: string } {
+export function pickMimeType(): { mimeType: string; ext: string } {
   const candidates = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
   for (const m of candidates) {
     if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(m)) {
@@ -35,7 +35,7 @@ function pickMimeType(): { mimeType: string; ext: string } {
   return { mimeType: "video/webm", ext: "webm" };
 }
 
-function timeRangeOfSession(events: eventWithTime[]): { start: number; end: number } {
+export function timeRangeOfSession(events: eventWithTime[]): { start: number; end: number } {
   if (events.length === 0) return { start: 0, end: 0 };
   let start = events[0].timestamp;
   let end = start;
@@ -46,7 +46,7 @@ function timeRangeOfSession(events: eventWithTime[]): { start: number; end: numb
   return { start, end };
 }
 
-function viewportFromEvents(events: eventWithTime[]): { width: number; height: number } {
+export function viewportFromEvents(events: eventWithTime[]): { width: number; height: number } {
   for (const e of events) {
     const meta = e as { type: number; data?: { width?: number; height?: number } };
     if (meta.type === 4 && meta.data?.width && meta.data?.height) {
