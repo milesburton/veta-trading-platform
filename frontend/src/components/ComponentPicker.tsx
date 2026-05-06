@@ -60,6 +60,7 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "symbol-search": "Search by symbol, RIC, BBG ticker, ISIN, or paste a Bloomberg trade",
   "dev-tools": "UAT debugging — fire test alerts, inject trades, manage mute rules",
   "data-depth": "Per-symbol data depth — sortable list with candle counts and span days",
+  scenarios: "Save and replay a deterministic trading scenario — same seed, same fills",
 };
 
 export function ComponentPicker() {

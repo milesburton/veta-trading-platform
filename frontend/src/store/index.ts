@@ -27,6 +27,7 @@ import { observabilitySlice } from "./observabilitySlice.ts";
 import { ordersSlice } from "./ordersSlice.ts";
 import { replayApi } from "./replayApi.ts";
 import { riskApi } from "./riskApi.ts";
+import { scenariosApi } from "./scenariosApi.ts";
 import { servicesApi } from "./servicesApi.ts";
 import { themeSlice } from "./themeSlice.ts";
 import { uiSlice } from "./uiSlice.ts";
@@ -61,6 +62,7 @@ export const store = configureStore({
     [newsApi.reducerPath]: newsApi.reducer,
     [replayApi.reducerPath]: replayApi.reducer,
     [riskApi.reducerPath]: riskApi.reducer,
+    [scenariosApi.reducerPath]: scenariosApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -74,6 +76,7 @@ export const store = configureStore({
       .concat(newsApi.middleware)
       .concat(replayApi.middleware)
       .concat(riskApi.middleware)
+      .concat(scenariosApi.middleware)
       .concat(userApi.middleware)
       .concat(gatewayMiddleware)
       .concat(alertsMiddleware)

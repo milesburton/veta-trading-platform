@@ -63,6 +63,7 @@ export const PANEL_IDS = [
   "symbol-search",
   "dev-tools",
   "data-depth",
+  "scenarios",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -118,6 +119,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "symbol-search": "Symbol Search (find instruments)",
   "dev-tools": "Dev Tools (UAT debugging)",
   "data-depth": "Market Data Depth (per-symbol history)",
+  scenarios: "Scenarios (deterministic replay)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -208,6 +210,8 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "UAT debugging toolkit — fire test alerts (all severities), inject demo trades, run load tests, manage mute rules, and inspect connection state",
   "data-depth":
     "Per-symbol market data depth — sortable list of all tracked symbols with candle count, span days, and warning thresholds",
+  scenarios:
+    "Save and replay deterministic trading scenarios — same seed reproduces the same fills, so an algo regression is visible immediately",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -296,6 +300,7 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "symbol-search": { out: true, in: false },
   "dev-tools": { out: false, in: false },
   "data-depth": { out: false, in: false },
+  scenarios: { out: false, in: false },
 };
 
 export type TradingStyle =
@@ -544,6 +549,7 @@ export const PANEL_PERMISSIONS: Record<PanelId, ReadonlySet<AuthRole>> = {
   ]),
   "dev-tools": new Set<AuthRole>(["admin"]),
   "data-depth": new Set<AuthRole>(DESK_ROLES),
+  scenarios: new Set<AuthRole>(["trader", "admin"]),
 };
 
 export const PANEL_TRADING_STYLES: Partial<Record<PanelId, ReadonlySet<TradingStyle>>> = {
