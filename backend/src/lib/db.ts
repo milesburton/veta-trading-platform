@@ -14,3 +14,4 @@ export const usersPool = new Pool(resolveUrl("USERS"), 12, true);
 export const intelligencePool = new Pool(resolveUrl("INTELLIGENCE"), 3, true);
 export const llmAdvisoryPool = new Pool(resolveUrl("LLM_ADVISORY"), 3, true);
 export const replayPool = new Pool(resolveUrl("REPLAY"), 3, true);
+export const riskPool = new Pool(resolveUrl("RISK"), 3, true);

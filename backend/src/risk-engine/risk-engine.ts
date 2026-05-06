@@ -2,6 +2,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { corsOptions, json, parseBody } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer, type MsgProducer } from "@veta/messaging";
+import { createConfigStore } from "./configStore.ts";
 import {
   CheckRequestSchema,
   type RiskConfig,
@@ -37,6 +38,14 @@ const config: RiskConfig = {
   breakerCooldownMs: 60_000,
   breakersEnabled: true,
 };
+
+const configStore = createConfigStore(config);
+
+if (!TEST_MODE) {
+  configStore.load().then(() => {
+    Object.assign(config, configStore.current().config);
+  });
+}
 
 const prices: Record<string, number> = {};
 const volumes: Record<string, number> = {};
@@ -477,7 +486,13 @@ Deno.serve({ port: PORT }, async (req) => {
   }
 
   if (path === "/config" && req.method === "GET") {
-    return json(config);
+    return json({ ...config, version: configStore.versionId() });
+  }
+
+  if (path === "/config/history" && req.method === "GET") {
+    const limit = Number(new URL(req.url).searchParams.get("limit") ?? "50");
+    const history = await configStore.history(Math.min(Math.max(limit, 1), 200));
+    return json({ history });
   }
 
   if (path === "/config" && req.method === "PUT") {
@@ -487,22 +502,35 @@ Deno.serve({ port: PORT }, async (req) => {
     if (body.maxDailyLoss !== undefined && body.maxDailyLoss >= 0) {
       return json({ error: "maxDailyLoss must be negative" }, 400);
     }
-    if (body.fatFingerPct !== undefined) config.fatFingerPct = Math.max(0.1, body.fatFingerPct);
-    if (body.maxOpenOrders !== undefined) config.maxOpenOrders = Math.max(1, body.maxOpenOrders);
-    if (body.duplicateWindowMs !== undefined) config.duplicateWindowMs = Math.max(50, body.duplicateWindowMs);
-    if (body.maxOrdersPerSecond !== undefined) config.maxOrdersPerSecond = Math.max(1, body.maxOrdersPerSecond);
-    if (body.maxAdvPct !== undefined) config.maxAdvPct = Math.max(0.1, body.maxAdvPct);
-    if (body.maxGrossNotional !== undefined) config.maxGrossNotional = Math.max(0, body.maxGrossNotional);
-    if (body.maxDailyLoss !== undefined) config.maxDailyLoss = body.maxDailyLoss;
+
+    const next: RiskConfig = { ...config };
+    if (body.fatFingerPct !== undefined) next.fatFingerPct = Math.max(0.1, body.fatFingerPct);
+    if (body.maxOpenOrders !== undefined) next.maxOpenOrders = Math.max(1, body.maxOpenOrders);
+    if (body.duplicateWindowMs !== undefined) next.duplicateWindowMs = Math.max(50, body.duplicateWindowMs);
+    if (body.maxOrdersPerSecond !== undefined) next.maxOrdersPerSecond = Math.max(1, body.maxOrdersPerSecond);
+    if (body.maxAdvPct !== undefined) next.maxAdvPct = Math.max(0.1, body.maxAdvPct);
+    if (body.maxGrossNotional !== undefined) next.maxGrossNotional = Math.max(0, body.maxGrossNotional);
+    if (body.maxDailyLoss !== undefined) next.maxDailyLoss = body.maxDailyLoss;
     if (body.maxConcentrationPct !== undefined) {
-      config.maxConcentrationPct = Math.min(100, Math.max(1, body.maxConcentrationPct));
+      next.maxConcentrationPct = Math.min(100, Math.max(1, body.maxConcentrationPct));
     }
-    if (body.haltMovePercent !== undefined) config.haltMovePercent = Math.max(0.1, body.haltMovePercent);
+    if (body.haltMovePercent !== undefined) next.haltMovePercent = Math.max(0.1, body.haltMovePercent);
     if (body.breakerCooldownMs !== undefined) {
-      config.breakerCooldownMs = Math.max(1_000, body.breakerCooldownMs);
+      next.breakerCooldownMs = Math.max(1_000, body.breakerCooldownMs);
     }
-    if (body.breakersEnabled !== undefined) config.breakersEnabled = body.breakersEnabled;
-    return json(config);
+    if (body.breakersEnabled !== undefined) next.breakersEnabled = body.breakersEnabled;
+
+    if (TEST_MODE) {
+      Object.assign(config, next);
+      return json({ ...config, version: 0 });
+    }
+
+    const url = new URL(req.url);
+    const createdBy = url.searchParams.get("by") ?? req.headers.get("x-veta-user") ?? "unknown";
+    const reason = url.searchParams.get("reason") ?? undefined;
+    const version = await configStore.save(next, { createdBy, reason });
+    Object.assign(config, version.config);
+    return json({ ...config, version: version.id });
   }
 
   const positionsMatch = path.match(/^\/positions\/([^/]+)$/);
@@ -537,7 +565,7 @@ Deno.serve({ port: PORT }, async (req) => {
     const parsed = await parseBody(req, CheckRequestSchema);
     if (!parsed.ok) return parsed.res;
     const result = runChecks(riskState, parsed.data);
-    return json(result);
+    return json({ ...result, riskConfigVersion: configStore.versionId() });
   }
 
   return json({ error: "Not Found" }, 404);
