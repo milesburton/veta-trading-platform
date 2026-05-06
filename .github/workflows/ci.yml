@@ -1060,6 +1060,10 @@ jobs:
             type=sha,prefix=
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
+      - name: Read app version
+        id: appver
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Build and push ${{ matrix.service }}
         uses: docker/build-push-action@v6
         with:
@@ -1073,5 +1077,6 @@ jobs:
             VITE_DEPLOYMENT=uat
             VITE_COMMIT_SHA=${{ github.sha }}
             VITE_BUILD_DATE=${{ github.run_started_at }}
+            VITE_APP_VERSION=${{ steps.appver.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
