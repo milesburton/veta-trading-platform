@@ -1,0 +1,63 @@
+---
+title: Scenarios — deterministic replay
+description: Save a trade, run it again, prove the algo behaves the same.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+import Svc from "../../../components/Svc.astro";
+
+A **scenario** is a saved description of a single trade — symbol, side, quantity, limit price, strategy, plus a numeric seed for the market simulator's PRNG. Running the same scenario twice should produce the same fills, the same slippage, the same child-order count. If it doesn't, **the algo behaviour has changed** — and that's something you'd want a regression test to catch automatically.
+
+This is the harness for two things at once:
+
+- **Algo correctness across releases.** Save a baseline run today, re-run it after every code change. Drift in the result tells you the change altered execution behaviour.
+- **The shape of MiFID II RTS 6 conformance testing.** Real firms are required to formally validate algorithmic trading systems and demonstrate they behave as documented. We don't have to file paperwork for a simulator, but the data structures we use to record runs would be exactly what you'd reach for if you did.
+
+<Aside type="caution" title="Simulator only">
+Scenarios drive the same OMS, risk-engine, algos and EMS that real orders flow through, so the runs are realistic — but the prices, fills, and dollars are all synthetic. Reproducibility here is about platform behaviour, not about predicting markets.
+</Aside>
+
+## How it works
+
+1. **Determinism comes from the simulator.** [`market-sim/rng.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/market-sim/rng.ts) replaces `Math.random()` with a seeded mulberry32 PRNG when `MARKET_SIM_SEED` is set or `POST /seed` is called at runtime. Same seed in → same price path out. Without the seed, the simulator uses `Math.random()` and behaves as before.
+2. **Each saved scenario carries its seed.** The orchestrator [`scenarios/orchestrator.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/scenarios/orchestrator.ts) calls `POST /seed` to reset the simulator's PRNG before submitting the order, so every run starts from the same regime and price baseline.
+3. **The orchestrator submits the order through the normal pipeline.** Risk engine, OMS, algos, EMS, journal — the same path as a manually-placed order. Nothing about the order flow changes for scenario-driven submissions.
+4. **The journal is the source of truth.** The orchestrator polls the journal for the parent order until terminal state (or 30s timeout), then computes an actual outcome — fill count, total filled, weighted-average price, slippage in basis points — and writes a run row.
+5. **Diff against expectations.** If the saved scenario specifies expected outcomes with tolerances, the run is marked `completed` (within tolerance), `mismatched` (outside tolerance), or `failed` (no order in journal, submit failed, etc.).
+
+## Schema
+
+Two tables in the `scenarios` schema (migration `0015_scenarios.sql`):
+
+| Table | Contents |
+|-------|----------|
+| `scenarios.scenarios` | One row per saved scenario. Owned by a user via `users.users(id)` cascade. Columns: `id`, `user_id`, `name`, `description`, `spec` (JSONB), `expected` (JSONB), timestamps. Unique on `(user_id, name)`. |
+| `scenarios.runs` | One row per execution. Append-only. Columns: `id`, `scenario_id`, `user_id`, `triggered_at`, `completed_at`, `parent_order_id`, `actual` (JSONB), `diff` (JSONB), `status`, `error`. |
+
+The `parent_order_id` column lets you drill from a mismatched run all the way through `journal.events` to the OMS validation, the risk-engine decision, and every child order the EMS produced.
+
+## API
+
+All routes proxy via the gateway with a session cookie. Trader and admin roles can write; any authenticated user can read their own scenarios.
+
+| Method | Path | Body / params | Returns |
+|--------|------|---------------|---------|
+| GET | `/api/gateway/scenarios` | — | `{ scenarios: Scenario[] }` |
+| POST | `/api/gateway/scenarios` | `{ name, description?, spec, expected? }` | `{ scenario: Scenario }` |
+| GET | `/api/gateway/scenarios/:id` | — | `{ scenario: Scenario }` |
+| PUT | `/api/gateway/scenarios/:id` | partial fields | `{ scenario: Scenario }` |
+| DELETE | `/api/gateway/scenarios/:id` | — | 204 |
+| POST | `/api/gateway/scenarios/:id/run` | — | `{ run: ScenarioRun }` |
+| GET | `/api/gateway/scenarios/:id/runs?limit=20` | — | `{ runs: ScenarioRun[] }` |
+
+`spec` shape: `{ seed, symbol, side, quantity, limitPrice, strategy, algoParams?, durationMs? }`. `expected` shape (all optional): `{ fillCount?, totalFilled?, avgFillPriceBps?, slippageBps?, tolerance? }`.
+
+## In-app panel
+
+Add the **Scenarios** panel to any workspace via `+ Add Panel`. It shows your saved scenarios with one-click run, plus the run history for the selected scenario with status pill, fill ratio and slippage in basis points. The panel is gated to `trader` and `admin` roles.
+
+A run is **synchronous** from the panel's perspective — clicking Run waits for the orchestrator to finish (or hit its 30s timeout) before the row appears in history. Run history polls every 5s for any newly-appended rows.
+
+## Pinned to risk config
+
+Each `/check` response from the <Svc name="risk-engine" /> includes `riskConfigVersion: <id>` from the immutable `risk.config_versions` table (migration `0014_risk_config_versions.sql`). Combined with the journal's parent order ID and the saved scenario seed, this means every past run can be reconstructed exactly: same prices, same risk thresholds, same algo parameters. That's the property regulators ask about — "why did we reject Alice's order at 3pm last Tuesday" has a deterministic answer.

@@ -88,6 +88,7 @@ export default defineConfig({
                 { label: "Service map", slug: "platform/services" },
                 { label: "Algo strategies", slug: "platform/algos" },
                 { label: "Risk controls", slug: "platform/risk" },
+                { label: "Scenarios", slug: "platform/scenarios" },
               ],
             },
             {
