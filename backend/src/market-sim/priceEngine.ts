@@ -2,6 +2,7 @@ import { ASSET_MAP as EQUITY_ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
 import { FX_ASSET_MAP, FX_ASSETS } from "./fxAssets.ts";
 import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodityAssets.ts";
 import { BOND_ASSET_MAP, BOND_ASSETS } from "./bondAssets.ts";
+import { nextRandom } from "./rng.ts";
 
 // 4 ticks/s × 390 min × 60 s/min — scaling daily vol by 1/√N gives
 // fine-grained steps that accumulate realistically over 1-min candles.
@@ -63,8 +64,8 @@ let marketDrift = 0;
 let regimeCountdown = 0;
 
 function refreshRegime() {
-  regimeCountdown = 30 + Math.floor(Math.random() * 270);
-  const r = Math.random();
+  regimeCountdown = 30 + Math.floor(nextRandom() * 270);
+  const r = nextRandom();
   if (r < 0.40) marketDrift = 0;
   else if (r < 0.65) marketDrift = 0.0000008;
   else if (r < 0.85) marketDrift = -0.0000008;
@@ -73,13 +74,20 @@ function refreshRegime() {
 }
 
 function randn(): number {
-  const u1 = Math.random();
-  const u2 = Math.random();
+  const u1 = nextRandom();
+  const u2 = nextRandom();
   return Math.sqrt(-2 * Math.log(u1 + 1e-12)) * Math.cos(2 * Math.PI * u2);
 }
 
 export function advanceRegime() {
   if (--regimeCountdown <= 0) refreshRegime();
+}
+
+export function resetRegime(): void {
+  marketDrift = 0;
+  regimeCountdown = 0;
+  for (const sector of Object.keys(sectorShocks)) delete sectorShocks[sector];
+  refreshRegime();
 }
 
 /** Run `ticks` silent GBM steps so prices start with realistic intraday drift. */

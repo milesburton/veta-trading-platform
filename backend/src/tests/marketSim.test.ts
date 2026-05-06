@@ -3,13 +3,43 @@ import {
   assertNotEquals,
 } from "jsr:@std/assert@0.217";
 import {
+  advanceRegime,
   generatePrice,
   marketData,
   openPrices,
   prewarmPrices,
   refreshSectorShocks,
+  resetRegime,
+  seedPrice,
   snapshotOpenPrices,
 } from "../market-sim/priceEngine.ts";
+import { seedRng } from "../market-sim/rng.ts";
+
+function runSequence(seed: number, ticks: number, asset = "AAPL"): number[] {
+  seedRng(seed);
+  seedPrice(asset, 100);
+  resetRegime();
+  const out: number[] = [];
+  for (let i = 0; i < ticks; i++) {
+    advanceRegime();
+    refreshSectorShocks();
+    out.push(generatePrice(asset));
+  }
+  return out;
+}
+
+Deno.test("seeded price sequence is deterministic", () => {
+  const a = runSequence(42, 100);
+  const b = runSequence(42, 100);
+  assertEquals(a, b);
+});
+
+Deno.test("different seeds produce different price sequences", () => {
+  const a = runSequence(42, 100);
+  const b = runSequence(7, 100);
+  assertNotEquals(a, b);
+  seedRng(null);
+});
 
 Deno.test("generatePrice returns a positive number for a known asset", () => {
   refreshSectorShocks();

@@ -9,6 +9,8 @@ import {
   seedPrice,
   snapshotOpenPrices,
 } from "./priceEngine.ts";
+import { nextRandom } from "./rng.ts";
+import { handleSeedRoute } from "./seedRoute.ts";
 import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
 import { FX_ASSET_MAP, FX_ASSETS } from "./fxAssets.ts";
 import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodityAssets.ts";
@@ -131,7 +133,7 @@ function computeTickVolumes(minute: number): Record<string, number> {
   const factor = intradayVolumeFactor(minute);
   return ALL_ASSETS.reduce<Record<string, number>>((acc, asset) => {
     const basePerMinute = asset.dailyVolume / 390;
-    const jitter = 0.7 + Math.random() * 0.6;
+    const jitter = 0.7 + nextRandom() * 0.6;
     acc[asset.symbol] = Math.round(basePerMinute * factor * jitter);
     return acc;
   }, {});
@@ -158,7 +160,7 @@ function buildBookForVenue(
 ): OrderBookSnapshot {
   const spreadBps = Math.max(
     3,
-    Math.min(25, dailyVol * 700 * (0.85 + Math.random() * 0.3)),
+    Math.min(25, dailyVol * 700 * (0.85 + nextRandom() * 0.3)),
   );
   const halfSpread = mid * (spreadBps / 10_000) * spreadMult;
   const avgLotSize = Math.max(100, Math.round(dailyVolume / 5_000));
@@ -172,14 +174,14 @@ function buildBookForVenue(
       price: parseFloat((mid - priceStep).toFixed(4)),
       size: Math.max(
         100,
-        Math.round(avgLotSize * depthMult * decay * (0.5 + Math.random())),
+        Math.round(avgLotSize * depthMult * decay * (0.5 + nextRandom())),
       ),
     });
     asks.push({
       price: parseFloat((mid + priceStep).toFixed(4)),
       size: Math.max(
         100,
-        Math.round(avgLotSize * depthMult * decay * (0.5 + Math.random())),
+        Math.round(avgLotSize * depthMult * decay * (0.5 + nextRandom())),
       ),
     });
   }
@@ -316,6 +318,10 @@ Deno.serve({ port: PORT }, (req) => {
     return new Response(JSON.stringify({ ...marketData }), {
       headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
+  }
+
+  if (url.pathname === "/seed") {
+    return handleSeedRoute(req);
   }
 
   if (req.method === "OPTIONS") {
