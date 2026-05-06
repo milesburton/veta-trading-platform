@@ -48,6 +48,12 @@ export default defineConfig({
       },
       sidebar: [
         {
+          label: "Mission Control",
+          items: [
+            { label: "Diagnostic dashboard", slug: "mission-control" },
+          ],
+        },
+        {
           label: "Getting Started",
           items: [
             { label: "Overview", slug: "guides/overview" },

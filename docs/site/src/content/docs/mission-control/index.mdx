@@ -1,0 +1,158 @@
+---
+title: Mission Control
+description: One page, every operational link — diagnostic dashboards, runbooks, log search, deploy status.
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+When something is wrong, you need three things in front of you fast: **what's broken**, **where to look**, and **what to do about it**. This page is the index. Everything below is a hop, not a hub.
+
+<Aside type="caution">
+Most of these tools are LAN-only on the homelab. From outside the network, use SSH port-forwarding (`ssh -L 3000:localhost:3000 miles@192.168.1.245`) or Tailscale if it's installed.
+</Aside>
+
+## Live diagnostics
+
+<CardGrid>
+  <LinkCard
+    title="Grafana dashboards"
+    href="http://192.168.1.245:3000/dashboards"
+    description="Trading Overview, Service Performance (OTel), Order Pipeline (Traces), k6 — anonymous read access on UAT."
+  />
+  <LinkCard
+    title="Tempo trace search"
+    href="http://192.168.1.245:3000/explore?datasource=tempo"
+    description="Search by service, span name, status, or paste a trace ID. Click a span to see logs filtered by trace_id."
+  />
+  <LinkCard
+    title="Loki log search"
+    href="http://192.168.1.245:3000/explore?datasource=loki"
+    description="LogQL across every service. Filter by service_name; pipe to a regex for substring search; pipe to JSON parse to filter on log level."
+  />
+  <LinkCard
+    title="Traefik dashboard"
+    href="http://192.168.1.245:8888/dashboard/"
+    description="Live router/service/middleware status. First place to look if a service is healthy but unreachable from the browser."
+  />
+  <LinkCard
+    title="Redpanda console"
+    href="http://192.168.1.245:8080"
+    description="Browse Kafka topics, inspect consumer groups, tail messages live. Useful when an event seems to be missing from the chain."
+  />
+  <LinkCard
+    title="Uptime Kuma"
+    href="http://192.168.1.245:3001"
+    description="External health checks for all platform services. The first thing that complains if the homelab is offline."
+  />
+</CardGrid>
+
+## In-app tools
+
+<CardGrid>
+  <LinkCard
+    title="Logs drawer (in trading UI)"
+    href="https://milesburton.github.io/veta-trading-platform/platform/observability/#in-app-log-search"
+    description="Header → Logs button. Loki when it's reachable, gateway in-process ring buffer when it isn't."
+  />
+  <LinkCard
+    title="Service Health panel"
+    href="https://milesburton.github.io/veta-trading-platform/platform/services/"
+    description="Live status of every backend service. Add via + Add Panel → Service Health."
+  />
+  <LinkCard
+    title="Decision Log panel"
+    href="https://milesburton.github.io/veta-trading-platform/platform/algos/"
+    description="Algo decisions in real time. Useful for understanding why a child order was or wasn't created."
+  />
+  <LinkCard
+    title="Estate Overview"
+    href="https://milesburton.github.io/veta-trading-platform/platform/services/"
+    description="Single-pane view of services, throughput and active alerts. Good for screen-sharing during incidents."
+  />
+</CardGrid>
+
+## Common runbooks
+
+<CardGrid>
+  <LinkCard
+    title="A service is restart-looping"
+    href="#service-restart-loop"
+    description="Recent crash-on-boot pattern: missing DATABASE_URL, port collision, dependency not yet healthy."
+  />
+  <LinkCard
+    title="A new service didn't deploy"
+    href="https://milesburton.github.io/veta-trading-platform/platform/supporting/watchtower/"
+    description="Watchtower can't create new services — only update existing ones. One-time docker compose up -d &lt;svc&gt; needed."
+  />
+  <LinkCard
+    title="Login is broken"
+    href="https://milesburton.github.io/veta-trading-platform/reference/rbac/"
+    description="user-service is the failure surface. Check Postgres, validate the cookie, look at gateway → user-service traces."
+  />
+  <LinkCard
+    title="Market ladder shows no prices"
+    href="https://milesburton.github.io/veta-trading-platform/platform/observability/"
+    description="Market-sim publishing? Gateway WebSocket connected? Frontend got 'authIdentity'? Walk the chain in this order."
+  />
+  <LinkCard
+    title="Algo regression"
+    href="https://milesburton.github.io/veta-trading-platform/platform/scenarios/"
+    description="Save a baseline scenario, run it three times. Identical fills = good. Drift = bug."
+  />
+</CardGrid>
+
+### Service restart loop
+
+Read the failing service's logs first — Grafana → Loki → `{service_name="<svc>"}`. Common causes ordered by frequency:
+
+1. **Missing env var.** Most often a database URL or service host. Compare the service's `compose.yml` block to its consumer module.
+2. **Schema migration not yet applied.** The service depends on `db-migrate` completing. Check `docker logs veta-db-migrate-1` — exit 0 means done; anything else means a migration failed.
+3. **Dependency not healthy.** A `depends_on: condition: service_healthy` will hold the dependent service back. The unhealthy upstream is where the real problem is.
+4. **Port collision.** Rare in compose. Check `docker ps` for duplicate names.
+
+Trick: if the service has been deleted manually, Watchtower's `INCLUDE_STOPPED + REVIVE_STOPPED` will resurrect it on the next pull. So a restart loop *can't* be papered over by stopping the container — fix the underlying issue.
+
+## Deploy and CI
+
+<CardGrid>
+  <LinkCard
+    title="GitHub Actions — main branch"
+    href="https://github.com/milesburton/veta-trading-platform/actions?query=branch%3Amain"
+    description="CI run for the latest commit. Should be green within ~12 minutes of a push."
+  />
+  <LinkCard
+    title="Container registry"
+    href="https://github.com/milesburton/veta-trading-platform/pkgs/container/veta-trading-platform%2Fgateway"
+    description="Every service has its own GHCR image. Watchtower pulls :latest within 5 minutes of CI publishing it."
+  />
+  <LinkCard
+    title="Release Please PRs"
+    href="https://github.com/milesburton/veta-trading-platform/pulls?q=is%3Apr+author%3Aapp%2Frelease-please"
+    description="Auto-generated version bumps. Merging promotes whatever's on main to a tagged release."
+  />
+</CardGrid>
+
+## Reference
+
+<CardGrid>
+  <LinkCard
+    title="Glossary"
+    href="https://milesburton.github.io/veta-trading-platform/reference/glossary/"
+    description="Searchable index of every term, acronym and service name. Dangling references fail the docs build."
+  />
+  <LinkCard
+    title="Service map"
+    href="https://milesburton.github.io/veta-trading-platform/platform/services/"
+    description="Every service, its port, its purpose, its repo path. Auto-generated from the codebase."
+  />
+  <LinkCard
+    title="Architecture overview"
+    href="https://milesburton.github.io/veta-trading-platform/platform/architecture/"
+    description="Order-flow diagram, bus topics, end-to-end picture of the platform."
+  />
+  <LinkCard
+    title="API gateway endpoints"
+    href="https://milesburton.github.io/veta-trading-platform/reference/api-gateway/"
+    description="Every public route the gateway serves, who's allowed to call it, and what shape the response takes."
+  />
+</CardGrid>
