@@ -49,6 +49,16 @@ frontend ──────┼──→ playwright-ui (5 min, parallel)
 
 Playwright, screenshots, Electron, and Docker all run in parallel with integration tests (not blocked by them).
 
+## Integration test isolation — known gap
+
+The current integration tests (`integration.test.ts`, `algo.integration.test.ts`, `intelligence.integration.test.ts`, `scenarios.integration.test.ts`) hit a **shared compose stack**: CI runs `docker compose up -d`, then every test points at the same `localhost:50xx` services. This is **not** how a serious trading platform should test integrations.
+
+Concretely: tests can leak state into the next test via Postgres rows, Redpanda offsets, OMS in-memory order tracking, and risk-engine rate limits. We work around this with `Date.now()`-suffixed scenario names and per-test cascade deletes, but the underlying coupling is real.
+
+The **planned approach** is per-test stack isolation via Testcontainers — each test file owns its own ephemeral Postgres + Redpanda + the subset of services it actually exercises. This is how production trading systems test, and it's the pattern this platform should be demonstrating. See [`project_testcontainers_planned`](https://github.com/milesburton/veta-trading-platform/blob/main/MEMORY.md) for the migration plan.
+
+**If you're writing a new integration test today**: use the existing pattern (target `localhost:50xx`, cascade-delete after) rather than inventing a third style. It'll get migrated alongside the others when Testcontainers lands.
+
 ## Writing tests
 
 ### Backend
