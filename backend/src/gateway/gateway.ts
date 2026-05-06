@@ -19,6 +19,7 @@ import { handleAdminRoute } from "./routes/admin.ts";
 import { handleAlertsRoute } from "./routes/alerts.ts";
 import { handleAnalyticsRoute } from "./routes/analytics.ts";
 import { handleLogsRoute, recordLogLine } from "./routes/logs.ts";
+import { handleScenariosRoute } from "./routes/scenarios.ts";
 import { handleProxiedRoutes } from "./routes/proxied.ts";
 import { handleWebSocketRoute } from "./routes/websocket.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
@@ -485,6 +486,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const logsResponse = await handleLogsRoute(req, path, gatewayContext);
   if (logsResponse) return logsResponse;
 
+  const scenariosResponse = await handleScenariosRoute(req, path, gatewayContext);
+  if (scenariosResponse) return scenariosResponse;
 
   // Self-alias: /api/gateway/* → strip prefix and re-issue to gateway's own routes.
   // Must forward Cookie so auth-protected routes work correctly.
