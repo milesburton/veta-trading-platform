@@ -13,7 +13,8 @@ sidebar:
 | Frontend unit | `cd frontend && npm run test:unit` | 797+ tests — Redux slices, components, panel registry, layout models, hooks |
 | Frontend coverage | `cd frontend && npm run test:coverage` | Same tests with v8 coverage reporting |
 | Integration | `deno task test:integration` | End-to-end order flow, algo fill rates, intelligence pipeline, journal HTTP |
-| Smoke | `deno task test:smoke` | 87+ tests — all service health checks, OAuth flow, order lifecycle, risk-engine |
+| Smoke (CI) | `deno task test:testcontainers` | 7 testcontainers files including `smoke.tc.test.ts` — 10-step reduced critical path that runs on every PR |
+| Smoke (deploy gate) | `deno task test:smoke` | 61 tests — full health-check suite for the post-deploy gate on Fly + homelab |
 | Playwright E2E | `cd frontend && npx playwright test` | 89+ tests — auth, orders, market data, FI, algo, session replay, observability |
 | Electron E2E | `cd frontend && npm run test:electron` | Desktop app — window, startup, contextBridge, pop-out |
 | Visual anomalies | `cd frontend && npx playwright test tests/visual-anomalies.spec.ts` | DOM-overflow + axe-core a11y/contrast scan across login + key workspaces |

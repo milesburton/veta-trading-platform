@@ -124,7 +124,7 @@ Every CI run on `main` generates JSON badge files committed to `docs/badges/`:
 |-------|--------|--------|
 | Backend tests | `deno task test:coverage` output | `"230 passed"` |
 | Frontend tests | `npm run test:coverage` output | `"797 passed"` |
-| Integration tests | `deno task test:smoke` output | `"87 passed"` |
+| Integration tests | `deno task test:testcontainers` output | `"62 passed"` |
 | E2E tests | Playwright output | `"89 passed"` |
 | Coverage | `coverage-summary.json` | `"42.5%"` |
 

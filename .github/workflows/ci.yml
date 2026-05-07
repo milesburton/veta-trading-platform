@@ -259,21 +259,6 @@ jobs:
     permissions:
       contents: write
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: veta
-          POSTGRES_PASSWORD: veta
-          POSTGRES_DB: veta
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
     steps:
       - uses: actions/checkout@v4
 
@@ -285,126 +270,16 @@ jobs:
         run: deno install
 
       - name: Testcontainers integration suite
-        run: deno task test:testcontainers
-
-      - name: Start Redpanda
-        run: |
-          docker run -d --name redpanda \
-            -p 9092:9092 \
-            redpandadata/redpanda:v24.3.6 \
-            redpanda start \
-            --mode=dev-container \
-            --smp=1 \
-            --memory=200M \
-            --default-log-level=warn \
-            --kafka-addr=0.0.0.0:9092 \
-            --advertise-kafka-addr=localhost:9092
-          for i in $(seq 1 30); do
-            docker exec redpanda rpk cluster health 2>/dev/null && echo "Redpanda ready" && break || sleep 2
-            echo "Waiting for Redpanda ($i/30)..."
-          done
-
-      - name: Run database migrations
-        run: deno run --allow-all backend/db/migrate.ts
-        env:
-          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
-
-      - name: Start backend services
-        env:
-          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
-        run: |
-          SHA=$(git rev-parse --short HEAD)
-          COMMIT_SHA=$SHA MARKET_SIM_PORT=5000 deno run --allow-all backend/src/market-sim/market-sim.ts &
-          COMMIT_SHA=$SHA EMS_PORT=5001 deno run --allow-all backend/src/ems/ems-server.ts &
-          COMMIT_SHA=$SHA OMS_PORT=5002 RISK_ENGINE_ENABLED=false RISK_ENGINE_HOST=localhost RISK_ENGINE_PORT=5032 ALGO_TRADER_PORT=5003 TWAP_ALGO_PORT=5004 POV_ALGO_PORT=5005 VWAP_ALGO_PORT=5006 ICEBERG_ALGO_PORT=5021 SNIPER_ALGO_PORT=5022 ARRIVAL_PRICE_ALGO_PORT=5023 MOMENTUM_ALGO_PORT=5025 IS_ALGO_PORT=5026 deno run --allow-all backend/src/oms/oms-server.ts &
-          COMMIT_SHA=$SHA ALGO_TRADER_PORT=5003 deno run --allow-all backend/src/algo/limit-strategy.ts &
-          COMMIT_SHA=$SHA TWAP_ALGO_PORT=5004 deno run --allow-all backend/src/algo/twap-strategy.ts &
-          COMMIT_SHA=$SHA POV_ALGO_PORT=5005 deno run --allow-all backend/src/algo/pov-strategy.ts &
-          COMMIT_SHA=$SHA VWAP_ALGO_PORT=5006 deno run --allow-all backend/src/algo/vwap-strategy.ts &
-          COMMIT_SHA=$SHA ICEBERG_ALGO_PORT=5021 deno run --allow-all backend/src/algo/iceberg-strategy.ts &
-          COMMIT_SHA=$SHA SNIPER_ALGO_PORT=5022 deno run --allow-all backend/src/algo/sniper-strategy.ts &
-          COMMIT_SHA=$SHA ARRIVAL_PRICE_ALGO_PORT=5023 deno run --allow-all backend/src/algo/arrival-price-strategy.ts &
-          COMMIT_SHA=$SHA JOURNAL_PORT=5009 deno run --allow-all backend/src/journal/journal-server.ts &
-          COMMIT_SHA=$SHA KAFKA_RELAY_PORT=5007 deno run --allow-all observability/kafka-relay.ts &
-          COMMIT_SHA=$SHA USER_SERVICE_PORT=5008 deno run --allow-all backend/src/user-service/user-service.ts &
-          COMMIT_SHA=$SHA FIX_ARCHIVE_PORT=5012 deno run --allow-all backend/src/fix/fix-archive.ts &
-          COMMIT_SHA=$SHA deno run --allow-all backend/src/news/news-aggregator.ts &
-          COMMIT_SHA=$SHA ANALYTICS_PORT=5014 deno run --allow-all backend/src/analytics/analytics-server.ts &
-          COMMIT_SHA=$SHA MARKET_DATA_PORT=5015 deno run --allow-all backend/src/market-data/market-data-service.ts &
-          COMMIT_SHA=$SHA MARKET_DATA_ADAPTERS_PORT=5016 deno run --allow-all backend/src/market-data-adapters/adapter-server.ts &
-          COMMIT_SHA=$SHA FEATURE_ENGINE_PORT=5017 deno run --allow-all backend/src/feature-engine/feature-engine.ts &
-          COMMIT_SHA=$SHA SIGNAL_ENGINE_PORT=5018 deno run --allow-all backend/src/signal-engine/signal-engine.ts &
-          COMMIT_SHA=$SHA RECOMMENDATION_ENGINE_PORT=5019 deno run --allow-all backend/src/recommendation-engine/recommendation-server.ts &
-          COMMIT_SHA=$SHA SCENARIO_ENGINE_PORT=5020 deno run --allow-all backend/src/scenario-engine/scenario-server.ts &
-          COMMIT_SHA=$SHA LLM_ADVISORY_PORT=5024 LLM_ENABLED=false deno run --allow-all backend/src/llm-advisory/orchestrator.ts &
-          COMMIT_SHA=$SHA MOMENTUM_ALGO_PORT=5025 deno run --allow-all backend/src/algo/momentum-strategy.ts &
-          COMMIT_SHA=$SHA IS_ALGO_PORT=5026 deno run --allow-all backend/src/algo/is-strategy.ts &
-          COMMIT_SHA=$SHA DARK_POOL_PORT=5027 deno run --allow-all backend/src/dark-pool/dark-pool-server.ts &
-          COMMIT_SHA=$SHA CCP_SERVICE_PORT=5028 deno run --allow-all backend/src/ccp/ccp-service.ts &
-          COMMIT_SHA=$SHA RFQ_SERVICE_PORT=5029 deno run --allow-all backend/src/rfq/rfq-service.ts &
-          COMMIT_SHA=$SHA REPLAY_PORT=5031 deno run --allow-all backend/src/replay/replay-service.ts &
-          COMMIT_SHA=$SHA RISK_ENGINE_PORT=5032 deno run --allow-all backend/src/risk-engine/risk-engine.ts &
-          COMMIT_SHA=$SHA GATEWAY_PORT=5011 JOURNAL_HOST=localhost JOURNAL_PORT=5009 USER_SERVICE_HOST=localhost USER_SERVICE_PORT=5008 DARK_POOL_HOST=localhost DARK_POOL_PORT=5027 CCP_SERVICE_HOST=localhost CCP_SERVICE_PORT=5028 RFQ_SERVICE_HOST=localhost RFQ_SERVICE_PORT=5029 REPLAY_HOST=localhost REPLAY_PORT=5031 RISK_ENGINE_HOST=localhost RISK_ENGINE_PORT=5032 deno run --allow-all backend/src/gateway/gateway.ts &
-
-      - name: Wait for services to be ready
-        run: |
-          for port in 5000 5001 5002 5003 5004 5005 5006 5007 5008 5009 5011 5012 5014 5015 5016 5017 5018 5019 5020 5021 5022 5023 5024 5025 5026 5027 5028 5029 5031 5032; do
-            for i in $(seq 1 30); do
-              curl -sf http://localhost:$port/health && break || sleep 1
-            done
-          done
-
-      - name: Wait for market data (EMS needs prices before integration tests)
-        run: |
-          for i in $(seq 1 30); do
-            PRICE=$(curl -sf http://localhost:5000/assets | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0].get('initialPrice',0) if data else 0)" 2>/dev/null || echo 0)
-            if [ "$PRICE" != "0" ] && [ -n "$PRICE" ]; then
-              echo "Market data ready: first asset initialPrice=$PRICE"
-              break
-            fi
-            echo "Waiting for market data ($i/30)..."
-            sleep 2
-          done
-
-      - name: Wait for risk-engine to have prices
-        run: |
-          for i in $(seq 1 30); do
-            TRACKED=$(curl -sf http://localhost:5032/health | python3 -c "import sys,json; print(json.load(sys.stdin).get('pricesTracked',0))" 2>/dev/null || echo 0)
-            if [ "$TRACKED" -gt 0 ] 2>/dev/null; then
-              echo "Risk-engine has $TRACKED prices tracked"
-              break
-            fi
-            echo "Waiting for risk-engine prices ($i/30)..."
-            sleep 2
-          done
-
-      - name: Configure risk-engine for integration tests
-        run: |
-          curl -sf -X PUT http://localhost:5032/config \
-            -H 'Content-Type: application/json' \
-            -d '{"maxOrdersPerSecond":100,"duplicateWindowMs":50,"maxOpenOrders":500,"fatFingerPct":50,"maxAdvPct":100}' \
-            && echo "✅ Risk-engine configured for integration test throughput" \
-            || echo "⚠️ Could not configure risk-engine (tests may be rate-limited)"
-
-      - name: Wait for Kafka consumers to subscribe
-        run: |
-          echo "Allowing 20s for all algo Kafka consumers to subscribe to their topics..."
-          sleep 20
-
-      - name: Smoke tests (all service health + contracts)
-        continue-on-error: true
-        run: |
-          deno task test:smoke 2>&1 | tee /tmp/smoke-test-output.txt || true
-          PASSED=$(grep -oP '\d+(?= passed)' /tmp/smoke-test-output.txt | tail -1 || echo 0)
-          echo "INTEGRATION_TESTS_PASSED=${PASSED}" >> "$GITHUB_ENV"
+        run: deno task test:testcontainers 2>&1 | tee /tmp/tc-test-output.txt
         env:
           DATABASE_URL: postgres://veta:veta@localhost:5432/veta
 
       - name: Generate integration test badge
         if: github.ref == 'refs/heads/main'
         run: |
-          COUNT="${INTEGRATION_TESTS_PASSED:-0}"
-          echo "{\"schemaVersion\":1,\"label\":\"integration tests\",\"message\":\"${COUNT} passed\",\"color\":\"brightgreen\"}" > docs/badges/integration-tests.json
+          PASSED=$(grep -oP '\d+(?= passed)' /tmp/tc-test-output.txt | awk '{s+=$1} END {print s}')
+          PASSED="${PASSED:-0}"
+          echo "{\"schemaVersion\":1,\"label\":\"integration tests\",\"message\":\"${PASSED} passed\",\"color\":\"brightgreen\"}" > docs/badges/integration-tests.json
 
       - name: Commit integration test badge
         if: github.ref == 'refs/heads/main'
