@@ -23,7 +23,7 @@ flowchart LR
   Frontend --> Electron["electron<br/><i>~6 min</i>"]:::parallel
   Frontend --> DockerBase["docker-base"]:::parallel
 
-  DockerBase --> DockerMatrix["34 service images<br/><i>matrix</i>"]:::parallel
+  DockerBase --> DockerMatrix["37 service images<br/><i>matrix</i>"]:::parallel
 
   Integration --> MainCheck{"branch = main?"}:::decision
   Playwright --> MainCheck
@@ -47,7 +47,7 @@ Integration covers service contracts, algo strategies (retry), the intelligence 
 
 Playwright, screenshots, Electron, and Docker builds run **in parallel with** integration tests. They only depend on the frontend job (~70 seconds), not the 15-minute integration suite. This saves ~10-12 minutes off the critical path.
 
-GitHub Pro provides 20 concurrent jobs — we use up to 40 matrix slots (34 Docker builds run in a matrix) but they queue efficiently.
+GitHub Pro provides 20 concurrent jobs — we use up to 40 matrix slots (37 Docker builds run in a matrix) but they queue efficiently.
 
 ## What each job does
 
@@ -85,9 +85,9 @@ GitHub Pro provides 20 concurrent jobs — we use up to 40 matrix slots (34 Dock
 
 ### docker-services (~3-5 minutes per image, parallel)
 
-- Builds 34 individual service Docker images
+- Builds 37 individual service Docker images
 - Pushes to GHCR (`ghcr.io/milesburton/veta-trading-platform/<service>:latest`)
-- Matrix build: all 34 run simultaneously
+- Matrix build: all 37 run simultaneously
 
 ## Deployment on change
 
@@ -125,7 +125,7 @@ Every CI run on `main` generates JSON badge files committed to `docs/badges/`:
 |-------|--------|--------|
 | Backend tests | `deno task test:coverage` output | `"230 passed"` |
 | Frontend tests | `npm run test:coverage` output | `"797 passed"` |
-| Integration tests | `deno task test:testcontainers` output | `"62 passed"` |
+| Integration tests | `deno task test:testcontainers` output | `"87 passed"` |
 | E2E tests | Playwright output | `"89 passed"` |
 | Coverage | `coverage-summary.json` | `"42.5%"` |
 
