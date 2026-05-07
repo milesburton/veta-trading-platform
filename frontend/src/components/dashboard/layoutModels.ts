@@ -346,8 +346,6 @@ export function makeAlgoModel(): IJsonModel {
 }
 
 export function makeAnalysisModel(): IJsonModel {
-  // Pure equities analysis — price chart, depth, news, forward projections.
-  // Options risk panels live in makeOptionsModel; FI panels in makeFi*Model.
   return {
     global: makeDefaultModel().global,
     layout: {
@@ -468,8 +466,6 @@ export function makeAnalysisModel(): IJsonModel {
 }
 
 export function makeOptionsModel(): IJsonModel {
-  // Derivatives / options workspace — Black-Scholes pricing, vol surface,
-  // scenario matrix, Greeks surface, and trade recommendations.
   return {
     global: makeDefaultModel().global,
     layout: {
@@ -653,8 +649,6 @@ export function makeResearchModel(): IJsonModel {
 }
 
 export function makeCommoditiesTradingModel(): IJsonModel {
-  // Commodities trading workspace — ladder + chart focused on commodity assets.
-  // Forward projections (price-fan) and news in the right column.
   return {
     global: makeDefaultModel().global,
     layout: {
@@ -721,8 +715,6 @@ export function makeCommoditiesTradingModel(): IJsonModel {
 }
 
 export function makeCommoditiesAnalysisModel(): IJsonModel {
-  // Commodities analysis workspace — chart, forward projections, scenario
-  // matrix, news, and recommendations. No equities-specific panels.
   return {
     global: makeDefaultModel().global,
     layout: {

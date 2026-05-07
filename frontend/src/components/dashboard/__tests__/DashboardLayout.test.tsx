@@ -31,8 +31,6 @@ function makeMinimalModel(panelTypes: PanelId[]): IJsonModel {
   };
 }
 
-// ─── Consumer component for testing context values ────────────────────────────
-
 function ContextInspector() {
   const { activePanelIds, addPanel, removePanel, resetLayout, setLayout, removeTabById, setModel } =
     useDashboard();
@@ -83,8 +81,6 @@ function renderWithDefault(children = <ContextInspector />) {
   return renderProvider(children, makeDefaultModel());
 }
 
-// ─── DashboardProvider – initial state ───────────────────────────────────────
-
 describe("DashboardProvider – initial state", () => {
   it("provides activePanelIds from DEFAULT_LAYOUT on mount", () => {
     renderWithDefault();
@@ -109,8 +105,6 @@ describe("DashboardProvider – initial state", () => {
   });
 });
 
-// ─── DashboardProvider – addPanel ─────────────────────────────────────────────
-
 describe("DashboardProvider – addPanel", () => {
   it("adds a panel that was not in the active set", () => {
     renderProvider(undefined, makeMinimalModel(["market-ladder", "order-ticket"]));
@@ -132,8 +126,6 @@ describe("DashboardProvider – addPanel", () => {
   });
 });
 
-// ─── DashboardProvider – removePanel ─────────────────────────────────────────
-
 describe("DashboardProvider – removePanel", () => {
   it("removes a panel from the active set", () => {
     renderWithDefault();
@@ -146,8 +138,6 @@ describe("DashboardProvider – removePanel", () => {
     expect(screen.getByTestId("active-ids").textContent).not.toContain("order-blotter");
   });
 });
-
-// ─── DashboardProvider – resetLayout ─────────────────────────────────────────
 
 describe("DashboardProvider – resetLayout", () => {
   it("restores the DEFAULT_LAYOUT panel set after removal", () => {
@@ -212,8 +202,6 @@ describe("DashboardProvider – model and tab controls", () => {
   });
 });
 
-// ─── PANEL_IDS and PANEL_TITLES integrity ─────────────────────────────────────
-
 describe("Panel registry", () => {
   it("every PANEL_ID has a title in PANEL_TITLES", () => {
     for (const id of PANEL_IDS) {
@@ -233,8 +221,6 @@ describe("Panel registry", () => {
     }
   });
 });
-
-// ─── Default context values (no provider) ────────────────────────────────────
 
 describe("DashboardContext – default value", () => {
   it("provides empty activePanelIds without a provider", () => {

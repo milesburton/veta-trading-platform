@@ -21,7 +21,6 @@ interface Metrics {
 
 const WINDOW_MS = 60_000;
 
-// Thresholds
 const FILL_RATE_WARN = 50; // below → WARNING
 const FILL_RATE_CRIT = 30; // below → red card
 const FILL_RATE_OK = 60; // above → recovery
@@ -117,7 +116,6 @@ export function ThroughputGaugesPanel() {
   });
   const sparkline = useSignal<SparkPoint[]>([]);
 
-  // Track threshold state for transition detection
   const threshRef = useRef({ fillRateLow: false, orderFlood: false });
 
   useEffect(() => {
@@ -126,7 +124,6 @@ export function ThroughputGaugesPanel() {
       metrics.value = m;
       sparkline.value = buildSparkline(orders);
 
-      // Fill rate threshold transitions
       const hasFillData = m.fillRateRecentChildren >= 5;
       const isFillLow = hasFillData && m.fillRate < FILL_RATE_WARN;
       const wasFillLow = threshRef.current.fillRateLow;
@@ -152,7 +149,6 @@ export function ThroughputGaugesPanel() {
         );
       }
 
-      // Order flood threshold transitions
       const isFlood = m.ordersPerMin > ORDER_FLOOD;
       const wasFlood = threshRef.current.orderFlood;
       if (isFlood && !wasFlood) {
@@ -183,7 +179,6 @@ export function ThroughputGaugesPanel() {
     return () => clearInterval(id);
   }, [orders, events, dispatch, metrics, sparkline]);
 
-  // Fill rate card colouring
   const fillRateBorder =
     metrics.value.fillRate < FILL_RATE_CRIT && metrics.value.fillRateRecentChildren >= 5
       ? "border-red-700/60"

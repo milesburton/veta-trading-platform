@@ -26,7 +26,6 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
   const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     if (!open.value) return;
     function handler(e: MouseEvent) {
@@ -43,7 +42,6 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [open.value, open]);
 
-  // Close on Escape
   useEffect(() => {
     if (!open.value) return;
     function handler(e: KeyboardEvent) {

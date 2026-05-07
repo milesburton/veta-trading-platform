@@ -70,7 +70,6 @@ export function YieldCurvePanel() {
   const totalPeriods = useSignal("20");
   const yieldAnnual = useSignal("4.5");
 
-  // Auto-fetch curve on mount
   useEffect(() => {
     fetchCurve({});
   }, [fetchCurve]);
@@ -89,7 +88,6 @@ export function YieldCurvePanel() {
   const fwds: ForwardRate[] = curveData?.forwardRates ?? [];
   const bond: BondPriceResponse | undefined = bondData;
 
-  // Chart data: rate as percentage
   const chartData = curve.map((p) => ({
     label: p.tenorLabel,
     rate: +(p.spotRate * 100).toFixed(3),
