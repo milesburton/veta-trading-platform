@@ -21,6 +21,8 @@ import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("FEATURE_ENGINE_PORT")) || 5_017;
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
+const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
+const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 const priceHistory = new Map<string, number[]>();
@@ -82,6 +84,7 @@ async function refreshRealisedVol(symbol: string): Promise<void> {
 
 let volRefreshIndex = 0;
 const volRefreshSymbols: string[] = [];
+const volRefreshKnown = new Set<string>();
 
 setInterval(async () => {
   if (volRefreshSymbols.length === 0) return;
@@ -89,6 +92,23 @@ setInterval(async () => {
   volRefreshIndex++;
   await refreshRealisedVol(symbol);
 }, 60_000 / Math.max(1, volRefreshSymbols.length || 80));
+
+async function loadSectorMap(): Promise<void> {
+  try {
+    const res = await fetch(
+      `http://${MARKET_SIM_HOST}:${MARKET_SIM_PORT}/assets`,
+      { signal: AbortSignal.timeout(3_000) },
+    );
+    if (!res.ok) return;
+    const assets = await res.json() as Array<{ symbol: string; sector?: string }>;
+    for (const a of assets) {
+      if (a.symbol && a.sector) symbolSectors.set(a.symbol, a.sector);
+    }
+  } catch { /* ignore — retried by interval */ }
+}
+
+await loadSectorMap();
+setInterval(loadSectorMap, 5 * 60_000);
 
 function computeFeatureVector(symbol: string): FeatureVector | null {
   const prices = priceHistory.get(symbol);
@@ -169,9 +189,9 @@ if (tickConsumer) {
       pushHistory(priceHistory, symbol, price, TICK_WINDOW);
       const vol = tick.volumes?.[symbol];
       if (vol != null) pushHistory(volumeHistory, symbol, vol, TICK_WINDOW);
-      if (!symbolSectors.has(symbol)) {
-        if (!volRefreshSymbols.includes(symbol)) volRefreshSymbols.push(symbol);
-        refreshRealisedVol(symbol).catch(() => {});
+      if (!volRefreshKnown.has(symbol)) {
+        volRefreshKnown.add(symbol);
+        volRefreshSymbols.push(symbol);
       }
       const fv = computeFeatureVector(symbol);
       if (fv) pendingFeatures.set(fv.symbol, fv);
