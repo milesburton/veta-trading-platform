@@ -20,6 +20,7 @@ import {
 import { useGetGreeksSurfaceQuery } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import { selectSymbols } from "../store/selectors.ts";
+import { COLOR } from "../tokens.ts";
 
 const EXPIRY_PRESETS = [
   { label: "7d", secs: 7 * 86400 },
@@ -148,12 +149,12 @@ export function GreeksSurfacePanel() {
         <div className="flex-1 min-h-0 px-2 py-2">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 4, right: 16, bottom: 16, left: -8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <CartesianGrid strokeDasharray="3 3" stroke={COLOR.CHART_GRID} />
               <XAxis
                 dataKey="moneyness"
                 type="number"
                 domain={["dataMin", "dataMax"]}
-                tick={{ fill: "#6b7280", fontSize: 9 }}
+                tick={{ fill: COLOR.CHART_AXIS, fontSize: 9 }}
                 tickFormatter={(v: number) => v.toFixed(2)}
                 label={{
                   value: "Moneyness (K/S)",
@@ -164,7 +165,7 @@ export function GreeksSurfacePanel() {
                 }}
               />
               <YAxis
-                tick={{ fill: "#6b7280", fontSize: 9 }}
+                tick={{ fill: COLOR.CHART_AXIS, fontSize: 9 }}
                 tickFormatter={(v: number) => v.toFixed(2)}
                 width={36}
               />
@@ -172,13 +173,13 @@ export function GreeksSurfacePanel() {
               <Legend iconSize={8} wrapperStyle={{ fontSize: "9px", paddingTop: "4px" }} />
               <ReferenceLine
                 x={1.0}
-                stroke="#374151"
+                stroke={COLOR.CHART_TOOLTIP_BORDER}
                 strokeDasharray="4 2"
-                label={{ value: "ATM", fill: "#6b7280", fontSize: 8 }}
+                label={{ value: "ATM", fill: COLOR.CHART_AXIS, fontSize: 8 }}
               />
               <Line
                 dataKey="delta"
-                stroke="#34d399"
+                stroke={COLOR.UP}
                 dot={false}
                 strokeWidth={1.5}
                 isAnimationActive={false}
@@ -192,7 +193,7 @@ export function GreeksSurfacePanel() {
               />
               <Line
                 dataKey="theta"
-                stroke="#f87171"
+                stroke={COLOR.DOWN}
                 dot={false}
                 strokeWidth={1.5}
                 isAnimationActive={false}

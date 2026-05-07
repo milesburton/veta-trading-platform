@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { useGetDurationLadderMutation } from "../store/analyticsApi.ts";
+import { COLOR } from "../tokens.ts";
 import type { BondPosition } from "../types/analytics.ts";
 
 interface PositionRow {
@@ -58,7 +59,7 @@ const DEFAULT_POSITIONS: PositionRow[] = [
   },
 ];
 
-const BAR_COLORS = ["#3b82f6", "#22c55e", "#eab308", "#ef4444", "#a855f7"];
+const BAR_COLORS = [COLOR.LIMIT, "#22c55e", COLOR.VWAP, "#ef4444", COLOR.TWAP];
 const TENOR_LABELS = ["3m", "1y", "2y", "5y", "10y", "30y"];
 
 export function DurationLadderPanel() {
@@ -170,7 +171,11 @@ export function DurationLadderPanel() {
           <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="2 4" stroke="#374151" vertical={false} />
+                <CartesianGrid
+                  strokeDasharray="2 4"
+                  stroke={COLOR.CHART_TOOLTIP_BORDER}
+                  vertical={false}
+                />
                 <XAxis
                   dataKey="tenor"
                   tick={{ fill: "#9ca3af", fontSize: 9 }}
@@ -186,17 +191,17 @@ export function DurationLadderPanel() {
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "#111827",
+                    background: COLOR.CHART_TOOLTIP_BG,
                     border: "1px solid #374151",
                     fontSize: 10,
                   }}
-                  labelStyle={{ color: "#e5e7eb" }}
+                  labelStyle={{ color: "rgb(var(--gray-200))" }}
                   formatter={(value: number, name: string) => [
                     `$${value.toFixed(4)}`,
                     `Bond ${Number(name.replace("bond", "")) + 1}`,
                   ]}
                 />
-                <ReferenceLine y={0} stroke="#6b7280" strokeDasharray="3 3" />
+                <ReferenceLine y={0} stroke={COLOR.CHART_AXIS} strokeDasharray="3 3" />
                 {positions.value.map((_, i) => (
                   <Bar
                     // biome-ignore lint/suspicious/noArrayIndexKey: bond index is the chart series key

@@ -15,6 +15,7 @@ import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useColumnLayout } from "../hooks/useColumnLayout.ts";
 import { useContainerLimit, useGridQuery } from "../hooks/useGridQuery.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import { COLOR } from "../tokens.ts";
 import type { ColDef } from "../types/gridPrefs.ts";
 import type { LiquidityFlag, OrderRecord } from "../types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
@@ -26,9 +27,9 @@ import { ResizableHeader } from "./grid/ResizableHeader.tsx";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 const LIQ_COLORS: Record<LiquidityFlag, string> = {
-  MAKER: "#10b981",
-  TAKER: "#f59e0b",
-  CROSS: "#38bdf8",
+  MAKER: COLOR.MAKER,
+  TAKER: COLOR.TAKER,
+  CROSS: COLOR.CROSS,
 };
 
 const EXEC_COLS: ColDef[] = [
@@ -325,25 +326,25 @@ function TradeRow({
                   </div>
                   <ResponsiveContainer width="100%" height={90}>
                     <LineChart data={timeline} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                      <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
-                      <XAxis dataKey="time" tick={{ fontSize: 9, fill: "#6b7280" }} />
+                      <CartesianGrid stroke={COLOR.CHART_GRID} strokeDasharray="3 3" />
+                      <XAxis dataKey="time" tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }} />
                       <YAxis
                         yAxisId="pct"
                         domain={[0, 100]}
-                        tick={{ fontSize: 9, fill: "#6b7280" }}
+                        tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }}
                         unit="%"
                         width={30}
                       />
                       <YAxis
                         yAxisId="px"
                         orientation="right"
-                        tick={{ fontSize: 9, fill: "#6b7280" }}
+                        tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }}
                         width={50}
                         domain={["auto", "auto"]}
                       />
                       <Tooltip
                         contentStyle={{
-                          background: "#111827",
+                          background: COLOR.CHART_TOOLTIP_BG,
                           border: "1px solid #374151",
                           fontSize: 10,
                         }}
@@ -356,7 +357,7 @@ function TradeRow({
                       <ReferenceLine
                         yAxisId="pct"
                         y={100}
-                        stroke="#10b981"
+                        stroke={COLOR.MAKER}
                         strokeDasharray="4 2"
                         strokeWidth={1}
                       />
@@ -364,7 +365,7 @@ function TradeRow({
                         yAxisId="pct"
                         type="monotone"
                         dataKey="pct"
-                        stroke="#38bdf8"
+                        stroke={COLOR.CROSS}
                         strokeWidth={1.5}
                         dot={false}
                         name="pct"
@@ -373,7 +374,7 @@ function TradeRow({
                         yAxisId="px"
                         type="monotone"
                         dataKey="fillPx"
-                        stroke="#f59e0b"
+                        stroke={COLOR.TAKER}
                         strokeWidth={1}
                         dot={false}
                         strokeDasharray="3 2"

@@ -21,6 +21,7 @@ import {
 } from "recharts";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import { COLOR } from "../tokens.ts";
 import { AdvisoryPanel } from "./AdvisoryPanel.tsx";
 
 const FEATURE_LABELS: Record<string, string> = {
@@ -53,7 +54,7 @@ function FeatureBar({ name, value, zScore }: { name: string; value: number; zSco
           style={{
             width: `${Math.abs(normalised) * 50}%`,
             marginLeft: isPositive ? "50%" : `${50 - Math.abs(normalised) * 50}%`,
-            backgroundColor: isPositive ? "#34d399" : "#f87171",
+            backgroundColor: isPositive ? COLOR.UP : COLOR.DOWN,
           }}
         />
       </div>
@@ -98,7 +99,7 @@ function ReplayTooltip({
       {score && (
         <div
           style={{
-            color: (score.value as number) >= 0 ? "#34d399" : "#f87171",
+            color: (score.value as number) >= 0 ? COLOR.UP : COLOR.DOWN,
           }}
         >
           Score:{" "}
@@ -244,7 +245,7 @@ export function InstrumentAnalysisPanel() {
             <div className="text-[10px] text-gray-500 mb-1">{chartData.length} frames</div>
             <ResponsiveContainer width="100%" height={160}>
               <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <CartesianGrid strokeDasharray="3 3" stroke={COLOR.CHART_GRID} />
                 <XAxis
                   dataKey="ts"
                   hide
@@ -269,7 +270,12 @@ export function InstrumentAnalysisPanel() {
                   tickFormatter={(v: number) => `$${v.toFixed(0)}`}
                 />
                 <Tooltip content={<ReplayTooltip />} />
-                <ReferenceLine yAxisId="score" y={0} stroke="#374151" strokeDasharray="3 3" />
+                <ReferenceLine
+                  yAxisId="score"
+                  y={0}
+                  stroke={COLOR.CHART_TOOLTIP_BORDER}
+                  strokeDasharray="3 3"
+                />
                 <Line
                   yAxisId="score"
                   dataKey="score"
@@ -281,7 +287,7 @@ export function InstrumentAnalysisPanel() {
                 <Line
                   yAxisId="price"
                   dataKey="close"
-                  stroke="#6b7280"
+                  stroke={COLOR.CHART_AXIS}
                   dot={false}
                   strokeWidth={1}
                   isAnimationActive={false}

@@ -11,16 +11,23 @@ import {
 } from "recharts";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import { COLOR } from "../tokens.ts";
 import type { OrderRecord } from "../types.ts";
 
-const FILL_COLOUR = "#34d399";
-const REMAINING_COLOUR = "#1f2937";
-const STRATEGY_COLOURS: Record<string, string> = {
-  LIMIT: "#3b82f6",
-  TWAP: "#a855f7",
-  POV: "#f97316",
-  VWAP: "#eab308",
-};
+function strategyColour(strategy: string): string {
+  switch (strategy) {
+    case "LIMIT":
+      return COLOR.LIMIT;
+    case "TWAP":
+      return COLOR.TWAP;
+    case "POV":
+      return COLOR.POV;
+    case "VWAP":
+      return COLOR.VWAP;
+    default:
+      return COLOR.NEUTRAL;
+  }
+}
 
 function fillPct(order: OrderRecord): number {
   if (order.quantity === 0) return 0;
@@ -42,11 +49,11 @@ interface BarEntry {
 function buildPieSlices(order: OrderRecord): PieEntry[] {
   const pct = fillPct(order);
   return [
-    { name: "Filled", value: Math.round(pct * 100), colour: FILL_COLOUR },
+    { name: "Filled", value: Math.round(pct * 100), colour: COLOR.FILL },
     {
       name: "Remaining",
       value: Math.round((1 - pct) * 100),
-      colour: REMAINING_COLOUR,
+      colour: COLOR.REMAINING,
     },
   ];
 }
@@ -57,7 +64,7 @@ function buildChildBars(order: OrderRecord): BarEntry[] {
     .map((c) => ({
       name: c.id.slice(0, 6).toUpperCase(),
       value: c.filled,
-      colour: STRATEGY_COLOURS[order.strategy] ?? "#34d399",
+      colour: strategyColour(order.strategy),
     }));
 }
 
@@ -123,7 +130,7 @@ export function OrderProgressPanel() {
   const pctDisplay = Math.round(pct * 100);
   const pieSlices = buildPieSlices(order);
   const childBars = buildChildBars(order);
-  const stratColour = STRATEGY_COLOURS[order.strategy] ?? "#6b7280";
+  const stratColour = strategyColour(order.strategy);
 
   return (
     <div
@@ -170,7 +177,7 @@ export function OrderProgressPanel() {
             <span
               className="text-4xl font-bold tabular-nums"
               data-testid="fill-percentage"
-              style={{ color: pct === 1 ? FILL_COLOUR : "#e5e7eb" }}
+              style={{ color: pct === 1 ? COLOR.FILL : "rgb(var(--gray-200))" }}
             >
               {pctDisplay}%
             </span>
@@ -207,12 +214,16 @@ export function OrderProgressPanel() {
               <BarChart data={childBars} margin={{ top: 4, right: 8, bottom: 4, left: -16 }}>
                 <XAxis
                   dataKey="name"
-                  tick={{ fontSize: 8, fill: "#6b7280" }}
+                  tick={{ fontSize: 8, fill: COLOR.CHART_AXIS }}
                   axisLine={false}
                   tickLine={false}
                 />
-                <YAxis tick={{ fontSize: 9, fill: "#6b7280" }} axisLine={false} tickLine={false} />
-                <Tooltip content={<BarTooltipContent />} cursor={{ fill: "#ffffff08" }} />
+                <YAxis
+                  tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip content={<BarTooltipContent />} cursor={{ fill: COLOR.CHART_CURSOR }} />
                 <Bar dataKey="value" radius={[3, 3, 0, 0]}>
                   {childBars.map((row) => (
                     <Cell key={row.name} fill={row.colour} />

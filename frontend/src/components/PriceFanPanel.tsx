@@ -18,6 +18,7 @@ import {
   YAxis,
 } from "recharts";
 import { useGetPriceFanQuery } from "../store/analyticsApi.ts";
+import { COLOR } from "../tokens.ts";
 
 interface HorizonPreset {
   label: string;
@@ -152,20 +153,20 @@ export function PriceFanPanel() {
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={areaData} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-              <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#6b7280" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={COLOR.CHART_GRID} />
+              <XAxis dataKey="label" tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }} />
               <YAxis
                 domain={[yMin ?? "auto", yMax ?? "auto"]}
                 tickFormatter={(v: number) => `$${v.toFixed(0)}`}
-                tick={{ fontSize: 9, fill: "#6b7280" }}
+                tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }}
               />
               <Tooltip
                 contentStyle={{
-                  background: "#111827",
+                  background: COLOR.CHART_TOOLTIP_BG,
                   border: "1px solid #374151",
                   borderRadius: 4,
                   fontSize: 9,
-                  color: "#d1d5db",
+                  color: "rgb(var(--gray-300))",
                 }}
                 formatter={(v: number, name: string) => {
                   if (name === "p50") return [`$${v.toFixed(2)}`, "median"];
@@ -185,7 +186,7 @@ export function PriceFanPanel() {
                 dataKey="band1"
                 stackId="fan"
                 stroke="none"
-                fill="#3b82f6"
+                fill={COLOR.LIMIT}
                 fillOpacity={0.12}
                 isAnimationActive={false}
                 legendType="none"
@@ -194,7 +195,7 @@ export function PriceFanPanel() {
                 dataKey="band2"
                 stackId="fan"
                 stroke="none"
-                fill="#3b82f6"
+                fill={COLOR.LIMIT}
                 fillOpacity={0.22}
                 isAnimationActive={false}
                 legendType="none"
@@ -203,7 +204,7 @@ export function PriceFanPanel() {
                 dataKey="band3"
                 stackId="fan"
                 stroke="none"
-                fill="#3b82f6"
+                fill={COLOR.LIMIT}
                 fillOpacity={0.12}
                 isAnimationActive={false}
                 legendType="none"
@@ -211,7 +212,7 @@ export function PriceFanPanel() {
               <Line
                 type="monotone"
                 dataKey="p50"
-                stroke="#3b82f6"
+                stroke={COLOR.LIMIT}
                 strokeWidth={2}
                 dot={false}
                 isAnimationActive={false}
@@ -219,7 +220,7 @@ export function PriceFanPanel() {
               {spotPrice > 0 && (
                 <ReferenceLine
                   y={spotPrice}
-                  stroke="#6b7280"
+                  stroke={COLOR.CHART_AXIS}
                   strokeDasharray="4 3"
                   strokeWidth={1}
                 />

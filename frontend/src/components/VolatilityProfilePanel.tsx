@@ -20,6 +20,7 @@ import {
 import { useGetVolProfileQuery } from "../store/analyticsApi.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import { selectSymbols } from "../store/selectors.ts";
+import { COLOR } from "../tokens.ts";
 
 interface TooltipPayloadItem {
   name: string;
@@ -126,14 +127,14 @@ export function VolatilityProfilePanel() {
             <AreaChart data={chartData} margin={{ top: 4, right: 16, bottom: 16, left: -8 }}>
               <defs>
                 <linearGradient id="volGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
+                  <stop offset="5%" stopColor={COLOR.LIMIT} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={COLOR.LIMIT} stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <CartesianGrid strokeDasharray="3 3" stroke={COLOR.CHART_GRID} />
               <XAxis dataKey="ts" type="number" domain={["dataMin", "dataMax"]} scale="time" hide />
               <YAxis
-                tick={{ fill: "#6b7280", fontSize: 9 }}
+                tick={{ fill: COLOR.CHART_AXIS, fontSize: 9 }}
                 tickFormatter={(v: number) => `${(v * 100).toFixed(1)}%`}
                 width={40}
               />
@@ -141,11 +142,11 @@ export function VolatilityProfilePanel() {
               {data && (
                 <ReferenceLine
                   y={data.rollingVol}
-                  stroke="#6b7280"
+                  stroke={COLOR.CHART_AXIS}
                   strokeDasharray="4 2"
                   label={{
                     value: `Rolling ${(data.rollingVol * 100).toFixed(1)}%`,
-                    fill: "#6b7280",
+                    fill: COLOR.CHART_AXIS,
                     fontSize: 8,
                     position: "insideTopRight",
                   }}
@@ -154,7 +155,7 @@ export function VolatilityProfilePanel() {
               <Area
                 type="monotone"
                 dataKey="vol"
-                stroke="#3b82f6"
+                stroke={COLOR.LIMIT}
                 strokeWidth={1.5}
                 fill="url(#volGradient)"
                 dot={false}

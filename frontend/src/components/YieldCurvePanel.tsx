@@ -19,6 +19,7 @@ import {
   YAxis,
 } from "recharts";
 import { useGetBondPriceMutation, useGetYieldCurveMutation } from "../store/analyticsApi.ts";
+import { COLOR } from "../tokens.ts";
 import type { BondPriceResponse, ForwardRate, YieldCurvePoint } from "../types/analytics.ts";
 
 function ForwardChip({ fwd, prevRate }: { fwd: ForwardRate; prevRate?: number }) {
@@ -120,29 +121,29 @@ export function YieldCurvePanel() {
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-              <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#6b7280" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={COLOR.CHART_GRID} />
+              <XAxis dataKey="label" tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }} />
               <YAxis
                 tickFormatter={(v: number) => `${v.toFixed(1)}%`}
-                tick={{ fontSize: 9, fill: "#6b7280" }}
+                tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }}
                 domain={["auto", "auto"]}
               />
               <Tooltip
                 contentStyle={{
-                  background: "#111827",
+                  background: COLOR.CHART_TOOLTIP_BG,
                   border: "1px solid #374151",
                   borderRadius: 4,
                   fontSize: 9,
-                  color: "#d1d5db",
+                  color: "rgb(var(--gray-300))",
                 }}
                 formatter={(v: number) => [`${v.toFixed(3)}%`, "Yield"]}
               />
               <Line
                 type="monotone"
                 dataKey="rate"
-                stroke="#3b82f6"
+                stroke={COLOR.LIMIT}
                 strokeWidth={2}
-                dot={{ r: 3, fill: "#3b82f6" }}
+                dot={{ r: 3, fill: COLOR.LIMIT }}
                 isAnimationActive={false}
               />
             </LineChart>
