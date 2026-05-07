@@ -88,10 +88,11 @@ async function withRetry<R>(label: string, attempts: number, fn: () => Promise<R
   throw lastErr;
 }
 
-// Skip steps that mirror the legacy CI's known-flaky algos (SNIPER/IS/MOMENTUM):
-// these depend on rich market price action which a cold-boot stack doesn't have.
-// Set RUN_FLAKY_ALGOS=1 to opt back in.
-const SKIP_FLAKY = Deno.env.get("RUN_FLAKY_ALGOS") !== "1";
+// SNIPER, IS and MOMENTUM are not permitted for alice's persona post-migration
+// 0010 (alice's allowed_strategies were stripped to LIMIT/TWAP/POV/VWAP/ICEBERG/
+// ARRIVAL_PRICE). The dedicated `test-full-trader` user (added in migration
+// 0016) has all 9 strategies enabled so these steps can run end-to-end.
+const FULL_TRADER = "test-full-trader";
 
 async function priceOf(stack: TestStack, token: string, symbol: string, fallback: number): Promise<number> {
   const gw = url(stack, "gateway");
@@ -191,9 +192,9 @@ Deno.test({
         assert(order!.children[0].quantity <= 50);
       });
 
-      await t.step({ name: "SNIPER routes and executes aggressively", ignore: SKIP_FLAKY, fn: async () => {
+      await t.step("SNIPER routes and executes aggressively", async () => {
         await withRetry("SNIPER", 2, async () => {
-          const token = await login(stack, "alice");
+          const token = await login(stack, FULL_TRADER);
           const px = await priceOf(stack, token, "AAPL", 190);
           const { clientOrderId } = await submitOrderViaWs(stack, token, {
             asset: "AAPL", side: "BUY", quantity: 50, limitPrice: px * 1.05, strategy: "SNIPER",
@@ -203,7 +204,7 @@ Deno.test({
           assertExists(order);
           assertEquals(order!.strategy, "SNIPER");
         });
-      } });
+      });
 
       await t.step("ARRIVAL_PRICE routes and produces children", async () => {
         const token = await login(stack, "alice");
@@ -270,9 +271,9 @@ Deno.test({
         }
       });
 
-      await t.step({ name: "[perf] SNIPER produces ≤3 slices", ignore: SKIP_FLAKY, fn: async () => {
+      await t.step("[perf] SNIPER produces ≤3 slices", async () => {
         await withRetry("perf SNIPER", 2, async () => {
-          const token = await login(stack, "alice");
+          const token = await login(stack, FULL_TRADER);
           const px = await priceOf(stack, token, "AAPL", 190);
           const { clientOrderId } = await submitOrderViaWs(stack, token, {
             asset: "AAPL", side: "BUY", quantity: 50, limitPrice: px * 1.05, strategy: "SNIPER",
@@ -282,11 +283,11 @@ Deno.test({
           assertExists(order);
           assert(order!.children.length <= 3, `SNIPER produced ${order!.children.length} slices`);
         });
-      } });
+      });
 
-      await t.step({ name: "IS routes at least one child slice", ignore: SKIP_FLAKY, fn: async () => {
+      await t.step("IS routes at least one child slice", async () => {
         await withRetry("IS", 2, async () => {
-          const token = await login(stack, "alice");
+          const token = await login(stack, FULL_TRADER);
           const px = await priceOf(stack, token, "AAPL", 190);
           const { clientOrderId } = await submitOrderViaWs(stack, token, {
             asset: "AAPL", side: "BUY", quantity: 100, limitPrice: px * 1.05, strategy: "IS",
@@ -295,11 +296,11 @@ Deno.test({
           const order = await pollForChildren(J, clientOrderId, 1, 60_000);
           assertExists(order);
         });
-      } });
+      });
 
-      await t.step({ name: "MOMENTUM routes at least one tranche (BUY or SELL)", ignore: SKIP_FLAKY, fn: async () => {
+      await t.step("MOMENTUM routes at least one tranche (BUY or SELL)", async () => {
        await withRetry("MOMENTUM", 2, async () => {
-        const token = await login(stack, "alice");
+        const token = await login(stack, FULL_TRADER);
         const px = await priceOf(stack, token, "AAPL", 190);
         const algoParams = {
           strategy: "MOMENTUM",
@@ -337,7 +338,7 @@ Deno.test({
         }
         assert(fired, "MOMENTUM: neither side produced a tranche within 120s");
        });
-      } });
+      });
     } catch (err) {
       await Deno.stderr.write(new TextEncoder().encode("\n--- service logs ---\n" + stack.dumpLogs()));
       throw err;
