@@ -1,7 +1,47 @@
+/* Shared design tokens — kept in sync with frontend/src/index.css.
+   Both sites declare the same gray scale + trading semantic palette as RGB
+   triplets so frontend components imported into the docs render with the
+   same colours, and Tailwind's <alpha-value> works on both. */
 :root {
-  --sl-color-accent-low: #1e293b;
-  --sl-color-accent: #38bdf8;
-  --sl-color-accent-high: #bae6fd;
+  --gray-50: 255 255 255;
+  --gray-100: 241 245 249;
+  --gray-200: 214 224 236;
+  --gray-300: 182 196 212;
+  --gray-400: 152 165 182;
+  --gray-500: 122 135 152;
+  --gray-600: 78 90 106;
+  --gray-700: 52 64 80;
+  --gray-800: 30 41 55;
+  --gray-900: 15 23 38;
+  --gray-950: 3 7 18;
+
+  --semantic-up: 52 211 153;
+  --semantic-up-dark: 5 150 105;
+  --semantic-down: 248 113 113;
+  --semantic-down-dark: 220 38 38;
+  --semantic-neutral: 156 163 175;
+  --semantic-maker: 16 185 129;
+  --semantic-taker: 245 158 11;
+  --semantic-cross: 56 189 248;
+  --semantic-limit: 59 130 246;
+  --semantic-twap: 168 85 247;
+  --semantic-pov: 249 115 22;
+  --semantic-vwap: 234 179 8;
+  --semantic-iceberg: 34 211 238;
+  --semantic-sniper: 244 63 94;
+  --semantic-arrival-price: 129 140 248;
+
+  --chart-grid: 31 41 55;
+  --chart-axis: 107 114 128;
+  --chart-tooltip-bg: 17 24 39;
+  --chart-tooltip-border: 55 65 81;
+
+  /* Map the app's semantic-cross to Starlight's accent so the docs share
+     the trading platform's accent colour rather than running the Starlight
+     default. */
+  --sl-color-accent-low: rgb(var(--gray-800));
+  --sl-color-accent: rgb(var(--semantic-cross));
+  --sl-color-accent-high: rgb(var(--semantic-cross) / 0.6);
 }
 
 .screenshot-grid {
@@ -62,7 +102,7 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(3, 7, 18, 0.92);
+  background: rgb(var(--gray-950) / 0.92);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -138,8 +178,8 @@
   margin-left: 0.5rem;
   transform: translateY(-50%) translateX(-4px);
   padding: 0.2rem 0.55rem;
-  background: var(--sl-color-bg-accent, #38bdf8);
-  color: var(--sl-color-bg, #0f172a);
+  background: var(--sl-color-bg-accent, rgb(var(--semantic-cross)));
+  color: var(--sl-color-bg, rgb(var(--gray-900)));
   font-size: 0.7rem;
   font-weight: 600;
   border-radius: 9999px;
