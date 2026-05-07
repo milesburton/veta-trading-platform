@@ -36,7 +36,7 @@ VETA is a simulation-first equities and fixed-income trading platform designed f
 - [Tech stack](docs/site/src/content/docs/reference/tech-stack.mdx)
 - [Changelog](CHANGELOG.md)
 
-## Docs by audience
+## Documentation by audience
 
 - User docs: [Placing orders](docs/site/src/content/docs/user-guide/placing-orders.md)
   - A concise path for day-to-day trading actions.
