@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.26.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.25.0...veta-trading-platform-v1.26.0) (2026-05-07)
+
+
+### Features
+
+* **ui:** consolidate gray scale into purpose-named semantic tokens ([#87](https://github.com/milesburton/veta-trading-platform/issues/87)) ([8bafd9a](https://github.com/milesburton/veta-trading-platform/commit/8bafd9ab4ddf1f54d596c875f42a38fbbdf61576))
+
+
+### Bug Fixes
+
+* **badges:** correct stale coverage badges that misrepresent the suite ([#82](https://github.com/milesburton/veta-trading-platform/issues/82)) ([45aac12](https://github.com/milesburton/veta-trading-platform/commit/45aac125e36cd408f52a5a68bfdeb226cbb432c1))
+* **fly:** bump vm size to shared-cpu-8x to match 12gb memory request ([#83](https://github.com/milesburton/veta-trading-platform/issues/83)) ([1b8c381](https://github.com/milesburton/veta-trading-platform/commit/1b8c381a55f901dcca18e04c91bb463ff582602e))
+* **tests:** un-skip 4 algo integration steps with a full-permission trader ([#80](https://github.com/milesburton/veta-trading-platform/issues/80)) ([5d2de6c](https://github.com/milesburton/veta-trading-platform/commit/5d2de6cdb494ece40f92dbc1be30047e6b459dae))
+
 ## [1.25.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.24.0...veta-trading-platform-v1.25.0) (2026-05-06)
 
 
