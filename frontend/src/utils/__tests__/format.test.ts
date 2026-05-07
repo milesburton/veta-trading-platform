@@ -29,6 +29,6 @@ describe("format utilities", () => {
   it("returns pnl css class by sign", () => {
     expect(pnlColor(1)).toBe("text-emerald-400");
     expect(pnlColor(-1)).toBe("text-red-400");
-    expect(pnlColor(0)).toBe("text-gray-500");
+    expect(pnlColor(0)).toBe("text-muted");
   });
 });

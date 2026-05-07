@@ -10,7 +10,7 @@ import {
 } from "../store/scenariosApi.ts";
 
 const STATUS_STYLE: Record<string, string> = {
-  pending: "bg-gray-700 text-gray-200",
+  pending: "bg-divider text-secondary",
   completed: "bg-emerald-900/60 text-emerald-300 border border-emerald-700/60",
   mismatched: "bg-amber-900/60 text-amber-300 border border-amber-700/60",
   failed: "bg-red-900/60 text-red-300 border border-red-700/60",
@@ -37,17 +37,17 @@ function ScenarioRow({
 }) {
   return (
     <tr
-      className={`cursor-pointer border-t border-gray-800/60 hover:bg-gray-800/40 ${
-        selected ? "bg-gray-800/60" : ""
+      className={`cursor-pointer border-t border-panel/60 hover:bg-panel/40 ${
+        selected ? "bg-panel/60" : ""
       }`}
       onClick={onSelect}
       data-testid="scenario-row"
     >
-      <td className="px-3 py-1.5 text-gray-200 font-medium">{scenario.name}</td>
-      <td className="px-3 py-1.5 text-gray-400 font-mono text-[10px]">
+      <td className="px-3 py-1.5 text-secondary font-medium">{scenario.name}</td>
+      <td className="px-3 py-1.5 text-label font-mono text-[10px]">
         {scenario.spec.symbol} · {scenario.spec.side} {scenario.spec.quantity}
       </td>
-      <td className="px-3 py-1.5 text-gray-400 font-mono text-[10px]">seed {scenario.spec.seed}</td>
+      <td className="px-3 py-1.5 text-label font-mono text-[10px]">seed {scenario.spec.seed}</td>
       <td className="px-3 py-1.5 text-right">
         <button
           type="button"
@@ -56,7 +56,7 @@ function ScenarioRow({
             e.stopPropagation();
             onRun();
           }}
-          className="text-emerald-400 hover:text-emerald-300 disabled:text-gray-600 disabled:cursor-not-allowed mr-2"
+          className="text-emerald-400 hover:text-emerald-300 disabled:text-subtle disabled:cursor-not-allowed mr-2"
           data-testid="scenario-run-btn"
         >
           {isRunning ? "Running…" : "Run"}
@@ -78,20 +78,20 @@ function ScenarioRow({
 }
 
 function RunRow({ run }: { run: ScenarioRun }) {
-  const cls = STATUS_STYLE[run.status] ?? "bg-gray-700 text-gray-200";
+  const cls = STATUS_STYLE[run.status] ?? "bg-divider text-secondary";
   return (
-    <tr className="border-t border-gray-800/40 text-[11px]">
-      <td className="px-2 py-1 text-gray-400 tabular-nums">{formatTime(run.triggeredAt)}</td>
+    <tr className="border-t border-panel/40 text-[11px]">
+      <td className="px-2 py-1 text-label tabular-nums">{formatTime(run.triggeredAt)}</td>
       <td className="px-2 py-1">
         <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase ${cls}`}>{run.status}</span>
       </td>
-      <td className="px-2 py-1 text-gray-300 tabular-nums">
+      <td className="px-2 py-1 text-default tabular-nums">
         {run.actual ? `${run.actual.fillCount}/${run.actual.totalFilled}` : "—"}
       </td>
-      <td className="px-2 py-1 text-gray-300 tabular-nums">
+      <td className="px-2 py-1 text-default tabular-nums">
         {run.actual ? `${run.actual.slippageBps.toFixed(1)} bps` : "—"}
       </td>
-      <td className="px-2 py-1 text-gray-500 font-mono truncate" title={run.parentOrderId ?? ""}>
+      <td className="px-2 py-1 text-muted font-mono truncate" title={run.parentOrderId ?? ""}>
         {run.parentOrderId ? `${run.parentOrderId.slice(0, 8)}…` : (run.error ?? "")}
       </td>
     </tr>
@@ -134,9 +134,9 @@ function NewScenarioForm({ onCancel }: { onCancel: () => void }) {
   }
 
   return (
-    <div className="p-3 border-b border-gray-800 bg-gray-950/60 text-xs">
+    <div className="p-3 border-b border-panel bg-page/60 text-xs">
       <div className="grid grid-cols-2 gap-2">
-        <label className="text-gray-400 col-span-2">
+        <label className="text-label col-span-2">
           Name
           <input
             type="text"
@@ -144,11 +144,11 @@ function NewScenarioForm({ onCancel }: { onCancel: () => void }) {
             onInput={(e) => {
               name.value = (e.target as HTMLInputElement).value;
             }}
-            className="mt-0.5 w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 text-gray-200"
+            className="mt-0.5 w-full bg-surface border border-panel rounded px-2 py-1 text-secondary"
             data-testid="scenario-name"
           />
         </label>
-        <label className="text-gray-400">
+        <label className="text-label">
           Symbol
           <input
             type="text"
@@ -156,23 +156,23 @@ function NewScenarioForm({ onCancel }: { onCancel: () => void }) {
             onInput={(e) => {
               symbol.value = (e.target as HTMLInputElement).value.toUpperCase();
             }}
-            className="mt-0.5 w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 text-gray-200 font-mono uppercase"
+            className="mt-0.5 w-full bg-surface border border-panel rounded px-2 py-1 text-secondary font-mono uppercase"
           />
         </label>
-        <label className="text-gray-400">
+        <label className="text-label">
           Side
           <select
             value={side.value}
             onChange={(e) => {
               side.value = (e.target as HTMLSelectElement).value as "BUY" | "SELL";
             }}
-            className="mt-0.5 w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 text-gray-200"
+            className="mt-0.5 w-full bg-surface border border-panel rounded px-2 py-1 text-secondary"
           >
             <option value="BUY">BUY</option>
             <option value="SELL">SELL</option>
           </select>
         </label>
-        <label className="text-gray-400">
+        <label className="text-label">
           Quantity
           <input
             type="number"
@@ -181,10 +181,10 @@ function NewScenarioForm({ onCancel }: { onCancel: () => void }) {
             onInput={(e) => {
               quantity.value = Number((e.target as HTMLInputElement).value);
             }}
-            className="mt-0.5 w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 text-gray-200 tabular-nums"
+            className="mt-0.5 w-full bg-surface border border-panel rounded px-2 py-1 text-secondary tabular-nums"
           />
         </label>
-        <label className="text-gray-400">
+        <label className="text-label">
           Limit Price
           <input
             type="number"
@@ -193,10 +193,10 @@ function NewScenarioForm({ onCancel }: { onCancel: () => void }) {
             onInput={(e) => {
               limitPrice.value = Number((e.target as HTMLInputElement).value);
             }}
-            className="mt-0.5 w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 text-gray-200 tabular-nums"
+            className="mt-0.5 w-full bg-surface border border-panel rounded px-2 py-1 text-secondary tabular-nums"
           />
         </label>
-        <label className="text-gray-400">
+        <label className="text-label">
           Seed
           <input
             type="number"
@@ -204,17 +204,17 @@ function NewScenarioForm({ onCancel }: { onCancel: () => void }) {
             onInput={(e) => {
               seed.value = Number((e.target as HTMLInputElement).value);
             }}
-            className="mt-0.5 w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 text-gray-200 tabular-nums"
+            className="mt-0.5 w-full bg-surface border border-panel rounded px-2 py-1 text-secondary tabular-nums"
           />
         </label>
-        <label className="text-gray-400">
+        <label className="text-label">
           Strategy
           <select
             value={strategy.value}
             onChange={(e) => {
               strategy.value = (e.target as HTMLSelectElement).value;
             }}
-            className="mt-0.5 w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 text-gray-200"
+            className="mt-0.5 w-full bg-surface border border-panel rounded px-2 py-1 text-secondary"
           >
             <option>LIMIT</option>
             <option>TWAP</option>
@@ -229,7 +229,7 @@ function NewScenarioForm({ onCancel }: { onCancel: () => void }) {
         <button
           type="button"
           onClick={onCancel}
-          className="px-2 py-1 text-gray-400 hover:text-gray-200"
+          className="px-2 py-1 text-label hover:text-secondary"
         >
           Cancel
         </button>
@@ -249,13 +249,13 @@ function NewScenarioForm({ onCancel }: { onCancel: () => void }) {
 
 function RunsTable({ scenarioId }: { scenarioId: string }) {
   const { data: runs = [], isLoading } = useListRunsQuery(scenarioId, { pollingInterval: 5_000 });
-  if (isLoading) return <div className="p-3 text-xs text-gray-500">Loading runs…</div>;
+  if (isLoading) return <div className="p-3 text-xs text-muted">Loading runs…</div>;
   if (runs.length === 0) {
-    return <div className="p-3 text-xs text-gray-500">No runs yet. Hit Run to record one.</div>;
+    return <div className="p-3 text-xs text-muted">No runs yet. Hit Run to record one.</div>;
   }
   return (
     <table className="w-full text-xs">
-      <thead className="text-gray-500 uppercase text-[10px]">
+      <thead className="text-muted uppercase text-[10px]">
         <tr>
           <th className="px-2 py-1 text-left">When</th>
           <th className="px-2 py-1 text-left">Status</th>
@@ -287,8 +287,8 @@ export function ScenariosPanel() {
 
   return (
     <div className="flex flex-col h-full text-xs">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0">
-        <span className="text-gray-400 font-medium uppercase tracking-wider">Scenarios</span>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-panel shrink-0">
+        <span className="text-label font-medium uppercase tracking-wider">Scenarios</span>
         <button
           type="button"
           onClick={() => {
@@ -310,16 +310,16 @@ export function ScenariosPanel() {
       )}
 
       <div className="flex-1 overflow-auto">
-        {isLoading && <div className="p-3 text-gray-500">Loading…</div>}
+        {isLoading && <div className="p-3 text-muted">Loading…</div>}
         {!isLoading && scenarios.length === 0 && (
-          <div className="p-4 text-gray-500">
+          <div className="p-4 text-muted">
             No saved scenarios yet. Click <strong>+ New</strong> to capture one — same seed, same
             symbol, same strategy means the run is repeatable end-to-end.
           </div>
         )}
         {scenarios.length > 0 && (
           <table className="w-full">
-            <thead className="sticky top-0 bg-gray-900/95 backdrop-blur text-gray-500 text-[10px] uppercase">
+            <thead className="sticky top-0 bg-surface/95 backdrop-blur text-muted text-[10px] uppercase">
               <tr>
                 <th className="px-3 py-1.5 text-left">Name</th>
                 <th className="px-3 py-1.5 text-left">Order</th>
@@ -350,8 +350,8 @@ export function ScenariosPanel() {
       </div>
 
       {selected && (
-        <div className="border-t border-gray-800 max-h-72 overflow-auto shrink-0">
-          <div className="px-3 py-1 text-[10px] uppercase text-gray-500 bg-gray-950/60">
+        <div className="border-t border-panel max-h-72 overflow-auto shrink-0">
+          <div className="px-3 py-1 text-[10px] uppercase text-muted bg-page/60">
             Runs · {selected.name}
           </div>
           <RunsTable scenarioId={selected.id} />

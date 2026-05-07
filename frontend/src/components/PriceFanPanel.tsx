@@ -99,9 +99,9 @@ export function PriceFanPanel() {
   const yMax = steps.length > 0 ? Math.max(...steps.map((s) => s.p95)) * 1.005 : undefined;
 
   return (
-    <div className="h-full flex flex-col bg-gray-950 text-gray-200 overflow-hidden text-xs">
-      <div className="px-3 py-2 border-b border-gray-800 shrink-0 flex items-center gap-2 flex-wrap">
-        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide shrink-0">
+    <div className="h-full flex flex-col bg-page text-secondary overflow-hidden text-xs">
+      <div className="px-3 py-2 border-b border-panel shrink-0 flex items-center gap-2 flex-wrap">
+        <span className="text-[11px] font-semibold text-label uppercase tracking-wide shrink-0">
           Price Fan · GBM Projection
         </span>
         <form onSubmit={handleSymbolSubmit} className="flex gap-1 items-center">
@@ -112,7 +112,7 @@ export function PriceFanPanel() {
               inputValue.value = e.target.value.toUpperCase();
             }}
             placeholder="AAPL"
-            className="w-20 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-[10px] text-gray-200 font-mono focus:outline-none focus:border-blue-600"
+            className="w-20 bg-surface border border-divider rounded px-1.5 py-0.5 text-[10px] text-secondary font-mono focus:outline-none focus:border-blue-600"
           />
           <button
             type="submit"
@@ -132,7 +132,7 @@ export function PriceFanPanel() {
               className={`text-[10px] px-2 py-0.5 rounded border ${
                 i === horizonIdx.value
                   ? "bg-blue-800/60 border-blue-600 text-blue-200"
-                  : "bg-gray-900 border-gray-700 text-gray-400 hover:text-gray-200"
+                  : "bg-surface border-divider text-label hover:text-secondary"
               }`}
             >
               {h.label}
@@ -147,7 +147,7 @@ export function PriceFanPanel() {
             Failed to load fan data for {symbol.value}
           </div>
         ) : steps.length === 0 && !isFetching ? (
-          <div className="flex items-center justify-center h-full text-gray-600 text-[10px]">
+          <div className="flex items-center justify-center h-full text-subtle text-[10px]">
             {symbol.value ? `No data for ${symbol.value}` : "Enter a symbol"}
           </div>
         ) : (
@@ -230,7 +230,7 @@ export function PriceFanPanel() {
         )}
       </div>
 
-      <div className="px-3 py-1 border-t border-gray-800 shrink-0 flex items-center gap-3 text-[9px] text-gray-600">
+      <div className="px-3 py-1 border-t border-panel shrink-0 flex items-center gap-3 text-[9px] text-subtle">
         {data && (
           <>
             <span>Vol: {(impliedVol * 100).toFixed(1)}%</span>

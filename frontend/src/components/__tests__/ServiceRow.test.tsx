@@ -26,7 +26,7 @@ describe("StatusDot", () => {
     expect(container.querySelector("span")?.className).toContain("bg-red-500");
 
     rerender(<StatusDot state="unknown" />);
-    expect(container.querySelector("span")?.className).toContain("bg-gray-500");
+    expect(container.querySelector("span")?.className).toContain("bg-muted");
   });
 });
 
@@ -67,7 +67,7 @@ describe("ServiceRow", () => {
 
     const dot = container.querySelector("span.inline-block");
     expect(dot).toBeTruthy();
-    expect(dot?.className).toContain("bg-gray-500");
+    expect(dot?.className).toContain("bg-muted");
   });
 
   it("falls back to lastChecked time or dash", () => {

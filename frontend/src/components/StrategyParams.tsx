@@ -97,11 +97,11 @@ export function StrategyParams({
 }: Props) {
   if (activeStrategy === "TWAP") {
     return (
-      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
-        <div className="text-[10px] text-gray-600 uppercase tracking-wider">TWAP Params</div>
+      <div data-testid="strategy-params" className="border border-panel rounded p-2 space-y-2">
+        <div className="text-[10px] text-subtle uppercase tracking-wider">TWAP Params</div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label htmlFor="twapSlices" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="twapSlices" className="block text-xs text-muted mb-1">
               Slices
             </label>
             <input
@@ -111,11 +111,11 @@ export function StrategyParams({
               value={twapSlices}
               onChange={(e) => setTwapSlices(e.target.value)}
               data-testid="param-slices"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <label htmlFor="twapCap" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="twapCap" className="block text-xs text-muted mb-1">
               Part. Cap %
             </label>
             <input
@@ -126,7 +126,7 @@ export function StrategyParams({
               value={twapCap}
               onChange={(e) => setTwapCap(e.target.value)}
               data-testid="param-participation-cap"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
         </div>
@@ -136,10 +136,10 @@ export function StrategyParams({
 
   if (activeStrategy === "POV") {
     return (
-      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
-        <div className="text-[10px] text-gray-600 uppercase tracking-wider">POV Params</div>
+      <div data-testid="strategy-params" className="border border-panel rounded p-2 space-y-2">
+        <div className="text-[10px] text-subtle uppercase tracking-wider">POV Params</div>
         <div>
-          <label htmlFor="povRate" className="block text-xs text-gray-500 mb-1">
+          <label htmlFor="povRate" className="block text-xs text-muted mb-1">
             Participation Rate %
           </label>
           <input
@@ -150,12 +150,12 @@ export function StrategyParams({
             value={povRate}
             onChange={(e) => setPovRate(e.target.value)}
             data-testid="param-participation-rate"
-            className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
           />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label htmlFor="povMin" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="povMin" className="block text-xs text-muted mb-1">
               Min Slice
             </label>
             <input
@@ -165,11 +165,11 @@ export function StrategyParams({
               value={povMin}
               onChange={(e) => setPovMin(e.target.value)}
               data-testid="param-min-slice"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <label htmlFor="povMax" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="povMax" className="block text-xs text-muted mb-1">
               Max Slice
             </label>
             <input
@@ -179,7 +179,7 @@ export function StrategyParams({
               value={povMax}
               onChange={(e) => setPovMax(e.target.value)}
               data-testid="param-max-slice"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
         </div>
@@ -189,10 +189,10 @@ export function StrategyParams({
 
   if (activeStrategy === "VWAP") {
     return (
-      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
-        <div className="text-[10px] text-gray-600 uppercase tracking-wider">VWAP Params</div>
+      <div data-testid="strategy-params" className="border border-panel rounded p-2 space-y-2">
+        <div className="text-[10px] text-subtle uppercase tracking-wider">VWAP Params</div>
         <div>
-          <label htmlFor="vwapDev" className="block text-xs text-gray-500 mb-1">
+          <label htmlFor="vwapDev" className="block text-xs text-muted mb-1">
             Max Deviation %
           </label>
           <input
@@ -203,12 +203,12 @@ export function StrategyParams({
             value={vwapDev}
             onChange={(e) => setVwapDev(e.target.value)}
             data-testid="param-max-deviation"
-            className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
           />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label htmlFor="vwapStart" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="vwapStart" className="block text-xs text-muted mb-1">
               Start Offset (s)
             </label>
             <input
@@ -218,11 +218,11 @@ export function StrategyParams({
               value={vwapStart}
               onChange={(e) => setVwapStart(e.target.value)}
               data-testid="param-start-offset"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <label htmlFor="vwapEnd" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="vwapEnd" className="block text-xs text-muted mb-1">
               End Offset (s)
             </label>
             <input
@@ -232,7 +232,7 @@ export function StrategyParams({
               value={vwapEnd}
               onChange={(e) => setVwapEnd(e.target.value)}
               data-testid="param-end-offset"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
         </div>
@@ -242,11 +242,11 @@ export function StrategyParams({
 
   if (activeStrategy === "ICEBERG") {
     return (
-      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
-        <div className="text-[10px] text-gray-600 uppercase tracking-wider">ICEBERG Params</div>
+      <div data-testid="strategy-params" className="border border-panel rounded p-2 space-y-2">
+        <div className="text-[10px] text-subtle uppercase tracking-wider">ICEBERG Params</div>
         <div>
-          <label htmlFor="icebergVisible" className="block text-xs text-gray-500 mb-1">
-            Visible Qty <span className="text-gray-600">(shares per slice)</span>
+          <label htmlFor="icebergVisible" className="block text-xs text-muted mb-1">
+            Visible Qty <span className="text-subtle">(shares per slice)</span>
           </label>
           <input
             id="icebergVisible"
@@ -255,7 +255,7 @@ export function StrategyParams({
             value={icebergVisible}
             onChange={(e) => setIcebergVisible(e.target.value)}
             data-testid="param-visible-qty"
-            className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
           />
         </div>
       </div>
@@ -264,11 +264,11 @@ export function StrategyParams({
 
   if (activeStrategy === "SNIPER") {
     return (
-      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
-        <div className="text-[10px] text-gray-600 uppercase tracking-wider">SNIPER Params</div>
+      <div data-testid="strategy-params" className="border border-panel rounded p-2 space-y-2">
+        <div className="text-[10px] text-subtle uppercase tracking-wider">SNIPER Params</div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label htmlFor="sniperAggression" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="sniperAggression" className="block text-xs text-muted mb-1">
               Aggression %
             </label>
             <input
@@ -279,11 +279,11 @@ export function StrategyParams({
               value={sniperAggression}
               onChange={(e) => setSniperAggression(e.target.value)}
               data-testid="param-aggression"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <label htmlFor="sniperMaxVenues" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="sniperMaxVenues" className="block text-xs text-muted mb-1">
               Max Venues
             </label>
             <input
@@ -294,7 +294,7 @@ export function StrategyParams({
               value={sniperMaxVenues}
               onChange={(e) => setSniperMaxVenues(e.target.value)}
               data-testid="param-max-venues"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
         </div>
@@ -304,13 +304,11 @@ export function StrategyParams({
 
   if (activeStrategy === "ARRIVAL_PRICE") {
     return (
-      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
-        <div className="text-[10px] text-gray-600 uppercase tracking-wider">
-          ARRIVAL PRICE Params
-        </div>
+      <div data-testid="strategy-params" className="border border-panel rounded p-2 space-y-2">
+        <div className="text-[10px] text-subtle uppercase tracking-wider">ARRIVAL PRICE Params</div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label htmlFor="apUrgency" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="apUrgency" className="block text-xs text-muted mb-1">
               Urgency
             </label>
             <input
@@ -321,11 +319,11 @@ export function StrategyParams({
               value={apUrgency}
               onChange={(e) => setApUrgency(e.target.value)}
               data-testid="param-urgency"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <label htmlFor="apMaxSlippageBps" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="apMaxSlippageBps" className="block text-xs text-muted mb-1">
               Max Slippage Bps
             </label>
             <input
@@ -335,7 +333,7 @@ export function StrategyParams({
               value={apMaxSlippageBps}
               onChange={(e) => setApMaxSlippageBps(e.target.value)}
               data-testid="param-max-slippage-bps"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
         </div>
@@ -345,13 +343,13 @@ export function StrategyParams({
 
   if (activeStrategy === "IS") {
     return (
-      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
-        <div className="text-[10px] text-gray-600 uppercase tracking-wider">
+      <div data-testid="strategy-params" className="border border-panel rounded p-2 space-y-2">
+        <div className="text-[10px] text-subtle uppercase tracking-wider">
           Implementation Shortfall Params
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label htmlFor="isUrgency" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="isUrgency" className="block text-xs text-muted mb-1">
               Urgency
             </label>
             <input
@@ -362,11 +360,11 @@ export function StrategyParams({
               value={isUrgency}
               onChange={(e) => setIsUrgency(e.target.value)}
               data-testid="param-is-urgency"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <label htmlFor="isMaxSlippageBps" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="isMaxSlippageBps" className="block text-xs text-muted mb-1">
               Max Slippage Bps
             </label>
             <input
@@ -376,11 +374,11 @@ export function StrategyParams({
               value={isMaxSlippageBps}
               onChange={(e) => setIsMaxSlippageBps(e.target.value)}
               data-testid="param-is-max-slippage-bps"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <label htmlFor="isMinSlices" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="isMinSlices" className="block text-xs text-muted mb-1">
               Min Slices
             </label>
             <input
@@ -390,11 +388,11 @@ export function StrategyParams({
               value={isMinSlices}
               onChange={(e) => setIsMinSlices(e.target.value)}
               data-testid="param-is-min-slices"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <label htmlFor="isMaxSlices" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="isMaxSlices" className="block text-xs text-muted mb-1">
               Max Slices
             </label>
             <input
@@ -404,7 +402,7 @@ export function StrategyParams({
               value={isMaxSlices}
               onChange={(e) => setIsMaxSlices(e.target.value)}
               data-testid="param-is-max-slices"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
         </div>
@@ -414,11 +412,11 @@ export function StrategyParams({
 
   if (activeStrategy === "MOMENTUM") {
     return (
-      <div data-testid="strategy-params" className="border border-gray-800 rounded p-2 space-y-2">
-        <div className="text-[10px] text-gray-600 uppercase tracking-wider">Momentum Params</div>
+      <div data-testid="strategy-params" className="border border-panel rounded p-2 space-y-2">
+        <div className="text-[10px] text-subtle uppercase tracking-wider">Momentum Params</div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label htmlFor="momentumThreshold" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="momentumThreshold" className="block text-xs text-muted mb-1">
               Entry Threshold Bps
             </label>
             <input
@@ -428,11 +426,11 @@ export function StrategyParams({
               value={momentumThreshold}
               onChange={(e) => setMomentumThreshold(e.target.value)}
               data-testid="param-momentum-threshold"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <label htmlFor="momentumMaxTranches" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="momentumMaxTranches" className="block text-xs text-muted mb-1">
               Max Tranches
             </label>
             <input
@@ -442,11 +440,11 @@ export function StrategyParams({
               value={momentumMaxTranches}
               onChange={(e) => setMomentumMaxTranches(e.target.value)}
               data-testid="param-momentum-max-tranches"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <label htmlFor="momentumShortEma" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="momentumShortEma" className="block text-xs text-muted mb-1">
               Short EMA Period
             </label>
             <input
@@ -456,11 +454,11 @@ export function StrategyParams({
               value={momentumShortEma}
               onChange={(e) => setMomentumShortEma(e.target.value)}
               data-testid="param-momentum-short-ema"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <label htmlFor="momentumLongEma" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="momentumLongEma" className="block text-xs text-muted mb-1">
               Long EMA Period
             </label>
             <input
@@ -470,11 +468,11 @@ export function StrategyParams({
               value={momentumLongEma}
               onChange={(e) => setMomentumLongEma(e.target.value)}
               data-testid="param-momentum-long-ema"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div className="col-span-2">
-            <label htmlFor="momentumCooldown" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="momentumCooldown" className="block text-xs text-muted mb-1">
               Cooldown Ticks
             </label>
             <input
@@ -484,7 +482,7 @@ export function StrategyParams({
               value={momentumCooldown}
               onChange={(e) => setMomentumCooldown(e.target.value)}
               data-testid="param-momentum-cooldown"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
         </div>

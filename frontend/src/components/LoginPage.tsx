@@ -34,7 +34,7 @@ const DegradedServicesOverlayCard = memo(function DegradedServicesOverlayCard({
   return (
     <div
       data-testid="degraded-services-overlay"
-      className="absolute inset-0 z-[110] rounded-lg border border-amber-700/60 bg-gray-900 p-5 shadow-2xl ring-1 ring-amber-700/30"
+      className="absolute inset-0 z-[110] rounded-lg border border-amber-700/60 bg-surface p-5 shadow-2xl ring-1 ring-amber-700/30"
     >
       <div className="flex h-full flex-col justify-between gap-4">
         <div className="flex items-start gap-3">
@@ -43,7 +43,7 @@ const DegradedServicesOverlayCard = memo(function DegradedServicesOverlayCard({
           </span>
           <div>
             <h2 className="text-sm font-semibold text-amber-300">Platform degraded</h2>
-            <p className="mt-1 text-xs leading-relaxed text-gray-400">
+            <p className="mt-1 text-xs leading-relaxed text-label">
               {degradedCount === 1
                 ? "1 required service is offline."
                 : `${degradedCount} required services are offline.`}{" "}
@@ -65,7 +65,7 @@ const DegradedServicesOverlayCard = memo(function DegradedServicesOverlayCard({
             type="button"
             data-testid="degraded-dismiss"
             onClick={onDismiss}
-            className="rounded border border-gray-600 bg-gray-800 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-gray-700 hover:text-gray-100"
+            className="rounded border border-subtle bg-panel px-3 py-1.5 text-xs text-default transition-colors hover:bg-divider hover:text-primary"
           >
             Sign in anyway
           </button>
@@ -220,16 +220,16 @@ export function LoginPage() {
   }
 
   return (
-    <div data-testid="login-page" className="h-screen flex flex-col bg-gray-950">
+    <div data-testid="login-page" className="h-screen flex flex-col bg-page">
       <AppHeader />
 
       <main className="flex-1 overflow-auto flex items-center justify-center px-6 py-8">
         <div className="w-full max-w-md flex flex-col gap-6">
           <div className="text-center">
-            <h1 data-testid="login-heading" className="text-xl font-semibold text-gray-100 mb-1">
+            <h1 data-testid="login-heading" className="text-xl font-semibold text-primary mb-1">
               Sign in
             </h1>
-            <p className="text-gray-500 text-xs">
+            <p className="text-muted text-xs">
               Use your VETA user ID and passcode.{" "}
               <a
                 href="https://milesburton.github.io/veta-trading-platform/"
@@ -299,10 +299,10 @@ function AuthForm({
   return (
     <form
       onSubmit={onSubmit}
-      className="rounded-lg border border-gray-800 bg-gray-900/70 p-5 space-y-4"
+      className="rounded-lg border border-panel bg-surface/70 p-5 space-y-4"
     >
       <label className="space-y-1.5 block">
-        <span className="block text-[10px] font-medium uppercase tracking-wider text-gray-500">
+        <span className="block text-[10px] font-medium uppercase tracking-wider text-muted">
           Username
         </span>
         <input
@@ -313,12 +313,12 @@ function AuthForm({
           placeholder="alice"
           autoComplete="username"
           disabled={loading}
-          className="w-full rounded border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 outline-none transition-colors focus:border-emerald-500 disabled:opacity-50"
+          className="w-full rounded border border-divider bg-page px-3 py-2 text-sm text-primary outline-none transition-colors focus:border-emerald-500 disabled:opacity-50"
         />
       </label>
 
       <label className="space-y-1.5 block">
-        <span className="block text-[10px] font-medium uppercase tracking-wider text-gray-500">
+        <span className="block text-[10px] font-medium uppercase tracking-wider text-muted">
           Passcode
         </span>
         <input
@@ -329,7 +329,7 @@ function AuthForm({
           placeholder="Enter passcode"
           autoComplete="current-password"
           disabled={loading}
-          className="w-full rounded border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 outline-none transition-colors focus:border-emerald-500 disabled:opacity-50"
+          className="w-full rounded border border-divider bg-page px-3 py-2 text-sm text-primary outline-none transition-colors focus:border-emerald-500 disabled:opacity-50"
         />
       </label>
 

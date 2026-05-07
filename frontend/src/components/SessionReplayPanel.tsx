@@ -36,15 +36,15 @@ function SessionList({ onSelect }: { onSelect: (id: string) => void }) {
 
   return (
     <div className="flex flex-col h-full text-xs">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-panel">
         <div className="flex items-center gap-3">
-          <span className="text-gray-400 font-medium uppercase tracking-wider">Session Replay</span>
+          <span className="text-label font-medium uppercase tracking-wider">Session Replay</span>
           {isAdmin && (
             <button
               type="button"
               onClick={handleToggle}
               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                config?.recordingEnabled ? "bg-red-600" : "bg-gray-700"
+                config?.recordingEnabled ? "bg-red-600" : "bg-divider"
               }`}
             >
               <span
@@ -65,7 +65,7 @@ function SessionList({ onSelect }: { onSelect: (id: string) => void }) {
           <button
             type="button"
             onClick={() => refetch()}
-            className="text-gray-500 hover:text-gray-300 transition-colors"
+            className="text-muted hover:text-default transition-colors"
           >
             Refresh
           </button>
@@ -74,11 +74,11 @@ function SessionList({ onSelect }: { onSelect: (id: string) => void }) {
       </div>
 
       {isLoading && (
-        <div className="flex-1 flex items-center justify-center text-gray-500">Loading...</div>
+        <div className="flex-1 flex items-center justify-center text-muted">Loading...</div>
       )}
 
       {!isLoading && !data?.sessions.length && (
-        <div className="flex-1 flex items-center justify-center text-gray-500">
+        <div className="flex-1 flex items-center justify-center text-muted">
           {config?.recordingEnabled
             ? "Recording is active. Sessions will appear here once completed."
             : "No recorded sessions. Enable recording to start capturing sessions."}
@@ -88,8 +88,8 @@ function SessionList({ onSelect }: { onSelect: (id: string) => void }) {
       {data && data.sessions.length > 0 && (
         <div className="flex-1 overflow-auto">
           <table className="w-full">
-            <thead className="sticky top-0 bg-gray-900/95 backdrop-blur">
-              <tr className="text-gray-500 text-left">
+            <thead className="sticky top-0 bg-surface/95 backdrop-blur">
+              <tr className="text-muted text-left">
                 <th className="px-3 py-1.5 font-medium" title="User who recorded this session">
                   User
                 </th>
@@ -117,7 +117,7 @@ function SessionList({ onSelect }: { onSelect: (id: string) => void }) {
               ))}
             </tbody>
           </table>
-          <div className="px-3 py-1.5 text-gray-600 border-t border-gray-800">
+          <div className="px-3 py-1.5 text-subtle border-t border-panel">
             {data.total} session{data.total !== 1 ? "s" : ""} total
           </div>
         </div>
@@ -204,13 +204,13 @@ function SessionRow({
   }
 
   return (
-    <tr className="border-t border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-      <td className="px-3 py-1.5 text-gray-300">{session.userName ?? session.userId}</td>
-      <td className="px-3 py-1.5 text-gray-500">{session.userRole ?? "--"}</td>
-      <td className="px-3 py-1.5 text-gray-400 tabular-nums">
+    <tr className="border-t border-panel/50 hover:bg-panel/30 transition-colors">
+      <td className="px-3 py-1.5 text-default">{session.userName ?? session.userId}</td>
+      <td className="px-3 py-1.5 text-muted">{session.userRole ?? "--"}</td>
+      <td className="px-3 py-1.5 text-label tabular-nums">
         {formatTime(new Date(session.startedAt).getTime())}
       </td>
-      <td className="px-3 py-1.5 text-gray-400 tabular-nums">
+      <td className="px-3 py-1.5 text-label tabular-nums">
         {session.endedAt ? (
           formatDuration(session.durationMs)
         ) : (
@@ -225,7 +225,7 @@ function SessionRow({
           type="button"
           onClick={() => onSelect(session.id)}
           disabled={!session.endedAt}
-          className="text-sky-400 hover:text-sky-300 disabled:text-gray-600 disabled:cursor-not-allowed mr-2"
+          className="text-sky-400 hover:text-sky-300 disabled:text-subtle disabled:cursor-not-allowed mr-2"
         >
           Play
         </button>
@@ -234,7 +234,7 @@ function SessionRow({
           onClick={handleDownload}
           disabled={!session.endedAt || downloading.value}
           title="Download rrweb events as JSON"
-          className="text-emerald-400/80 hover:text-emerald-300 disabled:text-gray-600 disabled:cursor-not-allowed mr-2"
+          className="text-emerald-400/80 hover:text-emerald-300 disabled:text-subtle disabled:cursor-not-allowed mr-2"
         >
           {downloading.value ? "..." : "JSON"}
         </button>
@@ -247,7 +247,7 @@ function SessionRow({
               ? "Click to cancel rendering"
               : "Render session as WebM video (runs in browser)"
           }
-          className="text-emerald-400/80 hover:text-emerald-300 disabled:text-gray-600 disabled:cursor-not-allowed mr-2 tabular-nums"
+          className="text-emerald-400/80 hover:text-emerald-300 disabled:text-subtle disabled:cursor-not-allowed mr-2 tabular-nums"
         >
           {renderingPct.value !== null ? `${renderingPct.value}%` : "Video"}
         </button>
@@ -312,7 +312,7 @@ function SessionPlayer({ sessionId, onBack }: { sessionId: string; onBack: () =>
 
   return (
     <div className="flex flex-col h-full text-xs">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-panel">
         <button
           type="button"
           onClick={onBack}
@@ -320,22 +320,22 @@ function SessionPlayer({ sessionId, onBack }: { sessionId: string; onBack: () =>
         >
           Back to sessions
         </button>
-        <span className="text-gray-500 font-mono">{sessionId.slice(0, 20)}...</span>
+        <span className="text-muted font-mono">{sessionId.slice(0, 20)}...</span>
       </div>
 
       {isLoading && (
-        <div className="flex-1 flex items-center justify-center text-gray-500">
+        <div className="flex-1 flex items-center justify-center text-muted">
           Loading session events...
         </div>
       )}
 
       {!isLoading && !data?.events?.length && (
-        <div className="flex-1 flex items-center justify-center text-gray-500">
+        <div className="flex-1 flex items-center justify-center text-muted">
           No events found for this session.
         </div>
       )}
 
-      <div ref={containerRef} className="flex-1 overflow-hidden bg-gray-950" />
+      <div ref={containerRef} className="flex-1 overflow-hidden bg-page" />
     </div>
   );
 }

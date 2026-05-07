@@ -122,31 +122,29 @@ export function DemoDayPanel() {
   const scenario = SCENARIOS.find((s) => s.id === selected.value) ?? SCENARIOS[0];
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
+    <div className="flex flex-col h-full bg-page text-default text-xs overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-panel shrink-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-[11px] font-semibold text-gray-200 uppercase tracking-wide">
+          <span className="text-[11px] font-semibold text-secondary uppercase tracking-wide">
             Demo Day
           </span>
-          <span className="text-[10px] text-gray-600">
+          <span className="text-[10px] text-subtle">
             Simulate a realistic trading session across all strategies
           </span>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-        <p className="text-[10px] text-gray-500 leading-relaxed">
+        <p className="text-[10px] text-muted leading-relaxed">
           Choose a scenario below and click{" "}
-          <span className="text-gray-300 font-medium">Launch Demo</span> to inject a realistic wave
+          <span className="text-default font-medium">Launch Demo</span> to inject a realistic wave
           of orders into the live pipeline. Orders fan out across all assets and strategies over the
           next ~30 seconds, filling the blotter, algo monitor, and Grafana dashboards with real
           trade flow.
         </p>
 
         <div className="space-y-2">
-          <div className="text-[10px] text-gray-500 uppercase tracking-wide font-medium">
-            Scenario
-          </div>
+          <div className="text-[10px] text-muted uppercase tracking-wide font-medium">Scenario</div>
           <div className="space-y-2">
             {SCENARIOS.map((sc) => {
               const active = sc.id === selected.value;
@@ -233,23 +231,23 @@ export function DemoDayPanel() {
             <div className="text-[11px] font-semibold text-emerald-400">Demo launched</div>
             <div className="space-y-1 text-[10px]">
               <div className="flex items-center justify-between">
-                <span className="text-gray-500">Scenario</span>
-                <span className="text-gray-200 font-medium">{result.value.scenario}</span>
+                <span className="text-muted">Scenario</span>
+                <span className="text-secondary font-medium">{result.value.scenario}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-500">Orders injected</span>
+                <span className="text-muted">Orders injected</span>
                 <span className="text-emerald-300 tabular-nums font-semibold">
                   {result.value.submitted.toLocaleString()}
                 </span>
               </div>
               {"jobId" in result.value && (
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Job ID</span>
-                  <span className="text-gray-400 font-mono text-[9px]">{result.value.jobId}</span>
+                  <span className="text-muted">Job ID</span>
+                  <span className="text-label font-mono text-[9px]">{result.value.jobId}</span>
                 </div>
               )}
             </div>
-            <p className="text-[10px] text-gray-600 leading-relaxed pt-1">
+            <p className="text-[10px] text-subtle leading-relaxed pt-1">
               Orders are staggered over the next ~30 seconds. Watch the Order Blotter, Algo Monitor,
               Throughput Gauges, and Grafana for live activity.
             </p>
@@ -262,37 +260,34 @@ export function DemoDayPanel() {
           </div>
         )}
 
-        <div className="rounded border border-gray-800 px-3 py-2.5 space-y-1.5">
-          <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+        <div className="rounded border border-panel px-3 py-2.5 space-y-1.5">
+          <div className="text-[10px] font-semibold text-label uppercase tracking-wide">
             What to watch
           </div>
-          <ul className="space-y-1 text-[10px] text-gray-500 list-disc list-inside leading-relaxed">
+          <ul className="space-y-1 text-[10px] text-muted list-disc list-inside leading-relaxed">
             <li>
-              <span className="text-gray-400">Order Blotter</span> — rows appear as orders are
+              <span className="text-label">Order Blotter</span> — rows appear as orders are
               submitted
             </li>
             <li>
-              <span className="text-gray-400">Algo Monitor</span> — active strategy count rises
+              <span className="text-label">Algo Monitor</span> — active strategy count rises
             </li>
             <li>
-              <span className="text-gray-400">Throughput Gauges</span> — orders/min and fills/min
-              spike
+              <span className="text-label">Throughput Gauges</span> — orders/min and fills/min spike
             </li>
             <li>
-              <span className="text-gray-400">Decision Log</span> — algo reasoning events stream in
+              <span className="text-label">Decision Log</span> — algo reasoning events stream in
             </li>
             <li>
-              <span className="text-gray-400">Grafana / Observability</span> — full pipeline
-              telemetry
+              <span className="text-label">Grafana / Observability</span> — full pipeline telemetry
             </li>
           </ul>
         </div>
 
         {/* User context note */}
         {user && (
-          <div className="text-[9px] text-gray-700 text-center">
-            Orders will be attributed to <span className="text-gray-500">{user.name}</span> (
-            {user.id})
+          <div className="text-[9px] text-divider text-center">
+            Orders will be attributed to <span className="text-muted">{user.name}</span> ({user.id})
           </div>
         )}
       </div>

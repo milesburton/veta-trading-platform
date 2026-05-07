@@ -51,17 +51,15 @@ export function ServiceStatus({ services }: Props) {
         onClick={() => {
           open.value = !open.value;
         }}
-        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+        className="flex items-center gap-1.5 text-xs text-label hover:text-secondary transition-colors"
       >
         <StatusDot state={overall} className="w-2 h-2" />
         <span>
           Services{" "}
-          <span className="tabular-nums text-gray-500">
+          <span className="tabular-nums text-muted">
             {okCount}/{totalCount}
           </span>
-          {consistent && version && (
-            <span className="ml-1 font-mono text-gray-500">v{version}</span>
-          )}
+          {consistent && version && <span className="ml-1 font-mono text-muted">v{version}</span>}
         </span>
       </button>
 
@@ -76,9 +74,9 @@ export function ServiceStatus({ services }: Props) {
             }}
           />
 
-          <div className="absolute right-0 top-7 z-20 w-[28rem] bg-gray-900 border border-gray-700 rounded shadow-xl text-xs">
-            <div className="px-3 py-2 border-b border-gray-700 flex items-center justify-between min-h-[2.75rem]">
-              <span className="font-semibold text-gray-300 uppercase tracking-wider">
+          <div className="absolute right-0 top-7 z-20 w-[28rem] bg-surface border border-divider rounded shadow-xl text-xs">
+            <div className="px-3 py-2 border-b border-divider flex items-center justify-between min-h-[2.75rem]">
+              <span className="font-semibold text-default uppercase tracking-wider">
                 Service Health
               </span>
               <div className="flex flex-col items-end gap-0.5 min-w-[9rem]">
@@ -93,7 +91,7 @@ export function ServiceStatus({ services }: Props) {
                     </span>
                   )}
                 </span>
-                <span className="text-gray-600 h-[1.1em] tabular-nums">
+                <span className="text-subtle h-[1.1em] tabular-nums">
                   {lastChecked
                     ? `checked ${new Date(lastChecked).toLocaleTimeString()}`
                     : "polls every 10s"}
@@ -102,15 +100,15 @@ export function ServiceStatus({ services }: Props) {
             </div>
 
             {okCount === 0 && (
-              <div className="px-3 py-2 border-b border-gray-800 bg-gray-950 text-gray-500 text-[11px]">
+              <div className="px-3 py-2 border-b border-panel bg-page text-muted text-[11px]">
                 No services responding. Start the backend:{" "}
-                <span className="font-mono text-gray-400">supervisorctl start all</span>
+                <span className="font-mono text-label">supervisorctl start all</span>
               </div>
             )}
 
             <table className="w-full table-fixed">
               <thead>
-                <tr className="text-gray-500 border-b border-gray-800">
+                <tr className="text-muted border-b border-panel">
                   <th className="text-left px-3 py-2 w-[33%]" title="Backend service name">
                     Service
                   </th>

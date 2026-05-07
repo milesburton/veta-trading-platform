@@ -49,7 +49,7 @@ function CandleChartForPopOut() {
     return <CandlestickChart key={symbol} symbol={symbol} candles={candles} />;
   }
   return (
-    <div className="flex items-center justify-center h-full text-gray-600 text-xs">
+    <div className="flex items-center justify-center h-full text-subtle text-xs">
       Waiting for candle data…
     </div>
   );
@@ -143,11 +143,9 @@ function PopOutHeader({
   const connected = useAppSelector((s) => s.market.connected);
 
   return (
-    <div className="flex items-center justify-between h-8 px-3 border-b border-gray-800 bg-gray-950/80 shrink-0 select-none">
+    <div className="flex items-center justify-between h-8 px-3 border-b border-panel bg-page/80 shrink-0 select-none">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
-          {title}
-        </span>
+        <span className="text-xs font-semibold text-default uppercase tracking-wider">{title}</span>
         {linkedSymbol && (
           <span className="text-xs font-mono text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">
             {linkedSymbol}
@@ -157,7 +155,7 @@ function PopOutHeader({
       <div className="flex items-center gap-2">
         {incoming !== null && (
           <span
-            className="flex items-center gap-1 text-[10px] text-gray-500"
+            className="flex items-center gap-1 text-[10px] text-muted"
             title={`Receiving from ${CHANNEL_COLOURS[incoming].label} channel`}
           >
             <span
@@ -169,7 +167,7 @@ function PopOutHeader({
         )}
         {outgoing !== null && (
           <span
-            className="flex items-center gap-1 text-[10px] text-gray-500"
+            className="flex items-center gap-1 text-[10px] text-muted"
             title={`Broadcasting to ${CHANNEL_COLOURS[outgoing].label} channel`}
           >
             <span
@@ -232,7 +230,7 @@ export function PopOutHost({
     return (
       <div
         data-theme={theme}
-        className="flex items-center justify-center h-screen bg-gray-950 text-gray-500 text-sm"
+        className="flex items-center justify-center h-screen bg-page text-muted text-sm"
       >
         Unknown panel: {panelType}
       </div>
@@ -243,7 +241,7 @@ export function PopOutHost({
     <ChannelContext.Provider value={channelCtx}>
       <div
         data-theme={theme}
-        className="flex flex-col h-screen bg-gray-950 text-gray-100 overflow-hidden"
+        className="flex flex-col h-screen bg-page text-primary overflow-hidden"
       >
         <PopOutHeader
           panelType={panelType}

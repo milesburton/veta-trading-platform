@@ -123,7 +123,7 @@ describe("StartupOverlay", () => {
     });
 
     const journalDot = screen.getByTestId("service-indicator-journal").querySelector("span");
-    expect(journalDot?.className).toContain("bg-gray-600");
+    expect(journalDot?.className).toContain("bg-subtle");
   });
 
   test("renders build info footer when props provided", () => {

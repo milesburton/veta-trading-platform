@@ -35,7 +35,7 @@ const STATE_COLOURS: Record<ProductState, string> = {
   structured: "bg-blue-900/60 text-blue-300 border-blue-700",
   issued: "bg-emerald-900/60 text-emerald-300 border-emerald-700",
   sold: "bg-amber-900/60 text-amber-300 border-amber-700",
-  unwound: "bg-gray-800 text-gray-400 border-gray-600",
+  unwound: "bg-panel text-label border-subtle",
 };
 
 const STATE_FILTERS: Array<ProductState | "all"> = [
@@ -171,8 +171,8 @@ export function ProductBookPanel() {
   return (
     <div className="flex flex-col h-full overflow-hidden" data-testid="product-book-panel">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-gray-800 flex items-center justify-between flex-shrink-0 gap-2">
-        <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
+      <div className="px-3 py-2 border-b border-panel flex items-center justify-between flex-shrink-0 gap-2">
+        <span className="text-xs font-semibold text-default uppercase tracking-wider">
           Product Book
         </span>
         <button
@@ -186,7 +186,7 @@ export function ProductBookPanel() {
       </div>
 
       {/* State filter tabs */}
-      <div className="flex gap-0.5 px-3 pt-2 pb-1 border-b border-gray-800/60 flex-shrink-0 flex-wrap">
+      <div className="flex gap-0.5 px-3 pt-2 pb-1 border-b border-panel/60 flex-shrink-0 flex-wrap">
         {STATE_FILTERS.map((f) => (
           <button
             key={f}
@@ -196,8 +196,8 @@ export function ProductBookPanel() {
             }}
             className={`px-2 py-0.5 rounded text-[10px] font-medium capitalize transition-colors ${
               stateFilter.value === f
-                ? "bg-gray-700 text-gray-200"
-                : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/50"
+                ? "bg-divider text-secondary"
+                : "text-muted hover:text-default hover:bg-panel/50"
             }`}
           >
             {f}
@@ -215,7 +215,7 @@ export function ProductBookPanel() {
       {/* Products table */}
       <div className="flex-1 overflow-auto">
         {products.value.length === 0 && !loading.value && (
-          <div className="flex items-center justify-center py-10 text-gray-600 text-xs">
+          <div className="flex items-center justify-center py-10 text-subtle text-xs">
             No products found
           </div>
         )}
@@ -223,7 +223,7 @@ export function ProductBookPanel() {
         {products.value.length > 0 && (
           <table className="w-full text-[10px] border-collapse">
             <thead>
-              <tr className="bg-gray-800/60 text-gray-500 text-left sticky top-0">
+              <tr className="bg-panel/60 text-muted text-left sticky top-0">
                 <th className="px-2 py-1.5 font-normal" title="Unique product identifier">
                   ID
                 </th>
@@ -261,14 +261,14 @@ export function ProductBookPanel() {
                   <>
                     <tr
                       key={product.productId}
-                      className="border-t border-gray-700/40 hover:bg-gray-800/20 cursor-pointer"
+                      className="border-t border-divider/40 hover:bg-panel/20 cursor-pointer"
                       onClick={() => toggleExpand(product.productId)}
                     >
-                      <td className="px-2 py-1.5 font-mono text-gray-400 text-[9px]">
+                      <td className="px-2 py-1.5 font-mono text-label text-[9px]">
                         {product.productId}
                       </td>
                       <td
-                        className="px-2 py-1.5 text-gray-200 max-w-[120px] truncate"
+                        className="px-2 py-1.5 text-secondary max-w-[120px] truncate"
                         title={product.name}
                       >
                         {product.name}
@@ -282,20 +282,18 @@ export function ProductBookPanel() {
                           {product.state}
                         </span>
                       </td>
-                      <td className="px-2 py-1.5 text-right tabular-nums text-gray-300">
+                      <td className="px-2 py-1.5 text-right tabular-nums text-default">
                         {formatNotional(product.targetNotional)}
                       </td>
-                      <td className="px-2 py-1.5 text-center text-gray-400">
-                        {product.legs.length}
-                      </td>
-                      <td className="px-2 py-1.5 text-gray-500 font-mono text-[9px]">
+                      <td className="px-2 py-1.5 text-center text-label">{product.legs.length}</td>
+                      <td className="px-2 py-1.5 text-muted font-mono text-[9px]">
                         {product.createdBy}
                       </td>
-                      <td className="px-2 py-1.5 text-gray-500 tabular-nums">
+                      <td className="px-2 py-1.5 text-muted tabular-nums">
                         {product.issuedAt ? (
                           new Date(product.issuedAt).toLocaleDateString()
                         ) : (
-                          <span className="text-gray-700">—</span>
+                          <span className="text-divider">—</span>
                         )}
                       </td>
                       <td
@@ -326,7 +324,7 @@ export function ProductBookPanel() {
                             <button
                               type="button"
                               onClick={() => void handleUnwind(product)}
-                              className="px-1.5 py-0.5 rounded text-[9px] bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
+                              className="px-1.5 py-0.5 rounded text-[9px] bg-divider hover:bg-subtle text-default transition-colors"
                             >
                               Unwind
                             </button>
@@ -337,7 +335,7 @@ export function ProductBookPanel() {
 
                     {/* Feedback row */}
                     {fb && (
-                      <tr key={`${product.productId}-fb`} className="border-t border-gray-700/20">
+                      <tr key={`${product.productId}-fb`} className="border-t border-divider/20">
                         <td
                           colSpan={8}
                           className={`px-3 py-1 text-[10px] ${
@@ -353,15 +351,15 @@ export function ProductBookPanel() {
                     {isExpanded && product.legs.length > 0 && (
                       <tr
                         key={`${product.productId}-legs`}
-                        className="border-t border-gray-700/20 bg-gray-900/40"
+                        className="border-t border-divider/20 bg-surface/40"
                       >
                         <td colSpan={8} className="px-4 py-2">
-                          <div className="text-[9px] text-gray-500 uppercase tracking-wider mb-1.5 font-semibold">
+                          <div className="text-[9px] text-muted uppercase tracking-wider mb-1.5 font-semibold">
                             Legs
                           </div>
                           <table className="w-full border-collapse">
                             <thead>
-                              <tr className="text-gray-600 text-left">
+                              <tr className="text-subtle text-left">
                                 <th
                                   className="pr-3 pb-0.5 font-normal"
                                   title="Unique leg identifier"
@@ -393,7 +391,7 @@ export function ProductBookPanel() {
                             </thead>
                             <tbody>
                               {product.legs.map((leg) => (
-                                <tr key={leg.legId} className="text-gray-400">
+                                <tr key={leg.legId} className="text-label">
                                   <td className="pr-3 py-0.5 font-mono text-[9px]">{leg.legId}</td>
                                   <td className="pr-3 py-0.5">
                                     <span
@@ -408,7 +406,7 @@ export function ProductBookPanel() {
                                       {leg.type.toUpperCase()}
                                     </span>
                                   </td>
-                                  <td className="pr-3 py-0.5 font-mono text-gray-300">
+                                  <td className="pr-3 py-0.5 font-mono text-default">
                                     {leg.symbol}
                                   </td>
                                   <td className="pr-3 py-0.5 text-right tabular-nums">
@@ -418,7 +416,7 @@ export function ProductBookPanel() {
                                     {leg.quantity != null ? (
                                       leg.quantity.toLocaleString()
                                     ) : (
-                                      <span className="text-gray-700">—</span>
+                                      <span className="text-divider">—</span>
                                     )}
                                   </td>
                                 </tr>
@@ -432,9 +430,9 @@ export function ProductBookPanel() {
                     {isExpanded && product.legs.length === 0 && (
                       <tr
                         key={`${product.productId}-no-legs`}
-                        className="border-t border-gray-700/20 bg-gray-900/40"
+                        className="border-t border-divider/20 bg-surface/40"
                       >
-                        <td colSpan={8} className="px-4 py-2 text-[10px] text-gray-600">
+                        <td colSpan={8} className="px-4 py-2 text-[10px] text-subtle">
                           No legs defined.
                         </td>
                       </tr>

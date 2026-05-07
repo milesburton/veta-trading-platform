@@ -27,7 +27,7 @@ export function SignalExplainabilityPanel() {
 
   if (!symbol) {
     return (
-      <div className="h-full flex items-center justify-center text-gray-500 text-xs">
+      <div className="h-full flex items-center justify-center text-muted text-xs">
         Link to a channel — waiting for symbol selection
       </div>
     );
@@ -35,7 +35,7 @@ export function SignalExplainabilityPanel() {
 
   if (!signal) {
     return (
-      <div className="h-full flex items-center justify-center text-gray-500 text-xs">
+      <div className="h-full flex items-center justify-center text-muted text-xs">
         No signal data for {symbol}
       </div>
     );
@@ -54,23 +54,23 @@ export function SignalExplainabilityPanel() {
       ? "text-emerald-400"
       : signal.direction === "short"
         ? "text-red-400"
-        : "text-gray-400";
+        : "text-label";
 
   return (
-    <div className="h-full flex flex-col bg-gray-950 text-gray-100">
+    <div className="h-full flex flex-col bg-page text-primary">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-800 shrink-0 text-xs">
-        <span className="font-mono font-bold text-gray-200">{symbol}</span>
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-panel shrink-0 text-xs">
+        <span className="font-mono font-bold text-secondary">{symbol}</span>
         <span className={`font-mono tabular-nums ${scoreColor}`}>
           score {signal.score >= 0 ? "+" : ""}
           {signal.score.toFixed(3)}
         </span>
-        <span className="text-gray-500 ml-auto capitalize">{signal.direction}</span>
+        <span className="text-muted ml-auto capitalize">{signal.direction}</span>
       </div>
 
       {/* Waterfall bars */}
       <div className="flex-1 overflow-auto px-3 py-2">
-        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">
+        <div className="text-[10px] text-muted uppercase tracking-wider mb-3">
           Factor contributions
         </div>
         {sortedFactors.map((f: SignalFactor) => {
@@ -81,7 +81,7 @@ export function SignalExplainabilityPanel() {
 
           return (
             <div key={f.name} className="mb-3">
-              <div className="flex justify-between text-[10px] text-gray-400 mb-1">
+              <div className="flex justify-between text-[10px] text-label mb-1">
                 <span>{label}</span>
                 <span className="tabular-nums" style={{ color: colour }}>
                   {isPositive ? "+" : ""}
@@ -89,9 +89,9 @@ export function SignalExplainabilityPanel() {
                 </span>
               </div>
               {/* Bar — always centred, extends left or right */}
-              <div className="relative h-3 bg-gray-800 rounded overflow-hidden">
+              <div className="relative h-3 bg-panel rounded overflow-hidden">
                 {/* Centre marker */}
-                <div className="absolute top-0 bottom-0 w-px bg-gray-600" style={{ left: "50%" }} />
+                <div className="absolute top-0 bottom-0 w-px bg-subtle" style={{ left: "50%" }} />
                 {/* Contribution bar */}
                 <div
                   className="absolute top-0 bottom-0 rounded transition-all duration-300"
@@ -103,7 +103,7 @@ export function SignalExplainabilityPanel() {
                 />
               </div>
               {/* Weight indicator */}
-              <div className="text-[9px] text-gray-600 mt-0.5">
+              <div className="text-[9px] text-subtle mt-0.5">
                 weight {f.weight >= 0 ? "+" : ""}
                 {f.weight.toFixed(2)}
               </div>
@@ -113,17 +113,17 @@ export function SignalExplainabilityPanel() {
       </div>
 
       {/* Score summary */}
-      <div className="shrink-0 border-t border-gray-800 px-3 py-2 text-xs">
+      <div className="shrink-0 border-t border-panel px-3 py-2 text-xs">
         <div className="flex justify-between">
-          <span className="text-gray-500">Final score</span>
+          <span className="text-muted">Final score</span>
           <span className={`font-mono tabular-nums font-bold ${scoreColor}`}>
             {signal.score >= 0 ? "+" : ""}
             {signal.score.toFixed(4)}
           </span>
         </div>
         <div className="flex justify-between mt-0.5">
-          <span className="text-gray-500">Confidence</span>
-          <span className="font-mono tabular-nums text-gray-300">
+          <span className="text-muted">Confidence</span>
+          <span className="font-mono tabular-nums text-default">
             {(signal.confidence * 100).toFixed(1)}%
           </span>
         </div>

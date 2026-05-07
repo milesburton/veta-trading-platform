@@ -17,7 +17,7 @@ export function AssetSelector({ assets, value, onChange, onSelect, inputRef, pri
 
   return (
     <div data-testid="asset-selector" className="relative">
-      <label htmlFor="asset-search" className="block text-xs text-gray-500 mb-1">
+      <label htmlFor="asset-search" className="block text-xs text-muted mb-1">
         Asset
       </label>
       <div className="flex items-center gap-2">
@@ -29,7 +29,7 @@ export function AssetSelector({ assets, value, onChange, onSelect, inputRef, pri
           value={value}
           onChange={(e) => onChange(e.target.value)}
           data-testid="asset-search-input"
-          className="flex-1 bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
+          className="flex-1 bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
         />
         {currentPrice ? (
           <span className="text-xs text-emerald-400 tabular-nums whitespace-nowrap">
@@ -40,14 +40,14 @@ export function AssetSelector({ assets, value, onChange, onSelect, inputRef, pri
               : "—"}
           </span>
         ) : (
-          <span className="text-xs text-gray-600">—</span>
+          <span className="text-xs text-subtle">—</span>
         )}
       </div>
 
       {filtered.length > 0 && value && (
         <ul
           data-testid="asset-dropdown"
-          className="absolute left-0 right-0 top-full mt-0.5 z-30 bg-gray-900 border border-gray-700 rounded shadow-xl max-h-48 overflow-auto text-xs"
+          className="absolute left-0 right-0 top-full mt-0.5 z-30 bg-surface border border-divider rounded shadow-xl max-h-48 overflow-auto text-xs"
         >
           {filtered.slice(0, 40).map((a) => (
             <li key={a.symbol}>
@@ -57,10 +57,10 @@ export function AssetSelector({ assets, value, onChange, onSelect, inputRef, pri
                 title={`Select ${a.symbol} — ${a.sector}`}
                 aria-label={`Select ${a.symbol}`}
                 data-testid={`asset-option-${a.symbol}`}
-                className="w-full text-left px-2.5 py-1.5 hover:bg-gray-700 flex items-center justify-between"
+                className="w-full text-left px-2.5 py-1.5 hover:bg-divider flex items-center justify-between"
               >
-                <span className="font-semibold text-gray-200">{a.symbol}</span>
-                <span className="text-gray-500">{a.sector}</span>
+                <span className="font-semibold text-secondary">{a.symbol}</span>
+                <span className="text-muted">{a.sector}</span>
               </button>
             </li>
           ))}

@@ -17,7 +17,7 @@ function relativeTime(ms: number): string {
 const SENTIMENT_STYLES: Record<NewsItem["sentiment"], { dot: string; badge: string }> = {
   positive: { dot: "bg-emerald-400", badge: "text-emerald-400" },
   negative: { dot: "bg-red-400", badge: "text-red-400" },
-  neutral: { dot: "bg-gray-500", badge: "text-gray-500" },
+  neutral: { dot: "bg-muted", badge: "text-muted" },
 };
 
 const SENTIMENT_LABELS: Record<NewsItem["sentiment"], string> = {
@@ -56,10 +56,10 @@ export function AnalysisPanel() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-300" data-testid="analysis-panel">
+    <div className="flex flex-col h-full bg-page text-default" data-testid="analysis-panel">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800 shrink-0">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">News</span>
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-panel shrink-0">
+        <span className="text-xs font-semibold text-label uppercase tracking-wide">News</span>
 
         {/* Selected symbol pill */}
         {selectedAsset && (
@@ -73,7 +73,7 @@ export function AnalysisPanel() {
           <div className="flex items-center gap-2 ml-1">
             <span className="text-[10px] text-emerald-400">▲ {sentimentCounts.positive}</span>
             <span className="text-[10px] text-red-400">▼ {sentimentCounts.negative}</span>
-            <span className="text-[10px] text-gray-600">— {sentimentCounts.neutral}</span>
+            <span className="text-[10px] text-subtle">— {sentimentCounts.neutral}</span>
           </div>
         )}
 
@@ -82,7 +82,7 @@ export function AnalysisPanel() {
             type="button"
             onClick={() => refetch()}
             disabled={isFetching || !selectedAsset}
-            className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors disabled:opacity-40 px-1 py-0.5 rounded border border-gray-700 hover:border-gray-500"
+            className="text-[10px] text-muted hover:text-default transition-colors disabled:opacity-40 px-1 py-0.5 rounded border border-divider hover:border-muted"
           >
             ↺
           </button>
@@ -93,18 +93,18 @@ export function AnalysisPanel() {
       <div className="flex-1 min-h-0 overflow-y-auto">
         {!selectedAsset && (
           <div className="flex items-center justify-center h-full">
-            <span className="text-[11px] text-gray-600">Select an asset to see news</span>
+            <span className="text-[11px] text-subtle">Select an asset to see news</span>
           </div>
         )}
 
         {selectedAsset && items.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-2 h-full">
-            <span className="text-[11px] text-gray-600">No news for {selectedAsset} yet</span>
+            <span className="text-[11px] text-subtle">No news for {selectedAsset} yet</span>
             <button
               type="button"
               onClick={() => refetch()}
               disabled={isFetching}
-              className="text-[10px] text-gray-500 hover:text-gray-300 border border-gray-700 hover:border-gray-500 px-2 py-0.5 rounded transition-colors disabled:opacity-40"
+              className="text-[10px] text-muted hover:text-default border border-divider hover:border-muted px-2 py-0.5 rounded transition-colors disabled:opacity-40"
             >
               {isFetching ? "Loading…" : "Fetch now"}
             </button>
@@ -112,13 +112,13 @@ export function AnalysisPanel() {
         )}
 
         {selectedAsset && items.length > 0 && (
-          <ul className="divide-y divide-gray-800/60" data-testid="news-feed">
+          <ul className="divide-y divide-panel/60" data-testid="news-feed">
             {items.map((item) => {
               const s = SENTIMENT_STYLES[item.sentiment];
               return (
                 <li
                   key={item.id}
-                  className="px-3 py-2.5 hover:bg-gray-900/50 transition-colors"
+                  className="px-3 py-2.5 hover:bg-surface/50 transition-colors"
                   data-testid="news-item"
                 >
                   <div className="flex items-start gap-2">
@@ -134,20 +134,20 @@ export function AnalysisPanel() {
                           rel="noopener noreferrer"
                           data-testid="news-link"
                           title={`Open original article on ${item.source}`}
-                          className="group inline-flex items-baseline gap-1 text-[12px] leading-snug text-gray-200 hover:text-emerald-300 transition-colors line-clamp-2"
+                          className="group inline-flex items-baseline gap-1 text-[12px] leading-snug text-secondary hover:text-emerald-300 transition-colors line-clamp-2"
                         >
-                          <span className="underline decoration-dotted underline-offset-2 decoration-gray-600 group-hover:decoration-emerald-400">
+                          <span className="underline decoration-dotted underline-offset-2 decoration-subtle group-hover:decoration-emerald-400">
                             {item.headline}
                           </span>
                           <span
                             aria-hidden="true"
-                            className="shrink-0 text-[9px] text-gray-500 group-hover:text-emerald-400"
+                            className="shrink-0 text-[9px] text-muted group-hover:text-emerald-400"
                           >
                             ↗
                           </span>
                         </a>
                       ) : (
-                        <span className="block text-[12px] leading-snug text-gray-200 line-clamp-2">
+                        <span className="block text-[12px] leading-snug text-secondary line-clamp-2">
                           {item.headline}
                         </span>
                       )}
@@ -157,25 +157,25 @@ export function AnalysisPanel() {
                             href={item.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[10px] text-gray-500 hover:text-emerald-400 transition-colors"
+                            className="text-[10px] text-muted hover:text-emerald-400 transition-colors"
                           >
                             {item.source}
                           </a>
                         ) : (
-                          <span className="text-[10px] text-gray-600">{item.source}</span>
+                          <span className="text-[10px] text-subtle">{item.source}</span>
                         )}
-                        <span className="text-[10px] text-gray-700">·</span>
-                        <span className="text-[10px] text-gray-600 tabular-nums">
+                        <span className="text-[10px] text-divider">·</span>
+                        <span className="text-[10px] text-subtle tabular-nums">
                           {relativeTime(item.publishedAt)}
                         </span>
                         {item.relatedSymbols.length > 0 && (
                           <>
-                            <span className="text-[10px] text-gray-700">·</span>
+                            <span className="text-[10px] text-divider">·</span>
                             <div className="flex gap-1 flex-wrap">
                               {item.relatedSymbols.map((ticker) => (
                                 <span
                                   key={ticker}
-                                  className="text-[9px] font-mono px-1 py-0 rounded bg-gray-800 text-gray-500 border border-gray-700/50"
+                                  className="text-[9px] font-mono px-1 py-0 rounded bg-panel text-muted border border-divider/50"
                                 >
                                   {ticker}
                                 </span>

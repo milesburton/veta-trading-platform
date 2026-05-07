@@ -124,7 +124,7 @@ export function ResizableHeader({
         {sortable && (
           <span
             className={`text-[9px] tabular-nums w-2.5 inline-block ${
-              isActive ? "text-sky-400" : "text-gray-700 group-hover:text-gray-500"
+              isActive ? "text-sky-400" : "text-divider group-hover:text-muted"
             }`}
             aria-hidden="true"
           >

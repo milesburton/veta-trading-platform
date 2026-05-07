@@ -64,7 +64,7 @@ export function ContextMenu({ items, x, y, onClose }: ContextMenuProps) {
       role="menu"
       aria-label="Context menu"
       style={{ top, left }}
-      className="fixed z-[9999] min-w-[180px] max-w-[240px] bg-gray-900 border border-gray-700 rounded shadow-2xl py-1 text-xs select-none"
+      className="fixed z-[9999] min-w-[180px] max-w-[240px] bg-surface border border-divider rounded shadow-2xl py-1 text-xs select-none"
       onContextMenu={(e) => e.preventDefault()}
     >
       {items.map((entry, i) => {
@@ -72,11 +72,11 @@ export function ContextMenu({ items, x, y, onClose }: ContextMenuProps) {
           return (
             <div key={`sep-${entry.label ?? i}`} className="flex items-center gap-2 my-1">
               {entry.label && (
-                <span className="text-[9px] text-gray-600 uppercase tracking-wider pl-3 whitespace-nowrap">
+                <span className="text-[9px] text-subtle uppercase tracking-wider pl-3 whitespace-nowrap">
                   {entry.label}
                 </span>
               )}
-              <div className="flex-1 h-px bg-gray-800 mr-2" />
+              <div className="flex-1 h-px bg-panel mr-2" />
             </div>
           );
         }
@@ -95,18 +95,18 @@ export function ContextMenu({ items, x, y, onClose }: ContextMenuProps) {
             }}
             className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${
               entry.disabled
-                ? "opacity-40 cursor-not-allowed text-gray-500"
+                ? "opacity-40 cursor-not-allowed text-muted"
                 : entry.danger
                   ? "text-red-400 hover:bg-red-950/60 cursor-pointer"
-                  : "text-gray-300 hover:bg-gray-800 cursor-pointer"
+                  : "text-default hover:bg-panel cursor-pointer"
             }`}
           >
             {entry.icon && (
-              <span className="w-4 text-center shrink-0 text-gray-500">{entry.icon}</span>
+              <span className="w-4 text-center shrink-0 text-muted">{entry.icon}</span>
             )}
             <span className="flex-1">{entry.label}</span>
             {entry.shortcut && (
-              <span className="text-[9px] text-gray-600 tabular-nums">{entry.shortcut}</span>
+              <span className="text-[9px] text-subtle tabular-nums">{entry.shortcut}</span>
             )}
           </button>
         );

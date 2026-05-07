@@ -367,19 +367,19 @@ export function WorkspaceSidebar({
         aria-label="Workspace navigation"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`flex flex-col shrink-0 bg-gray-950 border-r border-gray-800 transition-all duration-200 ${
+        className={`flex flex-col shrink-0 bg-page border-r border-panel transition-all duration-200 ${
           isExpanded ? "w-40" : "w-8"
         }`}
       >
         {/* ── Top bar ── */}
-        <div className="flex items-center shrink-0 border-b border-gray-800 h-8">
+        <div className="flex items-center shrink-0 border-b border-panel h-8">
           <button
             type="button"
             data-testid="add-workspace-btn"
             aria-label="Add new workspace"
             title="Add new workspace"
             onClick={addWorkspace}
-            className={`flex items-center gap-1.5 h-full text-emerald-600 hover:text-emerald-400 hover:bg-gray-900/60 transition-colors ${
+            className={`flex items-center gap-1.5 h-full text-emerald-600 hover:text-emerald-400 hover:bg-surface/60 transition-colors ${
               isExpanded ? "flex-1 px-2.5 text-[11px] font-semibold" : "w-8 justify-center"
             }`}
           >
@@ -410,7 +410,7 @@ export function WorkspaceSidebar({
                 className={`flex items-center justify-center w-7 h-full shrink-0 transition-colors ${
                   pinned.value
                     ? "text-emerald-500 hover:text-emerald-400"
-                    : "text-gray-600 hover:text-gray-300"
+                    : "text-subtle hover:text-default"
                 }`}
               >
                 <svg
@@ -450,17 +450,17 @@ export function WorkspaceSidebar({
             return (
               <li
                 key={ws.id}
-                className={`group relative flex items-center border-b border-gray-800/60 ${
+                className={`group relative flex items-center border-b border-panel/60 ${
                   active
-                    ? "bg-gray-900 border-l-2 border-l-emerald-500"
-                    : "border-l-2 border-l-transparent hover:bg-gray-900/40"
+                    ? "bg-surface border-l-2 border-l-emerald-500"
+                    : "border-l-2 border-l-transparent hover:bg-surface/40"
                 }`}
               >
                 {isExpanded ? (
                   <div className="flex items-center w-full min-w-0 px-2 py-1.5 gap-1">
                     {isConfirmingDelete ? (
                       <div className="flex items-center gap-1 w-full min-w-0">
-                        <span className="flex-1 text-[10px] text-gray-400 truncate">
+                        <span className="flex-1 text-[10px] text-label truncate">
                           Delete &ldquo;{ws.name}&rdquo;?
                         </span>
                         <button
@@ -469,7 +469,7 @@ export function WorkspaceSidebar({
                           onClick={() => {
                             confirmDeleteId.value = null;
                           }}
-                          className="text-[10px] text-gray-500 hover:text-gray-300 px-1"
+                          className="text-[10px] text-muted hover:text-default px-1"
                         >
                           Cancel
                         </button>
@@ -501,7 +501,7 @@ export function WorkspaceSidebar({
                           }
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 min-w-0 bg-gray-800 text-gray-100 text-[11px] px-1 rounded outline-none border border-emerald-500"
+                        className="flex-1 min-w-0 bg-panel text-primary text-[11px] px-1 rounded outline-none border border-emerald-500"
                       />
                     ) : (
                       <>
@@ -518,7 +518,7 @@ export function WorkspaceSidebar({
                                 : "Click to switch · Right-click to rename"
                           }
                           className={`flex-1 min-w-0 text-left text-[11px] truncate bg-transparent border-0 p-0 cursor-pointer ${
-                            active ? "text-gray-200" : "text-gray-500 hover:text-gray-300"
+                            active ? "text-secondary" : "text-muted hover:text-default"
                           }`}
                           onClick={() => onSelect(ws.id)}
                           onContextMenu={(e) => {
@@ -537,7 +537,7 @@ export function WorkspaceSidebar({
                           presetLocked ? (
                             <span
                               title="Default workspace — cannot be renamed, deleted, or shared"
-                              className="shrink-0 text-gray-600 p-0.5"
+                              className="shrink-0 text-subtle p-0.5"
                             >
                               <svg
                                 aria-hidden="true"
@@ -589,7 +589,7 @@ export function WorkspaceSidebar({
                                 e.stopPropagation();
                                 toggleUserLock(ws.id);
                               }}
-                              className="shrink-0 text-gray-600 hover:text-gray-400 opacity-0 group-hover:opacity-100 p-0.5 transition-all"
+                              className="shrink-0 text-subtle hover:text-label opacity-0 group-hover:opacity-100 p-0.5 transition-all"
                             >
                               <svg
                                 aria-hidden="true"
@@ -617,7 +617,7 @@ export function WorkspaceSidebar({
                               className={`shrink-0 transition-all hover:scale-110 p-0.5 ${
                                 sharedIds.value.has(ws.id)
                                   ? "text-emerald-400 opacity-100 hover:text-emerald-300"
-                                  : "text-gray-300 opacity-0 group-hover:opacity-100 hover:text-emerald-300"
+                                  : "text-default opacity-0 group-hover:opacity-100 hover:text-emerald-300"
                               }`}
                             >
                               <svg
@@ -638,7 +638,7 @@ export function WorkspaceSidebar({
                                 e.stopPropagation();
                                 confirmDeleteId.value = ws.id;
                               }}
-                              className="shrink-0 text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 p-0.5"
+                              className="shrink-0 text-default hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 p-0.5"
                             >
                               <svg
                                 aria-hidden="true"
@@ -674,12 +674,12 @@ export function WorkspaceSidebar({
                     }
                     onClick={() => onSelect(ws.id)}
                     className={`relative flex items-center justify-center w-8 h-8 text-[9px] font-semibold uppercase tracking-wider transition-colors ${
-                      active ? "text-emerald-400" : "text-gray-600 hover:text-gray-300"
+                      active ? "text-emerald-400" : "text-subtle hover:text-default"
                     }`}
                   >
                     {ws.name.charAt(0)}
                     {presetLocked && (
-                      <span className="absolute bottom-0.5 right-0.5 text-[6px] text-gray-600 leading-none">
+                      <span className="absolute bottom-0.5 right-0.5 text-[6px] text-subtle leading-none">
                         🔒
                       </span>
                     )}
@@ -697,7 +697,7 @@ export function WorkspaceSidebar({
       </nav>
 
       {shareToast.value && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-gray-800 text-gray-100 text-xs px-4 py-2 rounded shadow-lg border border-gray-700">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-panel text-primary text-xs px-4 py-2 rounded shadow-lg border border-divider">
           {shareToast.value}
         </div>
       )}
@@ -727,8 +727,8 @@ export function WorkspaceSidebar({
             if (e.target === e.currentTarget) shareDialog.value = null;
           }}
         >
-          <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-sm mx-4 p-4 flex flex-col gap-3">
-            <p className="text-sm font-semibold text-gray-200">
+          <div className="bg-surface border border-divider rounded-lg shadow-2xl w-full max-w-sm mx-4 p-4 flex flex-col gap-3">
+            <p className="text-sm font-semibold text-secondary">
               Share &ldquo;{shareDialog.value.ws.name}&rdquo;
             </p>
             <textarea
@@ -740,7 +740,7 @@ export function WorkspaceSidebar({
                   ? { ...shareDialog.value, description: e.currentTarget.value }
                   : shareDialog.value;
               }}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500 resize-none"
+              className="w-full bg-panel border border-divider rounded px-3 py-2 text-xs text-secondary placeholder-subtle focus:outline-none focus:border-muted resize-none"
             />
             <div className="flex gap-2 justify-end">
               <button
@@ -749,7 +749,7 @@ export function WorkspaceSidebar({
                 onClick={() => {
                   shareDialog.value = null;
                 }}
-                className="px-3 py-1.5 rounded text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                className="px-3 py-1.5 rounded text-xs text-label hover:text-secondary transition-colors"
               >
                 Cancel
               </button>

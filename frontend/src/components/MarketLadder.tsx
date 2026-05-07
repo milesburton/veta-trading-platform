@@ -86,7 +86,7 @@ function PriceFlash({ value, asset }: { value: number; asset: string }) {
       ? "text-emerald-400"
       : flashClass.value === "flash-red"
         ? "text-red-400"
-        : "text-gray-100";
+        : "text-primary";
 
   return (
     <span className={`tabular-nums transition-colors duration-300 ${colorClass}`}>
@@ -192,8 +192,8 @@ const Row = memo(function Row({
           height: "100%",
           borderLeft: isSelected ? `3px solid ${accentColour}` : "3px solid transparent",
         }}
-        className={`flex items-center border-b border-gray-800/40 cursor-pointer transition-colors text-xs bg-transparent text-left ${
-          isSelected ? "bg-gray-800/60" : "hover:bg-gray-800/30"
+        className={`flex items-center border-b border-panel/40 cursor-pointer transition-colors text-xs bg-transparent text-left ${
+          isSelected ? "bg-panel/60" : "hover:bg-panel/30"
         }`}
         onMouseDown={(e) => {
           e.preventDefault();
@@ -223,9 +223,9 @@ const Row = memo(function Row({
           >
             {asset.symbol}
           </div>
-          <div className="text-gray-600 text-[9px] leading-tight truncate">{asset.sector}</div>
+          <div className="text-subtle text-[9px] leading-tight truncate">{asset.sector}</div>
           {asset.beta !== undefined && (
-            <div className="text-gray-700 text-[9px] leading-tight">
+            <div className="text-divider text-[9px] leading-tight">
               β{asset.beta.toFixed(2)}
               {asset.marketCapB !== undefined && (
                 <span className="ml-1">
@@ -242,7 +242,7 @@ const Row = memo(function Row({
             {price > 0 ? formatPrice(asset.symbol, bid) : "—"}
           </div>
           {price > 0 && (
-            <div className="text-gray-700 text-[9px] tabular-nums">{spreadBps.toFixed(1)}bp</div>
+            <div className="text-divider text-[9px] tabular-nums">{spreadBps.toFixed(1)}bp</div>
           )}
         </div>
         <div
@@ -255,7 +255,7 @@ const Row = memo(function Row({
           {price > 0 ? (
             <PriceFlash value={price} asset={asset.symbol} />
           ) : (
-            <span className="text-gray-600">—</span>
+            <span className="text-subtle">—</span>
           )}
         </div>
         <div
@@ -440,14 +440,14 @@ export function MarketLadder() {
           }}
         />
       )}
-      <div className="px-2 py-1.5 border-b border-gray-800 flex gap-1.5 items-center">
+      <div className="px-2 py-1.5 border-b border-panel flex gap-1.5 items-center">
         <PopOutButton panelId="market-ladder" />
-        <span className="text-gray-600 text-[10px] tabular-nums ml-auto">
+        <span className="text-subtle text-[10px] tabular-nums ml-auto">
           {filtered.length}/{assets.length}
         </span>
       </div>
 
-      <div className="px-2 py-1.5 border-b border-gray-800 flex gap-1.5">
+      <div className="px-2 py-1.5 border-b border-panel flex gap-1.5">
         <input
           type="search"
           aria-label="Search by symbol or sector"
@@ -456,7 +456,7 @@ export function MarketLadder() {
           onChange={(e) => {
             search.value = e.target.value;
           }}
-          className="flex-1 bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1 focus:outline-none focus:border-emerald-500 min-w-0"
+          className="flex-1 bg-panel border border-divider text-primary text-xs rounded px-2 py-1 focus:outline-none focus:border-emerald-500 min-w-0"
         />
         <select
           aria-label="Filter by sector"
@@ -465,7 +465,7 @@ export function MarketLadder() {
           onChange={(e) => {
             sectorFilter.value = e.target.value;
           }}
-          className="bg-gray-800 border border-gray-700 text-gray-400 text-xs rounded px-1.5 py-1 focus:outline-none focus:border-emerald-500"
+          className="bg-panel border border-divider text-label text-xs rounded px-1.5 py-1 focus:outline-none focus:border-emerald-500"
         >
           {sectors.map((s) => (
             <option key={s} value={s}>
@@ -475,7 +475,7 @@ export function MarketLadder() {
         </select>
       </div>
 
-      <div className="flex text-xs text-gray-500 border-b border-gray-800 bg-gray-950 select-none">
+      <div className="flex text-xs text-muted border-b border-panel bg-page select-none">
         {LADDER_COLS.map((col) => (
           <div
             key={col.key}

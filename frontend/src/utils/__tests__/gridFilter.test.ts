@@ -338,11 +338,11 @@ describe("applyCfRules", () => {
             },
           ],
         },
-        style: { textColor: "text-gray-500" },
+        style: { textColor: "text-muted" },
       },
     ];
     const { cellClasses } = applyCfRules(rows[3] as Row, rules);
-    expect(cellClasses.status).toContain("text-gray-500");
+    expect(cellClasses.status).toContain("text-muted");
   });
 
   it("does not apply cell rule to non-matching row", () => {
@@ -365,7 +365,7 @@ describe("applyCfRules", () => {
             },
           ],
         },
-        style: { textColor: "text-gray-500" },
+        style: { textColor: "text-muted" },
       },
     ];
     const { cellClasses } = applyCfRules(rows[0] as Row, rules);

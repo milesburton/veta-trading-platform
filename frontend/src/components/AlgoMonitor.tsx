@@ -135,7 +135,7 @@ function ProgressBar({ pct }: { pct: number }) {
   const clamped = Math.min(pct, 100);
   const colour = clamped >= 100 ? "bg-emerald-500" : clamped >= 50 ? "bg-sky-500" : "bg-amber-500";
   return (
-    <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+    <div className="w-full bg-panel rounded-full h-1.5 overflow-hidden">
       <div
         className={`h-full rounded-full transition-all duration-500 ease-out ${colour}`}
         style={{ width: `${clamped}%` }}
@@ -164,47 +164,47 @@ function PerfCard({ perf, order }: { perf: TradePerf; order: OrderRecord }) {
       ? "text-red-400"
       : perf.marketImpactBps < -2
         ? "text-emerald-400"
-        : "text-gray-300";
+        : "text-default";
   const commColor = perf.totalCommission < 0 ? "text-emerald-400" : "text-amber-400";
 
   return (
-    <div className="bg-gray-900/60 border border-gray-700/60 rounded mx-3 my-1 p-2 grid grid-cols-4 gap-x-4 gap-y-1.5 text-[10px]">
+    <div className="bg-surface/60 border border-divider/60 rounded mx-3 my-1 p-2 grid grid-cols-4 gap-x-4 gap-y-1.5 text-[10px]">
       <div>
-        <div className="text-gray-500 uppercase tracking-wide">Avg Fill</div>
-        <div className="text-gray-200 tabular-nums font-mono">{perf.avgFillPx.toFixed(4)}</div>
+        <div className="text-muted uppercase tracking-wide">Avg Fill</div>
+        <div className="text-secondary tabular-nums font-mono">{perf.avgFillPx.toFixed(4)}</div>
       </div>
       <div>
-        <div className="text-gray-500 uppercase tracking-wide">Arrival Px</div>
-        <div className="text-gray-300 tabular-nums font-mono">{perf.arrivalPx.toFixed(4)}</div>
+        <div className="text-muted uppercase tracking-wide">Arrival Px</div>
+        <div className="text-default tabular-nums font-mono">{perf.arrivalPx.toFixed(4)}</div>
       </div>
       <div>
-        <div className="text-gray-500 uppercase tracking-wide">Mkt Impact</div>
+        <div className="text-muted uppercase tracking-wide">Mkt Impact</div>
         <div className={`tabular-nums font-semibold ${impactColor}`}>
           {formatBps(perf.marketImpactBps)}
         </div>
       </div>
       <div>
-        <div className="text-gray-500 uppercase tracking-wide">Impact $</div>
+        <div className="text-muted uppercase tracking-wide">Impact $</div>
         <div className={`tabular-nums ${impactColor}`}>
           {perf.marketImpactUSD >= 0 ? "+" : ""}${perf.marketImpactUSD.toFixed(2)}
         </div>
       </div>
       <div>
-        <div className="text-gray-500 uppercase tracking-wide">Fill Rate</div>
-        <div className="text-gray-200 tabular-nums">{perf.fillRate.toFixed(1)}%</div>
+        <div className="text-muted uppercase tracking-wide">Fill Rate</div>
+        <div className="text-secondary tabular-nums">{perf.fillRate.toFixed(1)}%</div>
       </div>
       <div>
-        <div className="text-gray-500 uppercase tracking-wide">Slices</div>
-        <div className="text-gray-200 tabular-nums">{perf.sliceCount}</div>
+        <div className="text-muted uppercase tracking-wide">Slices</div>
+        <div className="text-secondary tabular-nums">{perf.sliceCount}</div>
       </div>
       <div>
-        <div className="text-gray-500 uppercase tracking-wide">Commission</div>
+        <div className="text-muted uppercase tracking-wide">Commission</div>
         <div className={`tabular-nums font-semibold ${commColor}`}>
           {perf.totalCommission < 0 ? "" : "+"}${perf.totalCommission.toFixed(2)}
         </div>
       </div>
       <div>
-        <div className="text-gray-500 uppercase tracking-wide">Side</div>
+        <div className="text-muted uppercase tracking-wide">Side</div>
         <div
           className={`font-semibold ${order.side === "BUY" ? "text-emerald-400" : "text-red-400"}`}
         >
@@ -212,7 +212,7 @@ function PerfCard({ perf, order }: { perf: TradePerf; order: OrderRecord }) {
         </div>
       </div>
       <div className="col-span-4 flex items-center gap-3 pt-0.5">
-        <span className="text-gray-500 uppercase tracking-wide">Liquidity:</span>
+        <span className="text-muted uppercase tracking-wide">Liquidity:</span>
         <span className={LIQ_STYLES.MAKER}>MAKER {perf.makerPct.toFixed(0)}%</span>
         <span className={LIQ_STYLES.TAKER}>TAKER {perf.takerPct.toFixed(0)}%</span>
         {perf.crossPct > 0 && (
@@ -227,8 +227,8 @@ function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
   return (
     <>
       {rows.map((c) => (
-        <tr key={c.id} className="bg-gray-900/30 border-b border-gray-800/20">
-          <td className="pl-8 pr-3 py-1 text-gray-500 font-mono tabular-nums whitespace-nowrap">
+        <tr key={c.id} className="bg-surface/30 border-b border-panel/20">
+          <td className="pl-8 pr-3 py-1 text-muted font-mono tabular-nums whitespace-nowrap">
             {new Date(c.submittedAt).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -242,25 +242,25 @@ function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
           >
             {c.side}
           </td>
-          <td className="px-3 py-1 text-gray-500">{asset}</td>
+          <td className="px-3 py-1 text-muted">{asset}</td>
           <td className="px-3 py-1 text-right tabular-nums text-emerald-500">
             {formatQty(c.filled)}
           </td>
-          <td className="px-3 py-1 text-right tabular-nums text-gray-400">
+          <td className="px-3 py-1 text-right tabular-nums text-label">
             {(c.avgFillPrice ?? c.limitPrice).toFixed(4)}
           </td>
           <td
             className={`px-3 py-1 text-[10px] font-semibold ${
-              c.liquidityFlag ? LIQ_STYLES[c.liquidityFlag] : "text-gray-600"
+              c.liquidityFlag ? LIQ_STYLES[c.liquidityFlag] : "text-subtle"
             }`}
           >
             {c.liquidityFlag ?? "—"}
           </td>
-          <td className="px-3 py-1 text-gray-500 font-mono text-[10px]">
-            {c.venue ? <span className="bg-gray-800 rounded px-1">{c.venue}</span> : "—"}
+          <td className="px-3 py-1 text-muted font-mono text-[10px]">
+            {c.venue ? <span className="bg-panel rounded px-1">{c.venue}</span> : "—"}
           </td>
-          <td className="px-3 py-1 text-gray-500 font-mono text-[10px]">{c.counterparty ?? "—"}</td>
-          <td className="px-3 py-1 text-right tabular-nums text-gray-500 text-[10px]">
+          <td className="px-3 py-1 text-muted font-mono text-[10px]">{c.counterparty ?? "—"}</td>
+          <td className="px-3 py-1 text-right tabular-nums text-muted text-[10px]">
             {c.commissionUSD !== undefined ? (
               <span className={c.commissionUSD < 0 ? "text-emerald-600" : "text-amber-600"}>
                 ${c.commissionUSD.toFixed(2)}
@@ -367,9 +367,9 @@ export function AlgoMonitor() {
 
   return (
     <div className="flex flex-col h-full" data-testid="algo-monitor-panel">
-      <div className="px-3 py-1.5 border-b border-gray-800 flex items-center justify-between gap-2 flex-wrap">
+      <div className="px-3 py-1.5 border-b border-panel flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <div className="flex rounded overflow-hidden border border-gray-700 text-[11px]">
+          <div className="flex rounded overflow-hidden border border-divider text-[11px]">
             <button
               type="button"
               title="Orders currently pending or working"
@@ -381,7 +381,7 @@ export function AlgoMonitor() {
               className={`px-2.5 py-1 transition-colors ${
                 tab.value === "active"
                   ? "bg-sky-900/60 text-sky-300"
-                  : "text-gray-500 hover:text-gray-300"
+                  : "text-muted hover:text-default"
               }`}
             >
               Active
@@ -402,7 +402,7 @@ export function AlgoMonitor() {
               className={`px-2.5 py-1 transition-colors ${
                 tab.value === "needs-action"
                   ? "bg-amber-900/60 text-amber-300"
-                  : "text-gray-500 hover:text-gray-300"
+                  : "text-muted hover:text-default"
               }`}
             >
               Needs Action
@@ -422,13 +422,13 @@ export function AlgoMonitor() {
               data-testid="history-tab"
               className={`px-2.5 py-1 transition-colors ${
                 tab.value === "history"
-                  ? "bg-gray-700/80 text-gray-200"
-                  : "text-gray-500 hover:text-gray-300"
+                  ? "bg-divider/80 text-secondary"
+                  : "text-muted hover:text-default"
               }`}
             >
               History
               {historyOrders.length > 0 && (
-                <span className="ml-1 text-[9px] bg-gray-700 text-gray-400 rounded px-1">
+                <span className="ml-1 text-[9px] bg-divider text-label rounded px-1">
                   {historyOrders.length}
                 </span>
               )}
@@ -441,7 +441,7 @@ export function AlgoMonitor() {
             onChange={(e) => {
               stratFilter.value = e.target.value;
             }}
-            className="bg-gray-800 text-xs text-gray-300 rounded px-2 py-0.5 border border-gray-700"
+            className="bg-panel text-xs text-default rounded px-2 py-0.5 border border-divider"
           >
             <option value="ALL">All</option>
             <option value="LIMIT">Limit</option>
@@ -455,7 +455,7 @@ export function AlgoMonitor() {
 
       <div className="overflow-auto flex-1">
         {displayed.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-gray-600 text-xs">
+          <div className="flex items-center justify-center h-24 text-subtle text-xs">
             {tab.value === "active"
               ? "No active algo orders"
               : tab.value === "needs-action"
@@ -465,7 +465,7 @@ export function AlgoMonitor() {
         ) : (
           <table className="w-full text-xs" data-testid="algo-orders-table">
             <thead>
-              <tr className="text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950">
+              <tr className="text-muted border-b border-panel sticky top-0 bg-page">
                 {orderedCols.map((col) => (
                   <ResizableHeader
                     key={col.key}
@@ -505,15 +505,15 @@ export function AlgoMonitor() {
                     <tr
                       onClick={() => togglePerf(order.id)}
                       data-testid={`algo-order-row-${order.id}`}
-                      className={`border-b border-gray-800/40 cursor-pointer transition-colors ${
+                      className={`border-b border-panel/40 cursor-pointer transition-colors ${
                         isLinked
                           ? "bg-sky-900/20 border-l-2 border-l-sky-500"
                           : isNeedsAction
                             ? "bg-amber-950/10 hover:bg-amber-900/10"
-                            : "hover:bg-gray-800/20"
+                            : "hover:bg-panel/20"
                       }`}
                     >
-                      <td className="px-3 py-2 font-semibold text-gray-200">{order.asset}</td>
+                      <td className="px-3 py-2 font-semibold text-secondary">{order.asset}</td>
                       <td
                         className={`px-3 py-2 font-semibold ${
                           order.side === "BUY" ? "text-emerald-400" : "text-red-400"
@@ -521,7 +521,7 @@ export function AlgoMonitor() {
                       >
                         {order.side}
                       </td>
-                      <td className="px-3 py-2 text-gray-400">{order.strategy}</td>
+                      <td className="px-3 py-2 text-label">{order.strategy}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-emerald-400">
                         {formatQty(order.filled)}
                       </td>
@@ -529,21 +529,21 @@ export function AlgoMonitor() {
                         {unfilled > 0 ? (
                           formatQty(unfilled)
                         ) : (
-                          <span className="text-gray-600">—</span>
+                          <span className="text-subtle">—</span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-gray-300">
+                      <td className="px-3 py-2 text-right tabular-nums text-default">
                         {formatQty(order.quantity)}
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
                           <ProgressBar pct={pct} />
-                          <span className="text-gray-500 tabular-nums w-10 text-right shrink-0">
+                          <span className="text-muted tabular-nums w-10 text-right shrink-0">
                             {pct.toFixed(0)}%
                           </span>
                         </div>
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-gray-400">
+                      <td className="px-3 py-2 text-right tabular-nums text-label">
                         {formatPrice(order.limitPrice)}
                       </td>
                       <td
@@ -552,8 +552,8 @@ export function AlgoMonitor() {
                             ? (order.side === "BUY" && marketPrice <= order.limitPrice) ||
                               (order.side === "SELL" && marketPrice >= order.limitPrice)
                               ? "text-emerald-400"
-                              : "text-gray-400"
-                            : "text-gray-600"
+                              : "text-label"
+                            : "text-subtle"
                         }`}
                       >
                         {marketPrice !== undefined ? formatPrice(marketPrice) : "—"}
@@ -565,8 +565,8 @@ export function AlgoMonitor() {
                               ? "text-red-400"
                               : perf.marketImpactBps < -2
                                 ? "text-emerald-400"
-                                : "text-gray-400"
-                            : "text-gray-600"
+                                : "text-label"
+                            : "text-subtle"
                         }`}
                       >
                         {perf ? formatBps(perf.marketImpactBps) : "—"}
@@ -577,7 +577,7 @@ export function AlgoMonitor() {
                             ? perf.totalCommission < 0
                               ? "text-emerald-500"
                               : "text-amber-500"
-                            : "text-gray-600"
+                            : "text-subtle"
                         }`}
                       >
                         {perf ? `$${perf.totalCommission.toFixed(2)}` : "—"}
@@ -595,12 +595,12 @@ export function AlgoMonitor() {
                           {perf && <PerfCard perf={perf} order={order} />}
                           {order.children.length > 0 && (
                             <div className="mx-3 mb-2">
-                              <div className="text-[10px] text-gray-600 uppercase tracking-wide px-1 pb-0.5">
+                              <div className="text-[10px] text-subtle uppercase tracking-wide px-1 pb-0.5">
                                 Executions ({order.children.length})
                               </div>
                               <table className="w-full text-xs">
                                 <thead>
-                                  <tr className="text-gray-600 border-b border-gray-800/40">
+                                  <tr className="text-subtle border-b border-panel/40">
                                     <th className="text-left pl-8 pr-3 py-1">Time</th>
                                     <th className="text-left px-3 py-1">Side</th>
                                     <th className="text-left px-3 py-1">Asset</th>
@@ -619,7 +619,7 @@ export function AlgoMonitor() {
                             </div>
                           )}
                           {order.children.length === 0 && !perf && (
-                            <div className="text-gray-600 text-[10px] px-4 py-2">
+                            <div className="text-subtle text-[10px] px-4 py-2">
                               No executions yet
                             </div>
                           )}
@@ -628,14 +628,14 @@ export function AlgoMonitor() {
                     )}
 
                     {!isExpanded && (
-                      <tr key={`${order.id}-state`} className="border-b border-gray-800/20">
-                        <td colSpan={colSpan} className="px-3 py-0.5 text-[10px] text-gray-600">
+                      <tr key={`${order.id}-state`} className="border-b border-panel/20">
+                        <td colSpan={colSpan} className="px-3 py-0.5 text-[10px] text-subtle">
                           {order.status === "pending" ? (
                             <span className="text-amber-600">
                               Pending — waiting for fill conditions
                             </span>
                           ) : order.status === "expired" ? (
-                            <span className="text-gray-500">
+                            <span className="text-muted">
                               Expired —{" "}
                               {order.filled > 0
                                 ? `${formatQty(order.filled)} of ${formatQty(

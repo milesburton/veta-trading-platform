@@ -79,24 +79,23 @@ function ServiceRow({ svc, dispatch }: ServiceRowProps) {
     }
   }, [state, svc, dispatch]);
 
-  const dotClass =
-    state === "ok" ? "bg-green-400" : state === "error" ? "bg-red-400" : "bg-gray-600";
+  const dotClass = state === "ok" ? "bg-green-400" : state === "error" ? "bg-red-400" : "bg-subtle";
   const nameClass =
     state === "error"
       ? "text-red-400 font-semibold"
       : state === "ok"
-        ? "text-gray-200"
-        : "text-gray-600";
+        ? "text-secondary"
+        : "text-subtle";
   const statusText = state === "ok" ? "OK" : state === "error" ? "DOWN" : "—";
   const statusClass =
     state === "ok"
       ? "text-green-400"
       : state === "error"
         ? "text-red-400 font-semibold"
-        : "text-gray-600";
+        : "text-subtle";
 
   return (
-    <tr className="border-b border-gray-800/50 hover:bg-gray-900/40">
+    <tr className="border-b border-panel/50 hover:bg-surface/40">
       <td className="py-1 pl-3 pr-2 w-3">
         <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
       </td>
@@ -109,11 +108,11 @@ function ServiceRow({ svc, dispatch }: ServiceRowProps) {
           svc.name
         )}
       </td>
-      <td className="py-1 pr-3 text-[9px] text-gray-600 whitespace-nowrap">
+      <td className="py-1 pr-3 text-[9px] text-subtle whitespace-nowrap">
         {CATEGORY_LABEL[svc.category] ?? svc.category}
       </td>
       <td className={`py-1 pr-3 text-[9px] font-mono tabular-nums ${statusClass}`}>{statusText}</td>
-      <td className="py-1 pr-3 text-[9px] text-gray-600 font-mono tabular-nums">
+      <td className="py-1 pr-3 text-[9px] text-subtle font-mono tabular-nums">
         {data?.version ?? "—"}
       </td>
     </tr>
@@ -123,21 +122,21 @@ function ServiceRow({ svc, dispatch }: ServiceRowProps) {
 function ServiceHealthTable() {
   const dispatch = useAppDispatch();
   return (
-    <div className="overflow-auto shrink-0 border-b border-gray-800 max-h-[45%]">
+    <div className="overflow-auto shrink-0 border-b border-panel max-h-[45%]">
       <table className="w-full text-left border-collapse">
-        <thead className="sticky top-0 bg-gray-950 z-10">
-          <tr className="border-b border-gray-800">
+        <thead className="sticky top-0 bg-page z-10">
+          <tr className="border-b border-panel">
             <th className="py-1 pl-3 pr-2 w-3" />
-            <th className="py-1 pr-3 text-[9px] font-semibold text-gray-600 uppercase tracking-wider">
+            <th className="py-1 pr-3 text-[9px] font-semibold text-subtle uppercase tracking-wider">
               Service
             </th>
-            <th className="py-1 pr-3 text-[9px] font-semibold text-gray-600 uppercase tracking-wider">
+            <th className="py-1 pr-3 text-[9px] font-semibold text-subtle uppercase tracking-wider">
               Type
             </th>
-            <th className="py-1 pr-3 text-[9px] font-semibold text-gray-600 uppercase tracking-wider">
+            <th className="py-1 pr-3 text-[9px] font-semibold text-subtle uppercase tracking-wider">
               Status
             </th>
-            <th className="py-1 pr-3 text-[9px] font-semibold text-gray-600 uppercase tracking-wider">
+            <th className="py-1 pr-3 text-[9px] font-semibold text-subtle uppercase tracking-wider">
               Version
             </th>
           </tr>
@@ -227,12 +226,12 @@ function MiniMetricCard({
 }) {
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded bg-gray-900 border ${borderClass} px-2 py-2 min-w-0`}
+      className={`flex flex-col items-center justify-center rounded bg-surface border ${borderClass} px-2 py-2 min-w-0`}
     >
       <span className={`text-lg font-bold font-mono tabular-nums leading-none ${textClass}`}>
         {value}
       </span>
-      <span className="mt-0.5 text-[9px] text-gray-500 text-center leading-tight">{label}</span>
+      <span className="mt-0.5 text-[9px] text-muted text-center leading-tight">{label}</span>
     </div>
   );
 }
@@ -283,7 +282,7 @@ function ThroughputZone({ metrics, sparkline }: { metrics: Metrics; sparkline: S
 
   return (
     <div className="flex flex-col gap-2 p-2 overflow-hidden">
-      <div className="text-[9px] text-gray-600 uppercase tracking-wider">Throughput · 60s</div>
+      <div className="text-[9px] text-subtle uppercase tracking-wider">Throughput · 60s</div>
       <div className="grid grid-cols-2 gap-1.5">
         {cards.map((c) => (
           <MiniMetricCard key={c.label} {...c} />
@@ -323,7 +322,7 @@ const EVENT_TYPE_STYLES: Record<string, { dot: string; label: string }> = {
   "order.new": { dot: "bg-sky-400", label: "text-sky-400" },
   "order.routed": { dot: "bg-blue-400", label: "text-blue-400" },
   "order.filled": { dot: "bg-emerald-400", label: "text-emerald-400" },
-  "order.expired": { dot: "bg-gray-500", label: "text-gray-500" },
+  "order.expired": { dot: "bg-muted", label: "text-muted" },
   "order.rejected": { dot: "bg-red-500", label: "text-red-400" },
   "order.child": { dot: "bg-violet-400", label: "text-violet-400" },
   "algo.started": { dot: "bg-amber-400", label: "text-amber-400" },
@@ -332,7 +331,7 @@ const EVENT_TYPE_STYLES: Record<string, { dot: string; label: string }> = {
 };
 
 function eventStyle(type: string) {
-  return EVENT_TYPE_STYLES[type] ?? { dot: "bg-gray-600", label: "text-gray-500" };
+  return EVENT_TYPE_STYLES[type] ?? { dot: "bg-subtle", label: "text-muted" };
 }
 
 function formatTs(ts: number | undefined): string {
@@ -349,12 +348,12 @@ function EventRow({ ev }: { ev: ObsEvent }) {
   const symbol = ev.payload?.symbol as string | undefined;
   const status = ev.payload?.status as string | undefined;
   return (
-    <div className="flex items-center gap-1.5 px-2 py-0.5 hover:bg-gray-900/50">
+    <div className="flex items-center gap-1.5 px-2 py-0.5 hover:bg-surface/50">
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
       <span className={`text-[10px] font-mono ${label} shrink-0`}>{ev.type}</span>
-      {symbol && <span className="text-[10px] text-gray-400 shrink-0">{symbol}</span>}
-      {status && <span className="text-[10px] text-gray-600 shrink-0">{status}</span>}
-      <span className="ml-auto text-[9px] text-gray-700 tabular-nums shrink-0">
+      {symbol && <span className="text-[10px] text-label shrink-0">{symbol}</span>}
+      {status && <span className="text-[10px] text-subtle shrink-0">{status}</span>}
+      <span className="ml-auto text-[9px] text-divider tabular-nums shrink-0">
         {formatTs(ev.ts)}
       </span>
     </div>
@@ -371,12 +370,12 @@ function TimelineZone() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="text-[9px] text-gray-600 uppercase tracking-wider px-2 pt-2 pb-1 shrink-0">
+      <div className="text-[9px] text-subtle uppercase tracking-wider px-2 pt-2 pb-1 shrink-0">
         Event Timeline
       </div>
       <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto">
         {events.length === 0 ? (
-          <div className="px-2 py-3 text-[10px] text-gray-700">No events yet…</div>
+          <div className="px-2 py-3 text-[10px] text-divider">No events yet…</div>
         ) : (
           events.slice(0, 200).map((ev, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: events have no stable id; key includes ts+type for stability
@@ -422,15 +421,15 @@ function AlertFeedZone() {
 
   if (activeAlerts.length === 0) {
     return (
-      <div className="px-3 py-2 border-t border-gray-800 shrink-0">
-        <span className="text-[10px] text-gray-700">No active alerts</span>
+      <div className="px-3 py-2 border-t border-panel shrink-0">
+        <span className="text-[10px] text-divider">No active alerts</span>
       </div>
     );
   }
 
   return (
-    <div className="border-t border-gray-800 shrink-0">
-      <div className="text-[9px] text-gray-600 uppercase tracking-wider px-3 pt-1.5 pb-0.5">
+    <div className="border-t border-panel shrink-0">
+      <div className="text-[9px] text-subtle uppercase tracking-wider px-3 pt-1.5 pb-0.5">
         Alerts{overflow > 0 ? ` (showing 6 of ${activeAlerts.length})` : ""}
       </div>
       {shown.map((alert) => {
@@ -438,22 +437,22 @@ function AlertFeedZone() {
         return (
           <div
             key={alert.id}
-            className={`flex items-center gap-2 px-3 py-1 border-l-2 ${s.border} border-b border-gray-900 last:border-b-0`}
+            className={`flex items-center gap-2 px-3 py-1 border-l-2 ${s.border} border-b border-surface last:border-b-0`}
           >
             <span className={`text-[8px] px-1 py-0.5 rounded font-mono ${s.badge} shrink-0`}>
               {s.label}
             </span>
-            <span className="text-[9px] text-gray-500 font-mono shrink-0">
+            <span className="text-[9px] text-muted font-mono shrink-0">
               {SOURCE_LABELS[alert.source] ?? alert.source}
             </span>
-            <span className="text-[10px] text-gray-300 flex-1 truncate">{alert.message}</span>
-            <span className="text-[9px] text-gray-600 tabular-nums shrink-0">
+            <span className="text-[10px] text-default flex-1 truncate">{alert.message}</span>
+            <span className="text-[9px] text-subtle tabular-nums shrink-0">
               {Math.floor((Date.now() - alert.ts) / 60_000)}m
             </span>
             <button
               type="button"
               onClick={() => dispatch(alertDismissed(alert.id))}
-              className="text-[9px] text-gray-600 hover:text-gray-400 shrink-0 leading-none"
+              className="text-[9px] text-subtle hover:text-label shrink-0 leading-none"
               aria-label="dismiss"
             >
               ✕
@@ -540,10 +539,10 @@ export function EstateOverviewPanel() {
   }, [orders, dispatch, metrics, sparkline]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-950 text-gray-200 overflow-hidden">
+    <div className="h-full flex flex-col bg-page text-secondary overflow-hidden">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-gray-800 shrink-0">
-        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+      <div className="px-3 py-2 border-b border-panel shrink-0">
+        <span className="text-[11px] font-semibold text-label uppercase tracking-wide">
           Estate Overview
         </span>
       </div>
@@ -552,7 +551,7 @@ export function EstateOverviewPanel() {
       <ServiceHealthTable />
 
       {/* Zones 2+3: Throughput left, Timeline right */}
-      <div className="flex flex-1 min-h-0 divide-x divide-gray-800">
+      <div className="flex flex-1 min-h-0 divide-x divide-panel">
         <div className="w-[42%] flex flex-col overflow-hidden">
           <ThroughputZone metrics={metrics.value} sparkline={sparkline.value} />
         </div>

@@ -10,7 +10,7 @@ interface AdvisoryPanelProps {
 
 function StatusBadge({ status }: { status: AdvisoryStatus }) {
   const configs: Record<AdvisoryStatus, { label: string; className: string }> = {
-    "not-requested": { label: "Not requested", className: "text-gray-500" },
+    "not-requested": { label: "Not requested", className: "text-muted" },
     queued: { label: "Queued…", className: "text-amber-400" },
     running: { label: "Analysing…", className: "text-blue-400" },
     ready: { label: "Fresh", className: "text-emerald-400" },
@@ -43,9 +43,9 @@ export function AdvisoryPanel({ symbol }: AdvisoryPanelProps) {
   const ageSeconds = entry.note ? Math.round((now - entry.note.createdAt) / 1000) : null;
 
   return (
-    <div className="border border-gray-800 rounded bg-gray-900 p-3 mt-3">
+    <div className="border border-panel rounded bg-surface p-3 mt-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+        <span className="text-[10px] text-muted uppercase tracking-wider font-semibold">
           AI Advisory
         </span>
         <StatusBadge status={entry.status} />
@@ -60,7 +60,7 @@ export function AdvisoryPanel({ symbol }: AdvisoryPanelProps) {
             type="button"
             onClick={handleRequest}
             disabled={isRequesting}
-            className="px-2 py-1 text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 rounded transition-colors disabled:opacity-50 w-fit"
+            className="px-2 py-1 text-[10px] bg-panel hover:bg-divider text-default rounded transition-colors disabled:opacity-50 w-fit"
           >
             {isRequesting ? "Requesting…" : entry.status === "failed" ? "Retry" : "Get Advisory"}
           </button>
@@ -71,30 +71,30 @@ export function AdvisoryPanel({ symbol }: AdvisoryPanelProps) {
       )}
 
       {(entry.status === "queued" || entry.status === "running") && (
-        <div className="text-[10px] text-gray-400">
+        <div className="text-[10px] text-label">
           {entry.status === "queued"
             ? "Waiting for LLM worker…"
             : `Generating with ${entry.note?.modelId ?? "model"}…`}
           {entry.jobId && (
-            <span className="ml-1 text-gray-600 font-mono">{entry.jobId.slice(0, 8)}</span>
+            <span className="ml-1 text-subtle font-mono">{entry.jobId.slice(0, 8)}</span>
           )}
         </div>
       )}
 
       {(entry.status === "ready" || entry.status === "stale") && entry.note && (
         <div>
-          <div className="text-[10px] text-gray-300 leading-relaxed whitespace-pre-wrap mb-2">
+          <div className="text-[10px] text-default leading-relaxed whitespace-pre-wrap mb-2">
             {entry.note.content}
           </div>
           <div className="flex items-center justify-between">
-            <div className="text-[9px] text-gray-600 font-mono">
+            <div className="text-[9px] text-subtle font-mono">
               {entry.note.provider} · {ageSeconds !== null ? `${ageSeconds}s ago` : ""}
             </div>
             <button
               type="button"
               onClick={handleRequest}
               disabled={isRequesting}
-              className="px-2 py-0.5 text-[9px] bg-gray-800 hover:bg-gray-700 text-gray-500 rounded transition-colors disabled:opacity-50"
+              className="px-2 py-0.5 text-[9px] bg-panel hover:bg-divider text-muted rounded transition-colors disabled:opacity-50"
             >
               Refresh
             </button>
@@ -102,7 +102,7 @@ export function AdvisoryPanel({ symbol }: AdvisoryPanelProps) {
         </div>
       )}
 
-      <div className="mt-2 text-[9px] text-gray-600 italic">
+      <div className="mt-2 text-[9px] text-subtle italic">
         For educational purposes only. Not financial advice.
       </div>
     </div>

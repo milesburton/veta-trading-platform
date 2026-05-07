@@ -19,7 +19,7 @@ const BG_PRESETS: { label: string; tw: string }[] = [
   { label: "Green", tw: "bg-emerald-900/40" },
   { label: "Sky", tw: "bg-sky-900/40" },
   { label: "Purple", tw: "bg-purple-900/40" },
-  { label: "Gray", tw: "bg-gray-800/60" },
+  { label: "Gray", tw: "bg-panel/60" },
   { label: "Yellow", tw: "bg-yellow-900/40" },
   { label: "None", tw: "" },
 ];
@@ -29,8 +29,8 @@ const TEXT_PRESETS: { label: string; tw: string }[] = [
   { label: "Red", tw: "text-red-400" },
   { label: "Green", tw: "text-emerald-400" },
   { label: "Sky", tw: "text-sky-400" },
-  { label: "Gray", tw: "text-gray-500" },
-  { label: "White", tw: "text-gray-100" },
+  { label: "Gray", tw: "text-muted" },
+  { label: "White", tw: "text-primary" },
   { label: "Yellow", tw: "text-yellow-400" },
   { label: "Default", tw: "" },
 ];
@@ -49,7 +49,7 @@ function RuleSwatch({ style }: { style: CfStyle }) {
     .join(" ");
   return (
     <span
-      className={`inline-flex w-16 h-4 rounded border border-gray-700 text-[9px] items-center justify-center ${classes}`}
+      className={`inline-flex w-16 h-4 rounded border border-divider text-[9px] items-center justify-center ${classes}`}
     >
       Sample
     </span>
@@ -81,7 +81,7 @@ function RuleForm({ rule, fields, onChange }: RuleFormProps) {
             className={`px-2 py-0.5 rounded border text-[10px] transition-colors ${
               rule.scope === s
                 ? "bg-sky-700 border-sky-600 text-white"
-                : "border-gray-700 text-gray-500 hover:text-gray-300"
+                : "border-divider text-muted hover:text-default"
             }`}
           >
             {s === "row" ? "Entire row" : "Cell only"}
@@ -90,23 +90,23 @@ function RuleForm({ rule, fields, onChange }: RuleFormProps) {
       </div>
 
       <div>
-        <div className="block text-[10px] text-gray-500 mb-1">Label (optional)</div>
+        <div className="block text-[10px] text-muted mb-1">Label (optional)</div>
         <input
           type="text"
           value={rule.label ?? ""}
           onChange={(e) => onChange({ ...rule, label: e.target.value })}
           placeholder="e.g. Large orders"
-          className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-sky-500"
+          className="w-full bg-panel border border-divider rounded px-2 py-1 text-secondary focus:outline-none focus:border-sky-500"
         />
       </div>
 
       {rule.scope === "cell" && (
         <div>
-          <div className="block text-[10px] text-gray-500 mb-1">Cell field to highlight</div>
+          <div className="block text-[10px] text-muted mb-1">Cell field to highlight</div>
           <select
             value={rule.cellField ?? fields[0]?.key}
             onChange={(e) => onChange({ ...rule, cellField: e.target.value })}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-sky-500"
+            className="w-full bg-panel border border-divider rounded px-2 py-1 text-secondary focus:outline-none focus:border-sky-500"
           >
             {fields.map((f) => (
               <option key={f.key} value={f.key}>
@@ -118,7 +118,7 @@ function RuleForm({ rule, fields, onChange }: RuleFormProps) {
       )}
 
       <div>
-        <div className="block text-[10px] text-gray-500 mb-1">Condition</div>
+        <div className="block text-[10px] text-muted mb-1">Condition</div>
         <ExpressionBuilderInline
           fields={fields}
           value={expr}
@@ -127,7 +127,7 @@ function RuleForm({ rule, fields, onChange }: RuleFormProps) {
       </div>
 
       <div>
-        <div className="text-[10px] text-gray-500 mb-1">Background</div>
+        <div className="text-[10px] text-muted mb-1">Background</div>
         <div className="flex flex-wrap gap-1">
           {BG_PRESETS.map((p) => (
             <button
@@ -135,10 +135,10 @@ function RuleForm({ rule, fields, onChange }: RuleFormProps) {
               type="button"
               title={p.label}
               onClick={() => updateStyle({ bg: p.tw || undefined })}
-              className={`w-6 h-4 rounded border ${p.tw || "bg-gray-900"} ${
+              className={`w-6 h-4 rounded border ${p.tw || "bg-surface"} ${
                 style.bg === p.tw || (!style.bg && !p.tw)
                   ? "border-sky-500 ring-1 ring-sky-500"
-                  : "border-gray-600"
+                  : "border-subtle"
               }`}
             />
           ))}
@@ -146,7 +146,7 @@ function RuleForm({ rule, fields, onChange }: RuleFormProps) {
       </div>
 
       <div>
-        <div className="text-[10px] text-gray-500 mb-1">Text colour</div>
+        <div className="text-[10px] text-muted mb-1">Text colour</div>
         <div className="flex flex-wrap gap-1">
           {TEXT_PRESETS.map((p) => (
             <button
@@ -154,10 +154,10 @@ function RuleForm({ rule, fields, onChange }: RuleFormProps) {
               type="button"
               title={p.label}
               onClick={() => updateStyle({ textColor: p.tw || undefined })}
-              className={`px-1.5 py-0.5 rounded border text-[9px] ${p.tw || "text-gray-400"} ${
+              className={`px-1.5 py-0.5 rounded border text-[9px] ${p.tw || "text-label"} ${
                 style.textColor === p.tw || (!style.textColor && !p.tw)
                   ? "border-sky-500"
-                  : "border-gray-700"
+                  : "border-divider"
               }`}
             >
               Aa
@@ -168,7 +168,7 @@ function RuleForm({ rule, fields, onChange }: RuleFormProps) {
 
       <div className="flex items-center gap-4">
         <div>
-          <div className="text-[10px] text-gray-500 mb-1">Left border</div>
+          <div className="text-[10px] text-muted mb-1">Left border</div>
           <div className="flex flex-wrap gap-1">
             {BORDER_PRESETS.map((p) => (
               <button
@@ -176,10 +176,10 @@ function RuleForm({ rule, fields, onChange }: RuleFormProps) {
                 type="button"
                 title={p.label}
                 onClick={() => updateStyle({ border: p.tw || undefined })}
-                className={`px-1.5 py-0.5 rounded border text-[9px] text-gray-400 transition-colors ${
+                className={`px-1.5 py-0.5 rounded border text-[9px] text-label transition-colors ${
                   style.border === p.tw || (!style.border && !p.tw)
                     ? "border-sky-500"
-                    : "border-gray-700"
+                    : "border-divider"
                 }`}
               >
                 {p.label}
@@ -194,12 +194,12 @@ function RuleForm({ rule, fields, onChange }: RuleFormProps) {
             onChange={(e) => updateStyle({ bold: e.target.checked || undefined })}
             className="accent-sky-500"
           />
-          <span className="text-[10px] text-gray-400">Bold</span>
+          <span className="text-[10px] text-label">Bold</span>
         </label>
       </div>
 
       <div className="flex items-center gap-2 mt-1">
-        <span className="text-[10px] text-gray-500">Preview:</span>
+        <span className="text-[10px] text-muted">Preview:</span>
         <RuleSwatch style={style} />
       </div>
     </div>
@@ -251,13 +251,13 @@ export function CfRuleEditor({ gridId, fields, onClose }: Props) {
   }
 
   return (
-    <div className="absolute right-0 top-0 bottom-0 w-80 bg-gray-950 border-l border-gray-800 shadow-2xl flex flex-col z-20 text-xs">
-      <div className="px-3 py-2 border-b border-gray-800 flex items-center justify-between shrink-0">
-        <span className="text-gray-300 font-semibold text-[11px]">Conditional Formatting</span>
+    <div className="absolute right-0 top-0 bottom-0 w-80 bg-page border-l border-panel shadow-2xl flex flex-col z-20 text-xs">
+      <div className="px-3 py-2 border-b border-panel flex items-center justify-between shrink-0">
+        <span className="text-default font-semibold text-[11px]">Conditional Formatting</span>
         <button
           type="button"
           onClick={onClose}
-          className="text-gray-600 hover:text-gray-400 text-base leading-none"
+          className="text-subtle hover:text-label text-base leading-none"
           aria-label="Close formatting editor"
         >
           ×
@@ -280,7 +280,7 @@ export function CfRuleEditor({ gridId, fields, onClose }: Props) {
                 onClick={() => {
                   editingRule.value = null;
                 }}
-                className="flex-1 py-1 border border-gray-700 rounded text-gray-500 hover:text-gray-300 transition-colors"
+                className="flex-1 py-1 border border-divider rounded text-muted hover:text-default transition-colors"
               >
                 Cancel
               </button>
@@ -296,17 +296,17 @@ export function CfRuleEditor({ gridId, fields, onClose }: Props) {
         ) : (
           <div className="p-3 space-y-2">
             {cfRules.length === 0 && (
-              <p className="text-gray-600 text-center py-4">No formatting rules yet.</p>
+              <p className="text-subtle text-center py-4">No formatting rules yet.</p>
             )}
             {cfRules.map((rule) => (
               <div
                 key={rule.id}
-                className="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded p-2"
+                className="flex items-center gap-2 bg-surface border border-panel rounded p-2"
               >
                 <RuleSwatch style={rule.style} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-gray-300 truncate">{rule.label || rule.scope}</div>
-                  <div className="text-[10px] text-gray-600">
+                  <div className="text-default truncate">{rule.label || rule.scope}</div>
+                  <div className="text-[10px] text-subtle">
                     {rule.scope} · {rule.expr.rules.length} condition
                     {rule.expr.rules.length !== 1 ? "s" : ""}
                   </div>
@@ -314,7 +314,7 @@ export function CfRuleEditor({ gridId, fields, onClose }: Props) {
                 <button
                   type="button"
                   onClick={() => startEdit(rule)}
-                  className="text-gray-600 hover:text-gray-300 px-1"
+                  className="text-subtle hover:text-default px-1"
                   aria-label="Edit rule"
                 >
                   ✎
@@ -322,7 +322,7 @@ export function CfRuleEditor({ gridId, fields, onClose }: Props) {
                 <button
                   type="button"
                   onClick={() => deleteRule(rule.id)}
-                  className="text-gray-700 hover:text-red-400 px-1"
+                  className="text-divider hover:text-red-400 px-1"
                   aria-label="Delete rule"
                 >
                   ×
@@ -334,11 +334,11 @@ export function CfRuleEditor({ gridId, fields, onClose }: Props) {
       </div>
 
       {!editingRule.value && (
-        <div className="p-3 border-t border-gray-800 shrink-0">
+        <div className="p-3 border-t border-panel shrink-0">
           <button
             type="button"
             onClick={startNew}
-            className="w-full py-1.5 border border-dashed border-gray-700 rounded text-gray-500 hover:text-gray-300 hover:border-gray-600 transition-colors text-[11px]"
+            className="w-full py-1.5 border border-dashed border-divider rounded text-muted hover:text-default hover:border-subtle transition-colors text-[11px]"
           >
             + Add rule
           </button>

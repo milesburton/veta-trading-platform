@@ -80,10 +80,10 @@ function CellTooltip({ cell, x, y }: CellTooltipProps) {
   if (!cell) return null;
   return (
     <div
-      className="fixed z-50 pointer-events-none bg-gray-900 border border-gray-700 rounded p-2 text-[10px] shadow-lg"
+      className="fixed z-50 pointer-events-none bg-surface border border-divider rounded p-2 text-[10px] shadow-lg"
       style={{ left: x + 12, top: y - 8 }}
     >
-      <div className="text-gray-400 mb-1">
+      <div className="text-label mb-1">
         Spot {pctLabel(cell.spotPct)} · Vol {pctLabel(cell.volPct)}
       </div>
       <div
@@ -92,10 +92,10 @@ function CellTooltip({ cell, x, y }: CellTooltipProps) {
         P&L: {cell.pnl >= 0 ? "+" : ""}
         {cell.pnl.toFixed(3)}
       </div>
-      <div className="text-gray-400">P&L %: {(cell.pnlPct * 100).toFixed(1)}%</div>
-      <div className="text-gray-400">Price: ${cell.optionPrice.toFixed(3)}</div>
-      <div className="text-gray-400">MC Mean: ${cell.mean.toFixed(3)}</div>
-      <div className="text-gray-400">MC p95: ${cell.p95.toFixed(3)}</div>
+      <div className="text-label">P&L %: {(cell.pnlPct * 100).toFixed(1)}%</div>
+      <div className="text-label">Price: ${cell.optionPrice.toFixed(3)}</div>
+      <div className="text-label">MC Mean: ${cell.mean.toFixed(3)}</div>
+      <div className="text-label">MC p95: ${cell.p95.toFixed(3)}</div>
     </div>
   );
 }
@@ -149,21 +149,21 @@ export function ScenarioMatrixPanel() {
 
   return (
     <div
-      className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs"
+      className="flex flex-col h-full bg-page text-default text-xs"
       data-testid="scenario-matrix-panel"
     >
-      <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
-        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+      <div className="px-4 py-2.5 border-b border-panel shrink-0">
+        <span className="text-[11px] font-semibold text-label uppercase tracking-wide">
           Scenario Matrix — Spot / Vol Shocks
         </span>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="flex flex-wrap gap-2 items-end px-4 py-2 border-b border-gray-800 shrink-0"
+        className="flex flex-wrap gap-2 items-end px-4 py-2 border-b border-panel shrink-0"
       >
         <div className="flex flex-col gap-0.5">
-          <label htmlFor="sm-symbol" className="text-[9px] text-gray-600 uppercase">
+          <label htmlFor="sm-symbol" className="text-[9px] text-subtle uppercase">
             Symbol
           </label>
           <select
@@ -172,7 +172,7 @@ export function ScenarioMatrixPanel() {
             onChange={(e) => {
               symbol.value = e.target.value;
             }}
-            className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200"
+            className="bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary"
           >
             {symbols.map((s) => (
               <option key={s} value={s}>
@@ -183,7 +183,7 @@ export function ScenarioMatrixPanel() {
         </div>
 
         <div className="flex flex-col gap-0.5">
-          <span className="text-[9px] text-gray-600 uppercase">Type</span>
+          <span className="text-[9px] text-subtle uppercase">Type</span>
           <div className="flex gap-1">
             {(["call", "put"] as const).map((t) => (
               <button
@@ -197,7 +197,7 @@ export function ScenarioMatrixPanel() {
                     ? t === "call"
                       ? "bg-emerald-800 text-emerald-200"
                       : "bg-red-900 text-red-200"
-                    : "bg-gray-800 text-gray-500 hover:text-gray-300"
+                    : "bg-panel text-muted hover:text-default"
                 }`}
               >
                 {t.toUpperCase()}
@@ -207,7 +207,7 @@ export function ScenarioMatrixPanel() {
         </div>
 
         <div className="flex flex-col gap-0.5">
-          <label htmlFor="sm-strike" className="text-[9px] text-gray-600 uppercase">
+          <label htmlFor="sm-strike" className="text-[9px] text-subtle uppercase">
             Strike ($)
           </label>
           <input
@@ -220,12 +220,12 @@ export function ScenarioMatrixPanel() {
               strike.value = e.target.value;
             }}
             placeholder="e.g. 150"
-            className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 w-24 placeholder:text-gray-600"
+            className="bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary w-24 placeholder:text-subtle"
           />
         </div>
 
         <div className="flex flex-col gap-0.5">
-          <label htmlFor="sm-expiry" className="text-[9px] text-gray-600 uppercase">
+          <label htmlFor="sm-expiry" className="text-[9px] text-subtle uppercase">
             Expiry
           </label>
           <select
@@ -234,7 +234,7 @@ export function ScenarioMatrixPanel() {
             onChange={(e) => {
               expirySecs.value = Number(e.target.value);
             }}
-            className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200"
+            className="bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary"
           >
             {EXPIRY_OPTIONS.map((o) => (
               <option key={o.secs} value={o.secs}>
@@ -258,7 +258,7 @@ export function ScenarioMatrixPanel() {
           onClick={() => {
             showRanges.value = !showRanges.value;
           }}
-          className="px-2 py-1.5 rounded bg-gray-800 text-gray-500 hover:text-gray-300 text-[10px] transition-colors"
+          className="px-2 py-1.5 rounded bg-panel text-muted hover:text-default text-[10px] transition-colors"
         >
           {showRanges.value ? "▲ Ranges" : "▼ Ranges"}
         </button>
@@ -271,9 +271,9 @@ export function ScenarioMatrixPanel() {
       </form>
 
       {showRanges.value && (
-        <div className="flex gap-4 px-4 py-2 border-b border-gray-800 shrink-0">
+        <div className="flex gap-4 px-4 py-2 border-b border-panel shrink-0">
           <div className="flex flex-col gap-1 flex-1">
-            <label htmlFor="spot-range" className="text-[9px] text-gray-600 uppercase">
+            <label htmlFor="spot-range" className="text-[9px] text-subtle uppercase">
               Spot shock ±{spotRange.value}%
             </label>
             <input
@@ -290,7 +290,7 @@ export function ScenarioMatrixPanel() {
             />
           </div>
           <div className="flex flex-col gap-1 flex-1">
-            <label htmlFor="vol-range" className="text-[9px] text-gray-600 uppercase">
+            <label htmlFor="vol-range" className="text-[9px] text-subtle uppercase">
               Vol shock ±{volRange.value}%
             </label>
             <input
@@ -312,7 +312,7 @@ export function ScenarioMatrixPanel() {
       {result.value && (
         <>
           {/* Metric picker */}
-          <div className="flex gap-1 px-4 py-1.5 border-b border-gray-800 shrink-0">
+          <div className="flex gap-1 px-4 py-1.5 border-b border-panel shrink-0">
             {(Object.entries(METRIC_LABELS) as [CellMetric, string][]).map(([k, label]) => (
               <button
                 key={k}
@@ -321,9 +321,7 @@ export function ScenarioMatrixPanel() {
                   metric.value = k;
                 }}
                 className={`text-[9px] px-2 py-0.5 rounded transition-colors ${
-                  metric.value === k
-                    ? "bg-gray-700 text-gray-100"
-                    : "text-gray-600 hover:text-gray-400"
+                  metric.value === k ? "bg-divider text-primary" : "text-subtle hover:text-label"
                 }`}
               >
                 {label}
@@ -333,7 +331,7 @@ export function ScenarioMatrixPanel() {
 
           {/* Heatmap grid */}
           <div className="flex-1 overflow-auto p-3">
-            <div className="text-[9px] text-gray-600 mb-2">
+            <div className="text-[9px] text-subtle mb-2">
               Spot ${result.value.spotPrice.toFixed(2)} · Vol{" "}
               {(result.value.impliedVol * 100).toFixed(1)}% · Base $
               {result.value.baselinePrice.toFixed(4)} · Hover for all metrics
@@ -348,7 +346,7 @@ export function ScenarioMatrixPanel() {
               <thead>
                 <tr>
                   <th
-                    className="text-[9px] text-gray-600 text-left pr-2 pb-1 font-normal"
+                    className="text-[9px] text-subtle text-left pr-2 pb-1 font-normal"
                     title="Rows: spot price % shift. Columns: implied vol % shift"
                   >
                     Spot ↓ / Vol →
@@ -356,7 +354,7 @@ export function ScenarioMatrixPanel() {
                   {result.value.volShocks.map((vs) => (
                     <th
                       key={vs}
-                      className="text-[9px] text-gray-500 text-center pb-1 px-1 font-semibold min-w-[60px]"
+                      className="text-[9px] text-muted text-center pb-1 px-1 font-semibold min-w-[60px]"
                     >
                       {pctLabel(vs)}
                     </th>
@@ -370,7 +368,7 @@ export function ScenarioMatrixPanel() {
                   const spotPct = r0.spotShocks[si];
                   return (
                     <tr key={spotPct}>
-                      <td className="text-[9px] text-gray-500 pr-2 font-semibold">
+                      <td className="text-[9px] text-muted pr-2 font-semibold">
                         {pctLabel(spotPct)}
                       </td>
                       {row.map((cell) => {
@@ -424,7 +422,7 @@ export function ScenarioMatrixPanel() {
               </div>
             )}
 
-            <div className="text-[9px] text-gray-700 mt-2 text-right">
+            <div className="text-[9px] text-divider mt-2 text-right">
               {new Date(result.value.computedAt).toLocaleTimeString()} · 1000 MC paths/cell
             </div>
           </div>
@@ -436,7 +434,7 @@ export function ScenarioMatrixPanel() {
       )}
 
       {!result.value && (
-        <div className="flex-1 flex items-center justify-center text-gray-700 text-[11px]">
+        <div className="flex-1 flex items-center justify-center text-divider text-[11px]">
           Configure parameters and click Run Scenario
         </div>
       )}

@@ -28,12 +28,12 @@ function ForwardChip({ fwd, prevRate }: { fwd: ForwardRate; prevRate?: number })
   const borderClass = isInverted ? "border-red-700/60" : "border-green-700/60";
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded bg-gray-900 border ${borderClass} px-2 py-1.5 min-w-0`}
+      className={`flex flex-col items-center justify-center rounded bg-surface border ${borderClass} px-2 py-1.5 min-w-0`}
     >
       <span className={`text-sm font-bold font-mono tabular-nums leading-none ${textClass}`}>
         {(fwd.rate * 100).toFixed(2)}%
       </span>
-      <span className="mt-0.5 text-[9px] text-gray-500 text-center leading-tight">
+      <span className="mt-0.5 text-[9px] text-muted text-center leading-tight">
         {fwd.label} fwd
       </span>
     </div>
@@ -43,18 +43,18 @@ function ForwardChip({ fwd, prevRate }: { fwd: ForwardRate; prevRate?: number })
 function BondMetric({
   label,
   value,
-  textClass = "text-gray-200",
+  textClass = "text-secondary",
 }: {
   label: string;
   value: string;
   textClass?: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded bg-gray-900 border border-gray-700/60 px-2 py-1.5 min-w-0">
+    <div className="flex flex-col items-center justify-center rounded bg-surface border border-divider/60 px-2 py-1.5 min-w-0">
       <span className={`text-sm font-bold font-mono tabular-nums leading-none ${textClass}`}>
         {value}
       </span>
-      <span className="mt-0.5 text-[9px] text-gray-500 text-center leading-tight">{label}</span>
+      <span className="mt-0.5 text-[9px] text-muted text-center leading-tight">{label}</span>
     </div>
   );
 }
@@ -96,10 +96,10 @@ export function YieldCurvePanel() {
   }));
 
   return (
-    <div className="h-full flex flex-col bg-gray-950 text-gray-200 overflow-hidden text-xs">
+    <div className="h-full flex flex-col bg-page text-secondary overflow-hidden text-xs">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-gray-800 shrink-0 flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+      <div className="px-3 py-2 border-b border-panel shrink-0 flex items-center justify-between">
+        <span className="text-[11px] font-semibold text-label uppercase tracking-wide">
           Yield Curve · Nelson-Siegel
         </span>
         <button
@@ -115,7 +115,7 @@ export function YieldCurvePanel() {
       {/* Zone 1: spot yield curve chart */}
       <div className="px-2 pt-2 shrink-0" style={{ height: 180 }}>
         {curve.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-600 text-[10px]">
+          <div className="flex items-center justify-center h-full text-subtle text-[10px]">
             {curveLoading ? "Computing curve…" : "No data"}
           </div>
         ) : (
@@ -154,7 +154,7 @@ export function YieldCurvePanel() {
       {/* Zone 2: forward rate chips */}
       {fwds.length > 0 && (
         <div className="px-3 py-2 shrink-0">
-          <div className="text-[9px] text-gray-600 uppercase tracking-wider mb-1.5">
+          <div className="text-[9px] text-subtle uppercase tracking-wider mb-1.5">
             Implied Forward Rates
           </div>
           <div className="grid grid-cols-5 gap-1.5">
@@ -170,13 +170,13 @@ export function YieldCurvePanel() {
       )}
 
       {/* Zone 3: bond pricing (collapsible) */}
-      <div className="border-t border-gray-800 shrink-0">
+      <div className="border-t border-panel shrink-0">
         <button
           type="button"
           onClick={() => {
             showBond.value = !showBond.value;
           }}
-          className="w-full text-left px-3 py-1.5 text-[10px] text-gray-500 hover:text-gray-300 flex items-center gap-1"
+          className="w-full text-left px-3 py-1.5 text-[10px] text-muted hover:text-default flex items-center gap-1"
         >
           <span>{showBond.value ? "▾" : "▸"}</span>
           Bond Pricing (price / duration / convexity / DV01)
@@ -196,7 +196,7 @@ export function YieldCurvePanel() {
                 const id = `bond-${label.toLowerCase().replace(/[^a-z]/g, "-")}`;
                 return (
                   <div key={label} className="flex flex-col gap-0.5">
-                    <label htmlFor={id} className="text-[9px] text-gray-600">
+                    <label htmlFor={id} className="text-[9px] text-subtle">
                       {label}
                     </label>
                     <input
@@ -206,7 +206,7 @@ export function YieldCurvePanel() {
                       onChange={(e) => {
                         signal.value = e.target.value;
                       }}
-                      className="w-full bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-[10px] text-gray-200 font-mono focus:outline-none focus:border-blue-600"
+                      className="w-full bg-surface border border-divider rounded px-1.5 py-1 text-[10px] text-secondary font-mono focus:outline-none focus:border-blue-600"
                     />
                   </div>
                 );

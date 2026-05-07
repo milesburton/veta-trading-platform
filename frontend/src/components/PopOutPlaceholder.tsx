@@ -5,7 +5,7 @@ import { panelClosed } from "../store/windowSlice.ts";
 export function PopOutPlaceholder({ panelId }: { panelId: PanelId }) {
   const dispatch = useAppDispatch();
   return (
-    <div className="flex flex-col items-center justify-center h-full text-gray-600 text-xs gap-2">
+    <div className="flex flex-col items-center justify-center h-full text-subtle text-xs gap-2">
       <span>Panel open in external window</span>
       <button
         type="button"

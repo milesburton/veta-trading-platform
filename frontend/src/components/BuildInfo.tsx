@@ -22,7 +22,7 @@ export function BuildInfo({ buildDate, commitSha, version, className }: Props) {
     <span
       data-testid="build-info"
       title={tooltipBits.join(" ") || undefined}
-      className={className ?? "text-[10px] text-gray-500 tabular-nums"}
+      className={className ?? "text-[10px] text-muted tabular-nums"}
     >
       {parts.join(" · ")}
     </span>

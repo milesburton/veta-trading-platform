@@ -78,7 +78,7 @@ function PieTooltipContent({ active, payload }: PieTooltipProps) {
   const item = payload[0];
   if (item.name === "Remaining") return null;
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200">
+    <div className="bg-surface border border-divider rounded px-2 py-1 text-xs text-secondary">
       {item.value}% filled
     </div>
   );
@@ -93,7 +93,7 @@ interface BarTooltipProps {
 function BarTooltipContent({ active, payload, label }: BarTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200">
+    <div className="bg-surface border border-divider rounded px-2 py-1 text-xs text-secondary">
       Slice {label}: {payload[0].value} shares
     </div>
   );
@@ -108,7 +108,7 @@ export function OrderProgressPanel() {
 
   if (!selectedOrderId || !order) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-600 bg-gray-950">
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-subtle bg-page">
         <svg
           aria-hidden="true"
           viewBox="0 0 24 24"
@@ -134,20 +134,20 @@ export function OrderProgressPanel() {
 
   return (
     <div
-      className="flex flex-col h-full bg-gray-950 overflow-y-auto"
+      className="flex flex-col h-full bg-page overflow-y-auto"
       data-testid="order-progress-panel"
     >
-      <div className="px-3 pt-2.5 pb-2 border-b border-gray-800 shrink-0 flex items-center gap-2">
+      <div className="px-3 pt-2.5 pb-2 border-b border-panel shrink-0 flex items-center gap-2">
         <span
           className="text-[10px] font-semibold px-1.5 py-0.5 rounded tabular-nums font-mono"
           style={{ color: stratColour, background: `${stratColour}22` }}
         >
           {order.strategy}
         </span>
-        <span className="text-[11px] text-gray-300 font-semibold">
+        <span className="text-[11px] text-default font-semibold">
           {order.side} {order.quantity.toLocaleString()} {order.asset}
         </span>
-        <span className="ml-auto text-[10px] text-gray-600 font-mono">{order.id.slice(0, 8)}</span>
+        <span className="ml-auto text-[10px] text-subtle font-mono">{order.id.slice(0, 8)}</span>
       </div>
 
       <div className="flex items-center gap-4 px-4 pt-4 pb-2">
@@ -181,21 +181,21 @@ export function OrderProgressPanel() {
             >
               {pctDisplay}%
             </span>
-            <span className="text-xs text-gray-500 ml-1">filled</span>
+            <span className="text-xs text-muted ml-1">filled</span>
           </div>
-          <div className="text-xs text-gray-500 leading-relaxed">
+          <div className="text-xs text-muted leading-relaxed">
             <div>
-              <span className="text-gray-400">{order.filled.toLocaleString()}</span>
-              <span className="text-gray-600">/ {order.quantity.toLocaleString()} shares</span>
+              <span className="text-label">{order.filled.toLocaleString()}</span>
+              <span className="text-subtle">/ {order.quantity.toLocaleString()} shares</span>
             </div>
             {order.avgFillPrice != null && (
               <div>
-                avg <span className="text-gray-400">${order.avgFillPrice.toFixed(2)}</span>
+                avg <span className="text-label">${order.avgFillPrice.toFixed(2)}</span>
               </div>
             )}
             {order.totalCommissionUSD != null && order.totalCommissionUSD > 0 && (
               <div>
-                comm <span className="text-gray-400">${order.totalCommissionUSD.toFixed(2)}</span>
+                comm <span className="text-label">${order.totalCommissionUSD.toFixed(2)}</span>
               </div>
             )}
           </div>
@@ -204,8 +204,8 @@ export function OrderProgressPanel() {
 
       {childBars.length > 0 && (
         <>
-          <div className="px-3 pt-2 pb-1 border-t border-gray-800 mt-1 shrink-0">
-            <span className="text-[11px] text-gray-500 uppercase tracking-wider">
+          <div className="px-3 pt-2 pb-1 border-t border-panel mt-1 shrink-0">
+            <span className="text-[11px] text-muted uppercase tracking-wider">
               Slice fills ({childBars.length})
             </span>
           </div>

@@ -162,14 +162,14 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
   const isBooting = mode.value === "booting";
 
   return (
-    <div data-testid="startup-overlay" className="fixed inset-0 z-50 flex flex-col bg-gray-950">
+    <div data-testid="startup-overlay" className="fixed inset-0 z-50 flex flex-col bg-page">
       <div className="flex flex-1 items-center justify-center px-6 py-8">
         <div className="w-full max-w-4xl">
           <div className="flex flex-col items-center gap-4">
             <div className="flex flex-col items-center gap-1">
               <div
                 data-testid="brand-title"
-                className="text-4xl font-bold text-gray-100 tracking-tight"
+                className="text-4xl font-bold text-primary tracking-tight"
               >
                 VETA
               </div>
@@ -177,12 +177,12 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
                 Trading Platform
               </div>
             </div>
-            <div className="h-6 w-px bg-gray-700" />
+            <div className="h-6 w-px bg-divider" />
             <div className="flex flex-col items-center gap-1">
-              <div data-testid="startup-status" className="text-sm font-medium text-gray-200">
+              <div data-testid="startup-status" className="text-sm font-medium text-secondary">
                 {isBooting ? "Starting up" : "Waiting for services to respond"}
               </div>
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-label">
                 {isBooting
                   ? "Initialising trading services — usually takes 30–60 seconds"
                   : "Platform is running — some services are not yet responding"}
@@ -192,7 +192,7 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
           </div>
 
           {/* Service checklist */}
-          <div className="mt-6 overflow-x-auto rounded-lg border border-gray-800 bg-gray-900/65 p-4 sm:p-5">
+          <div className="mt-6 overflow-x-auto rounded-lg border border-panel bg-surface/65 p-4 sm:p-5">
             <table className="w-full border-collapse text-sm">
               <tbody>
                 {SERVICE_ORDER.map((key) => {
@@ -202,21 +202,21 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
                       <td className="w-6 pr-3 py-0.5 align-middle">
                         <span
                           className={`inline-block w-2 h-2 rounded-full ${
-                            up ? "bg-emerald-400" : "bg-gray-600 animate-pulse"
+                            up ? "bg-emerald-400" : "bg-subtle animate-pulse"
                           }`}
                         />
                       </td>
                       <td
                         className={`pr-6 py-0.5 align-middle whitespace-nowrap font-medium ${
-                          up ? "text-gray-200" : "text-gray-500"
+                          up ? "text-secondary" : "text-muted"
                         }`}
                       >
                         {SERVICE_LABELS[key]}
                       </td>
-                      <td className="py-0.5 align-middle text-[11px] text-gray-400">
+                      <td className="py-0.5 align-middle text-[11px] text-label">
                         {SERVICE_DESCRIPTIONS[key]}
                       </td>
-                      <td className="pl-4 py-0.5 align-middle text-[10px] text-gray-500 whitespace-nowrap">
+                      <td className="pl-4 py-0.5 align-middle text-[10px] text-muted whitespace-nowrap">
                         {up ? "ready" : ""}
                       </td>
                     </tr>
@@ -227,35 +227,32 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
           </div>
 
           {/* Progress summary */}
-          <div className="mt-6 flex flex-col items-center gap-2 text-gray-400">
+          <div className="mt-6 flex flex-col items-center gap-2 text-label">
             <div className="text-xs">
               {upCount} / {totalCount} services ready
             </div>
-            <div data-testid="startup-elapsed" className="text-xs tabular-nums text-gray-500">
+            <div data-testid="startup-elapsed" className="text-xs tabular-nums text-muted">
               {timeStr} elapsed
             </div>
           </div>
         </div>
       </div>
 
-      <div
-        data-testid="startup-build-info"
-        className="w-full border-t border-gray-800/60 bg-gray-950/95"
-      >
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-6 py-2 text-[9px] text-gray-600 tabular-nums sm:text-[10px]">
+      <div data-testid="startup-build-info" className="w-full border-t border-panel/60 bg-page/95">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-6 py-2 text-[9px] text-subtle tabular-nums sm:text-[10px]">
           <span className="whitespace-nowrap">VETA &middot; Miles Burton</span>
           <span className="flex items-center gap-3">
             <BuildInfo
               buildDate={buildDate}
               commitSha={commitSha}
               version={import.meta.env.VITE_APP_VERSION}
-              className="text-[10px] text-gray-600 tabular-nums"
+              className="text-[10px] text-subtle tabular-nums"
             />
             <a
               href="https://github.com/milesburton/veta-trading-platform"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-500 hover:text-gray-300 transition-colors"
+              className="text-muted hover:text-default transition-colors"
             >
               GitHub
             </a>

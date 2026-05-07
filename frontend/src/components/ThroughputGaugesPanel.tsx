@@ -92,12 +92,12 @@ interface MetricCardProps {
 function MetricCard({ label, value, borderClass, textClass }: MetricCardProps) {
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded bg-gray-900 border ${borderClass} px-3 py-3 min-w-0`}
+      className={`flex flex-col items-center justify-center rounded bg-surface border ${borderClass} px-3 py-3 min-w-0`}
     >
       <span className={`text-2xl font-bold font-mono tabular-nums leading-none ${textClass}`}>
         {value}
       </span>
-      <span className="mt-1 text-[10px] text-gray-400 text-center leading-tight">{label}</span>
+      <span className="mt-1 text-[10px] text-label text-center leading-tight">{label}</span>
     </div>
   );
 }
@@ -235,12 +235,12 @@ export function ThroughputGaugesPanel() {
   ];
 
   return (
-    <div className="h-full flex flex-col bg-gray-950 text-gray-200 overflow-auto">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800 flex-shrink-0">
-        <span className="text-xs font-semibold text-gray-100 tracking-wide uppercase">
+    <div className="h-full flex flex-col bg-page text-secondary overflow-auto">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-panel flex-shrink-0">
+        <span className="text-xs font-semibold text-primary tracking-wide uppercase">
           Throughput Gauges
         </span>
-        <span className="text-[10px] font-mono text-gray-500">last 60 s</span>
+        <span className="text-[10px] font-mono text-muted">last 60 s</span>
       </div>
 
       <div className="flex-shrink-0 p-3">
@@ -252,7 +252,7 @@ export function ThroughputGaugesPanel() {
       </div>
 
       <div className="flex-1 min-h-0 px-3 pb-3 flex flex-col">
-        <div className="text-[10px] text-gray-500 mb-1 font-mono">
+        <div className="text-[10px] text-muted mb-1 font-mono">
           Orders rate (per-second, last 60 s)
         </div>
         <div className="flex-1 min-h-[60px]">

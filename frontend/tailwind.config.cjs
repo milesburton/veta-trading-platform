@@ -24,6 +24,33 @@ module.exports = {
           900: "rgb(var(--gray-900) / <alpha-value>)",
           950: "rgb(var(--gray-950) / <alpha-value>)",
         },
+        // Purpose-named aliases over the gray scale, one per shade so each
+        // existing usage has an exact replacement. Single-word color names
+        // flatten into Tailwind utilities: `colors.muted` → `text-muted` /
+        // `bg-muted` / `border-muted`. Each maps to a specific gray shade so
+        // the four data-theme variants apply automatically.
+        //   strong       (gray-50)  pure white — high-emphasis headings
+        //   primary      (gray-100) primary text (~18:1 on page)
+        //   secondary    (gray-200) strong secondary text (~12:1)
+        //   default      (gray-300) body / value text (~8:1)
+        //   label        (gray-400) secondary labels (~5.5:1)
+        //   muted        (gray-500) muted labels (~3.5:1)
+        //   subtle       (gray-600) disabled / decorative
+        //   divider      (gray-700) subtle borders
+        //   panel        (gray-800) panel backgrounds
+        //   surface      (gray-900) surface backgrounds
+        //   page         (gray-950) page background
+        strong: "rgb(var(--gray-50) / <alpha-value>)",
+        primary: "rgb(var(--gray-100) / <alpha-value>)",
+        secondary: "rgb(var(--gray-200) / <alpha-value>)",
+        default: "rgb(var(--gray-300) / <alpha-value>)",
+        label: "rgb(var(--gray-400) / <alpha-value>)",
+        muted: "rgb(var(--gray-500) / <alpha-value>)",
+        subtle: "rgb(var(--gray-600) / <alpha-value>)",
+        divider: "rgb(var(--gray-700) / <alpha-value>)",
+        panel: "rgb(var(--gray-800) / <alpha-value>)",
+        surface: "rgb(var(--gray-900) / <alpha-value>)",
+        page: "rgb(var(--gray-950) / <alpha-value>)",
         semantic: {
           up: "rgb(var(--semantic-up) / <alpha-value>)",
           "up-dark": "rgb(var(--semantic-up-dark) / <alpha-value>)",

@@ -30,7 +30,7 @@ const STATE_COLOURS: Record<ProductState, string> = {
   structured: "bg-blue-900/60 text-blue-300 border-blue-700",
   issued: "bg-emerald-900/60 text-emerald-300 border-emerald-700",
   sold: "bg-amber-900/60 text-amber-300 border-amber-700",
-  unwound: "bg-gray-800 text-gray-400 border-gray-600",
+  unwound: "bg-panel text-label border-subtle",
 };
 
 export function ProductBuilderPanel() {
@@ -233,8 +233,8 @@ export function ProductBuilderPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden" data-testid="product-builder-panel">
-      <div className="px-3 py-2 border-b border-gray-800 flex items-center gap-3 flex-shrink-0">
-        <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
+      <div className="px-3 py-2 border-b border-panel flex items-center gap-3 flex-shrink-0">
+        <span className="text-xs font-semibold text-default uppercase tracking-wider">
           Product Builder
         </span>
         {currentState && (
@@ -247,16 +247,14 @@ export function ProductBuilderPanel() {
           </span>
         )}
         {savedProduct.value && (
-          <span className="text-[10px] text-gray-500 font-mono">
-            {savedProduct.value.productId}
-          </span>
+          <span className="text-[10px] text-muted font-mono">{savedProduct.value.productId}</span>
         )}
       </div>
 
       <div className="flex flex-col gap-3 p-3 overflow-auto flex-1">
         <div className="grid grid-cols-2 gap-2">
           <div className="col-span-2">
-            <label htmlFor="pb-name" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="pb-name" className="block text-xs text-muted mb-1">
               Product Name
             </label>
             <input
@@ -267,11 +265,11 @@ export function ProductBuilderPanel() {
                 name.value = e.target.value;
               }}
               placeholder="e.g. Tech Growth Basket 2026"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
             />
           </div>
           <div className="col-span-2">
-            <label htmlFor="pb-desc" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="pb-desc" className="block text-xs text-muted mb-1">
               Description
             </label>
             <textarea
@@ -282,11 +280,11 @@ export function ProductBuilderPanel() {
                 description.value = (e.target as HTMLTextAreaElement).value;
               }}
               placeholder="Brief description of the product"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 resize-none"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 resize-none"
             />
           </div>
           <div>
-            <label htmlFor="pb-notional" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="pb-notional" className="block text-xs text-muted mb-1">
               Target Notional ($)
             </label>
             <input
@@ -298,24 +296,24 @@ export function ProductBuilderPanel() {
               onChange={(e) => {
                 targetNotional.value = e.target.value;
               }}
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <p className="block text-xs text-gray-500 mb-1">Currency</p>
-            <div className="w-full bg-gray-800/50 border border-gray-700/50 text-gray-400 text-xs rounded px-2 py-1.5 tabular-nums">
+            <p className="block text-xs text-muted mb-1">Currency</p>
+            <div className="w-full bg-panel/50 border border-divider/50 text-label text-xs rounded px-2 py-1.5 tabular-nums">
               USD
             </div>
           </div>
         </div>
 
-        <div className="border border-gray-700/60 rounded p-2 flex flex-col gap-2">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+        <div className="border border-divider/60 rounded p-2 flex flex-col gap-2">
+          <span className="text-[10px] text-muted uppercase tracking-wider font-semibold">
             Add Leg
           </span>
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label htmlFor="pb-leg-type" className="block text-[10px] text-gray-600 mb-0.5">
+              <label htmlFor="pb-leg-type" className="block text-[10px] text-subtle mb-0.5">
                 Type
               </label>
               <select
@@ -324,7 +322,7 @@ export function ProductBuilderPanel() {
                 onChange={(e) => {
                   addType.value = e.target.value as LegType;
                 }}
-                className="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded px-2 py-1 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-panel border border-divider text-secondary text-xs rounded px-2 py-1 focus:outline-none focus:border-emerald-500"
               >
                 <option value="equity">Equity</option>
                 <option value="bond">Bond</option>
@@ -332,7 +330,7 @@ export function ProductBuilderPanel() {
               </select>
             </div>
             <div>
-              <label htmlFor="pb-leg-symbol" className="block text-[10px] text-gray-600 mb-0.5">
+              <label htmlFor="pb-leg-symbol" className="block text-[10px] text-subtle mb-0.5">
                 Symbol
               </label>
               <input
@@ -346,11 +344,11 @@ export function ProductBuilderPanel() {
                   if (e.key === "Enter") addLeg();
                 }}
                 placeholder="e.g. AAPL"
-                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1 focus:outline-none focus:border-emerald-500"
               />
             </div>
             <div>
-              <label htmlFor="pb-leg-weight" className="block text-[10px] text-gray-600 mb-0.5">
+              <label htmlFor="pb-leg-weight" className="block text-[10px] text-subtle mb-0.5">
                 Weight %
               </label>
               <input
@@ -366,7 +364,7 @@ export function ProductBuilderPanel() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") addLeg();
                 }}
-                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1 focus:outline-none focus:border-emerald-500 tabular-nums"
+                className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1 focus:outline-none focus:border-emerald-500 tabular-nums"
               />
             </div>
           </div>
@@ -380,10 +378,10 @@ export function ProductBuilderPanel() {
         </div>
 
         {legs.value.length > 0 && (
-          <div className="rounded border border-gray-700/60 overflow-hidden">
+          <div className="rounded border border-divider/60 overflow-hidden">
             <table className="w-full text-[10px] border-collapse">
               <thead>
-                <tr className="bg-gray-800/80 text-gray-500 text-left">
+                <tr className="bg-panel/80 text-muted text-left">
                   <th className="px-2 py-1.5 font-normal" title="Instrument type for this leg">
                     Type
                   </th>
@@ -401,7 +399,7 @@ export function ProductBuilderPanel() {
               </thead>
               <tbody>
                 {legs.value.map((leg) => (
-                  <tr key={leg._key} className="border-t border-gray-700/40 hover:bg-gray-800/30">
+                  <tr key={leg._key} className="border-t border-divider/40 hover:bg-panel/30">
                     <td className="px-2 py-1">
                       <span
                         className={`px-1 py-0.5 rounded text-[9px] font-semibold ${
@@ -415,15 +413,15 @@ export function ProductBuilderPanel() {
                         {leg.type.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-2 py-1 font-mono text-gray-200">{leg.symbol}</td>
-                    <td className="px-2 py-1 text-right tabular-nums text-gray-300">
+                    <td className="px-2 py-1 font-mono text-secondary">{leg.symbol}</td>
+                    <td className="px-2 py-1 text-right tabular-nums text-default">
                       {leg.weight.toFixed(1)}%
                     </td>
                     <td className="px-1 py-1 text-center">
                       <button
                         type="button"
                         onClick={() => removeLeg(leg._key)}
-                        className="text-gray-600 hover:text-red-400 transition-colors px-1"
+                        className="text-subtle hover:text-red-400 transition-colors px-1"
                         title="Remove leg"
                       >
                         ×
@@ -449,7 +447,7 @@ export function ProductBuilderPanel() {
         )}
 
         {legs.value.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-6 text-gray-600 text-xs gap-1">
+          <div className="flex flex-col items-center justify-center py-6 text-subtle text-xs gap-1">
             <span>Add legs to build the product</span>
           </div>
         )}
@@ -459,7 +457,7 @@ export function ProductBuilderPanel() {
             type="button"
             disabled={busy.value || !name.value.trim()}
             onClick={handleSaveDraft}
-            className="px-3 py-1.5 text-xs font-semibold rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-gray-200 transition-colors"
+            className="px-3 py-1.5 text-xs font-semibold rounded bg-divider hover:bg-subtle disabled:opacity-40 disabled:cursor-not-allowed text-secondary transition-colors"
           >
             {busy.value ? "Saving…" : "Save Draft"}
           </button>

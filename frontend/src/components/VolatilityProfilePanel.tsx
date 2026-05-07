@@ -40,8 +40,8 @@ function VolTooltip({
   if (!active || !payload?.length) return null;
   const vol = payload[0]?.value as number | undefined;
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-[10px]">
-      <div className="text-gray-500 mb-0.5">{new Date(label as number).toLocaleTimeString()}</div>
+    <div className="bg-surface border border-divider rounded px-2 py-1.5 text-[10px]">
+      <div className="text-muted mb-0.5">{new Date(label as number).toLocaleTimeString()}</div>
       {vol !== undefined && (
         <div className="text-blue-400 tabular-nums">EWMA Vol: {(vol * 100).toFixed(2)}%</div>
       )}
@@ -64,22 +64,22 @@ export function VolatilityProfilePanel() {
   }));
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs">
+    <div className="flex flex-col h-full bg-page text-default text-xs">
       {/* Header */}
-      <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
-        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+      <div className="px-4 py-2.5 border-b border-panel shrink-0">
+        <span className="text-[11px] font-semibold text-label uppercase tracking-wide">
           Volatility Profile
         </span>
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-800 shrink-0">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-panel shrink-0">
         <select
           value={symbol.value}
           onChange={(e) => {
             symbol.value = e.target.value;
           }}
-          className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 flex-1"
+          className="bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary flex-1"
         >
           {symbols.map((s) => (
             <option key={s} value={s}>
@@ -87,35 +87,33 @@ export function VolatilityProfilePanel() {
             </option>
           ))}
         </select>
-        {isFetching && <span className="text-[10px] text-gray-600">Refreshing…</span>}
+        {isFetching && <span className="text-[10px] text-subtle">Refreshing…</span>}
       </div>
 
       {/* Summary */}
       {data && (
-        <div className="flex items-center gap-4 px-4 py-1.5 border-b border-gray-800 shrink-0">
+        <div className="flex items-center gap-4 px-4 py-1.5 border-b border-panel shrink-0">
           <div>
-            <span className="text-[9px] text-gray-600 uppercase tracking-wide mr-1">EWMA</span>
+            <span className="text-[9px] text-subtle uppercase tracking-wide mr-1">EWMA</span>
             <span className="text-[13px] font-mono font-semibold text-blue-400 tabular-nums">
               {(data.ewmaVol * 100).toFixed(2)}%
             </span>
           </div>
           <div>
-            <span className="text-[9px] text-gray-600 uppercase tracking-wide mr-1">Rolling</span>
-            <span className="text-[11px] font-mono text-gray-400 tabular-nums">
+            <span className="text-[9px] text-subtle uppercase tracking-wide mr-1">Rolling</span>
+            <span className="text-[11px] font-mono text-label tabular-nums">
               {(data.rollingVol * 100).toFixed(2)}%
             </span>
           </div>
           {data.spotPrice !== null && (
-            <div className="ml-auto text-[10px] text-gray-600">
-              Spot ${data.spotPrice.toFixed(2)}
-            </div>
+            <div className="ml-auto text-[10px] text-subtle">Spot ${data.spotPrice.toFixed(2)}</div>
           )}
         </div>
       )}
 
       {/* Error */}
       {error && (
-        <div className="px-4 py-2 text-red-400 text-[10px] border-b border-gray-800">
+        <div className="px-4 py-2 text-red-400 text-[10px] border-b border-panel">
           {("data" in error ? (error.data as { error?: string })?.error : null) ?? "Failed to load"}
         </div>
       )}
@@ -166,14 +164,14 @@ export function VolatilityProfilePanel() {
         </div>
       ) : (
         !isFetching && (
-          <div className="flex-1 flex items-center justify-center text-gray-700 text-[11px]">
+          <div className="flex-1 flex items-center justify-center text-divider text-[11px]">
             {error ? "Could not load volatility data" : "Select a symbol to view vol profile"}
           </div>
         )
       )}
 
       {data && (
-        <div className="px-4 py-1.5 border-t border-gray-800 shrink-0 text-[9px] text-gray-700">
+        <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-divider">
           {new Date(data.computedAt).toLocaleTimeString()} · EWMA λ=0.94 · Auto-refreshes every 60s
         </div>
       )}

@@ -188,12 +188,9 @@ export function CandlestickChart({ symbol, candles }: Props) {
   const raw = candles[interval.value];
 
   return (
-    <div
-      className="relative flex flex-col h-full bg-gray-950"
-      data-testid="candlestick-chart-panel"
-    >
-      <div className="flex items-center gap-2 px-2 py-1.5 border-b border-gray-800 shrink-0">
-        <div className="flex rounded overflow-hidden border border-gray-700">
+    <div className="relative flex flex-col h-full bg-page" data-testid="candlestick-chart-panel">
+      <div className="flex items-center gap-2 px-2 py-1.5 border-b border-panel shrink-0">
+        <div className="flex rounded overflow-hidden border border-divider">
           {(["1m", "5m"] as Interval[]).map((iv) => (
             <button
               key={iv}
@@ -205,7 +202,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
               className={`px-2 py-0.5 text-xs transition-colors ${
                 interval.value === iv
                   ? "bg-emerald-700 text-white"
-                  : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                  : "bg-panel text-label hover:bg-divider"
               }`}
             >
               {iv}
@@ -213,7 +210,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
           ))}
         </div>
         {raw.length > 0 && (
-          <span className="ml-auto text-[10px] text-gray-600 tabular-nums">{raw.length} bars</span>
+          <span className="ml-auto text-[10px] text-subtle tabular-nums">{raw.length} bars</span>
         )}
       </div>
 
@@ -240,7 +237,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          <span className="text-[11px] text-gray-600">Collecting {interval.value} candles…</span>
+          <span className="text-[11px] text-subtle">Collecting {interval.value} candles…</span>
         </div>
       )}
       <div

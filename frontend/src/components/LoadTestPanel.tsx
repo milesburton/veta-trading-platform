@@ -22,13 +22,13 @@ export function LoadTestPanel() {
 
   if (user?.role !== "admin") {
     return (
-      <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs">
-        <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
+      <div className="flex flex-col h-full bg-page text-default text-xs">
+        <div className="px-4 py-2.5 border-b border-panel shrink-0">
           <div className="flex items-baseline gap-2">
-            <span className="text-[11px] font-semibold text-gray-200 uppercase tracking-wide">
+            <span className="text-[11px] font-semibold text-secondary uppercase tracking-wide">
               Load Test
             </span>
-            <span className="text-[10px] text-gray-600">
+            <span className="text-[10px] text-subtle">
               Admin only — injects bulk orders into the live pipeline
             </span>
           </div>
@@ -36,7 +36,7 @@ export function LoadTestPanel() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-1">
             <div className="text-[13px] font-semibold text-amber-400">Admin access required</div>
-            <div className="text-[11px] text-gray-600">
+            <div className="text-[11px] text-subtle">
               You must be logged in as an admin to use the load test runner.
             </div>
           </div>
@@ -76,13 +76,13 @@ export function LoadTestPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs">
-      <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
+    <div className="flex flex-col h-full bg-page text-default text-xs">
+      <div className="px-4 py-2.5 border-b border-panel shrink-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-[11px] font-semibold text-gray-200 uppercase tracking-wide">
+          <span className="text-[11px] font-semibold text-secondary uppercase tracking-wide">
             Load Test
           </span>
-          <span className="text-[10px] text-gray-600">
+          <span className="text-[10px] text-subtle">
             Admin only — injects bulk orders into the live pipeline
           </span>
         </div>
@@ -98,7 +98,7 @@ export function LoadTestPanel() {
           <div className="space-y-1">
             <label
               htmlFor="lt-order-count"
-              className="block text-[10px] text-gray-500 uppercase tracking-wide font-medium"
+              className="block text-[10px] text-muted uppercase tracking-wide font-medium"
             >
               Order Count
             </label>
@@ -126,7 +126,7 @@ export function LoadTestPanel() {
                   orderCount.value = Math.min(500, Math.max(1, Number(e.target.value)));
                 }}
                 disabled={isRunning}
-                className="w-16 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 tabular-nums text-right disabled:opacity-50"
+                className="w-16 bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary tabular-nums text-right disabled:opacity-50"
               />
             </div>
           </div>
@@ -134,7 +134,7 @@ export function LoadTestPanel() {
           <div className="space-y-1">
             <label
               htmlFor="lt-strategy"
-              className="block text-[10px] text-gray-500 uppercase tracking-wide font-medium"
+              className="block text-[10px] text-muted uppercase tracking-wide font-medium"
             >
               Strategy
             </label>
@@ -145,7 +145,7 @@ export function LoadTestPanel() {
                 strategy.value = e.target.value;
               }}
               disabled={isRunning}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-[11px] text-gray-200 disabled:opacity-50"
+              className="w-full bg-panel border border-divider rounded px-2 py-1.5 text-[11px] text-secondary disabled:opacity-50"
             >
               {STRATEGIES.map((s) => (
                 <option key={s} value={s}>
@@ -158,7 +158,7 @@ export function LoadTestPanel() {
           <div className="space-y-1">
             <label
               htmlFor="lt-symbols"
-              className="block text-[10px] text-gray-500 uppercase tracking-wide font-medium"
+              className="block text-[10px] text-muted uppercase tracking-wide font-medium"
             >
               Symbols (comma-separated)
             </label>
@@ -171,7 +171,7 @@ export function LoadTestPanel() {
               }}
               disabled={isRunning}
               placeholder="AAPL,MSFT,GOOGL,AMZN,TSLA"
-              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-[11px] text-gray-200 font-mono placeholder:text-gray-600 disabled:opacity-50"
+              className="w-full bg-panel border border-divider rounded px-2 py-1.5 text-[11px] text-secondary font-mono placeholder:text-subtle disabled:opacity-50"
             />
           </div>
 
@@ -210,31 +210,31 @@ export function LoadTestPanel() {
         {!isRunning && lastResult.value && (
           <div className="rounded border border-emerald-700/50 bg-emerald-950/30 px-3 py-2.5 space-y-1.5">
             <div className="text-[11px] font-semibold text-emerald-400">Job submitted</div>
-            <div className="space-y-0.5 text-[10px] text-gray-400">
+            <div className="space-y-0.5 text-[10px] text-label">
               {"jobId" in lastResult.value && (
                 <div>
-                  <span className="text-gray-600">Job ID:</span>{" "}
-                  <span className="font-mono text-gray-300">{lastResult.value.jobId}</span>
+                  <span className="text-subtle">Job ID:</span>{" "}
+                  <span className="font-mono text-default">{lastResult.value.jobId}</span>
                 </div>
               )}
               <div>
-                <span className="text-gray-600">Orders submitted:</span>{" "}
-                <span className="tabular-nums text-gray-300">
+                <span className="text-subtle">Orders submitted:</span>{" "}
+                <span className="tabular-nums text-default">
                   {lastResult.value.submitted.toLocaleString()}
                 </span>
               </div>
               <div>
-                <span className="text-gray-600">Strategy:</span>{" "}
-                <span className="font-mono text-gray-300">{lastResult.value.strategy}</span>
+                <span className="text-subtle">Strategy:</span>{" "}
+                <span className="font-mono text-default">{lastResult.value.strategy}</span>
               </div>
               <div>
-                <span className="text-gray-600">Symbols:</span>{" "}
-                <span className="font-mono text-gray-300">
+                <span className="text-subtle">Symbols:</span>{" "}
+                <span className="font-mono text-default">
                   {lastResult.value.symbols.join(", ")}
                 </span>
               </div>
             </div>
-            <div className="pt-1 text-[10px] text-gray-600 leading-relaxed">
+            <div className="pt-1 text-[10px] text-subtle leading-relaxed">
               Orders are injected via the message bus. Fill results appear in the Order Blotter
               within ~30 seconds.
             </div>

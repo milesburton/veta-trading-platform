@@ -14,8 +14,8 @@ const SIGNAL_STYLES: Record<SignalStrength, { badge: string; dot: string }> = {
     dot: "bg-emerald-600",
   },
   NEUTRAL: {
-    badge: "bg-gray-800/60 text-gray-400 border border-gray-700",
-    dot: "bg-gray-500",
+    badge: "bg-panel/60 text-label border border-divider",
+    dot: "bg-muted",
   },
   SELL: {
     badge: "bg-red-900/40 text-red-300 border border-red-800",
@@ -63,13 +63,13 @@ function ScoreBar({ score }: { score: number }) {
       : score >= 20
         ? "bg-emerald-700"
         : score > -20
-          ? "bg-gray-600"
+          ? "bg-subtle"
           : score > -60
             ? "bg-red-700"
             : "bg-red-500";
   return (
-    <div className="relative h-1.5 bg-gray-800 rounded-full w-20">
-      <div className="absolute top-0 left-1/2 w-px h-1.5 bg-gray-600" />
+    <div className="relative h-1.5 bg-panel rounded-full w-20">
+      <div className="absolute top-0 left-1/2 w-px h-1.5 bg-subtle" />
       <div
         className={`absolute top-0 h-1.5 rounded-full ${color}`}
         style={{
@@ -95,11 +95,11 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
   }
 
   return (
-    <li className="border-b border-gray-800 last:border-0" data-testid="recommendation-row">
+    <li className="border-b border-panel last:border-0" data-testid="recommendation-row">
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: list row toggle */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: list row toggle */}
       <div
-        className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-900/60 transition-colors"
+        className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-surface/60 transition-colors"
         onClick={() => {
           expanded.value = !expanded.value;
         }}
@@ -110,40 +110,38 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
         >
           {rec.signalStrength.replace("_", " ")}
         </span>
-        <span className="text-[11px] text-gray-200 flex-1">
+        <span className="text-[11px] text-secondary flex-1">
           <span className={rec.optionType === "call" ? "text-emerald-400" : "text-red-400"}>
             {rec.optionType.toUpperCase()}
           </span>{" "}
           ${rec.strike.toFixed(0)} · {fmtExpiry(rec.expirySecs)}
         </span>
-        <span className="text-[11px] text-gray-300 tabular-nums font-mono">
+        <span className="text-[11px] text-default tabular-nums font-mono">
           ${rec.price.toFixed(3)}
         </span>
         <ScoreBar score={rec.score} />
-        <span className="text-[10px] text-gray-500 tabular-nums w-8 text-right">
+        <span className="text-[10px] text-muted tabular-nums w-8 text-right">
           {rec.score > 0 ? "+" : ""}
           {rec.score.toFixed(0)}
         </span>
-        <span className="text-gray-600 text-xs ml-1">{expanded.value ? "▾" : "▸"}</span>
+        <span className="text-subtle text-xs ml-1">{expanded.value ? "▾" : "▸"}</span>
       </div>
 
       {expanded.value && (
-        <div className="px-4 pb-3 bg-gray-900/30">
+        <div className="px-4 pb-3 bg-surface/30">
           <div className="grid grid-cols-2 gap-x-6 gap-y-1 mb-2 pt-2">
-            <div className="text-[10px] text-gray-500">Δ {rec.greeks.delta.toFixed(3)}</div>
-            <div className="text-[10px] text-gray-500">Γ {rec.greeks.gamma.toFixed(5)}</div>
-            <div className="text-[10px] text-gray-500">Θ {rec.greeks.theta.toFixed(4)}/day</div>
-            <div className="text-[10px] text-gray-500">ν {rec.greeks.vega.toFixed(4)}/1%</div>
-            <div className="text-[10px] text-gray-500">
-              Vol {(rec.impliedVol * 100).toFixed(1)}%
-            </div>
+            <div className="text-[10px] text-muted">Δ {rec.greeks.delta.toFixed(3)}</div>
+            <div className="text-[10px] text-muted">Γ {rec.greeks.gamma.toFixed(5)}</div>
+            <div className="text-[10px] text-muted">Θ {rec.greeks.theta.toFixed(4)}/day</div>
+            <div className="text-[10px] text-muted">ν {rec.greeks.vega.toFixed(4)}/1%</div>
+            <div className="text-[10px] text-muted">Vol {(rec.impliedVol * 100).toFixed(1)}%</div>
             {rec.scoringMode && (
               <div className="text-[10px]">
                 <span
                   className={`px-1 py-0.5 rounded text-[8px] ${
                     rec.scoringMode === "signal-driven"
                       ? "bg-blue-900/40 text-blue-400"
-                      : "bg-gray-800 text-gray-500"
+                      : "bg-panel text-muted"
                   }`}
                 >
                   {rec.scoringMode}
@@ -152,7 +150,7 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
             )}
           </div>
           {rec.scoringMode === "signal-driven" && rec.signalScore !== undefined && (
-            <div className="text-[9px] text-gray-500 mb-2">
+            <div className="text-[9px] text-muted mb-2">
               Signal: {rec.signalScore >= 0 ? "+" : ""}
               {rec.signalScore.toFixed(3)} ·{" "}
               <span className="capitalize">{rec.signalDirection}</span> · conf{" "}
@@ -168,7 +166,7 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
                     ? "bg-emerald-900/30 text-emerald-400 border-emerald-800"
                     : r.includes(":") && r.includes("-")
                       ? "bg-red-900/30 text-red-400 border-red-800"
-                      : "bg-gray-800 text-gray-500 border-gray-700"
+                      : "bg-panel text-muted border-divider"
                 }`}
               >
                 {formatReason(r)}
@@ -224,26 +222,26 @@ export function TradeRecommendationPanel() {
       ? "text-emerald-400"
       : signal?.direction === "short"
         ? "text-red-400"
-        : "text-gray-400";
+        : "text-label";
 
   return (
     <div
-      className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs"
+      className="flex flex-col h-full bg-page text-default text-xs"
       data-testid="recommendation-panel"
     >
-      <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
-        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+      <div className="px-4 py-2.5 border-b border-panel shrink-0">
+        <span className="text-[11px] font-semibold text-label uppercase tracking-wide">
           Trade Recommendations
         </span>
       </div>
 
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-800 shrink-0">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-panel shrink-0">
         <select
           value={symbol.value}
           onChange={(e) => {
             symbol.value = e.target.value;
           }}
-          className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 flex-1"
+          className="bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary flex-1"
         >
           {symbols.map((s) => (
             <option key={s} value={s}>
@@ -265,14 +263,14 @@ export function TradeRecommendationPanel() {
 
       {/* Live signal context banner */}
       {signal && (
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-gray-900/50 border-b border-gray-800 shrink-0">
-          <span className="text-[9px] text-gray-600 uppercase tracking-wide shrink-0">Signal</span>
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-surface/50 border-b border-panel shrink-0">
+          <span className="text-[9px] text-subtle uppercase tracking-wide shrink-0">Signal</span>
           <span className={`text-[11px] font-mono tabular-nums ${signalColor}`}>
             {signal.score >= 0 ? "+" : ""}
             {signal.score.toFixed(3)}
           </span>
           <span className={`text-[9px] capitalize ${signalColor}`}>{signal.direction}</span>
-          <span className="text-[9px] text-gray-600">
+          <span className="text-[9px] text-subtle">
             conf {(signal.confidence * 100).toFixed(0)}%
           </span>
           <div className="ml-auto flex gap-1 flex-wrap">
@@ -297,7 +295,7 @@ export function TradeRecommendationPanel() {
       )}
 
       {error && (
-        <div className="px-4 py-2 text-red-400 text-[10px] border-b border-gray-800">
+        <div className="px-4 py-2 text-red-400 text-[10px] border-b border-panel">
           Error:{" "}
           {("data" in error ? (error.data as { error?: string })?.error : null) ?? "Failed to load"}
         </div>
@@ -306,18 +304,18 @@ export function TradeRecommendationPanel() {
       {result.value && (
         <>
           {/* Summary bar */}
-          <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-800 shrink-0">
-            <span className="text-[10px] text-gray-500">
+          <div className="flex items-center gap-3 px-4 py-2 border-b border-panel shrink-0">
+            <span className="text-[10px] text-muted">
               Spot ${result.value.spotPrice.toFixed(2)} · Vol{" "}
               {(result.value.impliedVol * 100).toFixed(1)}%
             </span>
-            <span className="text-[10px] text-gray-600">
+            <span className="text-[10px] text-subtle">
               {result.value.recommendations.length} options
             </span>
           </div>
 
           {/* Filter */}
-          <div className="flex gap-1 px-4 py-1.5 border-b border-gray-800 shrink-0 flex-wrap">
+          <div className="flex gap-1 px-4 py-1.5 border-b border-panel shrink-0 flex-wrap">
             {(["ALL", "STRONG_BUY", "BUY", "NEUTRAL", "SELL", "STRONG_SELL"] as const).map((f) => (
               <button
                 key={f}
@@ -327,8 +325,8 @@ export function TradeRecommendationPanel() {
                 }}
                 className={`text-[9px] px-2 py-0.5 rounded transition-colors ${
                   filterStrength.value === f
-                    ? "bg-gray-700 text-gray-100"
-                    : "text-gray-600 hover:text-gray-400"
+                    ? "bg-divider text-primary"
+                    : "text-subtle hover:text-label"
                 }`}
               >
                 {f === "ALL" ? "All" : f.replace("_", " ")}
@@ -339,7 +337,7 @@ export function TradeRecommendationPanel() {
           {/* List */}
           <div className="flex-1 overflow-y-auto">
             {filtered.length === 0 ? (
-              <div className="flex items-center justify-center h-24 text-gray-600 text-[11px]">
+              <div className="flex items-center justify-center h-24 text-subtle text-[11px]">
                 No recommendations match this filter
               </div>
             ) : (
@@ -354,7 +352,7 @@ export function TradeRecommendationPanel() {
             )}
           </div>
 
-          <div className="px-4 py-1.5 border-t border-gray-800 shrink-0 text-[9px] text-gray-700">
+          <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-divider">
             {new Date(result.value.computedAt).toLocaleTimeString()} ·{" "}
             {signal ? "Signal-driven scoring" : "Rule-based scoring"} · For educational use only
           </div>
@@ -362,7 +360,7 @@ export function TradeRecommendationPanel() {
       )}
 
       {!result.value && !isLoading && (
-        <div className="flex-1 flex items-center justify-center text-gray-700 text-[11px]">
+        <div className="flex-1 flex items-center justify-center text-divider text-[11px]">
           Select a symbol and click Analyse
         </div>
       )}

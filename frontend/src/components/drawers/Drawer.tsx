@@ -43,18 +43,18 @@ export function Drawer({ id, title, headerActions, children }: Props) {
       <div
         data-testid={`drawer-${id}`}
         data-drawer-position={position}
-        className="fixed top-0 h-full z-50 flex flex-col bg-gray-900 border-l border-gray-800 shadow-2xl"
+        className="fixed top-0 h-full z-50 flex flex-col bg-surface border-l border-panel shadow-2xl"
         style={{ right: `${rightOffset}px`, width: `${DRAWER_WIDTH_PX}px` }}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
-          <span className="text-sm font-semibold text-gray-200">{title}</span>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-panel shrink-0">
+          <span className="text-sm font-semibold text-secondary">{title}</span>
           <div className="flex items-center gap-2">
             {headerActions}
             <button
               type="button"
               onClick={() => close(id)}
               aria-label="Close"
-              className="text-gray-500 hover:text-gray-200 transition-colors text-lg leading-none"
+              className="text-muted hover:text-secondary transition-colors text-lg leading-none"
             >
               ×
             </button>

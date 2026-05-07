@@ -55,7 +55,7 @@ const LEVEL_COLOURS: Record<string, string> = {
   error: "text-red-400",
   warn: "text-amber-400",
   info: "text-sky-400",
-  debug: "text-gray-500",
+  debug: "text-muted",
 };
 
 function fmtTime(ts: number): string {
@@ -113,7 +113,7 @@ export function LogsDrawer() {
   return (
     <Drawer id={LOGS_DRAWER_ID} title="Logs">
       <div className="flex flex-col h-full text-xs">
-        <div className="px-3 py-2 border-b border-gray-800 bg-gray-950/60 flex flex-col gap-2 shrink-0">
+        <div className="px-3 py-2 border-b border-panel bg-page/60 flex flex-col gap-2 shrink-0">
           <div className="flex items-center gap-2">
             <input
               type="search"
@@ -123,13 +123,13 @@ export function LogsDrawer() {
                 search.value = (e.target as HTMLInputElement).value;
                 scheduleRun(400);
               }}
-              className="flex-1 bg-gray-900 border border-gray-800 rounded px-2 py-1 text-gray-200 focus:border-emerald-700 focus:outline-none"
+              className="flex-1 bg-surface border border-panel rounded px-2 py-1 text-secondary focus:border-emerald-700 focus:outline-none"
               data-testid="logs-search"
             />
             <button
               type="button"
               onClick={() => runQuery()}
-              className="px-2 py-1 rounded border border-gray-700 text-gray-300 hover:border-emerald-700 hover:text-emerald-300 transition-colors"
+              className="px-2 py-1 rounded border border-divider text-default hover:border-emerald-700 hover:text-emerald-300 transition-colors"
               data-testid="logs-refresh"
             >
               {isLoading.value ? "…" : "Refresh"}
@@ -137,7 +137,7 @@ export function LogsDrawer() {
           </div>
 
           <div className="flex flex-wrap gap-1.5">
-            <label className="flex items-center gap-1 text-[10px] text-gray-500 uppercase">
+            <label className="flex items-center gap-1 text-[10px] text-muted uppercase">
               Service
               <select
                 value={service.value}
@@ -145,7 +145,7 @@ export function LogsDrawer() {
                   service.value = (e.target as HTMLSelectElement).value;
                   scheduleRun(0);
                 }}
-                className="bg-gray-900 border border-gray-800 rounded px-1.5 py-0.5 text-[11px] text-gray-200"
+                className="bg-surface border border-panel rounded px-1.5 py-0.5 text-[11px] text-secondary"
                 data-testid="logs-service"
               >
                 {SERVICES.map((s) => (
@@ -155,7 +155,7 @@ export function LogsDrawer() {
                 ))}
               </select>
             </label>
-            <label className="flex items-center gap-1 text-[10px] text-gray-500 uppercase">
+            <label className="flex items-center gap-1 text-[10px] text-muted uppercase">
               Level
               <select
                 value={level.value}
@@ -163,7 +163,7 @@ export function LogsDrawer() {
                   level.value = (e.target as HTMLSelectElement).value;
                   scheduleRun(0);
                 }}
-                className="bg-gray-900 border border-gray-800 rounded px-1.5 py-0.5 text-[11px] text-gray-200"
+                className="bg-surface border border-panel rounded px-1.5 py-0.5 text-[11px] text-secondary"
                 data-testid="logs-level"
               >
                 {LEVELS.map((l) => (
@@ -173,7 +173,7 @@ export function LogsDrawer() {
                 ))}
               </select>
             </label>
-            <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase">
+            <div className="flex items-center gap-1 text-[10px] text-muted uppercase">
               Window
               {SINCE_PRESETS.map((p) => (
                 <button
@@ -187,7 +187,7 @@ export function LogsDrawer() {
                   className={`px-1.5 py-0.5 rounded text-[11px] border transition-colors ${
                     since.value === p.id
                       ? "border-emerald-700 bg-emerald-900/30 text-emerald-300"
-                      : "border-gray-800 text-gray-400 hover:border-gray-600"
+                      : "border-panel text-label hover:border-subtle"
                   }`}
                 >
                   {p.label}
@@ -197,7 +197,7 @@ export function LogsDrawer() {
           </div>
 
           {meta.value && (
-            <div className="text-[10px] text-gray-500">
+            <div className="text-[10px] text-muted">
               {lines.value.length} line(s) · source: {meta.value.source}
               {!meta.value.lokiConfigured &&
                 " (Loki unavailable — falling back to in-process ring buffer)"}
@@ -208,21 +208,21 @@ export function LogsDrawer() {
         <div className="flex-1 overflow-auto font-mono text-[11px] leading-relaxed">
           {error.value && <div className="px-3 py-3 text-red-400">Error: {error.value}</div>}
           {!error.value && lines.value.length === 0 && !isLoading.value && (
-            <div className="px-3 py-3 text-gray-500">No matching log lines.</div>
+            <div className="px-3 py-3 text-muted">No matching log lines.</div>
           )}
-          <ul className="divide-y divide-gray-900/60">
+          <ul className="divide-y divide-surface/60">
             {lines.value.map((l) => (
               <li
                 key={`${l.ts}-${l.service}-${l.message}`}
-                className="px-3 py-1.5 hover:bg-gray-900/40 grid grid-cols-[6.5rem_5rem_5rem_1fr] gap-2"
+                className="px-3 py-1.5 hover:bg-surface/40 grid grid-cols-[6.5rem_5rem_5rem_1fr] gap-2"
                 data-testid="logs-row"
               >
-                <span className="text-gray-500 tabular-nums">{fmtTime(l.ts)}</span>
-                <span className="text-gray-400 truncate">{l.service}</span>
-                <span className={`uppercase ${LEVEL_COLOURS[l.level] ?? "text-gray-300"}`}>
+                <span className="text-muted tabular-nums">{fmtTime(l.ts)}</span>
+                <span className="text-label truncate">{l.service}</span>
+                <span className={`uppercase ${LEVEL_COLOURS[l.level] ?? "text-default"}`}>
                   {l.level}
                 </span>
-                <span className="text-gray-200 break-words">{l.message}</span>
+                <span className="text-secondary break-words">{l.message}</span>
               </li>
             ))}
           </ul>

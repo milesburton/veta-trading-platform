@@ -103,7 +103,7 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
         aria-haspopup="menu"
         aria-expanded={open.value}
         className={`text-xs transition-colors ${
-          isActive ? "text-sky-400" : "text-gray-600 hover:text-gray-300"
+          isActive ? "text-sky-400" : "text-subtle hover:text-default"
         } disabled:opacity-30`}
       >
         ⬡
@@ -116,14 +116,14 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
             role="menu"
             aria-label="Panel actions menu"
             style={menuStyle()}
-            className="bg-gray-900 border border-gray-700 rounded shadow-xl py-1 min-w-[160px]"
+            className="bg-surface border border-divider rounded shadow-xl py-1 min-w-[160px]"
           >
             <button
               role="menuitem"
               type="button"
               onClick={openNewWindow}
               title="Open this panel in a new browser window"
-              className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 flex items-center gap-2"
+              className="w-full text-left px-3 py-1.5 text-xs text-default hover:bg-divider flex items-center gap-2"
             >
               <span aria-hidden="true">↗</span>
               New window
@@ -138,14 +138,14 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
                   ? "Already open in a dialog"
                   : "Open this panel in a floating dialog overlay"
               }
-              className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              className="w-full text-left px-3 py-1.5 text-xs text-default hover:bg-divider disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <span aria-hidden="true">□</span>
               Open in dialog
             </button>
             {isDialog && (
               <>
-                <hr className="border-t border-gray-700 my-1" />
+                <hr className="border-t border-divider my-1" />
                 <button
                   role="menuitem"
                   type="button"
@@ -153,7 +153,7 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
                     open.value = false;
                     closeDialog();
                   }}
-                  className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-gray-700 flex items-center gap-2"
+                  className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-divider flex items-center gap-2"
                 >
                   <span aria-hidden="true">✕</span>
                   Close dialog

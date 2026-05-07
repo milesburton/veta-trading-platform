@@ -9,7 +9,7 @@ export function PopOutButton({ panelId }: { panelId: PanelId }) {
       onClick={popOut}
       disabled={isPopOut}
       title="Pop out panel"
-      className="text-gray-600 hover:text-gray-300 transition-colors text-xs disabled:opacity-30"
+      className="text-subtle hover:text-default transition-colors text-xs disabled:opacity-30"
       aria-label="Pop out panel"
     >
       ⬡

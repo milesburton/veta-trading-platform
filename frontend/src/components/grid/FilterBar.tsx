@@ -45,7 +45,7 @@ export function FilterBar({ gridId, fields, openFieldSignal }: Props) {
 
   return (
     <>
-      <div className="flex items-center gap-1 flex-wrap px-2 py-1 border-b border-gray-800/60 min-h-[28px]">
+      <div className="flex items-center gap-1 flex-wrap px-2 py-1 border-b border-panel/60 min-h-[28px]">
         {hasRules ? (
           <button
             type="button"
@@ -60,7 +60,7 @@ export function FilterBar({ gridId, fields, openFieldSignal }: Props) {
         <button
           type="button"
           onClick={openBuilder}
-          className="inline-flex items-center gap-0.5 text-[10px] text-gray-600 hover:text-gray-400 transition-colors px-1 py-0.5 rounded hover:bg-gray-800"
+          className="inline-flex items-center gap-0.5 text-[10px] text-subtle hover:text-label transition-colors px-1 py-0.5 rounded hover:bg-panel"
           aria-label="Add filter"
         >
           <span>+</span>
@@ -71,7 +71,7 @@ export function FilterBar({ gridId, fields, openFieldSignal }: Props) {
           <button
             type="button"
             onClick={clearExpr}
-            className="text-[10px] text-gray-700 hover:text-gray-500 ml-auto transition-colors"
+            className="text-[10px] text-divider hover:text-muted ml-auto transition-colors"
             aria-label="Clear all filters"
           >
             Clear all

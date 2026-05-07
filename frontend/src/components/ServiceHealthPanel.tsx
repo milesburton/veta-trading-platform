@@ -100,8 +100,8 @@ function RowDisplay({ health, index, now }: RowDisplayProps) {
   const ageSecs = health.lastChecked != null ? Math.floor((now - health.lastChecked) / 1000) : null;
 
   return (
-    <tr className={index % 2 === 0 ? "bg-gray-950" : "bg-gray-900"}>
-      <td className="px-3 py-1 text-xs font-mono text-gray-200 whitespace-nowrap">
+    <tr className={index % 2 === 0 ? "bg-page" : "bg-surface"}>
+      <td className="px-3 py-1 text-xs font-mono text-secondary whitespace-nowrap">
         {health.link ? (
           <a
             href={health.link}
@@ -114,7 +114,7 @@ function RowDisplay({ health, index, now }: RowDisplayProps) {
         ) : (
           health.name
         )}
-        {health.optional && <span className="ml-1 text-gray-500 text-[10px]">(opt)</span>}
+        {health.optional && <span className="ml-1 text-muted text-[10px]">(opt)</span>}
       </td>
       <td className="px-3 py-1 text-xs font-mono">
         <span className="flex items-center gap-1.5">
@@ -126,10 +126,8 @@ function RowDisplay({ health, index, now }: RowDisplayProps) {
           <span className={isOk ? "text-green-400" : "text-red-400"}>{isOk ? "ok" : "error"}</span>
         </span>
       </td>
-      <td className="px-3 py-1 text-xs font-mono text-gray-400 whitespace-nowrap">
-        {health.version}
-      </td>
-      <td className="px-3 py-1 text-xs font-mono text-gray-500 whitespace-nowrap">
+      <td className="px-3 py-1 text-xs font-mono text-label whitespace-nowrap">{health.version}</td>
+      <td className="px-3 py-1 text-xs font-mono text-muted whitespace-nowrap">
         {ageSecs != null ? `${ageSecs}s ago` : "—"}
       </td>
     </tr>
@@ -146,21 +144,21 @@ function GaugeRow({ label, pct }: { label: string; pct: number | null }) {
   if (pct == null) {
     return (
       <div className="flex items-center gap-2 py-1">
-        <span className="w-20 text-xs font-mono text-gray-400 flex-shrink-0">{label}</span>
-        <span className="text-xs font-mono text-gray-600">unavailable</span>
+        <span className="w-20 text-xs font-mono text-label flex-shrink-0">{label}</span>
+        <span className="text-xs font-mono text-subtle">unavailable</span>
       </div>
     );
   }
   return (
     <div className="flex items-center gap-2 py-1">
-      <span className="w-20 text-xs font-mono text-gray-400 flex-shrink-0">{label}</span>
-      <div className="flex-1 h-2 bg-gray-800 rounded overflow-hidden">
+      <span className="w-20 text-xs font-mono text-label flex-shrink-0">{label}</span>
+      <div className="flex-1 h-2 bg-panel rounded overflow-hidden">
         <div
           className={`h-full rounded ${gaugeColour(pct)}`}
           style={{ width: `${Math.min(pct, 100)}%` }}
         />
       </div>
-      <span className="w-10 text-right text-xs font-mono text-gray-300">{pct.toFixed(1)}%</span>
+      <span className="w-10 text-right text-xs font-mono text-default">{pct.toFixed(1)}%</span>
     </div>
   );
 }
@@ -207,8 +205,8 @@ function HostResourcesSection() {
     : null;
 
   return (
-    <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0">
-      <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+    <div className="px-3 py-2 border-b border-panel flex-shrink-0">
+      <div className="text-[10px] font-semibold text-label uppercase tracking-wider mb-1.5">
         Host Resources
       </div>
       <GaugeRow label="Disk" pct={diskPct} />
@@ -243,13 +241,13 @@ export function ServiceHealthPanel() {
     Array.from(healthMap.value.values()).every((h) => h.state === "ok" || h.optional);
 
   return (
-    <div className="h-full flex flex-col bg-gray-950 text-gray-200 overflow-auto">
+    <div className="h-full flex flex-col bg-page text-secondary overflow-auto">
       {SERVICES.map((svc) => (
         <ServiceRow key={svc.name} svc={svc} onUpdate={handleUpdate} dispatch={dispatch} />
       ))}
 
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800 flex-shrink-0">
-        <span className="text-xs font-semibold text-gray-100 tracking-wide uppercase">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-panel flex-shrink-0">
+        <span className="text-xs font-semibold text-primary tracking-wide uppercase">
           Service Health
         </span>
         <div className="flex items-center gap-2">
@@ -272,28 +270,28 @@ export function ServiceHealthPanel() {
 
       <div className="overflow-auto flex-1">
         <table className="w-full border-collapse">
-          <thead className="sticky top-0 z-10 bg-gray-900 border-b border-gray-800">
+          <thead className="sticky top-0 z-10 bg-surface border-b border-panel">
             <tr>
               <th
-                className="px-3 py-1.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                className="px-3 py-1.5 text-left text-[10px] font-semibold text-label uppercase tracking-wider whitespace-nowrap"
                 title="Backend service name"
               >
                 Service
               </th>
               <th
-                className="px-3 py-1.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                className="px-3 py-1.5 text-left text-[10px] font-semibold text-label uppercase tracking-wider whitespace-nowrap"
                 title="Current health state"
               >
                 Status
               </th>
               <th
-                className="px-3 py-1.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                className="px-3 py-1.5 text-left text-[10px] font-semibold text-label uppercase tracking-wider whitespace-nowrap"
                 title="Reported service version"
               >
                 Version
               </th>
               <th
-                className="px-3 py-1.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                className="px-3 py-1.5 text-left text-[10px] font-semibold text-label uppercase tracking-wider whitespace-nowrap"
                 title="Time of last health check"
               >
                 Last Check

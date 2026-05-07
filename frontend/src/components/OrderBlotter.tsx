@@ -29,7 +29,7 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
   pending: "bg-amber-900/50 text-amber-300 border border-amber-700/50",
   working: "bg-sky-900/50 text-sky-300 border border-sky-700/50",
   filled: "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50",
-  expired: "bg-gray-800/50 text-gray-500 border border-gray-700/50",
+  expired: "bg-panel/50 text-muted border border-divider/50",
   rejected: "bg-red-950/60 text-red-400 border border-red-800/50",
   cancelled: "bg-orange-950/50 text-orange-400 border border-orange-800/50",
   held: "bg-yellow-950/50 text-yellow-400 border border-yellow-700/50",
@@ -402,7 +402,7 @@ export function OrderBlotter() {
         />
       )}
       <div
-        className="px-3 py-1.5 border-b border-gray-800 flex items-center gap-2 shrink-0"
+        className="px-3 py-1.5 border-b border-panel flex items-center gap-2 shrink-0"
         data-testid="blotter-filter-bar"
       >
         {selectedOrderId.value && channelColour && (
@@ -414,7 +414,7 @@ export function OrderBlotter() {
             ↗ {selectedOrderId.value.slice(0, 8)}
           </span>
         )}
-        <span className="text-[10px] text-gray-600 ml-auto">
+        <span className="text-[10px] text-subtle ml-auto">
           {isLoading
             ? "…"
             : displayOrders.length !== total
@@ -430,7 +430,7 @@ export function OrderBlotter() {
           className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
             showCfEditor.value
               ? "bg-sky-900/50 text-sky-400"
-              : "text-gray-600 hover:text-gray-400 hover:bg-gray-800"
+              : "text-subtle hover:text-label hover:bg-panel"
           }`}
         >
           Format ⚙
@@ -460,21 +460,19 @@ export function OrderBlotter() {
 
       <div ref={containerRef} className="overflow-auto flex-1">
         {isLoading && displayOrders.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-gray-600 text-xs">
-            Loading…
-          </div>
+          <div className="flex items-center justify-center h-24 text-subtle text-xs">Loading…</div>
         ) : total === 0 ? (
-          <div className="flex items-center justify-center h-24 text-gray-600 text-xs">
+          <div className="flex items-center justify-center h-24 text-subtle text-xs">
             No orders submitted yet
           </div>
         ) : displayOrders.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-gray-600 text-xs">
+          <div className="flex items-center justify-center h-24 text-subtle text-xs">
             No orders match the active filters
           </div>
         ) : (
           <table className="w-full text-xs" data-testid="orders-table">
             <thead>
-              <tr className="text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950">
+              <tr className="text-muted border-b border-panel sticky top-0 bg-page">
                 <th className="w-8 px-1 py-2 text-center" title="Select rows">
                   <input
                     type="checkbox"
@@ -537,11 +535,11 @@ export function OrderBlotter() {
                             }
                           : { borderLeft: "3px solid transparent" }
                       }
-                      className={`border-b border-gray-800/40 cursor-pointer transition-colors ${rowClasses} ${
+                      className={`border-b border-panel/40 cursor-pointer transition-colors ${rowClasses} ${
                         selectedOrderId.value === order.id && !channelColour
                           ? "bg-sky-900/20 border-l-2 border-l-sky-500"
                           : selectedOrderId.value !== order.id
-                            ? "hover:bg-gray-800/20"
+                            ? "hover:bg-panel/20"
                             : ""
                       }`}
                     >
@@ -572,7 +570,7 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 text-gray-500 tabular-nums whitespace-nowrap ${cellCls}`}
+                                className={`px-3 py-1.5 text-muted tabular-nums whitespace-nowrap ${cellCls}`}
                               >
                                 {formatTime(order.submittedAt)}
                               </td>
@@ -581,12 +579,12 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 text-gray-500 font-mono ${cellCls}`}
+                                className={`px-3 py-1.5 text-muted font-mono ${cellCls}`}
                               >
                                 <span className="flex items-center gap-1.5">
                                   {order.id.slice(0, 8)}
                                   {order.children.length > 0 && (
-                                    <span className="text-[9px] text-gray-600 bg-gray-800 rounded px-1 tabular-nums">
+                                    <span className="text-[9px] text-subtle bg-panel rounded px-1 tabular-nums">
                                       {order.children.length}
                                     </span>
                                   )}
@@ -597,7 +595,7 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 font-semibold text-gray-200 ${cellCls}`}
+                                className={`px-3 py-1.5 font-semibold text-secondary ${cellCls}`}
                               >
                                 {order.asset}
                               </td>
@@ -617,7 +615,7 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 text-right tabular-nums text-gray-200 ${cellCls}`}
+                                className={`px-3 py-1.5 text-right tabular-nums text-secondary ${cellCls}`}
                               >
                                 {order.quantity.toLocaleString()}
                               </td>
@@ -626,7 +624,7 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 text-right tabular-nums text-gray-300 ${cellCls}`}
+                                className={`px-3 py-1.5 text-right tabular-nums text-default ${cellCls}`}
                               >
                                 {order.children.length > 0
                                   ? avgFillPrice(order.children)
@@ -635,7 +633,7 @@ export function OrderBlotter() {
                             );
                           case "strategy":
                             return (
-                              <td key={col.key} className={`px-3 py-1.5 text-gray-400 ${cellCls}`}>
+                              <td key={col.key} className={`px-3 py-1.5 text-label ${cellCls}`}>
                                 {order.strategy}
                               </td>
                             );
@@ -657,7 +655,7 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 text-gray-500 font-mono text-[10px] ${cellCls}`}
+                                className={`px-3 py-1.5 text-muted font-mono text-[10px] ${cellCls}`}
                                 title={order.userId}
                               >
                                 {order.userId ?? "—"}
@@ -665,13 +663,13 @@ export function OrderBlotter() {
                             );
                           case "counterparty":
                             return (
-                              <td key={col.key} className="px-3 py-1.5 text-gray-600">
+                              <td key={col.key} className="px-3 py-1.5 text-subtle">
                                 —
                               </td>
                             );
                           case "liquidityFlag":
                             return (
-                              <td key={col.key} className="px-3 py-1.5 text-gray-600">
+                              <td key={col.key} className="px-3 py-1.5 text-subtle">
                                 —
                               </td>
                             );
@@ -679,7 +677,7 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 text-right tabular-nums text-gray-500 ${cellCls}`}
+                                className={`px-3 py-1.5 text-right tabular-nums text-muted ${cellCls}`}
                               >
                                 {totalCommission(order.children)}
                               </td>
@@ -688,13 +686,13 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className="px-3 py-1.5 text-gray-600 font-mono text-[9px]"
+                                className="px-3 py-1.5 text-subtle font-mono text-[9px]"
                               >
                                 {order.settlementDate ?? "—"}
                               </td>
                             );
                           default:
-                            return <td key={col.key} className="px-3 py-1.5 text-gray-600" />;
+                            return <td key={col.key} className="px-3 py-1.5 text-subtle" />;
                         }
                       })}
                     </tr>

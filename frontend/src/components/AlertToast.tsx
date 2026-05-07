@@ -119,7 +119,7 @@ export function AlertToast() {
     <output
       data-testid="alert-toast"
       aria-live="polite"
-      className={`fixed bottom-4 right-4 z-[120] w-[22rem] rounded-lg border bg-gray-900 shadow-2xl ring-1 ${styles.accent}`}
+      className={`fixed bottom-4 right-4 z-[120] w-[22rem] rounded-lg border bg-surface shadow-2xl ring-1 ${styles.accent}`}
     >
       <div className="flex items-start justify-between gap-2 px-3 pt-3">
         <div className="flex items-center gap-2">
@@ -128,7 +128,7 @@ export function AlertToast() {
           >
             {styles.label}
           </span>
-          <span className="text-[10px] text-gray-500">{sourceLabel}</span>
+          <span className="text-[10px] text-muted">{sourceLabel}</span>
           {(current.count ?? 1) > 1 && (
             <span
               className="text-[10px] font-mono font-semibold text-amber-400 bg-amber-950/40 border border-amber-800/40 rounded px-1 leading-none py-0.5"
@@ -141,7 +141,7 @@ export function AlertToast() {
         <button
           type="button"
           onClick={onDismiss}
-          className="shrink-0 text-gray-500 hover:text-gray-200 transition-colors text-base leading-none -mt-0.5"
+          className="shrink-0 text-muted hover:text-secondary transition-colors text-base leading-none -mt-0.5"
           aria-label="Dismiss alert"
           data-testid="alert-toast-dismiss"
         >
@@ -150,25 +150,25 @@ export function AlertToast() {
       </div>
 
       <div className="px-3 pb-3 pt-1.5">
-        <div className="text-[12px] text-gray-100 leading-snug">{current.message}</div>
+        <div className="text-[12px] text-primary leading-snug">{current.message}</div>
         {current.detail && (
-          <div className="mt-1 text-[11px] text-gray-400 leading-snug">{current.detail}</div>
+          <div className="mt-1 text-[11px] text-label leading-snug">{current.detail}</div>
         )}
-        {causedBy && <div className="mt-1.5 text-[10px] text-gray-500 font-mono">{causedBy}</div>}
-        <div className="mt-1.5 text-[10px] text-gray-600">
+        {causedBy && <div className="mt-1.5 text-[10px] text-muted font-mono">{causedBy}</div>}
+        <div className="mt-1.5 text-[10px] text-subtle">
           {(current.count ?? 1) > 1
             ? `last ${relativeTime(current.lastTs ?? current.ts)} · first ${relativeTime(current.ts)}`
             : relativeTime(current.ts)}
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-gray-800 px-2 py-1.5 text-[10px] text-gray-500">
+      <div className="flex items-center justify-between border-t border-panel px-2 py-1.5 text-[10px] text-muted">
         <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={onPrev}
             disabled={!hasPrev}
-            className="px-1.5 py-0.5 rounded hover:bg-gray-800 disabled:opacity-30 disabled:hover:bg-transparent"
+            className="px-1.5 py-0.5 rounded hover:bg-panel disabled:opacity-30 disabled:hover:bg-transparent"
             aria-label="Older alert"
             data-testid="alert-toast-prev"
           >
@@ -181,7 +181,7 @@ export function AlertToast() {
             type="button"
             onClick={onNext}
             disabled={!hasNext}
-            className="px-1.5 py-0.5 rounded hover:bg-gray-800 disabled:opacity-30 disabled:hover:bg-transparent"
+            className="px-1.5 py-0.5 rounded hover:bg-panel disabled:opacity-30 disabled:hover:bg-transparent"
             aria-label="Newer alert"
             data-testid="alert-toast-next"
           >
@@ -192,7 +192,7 @@ export function AlertToast() {
           <button
             type="button"
             onClick={onAcknowledge}
-            className="px-2 py-0.5 rounded text-gray-300 hover:bg-gray-800 transition-colors"
+            className="px-2 py-0.5 rounded text-default hover:bg-panel transition-colors"
             data-testid="alert-toast-ack"
           >
             Got it
