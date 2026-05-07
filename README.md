@@ -44,4 +44,3 @@ VETA is a simulation-first equities and fixed-income trading platform designed f
   - Standards and workflow for implementation changes.
 - Support docs: [Supporting services](docs/site/src/content/docs/platform/supporting-services.md)
   - Operational runbook material for platform reliability.
-  - Next page: [Risk controls](docs/site/src/content/docs/platform/risk.md)
