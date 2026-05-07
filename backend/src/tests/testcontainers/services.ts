@@ -19,6 +19,10 @@ export type ServiceName =
   | "twap-strategy"
   | "pov-strategy"
   | "vwap-strategy"
+  | "market-data"
+  | "market-data-adapters"
+  | "fix-archive"
+  | "observability"
   | "gateway";
 
 interface ServiceDescriptor {
@@ -38,9 +42,13 @@ const SERVICES: Record<ServiceName, ServiceDescriptor> = {
   "twap-strategy":   { entrypoint: "backend/src/algo/twap-strategy.ts",                          port: 5004, health: "/health", readyLog: ALGO_READY },
   "pov-strategy":    { entrypoint: "backend/src/algo/pov-strategy.ts",                           port: 5005, health: "/health", readyLog: ALGO_READY },
   "vwap-strategy":   { entrypoint: "backend/src/algo/vwap-strategy.ts",                          port: 5006, health: "/health", readyLog: ALGO_READY },
+  "observability":   { entrypoint: "observability/kafka-relay.ts",                              port: 5007, health: "/health" },
   "user-service":    { entrypoint: "backend/src/user-service/user-service.ts",                   port: 5008, health: "/health" },
   "journal":         { entrypoint: "backend/src/journal/journal-server.ts",                      port: 5009, health: "/health" },
   "gateway":         { entrypoint: "backend/src/gateway/gateway.ts",                             port: 5011, health: "/health" },
+  "fix-archive":     { entrypoint: "backend/src/fix/fix-archive.ts",                             port: 5012, health: "/health" },
+  "market-data":     { entrypoint: "backend/src/market-data/market-data-service.ts",             port: 5015, health: "/health" },
+  "market-data-adapters": { entrypoint: "backend/src/market-data-adapters/adapter-server.ts",    port: 5016, health: "/health" },
   "feature-engine":  { entrypoint: "backend/src/feature-engine/feature-engine.ts",               port: 5017, health: "/health" },
   "signal-engine":   { entrypoint: "backend/src/signal-engine/signal-engine.ts",                 port: 5018, health: "/health" },
   "scenario-engine": { entrypoint: "backend/src/scenario-engine/scenario-server.ts",             port: 5020, health: "/health" },
