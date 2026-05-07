@@ -12,7 +12,11 @@ primary_region = "iad"
   LLM_ENABLED = "false"
 
 [vm]
-  size = "shared-cpu-4x"
+  # shared-cpu-8x supports 12gb; shared-cpu-4x caps at 8gb (Fly enforces).
+  # Earlier 7de71f2 dropped to 4x/8gb and ace5a5a reverted because the
+  # monolith ran out of memory; sticking with 12gb means we need 8x or
+  # the cheapest performance-* tier.
+  size = "shared-cpu-8x"
   memory = "12gb"
 
 [deploy]
