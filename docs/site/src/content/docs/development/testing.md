@@ -79,7 +79,7 @@ The legacy `scenarios.integration.test.ts` was wired into `deno.json`'s `test:in
 
 **Replay tolerance**: bit-identical fill prices across same-seed runs would require pausing the live tick clock during a scenario; today's architecture generates ticks continuously while orders flow through Kafka. The harness asserts ±5bps tolerance, which captures the messaging-bus jitter while still proving determinism.
 
-Phases 3-4 (migrate remaining integration tests, drop compose-up from CI) are pending.
+CI runs `deno task test:testcontainers` as the first step of the `Integration tests` job, before the legacy shared-stack section (which still covers `integration.test.ts` and `algo.integration.test.ts`). Once those last two are migrated the shared-stack section can be deleted entirely.
 
 ### Dev-container quirks
 
