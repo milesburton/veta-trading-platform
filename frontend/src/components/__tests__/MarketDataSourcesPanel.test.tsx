@@ -42,11 +42,7 @@ function makeStore(role: "admin" | "trader" = "admin") {
         status: "authenticated" as const,
       },
       market: {
-        // Object shape deliberately mirrors how this panel currently derives symbols.
-        assets: {
-          AAPL: { symbol: "AAPL" },
-          MSFT: { symbol: "MSFT" },
-        } as unknown as never,
+        assets: [{ symbol: "AAPL" }, { symbol: "MSFT" }] as unknown as never,
         prices: {},
         priceHistory: {},
         sessionOpen: {},

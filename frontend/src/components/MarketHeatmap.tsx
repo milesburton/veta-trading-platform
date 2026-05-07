@@ -315,8 +315,9 @@ export function MarketHeatmap() {
 
   function renderTile(tile: LayoutTile, onClickOther?: (sector: string) => void) {
     const isHovered = tooltip.value?.symbol === tile.symbol;
-    const color = pctToColor(tile.pct);
-    const textClr = tileTextColor(tile.pct);
+    const pct = Number.isFinite(tile.pct) ? tile.pct : 0;
+    const color = pctToColor(pct);
+    const textClr = tileTextColor(pct);
     const tx = tile.x + 1;
     const ty = tile.y + 1;
     const tw = Math.max(tile.w - 2, 1);
@@ -399,7 +400,7 @@ export function MarketHeatmap() {
             broadcast({ selectedAsset: tile.symbol });
           }
         }}
-        aria-label={`${tile.symbol}: ${tile.pct >= 0 ? "+" : ""}${tile.pct.toFixed(2)}%`}
+        aria-label={`${tile.symbol}: ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`}
       >
         <rect
           x={tx}
@@ -434,8 +435,8 @@ export function MarketHeatmap() {
             fontWeight="400"
             style={{ pointerEvents: "none", fill: textClr }}
           >
-            {tile.pct >= 0 ? "+" : ""}
-            {tile.pct.toFixed(2)}%
+            {pct >= 0 ? "+" : ""}
+            {pct.toFixed(2)}%
           </text>
         )}
       </g>

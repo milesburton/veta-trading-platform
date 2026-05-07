@@ -12,9 +12,10 @@ export function MarketDataSourcesPanel() {
   const isAdmin = userRole === "admin";
 
   const assets = useAppSelector((s) => s.market.assets);
-  const symbols = Object.keys(assets).sort();
+  const symbols = assets.map((a) => a.symbol).sort();
 
-  const { data: sources = [] } = useGetSourcesQuery();
+  const { data: sourcesData } = useGetSourcesQuery();
+  const sources = Array.isArray(sourcesData) ? sourcesData : [];
   const { data: overridesData, isLoading: overridesLoading } = useGetOverridesQuery();
   const [setOverrides, { isLoading: saving }] = useSetOverridesMutation();
 
