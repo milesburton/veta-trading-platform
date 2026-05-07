@@ -79,7 +79,17 @@ The legacy `scenarios.integration.test.ts` was wired into `deno.json`'s `test:in
 
 **Replay tolerance**: bit-identical fill prices across same-seed runs would require pausing the live tick clock during a scenario; today's architecture generates ticks continuously while orders flow through Kafka. The harness asserts ±5bps tolerance, which captures the messaging-bus jitter while still proving determinism.
 
-CI runs `deno task test:testcontainers` as the first step of the `Integration tests` job, before the legacy shared-stack section (which still covers `integration.test.ts` and `algo.integration.test.ts`). Once those last two are migrated the shared-stack section can be deleted entirely.
+All seven integration suites now run on the harness (`deno task test:testcontainers`):
+
+- `testcontainers.smoke.test.ts` + `testcontainers.stack.test.ts` — boots ephemeral Postgres + Redpanda and a 2-service stack to validate the helpers themselves.
+- `journal.http.tc.test.ts` — journal HTTP contracts (8 steps).
+- `market-data.http.tc.test.ts` — market-data HTTP contracts (9 steps).
+- `intelligence.integration.tc.test.ts` — feature-engine/signal-engine/scenario-engine + gateway proxy (10 steps).
+- `integration.tc.test.ts` — service contracts + order flow + shared-workspaces lifecycle (20 steps).
+- `scenarios.integration.tc.test.ts` — same-seed determinism within ±5bps + different-seed divergence.
+- `algo.integration.tc.test.ts` — 9 strategies submitted via gateway WS and polled in journal (10 steps; 4 timing-sensitive steps for SNIPER/IS/MOMENTUM are gated behind `RUN_FLAKY_ALGOS=1`).
+
+CI runs `deno task test:testcontainers` as the first step of the Integration tests job. The shared-stack scaffolding remains only because the smoke-tests step (which generates the integration-test-count badge on main) hasn't been migrated yet.
 
 ### Dev-container quirks
 
