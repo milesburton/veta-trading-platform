@@ -5,6 +5,13 @@ on:
     branches: ["**"]
   pull_request:
     branches: ["**"]
+  # Manual escape hatch: GitHub's anti-loop policy means commits made by
+  # the default GITHUB_TOKEN (e.g. squash-merges via the trusted-automerge
+  # workflow) don't fire on:push. Use `gh workflow run ci.yml --ref main`
+  # after a merge to re-validate. The permanent fix is to swap the
+  # trusted-automerge workflow to a PAT secret so its merges trigger
+  # downstream workflows automatically.
+  workflow_dispatch:
 
 jobs:
   lint-and-test:
