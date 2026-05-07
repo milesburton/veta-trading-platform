@@ -58,9 +58,6 @@ export function AlertToast() {
   const { open: openDrawer, isOpen } = useDrawers();
   const drawerOpen = isOpen(ALERTS_DRAWER_ID);
 
-  // Index into the queue. We render queue[index].
-  // The queue updates as alerts are dispatched/acknowledged, so we
-  // clamp the index whenever the queue length changes.
   const index = useSignal(0);
 
   const queueLength = queue.length;
@@ -95,8 +92,6 @@ export function AlertToast() {
     openDrawer(ALERTS_DRAWER_ID);
   }, [current, dispatch, openDrawer]);
 
-  // Auto-dismiss INFO/WARNING after AUTO_DISMISS_MS, but only if
-  // no toast newer than `current` is already in the queue.
   // CRITICAL alerts persist until explicitly acknowledged.
   const currentId = current?.id;
   const currentSeverity = current?.severity;

@@ -119,7 +119,6 @@ export function InstrumentAnalysisPanel() {
   const signal = useAppSelector((s) => (symbol ? s.intelligence.signals[symbol] : undefined));
   const fv = useAppSelector((s) => (symbol ? s.intelligence.features[symbol] : undefined));
 
-  // All features across all symbols for cross-symbol z-score normalisation
   const allFeatures = useAppSelector((s) => s.intelligence.features);
 
   const replayLoading = useSignal(false);
@@ -129,7 +128,6 @@ export function InstrumentAnalysisPanel() {
   const GATEWAY =
     (import.meta as { env: Record<string, string> }).env.VITE_GATEWAY_URL ?? "/api/gateway";
 
-  // Compute per-feature mean and std across all tracked symbols
   const featureStats = useMemo(() => {
     const symbols = Object.keys(allFeatures);
     const stats: Record<string, { mean: number; std: number }> = {};
@@ -186,7 +184,6 @@ export function InstrumentAnalysisPanel() {
         ? "text-red-400"
         : "text-label";
 
-  // Build chart data: ts, close, score
   const chartData = replayFrames.value?.map((f) => ({
     ts: f.ts,
     close: f.close,

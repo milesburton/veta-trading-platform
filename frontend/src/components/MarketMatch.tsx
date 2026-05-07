@@ -152,7 +152,6 @@ function BookPosition({
   const bestAsk = asks[0]?.price ?? mid;
   const spread = bestAsk - bestBid;
 
-  // Position relative to spread: 0 = at bid, 1 = at ask
   const pos = spread > 0 ? (orderPrice - bestBid) / spread : 0.5;
   const clamped = Math.max(0, Math.min(1, pos));
 
@@ -225,7 +224,6 @@ export function MarketMatch() {
     ctxMenu.value = { x: e.clientX, y: e.clientY, items };
   }
 
-  // Extract fill events
   const fills: FillEvent[] = useMemo(() => {
     return events
       .filter((e) => e.type === "orders.filled")
@@ -252,7 +250,6 @@ export function MarketMatch() {
       .slice(0, 200);
   }, [events, filterAsset]);
 
-  // Aggregate stats
   const stats = useMemo(() => {
     const buyVol = fills.filter((f) => f.side === "BUY").reduce((s, f) => s + f.filledQty, 0);
     const sellVol = fills.filter((f) => f.side === "SELL").reduce((s, f) => s + f.filledQty, 0);
@@ -266,7 +263,6 @@ export function MarketMatch() {
     const avgImpact =
       fills.length > 0 ? fills.reduce((s, f) => s + (f.marketImpactBps ?? 0), 0) / fills.length : 0;
 
-    // Venue breakdown
     const venues: Record<string, number> = {};
     for (const f of fills) {
       if (f.venue) venues[f.venue] = (venues[f.venue] ?? 0) + f.filledQty;

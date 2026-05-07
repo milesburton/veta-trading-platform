@@ -5,8 +5,6 @@ import { marketSlice } from "../marketSlice";
 import { simulationMiddleware } from "../middleware/simulationMiddleware";
 import { ordersSlice } from "../ordersSlice";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 function makeStore() {
   return configureStore({
     reducer: {
@@ -50,8 +48,6 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-// ─── LIMIT strategy ──────────────────────────────────────────────────────────
-
 describe("simulationMiddleware – LIMIT via tickReceived", () => {
   it("fills a BUY order on tick when price <= limitPrice", () => {
     const store = makeStore();
@@ -94,8 +90,6 @@ describe("simulationMiddleware – LIMIT via tickReceived", () => {
     expect(store.getState().orders.orders[0].status).toBe("expired");
   });
 });
-
-// ─── TWAP strategy ───────────────────────────────────────────────────────────
 
 describe("simulationMiddleware – TWAP", () => {
   it("dispatches orderPatched to executing immediately", () => {
@@ -163,8 +157,6 @@ describe("simulationMiddleware – TWAP", () => {
   });
 });
 
-// ─── POV strategy ────────────────────────────────────────────────────────────
-
 describe("simulationMiddleware – POV", () => {
   it("dispatches orderPatched to executing immediately", () => {
     const store = makeStore();
@@ -229,8 +221,6 @@ describe("simulationMiddleware – POV", () => {
     expect(["expired", "filled"]).toContain(order.status);
   });
 });
-
-// ─── VWAP strategy ───────────────────────────────────────────────────────────
 
 describe("simulationMiddleware – VWAP", () => {
   it("dispatches orderPatched to executing immediately", () => {
@@ -303,8 +293,6 @@ describe("simulationMiddleware – VWAP", () => {
     expect(order.children.length).toBe(0);
   });
 });
-
-// ─── Gateway-connected guard ──────────────────────────────────────────────────
 
 describe("simulationMiddleware – gateway-connected guard", () => {
   it("does NOT run local simulation for TWAP when gateway is connected", () => {

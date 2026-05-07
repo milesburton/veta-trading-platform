@@ -46,61 +46,49 @@ function evaluateRules(
 
   const absDelta = Math.abs(delta);
 
-  // 1. Deep ITM
   if (absDelta > 0.85) results.push({ reason: "DEEP_ITM", delta: -15 });
 
-  // 2. Deep OTM
   if (absDelta < 0.10) results.push({ reason: "DEEP_OTM", delta: -25 });
 
-  // 3. ATM + high vol
   const isNearATM = Math.abs(moneyness - 1) < 0.05;
   if (isNearATM && sigma > 0.30) {
     results.push({ reason: "ATM_HIGH_VOL", delta: 15 });
   }
 
-  // 4. Low time value
   const intrinsic = isCall ? Math.max(0, S - K) : Math.max(0, K - S);
   const timeValue = Math.max(0, price - intrinsic);
   if (timeValue < price * 0.1 && price > 0) {
     results.push({ reason: "LOW_TIME_VALUE", delta: -10 });
   }
 
-  // 5. High theta decay
   const dailyDecayPct = price > 0 ? Math.abs(theta) / price : 0;
   if (dailyDecayPct > 0.03) {
     results.push({ reason: "HIGH_THETA_DECAY", delta: -20 });
   }
 
-  // 6. Positive delta trend (call)
   if (isCall && delta > 0.4 && delta <= 0.7) {
     results.push({ reason: "POSITIVE_DELTA_TREND", delta: 20 });
   }
 
-  // 7. Negative delta trend (put)
   if (!isCall && delta < -0.4 && delta >= -0.7) {
     results.push({ reason: "NEGATIVE_DELTA_TREND", delta: 20 });
   }
 
-  // 8. Vol premium elevated
   if (sigma > 0.40) {
     results.push({ reason: "VOL_PREMIUM_ELEVATED", delta: -15 });
   }
 
-  // 9. Vol discount
   if (sigma < 0.15) results.push({ reason: "VOL_DISCOUNT", delta: 15 });
 
-  // 10. Near expiry risk
   if (daysToExpiry < 7) {
     results.push({ reason: "NEAR_EXPIRY_RISK", delta: -20 });
   }
 
-  // 11. Wide bid-ask proxy
   const vegaRatio = price > 0 ? vega / price : 0;
   if (vegaRatio > 0.5) {
     results.push({ reason: "WIDE_BID_ASK_PROXY", delta: -10 });
   }
 
-  // 12. Favourable risk/reward
   if (
     absDelta >= 0.25 && absDelta <= 0.55 && timeValue > price * 0.3 &&
     daysToExpiry >= 14

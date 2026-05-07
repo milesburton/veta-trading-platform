@@ -2,7 +2,6 @@
 // Ref: https://fixprotocol.org/specifications/fix44
 
 export const Tag = {
-  // Standard header
   BeginString: 8,
   BodyLength: 9,
   MsgType: 35,
@@ -11,7 +10,6 @@ export const Tag = {
   MsgSeqNum: 34,
   SendingTime: 52,
 
-  // Session-level
   HeartBtInt: 108,
   EncryptMethod: 98,
   TestReqID: 112,
@@ -24,7 +22,6 @@ export const Tag = {
   RefMsgType: 372,
   SessionRejectReason: 373,
 
-  // Order fields
   ClOrdID: 11,
   Symbol: 55,
   Side: 54,
@@ -37,7 +34,6 @@ export const Tag = {
   HandlInst: 21,
   Account: 1,
 
-  // ExecutionReport fields
   ExecID: 17,
   ExecType: 150,
   OrdStatus: 39,
@@ -48,7 +44,6 @@ export const Tag = {
   LastQty: 32,
   LastPx: 31,
 
-  // Reject/text
   Text: 58,
   CheckSum: 10,
 } as const;
@@ -71,19 +66,16 @@ export const MsgType = {
 
 export type MsgTypeValue = (typeof MsgType)[keyof typeof MsgType];
 
-// Side field values
 export const Side = {
   Buy: "1",
   Sell: "2",
 } as const;
 
-// OrdType field values
 export const OrdType = {
   Market: "1",
   Limit: "2",
 } as const;
 
-// OrdStatus field values
 export const OrdStatus = {
   New: "0",
   PartiallyFilled: "1",
@@ -92,7 +84,6 @@ export const OrdStatus = {
   Rejected: "8",
 } as const;
 
-// ExecType field values
 export const ExecType = {
   New: "0",
   PartialFill: "1",
@@ -102,7 +93,6 @@ export const ExecType = {
   Trade: "F",
 } as const;
 
-// TimeInForce values
 export const TimeInForce = {
   Day: "0",
   GoodTillCancel: "1",
@@ -110,7 +100,6 @@ export const TimeInForce = {
   FillOrKill: "4",
 } as const;
 
-// EncryptMethod values
 export const EncryptMethod = {
   None: "0",
 } as const;
