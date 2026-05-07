@@ -20,7 +20,7 @@ export async function startEphemeralRedpanda(
   opts: RedpandaOptions = {},
 ): Promise<ManagedRedpanda> {
   const hostPort = pickFreePort();
-  const host = "127.0.0.1";
+  const host = Deno.env.get("TESTCONTAINERS_HOST_OVERRIDE") ?? "127.0.0.1";
 
   const container = await new GenericContainer(IMAGE)
     .withExposedPorts(

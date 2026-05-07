@@ -662,7 +662,9 @@ async function _reconstructOrders(
           quantity: quantity ?? rawObj.quantity ?? rawObj.requestedQty ?? 0,
           limitPrice: limitPrice ?? rawObj.limitPrice ?? 0,
           expiresAt: eventType === "orders.submitted"
-            ? (rawObj.expiresAt ?? tsMs + 86_400_000)
+            ? (rawObj.expiresAt !== undefined
+              ? tsMs + Number(rawObj.expiresAt) * 1_000
+              : tsMs + 86_400_000)
             : tsMs + 86_400_000,
           strategy: algo ?? rawObj.strategy ?? "LIMIT",
           status: eventType === "orders.rejected" ? "rejected" : "pending",
@@ -690,7 +692,7 @@ async function _reconstructOrders(
     }
 
     const { rows: activityRows } = await client.queryArray(
-      `SELECT order_id, event_type, ts, side, quantity, limit_price, filled_qty, child_id
+      `SELECT order_id, event_type, ts, side, quantity, limit_price, filled_qty, child_id, fill_price
        FROM journal.events
        WHERE order_id IS NOT NULL AND ts >= $1
          AND event_type IN ('orders.child','orders.filled')
@@ -708,6 +710,7 @@ async function _reconstructOrders(
         limitPrice,
         filledQty,
         childId,
+        fillPrice,
       ] of activityRows as unknown[][]
     ) {
       const order = orderMap.get(orderId as string);
@@ -718,6 +721,20 @@ async function _reconstructOrders(
         order.status = qty > 0 && Number(order.filled) >= qty
           ? "filled"
           : "working";
+        const childIdStr = childId as string | null;
+        if (childIdStr) {
+          const child = (order.children as Array<Record<string, unknown>>).find(
+            (c) => c.id === childIdStr,
+          );
+          if (child) {
+            child.filledQty = Number(child.filledQty ?? 0) + Number(filledQty ?? 0);
+            child.filled = Number(child.filledQty);
+            child.status = "filled";
+            if (fillPrice !== null && fillPrice !== undefined) {
+              child.avgFillPrice = Number(fillPrice);
+            }
+          }
+        }
       } else if (eventType === "orders.child") {
         (order.children as unknown[]).push({
           id: childId ?? "",

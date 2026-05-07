@@ -73,7 +73,14 @@ setInterval(() => {
 }, 5 * 60 * 1_000);
 refreshOverrides().catch(() => {});
 
-const producer = await createProducer("market-sim");
+let producer: Awaited<ReturnType<typeof createProducer>> | null = null;
+createProducer("market-sim")
+  .then((p) => {
+    producer = p;
+  })
+  .catch((err) =>
+    logger.warn("Redpanda unavailable — market.ticks not published", { err })
+  );
 
 const ALL_ASSETS = [
   ...SP500_ASSETS,
@@ -114,10 +121,15 @@ async function seedFromJournal(): Promise<void> {
   }
 }
 
-await seedFromJournal();
-prewarmPrices();
 snapshotOpenPrices();
-logger.info(`Price engine pre-warmed — intraday moves seeded`);
+setTimeout(() => {
+  prewarmPrices();
+  snapshotOpenPrices();
+  logger.info(`Price engine pre-warmed — intraday moves seeded`);
+  seedFromJournal()
+    .then(() => snapshotOpenPrices())
+    .catch((err) => logger.error("seedFromJournal failed", { err: err as Error }));
+}, 0);
 
 let marketMinute = 0;
 let tickCount = 0;
@@ -321,7 +333,12 @@ Deno.serve({ port: PORT }, (req) => {
   }
 
   if (url.pathname === "/seed") {
-    return handleSeedRoute(req);
+    return handleSeedRoute(req, {
+      onReset: () => {
+        marketMinute = 0;
+        tickCount = 0;
+      },
+    });
   }
 
   if (req.method === "OPTIONS") {

@@ -1,5 +1,6 @@
 import { CORS_HEADERS } from "@veta/http";
 import { currentSeed, seedRng } from "./rng.ts";
+import { resetPriceEngine } from "./priceEngine.ts";
 
 const json = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), {
@@ -7,7 +8,14 @@ const json = (status: number, body: unknown): Response =>
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
 
-export async function handleSeedRoute(req: Request): Promise<Response> {
+export interface SeedRouteOptions {
+  onReset?: () => void;
+}
+
+export async function handleSeedRoute(
+  req: Request,
+  opts: SeedRouteOptions = {},
+): Promise<Response> {
   if (req.method === "GET") {
     return json(200, { seed: currentSeed() });
   }
@@ -28,6 +36,8 @@ export async function handleSeedRoute(req: Request): Promise<Response> {
       return json(400, { error: "seed must be a finite number or null" });
     }
     seedRng(seed | 0);
+    resetPriceEngine();
+    opts.onReset?.();
     return json(200, { seed: currentSeed() });
   }
 
