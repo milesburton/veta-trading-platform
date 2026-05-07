@@ -284,6 +284,9 @@ jobs:
       - name: Install backend dependencies
         run: deno install
 
+      - name: Testcontainers integration suite
+        run: deno task test:testcontainers
+
       - name: Start Redpanda
         run: |
           docker run -d --name redpanda \
