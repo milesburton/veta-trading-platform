@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { configureStore } from "@reduxjs/toolkit";
+import { describe, expect, it, vi } from "vitest";
 import { DEPLOYMENT, SERVICES, servicesApi } from "../servicesApi";
 
 describe("servicesApi – SERVICES list", () => {
@@ -47,37 +48,106 @@ describe("servicesApi – RTK Query endpoints", () => {
     expect(servicesApi.endpoints.getServiceHealth).toBeDefined();
   });
 
-  it("getServiceHealth transformResponse maps version and name onto result", () => {
-    // Import the transform logic directly from the module source by testing the
-    // observable query shape without calling the private RTK internal.
-    // We verify the endpoint is configured with a custom transformResponse by
-    // checking that the endpoint definition object has the key present.
-    const endpointDef = (
-      servicesApi as unknown as {
-        endpoints: {
-          getServiceHealth: {
-            select: unknown;
-            initiate: unknown;
-            matchPending: unknown;
-            matchFulfilled: unknown;
-          };
-        };
-      }
-    ).endpoints.getServiceHealth;
-    // matchFulfilled is only available when transformResponse is set up correctly
-    expect(endpointDef.matchFulfilled).toBeDefined();
+  // RTK Query keeps transformResponse / transformErrorResponse internal —
+  // they only run when a fetch resolves. To exercise the real transform
+  // branches we spin up a minimal store, mock fetch globally, and dispatch
+  // the endpoint's initiate(). The transforms then fire as part of the
+  // RTK lifecycle and the resulting fulfilled/rejected payload reflects
+  // what the user-facing selector would see.
+
+  function makeStore() {
+    return configureStore({
+      reducer: { [servicesApi.reducerPath]: servicesApi.reducer },
+      middleware: (gdm) => gdm().concat(servicesApi.middleware),
+    });
+  }
+
+  it("getServiceHealth transformResponse maps version and meta onto a healthy ServiceHealth", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ service: "market-sim", status: "ok", version: "abc123", asset: "AAPL" }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      );
+    const store = makeStore();
+    try {
+      const result = await store.dispatch(
+        servicesApi.endpoints.getServiceHealth.initiate({
+          name: "Market Sim",
+          url: "http://example/health",
+          link: "http://example/health",
+          optional: false,
+          alertOnDeployments: ["fly"],
+        })
+      );
+      expect(result.data).toBeDefined();
+      const data = result.data;
+      if (!data) throw new Error("expected fulfilled query to populate data");
+      expect(data.name).toBe("Market Sim");
+      expect(data.url).toBe("http://example/health");
+      expect(data.link).toBe("http://example/health");
+      expect(data.optional).toBe(false);
+      expect(data.alertOnDeployments).toEqual(["fly"]);
+      expect(data.state).toBe("ok");
+      expect(data.version).toBe("abc123");
+      expect(data.meta).toEqual({ asset: "AAPL" });
+      expect(typeof data.lastChecked).toBe("number");
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 
-  it("getServiceHealth transformErrorResponse returns error state", () => {
-    const endpointDef = (
-      servicesApi as unknown as {
-        endpoints: {
-          getServiceHealth: {
-            matchRejected: unknown;
-          };
-        };
-      }
-    ).endpoints.getServiceHealth;
-    expect(endpointDef.matchRejected).toBeDefined();
+  it("getServiceHealth transformResponse stringifies a missing version as em-dash", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ service: "x", status: "ok" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    const store = makeStore();
+    try {
+      const result = await store.dispatch(
+        servicesApi.endpoints.getServiceHealth.initiate(
+          { name: "X", url: "http://example/h2" },
+          { forceRefetch: true }
+        )
+      );
+      expect(result.data?.version).toBe("—");
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("getServiceHealth transformErrorResponse returns an error-state ServiceHealth on http 5xx", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response("internal error", { status: 500 }));
+    const store = makeStore();
+    try {
+      const result = await store.dispatch(
+        servicesApi.endpoints.getServiceHealth.initiate({
+          name: "EMS",
+          url: "http://ems/health",
+          link: "http://ems/health",
+          optional: true,
+          alertOnDeployments: ["homelab"],
+        })
+      );
+      // transformErrorResponse promotes the rejected branch into a typed payload
+      // accessible via `result.error` (RTK reports the post-transform shape there).
+      const errorPayload = result.error as unknown as Record<string, unknown>;
+      expect(errorPayload).toBeDefined();
+      expect(errorPayload.name).toBe("EMS");
+      expect(errorPayload.state).toBe("error");
+      expect(errorPayload.version).toBe("—");
+      expect(errorPayload.meta).toEqual({});
+      expect(errorPayload.optional).toBe(true);
+      expect(errorPayload.alertOnDeployments).toEqual(["homelab"]);
+      expect(typeof errorPayload.lastChecked).toBe("number");
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 });

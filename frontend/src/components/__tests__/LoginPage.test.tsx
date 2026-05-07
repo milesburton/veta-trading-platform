@@ -181,6 +181,63 @@ describe("LoginPage", () => {
     );
     expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
   });
+
+  test("rejects empty username with a local validation error before hitting the API", async () => {
+    renderLogin();
+    // useSignal initialises username to "alice" — explicitly clear it so the
+    // !normalizedUsername guard fires.
+    fireEvent.change(screen.getByTestId("oauth-username"), {
+      target: { value: "" },
+    });
+    fireEvent.change(screen.getByTestId("oauth-password"), {
+      target: { value: "veta-dev-passcode" },
+    });
+    // fireEvent.submit on the form is more reliable in jsdom than clicking
+    // a type=submit button (jsdom doesn't always synthesise the submit
+    // event from a button click).
+    const form = screen.getByTestId("oauth-username").closest("form");
+    if (!form) throw new Error("oauth-username has no enclosing form");
+    fireEvent.submit(form);
+    await waitFor(() =>
+      expect(screen.getByTestId("login-error")).toHaveTextContent(/Username is required/)
+    );
+    expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
+  });
+
+  test("rejects empty password with a local validation error before hitting the API", async () => {
+    renderLogin();
+    fireEvent.change(screen.getByTestId("oauth-username"), {
+      target: { value: "alice" },
+    });
+    // useSignal initialises password to a default — explicitly clear it.
+    fireEvent.change(screen.getByTestId("oauth-password"), {
+      target: { value: "" },
+    });
+    const form = screen.getByTestId("oauth-username").closest("form");
+    if (!form) throw new Error("oauth-username has no enclosing form");
+    fireEvent.submit(form);
+    await waitFor(() =>
+      expect(screen.getByTestId("login-error")).toHaveTextContent(/Passcode is required/)
+    );
+    expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
+  });
+
+  test("rejects whitespace-only username (covers the trim() guard)", async () => {
+    renderLogin();
+    fireEvent.change(screen.getByTestId("oauth-username"), {
+      target: { value: "   " },
+    });
+    fireEvent.change(screen.getByTestId("oauth-password"), {
+      target: { value: "veta-dev-passcode" },
+    });
+    const form = screen.getByTestId("oauth-username").closest("form");
+    if (!form) throw new Error("oauth-username has no enclosing form");
+    fireEvent.submit(form);
+    await waitFor(() =>
+      expect(screen.getByTestId("login-error")).toHaveTextContent(/Username is required/)
+    );
+    expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
+  });
 });
 
 describe("LoginPage – DegradedServicesOverlay", () => {
