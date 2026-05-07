@@ -19,6 +19,11 @@ export type ServiceName =
   | "twap-strategy"
   | "pov-strategy"
   | "vwap-strategy"
+  | "iceberg-strategy"
+  | "sniper-strategy"
+  | "arrival-price-strategy"
+  | "momentum-strategy"
+  | "is-strategy"
   | "market-data"
   | "market-data-adapters"
   | "fix-archive"
@@ -43,6 +48,11 @@ const SERVICES: Record<ServiceName, ServiceDescriptor> = {
   "pov-strategy":    { entrypoint: "backend/src/algo/pov-strategy.ts",                           port: 5005, health: "/health", readyLog: ALGO_READY },
   "vwap-strategy":   { entrypoint: "backend/src/algo/vwap-strategy.ts",                          port: 5006, health: "/health", readyLog: ALGO_READY },
   "observability":   { entrypoint: "observability/kafka-relay.ts",                              port: 5007, health: "/health" },
+  "iceberg-strategy":      { entrypoint: "backend/src/algo/iceberg-strategy.ts",                 port: 5021, health: "/health", readyLog: ALGO_READY },
+  "sniper-strategy":       { entrypoint: "backend/src/algo/sniper-strategy.ts",                  port: 5022, health: "/health", readyLog: ALGO_READY },
+  "arrival-price-strategy":{ entrypoint: "backend/src/algo/arrival-price-strategy.ts",           port: 5023, health: "/health", readyLog: ALGO_READY },
+  "momentum-strategy":     { entrypoint: "backend/src/algo/momentum-strategy.ts",                port: 5025, health: "/health", readyLog: ALGO_READY },
+  "is-strategy":           { entrypoint: "backend/src/algo/is-strategy.ts",                      port: 5026, health: "/health", readyLog: ALGO_READY },
   "user-service":    { entrypoint: "backend/src/user-service/user-service.ts",                   port: 5008, health: "/health" },
   "journal":         { entrypoint: "backend/src/journal/journal-server.ts",                      port: 5009, health: "/health" },
   "gateway":         { entrypoint: "backend/src/gateway/gateway.ts",                             port: 5011, health: "/health" },

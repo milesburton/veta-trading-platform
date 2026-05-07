@@ -391,37 +391,6 @@ jobs:
           echo "Allowing 20s for all algo Kafka consumers to subscribe to their topics..."
           sleep 20
 
-      - name: Integration tests (service contracts + order flow)
-        run: deno test --allow-all backend/src/tests/integration.test.ts
-        env:
-          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
-
-      - name: Integration tests (algo strategies)
-        continue-on-error: true
-        run: |
-          deno test --allow-all backend/src/tests/algo.integration.test.ts || {
-            echo "::warning::Algo integration tests failed on first attempt — retrying (SNIPER/IS/MOMENTUM can be timing-sensitive on CI runners)"
-            sleep 5
-            deno test --allow-all backend/src/tests/algo.integration.test.ts
-          }
-        env:
-          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
-
-      - name: Integration tests (intelligence pipeline)
-        run: deno test --allow-all backend/src/tests/intelligence.integration.test.ts
-        env:
-          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
-
-      - name: Integration tests (journal HTTP contracts)
-        run: deno test --allow-all backend/src/tests/journal.http.test.ts
-        env:
-          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
-
-      - name: Integration tests (market-data-service HTTP contracts)
-        run: deno test --allow-all backend/src/tests/market-data.http.test.ts
-        env:
-          DATABASE_URL: postgres://veta:veta@localhost:5432/veta
-
       - name: Smoke tests (all service health + contracts)
         continue-on-error: true
         run: |
