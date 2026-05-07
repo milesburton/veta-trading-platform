@@ -134,4 +134,21 @@ test.describe("visual anomalies (informational, non-gating)", () => {
     const r = await captureAnomalies(page, "analyst-dashboard");
     expect(r.scenario).toBe("analyst-dashboard");
   });
+
+  // Each named theme should render the trader dashboard cleanly. The
+  // high-contrast theme exists in CSS but is otherwise never visually
+  // tested — this scenario surfaces axe contrast or DOM overflow regressions
+  // before they reach a user.
+  for (const theme of ["dark", "darker", "light", "high-contrast"] as const) {
+    test(`trader dashboard — ${theme} theme`, async ({ page }) => {
+      const app = new AppPage(page);
+      await app.gotoAsTrader();
+      await page.evaluate((t) => {
+        document.documentElement.setAttribute("data-theme", t);
+      }, theme);
+      await page.waitForTimeout(500);
+      const r = await captureAnomalies(page, `trader-dashboard-${theme}`);
+      expect(r.scenario).toBe(`trader-dashboard-${theme}`);
+    });
+  }
 });
