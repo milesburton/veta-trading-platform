@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-Every push to any branch triggers the CI workflow. Pushes to `main` additionally trigger deployment to Fly.io and GitHub Pages. The entire pipeline runs in parallel where possible.
+Every push to any branch triggers the CI workflow. Pushes to `main` additionally trigger GitHub Pages and trigger Watchtower on the homelab via the `:latest` Docker images pushed to GHCR. The Fly.io deployment is currently disabled (manual-dispatch only — see [Fly.io](#flyio) below). The entire pipeline runs in parallel where possible.
 
 ## Pipeline diagram
 
@@ -29,7 +29,6 @@ flowchart LR
   Playwright --> MainCheck
   DockerMatrix --> MainCheck
 
-  MainCheck -- "yes" --> FlyDeploy["Deploy to Fly.io"]:::deploy
   MainCheck -- "yes" --> Pages["Deploy GitHub Pages"]:::deploy
   MainCheck -- "yes" --> Release["Release Please PR"]:::deploy
   MainCheck -- "yes" --> Badges["Commit badges &<br/>screenshots"]:::deploy
@@ -94,9 +93,11 @@ GitHub Pro provides 20 concurrent jobs — we use up to 40 matrix slots (34 Dock
 
 ### Fly.io
 
-On every push to `main`:
+**Disabled on push.** The homelab is the canonical deployment target right now (solar-powered, plenty of resources, no per-machine memory cap). The Fly workflow file is kept so the deploy recipe stays self-documenting; manual deploys via `gh workflow run deploy.yml --ref main` still work for emergencies. To re-enable on every main push, restore the `push: branches: main` trigger in [`.github/workflows/deploy.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/deploy.yml).
 
-1. Tests pass (lint-and-test + frontend)
+When enabled, the workflow:
+
+1. Runs tests (lint-and-test + frontend)
 2. `flyctl deploy` builds the monolith Dockerfile with `VITE_COMMIT_SHA` and `VITE_BUILD_DATE`
 3. 3-attempt retry with 30-second backoff on failure
 4. Version verification: polls `/health` until the deployed SHA matches

@@ -35,6 +35,9 @@ cd frontend && npm run electron:dev
 
 The login page has a "Demo personas" panel — click any card to sign in with one click.
 
-## Live demo
+## Where it runs
 
-The platform is deployed at [veta-trading.fly.dev](https://veta-trading.fly.dev/). Note: this may be transiently offline as the project matures.
+The canonical deployment is a homelab box (solar-powered, plenty of RAM).
+There's no public live demo right now — the public Fly.io deploy was
+disabled while the platform is right-sized to fit Fly's shared-cpu memory
+ceiling. To try it locally, follow the [overview](/veta-trading-platform/guides/overview/).

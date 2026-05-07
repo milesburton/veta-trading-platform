@@ -1,9 +1,15 @@
 name: Deploy to Fly.io
 
+# DISABLED on push: the homelab is now the canonical deployment target
+# (solar-powered, plenty of resources, no per-machine memory cap). Keeping
+# this workflow file so the deployment recipe (env, secrets, build steps)
+# stays self-documenting; re-enable by restoring the `push: branches: main`
+# trigger below if/when the platform is right-sized for Fly's shared-cpu
+# memory ceiling and the homelab is decommissioned.
+#
+# Manual deploys still work via `gh workflow run deploy.yml --ref main` or
+# the Actions UI's "Run workflow" button.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       environment:
