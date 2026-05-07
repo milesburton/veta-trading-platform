@@ -61,23 +61,23 @@ function RadarTooltip({ active, payload }: { active?: boolean; payload?: Tooltip
   const d = payload[0]?.payload as Entry | undefined;
   if (!d) return null;
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-[10px]">
-      <div className="font-mono font-bold text-gray-200 mb-0.5">{d.symbol}</div>
+    <div className="bg-surface border border-divider rounded px-2 py-1.5 text-[10px]">
+      <div className="font-mono font-bold text-secondary mb-0.5">{d.symbol}</div>
       <div style={{ color: DIR_COLOUR[d.direction] }} className="capitalize mb-0.5">
         {d.direction}
       </div>
-      <div className="text-gray-400">
+      <div className="text-label">
         Score:{" "}
         <span className="tabular-nums" style={{ color: DIR_COLOUR[d.direction] }}>
           {d.score >= 0 ? "+" : ""}
           {d.score.toFixed(3)}
         </span>
       </div>
-      <div className="text-gray-400">
+      <div className="text-label">
         Confidence: <span className="tabular-nums">{(d.confidence * 100).toFixed(0)}%</span>
       </div>
       {d.newsVelocity > 0 && (
-        <div className="text-gray-500">
+        <div className="text-muted">
           News vel: <span className="tabular-nums">{d.newsVelocity.toFixed(1)}</span>
         </div>
       )}
@@ -134,7 +134,7 @@ export function ResearchRadarPanel() {
 
   if (allEntries.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center text-gray-500 text-xs">
+      <div className="h-full flex items-center justify-center text-muted text-xs">
         Waiting for signal data…
       </div>
     );
@@ -154,9 +154,9 @@ export function ResearchRadarPanel() {
   ];
 
   return (
-    <div className="h-full flex flex-col bg-gray-950 text-gray-100">
-      <div className="flex items-center gap-3 px-3 py-2 border-b border-gray-800 text-xs text-gray-400 shrink-0 flex-wrap">
-        <span className="text-gray-300 font-medium">Signal Radar</span>
+    <div className="h-full flex flex-col bg-page text-primary">
+      <div className="flex items-center gap-3 px-3 py-2 border-b border-panel text-xs text-label shrink-0 flex-wrap">
+        <span className="text-default font-medium">Signal Radar</span>
         <div className="flex gap-1 ml-auto">
           {FILTER_OPTIONS.map(({ key, label }) => (
             <button
@@ -166,16 +166,14 @@ export function ResearchRadarPanel() {
                 filter.value = key;
               }}
               className={`text-[9px] px-2 py-0.5 rounded transition-colors ${
-                filter.value === key
-                  ? "bg-gray-700 text-gray-100"
-                  : "text-gray-600 hover:text-gray-400"
+                filter.value === key ? "bg-divider text-primary" : "text-subtle hover:text-label"
               }`}
             >
               {label}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-1 text-[9px] text-gray-600">
+        <div className="flex items-center gap-1 text-[9px] text-subtle">
           Sort:
           {SORT_OPTIONS.map(({ key, label }) => (
             <button
@@ -185,7 +183,7 @@ export function ResearchRadarPanel() {
                 sort.value = key;
               }}
               className={`px-1.5 py-0.5 rounded transition-colors ${
-                sort.value === key ? "text-gray-300 underline" : "hover:text-gray-400"
+                sort.value === key ? "text-default underline" : "hover:text-label"
               }`}
             >
               {label}
@@ -265,10 +263,10 @@ export function ResearchRadarPanel() {
         </ResponsiveContainer>
       </div>
 
-      <div className="shrink-0 border-t border-gray-800 overflow-auto" style={{ maxHeight: "35%" }}>
+      <div className="shrink-0 border-t border-panel overflow-auto" style={{ maxHeight: "35%" }}>
         <table className="w-full text-[10px] font-mono">
           <thead>
-            <tr className="text-gray-500 border-b border-gray-800">
+            <tr className="text-muted border-b border-panel">
               <th className="text-left px-2 py-1">Symbol</th>
               <th className="text-right px-2 py-1">Score</th>
               <th className="text-right px-2 py-1">Conf</th>
@@ -279,10 +277,10 @@ export function ResearchRadarPanel() {
             {sorted.slice(0, 10).map((e) => (
               <tr
                 key={e.symbol}
-                className="border-b border-gray-900 hover:bg-gray-900 cursor-pointer"
+                className="border-b border-surface hover:bg-surface cursor-pointer"
                 onClick={() => broadcast({ selectedAsset: e.symbol })}
               >
-                <td className="px-2 py-0.5 text-gray-300">{e.symbol}</td>
+                <td className="px-2 py-0.5 text-default">{e.symbol}</td>
                 <td
                   className="text-right px-2 py-0.5 tabular-nums"
                   style={{ color: DIR_COLOUR[e.direction] }}
@@ -290,7 +288,7 @@ export function ResearchRadarPanel() {
                   {e.score >= 0 ? "+" : ""}
                   {e.score.toFixed(3)}
                 </td>
-                <td className="text-right px-2 py-0.5 tabular-nums text-gray-400">
+                <td className="text-right px-2 py-0.5 tabular-nums text-label">
                   {(e.confidence * 100).toFixed(0)}%
                 </td>
                 <td className="px-2 py-0.5 capitalize" style={{ color: DIR_COLOUR[e.direction] }}>

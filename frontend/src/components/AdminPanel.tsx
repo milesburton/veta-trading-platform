@@ -63,11 +63,11 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
       <tr
         key={user.id}
         data-testid="user-row"
-        className={`border-t border-gray-800 ${idx % 2 === 0 ? "bg-gray-950" : "bg-gray-900/40"}`}
+        className={`border-t border-panel ${idx % 2 === 0 ? "bg-page" : "bg-surface/40"}`}
       >
         <td className="px-3 py-2">
           <span className="mr-1">{user.avatar_emoji}</span>
-          <span className="text-gray-200">{user.name}</span>
+          <span className="text-secondary">{user.name}</span>
           <span
             className={`ml-1.5 text-[9px] px-1 py-0.5 rounded ${
               user.role === "admin"
@@ -90,10 +90,10 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
                   max_order_qty: Number(e.target.value),
                 };
               }}
-              className="w-24 bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-24 bg-panel border border-divider rounded px-2 py-0.5 text-secondary disabled:opacity-50 disabled:cursor-not-allowed"
             />
           ) : (
-            <span className="text-gray-600">—</span>
+            <span className="text-subtle">—</span>
           )}
         </td>
         <td className="px-3 py-2">
@@ -108,10 +108,10 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
                   max_daily_notional: Number(e.target.value),
                 };
               }}
-              className="w-28 bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-28 bg-panel border border-divider rounded px-2 py-0.5 text-secondary disabled:opacity-50 disabled:cursor-not-allowed"
             />
           ) : (
-            <span className="text-gray-600">—</span>
+            <span className="text-subtle">—</span>
           )}
         </td>
         <td className="px-3 py-2">
@@ -128,7 +128,7 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
                     className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors disabled:cursor-not-allowed ${
                       enabled
                         ? "bg-emerald-900/50 text-emerald-400 hover:bg-emerald-900"
-                        : "bg-gray-800 text-gray-600 hover:bg-gray-700"
+                        : "bg-panel text-subtle hover:bg-divider"
                     }`}
                   >
                     {s}
@@ -137,7 +137,7 @@ function UserLimitsRow({ user, isAdmin, idx }: UserLimitsRowProps) {
               })}
             </div>
           ) : (
-            <span className="text-gray-600">—</span>
+            <span className="text-subtle">—</span>
           )}
         </td>
         {isAdmin && (
@@ -185,7 +185,7 @@ export function AdminPanel() {
     <div data-testid="admin-panel" className="h-full overflow-auto p-3 space-y-4 text-xs">
       {/* Trading Limits table */}
       <div>
-        <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+        <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-2">
           Trading Limits
           {!isAdmin && (
             <span className="ml-2 text-orange-400">
@@ -193,10 +193,10 @@ export function AdminPanel() {
             </span>
           )}
         </div>
-        <div className="border border-gray-800 rounded overflow-hidden">
+        <div className="border border-panel rounded overflow-hidden">
           <table data-testid="users-table" className="w-full text-left">
             <thead>
-              <tr className="bg-gray-900 text-gray-500 text-[10px] uppercase tracking-wider">
+              <tr className="bg-surface text-muted text-[10px] uppercase tracking-wider">
                 <th className="px-3 py-2" title="Trader user account">
                   User
                 </th>
@@ -223,13 +223,13 @@ export function AdminPanel() {
 
       {/* Journal (last 50 entries) */}
       <div>
-        <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+        <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-2">
           Recent Audit Journal (last 50)
         </div>
-        <div className="border border-gray-800 rounded overflow-hidden">
+        <div className="border border-panel rounded overflow-hidden">
           <table data-testid="audit-table" className="w-full text-left text-[10px]">
             <thead>
-              <tr className="bg-gray-900 text-gray-500 uppercase tracking-wider">
+              <tr className="bg-surface text-muted uppercase tracking-wider">
                 <th className="px-3 py-1.5" title="Time the audit event was recorded">
                   Time
                 </th>
@@ -262,7 +262,7 @@ export function AdminPanel() {
             <tbody>
               {journal.value.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-3 py-4 text-center text-gray-600">
+                  <td colSpan={9} className="px-3 py-4 text-center text-subtle">
                     No journal entries yet
                   </td>
                 </tr>
@@ -270,11 +270,11 @@ export function AdminPanel() {
                 journal.value.map((entry, idx) => (
                   <tr
                     key={entry.id}
-                    className={`border-t border-gray-800 ${
-                      idx % 2 === 0 ? "bg-gray-950" : "bg-gray-900/40"
+                    className={`border-t border-panel ${
+                      idx % 2 === 0 ? "bg-page" : "bg-surface/40"
                     }`}
                   >
-                    <td className="px-3 py-1.5 text-gray-500 tabular-nums whitespace-nowrap">
+                    <td className="px-3 py-1.5 text-muted tabular-nums whitespace-nowrap">
                       {new Date(entry.ts).toLocaleTimeString()}
                     </td>
                     <td className="px-3 py-1.5">
@@ -286,14 +286,14 @@ export function AdminPanel() {
                               ? "bg-red-900/50 text-red-400"
                               : entry.event_type === "orders.submitted"
                                 ? "bg-blue-900/50 text-blue-400"
-                                : "bg-gray-800 text-gray-400"
+                                : "bg-panel text-label"
                         }`}
                       >
                         {entry.event_type.replace("orders.", "")}
                       </span>
                     </td>
-                    <td className="px-3 py-1.5 text-gray-400">{entry.algo ?? "—"}</td>
-                    <td className="px-3 py-1.5 text-gray-200 font-mono">
+                    <td className="px-3 py-1.5 text-label">{entry.algo ?? "—"}</td>
+                    <td className="px-3 py-1.5 text-secondary font-mono">
                       {entry.instrument ?? "—"}
                     </td>
                     <td
@@ -302,21 +302,21 @@ export function AdminPanel() {
                           ? "text-emerald-400"
                           : entry.side === "SELL"
                             ? "text-red-400"
-                            : "text-gray-500"
+                            : "text-muted"
                       }`}
                     >
                       {entry.side ?? "—"}
                     </td>
-                    <td className="px-3 py-1.5 text-gray-300 tabular-nums">
+                    <td className="px-3 py-1.5 text-default tabular-nums">
                       {entry.quantity?.toLocaleString() ?? "—"}
                     </td>
-                    <td className="px-3 py-1.5 text-gray-300 tabular-nums">
+                    <td className="px-3 py-1.5 text-default tabular-nums">
                       {entry.limit_price != null ? entry.limit_price.toFixed(4) : "—"}
                     </td>
-                    <td className="px-3 py-1.5 text-gray-300 tabular-nums">
+                    <td className="px-3 py-1.5 text-default tabular-nums">
                       {entry.fill_price != null ? entry.fill_price.toFixed(4) : "—"}
                     </td>
-                    <td className="px-3 py-1.5 text-gray-300 tabular-nums">
+                    <td className="px-3 py-1.5 text-default tabular-nums">
                       {entry.filled_qty?.toLocaleString() ?? "—"}
                     </td>
                   </tr>

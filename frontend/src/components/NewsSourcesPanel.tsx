@@ -33,9 +33,9 @@ function SourceForm({ initial, onCancel, onSave, saving }: SourceFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-2 p-3 bg-gray-900/80 rounded-lg border border-gray-700"
+      className="flex flex-col gap-2 p-3 bg-surface/80 rounded-lg border border-divider"
     >
-      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+      <p className="text-[10px] font-semibold text-label uppercase tracking-wide">
         {initial ? "Edit Source" : "Add Source"}
       </p>
       <input
@@ -46,7 +46,7 @@ function SourceForm({ initial, onCancel, onSave, saving }: SourceFormProps) {
           label.value = e.target.value;
         }}
         required
-        className="w-full bg-gray-800 border border-gray-700 focus:border-gray-500 outline-none rounded px-2 py-1 text-[11px] text-gray-200 placeholder-gray-600"
+        className="w-full bg-panel border border-divider focus:border-muted outline-none rounded px-2 py-1 text-[11px] text-secondary placeholder-subtle"
       />
       <input
         type="text"
@@ -56,9 +56,9 @@ function SourceForm({ initial, onCancel, onSave, saving }: SourceFormProps) {
           rssTemplate.value = e.target.value;
         }}
         required
-        className="w-full bg-gray-800 border border-gray-700 focus:border-gray-500 outline-none rounded px-2 py-1 text-[11px] text-gray-200 placeholder-gray-600"
+        className="w-full bg-panel border border-divider focus:border-muted outline-none rounded px-2 py-1 text-[11px] text-secondary placeholder-subtle"
       />
-      <label className="flex items-center gap-2 text-[11px] text-gray-400 cursor-pointer select-none">
+      <label className="flex items-center gap-2 text-[11px] text-label cursor-pointer select-none">
         <input
           type="checkbox"
           checked={symbolSpecific.value}
@@ -73,7 +73,7 @@ function SourceForm({ initial, onCancel, onSave, saving }: SourceFormProps) {
         <button
           type="button"
           onClick={onCancel}
-          className="text-[10px] text-gray-500 hover:text-gray-300 px-2 py-1 rounded border border-gray-700 hover:border-gray-500 transition-colors"
+          className="text-[10px] text-muted hover:text-default px-2 py-1 rounded border border-divider hover:border-muted transition-colors"
         >
           Cancel
         </button>
@@ -124,10 +124,10 @@ export function NewsSourcesPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-300">
+    <div className="flex flex-col h-full bg-page text-default">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800 shrink-0">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-panel shrink-0">
+        <span className="text-xs font-semibold text-label uppercase tracking-wide">
           News Sources
         </span>
         <div className="ml-auto flex items-center gap-1">
@@ -149,7 +149,7 @@ export function NewsSourcesPanel() {
             disabled={isLoading}
             title="Refresh news source list"
             aria-label="Refresh news sources"
-            className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors disabled:opacity-40 px-1 py-0.5 rounded border border-gray-700 hover:border-gray-500"
+            className="text-[10px] text-muted hover:text-default transition-colors disabled:opacity-40 px-1 py-0.5 rounded border border-divider hover:border-muted"
           >
             ↺
           </button>
@@ -170,7 +170,7 @@ export function NewsSourcesPanel() {
 
         {isLoading && (
           <div className="flex items-center justify-center flex-1">
-            <span className="text-[11px] text-gray-600">Loading sources…</span>
+            <span className="text-[11px] text-subtle">Loading sources…</span>
           </div>
         )}
 
@@ -182,7 +182,7 @@ export function NewsSourcesPanel() {
             <button
               type="button"
               onClick={() => refetch()}
-              className="text-[10px] text-gray-500 hover:text-gray-300 border border-gray-700 hover:border-gray-500 px-2 py-0.5 rounded transition-colors"
+              className="text-[10px] text-muted hover:text-default border border-divider hover:border-muted px-2 py-0.5 rounded transition-colors"
             >
               Retry
             </button>
@@ -191,7 +191,7 @@ export function NewsSourcesPanel() {
 
         {!isLoading && !isError && sources.length === 0 && !showAddForm.value && (
           <div className="flex items-center justify-center flex-1">
-            <span className="text-[11px] text-gray-600">
+            <span className="text-[11px] text-subtle">
               No sources configured. Click + Add to create one.
             </span>
           </div>
@@ -212,7 +212,7 @@ export function NewsSourcesPanel() {
                 />
               ) : confirmDeleteId.value === source.id ? (
                 <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-red-900/20 border border-red-700/40">
-                  <span className="flex-1 text-[11px] text-gray-300">
+                  <span className="flex-1 text-[11px] text-default">
                     Delete &ldquo;{source.label}&rdquo;?
                   </span>
                   <button
@@ -220,7 +220,7 @@ export function NewsSourcesPanel() {
                     onClick={() => {
                       confirmDeleteId.value = null;
                     }}
-                    className="text-[10px] text-gray-500 hover:text-gray-300 px-2 py-0.5 rounded border border-gray-700 transition-colors"
+                    className="text-[10px] text-muted hover:text-default px-2 py-0.5 rounded border border-divider transition-colors"
                   >
                     Cancel
                   </button>
@@ -233,25 +233,25 @@ export function NewsSourcesPanel() {
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-900/60 border border-gray-800 group">
+                <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-surface/60 border border-panel group">
                   {/* Status dot */}
                   <span
                     className={`w-2 h-2 rounded-full shrink-0 ${
-                      source.enabled ? "bg-emerald-400" : "bg-gray-600"
+                      source.enabled ? "bg-emerald-400" : "bg-subtle"
                     }`}
                   />
 
                   {/* Source info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[12px] font-medium text-gray-200 truncate">
+                      <span className="text-[12px] font-medium text-secondary truncate">
                         {source.label}
                       </span>
                       <span
                         className={`text-[9px] px-1.5 py-0.5 rounded font-mono border shrink-0 ${
                           source.symbolSpecific
                             ? "text-blue-400 border-blue-700/40 bg-blue-900/20"
-                            : "text-gray-500 border-gray-700/40 bg-gray-800/40"
+                            : "text-muted border-divider/40 bg-panel/40"
                         }`}
                       >
                         {source.symbolSpecific ? "symbol-specific" : "general"}
@@ -259,7 +259,7 @@ export function NewsSourcesPanel() {
                     </div>
                     {source.rssTemplate && (
                       <span
-                        className="text-[9px] text-gray-600 truncate block"
+                        className="text-[9px] text-subtle truncate block"
                         title={source.rssTemplate}
                       >
                         {source.rssTemplate}
@@ -276,7 +276,7 @@ export function NewsSourcesPanel() {
                         showAddForm.value = false;
                       }}
                       title={`Edit ${source.label}`}
-                      className="text-[10px] text-gray-600 hover:text-gray-300 opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded border border-gray-700 hover:border-gray-500 transition-all"
+                      className="text-[10px] text-subtle hover:text-default opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded border border-divider hover:border-muted transition-all"
                     >
                       Edit
                     </button>
@@ -286,7 +286,7 @@ export function NewsSourcesPanel() {
                         confirmDeleteId.value = source.id;
                       }}
                       title={`Delete ${source.label}`}
-                      className="text-[10px] text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded border border-gray-700 hover:border-red-700/50 transition-all"
+                      className="text-[10px] text-subtle hover:text-red-400 opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded border border-divider hover:border-red-700/50 transition-all"
                     >
                       ✕
                     </button>

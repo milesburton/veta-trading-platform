@@ -40,7 +40,7 @@ function volToColor(vol: number, minVol: number, maxVol: number): string {
 function textColor(vol: number, minVol: number, maxVol: number): string {
   const range = Math.max(0.001, maxVol - minVol);
   const t = (vol - minVol) / range;
-  return t > 0.65 || t < 0.2 ? "text-white" : "text-gray-900";
+  return t > 0.65 || t < 0.2 ? "text-white" : "text-surface";
 }
 
 const DEFAULT_SYMBOLS = ["AAPL", "MSFT", "NVDA", "TSLA", "SPY", "QQQ", "AMZN", "GOOGL"];
@@ -103,14 +103,14 @@ export function VolSurfacePanel() {
   return (
     <div
       ref={containerRef}
-      className="relative flex h-full flex-col gap-2 overflow-hidden p-3 text-xs text-gray-100"
+      className="relative flex h-full flex-col gap-2 overflow-hidden p-3 text-xs text-primary"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-semibold text-gray-200">Vol Surface · Smile + Term Structure</span>
+        <span className="font-semibold text-secondary">Vol Surface · Smile + Term Structure</span>
         <div className="flex items-center gap-2">
-          {isFetching && <span className="text-[10px] text-gray-500">refreshing…</span>}
+          {isFetching && <span className="text-[10px] text-muted">refreshing…</span>}
           <select
-            className="rounded border border-gray-700 bg-gray-800 px-2 py-0.5 text-xs focus:border-blue-500 focus:outline-none"
+            className="rounded border border-divider bg-panel px-2 py-0.5 text-xs focus:border-blue-500 focus:outline-none"
             value={symbol.value}
             onChange={(e) => {
               symbol.value = e.target.value;
@@ -126,7 +126,7 @@ export function VolSurfacePanel() {
       </div>
 
       {data && (
-        <div className="flex items-center gap-3 text-[10px] text-gray-400">
+        <div className="flex items-center gap-3 text-[10px] text-label">
           <span>
             Spot: <span className="text-white">${data.spotPrice.toFixed(2)}</span>
           </span>
@@ -135,9 +135,9 @@ export function VolSurfacePanel() {
             <span className="text-yellow-300">{(data.atTheMoneyVol * 100).toFixed(1)}%</span>
           </span>
           <span>
-            Surface: <span className="text-gray-300">{data.surface.length} points</span>
+            Surface: <span className="text-default">{data.surface.length} points</span>
           </span>
-          <span className="ml-auto text-[9px] text-gray-600">
+          <span className="ml-auto text-[9px] text-subtle">
             click cell → pre-fills Option Pricing
           </span>
         </div>
@@ -145,9 +145,7 @@ export function VolSurfacePanel() {
 
       {isError && <p className="py-4 text-center text-red-400">Failed to load vol surface.</p>}
 
-      {!data && !isError && !isFetching && (
-        <p className="py-4 text-center text-gray-500">Loading…</p>
-      )}
+      {!data && !isError && !isFetching && <p className="py-4 text-center text-muted">Loading…</p>}
 
       {data && moneynesses.length > 0 && (
         <div className="flex-1 overflow-auto">
@@ -155,7 +153,7 @@ export function VolSurfacePanel() {
             <div className="mb-1 grid grid-cols-[56px_repeat(5,1fr)] gap-0.5">
               <div />
               {EXPIRY_LABELS.map((exp) => (
-                <div key={exp} className="text-center text-[9px] font-medium text-gray-400">
+                <div key={exp} className="text-center text-[9px] font-medium text-label">
                   {exp}
                 </div>
               ))}
@@ -163,13 +161,13 @@ export function VolSurfacePanel() {
 
             {[...moneynesses].reverse().map((mn) => (
               <div key={mn} className="mb-0.5 grid grid-cols-[56px_repeat(5,1fr)] gap-0.5">
-                <div className="flex items-center justify-end pr-1 text-[9px] text-gray-400">
+                <div className="flex items-center justify-end pr-1 text-[9px] text-label">
                   {MONEYNESS_LABELS[mn] ?? `${(mn * 100).toFixed(1)}%`}
                 </div>
                 {EXPIRY_LABELS.map((exp) => {
                   const point = surfaceMap.get(exp)?.get(mn);
                   if (!point) {
-                    return <div key={exp} className="h-7 rounded bg-gray-800" />;
+                    return <div key={exp} className="h-7 rounded bg-panel" />;
                   }
                   const bg = volToColor(point.impliedVol, minVol, maxVol);
                   const tc = textColor(point.impliedVol, minVol, maxVol);
@@ -196,7 +194,7 @@ export function VolSurfacePanel() {
       )}
 
       {data && (
-        <div className="flex items-center gap-2 text-[9px] text-gray-500">
+        <div className="flex items-center gap-2 text-[9px] text-muted">
           <span>{(minVol * 100).toFixed(1)}%</span>
           <div
             className="h-2 flex-1 rounded"
@@ -211,7 +209,7 @@ export function VolSurfacePanel() {
 
       {tooltip.value && (
         <div
-          className="pointer-events-none absolute z-50 rounded border border-gray-600 bg-gray-900 p-2 text-[10px] shadow-xl"
+          className="pointer-events-none absolute z-50 rounded border border-subtle bg-surface p-2 text-[10px] shadow-xl"
           style={{
             left: Math.min(tooltip.value.x + 12, (containerRef.current?.clientWidth ?? 300) - 180),
             top: Math.min(tooltip.value.y + 8, (containerRef.current?.clientHeight ?? 300) - 100),
@@ -220,11 +218,11 @@ export function VolSurfacePanel() {
           <p className="font-semibold text-white">
             Strike: ${tooltip.value.point.strike.toFixed(2)}
           </p>
-          <p className="text-gray-300">Expiry: {tooltip.value.point.expiryLabel}</p>
+          <p className="text-default">Expiry: {tooltip.value.point.expiryLabel}</p>
           <p className="text-yellow-300">
             Implied Vol: {(tooltip.value.point.impliedVol * 100).toFixed(2)}%
           </p>
-          <p className="text-gray-400">
+          <p className="text-label">
             Moneyness: {(tooltip.value.point.moneyness * 100).toFixed(1)}%
             {tooltip.value.point.moneyness === 1.0 ? " (ATM)" : ""}
           </p>

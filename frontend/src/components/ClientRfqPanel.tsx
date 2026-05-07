@@ -105,22 +105,22 @@ export function ClientRfqPanel() {
   return (
     <div className="flex flex-col h-full overflow-hidden" data-testid="client-rfq-panel">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-gray-800 flex items-center gap-3 flex-shrink-0">
-        <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
+      <div className="px-3 py-2 border-b border-panel flex items-center gap-3 flex-shrink-0">
+        <span className="text-xs font-semibold text-default uppercase tracking-wider">
           Request for Quote
         </span>
-        {loading.value && <span className="text-[10px] text-gray-500">refreshing…</span>}
+        {loading.value && <span className="text-[10px] text-muted">refreshing…</span>}
       </div>
 
       <div className="flex flex-col gap-3 overflow-auto flex-1 p-3">
         {/* Submit RFQ form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
-          <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+          <div className="text-[10px] text-muted uppercase tracking-wider font-semibold">
             New RFQ
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="crfq-asset" className="block text-xs text-gray-500 mb-1">
+              <label htmlFor="crfq-asset" className="block text-xs text-muted mb-1">
                 Symbol
               </label>
               <input
@@ -131,11 +131,11 @@ export function ClientRfqPanel() {
                   asset.value = e.target.value.toUpperCase();
                 }}
                 placeholder="AAPL"
-                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 uppercase"
+                className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 uppercase"
               />
             </div>
             <div>
-              <p className="block text-xs text-gray-500 mb-1">Side</p>
+              <p className="block text-xs text-muted mb-1">Side</p>
               <div className="flex gap-1">
                 {(["BUY", "SELL"] as const).map((s) => (
                   <button
@@ -149,7 +149,7 @@ export function ClientRfqPanel() {
                         ? s === "BUY"
                           ? "bg-emerald-700 border-emerald-600 text-white"
                           : "bg-red-700 border-red-600 text-white"
-                        : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500"
+                        : "bg-panel border-divider text-label hover:border-muted"
                     }`}
                   >
                     {s}
@@ -160,7 +160,7 @@ export function ClientRfqPanel() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="crfq-qty" className="block text-xs text-gray-500 mb-1">
+              <label htmlFor="crfq-qty" className="block text-xs text-muted mb-1">
                 Quantity
               </label>
               <input
@@ -172,11 +172,11 @@ export function ClientRfqPanel() {
                 onChange={(e) => {
                   quantity.value = e.target.value;
                 }}
-                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 tabular-nums"
+                className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 tabular-nums"
               />
             </div>
             <div>
-              <label htmlFor="crfq-limit" className="block text-xs text-gray-500 mb-1">
+              <label htmlFor="crfq-limit" className="block text-xs text-muted mb-1">
                 Limit Price (optional)
               </label>
               <input
@@ -189,7 +189,7 @@ export function ClientRfqPanel() {
                   limitPrice.value = e.target.value;
                 }}
                 placeholder="—"
-                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 tabular-nums"
+                className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 tabular-nums"
               />
             </div>
           </div>
@@ -214,25 +214,25 @@ export function ClientRfqPanel() {
         {/* My RFQs list */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+            <span className="text-[10px] text-muted uppercase tracking-wider font-semibold">
               My RFQs
             </span>
             <button
               type="button"
               onClick={fetchRfqs}
-              className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
+              className="text-[10px] text-muted hover:text-default transition-colors"
             >
               Refresh
             </button>
           </div>
 
           {rfqs.value.length === 0 ? (
-            <div className="text-xs text-gray-600 py-2">No RFQs yet.</div>
+            <div className="text-xs text-subtle py-2">No RFQs yet.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="text-gray-500 text-[10px] uppercase tracking-wider">
+                  <tr className="text-muted text-[10px] uppercase tracking-wider">
                     <th className="text-left py-1 pr-2">RFQ ID</th>
                     <th className="text-left py-1 pr-2">Asset</th>
                     <th className="text-left py-1 pr-2">Side</th>
@@ -244,17 +244,15 @@ export function ClientRfqPanel() {
                 </thead>
                 <tbody>
                   {rfqs.value.map((rfq) => (
-                    <tr key={rfq.rfqId} className="border-t border-gray-800 hover:bg-gray-900">
-                      <td className="py-1.5 pr-2 text-gray-400 font-mono text-[10px]">
-                        {rfq.rfqId}
-                      </td>
-                      <td className="py-1.5 pr-2 text-gray-200 font-semibold">{rfq.asset}</td>
+                    <tr key={rfq.rfqId} className="border-t border-panel hover:bg-surface">
+                      <td className="py-1.5 pr-2 text-label font-mono text-[10px]">{rfq.rfqId}</td>
+                      <td className="py-1.5 pr-2 text-secondary font-semibold">{rfq.asset}</td>
                       <td
                         className={`py-1.5 pr-2 font-semibold ${rfq.side === "BUY" ? "text-emerald-400" : "text-red-400"}`}
                       >
                         {rfq.side}
                       </td>
-                      <td className="py-1.5 pr-2 text-right tabular-nums text-gray-300">
+                      <td className="py-1.5 pr-2 text-right tabular-nums text-default">
                         {rfq.quantity.toLocaleString()}
                       </td>
                       <td className="py-1.5 pr-2">
@@ -264,7 +262,7 @@ export function ClientRfqPanel() {
                           {rfq.state.replace(/_/g, " ")}
                         </span>
                       </td>
-                      <td className="py-1.5 pr-2 text-right tabular-nums text-gray-300">
+                      <td className="py-1.5 pr-2 text-right tabular-nums text-default">
                         {rfq.clientQuotedPrice != null ? rfq.clientQuotedPrice.toFixed(2) : "—"}
                       </td>
                       <td className="py-1.5">

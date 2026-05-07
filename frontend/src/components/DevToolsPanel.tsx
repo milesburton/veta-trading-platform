@@ -69,7 +69,7 @@ const QUICK_TRADES = [
 
 function SectionHeader({ children }: { children: string }) {
   return (
-    <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">
+    <div className="text-[10px] font-semibold text-label uppercase tracking-wide mb-2">
       {children}
     </div>
   );
@@ -82,11 +82,11 @@ function MuteRuleRow({ rule, onRemove }: { rule: MuteRule; onRemove: () => void 
   if (rule.messageContains) parts.push(`"${rule.messageContains}"`);
   return (
     <div className="flex items-center justify-between py-1">
-      <span className="text-[10px] text-gray-400 font-mono">{parts.join(" + ") || "all"}</span>
+      <span className="text-[10px] text-label font-mono">{parts.join(" + ") || "all"}</span>
       <button
         type="button"
         onClick={onRemove}
-        className="text-[9px] text-gray-600 hover:text-red-400 transition-colors"
+        className="text-[9px] text-subtle hover:text-red-400 transition-colors"
       >
         ×
       </button>
@@ -150,15 +150,15 @@ export function DevToolsPanel() {
 
   return (
     <div
-      className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs overflow-hidden"
+      className="flex flex-col h-full bg-page text-default text-xs overflow-hidden"
       data-testid="dev-tools-panel"
     >
-      <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
+      <div className="px-4 py-2.5 border-b border-panel shrink-0">
         <div className="flex items-baseline gap-2">
           <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wide">
             Dev Tools
           </span>
-          <span className="text-[10px] text-gray-600">Homelab debugging and simulation</span>
+          <span className="text-[10px] text-subtle">Homelab debugging and simulation</span>
         </div>
       </div>
 
@@ -204,7 +204,7 @@ export function DevToolsPanel() {
                 onChange={(e) => {
                   customSeverity.value = e.target.value as AlertSeverity;
                 }}
-                className="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[10px] text-gray-300"
+                className="flex-1 bg-surface border border-divider rounded px-2 py-1 text-[10px] text-default"
               >
                 {ALERT_SEVERITIES.map((s) => (
                   <option key={s} value={s}>
@@ -217,7 +217,7 @@ export function DevToolsPanel() {
                 onChange={(e) => {
                   customSource.value = e.target.value as AlertSource;
                 }}
-                className="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[10px] text-gray-300"
+                className="flex-1 bg-surface border border-divider rounded px-2 py-1 text-[10px] text-default"
               >
                 {ALERT_SOURCES.map((s) => (
                   <option key={s} value={s}>
@@ -233,7 +233,7 @@ export function DevToolsPanel() {
                 customMessage.value = e.target.value;
               }}
               placeholder="Alert message"
-              className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[10px] text-gray-300 placeholder-gray-600"
+              className="w-full bg-surface border border-divider rounded px-2 py-1 text-[10px] text-default placeholder-subtle"
             />
             <input
               type="text"
@@ -242,7 +242,7 @@ export function DevToolsPanel() {
                 customDetail.value = e.target.value;
               }}
               placeholder="Detail (optional)"
-              className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[10px] text-gray-300 placeholder-gray-600"
+              className="w-full bg-surface border border-divider rounded px-2 py-1 text-[10px] text-default placeholder-subtle"
             />
             <button
               type="button"
@@ -257,7 +257,7 @@ export function DevToolsPanel() {
         <section>
           <SectionHeader>{`Mute Rules (${muteRules.length})`}</SectionHeader>
           {muteRules.length === 0 ? (
-            <div className="text-[10px] text-gray-600">
+            <div className="text-[10px] text-subtle">
               No mute rules — use the diamond button on alert rows to mute similar alerts
             </div>
           ) : (
@@ -272,7 +272,7 @@ export function DevToolsPanel() {
               <button
                 type="button"
                 onClick={() => dispatch(allMuteRulesCleared())}
-                className="text-[9px] text-gray-600 hover:text-gray-400 mt-1 transition-colors"
+                className="text-[9px] text-subtle hover:text-label mt-1 transition-colors"
               >
                 Clear all rules
               </button>
@@ -301,7 +301,7 @@ export function DevToolsPanel() {
           <SectionHeader>Load Test</SectionHeader>
           <div className="flex gap-2 items-end">
             <label className="flex-1">
-              <span className="text-[9px] text-gray-500 block mb-0.5">Orders</span>
+              <span className="text-[9px] text-muted block mb-0.5">Orders</span>
               <input
                 type="number"
                 min={1}
@@ -310,17 +310,17 @@ export function DevToolsPanel() {
                 onChange={(e) => {
                   loadCount.value = Number(e.target.value);
                 }}
-                className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[10px] text-gray-300 tabular-nums"
+                className="w-full bg-surface border border-divider rounded px-2 py-1 text-[10px] text-default tabular-nums"
               />
             </label>
             <label className="flex-1">
-              <span className="text-[9px] text-gray-500 block mb-0.5">Strategy</span>
+              <span className="text-[9px] text-muted block mb-0.5">Strategy</span>
               <select
                 value={loadStrategy.value}
                 onChange={(e) => {
                   loadStrategy.value = e.target.value;
                 }}
-                className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[10px] text-gray-300"
+                className="w-full bg-surface border border-divider rounded px-2 py-1 text-[10px] text-default"
               >
                 {["LIMIT", "TWAP", "VWAP", "POV", "ICEBERG", "SNIPER"].map((s) => (
                   <option key={s} value={s}>
@@ -341,7 +341,7 @@ export function DevToolsPanel() {
         </section>
 
         {tradeResult.value && (
-          <div className="rounded border border-gray-700 bg-gray-900/50 px-3 py-2 text-[10px] text-gray-400">
+          <div className="rounded border border-divider bg-surface/50 px-3 py-2 text-[10px] text-label">
             {tradeResult.value}
           </div>
         )}
@@ -350,20 +350,20 @@ export function DevToolsPanel() {
           <SectionHeader>Connection State</SectionHeader>
           <div className="space-y-1.5 text-[10px]">
             <div className="flex items-center justify-between">
-              <span className="text-gray-500">WebSocket</span>
+              <span className="text-muted">WebSocket</span>
               <span className={wsConnected ? "text-emerald-400" : "text-red-400"}>
                 {wsConnected ? "Connected" : "Disconnected"}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-500">User</span>
-              <span className="text-gray-300 font-mono">
+              <span className="text-muted">User</span>
+              <span className="text-default font-mono">
                 {user ? `${user.name} (${user.role})` : "Not authenticated"}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-500">Active Mute Rules</span>
-              <span className="text-gray-300 tabular-nums">{muteRules.length}</span>
+              <span className="text-muted">Active Mute Rules</span>
+              <span className="text-default tabular-nums">{muteRules.length}</span>
             </div>
           </div>
         </section>

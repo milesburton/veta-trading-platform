@@ -21,5 +21,5 @@ export function formatCurrency(n: number): string {
 export function pnlColor(pnl: number): string {
   if (pnl > 0) return "text-emerald-400";
   if (pnl < 0) return "text-red-400";
-  return "text-gray-500";
+  return "text-muted";
 }

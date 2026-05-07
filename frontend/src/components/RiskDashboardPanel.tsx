@@ -111,11 +111,11 @@ function HeadroomBar({
         : "bg-emerald-500";
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[10px] text-gray-500 w-20">{label}</span>
-      <div className="flex-1 h-1.5 bg-gray-800 rounded overflow-hidden">
+      <span className="text-[10px] text-muted w-20">{label}</span>
+      <div className="flex-1 h-1.5 bg-panel rounded overflow-hidden">
         <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-[10px] text-gray-500 tabular-nums w-10 text-right">{pct}%</span>
+      <span className="text-[10px] text-muted tabular-nums w-10 text-right">{pct}%</span>
     </div>
   );
 }
@@ -146,17 +146,17 @@ function UserPositionRow({
 
   return (
     <>
-      <tr className="border-t border-gray-800/50 bg-gray-900/30">
-        <td className="px-3 py-1.5 font-medium text-gray-200" colSpan={2}>
+      <tr className="border-t border-panel/50 bg-surface/30">
+        <td className="px-3 py-1.5 font-medium text-secondary" colSpan={2}>
           {userId}
-          <span className="ml-2 text-gray-600 text-[10px]">
+          <span className="ml-2 text-subtle text-[10px]">
             {positions.length} symbol{positions.length !== 1 ? "s" : ""} · {fillCount} fills
           </span>
         </td>
-        <td className="px-3 py-1.5 text-right tabular-nums text-gray-400">
+        <td className="px-3 py-1.5 text-right tabular-nums text-label">
           ${formatCurrency(grossNotional)}
         </td>
-        <td className="px-3 py-1.5 text-right tabular-nums text-gray-400">
+        <td className="px-3 py-1.5 text-right tabular-nums text-label">
           ${formatCurrency(netNotional)}
         </td>
         <td className={`px-3 py-1.5 text-right tabular-nums ${pnlColor(totalUnrealised)}`}>
@@ -170,7 +170,7 @@ function UserPositionRow({
         </td>
       </tr>
       {riskConfig && (
-        <tr className="border-t border-gray-900/30 bg-gray-950/40">
+        <tr className="border-t border-surface/30 bg-page/40">
           <td colSpan={7} className="px-3 py-1.5">
             <div className="flex flex-col gap-1 max-w-md">
               <HeadroomBar label="Notional" ratio={notionalRatio} accentWhenHigh />
@@ -180,18 +180,18 @@ function UserPositionRow({
         </tr>
       )}
       {positions.map((p) => (
-        <tr key={`${userId}-${p.symbol}`} className="border-t border-gray-800/20">
-          <td className="px-3 py-1 pl-8 text-gray-500 text-[10px]" />
-          <td className="px-3 py-1 text-gray-400">
+        <tr key={`${userId}-${p.symbol}`} className="border-t border-panel/20">
+          <td className="px-3 py-1 pl-8 text-muted text-[10px]" />
+          <td className="px-3 py-1 text-label">
             {p.symbol}
             <span
-              className={`ml-2 text-[10px] ${p.netQty > 0 ? "text-emerald-600" : p.netQty < 0 ? "text-red-600" : "text-gray-600"}`}
+              className={`ml-2 text-[10px] ${p.netQty > 0 ? "text-emerald-600" : p.netQty < 0 ? "text-red-600" : "text-subtle"}`}
             >
               {p.netQty > 0 ? "LONG" : p.netQty < 0 ? "SHORT" : "FLAT"}{" "}
               {Math.abs(p.netQty).toLocaleString()}
             </span>
           </td>
-          <td className="px-3 py-1 text-right tabular-nums text-gray-500 text-[10px]">
+          <td className="px-3 py-1 text-right tabular-nums text-muted text-[10px]">
             {p.avgPrice.toFixed(2)} → {p.markPrice.toFixed(2)}
           </td>
           <td />
@@ -266,9 +266,9 @@ function BreakerConfigEditor({ riskConfig }: { riskConfig: RiskConfig }) {
   };
 
   return (
-    <div className="px-3 py-2 border-t border-gray-800 bg-gray-950/60">
+    <div className="px-3 py-2 border-t border-panel bg-page/60">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] uppercase tracking-wider text-gray-500">
+        <span className="text-[10px] uppercase tracking-wider text-muted">
           Breaker & Limit Config
         </span>
         <div className="flex items-center gap-2">
@@ -277,7 +277,7 @@ function BreakerConfigEditor({ riskConfig }: { riskConfig: RiskConfig }) {
             type="button"
             onClick={apply}
             disabled={!dirty || isLoading}
-            className="px-2 py-0.5 text-[10px] rounded bg-gray-800 hover:bg-gray-700 disabled:opacity-40 disabled:hover:bg-gray-800 border border-gray-700 text-gray-200"
+            className="px-2 py-0.5 text-[10px] rounded bg-panel hover:bg-divider disabled:opacity-40 disabled:hover:bg-panel border border-divider text-secondary"
           >
             Apply
           </button>
@@ -285,52 +285,52 @@ function BreakerConfigEditor({ riskConfig }: { riskConfig: RiskConfig }) {
       </div>
       <div className="grid grid-cols-3 gap-x-4 gap-y-1.5 text-[10px]">
         <label className="flex items-center justify-between gap-2">
-          <span className="text-gray-500">Max gross notional ($)</span>
+          <span className="text-muted">Max gross notional ($)</span>
           <input
             type="number"
             value={draft.maxGrossNotional}
             onChange={(e) => setDraft({ ...draft, maxGrossNotional: Number(e.target.value) })}
-            className="w-24 px-1 py-0.5 bg-gray-900 border border-gray-800 text-right tabular-nums text-gray-200"
+            className="w-24 px-1 py-0.5 bg-surface border border-panel text-right tabular-nums text-secondary"
           />
         </label>
         <label className="flex items-center justify-between gap-2">
-          <span className="text-gray-500">Max daily loss ($)</span>
+          <span className="text-muted">Max daily loss ($)</span>
           <input
             type="number"
             value={draft.maxDailyLoss}
             onChange={(e) => setDraft({ ...draft, maxDailyLoss: Number(e.target.value) })}
-            className="w-24 px-1 py-0.5 bg-gray-900 border border-gray-800 text-right tabular-nums text-gray-200"
+            className="w-24 px-1 py-0.5 bg-surface border border-panel text-right tabular-nums text-secondary"
           />
         </label>
         <label className="flex items-center justify-between gap-2">
-          <span className="text-gray-500">Max concentration (%)</span>
+          <span className="text-muted">Max concentration (%)</span>
           <input
             type="number"
             value={draft.maxConcentrationPct}
             onChange={(e) => setDraft({ ...draft, maxConcentrationPct: Number(e.target.value) })}
-            className="w-24 px-1 py-0.5 bg-gray-900 border border-gray-800 text-right tabular-nums text-gray-200"
+            className="w-24 px-1 py-0.5 bg-surface border border-panel text-right tabular-nums text-secondary"
           />
         </label>
         <label className="flex items-center justify-between gap-2">
-          <span className="text-gray-500">Halt move (%)</span>
+          <span className="text-muted">Halt move (%)</span>
           <input
             type="number"
             value={draft.haltMovePercent}
             onChange={(e) => setDraft({ ...draft, haltMovePercent: Number(e.target.value) })}
-            className="w-24 px-1 py-0.5 bg-gray-900 border border-gray-800 text-right tabular-nums text-gray-200"
+            className="w-24 px-1 py-0.5 bg-surface border border-panel text-right tabular-nums text-secondary"
           />
         </label>
         <label className="flex items-center justify-between gap-2">
-          <span className="text-gray-500">Cooldown (ms)</span>
+          <span className="text-muted">Cooldown (ms)</span>
           <input
             type="number"
             value={draft.breakerCooldownMs}
             onChange={(e) => setDraft({ ...draft, breakerCooldownMs: Number(e.target.value) })}
-            className="w-24 px-1 py-0.5 bg-gray-900 border border-gray-800 text-right tabular-nums text-gray-200"
+            className="w-24 px-1 py-0.5 bg-surface border border-panel text-right tabular-nums text-secondary"
           />
         </label>
         <label className="flex items-center justify-between gap-2">
-          <span className="text-gray-500">Breakers enabled</span>
+          <span className="text-muted">Breakers enabled</span>
           <input
             type="checkbox"
             checked={draft.breakersEnabled}
@@ -364,11 +364,11 @@ export function RiskDashboardPanel() {
 
   return (
     <div className="flex flex-col h-full text-xs">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-panel">
         <div className="flex items-center gap-3">
-          <span className="text-gray-400 font-medium uppercase tracking-wider">Risk Dashboard</span>
+          <span className="text-label font-medium uppercase tracking-wider">Risk Dashboard</span>
           {riskConfig && (
-            <span className="text-[10px] text-gray-600">
+            <span className="text-[10px] text-subtle">
               collar {riskConfig.fatFingerPct}% · max {riskConfig.maxOpenOrders} orders ·{" "}
               {riskConfig.maxOrdersPerSecond}/s · ADV {riskConfig.maxAdvPct}% · halt{" "}
               {riskConfig.haltMovePercent}%
@@ -388,11 +388,11 @@ export function RiskDashboardPanel() {
       <BreakerStrip />
 
       {isLoading && (
-        <div className="flex-1 flex items-center justify-center text-gray-500">Loading...</div>
+        <div className="flex-1 flex items-center justify-center text-muted">Loading...</div>
       )}
 
       {!isLoading && !hasPositions && (
-        <div className="flex-1 flex items-center justify-center text-gray-500">
+        <div className="flex-1 flex items-center justify-center text-muted">
           No positions — orders have not yet been filled.
         </div>
       )}
@@ -400,8 +400,8 @@ export function RiskDashboardPanel() {
       {hasPositions && (
         <div className="flex-1 overflow-auto">
           <table className="w-full">
-            <thead className="sticky top-0 bg-gray-900/95 backdrop-blur">
-              <tr className="text-gray-500 text-left text-[10px] uppercase tracking-wider">
+            <thead className="sticky top-0 bg-surface/95 backdrop-blur">
+              <tr className="text-muted text-left text-[10px] uppercase tracking-wider">
                 <th className="px-3 py-1.5" />
                 <th className="px-3 py-1.5" title="Instrument symbol">
                   Symbol

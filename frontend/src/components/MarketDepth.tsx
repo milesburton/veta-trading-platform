@@ -37,7 +37,7 @@ export function MarketDepth({ symbol }: Props) {
 
   if (!depthData) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-600 text-xs bg-gray-950">
+      <div className="flex-1 flex items-center justify-center text-subtle text-xs bg-page">
         No depth data for {symbol}
       </div>
     );
@@ -47,9 +47,9 @@ export function MarketDepth({ symbol }: Props) {
   const decimals = symbol.includes("/") ? 4 : 2;
 
   return (
-    <div data-testid="market-depth-panel" className="flex flex-col h-full bg-gray-950 text-xs">
+    <div data-testid="market-depth-panel" className="flex flex-col h-full bg-page text-xs">
       {/* Column headers */}
-      <div className="grid grid-cols-[1fr_auto_auto] px-3 py-1 border-b border-gray-800/50 text-[10px] text-gray-600 uppercase tracking-wider shrink-0">
+      <div className="grid grid-cols-[1fr_auto_auto] px-3 py-1 border-b border-panel/50 text-[10px] text-subtle uppercase tracking-wider shrink-0">
         <span title="Number of shares available at this price level">Size</span>
         <span className="text-right pr-4" title="Price level in the order book">
           Price
@@ -76,13 +76,13 @@ export function MarketDepth({ symbol }: Props) {
                   className="absolute inset-y-0 right-0 bg-red-900/20"
                   style={{ width: `${barPct}%` }}
                 />
-                <span className="relative font-mono text-[10px] text-gray-400 tabular-nums">
+                <span className="relative font-mono text-[10px] text-label tabular-nums">
                   {level.size.toLocaleString()}
                 </span>
                 <span className="relative font-mono text-[11px] text-red-400 tabular-nums pr-4">
                   {level.price.toFixed(decimals)}
                 </span>
-                <span className="relative font-mono text-[10px] text-gray-600 tabular-nums w-16 text-right">
+                <span className="relative font-mono text-[10px] text-subtle tabular-nums w-16 text-right">
                   {cum.toLocaleString()}
                 </span>
               </div>
@@ -97,21 +97,21 @@ export function MarketDepth({ symbol }: Props) {
               ? (asks[0].price - bids[0].price).toFixed(decimals)
               : "unavailable"
           }, mid price ${snapshot.mid.toFixed(decimals)}`}
-          className="flex items-center justify-center gap-3 py-1 border-y border-gray-800/50 bg-gray-900/40 shrink-0"
+          className="flex items-center justify-center gap-3 py-1 border-y border-panel/50 bg-surface/40 shrink-0"
         >
           <span
-            className="text-[10px] text-gray-500"
+            className="text-[10px] text-muted"
             title="Bid-ask spread — difference between best ask and best bid prices"
           >
             Spread{" "}
-            <span className="font-mono text-gray-300">
+            <span className="font-mono text-default">
               {asks.length > 0 && bids.length > 0
                 ? (asks[0].price - bids[0].price).toFixed(decimals)
                 : "—"}
             </span>
           </span>
           <span
-            className="text-[10px] font-mono font-semibold text-gray-200"
+            className="text-[10px] font-mono font-semibold text-secondary"
             title="Mid price — midpoint between best bid and ask"
           >
             {snapshot.mid.toFixed(decimals)}
@@ -132,13 +132,13 @@ export function MarketDepth({ symbol }: Props) {
                   className="absolute inset-y-0 right-0 bg-emerald-900/20"
                   style={{ width: `${barPct}%` }}
                 />
-                <span className="relative font-mono text-[10px] text-gray-400 tabular-nums">
+                <span className="relative font-mono text-[10px] text-label tabular-nums">
                   {level.size.toLocaleString()}
                 </span>
                 <span className="relative font-mono text-[11px] text-emerald-400 tabular-nums pr-4">
                   {level.price.toFixed(decimals)}
                 </span>
-                <span className="relative font-mono text-[10px] text-gray-600 tabular-nums w-16 text-right">
+                <span className="relative font-mono text-[10px] text-subtle tabular-nums w-16 text-right">
                   {cum.toLocaleString()}
                 </span>
               </div>
@@ -154,7 +154,7 @@ export function MarketDepthPanel() {
   const { selectedAsset } = useChannelIn();
   if (!selectedAsset) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-600 text-xs bg-gradient-to-br from-gray-900 to-gray-950">
+      <div className="flex items-center justify-center h-full text-subtle text-xs bg-gradient-to-br from-surface to-page">
         Select an asset in Market Ladder
       </div>
     );

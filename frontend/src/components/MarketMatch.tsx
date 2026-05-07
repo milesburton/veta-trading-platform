@@ -167,7 +167,7 @@ function BookPosition({
         symbol
       )} / ask ${formatPrice(bestAsk, symbol)}`}
     >
-      <div className="relative h-2 w-full bg-gray-800 rounded overflow-hidden">
+      <div className="relative h-2 w-full bg-panel rounded overflow-hidden">
         {/* Bid zone */}
         <div className="absolute inset-y-0 left-0 w-1/2 bg-emerald-900/30" />
         {/* Ask zone */}
@@ -180,7 +180,7 @@ function BookPosition({
           style={{ left: `${clamped * 100}%` }}
         />
       </div>
-      <div className="flex justify-between text-[8px] text-gray-700">
+      <div className="flex justify-between text-[8px] text-divider">
         <span>BID {formatPrice(bestBid, symbol)}</span>
         <span>ASK {formatPrice(bestAsk, symbol)}</span>
       </div>
@@ -298,8 +298,8 @@ export function MarketMatch() {
         />
       )}
       {/* Header */}
-      <div className="px-3 py-1.5 border-b border-gray-800 flex items-center gap-2 shrink-0">
-        <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+      <div className="px-3 py-1.5 border-b border-panel flex items-center gap-2 shrink-0">
+        <span className="text-[10px] text-muted uppercase tracking-wider font-semibold">
           Market Match
         </span>
         {filterAsset && (
@@ -307,11 +307,11 @@ export function MarketMatch() {
             {filterAsset}
           </span>
         )}
-        <span className="ml-auto text-[10px] text-gray-600 tabular-nums">{fills.length} fills</span>
+        <span className="ml-auto text-[10px] text-subtle tabular-nums">{fills.length} fills</span>
       </div>
 
       {fills.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center text-gray-600 text-xs">
+        <div className="flex-1 flex items-center justify-center text-subtle text-xs">
           {filterAsset
             ? `No fills for ${filterAsset} yet`
             : "No fills recorded yet — submit an order to see matching activity"}
@@ -319,31 +319,31 @@ export function MarketMatch() {
       ) : (
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* Stats summary bar */}
-          <div className="px-3 py-2 border-b border-gray-800 grid grid-cols-5 gap-3 text-[10px] shrink-0">
+          <div className="px-3 py-2 border-b border-panel grid grid-cols-5 gap-3 text-[10px] shrink-0">
             <div>
-              <div className="text-gray-600 mb-0.5">Buy / Sell flow</div>
+              <div className="text-subtle mb-0.5">Buy / Sell flow</div>
               <FlowBar buys={stats.buyVol} sells={stats.sellVol} />
-              <div className="flex justify-between text-gray-500 mt-0.5 tabular-nums">
+              <div className="flex justify-between text-muted mt-0.5 tabular-nums">
                 <span className="text-emerald-500">{formatQty(stats.buyVol)}</span>
                 <span className="text-red-400">{formatQty(stats.sellVol)}</span>
               </div>
             </div>
             <div>
               <div
-                className="text-gray-600 mb-0.5"
+                className="text-subtle mb-0.5"
                 title="Maker = passive (lower fees). Taker = aggressive."
               >
                 Maker / Taker
               </div>
               <FlowBar buys={stats.makerVol} sells={stats.takerVol} />
-              <div className="flex justify-between text-gray-500 mt-0.5 tabular-nums">
+              <div className="flex justify-between text-muted mt-0.5 tabular-nums">
                 <span className="text-emerald-500">{formatQty(stats.makerVol)}</span>
                 <span className="text-amber-400">{formatQty(stats.takerVol)}</span>
               </div>
             </div>
             <div>
               <div
-                className="text-gray-600 mb-0.5"
+                className="text-subtle mb-0.5"
                 title="Average market impact across all fills in basis points"
               >
                 Avg Impact
@@ -354,7 +354,7 @@ export function MarketMatch() {
                     ? "text-red-400"
                     : stats.avgImpact < -2
                       ? "text-emerald-400"
-                      : "text-gray-300"
+                      : "text-default"
                 }`}
               >
                 {stats.avgImpact > 0 ? "+" : ""}
@@ -362,13 +362,13 @@ export function MarketMatch() {
               </div>
             </div>
             <div>
-              <div className="text-gray-600 mb-0.5" title="Total commission and fees paid">
+              <div className="text-subtle mb-0.5" title="Total commission and fees paid">
                 Commission
               </div>
               <div className="tabular-nums text-amber-400">${stats.totalComm.toFixed(2)}</div>
             </div>
             <div>
-              <div className="text-gray-600 mb-0.5" title="Execution venues by share volume">
+              <div className="text-subtle mb-0.5" title="Execution venues by share volume">
                 Top venues
               </div>
               <div className="flex flex-col gap-px">
@@ -376,7 +376,7 @@ export function MarketMatch() {
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 2)
                   .map(([v, vol]) => (
-                    <div key={v} className="flex justify-between text-gray-500">
+                    <div key={v} className="flex justify-between text-muted">
                       <span>
                         {VENUE_FLAGS[v] ?? ""} {v}
                       </span>
@@ -391,7 +391,7 @@ export function MarketMatch() {
           <div className="flex-1 overflow-auto" data-testid="fill-tape">
             <table className="w-full text-[10px]">
               <thead>
-                <tr className="text-gray-600 border-b border-gray-800 sticky top-0 bg-gray-950 text-[9px] uppercase tracking-wider">
+                <tr className="text-subtle border-b border-panel sticky top-0 bg-page text-[9px] uppercase tracking-wider">
                   {orderedCols.map((col) => (
                     <ResizableHeader
                       key={col.key}
@@ -425,11 +425,11 @@ export function MarketMatch() {
                     <tr
                       key={`${f.ts}-${f.asset}-${f.parentOrderId ?? ""}-${f.side}`}
                       data-testid="fill-row"
-                      className="border-b border-gray-800/30 hover:bg-gray-900/40 transition-colors cursor-context-menu"
+                      className="border-b border-panel/30 hover:bg-surface/40 transition-colors cursor-context-menu"
                       onContextMenu={(e) => openFillCtxMenu(e, f)}
                       title="Right-click for options"
                     >
-                      <td className="pl-3 pr-2 py-1.5 text-gray-600 tabular-nums whitespace-nowrap">
+                      <td className="pl-3 pr-2 py-1.5 text-subtle tabular-nums whitespace-nowrap">
                         {formatTime(f.ts)}
                       </td>
                       <td
@@ -439,13 +439,11 @@ export function MarketMatch() {
                       >
                         {f.side}
                       </td>
-                      <td className="px-2 py-1.5 text-gray-300 font-semibold">
-                        {f.asset || asset}
-                      </td>
-                      <td className="px-2 py-1.5 text-right tabular-nums text-gray-200">
+                      <td className="px-2 py-1.5 text-default font-semibold">{f.asset || asset}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-secondary">
                         {formatQty(f.filledQty)}
                       </td>
-                      <td className="px-2 py-1.5 text-right tabular-nums font-mono text-gray-200">
+                      <td className="px-2 py-1.5 text-right tabular-nums font-mono text-secondary">
                         {formatPrice(f.avgFillPrice, f.asset || asset)}
                       </td>
                       <td className="px-2 py-1.5 w-32">
@@ -467,7 +465,7 @@ export function MarketMatch() {
                           "—"
                         )}
                       </td>
-                      <td className="px-2 py-1.5 text-gray-500 font-mono">
+                      <td className="px-2 py-1.5 text-muted font-mono">
                         {f.venue ? (
                           <span title={`Execution venue: ${f.venue}`}>
                             {VENUE_FLAGS[f.venue] ?? ""} {f.venue}
@@ -476,7 +474,7 @@ export function MarketMatch() {
                           "—"
                         )}
                       </td>
-                      <td className="px-2 py-1.5 text-gray-500">{f.counterparty ?? "—"}</td>
+                      <td className="px-2 py-1.5 text-muted">{f.counterparty ?? "—"}</td>
                       <td
                         className={`px-2 py-1.5 text-right tabular-nums text-[9px] font-semibold ${
                           f.marketImpactBps != null
@@ -484,15 +482,15 @@ export function MarketMatch() {
                               ? "text-red-400"
                               : f.marketImpactBps < -2
                                 ? "text-emerald-400"
-                                : "text-gray-500"
-                            : "text-gray-700"
+                                : "text-muted"
+                            : "text-divider"
                         }`}
                       >
                         {f.marketImpactBps != null
                           ? `${f.marketImpactBps > 0 ? "+" : ""}${f.marketImpactBps.toFixed(1)}bp`
                           : "—"}
                       </td>
-                      <td className="pr-3 pl-2 py-1.5 text-right tabular-nums text-gray-600 text-[9px]">
+                      <td className="pr-3 pl-2 py-1.5 text-right tabular-nums text-subtle text-[9px]">
                         {f.commissionUSD != null ? `$${f.commissionUSD.toFixed(2)}` : "—"}
                       </td>
                     </tr>

@@ -42,13 +42,13 @@ function FeatureBar({ name, value, zScore }: { name: string; value: number; zSco
 
   return (
     <div className="mb-1">
-      <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+      <div className="flex justify-between text-[10px] text-label mb-0.5">
         <span>{FEATURE_LABELS[name] ?? name}</span>
         <span className={`tabular-nums ${isPositive ? "text-emerald-400" : "text-red-400"}`}>
           {value.toFixed(4)}
         </span>
       </div>
-      <div className="h-1.5 bg-gray-800 rounded overflow-hidden">
+      <div className="h-1.5 bg-panel rounded overflow-hidden">
         <div
           className="h-full rounded transition-all duration-300"
           style={{
@@ -87,12 +87,12 @@ function ReplayTooltip({
   const score = payload.find((p: { dataKey: string }) => p.dataKey === "score");
   const price = payload.find((p: { dataKey: string }) => p.dataKey === "close");
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[10px]">
-      <div className="text-gray-500 mb-0.5">
+    <div className="bg-surface border border-divider rounded px-2 py-1 text-[10px]">
+      <div className="text-muted mb-0.5">
         {label != null ? new Date(label).toLocaleTimeString() : ""}
       </div>
       {price && (
-        <div className="text-gray-300">
+        <div className="text-default">
           Price: <span className="tabular-nums">${(price.value as number).toFixed(2)}</span>
         </div>
       )}
@@ -173,7 +173,7 @@ export function InstrumentAnalysisPanel() {
 
   if (!symbol) {
     return (
-      <div className="h-full flex items-center justify-center text-gray-500 text-xs">
+      <div className="h-full flex items-center justify-center text-muted text-xs">
         Link to a channel — waiting for symbol selection
       </div>
     );
@@ -184,7 +184,7 @@ export function InstrumentAnalysisPanel() {
       ? "text-emerald-400"
       : signal?.direction === "short"
         ? "text-red-400"
-        : "text-gray-400";
+        : "text-label";
 
   // Build chart data: ts, close, score
   const chartData = replayFrames.value?.map((f) => ({
@@ -194,9 +194,9 @@ export function InstrumentAnalysisPanel() {
   }));
 
   return (
-    <div className="h-full flex flex-col bg-gray-950 text-gray-100 overflow-auto">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-800 shrink-0">
-        <span className="text-sm font-mono font-bold text-gray-200">{symbol}</span>
+    <div className="h-full flex flex-col bg-page text-primary overflow-auto">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-panel shrink-0">
+        <span className="text-sm font-mono font-bold text-secondary">{symbol}</span>
         {signal && (
           <>
             <span className={`text-xs font-mono tabular-nums ${scoreColor}`}>
@@ -206,15 +206,15 @@ export function InstrumentAnalysisPanel() {
             <span className={`text-xs capitalize px-1.5 py-0.5 rounded ${scoreColor}`}>
               {signal.direction}
             </span>
-            <span className="text-xs text-gray-500 ml-auto">
+            <span className="text-xs text-muted ml-auto">
               conf {(signal.confidence * 100).toFixed(0)}%
             </span>
           </>
         )}
       </div>
 
-      <div className="p-3 border-b border-gray-800 shrink-0">
-        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Features</div>
+      <div className="p-3 border-b border-panel shrink-0">
+        <div className="text-[10px] text-muted uppercase tracking-wider mb-2">Features</div>
         {fv ? (
           FEATURE_KEYS.map((k) => {
             const raw = (fv as unknown as Record<string, number>)[k] ?? 0;
@@ -222,19 +222,19 @@ export function InstrumentAnalysisPanel() {
             return <FeatureBar key={k} name={k} value={raw} zScore={(raw - mean) / std} />;
           })
         ) : (
-          <div className="text-xs text-gray-600">No feature data yet…</div>
+          <div className="text-xs text-subtle">No feature data yet…</div>
         )}
       </div>
 
       <div className="p-3 shrink-0">
-        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+        <div className="text-[10px] text-muted uppercase tracking-wider mb-2">
           Backtest Replay (last 4h)
         </div>
         <button
           type="button"
           onClick={runBacktest}
           disabled={replayLoading.value}
-          className="px-3 py-1 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded transition-colors disabled:opacity-50"
+          className="px-3 py-1 text-xs bg-panel hover:bg-divider text-default rounded transition-colors disabled:opacity-50"
         >
           {replayLoading.value ? "Running…" : "Run Backtest"}
         </button>
@@ -242,7 +242,7 @@ export function InstrumentAnalysisPanel() {
 
         {chartData && chartData.length > 0 && (
           <div className="mt-3">
-            <div className="text-[10px] text-gray-500 mb-1">{chartData.length} frames</div>
+            <div className="text-[10px] text-muted mb-1">{chartData.length} frames</div>
             <ResponsiveContainer width="100%" height={160}>
               <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={COLOR.CHART_GRID} />
@@ -294,12 +294,12 @@ export function InstrumentAnalysisPanel() {
                 />
               </ComposedChart>
             </ResponsiveContainer>
-            <div className="flex gap-4 mt-1 text-[9px] text-gray-600">
+            <div className="flex gap-4 mt-1 text-[9px] text-subtle">
               <span className="flex items-center gap-1">
                 <span className="inline-block w-3 h-px bg-blue-400" /> Signal score (left)
               </span>
               <span className="flex items-center gap-1">
-                <span className="inline-block w-3 h-px bg-gray-500" /> Price (right)
+                <span className="inline-block w-3 h-px bg-muted" /> Price (right)
               </span>
             </div>
           </div>

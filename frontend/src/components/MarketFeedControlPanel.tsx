@@ -73,7 +73,7 @@ function sessionBadge(session: MarketSession): { label: string; cls: string } {
     case "closed":
       return {
         label: "Closed",
-        cls: "bg-gray-800/60 text-gray-500 border border-gray-700/40",
+        cls: "bg-panel/60 text-muted border border-divider/40",
       };
   }
 }
@@ -123,22 +123,22 @@ export function MarketFeedControlPanel() {
   const badge = sessionBadge(session.value);
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs">
+    <div className="flex flex-col h-full bg-page text-default text-xs">
       {/* Header */}
-      <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
-        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+      <div className="px-4 py-2.5 border-b border-panel shrink-0">
+        <span className="text-[11px] font-semibold text-label uppercase tracking-wide">
           Market Feed Control
         </span>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {/* ── Feed Status ── */}
-        <div className="px-4 pt-3 pb-2 border-b border-gray-800/60">
-          <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide mb-2">
+        <div className="px-4 pt-3 pb-2 border-b border-panel/60">
+          <div className="text-[10px] font-semibold text-subtle uppercase tracking-wide mb-2">
             Feed Status
           </div>
           {sourcesLoading ? (
-            <div className="text-[11px] text-gray-600">Loading…</div>
+            <div className="text-[11px] text-subtle">Loading…</div>
           ) : (
             <div className="flex gap-2">
               {sources.map((src) => {
@@ -148,21 +148,18 @@ export function MarketFeedControlPanel() {
                     ? "bg-emerald-500"
                     : src.enabled && !src.active
                       ? "bg-amber-400"
-                      : "bg-gray-600";
+                      : "bg-subtle";
                 return (
-                  <div
-                    key={src.id}
-                    className="flex-1 bg-gray-900 rounded p-2.5 border border-gray-800"
-                  >
+                  <div key={src.id} className="flex-1 bg-surface rounded p-2.5 border border-panel">
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
-                      <span className="text-[11px] font-semibold text-gray-200 flex-1 truncate">
+                      <span className="text-[11px] font-semibold text-secondary flex-1 truncate">
                         {src.label}
                       </span>
                       <span
                         className={`text-[9px] px-1.5 py-0.5 rounded font-mono border shrink-0 ${
                           !src.enabled
-                            ? "bg-gray-800/40 text-gray-500 border-gray-700/40"
+                            ? "bg-panel/40 text-muted border-divider/40"
                             : isPaused
                               ? "bg-amber-900/20 text-amber-400 border-amber-700/40"
                               : "bg-emerald-900/20 text-emerald-400 border-emerald-700/40"
@@ -171,7 +168,7 @@ export function MarketFeedControlPanel() {
                         {!src.enabled ? "unavailable" : isPaused ? "paused" : "active"}
                       </span>
                     </div>
-                    <div className="text-[10px] text-gray-500 leading-relaxed mb-1">
+                    <div className="text-[10px] text-muted leading-relaxed mb-1">
                       {src.description}
                     </div>
                     {src.requiresApiKey && (
@@ -205,32 +202,32 @@ export function MarketFeedControlPanel() {
         </div>
 
         {/* ── Market Hours ── */}
-        <div className="px-4 pt-3 pb-2 border-b border-gray-800/60">
-          <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide mb-2">
-            Market Hours <span className="text-gray-700 normal-case font-normal">(US Eastern)</span>
+        <div className="px-4 pt-3 pb-2 border-b border-panel/60">
+          <div className="text-[10px] font-semibold text-subtle uppercase tracking-wide mb-2">
+            Market Hours <span className="text-divider normal-case font-normal">(US Eastern)</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {EXCHANGES.map((ex) => (
-              <div key={ex.mic} className="bg-gray-900 rounded p-2.5 border border-gray-800">
+              <div key={ex.mic} className="bg-surface rounded p-2.5 border border-panel">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-semibold text-gray-200">{ex.name}</span>
-                  <span className="text-[9px] font-mono text-gray-600">{ex.mic}</span>
+                  <span className="text-[11px] font-semibold text-secondary">{ex.name}</span>
+                  <span className="text-[9px] font-mono text-subtle">{ex.mic}</span>
                 </div>
-                <div className="text-[10px] text-gray-500 mb-1.5">{ex.hours}</div>
+                <div className="text-[10px] text-muted mb-1.5">{ex.hours}</div>
                 <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${badge.cls}`}>
                   {badge.label}
                 </span>
               </div>
             ))}
           </div>
-          <div className="text-[9px] text-gray-700 mt-1.5">
+          <div className="text-[9px] text-divider mt-1.5">
             Stub — uses browser clock · no holiday calendar
           </div>
         </div>
 
         {/* ── Symbol Overview ── */}
         <div className="px-4 pt-3 pb-2">
-          <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide mb-2">
+          <div className="text-[10px] font-semibold text-subtle uppercase tracking-wide mb-2">
             Symbol Overview
           </div>
           <input
@@ -240,33 +237,33 @@ export function MarketFeedControlPanel() {
             onChange={(e) => {
               search.value = e.target.value;
             }}
-            className="w-full mb-2 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 placeholder:text-gray-600"
+            className="w-full mb-2 bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary placeholder:text-subtle"
           />
         </div>
 
         <table className="w-full border-collapse">
-          <thead className="sticky top-0 bg-gray-950 z-10">
-            <tr className="border-b border-gray-800">
+          <thead className="sticky top-0 bg-page z-10">
+            <tr className="border-b border-panel">
               <th
-                className="text-left px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium"
+                className="text-left px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium"
                 title="Instrument ticker symbol"
               >
                 Symbol
               </th>
               <th
-                className="text-left px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium"
+                className="text-left px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium"
                 title="Exchange or venue providing the feed"
               >
                 Exchange
               </th>
               <th
-                className="text-left px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium"
+                className="text-left px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium"
                 title="Market data source adapter"
               >
                 Source
               </th>
               <th
-                className="text-right px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium"
+                className="text-right px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium"
                 title="Feed status: live or paused"
               >
                 Status
@@ -275,10 +272,10 @@ export function MarketFeedControlPanel() {
           </thead>
           <tbody>
             {symbolRows.map((row) => (
-              <tr key={row.symbol} className="border-b border-gray-900">
-                <td className="px-4 py-1.5 font-mono text-[11px] text-gray-300">{row.symbol}</td>
-                <td className="px-4 py-1.5 text-[10px] font-mono text-gray-500">{row.exchange}</td>
-                <td className="px-4 py-1.5 text-[10px] text-gray-500">{row.sourceLabel}</td>
+              <tr key={row.symbol} className="border-b border-surface">
+                <td className="px-4 py-1.5 font-mono text-[11px] text-default">{row.symbol}</td>
+                <td className="px-4 py-1.5 text-[10px] font-mono text-muted">{row.exchange}</td>
+                <td className="px-4 py-1.5 text-[10px] text-muted">{row.sourceLabel}</td>
                 <td className="px-4 py-1.5 text-right">
                   {row.paused ? (
                     <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border bg-amber-900/20 text-amber-400 border-amber-700/40">
@@ -294,7 +291,7 @@ export function MarketFeedControlPanel() {
             ))}
             {symbolRows.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-gray-600 text-[11px]">
+                <td colSpan={4} className="px-4 py-6 text-center text-subtle text-[11px]">
                   No symbols match
                 </td>
               </tr>
@@ -304,7 +301,7 @@ export function MarketFeedControlPanel() {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-1.5 border-t border-gray-800 shrink-0 text-[9px] text-gray-700">
+      <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-divider">
         {symbolRows.length} symbol{symbolRows.length !== 1 ? "s" : ""} · {externalCount} on external
         feeds · {anySourcePaused ? "some feeds paused" : "all active"}
       </div>

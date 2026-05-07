@@ -32,6 +32,18 @@ module.exports = {
           900: "rgb(var(--gray-900) / <alpha-value>)",
           950: "rgb(var(--gray-950) / <alpha-value>)",
         },
+        // Purpose-named aliases — see frontend/tailwind.config.cjs for docs.
+        strong: "rgb(var(--gray-50) / <alpha-value>)",
+        primary: "rgb(var(--gray-100) / <alpha-value>)",
+        secondary: "rgb(var(--gray-200) / <alpha-value>)",
+        default: "rgb(var(--gray-300) / <alpha-value>)",
+        label: "rgb(var(--gray-400) / <alpha-value>)",
+        muted: "rgb(var(--gray-500) / <alpha-value>)",
+        subtle: "rgb(var(--gray-600) / <alpha-value>)",
+        divider: "rgb(var(--gray-700) / <alpha-value>)",
+        panel: "rgb(var(--gray-800) / <alpha-value>)",
+        surface: "rgb(var(--gray-900) / <alpha-value>)",
+        page: "rgb(var(--gray-950) / <alpha-value>)",
         semantic: {
           up: "rgb(var(--semantic-up) / <alpha-value>)",
           "up-dark": "rgb(var(--semantic-up-dark) / <alpha-value>)",

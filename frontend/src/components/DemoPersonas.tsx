@@ -46,38 +46,35 @@ export function DemoPersonas({ onSelect }: DemoPersonasProps) {
   const grouped = groupPersonas(personas);
 
   return (
-    <div
-      data-testid="demo-personas"
-      className="mt-6 rounded-xl border border-gray-800 bg-gray-900/50"
-    >
+    <div data-testid="demo-personas" className="mt-6 rounded-xl border border-panel bg-surface/50">
       <button
         type="button"
         data-testid="demo-personas-toggle"
         onClick={() => {
           expanded.value = !expanded.value;
         }}
-        className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-300 hover:bg-gray-800/40 transition-colors rounded-xl"
+        className="w-full flex items-center justify-between px-4 py-3 text-sm text-default hover:bg-panel/40 transition-colors rounded-xl"
       >
-        <span className="font-medium tracking-wide uppercase text-[11px] text-gray-400">
+        <span className="font-medium tracking-wide uppercase text-[11px] text-label">
           Demo personas
         </span>
-        <span className="text-gray-500 text-xs">{expanded.value ? "▾ hide" : "▸ show list"}</span>
+        <span className="text-muted text-xs">{expanded.value ? "▾ hide" : "▸ show list"}</span>
       </button>
 
       {expanded.value && (
         <div className="px-4 pb-4 pt-1 space-y-4 max-h-[480px] overflow-auto">
-          {isLoading && <div className="text-xs text-gray-500 py-2">Loading personas...</div>}
+          {isLoading && <div className="text-xs text-muted py-2">Loading personas...</div>}
           {error && (
             <div className="text-xs text-red-400 py-2">
               Failed to load personas — demo mode may be disabled on this deployment.
             </div>
           )}
           {!isLoading && !error && personas.length === 0 && (
-            <div className="text-xs text-gray-500 py-2">No personas available.</div>
+            <div className="text-xs text-muted py-2">No personas available.</div>
           )}
           {Object.entries(grouped).map(([groupLabel, items]) => (
             <div key={groupLabel}>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-2">
                 {groupLabel}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -100,33 +97,33 @@ export function DemoPersonas({ onSelect }: DemoPersonasProps) {
 function PersonaCard({ persona, onSelect }: { persona: DemoPersona; onSelect: () => void }) {
   const styleLabel = persona.trading_style ? STYLE_LABELS[persona.trading_style] : null;
   const deskLabel = persona.primary_desk ? DESK_LABELS[persona.primary_desk] : null;
-  const roleBadgeClass = ROLE_BADGE_CLASS[persona.role] ?? "bg-gray-800 text-gray-400";
+  const roleBadgeClass = ROLE_BADGE_CLASS[persona.role] ?? "bg-panel text-label";
 
   return (
     <button
       type="button"
       data-testid={`persona-${persona.id}`}
       onClick={onSelect}
-      className="text-left p-3 rounded-lg border border-gray-800 bg-gray-950/60 hover:bg-gray-800/40 hover:border-gray-700 transition-colors"
+      className="text-left p-3 rounded-lg border border-panel bg-page/60 hover:bg-panel/40 hover:border-divider transition-colors"
     >
       <div className="flex items-start gap-3">
         <div className="text-2xl leading-none shrink-0">{persona.avatar_emoji}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <div className="text-sm font-medium text-gray-200 truncate">{persona.name}</div>
+            <div className="text-sm font-medium text-secondary truncate">{persona.name}</div>
             <span className={`text-[9px] px-1.5 py-0.5 rounded ${roleBadgeClass}`}>
               {persona.role}
             </span>
           </div>
-          <div className="text-[10px] text-gray-500 mt-0.5">
+          <div className="text-[10px] text-muted mt-0.5">
             {deskLabel && <span>{deskLabel}</span>}
             {deskLabel && styleLabel && <span className="mx-1">·</span>}
             {styleLabel && <span>{styleLabel}</span>}
           </div>
-          <div className="text-[11px] text-gray-400 mt-1 line-clamp-2">
+          <div className="text-[11px] text-label mt-1 line-clamp-2">
             {persona.description || "—"}
           </div>
-          <div className="text-[9px] text-gray-600 mt-1 font-mono">Sign in as {persona.id}</div>
+          <div className="text-[9px] text-subtle mt-1 font-mono">Sign in as {persona.id}</div>
         </div>
       </div>
     </button>

@@ -75,11 +75,11 @@ function pct(n: number): string {
 function GreekRow({ label, value, title }: { label: string; value: string; title: string }) {
   return (
     <div
-      className="flex justify-between items-center py-1 border-b border-gray-800 last:border-0"
+      className="flex justify-between items-center py-1 border-b border-panel last:border-0"
       title={title}
     >
-      <span className="text-gray-500 text-[11px]">{label}</span>
-      <span className="text-gray-200 text-[11px] tabular-nums font-mono">{value}</span>
+      <span className="text-muted text-[11px]">{label}</span>
+      <span className="text-secondary text-[11px] tabular-nums font-mono">{value}</span>
     </div>
   );
 }
@@ -172,25 +172,22 @@ export function OptionPricingPanel() {
 
   return (
     <div
-      className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs"
+      className="flex flex-col h-full bg-page text-default text-xs"
       data-testid="option-pricing-panel"
     >
-      <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
-        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+      <div className="px-4 py-2.5 border-b border-panel shrink-0">
+        <span className="text-[11px] font-semibold text-label uppercase tracking-wide">
           Option Pricing — Black-Scholes
         </span>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-3 px-4 py-3 border-b border-gray-800 shrink-0"
+        className="flex flex-col gap-3 px-4 py-3 border-b border-panel shrink-0"
       >
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1">
-            <label
-              htmlFor="op-symbol"
-              className="text-[10px] text-gray-500 uppercase tracking-wide"
-            >
+            <label htmlFor="op-symbol" className="text-[10px] text-muted uppercase tracking-wide">
               Symbol
             </label>
             <select
@@ -199,7 +196,7 @@ export function OptionPricingPanel() {
               onChange={(e) => {
                 symbol.value = e.target.value;
               }}
-              className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200"
+              className="bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary"
             >
               {symbols.map((s) => (
                 <option key={s} value={s}>
@@ -210,7 +207,7 @@ export function OptionPricingPanel() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-gray-500 uppercase tracking-wide">Type</span>
+            <span className="text-[10px] text-muted uppercase tracking-wide">Type</span>
             <div className="flex gap-1">
               {(["call", "put"] as const).map((t) => (
                 <button
@@ -225,7 +222,7 @@ export function OptionPricingPanel() {
                       ? t === "call"
                         ? "bg-emerald-800 text-emerald-200"
                         : "bg-red-900 text-red-200"
-                      : "bg-gray-800 text-gray-500 hover:text-gray-300"
+                      : "bg-panel text-muted hover:text-default"
                   }`}
                 >
                   {t.toUpperCase()}
@@ -235,13 +232,10 @@ export function OptionPricingPanel() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label
-              htmlFor="op-strike"
-              className="text-[10px] text-gray-500 uppercase tracking-wide"
-            >
+            <label htmlFor="op-strike" className="text-[10px] text-muted uppercase tracking-wide">
               Strike ($){" "}
               {currentPrice ? (
-                <span className="text-gray-600 normal-case">(spot {currentPrice.toFixed(2)})</span>
+                <span className="text-subtle normal-case">(spot {currentPrice.toFixed(2)})</span>
               ) : null}
             </label>
             <input
@@ -255,14 +249,14 @@ export function OptionPricingPanel() {
               }}
               placeholder="e.g. 150"
               data-testid="strike-input"
-              className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 placeholder:text-gray-600"
+              className="bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary placeholder:text-subtle"
             />
           </div>
 
           <div className="flex flex-col gap-1">
             <label
               htmlFor="op-expiry-date"
-              className="text-[10px] text-gray-500 uppercase tracking-wide"
+              className="text-[10px] text-muted uppercase tracking-wide"
             >
               Expiry
             </label>
@@ -278,7 +272,7 @@ export function OptionPricingPanel() {
                   className={`px-1.5 py-0.5 rounded text-[9px] transition-colors ${
                     expirySecs.value === o.secs && !customDate.value
                       ? "bg-blue-700 text-white"
-                      : "bg-gray-800 text-gray-500 hover:text-gray-300"
+                      : "bg-panel text-muted hover:text-default"
                   }`}
                 >
                   {o.label}
@@ -291,7 +285,7 @@ export function OptionPricingPanel() {
               value={customDate.value}
               onChange={(e) => handleCustomDate(e.target.value)}
               data-testid="expiry-input"
-              className="bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-[10px] text-gray-200 mt-0.5"
+              className="bg-panel border border-divider rounded px-2 py-0.5 text-[10px] text-secondary mt-0.5"
             />
           </div>
         </div>
@@ -316,29 +310,29 @@ export function OptionPricingPanel() {
 
       {result.value && (
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4" data-testid="quote-result">
-          <div className="bg-gray-900 rounded p-3">
+          <div className="bg-surface rounded p-3">
             <div className="flex justify-between mb-2">
-              <span className="text-[10px] text-gray-500">Theoretical Price</span>
-              <span className="text-lg font-bold text-gray-100 tabular-nums font-mono">
+              <span className="text-[10px] text-muted">Theoretical Price</span>
+              <span className="text-lg font-bold text-primary tabular-nums font-mono">
                 ${fmt(result.value.price, 4)}
               </span>
             </div>
             <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-[10px]">
               <div>
-                <span className="text-gray-500">Spot</span>
-                <div className="text-gray-300 tabular-nums font-mono">
+                <span className="text-muted">Spot</span>
+                <div className="text-default tabular-nums font-mono">
                   ${fmt(result.value.spotPrice, 2)}
                 </div>
               </div>
               <div>
-                <span className="text-gray-500">Strike</span>
-                <div className="text-gray-300 tabular-nums font-mono">
+                <span className="text-muted">Strike</span>
+                <div className="text-default tabular-nums font-mono">
                   ${fmt(result.value.strike, 2)}
                 </div>
               </div>
               <div>
-                <span className="text-gray-500">Impl. Vol</span>
-                <div className="text-gray-300 tabular-nums font-mono">
+                <span className="text-muted">Impl. Vol</span>
+                <div className="text-default tabular-nums font-mono">
                   {pct(result.value.impliedVol)}
                 </div>
               </div>
@@ -346,8 +340,8 @@ export function OptionPricingPanel() {
           </div>
 
           <div>
-            <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-2">Greeks</div>
-            <div className="bg-gray-900 rounded p-3">
+            <div className="text-[10px] text-muted uppercase tracking-wide mb-2">Greeks</div>
+            <div className="bg-surface rounded p-3">
               <GreekRow
                 label="Δ Delta"
                 value={fmt(result.value.greeks.delta)}
@@ -378,7 +372,7 @@ export function OptionPricingPanel() {
 
           {sensitivityData.length > 0 && (
             <div>
-              <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">
+              <div className="text-[10px] text-muted uppercase tracking-wide mb-1">
                 Greeks vs Spot (±30%)
               </div>
               <ResponsiveContainer width="100%" height={170}>
@@ -431,14 +425,14 @@ export function OptionPricingPanel() {
             </div>
           )}
 
-          <div className="text-[9px] text-gray-700 text-right">
+          <div className="text-[9px] text-divider text-right">
             Computed {new Date(result.value.computedAt).toLocaleTimeString()} · EWMA vol
           </div>
         </div>
       )}
 
       {!result.value && (
-        <div className="flex-1 flex items-center justify-center text-gray-700 text-[11px]">
+        <div className="flex-1 flex items-center justify-center text-divider text-[11px]">
           Enter parameters and click Price Option
         </div>
       )}

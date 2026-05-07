@@ -107,9 +107,9 @@ function ShortcutOverlay({ onClose }: { onClose: () => void }) {
         onClick={onClose}
       />
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-        <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl p-6 w-80 pointer-events-auto">
+        <div className="bg-surface border border-divider rounded-lg shadow-2xl p-6 w-80 pointer-events-auto">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-semibold text-gray-200 uppercase tracking-wider">
+            <span className="text-sm font-semibold text-secondary uppercase tracking-wider">
               Keyboard Shortcuts
             </span>
             <button
@@ -117,7 +117,7 @@ function ShortcutOverlay({ onClose }: { onClose: () => void }) {
               onClick={onClose}
               title="Close shortcuts overlay (Escape)"
               aria-label="Close keyboard shortcuts overlay"
-              className="text-gray-500 hover:text-gray-300 text-lg leading-none"
+              className="text-muted hover:text-default text-lg leading-none"
             >
               ×
             </button>
@@ -125,13 +125,13 @@ function ShortcutOverlay({ onClose }: { onClose: () => void }) {
           <table className="w-full text-xs">
             <tbody>
               {shortcuts.map((s) => (
-                <tr key={s.key} className="border-b border-gray-800/60">
+                <tr key={s.key} className="border-b border-panel/60">
                   <td className="py-1.5 pr-4">
-                    <kbd className="px-1.5 py-0.5 bg-gray-800 border border-gray-600 rounded text-gray-200 font-mono">
+                    <kbd className="px-1.5 py-0.5 bg-panel border border-subtle rounded text-secondary font-mono">
                       {s.key}
                     </kbd>
                   </td>
-                  <td className="py-1.5 text-gray-400">{s.desc}</td>
+                  <td className="py-1.5 text-label">{s.desc}</td>
                 </tr>
               ))}
             </tbody>

@@ -99,9 +99,9 @@ export function DurationLadderPanel() {
   const dv01Color = totalDv01 >= 0 ? "text-emerald-400" : "text-red-400";
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 text-xs text-gray-100">
+    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 text-xs text-primary">
       <div className="flex items-center justify-between">
-        <span className="font-semibold text-gray-200">Duration Ladder · DV01 by Tenor</span>
+        <span className="font-semibold text-secondary">Duration Ladder · DV01 by Tenor</span>
         <span className="rounded bg-purple-900/40 px-2 py-0.5 text-[10px] text-purple-300">
           Key-Rate Buckets
         </span>
@@ -110,7 +110,7 @@ export function DurationLadderPanel() {
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-[10px]">
           <thead>
-            <tr className="border-b border-gray-700 text-gray-400">
+            <tr className="border-b border-divider text-label">
               <th className="py-1 pr-2 text-left">#</th>
               <th className="py-1 pr-2 text-right">Face $</th>
               <th className="py-1 pr-2 text-right">Cpn %</th>
@@ -122,15 +122,15 @@ export function DurationLadderPanel() {
           <tbody>
             {positions.value.map((pos, idx) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: positions are identified by index
-              <tr key={idx} className="border-b border-gray-800">
-                <td className="py-0.5 pr-2 text-gray-500">{idx + 1}</td>
+              <tr key={idx} className="border-b border-panel">
+                <td className="py-0.5 pr-2 text-muted">{idx + 1}</td>
                 {(
                   ["faceValue", "couponRate", "totalPeriods", "yieldAnnual", "quantity"] as const
                 ).map((field) => (
                   <td key={field} className="pr-1">
                     <input
                       type="number"
-                      className="w-16 rounded border border-gray-700 bg-gray-800 px-1 py-0.5 text-right text-[10px] focus:border-blue-500 focus:outline-none"
+                      className="w-16 rounded border border-divider bg-panel px-1 py-0.5 text-right text-[10px] focus:border-blue-500 focus:outline-none"
                       value={pos[field]}
                       step={field === "quantity" ? "1" : "0.01"}
                       onChange={(e) => updatePosition(idx, field, e.target.value)}
@@ -158,13 +158,11 @@ export function DurationLadderPanel() {
 
       {data && (
         <>
-          <div className="flex items-center justify-between rounded bg-gray-800 p-2">
-            <span className="text-gray-400">Portfolio DV01</span>
+          <div className="flex items-center justify-between rounded bg-panel p-2">
+            <span className="text-label">Portfolio DV01</span>
             <span className={`text-lg font-bold ${dv01Color}`}>
               ${Math.abs(totalDv01).toFixed(2)}
-              <span className="ml-1 text-xs text-gray-400">
-                {totalDv01 >= 0 ? "long" : "short"}
-              </span>
+              <span className="ml-1 text-xs text-label">{totalDv01 >= 0 ? "long" : "short"}</span>
             </span>
           </div>
 
@@ -216,10 +214,10 @@ export function DurationLadderPanel() {
             </ResponsiveContainer>
           </div>
 
-          <div className="overflow-x-auto rounded bg-gray-800">
+          <div className="overflow-x-auto rounded bg-panel">
             <table className="w-full text-[10px]">
               <thead>
-                <tr className="border-b border-gray-700 text-gray-400">
+                <tr className="border-b border-divider text-label">
                   <th className="py-1 pl-2 text-left">Tenor</th>
                   <th className="py-1 pr-2 text-right">Net DV01 ($)</th>
                   <th className="py-1 pr-2 text-right">Direction</th>
@@ -227,8 +225,8 @@ export function DurationLadderPanel() {
               </thead>
               <tbody>
                 {data.buckets.map((b) => (
-                  <tr key={b.tenorLabel} className="border-b border-gray-700/50">
-                    <td className="py-0.5 pl-2 font-mono text-gray-300">{b.tenorLabel}</td>
+                  <tr key={b.tenorLabel} className="border-b border-divider/50">
+                    <td className="py-0.5 pl-2 font-mono text-default">{b.tenorLabel}</td>
                     <td
                       className={`py-0.5 pr-2 text-right font-mono font-semibold ${
                         b.netDv01 >= 0 ? "text-emerald-400" : "text-red-400"
@@ -236,7 +234,7 @@ export function DurationLadderPanel() {
                     >
                       ${Math.abs(b.netDv01).toFixed(4)}
                     </td>
-                    <td className="py-0.5 pr-2 text-right text-gray-500">
+                    <td className="py-0.5 pr-2 text-right text-muted">
                       {b.netDv01 > 0.0001 ? "▲ long" : b.netDv01 < -0.0001 ? "▼ short" : "—"}
                     </td>
                   </tr>

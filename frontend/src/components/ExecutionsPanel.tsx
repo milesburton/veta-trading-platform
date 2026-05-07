@@ -138,13 +138,13 @@ function TradeRow({
   const timeline = buildFillTimeline(order);
 
   const impactColor =
-    impactBps > 5 ? "text-red-400" : impactBps < -2 ? "text-emerald-400" : "text-gray-400";
+    impactBps > 5 ? "text-red-400" : impactBps < -2 ? "text-emerald-400" : "text-label";
   const commColor = totalComm < 0 ? "text-emerald-400" : "text-amber-400";
   const statusColor =
     order.status === "filled"
       ? "text-emerald-500"
       : order.status === "expired"
-        ? "text-gray-500"
+        ? "text-muted"
         : "text-sky-400";
 
   const liqTotals = filledChildren.reduce(
@@ -163,7 +163,7 @@ function TradeRow({
     <>
       <tr
         data-testid="execution-row"
-        className={`border-b border-gray-800/40 cursor-pointer hover:bg-gray-800/20 transition-colors ${rowClasses}`}
+        className={`border-b border-panel/40 cursor-pointer hover:bg-panel/20 transition-colors ${rowClasses}`}
         onClick={() => {
           expanded.value = !expanded.value;
         }}
@@ -177,7 +177,7 @@ function TradeRow({
                 <td
                   key={col.key}
                   style={{ width: w }}
-                  className={`px-3 py-1.5 text-gray-500 tabular-nums whitespace-nowrap text-[10px] ${cellCls}`}
+                  className={`px-3 py-1.5 text-muted tabular-nums whitespace-nowrap text-[10px] ${cellCls}`}
                 >
                   {formatTime(order.submittedAt)}
                 </td>
@@ -187,7 +187,7 @@ function TradeRow({
                 <td
                   key={col.key}
                   style={{ width: w }}
-                  className={`px-3 py-1.5 font-semibold text-gray-200 ${cellCls}`}
+                  className={`px-3 py-1.5 font-semibold text-secondary ${cellCls}`}
                 >
                   {order.asset}
                 </td>
@@ -209,7 +209,7 @@ function TradeRow({
                 <td
                   key={col.key}
                   style={{ width: w }}
-                  className={`px-3 py-1.5 text-gray-400 ${cellCls}`}
+                  className={`px-3 py-1.5 text-label ${cellCls}`}
                 >
                   {order.strategy}
                 </td>
@@ -230,7 +230,7 @@ function TradeRow({
                 <td
                   key={col.key}
                   style={{ width: w }}
-                  className="px-3 py-1.5 text-right tabular-nums text-gray-300"
+                  className="px-3 py-1.5 text-right tabular-nums text-default"
                 >
                   {fillPct.toFixed(0)}%
                 </td>
@@ -260,7 +260,7 @@ function TradeRow({
                 <td
                   key={col.key}
                   style={{ width: w }}
-                  className="px-3 py-1.5 text-right tabular-nums text-gray-500 text-[10px]"
+                  className="px-3 py-1.5 text-right tabular-nums text-muted text-[10px]"
                 >
                   {filledChildren.length}
                 </td>
@@ -270,15 +270,13 @@ function TradeRow({
                 <td
                   key={col.key}
                   style={{ width: w }}
-                  className="px-3 py-1.5 text-gray-600 text-[10px]"
+                  className="px-3 py-1.5 text-subtle text-[10px]"
                 >
                   {expanded.value ? "▾" : "▸"}
                 </td>
               );
             default:
-              return (
-                <td key={col.key} style={{ width: w }} className="px-3 py-1.5 text-gray-600" />
-              );
+              return <td key={col.key} style={{ width: w }} className="px-3 py-1.5 text-subtle" />;
           }
         })}
       </tr>
@@ -286,15 +284,15 @@ function TradeRow({
       {expanded.value && (
         <tr>
           <td colSpan={cols.length} className="p-0">
-            <div className="bg-gray-900/40 border-b border-gray-800/40 px-4 py-3 flex flex-col gap-3">
+            <div className="bg-surface/40 border-b border-panel/40 px-4 py-3 flex flex-col gap-3">
               {totalFilledQty > 0 && (
                 <div className="flex items-center gap-4 text-[10px]">
-                  <span className="text-gray-500">
-                    Avg px <span className="text-gray-300 font-mono">{avgPx.toFixed(4)}</span>
+                  <span className="text-muted">
+                    Avg px <span className="text-default font-mono">{avgPx.toFixed(4)}</span>
                   </span>
-                  <span className="text-gray-500">
+                  <span className="text-muted">
                     Limit{" "}
-                    <span className="text-gray-300 font-mono">{order.limitPrice.toFixed(4)}</span>
+                    <span className="text-default font-mono">{order.limitPrice.toFixed(4)}</span>
                   </span>
                   {liqTotals.maker + liqTotals.taker + liqTotals.cross > 0 && (
                     <div className="flex gap-2">
@@ -320,7 +318,7 @@ function TradeRow({
 
               {timeline.length >= 2 ? (
                 <div>
-                  <div className="text-[10px] text-gray-500 mb-1">
+                  <div className="text-[10px] text-muted mb-1">
                     Fill progression — {order.asset} {order.side} {order.quantity.toLocaleString()}{" "}
                     @ limit {order.limitPrice.toFixed(2)}
                   </div>
@@ -384,7 +382,7 @@ function TradeRow({
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="text-gray-600 text-[10px]">
+                <div className="text-subtle text-[10px]">
                   {filledChildren.length === 0
                     ? "No fills recorded"
                     : "Need ≥2 fills to render chart"}
@@ -440,17 +438,17 @@ export function ExecutionsPanel() {
 
   return (
     <div className="flex flex-col h-full text-xs relative" data-testid="executions-panel">
-      <div className="px-2 py-1.5 border-b border-gray-800 flex items-center gap-2 shrink-0">
+      <div className="px-2 py-1.5 border-b border-panel flex items-center gap-2 shrink-0">
         {filterOrderId && (
           <span className="text-[10px] text-amber-400 bg-amber-900/30 font-mono px-1.5 py-0.5 rounded">
             {filterOrderId.slice(0, 8)}
           </span>
         )}
         {filterAsset && !filterOrderId && (
-          <span className="text-[10px] text-gray-500 font-mono">{filterAsset}</span>
+          <span className="text-[10px] text-muted font-mono">{filterAsset}</span>
         )}
         {!isLoading && tradeOrders.length > 0 && (
-          <span className="text-[10px] text-gray-600 ml-auto">
+          <span className="text-[10px] text-subtle ml-auto">
             {tradeOrders.length !== total ? `${tradeOrders.length} / ${total}` : tradeOrders.length}
           </span>
         )}
@@ -463,7 +461,7 @@ export function ExecutionsPanel() {
           className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
             showCfEditor.value
               ? "bg-sky-900/50 text-sky-400"
-              : "text-gray-600 hover:text-gray-400 hover:bg-gray-800"
+              : "text-subtle hover:text-label hover:bg-panel"
           }`}
         >
           Format ⚙
@@ -475,9 +473,9 @@ export function ExecutionsPanel() {
 
       <div ref={containerRef} className="flex-1 overflow-auto">
         {isLoading && tradeOrders.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-gray-600">Loading…</div>
+          <div className="flex items-center justify-center h-24 text-subtle">Loading…</div>
         ) : tradeOrders.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-gray-600">
+          <div className="flex items-center justify-center h-24 text-subtle">
             {filterOrderId
               ? `No executions for order ${filterOrderId.slice(0, 8)}`
               : filterAsset
@@ -489,7 +487,7 @@ export function ExecutionsPanel() {
         ) : (
           <table className="w-full text-xs" data-testid="executions-table">
             <thead>
-              <tr className="text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950">
+              <tr className="text-muted border-b border-panel sticky top-0 bg-page">
                 {orderedCols.map((col) => (
                   <ResizableHeader
                     key={col.key}

@@ -67,7 +67,7 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
   pending: "bg-amber-900/50 text-amber-300 border border-amber-700/50",
   working: "bg-sky-900/50 text-sky-300 border border-sky-700/50",
   filled: "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50",
-  expired: "bg-gray-800/50 text-gray-500 border border-gray-700/50",
+  expired: "bg-panel/50 text-muted border border-divider/50",
   rejected: "bg-red-950/60 text-red-400 border border-red-800/50",
   cancelled: "bg-orange-950/50 text-orange-400 border border-orange-800/50",
   held: "bg-yellow-950/50 text-yellow-400 border border-yellow-700/50",
@@ -127,9 +127,9 @@ export function ChildOrdersPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 overflow-hidden">
+    <div className="flex flex-col h-full bg-page overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800 shrink-0 min-h-0">
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-panel shrink-0 min-h-0">
         {inColour && (
           <span
             className="w-2 h-2 rounded-full shrink-0"
@@ -137,7 +137,7 @@ export function ChildOrdersPanel() {
             title="Receives selected order from linked panel"
           />
         )}
-        <span className="text-[11px] text-gray-400 font-medium truncate">
+        <span className="text-[11px] text-label font-medium truncate">
           {parentOrder
             ? `${parentOrder.asset} ${parentOrder.side} ${parentOrder.quantity} — ${children.length} slice${
                 children.length !== 1 ? "s" : ""
@@ -155,7 +155,7 @@ export function ChildOrdersPanel() {
 
       {/* No parent selected */}
       {!parentOrder && (
-        <div className="flex-1 flex items-center justify-center text-gray-600 text-[11px]">
+        <div className="flex-1 flex items-center justify-center text-subtle text-[11px]">
           {incoming !== null
             ? "Select an order in the linked blotter"
             : "Link an incoming channel from an Order Blotter"}
@@ -164,7 +164,7 @@ export function ChildOrdersPanel() {
 
       {/* Children table */}
       {parentOrder && children.length === 0 && (
-        <div className="flex-1 flex items-center justify-center text-gray-600 text-[11px]">
+        <div className="flex-1 flex items-center justify-center text-subtle text-[11px]">
           No execution slices yet
         </div>
       )}
@@ -172,8 +172,8 @@ export function ChildOrdersPanel() {
       {parentOrder && children.length > 0 && (
         <div className="flex-1 overflow-auto min-h-0">
           <table className="w-full text-xs border-collapse">
-            <thead className="sticky top-0 z-10 bg-gray-900">
-              <tr className="border-b border-gray-700 text-gray-500 text-[10px] font-medium">
+            <thead className="sticky top-0 z-10 bg-surface">
+              <tr className="border-b border-divider text-muted text-[10px] font-medium">
                 {orderedCols.map((col) => (
                   <ResizableHeader
                     key={col.key}
@@ -205,36 +205,32 @@ export function ChildOrdersPanel() {
                   <tr
                     key={child.id}
                     onClick={() => selectChild(child.id)}
-                    className={`border-b border-gray-800/40 cursor-pointer transition-colors ${
-                      isSelected
-                        ? "bg-sky-900/20 border-l-2 border-l-sky-500"
-                        : "hover:bg-gray-800/30"
+                    className={`border-b border-panel/40 cursor-pointer transition-colors ${
+                      isSelected ? "bg-sky-900/20 border-l-2 border-l-sky-500" : "hover:bg-panel/30"
                     }`}
                   >
-                    <td className="px-3 py-1.5 tabular-nums whitespace-nowrap text-gray-400">
+                    <td className="px-3 py-1.5 tabular-nums whitespace-nowrap text-label">
                       {formatTime(child.submittedAt)}
                     </td>
-                    <td className="px-3 py-1.5 font-mono text-gray-500">
-                      {child.id.slice(0, 12)}…
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-gray-300">
+                    <td className="px-3 py-1.5 font-mono text-muted">{child.id.slice(0, 12)}…</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums text-default">
                       {child.quantity}
                     </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-gray-300">
+                    <td className="px-3 py-1.5 text-right tabular-nums text-default">
                       {child.avgFillPrice !== undefined
                         ? child.avgFillPrice.toFixed(4)
                         : child.limitPrice.toFixed(4)}
                     </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-gray-400">
+                    <td className="px-3 py-1.5 text-right tabular-nums text-label">
                       {child.filled > 0 ? child.filled : "—"}
                     </td>
                     <td className="px-3 py-1.5">
                       {child.venue ? (
-                        <span className="text-[9px] font-mono text-gray-500 bg-gray-800 rounded px-1">
+                        <span className="text-[9px] font-mono text-muted bg-panel rounded px-1">
                           {child.venue}
                         </span>
                       ) : (
-                        <span className="text-gray-600">—</span>
+                        <span className="text-subtle">—</span>
                       )}
                     </td>
                     <td className="px-3 py-1.5">
@@ -247,22 +243,22 @@ export function ChildOrdersPanel() {
                         {child.status}
                       </span>
                     </td>
-                    <td className="px-3 py-1.5 font-mono text-[9px] text-gray-500">
+                    <td className="px-3 py-1.5 font-mono text-[9px] text-muted">
                       {child.counterparty ?? "—"}
                     </td>
                     <td
                       className={`px-3 py-1.5 text-[9px] font-semibold ${
-                        child.liquidityFlag ? LIQ_STYLES[child.liquidityFlag] : "text-gray-600"
+                        child.liquidityFlag ? LIQ_STYLES[child.liquidityFlag] : "text-subtle"
                       }`}
                     >
                       {child.liquidityFlag ?? "—"}
                     </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-[9px] text-gray-500">
+                    <td className="px-3 py-1.5 text-right tabular-nums text-[9px] text-muted">
                       {child.commissionUSD !== undefined
                         ? `$${child.commissionUSD.toFixed(2)}`
                         : "—"}
                     </td>
-                    <td className="px-3 py-1.5 font-mono text-[9px] text-gray-600">
+                    <td className="px-3 py-1.5 font-mono text-[9px] text-subtle">
                       {child.settlementDate ?? "—"}
                     </td>
                   </tr>

@@ -47,9 +47,9 @@ function SurfaceTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-[10px]">
-      <div className="text-gray-400 mb-1">
-        K/S = <span className="tabular-nums text-gray-200">{(label as number).toFixed(3)}</span>
+    <div className="bg-surface border border-divider rounded px-2 py-1.5 text-[10px]">
+      <div className="text-label mb-1">
+        K/S = <span className="tabular-nums text-secondary">{(label as number).toFixed(3)}</span>
       </div>
       {(payload as { name: string; value: number; color: string }[]).map((p) => (
         <div key={p.name} style={{ color: p.color }} className="tabular-nums">
@@ -80,22 +80,22 @@ export function GreeksSurfacePanel() {
   }));
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs">
+    <div className="flex flex-col h-full bg-page text-default text-xs">
       {/* Panel header */}
-      <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
-        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+      <div className="px-4 py-2.5 border-b border-panel shrink-0">
+        <span className="text-[11px] font-semibold text-label uppercase tracking-wide">
           Greeks Surface
         </span>
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-800 shrink-0 flex-wrap">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-panel shrink-0 flex-wrap">
         <select
           value={symbol.value}
           onChange={(e) => {
             symbol.value = e.target.value;
           }}
-          className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200"
+          className="bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary"
         >
           {symbols.map((s) => (
             <option key={s} value={s}>
@@ -115,7 +115,7 @@ export function GreeksSurfacePanel() {
               className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
                 expirySecs.value === secs
                   ? "bg-blue-700 text-white"
-                  : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                  : "bg-panel text-label hover:bg-divider"
               }`}
             >
               {label}
@@ -123,23 +123,21 @@ export function GreeksSurfacePanel() {
           ))}
         </div>
 
-        {isFetching && <span className="text-[10px] text-gray-600 ml-auto">Loading…</span>}
+        {isFetching && <span className="text-[10px] text-subtle ml-auto">Loading…</span>}
       </div>
 
       {/* Summary bar */}
       {data && (
-        <div className="flex items-center gap-3 px-4 py-1.5 border-b border-gray-800 shrink-0">
-          <span className="text-[10px] text-gray-500">Spot ${data.spotPrice.toFixed(2)}</span>
-          <span className="text-[10px] text-gray-500">
-            IV {(data.impliedVol * 100).toFixed(1)}%
-          </span>
-          <span className="text-[10px] text-gray-600">{data.strikes.length} strikes</span>
+        <div className="flex items-center gap-3 px-4 py-1.5 border-b border-panel shrink-0">
+          <span className="text-[10px] text-muted">Spot ${data.spotPrice.toFixed(2)}</span>
+          <span className="text-[10px] text-muted">IV {(data.impliedVol * 100).toFixed(1)}%</span>
+          <span className="text-[10px] text-subtle">{data.strikes.length} strikes</span>
         </div>
       )}
 
       {/* Error */}
       {error && (
-        <div className="px-4 py-2 text-red-400 text-[10px] border-b border-gray-800">
+        <div className="px-4 py-2 text-red-400 text-[10px] border-b border-panel">
           {("data" in error ? (error.data as { error?: string })?.error : null) ?? "Failed to load"}
         </div>
       )}
@@ -210,14 +208,14 @@ export function GreeksSurfacePanel() {
         </div>
       ) : (
         !isFetching && (
-          <div className="flex-1 flex items-center justify-center text-gray-700 text-[11px]">
+          <div className="flex-1 flex items-center justify-center text-divider text-[11px]">
             {error ? "Could not load surface data" : "Select a symbol to view Greeks surface"}
           </div>
         )
       )}
 
       {data && (
-        <div className="px-4 py-1.5 border-t border-gray-800 shrink-0 text-[9px] text-gray-700">
+        <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-divider">
           {new Date(data.computedAt).toLocaleTimeString()} · For educational use only
         </div>
       )}

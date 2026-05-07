@@ -29,9 +29,9 @@ const SCOPE_META: Record<KillScope, { label: string; hasValues: boolean; placeho
 
 const RESUME_PRESETS = [5, 15, 30, 60] as const;
 
-const LABEL_CLS = "text-gray-500 uppercase text-[10px] font-semibold tracking-wide";
+const LABEL_CLS = "text-muted uppercase text-[10px] font-semibold tracking-wide";
 const INPUT_CLS =
-  "bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-gray-200 focus:outline-none focus:border-gray-500 text-xs w-full";
+  "bg-panel border border-divider rounded px-2 py-1.5 text-secondary focus:outline-none focus:border-muted text-xs w-full";
 
 function MultiSelectGrid({
   items,
@@ -61,14 +61,14 @@ function MultiSelectGrid({
           aria-label={filterPlaceholder}
         />
       )}
-      <div className="max-h-36 overflow-y-auto border border-gray-700 rounded bg-gray-800/50">
+      <div className="max-h-36 overflow-y-auto border border-divider rounded bg-panel/50">
         {filtered.length === 0 ? (
-          <div className="px-3 py-2 text-gray-600 text-[11px]">No items</div>
+          <div className="px-3 py-2 text-subtle text-[11px]">No items</div>
         ) : (
           filtered.map((item) => (
             <label
               key={item}
-              className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-700/40 cursor-pointer select-none"
+              className="flex items-center gap-2 px-3 py-1.5 hover:bg-divider/40 cursor-pointer select-none"
             >
               <input
                 type="checkbox"
@@ -76,14 +76,12 @@ function MultiSelectGrid({
                 onChange={() => onToggle(item)}
                 className="w-3 h-3 accent-red-500"
               />
-              <span className="font-mono text-[11px] text-gray-300">{item}</span>
+              <span className="font-mono text-[11px] text-default">{item}</span>
             </label>
           ))
         )}
       </div>
-      {selected.size > 0 && (
-        <div className="text-[10px] text-gray-500">{selected.size} selected</div>
-      )}
+      {selected.size > 0 && <div className="text-[10px] text-muted">{selected.size} selected</div>}
     </div>
   );
 }
@@ -97,12 +95,12 @@ function ActiveBlockRow({ block, onRemove }: { block: KillBlock; onRemove: () =>
       <span className="text-red-400 text-[10px] font-semibold uppercase shrink-0">
         {scopeLabel}
       </span>
-      {vals && <span className="font-mono text-[10px] text-gray-400 truncate">{vals}</span>}
+      {vals && <span className="font-mono text-[10px] text-label truncate">{vals}</span>}
       <button
         type="button"
         onClick={onRemove}
         aria-label="Remove block"
-        className="ml-auto text-gray-600 hover:text-red-400 transition-colors text-[11px] shrink-0"
+        className="ml-auto text-subtle hover:text-red-400 transition-colors text-[11px] shrink-0"
       >
         ✕
       </button>
@@ -246,7 +244,7 @@ export function KillSwitchButton() {
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded border font-semibold text-[11px] tracking-wide transition-all ${
           activeCount > 0
             ? "border-red-500 bg-red-600 text-white animate-pulse"
-            : "border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:border-amber-700/70 hover:text-amber-300"
+            : "border-divider bg-surface text-label hover:bg-panel hover:border-amber-700/70 hover:text-amber-300"
         }`}
         aria-label={
           activeCount > 0 ? `Kill switch active, ${activeCount} block(s)` : "Kill switch standby"
@@ -255,13 +253,13 @@ export function KillSwitchButton() {
         <span
           aria-hidden="true"
           className={`inline-block w-1.5 h-1.5 rounded-full ${
-            activeCount > 0 ? "bg-white animate-pulse" : "bg-gray-600"
+            activeCount > 0 ? "bg-white animate-pulse" : "bg-subtle"
           }`}
         />
         <span>Kill Switch</span>
         <span
           className={`text-[9px] font-bold uppercase tracking-wider ${
-            activeCount > 0 ? "text-white" : "text-gray-500"
+            activeCount > 0 ? "text-white" : "text-muted"
           }`}
         >
           {activeCount > 0 ? `Active · ${activeCount}` : "Standby"}
@@ -276,7 +274,7 @@ export function KillSwitchButton() {
             aria-modal="true"
             aria-label="Kill Switch"
             data-testid="kill-switch-dialog"
-            className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-[480px] max-w-[95vw] text-xs text-gray-300 flex flex-col max-h-[90vh]"
+            className="bg-surface border border-divider rounded-lg shadow-2xl w-[480px] max-w-[95vw] text-xs text-default flex flex-col max-h-[90vh]"
             onKeyDown={(e) => {
               if (e.key === "Escape") close();
             }}
@@ -293,7 +291,7 @@ export function KillSwitchButton() {
                 type="button"
                 onClick={close}
                 aria-label="Close"
-                className="ml-auto text-gray-600 hover:text-gray-300"
+                className="ml-auto text-subtle hover:text-default"
               >
                 ✕
               </button>
@@ -301,7 +299,7 @@ export function KillSwitchButton() {
 
             {/* Active blocks */}
             {blocks.length > 0 && (
-              <div className="px-4 py-3 border-b border-gray-800 shrink-0">
+              <div className="px-4 py-3 border-b border-panel shrink-0">
                 <div className={`${LABEL_CLS} mb-2`}>Active blocks</div>
                 <div className="flex flex-col gap-1">
                   {blocks.map((b) => (
@@ -316,7 +314,7 @@ export function KillSwitchButton() {
             )}
 
             {/* Tab bar */}
-            <div className="flex border-b border-gray-800 shrink-0">
+            <div className="flex border-b border-panel shrink-0">
               {(["kill", "resume"] as const).map((t) => (
                 <button
                   key={t}
@@ -327,7 +325,7 @@ export function KillSwitchButton() {
                       ? t === "kill"
                         ? "text-red-400 border-b-2 border-red-500"
                         : "text-emerald-400 border-b-2 border-emerald-500"
-                      : "text-gray-600 hover:text-gray-400"
+                      : "text-subtle hover:text-label"
                   }`}
                 >
                   {t === "kill" ? "Cancel Orders" : "Resume Orders"}
@@ -352,7 +350,7 @@ export function KillSwitchButton() {
                           ? isKill
                             ? "border-red-600 bg-red-900/40 text-red-300"
                             : "border-emerald-600 bg-emerald-900/30 text-emerald-300"
-                          : "border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300"
+                          : "border-divider text-muted hover:border-muted hover:text-default"
                       }`}
                     >
                       {SCOPE_META[s].label}
@@ -402,14 +400,14 @@ export function KillSwitchButton() {
                       {[...selectedValues.value].map((v) => (
                         <span
                           key={v}
-                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-700 text-gray-300 font-mono text-[10px]"
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-divider text-default font-mono text-[10px]"
                         >
                           {v}
                           <button
                             type="button"
                             onClick={() => toggleValue(v)}
                             aria-label={`Remove ${v}`}
-                            className="text-gray-500 hover:text-red-400"
+                            className="text-muted hover:text-red-400"
                           >
                             ✕
                           </button>
@@ -455,7 +453,7 @@ export function KillSwitchButton() {
                       />
                     </>
                   ) : (
-                    <div className="text-gray-600 text-[11px]">Your orders will be targeted</div>
+                    <div className="text-subtle text-[11px]">Your orders will be targeted</div>
                   )}
                 </div>
               )}
@@ -476,7 +474,7 @@ export function KillSwitchButton() {
                         className={`px-2.5 py-1 rounded border text-[11px] capitalize transition-colors ${
                           resumeMode.value === m
                             ? "border-emerald-600 bg-emerald-900/30 text-emerald-300"
-                            : "border-gray-700 text-gray-500 hover:border-gray-500"
+                            : "border-divider text-muted hover:border-muted"
                         }`}
                       >
                         {m}
@@ -497,7 +495,7 @@ export function KillSwitchButton() {
                           className={`px-2 py-1 rounded border text-[11px] transition-colors ${
                             resumeMinutes.value === String(mins)
                               ? "border-emerald-600 bg-emerald-900/30 text-emerald-300"
-                              : "border-gray-700 text-gray-500 hover:border-gray-500"
+                              : "border-divider text-muted hover:border-muted"
                           }`}
                         >
                           {mins < 60 ? `${mins}m` : "1h"}
@@ -516,7 +514,7 @@ export function KillSwitchButton() {
                           resumeMinutes.value = (e.target as HTMLInputElement).value;
                           confirmed.value = false;
                         }}
-                        className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-gray-500 w-24 text-[11px]"
+                        className="bg-panel border border-divider rounded px-2 py-1 text-secondary focus:outline-none focus:border-muted w-24 text-[11px]"
                       />
                     </div>
                   )}
@@ -565,19 +563,19 @@ export function KillSwitchButton() {
                   }}
                   className="w-3.5 h-3.5 accent-red-500"
                 />
-                <span className="text-gray-400">
+                <span className="text-label">
                   I confirm this action and understand it will be audited
                 </span>
               </label>
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-2 px-4 py-3 border-t border-gray-800 shrink-0">
+            <div className="flex justify-end gap-2 px-4 py-3 border-t border-panel shrink-0">
               <button
                 type="button"
                 onClick={close}
                 data-testid="kill-switch-cancel-btn"
-                className="px-3 py-1.5 rounded border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors text-[11px]"
+                className="px-3 py-1.5 rounded border border-divider text-label hover:text-secondary hover:border-muted transition-colors text-[11px]"
               >
                 Cancel
               </button>

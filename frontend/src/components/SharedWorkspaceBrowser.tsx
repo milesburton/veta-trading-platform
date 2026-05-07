@@ -70,22 +70,22 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-xl mx-4 flex flex-col max-h-[80vh]">
+      <div className="bg-surface border border-divider rounded-lg shadow-2xl w-full max-w-xl mx-4 flex flex-col max-h-[80vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
-          <span className="text-sm font-semibold text-gray-200">Shared Workspaces</span>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-panel shrink-0">
+          <span className="text-sm font-semibold text-secondary">Shared Workspaces</span>
           <button
             type="button"
             onClick={onClose}
             title="Close shared workspaces"
-            className="text-gray-500 hover:text-gray-300 text-lg leading-none"
+            className="text-muted hover:text-default text-lg leading-none"
           >
             ×
           </button>
         </div>
 
         {/* Search */}
-        <div className="px-4 py-2 border-b border-gray-800 shrink-0">
+        <div className="px-4 py-2 border-b border-panel shrink-0">
           <input
             type="search"
             placeholder="Filter by name, description or owner…"
@@ -93,40 +93,40 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
             onChange={(e) => {
               search.value = e.currentTarget.value;
             }}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"
+            className="w-full bg-panel border border-divider rounded px-3 py-1.5 text-xs text-secondary placeholder-subtle focus:outline-none focus:border-muted"
           />
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto">
           {loading.value ? (
-            <div className="flex items-center justify-center py-12 text-gray-600 text-sm">
+            <div className="flex items-center justify-center py-12 text-subtle text-sm">
               Loading...
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-2 text-gray-600 text-sm">
+            <div className="flex flex-col items-center justify-center py-12 gap-2 text-subtle text-sm">
               <span className="text-2xl">⊞</span>
               <span>
                 {search.value ? "No workspaces match your search." : "No shared workspaces yet."}
               </span>
             </div>
           ) : (
-            <ul className="divide-y divide-gray-800 list-none m-0 p-0">
+            <ul className="divide-y divide-panel list-none m-0 p-0">
               {filtered.map((entry) => (
                 <li key={entry.id} className="flex items-start gap-3 px-4 py-3">
-                  <span className="shrink-0 w-7 h-7 rounded-full bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-400 mt-0.5">
+                  <span className="shrink-0 w-7 h-7 rounded-full bg-panel flex items-center justify-center text-[10px] font-bold text-label mt-0.5">
                     {entry.ownerEmoji}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-medium text-gray-200 truncate">
+                    <div className="text-[12px] font-medium text-secondary truncate">
                       {entry.name}
                     </div>
                     {entry.description && (
-                      <div className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">
+                      <div className="text-[11px] text-label mt-0.5 line-clamp-2">
                         {entry.description}
                       </div>
                     )}
-                    <div className="text-[10px] text-gray-600 mt-0.5">
+                    <div className="text-[10px] text-subtle mt-0.5">
                       {entry.ownerName} · {relativeTime(entry.createdAt)}
                     </div>
                   </div>
@@ -147,7 +147,7 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
                         type="button"
                         onClick={() => handleDelete(entry.id)}
                         title="Remove from shared registry"
-                        className="text-[11px] px-2 py-1 rounded text-gray-600 hover:text-red-400 transition-colors"
+                        className="text-[11px] px-2 py-1 rounded text-subtle hover:text-red-400 transition-colors"
                       >
                         ✕
                       </button>
@@ -161,7 +161,7 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
 
         {/* Footer count */}
         {!loading.value && entries.value.length > 0 && (
-          <div className="px-4 py-2 border-t border-gray-800 shrink-0 text-[10px] text-gray-600">
+          <div className="px-4 py-2 border-t border-panel shrink-0 text-[10px] text-subtle">
             {filtered.length === entries.value.length
               ? `${entries.value.length} workspace${entries.value.length !== 1 ? "s" : ""}`
               : `${filtered.length} of ${entries.value.length}`}

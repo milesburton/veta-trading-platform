@@ -40,8 +40,8 @@ const TOPIC_LABELS: Record<string, { label: string; icon: string; color: string 
   "orders.routed": { label: "Routed", icon: "→", color: "text-sky-500" },
   "orders.child": { label: "Slice", icon: "⚡", color: "text-amber-400" },
   "orders.filled": { label: "Filled", icon: "✓", color: "text-emerald-400" },
-  "orders.expired": { label: "Expired", icon: "⏱", color: "text-gray-500" },
-  "algo.heartbeat": { label: "Heartbeat", icon: "♡", color: "text-gray-700" },
+  "orders.expired": { label: "Expired", icon: "⏱", color: "text-muted" },
+  "algo.heartbeat": { label: "Heartbeat", icon: "♡", color: "text-divider" },
 };
 
 function formatPrice(p: number) {
@@ -104,7 +104,7 @@ function eventSummary(topic: string, ev: AlgoEvent): string {
 }
 
 const ALGO_COLORS: Record<string, string> = {
-  LIMIT: "text-gray-400",
+  LIMIT: "text-label",
   TWAP: "text-sky-400",
   POV: "text-amber-400",
   VWAP: "text-purple-400",
@@ -197,10 +197,10 @@ export function DecisionLog() {
       )}
       {/* Toolbar */}
       <div
-        className="px-3 py-1.5 border-b border-gray-800 flex items-center gap-2 flex-wrap shrink-0"
+        className="px-3 py-1.5 border-b border-panel flex items-center gap-2 flex-wrap shrink-0"
         data-testid="decision-log-filter"
       >
-        <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+        <span className="text-[10px] text-muted uppercase tracking-wider font-semibold">
           Decision Log
         </span>
         {filterOrderId ? (
@@ -220,7 +220,7 @@ export function DecisionLog() {
             onChange={(e) => {
               algoFilter.value = e.target.value;
             }}
-            className="bg-gray-800 text-[10px] text-gray-300 rounded px-1.5 py-0.5 border border-gray-700"
+            className="bg-panel text-[10px] text-default rounded px-1.5 py-0.5 border border-divider"
           >
             <option value="ALL">All algos</option>
             <option value="LIMIT">LIMIT</option>
@@ -229,7 +229,7 @@ export function DecisionLog() {
             <option value="VWAP">VWAP</option>
           </select>
           <label
-            className="flex items-center gap-1 text-[10px] text-gray-500 cursor-pointer select-none"
+            className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none"
             title="Show periodic heartbeat events from algo engines"
           >
             <input
@@ -242,14 +242,14 @@ export function DecisionLog() {
             />
             Heartbeats
           </label>
-          <span className="text-[10px] text-gray-600 tabular-nums">{filtered.length} events</span>
+          <span className="text-[10px] text-subtle tabular-nums">{filtered.length} events</span>
         </div>
       </div>
 
       {/* Event stream */}
       <div className="flex-1 overflow-auto font-mono">
         {filtered.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-gray-600 text-xs">
+          <div className="flex items-center justify-center h-24 text-subtle text-xs">
             {filterOrderId
               ? "No events for this order yet"
               : events.length === 0
@@ -271,21 +271,21 @@ export function DecisionLog() {
                   <tr
                     key={`${ts}-${e.type}-${p.orderId ?? p.parentOrderId ?? i}`}
                     data-testid="decision-log-row"
-                    className={`border-b border-gray-800/30 hover:bg-gray-900/40 transition-colors cursor-context-menu ${
+                    className={`border-b border-panel/30 hover:bg-surface/40 transition-colors cursor-context-menu ${
                       isFill ? "bg-emerald-950/10" : isExpired ? "bg-red-950/10" : ""
                     }`}
                     onContextMenu={(ev) => openEventCtxMenu(ev, p, e.type)}
                     title="Right-click for options"
                   >
                     {/* Timestamp */}
-                    <td className="pl-3 pr-2 py-1 text-gray-600 whitespace-nowrap w-20 tabular-nums">
+                    <td className="pl-3 pr-2 py-1 text-subtle whitespace-nowrap w-20 tabular-nums">
                       {ts ? formatTime(ts) : "—"}
                     </td>
 
                     {/* Topic badge */}
                     <td className="px-2 py-1 w-20 whitespace-nowrap">
                       <span
-                        className={`${meta?.color ?? "text-gray-500"} ${
+                        className={`${meta?.color ?? "text-muted"} ${
                           isHeartbeat ? "opacity-40" : ""
                         }`}
                         title={e.type}
@@ -300,7 +300,7 @@ export function DecisionLog() {
                       {p.algo && (
                         <span
                           className={`font-semibold text-[9px] ${
-                            ALGO_COLORS[p.algo] ?? "text-gray-400"
+                            ALGO_COLORS[p.algo] ?? "text-label"
                           }`}
                         >
                           {p.algo}
@@ -309,7 +309,7 @@ export function DecisionLog() {
                     </td>
 
                     {/* Summary */}
-                    <td className={`px-2 py-1 text-gray-400 ${isHeartbeat ? "opacity-40" : ""}`}>
+                    <td className={`px-2 py-1 text-label ${isHeartbeat ? "opacity-40" : ""}`}>
                       {eventSummary(e.type, p)}
                     </td>
 
@@ -322,7 +322,7 @@ export function DecisionLog() {
                               ? "text-red-400"
                               : p.marketImpactBps < -2
                                 ? "text-emerald-400"
-                                : "text-gray-500"
+                                : "text-muted"
                           }`}
                         >
                           {p.marketImpactBps > 0 ? "+" : ""}

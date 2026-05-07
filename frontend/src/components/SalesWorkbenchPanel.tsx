@@ -111,11 +111,11 @@ export function SalesWorkbenchPanel() {
   return (
     <div className="flex flex-col h-full overflow-hidden" data-testid="sales-workbench-panel">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-gray-800 flex items-center gap-3 flex-shrink-0">
-        <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
+      <div className="px-3 py-2 border-b border-panel flex items-center gap-3 flex-shrink-0">
+        <span className="text-xs font-semibold text-default uppercase tracking-wider">
           Sales Workbench
         </span>
-        <span className="text-[10px] text-gray-500">
+        <span className="text-[10px] text-muted">
           {rfqs.value.length} RFQ{rfqs.value.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -129,16 +129,16 @@ export function SalesWorkbenchPanel() {
 
         {/* Incoming RFQs table */}
         <div className="flex flex-col gap-1.5">
-          <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+          <div className="text-[10px] text-muted uppercase tracking-wider font-semibold">
             Incoming RFQs
           </div>
           {rfqs.value.length === 0 ? (
-            <div className="text-xs text-gray-600 py-2">No RFQs in the system.</div>
+            <div className="text-xs text-subtle py-2">No RFQs in the system.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="text-gray-500 text-[10px] uppercase tracking-wider">
+                  <tr className="text-muted text-[10px] uppercase tracking-wider">
                     <th className="text-left py-1 pr-2" title="Unique request-for-quote identifier">
                       RFQ ID
                     </th>
@@ -180,30 +180,30 @@ export function SalesWorkbenchPanel() {
                         onClick={() => {
                           selectedRfqId.value = isSelected ? null : rfq.rfqId;
                         }}
-                        className={`border-t border-gray-800 cursor-pointer transition-colors ${
+                        className={`border-t border-panel cursor-pointer transition-colors ${
                           isActionable
                             ? "bg-blue-950 hover:bg-blue-900"
                             : isSelected
-                              ? "bg-gray-800"
-                              : "hover:bg-gray-900"
+                              ? "bg-panel"
+                              : "hover:bg-surface"
                         }`}
                       >
-                        <td className="py-1.5 pr-2 text-gray-400 font-mono text-[10px]">
+                        <td className="py-1.5 pr-2 text-label font-mono text-[10px]">
                           {rfq.rfqId}
                         </td>
                         <td
-                          className="py-1.5 pr-2 text-gray-400 text-[10px] truncate max-w-[80px]"
+                          className="py-1.5 pr-2 text-label text-[10px] truncate max-w-[80px]"
                           title={rfq.clientUserId}
                         >
                           {rfq.clientUserId}
                         </td>
-                        <td className="py-1.5 pr-2 text-gray-200 font-semibold">{rfq.asset}</td>
+                        <td className="py-1.5 pr-2 text-secondary font-semibold">{rfq.asset}</td>
                         <td
                           className={`py-1.5 pr-2 font-semibold ${rfq.side === "BUY" ? "text-emerald-400" : "text-red-400"}`}
                         >
                           {rfq.side}
                         </td>
-                        <td className="py-1.5 pr-2 text-right tabular-nums text-gray-300">
+                        <td className="py-1.5 pr-2 text-right tabular-nums text-default">
                           {rfq.quantity.toLocaleString()}
                         </td>
                         <td className="py-1.5 pr-2">
@@ -213,7 +213,7 @@ export function SalesWorkbenchPanel() {
                             {rfq.state.replace(/_/g, " ")}
                           </span>
                         </td>
-                        <td className="py-1.5 pr-2 text-right tabular-nums text-gray-500 text-[10px]">
+                        <td className="py-1.5 pr-2 text-right tabular-nums text-muted text-[10px]">
                           {ageLabel(rfq.createdAt)}
                         </td>
                         <td className="py-1.5">
@@ -273,11 +273,11 @@ export function SalesWorkbenchPanel() {
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span className="text-gray-500">Asset</span>
-                <span className="ml-2 text-gray-200 font-semibold">{markupRfq.asset}</span>
+                <span className="text-muted">Asset</span>
+                <span className="ml-2 text-secondary font-semibold">{markupRfq.asset}</span>
               </div>
               <div>
-                <span className="text-gray-500">Side</span>
+                <span className="text-muted">Side</span>
                 <span
                   className={`ml-2 font-semibold ${markupRfq.side === "BUY" ? "text-emerald-400" : "text-red-400"}`}
                 >
@@ -285,14 +285,14 @@ export function SalesWorkbenchPanel() {
                 </span>
               </div>
               <div>
-                <span className="text-gray-500">Qty</span>
-                <span className="ml-2 text-gray-300 tabular-nums">
+                <span className="text-muted">Qty</span>
+                <span className="ml-2 text-default tabular-nums">
                   {markupRfq.quantity.toLocaleString()}
                 </span>
               </div>
               <div>
-                <span className="text-gray-500">Dealer Price</span>
-                <span className="ml-2 text-gray-300 tabular-nums">
+                <span className="text-muted">Dealer Price</span>
+                <span className="ml-2 text-default tabular-nums">
                   {markupRfq.dealerBestPrice != null
                     ? `$${markupRfq.dealerBestPrice.toFixed(2)}`
                     : "—"}
@@ -300,7 +300,7 @@ export function SalesWorkbenchPanel() {
               </div>
             </div>
             <div>
-              <label htmlFor="sw-markup-bps" className="block text-xs text-gray-500 mb-1">
+              <label htmlFor="sw-markup-bps" className="block text-xs text-muted mb-1">
                 Markup (bps)
               </label>
               <input
@@ -313,10 +313,10 @@ export function SalesWorkbenchPanel() {
                 onChange={(e) => {
                   markupBps.value = e.target.value;
                 }}
-                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-amber-500 tabular-nums"
+                className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-amber-500 tabular-nums"
               />
               {markupRfq.dealerBestPrice != null && markupBps.value && (
-                <div className="mt-1 text-[10px] text-gray-500">
+                <div className="mt-1 text-[10px] text-muted">
                   Client price:{" "}
                   <span className="text-amber-300 tabular-nums font-semibold">
                     $

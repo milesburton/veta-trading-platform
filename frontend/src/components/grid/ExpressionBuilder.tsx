@@ -106,7 +106,7 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
       <select
         value={rule.field}
         onChange={(e) => handleFieldChange(e.target.value)}
-        className="bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500"
+        className="bg-panel border border-divider rounded px-1.5 py-1 text-[11px] text-secondary focus:outline-none focus:border-sky-500"
       >
         {fields.map((f) => (
           <option key={f.key} value={f.key}>
@@ -119,7 +119,7 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
       <select
         value={rule.op}
         onChange={(e) => handleOpChange(e.target.value as ExprOp)}
-        className="bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500"
+        className="bg-panel border border-divider rounded px-1.5 py-1 text-[11px] text-secondary focus:outline-none focus:border-sky-500"
       >
         {availableOps.map((op) => (
           <option key={op} value={op}>
@@ -143,7 +143,7 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
                   value: [Number(e.target.value) || 0, hi],
                 });
               }}
-              className="w-20 bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500 tabular-nums"
+              className="w-20 bg-panel border border-divider rounded px-1.5 py-1 text-[11px] text-secondary focus:outline-none focus:border-sky-500 tabular-nums"
             />
             <input
               type="number"
@@ -156,7 +156,7 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
                   value: [lo, Number(e.target.value) || 0],
                 });
               }}
-              className="w-20 bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500 tabular-nums"
+              className="w-20 bg-panel border border-divider rounded px-1.5 py-1 text-[11px] text-secondary focus:outline-none focus:border-sky-500 tabular-nums"
             />
           </div>
         ) : rule.op === "in" && fieldDef?.options ? (
@@ -177,7 +177,7 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
                   className={`px-1.5 py-0.5 rounded text-[10px] border transition-colors ${
                     selected
                       ? "bg-sky-700 border-sky-600 text-white"
-                      : "border-gray-700 text-gray-400 hover:text-gray-200"
+                      : "border-divider text-label hover:text-secondary"
                   }`}
                 >
                   {opt}
@@ -197,7 +197,7 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
               });
             }}
             placeholder="value…"
-            className="w-28 bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 focus:outline-none focus:border-sky-500 tabular-nums"
+            className="w-28 bg-panel border border-divider rounded px-1.5 py-1 text-[11px] text-secondary focus:outline-none focus:border-sky-500 tabular-nums"
           />
         ))}
 
@@ -205,7 +205,7 @@ function RuleNode({ rule, fields, onChange, onDelete }: RuleNodeProps) {
       <button
         type="button"
         onClick={onDelete}
-        className="text-gray-700 hover:text-red-400 px-1 text-base leading-none mt-0.5"
+        className="text-divider hover:text-red-400 px-1 text-base leading-none mt-0.5"
         aria-label="Remove rule"
       >
         ×
@@ -223,7 +223,7 @@ interface GroupNodeProps {
 }
 
 function GroupNode({ group, fields, onChange, onDelete, depth }: GroupNodeProps) {
-  const borderColor = depth === 0 ? "border-gray-800" : "border-sky-900/60";
+  const borderColor = depth === 0 ? "border-panel" : "border-sky-900/60";
   const bgColor = depth === 0 ? "" : "bg-sky-950/20";
 
   function handleRuleChange(id: string, updated: ExprRule) {
@@ -257,19 +257,19 @@ function GroupNode({ group, fields, onChange, onDelete, depth }: GroupNodeProps)
         <button
           type="button"
           onClick={toggleJoin}
-          className="px-2 py-0.5 rounded text-[10px] font-semibold border transition-colors bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500"
+          className="px-2 py-0.5 rounded text-[10px] font-semibold border transition-colors bg-panel border-divider text-label hover:text-secondary hover:border-muted"
           title="Click to toggle AND / OR"
         >
           {group.join}
         </button>
-        <span className="text-[10px] text-gray-600">
+        <span className="text-[10px] text-subtle">
           {group.join === "AND" ? "all must match" : "any must match"}
         </span>
         {onDelete && (
           <button
             type="button"
             onClick={onDelete}
-            className="ml-auto text-gray-700 hover:text-red-400 px-1 text-base leading-none"
+            className="ml-auto text-divider hover:text-red-400 px-1 text-base leading-none"
             aria-label="Remove group"
           >
             ×
@@ -304,7 +304,7 @@ function GroupNode({ group, fields, onChange, onDelete, depth }: GroupNodeProps)
         <button
           type="button"
           onClick={addRule}
-          className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
+          className="text-[10px] text-muted hover:text-default transition-colors"
         >
           + Add rule
         </button>
@@ -312,7 +312,7 @@ function GroupNode({ group, fields, onChange, onDelete, depth }: GroupNodeProps)
           <button
             type="button"
             onClick={addSubGroup}
-            className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors"
+            className="text-[10px] text-subtle hover:text-label transition-colors"
           >
             + Add group
           </button>
@@ -330,7 +330,7 @@ interface InlineProps {
 
 export function ExpressionBuilderInline({ fields, value, onChange }: InlineProps) {
   return (
-    <div className="border border-gray-800 rounded p-2">
+    <div className="border border-panel rounded p-2">
       <GroupNode group={value} fields={fields} onChange={onChange} depth={0} />
     </div>
   );
@@ -404,15 +404,15 @@ export function ExpressionBuilder({ gridId, fields, initial, initialField, onClo
   return (
     <dialog
       ref={dialogRef}
-      className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl p-0 w-[520px] max-w-[95vw] text-xs text-gray-200 backdrop:bg-black/60"
+      className="bg-surface border border-divider rounded-lg shadow-2xl p-0 w-[520px] max-w-[95vw] text-xs text-secondary backdrop:bg-black/60"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800">
-        <span className="font-semibold text-[11px] text-gray-300">Build Filter</span>
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-panel">
+        <span className="font-semibold text-[11px] text-default">Build Filter</span>
         <button
           type="button"
           onClick={onClose}
-          className="text-gray-600 hover:text-gray-400 text-base leading-none"
+          className="text-subtle hover:text-label text-base leading-none"
           aria-label="Close filter builder"
         >
           ×
@@ -432,11 +432,11 @@ export function ExpressionBuilder({ gridId, fields, initial, initialField, onClo
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-800">
+      <div className="flex items-center justify-between px-4 py-2.5 border-t border-panel">
         <button
           type="button"
           onClick={handleClear}
-          className="text-[10px] text-gray-600 hover:text-red-400 transition-colors"
+          className="text-[10px] text-subtle hover:text-red-400 transition-colors"
         >
           Clear all
         </button>
@@ -444,7 +444,7 @@ export function ExpressionBuilder({ gridId, fields, initial, initialField, onClo
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1 text-gray-500 hover:text-gray-300 transition-colors text-[11px]"
+            className="px-3 py-1 text-muted hover:text-default transition-colors text-[11px]"
           >
             Cancel
           </button>

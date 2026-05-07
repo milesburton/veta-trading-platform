@@ -75,7 +75,7 @@ function computeMetrics(orders: OrderRecord[], windowMs: number): StrategyMetric
 
 function FillRateBar({ rate }: { rate: number | null }) {
   if (rate === null) {
-    return <span className="text-gray-600 text-[10px]">—</span>;
+    return <span className="text-subtle text-[10px]">—</span>;
   }
 
   const pct = Math.round(rate * 100);
@@ -84,7 +84,7 @@ function FillRateBar({ rate }: { rate: number | null }) {
 
   return (
     <div className="flex items-center gap-1.5">
-      <div className="w-16 h-1.5 rounded-full bg-gray-800 overflow-hidden shrink-0">
+      <div className="w-16 h-1.5 rounded-full bg-panel overflow-hidden shrink-0">
         <div className={`h-full rounded-full ${barColour}`} style={{ width: `${pct}%` }} />
       </div>
       <span className={`text-[10px] tabular-nums font-medium ${textColour}`}>{pct}%</span>
@@ -94,7 +94,7 @@ function FillRateBar({ rate }: { rate: number | null }) {
 
 function SlippageCell({ bps }: { bps: number | null }) {
   if (bps === null) {
-    return <span className="text-gray-600 text-[10px]">—</span>;
+    return <span className="text-subtle text-[10px]">—</span>;
   }
 
   const colourClass =
@@ -125,38 +125,38 @@ export function AlgoLeaderboardPanel() {
   const metrics = useMemo(() => computeMetrics(allOrders, 300_000), [allOrders, tick.value]);
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-300 text-xs">
-      <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
+    <div className="flex flex-col h-full bg-page text-default text-xs">
+      <div className="px-4 py-2.5 border-b border-panel shrink-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-[11px] font-semibold text-gray-200 uppercase tracking-wide">
+          <span className="text-[11px] font-semibold text-secondary uppercase tracking-wide">
             Algo Leaderboard (last 5 min)
           </span>
-          <span className="text-[10px] text-gray-600">Updates from live order flow</span>
+          <span className="text-[10px] text-subtle">Updates from live order flow</span>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {metrics.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-gray-600 text-[11px]">
+          <div className="flex items-center justify-center h-24 text-subtle text-[11px]">
             No order data in last 5 minutes
           </div>
         ) : (
           <table className="w-full border-collapse">
-            <thead className="sticky top-0 bg-gray-950 z-10">
-              <tr className="border-b border-gray-800">
-                <th className="text-left px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium">
+            <thead className="sticky top-0 bg-page z-10">
+              <tr className="border-b border-panel">
+                <th className="text-left px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium">
                   Strategy
                 </th>
-                <th className="text-right px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium">
+                <th className="text-right px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium">
                   Orders (5m)
                 </th>
-                <th className="px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium">
+                <th className="px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium">
                   Fill Rate
                 </th>
-                <th className="text-right px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium">
+                <th className="text-right px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium">
                   Avg Slippage
                 </th>
-                <th className="text-right px-4 py-1.5 text-[10px] text-gray-600 uppercase tracking-wide font-medium">
+                <th className="text-right px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium">
                   Total Filled Qty
                 </th>
               </tr>
@@ -165,16 +165,16 @@ export function AlgoLeaderboardPanel() {
               {metrics.map((m, idx) => (
                 <tr
                   key={m.strategy}
-                  className={`border-b border-gray-900 hover:bg-gray-900/40 transition-colors ${
-                    idx % 2 !== 0 ? "bg-gray-900/20" : ""
+                  className={`border-b border-surface hover:bg-surface/40 transition-colors ${
+                    idx % 2 !== 0 ? "bg-surface/20" : ""
                   }`}
                 >
                   <td className="px-4 py-2">
-                    <span className="font-mono text-[11px] text-gray-200 font-medium">
+                    <span className="font-mono text-[11px] text-secondary font-medium">
                       {m.strategy}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-[11px] text-gray-300">
+                  <td className="px-4 py-2 text-right tabular-nums text-[11px] text-default">
                     {m.orders}
                   </td>
                   <td className="px-4 py-2">
@@ -183,7 +183,7 @@ export function AlgoLeaderboardPanel() {
                   <td className="px-4 py-2 text-right">
                     <SlippageCell bps={m.avgSlippageBps} />
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-[11px] text-gray-300">
+                  <td className="px-4 py-2 text-right tabular-nums text-[11px] text-default">
                     {m.totalFilledQty.toLocaleString()}
                   </td>
                 </tr>

@@ -100,9 +100,9 @@ function ChannelPicker({
         <div
           data-channel-picker
           style={{ top: dropdownPos.value.top, left: dropdownPos.value.left }}
-          className="fixed z-[9999] bg-gray-900 border border-gray-700 rounded shadow-xl p-1.5 flex flex-col gap-0.5 min-w-[110px]"
+          className="fixed z-[9999] bg-surface border border-divider rounded shadow-xl p-1.5 flex flex-col gap-0.5 min-w-[110px]"
         >
-          <span className="text-[9px] text-gray-500 px-1 pb-0.5">{dirLabel}</span>
+          <span className="text-[9px] text-muted px-1 pb-0.5">{dirLabel}</span>
           {([1, 2, 3, 4, 5, 6] as ChannelNumber[]).map((n) => {
             const col = CHANNEL_COLOURS[n];
             const blocked = blockedChannels.has(n);
@@ -118,10 +118,10 @@ function ChannelPicker({
                 }}
                 className={`flex items-center gap-1.5 px-1.5 py-1 rounded text-[10px] transition-colors text-left ${
                   current === n
-                    ? "bg-gray-700 text-gray-100"
+                    ? "bg-divider text-primary"
                     : blocked
-                      ? "text-gray-700 cursor-not-allowed"
-                      : "text-gray-300 hover:bg-gray-800"
+                      ? "text-divider cursor-not-allowed"
+                      : "text-default hover:bg-panel"
                 }`}
               >
                 <span
@@ -129,7 +129,7 @@ function ChannelPicker({
                   style={{ backgroundColor: blocked ? "#374151" : col.hex }}
                 />
                 <span>{col.label}</span>
-                {blocked && <span className="ml-auto text-gray-700">⊘</span>}
+                {blocked && <span className="ml-auto text-divider">⊘</span>}
               </button>
             );
           })}
@@ -139,7 +139,7 @@ function ChannelPicker({
               onPick(null);
               open.value = false;
             }}
-            className="flex items-center gap-1.5 px-1.5 py-1 rounded text-[10px] text-gray-500 hover:bg-gray-800 hover:text-gray-300 transition-colors"
+            className="flex items-center gap-1.5 px-1.5 py-1 rounded text-[10px] text-muted hover:bg-panel hover:text-default transition-colors"
           >
             None
           </button>
@@ -157,11 +157,11 @@ function ChannelPicker({
         onClick={handleOpen}
         className={`flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors text-[9px] font-medium leading-none ${
           colour
-            ? "hover:bg-gray-700/60"
-            : "text-gray-500 hover:bg-gray-700/40 border border-dashed border-gray-700/60 hover:border-gray-500 hover:text-gray-400"
+            ? "hover:bg-divider/60"
+            : "text-muted hover:bg-divider/40 border border-dashed border-divider/60 hover:border-muted hover:text-label"
         }`}
       >
-        <span className={colour ? "text-gray-500" : "text-gray-600"}>{isOut ? "Out:" : "In:"}</span>
+        <span className={colour ? "text-muted" : "text-subtle"}>{isOut ? "Out:" : "In:"}</span>
         {colour ? (
           <>
             <span
@@ -173,7 +173,7 @@ function ChannelPicker({
             </span>
           </>
         ) : (
-          <span className="font-mono text-gray-600">—</span>
+          <span className="font-mono text-subtle">—</span>
         )}
       </button>
       {dropdown}
@@ -323,17 +323,17 @@ function PanelDialog({
     >
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
       <div
-        className="relative z-10 bg-gray-950 border border-gray-700 rounded-lg shadow-2xl flex flex-col"
+        className="relative z-10 bg-page border border-divider rounded-lg shadow-2xl flex flex-col"
         style={{ width: "min(90vw, 1100px)", height: "min(85vh, 800px)" }}
       >
-        <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0">
-          <span className="text-xs text-gray-400 font-medium">{title}</span>
+        <div className="flex items-center justify-between px-3 py-2 border-b border-panel shrink-0">
+          <span className="text-xs text-label font-medium">{title}</span>
           <button
             type="button"
             onClick={onClose}
             title="Close dialog (Escape)"
             aria-label="Close dialog"
-            className="text-gray-500 hover:text-gray-200 transition-colors text-sm px-1"
+            className="text-muted hover:text-secondary transition-colors text-sm px-1"
           >
             ✕
           </button>
@@ -347,11 +347,11 @@ function PanelDialog({
               incoming: null,
             }}
           >
-            <div className="h-full overflow-hidden bg-gray-950">
+            <div className="h-full overflow-hidden bg-page">
               {DialogPanel ? (
                 <DialogPanel />
               ) : (
-                <div className="flex items-center justify-center h-full text-gray-600 text-xs">
+                <div className="flex items-center justify-center h-full text-subtle text-xs">
                   Panel not available in dialog mode
                 </div>
               )}
@@ -379,7 +379,7 @@ function CandleChartPanel({ incoming }: { incoming: ChannelNumber | null }) {
     return <CandlestickChart key={symbol} symbol={symbol} candles={candles} />;
   }
   return (
-    <div className="flex flex-col items-center justify-center gap-3 h-full bg-gray-950">
+    <div className="flex flex-col items-center justify-center gap-3 h-full bg-page">
       <svg
         aria-label="Loading"
         className="animate-spin w-6 h-6 text-emerald-500/60"
@@ -401,7 +401,7 @@ function CandleChartPanel({ incoming }: { incoming: ChannelNumber | null }) {
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
         />
       </svg>
-      <span className="text-[11px] text-gray-600">Connecting to market…</span>
+      <span className="text-[11px] text-subtle">Connecting to market…</span>
     </div>
   );
 }
@@ -417,10 +417,10 @@ function EmptyWorkspace() {
   );
 
   return (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gray-950 gap-6 px-8">
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-page gap-6 px-8">
       <div className="text-center">
-        <div className="text-2xl text-gray-700 mb-2">Empty workspace</div>
-        <p className="text-sm text-gray-600">Choose a layout to get started.</p>
+        <div className="text-2xl text-divider mb-2">Empty workspace</div>
+        <p className="text-sm text-subtle">Choose a layout to get started.</p>
       </div>
 
       <div className="grid grid-cols-3 gap-3 w-full max-w-lg">
@@ -429,19 +429,19 @@ function EmptyWorkspace() {
             key={tpl.id}
             type="button"
             onClick={() => resetLayout(tpl.model)}
-            className="flex flex-col items-start gap-1 rounded-lg border border-gray-700 px-4 py-3 text-left transition-colors hover:border-emerald-600 hover:bg-emerald-950/30 cursor-pointer"
+            className="flex flex-col items-start gap-1 rounded-lg border border-divider px-4 py-3 text-left transition-colors hover:border-emerald-600 hover:bg-emerald-950/30 cursor-pointer"
           >
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-300">
-              {tpl.locked && <span className="text-[10px] text-gray-500">🔒</span>}
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-default">
+              {tpl.locked && <span className="text-[10px] text-muted">🔒</span>}
               {tpl.label}
             </span>
-            <span className="text-[9px] text-gray-600 leading-tight">{tpl.description}</span>
+            <span className="text-[9px] text-subtle leading-tight">{tpl.description}</span>
           </button>
         ))}
       </div>
 
-      <p className="text-[10px] text-gray-700">
-        Or use <span className="text-gray-500">⊞ Layout</span> in the toolbar to switch at any time.
+      <p className="text-[10px] text-divider">
+        Or use <span className="text-muted">⊞ Layout</span> in the toolbar to switch at any time.
       </p>
     </div>
   );
@@ -558,14 +558,14 @@ export function DashboardLayout() {
       function wrap(content: ReactNode) {
         return (
           <ChannelContext.Provider value={{ instanceId, panelType, outgoing, incoming }}>
-            <div className="h-full overflow-hidden bg-gray-950">{content}</div>
+            <div className="h-full overflow-hidden bg-page">{content}</div>
           </ChannelContext.Provider>
         );
       }
 
       if (!canAccessPanel(panelType, userRole, tradingStyle)) {
         return wrap(
-          <div className="h-full flex items-center justify-center text-gray-600 text-xs p-4 text-center">
+          <div className="h-full flex items-center justify-center text-subtle text-xs p-4 text-center">
             You do not have permission to view this panel.
           </div>
         );
@@ -578,7 +578,7 @@ export function DashboardLayout() {
       if (PanelComponent) {
         return wrap(<PanelComponent />);
       }
-      return wrap(<div className="text-gray-600 text-xs p-4">Unknown panel: {panelType}</div>);
+      return wrap(<div className="text-subtle text-xs p-4">Unknown panel: {panelType}</div>);
     },
     [userRole, tradingStyle]
   );
@@ -614,7 +614,7 @@ export function DashboardLayout() {
             setModel(Model.fromJson(model.toJson() as IJsonModel));
           }}
           className={`flex items-center justify-center w-4 h-4 rounded transition-colors ${
-            isPinned ? "text-amber-400 hover:text-amber-300" : "text-gray-600 hover:text-gray-400"
+            isPinned ? "text-amber-400 hover:text-amber-300" : "text-subtle hover:text-label"
           }`}
         >
           <svg
@@ -678,7 +678,7 @@ export function DashboardLayout() {
                 />
               )}
               <span>{symbol}</span>
-              {bracket && <span className="text-gray-500 font-normal">{bracket}</span>}
+              {bracket && <span className="text-muted font-normal">{bracket}</span>}
             </span>
           );
         }
@@ -739,7 +739,7 @@ export function DashboardLayout() {
           title="Open panel in floating dialog"
           aria-label="Open panel in dialog"
           onClick={doDialog}
-          className="flex items-center justify-center w-5 h-5 text-gray-500 hover:text-gray-200 transition-colors"
+          className="flex items-center justify-center w-5 h-5 text-muted hover:text-secondary transition-colors"
           style={{ fontSize: "11px" }}
         >
           □
@@ -750,7 +750,7 @@ export function DashboardLayout() {
           title="Open panel in new browser window"
           aria-label="Open panel in new window"
           onClick={doPopOut}
-          className="flex items-center justify-center w-5 h-5 text-gray-500 hover:text-gray-200 transition-colors"
+          className="flex items-center justify-center w-5 h-5 text-muted hover:text-secondary transition-colors"
           style={{ fontSize: "11px" }}
         >
           ↗

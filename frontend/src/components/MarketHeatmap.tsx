@@ -445,9 +445,9 @@ export function MarketHeatmap() {
   return (
     <div
       data-testid="market-heatmap-panel"
-      className="flex flex-col h-full bg-[#0d1117] text-gray-100 select-none"
+      className="flex flex-col h-full bg-[#0d1117] text-primary select-none"
     >
-      <div className="px-3 py-1.5 border-b border-gray-800 flex items-center gap-3 shrink-0 text-[11px]">
+      <div className="px-3 py-1.5 border-b border-panel flex items-center gap-3 shrink-0 text-[11px]">
         {isDrilled ? (
           <>
             <button
@@ -456,7 +456,7 @@ export function MarketHeatmap() {
                 drilldown.value = null;
                 tooltip.value = null;
               }}
-              className="flex items-center gap-1 text-gray-400 hover:text-gray-200 transition-colors"
+              className="flex items-center gap-1 text-label hover:text-secondary transition-colors"
               aria-label="Back to full market view"
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -470,21 +470,19 @@ export function MarketHeatmap() {
               </svg>
               <span className="uppercase tracking-wider">All Sectors</span>
             </button>
-            <span className="text-gray-700">/</span>
-            <span className="font-semibold text-gray-200 uppercase tracking-wider">
+            <span className="text-divider">/</span>
+            <span className="font-semibold text-secondary uppercase tracking-wider">
               {drilldown.value}
             </span>
-            <span className="text-gray-600 text-[9px] ml-1">
+            <span className="text-subtle text-[9px] ml-1">
               ({drilledSector?.items.length} stocks)
             </span>
           </>
         ) : (
-          <span className="font-semibold text-gray-400 uppercase tracking-wider">
-            Market Heatmap
-          </span>
+          <span className="font-semibold text-label uppercase tracking-wider">Market Heatmap</span>
         )}
         {!isDrilled && (
-          <div className="flex rounded border border-gray-700 overflow-hidden text-[10px] ml-2">
+          <div className="flex rounded border border-divider overflow-hidden text-[10px] ml-2">
             {(["cap", "change"] as const).map((mode) => (
               <button
                 key={mode}
@@ -495,8 +493,8 @@ export function MarketHeatmap() {
                 aria-pressed={sortBy.value === mode}
                 className={`px-2 py-0.5 transition-colors ${
                   sortBy.value === mode
-                    ? "bg-gray-700 text-gray-200"
-                    : "text-gray-500 hover:text-gray-300"
+                    ? "bg-divider text-secondary"
+                    : "text-muted hover:text-default"
                 }`}
               >
                 {mode === "cap" ? "By Cap" : "By Move"}
@@ -504,7 +502,7 @@ export function MarketHeatmap() {
             ))}
           </div>
         )}
-        <div className="ml-auto flex items-center gap-2 text-[9px] text-gray-500">
+        <div className="ml-auto flex items-center gap-2 text-[9px] text-muted">
           {([-4, -2, -0.5, 0, 0.5, 2, 4] as const).map((v) => (
             <span key={v} className="flex items-center gap-0.5">
               <span
@@ -605,12 +603,12 @@ export function MarketHeatmap() {
                 mouseY + OFFSET + TOOLTIP_H > ch ? mouseY - TOOLTIP_H - OFFSET : mouseY + OFFSET;
               return (
                 <div
-                  className="absolute bg-gray-900/95 border border-gray-700 rounded shadow-xl px-3 py-2 text-[11px] pointer-events-none z-10"
+                  className="absolute bg-surface/95 border border-divider rounded shadow-xl px-3 py-2 text-[11px] pointer-events-none z-10"
                   style={{ left, top, width: TOOLTIP_W }}
                   aria-live="polite"
                 >
-                  <div className="font-bold text-gray-100 text-sm mb-0.5">{sector} — Other</div>
-                  <div className="text-gray-400 text-[10px] mb-1">
+                  <div className="font-bold text-primary text-sm mb-0.5">{sector} — Other</div>
+                  <div className="text-label text-[10px] mb-1">
                     {otherTile.otherCount} stocks too small to display
                   </div>
                   <div
@@ -621,7 +619,7 @@ export function MarketHeatmap() {
                     Avg {otherTile.pct >= 0 ? "+" : ""}
                     {otherTile.pct.toFixed(2)}%
                   </div>
-                  <div className="text-gray-600 text-[9px] mt-1.5 border-t border-gray-800 pt-1">
+                  <div className="text-subtle text-[9px] mt-1.5 border-t border-panel pt-1">
                     Click to zoom in →
                   </div>
                 </div>
@@ -640,12 +638,12 @@ export function MarketHeatmap() {
               mouseY + OFFSET + TOOLTIP_H > ch ? mouseY - TOOLTIP_H - OFFSET : mouseY + OFFSET;
             return (
               <div
-                className="absolute bg-gray-900/95 border border-gray-700 rounded shadow-xl px-3 py-2 text-[11px] pointer-events-none z-10"
+                className="absolute bg-surface/95 border border-divider rounded shadow-xl px-3 py-2 text-[11px] pointer-events-none z-10"
                 style={{ left, top, width: TOOLTIP_W }}
                 aria-live="polite"
               >
                 <div className="flex items-baseline justify-between mb-1">
-                  <span className="font-bold text-gray-100 text-sm">{tooltipAsset.symbol}</span>
+                  <span className="font-bold text-primary text-sm">{tooltipAsset.symbol}</span>
                   <span
                     className={`font-bold text-sm ${
                       tooltipTile.pct >= 0 ? "text-emerald-400" : "text-red-400"
@@ -655,48 +653,48 @@ export function MarketHeatmap() {
                     {tooltipTile.pct.toFixed(2)}%
                   </span>
                 </div>
-                <div className="text-gray-500 text-[10px] mb-2">{tooltipAsset.sector}</div>
+                <div className="text-muted text-[10px] mb-2">{tooltipAsset.sector}</div>
                 <div className="space-y-0.5 text-[10px]">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Price</span>
-                    <span className="text-gray-200 tabular-nums">${price.toFixed(2)}</span>
+                    <span className="text-muted">Price</span>
+                    <span className="text-secondary tabular-nums">${price.toFixed(2)}</span>
                   </div>
                   {capB != null && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Mkt Cap</span>
-                      <span className="text-gray-200 tabular-nums">
+                      <span className="text-muted">Mkt Cap</span>
+                      <span className="text-secondary tabular-nums">
                         {capB >= 1000 ? `$${(capB / 1000).toFixed(1)}T` : `$${capB.toFixed(0)}B`}
                       </span>
                     </div>
                   )}
                   {tooltipAsset.beta != null && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Beta</span>
-                      <span className="text-gray-200 tabular-nums">
+                      <span className="text-muted">Beta</span>
+                      <span className="text-secondary tabular-nums">
                         {tooltipAsset.beta.toFixed(2)}
                       </span>
                     </div>
                   )}
                   {tooltipAsset.peRatio != null && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">P/E</span>
-                      <span className="text-gray-200 tabular-nums">
+                      <span className="text-muted">P/E</span>
+                      <span className="text-secondary tabular-nums">
                         {tooltipAsset.peRatio.toFixed(1)}x
                       </span>
                     </div>
                   )}
                   {tooltipAsset.dividendYield != null && tooltipAsset.dividendYield > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Div Yield</span>
-                      <span className="text-gray-200 tabular-nums">
+                      <span className="text-muted">Div Yield</span>
+                      <span className="text-secondary tabular-nums">
                         {tooltipAsset.dividendYield.toFixed(2)}%
                       </span>
                     </div>
                   )}
                   {tooltipAsset.dailyVolume != null && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Volume</span>
-                      <span className="text-gray-200 tabular-nums">
+                      <span className="text-muted">Volume</span>
+                      <span className="text-secondary tabular-nums">
                         {tooltipAsset.dailyVolume >= 1e6
                           ? `${(tooltipAsset.dailyVolume / 1e6).toFixed(1)}M`
                           : `${(tooltipAsset.dailyVolume / 1e3).toFixed(0)}K`}
@@ -704,7 +702,7 @@ export function MarketHeatmap() {
                     </div>
                   )}
                 </div>
-                <div className="text-gray-600 text-[9px] mt-1.5 border-t border-gray-800 pt-1">
+                <div className="text-subtle text-[9px] mt-1.5 border-t border-panel pt-1">
                   Click to broadcast →
                 </div>
               </div>

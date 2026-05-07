@@ -174,7 +174,7 @@ export function ThemeSwitcher() {
         onClick={() => {
           open.value = !open.value;
         }}
-        className="flex items-center gap-1.5 px-2 py-1 rounded border border-gray-700 bg-gray-800/60 text-gray-400 hover:bg-gray-700/60 hover:border-gray-500 hover:text-gray-300 font-semibold text-[11px] tracking-wide transition-all"
+        className="flex items-center gap-1.5 px-2 py-1 rounded border border-divider bg-panel/60 text-label hover:bg-divider/60 hover:border-muted hover:text-default font-semibold text-[11px] tracking-wide transition-all"
       >
         Theme
       </button>
@@ -188,7 +188,7 @@ export function ThemeSwitcher() {
               open.value = false;
             }}
           />
-          <div className="absolute right-0 top-7 z-20 w-36 bg-gray-900 border border-gray-700 rounded shadow-xl text-xs overflow-hidden">
+          <div className="absolute right-0 top-7 z-20 w-36 bg-surface border border-divider rounded shadow-xl text-xs overflow-hidden">
             {THEME_OPTIONS.map(({ id, label }) => (
               <button
                 key={id}
@@ -196,8 +196,8 @@ export function ThemeSwitcher() {
                 onClick={() => handleSelect(id)}
                 className={`w-full text-left px-3 py-2 transition-colors ${
                   theme === id
-                    ? "bg-gray-700 text-gray-100"
-                    : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+                    ? "bg-divider text-primary"
+                    : "text-label hover:bg-panel hover:text-secondary"
                 }`}
               >
                 {label}
@@ -268,7 +268,7 @@ function AlertCentreButton({ services }: { services: ServiceHealth[] }) {
   const SEVERITY_CLS: Record<AlertSeverity, string> = {
     CRITICAL: "border-red-500 bg-red-600 text-white animate-pulse",
     WARNING: "border-amber-500 bg-amber-600/80 text-white",
-    INFO: "border-gray-700 bg-gray-800/60 text-gray-400 hover:bg-gray-700/60 hover:border-gray-500 hover:text-gray-300",
+    INFO: "border-divider bg-panel/60 text-label hover:bg-divider/60 hover:border-muted hover:text-default",
   };
   const btnCls = highestSeverity ? SEVERITY_CLS[highestSeverity] : SEVERITY_CLS.INFO;
 
@@ -330,7 +330,7 @@ function DataFreshness() {
         title="Gateway disconnected — all data sources offline"
         className="flex items-center gap-1.5 text-[10px] text-red-400 tabular-nums"
       >
-        <span className="text-gray-500">Feed</span>
+        <span className="text-muted">Feed</span>
         <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
         disconnected
       </span>
@@ -364,7 +364,7 @@ function DataFreshness() {
       title={`Market data drives the headline. Other feeds are event-driven and only update when activity occurs.\n${tooltip}`}
       className={`flex items-center gap-1.5 text-[10px] tabular-nums ${textClass}`}
     >
-      <span className="text-gray-500">Feed</span>
+      <span className="text-muted">Feed</span>
       <span
         className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass} ${live ? "animate-pulse" : ""}`}
       />
@@ -395,7 +395,7 @@ function EnvironmentBadge() {
   const style = ENV_BADGE_STYLES[DEPLOYMENT] ?? {
     label: DEPLOYMENT,
     title: `${DEPLOYMENT} deployment`,
-    cls: "bg-gray-800 text-gray-300 border-gray-700",
+    cls: "bg-panel text-default border-divider",
   };
   return (
     <span
@@ -421,7 +421,7 @@ function LogsButton() {
       className={`flex items-center gap-1.5 px-2 py-1 rounded border font-semibold text-[11px] tracking-wide transition-all ${
         open
           ? "border-emerald-700 bg-emerald-900/30 text-emerald-300"
-          : "border-gray-700 bg-gray-800/60 text-gray-400 hover:border-emerald-700 hover:text-emerald-300"
+          : "border-divider bg-panel/60 text-label hover:border-emerald-700 hover:text-emerald-300"
       }`}
     >
       <svg aria-hidden="true" viewBox="0 0 16 16" width="11" height="11" fill="currentColor">
@@ -467,8 +467,8 @@ export function DataDepthIndicator() {
 
   if (isLoading || !data) {
     return (
-      <span className="flex items-center gap-1.5 text-[10px] text-gray-500 tabular-nums">
-        <span className="text-gray-500">Market Data</span>
+      <span className="flex items-center gap-1.5 text-[10px] text-muted tabular-nums">
+        <span className="text-muted">Market Data</span>
         <span>–</span>
       </span>
     );
@@ -498,9 +498,9 @@ export function DataDepthIndicator() {
       title={tooltip}
       onClick={() => toggle(DATA_DEPTH_DRAWER_ID)}
       aria-pressed={drawerOpen}
-      className={`flex items-center gap-1.5 text-[10px] tabular-nums hover:text-gray-200 transition-colors ${color}`}
+      className={`flex items-center gap-1.5 text-[10px] tabular-nums hover:text-secondary transition-colors ${color}`}
     >
-      <span className="text-gray-500">Market Data</span>
+      <span className="text-muted">Market Data</span>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
       {data.totalSymbols} sym · {label}
     </button>
@@ -572,7 +572,7 @@ export function AppHeader() {
           </button>
         </div>
       )}
-      <div className="flex items-center justify-between px-4 h-10 bg-gray-900 border-b border-gray-800 text-xs text-gray-400">
+      <div className="flex items-center justify-between px-4 h-10 bg-surface border-b border-panel text-xs text-label">
         <div className="flex items-center gap-5">
           <span className="text-emerald-400 font-bold tracking-widest uppercase text-[11px]">
             VETA Trading Platform
@@ -602,7 +602,7 @@ export function AppHeader() {
             rel="noopener noreferrer"
             title="Open documentation site"
             data-testid="docs-link"
-            className="text-gray-400 hover:text-gray-200 transition-colors"
+            className="text-label hover:text-secondary transition-colors"
           >
             <svg
               aria-hidden="true"
@@ -625,7 +625,7 @@ export function AppHeader() {
             target="_blank"
             rel="noopener noreferrer"
             title="View source on GitHub"
-            className="text-gray-400 hover:text-gray-200 transition-colors"
+            className="text-label hover:text-secondary transition-colors"
           >
             <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
@@ -648,17 +648,17 @@ export function AppHeader() {
             buildDate={import.meta.env.VITE_BUILD_DATE}
             commitSha={import.meta.env.VITE_COMMIT_SHA}
             version={import.meta.env.VITE_APP_VERSION}
-            className="px-2 py-0.5 rounded border border-gray-800 bg-gray-950/60 text-[10px] text-gray-400 tabular-nums"
+            className="px-2 py-0.5 rounded border border-panel bg-page/60 text-[10px] text-label tabular-nums"
           />
-          <span className="tabular-nums text-gray-500">{time.value}</span>
+          <span className="tabular-nums text-muted">{time.value}</span>
           {user && (
-            <div className="flex items-center gap-2 pl-3 border-l border-gray-800">
-              <span data-testid="user-menu-btn" className="flex items-center gap-1.5 text-gray-400">
+            <div className="flex items-center gap-2 pl-3 border-l border-panel">
+              <span data-testid="user-menu-btn" className="flex items-center gap-1.5 text-label">
                 <span
                   className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-semibold tracking-wide ${
                     user.role === "admin"
                       ? "bg-orange-900/60 text-orange-300"
-                      : "bg-gray-700 text-gray-200"
+                      : "bg-divider text-secondary"
                   }`}
                 >
                   {user.avatar_emoji}
@@ -679,7 +679,7 @@ export function AppHeader() {
                 onClick={handleLogout}
                 title="Log out"
                 data-testid="logout-btn"
-                className="text-gray-400 hover:text-gray-200 transition-colors text-[10px] leading-none px-1.5 py-0.5 border border-gray-700 hover:border-gray-500 rounded"
+                className="text-label hover:text-secondary transition-colors text-[10px] leading-none px-1.5 py-0.5 border border-divider hover:border-muted rounded"
               >
                 Log out
               </button>
@@ -697,10 +697,10 @@ export function WorkspaceToolbar() {
   return (
     <div
       data-testid="workspace-toolbar"
-      className="flex items-center gap-2 px-3 py-1.5 bg-gray-950 border-b border-gray-800 text-xs"
+      className="flex items-center gap-2 px-3 py-1.5 bg-page border-b border-panel text-xs"
     >
       <ComponentPicker />
-      <div className="w-px h-3.5 bg-gray-800" />
+      <div className="w-px h-3.5 bg-panel" />
       <TemplatePicker />
     </div>
   );

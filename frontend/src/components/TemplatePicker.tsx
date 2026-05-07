@@ -41,15 +41,15 @@ export function TemplatePicker() {
         onClick={() => {
           open.value = !open.value;
         }}
-        className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 transition-colors px-1.5 py-0.5 rounded border border-gray-700 hover:border-gray-500"
+        className="flex items-center gap-1 text-xs text-label hover:text-secondary transition-colors px-1.5 py-0.5 rounded border border-divider hover:border-muted"
       >
         <span className="text-sm leading-none">⊞</span>
         Layout
       </button>
 
       {open.value && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-gray-900 border border-gray-700 rounded shadow-xl p-1.5 flex flex-col gap-0.5 min-w-[200px]">
-          <span className="text-[9px] text-gray-500 px-2 py-1 uppercase tracking-wider">
+        <div className="absolute right-0 top-full mt-1 z-50 bg-surface border border-divider rounded shadow-xl p-1.5 flex flex-col gap-0.5 min-w-[200px]">
+          <span className="text-[9px] text-muted px-2 py-1 uppercase tracking-wider">
             Layout Templates
           </span>
           {visibleTemplates.map((tpl) => (
@@ -60,13 +60,13 @@ export function TemplatePicker() {
                 resetLayout(tpl.model);
                 open.value = false;
               }}
-              className="flex flex-col items-start gap-0.5 px-2 py-1.5 rounded text-left hover:bg-gray-800 transition-colors"
+              className="flex flex-col items-start gap-0.5 px-2 py-1.5 rounded text-left hover:bg-panel transition-colors"
             >
-              <span className="flex items-center gap-1 text-xs text-gray-200 font-medium">
-                {tpl.locked && <span className="text-[10px] text-gray-500">🔒</span>}
+              <span className="flex items-center gap-1 text-xs text-secondary font-medium">
+                {tpl.locked && <span className="text-[10px] text-muted">🔒</span>}
                 {tpl.label}
               </span>
-              <span className="text-[10px] text-gray-500">{tpl.description}</span>
+              <span className="text-[10px] text-muted">{tpl.description}</span>
             </button>
           ))}
         </div>

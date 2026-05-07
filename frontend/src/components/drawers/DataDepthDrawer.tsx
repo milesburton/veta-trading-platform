@@ -36,7 +36,7 @@ export function DataDepthList() {
     pollingInterval: 30_000,
   });
 
-  if (isLoading) return <div className="p-4 text-xs text-gray-500">Loading…</div>;
+  if (isLoading) return <div className="p-4 text-xs text-muted">Loading…</div>;
 
   if (isError) {
     return (
@@ -45,7 +45,7 @@ export function DataDepthList() {
         <button
           type="button"
           onClick={() => refetch()}
-          className="text-[11px] text-gray-400 hover:text-gray-200 underline"
+          className="text-[11px] text-label hover:text-secondary underline"
         >
           Retry
         </button>
@@ -57,7 +57,7 @@ export function DataDepthList() {
 
   return (
     <div data-testid="data-depth-list">
-      <div className="px-4 py-3 border-b border-gray-800 grid grid-cols-3 gap-3 text-[11px]">
+      <div className="px-4 py-3 border-b border-panel grid grid-cols-3 gap-3 text-[11px]">
         <Stat label="Symbols" value={String(data.totalSymbols)} />
         <Stat label="Avg" value={formatSpan(data.avgDays)} />
         <Stat label="Min" value={formatSpan(data.minDays)} />
@@ -71,7 +71,7 @@ export function DataDepthList() {
         </div>
       )}
 
-      <ul className="divide-y divide-gray-800/60">
+      <ul className="divide-y divide-panel/60">
         {[...data.symbols].sort(compareWorstFirst).map((sym) => {
           const category = categoryFor(sym.spanDays);
           const colour = colourFor(category);
@@ -83,9 +83,9 @@ export function DataDepthList() {
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${colour.dot}`} />
-                <span className="text-gray-200 truncate">{sym.instrument}</span>
+                <span className="text-secondary truncate">{sym.instrument}</span>
               </div>
-              <div className="flex items-center gap-3 text-gray-500 shrink-0">
+              <div className="flex items-center gap-3 text-muted shrink-0">
                 <span>{sym.candleCount} candles</span>
                 <span className={colour.text}>{formatSpan(sym.spanDays)}</span>
               </div>
@@ -114,7 +114,7 @@ export function DataDepthDrawer() {
         }
       }}
       className={`flex items-center justify-center w-5 h-5 rounded transition-colors ${
-        isPinned ? "text-amber-400 cursor-default" : "text-gray-600 hover:text-gray-300"
+        isPinned ? "text-amber-400 cursor-default" : "text-subtle hover:text-default"
       }`}
       style={{ fontSize: "11px", lineHeight: 1 }}
     >
@@ -132,8 +132,8 @@ export function DataDepthDrawer() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-gray-500 uppercase tracking-wider text-[9px]">{label}</div>
-      <div className="text-gray-100 font-medium">{value}</div>
+      <div className="text-muted uppercase tracking-wider text-[9px]">{label}</div>
+      <div className="text-primary font-medium">{value}</div>
     </div>
   );
 }

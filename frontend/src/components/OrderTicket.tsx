@@ -52,30 +52,30 @@ function AssetInfoBar({ symbol }: { symbol: string }) {
 
   return (
     <div
-      className="rounded bg-gray-800/60 border border-gray-700/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1"
+      className="rounded bg-panel/60 border border-divider/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1"
       data-testid="asset-info-bar"
     >
       <div className="flex justify-between">
-        <span className="text-gray-500">Bid</span>
+        <span className="text-muted">Bid</span>
         <span className="tabular-nums text-sky-400">{bid ? formatPrice(symbol, bid) : "—"}</span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-500">Ask</span>
+        <span className="text-muted">Ask</span>
         <span className="tabular-nums text-red-400">{ask ? formatPrice(symbol, ask) : "—"}</span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-500">Spread</span>
-        <span className="tabular-nums text-gray-400">{spreadBps ? `${spreadBps}bp` : "—"}</span>
+        <span className="text-muted">Spread</span>
+        <span className="tabular-nums text-label">{spreadBps ? `${spreadBps}bp` : "—"}</span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-500">Beta</span>
-        <span className="tabular-nums text-gray-400">
+        <span className="text-muted">Beta</span>
+        <span className="tabular-nums text-label">
           {asset.beta !== undefined ? asset.beta.toFixed(2) : "—"}
         </span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-500">Mkt Cap</span>
-        <span className="tabular-nums text-gray-400">
+        <span className="text-muted">Mkt Cap</span>
+        <span className="tabular-nums text-label">
           {asset.marketCapB !== undefined
             ? asset.marketCapB >= 1000
               ? `$${(asset.marketCapB / 1000).toFixed(1)}T`
@@ -84,22 +84,22 @@ function AssetInfoBar({ symbol }: { symbol: string }) {
         </span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-500">Div Yld</span>
-        <span className="tabular-nums text-gray-400">
+        <span className="text-muted">Div Yld</span>
+        <span className="tabular-nums text-label">
           {asset.dividendYield !== undefined && asset.dividendYield > 0
             ? `${(asset.dividendYield * 100).toFixed(2)}%`
             : "—"}
         </span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-500">P/E</span>
-        <span className="tabular-nums text-gray-400">
+        <span className="text-muted">P/E</span>
+        <span className="tabular-nums text-label">
           {asset.peRatio !== undefined && asset.peRatio > 0 ? asset.peRatio.toFixed(1) : "—"}
         </span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-500">Exchange</span>
-        <span className="tabular-nums text-gray-400">{asset.exchange ?? "—"}</span>
+        <span className="text-muted">Exchange</span>
+        <span className="tabular-nums text-label">{asset.exchange ?? "—"}</span>
       </div>
     </div>
   );
@@ -126,10 +126,10 @@ function OrderPreview({
     mid && mid > 0 ? ((limitPx - mid) / mid) * 10_000 * (side === "BUY" ? 1 : -1) : null;
 
   return (
-    <div className="rounded bg-gray-800/40 border border-gray-700/40 px-2.5 py-1.5 text-[10px] flex items-center justify-between gap-3">
+    <div className="rounded bg-panel/40 border border-divider/40 px-2.5 py-1.5 text-[10px] flex items-center justify-between gap-3">
       <div className="flex gap-3">
-        <span className="text-gray-500">Notional</span>
-        <span className="tabular-nums text-gray-200 font-semibold">
+        <span className="text-muted">Notional</span>
+        <span className="tabular-nums text-secondary font-semibold">
           $
           {notional >= 1_000_000
             ? `${(notional / 1_000_000).toFixed(2)}M`
@@ -140,14 +140,14 @@ function OrderPreview({
       </div>
       {arrivalSlippageBps !== null && (
         <div className="flex gap-1.5 items-center">
-          <span className="text-gray-500">vs Mid</span>
+          <span className="text-muted">vs Mid</span>
           <span
             className={`tabular-nums font-semibold ${
               arrivalSlippageBps > 5
                 ? "text-red-400"
                 : arrivalSlippageBps < -5
                   ? "text-emerald-400"
-                  : "text-gray-400"
+                  : "text-label"
             }`}
           >
             {arrivalSlippageBps > 0 ? "+" : ""}
@@ -163,11 +163,11 @@ function OptionPreview({ qty, premium }: { qty: number; premium: number }) {
   if (qty <= 0 || premium <= 0) return null;
   const notional = qty * 100 * premium;
   return (
-    <div className="rounded bg-gray-800/40 border border-gray-700/40 px-2.5 py-1.5 text-[10px] flex items-center justify-between gap-3">
-      <span className="text-gray-500">
+    <div className="rounded bg-panel/40 border border-divider/40 px-2.5 py-1.5 text-[10px] flex items-center justify-between gap-3">
+      <span className="text-muted">
         {qty} contract{qty !== 1 ? "s" : ""}
       </span>
-      <span className="tabular-nums text-gray-200 font-semibold">
+      <span className="tabular-nums text-secondary font-semibold">
         $
         {notional >= 1_000_000
           ? `${(notional / 1_000_000).toFixed(2)}M`
@@ -648,10 +648,10 @@ export function OrderTicket() {
         <span className="text-2xl" aria-hidden="true">
           {isCompliance ? "🔍" : "⚙"}
         </span>
-        <p className="text-sm font-semibold text-gray-300">
+        <p className="text-sm font-semibold text-default">
           {isCompliance ? "Compliance account" : "Admin account"}
         </p>
-        <p className="text-xs text-gray-500 leading-relaxed">{resolution.roleLockedMessage}</p>
+        <p className="text-xs text-muted leading-relaxed">{resolution.roleLockedMessage}</p>
       </div>
     );
   }
@@ -681,8 +681,8 @@ export function OrderTicket() {
               onClick={handleSwitchToEquity}
               className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
                 isEquityLike
-                  ? "bg-gray-700 border-gray-500 text-gray-100"
-                  : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+                  ? "bg-divider border-muted text-primary"
+                  : "bg-panel border-divider text-muted hover:border-muted"
               }`}
             >
               Equity
@@ -695,8 +695,8 @@ export function OrderTicket() {
               onClick={handleSwitchToOptions}
               className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
                 isOptions
-                  ? "bg-gray-700 border-gray-500 text-gray-100"
-                  : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+                  ? "bg-divider border-muted text-primary"
+                  : "bg-panel border-divider text-muted hover:border-muted"
               }`}
             >
               Options
@@ -709,8 +709,8 @@ export function OrderTicket() {
               onClick={handleSwitchToBond}
               className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
                 isBond
-                  ? "bg-gray-700 border-gray-500 text-gray-100"
-                  : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+                  ? "bg-divider border-muted text-primary"
+                  : "bg-panel border-divider text-muted hover:border-muted"
               }`}
             >
               Bond
@@ -726,8 +726,8 @@ export function OrderTicket() {
               }}
               className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
                 isFx
-                  ? "bg-gray-700 border-gray-500 text-gray-100"
-                  : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+                  ? "bg-divider border-muted text-primary"
+                  : "bg-panel border-divider text-muted hover:border-muted"
               }`}
             >
               FX
@@ -743,8 +743,8 @@ export function OrderTicket() {
               }}
               className={`flex-1 py-1 text-[11px] font-semibold rounded border transition-colors ${
                 isCommodity
-                  ? "bg-gray-700 border-gray-500 text-gray-100"
-                  : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+                  ? "bg-divider border-muted text-primary"
+                  : "bg-panel border-divider text-muted hover:border-muted"
               }`}
             >
               Futures
@@ -754,7 +754,7 @@ export function OrderTicket() {
 
         {!isOptions && !isBond && (
           <div>
-            <label htmlFor="strategy" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="strategy" className="block text-xs text-muted mb-1">
               Strategy
             </label>
             <select
@@ -764,7 +764,7 @@ export function OrderTicket() {
               title="Choose how the order is executed. LIMIT sends a single order. TWAP/POV/VWAP are algorithmic strategies that slice the order over time."
               value={activeStrategy}
               onChange={(e) => dispatch(setActiveStrategy(e.target.value as typeof activeStrategy))}
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
             >
               <option value="LIMIT" disabled={!limits.allowed_strategies.includes("LIMIT")}>
                 Limit Order{!limits.allowed_strategies.includes("LIMIT") ? " (not permitted)" : ""}
@@ -826,7 +826,7 @@ export function OrderTicket() {
         {isBond && (
           <>
             <div>
-              <label htmlFor="bondSymbol" className="block text-xs text-gray-500 mb-1">
+              <label htmlFor="bondSymbol" className="block text-xs text-muted mb-1">
                 Bond / ISIN
               </label>
               <select
@@ -839,7 +839,7 @@ export function OrderTicket() {
                   bondQuote.value = null;
                   scheduleBondQuoteFetch();
                 }}
-                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-purple-500"
+                className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-purple-500"
               >
                 <optgroup label="US Treasuries">
                   {BOND_UNIVERSE.filter((b) => b.issuer === "UST").map((b) => (
@@ -859,15 +859,15 @@ export function OrderTicket() {
             </div>
 
             {selectedBondDef && (
-              <div className="rounded bg-gray-800/60 border border-gray-700/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1">
+              <div className="rounded bg-panel/60 border border-divider/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">ISIN</span>
-                  <span className="tabular-nums text-gray-300 font-mono">
+                  <span className="text-muted">ISIN</span>
+                  <span className="tabular-nums text-default font-mono">
                     {selectedBondDef.isin}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Rating</span>
+                  <span className="text-muted">Rating</span>
                   <span
                     className={`font-semibold ${
                       selectedBondDef.creditRating === "AAA"
@@ -881,24 +881,24 @@ export function OrderTicket() {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Coupon</span>
-                  <span className="tabular-nums text-gray-300">
+                  <span className="text-muted">Coupon</span>
+                  <span className="tabular-nums text-default">
                     {(selectedBondDef.couponRate * 100).toFixed(2)}%
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Maturity</span>
-                  <span className="tabular-nums text-gray-300">{selectedBondDef.maturityDate}</span>
+                  <span className="text-muted">Maturity</span>
+                  <span className="tabular-nums text-default">{selectedBondDef.maturityDate}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Face $</span>
-                  <span className="tabular-nums text-gray-300">
+                  <span className="text-muted">Face $</span>
+                  <span className="tabular-nums text-default">
                     ${selectedBondDef.faceValue.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Issuer</span>
-                  <span className="text-gray-300">
+                  <span className="text-muted">Issuer</span>
+                  <span className="text-default">
                     {selectedBondDef.issuer === "UST"
                       ? "US Treasury"
                       : (selectedBondDef.sector ?? "Corp")}
@@ -908,10 +908,10 @@ export function OrderTicket() {
             )}
 
             <div>
-              <label htmlFor="bondYield" className="block text-xs text-gray-500 mb-1">
+              <label htmlFor="bondYield" className="block text-xs text-muted mb-1">
                 Yield (% p.a.){" "}
                 {selectedBondDef && (
-                  <span className="text-gray-600 normal-case">
+                  <span className="text-subtle normal-case">
                     (ref {(selectedBondDef.initialYield * 100).toFixed(2)}%)
                   </span>
                 )}
@@ -933,52 +933,52 @@ export function OrderTicket() {
                     ? `${(selectedBondDef.initialYield * 100).toFixed(2)}`
                     : "e.g. 4.75"
                 }
-                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-purple-500 tabular-nums"
+                className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-purple-500 tabular-nums"
               />
             </div>
 
             {bondFetching.value && (
-              <div className="text-[10px] text-gray-600 text-center py-1">Pricing bond…</div>
+              <div className="text-[10px] text-subtle text-center py-1">Pricing bond…</div>
             )}
             {bondQuote.value && !bondFetching.value && (
               <section
-                className="rounded bg-gray-800/60 border border-gray-700/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1"
+                className="rounded bg-panel/60 border border-divider/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1"
                 aria-label="Bond price"
               >
                 <div className="flex justify-between col-span-2">
-                  <span className="text-gray-500">Clean Price</span>
-                  <span className="tabular-nums font-semibold text-gray-100">
+                  <span className="text-muted">Clean Price</span>
+                  <span className="tabular-nums font-semibold text-primary">
                     ${bondQuote.value.price.toFixed(4)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Mod Duration</span>
-                  <span className="tabular-nums text-gray-300">
+                  <span className="text-muted">Mod Duration</span>
+                  <span className="tabular-nums text-default">
                     {bondQuote.value.modifiedDuration.toFixed(3)}y
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">DV01</span>
-                  <span className="tabular-nums text-gray-300">
+                  <span className="text-muted">DV01</span>
+                  <span className="tabular-nums text-default">
                     ${bondQuote.value.dv01.toFixed(4)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Convexity</span>
-                  <span className="tabular-nums text-gray-300">
+                  <span className="text-muted">Convexity</span>
+                  <span className="tabular-nums text-default">
                     {bondQuote.value.convexity.toFixed(3)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Yield p.a.</span>
-                  <span className="tabular-nums text-gray-300">
+                  <span className="text-muted">Yield p.a.</span>
+                  <span className="tabular-nums text-default">
                     {(bondQuote.value.yieldAnnual * 100).toFixed(3)}%
                   </span>
                 </div>
                 {selectedBondDef && qty > 0 && bondQuote.value && (
-                  <div className="col-span-2 flex justify-between border-t border-gray-700 pt-1 mt-0.5">
-                    <span className="text-gray-500">Notional ({qty} bonds)</span>
-                    <span className="tabular-nums font-semibold text-gray-200">
+                  <div className="col-span-2 flex justify-between border-t border-divider pt-1 mt-0.5">
+                    <span className="text-muted">Notional ({qty} bonds)</span>
+                    <span className="tabular-nums font-semibold text-secondary">
                       $
                       {(qty * bondQuote.value.price).toLocaleString(undefined, {
                         maximumFractionDigits: 0,
@@ -998,7 +998,7 @@ export function OrderTicket() {
         {isOptions && (
           <>
             <fieldset>
-              <legend className="block text-xs text-gray-500 mb-1">Option Type</legend>
+              <legend className="block text-xs text-muted mb-1">Option Type</legend>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -1011,7 +1011,7 @@ export function OrderTicket() {
                   className={`flex-1 py-1.5 text-xs font-semibold rounded border transition-colors ${
                     optionType.value === "call"
                       ? "bg-emerald-800 border-emerald-600 text-emerald-100"
-                      : "bg-gray-800 border-gray-700 text-gray-400 hover:border-emerald-700"
+                      : "bg-panel border-divider text-label hover:border-emerald-700"
                   }`}
                 >
                   CALL
@@ -1027,7 +1027,7 @@ export function OrderTicket() {
                   className={`flex-1 py-1.5 text-xs font-semibold rounded border transition-colors ${
                     optionType.value === "put"
                       ? "bg-red-800 border-red-600 text-red-100"
-                      : "bg-gray-800 border-gray-700 text-gray-400 hover:border-red-700"
+                      : "bg-panel border-divider text-label hover:border-red-700"
                   }`}
                 >
                   PUT
@@ -1036,7 +1036,7 @@ export function OrderTicket() {
             </fieldset>
 
             <div>
-              <label htmlFor="optionStrike" className="block text-xs text-gray-500 mb-1">
+              <label htmlFor="optionStrike" className="block text-xs text-muted mb-1">
                 Strike
               </label>
               <input
@@ -1053,12 +1053,12 @@ export function OrderTicket() {
                   scheduleQuoteFetch();
                 }}
                 placeholder={currentPrice ? Math.round(currentPrice).toString() : "e.g. 150"}
-                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+                className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
               />
             </div>
 
             <div>
-              <label htmlFor="optionExpiry" className="block text-xs text-gray-500 mb-1">
+              <label htmlFor="optionExpiry" className="block text-xs text-muted mb-1">
                 Expiry
               </label>
               <select
@@ -1071,7 +1071,7 @@ export function OrderTicket() {
                   optionQuote.value = null;
                   scheduleQuoteFetch();
                 }}
-                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
               >
                 {OPTION_EXPIRIES.map((ex) => (
                   <option key={ex.secs} value={String(ex.secs)}>
@@ -1082,40 +1082,40 @@ export function OrderTicket() {
             </div>
 
             {quoteFetching.value && (
-              <div className="text-[10px] text-gray-600 text-center py-1">Pricing…</div>
+              <div className="text-[10px] text-subtle text-center py-1">Pricing…</div>
             )}
             {optionQuote.value && !quoteFetching.value && (
               <section
-                className="rounded bg-gray-800/60 border border-gray-700/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1"
+                className="rounded bg-panel/60 border border-divider/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1"
                 aria-label="Option premium"
               >
                 <div className="flex justify-between col-span-2">
-                  <span className="text-gray-500">Premium</span>
-                  <span className="tabular-nums font-semibold text-gray-100">
+                  <span className="text-muted">Premium</span>
+                  <span className="tabular-nums font-semibold text-primary">
                     ${optionQuote.value.price.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Δ Delta</span>
-                  <span className="tabular-nums text-gray-300">
+                  <span className="text-muted">Δ Delta</span>
+                  <span className="tabular-nums text-default">
                     {optionQuote.value.greeks.delta.toFixed(4)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Θ Theta/d</span>
-                  <span className="tabular-nums text-gray-300">
+                  <span className="text-muted">Θ Theta/d</span>
+                  <span className="tabular-nums text-default">
                     {optionQuote.value.greeks.theta.toFixed(4)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">IV</span>
-                  <span className="tabular-nums text-gray-300">
+                  <span className="text-muted">IV</span>
+                  <span className="tabular-nums text-default">
                     {(optionQuote.value.impliedVol * 100).toFixed(1)}%
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Spot</span>
-                  <span className="tabular-nums text-gray-300">
+                  <span className="text-muted">Spot</span>
+                  <span className="tabular-nums text-default">
                     ${optionQuote.value.spotPrice.toFixed(2)}
                   </span>
                 </div>
@@ -1129,8 +1129,8 @@ export function OrderTicket() {
         )}
 
         <fieldset>
-          <legend className="block text-xs text-gray-500 mb-1">
-            Side <span className="text-gray-700">(B / S)</span>
+          <legend className="block text-xs text-muted mb-1">
+            Side <span className="text-divider">(B / S)</span>
           </legend>
           <div className="flex gap-2">
             <button
@@ -1142,7 +1142,7 @@ export function OrderTicket() {
               className={`flex-1 py-2 text-xs font-semibold rounded border transition-colors ${
                 activeSide === "BUY"
                   ? "bg-emerald-700 border-emerald-500 text-emerald-100"
-                  : "bg-gray-800 border-gray-700 text-gray-400 hover:border-emerald-700"
+                  : "bg-panel border-divider text-label hover:border-emerald-700"
               }`}
             >
               BUY
@@ -1156,7 +1156,7 @@ export function OrderTicket() {
               className={`flex-1 py-2 text-xs font-semibold rounded border transition-colors ${
                 activeSide === "SELL"
                   ? "bg-red-800 border-red-600 text-red-100"
-                  : "bg-gray-800 border-gray-700 text-gray-400 hover:border-red-700"
+                  : "bg-panel border-divider text-label hover:border-red-700"
               }`}
             >
               SELL
@@ -1165,18 +1165,18 @@ export function OrderTicket() {
         </fieldset>
 
         <div>
-          <label htmlFor="quantity" className="block text-xs text-gray-500 mb-1">
+          <label htmlFor="quantity" className="block text-xs text-muted mb-1">
             {isOptions ? (
               <>
-                Contracts <span className="text-gray-600">(1 contract = 100 shares)</span>
+                Contracts <span className="text-subtle">(1 contract = 100 shares)</span>
               </>
             ) : isBond ? (
               <>
-                Quantity <span className="text-gray-600">(bonds)</span>
+                Quantity <span className="text-subtle">(bonds)</span>
               </>
             ) : (
               <>
-                Quantity <span className="text-gray-600">(shares)</span>
+                Quantity <span className="text-subtle">(shares)</span>
               </>
             )}
           </label>
@@ -1196,21 +1196,21 @@ export function OrderTicket() {
               quantity.value = e.target.value;
             }}
             placeholder="100"
-            className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+            className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
           />
         </div>
 
         {!isOptions && !isBond && (
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label htmlFor="limitPrice" className="text-xs text-gray-500">
+              <label htmlFor="limitPrice" className="text-xs text-muted">
                 Limit Price
               </label>
               <div className="flex items-center gap-2">
                 {currentPrice && (
                   <>
-                    <span className="text-[10px] text-gray-600 tabular-nums" title="Live mid price">
-                      mid <span className="text-gray-400">{formatPrice(symbol, currentPrice)}</span>
+                    <span className="text-[10px] text-subtle tabular-nums" title="Live mid price">
+                      mid <span className="text-label">{formatPrice(symbol, currentPrice)}</span>
                     </span>
                     <button
                       type="button"
@@ -1238,7 +1238,7 @@ export function OrderTicket() {
                 limitPrice.value = e.target.value;
               }}
               placeholder="e.g. 150.00"
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
         )}
@@ -1253,7 +1253,7 @@ export function OrderTicket() {
         {!isOptions && !isBond && (
           <>
             <div>
-              <span className="block text-xs text-gray-500 mb-1">Time In Force</span>
+              <span className="block text-xs text-muted mb-1">Time In Force</span>
               <div className="flex gap-1">
                 {TIF_OPTIONS.map((opt) => (
                   <button
@@ -1265,8 +1265,8 @@ export function OrderTicket() {
                     }}
                     className={`flex-1 py-1 text-[10px] font-mono rounded border transition-colors ${
                       tif.value === opt.value
-                        ? "bg-gray-600 border-gray-500 text-gray-100"
-                        : "bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-500"
+                        ? "bg-subtle border-muted text-primary"
+                        : "bg-panel border-divider text-muted hover:border-muted"
                     }`}
                   >
                     {opt.label}
@@ -1276,8 +1276,8 @@ export function OrderTicket() {
             </div>
 
             <div>
-              <label htmlFor="expiresAt" className="block text-xs text-gray-500 mb-1">
-                Duration <span className="text-gray-600">(seconds)</span>
+              <label htmlFor="expiresAt" className="block text-xs text-muted mb-1">
+                Duration <span className="text-subtle">(seconds)</span>
               </label>
               <input
                 id="expiresAt"
@@ -1289,7 +1289,7 @@ export function OrderTicket() {
                 onChange={(e) => {
                   expiresAt.value = e.target.value;
                 }}
-                className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+                className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
               />
             </div>
 

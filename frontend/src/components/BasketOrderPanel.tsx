@@ -170,11 +170,11 @@ export function BasketOrderPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden" data-testid="basket-order-panel">
-      <div className="px-3 py-2 border-b border-gray-800 flex items-center gap-3 flex-shrink-0">
-        <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
+      <div className="px-3 py-2 border-b border-panel flex items-center gap-3 flex-shrink-0">
+        <span className="text-xs font-semibold text-default uppercase tracking-wider">
           Basket Order
         </span>
-        <span className="text-[10px] text-gray-500">
+        <span className="text-[10px] text-muted">
           {computedLegs.length} leg{computedLegs.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -182,7 +182,7 @@ export function BasketOrderPanel() {
       <div className="flex flex-col gap-2.5 p-3 overflow-auto flex-1">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label htmlFor="basket-notional" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="basket-notional" className="block text-xs text-muted mb-1">
               Target Notional ($)
             </label>
             <input
@@ -194,11 +194,11 @@ export function BasketOrderPanel() {
               onChange={(e) => {
                 notional.value = e.target.value;
               }}
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
           <div>
-            <label htmlFor="basket-duration" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="basket-duration" className="block text-xs text-muted mb-1">
               Duration (s)
             </label>
             <input
@@ -210,13 +210,13 @@ export function BasketOrderPanel() {
               onChange={(e) => {
                 expiresAt.value = e.target.value;
               }}
-              className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
+              className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 tabular-nums"
             />
           </div>
         </div>
 
         <div className="relative">
-          <label htmlFor="basket-search" className="block text-xs text-gray-500 mb-1">
+          <label htmlFor="basket-search" className="block text-xs text-muted mb-1">
             Add Symbol
           </label>
           <input
@@ -232,19 +232,19 @@ export function BasketOrderPanel() {
               }
             }}
             placeholder="e.g. TSLA"
-            className="w-full bg-gray-800 border border-gray-700 text-gray-100 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
           />
           {suggestions.length > 0 && (
-            <ul className="absolute z-20 left-0 right-0 top-full mt-0.5 bg-gray-800 border border-gray-700 rounded shadow-lg max-h-36 overflow-auto">
+            <ul className="absolute z-20 left-0 right-0 top-full mt-0.5 bg-panel border border-divider rounded shadow-lg max-h-36 overflow-auto">
               {suggestions.map((a) => (
                 <li key={a.symbol}>
                   <button
                     type="button"
-                    className="w-full text-left px-2.5 py-1.5 text-xs hover:bg-gray-700 flex justify-between"
+                    className="w-full text-left px-2.5 py-1.5 text-xs hover:bg-divider flex justify-between"
                     onClick={() => addSymbol(a.symbol)}
                   >
-                    <span className="font-mono text-gray-200">{a.symbol}</span>
-                    <span className="text-gray-500 text-[10px]">{a.sector}</span>
+                    <span className="font-mono text-secondary">{a.symbol}</span>
+                    <span className="text-muted text-[10px]">{a.sector}</span>
                   </button>
                 </li>
               ))}
@@ -253,10 +253,10 @@ export function BasketOrderPanel() {
         </div>
 
         {computedLegs.length > 0 && (
-          <div className="rounded border border-gray-700/60 overflow-hidden">
+          <div className="rounded border border-divider/60 overflow-hidden">
             <table className="w-full text-[10px] border-collapse">
               <thead>
-                <tr className="bg-gray-800/80 text-gray-500 text-left">
+                <tr className="bg-panel/80 text-muted text-left">
                   <th className="px-2 py-1.5 font-normal" title="Instrument symbol">
                     Symbol
                   </th>
@@ -292,8 +292,8 @@ export function BasketOrderPanel() {
               </thead>
               <tbody>
                 {computedLegs.map((leg) => (
-                  <tr key={leg.id} className="border-t border-gray-700/40 hover:bg-gray-800/30">
-                    <td className="px-2 py-1 font-mono text-gray-200">{leg.symbol}</td>
+                  <tr key={leg.id} className="border-t border-divider/40 hover:bg-panel/30">
+                    <td className="px-2 py-1 font-mono text-secondary">{leg.symbol}</td>
                     <td className="px-2 py-1 text-right">
                       <input
                         type="number"
@@ -306,29 +306,29 @@ export function BasketOrderPanel() {
                             weight: Math.max(0, Math.min(100, Number(e.target.value))),
                           })
                         }
-                        className="w-14 bg-gray-800 border border-gray-700 text-gray-100 rounded px-1 py-0.5 text-right tabular-nums focus:outline-none focus:border-emerald-500"
+                        className="w-14 bg-panel border border-divider text-primary rounded px-1 py-0.5 text-right tabular-nums focus:outline-none focus:border-emerald-500"
                       />
                     </td>
-                    <td className="px-2 py-1 text-right tabular-nums text-gray-300">
+                    <td className="px-2 py-1 text-right tabular-nums text-default">
                       {leg.qty > 0 ? (
                         leg.qty.toLocaleString()
                       ) : (
-                        <span className="text-gray-600">—</span>
+                        <span className="text-subtle">—</span>
                       )}
                       {leg.lotSize > 1 && (
-                        <span className="text-gray-600 ml-0.5">/{leg.lotSize}</span>
+                        <span className="text-subtle ml-0.5">/{leg.lotSize}</span>
                       )}
                     </td>
-                    <td className="px-2 py-1 text-right tabular-nums text-gray-400">
+                    <td className="px-2 py-1 text-right tabular-nums text-label">
                       {leg.price > 0 ? `$${leg.price.toFixed(2)}` : "—"}
                     </td>
-                    <td className="px-2 py-1 text-right tabular-nums text-gray-300">
+                    <td className="px-2 py-1 text-right tabular-nums text-default">
                       {leg.qty > 0 && leg.price > 0 ? (
                         `$${(leg.qty * leg.price).toLocaleString(undefined, {
                           maximumFractionDigits: 0,
                         })}`
                       ) : (
-                        <span className="text-gray-600">—</span>
+                        <span className="text-subtle">—</span>
                       )}
                     </td>
                     <td className="px-2 py-1 text-center">
@@ -352,7 +352,7 @@ export function BasketOrderPanel() {
                       <button
                         type="button"
                         onClick={() => removeLeg(leg.id)}
-                        className="text-gray-600 hover:text-red-400 transition-colors px-1"
+                        className="text-subtle hover:text-red-400 transition-colors px-1"
                         title="Remove leg"
                       >
                         ×
@@ -381,7 +381,7 @@ export function BasketOrderPanel() {
             >
               Distribute evenly
             </button>
-            <span className="text-gray-500 tabular-nums">
+            <span className="text-muted tabular-nums">
               ≈ $
               {totalNotional.toLocaleString(undefined, {
                 maximumFractionDigits: 0,
@@ -397,7 +397,7 @@ export function BasketOrderPanel() {
         )}
 
         {computedLegs.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-8 text-gray-600 text-xs gap-1">
+          <div className="flex flex-col items-center justify-center py-8 text-subtle text-xs gap-1">
             <span>Add symbols to build a basket</span>
           </div>
         )}

@@ -41,9 +41,9 @@ export function SpreadAnalysisPanel() {
   const maxSpread = data ? Math.max(Math.abs(data.gSpread), Math.abs(data.zSpread), 1) * 1.2 : 1;
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 text-xs text-gray-100">
+    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 text-xs text-primary">
       <div className="flex items-center justify-between">
-        <span className="font-semibold text-gray-200">Spread Analysis · Z / G / OAS</span>
+        <span className="font-semibold text-secondary">Spread Analysis · Z / G / OAS</span>
         <span className="rounded bg-blue-900/40 px-2 py-0.5 text-[10px] text-blue-300">
           vs Nelson-Siegel
         </span>
@@ -51,10 +51,10 @@ export function SpreadAnalysisPanel() {
 
       <div className="grid grid-cols-5 gap-2">
         <label className="flex flex-col gap-1">
-          <span className="text-gray-400">Coupon %</span>
+          <span className="text-label">Coupon %</span>
           <input
             type="number"
-            className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+            className="rounded border border-divider bg-panel px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
             value={coupon.value}
             step="0.25"
             min="0"
@@ -65,10 +65,10 @@ export function SpreadAnalysisPanel() {
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-gray-400">Periods</span>
+          <span className="text-label">Periods</span>
           <input
             type="number"
-            className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+            className="rounded border border-divider bg-panel px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
             value={periods.value}
             step="1"
             min="1"
@@ -79,10 +79,10 @@ export function SpreadAnalysisPanel() {
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-gray-400">Freq/yr</span>
+          <span className="text-label">Freq/yr</span>
           <input
             type="number"
-            className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+            className="rounded border border-divider bg-panel px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
             value={freq.value}
             step="1"
             min="1"
@@ -93,10 +93,10 @@ export function SpreadAnalysisPanel() {
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-gray-400">Yield %</span>
+          <span className="text-label">Yield %</span>
           <input
             type="number"
-            className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+            className="rounded border border-divider bg-panel px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
             value={yld.value}
             step="0.01"
             min="0"
@@ -107,10 +107,10 @@ export function SpreadAnalysisPanel() {
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-gray-400">Face $</span>
+          <span className="text-label">Face $</span>
           <input
             type="number"
-            className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+            className="rounded border border-divider bg-panel px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
             value={face.value}
             step="100"
             min="100"
@@ -137,32 +137,32 @@ export function SpreadAnalysisPanel() {
       {data && (
         <>
           <div className="grid grid-cols-2 gap-2">
-            <div className="rounded bg-gray-800 p-2">
-              <p className="text-gray-400">Tenor</p>
+            <div className="rounded bg-panel p-2">
+              <p className="text-label">Tenor</p>
               <p className="text-lg font-semibold text-white">
                 {data.tenorYears.toFixed(1)}
-                <span className="ml-1 text-xs text-gray-400">yr</span>
+                <span className="ml-1 text-xs text-label">yr</span>
               </p>
             </div>
-            <div className="rounded bg-gray-800 p-2">
-              <p className="text-gray-400">Gov Spot Rate</p>
+            <div className="rounded bg-panel p-2">
+              <p className="text-label">Gov Spot Rate</p>
               <p className="text-lg font-semibold text-white">
                 {(data.govSpotRate * 100).toFixed(3)}
-                <span className="ml-1 text-xs text-gray-400">%</span>
+                <span className="ml-1 text-xs text-label">%</span>
               </p>
             </div>
-            <div className="rounded bg-gray-800 p-2">
-              <p className="text-gray-400">G-Spread</p>
+            <div className="rounded bg-panel p-2">
+              <p className="text-label">G-Spread</p>
               <p className={`text-lg font-semibold ${spreadColor(data.gSpread)}`}>
                 {data.gSpread.toFixed(1)}
-                <span className="ml-1 text-xs text-gray-400">bps</span>
+                <span className="ml-1 text-xs text-label">bps</span>
               </p>
             </div>
-            <div className="rounded bg-gray-800 p-2">
-              <p className="text-gray-400">Z-Spread</p>
+            <div className="rounded bg-panel p-2">
+              <p className="text-label">Z-Spread</p>
               <p className={`text-lg font-semibold ${spreadColor(data.zSpread)}`}>
                 {data.zSpread.toFixed(1)}
-                <span className="ml-1 text-xs text-gray-400">bps</span>
+                <span className="ml-1 text-xs text-label">bps</span>
               </p>
             </div>
           </div>
@@ -176,18 +176,18 @@ export function SpreadAnalysisPanel() {
                   : "bg-red-900/30"
             }`}
           >
-            <p className="text-gray-400">
+            <p className="text-label">
               OAS (Option-Adjusted Spread)
-              <span className="ml-2 text-[10px] text-gray-500">= Z-spread for vanilla bonds</span>
+              <span className="ml-2 text-[10px] text-muted">= Z-spread for vanilla bonds</span>
             </p>
             <p className={`text-2xl font-bold ${spreadColor(data.oas)}`}>
               {data.oas.toFixed(1)}
-              <span className="ml-1 text-sm text-gray-400">bps</span>
+              <span className="ml-1 text-sm text-label">bps</span>
             </p>
           </div>
 
-          <div className="space-y-2 rounded bg-gray-800 p-3">
-            <p className="text-gray-400">Spread Comparison</p>
+          <div className="space-y-2 rounded bg-panel p-3">
+            <p className="text-label">Spread Comparison</p>
             {[
               { label: "G-Spread", value: data.gSpread, color: "bg-blue-500" },
               {
@@ -198,8 +198,8 @@ export function SpreadAnalysisPanel() {
               { label: "OAS", value: data.oas, color: "bg-purple-500" },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-center gap-2">
-                <span className="w-16 text-right text-gray-400">{label}</span>
-                <div className="flex-1 overflow-hidden rounded bg-gray-700">
+                <span className="w-16 text-right text-label">{label}</span>
+                <div className="flex-1 overflow-hidden rounded bg-divider">
                   <div
                     className={`h-4 rounded transition-all duration-500 ${spreadBg(value)}`}
                     style={{
@@ -214,7 +214,7 @@ export function SpreadAnalysisPanel() {
             ))}
           </div>
 
-          <div className="rounded border border-gray-700 p-2 text-[10px] text-gray-500">
+          <div className="rounded border border-divider p-2 text-[10px] text-muted">
             Typical IG corp spread: 50–150bp · HY: 200–600bp · UST benchmark: 0bp
           </div>
         </>

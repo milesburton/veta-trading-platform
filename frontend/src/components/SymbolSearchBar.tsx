@@ -104,11 +104,11 @@ export function SymbolSearchBar() {
             }}
             onKeyDown={handleKeyDown}
             placeholder="Search symbol, RIC, BBG, ISIN or paste trade (Ctrl+/)"
-            className="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 pl-8 text-sm text-gray-100 outline-none transition-colors focus:border-emerald-500 placeholder:text-gray-600"
+            className="w-full rounded-lg border border-divider bg-page px-3 py-2 pl-8 text-sm text-primary outline-none transition-colors focus:border-emerald-500 placeholder:text-subtle"
           />
           <svg
             aria-hidden="true"
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-600"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -120,7 +120,7 @@ export function SymbolSearchBar() {
               d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
             />
           </svg>
-          <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600 border border-gray-700 rounded px-1 py-0.5 hidden sm:inline">
+          <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-subtle border border-divider rounded px-1 py-0.5 hidden sm:inline">
             Ctrl+/
           </kbd>
         </div>
@@ -138,10 +138,10 @@ export function SymbolSearchBar() {
             </span>
           )}
           {parsed.quantity && (
-            <span className="text-gray-300">{parsed.quantity.toLocaleString()}</span>
+            <span className="text-default">{parsed.quantity.toLocaleString()}</span>
           )}
-          <span className="text-gray-100 font-semibold">{parsed.symbol}</span>
-          {parsed.price && <span className="text-gray-400">@ {parsed.price}</span>}
+          <span className="text-primary font-semibold">{parsed.symbol}</span>
+          {parsed.price && <span className="text-label">@ {parsed.price}</span>}
           {parsed.strategy && (
             <span className="text-sky-400 text-[10px] uppercase">{parsed.strategy}</span>
           )}
@@ -159,7 +159,7 @@ export function SymbolSearchBar() {
       {showResults.value && results.length > 0 && (
         <div
           data-testid="symbol-search-results"
-          className="mx-3 mb-1 rounded-lg border border-gray-700 bg-gray-950 overflow-hidden max-h-64 overflow-y-auto shadow-xl"
+          className="mx-3 mb-1 rounded-lg border border-divider bg-page overflow-hidden max-h-64 overflow-y-auto shadow-xl"
         >
           {results.map((asset, i) => {
             const price = prices[asset.symbol];
@@ -171,20 +171,20 @@ export function SymbolSearchBar() {
                 onMouseDown={() => selectAsset(asset.symbol)}
                 className={`w-full flex items-center gap-3 px-3 py-2 text-xs text-left transition-colors ${
                   i === highlightIdx.value
-                    ? "bg-emerald-900/30 text-gray-100"
-                    : "text-gray-300 hover:bg-gray-800/50"
+                    ? "bg-emerald-900/30 text-primary"
+                    : "text-default hover:bg-panel/50"
                 }`}
               >
-                <span className="font-bold text-gray-100 w-16 shrink-0">{asset.symbol}</span>
-                <span className="flex-1 truncate text-gray-400">{asset.name ?? asset.sector}</span>
-                <span className="text-[10px] text-gray-600 w-12 shrink-0">{asset.exchange}</span>
+                <span className="font-bold text-primary w-16 shrink-0">{asset.symbol}</span>
+                <span className="flex-1 truncate text-label">{asset.name ?? asset.sector}</span>
+                <span className="text-[10px] text-subtle w-12 shrink-0">{asset.exchange}</span>
                 {asset.ric && (
-                  <span className="text-[10px] text-gray-600 w-16 shrink-0 font-mono">
+                  <span className="text-[10px] text-subtle w-16 shrink-0 font-mono">
                     {asset.ric}
                   </span>
                 )}
                 {price != null && (
-                  <span className="tabular-nums text-gray-300 w-16 text-right shrink-0">
+                  <span className="tabular-nums text-default w-16 text-right shrink-0">
                     {price.toFixed(asset.symbol.includes("/") ? 4 : 2)}
                   </span>
                 )}
@@ -195,7 +195,7 @@ export function SymbolSearchBar() {
       )}
 
       {showResults.value && query.value && results.length === 0 && !parsed?.symbol && (
-        <div className="mx-3 mb-1 rounded-lg border border-gray-700 bg-gray-950 px-3 py-3 text-xs text-gray-500 text-center">
+        <div className="mx-3 mb-1 rounded-lg border border-divider bg-page px-3 py-3 text-xs text-muted text-center">
           No instruments matching &ldquo;{query.value}&rdquo;
         </div>
       )}
