@@ -51,7 +51,9 @@ function reconstructOrders(events: JournalEvent[]): OrderRecord[] {
         side: (raw.side ?? "BUY") as string,
         quantity: Number(raw.quantity ?? raw.requestedQty ?? 0),
         limitPrice: Number(raw.limitPrice ?? 0),
-        expiresAt: Number(raw.expiresAt ?? ts + 86_400_000),
+        expiresAt: raw.expiresAt !== undefined
+          ? ts + Number(raw.expiresAt) * 1_000
+          : ts + 86_400_000,
         strategy: (raw.strategy ?? raw.algo ?? "LIMIT") as string,
         status: "queued",
         filled: 0,
@@ -94,7 +96,7 @@ const BASE_ORDER = {
     quantity: 100,
     limitPrice: 190,
     strategy: "TWAP",
-    expiresAt: 1_086_400_000,
+    expiresAt: 86_400,
     algoParams: { strategy: "TWAP", numSlices: 4 },
   },
 };

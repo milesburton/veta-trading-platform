@@ -57,9 +57,9 @@ async function pollOrder(
   const url = `${deps.journalUrl}/orders?userId=${encodeURIComponent(userId)}`;
   const res = await fetchImpl(url, { signal: AbortSignal.timeout(3_000) });
   if (!res.ok) return null;
-  const body = (await res.json()) as { orders?: JournalOrder[] };
-  const orders = body.orders ?? [];
-  return orders.find((o) => o.clientOrderId === clientOrderId) ?? null;
+  const body = await res.json() as JournalOrder[] | { orders?: JournalOrder[] };
+  const orders = Array.isArray(body) ? body : (body.orders ?? []);
+  return orders.find((o) => o.clientOrderId === clientOrderId || o.id === clientOrderId) ?? null;
 }
 
 function isTerminal(status: string): boolean {

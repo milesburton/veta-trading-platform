@@ -90,6 +90,19 @@ export function resetRegime(): void {
   refreshRegime();
 }
 
+export function resetPriceEngine(opts: { prewarmTicks?: number } = {}): void {
+  for (const a of ALL_SEEDED_ASSETS) {
+    marketData[a.symbol] = a.initialPrice;
+    anchorPrices[a.symbol] = a.initialPrice;
+    openPrices[a.symbol] = a.initialPrice;
+  }
+  for (const sector of Object.keys(sectorShocks)) delete sectorShocks[sector];
+  marketDrift = 0;
+  regimeCountdown = 0;
+  refreshRegime();
+  prewarmPrices(opts.prewarmTicks ?? 240);
+}
+
 /** Run `ticks` silent GBM steps so prices start with realistic intraday drift. */
 export function prewarmPrices(ticks = 28_080): void {
   for (let i = 0; i < ticks; i++) {
