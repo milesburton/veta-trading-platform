@@ -122,8 +122,9 @@ async function seedFromJournal(): Promise<void> {
 }
 
 snapshotOpenPrices();
+const PREWARM_TICKS = Number(Deno.env.get("MARKET_SIM_PREWARM_TICKS")) || 28_080;
 setTimeout(() => {
-  prewarmPrices();
+  prewarmPrices(PREWARM_TICKS);
   snapshotOpenPrices();
   logger.info(`Price engine pre-warmed — intraday moves seeded`);
   seedFromJournal()
