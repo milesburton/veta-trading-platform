@@ -67,7 +67,7 @@ Every Deno service emits OTel traces and metrics when started with `OTEL_DENO=tr
 docker compose -f compose.yml -f compose.prod.yml -f compose.observability.yml up -d
 ```
 
-The overlay is opt-in — Fly and bare local development don't ship traces by default to keep the attack surface small and the bandwidth cost zero. Service names are auto-derived from the container hostname inside [`backend/src/lib/telemetry.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/telemetry.ts), so each service appears in Tempo without having to plumb `OTEL_SERVICE_NAME` into 35 compose blocks individually.
+The overlay is opt-in — Fly and bare local development don't ship traces by default to keep the attack surface small and the bandwidth cost zero. Service names are auto-derived from the container hostname inside [`backend/src/lib/telemetry.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/telemetry.ts), so each service appears in Tempo without having to plumb `OTEL_SERVICE_NAME` into 37 compose blocks individually.
 
 Trace context propagates automatically:
 
