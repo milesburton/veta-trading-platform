@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.25.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.24.0...veta-trading-platform-v1.25.0) (2026-05-06)
+
+
+### Features
+
+* **docs:** dynamic glossary page ([00c4b7e](https://github.com/milesburton/veta-trading-platform/commit/00c4b7ea12bb9fae1b342c9c6419b28c77a5d8b4))
+* **frontend:** scenarios panel + RTK Query slice ([b688585](https://github.com/milesburton/veta-trading-platform/commit/b6885851af07a09de955cd8759487fa85f42bb41))
+* **market-sim:** seedable PRNG for deterministic price replay ([baeabeb](https://github.com/milesburton/veta-trading-platform/commit/baeabeb438be351c8f98d1db0c30521b29eabd03))
+* **observability:** Grafana screenshots + in-app log drawer ([7c19188](https://github.com/milesburton/veta-trading-platform/commit/7c191884852a4ccb583f2e3bbb608405a8b9daf8))
+* **observability:** two Grafana dashboards driven by OTel data ([eeb2f89](https://github.com/milesburton/veta-trading-platform/commit/eeb2f8945f57bfaafdafc08c6e5d1ef5e3342d8e))
+* **observability:** wire Deno OTel auto-instrumentation across the stack ([e26e929](https://github.com/milesburton/veta-trading-platform/commit/e26e929370e4c85186e4a00380f29026037b4840))
+* **risk-engine:** immutable, versioned config history ([10ca65b](https://github.com/milesburton/veta-trading-platform/commit/10ca65b128ed605ff6146360c426c22208287165))
+* **scenarios:** orchestrator + gateway routes for repeatable runs ([45a08eb](https://github.com/milesburton/veta-trading-platform/commit/45a08eb1b4b69262bbcdcb0ba6f9565e2160f2e1))
+* **scenarios:** persistence layer for repeatable trading scenarios ([3336ca6](https://github.com/milesburton/veta-trading-platform/commit/3336ca6127855225f963717951bee23c8fc04967))
+
+
+### Bug Fixes
+
+* **compose:** remove duplicate gateway-ws-strip from prod override ([22f032e](https://github.com/milesburton/veta-trading-platform/commit/22f032e5b0c81f823ad450f3b58555622fff8910))
+* **compose:** stop stripping /ws/gateway prefix in Traefik ([96a586b](https://github.com/milesburton/veta-trading-platform/commit/96a586b0abdbda345d081b130beeddaf66260570))
+* **db,build:** lazy pools + version build-arg threaded through CI ([65b3df5](https://github.com/milesburton/veta-trading-platform/commit/65b3df5db53d5b7e48a38395965d62e7f5d3219a))
+* **frontend:** docs link in header + semver build chip without duplicate env pill ([b6358cb](https://github.com/milesburton/veta-trading-platform/commit/b6358cb93b5e8a4f17396c22e8e13f1816cc85c5))
+* **frontend:** tone down kill-switch idle red, dedupe startup version, frame header build-info ([0d672e7](https://github.com/milesburton/veta-trading-platform/commit/0d672e74195e534734f3893ec27f4e7ddacc3c4c))
+* **observability:** wire Alloy → Tempo correctly + align dashboards with real label keys ([7a5f577](https://github.com/milesburton/veta-trading-platform/commit/7a5f577c56cdd9a3e9513f4bb20e3021c95eecdd))
+
+
+### Reverts
+
+* **fly:** roll back vm resize — 8gb wasn't enough for the monolith ([ace5a5a](https://github.com/milesburton/veta-trading-platform/commit/ace5a5afc5728ecb6b5d437919036061c3de17e8))
+
 ## [1.24.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.23.0...veta-trading-platform-v1.24.0) (2026-05-05)
 
 
