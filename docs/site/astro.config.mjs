@@ -142,6 +142,7 @@ export default defineConfig({
             { label: "API gateway", slug: "reference/api-gateway" },
             { label: "RBAC & permissions", slug: "reference/rbac" },
             { label: "Trading styles", slug: "reference/trading-styles" },
+            { label: "Panel reference", slug: "reference/panels" },
             { label: "Migrations", slug: "reference/migrations" },
             { label: "Performance", slug: "reference/performance" },
             { label: "Tech stack", slug: "reference/tech-stack" },
