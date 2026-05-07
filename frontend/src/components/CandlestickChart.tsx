@@ -9,6 +9,7 @@ import {
 } from "lightweight-charts";
 import { useEffect, useRef } from "react";
 import { useAppSelector } from "../store/hooks.ts";
+import { COLOR } from "../tokens.ts";
 import type { OhlcCandle } from "../types.ts";
 
 type Interval = "1m" | "5m";
@@ -58,7 +59,7 @@ function toVolData(c: OhlcCandle) {
   return {
     time: (c.time / 1000) as UTCTimestamp,
     value: c.volume ?? 0,
-    color: c.close >= c.open ? "#34d39966" : "#f8717166",
+    color: c.close >= c.open ? COLOR.UP_BG : COLOR.DOWN_BG,
   };
 }
 
@@ -87,16 +88,16 @@ export function CandlestickChart({ symbol, candles }: Props) {
     });
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: "#34d399",
-      downColor: "#f87171",
-      borderUpColor: "#34d399",
-      borderDownColor: "#f87171",
-      wickUpColor: "#34d399",
-      wickDownColor: "#f87171",
+      upColor: COLOR.UP,
+      downColor: COLOR.DOWN,
+      borderUpColor: COLOR.UP,
+      borderDownColor: COLOR.DOWN,
+      wickUpColor: COLOR.UP,
+      wickDownColor: COLOR.DOWN,
     });
 
     const volumeSeries = chart.addSeries(HistogramSeries, {
-      color: "#34d399",
+      color: COLOR.UP,
       priceFormat: { type: "volume" },
       priceScaleId: "volume",
     });

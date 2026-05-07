@@ -23,11 +23,18 @@ import {
 } from "recharts";
 import { useChannelOut } from "../hooks/useChannelOut.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import { COLOR } from "../tokens.ts";
 
 const DIR_COLOUR: Record<string, string> = {
-  long: "#34d399",
-  short: "#f87171",
-  neutral: "#9ca3af",
+  get long() {
+    return COLOR.UP;
+  },
+  get short() {
+    return COLOR.DOWN;
+  },
+  get neutral() {
+    return COLOR.NEUTRAL;
+  },
 };
 
 type Direction = "long" | "short" | "neutral";
@@ -190,17 +197,17 @@ export function ResearchRadarPanel() {
       <div className="flex-1 min-h-0 px-2 py-1">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: -8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+            <CartesianGrid strokeDasharray="3 3" stroke={COLOR.CHART_GRID} />
             <XAxis
               type="number"
               dataKey="score"
               domain={[-1, 1]}
-              tick={{ fill: "#6b7280", fontSize: 9 }}
+              tick={{ fill: COLOR.CHART_AXIS, fontSize: 9 }}
               tickFormatter={(v: number) => v.toFixed(1)}
               label={{
                 value: "Score",
                 position: "insideBottom",
-                fill: "#4b5563",
+                fill: "rgb(var(--gray-600))",
                 fontSize: 9,
                 dy: 8,
               }}
@@ -209,19 +216,19 @@ export function ResearchRadarPanel() {
               type="number"
               dataKey="confidence"
               domain={[0, 1]}
-              tick={{ fill: "#6b7280", fontSize: 9 }}
+              tick={{ fill: COLOR.CHART_AXIS, fontSize: 9 }}
               tickFormatter={(v: number) => `${(v * 100).toFixed(0)}%`}
               label={{
                 value: "Conf",
                 angle: -90,
                 position: "insideLeft",
-                fill: "#4b5563",
+                fill: "rgb(var(--gray-600))",
                 fontSize: 9,
                 dx: 12,
               }}
             />
             <ZAxis type="number" dataKey="z" range={[30, 300]} />
-            <ReferenceLine x={0} stroke="#374151" strokeDasharray="3 3" />
+            <ReferenceLine x={0} stroke={COLOR.CHART_TOOLTIP_BORDER} strokeDasharray="3 3" />
             <Tooltip content={<RadarTooltip />} cursor={false} />
             <Scatter
               data={filtered}
@@ -235,7 +242,7 @@ export function ResearchRadarPanel() {
                   fill?: string;
                   payload?: Entry;
                 };
-                const { cx = 0, cy = 0, r = 6, fill = "#9ca3af", payload } = p;
+                const { cx = 0, cy = 0, r = 6, fill = COLOR.NEUTRAL, payload } = p;
                 return (
                   <circle
                     data-symbol={payload?.symbol}
@@ -244,14 +251,14 @@ export function ResearchRadarPanel() {
                     r={r}
                     fill={fill}
                     fillOpacity={0.75}
-                    stroke="#1f2937"
+                    stroke={COLOR.CHART_GRID}
                     strokeWidth={0.5}
                   />
                 );
               }}
             >
               {filtered.map((entry) => (
-                <Cell key={entry.symbol} fill={DIR_COLOUR[entry.direction] ?? "#9ca3af"} />
+                <Cell key={entry.symbol} fill={DIR_COLOUR[entry.direction] ?? COLOR.NEUTRAL} />
               ))}
             </Scatter>
           </ScatterChart>

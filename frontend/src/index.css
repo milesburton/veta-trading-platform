@@ -11,6 +11,49 @@
   --gray-800: 30 41 55; /* panel backgrounds */
   --gray-900: 15 23 38; /* surface backgrounds */
   --gray-950: 3 7 18; /* page background */
+
+  /* Trading semantics — RGB triplets so Tailwind <alpha-value> works.
+     Constant across themes for now; per-theme contrast tuning is a follow-up. */
+  --semantic-up: 52 211 153;          /* emerald-400  */
+  --semantic-up-dark: 5 150 105;      /* emerald-600  */
+  --semantic-down: 248 113 113;       /* red-400      */
+  --semantic-down-dark: 220 38 38;    /* red-600      */
+  --semantic-neutral: 156 163 175;    /* gray-400     */
+  --semantic-maker: 16 185 129;       /* emerald-500  */
+  --semantic-taker: 245 158 11;       /* amber-500    */
+  --semantic-cross: 56 189 248;       /* sky-400      */
+  --semantic-limit: 59 130 246;       /* blue-500     */
+  --semantic-twap: 168 85 247;        /* purple-500   */
+  --semantic-pov: 249 115 22;         /* orange-500   */
+  --semantic-vwap: 234 179 8;         /* yellow-500   */
+  --semantic-iceberg: 34 211 238;     /* cyan-400     */
+  --semantic-sniper: 244 63 94;       /* rose-500     */
+  --semantic-arrival-price: 129 140 248; /* indigo-400 */
+
+  /* Chart chrome */
+  --chart-grid: 31 41 55;             /* gray-800     */
+  --chart-axis: 107 114 128;          /* gray-500     */
+  --chart-tooltip-bg: 17 24 39;       /* gray-900     */
+  --chart-tooltip-border: 55 65 81;   /* gray-700     */
+
+  /* Heatmap palette — Finviz-style, perceptually balanced. */
+  --heat-strong-up: 10 92 49;
+  --heat-mid-up: 20 122 65;
+  --heat-up: 30 153 82;
+  --heat-light-up: 45 181 106;
+  --heat-faint-up: 30 77 43;
+  --heat-neutral: 28 37 49;
+  --heat-faint-down: 77 28 28;
+  --heat-down: 181 42 42;
+  --heat-mid-down: 146 32 32;
+  --heat-strong-down: 114 21 21;
+  --heat-deep-down: 79 13 13;
+  --heat-text-light-up: 167 243 208;
+  --heat-text-light-down: 252 165 165;
+  --heat-text-default: 240 240 240;
+  --heat-bg: 10 14 20;
+  --heat-sector-bg: 13 21 32;
+  --heat-sector-label: 100 116 139;
 }
 
 [data-theme="darker"] {

@@ -11,17 +11,12 @@ import {
   YAxis,
 } from "recharts";
 import { useAppSelector } from "../store/hooks.ts";
-import type { LiquidityFlag, ObsEvent, OrderRecord } from "../types.ts";
+import { COLOR } from "../tokens.ts";
+import type { ObsEvent, OrderRecord } from "../types.ts";
 import { formatBps, formatTime } from "../utils/format.ts";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 type ObsTab = "summary" | "trades" | "events";
-
-const LIQ_COLORS: Record<LiquidityFlag, string> = {
-  MAKER: "#10b981",
-  TAKER: "#f59e0b",
-  CROSS: "#38bdf8",
-};
 
 function buildFillTimeline(order: OrderRecord) {
   if (order.children.length === 0) return [];
@@ -154,24 +149,22 @@ function LiqBar({
       <div className="text-[9px] text-gray-500 uppercase tracking-wider">Liquidity Mix</div>
       <div className="flex h-2 rounded overflow-hidden w-full bg-gray-800">
         <div
-          style={{ width: `${makerPct}%`, background: LIQ_COLORS.MAKER }}
+          style={{ width: `${makerPct}%`, background: COLOR.MAKER }}
           title={`MAKER ${makerPct.toFixed(0)}%`}
         />
         <div
-          style={{ width: `${takerPct}%`, background: LIQ_COLORS.TAKER }}
+          style={{ width: `${takerPct}%`, background: COLOR.TAKER }}
           title={`TAKER ${takerPct.toFixed(0)}%`}
         />
         <div
-          style={{ width: `${crossPct}%`, background: LIQ_COLORS.CROSS }}
+          style={{ width: `${crossPct}%`, background: COLOR.CROSS }}
           title={`CROSS ${crossPct.toFixed(0)}%`}
         />
       </div>
       <div className="flex gap-2 text-[9px] mt-0.5">
-        <span style={{ color: LIQ_COLORS.MAKER }}>MAKER {makerPct.toFixed(0)}%</span>
-        <span style={{ color: LIQ_COLORS.TAKER }}>TAKER {takerPct.toFixed(0)}%</span>
-        {crossPct > 0 && (
-          <span style={{ color: LIQ_COLORS.CROSS }}>CROSS {crossPct.toFixed(0)}%</span>
-        )}
+        <span style={{ color: COLOR.MAKER }}>MAKER {makerPct.toFixed(0)}%</span>
+        <span style={{ color: COLOR.TAKER }}>TAKER {takerPct.toFixed(0)}%</span>
+        {crossPct > 0 && <span style={{ color: COLOR.CROSS }}>CROSS {crossPct.toFixed(0)}%</span>}
       </div>
     </div>
   );
@@ -255,26 +248,26 @@ function TradeRow({ order }: { order: OrderRecord }) {
                   </div>
                   <ResponsiveContainer width="100%" height={90}>
                     <LineChart data={timeline} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                      <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
-                      <XAxis dataKey="time" tick={{ fontSize: 9, fill: "#6b7280" }} />
+                      <CartesianGrid stroke={COLOR.CHART_GRID} strokeDasharray="3 3" />
+                      <XAxis dataKey="time" tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }} />
                       <YAxis
                         yAxisId="pct"
                         domain={[0, 100]}
-                        tick={{ fontSize: 9, fill: "#6b7280" }}
+                        tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }}
                         unit="%"
                         width={30}
                       />
                       <YAxis
                         yAxisId="px"
                         orientation="right"
-                        tick={{ fontSize: 9, fill: "#6b7280" }}
+                        tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }}
                         width={50}
                         domain={["auto", "auto"]}
                       />
                       <Tooltip
                         contentStyle={{
-                          background: "#111827",
-                          border: "1px solid #374151",
+                          background: COLOR.CHART_TOOLTIP_BG,
+                          border: `1px solid ${COLOR.CHART_TOOLTIP_BORDER}`,
                           fontSize: 10,
                         }}
                         formatter={(v: unknown, name: string) =>
@@ -286,7 +279,7 @@ function TradeRow({ order }: { order: OrderRecord }) {
                       <ReferenceLine
                         yAxisId="pct"
                         y={100}
-                        stroke="#10b981"
+                        stroke={COLOR.MAKER}
                         strokeDasharray="4 2"
                         strokeWidth={1}
                       />
@@ -294,7 +287,7 @@ function TradeRow({ order }: { order: OrderRecord }) {
                         yAxisId="pct"
                         type="monotone"
                         dataKey="pct"
-                        stroke="#38bdf8"
+                        stroke={COLOR.CROSS}
                         strokeWidth={1.5}
                         dot={false}
                         name="pct"
@@ -303,7 +296,7 @@ function TradeRow({ order }: { order: OrderRecord }) {
                         yAxisId="px"
                         type="monotone"
                         dataKey="fillPx"
-                        stroke="#f59e0b"
+                        stroke={COLOR.TAKER}
                         strokeWidth={1}
                         dot={false}
                         strokeDasharray="3 2"
@@ -498,16 +491,16 @@ export function ObservabilityPanel() {
                 <div className="text-[10px] text-gray-500 mb-1">Fill events / 5s bucket</div>
                 <ResponsiveContainer width="100%" height={80}>
                   <LineChart data={chartData}>
-                    <XAxis dataKey="time" tick={{ fontSize: 9, fill: "#6b7280" }} />
+                    <XAxis dataKey="time" tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }} />
                     <YAxis
                       allowDecimals={false}
-                      tick={{ fontSize: 9, fill: "#6b7280" }}
+                      tick={{ fontSize: 9, fill: COLOR.CHART_AXIS }}
                       width={20}
                     />
                     <Tooltip
                       contentStyle={{
-                        background: "#111827",
-                        border: "1px solid #374151",
+                        background: COLOR.CHART_TOOLTIP_BG,
+                        border: `1px solid ${COLOR.CHART_TOOLTIP_BORDER}`,
                         fontSize: 10,
                       }}
                       formatter={(v: unknown, name: string) => [
@@ -518,14 +511,14 @@ export function ObservabilityPanel() {
                     <Line
                       type="monotone"
                       dataKey="fills"
-                      stroke="#10b981"
+                      stroke={COLOR.MAKER}
                       strokeWidth={1.5}
                       dot={false}
                     />
                     <Line
                       type="monotone"
                       dataKey="orders"
-                      stroke="#38bdf8"
+                      stroke={COLOR.CROSS}
                       strokeWidth={1}
                       dot={false}
                       strokeDasharray="3 2"

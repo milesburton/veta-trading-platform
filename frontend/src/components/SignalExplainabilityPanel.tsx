@@ -8,6 +8,7 @@
 import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useAppSelector } from "../store/hooks.ts";
 import type { SignalFactor } from "../store/intelligenceSlice.ts";
+import { COLOR } from "../tokens.ts";
 
 const FEATURE_LABELS: Record<string, string> = {
   momentum: "Momentum",
@@ -75,7 +76,7 @@ export function SignalExplainabilityPanel() {
         {sortedFactors.map((f: SignalFactor) => {
           const isPositive = f.contribution >= 0;
           const barPct = (Math.abs(f.contribution) / maxContrib) * 100;
-          const colour = isPositive ? "#34d399" : "#f87171";
+          const colour = isPositive ? COLOR.UP : COLOR.DOWN;
           const label = FEATURE_LABELS[f.name] ?? f.name;
 
           return (

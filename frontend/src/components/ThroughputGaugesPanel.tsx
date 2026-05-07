@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { alertAdded } from "../store/alertsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+import { COLOR } from "../tokens.ts";
 
 interface SparkPoint {
   t: number;
@@ -260,11 +261,11 @@ export function ThroughputGaugesPanel() {
               <XAxis dataKey="t" hide />
               <Tooltip
                 contentStyle={{
-                  background: "#111827",
+                  background: COLOR.CHART_TOOLTIP_BG,
                   border: "1px solid #374151",
                   borderRadius: 4,
                   fontSize: 10,
-                  color: "#d1d5db",
+                  color: "rgb(var(--gray-300))",
                 }}
                 labelFormatter={(v) => `${v}s ago`}
                 formatter={(v: number) => [v, "orders"]}
@@ -272,7 +273,7 @@ export function ThroughputGaugesPanel() {
               <Line
                 type="monotone"
                 dataKey="count"
-                stroke={metrics.value.ordersPerMin > ORDER_FLOOD ? "#f87171" : "#3b82f6"}
+                stroke={metrics.value.ordersPerMin > ORDER_FLOOD ? COLOR.DOWN : COLOR.LIMIT}
                 strokeWidth={1.5}
                 dot={false}
                 isAnimationActive={false}

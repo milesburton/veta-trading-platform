@@ -9,6 +9,7 @@ import {
 } from "../store/alertsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
+import { COLOR } from "../tokens.ts";
 import type { ObsEvent } from "../types.ts";
 
 const WINDOW_MS = 60_000;
@@ -294,11 +295,11 @@ function ThroughputZone({ metrics, sparkline }: { metrics: Metrics; sparkline: S
             <XAxis dataKey="t" hide />
             <Tooltip
               contentStyle={{
-                background: "#111827",
+                background: COLOR.CHART_TOOLTIP_BG,
                 border: "1px solid #374151",
                 borderRadius: 4,
                 fontSize: 9,
-                color: "#d1d5db",
+                color: "rgb(var(--gray-300))",
               }}
               labelFormatter={(v) => `${v}s ago`}
               formatter={(v: number) => [v, "orders"]}
@@ -306,7 +307,7 @@ function ThroughputZone({ metrics, sparkline }: { metrics: Metrics; sparkline: S
             <Line
               type="monotone"
               dataKey="count"
-              stroke={metrics.ordersPerMin > ORDER_FLOOD ? "#f87171" : "#3b82f6"}
+              stroke={metrics.ordersPerMin > ORDER_FLOOD ? COLOR.DOWN : COLOR.LIMIT}
               strokeWidth={1.5}
               dot={false}
               isAnimationActive={false}

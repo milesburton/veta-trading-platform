@@ -14,6 +14,7 @@ import { useGetQuoteMutation } from "../store/analyticsApi.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { selectSymbols } from "../store/selectors.ts";
 import { setOptionPrefill } from "../store/uiSlice.ts";
+import { COLOR } from "../tokens.ts";
 import type { OptionQuoteResponse, OptionType } from "../types/analytics.ts";
 
 function normCdf(x: number): number {
@@ -84,7 +85,7 @@ function GreekRow({ label, value, title }: { label: string; value: string; title
 }
 
 const CHART_TOOLTIP_STYLE = {
-  backgroundColor: "#111827",
+  backgroundColor: COLOR.CHART_TOOLTIP_BG,
   border: "1px solid #374151",
   fontSize: 9,
   padding: "4px 8px",
@@ -385,9 +386,13 @@ export function OptionPricingPanel() {
                   data={sensitivityData}
                   margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                  <XAxis dataKey="spot" tick={{ fontSize: 8, fill: "#6b7280" }} interval={4} />
-                  <YAxis tick={{ fontSize: 8, fill: "#6b7280" }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={COLOR.CHART_GRID} />
+                  <XAxis
+                    dataKey="spot"
+                    tick={{ fontSize: 8, fill: COLOR.CHART_AXIS }}
+                    interval={4}
+                  />
+                  <YAxis tick={{ fontSize: 8, fill: COLOR.CHART_AXIS }} />
                   <Tooltip
                     contentStyle={CHART_TOOLTIP_STYLE}
                     formatter={(val: number, name: string) => [val.toFixed(5), name]}
@@ -396,7 +401,7 @@ export function OptionPricingPanel() {
                   <Line
                     type="monotone"
                     dataKey="delta"
-                    stroke="#34d399"
+                    stroke={COLOR.UP}
                     dot={false}
                     strokeWidth={1.5}
                   />
@@ -410,7 +415,7 @@ export function OptionPricingPanel() {
                   <Line
                     type="monotone"
                     dataKey="theta"
-                    stroke="#f87171"
+                    stroke={COLOR.DOWN}
                     dot={false}
                     strokeWidth={1.5}
                   />

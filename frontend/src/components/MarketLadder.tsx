@@ -5,6 +5,7 @@ import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelOut } from "../hooks/useChannelOut.ts";
 import { useColumnLayout } from "../hooks/useColumnLayout.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import { COLOR } from "../tokens.ts";
 import type { ColDef } from "../types/gridPrefs.ts";
 import type { AssetDef, MarketPrices, OrderBookSnapshot, PriceHistory } from "../types.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
@@ -107,7 +108,7 @@ function Sparkline({ data }: { data: number[] }) {
     const max = Math.max(...data);
     const range = max - min || 1;
     const isUp = data[data.length - 1] >= data[0];
-    ctx.strokeStyle = isUp ? "#34d399" : "#f87171";
+    ctx.strokeStyle = isUp ? COLOR.UP : COLOR.DOWN;
     ctx.lineWidth = 1.5;
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -179,7 +180,7 @@ const Row = memo(function Row({
     onSelectAsset(isSelected ? null : asset.symbol);
   }
 
-  const accentColour = isSelected ? (channelHex ?? "#34d399") : undefined;
+  const accentColour = isSelected ? (channelHex ?? COLOR.UP) : undefined;
 
   return (
     <div {...ariaAttributes} style={style}>
@@ -217,7 +218,7 @@ const Row = memo(function Row({
           <div
             className="font-semibold leading-tight"
             style={{
-              color: isSelected ? (accentColour ?? "#34d399") : "#e5e7eb",
+              color: isSelected ? (accentColour ?? COLOR.UP) : "rgb(var(--gray-200))",
             }}
           >
             {asset.symbol}
