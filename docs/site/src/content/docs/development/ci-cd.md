@@ -131,6 +131,49 @@ Every CI run on `main` generates JSON badge files committed to `docs/badges/`:
 
 Badges are shields.io endpoint badges reading from the raw GitHub file URL.
 
+## Bot PAT for auto-merge
+
+[`.github/workflows/trusted-automerge.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/trusted-automerge.yml) auto-approves and squash-merges trusted PRs. By default it uses GitHub's built-in `GITHUB_TOKEN`, which has a known limitation: **commits made by `GITHUB_TOKEN` don't fire downstream `on: push` workflows**. GitHub's anti-loop policy treats them as bot-internal events.
+
+The visible symptoms are:
+
+- The auto-merge succeeds, the merge commit lands on `main`, but `Deploy to Fly.io`, the coverage-badges commit, and the on-push CI run for `main` never fire.
+- Integration tests / lint / unit tests still ran on the PR before merge — the PR-level CI is unaffected — but `main`'s status check trail is empty for that SHA.
+
+The PR-level CI runs are good enough for code correctness, but the missing main-push workflows leave stale badges and skip optional jobs that only fire on main. To close the gap, swap the workflow's token reference from `GITHUB_TOKEN` to a personal access token with `Contents: write` and `Pull requests: write` scopes on this repo.
+
+### Setup
+
+1. **Create a fine-grained PAT.** GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token.
+   - Repository access: this repo only.
+   - Permissions:
+     - `Contents`: Read and write
+     - `Pull requests`: Read and write
+     - `Metadata`: Read-only (mandatory)
+   - Expiration: pick a date you'll remember to rotate; 1 year is reasonable for a hobby project.
+2. **Add it as a repo secret.** GitHub → repo Settings → Secrets and variables → Actions → New repository secret. Name it `BOT_PAT`.
+3. **Edit `trusted-automerge.yml`** to use the secret:
+   ```yaml
+   - name: Enable auto-merge once checks pass
+     env:
+       GH_TOKEN: ${{ secrets.BOT_PAT }}    # was: ${{ secrets.GITHUB_TOKEN }}
+       PR_URL: ${{ github.event.pull_request.html_url }}
+     run: |
+       gh pr merge "$PR_URL" --auto --squash --delete-branch || \
+       gh pr merge "$PR_URL" --auto --merge --delete-branch
+   ```
+4. **Verify.** Open any small PR, let auto-merge run, then check that the merge commit on main fires both CI and Deploy GitHub Pages. If they don't, the token scopes are wrong (most common cause: forgot `Contents: write`).
+
+### Manual escape hatch (no PAT)
+
+Until the PAT is configured, [`ci.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/ci.yml) accepts `workflow_dispatch` so you can re-trigger CI on any commit:
+
+```sh
+gh workflow run ci.yml --ref main
+```
+
+Same for `deploy.yml` if a Fly deploy is needed despite [#84](https://github.com/milesburton/veta-trading-platform/pull/84) disabling the `push` trigger.
+
 ## Release management
 
 - **Release Please** auto-generates version bump PRs from conventional commits

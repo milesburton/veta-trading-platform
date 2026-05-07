@@ -15,6 +15,24 @@ The self-hosted LGTM stack and the OTel auto-instrumentation overlay described o
 The instrumentation itself — `OTEL_DENO=true`, the trace-propagating Kafka helpers, the `withSpan()` calls — works against any OTLP receiver. Only the receiver and storage choice changes.
 </Aside>
 
+## Where logs surface
+
+Logs from the platform appear in **three places**, depending on what's running. Use this decision tree:
+
+| You want to… | Use this | What it shows |
+|---|---|---|
+| Search recent logs from inside the app, no extra setup | **Logs drawer** in the app's status bar (`Logs` button, top-right) | Last ~2,000 lines from the gateway's in-memory ring buffer; falls back to Loki if `LOKI_URL` is set |
+| Full historical search across every service | **Grafana → Explore → Loki datasource** at `http://localhost:3000` | Everything Alloy has shipped to Loki; backed by the LGTM stack |
+| Tail a single service's stdout while debugging | **`supervisorctl tail -f <service>`** on the host running the platform | Live stdout/stderr from supervisord; same lines that Alloy is collecting |
+| Track an order through the whole pipeline | **Grafana → Tempo → search by trace ID** | Distributed trace spanning gateway → OMS → algos → EMS → journal, with linked log lines |
+| Per-service container logs (Docker / k8s) | **`docker logs <container>`** | Raw stdout from a single service container |
+
+**Quickest win**: the in-app Logs drawer always works with zero infrastructure — even on the Fly demo or a fresh dev container. Each row is filterable by service, log level (error/warn/info/debug), time window (5m–6h), and free-text search.
+
+When the LGTM stack is up (`docker compose -f observability/docker-compose.lgtm.yml up -d`) and the gateway has `LOKI_URL=http://localhost:3100` set, the same drawer transparently switches to LogQL queries against Loki — same UI, full history. The drawer's response includes a `source: "loki" | "ring-buffer"` field so you always know which one answered.
+
+The remainder of this page covers the LGTM stack itself; jump to [In-app log search](#in-app-log-search) if you only want the drawer details, or [How events get into Loki](#how-events-get-into-loki) for the collector path.
+
 ## LGTM stack
 
 A separate Compose stack at [`observability/docker-compose.lgtm.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/docker-compose.lgtm.yml) provides metrics, logs and traces. It is independent of the trading stack and can run on the same host or be pointed at a remote one.
