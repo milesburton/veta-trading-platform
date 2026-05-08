@@ -1,7 +1,7 @@
 {
   "uid": "veta-order-pipeline-traces",
   "title": "Order Pipeline (Traces)",
-  "description": "Trace-driven view of the order lifecycle. The platform's HTTP and Kafka hops both propagate trace context, so a single submitted order produces one connected trace from Gateway through OMS, Risk, Algo, EMS, and Journal. This dashboard surfaces the slowest, the failed, and the most active.",
+  "description": "Trace-driven view of the order lifecycle. The platform's HTTP and Kafka hops both propagate trace context, so a single submitted order produces one connected trace from Gateway through OMS, Risk, Algo, EMS, and Journal. This dashboard surfaces the slowest, the failed, and the most active. **Empty panels** mean no recent order activity — submit an order via the Trading UI or run Demo Day from Mission Control to populate the view.",
   "tags": ["veta", "otel", "orders", "traces"],
   "timezone": "browser",
   "time": { "from": "now-30m", "to": "now" },
@@ -21,33 +21,34 @@
     {
       "id": 10,
       "type": "timeseries",
-      "title": "Order submission latency (gateway span p50/p95/p99)",
-      "description": "Latency of the gateway's order-submission span — what the user actually waited for.",
+      "title": "Order pipeline latency (OMS span p50/p95/p99)",
+      "description": "Latency of OMS's per-order processing span — the time from receiving orders.new to publishing orders.submitted (after risk-check). Order submission via WebSocket isn't a regular HTTP span, so the OMS-side measurement is the closest proxy for end-user wait time.",
       "gridPos": { "x": 0, "y": 1, "w": 12, "h": 9 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "s",
           "color": { "mode": "palette-classic" },
-          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5 }
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5 },
+          "noValue": "no order activity in this window"
         }
       },
       "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"gateway\",span_name=~\".*orders.*|.*submit.*\"}[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"oms\",span_kind=\"SPAN_KIND_CLIENT\"}[5m])))",
           "legendFormat": "p50",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"gateway\",span_name=~\".*orders.*|.*submit.*\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"oms\",span_kind=\"SPAN_KIND_CLIENT\"}[5m])))",
           "legendFormat": "p95",
           "refId": "B",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"gateway\",span_name=~\".*orders.*|.*submit.*\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"oms\",span_kind=\"SPAN_KIND_CLIENT\"}[5m])))",
           "legendFormat": "p99",
           "refId": "C",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
@@ -71,7 +72,7 @@
       "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] } },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, service) (rate(traces_spanmetrics_latency_bucket{service=~\"gateway|oms|risk-engine|ems|journal|limit-algo|twap-algo|pov-algo|vwap-algo\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, service) (rate(traces_spanmetrics_latency_bucket{service=~\"gateway|oms|risk-engine|ems|journal|limit-algo|twap-algo|pov-algo|vwap-algo\",url_path!~\"/health|/healthz|/api/overview|/logs/query|/data-depth\"}[5m])))",
           "legendFormat": "{{service}}",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
