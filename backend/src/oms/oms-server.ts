@@ -657,34 +657,38 @@ killConsumer?.onMessage(async (topic, raw) => {
 
 logger.info(`Listening for orders.new on message bus`);
 
+interface JournalOrder {
+  id: string;
+  clientOrderId?: string;
+  status: string;
+  expiresAt: number;
+  userId?: string;
+}
+
 async function expireOrphanedOrders() {
   try {
-    const res = await fetch(`${JOURNAL_URL}/orders?limit=500`);
+    const res = await fetch(`${JOURNAL_URL}/orders?limit=500`, {
+      signal: AbortSignal.timeout(5_000),
+    });
     if (!res.ok) return;
-    const orders = await res.json() as Array<{
-      id: string;
-      clientOrderId?: string;
-      status: string;
-      expiresAt: number;
-      userId?: string;
-    }>;
+    const orders = await res.json() as JournalOrder[];
     const now = Date.now();
-    for (const order of orders) {
-      if (
-        (order.status === "pending" || order.status === "working") &&
-        order.expiresAt < now
-      ) {
-        await producer?.send("orders.expired", {
-          orderId: order.id,
-          clientOrderId: order.clientOrderId ?? order.id,
-          userId: order.userId,
+    const expired = orders.filter((o) =>
+      (o.status === "pending" || o.status === "working") && o.expiresAt < now
+    );
+    await Promise.all(
+      expired.map((o) =>
+        producer?.send("orders.expired", {
+          orderId: o.id,
+          clientOrderId: o.clientOrderId ?? o.id,
+          userId: o.userId,
           ts: now,
           reason: "expired_on_oms_restart",
-        }).catch(() => {});
-        logger.info(`Expired orphaned order ${order.id}`);
-      }
-    }
-  } catch { /* journal may not be up yet */ }
+        }).catch(() => {})
+      ),
+    );
+    expired.forEach((o) => logger.info(`Expired orphaned order ${o.id}`));
+  } catch { /* journal may not be up yet, or fetch timed out */ }
 }
 
 setTimeout(() => {
