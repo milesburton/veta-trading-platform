@@ -80,9 +80,9 @@ checklist of work in front of us.
 
 | Capability | State | Where |
 |---|---|---|
-| Dependency scanning on PRs | Partially | Dependabot is on; no CodeQL/Semgrep. Planned. |
-| Secret scanning of git history | Deferred | `gitleaks` to be added to CI. |
-| Static analysis on every PR | Deferred | Planned: CodeQL workflow. |
+| Dependency scanning on PRs | Implemented | Dependabot enabled + CodeQL `security-and-quality` query suite via [`.github/workflows/codeql.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/codeql.yml). |
+| Secret scanning of git history | Implemented | [`gitleaks` workflow](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/gitleaks.yml) runs on every push, every PR, and weekly against full history. |
+| Static analysis on every PR | Implemented | CodeQL [`javascript-typescript`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/codeql.yml) on every PR + main + weekly. |
 | SBOM generation per build | Deferred | Planned: `syft` in the docker-base build step. |
 | Container image signatures | Deferred | Planned: `cosign` in the docker-services matrix. |
 | Reproducible builds with pinned image digests | Partially | Compose uses `:latest` tags from GHCR; pinning by digest planned. |
