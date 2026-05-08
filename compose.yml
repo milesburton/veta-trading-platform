@@ -380,6 +380,8 @@ services:
         condition: service_healthy
       db-migrate:
         condition: service_completed_successfully
+      journal:
+        condition: service_healthy
     environment:
       OMS_PORT: "5002"
       ALGO_HOST: limit-algo
@@ -394,6 +396,10 @@ services:
       IS_ALGO_PORT: "5026"
       USER_SERVICE_HOST: user-service
       USER_SERVICE_PORT: "5008"
+      RISK_ENGINE_HOST: risk-engine
+      RISK_ENGINE_PORT: "5032"
+      JOURNAL_HOST: journal
+      JOURNAL_PORT: "5009"
       REDPANDA_BROKERS: redpanda:9092
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5002/health || exit 1"]
@@ -1416,8 +1422,11 @@ services:
     depends_on:
       redpanda:
         condition: service_healthy
+      market-sim:
+        condition: service_healthy
     environment:
       REDPANDA_BROKERS: redpanda:9092
+      MARKET_SIM_URL: http://market-sim:5000
     labels:
       - "traefik.enable=false"
 
