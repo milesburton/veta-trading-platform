@@ -23,6 +23,8 @@ jobs:
       backend-coverage: ${{ steps.backend_coverage.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BOT_PAT }}
 
       - uses: denoland/setup-deno@v2
         with:
@@ -86,6 +88,9 @@ jobs:
       frontend-coverage: ${{ steps.frontend_coverage.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BOT_PAT }}
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -209,6 +214,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BOT_PAT }}
+
 
       - name: Generate frontend/backend/combined coverage badges
         env:
@@ -268,6 +276,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BOT_PAT }}
 
       - uses: denoland/setup-deno@v2
         with:
@@ -310,6 +320,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BOT_PAT }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -384,7 +396,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BOT_PAT }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -442,7 +454,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BOT_PAT }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -714,7 +726,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BOT_PAT }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
