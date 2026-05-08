@@ -9,8 +9,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   // Retry once on CI to tolerate flaky timing; never locally.
   retries: process.env.CI ? 1 : 0,
-  // Serial on CI (single worker keeps resource usage low); parallel locally.
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 4 : undefined,
 
   webServer: {
     command: `npx vite --port ${PORT} --mode playwright`,

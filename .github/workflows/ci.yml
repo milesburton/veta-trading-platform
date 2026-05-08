@@ -14,6 +14,35 @@ on:
   workflow_dispatch:
 
 jobs:
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      docker: ${{ steps.filter.outputs.docker }}
+      electron: ${{ steps.filter.outputs.electron }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            docker:
+              - 'docker/**'
+              - 'compose*.yml'
+              - 'backend/**'
+              - 'frontend/src/**'
+              - 'frontend/public/**'
+              - 'frontend/package.json'
+              - 'frontend/package-lock.json'
+              - 'shared/**'
+              - 'deno.json'
+              - 'deno.lock'
+              - '.github/workflows/ci.yml'
+            electron:
+              - 'frontend/**'
+              - 'electron/**'
+              - '.github/workflows/ci.yml'
+
   lint-and-test:
     name: Lint, type-check, unit tests
     runs-on: ubuntu-latest
@@ -29,6 +58,16 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: 2.7.x
+
+      - name: Cache Deno deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/deno
+            ~/.deno
+          key: deno-${{ runner.os }}-${{ hashFiles('deno.lock', 'deno.json') }}
+          restore-keys: |
+            deno-${{ runner.os }}-
 
       - name: Install backend dependencies
         run: deno install
@@ -282,6 +321,16 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: 2.7.x
+
+      - name: Cache Deno deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/deno
+            ~/.deno
+          key: deno-${{ runner.os }}-${{ hashFiles('deno.lock', 'deno.json') }}
+          restore-keys: |
+            deno-${{ runner.os }}-
 
       - name: Install backend dependencies
         run: deno install
@@ -835,7 +884,8 @@ jobs:
   docker-base:
     name: Build base image
     runs-on: ubuntu-latest
-    needs: [lint-and-test, frontend]
+    needs: [changes, lint-and-test, frontend]
+    if: github.ref == 'refs/heads/main' || needs.changes.outputs.docker == 'true'
     permissions:
       contents: read
       packages: write
