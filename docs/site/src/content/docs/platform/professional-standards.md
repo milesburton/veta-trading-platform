@@ -71,7 +71,7 @@ checklist of work in front of us.
 | Capability | State | Where |
 |---|---|---|
 | Public surface area documented | Partially | [API gateway page](../../reference/api-gateway/) lists routes; no formal exposed-vs-internal classification. |
-| Rate limiting per endpoint, per IP, per user | Deferred | Planned: gateway middleware. |
+| Rate limiting per endpoint, per IP, per user | Implemented | Token-bucket limiter at the gateway: per-IP cap on every request + tighter per-user cap on authenticated routes. See [`backend/src/lib/rateLimit.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/rateLimit.ts), wired in [`backend/src/gateway/gateway.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/gateway.ts). |
 | DDoS protection at edge | Deferred | Cloudflare tunnel is the intended posture. |
 | CSP and security headers (HSTS, X-Frame-Options, etc.) | Deferred | Frontend currently scores ~B at securityheaders.com. Target A+. |
 | WebSocket origin checking | Implemented | Gateway WS handler validates `Origin` header. |

@@ -2,6 +2,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { getCookieToken } from "@veta/auth";
 import { logger, registerLogSink } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
+import { clientIp, rateLimitResponse, RateLimiter } from "@veta/rate-limit";
 import { serveDir } from "jsr:@std/http@1.0.25/file-server";
 import {
   handleHealth,
@@ -71,6 +72,28 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
+const RATE_LIMIT_ENABLED = (Deno.env.get("RATE_LIMIT_ENABLED") ?? "true").toLowerCase() !== "false";
+
+const ipLimiter = new RateLimiter({
+  capacity: Number(Deno.env.get("RATE_LIMIT_IP_CAPACITY")) || 60,
+  refillPerSecond: Number(Deno.env.get("RATE_LIMIT_IP_REFILL")) || 30,
+});
+
+const userLimiter = new RateLimiter({
+  capacity: Number(Deno.env.get("RATE_LIMIT_USER_CAPACITY")) || 240,
+  refillPerSecond: Number(Deno.env.get("RATE_LIMIT_USER_REFILL")) || 120,
+});
+
+const RATE_LIMIT_BYPASS_PATHS = new Set([
+  "/health",
+  "/ready",
+  "/metrics",
+  "/system",
+]);
+
+function isWebSocketUpgrade(req: Request): boolean {
+  return req.headers.get("upgrade")?.toLowerCase() === "websocket";
+}
 
 const validateToken = makeValidateToken(USER_SERVICE_URL);
 
@@ -91,6 +114,10 @@ async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; lim
       status: 401,
       headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
+  }
+  if (RATE_LIMIT_ENABLED) {
+    const userResult = userLimiter.consume(`user:${auth.user.id}`);
+    if (!userResult.allowed) return rateLimitResponse(userResult.retryAfterMs);
   }
   publishAccessEvent({ action: "http_request", userId: auth.user.id, userRole: auth.user.role, path: url.pathname });
   return auth;
@@ -396,6 +423,11 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+
+  if (RATE_LIMIT_ENABLED && !RATE_LIMIT_BYPASS_PATHS.has(path) && !isWebSocketUpgrade(req)) {
+    const ipResult = ipLimiter.consume(`ip:${clientIp(req)}`);
+    if (!ipResult.allowed) return rateLimitResponse(ipResult.retryAfterMs);
   }
 
   if (path === "/health" && req.method === "GET") {
