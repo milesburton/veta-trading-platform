@@ -1652,7 +1652,7 @@ services:
   k6:
     image: grafana/k6:0.55.0
     profiles: [loadtest]
-    user: "${UID:-1000}:${GID:-1000}"
+    user: "${K6_UID:-1000}:${K6_GID:-1000}"
     networks:
       - trading-net
     extra_hosts:

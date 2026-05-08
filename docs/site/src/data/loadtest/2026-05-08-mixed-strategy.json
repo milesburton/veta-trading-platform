@@ -1,0 +1,27 @@
+{
+  "runLabel": "mixed-strategy",
+  "runDate": "2026-05-08",
+  "runStartedAt": "2026-05-08T22:13:18.913Z",
+  "target": "http://gateway:5011",
+  "iterations": 73948,
+  "successRate": 0.998,
+  "failureRate": 0.002,
+  "httpReqs": 73948,
+  "stages": {
+    "submitDurationMs": {
+      "count": 0,
+      "p50": 14,
+      "p95": 69,
+      "p99": 108,
+      "max": 8086
+    },
+    "httpReqDurationMs": {
+      "count": 0,
+      "p50": 13.966,
+      "p95": 69.339,
+      "p99": 108.357,
+      "max": 8085.98
+    }
+  },
+  "thresholdsBreached": []
+}

@@ -31,12 +31,14 @@ acquire_token() {
     challenge="$(printf '%s' "$verifier" | openssl dgst -sha256 -binary | openssl base64 | tr -d '=' | tr '/+' '_-')"
 
     log "Acquiring OAuth code for user '$OAUTH_USERNAME' against $USER_SERVICE_URL"
-    authorize_resp=$(
-        VERIFIER="$verifier" CHALLENGE="$challenge" \
-        OAUTH_CLIENT_ID="$OAUTH_CLIENT_ID" OAUTH_USERNAME="$OAUTH_USERNAME" OAUTH_PASSWORD="$OAUTH_PASSWORD" \
+
+    local authorize_body token_body
+    authorize_body=$(
+        OAUTH_CLIENT_ID="$OAUTH_CLIENT_ID" OAUTH_USERNAME="$OAUTH_USERNAME" \
+        OAUTH_PASSWORD="$OAUTH_PASSWORD" CHALLENGE="$challenge" \
         python3 -c "
-import json, os, sys, urllib.request
-body = json.dumps({
+import json, os
+print(json.dumps({
     'client_id': os.environ['OAUTH_CLIENT_ID'],
     'username': os.environ['OAUTH_USERNAME'],
     'password': os.environ['OAUTH_PASSWORD'],
@@ -45,38 +47,34 @@ body = json.dumps({
     'scope': 'openid profile',
     'code_challenge': os.environ['CHALLENGE'],
     'code_challenge_method': 'S256',
-}).encode()
-req = urllib.request.Request('$USER_SERVICE_URL/oauth/authorize', data=body, headers={'Content-Type': 'application/json'}, method='POST')
-try:
-    with urllib.request.urlopen(req, timeout=10) as r:
-        sys.stdout.write(r.read().decode())
-except urllib.error.HTTPError as e:
-    sys.stderr.write(f'HTTP {e.code}: {e.read().decode()[:300]}\n')
-    sys.exit(1)
-" ) || fail "OAuth authorize failed (check user-service is reachable + credentials are correct)"
+}))")
+
+    authorize_resp=$(docker run --rm --network=veta_trading-net curlimages/curl:8.10.1 \
+        -fsS -X POST "$USER_SERVICE_URL/oauth/authorize" \
+        -H "Content-Type: application/json" \
+        -d "$authorize_body" 2>&1) \
+      || fail "OAuth authorize failed: $authorize_resp"
 
     code=$(printf '%s' "$authorize_resp" | python3 -c "import json, sys; print(json.load(sys.stdin)['code'])")
     log "Code acquired (expires in 60s); exchanging for access token"
 
-    token_resp=$(
-        VERIFIER="$verifier" CODE="$code" OAUTH_CLIENT_ID="$OAUTH_CLIENT_ID" \
+    token_body=$(
+        OAUTH_CLIENT_ID="$OAUTH_CLIENT_ID" CODE="$code" VERIFIER="$verifier" \
         python3 -c "
-import json, os, sys, urllib.request
-body = json.dumps({
+import json, os
+print(json.dumps({
     'client_id': os.environ['OAUTH_CLIENT_ID'],
     'code': os.environ['CODE'],
     'grant_type': 'authorization_code',
     'redirect_uri': 'postmessage',
     'code_verifier': os.environ['VERIFIER'],
-}).encode()
-req = urllib.request.Request('$USER_SERVICE_URL/oauth/token', data=body, headers={'Content-Type': 'application/json'}, method='POST')
-try:
-    with urllib.request.urlopen(req, timeout=10) as r:
-        sys.stdout.write(r.read().decode())
-except urllib.error.HTTPError as e:
-    sys.stderr.write(f'HTTP {e.code}: {e.read().decode()[:300]}\n')
-    sys.exit(1)
-" ) || fail "OAuth token exchange failed"
+}))")
+
+    token_resp=$(docker run --rm --network=veta_trading-net curlimages/curl:8.10.1 \
+        -fsS -X POST "$USER_SERVICE_URL/oauth/token" \
+        -H "Content-Type: application/json" \
+        -d "$token_body" 2>&1) \
+      || fail "OAuth token exchange failed: $token_resp"
 
     access_token=$(printf '%s' "$token_resp" | python3 -c "import json, sys; print(json.load(sys.stdin)['access_token'])")
     [[ -n "$access_token" ]] || fail "Empty access token in token response"
@@ -100,7 +98,7 @@ run_scenario() {
         extra_env+=(-e "SOAK_DURATION=$SOAK_DURATION" -e "SOAK_VUS=$SOAK_VUS")
     fi
 
-    docker compose --profile loadtest run --rm \
+    K6_SCRIPT="$script" docker compose --profile loadtest run --rm \
         -e "K6_SCRIPT=$script" \
         -e "K6_TOKEN=$K6_TOKEN" \
         -e "RUN_LABEL=$label" \
@@ -149,17 +147,27 @@ mkdir -p "$OUTPUT_DIR"
 apply_loadtest_overlay() {
     if [[ "$DRY_RUN" = "1" ]]; then return 0; fi
     log "Applying compose.loadtest.yml overlay (RATE_LIMIT_ENABLED=false on gateway)"
-    docker compose -f compose.yml -f compose.prod.yml -f compose.loadtest.yml up -d gateway >/dev/null 2>&1 \
-      || docker compose -f compose.yml -f compose.loadtest.yml up -d gateway >/dev/null 2>&1 \
+    docker compose -f compose.yml -f compose.prod.yml -f compose.loadtest.yml up -d --force-recreate gateway 2>&1 | tail -3 \
+      || docker compose -f compose.yml -f compose.loadtest.yml up -d --force-recreate gateway 2>&1 | tail -3 \
       || fail "Could not apply load-test overlay (gateway recreate failed)"
-    sleep 3
+    log "Waiting up to 60s for gateway /health to return ok..."
+    local deadline=$(( $(date +%s) + 60 ))
+    while [[ $(date +%s) -lt $deadline ]]; do
+        if curl -fsS -m 2 "${USER_SERVICE_URL%/*}/gateway/health" >/dev/null 2>&1 \
+           || curl -fsS -m 2 "${GATEWAY_URL}/health" >/dev/null 2>&1; then
+            log "Gateway ready"
+            return 0
+        fi
+        sleep 2
+    done
+    log "WARNING: gateway readiness probe didn't succeed in 60s; continuing anyway"
 }
 
 revert_loadtest_overlay() {
     if [[ "$DRY_RUN" = "1" ]]; then return 0; fi
     log "Reverting compose.loadtest.yml overlay (RATE_LIMIT_ENABLED back to default)"
-    docker compose -f compose.yml -f compose.prod.yml up -d gateway >/dev/null 2>&1 \
-      || docker compose -f compose.yml up -d gateway >/dev/null 2>&1 \
+    docker compose -f compose.yml -f compose.prod.yml up -d --force-recreate gateway >/dev/null 2>&1 \
+      || docker compose -f compose.yml up -d --force-recreate gateway >/dev/null 2>&1 \
       || log "WARNING: gateway revert failed; check it manually"
 }
 
