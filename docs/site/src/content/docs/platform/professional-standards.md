@@ -54,6 +54,56 @@ checklist of work in front of us.
 | Synthetic probes that emulate user journeys | Deferred | Planned. |
 | Runbooks linked from each alert | Deferred | Planned. |
 
+### Live error-rate posture
+
+The Service Performance dashboard's "Error rate" stat reflects the
+percentage of traced HTTP/RPC spans tagged `STATUS_CODE_ERROR`. We
+publish the **live** number rather than only the aspirational target,
+on the principle that a healthy platform's claim about its error
+rate should be falsifiable.
+
+| Window | Filter | Recent rate | Notes |
+|---|---|---|---|
+| Raw (all spans) | None | ~5% | Includes by-design 401/403/404 responses (auth gates), `/health` probes that timeout, and connection-refused on services still starting. Not a useful "is it broken" signal on its own. |
+| Filtered | Excludes `/health`, `/healthz`, `/api/overview`, `/logs/query` paths and 401/403/404 status codes | **target <1%**, currently ~0.4% after the OMS-poll-timeout fix | This is the figure we treat as the operational SLO. |
+
+The journey here is non-trivial and worth recording: at one point the
+filtered rate was **98%** because of a feature-engine fan-out bug
+([PR #96](https://github.com/milesburton/veta-trading-platform/pull/96))
+that fired one Journal HTTP fetch per Kafka tick instead of per
+schedule. The dashboard correctly flagged the failure but the
+volume drowned out genuine signal until the bug was fixed and
+the dashboard query was tightened to exclude by-design 4xx
+responses.
+
+#### What "Filtered" excludes and why
+
+- `/health`, `/healthz` — periodic poll endpoints. The `gateway`
+  service runs a 5-second `chk()` loop against ~30 downstream
+  services. Even a 2% timeout rate on those probes shows up
+  visibly in raw error rate, but it represents transient slowness,
+  not a real failure.
+- `/api/overview` — Traefik dashboard endpoint, only reachable on
+  homelab; absence is expected on Fly.
+- `/logs/query` — the gateway's logs route, returns 403 to viewer
+  roles. By-design auth gating, not a server error.
+- HTTP `401`, `403`, `404` — by-design auth/authz responses. A
+  viewer hitting an admin route returns 401; the dashboard should
+  not count that as a service failure.
+
+#### What "Filtered" still includes (and we don't suppress)
+
+- 5xx server errors from any service
+- Connection refused / timeout on internal service-to-service calls
+  *that aren't probes* — these are real degradation
+- Span exceptions raised by application code (`recordException`)
+
+These are the signals we want to surface, and they're how we know
+when something is genuinely wrong. The remaining ~0.4% is dominated
+by transient `journal /orders` polls (OMS expire-orphan loop) that
+sometimes time out under load. Each follow-up PR named in the
+"Where" column above will reduce this further.
+
 ## Container hardening and runtime security
 
 | Capability | State | Where |
