@@ -10,6 +10,8 @@ import {
   makeMarketSimWsProxy,
 } from "./system-status.ts";
 import { proxyGet, proxyPost, proxyPut } from "./proxy.ts";
+import { LoadAgent } from "./loadAgent.ts";
+import { createRefPriceCache } from "./refPrices.ts";
 import {
   type AuthenticatedUser,
   type GatewayContext,
@@ -415,7 +417,17 @@ const gatewayContext: GatewayContext = {
     riskEngine: RISK_ENGINE_URL,
     replay: REPLAY_URL,
   },
+  loadAgent: makeLoadAgent(),
 };
+
+function makeLoadAgent(): LoadAgent {
+  const refPrices = createRefPriceCache(MARKET_SIM_URL);
+  return new LoadAgent({
+    producer,
+    refPriceFor: refPrices.refPriceFor,
+    publishAccessEvent,
+  });
+}
 
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
