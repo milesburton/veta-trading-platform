@@ -320,6 +320,7 @@ const ALL_READ_ROLES: AuthRole[] = [
   "admin",
   "compliance",
   "sales",
+  "oncall",
   "external-client",
   "viewer",
 ];
@@ -551,6 +552,22 @@ export const PANEL_PERMISSIONS: Record<PanelId, ReadonlySet<AuthRole>> = {
   "data-depth": new Set<AuthRole>(DESK_ROLES),
   scenarios: new Set<AuthRole>(["trader", "admin"]),
 };
+
+const ONCALL_EXCLUDED_PANELS: ReadonlySet<PanelId> = new Set<PanelId>([
+  "admin",
+  "news-sources",
+  "market-data-sources",
+  "market-feed-control",
+  "load-test",
+  "llm-subsystem",
+  "demo-day",
+  "dev-tools",
+]);
+
+for (const [panelId, roles] of Object.entries(PANEL_PERMISSIONS) as [PanelId, Set<AuthRole>][]) {
+  if (ONCALL_EXCLUDED_PANELS.has(panelId)) continue;
+  if (roles.has("admin")) roles.add("oncall");
+}
 
 export const PANEL_TRADING_STYLES: Partial<Record<PanelId, ReadonlySet<TradingStyle>>> = {
   "order-ticket": new Set<TradingStyle>([

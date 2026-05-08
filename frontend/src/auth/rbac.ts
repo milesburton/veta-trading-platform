@@ -5,6 +5,7 @@ export const AUTH_ROLES = [
   "admin",
   "compliance",
   "sales",
+  "oncall",
   "external-client",
   "viewer",
 ] as const;
@@ -17,6 +18,7 @@ export const NON_TRADING_ROLES = new Set<AuthRole>([
   "admin",
   "compliance",
   "sales",
+  "oncall",
   "external-client",
   "viewer",
 ]);
@@ -28,6 +30,7 @@ export const ROLE_LABELS: Record<AuthRole, string> = {
   admin: "Administrator",
   compliance: "Compliance",
   sales: "Sales",
+  oncall: "Oncall Engineer",
   "external-client": "External Client",
   viewer: "Viewer",
 };

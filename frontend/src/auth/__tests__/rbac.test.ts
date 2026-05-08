@@ -7,7 +7,8 @@ describe("auth/rbac", () => {
       expect(AUTH_ROLES).toContain("trader");
       expect(AUTH_ROLES).toContain("admin");
       expect(AUTH_ROLES).toContain("compliance");
-      expect(AUTH_ROLES).toHaveLength(8);
+      expect(AUTH_ROLES).toContain("oncall");
+      expect(AUTH_ROLES).toHaveLength(9);
     });
   });
 
