@@ -76,7 +76,7 @@
       "id": 11,
       "type": "stat",
       "title": "Error rate",
-      "description": "Spans with status code = ERROR, expressed as a percentage of total spans.",
+      "description": "Spans with status code = ERROR, expressed as a percentage of total spans. Excludes health-check probes and the by-design 401/403 auth-gate responses so the figure tracks real service errors rather than expected non-200s.",
       "gridPos": { "x": 6, "y": 1, "w": 6, "h": 5 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "fieldConfig": {
@@ -100,7 +100,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(traces_spanmetrics_calls_total{service=~\"$service\",status_code=\"STATUS_CODE_ERROR\"}[5m])) / clamp_min(sum(rate(traces_spanmetrics_calls_total{service=~\"$service\"}[5m])), 0.0001)",
+          "expr": "sum(rate(traces_spanmetrics_calls_total{service=~\"$service\",status_code=\"STATUS_CODE_ERROR\",url_path!~\"/health|/healthz|/api/overview|/logs/query\",http_response_status_code!~\"401|403|404\"}[5m])) / clamp_min(sum(rate(traces_spanmetrics_calls_total{service=~\"$service\",url_path!~\"/health|/healthz|/api/overview\"}[5m])), 0.0001)",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
@@ -201,7 +201,7 @@
       "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum", "lastNotNull"] } },
       "targets": [
         {
-          "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{service=~\"$service\",status_code=\"STATUS_CODE_ERROR\"}[1m]))",
+          "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{service=~\"$service\",status_code=\"STATUS_CODE_ERROR\",url_path!~\"/health|/healthz|/api/overview|/logs/query\",http_response_status_code!~\"401|403|404\"}[1m]))",
           "legendFormat": "{{service}}",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
