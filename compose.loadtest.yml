@@ -1,0 +1,4 @@
+services:
+  gateway:
+    environment:
+      RATE_LIMIT_ENABLED: "false"

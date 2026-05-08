@@ -146,6 +146,26 @@ export K6_TOKEN
 
 mkdir -p "$OUTPUT_DIR"
 
+apply_loadtest_overlay() {
+    if [[ "$DRY_RUN" = "1" ]]; then return 0; fi
+    log "Applying compose.loadtest.yml overlay (RATE_LIMIT_ENABLED=false on gateway)"
+    docker compose -f compose.yml -f compose.prod.yml -f compose.loadtest.yml up -d gateway >/dev/null 2>&1 \
+      || docker compose -f compose.yml -f compose.loadtest.yml up -d gateway >/dev/null 2>&1 \
+      || fail "Could not apply load-test overlay (gateway recreate failed)"
+    sleep 3
+}
+
+revert_loadtest_overlay() {
+    if [[ "$DRY_RUN" = "1" ]]; then return 0; fi
+    log "Reverting compose.loadtest.yml overlay (RATE_LIMIT_ENABLED back to default)"
+    docker compose -f compose.yml -f compose.prod.yml up -d gateway >/dev/null 2>&1 \
+      || docker compose -f compose.yml up -d gateway >/dev/null 2>&1 \
+      || log "WARNING: gateway revert failed; check it manually"
+}
+
+trap revert_loadtest_overlay EXIT
+apply_loadtest_overlay
+
 for script in $SCENARIOS; do
     run_scenario "$script"
 done
