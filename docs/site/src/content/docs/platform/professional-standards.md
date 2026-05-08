@@ -147,6 +147,19 @@ sometimes time out under load. Each follow-up PR named in the
 | Encryption at rest | Partially | Postgres on encrypted disk on the homelab; not enforced for Fly. |
 | Encryption in transit (public surfaces only) | Implemented | TLS at the Cloudflare/Fly edge. |
 
+## Performance and capacity
+
+| Capability | State | Where |
+|---|---|---|
+| Repeatable load-test harness | Implemented | k6 scenarios in [`k6/`](https://github.com/milesburton/veta-trading-platform/tree/main/k6); see [k6 load testing](../supporting/k6-load-testing/). |
+| Mixed-strategy load (all 9 algos) | Implemented | [`k6/mixed-strategy.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/mixed-strategy.js) — weighted realistic distribution. |
+| Open-bell burst pattern | Implemented | [`k6/burst-open.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/burst-open.js) — 0→200 VUs in 30s, hold 5min. |
+| Sustained soak for memory leaks | Implemented | [`k6/soak.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/soak.js) — 25 VUs for 30min, configurable. |
+| Risk-engine pressure test | Implemented | [`k6/risk-stress.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/risk-stress.js) — weighted under/at/over-limit mix. |
+| Live load-test telemetry to Grafana | Implemented | k6 writes to Prometheus via remote-write; rendered on the **k6 Prometheus** dashboard. |
+| Performance regression tracking | Partially | JSON summaries written per-run to [`docs/site/src/data/loadtest/`](https://github.com/milesburton/veta-trading-platform/tree/main/docs/site/src/data/loadtest); no automated CI gate yet. |
+| Load tests scheduled in CI | Deferred | Currently manual; nightly k6 run on the homelab is a planned follow-up. |
+
 ## Recovery and operational drills
 
 | Capability | State | Where |

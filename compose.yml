@@ -1674,4 +1674,4 @@ services:
       - --out
       - experimental-prometheus-rw
       - --summary-trend-stats=p(50),p(95),p(99),avg,max,min,med
-      - /scripts/baseline-limit.js
+      - /scripts/${K6_SCRIPT:-baseline-limit.js}
