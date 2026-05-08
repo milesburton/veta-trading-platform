@@ -70,7 +70,7 @@ function trimOldEvents(): void {
 
 async function refreshRealisedVol(symbol: string): Promise<void> {
   try {
-    const url = `${JOURNAL_URL}/candles?symbol=${
+    const url = `${JOURNAL_URL}/candles?instrument=${
       encodeURIComponent(symbol)
     }&interval=1m&limit=120`;
     const res = await fetch(url, { signal: AbortSignal.timeout(3_000) });
