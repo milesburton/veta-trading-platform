@@ -3,6 +3,7 @@ import { createProducer } from "@veta/messaging";
 import type { NewsEvent } from "@veta/types/intelligence";
 import { json, corsOptions } from "@veta/http";
 import { logger } from "@veta/logger";
+import { waitForUrl } from "@veta/wait-for";
 
 const PORT = Number(Deno.env.get("NEWS_AGGREGATOR_PORT")) || 5_013;
 const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") ||
@@ -667,6 +668,8 @@ async function loadSymbols(): Promise<void> {
 }
 
 (async () => {
+  const ready = await waitForUrl(`${MARKET_SIM_URL}/health`, { timeoutMs: 60_000 });
+  if (!ready) logger.warn("market-sim not reachable after 60s — proceeding anyway");
   await loadSymbols();
   await pollAll();
   setInterval(async () => {

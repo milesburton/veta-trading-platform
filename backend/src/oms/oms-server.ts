@@ -21,6 +21,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
+import { waitForUrl } from "@veta/wait-for";
 import type { Desk } from "@veta/primitives";
 import {
   type OrderKillCommand,
@@ -691,12 +692,14 @@ async function expireOrphanedOrders() {
   } catch { /* journal may not be up yet, or fetch timed out */ }
 }
 
-setTimeout(() => {
+(async () => {
+  const ready = await waitForUrl(`${JOURNAL_URL}/health`, { timeoutMs: 60_000 });
+  if (!ready) logger.warn("journal not reachable after 60s — expire-orphan loop will start anyway");
   expireOrphanedOrders().catch(() => {});
-}, 3_000);
-setInterval(() => {
-  expireOrphanedOrders().catch(() => {});
-}, 15_000);
+  setInterval(() => {
+    expireOrphanedOrders().catch(() => {});
+  }, 15_000);
+})();
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
