@@ -39,7 +39,9 @@ overrides:
   defaults:
     metrics_generator:
       processors: [service-graphs, span-metrics]
-      span_metrics_dimensions:
-        - http.response.status_code
-        - http.request.method
-        - url.path
+      processor:
+        span_metrics:
+          dimensions:
+            - http.response.status_code
+            - http.request.method
+            - url.path
