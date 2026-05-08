@@ -1,3 +1,4 @@
+import type { AuthRole } from "../../auth/rbac";
 import type { TradingLimits } from "../../store/authSlice";
 import type { KillBlock } from "../../store/killSwitchSlice";
 import type { InstrumentType, Strategy, TimeInForce } from "../../types";
@@ -43,16 +44,7 @@ export interface BondDraft {
 
 export interface TicketContext {
   userId: string | undefined;
-  userRole:
-    | "trader"
-    | "desk-head"
-    | "risk-manager"
-    | "admin"
-    | "compliance"
-    | "sales"
-    | "external-client"
-    | "viewer"
-    | undefined;
+  userRole: AuthRole | undefined;
   limits: TradingLimits;
   killBlocks: KillBlock[];
   instrument: InstrumentContext;

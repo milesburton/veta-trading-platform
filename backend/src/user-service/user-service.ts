@@ -15,7 +15,7 @@ import {
   TokenRequestSchema,
 } from "@veta/schemas/user";
 
-const AUTH_ROLES = ["trader", "admin", "compliance", "sales", "external-client", "viewer", "desk-head", "risk-manager"] as const;
+const AUTH_ROLES = ["trader", "admin", "compliance", "sales", "external-client", "viewer", "desk-head", "risk-manager", "oncall"] as const;
 type AuthRole = typeof AUTH_ROLES[number];
 
 function parseOAuthClients(config: string): Map<string, {
@@ -261,7 +261,7 @@ async function handle(req: Request): Promise<Response> {
                 l.trading_style, l.primary_desk, l.allowed_strategies, l.max_order_qty, l.dark_pool_access
          FROM users.users u
          LEFT JOIN users.trading_limits l ON l.user_id = u.id
-         WHERE u.role IN ('trader','desk-head','risk-manager','compliance','sales','admin','external-client')
+         WHERE u.role IN ('trader','desk-head','risk-manager','compliance','sales','oncall','admin','external-client')
          ORDER BY
            CASE u.role
              WHEN 'trader' THEN 1
@@ -270,8 +270,9 @@ async function handle(req: Request): Promise<Response> {
              WHEN 'sales' THEN 4
              WHEN 'external-client' THEN 5
              WHEN 'compliance' THEN 6
-             WHEN 'admin' THEN 7
-             ELSE 8
+             WHEN 'oncall' THEN 7
+             WHEN 'admin' THEN 8
+             ELSE 9
            END,
            l.primary_desk NULLS LAST,
            l.trading_style NULLS LAST,
