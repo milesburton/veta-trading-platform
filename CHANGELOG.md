@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.27.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.26.0...veta-trading-platform-v1.27.0) (2026-05-08)
+
+
+### Features
+
+* **observability:** add order-flow Sankey to pipeline dashboard ([#105](https://github.com/milesburton/veta-trading-platform/issues/105)) ([d538c36](https://github.com/milesburton/veta-trading-platform/commit/d538c362a0815496085d7f8573faba38d0e4d862))
+* **rbac:** add oncall role end-to-end ([#108](https://github.com/milesburton/veta-trading-platform/issues/108)) ([2d5204a](https://github.com/milesburton/veta-trading-platform/commit/2d5204a4e8ea58319d3824957100e7523c783356))
+* **risk:** bypass-resistance audit + integration test + doc ([#112](https://github.com/milesburton/veta-trading-platform/issues/112)) ([359dc5c](https://github.com/milesburton/veta-trading-platform/commit/359dc5c3d459e847689ef212b214c7f11dfd1a7a))
+
+
+### Bug Fixes
+
+* **ci:** build PR docker images successfully by always pushing the base ([#97](https://github.com/milesburton/veta-trading-platform/issues/97)) ([4bd8b4b](https://github.com/milesburton/veta-trading-platform/commit/4bd8b4b637fcdc3801a4f2b5254b8d147f4eb5b9))
+* **compose:** wire JOURNAL/MARKET_DATA hosts for market-sim ([#102](https://github.com/milesburton/veta-trading-platform/issues/102)) ([839d23e](https://github.com/milesburton/veta-trading-platform/commit/839d23e3abc8986e652af80b9e1c66d764bfbb05))
+* **feature-engine:** stop fetching journal on every Kafka tick ([#96](https://github.com/milesburton/veta-trading-platform/issues/96)) ([34620cf](https://github.com/milesburton/veta-trading-platform/commit/34620cf58e47d9dd75054a4eb2e2621db12166ce))
+* **observability:** drop error-rate dashboard noise to actuals ([#98](https://github.com/milesburton/veta-trading-platform/issues/98)) ([814ac5a](https://github.com/milesburton/veta-trading-platform/commit/814ac5ad5d0fa864b168502975e29c1d01bf06c1))
+* **screenshots:** clean marketing dashboard — drop service-down banner + reject toast ([#107](https://github.com/milesburton/veta-trading-platform/issues/107)) ([5b7a369](https://github.com/milesburton/veta-trading-platform/commit/5b7a369154ef10564aa4205bed72828409c8b00f))
+
+
+### Performance Improvements
+
+* **ci:** tier 1 build-time reductions (~14min → ~5min target) ([#106](https://github.com/milesburton/veta-trading-platform/issues/106)) ([0ac4034](https://github.com/milesburton/veta-trading-platform/commit/0ac4034678259635ab2dd3986148eb96ea790e2e))
+
 ## [1.26.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.25.0...veta-trading-platform-v1.26.0) (2026-05-07)
 
 
