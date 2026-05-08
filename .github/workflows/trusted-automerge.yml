@@ -23,7 +23,7 @@ jobs:
 
       - name: Enable auto-merge once checks pass
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.BOT_PAT }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           gh pr merge "$PR_URL" --auto --squash --delete-branch || \
