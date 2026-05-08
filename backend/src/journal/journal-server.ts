@@ -538,7 +538,11 @@ async function handle(req: Request): Promise<Response> {
 
   if (req.method === "GET" && path === "/orders") {
     const limit = Math.min(Number(url.searchParams.get("limit") ?? 200), 500);
-    const allOrders = await reconstructOrders(RETENTION_MS);
+    const lookbackMsParam = Number(url.searchParams.get("lookbackMs"));
+    const lookbackMs = Number.isFinite(lookbackMsParam) && lookbackMsParam > 0
+      ? Math.min(lookbackMsParam, RETENTION_MS)
+      : RETENTION_MS;
+    const allOrders = await reconstructOrders(lookbackMs);
     return json(allOrders.slice(0, limit));
   }
 
