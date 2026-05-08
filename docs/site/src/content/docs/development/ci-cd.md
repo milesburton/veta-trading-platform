@@ -133,40 +133,31 @@ Badges are shields.io endpoint badges reading from the raw GitHub file URL.
 
 ## Bot PAT for auto-merge
 
-[`.github/workflows/trusted-automerge.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/trusted-automerge.yml) auto-approves and squash-merges trusted PRs. By default it uses GitHub's built-in `GITHUB_TOKEN`, which has a known limitation: **commits made by `GITHUB_TOKEN` don't fire downstream `on: push` workflows**. GitHub's anti-loop policy treats them as bot-internal events.
+[`.github/workflows/trusted-automerge.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/trusted-automerge.yml) auto-approves and squash-merges trusted PRs. The `gh pr merge` step authenticates with a fine-grained personal access token stored as the `BOT_PAT` repo secret.
 
-The visible symptoms are:
+This matters because GitHub's built-in `GITHUB_TOKEN` has an anti-loop limitation: **commits made by `GITHUB_TOKEN` don't fire downstream `on: push` workflows**. Without a PAT, every bot-driven merge to `main` would land silently — no `ci.yml` run, no docker image build, no Watchtower deploy. The PAT bypasses the limitation because it's a user credential, so the merge commit looks like a normal push.
 
-- The auto-merge succeeds, the merge commit lands on `main`, but `Deploy to Fly.io`, the coverage-badges commit, and the on-push CI run for `main` never fire.
-- Integration tests / lint / unit tests still ran on the PR before merge — the PR-level CI is unaffected — but `main`'s status check trail is empty for that SHA.
+### What the PAT must allow
 
-The PR-level CI runs are good enough for code correctness, but the missing main-push workflows leave stale badges and skip optional jobs that only fire on main. To close the gap, swap the workflow's token reference from `GITHUB_TOKEN` to a personal access token with `Contents: write` and `Pull requests: write` scopes on this repo.
+- Repository access: **this repo only**
+- Permissions:
+  - `Contents`: Read and write — required to create the merge commit
+  - `Pull requests`: Read and write — required to enable auto-merge
+  - `Metadata`: Read-only — mandatory boilerplate
+- Expiration: rotate annually. When the token expires, auto-merge silently starts failing with auth errors; check the `trusted-automerge` workflow run output if merges suddenly stop landing.
 
-### Setup
+### Rotating the PAT
 
-1. **Create a fine-grained PAT.** GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token.
-   - Repository access: this repo only.
-   - Permissions:
-     - `Contents`: Read and write
-     - `Pull requests`: Read and write
-     - `Metadata`: Read-only (mandatory)
-   - Expiration: pick a date you'll remember to rotate; 1 year is reasonable for a hobby project.
-2. **Add it as a repo secret.** GitHub → repo Settings → Secrets and variables → Actions → New repository secret. Name it `BOT_PAT`.
-3. **Edit `trusted-automerge.yml`** to use the secret:
-   ```yaml
-   - name: Enable auto-merge once checks pass
-     env:
-       GH_TOKEN: ${{ secrets.BOT_PAT }}    # was: ${{ secrets.GITHUB_TOKEN }}
-       PR_URL: ${{ github.event.pull_request.html_url }}
-     run: |
-       gh pr merge "$PR_URL" --auto --squash --delete-branch || \
-       gh pr merge "$PR_URL" --auto --merge --delete-branch
-   ```
-4. **Verify.** Open any small PR, let auto-merge run, then check that the merge commit on main fires both CI and Deploy GitHub Pages. If they don't, the token scopes are wrong (most common cause: forgot `Contents: write`).
+When the existing `BOT_PAT` is approaching expiry:
 
-### Manual escape hatch (no PAT)
+1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token (same scopes as above).
+2. Repo → Settings → Secrets and variables → Actions → click `BOT_PAT` → Update value.
+3. No workflow change needed; the secret name stays the same.
+4. Revoke the old token from the same fine-grained tokens page.
 
-Until the PAT is configured, [`ci.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/ci.yml) accepts `workflow_dispatch` so you can re-trigger CI on any commit:
+### Manual escape hatch
+
+If the PAT is ever broken or revoked, [`ci.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/ci.yml) accepts `workflow_dispatch` so you can re-trigger CI on any commit without depending on the auto-merge:
 
 ```sh
 gh workflow run ci.yml --ref main
