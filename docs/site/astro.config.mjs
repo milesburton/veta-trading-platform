@@ -88,6 +88,7 @@ export default defineConfig({
           label: "Platform",
           items: [
             { label: "Professional standards", slug: "platform/professional-standards" },
+            { label: "Threat model", slug: "platform/threat-model" },
             {
               label: "How it works",
               items: [
