@@ -89,6 +89,7 @@ export default defineConfig({
           items: [
             { label: "Professional standards", slug: "platform/professional-standards" },
             { label: "Threat model", slug: "platform/threat-model" },
+            { label: "Risk architecture", slug: "platform/risk-architecture" },
             {
               label: "How it works",
               items: [
