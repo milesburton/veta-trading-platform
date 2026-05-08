@@ -297,6 +297,50 @@ function seedOrders(app: AppPage) {
   });
 }
 
+function seedOrdersHealthy(app: AppPage) {
+  app.gateway.injectOrder({
+    asset: "AAPL",
+    side: "BUY",
+    quantity: 2500,
+    strategy: "TWAP",
+    limitPrice: 192.34,
+    status: "executing",
+  });
+  app.gateway.injectOrder({
+    asset: "NVDA",
+    side: "BUY",
+    quantity: 150,
+    strategy: "LIMIT",
+    limitPrice: 885.0,
+    status: "filled",
+  });
+  app.gateway.injectOrder({
+    asset: "MSFT",
+    side: "SELL",
+    quantity: 800,
+    strategy: "VWAP",
+    limitPrice: 418.67,
+    status: "filled",
+  });
+  app.gateway.injectOrder({
+    asset: "AMZN",
+    side: "BUY",
+    quantity: 1800,
+    strategy: "TWAP",
+    limitPrice: 228.45,
+    status: "filled",
+  });
+}
+
+async function dismissAllToasts(page: import("@playwright/test").Page) {
+  const dismiss = page.getByTestId("alert-toast-dismiss");
+  for (let i = 0; i < 10; i++) {
+    if (!(await dismiss.isVisible().catch(() => false))) return;
+    await dismiss.click({ timeout: 1_000 }).catch(() => {});
+    await page.waitForTimeout(150);
+  }
+}
+
 test("screenshot: trading dashboard", async ({ page }) => {
   const app = new AppPage(page);
   await app.gotoAsTrader(MARKET_ASSETS);
@@ -304,7 +348,7 @@ test("screenshot: trading dashboard", async ({ page }) => {
   seedMarket(app);
   await page.waitForTimeout(600);
 
-  seedOrders(app);
+  seedOrdersHealthy(app);
 
   app.gateway.sendNewsUpdate({
     id: "n1",
@@ -330,6 +374,7 @@ test("screenshot: trading dashboard", async ({ page }) => {
   });
 
   await page.waitForTimeout(500);
+  await dismissAllToasts(page);
   await page.screenshot({
     path: path.join(OUT_DIR, "01-trading-dashboard.png"),
   });

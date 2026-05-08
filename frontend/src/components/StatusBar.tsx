@@ -392,6 +392,7 @@ const ENV_BADGE_STYLES: Record<string, { label: string; title: string; cls: stri
 };
 
 function EnvironmentBadge() {
+  if (DEPLOYMENT === "playwright") return null;
   const style = ENV_BADGE_STYLES[DEPLOYMENT] ?? {
     label: DEPLOYMENT,
     title: `${DEPLOYMENT} deployment`,
