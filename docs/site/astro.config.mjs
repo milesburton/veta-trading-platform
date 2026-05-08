@@ -87,6 +87,7 @@ export default defineConfig({
         {
           label: "Platform",
           items: [
+            { label: "Professional standards", slug: "platform/professional-standards" },
             {
               label: "How it works",
               items: [
