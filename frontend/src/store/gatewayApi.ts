@@ -23,6 +23,36 @@ export interface DemoDayResult {
   elapsedMs: number;
 }
 
+export interface LoadGenConfig {
+  ratePerSecond: number;
+  strategyMix: ReadonlyArray<{ strategy: string; weight: number }>;
+  symbols: ReadonlyArray<string>;
+  userIds: ReadonlyArray<string>;
+  sizeMin: number;
+  sizeMax: number;
+  autoStopAfterMs: number;
+}
+
+export interface LoadGenStatus {
+  running: boolean;
+  startedAt: number | null;
+  stopAt: number | null;
+  config: LoadGenConfig | null;
+  ordersSent: number;
+  ordersFailed: number;
+  lastTickAt: number | null;
+  lastError: string | null;
+}
+
+export interface LoadGenStartRequest {
+  ratePerSecond?: number;
+  symbols?: string[];
+  sizeMin?: number;
+  sizeMax?: number;
+  autoStopAfterMs?: number;
+  strategyMix?: ReadonlyArray<{ strategy: string; weight: number }>;
+}
+
 export const gatewayApi = createApi({
   reducerPath: "gatewayApi",
   baseQuery: fetchBaseQuery({
@@ -44,7 +74,29 @@ export const gatewayApi = createApi({
         body,
       }),
     }),
+    startLoadGen: builder.mutation<LoadGenStatus, LoadGenStartRequest>({
+      query: (body) => ({
+        url: "/load-gen/start",
+        method: "POST",
+        body,
+      }),
+    }),
+    stopLoadGen: builder.mutation<LoadGenStatus, void>({
+      query: () => ({
+        url: "/load-gen/stop",
+        method: "POST",
+      }),
+    }),
+    getLoadGenStatus: builder.query<LoadGenStatus, void>({
+      query: () => "/load-gen/status",
+    }),
   }),
 });
 
-export const { useRunLoadTestMutation, useRunDemoDayMutation } = gatewayApi;
+export const {
+  useRunLoadTestMutation,
+  useRunDemoDayMutation,
+  useStartLoadGenMutation,
+  useStopLoadGenMutation,
+  useGetLoadGenStatusQuery,
+} = gatewayApi;

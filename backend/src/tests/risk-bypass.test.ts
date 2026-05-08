@@ -7,6 +7,7 @@ const SRC_ROOT = new URL("../", import.meta.url).pathname;
 const ORDERS_NEW_PRODUCERS = new Set<string>([
   "gateway/routes/websocket.ts",
   "gateway/routes/admin.ts",
+  "gateway/loadAgent.ts",
   "rfq/rfq-service.ts",
   "scenarios/orchestrator.ts",
 ]);

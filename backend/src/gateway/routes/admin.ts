@@ -22,6 +22,16 @@ function requireAdmin(auth: AuthResult): Response | null {
   return null;
 }
 
+function requireAdminOrOncall(auth: AuthResult): Response | null {
+  if (auth.user.role !== "admin" && auth.user.role !== "oncall") {
+    return new Response(JSON.stringify({ error: "Admin or oncall role required" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  }
+  return null;
+}
+
 function busUnavailable(producerReady: boolean): Response | null {
   if (producerReady) return null;
   return new Response(JSON.stringify({ error: "Bus unavailable" }), {
@@ -319,6 +329,60 @@ async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<Respons
   );
 }
 
+async function handleLoadGenStart(req: Request, ctx: GatewayContext): Promise<Response> {
+  const auth = await ctx.requireAuth(req);
+  if (isResponse(auth)) return auth;
+  const rej = requireAdminOrOncall(auth);
+  if (rej) return rej;
+  const busRej = busUnavailable(ctx.producer.isReady());
+  if (busRej) return busRej;
+
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await req.json()) as Record<string, unknown>;
+  } catch {
+    body = {};
+  }
+
+  try {
+    const status = ctx.loadAgent.start(body, { userId: auth.user.id, role: auth.user.role });
+    return new Response(JSON.stringify(status), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
+      status: 409,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  }
+}
+
+async function handleLoadGenStop(req: Request, ctx: GatewayContext): Promise<Response> {
+  const auth = await ctx.requireAuth(req);
+  if (isResponse(auth)) return auth;
+  const rej = requireAdminOrOncall(auth);
+  if (rej) return rej;
+
+  const status = ctx.loadAgent.stop({ userId: auth.user.id, role: auth.user.role });
+  return new Response(JSON.stringify(status), {
+    status: 200,
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+  });
+}
+
+async function handleLoadGenStatus(req: Request, ctx: GatewayContext): Promise<Response> {
+  const auth = await ctx.requireAuth(req);
+  if (isResponse(auth)) return auth;
+  const rej = requireAdminOrOncall(auth);
+  if (rej) return rej;
+
+  return new Response(JSON.stringify(ctx.loadAgent.status()), {
+    status: 200,
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+  });
+}
+
 export function handleAdminRoute(
   req: Request,
   path: string,
@@ -329,6 +393,15 @@ export function handleAdminRoute(
   }
   if (path === "/demo-day" && req.method === "POST") {
     return handleDemoDay(req, ctx);
+  }
+  if (path === "/load-gen/start" && req.method === "POST") {
+    return handleLoadGenStart(req, ctx);
+  }
+  if (path === "/load-gen/stop" && req.method === "POST") {
+    return handleLoadGenStop(req, ctx);
+  }
+  if (path === "/load-gen/status" && req.method === "GET") {
+    return handleLoadGenStatus(req, ctx);
   }
   return null;
 }

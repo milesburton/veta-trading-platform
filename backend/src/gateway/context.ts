@@ -1,4 +1,5 @@
 import type { MsgProducer } from "@veta/messaging";
+import type { LoadAgent } from "./loadAgent.ts";
 
 export interface AuthenticatedUser {
   id: string;
@@ -27,6 +28,7 @@ export interface GatewayContext {
   producer: MsgProducer;
   publishAccessEvent: (event: AccessEvent) => void;
   urls: ServiceUrls;
+  loadAgent: LoadAgent;
 }
 
 export interface AccessEvent {
