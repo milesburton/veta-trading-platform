@@ -1,0 +1,25 @@
+{
+  "runLabel": "burst-open",
+  "runDate": "2026-05-08",
+  "target": "http://gateway:5011",
+  "iterations": 372942,
+  "successRate": 0.997,
+  "failureRate": 0.003,
+  "stages": {
+    "submitDurationMs": {
+      "count": 0,
+      "p50": 152,
+      "p95": 246,
+      "p99": 340,
+      "max": 8166
+    },
+    "httpReqDurationMs": {
+      "count": 0,
+      "p50": 152.282,
+      "p95": 245.381,
+      "p99": 339.544,
+      "max": 8166.388
+    }
+  },
+  "thresholdsBreached": []
+}
