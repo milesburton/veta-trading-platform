@@ -34,11 +34,11 @@ checklist of work in front of us.
 
 | Capability | State | Where |
 |---|---|---|
-| Pre-trade limits enforced server-side, not just UI | Partially | [`risk-engine`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/risk-engine/risk-engine.ts) checks limits; needs audit confirming no order path bypasses it. |
+| Pre-trade limits enforced server-side, not just UI | Implemented | OMS calls `risk-engine /check` before publishing `orders.submitted`; fail-closed on risk-engine outage. See [Risk Architecture](../risk-architecture/). |
 | Per-user limits configurable and versioned | Implemented | Migration [`0014_risk_config_versions.sql`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/db/migrations/0014_risk_config_versions.sql) |
 | Position-aware sizing | Implemented | [Risk controls page](../risk/) |
 | Kill switch with multi-scope cancel | Implemented | [Risk controls page](../risk/) |
-| Bypass-resistance proven by integration test | Deferred | Audit work to write a test that fails when a new order route omits the risk check. |
+| Bypass-resistance proven by integration test | Implemented | [`backend/src/tests/risk-bypass.test.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/tests/risk-bypass.test.ts) — grep-based allowlist of `orders.new` and `orders.submitted` producers; fails on any new producer. |
 
 ## Logging, audit, and observability
 
