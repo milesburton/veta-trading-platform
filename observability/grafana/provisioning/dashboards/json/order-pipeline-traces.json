@@ -83,25 +83,187 @@
     {
       "id": 2,
       "type": "row",
-      "title": "Order flow (service graph)",
+      "title": "Order flow (per-stage throughput)",
       "gridPos": { "x": 0, "y": 10, "w": 24, "h": 1 },
       "collapsed": false
     },
     {
-      "id": 20,
-      "type": "nodeGraph",
-      "title": "Live service graph",
-      "description": "Auto-discovered call graph from trace data. Edge labels show requests/sec.",
-      "gridPos": { "x": 0, "y": 11, "w": 24, "h": 12 },
-      "datasource": { "uid": "tempo", "type": "tempo" },
-      "options": {},
+      "id": 21,
+      "type": "stat",
+      "title": "Submitted",
+      "description": "Orders entering the pipeline (orders.submitted topic).",
+      "gridPos": { "x": 0, "y": 11, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "noValue": "—"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"] },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
       "targets": [
         {
-          "queryType": "serviceMap",
+          "expr": "sum(rate({service_name=\"kafka-relay\"} | json | type = `orders.submitted` [$__interval]))",
           "refId": "A",
-          "datasource": { "uid": "tempo", "type": "tempo" }
+          "datasource": { "uid": "loki", "type": "loki" }
         }
       ]
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "Routed",
+      "description": "Orders that passed risk and were routed to an algo (orders.routed).",
+      "gridPos": { "x": 4, "y": 11, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "noValue": "—"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"] },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({service_name=\"kafka-relay\"} | json | type = `orders.routed` [$__interval]))",
+          "refId": "A",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "stat",
+      "title": "Child slices",
+      "description": "Algo-generated child orders (orders.child). Volume is typically multiples of routed.",
+      "gridPos": { "x": 8, "y": 11, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "fixed", "fixedColor": "purple" },
+          "noValue": "—"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"] },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({service_name=\"kafka-relay\"} | json | type = `orders.child` [$__interval]))",
+          "refId": "A",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "Filled",
+      "description": "Child orders executed (orders.filled).",
+      "gridPos": { "x": 12, "y": 11, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "noValue": "—"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"] },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({service_name=\"kafka-relay\"} | json | type = `orders.filled` [$__interval]))",
+          "refId": "A",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "type": "stat",
+      "title": "Rejected",
+      "description": "Orders rejected at risk-engine or OMS limit checks (orders.rejected).",
+      "gridPos": { "x": 16, "y": 11, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "noValue": "—"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"] },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({service_name=\"kafka-relay\"} | json | type = `orders.rejected` [$__interval]))",
+          "refId": "A",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "type": "stat",
+      "title": "Expired",
+      "description": "Orders expired before fill (orders.expired).",
+      "gridPos": { "x": 20, "y": 11, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "fixed", "fixedColor": "red" },
+          "noValue": "—"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"] },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({service_name=\"kafka-relay\"} | json | type = `orders.expired` [$__interval]))",
+          "refId": "A",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "type": "text",
+      "title": "Pipeline architecture",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 7 },
+      "options": {
+        "mode": "markdown",
+        "content": "```\n  ┌────────┐  orders.submitted  ┌──────────────┐  orders.routed  ┌──────┐  orders.child  ┌─────┐  orders.filled  ┌─────────┐\n  │ User / │ ─────────────────▶ │ Risk-engine  │ ──────────────▶ │ Algo │ ────────────▶ │ EMS │ ──────────────▶ │ Journal │\n  │ Gateway│                    │ check + OMS  │                 │      │                │     │                  │ (DB)    │\n  └────────┘                    └──────────────┘                 └──────┘                └─────┘                  └─────────┘\n                                       │                                                       │\n                                       ▼                                                       ▼\n                                orders.rejected                                          orders.expired\n```\n\n**How to read the row above:** each stat shows the per-second event rate for that pipeline stage, averaged across the dashboard time window. Healthy steady-state: **routed ≈ submitted minus rejected**, **child > routed** (algo expansion), **filled ≈ child** (with small expired tail). Empty values mean no orders are flowing — submit an order via the trading UI or run **Demo Day** from Mission Control."
+      }
     },
 
     {
