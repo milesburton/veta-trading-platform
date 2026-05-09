@@ -189,6 +189,8 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
 async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<Response> {
   const auth = await ctx.requireAuth(req);
   if (isResponse(auth)) return auth;
+  const adminRej = requireAdminOrOncall(auth);
+  if (adminRej) return adminRej;
   const busRej = busUnavailable(ctx.producer.isReady());
   if (busRej) return busRej;
 
