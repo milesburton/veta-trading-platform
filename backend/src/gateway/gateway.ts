@@ -605,6 +605,17 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const svcPath = svcMatch[2] ?? "/";
     const target = SVC_PROXY[svcName];
     if (target) {
+      // Allowlist of unauthenticated proxy paths. Everything else needs
+      // a valid veta_user cookie. The frontend's pre-login OAuth flow
+      // hits /api/user-service/oauth/* before the user has a session,
+      // so those have to be reachable unauthenticated; all other proxy
+      // traffic is post-login and must be authenticated.
+      const PROXY_PUBLIC = svcName === "user-service" &&
+        (svcPath.startsWith("/oauth/") || svcPath.startsWith("/auth/"));
+      if (!PROXY_PUBLIC) {
+        const auth = await requireAuth(req);
+        if (isResponse(auth)) return auth;
+      }
       const targetUrl = `${target}${svcPath}${url.search}`;
       if (req.method === "GET" || req.method === "DELETE") return proxyGet(targetUrl, req);
       if (req.method === "POST") return proxyPost(targetUrl, req);
