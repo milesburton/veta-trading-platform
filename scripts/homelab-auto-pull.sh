@@ -63,6 +63,22 @@ if [[ "$REMOTE" == "$LAST" ]]; then
 fi
 
 log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — running deploy"
+
+# Self-update deploy.sh from the freshly-fetched repo before running it.
+# Otherwise a fix to deploy.sh in main is unreachable: the script can't
+# update itself.
+checkout=$(mktemp -d)
+# shellcheck disable=SC2064
+trap "rm -rf '$checkout'" EXIT
+if git clone --depth 1 --branch "$REPO_REF" --filter=blob:none "$REPO_URL" "$checkout" >/dev/null 2>&1; then
+  if [[ -f "$checkout/scripts/homelab-deploy.sh" ]]; then
+    install -m 0755 "$checkout/scripts/homelab-deploy.sh" "$DEPLOY_SCRIPT"
+    log "refreshed $DEPLOY_SCRIPT from main"
+  fi
+else
+  log "could not refresh $DEPLOY_SCRIPT from main; running existing copy"
+fi
+
 if "$DEPLOY_SCRIPT"; then
   printf '%s' "$REMOTE" > "$LAST_DEPLOYED_FILE"
   log "deployed ${REMOTE:0:7} successfully"
