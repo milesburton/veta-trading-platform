@@ -25,20 +25,29 @@ PROFILE_FLAG=(--profile loadgen --profile trading)
 log() { echo "[load] $(date -u +%H:%M:%S) $*"; }
 fail() { echo "[load] ERROR: $*" >&2; exit 1; }
 
-cmd_on() {
+# Source .env.loadgen so docker compose can interpolate $LOADGEN_* values.
+# Required by every subcommand because compose.loadgen.yml references
+# ${LOADGEN_OAUTH_PASSWORD:?...} which fails interpolation if unset —
+# even on `stop`, `rm`, `ps`, `logs`.
+load_env() {
   [[ -f "$ENV_FILE" ]] || fail "missing $ENV_FILE — see scripts/loadgen/README.md"
-  log "starting loadgen profile..."
-  cd "$STACK_DIR"
   set -a
   # shellcheck disable=SC1090
   . "$ENV_FILE"
   set +a
+}
+
+cmd_on() {
+  load_env
+  log "starting loadgen profile..."
+  cd "$STACK_DIR"
   docker compose "${COMPOSE_FILES[@]}" "${PROFILE_FLAG[@]}" up -d \
     loadgen-token loadgen-soak loadgen-matrix
   log "loadgen up; check 'load.sh status' or 'load.sh logs'"
 }
 
 cmd_off() {
+  load_env
   cd "$STACK_DIR"
   log "stopping loadgen containers..."
   docker compose "${COMPOSE_FILES[@]}" "${PROFILE_FLAG[@]}" stop \
@@ -49,12 +58,14 @@ cmd_off() {
 }
 
 cmd_status() {
+  load_env
   cd "$STACK_DIR"
   docker compose "${COMPOSE_FILES[@]}" "${PROFILE_FLAG[@]}" ps \
     loadgen-token loadgen-soak loadgen-matrix 2>&1
 }
 
 cmd_logs() {
+  load_env
   cd "$STACK_DIR"
   docker compose "${COMPOSE_FILES[@]}" "${PROFILE_FLAG[@]}" logs -f --tail=50 \
     loadgen-token loadgen-soak loadgen-matrix
