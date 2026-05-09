@@ -77,6 +77,7 @@ export function handleSummary(data) {
     runTargetVus: TARGET_VUS,
     target: BASE_URL,
     iterations: data.metrics.iterations?.values?.count ?? 0,
+    successRate: round(data.metrics.veta_loadtest_submit_ok?.values?.rate ?? 0),
     failureRate: round(1 - (data.metrics.veta_loadtest_submit_ok?.values?.rate ?? 0)),
     httpFailureRate: round(data.metrics.http_req_failed?.values?.rate ?? 0),
     stages: {

@@ -105,6 +105,7 @@ export function handleSummary(data) {
     runStartedAt: new Date(Date.now()).toISOString(),
     target: BASE_URL,
     iterations: data.metrics.iterations?.values?.count ?? 0,
+    successRate: round(data.metrics.veta_loadtest_submit_ok?.values?.rate ?? 0),
     failureRate: round(1 - (data.metrics.veta_loadtest_submit_ok?.values?.rate ?? 0)),
     httpReqs: data.metrics.http_reqs?.values?.count ?? 0,
     strategyMix: STRATEGIES.map((s) => ({ strategy: s.name, weight: s.weight })),
