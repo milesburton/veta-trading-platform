@@ -1272,10 +1272,12 @@ services:
   feature-engine:
     <<: *deno-medium
     profiles: [trading]
+    mem_limit: 2560m
     command: [
       "deno",
       "run",
       "--allow-all",
+      "--v8-flags=--max-old-space-size=2048",
       "/app/backend/src/feature-engine/feature-engine.ts",
     ]
     depends_on:
