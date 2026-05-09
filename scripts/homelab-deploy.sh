@@ -55,15 +55,21 @@ CRITICAL_SERVICES="gateway oms ems risk-engine journal market-sim user-service"
 log "Syncing config files from repo..."
 sync_configs
 
+# Compose files in load order (later overlays merge on top of earlier ones).
+# - compose.yml: base service definitions
+# - compose.prod.yml: homelab-specific overrides (image tags, Traefik labels)
+# - compose.observability.yml: OTEL env vars for trace/metric/log emission
+COMPOSE_FILES=(-f compose.yml -f compose.prod.yml -f compose.observability.yml)
+
 log "Pulling latest images..."
-docker compose -f compose.yml -f compose.prod.yml --profile trading pull \
+docker compose "${COMPOSE_FILES[@]}" --profile trading pull \
     || log "⚠ pull returned non-zero (some images may be unavailable); continuing"
 
 log "Restarting stack..."
 # `up -d` exits non-zero if any service fails to start (e.g. unhealthy
 # dependency). We tolerate that — the per-service verification below
 # decides whether the deploy is actually broken.
-docker compose -f compose.yml -f compose.prod.yml --profile trading up -d \
+docker compose "${COMPOSE_FILES[@]}" --profile trading up -d \
     || log "⚠ up -d returned non-zero; checking which services are actually up"
 
 log "Waiting up to ${MAX_WAIT}s for critical services to be healthy..."
@@ -71,7 +77,7 @@ DEADLINE=$(( $(date +%s) + MAX_WAIT ))
 while [[ $(date +%s) -lt $DEADLINE ]]; do
     UNHEALTHY=""
     for svc in $CRITICAL_SERVICES; do
-        cid=$(docker compose -f compose.yml -f compose.prod.yml ps -q "$svc" 2>/dev/null | head -1)
+        cid=$(docker compose "${COMPOSE_FILES[@]}" ps -q "$svc" 2>/dev/null | head -1)
         if [[ -z "$cid" ]]; then
             UNHEALTHY="$UNHEALTHY $svc(missing)"
             continue
@@ -83,7 +89,7 @@ while [[ $(date +%s) -lt $DEADLINE ]]; do
     done
     if [[ -z "$UNHEALTHY" ]]; then
         # Snapshot live commit + record success.
-        gateway_cid=$(docker compose -f compose.yml -f compose.prod.yml ps -q gateway | head -1)
+        gateway_cid=$(docker compose "${COMPOSE_FILES[@]}" ps -q gateway | head -1)
         VERSION=$(docker exec "$gateway_cid" sh -c 'curl -sf http://localhost:5011/health' 2>/dev/null \
             | python3 -c "import sys,json; print(json.load(sys.stdin).get('version',''))" 2>/dev/null || echo "")
         if [[ -n "$VERSION" ]]; then
@@ -93,7 +99,7 @@ while [[ $(date +%s) -lt $DEADLINE ]]; do
             log "✅ Critical services healthy (gateway version not readable; .good-sha unchanged)"
         fi
         # Note any non-critical services that are unhealthy, for visibility.
-        ALL_UNHEALTHY=$(docker compose -f compose.yml -f compose.prod.yml ps --format json 2>/dev/null \
+        ALL_UNHEALTHY=$(docker compose "${COMPOSE_FILES[@]}" ps --format json 2>/dev/null \
             | python3 -c "
 import json, sys
 for line in sys.stdin:
