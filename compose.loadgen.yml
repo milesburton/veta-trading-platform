@@ -1,0 +1,105 @@
+services:
+
+  # Disable rate limiting on the gateway when load gen is active.
+  # Rate limit per-IP would otherwise throttle k6's ramp-up scenarios.
+  gateway:
+    environment:
+      RATE_LIMIT_ENABLED: "false"
+
+  # ── Token refresh sidecar ────────────────────────────────────────────────
+  # Performs OAuth PKCE every REFRESH_INTERVAL seconds and writes the access
+  # token to a shared volume. k6 containers read the token on each iteration.
+  loadgen-token:
+    image: alpine:3.21
+    profiles: [loadgen]
+    restart: unless-stopped
+    networks:
+      - trading-net
+    depends_on:
+      gateway:
+        condition: service_healthy
+    volumes:
+      - loadgen-shared:/loadgen
+      - ./scripts/loadgen/token-refresh.sh:/entrypoint.sh:ro
+      - ./scripts/lib/oauth.sh:/scripts/lib/oauth.sh:ro
+    environment:
+      USER_SERVICE_URL: http://user-service:5008
+      OAUTH_USERNAME: ${LOADGEN_OAUTH_USERNAME:-admin}
+      OAUTH_PASSWORD: ${LOADGEN_OAUTH_PASSWORD:?LOADGEN_OAUTH_PASSWORD must be set in .env.loadgen}
+      OAUTH_CLIENT_ID: veta-automation
+      REFRESH_INTERVAL: "3000"
+      TOKEN_FILE: /loadgen/token
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["apk add --no-cache curl python3 openssl bash >/dev/null && exec bash /entrypoint.sh"]
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # ── Soak runner ──────────────────────────────────────────────────────────
+  # Constant ~50 VUs forever. Restarts soak.js every 50min to pick up rotated
+  # tokens. Output goes to Prometheus via remote_write.
+  loadgen-soak:
+    image: grafana/k6:0.55.0
+    profiles: [loadgen]
+    restart: unless-stopped
+    user: "${K6_UID:-1000}:${K6_GID:-1000}"
+    networks:
+      - trading-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      loadgen-token:
+        condition: service_started
+    volumes:
+      - loadgen-shared:/loadgen:ro
+      - ./k6:/scripts:ro
+      - ./scripts/loadgen/soak-loop.sh:/loop.sh:ro
+    environment:
+      BASE_URL: http://gateway:5011
+      TOKEN_FILE: /loadgen/token
+      SOAK_SCRIPT: /scripts/soak.js
+      SOAK_VUS: "${LOADGEN_SOAK_VUS:-50}"
+      SOAK_DURATION: "${LOADGEN_SOAK_DURATION:-50m}"
+      K6_PROMETHEUS_RW_SERVER_URL: http://host.docker.internal:9090/api/v1/write
+      K6_PROMETHEUS_RW_TREND_STATS: "p(50),p(90),p(95),p(99),min,max"
+    entrypoint: ["/bin/sh", "/loop.sh"]
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # ── Matrix runner ────────────────────────────────────────────────────────
+  # Cycles baseline → mixed → burst-open → risk-stress on a loop.
+  # Output goes to Prometheus via remote_write.
+  loadgen-matrix:
+    image: grafana/k6:0.55.0
+    profiles: [loadgen]
+    restart: unless-stopped
+    user: "${K6_UID:-1000}:${K6_GID:-1000}"
+    networks:
+      - trading-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      loadgen-token:
+        condition: service_started
+    volumes:
+      - loadgen-shared:/loadgen:ro
+      - ./k6:/scripts:ro
+      - ./scripts/loadgen/matrix-loop.sh:/loop.sh:ro
+    environment:
+      BASE_URL: http://gateway:5011
+      TOKEN_FILE: /loadgen/token
+      SCENARIOS: "${LOADGEN_MATRIX_SCENARIOS:-baseline-limit.js mixed-strategy.js burst-open.js risk-stress.js}"
+      SLEEP_BETWEEN: "${LOADGEN_MATRIX_SLEEP:-30}"
+      K6_PROMETHEUS_RW_SERVER_URL: http://host.docker.internal:9090/api/v1/write
+      K6_PROMETHEUS_RW_TREND_STATS: "p(50),p(90),p(95),p(99),min,max"
+    entrypoint: ["/bin/sh", "/loop.sh"]
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  loadgen-shared:
