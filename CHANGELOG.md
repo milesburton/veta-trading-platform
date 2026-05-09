@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.28.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.27.0...veta-trading-platform-v1.28.0) (2026-05-09)
+
+
+### Features
+
+* **gateway:** token-bucket rate limiting per IP + per user ([#113](https://github.com/milesburton/veta-trading-platform/issues/113)) ([ea1c198](https://github.com/milesburton/veta-trading-platform/commit/ea1c198a2eaaebdc0c663c489764e15bc3285db8))
+* **load-gen:** admin/oncall toggleable in-platform load generator ([#120](https://github.com/milesburton/veta-trading-platform/issues/120)) ([47f3258](https://github.com/milesburton/veta-trading-platform/commit/47f3258d2f2d072ab2c68363604dc19c93dc836f))
+
+
+### Bug Fixes
+
+* **observability:** correct tempo span_metrics_dimensions schema for Tempo 2.7 ([#115](https://github.com/milesburton/veta-trading-platform/issues/115)) ([0ce33ad](https://github.com/milesburton/veta-trading-platform/commit/0ce33ad9c2bd1e6c0118ce6e5fbe85eb31476ae8))
+* **observability:** order pipeline dashboard — empty-state guidance + filter health probes ([#118](https://github.com/milesburton/veta-trading-platform/issues/118)) ([b217978](https://github.com/milesburton/veta-trading-platform/commit/b217978fe703a2546f58e089ed79c84e28b2e074))
+* **observability:** replace nodeGraph with per-stage throughput row ([#121](https://github.com/milesburton/veta-trading-platform/issues/121)) ([9b47718](https://github.com/milesburton/veta-trading-platform/commit/9b47718b5e8c6c8c7d0bb954d5a5af55897b411b))
+* **observability:** wait for downstream readiness before first poll ([#117](https://github.com/milesburton/veta-trading-platform/issues/117)) ([8b4c1d7](https://github.com/milesburton/veta-trading-platform/commit/8b4c1d70279beb24fa7c39a3b7fa16e9685139f4))
+* **oms,journal:** cap expire-orphans poll lookback to 6h to drop error rate &lt;1% ([#122](https://github.com/milesburton/veta-trading-platform/issues/122)) ([e8c207d](https://github.com/milesburton/veta-trading-platform/commit/e8c207ddb5341835e0e1b3e320d2094c7bb17f27))
+* **oms:** timeout + functional refactor on expire-orphans poll, document live error-rate ([#116](https://github.com/milesburton/veta-trading-platform/issues/116)) ([619e589](https://github.com/milesburton/veta-trading-platform/commit/619e589ffaac58b674cea4e2dc9e6b31b4185abb))
+* wire missing service hosts + drop OTel-traced waitFor probes ([#124](https://github.com/milesburton/veta-trading-platform/issues/124)) ([db18cd4](https://github.com/milesburton/veta-trading-platform/commit/db18cd41f81cee1b1f0da389ca1678807e305cda))
+
 ## [1.27.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.26.0...veta-trading-platform-v1.27.0) (2026-05-08)
 
 
