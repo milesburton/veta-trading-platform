@@ -136,19 +136,6 @@ function startTwapSimulation(order: OrderRecord, api: SimListenerAPI): void {
     );
     if (done) clearInterval(handle);
   }, intervalMs);
-
-  setTimeout(() => {
-    clearInterval(handle);
-    const current = api.getState().orders.orders.find((o) => o.id === order.id);
-    if (current && current.status !== "filled") {
-      api.dispatch(
-        ordersSlice.actions.orderPatched({
-          id: order.id,
-          patch: { status: "expired" },
-        })
-      );
-    }
-  }, order.expiresAt - Date.now());
 }
 
 function startPovSimulation(order: OrderRecord, api: SimListenerAPI): void {
