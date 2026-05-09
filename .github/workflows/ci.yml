@@ -1053,44 +1053,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy-homelab:
-    name: Deploy to homelab
-    runs-on: ubuntu-latest
-    needs: [docker-services]
-    if: github.ref == 'refs/heads/main'
-    concurrency:
-      group: deploy-homelab
-      cancel-in-progress: false
-    steps:
-      - name: Check secrets
-        id: secrets
-        env:
-          KEY: ${{ secrets.HOMELAB_SSH_KEY }}
-          HOST: ${{ secrets.HOMELAB_HOST }}
-          USER: ${{ secrets.HOMELAB_USER }}
-        run: |
-          if [[ -z "$KEY" || -z "$HOST" || -z "$USER" ]]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::HOMELAB_SSH_KEY / HOMELAB_HOST / HOMELAB_USER secrets not configured — skipping homelab deploy"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Configure SSH
-        if: steps.secrets.outputs.ready == 'true'
-        env:
-          KEY: ${{ secrets.HOMELAB_SSH_KEY }}
-          HOST: ${{ secrets.HOMELAB_HOST }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$KEY" > ~/.ssh/id_homelab
-          chmod 600 ~/.ssh/id_homelab
-          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
-
-      - name: Trigger deploy script
-        if: steps.secrets.outputs.ready == 'true'
-        env:
-          HOST: ${{ secrets.HOMELAB_HOST }}
-          USER: ${{ secrets.HOMELAB_USER }}
-        run: |
-          ssh -i ~/.ssh/id_homelab -o BatchMode=yes "$USER@$HOST" '/opt/stacks/veta/deploy.sh'
+  # Homelab deploy is handled by a systemd timer on the homelab itself
+  # (scripts/homelab-auto-pull.sh) — GH Actions runners can't reach the
+  # private LAN. See scripts/homelab-systemd/README.md for setup.
