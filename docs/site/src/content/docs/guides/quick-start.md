@@ -15,18 +15,22 @@ description: Get VETA running locally in under 5 minutes.
 3. The MOTD will show available commands
 4. Run `cd frontend && npm run dev` for the browser UI
 
-## Manual setup
+## Manual setup (without Dev Container)
 
 ```sh
-# Backend services (managed by supervisord)
-supervisorctl start all
+# Backend services — Docker Compose runs the full stack
+docker compose --profile trading up -d
 
-# Frontend dev server
+# Frontend dev server (separate terminal)
 cd frontend && npm run dev
 
 # Electron desktop app
 cd frontend && npm run electron:dev
 ```
+
+Verify the stack is up: `docker compose ps` should show the core services
+healthy. The frontend dev server proxies API calls to the gateway at port
+5011.
 
 ## Default credentials
 

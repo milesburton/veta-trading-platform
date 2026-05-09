@@ -31,9 +31,14 @@ To re-enable on every main push, restore the `push: branches: main` trigger in [
 
 ## Local development
 
+The dev container's `post-start.sh` runs `docker compose up -d` automatically
+on container start. Services are managed by Docker Compose, not supervisord
+(supervisord is only used inside the Fly.io image, where every service runs
+as a process under one container).
+
 ```sh
-# Start all services
-supervisorctl start all
+# Restart the stack (services managed by Compose)
+docker compose --profile trading up -d
 
 # Frontend dev server
 cd frontend && npm run dev
