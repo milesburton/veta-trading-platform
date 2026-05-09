@@ -59,17 +59,36 @@ sync_configs
 # - compose.yml: base service definitions
 # - compose.prod.yml: homelab-specific overrides (image tags, Traefik labels)
 # - compose.observability.yml: OTEL env vars for trace/metric/log emission
+# - compose.loadgen.yml: ONLY included when .env.loadgen exists (otherwise
+#   compose interpolation fails on ${LOADGEN_OAUTH_PASSWORD:?...}).
+#   Also disables gateway rate limiting so the load gen isn't 429'd.
 COMPOSE_FILES=(-f compose.yml -f compose.prod.yml -f compose.observability.yml)
+PROFILES=(--profile trading)
+LOADGEN_ENV_FILE="$STACK_DIR/.env.loadgen"
+if [[ -f "$LOADGEN_ENV_FILE" ]]; then
+    log "Loadgen credentials present — including compose.loadgen.yml"
+    COMPOSE_FILES+=(-f compose.loadgen.yml)
+    PROFILES+=(--profile loadgen)
+    set -a
+    # shellcheck disable=SC1090
+    . "$LOADGEN_ENV_FILE"
+    set +a
+fi
 
 log "Pulling latest images..."
-docker compose "${COMPOSE_FILES[@]}" --profile trading pull \
+docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" pull \
     || log "⚠ pull returned non-zero (some images may be unavailable); continuing"
 
-log "Restarting stack..."
+# Horizontal scale — gateway is the CPU bottleneck. Override via env at
+# deploy time: GATEWAY_REPLICAS=3 /opt/stacks/veta/deploy.sh
+GATEWAY_REPLICAS="${GATEWAY_REPLICAS:-1}"
+
+log "Restarting stack (gateway replicas=$GATEWAY_REPLICAS)..."
 # `up -d` exits non-zero if any service fails to start (e.g. unhealthy
 # dependency). We tolerate that — the per-service verification below
 # decides whether the deploy is actually broken.
-docker compose "${COMPOSE_FILES[@]}" --profile trading up -d \
+docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d \
+    --scale "gateway=$GATEWAY_REPLICAS" \
     || log "⚠ up -d returned non-zero; checking which services are actually up"
 
 log "Waiting up to ${MAX_WAIT}s for critical services to be healthy..."
@@ -77,15 +96,19 @@ DEADLINE=$(( $(date +%s) + MAX_WAIT ))
 while [[ $(date +%s) -lt $DEADLINE ]]; do
     UNHEALTHY=""
     for svc in $CRITICAL_SERVICES; do
-        cid=$(docker compose "${COMPOSE_FILES[@]}" ps -q "$svc" 2>/dev/null | head -1)
-        if [[ -z "$cid" ]]; then
+        # Check ALL replicas, not just the first — a partial scale-out
+        # where some replicas are unhealthy should fail the deploy.
+        cids=$(docker compose "${COMPOSE_FILES[@]}" ps -q "$svc" 2>/dev/null)
+        if [[ -z "$cids" ]]; then
             UNHEALTHY="$UNHEALTHY $svc(missing)"
             continue
         fi
-        state=$(docker inspect --format '{{.State.Health.Status}}' "$cid" 2>/dev/null || echo "no-healthcheck")
-        if [[ "$state" != "healthy" && "$state" != "no-healthcheck" ]]; then
-            UNHEALTHY="$UNHEALTHY $svc($state)"
-        fi
+        for cid in $cids; do
+            state=$(docker inspect --format '{{.State.Health.Status}}' "$cid" 2>/dev/null || echo "no-healthcheck")
+            if [[ "$state" != "healthy" && "$state" != "no-healthcheck" ]]; then
+                UNHEALTHY="$UNHEALTHY $svc:${cid:0:8}($state)"
+            fi
+        done
     done
     if [[ -z "$UNHEALTHY" ]]; then
         # Snapshot live commit + record success.
