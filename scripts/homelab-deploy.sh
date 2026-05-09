@@ -11,8 +11,14 @@ CONFIG_PATHS=(
     "compose.yml"
     "compose.prod.yml"
     "compose.observability.yml"
+    "compose.loadgen.yml"
+    "compose.loadtest.yml"
     "traefik.yml"
     "observability/"
+    "scripts/load.sh"
+    "scripts/lib/"
+    "scripts/loadgen/"
+    "k6/"
 )
 
 cd "$STACK_DIR"
@@ -35,6 +41,7 @@ sync_configs() {
             log "  skip $path (not in repo)"
             continue
         fi
+        mkdir -p "$(dirname "$dst")"
         local out
         out=$(rsync -ai --delete "$src" "$dst" 2>&1 || true)
         if [[ -n "$out" ]]; then
