@@ -4,8 +4,8 @@
   "description": "Per-service request rate, latency, errors, and resource usage — sourced from Deno's built-in OpenTelemetry instrumentation. All panels respect the service variable, so pick a service from the top to scope the view.",
   "tags": ["veta", "otel", "services"],
   "timezone": "browser",
-  "time": { "from": "now-15m", "to": "now" },
-  "refresh": "30s",
+  "time": { "from": "now-5m", "to": "now" },
+  "refresh": "10s",
   "schemaVersion": 39,
   "version": 1,
   "editable": true,
@@ -100,7 +100,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(traces_spanmetrics_calls_total{service=~\"$service\",status_code=\"STATUS_CODE_ERROR\",url_path!~\"/health|/healthz|/api/overview|/logs/query\",http_response_status_code!~\"401|403|404\"}[5m])) / clamp_min(sum(rate(traces_spanmetrics_calls_total{service=~\"$service\",url_path!~\"/health|/healthz|/api/overview\"}[5m])), 0.0001)",
+          "expr": "sum(rate(traces_spanmetrics_calls_total{service=~\"$service\",status_code=\"STATUS_CODE_ERROR\",url_path!~\"/health|/healthz|/api/overview|/logs/query\",http_response_status_code!~\"401|403|404\"}[1m])) / clamp_min(sum(rate(traces_spanmetrics_calls_total{service=~\"$service\",url_path!~\"/health|/healthz|/api/overview\"}[1m])), 0.0001)",
           "refId": "A",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
