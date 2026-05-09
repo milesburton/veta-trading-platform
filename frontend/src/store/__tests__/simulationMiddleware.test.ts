@@ -140,7 +140,7 @@ describe("simulationMiddleware – TWAP", () => {
     expect(order.status).toBe("filled");
   });
 
-  it("does not expire a TWAP order via the expiry timeout under normal flow", () => {
+  it("fills a TWAP order via slice ticks (expiry path is unreachable by design)", () => {
     const store = makeStore();
     const twapOrder = makeOrder({
       strategy: "TWAP",

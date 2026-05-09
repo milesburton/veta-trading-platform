@@ -107,7 +107,17 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
   const strategy = body.strategy ?? "LIMIT";
   const jobId = `load-${Date.now()}`;
 
-  const LOAD_TEST_USERS = (Deno.env.get("LOAD_TEST_USER_IDS") ?? "alice,amelia,bob,dave")
+  const loadTestUserIds = Deno.env.get("LOAD_TEST_USER_IDS");
+  if (!loadTestUserIds) {
+    return new Response(
+      JSON.stringify({
+        error: "LOAD_TEST_USER_IDS env var must be set on the gateway " +
+          "with a comma-separated list of existing trader user IDs.",
+      }),
+      { status: 500, headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+    );
+  }
+  const LOAD_TEST_USERS = loadTestUserIds
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);

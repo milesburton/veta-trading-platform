@@ -1535,6 +1535,7 @@ services:
       GATEWAY_PORT: "5011"
       DATABASE_URL: postgres://veta:veta@postgres:5432/veta
       SCENARIOS_DATABASE_URL: postgres://veta:veta@postgres:5432/veta
+      LOAD_TEST_USER_IDS: ${LOAD_TEST_USER_IDS:-alice,amelia,bob,dave}
       MARKET_SIM_HOST: market-sim
       MARKET_SIM_PORT: "5000"
       EMS_HOST: ems
