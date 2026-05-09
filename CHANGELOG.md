@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.28.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.28.0...veta-trading-platform-v1.28.1) (2026-05-09)
+
+
+### Bug Fixes
+
+* **observability:** shorten dashboard windows for real-time visibility ([#126](https://github.com/milesburton/veta-trading-platform/issues/126)) ([0dab052](https://github.com/milesburton/veta-trading-platform/commit/0dab0526cec84c81ba104556330fff56c301ae7d))
+
 ## [1.28.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.27.0...veta-trading-platform-v1.28.0) (2026-05-09)
 
 
