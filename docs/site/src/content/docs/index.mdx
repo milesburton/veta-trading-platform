@@ -1,72 +1,63 @@
 ---
 title: VETA Trading Platform
 description: A near real-world equities and fixed income trading platform for paper trading and learning market dynamics.
+template: splash
 hero:
   tagline: Paper trade equities, fixed income, FX, and commodities with realistic desk segregation, algo strategies, and pre-trade risk controls.
   image:
     file: ../../assets/logo.svg
   actions:
-    - text: Getting Started
-      link: /veta-trading-platform/guides/overview/
+    - text: Get started
+      link: /veta-trading-platform/guides/quick-start/
       icon: right-arrow
       variant: primary
-    - text: GitHub
+    - text: View on GitHub
       link: https://github.com/milesburton/veta-trading-platform
       icon: github
+      variant: secondary
 ---
 
-import { Card, CardGrid } from "@astrojs/starlight/components";
+import { Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+## What's in the box
 
 <CardGrid>
-  <Card title="9 Algo Strategies" icon="rocket">
-    LIMIT, TWAP, VWAP, POV, ICEBERG, SNIPER, ARRIVAL_PRICE, IS, and MOMENTUM.
-    Each runs as an independent microservice on the Redpanda message bus.
+  <Card title="9 algo strategies" icon="rocket">
+    LIMIT, TWAP, VWAP, POV, ICEBERG, SNIPER, ARRIVAL_PRICE, IS, and MOMENTUM — each an independent service on the Redpanda bus.
   </Card>
-  <Card title="Pre-trade Risk Engine" icon="warning">
-    6 real-time checks: fat-finger price collar, duplicate detection, rate
-    limiting, self-cross prevention, ADV check, and max open orders. Hard-fail
-    on outage — orders are blocked, not bypassed.
+  <Card title="Pre-trade risk engine" icon="warning">
+    Six checks: fat-finger collar, duplicate detection, rate limit, self-cross, ADV, max open orders. Hard-fail when down — orders are blocked, not bypassed.
   </Card>
-  <Card title="Realistic Desk Segregation" icon="approve-check">
-    18 seeded personas across equity cash, equity derivatives, FI rates, FI
-    credit, FX, and commodities. Cross-asset-class trading is impossible.
-    High-touch vs low-touch RBAC enforced at the panel level.
+  <Card title="Realistic desk segregation" icon="puzzle">
+    18 personas across equity cash, equity derivatives, FI rates, FI credit, FX, and commodities. Cross-asset trading is impossible; high-touch vs low-touch enforced per panel.
   </Card>
-  <Card title="Fixed Income & Derivatives" icon="document">
-    Bond pricing, yield curves, duration ladders, spread analysis, vol surfaces,
-    Black-Scholes option pricing, and scenario matrices.
+  <Card title="Fixed income & derivatives" icon="document">
+    Bond pricing, yield curves, duration ladders, spread analysis, vol surfaces, Black–Scholes options, and scenario matrices.
   </Card>
-  <Card title="Live P&L & Positions" icon="list-format">
-    Real-time position tracking from fills with unrealised, realised, and total
-    P&L. Risk Dashboard for firm-wide oversight; My Positions for individual
-    traders.
+  <Card title="Live P&L and positions" icon="bars">
+    Real-time positions from fills with unrealised, realised, and total P&L. Risk Dashboard for firm-wide oversight; My Positions for the individual trader.
   </Card>
-  <Card title="Session Replay" icon="magnifier">
-    Record and play back browser sessions with rrweb for training, audit, and
-    post-incident review. Admin-controlled toggle with timeline playback.
+  <Card title="Session replay" icon="magnifier">
+    Record and play back browser sessions with rrweb for training, audit, and post-incident review. Admin-controlled with timeline playback.
   </Card>
 </CardGrid>
 
-## Key documents
+## Start here
 
-- [Platform overview](/veta-trading-platform/guides/overview/)
-- [Architecture](/veta-trading-platform/platform/architecture/)
-- [Service map](/veta-trading-platform/platform/services/)
-- [API gateway reference](/veta-trading-platform/reference/api-gateway/)
-- [Tech stack](/veta-trading-platform/reference/tech-stack/)
-- [Performance and load testing](/veta-trading-platform/reference/performance/)
-- [Screenshots](/veta-trading-platform/platform/screenshots/)
-
-For release history, see the repository root `CHANGELOG.md`.
-
-## Docs by audience
-
-- User docs: [Placing orders](/veta-trading-platform/user-guide/placing-orders/)
-  - A concise path for day-to-day trading actions.
-  - Next page: [Managing orders](/veta-trading-platform/user-guide/managing-orders/)
-- Developer docs: [Contributing](/veta-trading-platform/development/contributing/)
-  - Standards and workflow for implementation changes.
-  - Next page: [Testing](/veta-trading-platform/development/testing/)
-- Support docs: [Supporting services](/veta-trading-platform/platform/supporting-services/)
-  - Operational runbook material for platform reliability.
-  - Next page: [Risk controls](/veta-trading-platform/platform/risk/)
+<CardGrid>
+  <LinkCard
+    title="Quick start"
+    href="/veta-trading-platform/guides/quick-start/"
+    description="Get the stack running locally in under 5 minutes."
+  />
+  <LinkCard
+    title="Architecture"
+    href="/veta-trading-platform/platform/architecture/"
+    description="How the services fit together on the Redpanda bus."
+  />
+  <LinkCard
+    title="Glossary"
+    href="/veta-trading-platform/reference/glossary/"
+    description="Trading and platform terminology used across the docs."
+  />
+</CardGrid>
