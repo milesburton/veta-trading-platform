@@ -42,6 +42,7 @@ export const PANEL_IDS = [
   "throughput-gauges",
   "algo-leaderboard",
   "load-test",
+  "load-gen",
   "llm-subsystem",
   "greeks-surface",
   "vol-profile",
@@ -98,6 +99,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "throughput-gauges": "Throughput (pipeline metrics)",
   "algo-leaderboard": "Algo Leaderboard (strategy performance)",
   "load-test": "Load Test (bulk order injection)",
+  "load-gen": "Load Generator (sustained synthetic load)",
   "llm-subsystem": "LLM Advisory Subsystem (operator controls)",
   "greeks-surface": "Greeks Surface (strike profile)",
   "vol-profile": "Volatility Profile (EWMA trend)",
@@ -172,6 +174,8 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Strategy performance leaderboard — fill rate, average slippage, and total filled quantity per algo in the last 5 minutes",
   "load-test":
     "Admin-only bulk order injector — submit configurable volumes of synthetic orders to stress-test the pipeline",
+  "load-gen":
+    "Admin/oncall sustained load generator — toggle on/off, configurable rate (orders/sec), realistic strategy mix, auto-stop safety cap",
   "llm-subsystem":
     "LLM Advisory Subsystem operator controls — arm/disarm the advisory engine, set trigger mode, and start the worker",
   "greeks-surface":
@@ -228,6 +232,7 @@ export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
   "throughput-gauges",
   "algo-leaderboard",
   "load-test",
+  "load-gen",
   "llm-subsystem",
   "demo-day",
   "client-rfq",
@@ -279,6 +284,7 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "throughput-gauges": { out: false, in: false },
   "algo-leaderboard": { out: false, in: false },
   "load-test": { out: false, in: false },
+  "load-gen": { out: false, in: false },
   "llm-subsystem": { out: false, in: false },
   "greeks-surface": { out: false, in: false },
   "vol-profile": { out: false, in: false },
@@ -464,6 +470,7 @@ export const PANEL_PERMISSIONS: Record<PanelId, ReadonlySet<AuthRole>> = {
     "compliance",
   ]),
   "load-test": new Set<AuthRole>(["admin"]),
+  "load-gen": new Set<AuthRole>(["admin", "oncall"]),
   "llm-subsystem": new Set<AuthRole>(["admin"]),
   "greeks-surface": new Set<AuthRole>([
     "trader",
@@ -564,10 +571,12 @@ const ONCALL_EXCLUDED_PANELS: ReadonlySet<PanelId> = new Set<PanelId>([
   "dev-tools",
 ]);
 
-for (const [panelId, roles] of Object.entries(PANEL_PERMISSIONS) as [PanelId, Set<AuthRole>][]) {
-  if (ONCALL_EXCLUDED_PANELS.has(panelId)) continue;
-  if (roles.has("admin")) roles.add("oncall");
-}
+// biome-ignore lint/complexity/noForEach: project preference is functional/forEach over for-of for mutating sets
+(Object.entries(PANEL_PERMISSIONS) as [PanelId, Set<AuthRole>][])
+  .filter(([panelId, roles]) => !ONCALL_EXCLUDED_PANELS.has(panelId) && roles.has("admin"))
+  .forEach(([, roles]) => {
+    roles.add("oncall");
+  });
 
 export const PANEL_TRADING_STYLES: Partial<Record<PanelId, ReadonlySet<TradingStyle>>> = {
   "order-ticket": new Set<TradingStyle>([

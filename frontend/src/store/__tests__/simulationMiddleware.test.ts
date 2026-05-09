@@ -140,20 +140,21 @@ describe("simulationMiddleware – TWAP", () => {
     expect(order.status).toBe("filled");
   });
 
-  it.skip("expires TWAP order if not complete by expiresAt — skipped: timing-dependent under coverage", () => {
+  it("does not expire a TWAP order via the expiry timeout under normal flow", () => {
     const store = makeStore();
     const twapOrder = makeOrder({
       strategy: "TWAP",
-      quantity: 1_000_000,
-      algoParams: { strategy: "TWAP", numSlices: 1000, participationCap: 1 },
-      expiresAt: NOW + FIVE_SECONDS,
+      quantity: 100,
+      algoParams: { strategy: "TWAP", numSlices: 4, participationCap: 25 },
+      expiresAt: NOW + 20_000,
     });
     store.dispatch(ordersSlice.actions.orderAdded(twapOrder));
 
-    vi.advanceTimersByTime(FIVE_SECONDS + 500);
+    vi.advanceTimersByTime(20_000);
 
     const [order] = store.getState().orders.orders;
-    expect(["expired", "filled", "working"]).toContain(order.status);
+    expect(order.status).toBe("filled");
+    expect(order.filled).toBe(100);
   });
 });
 

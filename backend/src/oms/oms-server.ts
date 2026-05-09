@@ -666,11 +666,14 @@ interface JournalOrder {
   userId?: string;
 }
 
+const EXPIRE_LOOKBACK_MS = 6 * 60 * 60 * 1_000;
+
 async function expireOrphanedOrders() {
   try {
-    const res = await fetch(`${JOURNAL_URL}/orders?limit=500`, {
-      signal: AbortSignal.timeout(5_000),
-    });
+    const res = await fetch(
+      `${JOURNAL_URL}/orders?limit=500&lookbackMs=${EXPIRE_LOOKBACK_MS}`,
+      { signal: AbortSignal.timeout(5_000) },
+    );
     if (!res.ok) return;
     const orders = await res.json() as JournalOrder[];
     const now = Date.now();

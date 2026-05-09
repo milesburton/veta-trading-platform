@@ -37,6 +37,8 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "throughput-gauges": "Pipeline throughput metrics — orders/min, fills/min, and fill rate",
   "algo-leaderboard": "Strategy performance leaderboard — fill rate and slippage per algo",
   "load-test": "Admin-only bulk order injector — stress-test the pipeline",
+  "load-gen":
+    "Admin/oncall sustained load generator — toggle on/off, configurable rate, auto-stop safety cap",
   "llm-subsystem": "LLM Advisory Subsystem operator controls — arm/disarm the advisory engine",
   "greeks-surface": "Delta, gamma, theta, and vega across the strike surface for any expiry",
   "vol-profile": "EWMA volatility trend with rolling baseline — auto-refreshes every 60s",

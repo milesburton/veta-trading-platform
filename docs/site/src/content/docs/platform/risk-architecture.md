@@ -49,6 +49,7 @@ the allowlist.
 | Admin / load-test | `backend/src/gateway/routes/admin.ts` | Admin endpoint for stress testing |
 | Admin scenario | `backend/src/gateway/routes/admin.ts` | Admin "demo day" canned sequence |
 | Admin replay | `backend/src/gateway/routes/admin.ts` | Replay a saved scenario |
+| Continuous load agent | `backend/src/gateway/loadAgent.ts` | Admin/oncall toggles in-platform load generator |
 | RFQ acceptance | `backend/src/rfq/rfq-service.ts` | Sales accepts a client RFQ quote |
 | Scenario orchestrator | `backend/src/scenarios/orchestrator.ts` | Deterministic scenario replay |
 

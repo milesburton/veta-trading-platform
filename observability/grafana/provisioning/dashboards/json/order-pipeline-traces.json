@@ -83,32 +83,203 @@
     {
       "id": 2,
       "type": "row",
-      "title": "Order flow (service graph)",
+      "title": "Order flow (per-stage throughput)",
       "gridPos": { "x": 0, "y": 10, "w": 24, "h": 1 },
       "collapsed": false
     },
     {
-      "id": 20,
-      "type": "nodeGraph",
-      "title": "Live service graph",
-      "description": "Auto-discovered call graph from trace data. Edge labels show requests/sec.",
-      "gridPos": { "x": 0, "y": 11, "w": 24, "h": 12 },
-      "datasource": { "uid": "tempo", "type": "tempo" },
-      "options": {},
+      "id": 21,
+      "type": "stat",
+      "title": "Submitted",
+      "description": "Orders entering the pipeline (orders.submitted topic).",
+      "gridPos": { "x": 0, "y": 11, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "noValue": "—"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"] },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
       "targets": [
         {
-          "queryType": "serviceMap",
+          "expr": "sum(rate({service_name=\"kafka-relay\"} | json | type = `orders.submitted` [$__interval]))",
           "refId": "A",
-          "datasource": { "uid": "tempo", "type": "tempo" }
+          "datasource": { "uid": "loki", "type": "loki" }
         }
       ]
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "Routed",
+      "description": "Orders that passed risk and were routed to an algo (orders.routed).",
+      "gridPos": { "x": 4, "y": 11, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "noValue": "—"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"] },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({service_name=\"kafka-relay\"} | json | type = `orders.routed` [$__interval]))",
+          "refId": "A",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "stat",
+      "title": "Child slices",
+      "description": "Algo-generated child orders (orders.child). Volume is typically multiples of routed.",
+      "gridPos": { "x": 8, "y": 11, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "fixed", "fixedColor": "purple" },
+          "noValue": "—"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"] },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({service_name=\"kafka-relay\"} | json | type = `orders.child` [$__interval]))",
+          "refId": "A",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "Filled",
+      "description": "Child orders executed (orders.filled).",
+      "gridPos": { "x": 12, "y": 11, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "noValue": "—"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"] },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({service_name=\"kafka-relay\"} | json | type = `orders.filled` [$__interval]))",
+          "refId": "A",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "type": "stat",
+      "title": "Rejected",
+      "description": "Orders rejected at risk-engine or OMS limit checks (orders.rejected).",
+      "gridPos": { "x": 16, "y": 11, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "noValue": "—"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"] },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({service_name=\"kafka-relay\"} | json | type = `orders.rejected` [$__interval]))",
+          "refId": "A",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "type": "stat",
+      "title": "Expired",
+      "description": "Orders expired before fill (orders.expired).",
+      "gridPos": { "x": 20, "y": 11, "w": 4, "h": 5 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "fixed", "fixedColor": "red" },
+          "noValue": "—"
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"] },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({service_name=\"kafka-relay\"} | json | type = `orders.expired` [$__interval]))",
+          "refId": "A",
+          "datasource": { "uid": "loki", "type": "loki" }
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "type": "grafana-mermaid-panel",
+      "title": "Pipeline architecture",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 9 },
+      "options": {
+        "content": "flowchart LR\n    User[User / Gateway]\n    Risk[Risk-engine + OMS]\n    Algo[Algo]\n    EMS[EMS]\n    Journal[(Journal DB)]\n    Rejected([orders.rejected])\n    Expired([orders.expired])\n\n    User -- orders.submitted --> Risk\n    Risk -- orders.routed --> Algo\n    Algo -- orders.child --> EMS\n    EMS -- orders.filled --> Journal\n    Risk -.-> Rejected\n    EMS -.-> Expired\n\n    classDef stage fill:#1f2937,stroke:#3b82f6,stroke-width:1px,color:#e5e7eb;\n    classDef terminal fill:#3f1d1d,stroke:#dc2626,stroke-width:1px,color:#fecaca;\n    class User,Risk,Algo,EMS,Journal stage;\n    class Rejected,Expired terminal;"
+      }
+    },
+    {
+      "id": 28,
+      "type": "text",
+      "title": "How to read this dashboard",
+      "gridPos": { "x": 0, "y": 25, "w": 24, "h": 3 },
+      "options": {
+        "mode": "markdown",
+        "content": "**How to read the throughput row above:** each stat shows the per-second event rate for that pipeline stage, averaged across the dashboard time window. Healthy steady-state: **routed ≈ submitted minus rejected**, **child > routed** (algo expansion), **filled ≈ child** (with small expired tail). Empty values mean no orders are flowing — submit an order via the trading UI or run **Demo Day** from Mission Control."
+      }
     },
 
     {
       "id": 3,
       "type": "row",
       "title": "Errors and slow traces",
-      "gridPos": { "x": 0, "y": 23, "w": 24, "h": 1 },
+      "gridPos": { "x": 0, "y": 28, "w": 24, "h": 1 },
       "collapsed": false
     },
     {
@@ -116,7 +287,7 @@
       "type": "table",
       "title": "Recent error spans",
       "description": "Spans with status=ERROR in the selected window. Click TraceID to open the full trace.",
-      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 10 },
+      "gridPos": { "x": 0, "y": 29, "w": 12, "h": 10 },
       "datasource": { "uid": "tempo", "type": "tempo" },
       "options": { "showHeader": true },
       "targets": [
@@ -136,7 +307,7 @@
       "type": "table",
       "title": "Slowest traces (>500ms)",
       "description": "Traces that took longer than 500ms end-to-end. The order pipeline target is sub-100ms.",
-      "gridPos": { "x": 12, "y": 24, "w": 12, "h": 10 },
+      "gridPos": { "x": 12, "y": 29, "w": 12, "h": 10 },
       "datasource": { "uid": "tempo", "type": "tempo" },
       "options": { "showHeader": true },
       "targets": [
@@ -154,7 +325,7 @@
       "id": 4,
       "type": "row",
       "title": "Bus events",
-      "gridPos": { "x": 0, "y": 34, "w": 24, "h": 1 },
+      "gridPos": { "x": 0, "y": 39, "w": 24, "h": 1 },
       "collapsed": false
     },
     {
@@ -162,7 +333,7 @@
       "type": "timeseries",
       "title": "Order events from bus",
       "description": "Order lifecycle events as observed by kafka-relay → Loki. Use this when traces are too detailed.",
-      "gridPos": { "x": 0, "y": 35, "w": 24, "h": 9 },
+      "gridPos": { "x": 0, "y": 40, "w": 24, "h": 9 },
       "datasource": { "uid": "loki", "type": "loki" },
       "fieldConfig": {
         "defaults": {
@@ -185,7 +356,7 @@
       "id": 5,
       "type": "row",
       "title": "Order-flow Sankey",
-      "gridPos": { "x": 0, "y": 44, "w": 24, "h": 1 },
+      "gridPos": { "x": 0, "y": 49, "w": 24, "h": 1 },
       "collapsed": false
     },
     {
@@ -193,7 +364,7 @@
       "type": "barchart",
       "title": "Order flow — stage transitions (count over window)",
       "description": "Counts each lifecycle transition over the dashboard time range, showing where order volume goes at each branch in the pipeline. Sourced from kafka-relay → Loki. Built-in Sankey requires Grafana ≥11.5; this stack runs 11.4.0, so the same five transitions are rendered as a bar chart instead — each bar is one edge of the Sankey and its height is the edge weight (event count).\n\nTransitions:\n  submitted → routed   (accepted by risk, handed to algo)\n  submitted → rejected (rejected at risk)\n  routed    → child    (algo sliced parent into child orders)\n  child     → filled   (executed by EMS)\n  child     → expired  (timed out before fill)",
-      "gridPos": { "x": 0, "y": 45, "w": 24, "h": 10 },
+      "gridPos": { "x": 0, "y": 50, "w": 24, "h": 10 },
       "datasource": { "uid": "loki", "type": "loki" },
       "fieldConfig": {
         "defaults": {
