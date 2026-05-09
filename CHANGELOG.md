@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.29.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.28.1...veta-trading-platform-v1.29.0) (2026-05-09)
+
+
+### Features
+
+* continuous load generator with on/off switch ([#129](https://github.com/milesburton/veta-trading-platform/issues/129)) ([2159341](https://github.com/milesburton/veta-trading-platform/commit/2159341d2b07351b88d5f2b552bff5e64ac0757e))
+
+
+### Bug Fixes
+
+* **deploy:** auto-pull self-updates deploy.sh before running it ([#138](https://github.com/milesburton/veta-trading-platform/issues/138)) ([1638484](https://github.com/milesburton/veta-trading-platform/commit/1638484c16c4009806f15926980779bd0b1f163d))
+* **deploy:** tolerate non-critical service failures + correct verification ([#136](https://github.com/milesburton/veta-trading-platform/issues/136)) ([c00bb33](https://github.com/milesburton/veta-trading-platform/commit/c00bb33b0ea42141429fb7ed79aef82b7f21ac2d))
+* **feature-engine:** bump V8 heap and container memory to stop OOM crash loop ([#134](https://github.com/milesburton/veta-trading-platform/issues/134)) ([ff4f6ba](https://github.com/milesburton/veta-trading-platform/commit/ff4f6ba833e1ac091c687548d1c241a946d472ef))
+* **security,docs:** demo-day admin gate + correct local-dev instructions ([#137](https://github.com/milesburton/veta-trading-platform/issues/137)) ([dc91e2e](https://github.com/milesburton/veta-trading-platform/commit/dc91e2ef15b2cc8292b409449351c69727108036))
+* three small correctness issues from session audit ([#131](https://github.com/milesburton/veta-trading-platform/issues/131)) ([21a2b33](https://github.com/milesburton/veta-trading-platform/commit/21a2b3390b6b6846d3d6a1b3bd07b0043d8d5304))
+
 ## [1.28.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.28.0...veta-trading-platform-v1.28.1) (2026-05-09)
 
 
