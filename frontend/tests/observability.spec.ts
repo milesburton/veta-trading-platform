@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { DEFAULT_ADMIN, DEFAULT_TRADER, GatewayMock } from "./helpers/GatewayMock.ts";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 
 async function switchLayout(app: AppPage, label: string) {

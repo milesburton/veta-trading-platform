@@ -18,9 +18,6 @@ function waitForServer(url, timeoutMs = 30_000) {
   return new Promise((resolve, reject) => {
     const deadline = Date.now() + timeoutMs;
     function poll() {
-      const req = (url.startsWith("https") ? null : createServer()).request
-        ? null
-        : null;
       import("http").then(({ get }) => {
         get(url, (res) => {
           if (res.statusCode < 500) resolve();

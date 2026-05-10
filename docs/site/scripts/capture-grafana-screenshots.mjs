@@ -131,6 +131,12 @@ async function main() {
       const filePath = path.join(dashDir, fileName);
       try {
         const png = await fetchPanelPng(dash.uid, panel.id);
+        if (
+          !(png instanceof Uint8Array || Buffer.isBuffer(png)) ||
+          png[0] !== 0x89 || png[1] !== 0x50 || png[2] !== 0x4e || png[3] !== 0x47
+        ) {
+          throw new Error("Invalid PNG data received from network");
+        }
         fs.writeFileSync(filePath, png);
         console.log(`  ✓ ${panel.title} → ${fileName} (${png.length} B)`);
         dashEntry.panels.push({

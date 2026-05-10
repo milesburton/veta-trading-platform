@@ -18,8 +18,9 @@ const ORDERS_SUBMITTED_PRODUCERS = new Set<string>([
 
 async function findProducers(topic: string): Promise<Set<string>> {
   const found = new Set<string>();
+  const escaped = topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = new RegExp(
-    String.raw`producer[?]?\.send\s*\(\s*["']${topic.replace(/\./g, "\\.")}["']`,
+    String.raw`producer[?]?\.send\s*\(\s*["']${escaped}["']`,
   );
 
   for await (

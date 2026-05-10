@@ -62,7 +62,7 @@ async function queryLoki(
   let logQL = `{${filters.join(",")}}`;
   if (level) logQL += ` |~ "(?i)\\"level\\":\\"${level}"`;
   if (search) {
-    const escaped = search.replace(/"/g, '\\"');
+    const escaped = search.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
     logQL += ` |~ "(?i)${escaped}"`;
   }
 

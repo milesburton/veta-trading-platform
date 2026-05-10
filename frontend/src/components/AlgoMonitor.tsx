@@ -309,9 +309,7 @@ function TradeAtLastButton({
       }}
       data-testid="trade-at-last-btn"
       className="px-2 py-0.5 text-[10px] font-semibold rounded border border-amber-600/60 text-amber-400 hover:bg-amber-900/30 transition-colors whitespace-nowrap"
-      title={`Submit LIMIT order for ${formatQty(remaining)} @ ${
-        marketPrice ? formatPrice(marketPrice) : "—"
-      }`}
+      title={`Submit LIMIT order for ${formatQty(remaining)} @ ${formatPrice(marketPrice)}`}
     >
       Trade at Last
     </button>
