@@ -32,8 +32,11 @@ certificatesResolvers:
     acme:
       email: "${ACME_EMAIL}"
       storage: /letsencrypt/acme.json
-      httpChallenge:
-        entryPoint: web
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
 
 metrics:
   prometheus:

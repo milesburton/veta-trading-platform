@@ -4,6 +4,25 @@ Polls `origin/main` every 5 minutes and runs `deploy.sh` when a new commit
 lands. Replaces the `deploy-homelab` GitHub Actions job — GH runners can't
 reach the homelab's private LAN, so we invert the direction.
 
+## Required machine-local env (one-time)
+
+`/opt/stacks/veta/.env` is **not** synced from the repo — it holds machine-local
+secrets and is read by `docker compose` at deploy time. Required keys:
+
+```env
+# Let's Encrypt registration address (recovery + expiry warnings)
+ACME_EMAIL=miles.burton@gmail.com
+
+# Cloudflare API token for DNS-01 challenge.
+# Scope: Zone:DNS:Edit + Zone:Zone:Read on the mnetcs.com zone only.
+# Generate at https://dash.cloudflare.com/profile/api-tokens.
+CF_DNS_API_TOKEN=<token>
+```
+
+Without these, Traefik will start but fail every cert request (logged as
+`unable to obtain ACME certificate`). The site will still serve — it falls back
+to Traefik's self-signed default cert — but browsers will warn.
+
 ## Install (one-time, on the homelab)
 
 ```bash
