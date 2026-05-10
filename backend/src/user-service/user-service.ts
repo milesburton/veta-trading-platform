@@ -37,7 +37,7 @@ function parseOAuthClients(config: string): Map<string, {
     // 1) clientId:redirect1,redirect2|scope1,scope2
     // 2) clientId|redirect1,redirect2|scope1,scope2
     let clientId = "";
-    let redirectPart = "postmessage";
+    let redirectPart: string;
     let scopePart = "openid,profile";
 
     if (entry.includes("|")) {

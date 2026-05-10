@@ -1,5 +1,5 @@
 import { test as base, expect } from "@playwright/test";
-import { DEFAULT_ADMIN, DEFAULT_ASSETS, DEFAULT_LIMITS, GatewayMock } from "./helpers/GatewayMock.ts";
+import { DEFAULT_ADMIN, DEFAULT_ASSETS, DEFAULT_LIMITS } from "./helpers/GatewayMock.ts";
 import { adminTest, traderTest } from "./helpers/fixtures.ts";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 

@@ -30,7 +30,12 @@ export function useSessionRecording() {
   useEffect(() => {
     if (!config?.recordingEnabled || !user || recordingRef.current) return;
 
-    const sessionId = `${user.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const randomBytes = new Uint8Array(6);
+    crypto.getRandomValues(randomBytes);
+    const randomHex = Array.from(randomBytes)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    const sessionId = `${user.id}-${Date.now()}-${randomHex}`;
     sessionIdRef.current = sessionId;
     recordingRef.current = true;
 

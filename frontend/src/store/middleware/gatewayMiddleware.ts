@@ -68,6 +68,11 @@ const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? `${_origin}/api/gateway`
 const UI_TICK_INTERVAL_MS = 250;
 const ALGO_HEARTBEAT_TIMEOUT_MS = 30_000;
 
+function sanitizeLogEntry(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return String(value).replace(/[\r\n]/g, " ");
+}
+
 interface MarketUpdateData {
   prices: Record<string, number>;
   openPrices?: Record<string, number>;
@@ -319,7 +324,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
               reason?: string;
               clientOrderId?: string;
             };
-            console.warn("[gateway] Order rejected by gateway:", rejData.reason);
+            console.warn("[gateway] Order rejected by gateway:", sanitizeLogEntry(rejData.reason));
             if (rejData.clientOrderId) {
               storeAPI.dispatch(
                 orderPatched({
@@ -454,7 +459,10 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             break;
           }
           case "error":
-            console.error("[gateway] Server error:", (msg.data as { message?: string }).message);
+            console.error(
+              "[gateway] Server error:",
+              sanitizeLogEntry((msg.data as { message?: string }).message)
+            );
             break;
         }
       } catch {

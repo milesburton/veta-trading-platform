@@ -2,8 +2,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "@playwright/test";
 import {
-  ALGO_TRADER,
-  ALGO_TRADER_LIMITS,
   type AssetDef,
   DEFAULT_ADMIN,
   GatewayMock,

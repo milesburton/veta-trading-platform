@@ -1,5 +1,4 @@
 import { defineConfig } from "@playwright/test";
-import * as path from "path";
 
 // Electron E2E tests launch the packaged app directly via the _electron fixture.
 // Run with: npm run test:electron

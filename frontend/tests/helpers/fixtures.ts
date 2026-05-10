@@ -1,12 +1,7 @@
 import { test as base, expect } from "@playwright/test";
 import {
-  ALGO_TRADER,
-  ALGO_TRADER_LIMITS,
   DEFAULT_ASSETS,
   DEFAULT_LIMITS,
-  DEFAULT_TRADER,
-  FI_TRADER,
-  FI_TRADER_LIMITS,
   GatewayMock,
 } from "./GatewayMock.ts";
 import { AppPage } from "./pages/AppPage.ts";
