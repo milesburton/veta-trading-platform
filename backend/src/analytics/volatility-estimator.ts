@@ -26,13 +26,13 @@ interface VolCacheEntry {
 // Cache volatility estimates for 60 seconds to avoid hammering the journal
 const volCache = new Map<string, VolCacheEntry>();
 
-interface VolResult {
+export interface VolResult {
   ewmaVol: number;
   rollingVol: number;
   ewmaSeries: VolProfileSample[];
 }
 
-function computeVol(closes: number[], timestamps: number[]): VolResult {
+export function computeVol(closes: number[], timestamps: number[]): VolResult {
   // Compute log returns
   const logReturns: number[] = [];
   for (let i = 1; i < closes.length; i++) {

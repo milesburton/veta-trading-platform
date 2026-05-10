@@ -14,12 +14,14 @@ const A4 = -1.453152027;
 const A5 = 1.061405429;
 const P = 0.3275911;
 
-/** Cumulative standard normal distribution N(x). */
+/** Cumulative standard normal distribution N(x) via N(x) = 0.5·(1 + erf(x/√2)). */
 export function normCdf(x: number): number {
   const sign = x < 0 ? -1 : 1;
-  const t = 1.0 / (1.0 + P * Math.abs(x));
+  const z = Math.abs(x) / Math.SQRT2;
+  const t = 1.0 / (1.0 + P * z);
   const y = ((((A5 * t + A4) * t + A3) * t + A2) * t + A1) * t;
-  return 0.5 * (1.0 + sign * (1.0 - y * Math.exp(-x * x)));
+  const erf = 1.0 - y * Math.exp(-z * z);
+  return 0.5 * (1.0 + sign * erf);
 }
 
 /** Standard normal PDF φ(x). */
