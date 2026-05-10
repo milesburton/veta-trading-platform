@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.30.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.29.0...veta-trading-platform-v1.30.0) (2026-05-10)
+
+
+### Features
+
+* **deploy:** gateway scale-out + loadgen overlay conditional ([#142](https://github.com/milesburton/veta-trading-platform/issues/142)) ([0a1d475](https://github.com/milesburton/veta-trading-platform/commit/0a1d4752b6c80b80fe49a24b1b32238758ba2e7e))
+
+
+### Bug Fixes
+
+* **compose:** expose only frontend, gateway, redpanda-console via Traefik ([#144](https://github.com/milesburton/veta-trading-platform/issues/144)) ([5d43d03](https://github.com/milesburton/veta-trading-platform/commit/5d43d031f657d593380c9339f0537a9111cd590d))
+* **deploy,compose:** observability overlay + ollama healthcheck + load-gen rsync ([#139](https://github.com/milesburton/veta-trading-platform/issues/139)) ([faca17d](https://github.com/milesburton/veta-trading-platform/commit/faca17d3c50ce0ddd8e4a98b80d086da51e1fd6b))
+* **gateway:** require auth on SVC_PROXY catch-all ([#143](https://github.com/milesburton/veta-trading-platform/issues/143)) ([56759a9](https://github.com/milesburton/veta-trading-platform/commit/56759a924b86142bb2c2b69ab1457fdb81c96200))
+* **load.sh:** source .env.loadgen for off/status/logs ([#141](https://github.com/milesburton/veta-trading-platform/issues/141)) ([6982123](https://github.com/milesburton/veta-trading-platform/commit/69821230d3399785193d84ba1fb869c2fd90a40c))
+
 ## [1.29.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.28.1...veta-trading-platform-v1.29.0) (2026-05-09)
 
 
