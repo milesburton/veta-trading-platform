@@ -130,6 +130,7 @@ export default defineConfig({
             { label: "Coding approach", slug: "development/coding-approach" },
             { label: "Project structure", slug: "development/structure" },
             { label: "Testing", slug: "development/testing" },
+            { label: "Testcontainers", slug: "development/testcontainers" },
             { label: "CI / CD", slug: "development/ci-cd" },
             { label: "Deployment", slug: "development/deployment" },
             { label: "Shared modules", slug: "development/shared-modules" },
