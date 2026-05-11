@@ -34,7 +34,7 @@ jobs:
     name: Run Tests
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -50,7 +50,7 @@ jobs:
         run: deno task test
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "24"
           cache: "npm"
@@ -68,7 +68,7 @@ jobs:
     name: Deploy to Fly.io
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Fly.io
         uses: superfly/flyctl-actions/setup-flyctl@master
@@ -148,7 +148,7 @@ jobs:
     name: Smoke tests against Fly.io
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Probe whether a machine is running
         id: probe
