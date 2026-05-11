@@ -151,3 +151,70 @@ If the homelab is ever compromised, the worst the attacker can do via
 this key is hold port 18443 open on the OVH edge — no shell, no other
 forwards. They'd see the inbound HTTPS connections proxied through the
 tunnel, but that's the public traffic anyway.
+
+---
+
+# Grafana public route — `GRAFANA_BASICAUTH_HTPASSWD`
+
+Grafana is exposed at `https://veta.mnetcs.com/grafana/` via the homelab
+Traefik. Because Grafana itself currently has anonymous Admin enabled
+(`GF_AUTH_ANONYMOUS_ENABLED=true`, `GF_AUTH_ANONYMOUS_ORG_ROLE=Admin`,
+login form hidden), the public path **must** be gated at Traefik with
+HTTP basic auth, or the world gets Admin.
+
+The Traefik `basicauth` middleware reads its users from
+`${GRAFANA_BASICAUTH_HTPASSWD}` (set in `/opt/stacks/veta/.env`).
+
+## Generate + set the credential
+
+```bash
+# Install htpasswd if missing
+which htpasswd || sudo apt-get install -y apache2-utils
+
+# Generate a hash for username `demo` (replace with your choice; you'll
+# be prompted for the password twice)
+htpasswd -nB demo
+# example output: demo:$2y$05$ucm9F0J0CnsdH7K0z.QzfeR9PpAVy7eMnD2YQYxQK6.LbKbJ.LJjK
+
+# Put it in the homelab .env, escaping every $ as $$ for compose:
+sudo tee -a /opt/stacks/veta/.env <<'EOF'
+GRAFANA_BASICAUTH_HTPASSWD=demo:$$2y$$05$$ucm9F0J0CnsdH7K0z.QzfeR9PpAVy7eMnD2YQYxQK6.LbKbJ.LJjK
+EOF
+```
+
+The literal `$$` in the file becomes `$` after compose's first-pass
+substitution, and is then passed unchanged into Traefik's label.
+
+## Recreate Grafana to pick up the new label
+
+```bash
+cd /opt/stacks/veta/observability
+docker compose -f docker-compose.lgtm.yml up -d --force-recreate grafana
+```
+
+If the env was unset before, the placeholder hash `apr1$placeholder...`
+in the compose label silently fails every login. Once you set the env
+and recreate, real basic-auth kicks in.
+
+## Adding more users later
+
+Append to the same hash with a comma:
+
+```
+GRAFANA_BASICAUTH_HTPASSWD=demo:$$hash1...,viewer:$$hash2...
+```
+
+## LAN access
+
+The basicauth middleware is on the Grafana router, which matches
+`PathPrefix(/grafana)` on the homelab Traefik. Any request to that
+path through Traefik — public or LAN — will hit basicauth.
+
+Anonymous-Admin Grafana is still reachable on the LAN by bypassing
+Traefik entirely: `http://192.168.1.245:3000` (the docker-published
+host port) or the container's IP directly on the `lgtm` docker network.
+That's how you'd log in to provision dashboards or change settings.
+
+If you want fully gated Grafana even from LAN, set
+`GF_SECURITY_ADMIN_PASSWORD` + drop `GF_AUTH_ANONYMOUS_ENABLED`. A
+follow-up.
