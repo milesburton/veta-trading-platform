@@ -120,6 +120,59 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
 }
 
+/* Mermaid SVG lightbox: scrollable container so wide diagrams stay
+   navigable. The SVG renders at its intrinsic viewBox aspect; users
+   scroll horizontally / vertically when it exceeds the viewport. */
+.veta-lightbox--mermaid {
+  cursor: default;
+}
+.veta-lightbox-scroll {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sl-color-bg);
+  border-radius: 6px;
+  padding: 1.5rem;
+}
+.veta-lightbox-scroll svg {
+  /* Don't shrink — let it overflow and be scrolled. */
+  flex-shrink: 0;
+  max-width: none;
+  max-height: none;
+  min-width: 100%;
+}
+
+/* Hover affordance on the rendered diagrams in the page itself. */
+.sl-markdown-content .mermaid {
+  position: relative;
+  transition: outline 0.15s;
+  border-radius: 4px;
+}
+.sl-markdown-content .mermaid:hover {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 4px;
+}
+.sl-markdown-content .mermaid::after {
+  content: "⤢ Click to expand";
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  color: var(--sl-color-white);
+  background: rgb(var(--gray-950) / 0.7);
+  border-radius: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.sl-markdown-content .mermaid:hover::after {
+  opacity: 1;
+}
+
 .veta-lightbox-close {
   position: absolute;
   top: 1rem;
