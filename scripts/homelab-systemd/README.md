@@ -4,24 +4,13 @@ Polls `origin/main` every 5 minutes and runs `deploy.sh` when a new commit
 lands. Replaces the `deploy-homelab` GitHub Actions job — GH runners can't
 reach the homelab's private LAN, so we invert the direction.
 
-## Required machine-local env (one-time)
+There are two services managed via systemd on the homelab:
 
-`/opt/stacks/veta/.env` is **not** synced from the repo — it holds machine-local
-secrets and is read by `docker compose` at deploy time. Required keys:
-
-```env
-# Let's Encrypt registration address (recovery + expiry warnings)
-ACME_EMAIL=miles.burton@gmail.com
-
-# Cloudflare API token for DNS-01 challenge.
-# Scope: Zone:DNS:Edit + Zone:Zone:Read on the mnetcs.com zone only.
-# Generate at https://dash.cloudflare.com/profile/api-tokens.
-CF_DNS_API_TOKEN=<token>
-```
-
-Without these, Traefik will start but fail every cert request (logged as
-`unable to obtain ACME certificate`). The site will still serve — it falls back
-to Traefik's self-signed default cert — but browsers will warn.
+- `veta-auto-pull.{service,timer}` — polls `origin/main`, runs `deploy.sh` on SHA change.
+- `veta-tunnel.service` — `autossh` reverse tunnel to the OVH edge box, exposes
+  the homelab Traefik at `127.0.0.1:18443` on OVH so the edge's Let's Encrypt
+  Traefik can proxy `https://veta.mnetcs.com/` into the homelab. See
+  [`edge/README.md`](../../edge/README.md) for the edge side.
 
 ## Install (one-time, on the homelab)
 
@@ -95,3 +84,70 @@ Alternatives considered and rejected:
 - **Cloudflare Tunnel / ngrok**: extra hop, third-party dependency
 
 The cron model has zero new infrastructure and zero inbound exposure.
+
+---
+
+# Reverse SSH tunnel (`veta-tunnel.service`)
+
+Maintains an `autossh` reverse tunnel from the homelab to the OVH edge
+box. Public traffic for `https://veta.mnetcs.com/` arrives at the OVH
+edge's Traefik (which terminates Let's Encrypt TLS) and is proxied into
+this tunnel back to the homelab's internal Traefik on port 443.
+
+The homelab dials out; nothing inbound to the home router is required.
+
+## Install (one-time, on the homelab)
+
+```bash
+# Install autossh
+sudo apt-get install -y autossh
+
+# Generate a dedicated keypair (separate from your personal SSH keys)
+sudo install -d -m 0700 -o root -g root /etc/veta-tunnel
+sudo ssh-keygen -t ed25519 -N "" -C veta-tunnel@homelab \
+  -f /etc/veta-tunnel/id_ed25519
+
+# Print the public key — paste this into the OVH edge box (see edge/README.md)
+sudo cat /etc/veta-tunnel/id_ed25519.pub
+
+# Install + start the systemd unit
+sudo install -m 0644 \
+  /path/to/repo/scripts/homelab-systemd/veta-tunnel.service \
+  /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now veta-tunnel.service
+```
+
+## Daily use
+
+```bash
+# Status
+systemctl status veta-tunnel.service
+
+# Recent activity
+journalctl -u veta-tunnel.service -n 50 --no-pager
+
+# Restart (e.g. after rotating keys)
+sudo systemctl restart veta-tunnel.service
+
+# Quick health check — the tunnel exposes port 18443 on the OVH side
+ssh ubuntu@ovh.agileview.co.uk 'ss -tlnp | grep :18443'
+```
+
+## Why a separate user + restricted authorized_keys on OVH?
+
+The homelab key on OVH lives under user `veta-tunnel` with a single
+authorized_keys entry:
+
+```
+restrict,port-forwarding,permitlisten="18443" ssh-ed25519 ...
+```
+
+- `restrict` denies pty/X11/agent/user-rc/exec by default
+- `port-forwarding` re-enables the one capability we need
+- `permitlisten="18443"` allows reverse-forwarding only to port 18443
+
+If the homelab is ever compromised, the worst the attacker can do via
+this key is hold port 18443 open on the OVH edge — no shell, no other
+forwards. They'd see the inbound HTTPS connections proxied through the
+tunnel, but that's the public traffic anyway.
