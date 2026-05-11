@@ -286,7 +286,7 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (req.method === "GET" && path === "/personas") {
-    const demoMode = (Deno.env.get("VETA_DEMO_MODE") ?? "true").toLowerCase() !== "false";
+    const demoMode = (Deno.env.get("VETA_DEMO_MODE") ?? "false").toLowerCase() === "true";
     if (!demoMode) return json({ error: "demo mode disabled" }, 404);
     const client = await usersPool.connect();
     try {
@@ -392,6 +392,14 @@ async function handle(req: Request): Promise<Response> {
   if (limitsMatch) {
     const userId = limitsMatch[1];
     if (req.method === "GET") {
+      const caller = await getUserFromToken(getCookieToken(req));
+      if (!caller) return json({ error: "unauthenticated" }, 401);
+      const canReadAny = caller.role === "admin" ||
+        caller.role === "compliance" ||
+        caller.role === "risk-manager";
+      if (!canReadAny && caller.id !== userId) {
+        return json({ error: "forbidden" }, 403);
+      }
       const client = await usersPool.connect();
       try {
         const { rows } = await client.queryArray(
