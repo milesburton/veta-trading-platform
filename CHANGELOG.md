@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.35.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.34.0...veta-trading-platform-v1.35.0) (2026-05-11)
+
+
+### Features
+
+* **trade-bar:** LLM fallback via llm-worker /parse-ticket endpoint ([#186](https://github.com/milesburton/veta-trading-platform/issues/186)) ([b1ce1fc](https://github.com/milesburton/veta-trading-platform/commit/b1ce1fc1533d21d32e1f17e5449dffc99d9a3a14))
+
 ## [1.34.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.33.0...veta-trading-platform-v1.34.0) (2026-05-11)
 
 
