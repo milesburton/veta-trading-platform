@@ -20,6 +20,7 @@
  */
 
 import type { Middleware, UnknownAction } from "@reduxjs/toolkit";
+import { z } from "zod";
 import type { AssetDef, OhlcCandle, OrderBookSnapshot, OrderSide } from "../../types.ts";
 import { advisoryNoteReceived } from "../advisorySlice.ts";
 import { alertAdded } from "../alertsSlice.ts";
@@ -69,15 +70,29 @@ const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? `${_origin}/api/gateway`
 const UI_TICK_INTERVAL_MS = 250;
 const ALGO_HEARTBEAT_TIMEOUT_MS = 30_000;
 
-// Returns a JSON-encoded string of `value`, length-capped at 500 chars.
-// JSON.stringify escapes every ASCII control character (CR, LF, etc.)
-// to its \u00XX form, which is the canonical defence against log
-// injection: a hostile gateway message can no longer forge a fake log
-// line. CodeQL recognises JSON.stringify as a log-injection sanitizer.
-function sanitizeLogEntry(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  return JSON.stringify(String(value)).slice(0, 500);
-}
+const OrderRejectedSchema = z.object({
+  reason: z
+    .string()
+    .min(1)
+    .max(500)
+    .regex(/^[\x20-\x7e]+$/)
+    .optional(),
+  clientOrderId: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[\w.:-]+$/)
+    .optional(),
+});
+
+const ServerErrorSchema = z.object({
+  message: z
+    .string()
+    .min(1)
+    .max(500)
+    .regex(/^[\x20-\x7e]+$/)
+    .optional(),
+});
 
 interface MarketUpdateData {
   prices: Record<string, number>;
@@ -327,15 +342,17 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             break;
           }
           case "orderRejected": {
-            const rejData = msg.data as {
-              reason?: string;
-              clientOrderId?: string;
-            };
-            console.warn("[gateway] Order rejected by gateway:", sanitizeLogEntry(rejData.reason));
-            if (rejData.clientOrderId) {
+            const parsed = OrderRejectedSchema.safeParse(msg.data);
+            if (!parsed.success) {
+              console.warn("[gateway] orderRejected frame failed validation");
+              break;
+            }
+            const { reason, clientOrderId } = parsed.data;
+            console.warn("[gateway] Order rejected by gateway:", reason ?? "");
+            if (clientOrderId) {
               storeAPI.dispatch(
                 orderPatched({
-                  id: rejData.clientOrderId,
+                  id: clientOrderId,
                   patch: { status: "rejected" },
                 })
               );
@@ -466,12 +483,12 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             );
             break;
           }
-          case "error":
-            console.error(
-              "[gateway] Server error:",
-              sanitizeLogEntry((msg.data as { message?: string }).message)
-            );
+          case "error": {
+            const parsed = ServerErrorSchema.safeParse(msg.data);
+            const message = parsed.success ? (parsed.data.message ?? "") : "";
+            console.error("[gateway] Server error:", message);
             break;
+          }
         }
       } catch {
         // ignore unparseable frames
