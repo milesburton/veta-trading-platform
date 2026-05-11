@@ -1593,6 +1593,12 @@ services:
       RFQ_SERVICE_PORT: "5029"
       FIX_GATEWAY_HOST: fix-gateway
       FIX_GATEWAY_PORT: "9881"
+      REPLAY_HOST: replay-service
+      REPLAY_PORT: "5031"
+      RISK_ENGINE_HOST: risk-engine
+      RISK_ENGINE_PORT: "5032"
+      MARKET_DATA_ADAPTERS_HOST: market-data-adapters
+      MARKET_DATA_ADAPTERS_PORT: "5016"
       REDPANDA_BROKERS: redpanda:9092
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5011/health || exit 1"]
