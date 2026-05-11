@@ -44,7 +44,9 @@ import { loadTheme } from "./store/themeSlice.ts";
 import { loadUiPrefs } from "./store/uiSlice.ts";
 
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway";
-const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL ?? "/api/user-service";
+// Reach user-service via gateway SVC_PROXY since PR #144 dropped the
+// direct Traefik router.
+const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL ?? "/api/gateway/api/user-service";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolean }> {
   state = { crashed: false };

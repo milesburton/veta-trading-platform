@@ -19,7 +19,7 @@ export interface ReplayConfig {
 
 export const replayApi = createApi({
   reducerPath: "replayApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api/replay" }),
+  baseQuery: fetchBaseQuery({ baseUrl: "/api/gateway/api/replay" }),
   tagTypes: ["Sessions", "Config"],
   endpoints: (builder) => ({
     getReplayConfig: builder.query<ReplayConfig, void>({

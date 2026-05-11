@@ -62,8 +62,12 @@ export interface UpdateLimitsRequest {
 
 export const userApi = createApi({
   reducerPath: "userApi",
+  // /api/user-service has no direct Traefik route since PR #144 (only the
+  // gateway is publicly reachable). Go through /api/gateway/api/user-service,
+  // which SVC_PROXY forwards to the user-service container. Local dev with a
+  // bound port can still override via VITE_USER_SERVICE_URL.
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_USER_SERVICE_URL ?? "/api/user-service",
+    baseUrl: import.meta.env.VITE_USER_SERVICE_URL ?? "/api/gateway/api/user-service",
     credentials: "include",
   }),
   tagTypes: ["UserLimits"],
