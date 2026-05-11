@@ -24,8 +24,12 @@ export interface SystemMetrics {
 
 const _origin = typeof window !== "undefined" ? window.location.origin : "";
 
-const _traefik =
-  import.meta.env.VITE_TRAEFIK_DASHBOARD_URL ?? `${_origin.replace(/:(\d+)$/, "")}:8888`;
+// Traefik dashboard URL is opt-in via env. The fallback used to hardcode
+// `${_origin}:8888` which advertised the dashboard port to anyone reading
+// the production bundle. The Traefik tile is showOnDeployments=["local"]
+// anyway, so production callers never see it — but the string was still in
+// the bundle. Now: unset env → empty URL → tile hides itself.
+const _traefik = (import.meta.env.VITE_TRAEFIK_DASHBOARD_URL as string | undefined) ?? "";
 
 export const DEPLOYMENT = (import.meta.env.VITE_DEPLOYMENT as string | undefined) ?? "local";
 
@@ -196,6 +200,11 @@ const SERVICES_ALL: {
   },
   {
     name: "Traefik",
+    // Only meaningful when VITE_TRAEFIK_DASHBOARD_URL is set (local
+    // dev). Empty _traefik produces relative-path strings that the
+    // health-check fetch will treat as same-origin — which is fine
+    // because the Traefik tile is also gated by showOnDeployments=
+    // ["local"] and won't render in production.
     url: `${_traefik}/api/overview`,
     link: _traefik,
     optional: true,
