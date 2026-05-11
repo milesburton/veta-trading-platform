@@ -247,7 +247,7 @@ jobs:
   coverage-badges:
     name: Publish coverage badges
     runs-on: ubuntu-latest
-    needs: [lint-and-test, frontend]
+    needs: [lint-and-test, frontend, integration]
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
@@ -256,10 +256,34 @@ jobs:
         with:
           token: ${{ secrets.BOT_PAT }}
 
+      - name: Download unit coverage
+        uses: actions/download-artifact@v6
+        with:
+          name: backend-coverage
+          path: cov-unit
+        continue-on-error: true
+
+      - name: Download TC coverage
+        uses: actions/download-artifact@v6
+        with:
+          name: backend-tc-coverage
+          path: cov-tc
+        continue-on-error: true
+
+      - name: Combine backend coverage (unit + TC)
+        id: combine
+        run: |
+          # Concatenating LCOV records is the standard merge —
+          # lines for the same file are added together by tools.
+          : > coverage-combined.lcov
+          [[ -f cov-unit/coverage.lcov ]] && cat cov-unit/coverage.lcov >> coverage-combined.lcov
+          [[ -f cov-tc/coverage-tc.lcov ]] && cat cov-tc/coverage-tc.lcov >> coverage-combined.lcov
+          PCT=$(awk -F: '/^LF:/{lf+=$2}/^LH:/{lh+=$2} END { if (lf > 0) printf "%.1f", (lh*100/lf); else print "0.0" }' coverage-combined.lcov)
+          echo "backend=${PCT}" >> "$GITHUB_OUTPUT"
 
       - name: Generate frontend/backend/combined coverage badges
         env:
-          BACKEND_COVERAGE: ${{ needs.lint-and-test.outputs.backend-coverage }}
+          BACKEND_COVERAGE: ${{ steps.combine.outputs.backend }}
           FRONTEND_COVERAGE: ${{ needs.frontend.outputs.frontend-coverage }}
         run: |
           mkdir -p docs/badges
@@ -335,10 +359,21 @@ jobs:
       - name: Install backend dependencies
         run: deno install
 
-      - name: Testcontainers integration suite
-        run: deno task test:testcontainers 2>&1 | tee /tmp/tc-test-output.txt
+      - name: Testcontainers integration suite (with coverage)
+        run: deno task test:testcontainers:coverage 2>&1 | tee /tmp/tc-test-output.txt
         env:
           DATABASE_URL: postgres://veta:veta@localhost:5432/veta
+
+      - name: Generate TC coverage lcov
+        run: deno coverage coverage --lcov > coverage-tc.lcov || echo "(no TC coverage produced)"
+
+      - name: Upload TC coverage
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v6
+        with:
+          name: backend-tc-coverage
+          path: coverage-tc.lcov
+          retention-days: 14
 
       - name: Generate integration test badge
         if: github.ref == 'refs/heads/main'
