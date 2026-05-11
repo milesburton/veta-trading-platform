@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.36.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.35.0...veta-trading-platform-v1.36.0) (2026-05-11)
+
+
+### Features
+
+* **login:** one-click persona sign-in + full-width persona browser ([#188](https://github.com/milesburton/veta-trading-platform/issues/188)) ([b960c40](https://github.com/milesburton/veta-trading-platform/commit/b960c40ce4c14cb7a96cf6a5042fd04abc5a03dd))
+* **observability:** ship frontend warns/errors to Loki, not just the console ([#191](https://github.com/milesburton/veta-trading-platform/issues/191)) ([b93e049](https://github.com/milesburton/veta-trading-platform/commit/b93e0490ceff33a82f429a58df06a45227c3a23d))
+
+
+### Bug Fixes
+
+* **ws+auth+login:** connection-loss UX, session-expiry banner, login polish ([#190](https://github.com/milesburton/veta-trading-platform/issues/190)) ([e2dc4af](https://github.com/milesburton/veta-trading-platform/commit/e2dc4af5456db262b490638438071b97a5aff672))
+
 ## [1.35.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.34.0...veta-trading-platform-v1.35.0) (2026-05-11)
 
 
