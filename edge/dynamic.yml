@@ -1,3 +1,11 @@
+tls:
+  stores:
+    default:
+      defaultGeneratedCert:
+        resolver: letsencrypt
+        domain:
+          main: veta.mnetcs.com
+
 http:
   routers:
     veta:
@@ -7,6 +15,8 @@ http:
       service: veta-origin
       tls:
         certResolver: letsencrypt
+        domains:
+          - main: veta.mnetcs.com
       middlewares:
         - edge-ratelimit
         - security-headers

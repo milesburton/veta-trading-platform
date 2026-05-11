@@ -91,6 +91,16 @@ docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d \
     --scale "gateway=$GATEWAY_REPLICAS" \
     || log "⚠ up -d returned non-zero; checking which services are actually up"
 
+# Observability (LGTM) is a separate compose project. Recreate it so config
+# changes in observability/docker-compose.lgtm.yml take effect — e.g.
+# Grafana's sub-path env + Traefik labels for the public /grafana route.
+if [[ -f "$STACK_DIR/observability/docker-compose.lgtm.yml" ]]; then
+    log "Updating observability (LGTM) stack..."
+    (cd "$STACK_DIR/observability" && \
+        docker compose -f docker-compose.lgtm.yml up -d 2>&1 | sed 's/^/  /') \
+        || log "⚠ observability up -d returned non-zero; continuing"
+fi
+
 log "Waiting up to ${MAX_WAIT}s for critical services to be healthy..."
 DEADLINE=$(( $(date +%s) + MAX_WAIT ))
 while [[ $(date +%s) -lt $DEADLINE ]]; do
