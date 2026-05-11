@@ -15,7 +15,7 @@ http:
     veta-origin:
       loadBalancer:
         servers:
-          - url: "https://host.docker.internal:18443"
+          - url: "https://127.0.0.1:18443"
         passHostHeader: true
 
   middlewares:

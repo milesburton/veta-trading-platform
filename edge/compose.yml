@@ -2,18 +2,13 @@ services:
   traefik:
     image: traefik:v3.3
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
+    network_mode: host
     environment:
       ACME_EMAIL: "${ACME_EMAIL:?ACME_EMAIL is required}"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik.yml:/etc/traefik/traefik.yml:ro
       - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
       - letsencrypt:/letsencrypt
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     cap_drop:
       - ALL
     cap_add:
