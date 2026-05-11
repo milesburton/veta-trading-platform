@@ -4,7 +4,11 @@ import { sha256Async } from "../lib/sha256.ts";
 import { setUser } from "../store/authSlice.ts";
 import { useAppDispatch } from "../store/hooks.ts";
 import { reportError } from "../store/observabilitySlice.ts";
-import { useAuthorizeOAuthMutation, useExchangeOAuthCodeMutation } from "../store/userApi.ts";
+import {
+  type DemoPersona,
+  useAuthorizeOAuthMutation,
+  useExchangeOAuthCodeMutation,
+} from "../store/userApi.ts";
 import type { ServiceHealth } from "../types.ts";
 import { DemoPersonas } from "./DemoPersonas.tsx";
 import { AppHeader, useAllServiceHealth } from "./StatusBar.tsx";
@@ -161,18 +165,18 @@ export function LoginPage() {
   const isLoading = authorizeState.isLoading || tokenState.isLoading;
   const apiError = authorizeState.error ?? tokenState.error;
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const normalizedUsername = username.value.trim().toLowerCase();
+  async function performSignIn(overrideUsername?: string, overridePassword?: string) {
+    const u = (overrideUsername ?? username.value).trim().toLowerCase();
+    const p = overridePassword ?? password.value;
     localError.value = null;
     authorizeState.reset();
     tokenState.reset();
 
-    if (!normalizedUsername) {
+    if (!u) {
       localError.value = "Username is required.";
       return;
     }
-    if (!password.value.trim()) {
+    if (!p.trim()) {
       localError.value = "Passcode is required.";
       return;
     }
@@ -181,8 +185,8 @@ export function LoginPage() {
       const pkce = await createPkcePair();
       const authorizeResult = await authorizeOAuth({
         client_id: OAUTH_CLIENT_ID,
-        username: normalizedUsername,
-        password: password.value,
+        username: u,
+        password: p,
         redirect_uri: OAUTH_REDIRECT_URI,
         response_type: "code",
         scope: OAUTH_SCOPE,
@@ -219,60 +223,70 @@ export function LoginPage() {
     }
   }
 
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await performSignIn();
+  }
+
+  async function handlePersonaSelect(persona: DemoPersona) {
+    username.value = persona.id;
+    if (persona.passcode) password.value = persona.passcode;
+    await performSignIn(persona.id, persona.passcode);
+  }
+
   return (
     <div data-testid="login-page" className="h-screen flex flex-col bg-page">
       <AppHeader />
 
-      <main className="flex-1 overflow-auto flex items-center justify-center px-6 py-8">
-        <div className="w-full max-w-md flex flex-col gap-6">
-          <div className="text-center">
-            <h1 data-testid="login-heading" className="text-xl font-semibold text-primary mb-1">
-              Sign in
-            </h1>
-            <p className="text-muted text-xs">
-              Use your VETA user ID and passcode.{" "}
-              <a
-                href="https://milesburton.github.io/veta-trading-platform/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors"
-              >
-                Docs &rarr;
-              </a>
-            </p>
-          </div>
-
-          <div className="relative">
-            <AuthForm
-              username={username.value}
-              password={password.value}
-              loading={isLoading}
-              onUsernameChange={(v) => {
-                username.value = v;
-              }}
-              onPasswordChange={(v) => {
-                password.value = v;
-              }}
-              onSubmit={handleSubmit}
-            />
-            <DegradedServicesOverlay />
-          </div>
-
-          {(localError.value || apiError) && (
-            <div
-              data-testid="login-error"
-              className="text-center text-red-400 text-xs bg-red-900/20 border border-red-800 rounded-lg px-4 py-2"
-            >
-              {localError.value ?? formatApiError(apiError)}
+      <main className="flex-1 overflow-hidden px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mx-auto h-full max-w-6xl grid gap-6 md:grid-cols-[400px_1fr] md:items-start">
+          <div className="flex flex-col gap-5">
+            <div>
+              <h1 data-testid="login-heading" className="text-xl font-semibold text-primary mb-1">
+                Sign in
+              </h1>
+              <p className="text-muted text-xs">
+                Use your VETA user ID and passcode, or pick a demo persona to sign in instantly.{" "}
+                <a
+                  href="https://milesburton.github.io/veta-trading-platform/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors"
+                >
+                  Docs &rarr;
+                </a>
+              </p>
             </div>
-          )}
 
-          <DemoPersonas
-            onSelect={(personaId) => {
-              username.value = personaId;
-              password.value = import.meta.env.VITE_DEMO_PASSCODE ?? "veta-dev-passcode";
-            }}
-          />
+            <div className="relative">
+              <AuthForm
+                username={username.value}
+                password={password.value}
+                loading={isLoading}
+                onUsernameChange={(v) => {
+                  username.value = v;
+                }}
+                onPasswordChange={(v) => {
+                  password.value = v;
+                }}
+                onSubmit={handleSubmit}
+              />
+              <DegradedServicesOverlay />
+            </div>
+
+            {(localError.value || apiError) && (
+              <div
+                data-testid="login-error"
+                className="text-center text-red-400 text-xs bg-red-900/20 border border-red-800 rounded-lg px-4 py-2"
+              >
+                {localError.value ?? formatApiError(apiError)}
+              </div>
+            )}
+          </div>
+
+          <div className="min-h-0 md:h-full">
+            <DemoPersonas mode="full" onSelect={handlePersonaSelect} />
+          </div>
         </div>
       </main>
     </div>

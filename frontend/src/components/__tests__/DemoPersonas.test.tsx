@@ -169,9 +169,10 @@ describe("DemoPersonas – expanded states", () => {
     expect(screen.getByText(/Administration/i)).toBeInTheDocument();
   });
 
-  it("calls onSelect with persona id when card clicked", () => {
+  it("calls onSelect with the full persona when card clicked", () => {
+    const alice = makePersona({ id: "alice" });
     mockUseQuery.mockReturnValue({
-      data: { personas: [makePersona({ id: "alice" })] },
+      data: { personas: [alice] },
       isLoading: false,
       error: undefined,
     });
@@ -179,7 +180,7 @@ describe("DemoPersonas – expanded states", () => {
     render(<DemoPersonas onSelect={onSelect} />);
     fireEvent.click(screen.getByTestId("demo-personas-toggle"));
     fireEvent.click(screen.getByTestId("persona-alice"));
-    expect(onSelect).toHaveBeenCalledWith("alice");
+    expect(onSelect).toHaveBeenCalledWith(alice);
   });
 
   it("renders persona without a description as a dash", () => {
@@ -215,5 +216,32 @@ describe("DemoPersonas – expanded states", () => {
     fireEvent.click(screen.getByTestId("demo-personas-toggle"));
     // No persona rendered (intern role isn't in groupPersonas), but render path exercised
     expect(screen.queryByTestId("persona-weird")).not.toBeInTheDocument();
+  });
+});
+
+describe("DemoPersonas – full mode", () => {
+  it("auto-loads personas without a toggle click (always-expanded)", () => {
+    mockUseQuery.mockReturnValue({
+      data: { personas: [makePersona({ id: "alice" })] },
+      isLoading: false,
+      error: undefined,
+    });
+    render(<DemoPersonas mode="full" onSelect={() => {}} />);
+    expect(screen.queryByTestId("demo-personas-toggle")).not.toBeInTheDocument();
+    expect(screen.getByTestId("persona-alice")).toBeInTheDocument();
+  });
+
+  it("passes the full persona (incl. passcode) to onSelect", () => {
+    const alice = makePersona({ id: "alice", passcode: "alice123" });
+    mockUseQuery.mockReturnValue({
+      data: { personas: [alice] },
+      isLoading: false,
+      error: undefined,
+    });
+    const onSelect = vi.fn();
+    render(<DemoPersonas mode="full" onSelect={onSelect} />);
+    fireEvent.click(screen.getByTestId("persona-alice"));
+    expect(onSelect).toHaveBeenCalledWith(alice);
+    expect(onSelect.mock.calls[0][0].passcode).toBe("alice123");
   });
 });

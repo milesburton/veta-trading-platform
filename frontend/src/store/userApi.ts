@@ -134,6 +134,7 @@ export interface DemoPersona {
   allowed_strategies: string[];
   max_order_qty: number;
   dark_pool_access: boolean;
+  passcode?: string;
 }
 
 export const {
