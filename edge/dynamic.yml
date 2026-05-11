@@ -58,13 +58,9 @@ http:
         # style-src 'unsafe-inline' is required by React inline-style props
         # used across the codebase. Tightening means refactoring to CSS
         # modules / classes.
-        contentSecurityPolicy: >
-          default-src 'self';
-          script-src 'self' 'unsafe-inline';
-          style-src 'self' 'unsafe-inline';
-          img-src 'self' data: blob:;
-          font-src 'self' data:;
-          connect-src 'self' wss://veta.mnetcs.com;
-          frame-ancestors 'none';
-          base-uri 'self';
-          form-action 'self'
+        contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://veta.mnetcs.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        # Fallback: customResponseHeaders adds the header unconditionally.
+        # Belt-and-braces in case contentSecurityPolicy isn't honoured by
+        # the running Traefik version.
+        customResponseHeaders:
+          Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://veta.mnetcs.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
