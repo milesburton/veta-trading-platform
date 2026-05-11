@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.34.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.33.0...veta-trading-platform-v1.34.0) (2026-05-11)
+
+
+### Features
+
+* **trade-bar:** natural-language QuickTradeBar prefilling the OrderTicket ([#184](https://github.com/milesburton/veta-trading-platform/issues/184)) ([fde9fb3](https://github.com/milesburton/veta-trading-platform/commit/fde9fb3bcfd4fde305c109e4fa9406470390a497))
+
 ## [1.33.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.32.1...veta-trading-platform-v1.33.0) (2026-05-11)
 
 
