@@ -1,11 +1,5 @@
-# Traefik v3 static configuration
-# Used across all environments: local Docker, UAT, Fly.io
-# TLS is activated per-router via compose.prod.yml labels (certresolver=letsencrypt)
-# Fly.io: TLS termination happens at the Fly edge; internal Traefik uses :80 only
-
 api:
-  dashboard: true
-  insecure: true
+  dashboard: false
 
 ping: {}
 
@@ -25,7 +19,9 @@ providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
-    network: trading-net
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
 
 certificatesResolvers:
   letsencrypt:
@@ -35,19 +31,8 @@ certificatesResolvers:
       httpChallenge:
         entryPoint: web
 
-metrics:
-  prometheus:
-    addEntryPointsLabels: true
-    addServicesLabels: true
-    addRoutersLabels: true
-    buckets:
-      - 0.01
-      - 0.05
-      - 0.1
-      - 0.25
-      - 0.5
-      - 1.0
-      - 2.0
+serversTransport:
+  insecureSkipVerify: true
 
 accessLog:
   format: json

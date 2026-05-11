@@ -1,0 +1,42 @@
+[Unit]
+Description=VETA reverse SSH tunnel to OVH edge (autossh)
+Documentation=https://github.com/milesburton/veta-trading-platform/blob/main/edge/README.md
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10s
+
+Environment=AUTOSSH_GATETIME=0
+Environment=AUTOSSH_POLL=30
+
+ExecStart=/usr/bin/autossh -M 0 -N \
+  -o ServerAliveInterval=30 \
+  -o ServerAliveCountMax=3 \
+  -o ExitOnForwardFailure=yes \
+  -o IdentitiesOnly=yes \
+  -o StrictHostKeyChecking=accept-new \
+  -o UserKnownHostsFile=/etc/veta-tunnel/known_hosts \
+  -i /etc/veta-tunnel/id_ed25519 \
+  -R 18443:127.0.0.1:443 \
+  veta-tunnel@ovh.agileview.co.uk
+
+User=root
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/etc/veta-tunnel
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+RestrictRealtime=true
+
+[Install]
+WantedBy=multi-user.target

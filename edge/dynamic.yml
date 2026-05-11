@@ -1,0 +1,37 @@
+http:
+  routers:
+    veta:
+      rule: "Host(`veta.mnetcs.com`)"
+      entryPoints:
+        - websecure
+      service: veta-origin
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - edge-ratelimit
+        - security-headers
+
+  services:
+    veta-origin:
+      loadBalancer:
+        servers:
+          - url: "https://host.docker.internal:18443"
+        passHostHeader: true
+
+  middlewares:
+    edge-ratelimit:
+      rateLimit:
+        average: 60
+        burst: 120
+        sourceCriterion:
+          ipStrategy:
+            depth: 0
+    security-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        frameDeny: true
