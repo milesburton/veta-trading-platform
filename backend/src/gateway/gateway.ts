@@ -701,6 +701,78 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "risk-engine":          RISK_ENGINE_URL,
   };
 
+  // F-17: gate SVC_PROXY access by role. Without this, any logged-in
+  // viewer could hit /api/risk-engine/config, /api/journal/grid/query,
+  // /api/oms/orders, etc. The internal services trust the gateway and
+  // don't re-check the caller, so the gateway is the single
+  // enforcement point.
+  //
+  // Roles in use: trader, desk-head, risk-manager, compliance, sales,
+  // oncall, admin, external-client, viewer.
+  //
+  // Default-deny: services not in this map require `admin`.
+  const SVC_MIN_ROLES: Record<string, Set<string>> = {
+    // Pre-login surface (already in PROXY_PUBLIC below):
+    "user-service": new Set([
+      "viewer", "trader", "desk-head", "risk-manager", "compliance",
+      "sales", "oncall", "admin", "external-client",
+    ]),
+    // Read-only market info — fine for any logged-in role.
+    "market-sim": new Set([
+      "viewer", "trader", "desk-head", "risk-manager", "compliance",
+      "sales", "oncall", "admin", "external-client",
+    ]),
+    "market-data": new Set([
+      "viewer", "trader", "desk-head", "risk-manager", "compliance",
+      "sales", "oncall", "admin", "external-client",
+    ]),
+    "market-data-adapters": new Set([
+      "viewer", "trader", "desk-head", "risk-manager", "compliance",
+      "sales", "oncall", "admin", "external-client",
+    ]),
+    "news-aggregator": new Set([
+      "viewer", "trader", "desk-head", "risk-manager", "compliance",
+      "sales", "oncall", "admin", "external-client",
+    ]),
+    "analytics": new Set([
+      "viewer", "trader", "desk-head", "risk-manager", "compliance",
+      "sales", "oncall", "admin", "external-client",
+    ]),
+    // Order surface — traders and supervisors.
+    "ems": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+    "oms": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+    "journal": new Set([
+      "trader", "desk-head", "risk-manager", "compliance", "oncall", "admin",
+    ]),
+    // Algos — traders use them, but only desk-head+ to configure.
+    "limit-algo":           new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "twap-algo":            new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "pov-algo":             new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "vwap-algo":            new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "iceberg-algo":         new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "sniper-algo":          new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "arrival-price-algo":   new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "momentum-algo":        new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "is-algo":              new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    // Recommendation/feature/signal engines: read by trader, configured by quant.
+    "feature-engine":       new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "signal-engine":        new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "recommendation-engine":new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "scenario-engine":      new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+    "llm-advisory":         new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+    // Dark pool / CCP / RFQ — desk-head+.
+    "dark-pool":            new Set(["desk-head", "risk-manager", "compliance", "admin"]),
+    "ccp-service":          new Set(["desk-head", "risk-manager", "compliance", "admin"]),
+    "rfq-service":          new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+    // FIX surface, replay, risk-engine — risk/oncall/admin only.
+    "fix-archive":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    "fix-gateway":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    "kafka-relay":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    "observability":        new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    "replay":               new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    "risk-engine":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
+  };
+
   const svcMatch = path.match(/^\/api\/([^/]+)(\/.*)?$/);
   if (svcMatch) {
     const svcName = svcMatch[1];
@@ -717,6 +789,22 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       if (!PROXY_PUBLIC) {
         const auth = await requireAuth(req);
         if (isResponse(auth)) return auth;
+        // F-17: check the caller's role against the per-service allowlist.
+        // Default-deny: services not in SVC_MIN_ROLES require admin.
+        const allowedRoles = SVC_MIN_ROLES[svcName] ?? new Set(["admin"]);
+        if (!allowedRoles.has(auth.user.role)) {
+          publishAccessEvent({
+            action: "auth_failure",
+            userId: auth.user.id,
+            userRole: auth.user.role,
+            path: url.pathname,
+            reason: `role ${auth.user.role} not permitted for /api/${svcName}`,
+          });
+          return new Response(
+            JSON.stringify({ error: "forbidden" }),
+            { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders(req) } },
+          );
+        }
       }
       const targetUrl = `${target}${svcPath}${url.search}`;
       if (req.method === "GET" || req.method === "DELETE") return proxyGet(targetUrl, req);
