@@ -57,6 +57,7 @@ import {
   orderPatched,
   setGatewayWs,
 } from "../ordersSlice.ts";
+import { isSafeKey } from "../safeKey.ts";
 import { loadUiPrefs, setSelectedAsset, setUpgradeStatus } from "../uiSlice.ts";
 
 const _origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -68,9 +69,17 @@ const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? `${_origin}/api/gateway`
 const UI_TICK_INTERVAL_MS = 250;
 const ALGO_HEARTBEAT_TIMEOUT_MS = 30_000;
 
+// Strip ASCII control characters (0x00–0x1f plus DEL) so a hostile
+// message can't forge a fake log line. Length-capped at 500 chars.
 function sanitizeLogEntry(value: unknown): string {
   if (value === null || value === undefined) return "";
-  return String(value).replace(/[\r\n]/g, " ");
+  const raw = String(value).slice(0, 500);
+  let out = "";
+  for (let i = 0; i < raw.length; i++) {
+    const code = raw.charCodeAt(i);
+    out += code < 0x20 || code === 0x7f ? " " : raw[i];
+  }
+  return out;
 }
 
 interface MarketUpdateData {
@@ -147,6 +156,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     pendingPrices = data.prices;
     if (data.openPrices) pendingOpenPrices = data.openPrices;
     for (const [sym, vol] of Object.entries(data.volumes ?? {})) {
+      if (!isSafeKey(sym)) continue;
       pendingVolumes[sym] = (pendingVolumes[sym] ?? 0) + vol;
     }
     if (data.orderBook) pendingOrderBook = data.orderBook;
@@ -375,6 +385,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             break;
           case "algoHeartbeat": {
             const hb = msg.data as { algo: string; ts?: number };
+            if (!isSafeKey(hb.algo)) break;
             const now = Date.now();
             const prev = algoLastSeen[hb.algo];
             algoLastSeen[hb.algo] = now;

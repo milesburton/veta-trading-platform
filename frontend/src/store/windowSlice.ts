@@ -1,5 +1,6 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
+import { isSafeKey } from "./safeKey.ts";
 
 // String-keyed by instance ID so any panel (including multi-instances) can pop out or open in dialog
 interface WindowState {
@@ -17,22 +18,32 @@ export const windowSlice = createSlice({
   initialState,
   reducers: {
     panelPopped(state, action: PayloadAction<{ panelId: string }>) {
-      state.popOuts[action.payload.panelId] = { open: true };
+      const { panelId } = action.payload;
+      if (!isSafeKey(panelId)) return;
+      state.popOuts[panelId] = { open: true };
     },
     panelClosed(state, action: PayloadAction<{ panelId: string }>) {
-      if (state.popOuts[action.payload.panelId]) {
-        state.popOuts[action.payload.panelId].open = false;
+      const { panelId } = action.payload;
+      if (!isSafeKey(panelId)) return;
+      const entry = state.popOuts[panelId];
+      if (entry) {
+        entry.open = false;
       }
     },
     panelDialogOpened(state, action: PayloadAction<{ panelId: string; panelType: string }>) {
-      state.dialogs[action.payload.panelId] = {
+      const { panelId, panelType } = action.payload;
+      if (!isSafeKey(panelId)) return;
+      state.dialogs[panelId] = {
         open: true,
-        panelType: action.payload.panelType,
+        panelType,
       };
     },
     panelDialogClosed(state, action: PayloadAction<{ panelId: string }>) {
-      if (state.dialogs[action.payload.panelId]) {
-        state.dialogs[action.payload.panelId].open = false;
+      const { panelId } = action.payload;
+      if (!isSafeKey(panelId)) return;
+      const entry = state.dialogs[panelId];
+      if (entry) {
+        entry.open = false;
       }
     },
   },

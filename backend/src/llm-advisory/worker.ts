@@ -259,7 +259,7 @@ const server = Deno.serve({ port: PORT }, (_req: Request): Response => {
 
 logger.info(`Entering work loop`);
 
-let exitReason = "queue-exhausted";
+let exitReason: "max-jobs-per-session" | "idle-timeout";
 const sessionStart = Date.now();
 
 outer: while (true) {
