@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.31.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.31.0...veta-trading-platform-v1.31.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* **security:** close two critical public-exposure findings (F-1, F-2) ([#156](https://github.com/milesburton/veta-trading-platform/issues/156)) ([e580551](https://github.com/milesburton/veta-trading-platform/commit/e580551da3cb4b39cd9027d85c218238af940197))
+
 ## [1.31.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.30.0...veta-trading-platform-v1.31.0) (2026-05-11)
 
 
