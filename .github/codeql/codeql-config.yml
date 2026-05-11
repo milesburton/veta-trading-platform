@@ -7,6 +7,11 @@ paths-ignore:
   # `js/missing-origin-check` finding tracks an upstream MSW design choice
   # that we don't ship to end users.
   - "frontend/public/mockServiceWorker.js"
+  # CI screenshot tool whose entire job is "fetch PNG from authenticated
+  # Grafana → write to docs/screenshots/". The js/http-to-file-access
+  # finding here is the script's intended behaviour; we keep PNG-magic
+  # validation + path.resolve guards in the script itself.
+  - "docs/site/scripts/capture-grafana-screenshots.mjs"
   # Vendored / generated bundles. These aren't authored in this repo.
   - "**/node_modules/**"
   - "**/dist/**"

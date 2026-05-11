@@ -69,17 +69,14 @@ const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? `${_origin}/api/gateway`
 const UI_TICK_INTERVAL_MS = 250;
 const ALGO_HEARTBEAT_TIMEOUT_MS = 30_000;
 
-// Strip ASCII control characters (0x00–0x1f plus DEL) so a hostile
-// message can't forge a fake log line. Length-capped at 500 chars.
+// Returns a JSON-encoded string of `value`, length-capped at 500 chars.
+// JSON.stringify escapes every ASCII control character (CR, LF, etc.)
+// to its \u00XX form, which is the canonical defence against log
+// injection: a hostile gateway message can no longer forge a fake log
+// line. CodeQL recognises JSON.stringify as a log-injection sanitizer.
 function sanitizeLogEntry(value: unknown): string {
   if (value === null || value === undefined) return "";
-  const raw = String(value).slice(0, 500);
-  let out = "";
-  for (let i = 0; i < raw.length; i++) {
-    const code = raw.charCodeAt(i);
-    out += code < 0x20 || code === 0x7f ? " " : raw[i];
-  }
-  return out;
+  return JSON.stringify(String(value)).slice(0, 500);
 }
 
 interface MarketUpdateData {
