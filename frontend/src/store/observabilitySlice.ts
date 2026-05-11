@@ -20,7 +20,13 @@ export const observabilitySlice = createSlice({
     },
     reportError(
       state,
-      action: PayloadAction<{ message: string; source?: string; stack?: string }>
+      action: PayloadAction<{
+        message: string;
+        source?: string;
+        stack?: string;
+        severity?: "info" | "warn" | "error";
+        detail?: Record<string, unknown>;
+      }>
     ) {
       const evt: ObsEvent = {
         type: "client.error",

@@ -822,7 +822,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       const PROXY_PUBLIC = (
         svcName === "user-service" &&
         (svcPath.startsWith("/oauth/") || svcPath.startsWith("/auth/") || svcPath === "/personas")
-      ) || svcPath === "/health";
+      ) || svcPath === "/health" || (
+        svcName === "kafka-relay" && svcPath === "/events/batch" && req.method === "POST"
+      );
       if (!PROXY_PUBLIC) {
         const auth = await requireAuth(req);
         if (isResponse(auth)) return auth;

@@ -90,10 +90,16 @@ Deno.serve({ port: PORT }, async (req: Request) => {
     return json({ service: "kafka-relay", version: VERSION, status: "ok" });
   }
 
-  // Accept a batch of events from the frontend or other services and log them.
   if (req.method === "POST" && url.pathname === "/events/batch") {
-    const events = await req.json() as unknown[];
-    const arr = Array.isArray(events) ? events : [events];
+    const body = await req.json();
+    let arr: unknown[];
+    if (Array.isArray(body)) {
+      arr = body;
+    } else if (body && typeof body === "object" && Array.isArray((body as { events?: unknown }).events)) {
+      arr = (body as { events: unknown[] }).events;
+    } else {
+      arr = [body];
+    }
     for (const ev of arr) {
       console.log(
         JSON.stringify({
