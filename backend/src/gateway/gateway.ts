@@ -790,12 +790,22 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const target = SVC_PROXY[svcName];
     if (target) {
       // Allowlist of unauthenticated proxy paths. Everything else needs
-      // a valid veta_user cookie. The frontend's pre-login OAuth flow
-      // hits /api/user-service/oauth/* before the user has a session,
-      // so those have to be reachable unauthenticated; all other proxy
-      // traffic is post-login and must be authenticated.
-      const PROXY_PUBLIC = svcName === "user-service" &&
-        (svcPath.startsWith("/oauth/") || svcPath.startsWith("/auth/"));
+      // a valid veta_user cookie. Three categories of pre-login traffic:
+      //  - /api/user-service/oauth/* and /auth/* — the OAuth login flow
+      //    itself runs before there's a session cookie to validate.
+      //  - /api/<svc>/health — the login page polls every service's
+      //    /health endpoint to render the "platform degraded" indicator
+      //    before the user is signed in. F-17 broke this; F-9 trimmed
+      //    /ready detail so /health is now the only anon-readable
+      //    health probe. The endpoints return service+version+ok and
+      //    leak nothing actionable.
+      //  - /metrics is intentionally NOT in this list — Prometheus
+      //    scrape is internal-network-only and shouldn't be reachable
+      //    via the public gateway anyway.
+      const PROXY_PUBLIC = (
+        svcName === "user-service" &&
+        (svcPath.startsWith("/oauth/") || svcPath.startsWith("/auth/"))
+      ) || svcPath === "/health";
       if (!PROXY_PUBLIC) {
         const auth = await requireAuth(req);
         if (isResponse(auth)) return auth;

@@ -1,3 +1,10 @@
+# YAML anchors. Top-level `x-` keys are ignored by Traefik but let us
+# define the CSP once and reference it from both places that need it
+# (the contentSecurityPolicy field and the customResponseHeaders
+# fallback) so they can't drift.
+x-anchors:
+  csp: &csp "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://veta.mnetcs.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
 tls:
   stores:
     default:
@@ -58,9 +65,10 @@ http:
         # style-src 'unsafe-inline' is required by React inline-style props
         # used across the codebase. Tightening means refactoring to CSS
         # modules / classes.
-        contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://veta.mnetcs.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        contentSecurityPolicy: *csp
         # Fallback: customResponseHeaders adds the header unconditionally.
         # Belt-and-braces in case contentSecurityPolicy isn't honoured by
-        # the running Traefik version.
+        # the running Traefik version. Both fields use the same anchor
+        # defined at the top of this file so the policy can't drift.
         customResponseHeaders:
-          Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://veta.mnetcs.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+          Content-Security-Policy: *csp
