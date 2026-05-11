@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.36.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.36.0...veta-trading-platform-v1.36.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* **auth+coverage:** force sign-in for anonymous visitors; lift branch coverage above 80% ([#192](https://github.com/milesburton/veta-trading-platform/issues/192)) ([fcf6227](https://github.com/milesburton/veta-trading-platform/commit/fcf6227f3a7dd0f33f3952ffd0e777720d74e30d))
+
 ## [1.36.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.35.0...veta-trading-platform-v1.36.0) (2026-05-11)
 
 
