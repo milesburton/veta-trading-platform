@@ -83,13 +83,35 @@ docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" pull \
 # deploy time: GATEWAY_REPLICAS=3 /opt/stacks/veta/deploy.sh
 GATEWAY_REPLICAS="${GATEWAY_REPLICAS:-1}"
 
+# Pre-clean: remove any <12hex>_<container> orphans left by a previous
+# failed `up -d` recreate. These appear when Docker can't remove the old
+# container fast enough before creating the replacement and renames the
+# stale one out of the way. Future deploys then fail to recreate cleanly
+# until they're gone.
+ORPHANS=$(docker ps -a --format "{{.Names}}" | grep -E "^[0-9a-f]{12}_veta-" || true)
+if [[ -n "$ORPHANS" ]]; then
+    log "Cleaning up $(echo "$ORPHANS" | wc -l) orphan container(s) from a previous failed recreate..."
+    echo "$ORPHANS" | xargs -r docker rm -f >/dev/null 2>&1 || true
+fi
+
 log "Restarting stack (gateway replicas=$GATEWAY_REPLICAS)..."
 # `up -d` exits non-zero if any service fails to start (e.g. unhealthy
-# dependency). We tolerate that — the per-service verification below
-# decides whether the deploy is actually broken.
-docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d \
-    --scale "gateway=$GATEWAY_REPLICAS" \
-    || log "⚠ up -d returned non-zero; checking which services are actually up"
+# dependency, or the Docker daemon race condition where remove/create
+# overlap on container names during a recreate). We retry once after a
+# short pause — most race-induced failures clear within seconds.
+if ! docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d \
+        --scale "gateway=$GATEWAY_REPLICAS"; then
+    log "⚠ up -d returned non-zero — pausing 10s and retrying once"
+    sleep 10
+    # Re-clean orphans in case the failed up created new ones
+    ORPHANS=$(docker ps -a --format "{{.Names}}" | grep -E "^[0-9a-f]{12}_veta-" || true)
+    if [[ -n "$ORPHANS" ]]; then
+        echo "$ORPHANS" | xargs -r docker rm -f >/dev/null 2>&1 || true
+    fi
+    docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d \
+        --scale "gateway=$GATEWAY_REPLICAS" \
+        || log "⚠ retry also returned non-zero; per-service verification will decide"
+fi
 
 # Observability (LGTM) is a separate compose project. Recreate it so config
 # changes in observability/docker-compose.lgtm.yml take effect — e.g.
@@ -121,6 +143,19 @@ while [[ $(date +%s) -lt $DEADLINE ]]; do
         done
     done
     if [[ -z "$UNHEALTHY" ]]; then
+        # Fail the deploy if any service was created but never started.
+        # This is the signature of the recreate race (orphan + Conflict),
+        # which used to pass the critical-services-only check because
+        # gateway/journal/etc. happened to survive.
+        STUCK_CREATED=$(docker compose "${COMPOSE_FILES[@]}" ps -a --format '{{.Service}}|{{.State}}' 2>/dev/null \
+            | awk -F'|' '$2 == "created" { print $1 }' \
+            | tr '\n' ' ')
+        if [[ -n "$STUCK_CREATED" ]]; then
+            log "❌ Services in 'created' state (recreate race?):$STUCK_CREATED"
+            log "   try: docker ps -a | grep '^[0-9a-f]\\{12\\}_veta-' && docker compose up -d"
+            exit 1
+        fi
+
         # Snapshot live commit + record success.
         gateway_cid=$(docker compose "${COMPOSE_FILES[@]}" ps -q gateway | head -1)
         VERSION=$(docker exec "$gateway_cid" sh -c 'curl -sf http://localhost:5011/health' 2>/dev/null \
