@@ -33,17 +33,69 @@ const ROLE_BADGE_CLASS: Record<string, string> = {
 };
 
 interface DemoPersonasProps {
-  onSelect: (username: string) => void;
+  onSelect: (persona: DemoPersona) => void;
+  mode?: "compact" | "full";
 }
 
-export function DemoPersonas({ onSelect }: DemoPersonasProps) {
-  const expanded = useSignal(false);
+export function DemoPersonas({ onSelect, mode = "compact" }: DemoPersonasProps) {
+  const expanded = useSignal(mode === "full");
+  const shouldLoad = mode === "full" || expanded.value;
   const { data, isLoading, error } = useGetDemoPersonasQuery(undefined, {
-    skip: !expanded.value,
+    skip: !shouldLoad,
   });
 
   const personas = data?.personas ?? [];
   const grouped = groupPersonas(personas);
+
+  const gridClass =
+    mode === "full"
+      ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3"
+      : "grid grid-cols-1 sm:grid-cols-2 gap-2";
+
+  const body = (
+    <div
+      className={`${mode === "full" ? "p-4" : "px-4 pb-4 pt-1"} space-y-5 ${mode === "full" ? "" : "max-h-[480px]"} overflow-auto`}
+    >
+      {isLoading && <div className="text-xs text-muted py-2">Loading personas...</div>}
+      {error && (
+        <div className="text-xs text-red-400 py-2">
+          Failed to load personas — demo mode may be disabled on this deployment.
+        </div>
+      )}
+      {!isLoading && !error && personas.length === 0 && (
+        <div className="text-xs text-muted py-2">No personas available.</div>
+      )}
+      {Object.entries(grouped).map(([groupLabel, items]) => (
+        <div key={groupLabel}>
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-2">
+            {groupLabel}
+          </div>
+          <div className={gridClass}>
+            {items.map((persona) => (
+              <PersonaCard key={persona.id} persona={persona} onSelect={() => onSelect(persona)} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (mode === "full") {
+    return (
+      <div
+        data-testid="demo-personas"
+        className="rounded-xl border border-panel bg-surface/50 h-full flex flex-col"
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-panel">
+          <span className="font-medium tracking-wide uppercase text-[11px] text-label">
+            Demo personas — click to sign in
+          </span>
+          <span className="text-muted text-[10px]">{personas.length} available</span>
+        </div>
+        <div className="flex-1 min-h-0">{body}</div>
+      </div>
+    );
+  }
 
   return (
     <div data-testid="demo-personas" className="mt-6 rounded-xl border border-panel bg-surface/50">
@@ -61,35 +113,7 @@ export function DemoPersonas({ onSelect }: DemoPersonasProps) {
         <span className="text-muted text-xs">{expanded.value ? "▾ hide" : "▸ show list"}</span>
       </button>
 
-      {expanded.value && (
-        <div className="px-4 pb-4 pt-1 space-y-4 max-h-[480px] overflow-auto">
-          {isLoading && <div className="text-xs text-muted py-2">Loading personas...</div>}
-          {error && (
-            <div className="text-xs text-red-400 py-2">
-              Failed to load personas — demo mode may be disabled on this deployment.
-            </div>
-          )}
-          {!isLoading && !error && personas.length === 0 && (
-            <div className="text-xs text-muted py-2">No personas available.</div>
-          )}
-          {Object.entries(grouped).map(([groupLabel, items]) => (
-            <div key={groupLabel}>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-2">
-                {groupLabel}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {items.map((persona) => (
-                  <PersonaCard
-                    key={persona.id}
-                    persona={persona}
-                    onSelect={() => onSelect(persona.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {expanded.value && body}
     </div>
   );
 }

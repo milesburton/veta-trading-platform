@@ -313,18 +313,22 @@ async function handle(req: Request): Promise<Response> {
            u.name`,
       );
       return json({
-        personas: rows.map((r) => ({
-          id: r[0] as string,
-          name: r[1] as string,
-          role: r[2] as string,
-          avatar_emoji: r[3] as string,
-          description: (r[4] as string) ?? "",
-          trading_style: (r[5] as string) ?? null,
-          primary_desk: (r[6] as string) ?? null,
-          allowed_strategies: r[7] ? splitCsv(r[7] as string) : [],
-          max_order_qty: (r[8] as number) ?? 0,
-          dark_pool_access: (r[9] as boolean) ?? false,
-        })),
+        personas: rows.map((r) => {
+          const id = r[0] as string;
+          return {
+            id,
+            name: r[1] as string,
+            role: r[2] as string,
+            avatar_emoji: r[3] as string,
+            description: (r[4] as string) ?? "",
+            trading_style: (r[5] as string) ?? null,
+            primary_desk: (r[6] as string) ?? null,
+            allowed_strategies: r[7] ? splitCsv(r[7] as string) : [],
+            max_order_qty: (r[8] as number) ?? 0,
+            dark_pool_access: (r[9] as boolean) ?? false,
+            passcode: OAUTH_USER_SECRETS.get(id) ?? OAUTH_SHARED_SECRET,
+          };
+        }),
       });
     } finally { client.release(); }
   }
