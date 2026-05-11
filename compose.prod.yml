@@ -237,6 +237,10 @@ services:
     profiles: !reset []
     environment:
       OAUTH2_SHARED_SECRET: "${OAUTH2_SHARED_SECRET:?OAUTH2_SHARED_SECRET must be set in /opt/stacks/veta/.env — see scripts/homelab-systemd/README.md}"
+      # Per-user demo passwords. Format: alice:secret1,bob:secret2,...
+      # Optional. When set, takes precedence over OAUTH2_SHARED_SECRET
+      # for the named users. Used for friends-and-family demos.
+      OAUTH2_USER_SECRETS: "${OAUTH2_USER_SECRETS:-}"
     labels:
       - "traefik.enable=false"
       - "traefik.http.routers.user-service.rule=PathPrefix(`/api/user-service`)"
