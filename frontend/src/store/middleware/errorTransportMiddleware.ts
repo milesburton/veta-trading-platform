@@ -1,7 +1,7 @@
 import type { Middleware } from "@reduxjs/toolkit";
 import { reportError } from "../observabilitySlice.ts";
 
-const OBS_URL = "/api/kafka-relay/events/batch";
+const OBS_URL = "/api/gateway/api/kafka-relay/events/batch";
 
 export const errorTransportMiddleware: Middleware = () => (next) => (action) => {
   const result = next(action);

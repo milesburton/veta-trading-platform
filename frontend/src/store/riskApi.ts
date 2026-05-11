@@ -57,7 +57,7 @@ export interface BreakersResponse {
 
 export const riskApi = createApi({
   reducerPath: "riskApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api/risk-engine" }),
+  baseQuery: fetchBaseQuery({ baseUrl: "/api/gateway/api/risk-engine" }),
   tagTypes: ["Positions", "Config", "Breakers"],
   endpoints: (builder) => ({
     getPositions: builder.query<{ positions: Record<string, RiskPosition[]> }, undefined>({

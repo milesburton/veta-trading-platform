@@ -170,7 +170,7 @@ export function AdminPanel() {
   const journal = useSignal<JournalEntry[]>([]);
 
   useEffect(() => {
-    fetch("/api/journal/journal?limit=50", { credentials: "include" })
+    fetch("/api/gateway/api/journal/journal?limit=50", { credentials: "include" })
       .then((r) => r.json())
       .then((data: { entries: JournalEntry[] }) => {
         journal.value = data.entries ?? [];

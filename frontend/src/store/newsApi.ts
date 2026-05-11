@@ -2,7 +2,8 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { NewsItem } from "./newsSlice.ts";
 
 const NEWS_AGGREGATOR_BASE =
-  (import.meta.env?.VITE_NEWS_AGGREGATOR_URL as string | undefined) ?? "/api/news-aggregator";
+  (import.meta.env?.VITE_NEWS_AGGREGATOR_URL as string | undefined) ??
+  "/api/gateway/api/news-aggregator";
 
 export interface NewsSource {
   id: string;

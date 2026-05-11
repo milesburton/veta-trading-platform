@@ -28,7 +28,7 @@ describe("errorTransportMiddleware", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/kafka-relay/events/batch");
+    expect(url).toBe("/api/gateway/api/kafka-relay/events/batch");
     expect(init?.method).toBe("POST");
     const body = JSON.parse(init?.body as string);
     expect(body.events).toHaveLength(1);
