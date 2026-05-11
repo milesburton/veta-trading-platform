@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.33.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.32.1...veta-trading-platform-v1.33.0) (2026-05-11)
+
+
+### Features
+
+* **auth:** public read-only dashboard + fix demo persona picker + blank pop-out ticket ([#180](https://github.com/milesburton/veta-trading-platform/issues/180)) ([3d8e5c5](https://github.com/milesburton/veta-trading-platform/commit/3d8e5c500535702b2c9e982397042bb49e0604da))
+* **homelab:** wire OAUTH2_USER_SECRETS env into user-service ([#178](https://github.com/milesburton/veta-trading-platform/issues/178)) ([cab8f1c](https://github.com/milesburton/veta-trading-platform/commit/cab8f1c3b4105613c54987d6493696db28ea3dc4))
+
 ## [1.32.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.32.0...veta-trading-platform-v1.32.1) (2026-05-11)
 
 
