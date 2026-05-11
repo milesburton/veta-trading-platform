@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.32.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.31.1...veta-trading-platform-v1.32.0) (2026-05-11)
+
+
+### Features
+
+* **coverage:** instrument Testcontainer-spawned services (closes [#148](https://github.com/milesburton/veta-trading-platform/issues/148)) ([#162](https://github.com/milesburton/veta-trading-platform/issues/162)) ([f79e076](https://github.com/milesburton/veta-trading-platform/commit/f79e0762f0012b1d97a3ca4bbf1ab8ac9810ec58))
+* **security:** Grafana alert rules for auth_failure + ws_rate_limited spikes (F-11) ([#168](https://github.com/milesburton/veta-trading-platform/issues/168)) ([ec8616f](https://github.com/milesburton/veta-trading-platform/commit/ec8616f870254f913af79accb2cf3f2955eef3d9))
+
+
+### Bug Fixes
+
+* **compose:** add missing *_HOST envs to gateway for replay, risk-engine, market-data-adapters ([#173](https://github.com/milesburton/veta-trading-platform/issues/173)) ([34ae425](https://github.com/milesburton/veta-trading-platform/commit/34ae4257878ffc9b0faa740b65f7b253c630b3ee))
+* **frontend:** route service health probes through gateway SVC_PROXY ([#174](https://github.com/milesburton/veta-trading-platform/issues/174)) ([578baea](https://github.com/milesburton/veta-trading-platform/commit/578baeacd12d1ad369d4813560ebbc4567daef2d))
+* **gateway:** SVC_PROXY map ignored *_HOST env, hardcoded localhost ([#172](https://github.com/milesburton/veta-trading-platform/issues/172)) ([4efa63a](https://github.com/milesburton/veta-trading-platform/commit/4efa63a9788c54f0a4d78f70274c312ef086f2bb))
+* **security:** allow /api/&lt;svc&gt;/health under SVC_PROXY without auth + dedupe CSP ([#170](https://github.com/milesburton/veta-trading-platform/issues/170)) ([a862942](https://github.com/milesburton/veta-trading-platform/commit/a862942c6c07d1d2f4fe53a45ea859458f1fb69d))
+* **security:** CSP, CSRF check, upgrade-status validation, dashboard scope (F-7/F-8/F-12/F-14/F-15/F-16) ([d5d9659](https://github.com/milesburton/veta-trading-platform/commit/d5d9659e59d4df7d1f1cb2e0362f78e7b1846346))
+* **security:** CSP, CSRF check, upgrade-status validation, Traefik dashboard scope, doc fixes ([9930c6d](https://github.com/milesburton/veta-trading-platform/commit/9930c6de3702b5449ba98141f978b21fe475d9fb))
+* **security:** drop wildcard CORS from shared @veta/http helpers ([#166](https://github.com/milesburton/veta-trading-platform/issues/166)) ([b7676c0](https://github.com/milesburton/veta-trading-platform/commit/b7676c0ccf584765cf7c942c2d163cf77b1f47e7))
+* **security:** ensure CSP header actually lands in responses ([#169](https://github.com/milesburton/veta-trading-platform/issues/169)) ([46920c1](https://github.com/milesburton/veta-trading-platform/commit/46920c143efd84f48452353346f459281a979116))
+* **security:** revert SERVICES filter change that broke StatusBar tests ([#167](https://github.com/milesburton/veta-trading-platform/issues/167)) ([902ebbe](https://github.com/milesburton/veta-trading-platform/commit/902ebbe9372b98a32e07a11787c6f1ac28de0417))
+* **security:** SVC_PROXY default-deny role allowlist (F-17) ([#165](https://github.com/milesburton/veta-trading-platform/issues/165)) ([45c2905](https://github.com/milesburton/veta-trading-platform/commit/45c290592eed78b29cbe8639b081620a323f17ea))
+* **security:** tighten CORS, harden cookie, gate public registration (F-3, F-4, F-13) ([#158](https://github.com/milesburton/veta-trading-platform/issues/158)) ([5b8fc3f](https://github.com/milesburton/veta-trading-platform/commit/5b8fc3f68c983758537b95751bc155f6f94087ea))
+* **security:** trim unauth detail from /ready and /system (F-9) ([#164](https://github.com/milesburton/veta-trading-platform/issues/164)) ([e1ee1eb](https://github.com/milesburton/veta-trading-platform/commit/e1ee1eb0132a78159ad3c9bd96cbc5e08d94b6d8))
+* **security:** WS frame rate-limit + per-user data scoping (F-5, F-6) ([#161](https://github.com/milesburton/veta-trading-platform/issues/161)) ([db5adad](https://github.com/milesburton/veta-trading-platform/commit/db5adad6f90b0de66bb4cc9ef9bddba8af12c374))
+
 ## [1.31.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.31.0...veta-trading-platform-v1.31.1) (2026-05-11)
 
 
