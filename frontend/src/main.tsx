@@ -5,6 +5,7 @@ import "./index.css";
 import "rrweb-player/dist/style.css";
 import App from "./App.tsx";
 import { PopOutHost } from "./components/PopOutHost.tsx";
+import { TradingProvider } from "./context/TradingContext.tsx";
 import { listenForStateRequests } from "./store/channel.ts";
 import { store } from "./store/index.ts";
 import { reportError } from "./store/observabilitySlice.ts";
@@ -48,11 +49,17 @@ const panelType = searchParams.get("type") ?? instanceId ?? "";
 const layoutKey = searchParams.get("layout") ?? "dashboard-layout";
 
 if (instanceId) {
-  // Pop-out window mode: render just the requested panel
+  // Pop-out window mode: render just the requested panel.
+  // TradingProvider must wrap PopOutHost because OrderTicket (and
+  // potentially other panels) call useTradingContext at render time —
+  // without it the hook throws and React unmounts the whole window,
+  // leaving a blank screen.
   createRoot(root).render(
     <StrictMode>
       <Provider store={store}>
-        <PopOutHost instanceId={instanceId} panelType={panelType} layoutKey={layoutKey} />
+        <TradingProvider>
+          <PopOutHost instanceId={instanceId} panelType={panelType} layoutKey={layoutKey} />
+        </TradingProvider>
       </Provider>
     </StrictMode>
   );
