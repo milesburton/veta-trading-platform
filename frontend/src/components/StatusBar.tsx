@@ -529,6 +529,9 @@ export function AppHeader() {
     try {
       await deleteSession();
     } finally {
+      try {
+        localStorage.removeItem("veta:last-known-user");
+      } catch {}
       dispatch(clearUser());
     }
   }

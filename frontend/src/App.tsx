@@ -4,6 +4,7 @@ import { Model } from "flexlayout-react";
 import type { ReactNode } from "react";
 import { Component, useCallback, useEffect, useRef, useState } from "react";
 import { AlertToast } from "./components/AlertToast.tsx";
+import { ConnectionLostBanner } from "./components/ConnectionLostBanner.tsx";
 import {
   DashboardLayout,
   DashboardProvider,
@@ -37,7 +38,13 @@ import {
   selectCriticalAlerts,
 } from "./store/alertsSlice.ts";
 import type { AuthUser } from "./store/authSlice.ts";
-import { setShowLogin, setStatus, setUser } from "./store/authSlice.ts";
+import {
+  dismissSessionExpired,
+  sessionExpired,
+  setShowLogin,
+  setStatus,
+  setUser,
+} from "./store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "./store/hooks.ts";
 import { store } from "./store/index.ts";
 import { reportError } from "./store/observabilitySlice.ts";
@@ -83,17 +90,36 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolea
   }
 }
 
+const LAST_KNOWN_USER_KEY = "veta:last-known-user";
+
 function AuthGate({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   const status = useAppSelector((s) => s.auth.status);
   const showLogin = useAppSelector((s) => s.auth.showLogin);
+  const sessionWasLost = useAppSelector((s) => s.auth.sessionExpired);
 
   useEffect(() => {
     fetch(`${USER_SERVICE_URL}/sessions/me`, { credentials: "include" })
       .then(async (res) => {
         if (res.ok) {
           const user: AuthUser = await res.json();
+          try {
+            localStorage.setItem(LAST_KNOWN_USER_KEY, user.id);
+          } catch {}
           dispatch(setUser(user));
+        } else if (res.status === 401) {
+          let hadSession = false;
+          try {
+            hadSession = localStorage.getItem(LAST_KNOWN_USER_KEY) !== null;
+          } catch {}
+          if (hadSession) {
+            try {
+              localStorage.removeItem(LAST_KNOWN_USER_KEY);
+            } catch {}
+            dispatch(sessionExpired());
+          } else {
+            dispatch(setStatus("unauthenticated"));
+          }
         } else {
           dispatch(setStatus("unauthenticated"));
         }
@@ -112,10 +138,42 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const showLoginModal = status === "unauthenticated" && (showLogin || sessionWasLost);
+
   return (
     <>
       {children}
-      {status === "unauthenticated" && showLogin && (
+      {sessionWasLost && (
+        <div
+          data-testid="session-expired-banner"
+          role="alert"
+          className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-4 py-2 bg-amber-950 border-b border-amber-800 text-sm text-amber-200"
+        >
+          <span aria-hidden="true" className="text-amber-400 font-bold shrink-0">
+            ⚠
+          </span>
+          <span className="flex-1">
+            Your session has expired. Sign in again to resume placing orders.
+          </span>
+          <button
+            type="button"
+            data-testid="session-expired-sign-in"
+            onClick={() => dispatch(setShowLogin(true))}
+            className="shrink-0 px-3 py-0.5 rounded bg-amber-700 hover:bg-amber-600 text-white text-[11px] font-semibold uppercase tracking-wide transition-colors"
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => dispatch(dismissSessionExpired())}
+            className="shrink-0 text-amber-400 hover:text-amber-200 text-lg leading-none"
+          >
+            ×
+          </button>
+        </div>
+      )}
+      {showLoginModal && (
         <div
           data-testid="login-modal"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
@@ -366,6 +424,7 @@ function TradingApp() {
           className="flex flex-col h-screen bg-page text-primary overflow-hidden"
         >
           <AppHeader />
+          <ConnectionLostBanner />
           <QuickTradeBar />
 
           {latestCritical && (

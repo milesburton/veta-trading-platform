@@ -98,7 +98,7 @@ export interface MarketState {
   candlesReady: Record<string, boolean>;
   orderBook: Record<string, OrderBookSnapshot>;
   connected: boolean;
-  /** Current exchange session phase. */
+  connectionFailures: number;
   sessionPhase: MarketPhase;
 }
 
@@ -111,6 +111,7 @@ const initialState: MarketState = {
   candlesReady: {},
   orderBook: {},
   connected: false,
+  connectionFailures: 0,
   sessionPhase: "CONTINUOUS",
 };
 
@@ -128,6 +129,13 @@ export const marketSlice = createSlice({
     },
     setConnected(state, action: PayloadAction<boolean>) {
       state.connected = action.payload;
+      if (action.payload) state.connectionFailures = 0;
+    },
+    connectionFailed(state) {
+      state.connectionFailures += 1;
+    },
+    connectionRecovered(state) {
+      state.connectionFailures = 0;
     },
     setSessionPhase(state, action: PayloadAction<MarketPhase>) {
       state.sessionPhase = action.payload;
@@ -193,6 +201,8 @@ export const marketSlice = createSlice({
 export const {
   setAssets,
   setConnected,
+  connectionFailed,
+  connectionRecovered,
   setSessionPhase,
   tickReceived,
   candlesSeeded,

@@ -39,6 +39,7 @@ function makeStore(events: ObsEvent[] = [], channelAsset?: string) {
         candlesReady: {},
         orderBook: {},
         connected: true,
+        connectionFailures: 0,
         sessionPhase: "CONTINUOUS" as const,
       },
       ui: {
@@ -350,6 +351,7 @@ describe("MarketMatch – BookPosition with order book", () => {
             },
           },
           connected: true,
+          connectionFailures: 0,
           sessionPhase: "CONTINUOUS" as const,
         },
       },

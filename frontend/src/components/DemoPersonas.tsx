@@ -131,11 +131,17 @@ function PersonaCard({ persona, onSelect }: { persona: DemoPersona; onSelect: ()
       className="text-left p-3 rounded-lg border border-panel bg-page/60 hover:bg-panel/40 hover:border-divider transition-colors"
     >
       <div className="flex items-start gap-3">
-        <div className="text-2xl leading-none shrink-0">{persona.avatar_emoji}</div>
+        <div className="text-xl leading-none shrink-0 w-6 overflow-hidden" aria-hidden="true">
+          {persona.avatar_emoji}
+        </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-sm font-medium text-secondary truncate">{persona.name}</div>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded ${roleBadgeClass}`}>
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="text-sm font-medium text-secondary truncate flex-1 min-w-0">
+              {persona.name}
+            </div>
+            <span
+              className={`shrink-0 whitespace-nowrap text-[9px] px-1.5 py-0.5 rounded ${roleBadgeClass}`}
+            >
               {persona.role}
             </span>
           </div>

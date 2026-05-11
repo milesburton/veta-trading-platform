@@ -38,6 +38,7 @@ function makeStore(role: "admin" | "trader" = "admin") {
         },
         status: "authenticated" as const,
         showLogin: false,
+        sessionExpired: false,
       },
     },
   });

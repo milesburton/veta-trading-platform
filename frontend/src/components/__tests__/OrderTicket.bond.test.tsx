@@ -65,6 +65,7 @@ function renderTicket() {
         },
         status: "authenticated" as const,
         showLogin: false,
+        sessionExpired: false,
       },
       market: {
         assets,
@@ -74,6 +75,7 @@ function renderTicket() {
         candleHistory: {},
         candlesReady: {},
         connected: true,
+        connectionFailures: 0,
         orderBook: {},
         sessionPhase: "CONTINUOUS" as const,
       },

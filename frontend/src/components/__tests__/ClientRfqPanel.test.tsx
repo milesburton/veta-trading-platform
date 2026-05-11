@@ -26,6 +26,7 @@ function makeStore() {
         },
         status: "authenticated" as const,
         showLogin: false,
+        sessionExpired: false,
       },
     },
   });

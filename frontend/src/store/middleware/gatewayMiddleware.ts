@@ -43,6 +43,8 @@ import { allBlocksCleared, blockAdded } from "../killSwitchSlice.ts";
 import { type LlmSubsystemStatus, llmStateReceived } from "../llmSubsystemSlice.ts";
 import {
   candlesSeeded,
+  connectionFailed,
+  connectionRecovered,
   type MarketPhase,
   marketSlice,
   orderBookUpdated,
@@ -69,6 +71,7 @@ const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? `${_origin}/api/gateway`
 
 const UI_TICK_INTERVAL_MS = 250;
 const ALGO_HEARTBEAT_TIMEOUT_MS = 30_000;
+const MAX_CONNECT_FAILURES = 5;
 
 const OrderRejectedSchema = z.object({
   reason: z
@@ -136,6 +139,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   let ws: WebSocket | null = null;
   let reconnectDelay = 2_000;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let consecutiveFailures = 0;
   let started = false;
 
   const algoLastSeen: Record<string, number> = {};
@@ -303,7 +307,9 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     ws.onopen = () => {
       console.log("[gateway] Connected");
       reconnectDelay = 2_000;
+      consecutiveFailures = 0;
       setGatewayWs(ws);
+      storeAPI.dispatch(connectionRecovered());
       storeAPI.dispatch(marketSlice.actions.setConnected(true));
       fetch(`${GATEWAY_URL}/ready`, { credentials: "include" })
         .then((r) => (r.ok ? r.json() : null))
@@ -344,7 +350,12 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           case "orderRejected": {
             const parsed = OrderRejectedSchema.safeParse(msg.data);
             if (!parsed.success) {
-              console.warn("[gateway] orderRejected frame failed validation");
+              console.warn(
+                "[gateway] orderRejected frame failed validation:",
+                parsed.error.issues,
+                "raw:",
+                msg.data
+              );
               break;
             }
             const { reason, clientOrderId } = parsed.data;
@@ -485,32 +496,74 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           }
           case "error": {
             const parsed = ServerErrorSchema.safeParse(msg.data);
-            const message = parsed.success ? (parsed.data.message ?? "") : "";
-            console.error("[gateway] Server error:", message);
+            if (parsed.success) {
+              console.error("[gateway] Server error:", parsed.data.message ?? "");
+            } else {
+              console.error(
+                "[gateway] Server error (raw, failed validation):",
+                msg.data,
+                "issues:",
+                parsed.error.issues
+              );
+            }
             break;
           }
         }
-      } catch {
-        // ignore unparseable frames
+      } catch (err) {
+        console.warn("[gateway] Unparseable frame:", err, "raw:", event.data);
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event?: CloseEvent) => {
       setGatewayWs(null);
       storeAPI.dispatch(marketSlice.actions.setConnected(false));
+      storeAPI.dispatch(connectionFailed());
+      consecutiveFailures += 1;
       for (const key of Object.keys(algoLastSeen)) delete algoLastSeen[key];
       if (tickTimer) {
         clearTimeout(tickTimer);
         tickTimer = null;
       }
-      console.warn(`[gateway] Disconnected — reconnecting in ${reconnectDelay}ms`);
+      const code = event?.code ?? 0;
+      const reason = event?.reason ?? "";
+      if (consecutiveFailures >= MAX_CONNECT_FAILURES) {
+        console.error(
+          `[gateway] Disconnected — gave up after ${consecutiveFailures} attempts (code=${code} reason="${reason}"). User action required.`
+        );
+        return;
+      }
+      console.warn(
+        `[gateway] Disconnected (attempt ${consecutiveFailures}/${MAX_CONNECT_FAILURES}, code=${code}) — reconnecting in ${reconnectDelay}ms`
+      );
       reconnectTimer = setTimeout(() => {
         reconnectDelay = Math.min(reconnectDelay * 2, 30_000);
         connect();
       }, reconnectDelay);
     };
 
-    ws.onerror = () => ws?.close();
+    ws.onerror = (event) => {
+      console.warn("[gateway] WebSocket error", event);
+      ws?.close();
+    };
+  }
+
+  function manualReconnect() {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    consecutiveFailures = 0;
+    reconnectDelay = 2_000;
+    storeAPI.dispatch(connectionRecovered());
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.close();
+      } catch {
+        // ignore
+      }
+    } else {
+      connect();
+    }
   }
 
   async function fetchCandlesForAsset(symbol: string) {
@@ -598,10 +651,16 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       if (symbol) hydrateNewsForSymbol(symbol);
     }
 
-    if ((action as { type: string }).type === "marketFeed/stop") {
+    const type = (action as { type: string }).type;
+    if (type === "marketFeed/stop") {
       ws?.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
+    }
+    if (type === "gateway/reconnect") {
+      manualReconnect();
     }
     return result;
   };
 };
+
+export const reconnectGateway = () => ({ type: "gateway/reconnect" as const });

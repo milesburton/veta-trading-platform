@@ -51,6 +51,7 @@ function makeStore(orderBook: Record<string, OrderBookSnapshot> = {}) {
         candlesReady: {},
         orderBook,
         connected: true,
+        connectionFailures: 0,
         sessionPhase: "CONTINUOUS" as const,
       },
     },

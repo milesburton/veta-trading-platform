@@ -42,6 +42,7 @@ function renderPanel(role: "admin" | "viewer" = "admin") {
         },
         status: "authenticated" as const,
         showLogin: false,
+        sessionExpired: false,
       },
     },
   });
