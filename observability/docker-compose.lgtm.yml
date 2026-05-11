@@ -72,6 +72,10 @@ services:
       GF_RENDERING_CALLBACK_URL: "http://grafana:3000/"
       GF_LOG_FILTERS: "rendering:debug"
       GF_INSTALL_PLUGINS: "grafana-mermaid-panel"
+      # Used by provisioning/alerting/contact-points.yml. Unset → alerts
+      # still fire in the UI but external delivery is dropped. Set in
+      # /opt/stacks/veta/.env (e.g. Slack incoming webhook URL).
+      ALERT_WEBHOOK_URL: "${ALERT_WEBHOOK_URL:-}"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana-data:/var/lib/grafana

@@ -1,0 +1,36 @@
+apiVersion: 1
+
+# Alert contact points + notification policy. The default route uses
+# `grafana-default-email` which sends to whatever SMTP Grafana is
+# configured with (none, in this stack — so alerts will fire but
+# notifications won't deliver). To actually receive notifications:
+#
+# 1. Set up an SMTP provider in Grafana settings, or
+# 2. Replace `grafana-default-email` below with a `webhook` type
+#    pointing at a Slack incoming-webhook URL or similar, or
+# 3. Configure an Alertmanager external receiver via env.
+#
+# This file just declares the routing; the heavy lifting is operator
+# config.
+
+contactPoints:
+  - orgId: 1
+    name: security-alerts
+    receivers:
+      - uid: security-webhook
+        type: webhook
+        settings:
+          # Set ALERT_WEBHOOK_URL in the homelab .env to enable. When
+          # unset, Grafana logs a warning and drops the notification —
+          # alerts still fire in the UI; just no external delivery.
+          url: ${ALERT_WEBHOOK_URL}
+          httpMethod: POST
+        disableResolveMessage: false
+
+policies:
+  - orgId: 1
+    receiver: security-alerts
+    group_by: [alertname, severity]
+    repeat_interval: 4h
+    group_wait: 30s
+    group_interval: 5m
