@@ -17,7 +17,7 @@ labels:
   - "traefik.http.services.<svc>.loadbalancer.server.port=<port>"
 ```
 
-Traefik does **not** match on `Host` headers, so any hostname or IP that resolves to the host works. That keeps the LAN dev experience simple — `http://192.168.1.245/` and `https://veta.example.com/` are interchangeable.
+Traefik does **not** match on `Host` headers, so any hostname or IP that resolves to the host works. That keeps the LAN dev experience simple — a LAN IP and the public hostname are interchangeable.
 
 ## TLS
 
