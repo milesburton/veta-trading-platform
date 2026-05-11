@@ -107,7 +107,6 @@ const RATE_LIMIT_BYPASS_PATHS = new Set([
   "/health",
   "/ready",
   "/metrics",
-  "/system",
 ]);
 
 function isWebSocketUpgrade(req: Request): boolean {
@@ -465,13 +464,29 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   if (path === "/ready" && req.method === "GET") {
     const h = cachedHealth;
+    // Per-service detail leaks the backend topology to anonymous
+    // scanners (F-9 in docs/security-audit-2026-05-11.md). Return a
+    // boolean-only response for unauthenticated callers, full detail
+    // (needed by StartupOverlay) only for authenticated sessions.
+    const tokenCookie = getCookieToken(req);
+    const isAuthed = tokenCookie ? (await validateToken(tokenCookie)) !== null : false;
+
     if (!h) {
-      return new Response(JSON.stringify({ ready: false, startedAt: STARTED_AT }), {
-        status: 503,
-        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
-      });
+      return new Response(
+        JSON.stringify({ ready: false, startedAt: STARTED_AT }),
+        { status: 503, headers: { "Content-Type": "application/json", ...corsHeaders(req) } },
+      );
     }
     const ready = h.marketSim && h.ems && h.oms && h.journal && h.userService;
+    if (!isAuthed) {
+      return new Response(
+        JSON.stringify({ ready, startedAt: STARTED_AT }),
+        {
+          status: ready ? 200 : 503,
+          headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+        },
+      );
+    }
     return new Response(
       JSON.stringify({
         ready,
@@ -501,6 +516,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/system" && req.method === "GET") {
+    // F-9: /system exposes the full backend topology, ports, and
+    // health states. Require an authenticated session to view it.
+    const auth = await requireAuth(req);
+    if (isResponse(auth)) return auth;
     return handleSystemStatus();
   }
 
