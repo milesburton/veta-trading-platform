@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.32.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.32.0...veta-trading-platform-v1.32.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* **docs:** redact LAN IPs from public docs site + add CI guard ([#177](https://github.com/milesburton/veta-trading-platform/issues/177)) ([591e58e](https://github.com/milesburton/veta-trading-platform/commit/591e58eb24987cdeaca4cf9ce7afdf55d8dc2b3f))
+* **frontend:** route ALL backend fetches through gateway + redo arch diagram ([#175](https://github.com/milesburton/veta-trading-platform/issues/175)) ([c091979](https://github.com/milesburton/veta-trading-platform/commit/c0919793687cb1f7dcd7034028c13a2110538826))
+
 ## [1.32.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.31.1...veta-trading-platform-v1.32.0) (2026-05-11)
 
 
