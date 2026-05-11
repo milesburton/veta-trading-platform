@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.31.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.30.0...veta-trading-platform-v1.31.0) (2026-05-11)
+
+
+### Features
+
+* **infra:** public ingress via OVH edge + autossh reverse tunnel ([#153](https://github.com/milesburton/veta-trading-platform/issues/153)) ([5241f14](https://github.com/milesburton/veta-trading-platform/commit/5241f14a7d9bdbaf82a2157b15c15709c0e03f80))
+
+
+### Bug Fixes
+
+* **deploy:** recover from Docker recreate race + treat Created as failure ([#155](https://github.com/milesburton/veta-trading-platform/issues/155)) ([8153e88](https://github.com/milesburton/veta-trading-platform/commit/8153e882c505c5f75638c1ff6d98bb9f505b5c57))
+* **edge:** make LE cert issue + add Grafana public route ([#154](https://github.com/milesburton/veta-trading-platform/issues/154)) ([0f91413](https://github.com/milesburton/veta-trading-platform/commit/0f914136deff2a2eb8da7a7102249e7b8cbb43b6))
+* **homelab:** real TLS via Cloudflare DNS-01 + edge rate-limit ([#151](https://github.com/milesburton/veta-trading-platform/issues/151)) ([4c146b5](https://github.com/milesburton/veta-trading-platform/commit/4c146b5b00e8d936503902ee986ce1f11397cb68))
+
 ## [1.30.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.29.0...veta-trading-platform-v1.30.0) (2026-05-10)
 
 
