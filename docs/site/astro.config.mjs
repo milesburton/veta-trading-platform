@@ -214,6 +214,63 @@ export default defineConfig({
               figure.replaceWith(div);
             });
             await mermaid.run();
+            bindMermaidLightbox();
+
+            // Click-to-expand on rendered mermaid diagrams. The shared
+            // .veta-lightbox styles are extended in custom.css to handle
+            // SVG children with overflow:auto so wide diagrams remain
+            // navigable inside the modal.
+            function openMermaidLightbox(sourceNode) {
+              const svg = sourceNode.querySelector("svg");
+              if (!svg) return;
+              const overlay = document.createElement("div");
+              overlay.className = "veta-lightbox veta-lightbox--mermaid";
+              overlay.setAttribute("role", "dialog");
+              overlay.setAttribute("aria-modal", "true");
+              overlay.setAttribute("aria-label", "Diagram preview");
+              const inner = document.createElement("div");
+              inner.className = "veta-lightbox-scroll";
+              const clone = svg.cloneNode(true);
+              // Strip width/height so the SVG uses its intrinsic viewBox
+              // dimensions; CSS controls the rendered size.
+              clone.removeAttribute("width");
+              clone.removeAttribute("height");
+              clone.removeAttribute("style");
+              inner.appendChild(clone);
+              const closeBtn = document.createElement("button");
+              closeBtn.type = "button";
+              closeBtn.className = "veta-lightbox-close";
+              closeBtn.setAttribute("aria-label", "Close diagram preview");
+              closeBtn.textContent = "×";
+              overlay.append(inner, closeBtn);
+              document.body.append(overlay);
+              document.body.style.overflow = "hidden";
+
+              function close() {
+                overlay.remove();
+                document.body.style.overflow = "";
+                document.removeEventListener("keydown", onKey);
+              }
+              function onKey(e) {
+                if (e.key === "Escape") close();
+              }
+              // Close on overlay click but not on diagram-content click.
+              overlay.addEventListener("click", (e) => {
+                if (e.target === overlay || e.target === inner) close();
+              });
+              closeBtn.addEventListener("click", close);
+              document.addEventListener("keydown", onKey);
+            }
+
+            function bindMermaidLightbox() {
+              for (const node of document.querySelectorAll(".mermaid")) {
+                if (node.dataset.lightboxBound === "1") continue;
+                node.dataset.lightboxBound = "1";
+                node.style.cursor = "zoom-in";
+                node.title = "Click to expand";
+                node.addEventListener("click", () => openMermaidLightbox(node));
+              }
+            }
 
             async function rerenderAll() {
               configure();
@@ -223,8 +280,10 @@ export default defineConfig({
                 if (!src) continue;
                 node.removeAttribute("data-processed");
                 node.innerHTML = src;
+                delete node.dataset.lightboxBound;
               }
               await mermaid.run({ nodes });
+              bindMermaidLightbox();
             }
 
             const observer = new MutationObserver((mutations) => {
