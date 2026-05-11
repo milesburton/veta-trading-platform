@@ -36,7 +36,7 @@ import {
   selectCriticalAlerts,
 } from "./store/alertsSlice.ts";
 import type { AuthUser } from "./store/authSlice.ts";
-import { setStatus, setUser } from "./store/authSlice.ts";
+import { setShowLogin, setStatus, setUser } from "./store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "./store/hooks.ts";
 import { store } from "./store/index.ts";
 import { reportError } from "./store/observabilitySlice.ts";
@@ -85,6 +85,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolea
 function AuthGate({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   const status = useAppSelector((s) => s.auth.status);
+  const showLogin = useAppSelector((s) => s.auth.showLogin);
 
   useEffect(() => {
     fetch(`${USER_SERVICE_URL}/sessions/me`, { credentials: "include" })
@@ -110,11 +111,29 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (status === "unauthenticated") {
-    return <LoginPage />;
-  }
-
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {status === "unauthenticated" && showLogin && (
+        <div
+          data-testid="login-modal"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+        >
+          <div className="relative">
+            <button
+              type="button"
+              aria-label="Close sign-in"
+              onClick={() => dispatch(setShowLogin(false))}
+              className="absolute -top-2 -right-2 z-10 w-7 h-7 rounded-full bg-surface border border-default text-muted hover:text-primary hover:border-emerald-600 text-sm leading-none transition-colors"
+            >
+              ×
+            </button>
+            <LoginPage />
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 function TradingApp() {

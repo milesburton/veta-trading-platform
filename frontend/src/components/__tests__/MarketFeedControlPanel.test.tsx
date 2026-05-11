@@ -63,6 +63,7 @@ function renderPanel(role: "admin" | "trader" = "admin") {
           dark_pool_access: false,
         },
         status: "authenticated" as const,
+        showLogin: false,
       },
       market: {
         assets: [

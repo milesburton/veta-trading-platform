@@ -73,6 +73,7 @@ function makeStore() {
           dark_pool_access: false,
         },
         status: "authenticated" as const,
+        showLogin: false,
       },
       market: {
         assets,
@@ -515,6 +516,7 @@ describe("OrderTicket – preview slippage variants", () => {
             dark_pool_access: false,
           },
           status: "authenticated" as const,
+          showLogin: false,
         },
         market: {
           assets,
@@ -597,6 +599,7 @@ describe("OrderTicket – FX & Commodity tabs", () => {
             dark_pool_access: false,
           },
           status: "authenticated" as const,
+          showLogin: false,
         },
         market: {
           assets,
@@ -688,6 +691,7 @@ describe("OrderTicket – submit advanced strategies (trader with full perms)", 
             dark_pool_access: true,
           },
           status: "authenticated" as const,
+          showLogin: false,
         },
         market: {
           assets,
@@ -798,6 +802,7 @@ describe("OrderTicket – channel incoming asset", () => {
             dark_pool_access: false,
           },
           status: "authenticated" as const,
+          showLogin: false,
         },
         market: {
           assets,
@@ -875,6 +880,7 @@ describe("OrderTicket – channel asset switching", () => {
             dark_pool_access: false,
           },
           status: "authenticated" as const,
+          showLogin: false,
         },
         market: {
           assets: fxAssets,
@@ -940,6 +946,7 @@ describe("OrderTicket – channel asset switching", () => {
             dark_pool_access: false,
           },
           status: "authenticated" as const,
+          showLogin: false,
         },
         market: {
           assets: commodityAssets,
@@ -1010,6 +1017,7 @@ describe("OrderTicket – AssetInfoBar with full metadata", () => {
             dark_pool_access: false,
           },
           status: "authenticated" as const,
+          showLogin: false,
         },
         market: {
           assets: fullAssets,
@@ -1083,6 +1091,7 @@ describe("OrderTicket – AssetInfoBar with full metadata", () => {
             dark_pool_access: false,
           },
           status: "authenticated" as const,
+          showLogin: false,
         },
         market: {
           assets: slimAssets,

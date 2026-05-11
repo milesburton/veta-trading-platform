@@ -64,6 +64,7 @@ function renderTicket() {
           dark_pool_access: false,
         },
         status: "authenticated" as const,
+        showLogin: false,
       },
       market: {
         assets,
