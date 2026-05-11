@@ -674,36 +674,46 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
   }
 
-  // Generic service proxy — /api/<service>/* → localhost:<port>/*
-  // Used by the Fly.io monolith where all services run on localhost but only port 5011 is publicly accessible.
+  // Generic service proxy — /api/<service>/* → <SERVICE>_URL/*
+  // The URL constants at the top of the file already honour
+  // <SERVICE>_HOST + <SERVICE>_PORT envs, defaulting to localhost for
+  // the Fly.io monolith case where every service binds to localhost
+  // and only port 5011 is publicly exposed. On the homelab each
+  // service runs in its own container with hostname == service name
+  // (e.g. OMS_HOST=oms via compose env).
+  //
+  // Pre-2026-05-11 this map hardcoded `http://localhost:` for most
+  // entries, ignoring the *_HOST overrides — so /api/<svc>/health
+  // returned 502 on the homelab because gateway tried localhost:<port>
+  // instead of oms:5002 / ems:5001 / etc.
   const SVC_PROXY: Record<string, string> = {
-    "market-sim":           `http://localhost:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`,
-    "ems":                  `http://localhost:${Deno.env.get("EMS_PORT") ?? "5001"}`,
-    "oms":                  `http://localhost:${Deno.env.get("OMS_PORT") ?? "5002"}`,
-    "limit-algo":           `http://localhost:${Deno.env.get("ALGO_TRADER_PORT") ?? "5003"}`,
-    "twap-algo":            `http://localhost:${Deno.env.get("TWAP_ALGO_PORT") ?? "5004"}`,
-    "pov-algo":             `http://localhost:${Deno.env.get("POV_ALGO_PORT") ?? "5005"}`,
-    "vwap-algo":            `http://localhost:${Deno.env.get("VWAP_ALGO_PORT") ?? "5006"}`,
-    "observability":        `http://localhost:${Deno.env.get("KAFKA_RELAY_PORT") ?? "5007"}`,
+    "market-sim":           MARKET_SIM_URL,
+    "ems":                  EMS_URL,
+    "oms":                  OMS_URL,
+    "limit-algo":           LIMIT_ALGO_URL,
+    "twap-algo":            TWAP_ALGO_URL,
+    "pov-algo":             POV_ALGO_URL,
+    "vwap-algo":            VWAP_ALGO_URL,
+    "observability":        KAFKA_RELAY_URL,
     "journal":              JOURNAL_URL,
-    "fix-archive":          `http://localhost:${Deno.env.get("FIX_ARCHIVE_PORT") ?? "5012"}`,
-    "fix-gateway":          `http://localhost:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`,
-    "kafka-relay":          `http://localhost:${Deno.env.get("KAFKA_RELAY_PORT") ?? "5007"}`,
+    "fix-archive":          FIX_ARCHIVE_URL,
+    "fix-gateway":          FIX_GATEWAY_URL,
+    "kafka-relay":          KAFKA_RELAY_URL,
     "user-service":         USER_SERVICE_URL,
-    "news-aggregator":      `http://localhost:${Deno.env.get("NEWS_AGGREGATOR_PORT") ?? "5013"}`,
+    "news-aggregator":      NEWS_AGGREGATOR_URL,
     "analytics":            ANALYTICS_URL,
     "market-data":          MARKET_DATA_URL,
-    "market-data-adapters": `http://localhost:${Deno.env.get("MARKET_DATA_ADAPTERS_PORT") ?? "5016"}`,
+    "market-data-adapters": `http://${Deno.env.get("MARKET_DATA_ADAPTERS_HOST") ?? "localhost"}:${Deno.env.get("MARKET_DATA_ADAPTERS_PORT") ?? "5016"}`,
     "feature-engine":       FEATURE_ENGINE_URL,
     "signal-engine":        SIGNAL_ENGINE_URL,
     "recommendation-engine": RECOMMENDATION_ENGINE_URL,
     "scenario-engine":      SCENARIO_ENGINE_URL,
-    "iceberg-algo":         `http://localhost:${Deno.env.get("ICEBERG_ALGO_PORT") ?? "5021"}`,
-    "sniper-algo":          `http://localhost:${Deno.env.get("SNIPER_ALGO_PORT") ?? "5022"}`,
-    "arrival-price-algo":   `http://localhost:${Deno.env.get("ARRIVAL_PRICE_ALGO_PORT") ?? "5023"}`,
+    "iceberg-algo":         ICEBERG_ALGO_URL,
+    "sniper-algo":          SNIPER_ALGO_URL,
+    "arrival-price-algo":   ARRIVAL_PRICE_ALGO_URL,
     "llm-advisory":         LLM_ADVISORY_URL,
-    "momentum-algo":        `http://localhost:${Deno.env.get("MOMENTUM_ALGO_PORT") ?? "5025"}`,
-    "is-algo":              `http://localhost:${Deno.env.get("IS_ALGO_PORT") ?? "5026"}`,
+    "momentum-algo":        MOMENTUM_ALGO_URL,
+    "is-algo":              IS_ALGO_URL,
     "dark-pool":            DARK_POOL_URL,
     "ccp-service":          CCP_SERVICE_URL,
     "rfq-service":          RFQ_SERVICE_URL,
