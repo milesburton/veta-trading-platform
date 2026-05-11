@@ -52,6 +52,7 @@ function makeStore(orders: OrderRecord[] = [], prices: MarketPrices = {}) {
         candleHistory: {},
         candlesReady: {},
         connected: false,
+        connectionFailures: 0,
         orderBook: {},
         sessionPhase: "CONTINUOUS" as const,
       },

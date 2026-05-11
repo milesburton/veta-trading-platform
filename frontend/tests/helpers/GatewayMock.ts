@@ -143,10 +143,26 @@ export class GatewayMock {
   private _wsRoute: WebSocketRoute | null = null;
   private _outboundQueue: GatewayOutbound[] = [];
   private _outboundResolvers: Array<{ type: string; resolve: (msg: GatewayOutbound) => void }> = [];
+  private _refuseNextConnections = false;
+  private _connectionCount = 0;
 
   private _orders = new Map<string, MockOrder>();
 
   private constructor(private readonly page: Page) {}
+
+  get connectionCount(): number {
+    return this._connectionCount;
+  }
+
+  async dropConnection(opts: { code?: number; reason?: string } = {}): Promise<void> {
+    if (!this._wsRoute) return;
+    await this._wsRoute.close({ code: opts.code ?? 1006, reason: opts.reason ?? "" });
+    this._wsRoute = null;
+  }
+
+  refuseNextConnections(yes = true): void {
+    this._refuseNextConnections = yes;
+  }
 
   static async attach(
     page: Page,
@@ -324,6 +340,11 @@ export class GatewayMock {
     );
 
     await page.routeWebSocket("/ws/gateway", (ws) => {
+      mock._connectionCount += 1;
+      if (mock._refuseNextConnections) {
+        void ws.close({ code: 1011, reason: "refused" });
+        return;
+      }
       mock._wsRoute = ws;
 
       ws.onMessage((raw) => {

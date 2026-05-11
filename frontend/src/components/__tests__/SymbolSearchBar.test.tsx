@@ -48,6 +48,7 @@ function makeStore() {
         candleHistory: {},
         candlesReady: {},
         connected: true,
+        connectionFailures: 0,
         orderBook: {},
         sessionPhase: "CONTINUOUS" as const,
       },

@@ -64,6 +64,7 @@ function renderPanel(role: "admin" | "trader" = "admin") {
         },
         status: "authenticated" as const,
         showLogin: false,
+        sessionExpired: false,
       },
       market: {
         assets: [
@@ -90,6 +91,7 @@ function renderPanel(role: "admin" | "trader" = "admin") {
         candleHistory: {},
         candlesReady: {},
         connected: true,
+        connectionFailures: 0,
         orderBook: {},
         sessionPhase: "CONTINUOUS" as const,
       },

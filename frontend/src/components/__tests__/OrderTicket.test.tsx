@@ -74,6 +74,7 @@ function makeStore() {
         },
         status: "authenticated" as const,
         showLogin: false,
+        sessionExpired: false,
       },
       market: {
         assets,
@@ -83,6 +84,7 @@ function makeStore() {
         candleHistory: {},
         candlesReady: {},
         connected: true,
+        connectionFailures: 0,
         orderBook: {},
         sessionPhase: "CONTINUOUS" as const,
       },
@@ -517,6 +519,7 @@ describe("OrderTicket – preview slippage variants", () => {
           },
           status: "authenticated" as const,
           showLogin: false,
+          sessionExpired: false,
         },
         market: {
           assets,
@@ -526,6 +529,7 @@ describe("OrderTicket – preview slippage variants", () => {
           candleHistory: {},
           candlesReady: {},
           connected: true,
+          connectionFailures: 0,
           orderBook: (mid
             ? {
                 AAPL: {
@@ -600,6 +604,7 @@ describe("OrderTicket – FX & Commodity tabs", () => {
           },
           status: "authenticated" as const,
           showLogin: false,
+          sessionExpired: false,
         },
         market: {
           assets,
@@ -609,6 +614,7 @@ describe("OrderTicket – FX & Commodity tabs", () => {
           candleHistory: {},
           candlesReady: {},
           connected: true,
+          connectionFailures: 0,
           orderBook: {},
           sessionPhase: "CONTINUOUS" as const,
         },
@@ -692,6 +698,7 @@ describe("OrderTicket – submit advanced strategies (trader with full perms)", 
           },
           status: "authenticated" as const,
           showLogin: false,
+          sessionExpired: false,
         },
         market: {
           assets,
@@ -701,6 +708,7 @@ describe("OrderTicket – submit advanced strategies (trader with full perms)", 
           candleHistory: {},
           candlesReady: {},
           connected: true,
+          connectionFailures: 0,
           orderBook: {},
           sessionPhase: "CONTINUOUS" as const,
         },
@@ -803,6 +811,7 @@ describe("OrderTicket – channel incoming asset", () => {
           },
           status: "authenticated" as const,
           showLogin: false,
+          sessionExpired: false,
         },
         market: {
           assets,
@@ -812,6 +821,7 @@ describe("OrderTicket – channel incoming asset", () => {
           candleHistory: {},
           candlesReady: {},
           connected: true,
+          connectionFailures: 0,
           orderBook: {},
           sessionPhase: "CONTINUOUS" as const,
         },
@@ -881,6 +891,7 @@ describe("OrderTicket – channel asset switching", () => {
           },
           status: "authenticated" as const,
           showLogin: false,
+          sessionExpired: false,
         },
         market: {
           assets: fxAssets,
@@ -890,6 +901,7 @@ describe("OrderTicket – channel asset switching", () => {
           candleHistory: {},
           candlesReady: {},
           connected: true,
+          connectionFailures: 0,
           orderBook: {},
           sessionPhase: "CONTINUOUS" as const,
         },
@@ -947,6 +959,7 @@ describe("OrderTicket – channel asset switching", () => {
           },
           status: "authenticated" as const,
           showLogin: false,
+          sessionExpired: false,
         },
         market: {
           assets: commodityAssets,
@@ -956,6 +969,7 @@ describe("OrderTicket – channel asset switching", () => {
           candleHistory: {},
           candlesReady: {},
           connected: true,
+          connectionFailures: 0,
           orderBook: {},
           sessionPhase: "CONTINUOUS" as const,
         },
@@ -1018,6 +1032,7 @@ describe("OrderTicket – AssetInfoBar with full metadata", () => {
           },
           status: "authenticated" as const,
           showLogin: false,
+          sessionExpired: false,
         },
         market: {
           assets: fullAssets,
@@ -1027,6 +1042,7 @@ describe("OrderTicket – AssetInfoBar with full metadata", () => {
           candleHistory: {},
           candlesReady: {},
           connected: true,
+          connectionFailures: 0,
           orderBook: {
             AAPL: {
               mid: 155,
@@ -1092,6 +1108,7 @@ describe("OrderTicket – AssetInfoBar with full metadata", () => {
           },
           status: "authenticated" as const,
           showLogin: false,
+          sessionExpired: false,
         },
         market: {
           assets: slimAssets,
@@ -1101,6 +1118,7 @@ describe("OrderTicket – AssetInfoBar with full metadata", () => {
           candleHistory: {},
           candlesReady: {},
           connected: true,
+          connectionFailures: 0,
           orderBook: {},
           sessionPhase: "CONTINUOUS" as const,
         },

@@ -41,6 +41,7 @@ function makeStore(role: "admin" | "trader" = "admin") {
         },
         status: "authenticated" as const,
         showLogin: false,
+        sessionExpired: false,
       },
       market: {
         assets: [{ symbol: "AAPL" }, { symbol: "MSFT" }] as unknown as never,
@@ -50,6 +51,7 @@ function makeStore(role: "admin" | "trader" = "admin") {
         candleHistory: {},
         candlesReady: {},
         connected: true,
+        connectionFailures: 0,
         orderBook: {},
         sessionPhase: "CONTINUOUS" as const,
       },

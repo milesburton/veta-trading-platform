@@ -43,6 +43,7 @@ function renderPanel() {
         },
         status: "authenticated" as const,
         showLogin: false,
+        sessionExpired: false,
       },
       market: {
         assets: [],
@@ -53,6 +54,7 @@ function renderPanel() {
         candlesReady: {},
         orderBook: {},
         connected: true,
+        connectionFailures: 0,
         sessionPhase: "CONTINUOUS" as const,
       },
     },

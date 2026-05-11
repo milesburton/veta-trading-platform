@@ -40,6 +40,7 @@ function makeStore(connected = false) {
         candlesReady: {},
         orderBook: {},
         connected,
+        connectionFailures: 0,
         sessionPhase: "CONTINUOUS" as const,
       },
     },

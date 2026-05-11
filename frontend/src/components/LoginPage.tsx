@@ -156,8 +156,8 @@ export function formatApiError(err: unknown): string {
 
 export function LoginPage() {
   const dispatch = useAppDispatch();
-  const username = useSignal("alice");
-  const password = useSignal("veta-dev-passcode");
+  const username = useSignal("");
+  const password = useSignal("");
   const localError = useSignal<string | null>(null);
   const [authorizeOAuth, authorizeState] = useAuthorizeOAuthMutation();
   const [exchangeOAuthCode, tokenState] = useExchangeOAuthCodeMutation();
@@ -235,11 +235,11 @@ export function LoginPage() {
   }
 
   return (
-    <div data-testid="login-page" className="h-screen flex flex-col bg-page">
+    <div data-testid="login-page" className="min-h-screen flex flex-col bg-page">
       <AppHeader />
 
-      <main className="flex-1 overflow-hidden px-4 py-6 sm:px-6 sm:py-8">
-        <div className="mx-auto h-full max-w-6xl grid gap-6 md:grid-cols-[400px_1fr] md:items-start">
+      <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mx-auto max-w-6xl grid gap-6 md:grid-cols-[400px_1fr] md:items-start">
           <div className="flex flex-col gap-5">
             <div>
               <h1 data-testid="login-heading" className="text-xl font-semibold text-primary mb-1">
@@ -284,7 +284,7 @@ export function LoginPage() {
             )}
           </div>
 
-          <div className="min-h-0 md:h-full">
+          <div className="min-h-0">
             <DemoPersonas mode="full" onSelect={handlePersonaSelect} />
           </div>
         </div>

@@ -68,6 +68,7 @@ function renderHost(panelType: string) {
         candlesReady: {},
         orderBook: {},
         connected: true,
+        connectionFailures: 0,
         sessionPhase: "CONTINUOUS" as const,
       },
     },
