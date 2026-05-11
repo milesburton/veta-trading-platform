@@ -7,44 +7,15 @@ import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
 When something is wrong, you need three things in front of you fast: **what's broken**, **where to look**, and **what to do about it**. This page is the index. Everything below is a hop, not a hub.
 
-<Aside type="caution">
-Most of these tools are LAN-only on the homelab. From outside the network, use SSH port-forwarding (`ssh -L 3000:localhost:3000 miles@192.168.1.245`) or Tailscale if it's installed.
+<Aside type="note">
+These diagnostic tools are operator-only and live on a private network. URLs and access instructions are kept in the team password manager rather than in public docs.
 </Aside>
 
-## Live diagnostics
+## Live diagnostics (operator access)
 
-<CardGrid>
-  <LinkCard
-    title="Grafana dashboards"
-    href="http://192.168.1.245:3000/dashboards"
-    description="Trading Overview, Service Performance (OTel), Order Pipeline (Traces), k6 — anonymous read access on UAT."
-  />
-  <LinkCard
-    title="Tempo trace search"
-    href="http://192.168.1.245:3000/explore?datasource=tempo"
-    description="Search by service, span name, status, or paste a trace ID. Click a span to see logs filtered by trace_id."
-  />
-  <LinkCard
-    title="Loki log search"
-    href="http://192.168.1.245:3000/explore?datasource=loki"
-    description="LogQL across every service. Filter by service_name; pipe to a regex for substring search; pipe to JSON parse to filter on log level."
-  />
-  <LinkCard
-    title="Traefik dashboard"
-    href="http://192.168.1.245:8888/dashboard/"
-    description="Live router/service/middleware status. First place to look if a service is healthy but unreachable from the browser."
-  />
-  <LinkCard
-    title="Redpanda console"
-    href="http://192.168.1.245:8080"
-    description="Browse Kafka topics, inspect consumer groups, tail messages live. Useful when an event seems to be missing from the chain."
-  />
-  <LinkCard
-    title="Uptime Kuma"
-    href="http://192.168.1.245:3001"
-    description="External health checks for all platform services. The first thing that complains if the homelab is offline."
-  />
-</CardGrid>
+The platform uses the standard Grafana LGTM stack for live observability — Grafana for dashboards, Tempo for traces, Loki for logs — plus Traefik's built-in dashboard for routing state, Redpanda Console for Kafka topic inspection, and Uptime Kuma for external health checks.
+
+These run inside the deployment's private network and aren't exposed publicly. Operator-only credentials and URLs are in the team password manager.
 
 ## In-app tools
 

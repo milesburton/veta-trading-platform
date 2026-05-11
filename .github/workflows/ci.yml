@@ -157,6 +157,21 @@ jobs:
         working-directory: frontend
         run: npx tsc --noEmit
 
+      - name: Check for leaked private IPs in public docs
+        run: |
+          # The Astro/Starlight site under docs/site/src/ is built and
+          # published to GitHub Pages. Anything in there is internet-public.
+          # Reject RFC1918 (10/8, 172.16/12, 192.168/16) and loopback
+          # (127/8) addresses appearing in source files, which would
+          # advertise internal infrastructure to the world.
+          if grep -rnE '\b(10\.[0-9]+\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|127\.[0-9]+\.[0-9]+\.[0-9]+)\b' \
+              docs/site/src/ \
+              --include='*.md' --include='*.mdx' --include='*.html' --include='*.tsx' --include='*.ts'; then
+            echo "::error::Private IP address(es) leaked into public docs (docs/site/src/). Remove or describe abstractly."
+            exit 1
+          fi
+          echo "No private IPs in public docs."
+
       - name: Vitest unit tests with coverage
         working-directory: frontend
         run: |
