@@ -93,7 +93,20 @@ const OAUTH_CLIENTS = new Map<string, {
 ));
 
 const OAUTH_USER_SECRETS = parseUserSecrets(Deno.env.get("OAUTH2_USER_SECRETS") ?? "");
-const OAUTH_SHARED_SECRET = Deno.env.get("OAUTH2_SHARED_SECRET") ?? "veta-dev-passcode";
+const DEFAULT_DEV_PASSCODE = "veta-dev-passcode";
+const OAUTH_SHARED_SECRET = Deno.env.get("OAUTH2_SHARED_SECRET") ?? DEFAULT_DEV_PASSCODE;
+
+if (
+  OAUTH_SHARED_SECRET === DEFAULT_DEV_PASSCODE &&
+  Deno.env.get("VETA_ALLOW_DEFAULT_PASSCODE") !== "true"
+) {
+  logger.error(
+    "FATAL: OAUTH2_SHARED_SECRET unset or equals the dev default. " +
+      "Set OAUTH2_SHARED_SECRET to a strong random value, or set " +
+      "VETA_ALLOW_DEFAULT_PASSCODE=true to acknowledge a dev environment.",
+  );
+  Deno.exit(1);
+}
 
 const oauthCodes = new Map<string, {
   clientId: string;
