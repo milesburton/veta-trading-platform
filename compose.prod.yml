@@ -235,6 +235,8 @@ services:
     image: ghcr.io/milesburton/veta-trading-platform/user-service:latest
     build: !reset null
     profiles: !reset []
+    environment:
+      OAUTH2_SHARED_SECRET: "${OAUTH2_SHARED_SECRET:?OAUTH2_SHARED_SECRET must be set in /opt/stacks/veta/.env — see scripts/homelab-systemd/README.md}"
     labels:
       - "traefik.enable=false"
       - "traefik.http.routers.user-service.rule=PathPrefix(`/api/user-service`)"
@@ -586,13 +588,7 @@ services:
   redpanda-console:
     <<: *prod-defaults
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.redpanda-console.rule=PathPrefix(`/admin/redpanda`)"
-      - "traefik.http.routers.redpanda-console.entrypoints=websecure"
-      - "traefik.http.routers.redpanda-console.tls=true"
-      - "traefik.http.routers.redpanda-console.middlewares=redpanda-strip,api-ratelimit"
-      - "traefik.http.services.redpanda-console.loadbalancer.server.port=8081"
-      - "traefik.http.routers.redpanda-console.priority=15"
+      - "traefik.enable=false"
       - "com.centurylinklabs.watchtower.enable=false"
 
   # Watchtower — auto-updates services labelled with watchtower.enable=true
