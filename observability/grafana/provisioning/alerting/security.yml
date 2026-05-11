@@ -1,0 +1,119 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: security
+    folder: VETA
+    interval: 1m
+    rules:
+      - uid: auth-failure-spike
+        title: Auth-failure spike
+        condition: B
+        # Loki query: counts auth_failure events from the gateway over the
+        # last 5 minutes. Both the WARN logger.info(access_event)
+        # serialisation and the underlying access-log lines should match
+        # `auth_failure` in body.
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki
+            model:
+              datasource:
+                type: loki
+                uid: loki
+              expr: 'sum(count_over_time({service_name="gateway"} |= "auth_failure" [5m]))'
+              intervalMs: 1000
+              maxDataPoints: 43200
+              queryType: instant
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [5]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'More than 5 auth_failure events from the gateway in the last 5 minutes. Possible credential-stuffing or scanning attempt. Loki query: `{service_name="gateway"} |= "auth_failure" | json` to investigate.'
+          summary: Auth failure rate exceeded threshold
+        labels:
+          severity: high
+        isPaused: false
+
+      - uid: ws-rate-limited-spike
+        title: WebSocket rate-limit hit repeatedly
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki
+            model:
+              datasource:
+                type: loki
+                uid: loki
+              expr: 'sum(count_over_time({service_name="gateway"} |= "ws_rate_limited" [5m]))'
+              intervalMs: 1000
+              maxDataPoints: 43200
+              queryType: instant
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [20]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'More than 20 ws_rate_limited events from the gateway in 5 minutes. One client is repeatedly hitting the per-socket frame rate limit — investigate whether this is a misbehaving client or an attack.'
+          summary: WebSocket frame rate-limit triggered repeatedly
+        labels:
+          severity: medium
+        isPaused: false

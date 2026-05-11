@@ -192,7 +192,17 @@ function publishAccessEvent(event: {
   scope?: string;
   scopeValue?: string;
 }) {
-  producer?.send("user.access", { ...event, ts: Date.now() }).catch(() => {});
+  const enriched = { ...event, ts: Date.now() };
+  producer?.send("user.access", enriched).catch(() => {});
+  // F-11: also emit via the logger so events reach Loki via OTLP,
+  // not just Kafka. Loki is where alert rules query from.
+  // auth_failure and ws_rate_limited are visible at WARN; everything
+  // else stays at INFO so non-security events don't pollute alert
+  // queries that filter on level.
+  const level = event.action === "auth_failure" || event.action === "ws_rate_limited"
+    ? "warn"
+    : "info";
+  logger[level]("access_event", enriched);
 }
 
 

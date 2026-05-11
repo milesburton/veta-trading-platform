@@ -218,3 +218,34 @@ That's how you'd log in to provision dashboards or change settings.
 If you want fully gated Grafana even from LAN, set
 `GF_SECURITY_ADMIN_PASSWORD` + drop `GF_AUTH_ANONYMOUS_ENABLED`. A
 follow-up.
+
+---
+
+# Alert delivery — `ALERT_WEBHOOK_URL`
+
+`observability/grafana/provisioning/alerting/` ships two alert rules:
+
+- **Auth-failure spike** — >5 `auth_failure` events from the gateway
+  in any 5-minute window. Indicates credential-stuffing / scanning.
+- **WebSocket rate-limit hit repeatedly** — >20 `ws_rate_limited`
+  events in 5 minutes. Indicates a misbehaving or hostile client.
+
+Both rules fire into the `security-alerts` contact point. Delivery
+needs a webhook target — Slack incoming-webhook URL is the easiest:
+
+```
+# Create a Slack incoming webhook at https://api.slack.com/messaging/webhooks
+# Then add to /opt/stacks/veta/.env:
+ALERT_WEBHOOK_URL=https://hooks.slack.com/services/T.../B.../...
+```
+
+Restart Grafana after setting:
+
+```bash
+cd /opt/stacks/veta/observability
+docker compose -f docker-compose.lgtm.yml restart grafana
+```
+
+Without `ALERT_WEBHOOK_URL` set, alerts still **fire visibly in the
+Grafana UI** (left sidebar → Alerting → Active alerts), but external
+delivery is silently dropped.
