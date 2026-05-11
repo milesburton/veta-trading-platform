@@ -26,7 +26,10 @@ export function checkRoleLocked(ctx: TicketContext): {
   message: string | null;
 } {
   const role = ctx.userRole;
-  if (role && NON_TRADING_ROLES.has(role)) {
+  if (!role) {
+    return { locked: true, message: "Sign in to submit orders. Browsing in read-only mode." };
+  }
+  if (NON_TRADING_ROLES.has(role)) {
     return { locked: true, message: ROLE_MESSAGES[role] ?? "Your role cannot submit orders." };
   }
   if (role === "trader") {

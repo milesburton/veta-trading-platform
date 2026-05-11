@@ -241,6 +241,11 @@ services:
       # Optional. When set, takes precedence over OAUTH2_SHARED_SECRET
       # for the named users. Used for friends-and-family demos.
       OAUTH2_USER_SECRETS: "${OAUTH2_USER_SECRETS:-}"
+      # Enables the unauthenticated /personas endpoint that powers the
+      # demo-persona picker on the Sign-in panel. Safe to leave on for
+      # public deployments — only returns avatar, role, desk and trading
+      # style; never credentials.
+      VETA_DEMO_MODE: "${VETA_DEMO_MODE:-true}"
     labels:
       - "traefik.enable=false"
       - "traefik.http.routers.user-service.rule=PathPrefix(`/api/user-service`)"

@@ -800,9 +800,13 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const target = SVC_PROXY[svcName];
     if (target) {
       // Allowlist of unauthenticated proxy paths. Everything else needs
-      // a valid veta_user cookie. Three categories of pre-login traffic:
+      // a valid veta_user cookie. Four categories of pre-login traffic:
       //  - /api/user-service/oauth/* and /auth/* — the OAuth login flow
       //    itself runs before there's a session cookie to validate.
+      //  - /api/user-service/personas — read-only demo persona catalogue
+      //    powering the Sign-in panel. Gated by VETA_DEMO_MODE on the
+      //    user-service; safe to expose because it only returns avatar,
+      //    role, desk and trading style — never credentials.
       //  - /api/<svc>/health — the login page polls every service's
       //    /health endpoint to render the "platform degraded" indicator
       //    before the user is signed in. F-17 broke this; F-9 trimmed
@@ -814,7 +818,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       //    via the public gateway anyway.
       const PROXY_PUBLIC = (
         svcName === "user-service" &&
-        (svcPath.startsWith("/oauth/") || svcPath.startsWith("/auth/"))
+        (svcPath.startsWith("/oauth/") || svcPath.startsWith("/auth/") || svcPath === "/personas")
       ) || svcPath === "/health";
       if (!PROXY_PUBLIC) {
         const auth = await requireAuth(req);
