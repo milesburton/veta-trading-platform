@@ -36,4 +36,24 @@ describe("openOrderTicketWindow", () => {
     expect(params.get("type")).toBe("order-ticket");
     expect(params.get("layout")).toBeTruthy();
   });
+
+  it("encodes a prefill intent into the URL when provided", () => {
+    openOrderTicketWindow(undefined, {
+      side: "BUY",
+      symbol: "AAPL",
+      quantity: 500,
+      limitPrice: 200,
+    });
+    const url = (window.open as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const params = new URLSearchParams(url.split("?")[1]);
+    const prefill = params.get("prefill");
+    expect(prefill).toBeTruthy();
+    const parsed = JSON.parse(decodeURIComponent(prefill ?? ""));
+    expect(parsed).toMatchObject({
+      side: "BUY",
+      symbol: "AAPL",
+      quantity: 500,
+      limitPrice: 200,
+    });
+  });
 });

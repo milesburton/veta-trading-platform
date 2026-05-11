@@ -97,4 +97,22 @@ describe("replayApi", () => {
     );
     expect(calls.some((c) => c.url.endsWith("/sessions/s1") && c.method === "DELETE")).toBe(true);
   });
+
+  it("listSessions without args sends no pagination params", async () => {
+    installRelativeRequestSupport();
+    const fetchSpy = vi.fn(async () => {
+      return new Response(JSON.stringify({ sessions: [], total: 0 }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+    const store = createStore();
+    await store.dispatch(replayApi.endpoints.listSessions.initiate(undefined));
+    const firstCall = fetchSpy.mock.calls[0] as unknown as [RequestInfo | URL, RequestInit?];
+    const url = urlOf(firstCall[0]);
+    expect(url).toContain("/sessions");
+    expect(url).not.toContain("limit");
+    expect(url).not.toContain("offset");
+  });
 });

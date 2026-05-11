@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { panelClosed, panelPopped, windowSlice } from "../windowSlice";
+import {
+  panelClosed,
+  panelDialogClosed,
+  panelDialogOpened,
+  panelPopped,
+  windowSlice,
+} from "../windowSlice";
 
 const { reducer } = windowSlice;
 const initial = reducer(undefined, { type: "@@init" });
@@ -55,6 +61,54 @@ describe("windowSlice – panelClosed", () => {
     state = reducer(state, panelPopped({ panelId: "algo-monitor" }));
     state = reducer(state, panelClosed({ panelId: "order-blotter" }));
     expect(state.popOuts["algo-monitor"].open).toBe(true);
+  });
+});
+
+describe("windowSlice – panelDialogOpened", () => {
+  it("opens a dialog with the given panel type", () => {
+    const state = reducer(
+      initial,
+      panelDialogOpened({ panelId: "limits", panelType: "admin-limits" })
+    );
+    expect(state.dialogs.limits).toEqual({ open: true, panelType: "admin-limits" });
+  });
+
+  it("rejects unsafe keys (prototype pollution guard)", () => {
+    const state = reducer(initial, panelDialogOpened({ panelId: "__proto__", panelType: "x" }));
+    expect(Object.hasOwn(state.dialogs, "__proto__")).toBe(false);
+  });
+});
+
+describe("windowSlice – panelDialogClosed", () => {
+  it("flips open=false on an existing dialog", () => {
+    let state = reducer(
+      initial,
+      panelDialogOpened({ panelId: "limits", panelType: "admin-limits" })
+    );
+    state = reducer(state, panelDialogClosed({ panelId: "limits" }));
+    expect(state.dialogs.limits.open).toBe(false);
+  });
+
+  it("is a no-op when the dialog was never opened", () => {
+    const state = reducer(initial, panelDialogClosed({ panelId: "never-existed" }));
+    expect(state.dialogs["never-existed"]).toBeUndefined();
+  });
+
+  it("rejects unsafe keys on close", () => {
+    const state = reducer(initial, panelDialogClosed({ panelId: "constructor" }));
+    expect(state).toEqual(initial);
+  });
+});
+
+describe("windowSlice – isSafeKey guard on popOuts", () => {
+  it("panelPopped rejects __proto__", () => {
+    const state = reducer(initial, panelPopped({ panelId: "__proto__" }));
+    expect(Object.hasOwn(state.popOuts, "__proto__")).toBe(false);
+  });
+
+  it("panelClosed rejects __proto__", () => {
+    const state = reducer(initial, panelClosed({ panelId: "__proto__" }));
+    expect(state).toEqual(initial);
   });
 });
 

@@ -38,13 +38,7 @@ import {
   selectCriticalAlerts,
 } from "./store/alertsSlice.ts";
 import type { AuthUser } from "./store/authSlice.ts";
-import {
-  dismissSessionExpired,
-  sessionExpired,
-  setShowLogin,
-  setStatus,
-  setUser,
-} from "./store/authSlice.ts";
+import { sessionExpired, setStatus, setUser } from "./store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "./store/hooks.ts";
 import { store } from "./store/index.ts";
 import { reportError } from "./store/observabilitySlice.ts";
@@ -95,8 +89,6 @@ const LAST_KNOWN_USER_KEY = "veta:last-known-user";
 function AuthGate({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   const status = useAppSelector((s) => s.auth.status);
-  const showLogin = useAppSelector((s) => s.auth.showLogin);
-  const sessionWasLost = useAppSelector((s) => s.auth.sessionExpired);
 
   useEffect(() => {
     fetch(`${USER_SERVICE_URL}/sessions/me`, { credentials: "include" })
@@ -138,61 +130,11 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const showLoginModal = status === "unauthenticated" && (showLogin || sessionWasLost);
+  if (status !== "authenticated") {
+    return <LoginPage />;
+  }
 
-  return (
-    <>
-      {children}
-      {sessionWasLost && (
-        <div
-          data-testid="session-expired-banner"
-          role="alert"
-          className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-4 py-2 bg-amber-950 border-b border-amber-800 text-sm text-amber-200"
-        >
-          <span aria-hidden="true" className="text-amber-400 font-bold shrink-0">
-            ⚠
-          </span>
-          <span className="flex-1">
-            Your session has expired. Sign in again to resume placing orders.
-          </span>
-          <button
-            type="button"
-            data-testid="session-expired-sign-in"
-            onClick={() => dispatch(setShowLogin(true))}
-            className="shrink-0 px-3 py-0.5 rounded bg-amber-700 hover:bg-amber-600 text-white text-[11px] font-semibold uppercase tracking-wide transition-colors"
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            aria-label="Dismiss"
-            onClick={() => dispatch(dismissSessionExpired())}
-            className="shrink-0 text-amber-400 hover:text-amber-200 text-lg leading-none"
-          >
-            ×
-          </button>
-        </div>
-      )}
-      {showLoginModal && (
-        <div
-          data-testid="login-modal"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-        >
-          <div className="relative">
-            <button
-              type="button"
-              aria-label="Close sign-in"
-              onClick={() => dispatch(setShowLogin(false))}
-              className="absolute -top-2 -right-2 z-10 w-7 h-7 rounded-full bg-surface border border-default text-muted hover:text-primary hover:border-emerald-600 text-sm leading-none transition-colors"
-            >
-              ×
-            </button>
-            <LoginPage />
-          </div>
-        </div>
-      )}
-    </>
-  );
+  return <>{children}</>;
 }
 
 function TradingApp() {

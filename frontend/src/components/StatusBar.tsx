@@ -4,7 +4,7 @@ import { Actions, Model } from "flexlayout-react";
 import { useEffect, useRef } from "react";
 import type { AlertSeverity } from "../store/alertsSlice.ts";
 import { alertAdded, selectAlertCount, selectHighestSeverity } from "../store/alertsSlice.ts";
-import { clearUser, setShowLogin } from "../store/authSlice.ts";
+import { clearUser } from "../store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import {
   DEPLOYMENT,
@@ -655,7 +655,7 @@ export function AppHeader() {
             className="px-2 py-0.5 rounded border border-panel bg-page/60 text-[10px] text-label tabular-nums"
           />
           <span className="tabular-nums text-muted">{time.value}</span>
-          {user ? (
+          {user && (
             <div className="flex items-center gap-2 pl-3 border-l border-panel">
               <span data-testid="user-menu-btn" className="flex items-center gap-1.5 text-label">
                 <span
@@ -686,24 +686,6 @@ export function AppHeader() {
                 className="text-label hover:text-secondary transition-colors text-[10px] leading-none px-1.5 py-0.5 border border-divider hover:border-muted rounded"
               >
                 Log out
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 pl-3 border-l border-panel">
-              <span
-                data-testid="readonly-badge"
-                className="text-[9px] font-medium uppercase px-1.5 py-0.5 rounded bg-amber-900/40 text-amber-300 tracking-wide"
-                title="Read-only — sign in to place orders and access trading tools"
-              >
-                Read-only
-              </span>
-              <button
-                type="button"
-                onClick={() => dispatch(setShowLogin(true))}
-                data-testid="sign-in-btn"
-                className="px-2.5 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-semibold uppercase tracking-wide transition-colors"
-              >
-                Sign in
               </button>
             </div>
           )}
