@@ -2,7 +2,7 @@ import { useSignal } from "@preact/signals-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { sha256Async } from "../lib/sha256.ts";
 import { setUser } from "../store/authSlice.ts";
-import { useAppDispatch } from "../store/hooks.ts";
+import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { reportError } from "../store/observabilitySlice.ts";
 import {
   type DemoPersona,
@@ -156,6 +156,7 @@ export function formatApiError(err: unknown): string {
 
 export function LoginPage() {
   const dispatch = useAppDispatch();
+  const sessionWasLost = useAppSelector((s) => s.auth.sessionExpired);
   const username = useSignal("");
   const password = useSignal("");
   const localError = useSignal<string | null>(null);
@@ -241,6 +242,20 @@ export function LoginPage() {
       <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
         <div className="mx-auto max-w-6xl grid gap-6 md:grid-cols-[400px_1fr] md:items-start">
           <div className="flex flex-col gap-5">
+            {sessionWasLost && (
+              <div
+                data-testid="session-expired-banner"
+                role="alert"
+                className="flex items-center gap-3 px-3 py-2 rounded-lg border border-amber-800 bg-amber-950 text-amber-200 text-xs"
+              >
+                <span aria-hidden="true" className="text-amber-400 font-bold shrink-0">
+                  ⚠
+                </span>
+                <span className="flex-1">
+                  Your session has expired. Sign in again to resume placing orders.
+                </span>
+              </div>
+            )}
             <div>
               <h1 data-testid="login-heading" className="text-xl font-semibold text-primary mb-1">
                 Sign in

@@ -299,3 +299,117 @@ describe("gridPrefsSlice – loadGridPrefs reducer lifecycle", () => {
     expect(state.executions.sortDir).toBe("desc");
   });
 });
+
+describe("gridPrefsSlice – legacy migration via setAllPrefs", () => {
+  it("migrates a legacy cfRule with field/op/value into the expr shape", () => {
+    const legacyPrefs: AllGridPrefs = {
+      orderBlotter: {
+        filters: [],
+        filterExpr: undefined as unknown as never,
+        sortField: null,
+        sortDir: null,
+        cfRules: [
+          {
+            id: "cf1",
+            scope: "row",
+            field: "side",
+            op: "=",
+            value: "BUY",
+            style: { bg: "red" },
+            label: "Sells",
+          } as unknown as never,
+        ],
+        columnWidths: undefined as unknown as never,
+        columnOrder: undefined as unknown as never,
+      } as never,
+    } as never;
+
+    const state = reducer(initial, setAllPrefs(legacyPrefs));
+    expect(state.orderBlotter.cfRules).toHaveLength(1);
+    const rule = state.orderBlotter.cfRules[0];
+    expect(rule.expr).toBeDefined();
+    expect(rule.expr?.rules).toHaveLength(1);
+  });
+
+  it("leaves cfRules with an existing expr untouched", () => {
+    const existingExprPrefs: AllGridPrefs = {
+      orderBlotter: {
+        filters: [],
+        filterExpr: undefined as unknown as never,
+        sortField: null,
+        sortDir: null,
+        cfRules: [
+          {
+            id: "cf1",
+            scope: "row",
+            expr: {
+              kind: "group",
+              id: "g1",
+              join: "AND",
+              rules: [{ kind: "rule", id: "r1", field: "side", op: "=", value: "SELL" }],
+            },
+            style: { bg: "green" },
+            label: "Sells",
+          } as never,
+        ],
+        columnWidths: {},
+        columnOrder: [],
+      } as never,
+    } as never;
+
+    const state = reducer(initial, setAllPrefs(existingExprPrefs));
+    const firstNode = state.orderBlotter.cfRules[0].expr?.rules[0];
+    expect(firstNode && firstNode.kind === "rule" ? firstNode.value : null).toBe("SELL");
+  });
+
+  it("handles legacy cfRules with no field (gives empty rules array)", () => {
+    const prefs: AllGridPrefs = {
+      orderBlotter: {
+        filters: [],
+        filterExpr: undefined as unknown as never,
+        sortField: null,
+        sortDir: null,
+        cfRules: [{ id: "cf1", scope: "row", style: { bg: "blue" }, label: "Generic" } as never],
+        columnWidths: {},
+        columnOrder: [],
+      } as never,
+    } as never;
+
+    const state = reducer(initial, setAllPrefs(prefs));
+    expect(state.orderBlotter.cfRules[0].expr?.rules).toEqual([]);
+  });
+
+  it("ignores grid ids not present in the payload", () => {
+    const partial: AllGridPrefs = {
+      orderBlotter: {
+        filters: [{ id: "f1", field: "asset", op: "=", value: "AAPL" }],
+        filterExpr: undefined as unknown as never,
+        sortField: null,
+        sortDir: null,
+        cfRules: [],
+        columnWidths: {},
+        columnOrder: [],
+      } as never,
+    } as never;
+
+    const state = reducer(initial, setAllPrefs(partial));
+    expect(state.orderBlotter.filters).toHaveLength(1);
+    expect(state.executions.filters).toHaveLength(0);
+  });
+});
+
+describe("gridPrefsSlice – loadGridPrefs lifecycle", () => {
+  it("sets loading=true on pending", () => {
+    const state = reducer(initial, loadGridPrefs.pending("req-x", undefined));
+    expect(state.loading).toBe(true);
+  });
+
+  it("sets loading=false on rejected", () => {
+    const pending = reducer(initial, loadGridPrefs.pending("req-x", undefined));
+    const state = reducer(
+      pending,
+      loadGridPrefs.rejected(new Error("network"), "req-x", undefined)
+    );
+    expect(state.loading).toBe(false);
+  });
+});

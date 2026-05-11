@@ -102,6 +102,58 @@ describe("intelligenceSlice", () => {
     expect(state.features.MSFT.sentimentDelta).toBe(0.8);
   });
 
+  it("drops single signals with unsafe symbols (prototype-pollution guard)", () => {
+    const state = reducer(
+      undefined,
+      signalReceived({
+        symbol: "__proto__",
+        score: 0,
+        direction: "neutral",
+        confidence: 0,
+        factors: [],
+        ts: 0,
+      })
+    );
+    expect(Object.hasOwn(state.signals, "__proto__")).toBe(false);
+  });
+
+  it("drops single features with unsafe symbols", () => {
+    const state = reducer(
+      undefined,
+      featureReceived({
+        symbol: "constructor",
+        ts: 0,
+        momentum: 0,
+        relativeVolume: 0,
+        realisedVol: 0,
+        sectorRelativeStrength: 0,
+        eventScore: 0,
+        newsVelocity: 0,
+        sentimentDelta: 0,
+      })
+    );
+    expect(Object.hasOwn(state.features, "constructor")).toBe(false);
+  });
+
+  it("skips unsafe entries in batches but accepts the rest", () => {
+    const state = reducer(
+      undefined,
+      signalsBatchReceived([
+        {
+          symbol: "__proto__",
+          score: 0,
+          direction: "neutral",
+          confidence: 0,
+          factors: [],
+          ts: 0,
+        },
+        { symbol: "AAPL", score: 0.5, direction: "long", confidence: 0.5, factors: [], ts: 1 },
+      ])
+    );
+    expect(state.signals.AAPL.score).toBe(0.5);
+    expect(Object.hasOwn(state.signals, "__proto__")).toBe(false);
+  });
+
   it("keeps recommendations capped at 100 with newest first", () => {
     let state = reducer(undefined, { type: "noop" });
 
