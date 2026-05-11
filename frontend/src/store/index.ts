@@ -25,6 +25,7 @@ import { newsApi } from "./newsApi.ts";
 import { newsSlice } from "./newsSlice.ts";
 import { observabilitySlice } from "./observabilitySlice.ts";
 import { ordersSlice } from "./ordersSlice.ts";
+import { parseTicketApi } from "./parseTicketApi.ts";
 import { replayApi } from "./replayApi.ts";
 import { riskApi } from "./riskApi.ts";
 import { scenariosApi } from "./scenariosApi.ts";
@@ -60,6 +61,7 @@ export const store = configureStore({
     [gatewayApi.reducerPath]: gatewayApi.reducer,
     [gridApi.reducerPath]: gridApi.reducer,
     [newsApi.reducerPath]: newsApi.reducer,
+    [parseTicketApi.reducerPath]: parseTicketApi.reducer,
     [replayApi.reducerPath]: replayApi.reducer,
     [riskApi.reducerPath]: riskApi.reducer,
     [scenariosApi.reducerPath]: scenariosApi.reducer,
@@ -74,6 +76,7 @@ export const store = configureStore({
       .concat(gatewayApi.middleware)
       .concat(gridApi.middleware)
       .concat(newsApi.middleware)
+      .concat(parseTicketApi.middleware)
       .concat(replayApi.middleware)
       .concat(riskApi.middleware)
       .concat(scenariosApi.middleware)

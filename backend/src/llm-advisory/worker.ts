@@ -11,6 +11,7 @@ import {
   computeSystemPromptHash,
   SYSTEM_PROMPT,
 } from "./prompt-builder.ts";
+import { handleParseTicket } from "./parse-ticket-handler.ts";
 import { createMockProvider } from "./providers/mock.ts";
 import { createOllamaProvider } from "./providers/ollama.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
@@ -241,7 +242,11 @@ async function processJob(jobId: string): Promise<boolean> {
   }
 }
 
-const server = Deno.serve({ port: PORT }, (_req: Request): Response => {
+const server = Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
+  const url = new URL(req.url);
+  if (req.method === "POST" && url.pathname === "/parse-ticket") {
+    return await handleParseTicket(req, { provider });
+  }
   return new Response(
     JSON.stringify({
       service: "llm-worker",
