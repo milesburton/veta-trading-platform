@@ -46,6 +46,7 @@ const SIGNAL_ENGINE_URL = `http://${Deno.env.get("SIGNAL_ENGINE_HOST") ?? "local
 const RECOMMENDATION_ENGINE_URL = `http://${Deno.env.get("RECOMMENDATION_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("RECOMMENDATION_ENGINE_PORT") ?? "5019"}`;
 const SCENARIO_ENGINE_URL = `http://${Deno.env.get("SCENARIO_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("SCENARIO_ENGINE_PORT") ?? "5020"}`;
 const LLM_ADVISORY_URL = `http://${Deno.env.get("LLM_ADVISORY_HOST") ?? "localhost"}:${Deno.env.get("LLM_ADVISORY_PORT") ?? "5024"}`;
+const LLM_WORKER_URL = `http://${Deno.env.get("LLM_WORKER_HOST") ?? "localhost"}:${Deno.env.get("LLM_WORKER_PORT") ?? "5033"}`;
 const EMS_URL = `http://${Deno.env.get("EMS_HOST") ?? "localhost"}:${Deno.env.get("EMS_PORT") ?? "5001"}`;
 const OMS_URL = `http://${Deno.env.get("OMS_HOST") ?? "localhost"}:${Deno.env.get("OMS_PORT") ?? "5002"}`;
 const LIMIT_ALGO_URL = `http://${Deno.env.get("LIMIT_ALGO_HOST") ?? "localhost"}:${Deno.env.get("LIMIT_ALGO_PORT") ?? "5003"}`;
@@ -712,6 +713,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "sniper-algo":          SNIPER_ALGO_URL,
     "arrival-price-algo":   ARRIVAL_PRICE_ALGO_URL,
     "llm-advisory":         LLM_ADVISORY_URL,
+    "llm-worker":           LLM_WORKER_URL,
     "momentum-algo":        MOMENTUM_ALGO_URL,
     "is-algo":              IS_ALGO_URL,
     "dark-pool":            DARK_POOL_URL,
@@ -780,6 +782,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "recommendation-engine":new Set(["trader", "desk-head", "risk-manager", "admin"]),
     "scenario-engine":      new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
     "llm-advisory":         new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+    "llm-worker":           new Set(["trader", "desk-head", "risk-manager", "admin"]),
     // Dark pool / CCP / RFQ — desk-head+.
     "dark-pool":            new Set(["desk-head", "risk-manager", "compliance", "admin"]),
     "ccp-service":          new Set(["desk-head", "risk-manager", "compliance", "admin"]),

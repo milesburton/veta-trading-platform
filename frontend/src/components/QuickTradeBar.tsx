@@ -1,7 +1,13 @@
 import { useSignal } from "@preact/signals-react";
+import type React from "react";
 import { useMemo } from "react";
-import { parseQuickTrade, type QuickTradeIntent } from "../domain/quickTrade/parse.ts";
+import {
+  parseQuickTrade,
+  type QuickTradeIntent,
+  QuickTradeIntentSchema,
+} from "../domain/quickTrade/parse.ts";
 import { useAppSelector } from "../store/hooks.ts";
+import { useParseTicketMutation } from "../store/parseTicketApi.ts";
 import { selectOrderTicketWindowSize } from "../store/uiSlice.ts";
 import { openOrderTicketWindow } from "../utils/orderTicketWindow.ts";
 
@@ -20,37 +26,71 @@ export function QuickTradeBar() {
   const user = useAppSelector((s) => s.auth.user);
   const assets = useAppSelector((s) => s.market.assets);
   const ticketSize = useAppSelector(selectOrderTicketWindowSize);
+  const [parseTicket, parseTicketState] = useParseTicketMutation();
 
   const input = useSignal("");
   const flash = useSignal<{ kind: "ok" | "err"; msg: string } | null>(null);
 
   const knownSymbols = useMemo(() => new Set(assets.map((a) => a.symbol)), [assets]);
+  const symbolList = useMemo(() => assets.map((a) => a.symbol), [assets]);
 
   if (!user || user.role !== "trader") return null;
 
-  const intent = parseQuickTrade(input.value, { knownSymbols });
+  const regexIntent = parseQuickTrade(input.value, { knownSymbols });
+  const canAskAi = !regexIntent && input.value.trim().length >= 8 && !parseTicketState.isLoading;
 
   function send() {
-    if (!intent) {
+    if (!regexIntent) {
       flash.value = { kind: "err", msg: "Couldn't parse — try: buy 500 aapl @ 200 twap 30m" };
       return;
     }
-    openOrderTicketWindow(ticketSize, intent);
-    flash.value = { kind: "ok", msg: `Opened ticket → ${formatIntent(intent)}` };
+    openOrderTicketWindow(ticketSize, regexIntent);
+    flash.value = { kind: "ok", msg: `Opened ticket → ${formatIntent(regexIntent)}` };
     input.value = "";
+  }
+
+  async function askAi() {
+    const text = input.value.trim();
+    if (text.length === 0) return;
+    flash.value = { kind: "ok", msg: "Asking AI…" };
+    try {
+      const result = await parseTicket({ input: text, symbols: symbolList }).unwrap();
+      if ("intent" in result) {
+        const parsed = QuickTradeIntentSchema.safeParse(result.intent);
+        if (!parsed.success) {
+          flash.value = { kind: "err", msg: "AI response failed validation" };
+          return;
+        }
+        openOrderTicketWindow(ticketSize, parsed.data);
+        flash.value = { kind: "ok", msg: `Opened ticket → ${formatIntent(parsed.data)}` };
+        input.value = "";
+        return;
+      }
+      flash.value = { kind: "err", msg: `AI: ${result.error}` };
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      if (status === 503) {
+        flash.value = { kind: "err", msg: "AI is offline — try the shorthand grammar instead" };
+      } else if (status === 422) {
+        flash.value = { kind: "err", msg: "AI couldn't parse that — rephrase or use shorthand" };
+      } else {
+        flash.value = { kind: "err", msg: "AI request failed" };
+      }
+    }
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
-      send();
+      if (regexIntent) send();
+      else if (canAskAi) askAi();
     } else if (e.key === "Escape") {
       input.value = "";
       flash.value = null;
     }
   }
 
-  const previewClass = intent
+  const previewClass = regexIntent
     ? "text-emerald-400"
     : input.value.length > 0
       ? "text-amber-400"
@@ -72,7 +112,7 @@ export function QuickTradeBar() {
           if (flash.value) flash.value = null;
         }}
         onKeyDown={onKeyDown}
-        placeholder="buy 500 aapl @ 200 twap 30m"
+        placeholder="buy 500 aapl @ 200 twap 30m — or describe in natural language"
         aria-label="Quick trade — natural-language order entry"
         className="flex-1 bg-surface border border-panel rounded px-3 py-1 text-sm font-mono text-primary placeholder:text-subtle focus:outline-none focus:border-emerald-600"
         autoComplete="off"
@@ -83,16 +123,30 @@ export function QuickTradeBar() {
         data-testid="quick-trade-preview"
         className={`shrink-0 text-[11px] font-mono ${previewClass}`}
       >
-        {intent ? `→ ${formatIntent(intent)}` : input.value.length === 0 ? "" : "no match"}
+        {regexIntent
+          ? `→ ${formatIntent(regexIntent)}`
+          : input.value.length === 0
+            ? ""
+            : "no match"}
       </span>
       <button
         type="button"
         data-testid="quick-trade-send"
         onClick={send}
-        disabled={!intent}
+        disabled={!regexIntent}
         className="shrink-0 px-3 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-semibold uppercase tracking-wide transition-colors"
       >
         Send → Ticket
+      </button>
+      <button
+        type="button"
+        data-testid="quick-trade-ask-ai"
+        onClick={askAi}
+        disabled={!canAskAi}
+        title="Use the LLM to parse free-form instructions"
+        className="shrink-0 px-2 py-0.5 rounded border border-emerald-700 hover:bg-emerald-900/40 disabled:opacity-30 disabled:cursor-not-allowed text-emerald-300 text-[11px] font-semibold uppercase tracking-wide transition-colors"
+      >
+        {parseTicketState.isLoading ? "Asking…" : "Ask AI"}
       </button>
       {flash.value && (
         <span
