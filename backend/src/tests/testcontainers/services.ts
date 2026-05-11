@@ -86,6 +86,11 @@ export interface StartStackOptions {
   perServiceEnv?: Partial<Record<ServiceName, Record<string, string>>>;
   startupTimeoutMs?: number;
   verbose?: boolean;
+  // When set (or DENO_COVERAGE_DIR env), spawn each service with
+  // --coverage=<coverageDir>/<service-name> so .tc.test.ts runs
+  // contribute to the unified coverage report. Subprocesses get up to
+  // 3s on SIGTERM to flush coverage before SIGKILL (see killProcess).
+  coverageDir?: string;
 }
 
 function buildBaseEnv(pg: ManagedPostgres, rp: ManagedRedpanda): Record<string, string> {
@@ -190,6 +195,7 @@ function pipeToBuffer(
 
 export async function startStack(opts: StartStackOptions): Promise<TestStack> {
   const startupTimeoutMs = opts.startupTimeoutMs ?? 30_000;
+  const coverageDir = opts.coverageDir ?? Deno.env.get("DENO_COVERAGE_DIR");
 
   const pg = await startEphemeralPostgres();
   let rp: ManagedRedpanda | null = null;
@@ -218,8 +224,15 @@ export async function startStack(opts: StartStackOptions): Promise<TestStack> {
         ...(opts.perServiceEnv?.[name] ?? {}),
       };
 
+      const args = ["run", "--allow-all"];
+      if (coverageDir) {
+        // All subprocesses write to the same directory; Deno coverage
+        // profiles use random per-process filenames so they don't collide.
+        args.push(`--coverage=${coverageDir}`);
+      }
+      args.push(desc.entrypoint);
       const cmd = new Deno.Command("deno", {
-        args: ["run", "--allow-all", desc.entrypoint],
+        args,
         cwd: REPO_ROOT,
         env,
         stdout: "piped",
