@@ -35,6 +35,11 @@ http:
         burst: 120
         sourceCriterion:
           ipStrategy:
+            # depth: 0 = trust no proxies; use the TCP peer IP directly.
+            # Correct when Cloudflare is DNS-only (grey cloud). If proxy
+            # is ever enabled (orange cloud), every visitor's IP collapses
+            # to a small set of Cloudflare edge IPs and rate-limiting
+            # becomes useless. See edge/README.md.
             depth: 0
     security-headers:
       headers:
@@ -45,3 +50,21 @@ http:
         browserXssFilter: true
         referrerPolicy: "strict-origin-when-cross-origin"
         frameDeny: true
+        # script-src 'unsafe-inline' is required by frontend/index.html which
+        # has a sync <script> for theme persistence (runs before paint to
+        # avoid FOUC). Tightening this requires either a build-time SHA-256
+        # hash or moving the script to an external file with a CSP nonce —
+        # see follow-up TODO in audit doc.
+        # style-src 'unsafe-inline' is required by React inline-style props
+        # used across the codebase. Tightening means refactoring to CSS
+        # modules / classes.
+        contentSecurityPolicy: >
+          default-src 'self';
+          script-src 'self' 'unsafe-inline';
+          style-src 'self' 'unsafe-inline';
+          img-src 'self' data: blob:;
+          font-src 'self' data:;
+          connect-src 'self' wss://veta.mnetcs.com;
+          frame-ancestors 'none';
+          base-uri 'self';
+          form-action 'self'

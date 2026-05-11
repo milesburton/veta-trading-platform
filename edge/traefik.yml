@@ -27,6 +27,12 @@ certificatesResolvers:
       httpChallenge:
         entryPoint: web
 
+# insecureSkipVerify is required because the destination is
+# 127.0.0.1:18443, reached via an SSH reverse tunnel from the homelab.
+# The homelab Traefik presents a self-signed cert and the SSH tunnel
+# provides the actual transport security — cert verification at this
+# hop would be meaningless and would require shipping the homelab's CA.
+# Do not "fix" this without redesigning the tunnel.
 serversTransport:
   insecureSkipVerify: true
 

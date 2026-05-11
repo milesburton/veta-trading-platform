@@ -214,13 +214,15 @@ services:
       - NET_BIND_SERVICE
     security_opt:
       - no-new-privileges:true
+    # No `traefik.enable=true` for the Traefik service itself — the
+    # `api.insecure: true` dashboard at :8080 is published only on the
+    # host's :8888 port (LAN-only on the homelab; the SSH tunnel forwards
+    # :443, never :8888). Exposing /admin/traefik through the normal
+    # entrypoints would route the dashboard through the public hostname
+    # the moment a tunnel forwarding rule changes. Reach the dashboard
+    # at http://192.168.1.245:8888/dashboard/ from the LAN.
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik-dashboard.rule=PathPrefix(`/admin/traefik`)"
-      - "traefik.http.routers.traefik-dashboard.entrypoints=web,websecure"
-      - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-strip"
-      - "traefik.http.middlewares.traefik-strip.stripprefix.prefixes=/admin/traefik"
+      - "traefik.enable=false"
 
   # ── Ollama (local LLM) ─────────────────────────────────────────────────────
   ollama:
