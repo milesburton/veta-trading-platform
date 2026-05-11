@@ -72,7 +72,13 @@ export async function handleProxiedRoutes(
   if (path === "/orders" && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
-    return proxyGet(`${ctx.urls.journal}/orders`, req);
+    const url = new URL(req.url);
+    const role = auth.user.role;
+    const canSeeAll = role === "admin" || role === "compliance";
+    if (!canSeeAll && !url.searchParams.has("userId")) {
+      url.searchParams.set("userId", auth.user.id);
+    }
+    return proxyGet(`${ctx.urls.journal}/orders${url.search}`, req);
   }
 
   // ── Dark pool / CCP ──────────────────────────────────────────

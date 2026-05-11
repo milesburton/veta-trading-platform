@@ -542,8 +542,12 @@ async function handle(req: Request): Promise<Response> {
     const lookbackMs = Number.isFinite(lookbackMsParam) && lookbackMsParam > 0
       ? Math.min(lookbackMsParam, RETENTION_MS)
       : RETENTION_MS;
+    const userIdFilter = url.searchParams.get("userId");
     const allOrders = await reconstructOrders(lookbackMs);
-    return json(allOrders.slice(0, limit));
+    const filtered = userIdFilter
+      ? allOrders.filter((o) => (o as { userId?: string }).userId === userIdFilter)
+      : allOrders;
+    return json(filtered.slice(0, limit));
   }
 
   if (req.method === "POST" && path === "/grid/query") {

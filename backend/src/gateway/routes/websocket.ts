@@ -1,5 +1,6 @@
 import { getCookieToken } from "@veta/auth";
 import { logger } from "@veta/logger";
+import { RateLimiter } from "@veta/rate-limit";
 import {
   addAnonymousSocket,
   addUserSocket,
@@ -8,6 +9,9 @@ import {
   totalConnections,
 } from "../connections.ts";
 import type { AuthResult, GatewayContext } from "../context.ts";
+
+const WS_FRAME_CAPACITY = Number(Deno.env.get("WS_FRAME_CAPACITY")) || 100;
+const WS_FRAME_REFILL_PER_SECOND = Number(Deno.env.get("WS_FRAME_REFILL_PER_SECOND")) || 10;
 
 export interface WebSocketRouteDeps {
   validateToken: (token: string) => Promise<AuthResult | null>;
@@ -36,6 +40,11 @@ export function handleWebSocketRoute(
   const { socket, response } = Deno.upgradeWebSocket(req);
   let auth: AuthResult | null = null;
   let socketUserId: string | null = null;
+
+  const frameLimiter = new RateLimiter({
+    capacity: WS_FRAME_CAPACITY,
+    refillPerSecond: WS_FRAME_REFILL_PER_SECOND,
+  });
 
   initialAuthPromise.then((result) => {
     auth = result;
@@ -67,6 +76,19 @@ export function handleWebSocketRoute(
   };
 
   socket.onmessage = async (event) => {
+    const limit = frameLimiter.consume("socket");
+    if (!limit.allowed) {
+      ctx.publishAccessEvent({
+        action: "ws_rate_limited",
+        userId: socketUserId ?? undefined,
+        reason: `retryAfterMs=${limit.retryAfterMs}`,
+      });
+      socket.send(JSON.stringify({
+        event: "rateLimited",
+        data: { retryAfterMs: limit.retryAfterMs },
+      }));
+      return;
+    }
     try {
       const msg = JSON.parse(event.data as string) as {
         type: string;
