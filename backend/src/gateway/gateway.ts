@@ -116,6 +116,32 @@ function isWebSocketUpgrade(req: Request): boolean {
 
 const validateToken = makeValidateToken(USER_SERVICE_URL);
 
+const CSRF_ENFORCE = (Deno.env.get("CSRF_ENFORCE") ?? "true").toLowerCase() !== "false";
+
+function isCsrfSafeMethod(method: string): boolean {
+  return method === "GET" || method === "HEAD" || method === "OPTIONS";
+}
+
+function originIsAllowed(req: Request): boolean {
+  const origin = req.headers.get("origin");
+  if (origin) return ALLOWED_ORIGINS.has(origin);
+  // Fall back to Referer if Origin is missing (some legacy clients).
+  const referer = req.headers.get("referer");
+  if (!referer) {
+    // Missing both Origin and Referer is common for non-browser clients
+    // (curl, automation, Electron). The cookie + SameSite=Strict still
+    // protects browser-based CSRF. Allow it; deny only when an origin/referer
+    // is present and unrecognised (the case a malicious site triggers).
+    return true;
+  }
+  try {
+    const refOrigin = new URL(referer).origin;
+    return ALLOWED_ORIGINS.has(refOrigin);
+  } catch {
+    return false;
+  }
+}
+
 async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; limits: UserLimits } | Response> {
   const url = new URL(req.url);
   const token = getCookieToken(req);
@@ -123,6 +149,19 @@ async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; lim
     publishAccessEvent({ action: "auth_failure", path: url.pathname, reason: "no session cookie" });
     return new Response(JSON.stringify({ error: "unauthenticated" }), {
       status: 401,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+    });
+  }
+  // CSRF defence: state-changing methods must come from a trusted origin.
+  // SameSite=Strict on the cookie is the first line; this is belt-and-braces.
+  if (CSRF_ENFORCE && !isCsrfSafeMethod(req.method) && !originIsAllowed(req)) {
+    publishAccessEvent({
+      action: "auth_failure",
+      path: url.pathname,
+      reason: `csrf — origin=${req.headers.get("origin") ?? "none"} method=${req.method}`,
+    });
+    return new Response(JSON.stringify({ error: "forbidden" }), {
+      status: 403,
       headers: { "Content-Type": "application/json", ...corsHeaders(req) },
     });
   }
@@ -513,7 +552,34 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...corsHeaders(req) },
       });
     }
-    const body = await req.json() as { inProgress: boolean; message?: string };
+    let body: { inProgress: boolean; message?: string };
+    try {
+      body = await req.json() as { inProgress: boolean; message?: string };
+    } catch {
+      return new Response(JSON.stringify({ error: "invalid json" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+      });
+    }
+    if (typeof body.inProgress !== "boolean") {
+      return new Response(JSON.stringify({ error: "inProgress must be boolean" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+      });
+    }
+    if (body.message !== undefined && typeof body.message !== "string") {
+      return new Response(JSON.stringify({ error: "message must be string" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+      });
+    }
+    const MAX_MESSAGE_LEN = 280;
+    if (body.message && body.message.length > MAX_MESSAGE_LEN) {
+      return new Response(
+        JSON.stringify({ error: `message exceeds ${MAX_MESSAGE_LEN} chars` }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders(req) } },
+      );
+    }
     upgradeInProgress = body.inProgress;
     upgradeMessage = body.message ?? null;
     broadcastAll({ event: "upgradeStatus", data: { inProgress: upgradeInProgress, message: upgradeMessage } });
