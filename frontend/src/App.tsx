@@ -13,6 +13,7 @@ import {
 import { DrawersProvider } from "./components/drawers/DrawersContext.tsx";
 import { EnvironmentOverlay } from "./components/EnvironmentOverlay.tsx";
 import { LoginPage } from "./components/LoginPage.tsx";
+import { QuickTradeBar } from "./components/QuickTradeBar.tsx";
 import { StartupOverlay } from "./components/StartupOverlay.tsx";
 import { AppHeader, WorkspaceToolbar } from "./components/StatusBar.tsx";
 import {
@@ -365,6 +366,7 @@ function TradingApp() {
           className="flex flex-col h-screen bg-page text-primary overflow-hidden"
         >
           <AppHeader />
+          <QuickTradeBar />
 
           {latestCritical && (
             <div className="flex items-center gap-3 px-4 py-2 bg-red-950 border-b border-red-800 text-sm text-red-200 shrink-0">

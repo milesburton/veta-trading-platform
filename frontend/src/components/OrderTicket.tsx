@@ -4,6 +4,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useTradingContext } from "../context/TradingContext.tsx";
 import { BOND_UNIVERSE } from "../data/bondUniverse.ts";
 import { resolveSession } from "../domain/market/market-session.ts";
+import { QuickTradeIntentSchema } from "../domain/quickTrade/parse.ts";
 import type { TicketContext } from "../domain/ticket/ticket-types.ts";
 import { useTicketResolution } from "../domain/ticket/useTicketResolution.ts";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
@@ -276,6 +277,31 @@ export function OrderTicket() {
   useEffect(() => {
     registerTicketRef(assetInputRef.current);
   }, [registerTicketRef]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot mount-time prefill from URL
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = new URLSearchParams(window.location.search).get("prefill");
+    if (!raw) return;
+    try {
+      const intent = QuickTradeIntentSchema.parse(JSON.parse(decodeURIComponent(raw)));
+      assetSearch.value = intent.symbol;
+      dispatch(setActiveSide(intent.side));
+      if (intent.quantity !== undefined) quantity.value = String(intent.quantity);
+      if (intent.limitPrice !== undefined) limitPrice.value = String(intent.limitPrice);
+      if (intent.strategy) dispatch(setActiveStrategy(intent.strategy));
+      if (intent.tif) tif.value = intent.tif;
+      if (intent.twapDurationMinutes !== undefined) {
+        twapSlices.value = String(Math.max(1, Math.round(intent.twapDurationMinutes / 3)));
+      }
+      if (intent.povRatePercent !== undefined) povRate.value = String(intent.povRatePercent);
+      if (intent.icebergVisibleQty !== undefined) {
+        icebergVisible.value = String(intent.icebergVisibleQty);
+      }
+    } catch {
+      return;
+    }
+  }, []);
 
   const selectedAsset = assets.find((a) => a.symbol === assetSearch.value) ?? assets[0];
   const currentPrice = selectedAsset ? prices[selectedAsset.symbol] : undefined;
