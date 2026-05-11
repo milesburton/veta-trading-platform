@@ -128,11 +128,32 @@ setInterval(() => {
 const PORT = Number(Deno.env.get("USER_SERVICE_PORT")) || 5_008;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
+const ALLOWED_ORIGINS = new Set(
+  (Deno.env.get("CORS_ALLOWED_ORIGINS") ??
+    "http://localhost:5173,http://localhost:3000")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0),
+);
+
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
+
+const COOKIE_SECURE = (Deno.env.get("COOKIE_SECURE") ?? "true").toLowerCase() !== "false";
+const COOKIE_SAMESITE = Deno.env.get("COOKIE_SAMESITE") ?? "Strict";
+const COOKIE_BASE = `HttpOnly; SameSite=${COOKIE_SAMESITE}; Path=/${COOKIE_SECURE ? "; Secure" : ""}`;
+
+function applyCors(res: Response, req: Request): Response {
+  const origin = req.headers.get("origin");
+  if (!origin || !ALLOWED_ORIGINS.has(origin)) return res;
+  const headers = new Headers(res.headers);
+  headers.set("Access-Control-Allow-Origin", origin);
+  headers.set("Access-Control-Allow-Credentials", "true");
+  headers.append("Vary", "Origin");
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
 
 const producer = await createProducer("user-service").catch((err) => {
   logger.warn("Redpanda unavailable", { err });
@@ -330,7 +351,7 @@ async function handle(req: Request): Promise<Response> {
       } finally { client.release(); }
     }
     return json({ success: true }, 200, {
-      "Set-Cookie": "veta_user=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
+      "Set-Cookie": `veta_user=; ${COOKIE_BASE}; Max-Age=0`,
     });
   }
 
@@ -702,12 +723,15 @@ async function handle(req: Request): Promise<Response> {
           user: session.user,
         },
         200,
-        { "Set-Cookie": `veta_user=${session.token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800` },
+        { "Set-Cookie": `veta_user=${session.token}; ${COOKIE_BASE}; Max-Age=28800` },
       );
     } finally { client.release(); }
   }
 
   if (req.method === "POST" && (path === "/oauth/register" || path === "/auth/register")) {
+    if (Deno.env.get("OAUTH_ALLOW_PUBLIC_REGISTER") !== "true") {
+      return jsonError("registration disabled", 403);
+    }
     const parsed = await parseBody(req, RegisterRequestSchema);
     if (!parsed.ok) return parsed.res;
     const body = parsed.data;
@@ -742,4 +766,4 @@ async function handle(req: Request): Promise<Response> {
 }
 
 logger.info(`running on port ${PORT}`);
-Deno.serve({ port: PORT }, handle);
+Deno.serve({ port: PORT }, async (req) => applyCors(await handle(req), req));

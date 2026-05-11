@@ -68,11 +68,28 @@ const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost
 const REPLAY_URL = `http://${Deno.env.get("REPLAY_HOST") ?? "localhost"}:${Deno.env.get("REPLAY_PORT") ?? "5031"}`;
 const RISK_ENGINE_URL = `http://${Deno.env.get("RISK_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("RISK_ENGINE_PORT") ?? "5032"}`;
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
+const ALLOWED_ORIGINS = new Set(
+  (Deno.env.get("CORS_ALLOWED_ORIGINS") ??
+    "http://localhost:5173,http://localhost:3000")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0),
+);
+
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("origin");
+  const allow = origin && ALLOWED_ORIGINS.has(origin) ? origin : null;
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Vary": "Origin",
+  };
+  if (allow) {
+    headers["Access-Control-Allow-Origin"] = allow;
+    headers["Access-Control-Allow-Credentials"] = "true";
+  }
+  return headers;
+}
 
 const RATE_LIMIT_ENABLED = (Deno.env.get("RATE_LIMIT_ENABLED") ?? "true").toLowerCase() !== "false";
 
@@ -106,7 +123,7 @@ async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; lim
     publishAccessEvent({ action: "auth_failure", path: url.pathname, reason: "no session cookie" });
     return new Response(JSON.stringify({ error: "unauthenticated" }), {
       status: 401,
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
     });
   }
   const auth = await validateToken(token);
@@ -114,7 +131,7 @@ async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; lim
     publishAccessEvent({ action: "auth_failure", path: url.pathname, reason: "invalid or expired token" });
     return new Response(JSON.stringify({ error: "unauthenticated" }), {
       status: 401,
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
     });
   }
   if (RATE_LIMIT_ENABLED) {
@@ -434,7 +451,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const path = url.pathname;
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers: corsHeaders(req) });
   }
 
   if (RATE_LIMIT_ENABLED && !RATE_LIMIT_BYPASS_PATHS.has(path) && !isWebSocketUpgrade(req)) {
@@ -451,7 +468,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     if (!h) {
       return new Response(JSON.stringify({ ready: false, startedAt: STARTED_AT }), {
         status: 503,
-        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
       });
     }
     const ready = h.marketSim && h.ems && h.oms && h.journal && h.userService;
@@ -478,7 +495,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       }),
       {
         status: ready ? 200 : 503,
-        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
       },
     );
   }
@@ -493,7 +510,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     if (auth.user.role !== "admin") {
       return new Response(JSON.stringify({ error: "admin role required" }), {
         status: 403,
-        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
       });
     }
     const body = await req.json() as { inProgress: boolean; message?: string };
@@ -501,7 +518,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     upgradeMessage = body.message ?? null;
     broadcastAll({ event: "upgradeStatus", data: { inProgress: upgradeInProgress, message: upgradeMessage } });
     return new Response(JSON.stringify({ inProgress: upgradeInProgress, message: upgradeMessage }), {
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
     });
   }
 
@@ -550,14 +567,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       const resBody = await res.arrayBuffer();
       const resHeaders: Record<string, string> = {
         "Content-Type": res.headers.get("Content-Type") ?? "application/json",
-        ...CORS_HEADERS,
+        ...corsHeaders(req),
       };
       const setCookie = res.headers.get("set-cookie");
       if (setCookie) resHeaders["Set-Cookie"] = setCookie;
       return new Response(resBody, { status: res.status, headers: resHeaders });
     } catch (err) {
       return new Response(JSON.stringify({ error: (err as Error).message }), {
-        status: 502, headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        status: 502, headers: { "Content-Type": "application/json", ...corsHeaders(req) },
       });
     }
   }
@@ -633,7 +650,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return res;
   }
 
-  return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
+  return new Response("Not Found", { status: 404, headers: corsHeaders(req) });
 });
 
 logger.info(`API Gateway running on port ${PORT}`);
