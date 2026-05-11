@@ -53,6 +53,7 @@ import {
 import { newsApi } from "../newsApi.ts";
 import type { NewsItem } from "../newsSlice.ts";
 import { newsBatchReceived, newsItemReceived } from "../newsSlice.ts";
+import { reportError } from "../observabilitySlice.ts";
 import {
   childAdded,
   fillReceived,
@@ -356,10 +357,26 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
                 "raw:",
                 msg.data
               );
+              storeAPI.dispatch(
+                reportError({
+                  message: "orderRejected frame failed validation",
+                  source: "gatewayMiddleware",
+                  severity: "warn",
+                  detail: { issues: parsed.error.issues, raw: msg.data },
+                })
+              );
               break;
             }
             const { reason, clientOrderId } = parsed.data;
             console.warn("[gateway] Order rejected by gateway:", reason ?? "");
+            storeAPI.dispatch(
+              reportError({
+                message: `Order rejected by gateway: ${reason ?? "(no reason)"}`,
+                source: "gatewayMiddleware",
+                severity: "warn",
+                detail: { clientOrderId },
+              })
+            );
             if (clientOrderId) {
               storeAPI.dispatch(
                 orderPatched({
@@ -497,7 +514,15 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
           case "error": {
             const parsed = ServerErrorSchema.safeParse(msg.data);
             if (parsed.success) {
-              console.error("[gateway] Server error:", parsed.data.message ?? "");
+              const message = parsed.data.message ?? "";
+              console.error("[gateway] Server error:", message);
+              storeAPI.dispatch(
+                reportError({
+                  message: `Server error: ${message}`,
+                  source: "gatewayMiddleware",
+                  severity: "error",
+                })
+              );
             } else {
               console.error(
                 "[gateway] Server error (raw, failed validation):",
@@ -505,12 +530,30 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
                 "issues:",
                 parsed.error.issues
               );
+              storeAPI.dispatch(
+                reportError({
+                  message: "Server error frame failed validation",
+                  source: "gatewayMiddleware",
+                  severity: "error",
+                  detail: { issues: parsed.error.issues, raw: msg.data },
+                })
+              );
             }
             break;
           }
         }
       } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
         console.warn("[gateway] Unparseable frame:", err, "raw:", event.data);
+        storeAPI.dispatch(
+          reportError({
+            message: `Unparseable gateway frame: ${errMsg}`,
+            source: "gatewayMiddleware",
+            severity: "warn",
+            stack: err instanceof Error ? err.stack : undefined,
+            detail: { raw: typeof event.data === "string" ? event.data.slice(0, 500) : "<binary>" },
+          })
+        );
       }
     };
 
@@ -530,10 +573,26 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
         console.error(
           `[gateway] Disconnected — gave up after ${consecutiveFailures} attempts (code=${code} reason="${reason}"). User action required.`
         );
+        storeAPI.dispatch(
+          reportError({
+            message: `WebSocket disconnect: gave up after ${consecutiveFailures} reconnect attempts`,
+            source: "gatewayMiddleware",
+            severity: "error",
+            detail: { code, reason },
+          })
+        );
         return;
       }
       console.warn(
         `[gateway] Disconnected (attempt ${consecutiveFailures}/${MAX_CONNECT_FAILURES}, code=${code}) — reconnecting in ${reconnectDelay}ms`
+      );
+      storeAPI.dispatch(
+        reportError({
+          message: `WebSocket disconnect (attempt ${consecutiveFailures}/${MAX_CONNECT_FAILURES})`,
+          source: "gatewayMiddleware",
+          severity: "warn",
+          detail: { code, reason, reconnectDelayMs: reconnectDelay },
+        })
       );
       reconnectTimer = setTimeout(() => {
         reconnectDelay = Math.min(reconnectDelay * 2, 30_000);
@@ -543,6 +602,13 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
 
     ws.onerror = (event) => {
       console.warn("[gateway] WebSocket error", event);
+      storeAPI.dispatch(
+        reportError({
+          message: "WebSocket error event",
+          source: "gatewayMiddleware",
+          severity: "warn",
+        })
+      );
       ws?.close();
     };
   }
