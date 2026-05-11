@@ -2563,18 +2563,11 @@ const EXCHANGE_RIC_SUFFIX: Record<string, string> = {
   XCME: ".CME", XNYM: ".NYM", XCBT: ".CBT",
 };
 
-function deriveRic(symbol: string, exchange: string, assetClass?: string): string {
-  if (assetClass === "fx") return `${symbol.replace("/", "")}=X`;
-  if (assetClass === "commodity") return `${symbol.replace("!", "")}c1`;
+function deriveRic(symbol: string, exchange: string): string {
   return `${symbol.replace(".", "/")}${EXCHANGE_RIC_SUFFIX[exchange] ?? ".OQ"}`;
 }
 
-function deriveBbgTicker(symbol: string, assetClass?: string): string {
-  if (assetClass === "fx") return `${symbol.replace("/", "")} Curncy`;
-  if (assetClass === "commodity") {
-    const base = symbol.replace(/\d*!$/, "");
-    return `${base}1 Comdty`;
-  }
+function deriveBbgTicker(symbol: string): string {
   return `${symbol.replace(".", "/")} US Equity`;
 }
 

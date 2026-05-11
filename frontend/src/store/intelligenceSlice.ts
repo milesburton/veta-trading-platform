@@ -1,5 +1,6 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
+import { isSafeKey } from "./safeKey.ts";
 
 export interface FeatureVector {
   symbol: string;
@@ -55,9 +56,11 @@ export const intelligenceSlice = createSlice({
   initialState,
   reducers: {
     signalReceived(state, action: PayloadAction<Signal>) {
+      if (!isSafeKey(action.payload.symbol)) return;
       state.signals[action.payload.symbol] = action.payload;
     },
     featureReceived(state, action: PayloadAction<FeatureVector>) {
+      if (!isSafeKey(action.payload.symbol)) return;
       state.features[action.payload.symbol] = action.payload;
     },
     recommendationReceived(state, action: PayloadAction<TradeRecommendation>) {
@@ -68,11 +71,13 @@ export const intelligenceSlice = createSlice({
     },
     signalsBatchReceived(state, action: PayloadAction<Signal[]>) {
       for (const sig of action.payload) {
+        if (!isSafeKey(sig.symbol)) continue;
         state.signals[sig.symbol] = sig;
       }
     },
     featuresBatchReceived(state, action: PayloadAction<FeatureVector[]>) {
       for (const fv of action.payload) {
+        if (!isSafeKey(fv.symbol)) continue;
         state.features[fv.symbol] = fv;
       }
     },

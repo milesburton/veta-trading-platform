@@ -1,0 +1,14 @@
+name: VETA CodeQL config
+
+paths-ignore:
+  # MSW generates this file with its own service-worker glue. It only runs
+  # in tests/dev (the postmessage handler is part of MSW's protocol with
+  # the test runtime, not exposed to production code). The known
+  # `js/missing-origin-check` finding tracks an upstream MSW design choice
+  # that we don't ship to end users.
+  - "frontend/public/mockServiceWorker.js"
+  # Vendored / generated bundles. These aren't authored in this repo.
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/.next/**"
+  - "**/build/**"

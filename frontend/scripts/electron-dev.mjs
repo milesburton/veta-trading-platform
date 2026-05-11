@@ -9,7 +9,6 @@
  */
 
 import { spawn } from "child_process";
-import { createServer } from "http";
 
 const VITE_PORT = 5173;
 const VITE_URL = `http://localhost:${VITE_PORT}`;

@@ -1,6 +1,7 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
 import type { RootState } from "./index.ts";
+import { isSafeKey } from "./safeKey.ts";
 
 export interface NewsItem {
   id: string;
@@ -28,6 +29,7 @@ export const newsSlice = createSlice({
   reducers: {
     newsItemReceived(state, action: PayloadAction<NewsItem>) {
       const { symbol } = action.payload;
+      if (!isSafeKey(symbol)) return;
       const list = state.bySymbol[symbol] ?? [];
       if (list.some((i) => i.id === action.payload.id)) return;
       list.unshift(action.payload);
@@ -37,6 +39,7 @@ export const newsSlice = createSlice({
     newsBatchReceived(state, action: PayloadAction<NewsItem[]>) {
       for (const item of action.payload) {
         const { symbol } = item;
+        if (!isSafeKey(symbol)) continue;
         const list = state.bySymbol[symbol] ?? [];
         if (!list.some((i) => i.id === item.id)) {
           list.push(item);
@@ -44,9 +47,10 @@ export const newsSlice = createSlice({
         state.bySymbol[symbol] = list;
       }
       for (const symbol of Object.keys(state.bySymbol)) {
-        state.bySymbol[symbol].sort((a, b) => b.publishedAt - a.publishedAt);
-        if (state.bySymbol[symbol].length > MAX_PER_SYMBOL) {
-          state.bySymbol[symbol].length = MAX_PER_SYMBOL;
+        const list = state.bySymbol[symbol];
+        list.sort((a, b) => b.publishedAt - a.publishedAt);
+        if (list.length > MAX_PER_SYMBOL) {
+          list.length = MAX_PER_SYMBOL;
         }
       }
     },

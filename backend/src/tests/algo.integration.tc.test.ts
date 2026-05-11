@@ -325,7 +325,7 @@ Deno.test({
 
         const deadline = Date.now() + 120_000;
         let fired = false;
-        while (!fired && Date.now() < deadline) {
+        while (Date.now() < deadline) {
           const [b, s] = await Promise.all([
             pollForOrder(J, buy.clientOrderId, 5_000),
             pollForOrder(J, sell.clientOrderId, 5_000),

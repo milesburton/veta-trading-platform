@@ -1,5 +1,6 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
+import { isSafeKey } from "./safeKey.ts";
 
 export type AdvisoryStatus = "not-requested" | "queued" | "running" | "ready" | "failed" | "stale";
 
@@ -33,18 +34,20 @@ const initialState: AdvisoryState = {
   bySymbol: {},
 };
 
-function ensureEntry(state: AdvisoryState, symbol: string): AdvisoryEntry {
-  if (!state.bySymbol[symbol]) {
-    state.bySymbol[symbol] = {
-      symbol,
-      status: "not-requested",
-      jobId: null,
-      note: null,
-      errorMessage: null,
-      requestedAt: null,
-    };
-  }
-  return state.bySymbol[symbol];
+function ensureEntry(state: AdvisoryState, symbol: string): AdvisoryEntry | null {
+  if (!isSafeKey(symbol)) return null;
+  const existing = state.bySymbol[symbol];
+  if (existing) return existing;
+  const fresh: AdvisoryEntry = {
+    symbol,
+    status: "not-requested",
+    jobId: null,
+    note: null,
+    errorMessage: null,
+    requestedAt: null,
+  };
+  state.bySymbol[symbol] = fresh;
+  return fresh;
 }
 
 export const advisorySlice = createSlice({
@@ -53,6 +56,7 @@ export const advisorySlice = createSlice({
   reducers: {
     advisoryRequested(state, action: PayloadAction<{ symbol: string; jobId: string }>) {
       const entry = ensureEntry(state, action.payload.symbol);
+      if (!entry) return;
       entry.status = "queued";
       entry.jobId = action.payload.jobId;
       entry.errorMessage = null;
@@ -60,6 +64,7 @@ export const advisorySlice = createSlice({
     },
     advisoryJobRunning(state, action: PayloadAction<{ symbol: string; jobId: string }>) {
       const entry = ensureEntry(state, action.payload.symbol);
+      if (!entry) return;
       if (entry.jobId === action.payload.jobId) {
         entry.status = "running";
       }
@@ -78,6 +83,7 @@ export const advisorySlice = createSlice({
     ) {
       const p = action.payload;
       const entry = ensureEntry(state, p.symbol);
+      if (!entry) return;
       entry.status = "ready";
       entry.jobId = p.jobId;
       entry.note = {
@@ -96,10 +102,12 @@ export const advisorySlice = createSlice({
     },
     advisoryFailed(state, action: PayloadAction<{ symbol: string; error: string }>) {
       const entry = ensureEntry(state, action.payload.symbol);
+      if (!entry) return;
       entry.status = "failed";
       entry.errorMessage = action.payload.error;
     },
     advisoryMarkedStale(state, action: PayloadAction<{ symbol: string }>) {
+      if (!isSafeKey(action.payload.symbol)) return;
       const entry = state.bySymbol[action.payload.symbol];
       if (entry && entry.status === "ready") {
         entry.status = "stale";

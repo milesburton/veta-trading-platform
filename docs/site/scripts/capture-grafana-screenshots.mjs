@@ -126,9 +126,18 @@ async function main() {
 
     console.log(`\n=== ${dash.title} (${dash.uid}) — ${dash.panels.length} panels ===`);
 
+    const dashDirResolved = path.resolve(dashDir);
     for (const panel of dash.panels) {
       const fileName = `${panel.id}-${slug(panel.title)}.png`;
-      const filePath = path.join(dashDir, fileName);
+      const filePath = path.resolve(dashDir, fileName);
+      // Defence-in-depth: slug() already sanitises panel.title, but reject
+      // any resolved path that escapes the dashboard output directory so a
+      // hostile Grafana response can't be turned into an arbitrary file
+      // write under the docs tree.
+      if (!filePath.startsWith(dashDirResolved + path.sep)) {
+        console.error(`  ✗ ${panel.title}: refused path escape outside ${dashDirResolved}`);
+        continue;
+      }
       try {
         const png = await fetchPanelPng(dash.uid, panel.id);
         if (
