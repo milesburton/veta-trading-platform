@@ -1,0 +1,30 @@
+api:
+  dashboard: true
+  insecure: true
+
+ping: {}
+
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: trading-net
+
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addServicesLabels: true
+    addRoutersLabels: true
+
+accessLog:
+  format: json
+
+log:
+  level: INFO
+  format: json
