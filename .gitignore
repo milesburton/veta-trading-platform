@@ -23,3 +23,5 @@ docs/site/public/screenshots/
 docs/site/.astro/
 docs/site/src/generated/
 docs/visual-anomalies/
+compose.gate.yml
+frontend/playwright-gate-report/
