@@ -356,10 +356,8 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
             const parsed = OrderRejectedSchema.safeParse(msg.data);
             if (!parsed.success) {
               console.warn(
-                "[gateway] orderRejected frame failed validation:",
-                parsed.error.issues,
-                "raw:",
-                msg.data
+                "[gateway] orderRejected frame failed validation",
+                JSON.stringify({ issues: parsed.error.issues, raw: msg.data }).slice(0, 1000)
               );
               storeAPI.dispatch(
                 reportError({
@@ -529,10 +527,8 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
               );
             } else {
               console.error(
-                "[gateway] Server error (raw, failed validation):",
-                msg.data,
-                "issues:",
-                parsed.error.issues
+                "[gateway] Server error frame failed validation",
+                JSON.stringify({ issues: parsed.error.issues, raw: msg.data }).slice(0, 1000)
               );
               storeAPI.dispatch(
                 reportError({
@@ -548,7 +544,11 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
         }
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
-        console.warn("[gateway] Unparseable frame:", err, "raw:", event.data);
+        const rawSnippet = typeof event.data === "string" ? event.data.slice(0, 500) : "<binary>";
+        console.warn(
+          "[gateway] Unparseable frame",
+          JSON.stringify({ err: errMsg, raw: rawSnippet })
+        );
         storeAPI.dispatch(
           reportError({
             message: `Unparseable gateway frame: ${errMsg}`,
