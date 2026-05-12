@@ -41,7 +41,4 @@ The login page has a "Demo personas" panel — click any card to sign in with on
 
 ## Where it runs
 
-The canonical deployment is a homelab box (solar-powered, plenty of RAM).
-There's no public live demo right now — the public Fly.io deploy was
-disabled while the platform is right-sized to fit Fly's shared-cpu memory
-ceiling. To try it locally, follow the [overview](/veta-trading-platform/guides/overview/).
+The canonical deployment is a homelab Proxmox LXC, exposed to the public internet via a reverse SSH tunnel from an OVH dedicated server. The app lives at [`https://veta.mnetcs.com/`](https://veta.mnetcs.com/) and the dashboards at [`https://veta.mnetcs.com/grafana/`](https://veta.mnetcs.com/grafana/). To try it locally instead, follow the [overview](/veta-trading-platform/guides/overview/).

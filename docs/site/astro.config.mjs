@@ -116,7 +116,6 @@ export default defineConfig({
                     { label: "db-migrate", slug: "platform/supporting/db-migrate" },
                     { label: "Redpanda console", slug: "platform/supporting/redpanda-console" },
                     { label: "Watchtower", slug: "platform/supporting/watchtower" },
-                    { label: "flyctl", slug: "platform/supporting/flyctl" },
                   ],
                 },
                 { label: "Security posture", slug: "platform/security" },
@@ -144,6 +143,7 @@ export default defineConfig({
           label: "Reference",
           items: [
             { label: "Glossary", slug: "reference/glossary" },
+            { label: "SRE terminology", slug: "reference/sre-terminology" },
             { label: "API gateway", slug: "reference/api-gateway" },
             { label: "RBAC & permissions", slug: "reference/rbac" },
             { label: "Trading styles", slug: "reference/trading-styles" },

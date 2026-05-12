@@ -10,9 +10,10 @@ operational steps required when rolling out hardening changes to UAT.
 ## Threat model
 
 The primary attacker we defend against is **a remote actor with network
-access to the trading network** (LAN attacker on UAT, or someone who has
-compromised a service on Fly.io). The exploit chain we are most concerned
-with:
+access to the trading network** (LAN attacker on the homelab, or someone
+who has compromised a public-facing service reachable through the OVH
+edge at [`veta.mnetcs.com`](https://veta.mnetcs.com/)). The exploit chain
+we are most concerned with:
 
 1. Find a remote-code-execution bug in any internet-reachable service
    (gateway, frontend, public-facing health endpoints).
@@ -115,14 +116,6 @@ range (`userns-remap`), so even "root in container" is a low-privileged
 host user. This would substantially harden the residual privileged
 containers (Watchtower, Postgres). It is invasive (every existing
 volume needs UID migration) and is queued as its own session.
-
-### Fly.io monolith uses supervisord as root
-
-The Fly.io deployment runs all services in a single container managed
-by supervisord, which requires root. The hardening described here applies
-to local and UAT compose deployments only. Fly.io has its own hardening
-story (Fly's edge proxy, machine-level isolation) that is largely
-out of our hands.
 
 ## Migration runbook (UAT)
 

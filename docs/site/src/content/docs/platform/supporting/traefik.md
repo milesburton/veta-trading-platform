@@ -3,7 +3,7 @@ title: Traefik
 description: Ingress proxy that fronts every backend service.
 ---
 
-Traefik is the ingress proxy for every deployment except the Fly.io monolith. It listens on port 80 (and 443 in UAT with Let's Encrypt) and exposes a dashboard on port 8888.
+Traefik is the ingress proxy for every deployment. It listens on port 80 (and 443 in UAT with Let's Encrypt) and exposes a dashboard on port 8888. Public traffic for [`veta.mnetcs.com`](https://veta.mnetcs.com/) and the Grafana subpath at `/grafana/` is delivered via a reverse SSH tunnel from an OVH dedicated server into this Traefik instance.
 
 ## Routing
 
@@ -24,8 +24,8 @@ Traefik does **not** match on `Host` headers, so any hostname or IP that resolve
 | Environment | TLS terminator |
 |-------------|----------------|
 | `local` (devcontainer) | none — plain HTTP |
+| `homelab prod` (`veta.mnetcs.com`) | OVH edge terminates TLS, then tunnels HTTP into homelab Traefik |
 | `uat` (private VM) | Traefik via Let's Encrypt (`ACME_EMAIL` required) |
-| `fly` (public demo) | Fly edge — Traefik runs HTTP-only |
 
 ## Dashboard
 

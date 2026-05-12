@@ -57,6 +57,12 @@ That is the same loop a hobbyist project runs. It is not the loop a regulated tr
 
 A platform that wants to be taken seriously needs explicit targets, error budgets, and the discipline to **stop shipping features when the budget is exhausted**.
 
+<Aside type="note" title="Terms used here">
+This section uses standard Site Reliability Engineering vocabulary: **SLI** (the metric you measure), **SLO** (the target you commit to over a time window), **SLA** (the contractual promise if you miss the SLO), and **error budget** (the downtime the SLO mathematically allows). If any of these are new, see [SRE terminology](../../reference/sre-terminology) — one page that defines every term used here with VETA examples and the standard error-budget policy.
+
+In short: an SLO is a promise about user experience, an error budget is how much you're allowed to break it, and the budget makes the risk-vs-velocity trade-off explicit instead of leaving it to a manager's gut.
+</Aside>
+
 | SLI | Target | Window | Error budget |
 |---|---|---|---|
 | **User-facing availability** (`/` returns 200 + WS handshake succeeds) | 99.9% | 30 days | 43 min/month downtime |
@@ -83,19 +89,51 @@ The first two are "elite" by DORA's classification; the last two are "low perfor
 
 ### Environments
 
-Three explicit environments, no overlap:
+Three explicit environments, no overlap of running services:
 
 | Env | Host | Purpose | Promotion |
 |---|---|---|---|
-| **dev** | engineer laptop / devcontainer | day-to-day coding, fast iteration | n/a |
-| **UAT** | Proxmox node B (LXC, separate from prod) | every merge to `main` deploys here automatically; integration testing; load testing; demos | manual after 24h soak + green synthetics |
-| **prod** | Proxmox node A (existing LXC), public via OVH SSH tunnel | tagged releases only; never `:latest`; the only environment customers (and demos) see at `veta.mnetcs.com` | gated by release tag + manual approval |
+| **dev** | engineer workstation, devcontainer | day-to-day coding, fast iteration. Not 24/7. | n/a |
+| **UAT** | homelab Proxmox LXC, ports `8xxx` (separate compose project, separate DB schema, separate Redpanda topic prefix) | every merge to `main` deploys here automatically; integration testing; load testing; demos | manual after green synthetic soak |
+| **prod** | homelab Proxmox LXC, ports `5xxx` (existing prod project), public via OVH SSH tunnel | tagged releases only; never `:latest`; the only environment customers (and demos) see at `veta.mnetcs.com` | gated by release tag + manual approval |
 
-UAT runs on a **different Proxmox node** so a load test or a runaway query can't take prod down through resource contention. Both serve via Traefik on OVH:
+Both UAT and prod live on the **same homelab box** (32 cores, 64 GB RAM, 2 TB SSD, 100 TB NAS via iSCSI — plenty of headroom). They are kept apart by:
 
-- `veta.mnetcs.com` — prod
-- `uat.veta.mnetcs.com` — UAT
-- (dev is local-only, no public route)
+- **Compose project name**: `veta` for prod, `veta-uat` for UAT. Each project gets its own Docker network, its own container names, and its own volumes.
+- **Port range**: prod uses the existing `5xxx` range, UAT uses `8xxx`. Traefik on OVH routes each public hostname to the correct port via separate SSH tunnels.
+- **Database**: separate Postgres database (`veta_prod` vs `veta_uat`) on the same Postgres instance, or separate Postgres containers if isolation needs to be stronger.
+- **Bus**: separate Redpanda topic prefix (`uat.orders.new` vs `orders.new`). Same broker, no cross-talk.
+- **Resource limits**: UAT containers get explicit CPU/memory caps in `compose.uat.yml` so a UAT load test cannot starve prod of resources. Prod has no caps — it gets first claim on the host.
+
+Public routing on the OVH edge:
+
+- `veta.mnetcs.com` → prod, via existing SSH tunnel
+- `uat.veta.mnetcs.com` → UAT, via second SSH tunnel on a different local port
+
+(Dev runs on the workstation when actively coding; no public route, no automatic promotion path.)
+
+<Aside type="note" title="Why same-box UAT is acceptable">
+A real bank would use separate hardware for UAT to model real prod isolation. We make a deliberate trade-off: same hardware, **strict process isolation** (separate Docker network, separate DB, separate topic namespace, resource limits). The single failure mode this doesn't catch is "host hardware dies" — which is also a SEV1 for prod and is addressed by Phase 6 (multi-host).
+</Aside>
+
+### Single-instance topology: rolling deploys, not high availability
+
+Today each environment runs **one replica** of every service. A deploy therefore takes that replica down briefly while the new one starts. That's the gap a real platform would not accept: any deploy = visible downtime, any single-process crash = visible downtime, and we have no second instance to fall back on. The user reporting "the feed is still down" during today's outages was watching exactly this gap.
+
+We do not yet have the headroom (or operational maturity) to run multi-replica services across multiple hosts — that's Phase 6 (multi-host prod, separate hardware). What we **can** do today, on the same single host, is run deploys in a way the user never sees:
+
+- **`update_config: order: start-first`** (Swarm) — bring the new container up, wait for its healthcheck, then drop the old one. The two coexist briefly on different internal IDs. Memory cost: a few hundred MB during the cutover window. Wall-clock downtime per service: ~0 seconds for stateless services; very brief for the bus-coupled ones.
+- **WebSocket reconnect on the client side** — already shipped in PR #194 and PR #196. A tab that loses its socket during the brief swap reconnects within ~1s and the user sees a 1-frame pause rather than a "Connection lost" banner.
+- **Healthcheck-gated rollback** — if the new container fails its healthcheck, Swarm leaves the old one running and surfaces the failure. The user never sees the broken version.
+
+This is **rolling deploy on a single replica** — the cheap, high-value win we can take immediately. It removes deploy-induced downtime entirely without buying a second host.
+
+What it does **not** give us:
+
+- Crash protection: if the single replica panics, that service is briefly unavailable until Swarm restarts it (typically < 5s with `restart: always` and a watchdog). For order-flow services this can drop in-flight WS messages.
+- Host failure protection: a homelab reboot or hardware fault takes the whole platform down. RTO ≈ time-to-restart-the-host.
+
+Both of those are addressed by Phase 6, when we run multiple replicas across multiple hosts. A second physical node is offered (an additional homelab Proxmox node) but deferred until Phase 6 — the single-node rolling-deploy gain comes first because it solves the user-visible problem today.
 
 ### Deploy mechanism: Docker Swarm, single-node first
 
@@ -244,9 +282,9 @@ Five working days. Each phase is a single PR, reviewed and watched before the ne
 
 **PR scope**:
 
-- Stand up a new Proxmox LXC for UAT on a separate node.
-- `compose.uat.yml` overlay: different DB schema, different Redpanda topic prefix, different ports.
-- Traefik on OVH adds `uat.veta.mnetcs.com` routing through a second SSH tunnel.
+- Add a second compose project on the homelab for UAT (`veta-uat`), bound to the `8xxx` port range. Same host as prod, isolated via Docker network, separate Postgres DB, separate Redpanda topic prefix.
+- `compose.uat.yml` overlay: different DB name, different topic prefix, different port bindings, explicit CPU/memory caps so a UAT load test cannot starve prod.
+- Traefik on OVH adds `uat.veta.mnetcs.com` routing through a second reverse SSH tunnel on a different local port.
 - GitHub Actions: every merge to `main` deploys to UAT automatically.
 - Prod is no longer auto-deployed. Tagged release (e.g. `v1.36.0`) → manual `scripts/promote-to-prod.sh` runs the same deploy state machine against prod, requires explicit confirmation.
 
@@ -254,7 +292,7 @@ Five working days. Each phase is a single PR, reviewed and watched before the ne
 
 - Merging a PR to `main` ships to UAT within 15 minutes; prod is unchanged.
 - A `make demo` against `uat.veta.mnetcs.com` exercises every dashboard path.
-- A load test against UAT does not affect prod (verified by running a sustained 100 req/s test against UAT while a synthetic probe runs against prod, with no SLO breaches).
+- A load test against UAT does not affect prod (verified by running a sustained 100 req/s test against UAT while a synthetic probe runs against prod, with no SLO breaches — UAT resource caps must hold).
 - Promoting to prod requires a tag AND a manual confirmation step; no automated path from `main` to prod.
 
 ### Phase 4 — Synthetic monitoring + alerting (Day 3, morning)
@@ -296,9 +334,9 @@ Five working days. Each phase is a single PR, reviewed and watched before the ne
 
 **Acceptance criteria**:
 
-- Killing the homelab LXC (`shutdown -h now`) results in continued service from the remaining nodes within 60 seconds, with the synthetic probe seeing no more than 1 failed probe.
+- Killing the homelab host (`shutdown -h now` on the box that previously carried all of prod) results in continued service from the remaining Swarm nodes within 60 seconds, with the synthetic probe seeing no more than 1 failed probe.
 - Postgres failover completes within 30 seconds of primary loss; RPO < 1 minute verified.
-- A full disaster scenario (all homelab data lost) recovers from VPS-stored backups within 30 minutes, ≤ 5 min of data loss.
+- A full disaster scenario (all homelab data lost) recovers from off-site backups within 30 minutes, ≤ 5 min of data loss.
 
 ## What this is not
 

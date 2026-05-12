@@ -1,40 +1,27 @@
 ---
 title: Deployment
-description: How to deploy VETA to the homelab, Fly.io (manual), or locally.
+description: How to deploy VETA to the homelab or locally.
 sidebar:
   order: 7
 ---
 
 ## Homelab (canonical)
 
-The platform is currently deployed only to a homelab box (solar-powered, plenty of resources). Per-service Docker images are built by CI on every main push and pushed to GHCR; Watchtower on the homelab polls every 5 minutes and restarts containers when a new `:latest` is available. See the [supporting services overview](/veta-trading-platform/platform/supporting-services/) for the homelab compose file shape.
+The platform is deployed to a homelab host (Proxmox LXC, 32 cores, 64 GB RAM, 2 TB SSD, NAS-backed storage). Per-service Docker images are built by CI on every `main` push and pushed to GHCR; Watchtower on the homelab polls every five minutes and restarts containers when a new `:latest` tag is available. See the [supporting services overview](/veta-trading-platform/platform/supporting-services/) for the homelab compose layout, and the [operations strategy](/veta-trading-platform/platform/operations-strategy/) for the planned Swarm-based replacement.
 
-## Fly.io (manual deploy only)
+## Public URLs
 
-Auto-deploy on main push is **disabled** while the platform is right-sized to fit Fly's shared-cpu memory ceiling. The workflow file is kept so the deploy recipe stays self-documenting; trigger a one-off deploy via:
+| Surface | URL |
+|---------|-----|
+| Application | [`https://veta.mnetcs.com/`](https://veta.mnetcs.com/) |
+| Grafana dashboards | [`https://veta.mnetcs.com/grafana/`](https://veta.mnetcs.com/grafana/) |
 
-```sh
-gh workflow run deploy.yml --ref main
-```
-
-Or from the local CLI:
-
-```sh
-flyctl deploy --dockerfile Dockerfile.fly --remote-only \
-  --build-arg VITE_COMMIT_SHA=$(git rev-parse --short HEAD) \
-  --build-arg VITE_BUILD_DATE=$(date -u +%Y-%m-%d)
-```
-
-`fly.toml` sets `auto_start_machines=false`, `auto_stop_machines=suspend`, and `min_machines_running=0`. After a deploy the new image is rolled but machines remain stopped; start them manually with `flyctl machine start <id>`.
-
-To re-enable on every main push, restore the `push: branches: main` trigger in [`.github/workflows/deploy.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/deploy.yml).
+Both are served by Traefik on the homelab and exposed to the public internet through a reverse SSH tunnel from an OVH dedicated server. There is no Fly.io deployment.
 
 ## Local development
 
 The dev container's `post-start.sh` runs `docker compose up -d` automatically
-on container start. Services are managed by Docker Compose, not supervisord
-(supervisord is only used inside the Fly.io image, where every service runs
-as a process under one container).
+on container start. Services are managed by Docker Compose.
 
 ```sh
 # Restart the stack (services managed by Compose)
@@ -55,5 +42,5 @@ cd frontend && npm run electron:dev
 | `OAUTH2_SHARED_SECRET` | `veta-dev-passcode` | Demo login passcode |
 | `RISK_ENGINE_ENABLED` | `true` | Enable/disable pre-trade risk checks |
 | `VETA_DEMO_MODE` | `true` | Show demo personas on login page |
-| `JOURNAL_RETENTION_DAYS` | `90` (local) / `1` (Fly.io) | Event retention period |
+| `JOURNAL_RETENTION_DAYS` | `90` | Event retention period |
 | `LLM_ENABLED` | `false` | Enable Ollama LLM advisory |
