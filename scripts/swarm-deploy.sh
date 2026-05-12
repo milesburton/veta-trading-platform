@@ -47,18 +47,19 @@ sync_configs() {
   done
 }
 
-if [[ -f "$STACK_DIR/.env" ]]; then
-  set -a
-  # shellcheck disable=SC1091
-  . "$STACK_DIR/.env"
-  set +a
-fi
-
 log "Syncing config files from repo..."
 sync_configs
 
-log "Logging in to GHCR for image pulls..."
+if [[ -f "$STACK_DIR/.env" ]]; then
+  ENV_FILE_ARG=(--env-file "$STACK_DIR/.env")
+else
+  ENV_FILE_ARG=()
+fi
+
+GHCR_USER=$(grep -E "^GHCR_USER=" "$STACK_DIR/.env" 2>/dev/null | head -1 | cut -d= -f2- || true)
+GHCR_TOKEN=$(grep -E "^GHCR_TOKEN=" "$STACK_DIR/.env" 2>/dev/null | head -1 | cut -d= -f2- || true)
 if [[ -n "${GHCR_USER:-}" && -n "${GHCR_TOKEN:-}" ]]; then
+  log "Logging in to GHCR..."
   echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
 fi
 
@@ -66,15 +67,37 @@ log "Resolving compose to a Swarm bundle..."
 RESOLVED_COMPOSE=$(mktemp)
 trap 'rm -f "$RESOLVED_COMPOSE"' EXIT
 docker compose \
+  "${ENV_FILE_ARG[@]}" \
   -f compose.yml \
   -f compose.prod.yml \
   -f compose.observability.yml \
   -f compose.swarm.yml \
   config > "$RESOLVED_COMPOSE"
 
+sed -i \
+  -e '/^    mem_limit:/d' \
+  -e '/^    restart:/d' \
+  -e '/^    pull_policy:/d' \
+  -e '/^    profiles:/d' \
+  -e 's/published: "\([0-9]\+\)"/published: \1/' \
+  "$RESOLVED_COMPOSE"
+
+python3 - "$RESOLVED_COMPOSE" <<'PY'
+import sys, yaml
+path = sys.argv[1]
+with open(path) as f:
+    d = yaml.safe_load(f)
+d.pop("name", None)
+for svc in (d.get("services") or {}).values():
+    dep = svc.get("depends_on")
+    if isinstance(dep, dict):
+        svc["depends_on"] = list(dep.keys())
+with open(path, "w") as f:
+    yaml.safe_dump(d, f, default_flow_style=False, sort_keys=False)
+PY
+
 log "Deploying stack '$STACK_NAME'..."
 docker stack deploy \
-  --detach=true \
   --resolve-image=always \
   --with-registry-auth \
   -c "$RESOLVED_COMPOSE" \
