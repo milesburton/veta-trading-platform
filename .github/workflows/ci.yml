@@ -1073,25 +1073,29 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      - name: Compute short SHA
+        id: sha
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v6
         with:
           images: ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}
           tags: |
-            type=sha,prefix=
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ steps.sha.outputs.short }}
 
       - name: Read app version
         id: appver
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Build and push ${{ matrix.service }}
+      - name: Build ${{ matrix.service }} (cache only)
         uses: docker/build-push-action@v7
         with:
           context: .
           file: ${{ matrix.file }}
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: false
+          load: false
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
             BASE_TAG=${{ needs.docker-base.outputs.base-tag }}
@@ -1100,9 +1104,248 @@ jobs:
             VITE_COMMIT_SHA=${{ github.sha }}
             VITE_BUILD_DATE=${{ github.run_started_at }}
             VITE_APP_VERSION=${{ steps.appver.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
-  # Homelab deploy is handled by a systemd timer on the homelab itself
-  # (scripts/homelab-auto-pull.sh) — GH Actions runners can't reach the
-  # private LAN. See scripts/homelab-systemd/README.md for setup.
+  deploy-gate:
+    name: Deploy gate (compose + smoke)
+    runs-on: ubuntu-latest
+    needs: [docker-base, docker-services]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compute short SHA
+        id: sha
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Read app version
+        id: appver
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Rebuild all service images from cache (load locally)
+        env:
+          BASE_TAG: ${{ needs.docker-base.outputs.base-tag }}
+          COMMIT_SHA: ${{ github.sha }}
+          VITE_DEPLOYMENT: uat
+          BUILD_DATE: ${{ github.run_started_at }}
+          APP_VERSION: ${{ steps.appver.outputs.version }}
+          GATE_TAG: ${{ steps.sha.outputs.short }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r svc; do
+            [[ -z "$svc" ]] && continue
+            file="docker/${svc}/Dockerfile"
+            tag="ghcr.io/milesburton/veta-trading-platform/${svc}:${GATE_TAG}"
+            echo "::group::Build $svc from cache"
+            docker buildx build \
+              --file "$file" \
+              --tag "$tag" \
+              --build-arg "BASE_TAG=${BASE_TAG}" \
+              --build-arg "COMMIT_SHA=${COMMIT_SHA}" \
+              --build-arg "VITE_DEPLOYMENT=${VITE_DEPLOYMENT}" \
+              --build-arg "VITE_COMMIT_SHA=${COMMIT_SHA}" \
+              --build-arg "VITE_BUILD_DATE=${BUILD_DATE}" \
+              --build-arg "VITE_APP_VERSION=${APP_VERSION}" \
+              --cache-from "type=gha,scope=${svc}" \
+              --load \
+              .
+            echo "::endgroup::"
+          done < scripts/gate-services.txt
+          docker image ls "ghcr.io/milesburton/veta-trading-platform/*" --format '{{.Repository}}:{{.Tag}} {{.Size}}' | sort
+
+      - name: Set up Node + Playwright
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps (for Playwright)
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate gate compose override
+        env:
+          GATE_TAG: ${{ steps.sha.outputs.short }}
+        run: ./scripts/emit-gate-compose-override.sh compose.gate.yml
+
+      - name: Bring up the gate stack
+        env:
+          GATE_TAG: ${{ steps.sha.outputs.short }}
+          VETA_ALLOW_DEFAULT_PASSCODE: "true"
+          VETA_DEMO_MODE: "true"
+        run: |
+          set -euo pipefail
+          docker compose -f compose.yml -f compose.gate.yml --profile trading up -d
+          docker compose -f compose.yml -f compose.gate.yml ps
+
+      - name: Wait for stack readiness
+        env:
+          BASE_URL: http://localhost
+          TIMEOUT: "180"
+        run: ./scripts/wait-for-stack.sh
+
+      - name: Run Playwright gate suite
+        working-directory: frontend
+        env:
+          GATE_BASE_URL: http://localhost
+          CI: "true"
+        run: npx playwright test --config=playwright.gate.config.ts
+
+      - name: Collect compose logs on failure
+        if: failure()
+        run: |
+          mkdir -p /tmp/gate-logs
+          docker compose -f compose.yml -f compose.gate.yml ps > /tmp/gate-logs/ps.txt || true
+          for svc in gateway frontend market-sim user-service oms ems traefik postgres redpanda journal; do
+            docker compose -f compose.yml -f compose.gate.yml logs --no-color --tail=300 "$svc" \
+              > "/tmp/gate-logs/${svc}.log" 2>&1 || true
+          done
+
+      - name: Upload gate diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-diagnostics
+          path: |
+            /tmp/gate-logs
+            frontend/playwright-gate-report
+            frontend/test-results
+          retention-days: 7
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f compose.yml -f compose.gate.yml down -v --remove-orphans || true
+
+  publish-latest:
+    name: Publish ${{ matrix.service }} :latest (gated)
+    runs-on: ubuntu-latest
+    needs: [docker-base, docker-services, deploy-gate]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: frontend
+            file: docker/frontend/Dockerfile
+          - service: market-sim
+            file: docker/market-sim/Dockerfile
+          - service: ems
+            file: docker/ems/Dockerfile
+          - service: oms
+            file: docker/oms/Dockerfile
+          - service: limit-algo
+            file: docker/limit-algo/Dockerfile
+          - service: twap-algo
+            file: docker/twap-algo/Dockerfile
+          - service: pov-algo
+            file: docker/pov-algo/Dockerfile
+          - service: vwap-algo
+            file: docker/vwap-algo/Dockerfile
+          - service: iceberg-algo
+            file: docker/iceberg-algo/Dockerfile
+          - service: sniper-algo
+            file: docker/sniper-algo/Dockerfile
+          - service: arrival-price-algo
+            file: docker/arrival-price-algo/Dockerfile
+          - service: momentum-algo
+            file: docker/momentum-algo/Dockerfile
+          - service: is-algo
+            file: docker/is-algo/Dockerfile
+          - service: observability
+            file: docker/observability/Dockerfile
+          - service: user-service
+            file: docker/user-service/Dockerfile
+          - service: journal
+            file: docker/journal/Dockerfile
+          - service: fix-exchange
+            file: docker/fix-exchange/Dockerfile
+          - service: fix-gateway
+            file: docker/fix-gateway/Dockerfile
+          - service: fix-archive
+            file: docker/fix-archive/Dockerfile
+          - service: analytics
+            file: docker/analytics/Dockerfile
+          - service: market-data
+            file: docker/market-data/Dockerfile
+          - service: market-data-adapters
+            file: docker/market-data-adapters/Dockerfile
+          - service: feature-engine
+            file: docker/feature-engine/Dockerfile
+          - service: signal-engine
+            file: docker/signal-engine/Dockerfile
+          - service: recommendation-engine
+            file: docker/recommendation-engine/Dockerfile
+          - service: scenario-engine
+            file: docker/scenario-engine/Dockerfile
+          - service: llm-advisory
+            file: docker/llm-advisory/Dockerfile
+          - service: llm-worker
+            file: docker/llm-worker/Dockerfile
+          - service: news-aggregator
+            file: docker/news-aggregator/Dockerfile
+          - service: gateway
+            file: docker/gateway/Dockerfile
+          - service: dark-pool
+            file: docker/dark-pool/Dockerfile
+          - service: ccp-service
+            file: docker/ccp-service/Dockerfile
+          - service: rfq-service
+            file: docker/rfq-service/Dockerfile
+          - service: product-service
+            file: docker/product-service/Dockerfile
+          - service: replay-service
+            file: docker/replay-service/Dockerfile
+          - service: risk-engine
+            file: docker/risk-engine/Dockerfile
+          - service: db-migrate
+            file: docker/db-migrate/Dockerfile
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compute short SHA
+        id: sha
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Read app version
+        id: appver
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Push ${{ matrix.service }} (:sha + :latest from cache)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          push: true
+          tags: |
+            ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}:${{ steps.sha.outputs.short }}
+            ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}:latest
+          build-args: |
+            BASE_TAG=${{ needs.docker-base.outputs.base-tag }}
+            COMMIT_SHA=${{ github.sha }}
+            VITE_DEPLOYMENT=uat
+            VITE_COMMIT_SHA=${{ github.sha }}
+            VITE_BUILD_DATE=${{ github.run_started_at }}
+            VITE_APP_VERSION=${{ steps.appver.outputs.version }}
+          cache-from: type=gha,scope=${{ matrix.service }}
