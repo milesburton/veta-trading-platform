@@ -21,13 +21,11 @@ services:
     mem_limit: 768m
     labels:
       - "traefik.enable=false"
-      - "com.centurylinklabs.watchtower.enable=false"
 
   postgres:
     <<: *prod-defaults
     labels:
       - "traefik.enable=false"
-      - "com.centurylinklabs.watchtower.enable=false"
 
   # Application services — use GHCR images + Watchtower
   frontend:
@@ -46,7 +44,6 @@ services:
       - "traefik.http.routers.frontend.middlewares=origin-ratelimit"
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
       - "traefik.http.routers.frontend.priority=1"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   market-sim:
     <<: *prod-defaults
@@ -60,7 +57,6 @@ services:
       - "traefik.http.routers.market-sim.middlewares=market-sim-strip"
       - "traefik.http.services.market-sim.loadbalancer.server.port=5000"
       - "traefik.http.routers.market-sim.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   ems:
     <<: *prod-defaults
@@ -74,7 +70,6 @@ services:
       - "traefik.http.routers.ems.middlewares=ems-strip"
       - "traefik.http.services.ems.loadbalancer.server.port=5001"
       - "traefik.http.routers.ems.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   oms:
     <<: *prod-defaults
@@ -88,7 +83,6 @@ services:
       - "traefik.http.routers.oms.middlewares=oms-strip"
       - "traefik.http.services.oms.loadbalancer.server.port=5002"
       - "traefik.http.routers.oms.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   limit-algo:
     <<: *prod-defaults
@@ -102,7 +96,6 @@ services:
       - "traefik.http.routers.limit-algo.middlewares=limit-algo-strip"
       - "traefik.http.services.limit-algo.loadbalancer.server.port=5003"
       - "traefik.http.routers.limit-algo.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   twap-algo:
     <<: *prod-defaults
@@ -116,7 +109,6 @@ services:
       - "traefik.http.routers.twap-algo.middlewares=twap-algo-strip"
       - "traefik.http.services.twap-algo.loadbalancer.server.port=5004"
       - "traefik.http.routers.twap-algo.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   pov-algo:
     <<: *prod-defaults
@@ -130,7 +122,6 @@ services:
       - "traefik.http.routers.pov-algo.middlewares=pov-algo-strip"
       - "traefik.http.services.pov-algo.loadbalancer.server.port=5005"
       - "traefik.http.routers.pov-algo.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   vwap-algo:
     <<: *prod-defaults
@@ -144,7 +135,6 @@ services:
       - "traefik.http.routers.vwap-algo.middlewares=vwap-algo-strip"
       - "traefik.http.services.vwap-algo.loadbalancer.server.port=5006"
       - "traefik.http.routers.vwap-algo.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   iceberg-algo:
     <<: *prod-defaults
@@ -158,7 +148,6 @@ services:
       - "traefik.http.routers.iceberg-algo.middlewares=iceberg-algo-strip"
       - "traefik.http.services.iceberg-algo.loadbalancer.server.port=5021"
       - "traefik.http.routers.iceberg-algo.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   sniper-algo:
     <<: *prod-defaults
@@ -172,7 +161,6 @@ services:
       - "traefik.http.routers.sniper-algo.middlewares=sniper-algo-strip"
       - "traefik.http.services.sniper-algo.loadbalancer.server.port=5022"
       - "traefik.http.routers.sniper-algo.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   arrival-price-algo:
     <<: *prod-defaults
@@ -186,7 +174,6 @@ services:
       - "traefik.http.routers.arrival-price-algo.middlewares=arrival-price-algo-strip"
       - "traefik.http.services.arrival-price-algo.loadbalancer.server.port=5023"
       - "traefik.http.routers.arrival-price-algo.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   momentum-algo:
     <<: *prod-defaults
@@ -200,7 +187,6 @@ services:
       - "traefik.http.routers.momentum-algo.middlewares=momentum-algo-strip"
       - "traefik.http.services.momentum-algo.loadbalancer.server.port=5025"
       - "traefik.http.routers.momentum-algo.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   is-algo:
     <<: *prod-defaults
@@ -214,7 +200,6 @@ services:
       - "traefik.http.routers.is-algo.middlewares=is-algo-strip"
       - "traefik.http.services.is-algo.loadbalancer.server.port=5026"
       - "traefik.http.routers.is-algo.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   kafka-relay:
     <<: *prod-defaults
@@ -228,7 +213,6 @@ services:
       - "traefik.http.routers.kafka-relay.middlewares=kafka-relay-strip"
       - "traefik.http.services.kafka-relay.loadbalancer.server.port=5007"
       - "traefik.http.routers.kafka-relay.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   user-service:
     <<: *prod-defaults
@@ -253,7 +237,6 @@ services:
       - "traefik.http.routers.user-service.middlewares=user-service-strip"
       - "traefik.http.services.user-service.loadbalancer.server.port=5008"
       - "traefik.http.routers.user-service.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   journal:
     <<: *prod-defaults
@@ -267,7 +250,6 @@ services:
       - "traefik.http.routers.journal.middlewares=journal-strip"
       - "traefik.http.services.journal.loadbalancer.server.port=5009"
       - "traefik.http.routers.journal.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   fix-exchange:
     <<: *prod-defaults
@@ -281,7 +263,6 @@ services:
       - "traefik.http.routers.fix-exchange.middlewares=fix-exchange-strip"
       - "traefik.http.services.fix-exchange.loadbalancer.server.port=9880"
       - "traefik.http.routers.fix-exchange.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   fix-gateway:
     <<: *prod-defaults
@@ -295,7 +276,6 @@ services:
       - "traefik.http.routers.fix-gateway.middlewares=fix-gateway-strip"
       - "traefik.http.services.fix-gateway.loadbalancer.server.port=9881"
       - "traefik.http.routers.fix-gateway.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   fix-archive:
     <<: *prod-defaults
@@ -309,7 +289,6 @@ services:
       - "traefik.http.routers.fix-archive.middlewares=fix-archive-strip"
       - "traefik.http.services.fix-archive.loadbalancer.server.port=5012"
       - "traefik.http.routers.fix-archive.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   analytics:
     <<: *prod-defaults
@@ -323,7 +302,6 @@ services:
       - "traefik.http.routers.analytics.middlewares=analytics-strip"
       - "traefik.http.services.analytics.loadbalancer.server.port=5014"
       - "traefik.http.routers.analytics.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   market-data:
     <<: *prod-defaults
@@ -337,7 +315,6 @@ services:
       - "traefik.http.routers.market-data.middlewares=market-data-strip"
       - "traefik.http.services.market-data.loadbalancer.server.port=5015"
       - "traefik.http.routers.market-data.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   market-data-adapters:
     <<: *prod-defaults
@@ -351,7 +328,6 @@ services:
       - "traefik.http.routers.market-data-adapters.middlewares=market-data-adapters-strip"
       - "traefik.http.services.market-data-adapters.loadbalancer.server.port=5016"
       - "traefik.http.routers.market-data-adapters.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   feature-engine:
     <<: *prod-defaults
@@ -365,7 +341,6 @@ services:
       - "traefik.http.routers.feature-engine.middlewares=feature-engine-strip"
       - "traefik.http.services.feature-engine.loadbalancer.server.port=5017"
       - "traefik.http.routers.feature-engine.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   signal-engine:
     <<: *prod-defaults
@@ -379,7 +354,6 @@ services:
       - "traefik.http.routers.signal-engine.middlewares=signal-engine-strip"
       - "traefik.http.services.signal-engine.loadbalancer.server.port=5018"
       - "traefik.http.routers.signal-engine.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   recommendation-engine:
     <<: *prod-defaults
@@ -393,7 +367,6 @@ services:
       - "traefik.http.routers.recommendation-engine.middlewares=recommendation-engine-strip"
       - "traefik.http.services.recommendation-engine.loadbalancer.server.port=5019"
       - "traefik.http.routers.recommendation-engine.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   scenario-engine:
     <<: *prod-defaults
@@ -407,7 +380,6 @@ services:
       - "traefik.http.routers.scenario-engine.middlewares=scenario-engine-strip"
       - "traefik.http.services.scenario-engine.loadbalancer.server.port=5020"
       - "traefik.http.routers.scenario-engine.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   llm-advisory:
     <<: *prod-defaults
@@ -432,7 +404,6 @@ services:
       - "traefik.http.routers.llm-advisory.middlewares=llm-advisory-strip"
       - "traefik.http.services.llm-advisory.loadbalancer.server.port=5024"
       - "traefik.http.routers.llm-advisory.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   llm-worker:
     <<: *prod-defaults
@@ -447,7 +418,6 @@ services:
       LLM_ENABLED: "false"
     labels:
       - "traefik.enable=false"
-      - "com.centurylinklabs.watchtower.enable=false"
 
   news-aggregator:
     <<: *prod-defaults
@@ -456,7 +426,6 @@ services:
     profiles: !reset []
     labels:
       - "traefik.enable=false"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   dark-pool:
     <<: *prod-defaults
@@ -470,7 +439,6 @@ services:
       - "traefik.http.routers.dark-pool.middlewares=dark-pool-strip"
       - "traefik.http.services.dark-pool.loadbalancer.server.port=5027"
       - "traefik.http.routers.dark-pool.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   ccp-service:
     <<: *prod-defaults
@@ -484,7 +452,6 @@ services:
       - "traefik.http.routers.ccp-service.middlewares=ccp-service-strip"
       - "traefik.http.services.ccp-service.loadbalancer.server.port=5028"
       - "traefik.http.routers.ccp-service.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   rfq-service:
     <<: *prod-defaults
@@ -498,7 +465,6 @@ services:
       - "traefik.http.routers.rfq-service.middlewares=rfq-service-strip"
       - "traefik.http.services.rfq-service.loadbalancer.server.port=5029"
       - "traefik.http.routers.rfq-service.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   product-service:
     <<: *prod-defaults
@@ -512,7 +478,6 @@ services:
       - "traefik.http.routers.product-service.middlewares=product-service-strip"
       - "traefik.http.services.product-service.loadbalancer.server.port=5030"
       - "traefik.http.routers.product-service.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   replay-service:
     <<: *prod-defaults
@@ -526,7 +491,6 @@ services:
       - "traefik.http.routers.replay-service.middlewares=replay-service-strip"
       - "traefik.http.services.replay-service.loadbalancer.server.port=5031"
       - "traefik.http.routers.replay-service.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   risk-engine:
     <<: *prod-defaults
@@ -540,7 +504,6 @@ services:
       - "traefik.http.routers.risk-engine.middlewares=risk-engine-strip"
       - "traefik.http.services.risk-engine.loadbalancer.server.port=5032"
       - "traefik.http.routers.risk-engine.priority=10"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   # Gateway is the platform's CPU bottleneck under load — Deno is single-
   # threaded and one replica pegs at one core. Scale horizontally with
@@ -582,7 +545,6 @@ services:
       - "traefik.http.routers.health.tls=true"
       - "traefik.http.routers.health.service=gateway"
       - "traefik.http.routers.health.priority=25"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   db-migrate:
     <<: *prod-defaults
@@ -592,34 +554,8 @@ services:
     restart: "no"
     labels:
       - "traefik.enable=false"
-      - "com.centurylinklabs.watchtower.enable=true"
 
   redpanda-console:
     <<: *prod-defaults
     labels:
       - "traefik.enable=false"
-      - "com.centurylinklabs.watchtower.enable=false"
-
-  # Watchtower — auto-updates services labelled with watchtower.enable=true
-  # The Docker socket mount is required and is the residual privileged surface
-  # on the UAT deployment. See docs platform/security.md for the threat model.
-  watchtower:
-    image: containrrr/watchtower:latest
-    restart: unless-stopped
-    networks:
-      - trading-net
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-    environment:
-      WATCHTOWER_LABEL_ENABLE: "true"
-      WATCHTOWER_POLL_INTERVAL: "300"
-      WATCHTOWER_CLEANUP: "true"
-      WATCHTOWER_INCLUDE_STOPPED: "true"
-      WATCHTOWER_REVIVE_STOPPED: "true"
-    labels:
-      - "traefik.enable=false"
-      - "com.centurylinklabs.watchtower.enable=false"

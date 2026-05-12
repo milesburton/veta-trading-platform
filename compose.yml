@@ -221,6 +221,12 @@ services:
     # entrypoints would route the dashboard through the public hostname
     # the moment a tunnel forwarding rule changes. Reach the dashboard
     # at http://192.168.1.245:8888/dashboard/ from the LAN.
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     labels:
       - "traefik.enable=false"
 
@@ -287,7 +293,11 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      disable: true
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/__version || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
@@ -1428,6 +1438,13 @@ services:
     environment:
       REDPANDA_BROKERS: redpanda:9092
       MARKET_SIM_URL: http://market-sim:5000
+      NEWS_AGGREGATOR_PORT: "5013"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5013/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     labels:
       - "traefik.enable=false"
 
@@ -1507,8 +1524,15 @@ services:
       JOURNAL_URL: http://journal:5009
       DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
       REDPANDA_BROKERS: redpanda:9092
+      LLM_WORKER_PORT: "5033"
     volumes:
       - llm-advisory-data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5033/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     labels:
       - "traefik.enable=false"
 

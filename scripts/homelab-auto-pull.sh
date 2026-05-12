@@ -71,15 +71,19 @@ checkout=$(mktemp -d)
 # shellcheck disable=SC2064
 trap "rm -rf '$checkout'" EXIT
 if git clone --depth 1 --branch "$REPO_REF" --filter=blob:none "$REPO_URL" "$checkout" >/dev/null 2>&1; then
-  if [[ -f "$checkout/scripts/homelab-deploy.sh" ]]; then
-    install -m 0755 "$checkout/scripts/homelab-deploy.sh" "$DEPLOY_SCRIPT"
-    log "refreshed $DEPLOY_SCRIPT from main"
+  SRC="$checkout/scripts/swarm-deploy.sh"
+  if [[ ! -f "$SRC" ]]; then
+    SRC="$checkout/scripts/homelab-deploy.sh"
+  fi
+  if [[ -f "$SRC" ]]; then
+    install -m 0755 "$SRC" "$DEPLOY_SCRIPT"
+    log "refreshed $DEPLOY_SCRIPT from main (source: $(basename "$SRC"))"
   fi
 else
   log "could not refresh $DEPLOY_SCRIPT from main; running existing copy"
 fi
 
-if "$DEPLOY_SCRIPT"; then
+if GITHUB_SHA="$REMOTE" "$DEPLOY_SCRIPT"; then
   printf '%s' "$REMOTE" > "$LAST_DEPLOYED_FILE"
   log "deployed ${REMOTE:0:7} successfully"
 else
