@@ -533,14 +533,21 @@ describe("gatewayMiddleware", () => {
       vi.useRealTimers();
     });
 
-    it("reconnects after close delay and creates a new websocket", () => {
+    it("reconnects after close delay and creates a new websocket", async () => {
       const { invoke } = createHarness();
       const ws = connectWs(invoke);
 
       ws.onclose?.({} as CloseEvent);
       expect(MockWebSocket.instances).toHaveLength(1);
 
-      vi.advanceTimersByTime(2_000);
+      await vi.advanceTimersByTimeAsync(2_000);
+      for (let i = 0; i < 20; i++) {
+        await Promise.resolve();
+      }
+      await vi.advanceTimersByTimeAsync(6_000);
+      for (let i = 0; i < 20; i++) {
+        await Promise.resolve();
+      }
       expect(MockWebSocket.instances.length).toBeGreaterThan(1);
     });
 

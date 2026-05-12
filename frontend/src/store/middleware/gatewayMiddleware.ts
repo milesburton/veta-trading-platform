@@ -25,7 +25,7 @@ import type { AssetDef, OhlcCandle, OrderBookSnapshot, OrderSide } from "../../t
 import { advisoryNoteReceived } from "../advisorySlice.ts";
 import { alertAdded } from "../alertsSlice.ts";
 import type { AuthUser, TradingLimits } from "../authSlice.ts";
-import { setUser, setUserWithLimits } from "../authSlice.ts";
+import { sessionExpired, setUser, setUserWithLimits } from "../authSlice.ts";
 import { breakerExpired, breakerFired } from "../breakersSlice.ts";
 import { feedReceived } from "../feedSlice.ts";
 import { gridApi } from "../gridApi.ts";
@@ -72,7 +72,10 @@ const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? `${_origin}/api/gateway`
 
 const UI_TICK_INTERVAL_MS = 250;
 const ALGO_HEARTBEAT_TIMEOUT_MS = 30_000;
-const MAX_CONNECT_FAILURES = 5;
+const RECONNECT_DELAY_INITIAL_MS = 2_000;
+const RECONNECT_DELAY_MAX_MS = 30_000;
+const RECONNECT_DELAY_AFTER_GIVE_UP_MS = 60_000;
+const SHOW_BANNER_AFTER_FAILURES = 3;
 
 const OrderRejectedSchema = z.object({
   reason: z
@@ -138,10 +141,11 @@ interface OrderEventData {
 
 export const gatewayMiddleware: Middleware = (storeAPI) => {
   let ws: WebSocket | null = null;
-  let reconnectDelay = 2_000;
+  let reconnectDelay = RECONNECT_DELAY_INITIAL_MS;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let consecutiveFailures = 0;
   let started = false;
+  let visibilityListenerInstalled = false;
 
   const algoLastSeen: Record<string, number> = {};
 
@@ -569,35 +573,25 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       }
       const code = event?.code ?? 0;
       const reason = event?.reason ?? "";
-      if (consecutiveFailures >= MAX_CONNECT_FAILURES) {
-        console.error(
-          `[gateway] Disconnected — gave up after ${consecutiveFailures} attempts (code=${code} reason="${reason}"). User action required.`
-        );
-        storeAPI.dispatch(
-          reportError({
-            message: `WebSocket disconnect: gave up after ${consecutiveFailures} reconnect attempts`,
-            source: "gatewayMiddleware",
-            severity: "error",
-            detail: { code, reason },
-          })
-        );
-        return;
-      }
+      const nextDelay =
+        consecutiveFailures >= SHOW_BANNER_AFTER_FAILURES
+          ? RECONNECT_DELAY_AFTER_GIVE_UP_MS
+          : Math.min(reconnectDelay * 2, RECONNECT_DELAY_MAX_MS);
       console.warn(
-        `[gateway] Disconnected (attempt ${consecutiveFailures}/${MAX_CONNECT_FAILURES}, code=${code}) — reconnecting in ${reconnectDelay}ms`
+        `[gateway] Disconnected (attempt ${consecutiveFailures}, code=${code}) — reconnecting in ${nextDelay}ms`
       );
       storeAPI.dispatch(
         reportError({
-          message: `WebSocket disconnect (attempt ${consecutiveFailures}/${MAX_CONNECT_FAILURES})`,
+          message: `WebSocket disconnect (attempt ${consecutiveFailures})`,
           source: "gatewayMiddleware",
-          severity: "warn",
-          detail: { code, reason, reconnectDelayMs: reconnectDelay },
+          severity: consecutiveFailures >= SHOW_BANNER_AFTER_FAILURES ? "error" : "warn",
+          detail: { code, reason, nextDelayMs: nextDelay },
         })
       );
+      reconnectDelay = nextDelay;
       reconnectTimer = setTimeout(() => {
-        reconnectDelay = Math.min(reconnectDelay * 2, 30_000);
-        connect();
-      }, reconnectDelay);
+        void scheduledReconnect();
+      }, nextDelay);
     };
 
     ws.onerror = (event) => {
@@ -613,23 +607,74 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     };
   }
 
+  async function scheduledReconnect() {
+    try {
+      const probe = await fetch(`${GATEWAY_URL}/health`, {
+        credentials: "include",
+        signal: AbortSignal.timeout(5_000),
+      });
+      if (probe.status === 401) {
+        storeAPI.dispatch(
+          reportError({
+            message: "Gateway returned 401 during reconnect probe — session expired",
+            source: "gatewayMiddleware",
+            severity: "error",
+          })
+        );
+        storeAPI.dispatch(sessionExpired());
+        if (reconnectTimer) {
+          clearTimeout(reconnectTimer);
+          reconnectTimer = null;
+        }
+        return;
+      }
+    } catch {
+      // probe failure is not fatal — try the WS anyway, it has its own backoff
+    }
+    connect();
+  }
+
   function manualReconnect() {
     if (reconnectTimer) {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
     }
     consecutiveFailures = 0;
-    reconnectDelay = 2_000;
+    reconnectDelay = RECONNECT_DELAY_INITIAL_MS;
     storeAPI.dispatch(connectionRecovered());
     if (ws && ws.readyState === WebSocket.OPEN) {
       try {
         ws.close();
-      } catch {
-        // ignore
-      }
+      } catch {}
     } else {
-      connect();
+      void scheduledReconnect();
     }
+  }
+
+  function nudgeReconnectIfStuck(reason: string) {
+    const state = storeAPI.getState() as { market?: { connected?: boolean } };
+    if (state.market?.connected) return;
+    if (!started) return;
+    storeAPI.dispatch(
+      reportError({
+        message: `Nudging reconnect: ${reason}`,
+        source: "gatewayMiddleware",
+        severity: "info",
+      })
+    );
+    manualReconnect();
+  }
+
+  function installRecoveryListeners() {
+    if (visibilityListenerInstalled) return;
+    if (typeof window === "undefined") return;
+    visibilityListenerInstalled = true;
+    window.addEventListener("online", () => nudgeReconnectIfStuck("browser online event"));
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        nudgeReconnectIfStuck("tab became visible");
+      }
+    });
   }
 
   async function fetchCandlesForAsset(symbol: string) {
@@ -686,6 +731,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   function startGateway() {
     if (started) return;
     started = true;
+    installRecoveryListeners();
     fetchAssetsAndSeedCandles().then(() => {
       const state = storeAPI.getState() as {
         ui: { selectedAsset: string | null };

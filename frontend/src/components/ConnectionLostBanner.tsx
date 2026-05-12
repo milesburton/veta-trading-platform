@@ -21,7 +21,7 @@ export function ConnectionLostBanner() {
       </span>
       <span className="flex-1">
         Connection to the gateway has been lost. Live prices, order updates, and trade actions are
-        paused.
+        paused. Reconnecting automatically — or click below to retry now.
       </span>
       <button
         type="button"
