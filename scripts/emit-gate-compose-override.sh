@@ -9,6 +9,10 @@ mapfile -t SERVICES < <(grep -v '^\s*$' "$SERVICES_FILE")
 
 {
   echo "services:"
+  echo "  traefik:"
+  echo "    volumes: !override"
+  echo "      - /var/run/docker.sock:/var/run/docker.sock:ro"
+  echo "      - ./traefik.gate.yml:/traefik.yml:ro"
   for svc in "${SERVICES[@]}"; do
     echo "  ${svc}:"
     echo "    image: ghcr.io/milesburton/veta-trading-platform/${svc}:${TAG}"
