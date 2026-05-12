@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.37.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.36.1...veta-trading-platform-v1.37.0) (2026-05-12)
+
+
+### Features
+
+* **version-watch:** auto-reload anonymous tabs across deploys; faster polling ([#196](https://github.com/milesburton/veta-trading-platform/issues/196)) ([d085b48](https://github.com/milesburton/veta-trading-platform/commit/d085b487a4dc61e0dabd0d0fcd6b988cdfa45bcd))
+
+
+### Bug Fixes
+
+* **test:** match /api/gateway/api/user-service/sessions/me in GatewayMock ([#197](https://github.com/milesburton/veta-trading-platform/issues/197)) ([fd25bfd](https://github.com/milesburton/veta-trading-platform/commit/fd25bfd84786e5a3c2d9344d513f3d8e35ae1307))
+* **ws:** keep recovering instead of giving up; auto-retry on tab focus and online ([#194](https://github.com/milesburton/veta-trading-platform/issues/194)) ([490ead1](https://github.com/milesburton/veta-trading-platform/commit/490ead1d72f132c7407d2b4028c377ebc07ea052))
+
 ## [1.36.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.36.0...veta-trading-platform-v1.36.1) (2026-05-11)
 
 
