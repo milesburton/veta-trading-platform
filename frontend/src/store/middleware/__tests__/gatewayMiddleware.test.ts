@@ -491,3 +491,100 @@ describe("gatewayMiddleware – setSelectedAsset triggers news hydration", () =>
     expect(globalThis.fetch).toHaveBeenCalled();
   });
 });
+
+describe("gatewayMiddleware – reconnect resilience", () => {
+  it("keeps trying to reconnect even after many failures (no permanent give-up)", async () => {
+    vi.useFakeTimers();
+    const { store } = makeStore();
+    store.dispatch(setUser({ id: "a", name: "A", role: "trader", avatar_emoji: "🙂" }));
+    const initialCount = FakeWebSocket.instances.length;
+
+    for (let i = 0; i < 10; i++) {
+      FakeWebSocket.instances[FakeWebSocket.instances.length - 1].onclose?.();
+      await vi.advanceTimersByTimeAsync(120_000);
+    }
+
+    expect(FakeWebSocket.instances.length).toBeGreaterThan(initialCount + 5);
+  });
+
+  it("gateway/reconnect action triggers an immediate connection attempt", async () => {
+    vi.useFakeTimers();
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response("ok", { status: 200 })
+    );
+    const { store } = makeStore();
+    store.dispatch(setUser({ id: "a", name: "A", role: "trader", avatar_emoji: "🙂" }));
+    FakeWebSocket.instances[0].onclose?.();
+    const countAfterClose = FakeWebSocket.instances.length;
+
+    store.dispatch({ type: "gateway/reconnect" });
+    for (let i = 0; i < 20; i++) {
+      await Promise.resolve();
+    }
+    await vi.advanceTimersByTimeAsync(6_000);
+    for (let i = 0; i < 20; i++) {
+      await Promise.resolve();
+    }
+
+    expect(FakeWebSocket.instances.length).toBeGreaterThan(countAfterClose);
+  });
+
+  it("dispatches sessionExpired when health probe returns 401 during reconnect", async () => {
+    vi.useFakeTimers();
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response("", { status: 401 })
+    );
+    const { store, dispatched } = makeStore();
+    store.dispatch(setUser({ id: "a", name: "A", role: "trader", avatar_emoji: "🙂" }));
+    FakeWebSocket.instances[0].onclose?.();
+    await vi.advanceTimersByTimeAsync(5_000);
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+
+    const sessionExpiredCount = dispatched.filter((a) => a.type === "auth/sessionExpired").length;
+    expect(sessionExpiredCount).toBeGreaterThan(0);
+  });
+});
+
+describe("gatewayMiddleware – browser recovery signals", () => {
+  it("dispatches a manual reconnect when the tab becomes visible while disconnected", async () => {
+    vi.useFakeTimers();
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response("ok", { status: 200 })
+    );
+    const { store } = makeStore();
+    store.dispatch(setUser({ id: "a", name: "A", role: "trader", avatar_emoji: "🙂" }));
+    FakeWebSocket.instances[0].onclose?.();
+    const countBefore = FakeWebSocket.instances.length;
+
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => "visible",
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(6_000);
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+
+    expect(FakeWebSocket.instances.length).toBeGreaterThan(countBefore);
+  });
+
+  it("does not reconnect on visibilitychange when already connected", async () => {
+    vi.useFakeTimers();
+    const { store } = makeStore();
+    store.dispatch(setUser({ id: "a", name: "A", role: "trader", avatar_emoji: "🙂" }));
+    const ws = FakeWebSocket.instances[0];
+    ws.onopen?.();
+    const countAfterOpen = FakeWebSocket.instances.length;
+
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => "visible",
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(FakeWebSocket.instances.length).toBe(countAfterOpen);
+  });
+});
