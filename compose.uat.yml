@@ -5,6 +5,7 @@ services:
 
   redpanda:
     <<: *uat-defaults
+    container_name: veta-uat-redpanda
     command:
       - redpanda
       - start
@@ -41,9 +42,14 @@ services:
 
   disk-monitor:
     <<: *uat-defaults
+    container_name: veta-uat-disk-monitor
     ports: !override
       - "8199:8099"
     mem_limit: 32m
+
+  redpanda-init:
+    <<: *uat-defaults
+    container_name: veta-uat-redpanda-init
 
   frontend:
     <<: *uat-defaults
