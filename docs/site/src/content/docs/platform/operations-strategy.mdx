@@ -1,0 +1,313 @@
+---
+title: Operations strategy
+description: How VETA is operated as if it were a real trading platform — SLOs, environments, deploys, incident response.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+VETA is a simulation, but the discipline around running it is not. This page is the **plan of record** for how the platform is operated, what we measure, and how we recover when things break. New work should reference this doc before changing anything in the deploy or monitoring path.
+
+<Aside type="note" title="Why this document exists">
+On **2026-05-12** the platform suffered multiple back-to-back partial outages caused by deploy-mechanism failure (Watchtower stopping containers it then couldn't recreate). The outages were invisible to monitoring and only surfaced when a human noticed the UI was broken. That is not the operational posture of a system anyone would be willing to trade real money against. This document defines the posture we **will** operate to instead.
+</Aside>
+
+## Where we are today (honest current state)
+
+### Architecture
+
+- Single homelab host (Proxmox LXC) runs the full backend, frontend, observability stack, and ingress (Traefik).
+- A reverse SSH tunnel from the homelab to an OVH dedicated server exposes the platform to the public internet as `veta.mnetcs.com`.
+- Two further VPS hosts exist but are unused.
+- All environments collapse into one: the homelab serves dev playground, integration testing, and "production" simultaneously.
+
+### Tests
+
+- **1,825 vitest** unit tests covering frontend slices, middleware, components, and parsers.
+- **147 Playwright** end-to-end tests, but against the **Vite dev server**, not the built container.
+- **11 backend handler** unit tests for the LLM parse-ticket endpoint.
+- **`smoke.test.ts`** suite skips when services aren't running locally, so in practice runs nowhere.
+- **`*.integration.tc.test.ts`** suites use Testcontainers — these are the only tests that exercise real wired services, and they only run in CI.
+
+### CI/CD
+
+- Every PR runs lint, typecheck, vitest, Playwright, CodeQL, secret scan, image builds.
+- On `main` merge, CI publishes container images to `ghcr.io` with the `:latest` tag.
+- **Watchtower 1.7.0** polls the homelab every ~5 minutes, pulls new `:latest` images, restarts containers in batch.
+- No pre-deploy verification. No staging. No automated rollback. No deploy-time smoke test. No on-failure alerts.
+
+### Observability
+
+- LGTM stack on the homelab (Loki + Grafana + Tempo + Prometheus + Alloy).
+- Frontend ships warns/errors to Loki via the gateway → kafka-relay path (after PR #191).
+- Backend services emit structured logs and OTLP traces.
+- **No SLO dashboards.** **No alerts.** **No synthetic monitoring.**
+
+### What this combination produces
+
+Failures are detected by:
+
+1. A human notices the UI is broken
+2. Asks an engineer
+3. Engineer SSHes into the homelab to diagnose
+4. Engineer fixes manually
+
+That is the same loop a hobbyist project runs. It is not the loop a regulated trading venue runs.
+
+## SLOs we commit to
+
+A platform that wants to be taken seriously needs explicit targets, error budgets, and the discipline to **stop shipping features when the budget is exhausted**.
+
+| SLI | Target | Window | Error budget |
+|---|---|---|---|
+| **User-facing availability** (`/` returns 200 + WS handshake succeeds) | 99.9% | 30 days | 43 min/month downtime |
+| **Order-ack latency p99** (submit → orderAck on WS) | < 300 ms | 7 days | 1% of orders may exceed |
+| **WS-feed continuity** (no `marketUpdate` gaps > 2 s) | 99.5% | 24 hours | ~7 min of feed outage / day |
+| **Deploy success rate** | > 95% | rolling 30 deploys | One bad deploy in 20 |
+| **MTTR** (page-able alert fires → all green again) | < 30 min | per incident | — |
+| **Change failure rate** | < 15% | 30 days | 3 in 20 deploys may cause incident |
+| **RPO** (data loss tolerated on disaster) | < 5 min | — | — |
+| **RTO** (time to recover from total disaster) | < 30 min | — | — |
+
+DORA targets we already meet:
+
+| DORA metric | Target | Status |
+|---|---|---|
+| Deployment frequency | Multiple per day | ✓ |
+| Lead time for changes | < 1 hour PR→prod | ✓ |
+| Change failure rate | < 15% | ✗ currently ~40% |
+| Mean time to recovery | < 1 hour | ✗ currently unmeasured, often hours |
+
+The first two are "elite" by DORA's classification; the last two are "low performer". The gap is operations, not engineering velocity.
+
+## Target architecture
+
+### Environments
+
+Three explicit environments, no overlap:
+
+| Env | Host | Purpose | Promotion |
+|---|---|---|---|
+| **dev** | engineer laptop / devcontainer | day-to-day coding, fast iteration | n/a |
+| **UAT** | Proxmox node B (LXC, separate from prod) | every merge to `main` deploys here automatically; integration testing; load testing; demos | manual after 24h soak + green synthetics |
+| **prod** | Proxmox node A (existing LXC), public via OVH SSH tunnel | tagged releases only; never `:latest`; the only environment customers (and demos) see at `veta.mnetcs.com` | gated by release tag + manual approval |
+
+UAT runs on a **different Proxmox node** so a load test or a runaway query can't take prod down through resource contention. Both serve via Traefik on OVH:
+
+- `veta.mnetcs.com` — prod
+- `uat.veta.mnetcs.com` — UAT
+- (dev is local-only, no public route)
+
+### Deploy mechanism: Docker Swarm, single-node first
+
+Watchtower is the wrong tool for a real platform. Its design is "pull image, restart container" without coordination, health gating, or rollback. The 2026-05-12 outage was caused by a known Watchtower 1.7.0 bug where stopped containers' names aren't released before recreation, leaving 19 services offline.
+
+**Replacement**: Docker Swarm (single-node mode to start) with `docker stack deploy`. Same `compose.yml` (95% compatible). Adds:
+
+- `update_config: order: start-first` — new container ready before old one drops
+- `update_config: failure_action: rollback` — automatic image rollback if healthcheck fails
+- `update_config: parallelism: N` — explicit batch size, not all-at-once
+- `healthcheck: ... start_period: ...` — every service declares its own readiness
+- `rollback_config` — if rollback fires, declared behaviour on the failing replicas
+
+Multi-node Swarm comes later (prod LXC + OVH dedicated + a VPS as Swarm managers in a 3-node quorum). For now, single-node Swarm gives us rolling restarts and rollback. That alone closes the largest current operational gap.
+
+### Deploy state machine
+
+Every promotion to UAT or prod runs this sequence:
+
+```
+1. CI publishes new image tag (e.g. veta-gateway:sha-31bbcde)
+2. Deploy controller (Deno script on Swarm manager):
+   a. Validates compose file + env vars + disk space
+   b. docker stack deploy --with-registry-auth veta
+   c. Polls service readiness for up to 5 min
+   d. If any service fails healthcheck → Swarm auto-rollback fires
+   e. Runs post-deploy smoke probe (see below)
+   f. If smoke fails → manual rollback (docker service update --rollback)
+3. Records the deploy in a deploy log (deploys.jsonl, shipped to Loki)
+4. Alerts on failure to veta@mnetcs.com (later: Discord webhook)
+```
+
+### Synthetic monitoring
+
+Source of truth for "is the platform up". Runs **outside** the homelab so it sees what real users see.
+
+- **Host**: one of the spare VPSes (no relation to the homelab — independent failure domain).
+- **Cadence**: every 60 seconds.
+- **Probe** (one end-to-end run):
+  1. GET `https://veta.mnetcs.com/` — expect 200, presence of `__version` hash.
+  2. POST `/api/gateway/api/user-service/oauth/authorize` — sign in as a dedicated `synthetic-monitor` user.
+  3. Open `wss://veta.mnetcs.com/ws/gateway` — count `marketUpdate` frames for 10s, expect ≥ 20.
+  4. POST a tiny test order (10 shares of `AAPL` at `limitPrice = currentPrice * 0.5`, so it never fills) — expect `orderAck` within 500 ms.
+  5. Cancel the test order via WS — expect ack.
+- **Output**: structured log line to Loki tagged `service=synthetic`, `probe=<step>`, `outcome=ok|fail`, `duration_ms=...`.
+- **Alerting**: 3 consecutive failures → email to `veta@mnetcs.com`. Later: Discord webhook. Later again: pager.
+- **The probe doubles as the post-deploy smoke gate.** Same code, same checks.
+
+The probe runs against both UAT and prod, with separate alert thresholds.
+
+### Test gate on the deploy
+
+CI today proves code is correct in isolation. It does not prove that the **built containers** wired together actually work. Today's deploy regressions (the `/sessions/me` route mismatch in PR #192; the Watchtower name-conflict) would have been caught by a build-and-run gate.
+
+Addition to CI: a **deploy-gate** job that:
+
+1. Builds every container image.
+2. Brings them up via `docker compose up -d` inside the GitHub Actions runner.
+3. Runs the Playwright suite against the running stack (not Vite dev server).
+4. Runs the synthetic probe against the stack.
+5. Only on green does CI publish the image tags.
+
+This is slower (5-10 minutes) but it shifts left every kind of failure we hit on 2026-05-12.
+
+### Multi-host prod, eventually
+
+A single Proxmox LXC cannot survive single-host failure. The strategic target is:
+
+- **2-3 Swarm manager nodes** — homelab Proxmox + OVH dedicated + a VPS. Quorum survives one-host loss.
+- **Postgres**: streaming replication, automatic failover (Patroni or pg-auto-failover). Async OK for our RPO of 5 min.
+- **Redpanda**: 3-broker cluster with `replication.factor=3` on critical topics. Bus survives one-broker loss.
+- **Traefik**: keep on OVH edge with health-checked upstream pool (homelab + OVH-local replicas).
+
+This is the actually-hard part of the strategy: distributed-systems work, not ops-tools work. Multi-host comes after the single-node operations posture is solid.
+
+## Operational discipline
+
+### Rollback plans in every PR
+
+Every PR description must answer: **"How do we roll this back if it breaks prod?"** Three classes:
+
+- **Pure code change** — revert the commit, redeploy. Default; needs no special handling.
+- **Schema migration** — must include a working `down` migration AND be deployed in **two phases**: expand (schema accepts old + new code) → contract (after rollout settles) → drop (after a soak). Single-phase migrations are forbidden.
+- **Config / env change** — captured in version control; rollback is reverting the config commit, never editing on the box.
+
+PR template enforces this with a required `## Rollback plan` section.
+
+### Incident log
+
+A `docs/incidents/` directory. Every incident gets a timestamped file with:
+
+- When (UTC start, UTC end)
+- What (user-facing symptom)
+- Root cause
+- MTTR
+- Detection (synthetic / user-reported / log alert)
+- Action item with owner + deadline (e.g. "add test that catches this class — owner: M, by: 2026-05-19")
+
+Backfilled with 2026-05-12 incidents as the first entries. Patterns become visible after ~10 entries.
+
+### Postmortems
+
+Blameless template, lives in the same directory. Required for any incident with MTTR > 30 min OR user-visible impact > 5 min. Three sections only: **What happened (timeline)**, **What went well**, **What we'll change**. No long apologies; no individuals named except as note-takers.
+
+### Change-freeze windows
+
+`scripts/deploy.sh` checks for an active freeze window (file or env var) and refuses to deploy without an explicit `--hotfix` flag, which is logged. Typical freezes:
+
+- Demo windows (announced in advance)
+- The first 30 min after another deploy (let the platform settle)
+- Weekends outside hotfixes
+
+Cheap to implement, prevents the "user is watching the dashboard while the deploy trashes it" scenario from 2026-05-12.
+
+### On-call rotation (future)
+
+Solo project today, but worth defining the shape. When a second person joins, **on-call** becomes a named role with a known pager (email/Discord/SMS). Until then, the synthetic probe still emails `veta@mnetcs.com` and we treat it as the pager.
+
+## The path between today and the target
+
+Five working days. Each phase is a single PR, reviewed and watched before the next starts. No parallel work.
+
+### Phase 1 — Deploy gate in CI (Day 1, morning)
+
+**PR scope**: new GitHub Actions job that builds containers, brings them up via compose inside the runner, runs Playwright against the built stack, runs the synthetic probe locally. Image-tag publication blocked until the new job is green.
+
+**Acceptance criteria**:
+
+- CI fails when a PR introduces a regression that only surfaces against built containers (verified by introducing a deliberate regression and confirming the job fails).
+- Average job runtime under 12 minutes on a standard GitHub-hosted runner.
+- `:latest` image tags only published after this job is green.
+- Existing PR contributors see a single new required check on their PRs.
+
+### Phase 2 — Swarm migration (Day 1, afternoon)
+
+**PR scope**: convert `compose.prod.yml` to Swarm-stack syntax (`docker stack deploy` compatible). Add `update_config`, `rollback_config`, `healthcheck` to every service. Install single-node Swarm on the homelab. Decommission Watchtower (keep as `manual-only` for emergency rollback if needed). New `scripts/deploy.sh` runs `docker stack deploy` with smoke gate.
+
+**Acceptance criteria**:
+
+- A deliberately-broken image (e.g. crashing on startup) triggers automatic Swarm rollback to the previous version, no service interruption.
+- Rolling deploys never reduce service-count to 0 (verified by `docker stack ps` history showing `start-first` ordering).
+- The 2026-05-12 Watchtower bug class (name-collision after partial recreate) cannot recur — Swarm handles this natively.
+- `scripts/deploy.sh` exits non-zero and emits an alert if the post-deploy probe fails.
+
+### Phase 3 — Environments: dev / UAT / prod split (Day 2)
+
+**PR scope**:
+
+- Stand up a new Proxmox LXC for UAT on a separate node.
+- `compose.uat.yml` overlay: different DB schema, different Redpanda topic prefix, different ports.
+- Traefik on OVH adds `uat.veta.mnetcs.com` routing through a second SSH tunnel.
+- GitHub Actions: every merge to `main` deploys to UAT automatically.
+- Prod is no longer auto-deployed. Tagged release (e.g. `v1.36.0`) → manual `scripts/promote-to-prod.sh` runs the same deploy state machine against prod, requires explicit confirmation.
+
+**Acceptance criteria**:
+
+- Merging a PR to `main` ships to UAT within 15 minutes; prod is unchanged.
+- A `make demo` against `uat.veta.mnetcs.com` exercises every dashboard path.
+- A load test against UAT does not affect prod (verified by running a sustained 100 req/s test against UAT while a synthetic probe runs against prod, with no SLO breaches).
+- Promoting to prod requires a tag AND a manual confirmation step; no automated path from `main` to prod.
+
+### Phase 4 — Synthetic monitoring + alerting (Day 3, morning)
+
+**PR scope**: small Deno binary running on one of the spare VPSes. Configurable target (UAT and prod). 60-second cadence. Emits structured logs to Loki and to a local file (in case Loki itself is the thing that's down).
+
+**Acceptance criteria**:
+
+- Probe runs continuously for 24 hours with no false positives.
+- A simulated outage (block port 443 at the OVH edge for 90 seconds) results in an email to `veta@mnetcs.com` within 4 minutes of detection.
+- Grafana dashboard `Synthetic SLO` shows rolling 24h / 7d / 30d availability for both UAT and prod.
+- Probe results are queryable in Loki by `{service="synthetic", env="prod"}`.
+
+### Phase 5 — Discipline tooling (Day 3, afternoon)
+
+**PR scope**:
+
+- `.github/PULL_REQUEST_TEMPLATE.md` adds a required `## Rollback plan` section.
+- `docs/incidents/` directory with `TEMPLATE.md` for new incidents and `postmortems/TEMPLATE.md`.
+- Backfill `docs/incidents/2026-05-12-*` for today's outages.
+- `scripts/deploy.sh` adds a change-freeze check (`/opt/stacks/veta/CHANGE_FREEZE` sentinel file aborts unless `--hotfix` flag set).
+- A daily Grafana alert that produces an "Error budget report" — how much of the 30-day budget we've consumed, projected to month-end.
+
+**Acceptance criteria**:
+
+- PRs missing a Rollback plan section fail a lightweight check in CI (lint-level, not blocking).
+- Today's three outages (Watchtower partial recreate, `/sessions/me` route mismatch, stuck-tab non-recovery) are documented in `docs/incidents/` with action items linked to specific PRs.
+- A test deploy with `CHANGE_FREEZE` set aborts cleanly with a clear message.
+
+### Phase 6 — Multi-host prod (Days 4-5)
+
+**PR scope**: real distributed-systems work. Listed separately because it's higher-risk and benefits from a stable single-node operations posture first.
+
+- 3-node Swarm cluster: homelab Proxmox LXC + OVH dedicated + 1 VPS (managers; OVH and VPS run lightweight ingress + monitoring, homelab carries the bulk of services).
+- Postgres streaming replication (homelab primary → VPS standby), automatic failover via `pg-auto-failover` or Patroni.
+- Redpanda 3-broker cluster (one per node), `replication.factor=3` on order topics.
+- Traefik on OVH edge points at a Swarm-managed upstream pool so node loss is transparent.
+- Disaster recovery runbook: how to demote primary, promote standby, restore from backup.
+
+**Acceptance criteria**:
+
+- Killing the homelab LXC (`shutdown -h now`) results in continued service from the remaining nodes within 60 seconds, with the synthetic probe seeing no more than 1 failed probe.
+- Postgres failover completes within 30 seconds of primary loss; RPO < 1 minute verified.
+- A full disaster scenario (all homelab data lost) recovers from VPS-stored backups within 30 minutes, ≤ 5 min of data loss.
+
+## What this is not
+
+- **Not a hobby checklist.** Each phase has an acceptance criterion that's verifiable by an outside observer. We measure success, not effort.
+- **Not yet enterprise-grade.** A real bank has multi-region active/active, chaos engineering, formal change advisory boards, SOC2 compliance audits, and a 24/7 SRE rotation. We're aiming at "small fintech that hasn't burned its customers yet" — a meaningful gap above where we are now.
+- **Not a one-time push.** Phase 5's discipline tooling is the part that matters long-term. The shiny infrastructure changes (Swarm, multi-host) decay without the practices around them.
+
+## Decision log
+
+- **2026-05-12** — adopted. Replaces the implicit "homelab + Watchtower" model that produced 3+ outages in 24 hours.
+- Owner: Miles Burton.
+- Review cadence: end of phase 5 (after first incident under the new model), then quarterly.

@@ -103,6 +103,7 @@ export default defineConfig({
             {
               label: "Operations",
               items: [
+                { label: "Strategy", slug: "platform/operations-strategy" },
                 { label: "Observability", slug: "platform/observability" },
                 {
                   label: "Supporting services",
