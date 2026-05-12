@@ -38,11 +38,6 @@ The [Service Map](../services/) catalogues the trading pipeline itself — marke
     href="/veta-trading-platform/platform/supporting/watchtower/"
     description="Auto-updates UAT containers when CI publishes a new image."
   />
-  <LinkCard
-    title="flyctl in the dev container"
-    href="/veta-trading-platform/platform/supporting/flyctl/"
-    description="Pinned flyctl with host-shared credentials for the Fly.io demo deploy."
-  />
 </CardGrid>
 
 ## Where to run what
@@ -51,6 +46,5 @@ The [Service Map](../services/) catalogues the trading pipeline itself — marke
 |-------------|---------------|-----------|----|-----------|
 | `local` (devcontainer) | yes | optional | optional | no |
 | `uat` (private VM) | yes | yes | manual | yes |
-| `fly` (public demo) | monolith | no | manual against URL | no |
 
 LGTM and k6 are deliberately optional locally — they add real overhead and the platform runs fine without them. Bring them up when you are investigating performance, debugging event flow, or generating data for the performance docs.

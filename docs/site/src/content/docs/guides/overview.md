@@ -31,7 +31,7 @@ See [Architecture](/veta-trading-platform/platform/architecture/) for the full s
 
 ## Technology stack
 
-Deno, TypeScript, React, Redux Toolkit, Tailwind CSS, FlexLayout, Vite, Electron, PostgreSQL, SQLite (WAL), Redpanda (Kafka), FIX 4.2, Playwright, Docker, Fly.io, Supervisord, AG Grid, rrweb, and Ollama.
+Deno, TypeScript, React, Redux Toolkit, Tailwind CSS, FlexLayout, Vite, Electron, PostgreSQL, SQLite (WAL), Redpanda (Kafka), FIX 4.2, Playwright, Docker, Traefik, AG Grid, rrweb, and Ollama.
 
 ## Key documents
 

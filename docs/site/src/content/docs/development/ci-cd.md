@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-Every push to any branch triggers the CI workflow. Pushes to `main` additionally trigger GitHub Pages and trigger Watchtower on the homelab via the `:latest` Docker images pushed to GHCR. The Fly.io deployment is currently disabled (manual-dispatch only — see [Fly.io](#flyio) below). The entire pipeline runs in parallel where possible.
+Every push to any branch triggers the CI workflow. Pushes to `main` additionally trigger GitHub Pages and trigger Watchtower on the homelab via the `:latest` Docker images pushed to GHCR. The entire pipeline runs in parallel where possible.
 
 ## Pipeline diagram
 
@@ -91,18 +91,7 @@ GitHub Pro provides 20 concurrent jobs — we use up to 40 matrix slots (37 Dock
 
 ## Deployment on change
 
-### Fly.io
-
-**Disabled on push.** The homelab is the canonical deployment target right now (solar-powered, plenty of resources, no per-machine memory cap). The Fly workflow file is kept so the deploy recipe stays self-documenting; manual deploys via `gh workflow run deploy.yml --ref main` still work for emergencies. To re-enable on every main push, restore the `push: branches: main` trigger in [`.github/workflows/deploy.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/deploy.yml).
-
-When enabled, the workflow:
-
-1. Runs tests (lint-and-test + frontend)
-2. `flyctl deploy` builds the monolith Dockerfile with `VITE_COMMIT_SHA` and `VITE_BUILD_DATE`
-3. 3-attempt retry with 30-second backoff on failure
-4. Version verification: polls `/health` until the deployed SHA matches
-5. Full smoke test suite runs against the live deployment
-6. Concurrency control: only one deploy runs at a time (`concurrency: fly-deploy`)
+The homelab is the only deployment target. The application is served at [`https://veta.mnetcs.com/`](https://veta.mnetcs.com/) and Grafana at [`https://veta.mnetcs.com/grafana/`](https://veta.mnetcs.com/grafana/) via a reverse SSH tunnel from an OVH dedicated server.
 
 ### Homelab
 
@@ -162,8 +151,6 @@ If the PAT is ever broken or revoked, [`ci.yml`](https://github.com/milesburton/
 ```sh
 gh workflow run ci.yml --ref main
 ```
-
-Same for `deploy.yml` if a Fly deploy is needed despite [#84](https://github.com/milesburton/veta-trading-platform/pull/84) disabling the `push` trigger.
 
 ## Release management
 

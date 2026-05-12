@@ -3,7 +3,7 @@ title: Redpanda console
 description: Optional Kafka UI for debugging the message bus.
 ---
 
-`redpanda-console` (an Apache Kafka UI) ships with the Compose stack as an optional debugging aid. It is not required for the platform to run, and is omitted from the Fly.io monolith.
+`redpanda-console` (an Apache Kafka UI) ships with the Compose stack as an optional debugging aid. It is not required for the platform to run.
 
 ## What it provides
 

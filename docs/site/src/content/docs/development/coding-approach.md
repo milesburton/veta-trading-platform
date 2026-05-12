@@ -51,7 +51,7 @@ The project enforces testing at four levels, each catching different classes of 
 
 ### Smoke tests (production-like)
 
-- 87+ tests run against the deployed Fly.io instance after every deploy.
+- 87+ tests run against the deployed homelab instance ([`https://veta.mnetcs.com/`](https://veta.mnetcs.com/)) after every deploy.
 - Health checks for all backend services.
 - Full OAuth login flow with browser-style headers.
 - Order lifecycle: submit → fill or expire within timeout.
