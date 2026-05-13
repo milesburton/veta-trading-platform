@@ -71,7 +71,12 @@ services:
       GF_RENDERING_SERVER_URL: "http://renderer:8081/render"
       GF_RENDERING_CALLBACK_URL: "http://grafana:3000/"
       GF_LOG_FILTERS: "rendering:debug"
-      GF_INSTALL_PLUGINS: "grafana-mermaid-panel"
+      # GF_INSTALL_PLUGINS intentionally unset: the previously-installed
+      # grafana-mermaid-panel slug no longer exists in Grafana's plugin
+      # catalog, causing the container to crash-loop on startup. The
+      # order-pipeline-traces dashboard's flowchart panel will render as
+      # "panel not installed" until a working mermaid/flowchart plugin is
+      # picked. Trading is unaffected.
       # Used by provisioning/alerting/contact-points.yml. Unset → alerts
       # still fire in the UI but external delivery is dropped. Set in
       # /opt/stacks/veta/.env (e.g. Slack incoming webhook URL).
