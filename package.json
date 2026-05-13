@@ -4,6 +4,7 @@
   "private": true,
   "description": "VETA Trading Platform — real-time market simulation with algorithmic trading strategies.",
   "scripts": {
+    "prepare": "git config core.hooksPath .husky",
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
     "lint": "deno task lint && cd frontend && npm run lint",
