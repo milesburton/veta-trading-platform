@@ -1,5 +1,6 @@
 networks:
   trading-net:
+    name: trading-net
     driver: bridge
 
 volumes:
