@@ -18,10 +18,24 @@ CONFIG_PATHS=(
   "observability/"
 )
 
+ONE_SHOT_SERVICES=(
+  db-migrate
+  redpanda-init
+  ollama-model-pull
+)
+
 cd "$STACK_DIR"
 
 log() { echo "[swarm-deploy] $(date -u +%H:%M:%S) $*"; }
 fail() { log "ERROR: $*"; exit 1; }
+
+if ! command -v python3 >/dev/null 2>&1; then
+  fail "python3 is required. Install python3 + python3-yaml on the host."
+fi
+
+if ! python3 -c "import yaml" 2>/dev/null; then
+  fail "PyYAML missing. Install with: sudo apt install -y python3-yaml  (or pip install pyyaml)."
+fi
 
 if ! docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null | grep -q active; then
   fail "Docker Swarm is not active on this host. Run 'docker swarm init' first (see docs/incidents/runbooks/swarm-bootstrap.md)."
@@ -74,26 +88,47 @@ docker compose \
   -f compose.swarm.yml \
   config > "$RESOLVED_COMPOSE"
 
-sed -i \
-  -e '/^    mem_limit:/d' \
-  -e '/^    restart:/d' \
-  -e '/^    pull_policy:/d' \
-  -e '/^    profiles:/d' \
-  -e 's/published: "\([0-9]\+\)"/published: \1/' \
-  "$RESOLVED_COMPOSE"
+ONE_SHOT_LIST="${ONE_SHOT_SERVICES[*]}" python3 - "$RESOLVED_COMPOSE" <<'PY'
+import os
+import sys
+import yaml
 
-python3 - "$RESOLVED_COMPOSE" <<'PY'
-import sys, yaml
 path = sys.argv[1]
+one_shot = set(os.environ.get("ONE_SHOT_LIST", "").split())
+
+UNSUPPORTED_KEYS = (
+    "mem_limit",
+    "restart",
+    "pull_policy",
+    "profiles",
+)
+
 with open(path) as f:
-    d = yaml.safe_load(f)
-d.pop("name", None)
-for svc in (d.get("services") or {}).values():
+    doc = yaml.safe_load(f)
+
+doc.pop("name", None)
+
+services = doc.get("services") or {}
+for name, svc in services.items():
+    for key in UNSUPPORTED_KEYS:
+        svc.pop(key, None)
+
     dep = svc.get("depends_on")
     if isinstance(dep, dict):
         svc["depends_on"] = list(dep.keys())
+
+    ports = svc.get("ports")
+    if isinstance(ports, list):
+        for p in ports:
+            if isinstance(p, dict) and isinstance(p.get("published"), str) and p["published"].isdigit():
+                p["published"] = int(p["published"])
+
+    if name in one_shot:
+        deploy = svc.setdefault("deploy", {})
+        deploy["restart_policy"] = {"condition": "none"}
+
 with open(path, "w") as f:
-    yaml.safe_dump(d, f, default_flow_style=False, sort_keys=False)
+    yaml.safe_dump(doc, f, default_flow_style=False, sort_keys=False)
 PY
 
 log "Deploying stack '$STACK_NAME'..."
@@ -121,6 +156,6 @@ done
 log "Probe never returned ready={true} within ${PROBE_TIMEOUT}s."
 log "Current service state:"
 docker stack services "$STACK_NAME" | sed 's/^/  /'
-log "Failed tasks (last 5):"
+log "Failed tasks (last 10):"
 docker stack ps "$STACK_NAME" --no-trunc --filter desired-state=shutdown 2>/dev/null | head -10 | sed 's/^/  /' || true
 exit 1

@@ -6,7 +6,8 @@ One-time setup to convert the homelab from plain `docker compose` + Watchtower t
 
 - The latest `main` is at a revision that includes `compose.swarm.yml`, `scripts/swarm-deploy.sh`, and the updated `scripts/homelab-auto-pull.sh`.
 - You can SSH to the homelab as a user in the `docker` group (`ssh miles@192.168.1.245`).
-- `/opt/stacks/veta/.env` contains `OAUTH2_SHARED_SECRET`, `OAUTH2_USER_SECRETS`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `GHCR_USER`, `GHCR_TOKEN`. (The auto-pull script sources this file, so missing entries surface as compose interpolation errors.)
+- `/opt/stacks/veta/.env` contains `OAUTH2_SHARED_SECRET`, `OAUTH2_USER_SECRETS`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `GHCR_USER`, `GHCR_TOKEN`. The file is **not** sourced as shell — `swarm-deploy.sh` passes it to `docker compose` via `--env-file`, so values like `OAUTH2_USER_SECRETS=alice:alice123;bob:bob123;…` are safe even though semicolons would be shell separators if sourced. Missing entries surface as compose interpolation errors at config-resolve time.
+- `python3` with the `PyYAML` module is installed on the host: `python3 -c "import yaml"` should print nothing. On Debian/Ubuntu: `sudo apt install -y python3-yaml`. `swarm-deploy.sh` exits with a clear instruction if either is missing.
 - You have a known-good rollback path: the existing `compose.yml + compose.prod.yml + docker compose up -d` flow still works and is the fallback if Swarm bootstrap goes wrong.
 
 ## Step 1 — stop the existing flow cleanly
@@ -16,11 +17,13 @@ ssh miles@192.168.1.245
 sudo systemctl stop veta-auto-pull.timer
 sudo systemctl stop veta-auto-pull.service || true
 cd /opt/stacks/veta
-docker compose -f compose.yml -f compose.prod.yml stop watchtower
-docker compose -f compose.yml -f compose.prod.yml rm -f watchtower
+docker compose -f compose.yml -f compose.prod.yml stop watchtower || true
+docker compose -f compose.yml -f compose.prod.yml rm -f watchtower || true
 ```
 
 The trading services keep running on plain compose during the bootstrap. Watchtower is shut down first so it can't fight us during the transition.
+
+The `|| true` suffixes matter once `compose.prod.yml` no longer defines a `watchtower` service (this PR removes it). After that point both commands will print "no such service" and exit non-zero, which we want to ignore rather than abort the runbook on.
 
 ## Step 2 — initialise Swarm
 
