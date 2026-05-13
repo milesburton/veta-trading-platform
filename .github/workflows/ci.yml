@@ -1100,7 +1100,7 @@ jobs:
           build-args: |
             BASE_TAG=${{ needs.docker-base.outputs.base-tag }}
             COMMIT_SHA=${{ github.sha }}
-            VITE_DEPLOYMENT=uat
+            VITE_DEPLOYMENT=prod
             VITE_COMMIT_SHA=${{ github.sha }}
             VITE_BUILD_DATE=${{ github.run_started_at }}
             VITE_APP_VERSION=${{ steps.appver.outputs.version }}
@@ -1130,7 +1130,7 @@ jobs:
         env:
           BASE_TAG: ${{ needs.docker-base.outputs.base-tag }}
           COMMIT_SHA: ${{ github.sha }}
-          VITE_DEPLOYMENT: uat
+          VITE_DEPLOYMENT: prod
           BUILD_DATE: ${{ github.run_started_at }}
           APP_VERSION: ${{ steps.appver.outputs.version }}
           GATE_TAG: ${{ steps.sha.outputs.short }}
@@ -1344,7 +1344,7 @@ jobs:
           build-args: |
             BASE_TAG=${{ needs.docker-base.outputs.base-tag }}
             COMMIT_SHA=${{ github.sha }}
-            VITE_DEPLOYMENT=uat
+            VITE_DEPLOYMENT=prod
             VITE_COMMIT_SHA=${{ github.sha }}
             VITE_BUILD_DATE=${{ github.run_started_at }}
             VITE_APP_VERSION=${{ steps.appver.outputs.version }}
