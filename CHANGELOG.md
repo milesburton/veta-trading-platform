@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.37.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.37.0...veta-trading-platform-v1.37.1) (2026-05-13)
+
+
+### Bug Fixes
+
+* **ci:** build frontend with VITE_DEPLOYMENT=prod, not uat ([#220](https://github.com/milesburton/veta-trading-platform/issues/220)) ([8055171](https://github.com/milesburton/veta-trading-platform/commit/8055171c01b6d4be8bf9af4940da8128b42863d3))
+* **ci:** probe market-sim/prices directly, not through the gated gateway ([#218](https://github.com/milesburton/veta-trading-platform/issues/218)) ([ca1b6ab](https://github.com/milesburton/veta-trading-platform/commit/ca1b6ab1d3450f8de1ee42e33d4a2971ed6bbe94))
+* **compose:** pin trading-net to bare name so Traefik finds it ([#215](https://github.com/milesburton/veta-trading-platform/issues/215)) ([8a6dadb](https://github.com/milesburton/veta-trading-platform/commit/8a6dadb885f0acfb3b9e14aa3b17cf39c8e9cc7a))
+* **edge:** restrict OVH-edge TLS ALPN to http/1.1 so WebSocket upgrades work ([#213](https://github.com/milesburton/veta-trading-platform/issues/213)) ([720d10a](https://github.com/milesburton/veta-trading-platform/commit/720d10a8e3958407fcd27e4df608738c291d0049))
+* **gate:** authenticate the prices test so it doesn't 401 at the gateway ([#219](https://github.com/milesburton/veta-trading-platform/issues/219)) ([abcef62](https://github.com/milesburton/veta-trading-platform/commit/abcef626bd4a44d3094e079f9406830526e05e2c))
+* **gateway:** cache rejected tokens to stop infinite reauth loops ([#221](https://github.com/milesburton/veta-trading-platform/issues/221)) ([69507e0](https://github.com/milesburton/veta-trading-platform/commit/69507e0d3900cbe5f3c64be4b4402dfe66770082))
+* **market-data-adapters:** don't block HTTP server boot on initial seed ([#217](https://github.com/milesburton/veta-trading-platform/issues/217)) ([b475497](https://github.com/milesburton/veta-trading-platform/commit/b4754977e3b31e0b94cbc16dd832a9bf5c14362d))
+* **observability:** remove grafana-mermaid-panel install, breaks crash loop ([#211](https://github.com/milesburton/veta-trading-platform/issues/211)) ([9539783](https://github.com/milesburton/veta-trading-platform/commit/9539783c1d639bae8db5679825d8318822f65fc8))
+
 ## [1.37.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.36.1...veta-trading-platform-v1.37.0) (2026-05-12)
 
 
