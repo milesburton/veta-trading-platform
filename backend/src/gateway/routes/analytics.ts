@@ -1,5 +1,9 @@
 import { CORS_HEADERS } from "@veta/http";
-import { type AuthResult, type GatewayContext, isResponse } from "../context.ts";
+import {
+  type AuthResult,
+  type GatewayContext,
+  isResponse,
+} from "../context.ts";
 import { proxyGet, proxyPost, proxyPut } from "../proxy.ts";
 
 function requireAdmin(auth: AuthResult): Response | null {
@@ -103,7 +107,10 @@ export async function handleAnalyticsRoute(
   if (featureMatch && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
-    return proxyGet(`${FEATURE_ENGINE_URL}/features${featureMatch[1] ?? ""}`, req);
+    return proxyGet(
+      `${FEATURE_ENGINE_URL}/features${featureMatch[1] ?? ""}`,
+      req,
+    );
   }
   const signalMatch = path.match(/^\/intelligence\/signals(\/.*)?$/);
   if (signalMatch && req.method === "GET") {
@@ -144,18 +151,24 @@ export async function handleAnalyticsRoute(
   if (advisoryNoteMatch && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
-    return proxyGet(`${LLM_ADVISORY_URL}/advisory/${advisoryNoteMatch[1]}`, req);
+    return proxyGet(
+      `${LLM_ADVISORY_URL}/advisory/${advisoryNoteMatch[1]}`,
+      req,
+    );
   }
   if (path === "/advisory/request" && req.method === "POST") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
     const body = await req.text();
     const parsed = JSON.parse(body) as { symbol?: string };
-    return proxyPost(`${LLM_ADVISORY_URL}/advisory/request`, new Request(req.url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...parsed, requestedBy: auth.user.id }),
-    }));
+    return proxyPost(
+      `${LLM_ADVISORY_URL}/advisory/request`,
+      new Request(req.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...parsed, requestedBy: auth.user.id }),
+      }),
+    );
   }
   if (path === "/advisory/jobs" && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
@@ -176,22 +189,28 @@ export async function handleAnalyticsRoute(
     if (adminRej) return adminRej;
     const body = await req.text();
     const parsed = JSON.parse(body) as Record<string, unknown>;
-    return proxyPut(`${LLM_ADVISORY_URL}/admin/state`, new Request(req.url, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...parsed, updatedBy: auth.user.id }),
-    }));
+    return proxyPut(
+      `${LLM_ADVISORY_URL}/admin/state`,
+      new Request(req.url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...parsed, updatedBy: auth.user.id }),
+      }),
+    );
   }
   if (path === "/advisory/admin/watchlist-brief" && req.method === "POST") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
     const body = await req.text();
     const parsed = JSON.parse(body) as Record<string, unknown>;
-    return proxyPost(`${LLM_ADVISORY_URL}/admin/watchlist-brief`, new Request(req.url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...parsed, requestedBy: auth.user.id }),
-    }));
+    return proxyPost(
+      `${LLM_ADVISORY_URL}/admin/watchlist-brief`,
+      new Request(req.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...parsed, requestedBy: auth.user.id }),
+      }),
+    );
   }
   if (path === "/advisory/admin/trigger-worker" && req.method === "POST") {
     const auth = await ctx.requireAuth(req);

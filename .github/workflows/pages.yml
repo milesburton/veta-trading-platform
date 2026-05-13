@@ -1,7 +1,12 @@
-name: Deploy GitHub Pages
+name: Docs - Build and Deploy Pages
 
 on:
   push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+  pull_request:
     branches: [main]
     paths:
       - "docs/**"
@@ -18,10 +23,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
+    name: Build Docs Site
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -44,11 +47,32 @@ jobs:
         working-directory: docs/site
         run: npm run build
 
+      - name: Upload docs build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-site-dist
+          path: docs/site/dist
+
+  deploy:
+    name: Deploy Docs to GitHub Pages
+    if: github.event_name == 'push'
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download docs build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-site-dist
+          path: docs-site-dist
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/site/dist
+          path: docs-site-dist
 
       - id: deployment
         uses: actions/deploy-pages@v4

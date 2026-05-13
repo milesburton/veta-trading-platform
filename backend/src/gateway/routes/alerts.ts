@@ -16,11 +16,15 @@ export async function handleAlertsRoute(
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
     const body = await req.arrayBuffer();
-    return forward(`${ctx.urls.userService}/users/${auth.user.id}/alerts`, req, {
-      method: "POST",
-      body,
-      contentType: "application/json",
-    });
+    return forward(
+      `${ctx.urls.userService}/users/${auth.user.id}/alerts`,
+      req,
+      {
+        method: "POST",
+        body,
+        contentType: "application/json",
+      },
+    );
   }
 
   if (path === "/alerts/dismiss-all" && req.method === "PUT") {

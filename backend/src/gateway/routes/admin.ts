@@ -1,5 +1,9 @@
 import { CORS_HEADERS } from "@veta/http";
-import { type AuthResult, type GatewayContext, isResponse } from "../context.ts";
+import {
+  type AuthResult,
+  type GatewayContext,
+  isResponse,
+} from "../context.ts";
 
 type OrderSpec = {
   asset: string;
@@ -24,10 +28,13 @@ function requireAdmin(auth: AuthResult): Response | null {
 
 function requireAdminOrOncall(auth: AuthResult): Response | null {
   if (auth.user.role !== "admin" && auth.user.role !== "oncall") {
-    return new Response(JSON.stringify({ error: "Admin or oncall role required" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-    });
+    return new Response(
+      JSON.stringify({ error: "Admin or oncall role required" }),
+      {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      },
+    );
   }
   return null;
 }
@@ -43,7 +50,11 @@ function busUnavailable(producerReady: boolean): Response | null {
 function makeWave(
   assets: string[],
   count: number,
-  strategyMix: Array<{ strategy: string; algoParams: Record<string, unknown>; weight: number }>,
+  strategyMix: Array<{
+    strategy: string;
+    algoParams: Record<string, unknown>;
+    weight: number;
+  }>,
   sideRatio = 0.6,
   baseDelay = 0,
   spreadMs = 8_000,
@@ -54,12 +65,13 @@ function makeWave(
     const asset = assets[i % assets.length];
     const side: "BUY" | "SELL" = Math.random() < sideRatio ? "BUY" : "SELL";
     const tier = Math.random();
-    const quantity = tier < 0.6
-      ? Math.round(10 + Math.random() * 90)
-      : tier < 0.9
-      ? Math.round(100 + Math.random() * 400)
-      : Math.round(500 + Math.random() * 1500);
-    const spread = (Math.random() * 0.03) * (side === "BUY" ? 1 : -1);
+    const quantity =
+      tier < 0.6
+        ? Math.round(10 + Math.random() * 90)
+        : tier < 0.9
+          ? Math.round(100 + Math.random() * 400)
+          : Math.round(500 + Math.random() * 1500);
+    const spread = Math.random() * 0.03 * (side === "BUY" ? 1 : -1);
     const limitPriceFactor = 1 + spread;
     let r = Math.random() * totalWeight;
     let chosen = strategyMix[0];
@@ -84,7 +96,10 @@ function makeWave(
   return orders;
 }
 
-async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Response> {
+async function handleLoadTest(
+  req: Request,
+  ctx: GatewayContext,
+): Promise<Response> {
   const auth = await ctx.requireAuth(req);
   if (isResponse(auth)) return auth;
   const adminRej = requireAdmin(auth);
@@ -94,7 +109,7 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
 
   let body: { symbols?: string[]; orderCount?: number; strategy?: string };
   try {
-    body = await req.json() as typeof body;
+    body = (await req.json()) as typeof body;
   } catch {
     return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
       status: 400,
@@ -111,10 +126,14 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
   if (!loadTestUserIds) {
     return new Response(
       JSON.stringify({
-        error: "LOAD_TEST_USER_IDS env var must be set on the gateway " +
+        error:
+          "LOAD_TEST_USER_IDS env var must be set on the gateway " +
           "with a comma-separated list of existing trader user IDs.",
       }),
-      { status: 500, headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      },
     );
   }
   const LOAD_TEST_USERS = loadTestUserIds
@@ -130,8 +149,10 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
     const res = await fetch(`${ctx.urls.marketSim}/prices`, {
       signal: AbortSignal.timeout(2000),
     });
-    if (res.ok) prices = await res.json() as Record<string, number>;
-  } catch { /* fall through to defaults */ }
+    if (res.ok) prices = (await res.json()) as Record<string, number>;
+  } catch {
+    /* fall through to defaults */
+  }
 
   const FALLBACK_REF: Record<string, number> = {
     AAPL: 180,
@@ -149,23 +170,26 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
       const side = i % 2 === 0 ? "BUY" : "SELL";
       const userId = LOAD_TEST_USERS[i % LOAD_TEST_USERS.length];
       const mid = refPrice(symbol);
-      const limitPrice = side === "BUY"
-        ? Number((mid * 1.02).toFixed(2))
-        : Number((mid * 0.98).toFixed(2));
+      const limitPrice =
+        side === "BUY"
+          ? Number((mid * 1.02).toFixed(2))
+          : Number((mid * 0.98).toFixed(2));
 
-      ctx.producer.send("orders.new", {
-        clientOrderId: `${jobId}-${i}`,
-        asset: symbol,
-        side,
-        quantity: 10 + (i % 90),
-        limitPrice,
-        expiresAt: 300,
-        strategy,
-        algoParams: { strategy },
-        userId,
-        userRole: "trader",
-        _loadTestJobId: jobId,
-      }).catch(() => {});
+      ctx.producer
+        .send("orders.new", {
+          clientOrderId: `${jobId}-${i}`,
+          asset: symbol,
+          side,
+          quantity: 10 + (i % 90),
+          limitPrice,
+          expiresAt: 300,
+          strategy,
+          algoParams: { strategy },
+          userId,
+          userRole: "trader",
+          _loadTestJobId: jobId,
+        })
+        .catch(() => {});
 
       if (i + 1 < orderCount && stride > 0) {
         await new Promise((r) => setTimeout(r, stride));
@@ -181,12 +205,24 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
   });
 
   return new Response(
-    JSON.stringify({ jobId, submitted: orderCount, symbols, strategy, paced: true }),
-    { status: 202, headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+    JSON.stringify({
+      jobId,
+      submitted: orderCount,
+      symbols,
+      strategy,
+      paced: true,
+    }),
+    {
+      status: 202,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    },
   );
 }
 
-async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<Response> {
+async function handleDemoDay(
+  req: Request,
+  ctx: GatewayContext,
+): Promise<Response> {
   const auth = await ctx.requireAuth(req);
   if (isResponse(auth)) return auth;
   const adminRej = requireAdminOrOncall(auth);
@@ -196,7 +232,7 @@ async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<Respons
 
   let body: { scenario?: string };
   try {
-    body = await req.json() as typeof body;
+    body = (await req.json()) as typeof body;
   } catch {
     body = {};
   }
@@ -207,43 +243,111 @@ async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<Respons
   try {
     const priceRes = await fetch(`${ctx.urls.marketSim}/assets`);
     if (priceRes.ok) {
-      const assets = await priceRes.json() as { symbol: string; price: number }[];
+      const assets = (await priceRes.json()) as {
+        symbol: string;
+        price: number;
+      }[];
       for (const a of assets) livePrices[a.symbol] = a.price;
     }
-  } catch { /* fall back to defaults */ }
+  } catch {
+    /* fall back to defaults */
+  }
 
   const defaultPrices: Record<string, number> = {
-    AAPL: 189, MSFT: 421, GOOGL: 175, AMZN: 185, TSLA: 172,
-    NVDA: 870, META: 510, JPM: 195, GS: 460, V: 275,
+    AAPL: 189,
+    MSFT: 421,
+    GOOGL: 175,
+    AMZN: 185,
+    TSLA: 172,
+    NVDA: 870,
+    META: 510,
+    JPM: 195,
+    GS: 460,
+    V: 275,
   };
   const priceFor = (symbol: string) =>
     livePrices[symbol] ?? defaultPrices[symbol] ?? 100;
 
-  const ALL_ASSETS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "JPM", "GS", "V"];
+  const ALL_ASSETS = [
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "TSLA",
+    "NVDA",
+    "META",
+    "JPM",
+    "GS",
+    "V",
+  ];
   const LARGE_CAP = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META"];
   const FIN_ASSETS = ["JPM", "GS", "V"];
 
   const limitMix = [
     { strategy: "LIMIT", algoParams: { strategy: "LIMIT" }, weight: 4 },
-    { strategy: "TWAP", algoParams: { strategy: "TWAP", slices: 4, intervalSeconds: 15 }, weight: 2 },
-    { strategy: "POV", algoParams: { strategy: "POV", povRate: 0.08 }, weight: 1 },
-    { strategy: "VWAP", algoParams: { strategy: "VWAP", intervalSeconds: 20 }, weight: 1 },
+    {
+      strategy: "TWAP",
+      algoParams: { strategy: "TWAP", slices: 4, intervalSeconds: 15 },
+      weight: 2,
+    },
+    {
+      strategy: "POV",
+      algoParams: { strategy: "POV", povRate: 0.08 },
+      weight: 1,
+    },
+    {
+      strategy: "VWAP",
+      algoParams: { strategy: "VWAP", intervalSeconds: 20 },
+      weight: 1,
+    },
   ];
   const algoHeavyMix = [
     { strategy: "LIMIT", algoParams: { strategy: "LIMIT" }, weight: 1 },
-    { strategy: "TWAP", algoParams: { strategy: "TWAP", slices: 5, intervalSeconds: 10 }, weight: 3 },
-    { strategy: "POV", algoParams: { strategy: "POV", povRate: 0.10 }, weight: 2 },
-    { strategy: "VWAP", algoParams: { strategy: "VWAP", intervalSeconds: 15 }, weight: 2 },
-    { strategy: "ICEBERG", algoParams: { strategy: "ICEBERG", visibleQty: 100 }, weight: 1 },
+    {
+      strategy: "TWAP",
+      algoParams: { strategy: "TWAP", slices: 5, intervalSeconds: 10 },
+      weight: 3,
+    },
+    {
+      strategy: "POV",
+      algoParams: { strategy: "POV", povRate: 0.1 },
+      weight: 2,
+    },
+    {
+      strategy: "VWAP",
+      algoParams: { strategy: "VWAP", intervalSeconds: 15 },
+      weight: 2,
+    },
+    {
+      strategy: "ICEBERG",
+      algoParams: { strategy: "ICEBERG", visibleQty: 100 },
+      weight: 1,
+    },
     { strategy: "SNIPER", algoParams: { strategy: "SNIPER" }, weight: 1 },
     { strategy: "IS", algoParams: { strategy: "IS", urgency: 0.6 }, weight: 1 },
-    { strategy: "MOMENTUM", algoParams: { strategy: "MOMENTUM", entryThresholdBps: 8 }, weight: 1 },
+    {
+      strategy: "MOMENTUM",
+      algoParams: { strategy: "MOMENTUM", entryThresholdBps: 8 },
+      weight: 1,
+    },
   ];
   const volatilityMix = [
     { strategy: "SNIPER", algoParams: { strategy: "SNIPER" }, weight: 3 },
-    { strategy: "ICEBERG", algoParams: { strategy: "ICEBERG", visibleQty: 50 }, weight: 2 },
-    { strategy: "ARRIVAL_PRICE", algoParams: { strategy: "ARRIVAL_PRICE" }, weight: 2 },
-    { strategy: "MOMENTUM", algoParams: { strategy: "MOMENTUM", entryThresholdBps: 5, urgency: 0.8 }, weight: 1 },
+    {
+      strategy: "ICEBERG",
+      algoParams: { strategy: "ICEBERG", visibleQty: 50 },
+      weight: 2,
+    },
+    {
+      strategy: "ARRIVAL_PRICE",
+      algoParams: { strategy: "ARRIVAL_PRICE" },
+      weight: 2,
+    },
+    {
+      strategy: "MOMENTUM",
+      algoParams: { strategy: "MOMENTUM", entryThresholdBps: 5, urgency: 0.8 },
+      weight: 1,
+    },
     { strategy: "LIMIT", algoParams: { strategy: "LIMIT" }, weight: 1 },
   ];
 
@@ -254,10 +358,21 @@ async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<Respons
     case "market-open": {
       scenarioLabel = "Market Open";
       waves = [
-        ...makeWave(ALL_ASSETS, 60, [
-          { strategy: "LIMIT", algoParams: { strategy: "LIMIT" }, weight: 5 },
-          { strategy: "SNIPER", algoParams: { strategy: "SNIPER" }, weight: 3 },
-        ], 0.65, 0, 3_000),
+        ...makeWave(
+          ALL_ASSETS,
+          60,
+          [
+            { strategy: "LIMIT", algoParams: { strategy: "LIMIT" }, weight: 5 },
+            {
+              strategy: "SNIPER",
+              algoParams: { strategy: "SNIPER" },
+              weight: 3,
+            },
+          ],
+          0.65,
+          0,
+          3_000,
+        ),
         ...makeWave(ALL_ASSETS, 40, limitMix, 0.55, 4_000, 10_000),
         ...makeWave(LARGE_CAP, 20, algoHeavyMix, 0.5, 15_000, 8_000),
       ];
@@ -275,16 +390,54 @@ async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<Respons
     case "institutional": {
       scenarioLabel = "Institutional Flow";
       waves = [
-        ...makeWave(LARGE_CAP, 30, [
-          { strategy: "TWAP", algoParams: { strategy: "TWAP", slices: 8, intervalSeconds: 20 }, weight: 3 },
-          { strategy: "VWAP", algoParams: { strategy: "VWAP", intervalSeconds: 25 }, weight: 3 },
-          { strategy: "ICEBERG", algoParams: { strategy: "ICEBERG", visibleQty: 200 }, weight: 2 },
-        ], 0.5, 0, 12_000),
-        ...makeWave(FIN_ASSETS, 20, [
-          { strategy: "ARRIVAL_PRICE", algoParams: { strategy: "ARRIVAL_PRICE" }, weight: 2 },
-          { strategy: "TWAP", algoParams: { strategy: "TWAP", slices: 6, intervalSeconds: 15 }, weight: 2 },
-          { strategy: "ICEBERG", algoParams: { strategy: "ICEBERG", visibleQty: 150 }, weight: 1 },
-        ], 0.45, 5_000, 10_000),
+        ...makeWave(
+          LARGE_CAP,
+          30,
+          [
+            {
+              strategy: "TWAP",
+              algoParams: { strategy: "TWAP", slices: 8, intervalSeconds: 20 },
+              weight: 3,
+            },
+            {
+              strategy: "VWAP",
+              algoParams: { strategy: "VWAP", intervalSeconds: 25 },
+              weight: 3,
+            },
+            {
+              strategy: "ICEBERG",
+              algoParams: { strategy: "ICEBERG", visibleQty: 200 },
+              weight: 2,
+            },
+          ],
+          0.5,
+          0,
+          12_000,
+        ),
+        ...makeWave(
+          FIN_ASSETS,
+          20,
+          [
+            {
+              strategy: "ARRIVAL_PRICE",
+              algoParams: { strategy: "ARRIVAL_PRICE" },
+              weight: 2,
+            },
+            {
+              strategy: "TWAP",
+              algoParams: { strategy: "TWAP", slices: 6, intervalSeconds: 15 },
+              weight: 2,
+            },
+            {
+              strategy: "ICEBERG",
+              algoParams: { strategy: "ICEBERG", visibleQty: 150 },
+              weight: 1,
+            },
+          ],
+          0.45,
+          5_000,
+          10_000,
+        ),
       ];
       break;
     }
@@ -337,11 +490,17 @@ async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<Respons
 
   return new Response(
     JSON.stringify({ jobId, submitted: total, scenario: scenarioLabel }),
-    { status: 202, headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+    {
+      status: 202,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    },
   );
 }
 
-async function handleLoadGenStart(req: Request, ctx: GatewayContext): Promise<Response> {
+async function handleLoadGenStart(
+  req: Request,
+  ctx: GatewayContext,
+): Promise<Response> {
   const auth = await ctx.requireAuth(req);
   if (isResponse(auth)) return auth;
   const rej = requireAdminOrOncall(auth);
@@ -357,7 +516,10 @@ async function handleLoadGenStart(req: Request, ctx: GatewayContext): Promise<Re
   }
 
   try {
-    const status = ctx.loadAgent.start(body, { userId: auth.user.id, role: auth.user.role });
+    const status = ctx.loadAgent.start(body, {
+      userId: auth.user.id,
+      role: auth.user.role,
+    });
     return new Response(JSON.stringify(status), {
       status: 200,
       headers: { "Content-Type": "application/json", ...CORS_HEADERS },
@@ -370,20 +532,29 @@ async function handleLoadGenStart(req: Request, ctx: GatewayContext): Promise<Re
   }
 }
 
-async function handleLoadGenStop(req: Request, ctx: GatewayContext): Promise<Response> {
+async function handleLoadGenStop(
+  req: Request,
+  ctx: GatewayContext,
+): Promise<Response> {
   const auth = await ctx.requireAuth(req);
   if (isResponse(auth)) return auth;
   const rej = requireAdminOrOncall(auth);
   if (rej) return rej;
 
-  const status = ctx.loadAgent.stop({ userId: auth.user.id, role: auth.user.role });
+  const status = ctx.loadAgent.stop({
+    userId: auth.user.id,
+    role: auth.user.role,
+  });
   return new Response(JSON.stringify(status), {
     status: 200,
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
 }
 
-async function handleLoadGenStatus(req: Request, ctx: GatewayContext): Promise<Response> {
+async function handleLoadGenStatus(
+  req: Request,
+  ctx: GatewayContext,
+): Promise<Response> {
   const auth = await ctx.requireAuth(req);
   if (isResponse(auth)) return auth;
   const rej = requireAdminOrOncall(auth);

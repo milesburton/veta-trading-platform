@@ -23,7 +23,7 @@ services:
     <<: *uat-defaults
     ports: !override
       - "8432:5432"
-    mem_limit: 256m
+    mem_limit: 512m
     labels:
       - "traefik.enable=false"
 

@@ -48,9 +48,12 @@ export async function handleProxiedRoutes(
   if (path === "/me" && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
-    return new Response(JSON.stringify({ user: auth.user, limits: auth.limits }), {
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-    });
+    return new Response(
+      JSON.stringify({ user: auth.user, limits: auth.limits }),
+      {
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      },
+    );
   }
 
   // ── Reference data ───────────────────────────────────────────
@@ -135,9 +138,12 @@ export async function handleProxiedRoutes(
     if (isResponse(auth)) return auth;
     const target = new URL(`${ctx.urls.rfqService}/rfq`);
     target.search = url.search;
-    if (!target.searchParams.has("userId")) target.searchParams.set("userId", auth.user.id);
+    if (!target.searchParams.has("userId"))
+      target.searchParams.set("userId", auth.user.id);
     try {
-      const res = await fetch(target.toString(), { signal: AbortSignal.timeout(8_000) });
+      const res = await fetch(target.toString(), {
+        signal: AbortSignal.timeout(8_000),
+      });
       const body = await res.arrayBuffer();
       return new Response(body, {
         status: res.status,
@@ -182,7 +188,10 @@ export async function handleProxiedRoutes(
   if (matchSsRfq && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
-    return proxyGet(`${ctx.urls.rfqService}/rfq/sellside/${matchSsRfq[1]}`, req);
+    return proxyGet(
+      `${ctx.urls.rfqService}/rfq/sellside/${matchSsRfq[1]}`,
+      req,
+    );
   }
   const matchSsRoute = path.match(
     /^\/rfq\/sellside\/([^/]+)\/(route|markup|confirm|reject)$/,
@@ -205,7 +214,10 @@ export async function handleProxiedRoutes(
       qs.set("userId", auth.user.id);
       qs.set("userRole", "external-client");
     }
-    return proxyGet(`${ctx.urls.productService}/products?${qs.toString()}`, req);
+    return proxyGet(
+      `${ctx.urls.productService}/products?${qs.toString()}`,
+      req,
+    );
   }
   if (path === "/products/stats" && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
@@ -221,7 +233,10 @@ export async function handleProxiedRoutes(
   if (matchProductId && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
-    return proxyGet(`${ctx.urls.productService}/products/${matchProductId[1]}`, req);
+    return proxyGet(
+      `${ctx.urls.productService}/products/${matchProductId[1]}`,
+      req,
+    );
   }
   const matchProductAction = path.match(
     /^\/products\/([^/]+)\/(legs|structure|issue|sell|unwind)$/,
@@ -334,11 +349,16 @@ export async function handleProxiedRoutes(
     if (isResponse(auth)) return auth;
     return proxyPut(`${ctx.urls.marketData}/overrides`, req);
   }
-  const mdsToggleMatch = path.match(/^\/market-data\/sources\/([^/]+)\/toggle$/);
+  const mdsToggleMatch = path.match(
+    /^\/market-data\/sources\/([^/]+)\/toggle$/,
+  );
   if (mdsToggleMatch && req.method === "POST") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
-    return proxyPost(`${ctx.urls.marketData}/sources/${mdsToggleMatch[1]}/toggle`, req);
+    return proxyPost(
+      `${ctx.urls.marketData}/sources/${mdsToggleMatch[1]}/toggle`,
+      req,
+    );
   }
 
   return null;
