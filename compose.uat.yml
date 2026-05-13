@@ -31,8 +31,6 @@ services:
 
   traefik:
     <<: *uat-defaults
-    command:
-      - "--providers.docker.constraints=Label(`io.veta.env`, `uat`)"
     ports: !override
       - "8080:80"
       - "8443:443"

@@ -6,14 +6,6 @@ x-prod-image: &prod-defaults
 
 services:
 
-  traefik:
-    <<: *prod-defaults
-    command:
-      - "--providers.docker.constraints=Label(`io.veta.env`, `prod`)"
-    labels:
-      - "io.veta.env=prod"
-      - "traefik.enable=false"
-
   # Infrastructure — persistent, no Watchtower
   redpanda:
     <<: *prod-defaults
@@ -28,13 +20,11 @@ services:
       - --advertise-kafka-addr=redpanda:9092
     mem_limit: 768m
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
 
   postgres:
     <<: *prod-defaults
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
 
   # Application services — use GHCR images + Watchtower
@@ -44,7 +34,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=true"
       - "traefik.http.middlewares.origin-ratelimit.ratelimit.average=60"
       - "traefik.http.middlewares.origin-ratelimit.ratelimit.burst=120"
@@ -62,7 +51,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.market-sim.rule=PathPrefix(`/api/market-sim`) || PathPrefix(`/ws/market-sim`)"
       - "traefik.http.routers.market-sim.entrypoints=web"
@@ -76,7 +64,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.ems.rule=PathPrefix(`/api/ems`)"
       - "traefik.http.routers.ems.entrypoints=web"
@@ -90,7 +77,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.oms.rule=PathPrefix(`/api/oms`)"
       - "traefik.http.routers.oms.entrypoints=web"
@@ -104,7 +90,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.limit-algo.rule=PathPrefix(`/api/limit-algo`)"
       - "traefik.http.routers.limit-algo.entrypoints=web"
@@ -118,7 +103,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.twap-algo.rule=PathPrefix(`/api/twap-algo`)"
       - "traefik.http.routers.twap-algo.entrypoints=web"
@@ -132,7 +116,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.pov-algo.rule=PathPrefix(`/api/pov-algo`)"
       - "traefik.http.routers.pov-algo.entrypoints=web"
@@ -146,7 +129,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.vwap-algo.rule=PathPrefix(`/api/vwap-algo`)"
       - "traefik.http.routers.vwap-algo.entrypoints=web"
@@ -160,7 +142,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.iceberg-algo.rule=PathPrefix(`/api/iceberg-algo`)"
       - "traefik.http.routers.iceberg-algo.entrypoints=web"
@@ -174,7 +155,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.sniper-algo.rule=PathPrefix(`/api/sniper-algo`)"
       - "traefik.http.routers.sniper-algo.entrypoints=web"
@@ -188,7 +168,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.arrival-price-algo.rule=PathPrefix(`/api/arrival-price-algo`)"
       - "traefik.http.routers.arrival-price-algo.entrypoints=web"
@@ -202,7 +181,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.momentum-algo.rule=PathPrefix(`/api/momentum-algo`)"
       - "traefik.http.routers.momentum-algo.entrypoints=web"
@@ -216,7 +194,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.is-algo.rule=PathPrefix(`/api/is-algo`)"
       - "traefik.http.routers.is-algo.entrypoints=web"
@@ -230,7 +207,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.kafka-relay.rule=PathPrefix(`/api/kafka-relay`) || PathPrefix(`/api/observability`)"
       - "traefik.http.routers.kafka-relay.entrypoints=web"
@@ -255,7 +231,6 @@ services:
       # style; never credentials.
       VETA_DEMO_MODE: "${VETA_DEMO_MODE:-true}"
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.user-service.rule=PathPrefix(`/api/user-service`)"
       - "traefik.http.routers.user-service.entrypoints=web"
@@ -269,7 +244,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.journal.rule=PathPrefix(`/api/journal`)"
       - "traefik.http.routers.journal.entrypoints=web"
@@ -283,7 +257,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.fix-exchange.rule=PathPrefix(`/api/fix-exchange`)"
       - "traefik.http.routers.fix-exchange.entrypoints=web"
@@ -297,7 +270,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.fix-gateway.rule=PathPrefix(`/api/fix-gateway`) || PathPrefix(`/ws/fix`)"
       - "traefik.http.routers.fix-gateway.entrypoints=web"
@@ -311,7 +283,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.fix-archive.rule=PathPrefix(`/api/fix-archive`)"
       - "traefik.http.routers.fix-archive.entrypoints=web"
@@ -325,7 +296,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.analytics.rule=PathPrefix(`/api/analytics`)"
       - "traefik.http.routers.analytics.entrypoints=web"
@@ -339,7 +309,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.market-data.rule=PathPrefix(`/api/market-data`)"
       - "traefik.http.routers.market-data.entrypoints=web"
@@ -353,7 +322,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.market-data-adapters.rule=PathPrefix(`/api/market-data-adapters`)"
       - "traefik.http.routers.market-data-adapters.entrypoints=web"
@@ -367,7 +335,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.feature-engine.rule=PathPrefix(`/api/feature-engine`)"
       - "traefik.http.routers.feature-engine.entrypoints=web"
@@ -381,7 +348,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.signal-engine.rule=PathPrefix(`/api/signal-engine`)"
       - "traefik.http.routers.signal-engine.entrypoints=web"
@@ -395,7 +361,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.recommendation-engine.rule=PathPrefix(`/api/recommendation-engine`)"
       - "traefik.http.routers.recommendation-engine.entrypoints=web"
@@ -409,7 +374,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.scenario-engine.rule=PathPrefix(`/api/scenario-engine`)"
       - "traefik.http.routers.scenario-engine.entrypoints=web"
@@ -434,7 +398,6 @@ services:
       LLM_WORKER_ENABLED: "false"
       DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.llm-advisory.rule=PathPrefix(`/api/llm-advisory`)"
       - "traefik.http.routers.llm-advisory.entrypoints=web"
@@ -454,7 +417,6 @@ services:
     environment:
       LLM_ENABLED: "false"
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
 
   news-aggregator:
@@ -463,7 +425,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
 
   dark-pool:
@@ -472,7 +433,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.dark-pool.rule=PathPrefix(`/api/dark-pool`)"
       - "traefik.http.routers.dark-pool.entrypoints=web"
@@ -486,7 +446,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.ccp-service.rule=PathPrefix(`/api/ccp-service`)"
       - "traefik.http.routers.ccp-service.entrypoints=web"
@@ -500,7 +459,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.rfq-service.rule=PathPrefix(`/api/rfq-service`)"
       - "traefik.http.routers.rfq-service.entrypoints=web"
@@ -514,7 +472,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.product-service.rule=PathPrefix(`/api/product-service`)"
       - "traefik.http.routers.product-service.entrypoints=web"
@@ -528,7 +485,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.replay-service.rule=PathPrefix(`/api/replay`)"
       - "traefik.http.routers.replay-service.entrypoints=web"
@@ -542,7 +498,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
       - "traefik.http.routers.risk-engine.rule=PathPrefix(`/api/risk-engine`)"
       - "traefik.http.routers.risk-engine.entrypoints=web"
@@ -566,7 +521,6 @@ services:
     build: !reset null
     profiles: !reset []
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=true"
       - "traefik.http.middlewares.api-ratelimit.ratelimit.average=30"
       - "traefik.http.middlewares.api-ratelimit.ratelimit.burst=60"
@@ -599,11 +553,9 @@ services:
     profiles: !reset []
     restart: "no"
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
 
   redpanda-console:
     <<: *prod-defaults
     labels:
-      - "io.veta.env=prod"
       - "traefik.enable=false"
