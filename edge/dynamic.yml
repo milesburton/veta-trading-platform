@@ -12,6 +12,11 @@ tls:
         resolver: letsencrypt
         domain:
           main: veta.mnetcs.com
+  options:
+    default:
+      alpnProtocols:
+        - http/1.1
+        - acme-tls/1
 
 http:
   routers:
