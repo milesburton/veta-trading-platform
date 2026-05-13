@@ -90,7 +90,9 @@ async function seedEvents(): Promise<void> {
   for (const ev of economicEvents) await publishEvent(ev, economicSource);
 }
 
-await seedEvents();
+seedEvents().catch((err) => {
+  logger.warn("Initial event seed failed", { err });
+});
 setInterval(async () => {
   await seedEvents();
 }, 7 * 24 * 60 * 60 * 1000);
