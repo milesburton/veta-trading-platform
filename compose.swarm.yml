@@ -1,3 +1,8 @@
+networks:
+  trading-net:
+    driver: overlay
+    attachable: true
+
 x-app-deploy: &app-deploy
   replicas: 1
   update_config:
