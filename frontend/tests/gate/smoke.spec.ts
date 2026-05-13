@@ -12,11 +12,20 @@ test.describe("deploy-gate smoke", () => {
     expect(res.status()).toBe(401);
   });
 
-  test("market-sim is producing prices via gateway", async ({ request }) => {
+  test("market-sim is producing prices via gateway", async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto("/");
+    await expect(page.getByTestId("login-page")).toBeVisible({ timeout: 15_000 });
+    await page.getByTestId("oauth-username").fill("alice");
+    await page.getByTestId("oauth-password").fill("veta-dev-passcode");
+    await page.getByTestId("oauth-submit").click();
+    await expect(page.getByTestId("app-header")).toBeVisible({ timeout: 30_000 });
+
     const deadline = Date.now() + 30_000;
     let prices: Record<string, unknown> | null = null;
     while (Date.now() < deadline) {
-      const res = await request.get("/api/gateway/api/market-sim/prices");
+      const res = await context.request.get("/api/gateway/api/market-sim/prices");
       if (res.ok()) {
         const body = await res.json();
         if (body && typeof body === "object" && Object.keys(body).length > 0) {
@@ -26,6 +35,7 @@ test.describe("deploy-gate smoke", () => {
       }
       await new Promise((r) => setTimeout(r, 1_000));
     }
+    await context.close();
     expect(prices, "market-sim should have published at least one price within 30s").not.toBeNull();
   });
 
