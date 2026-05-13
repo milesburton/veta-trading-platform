@@ -14,7 +14,8 @@ providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
-    network: trading-net
+    network: veta-uat_trading-net
+    constraints: "Label(`io.veta.env`, `uat`)"
 
 certificatesResolvers:
   letsencrypt:
