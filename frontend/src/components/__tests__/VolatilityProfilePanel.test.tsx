@@ -1,11 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { marketSlice } from "../../store/marketSlice";
 import { VolatilityProfilePanel } from "../VolatilityProfilePanel";
 
 const useGetVolProfileQuery = vi.fn();
+let warnSpy: ReturnType<typeof vi.spyOn>;
 
 vi.mock("../../store/analyticsApi.ts", () => ({
   useGetVolProfileQuery: (...args: unknown[]) => useGetVolProfileQuery(...args),
@@ -49,12 +50,18 @@ function renderPanel() {
 
   render(
     <Provider store={store}>
-      <VolatilityProfilePanel />
+      <div style={{ width: 800, height: 480 }}>
+        <VolatilityProfilePanel />
+      </div>
     </Provider>
   );
 }
 
 beforeEach(() => {
+  warnSpy = vi.spyOn(console, "warn").mockImplementation((...args: unknown[]) => {
+    const first = String(args[0] ?? "");
+    if (first.includes("The width(0) and height(0) of chart should be greater than 0")) return;
+  });
   useGetVolProfileQuery.mockReset();
   useGetVolProfileQuery.mockReturnValue({
     data: {
@@ -71,6 +78,10 @@ beforeEach(() => {
     isFetching: false,
     error: undefined,
   });
+});
+
+afterEach(() => {
+  warnSpy.mockRestore();
 });
 
 describe("VolatilityProfilePanel", () => {
