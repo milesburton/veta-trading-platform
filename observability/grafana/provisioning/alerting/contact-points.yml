@@ -20,9 +20,10 @@ contactPoints:
       - uid: security-webhook
         type: webhook
         settings:
-          # Set ALERT_WEBHOOK_URL in the homelab .env to enable. When
-          # unset, Grafana logs a warning and drops the notification —
-          # alerts still fire in the UI; just no external delivery.
+          # Set ALERT_WEBHOOK_URL in the homelab .env to enable.
+          # docker-compose.lgtm.yml supplies an unreachable sentinel
+          # default — Grafana 11.4 refuses to provision a webhook
+          # receiver with an empty url and crash-loops the container.
           url: ${ALERT_WEBHOOK_URL}
           httpMethod: POST
         disableResolveMessage: false

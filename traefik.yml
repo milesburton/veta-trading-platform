@@ -25,7 +25,12 @@ providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
-    network: trading-net
+    # Compose namespaces the network as `<project>_trading-net`. On the
+    # homelab and UAT (compose project `veta`) the actual network is
+    # `veta_trading-net`. Other stacks on the homelab (LGTM observability,
+    # the personal caddy/mediawiki bridge) also attach to this exact name,
+    # so we match the de-facto identifier rather than rename it.
+    network: veta_trading-net
 
 certificatesResolvers:
   letsencrypt:

@@ -77,10 +77,14 @@ services:
       # order-pipeline-traces dashboard's flowchart panel will render as
       # "panel not installed" until a working mermaid/flowchart plugin is
       # picked. Trading is unaffected.
-      # Used by provisioning/alerting/contact-points.yml. Unset → alerts
-      # still fire in the UI but external delivery is dropped. Set in
-      # /opt/stacks/veta/.env (e.g. Slack incoming webhook URL).
-      ALERT_WEBHOOK_URL: "${ALERT_WEBHOOK_URL:-}"
+      # Used by provisioning/alerting/contact-points.yml. Grafana 11.4
+      # rejects an empty `url` on a webhook receiver at provisioning time
+      # and crash-loops the container, so the default has to be a
+      # syntactically valid URL. The sentinel below is unreachable —
+      # webhook send attempts will fail with a connection error logged
+      # by Grafana, but the UI keeps working. Override in
+      # /opt/stacks/veta/.env to actually deliver alerts.
+      ALERT_WEBHOOK_URL: "${ALERT_WEBHOOK_URL:-http://alerts-not-configured.invalid/}"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana-data:/var/lib/grafana
