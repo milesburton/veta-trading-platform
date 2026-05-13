@@ -15,27 +15,36 @@ fi
 
 echo "Pre-commit checks... (commit: $COMMIT_SHA)"
 
-echo "  [1/8] Backend lint..."
+echo "  [0/8] Verifying clean working directory..."
+# Check for any uncommitted changes (excluding untracked files)
+if ! git diff-index --quiet HEAD --; then
+  echo "❌ ERROR: You have uncommitted changes in your working directory."
+  echo "Please commit or stash your changes before committing:"
+  git diff-index --name-only HEAD --
+  exit 1
+fi
+
+echo "  [1/9] Backend lint..."
 cd "$REPO_ROOT"
 deno task lint
 
-echo "  [2/8] Backend type-check..."
+echo "  [2/9] Backend type-check..."
 deno task check
 
-echo "  [3/8] Backend unit tests..."
+echo "  [3/9] Backend unit tests..."
 deno task test
 
-echo "  [4/8] Frontend lint (all files)..."
+echo "  [4/9] Frontend lint (all files)..."
 cd "$REPO_ROOT/frontend"
 deno run -A npm:@biomejs/biome check src/
 
-echo "  [5/8] Frontend type-check (all files)..."
+echo "  [5/9] Frontend type-check (all files)..."
 ./node_modules/.bin/tsc --noEmit --skipLibCheck
 
-echo "  [6/8] Frontend unit tests..."
+echo "  [6/9] Frontend unit tests..."
 ./node_modules/.bin/vitest run
 
-echo "  [7/8] Smoke tests (skipped if services offline)..."
+echo "  [7/9] Smoke tests (skipped if services offline)..."
 cd "$REPO_ROOT"
 if curl -sf http://localhost:5000/health >/dev/null 2>&1 && curl -sf http://localhost:5018/health >/dev/null 2>&1; then
   deno task test:smoke
@@ -43,7 +52,7 @@ else
   echo "       Services not fully running — skipping smoke tests."
 fi
 
-echo "  [8/8] Integration tests (skipped if services offline)..."
+echo "  [8/9] Integration tests (skipped if services offline)..."
 if curl -sf http://localhost:5000/health >/dev/null 2>&1 && curl -sf http://localhost:5032/health >/dev/null 2>&1; then
   deno task test:integration
 else
