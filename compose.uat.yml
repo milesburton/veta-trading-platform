@@ -17,6 +17,7 @@ services:
       - --advertise-kafka-addr=redpanda:9092
     mem_limit: 512m
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=false"
 
   postgres:
@@ -25,10 +26,13 @@ services:
       - "8432:5432"
     mem_limit: 512m
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=false"
 
   traefik:
     <<: *uat-defaults
+    command:
+      - "--providers.docker.constraints=Label(`io.veta.env`, `uat`)"
     ports: !override
       - "8080:80"
       - "8443:443"
@@ -38,6 +42,7 @@ services:
       - ./traefik.uat.yml:/traefik.yml:ro
     mem_limit: 96m
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=false"
 
   disk-monitor:
@@ -58,6 +63,7 @@ services:
     profiles: !reset []
     mem_limit: 128m
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
       - "traefik.http.routers.frontend.entrypoints=web"
@@ -71,6 +77,7 @@ services:
     profiles: !reset []
     mem_limit: 384m
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=true"
       - "traefik.http.routers.market-sim.rule=PathPrefix(`/api/market-sim`) || PathPrefix(`/ws/market-sim`)"
       - "traefik.http.routers.market-sim.entrypoints=web"
@@ -86,6 +93,7 @@ services:
     profiles: !reset []
     mem_limit: 256m
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=true"
       - "traefik.http.routers.ems.rule=PathPrefix(`/api/ems`)"
       - "traefik.http.routers.ems.entrypoints=web"
@@ -101,6 +109,7 @@ services:
     profiles: !reset []
     mem_limit: 256m
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=true"
       - "traefik.http.routers.oms.rule=PathPrefix(`/api/oms`)"
       - "traefik.http.routers.oms.entrypoints=web"
@@ -116,6 +125,7 @@ services:
     profiles: !reset []
     mem_limit: 384m
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=true"
       - "traefik.http.routers.gateway.rule=PathPrefix(`/api/gateway`)"
       - "traefik.http.routers.gateway.entrypoints=web"
@@ -138,7 +148,12 @@ services:
     build: !reset null
     profiles: !reset []
     mem_limit: 256m
+    environment:
+      OAUTH2_SHARED_SECRET: "${OAUTH2_SHARED_SECRET:?OAUTH2_SHARED_SECRET must be set in /opt/stacks/veta-uat/.env}"
+      OAUTH2_USER_SECRETS: "${OAUTH2_USER_SECRETS:-}"
+      VETA_DEMO_MODE: "${VETA_DEMO_MODE:-true}"
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=false"
 
   journal:
@@ -148,6 +163,7 @@ services:
     profiles: !reset []
     mem_limit: 256m
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=false"
 
   risk-engine:
@@ -157,6 +173,7 @@ services:
     profiles: !reset []
     mem_limit: 256m
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=false"
 
   analytics:
@@ -166,6 +183,7 @@ services:
     profiles: !reset []
     mem_limit: 256m
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=false"
 
   market-data:
@@ -368,6 +386,7 @@ services:
     <<: *uat-defaults
     mem_limit: 96m
     labels:
+      - "io.veta.env=uat"
       - "traefik.enable=false"
 
   ollama:
