@@ -14,9 +14,19 @@ export interface RuntimeConfigStore {
   ): Promise<LlmRuntimeConfig>;
 }
 
+export interface RuntimeConfigStoreOptions {
+  /** TTL for the in-process cache of getConfig() results. Default 30s. Pass 0 to disable. */
+  cacheTtlMs?: number;
+  /** Override `Date.now` (tests only). */
+  now?: () => number;
+}
+
 export async function createRuntimeConfigStore(
   pool: Pool,
+  options: RuntimeConfigStoreOptions = {},
 ): Promise<RuntimeConfigStore> {
+  const cacheTtlMs = options.cacheTtlMs ?? 30_000;
+  const now = options.now ?? Date.now;
   // Ensure default row exists
   const client = await pool.connect();
   try {
@@ -30,7 +40,16 @@ export async function createRuntimeConfigStore(
     client.release();
   }
 
-  async function getConfig(): Promise<LlmRuntimeConfig> {
+  // In-process cache. `getConfig()` is on the hot path of every event
+  // consumed by the orchestrator (3+ calls per event). Without the cache,
+  // each call is a DB round-trip and the consumer handler-timeout fires
+  // under any non-trivial event rate. Cache entries are invalidated by
+  // `updateConfig` so UI changes propagate immediately on the writer, and
+  // expire on a TTL elsewhere so other readers pick them up within
+  // `cacheTtlMs`.
+  let cached: { value: LlmRuntimeConfig; expiresAt: number } | null = null;
+
+  async function fetchFresh(): Promise<LlmRuntimeConfig> {
     const c = await pool.connect();
     try {
       const { rows } = await c.queryArray<
@@ -43,7 +62,7 @@ export async function createRuntimeConfigStore(
           enabled: false,
           workerEnabled: false,
           triggerMode: "manual",
-          updatedAt: Date.now(),
+          updatedAt: now(),
           updatedBy: "system",
         };
       }
@@ -61,6 +80,17 @@ export async function createRuntimeConfigStore(
     }
   }
 
+  async function getConfig(): Promise<LlmRuntimeConfig> {
+    if (cacheTtlMs > 0 && cached && now() < cached.expiresAt) {
+      return cached.value;
+    }
+    const value = await fetchFresh();
+    if (cacheTtlMs > 0) {
+      cached = { value, expiresAt: now() + cacheTtlMs };
+    }
+    return value;
+  }
+
   return {
     getConfig,
 
@@ -68,12 +98,12 @@ export async function createRuntimeConfigStore(
       patch: Partial<Omit<LlmRuntimeConfig, "updatedAt">>,
       updatedBy: string,
     ): Promise<LlmRuntimeConfig> {
-      const current = await getConfig();
+      const current = await fetchFresh();
       const next: LlmRuntimeConfig = {
         enabled: patch.enabled ?? current.enabled,
         workerEnabled: patch.workerEnabled ?? current.workerEnabled,
         triggerMode: patch.triggerMode ?? current.triggerMode,
-        updatedAt: Date.now(),
+        updatedAt: now(),
         updatedBy,
       };
       const c = await pool.connect();
@@ -93,6 +123,9 @@ export async function createRuntimeConfigStore(
       } finally {
         c.release();
       }
+      cached = cacheTtlMs > 0
+        ? { value: next, expiresAt: now() + cacheTtlMs }
+        : null;
       return next;
     },
   };
