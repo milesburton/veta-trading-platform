@@ -119,7 +119,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "risk-dashboard": "Risk Dashboard (firm-wide P&L)",
   "my-positions": "My Positions (live book)",
   "symbol-search": "Symbol Search (find instruments)",
-  "dev-tools": "Dev Tools (UAT debugging)",
+  "dev-tools": "Dev Tools (admin debugging)",
   "data-depth": "Market Data Depth (per-symbol history)",
   scenarios: "Scenarios (deterministic replay)",
 };
@@ -211,7 +211,7 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "my-positions": "Your open positions with live mark-to-market P&L",
   "symbol-search": "Search by symbol, RIC, BBG ticker, ISIN, or paste a Bloomberg trade",
   "dev-tools":
-    "UAT debugging toolkit — fire test alerts (all severities), inject demo trades, run load tests, manage mute rules, and inspect connection state",
+    "Admin debugging toolkit — fire test alerts (all severities), inject demo trades, run load tests, manage mute rules, and inspect connection state",
   "data-depth":
     "Per-symbol market data depth — sortable list of all tracked symbols with candle count, span days, and warning thresholds",
   scenarios:

@@ -89,32 +89,16 @@ The first two are "elite" by DORA's classification; the last two are "low perfor
 
 ### Environments
 
-Three explicit environments, no overlap of running services:
+Two environments, no overlap of running services:
 
 | Env | Host | Purpose | Promotion |
 |---|---|---|---|
 | **dev** | engineer workstation, devcontainer | day-to-day coding, fast iteration. Not 24/7. | n/a |
-| **UAT** | homelab Proxmox LXC, ports `8xxx` (separate compose project, separate DB schema, separate Redpanda topic prefix) | every merge to `main` deploys here automatically; integration testing; load testing; demos | manual after green synthetic soak |
-| **prod** | homelab Proxmox LXC, ports `5xxx` (existing prod project), public via OVH SSH tunnel | tagged releases only; never `:latest`; the only environment customers (and demos) see at `veta.mnetcs.com` | gated by release tag + manual approval |
+| **prod** | homelab Proxmox LXC, ports `5xxx`, public via OVH SSH tunnel at `veta.mnetcs.com` | every merge to `main` deploys here automatically via the systemd auto-pull + swarm-deploy pipeline | continuous |
 
-Both UAT and prod live on the **same homelab box** (32 cores, 64 GB RAM, 2 TB SSD, 100 TB NAS via iSCSI — plenty of headroom). They are kept apart by:
-
-- **Compose project name**: `veta` for prod, `veta-uat` for UAT. Each project gets its own Docker network, its own container names, and its own volumes.
-- **Port range**: prod uses the existing `5xxx` range, UAT uses `8xxx`. Traefik on OVH routes each public hostname to the correct port via separate SSH tunnels.
-- **Database**: separate Postgres database (`veta_prod` vs `veta_uat`) on the same Postgres instance, or separate Postgres containers if isolation needs to be stronger.
-- **Bus**: separate Redpanda topic prefix (`uat.orders.new` vs `orders.new`). Same broker, no cross-talk.
-- **Resource limits**: UAT containers get explicit CPU/memory caps in `compose.uat.yml` so a UAT load test cannot starve prod of resources. Prod has no caps — it gets first claim on the host.
-
-Public routing on the OVH edge:
-
-- `veta.mnetcs.com` → prod, via existing SSH tunnel
-- `uat.veta.mnetcs.com` → UAT, via second SSH tunnel on a different local port
+A previous version of this doc proposed a third **UAT** environment co-located on the homelab. We dropped it in favour of a simpler two-tier model: the homelab box has plenty of headroom (32 cores, 64 GB RAM, 2 TB SSD), the public demo audience is small, and the discipline of Swarm's `start-first` rolling deploy + healthcheck-gated rollback gives us the deploy-safety properties a UAT step would have caught. If/when a stakeholder audience grows beyond demo-friends, the UAT tier comes back as a port-isolated second compose project on the same box — the operational primitives for that (per-project network, per-project DB, per-project topic prefix) are already in compose.yml.
 
 (Dev runs on the workstation when actively coding; no public route, no automatic promotion path.)
-
-<Aside type="note" title="Why same-box UAT is acceptable">
-A real bank would use separate hardware for UAT to model real prod isolation. We make a deliberate trade-off: same hardware, **strict process isolation** (separate Docker network, separate DB, separate topic namespace, resource limits). The single failure mode this doesn't catch is "host hardware dies" — which is also a SEV1 for prod and is addressed by Phase 6 (multi-host).
-</Aside>
 
 ### Single-instance topology: rolling deploys, not high availability
 
@@ -151,7 +135,7 @@ Multi-node Swarm comes later (prod LXC + OVH dedicated + a VPS as Swarm managers
 
 ### Deploy state machine
 
-Every promotion to UAT or prod runs this sequence:
+Every deploy to prod runs this sequence:
 
 ```
 1. CI publishes new image tag (e.g. veta-gateway:sha-31bbcde)
@@ -182,7 +166,7 @@ Source of truth for "is the platform up". Runs **outside** the homelab so it see
 - **Alerting**: 3 consecutive failures → email to `veta@mnetcs.com`. Later: Discord webhook. Later again: pager.
 - **The probe doubles as the post-deploy smoke gate.** Same code, same checks.
 
-The probe runs against both UAT and prod, with separate alert thresholds.
+The probe runs against prod.
 
 ### Test gate on the deploy
 
@@ -278,32 +262,19 @@ Five working days. Each phase is a single PR, reviewed and watched before the ne
 - The 2026-05-12 Watchtower bug class (name-collision after partial recreate) cannot recur — Swarm handles this natively.
 - `scripts/deploy.sh` exits non-zero and emits an alert if the post-deploy probe fails.
 
-### Phase 3 — Environments: dev / UAT / prod split (Day 2)
+### Phase 3 — (originally UAT split) — descoped
 
-**PR scope**:
-
-- Add a second compose project on the homelab for UAT (`veta-uat`), bound to the `8xxx` port range. Same host as prod, isolated via Docker network, separate Postgres DB, separate Redpanda topic prefix.
-- `compose.uat.yml` overlay: different DB name, different topic prefix, different port bindings, explicit CPU/memory caps so a UAT load test cannot starve prod.
-- Traefik on OVH adds `uat.veta.mnetcs.com` routing through a second reverse SSH tunnel on a different local port.
-- GitHub Actions: every merge to `main` deploys to UAT automatically.
-- Prod is no longer auto-deployed. Tagged release (e.g. `v1.36.0`) → manual `scripts/promote-to-prod.sh` runs the same deploy state machine against prod, requires explicit confirmation.
-
-**Acceptance criteria**:
-
-- Merging a PR to `main` ships to UAT within 15 minutes; prod is unchanged.
-- A `make demo` against `uat.veta.mnetcs.com` exercises every dashboard path.
-- A load test against UAT does not affect prod (verified by running a sustained 100 req/s test against UAT while a synthetic probe runs against prod, with no SLO breaches — UAT resource caps must hold).
-- Promoting to prod requires a tag AND a manual confirmation step; no automated path from `main` to prod.
+Previously planned: a second compose project on the homelab (`veta-uat`) bound to ports `8xxx`, separate DB and topic prefix. We dropped this in favour of a two-tier model (dev + prod). Rationale: the discipline gained from Phase 2 (Swarm `start-first` + healthcheck-gated rollback) covers the deploy-safety properties a UAT step would have, the public-demo audience is small, and the operational overhead of keeping a separate UAT env healthy was eating time that better served Phase 5 (discipline tooling). If a stakeholder audience grows, this phase comes back unchanged — `compose.yml` already supports per-project port and network isolation.
 
 ### Phase 4 — Synthetic monitoring + alerting (Day 3, morning)
 
-**PR scope**: small Deno binary running on one of the spare VPSes. Configurable target (UAT and prod). 60-second cadence. Emits structured logs to Loki and to a local file (in case Loki itself is the thing that's down).
+**PR scope**: small Deno binary running on one of the spare VPSes. Configurable target (prod). 60-second cadence. Emits structured logs to Loki and to a local file (in case Loki itself is the thing that's down).
 
 **Acceptance criteria**:
 
 - Probe runs continuously for 24 hours with no false positives.
 - A simulated outage (block port 443 at the OVH edge for 90 seconds) results in an email to `veta@mnetcs.com` within 4 minutes of detection.
-- Grafana dashboard `Synthetic SLO` shows rolling 24h / 7d / 30d availability for both UAT and prod.
+- Grafana dashboard `Synthetic SLO` shows rolling 24h / 7d / 30d availability for prod.
 - Probe results are queryable in Loki by `{service="synthetic", env="prod"}`.
 
 ### Phase 5 — Discipline tooling (Day 3, afternoon)

@@ -63,7 +63,7 @@ every five seconds during active runs.
 ## Targeting other environments
 
 ```bash
-BASE_URL=https://veta-trading.fly.dev/api/gateway \
+BASE_URL=https://veta.mnetcs.com/api/gateway \
   docker compose --profile loadtest run --rm k6
 ```
 

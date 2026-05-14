@@ -1,4 +1,4 @@
-# UAT override — internal Dockge-managed VM
+# Homelab prod override — internal Dockge-managed VM serving veta.mnetcs.com.
 # Usage: docker compose -f compose.yml -f compose.prod.yml up -d
 
 x-prod-image: &prod-defaults
@@ -6,7 +6,7 @@ x-prod-image: &prod-defaults
 
 services:
 
-  # Infrastructure — persistent, no Watchtower
+  # Infrastructure — persistent, never auto-restarted on image change.
   redpanda:
     <<: *prod-defaults
     command:
@@ -27,7 +27,7 @@ services:
     labels:
       - "traefik.enable=false"
 
-  # Application services — use GHCR images + Watchtower
+  # Application services — pulled from GHCR by the homelab auto-pull.
   frontend:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/frontend:latest

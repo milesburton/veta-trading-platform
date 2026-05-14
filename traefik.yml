@@ -1,7 +1,7 @@
 # Traefik v3 static configuration
-# Used across all environments: local Docker, UAT, Fly.io
-# TLS is activated per-router via compose.prod.yml labels (certresolver=letsencrypt)
-# Fly.io: TLS termination happens at the Fly edge; internal Traefik uses :80 only
+# Used across all environments: local Docker, homelab prod.
+# TLS termination happens at the OVH edge in production; internal Traefik
+# uses :80 only and is reached via the reverse SSH tunnel.
 
 api:
   dashboard: true
@@ -26,7 +26,7 @@ providers:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
     # Compose namespaces the network as `<project>_trading-net`. On the
-    # homelab and UAT (compose project `veta`) the actual network is
+    # homelab (compose project `veta`) the actual network is
     # `veta_trading-net`. Other stacks on the homelab (LGTM observability,
     # the personal caddy/mediawiki bridge) also attach to this exact name,
     # so we match the de-facto identifier rather than rename it.

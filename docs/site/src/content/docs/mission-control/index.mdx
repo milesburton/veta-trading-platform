@@ -52,8 +52,8 @@ These run inside the deployment's private network and aren't exposed publicly. O
   />
   <LinkCard
     title="A new service didn't deploy"
-    href="https://milesburton.github.io/veta-trading-platform/platform/supporting/watchtower/"
-    description="Watchtower can't create new services — only update existing ones. One-time docker compose up -d &lt;svc&gt; needed."
+    href="https://github.com/milesburton/veta-trading-platform/blob/main/scripts/homelab-auto-pull.sh"
+    description="The systemd auto-pull only re-runs deploy.sh when the main branch SHA changes. A force-deploy is `sudo systemctl start veta-auto-pull.service`."
   />
   <LinkCard
     title="Login is broken"
@@ -81,7 +81,7 @@ Read the failing service's logs first — Grafana → Loki → `{service_name="<
 3. **Dependency not healthy.** A `depends_on: condition: service_healthy` will hold the dependent service back. The unhealthy upstream is where the real problem is.
 4. **Port collision.** Rare in compose. Check `docker ps` for duplicate names.
 
-Trick: if the service has been deleted manually, Watchtower's `INCLUDE_STOPPED + REVIVE_STOPPED` will resurrect it on the next pull. So a restart loop *can't* be papered over by stopping the container — fix the underlying issue.
+Trick: if the service has been deleted manually, the next auto-pull tick (every 5 min) will run `deploy.sh` which brings the full compose stack back up. So a restart loop *can't* be papered over by stopping the container — fix the underlying issue.
 
 ## Deploy and CI
 
@@ -94,7 +94,7 @@ Trick: if the service has been deleted manually, Watchtower's `INCLUDE_STOPPED +
   <LinkCard
     title="Container registry"
     href="https://github.com/milesburton/veta-trading-platform/pkgs/container/veta-trading-platform%2Fgateway"
-    description="Every service has its own GHCR image. Watchtower pulls :latest within 5 minutes of CI publishing it."
+    description="Every service has its own GHCR image. The homelab auto-pull picks up :latest within 5 minutes of CI publishing it."
   />
   <LinkCard
     title="Release Please PRs"
