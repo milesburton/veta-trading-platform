@@ -1,0 +1,39 @@
+groups:
+  - name: host
+    rules:
+      - alert: DiskUsageHigh
+        expr: disk_used_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Host disk above 80% for 5m
+          description: |
+            disk_used_percent is {{ $value }}%. Past incident: kafka-relay
+            log spam filled the disk at 100% and took out the site. Investigate
+            container log file sizes:
+              sudo du -sh /var/lib/docker/containers/*/*.log | sort -h | tail -5
+
+      - alert: DiskUsageCritical
+        expr: disk_used_percent > 92
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Host disk above 92% — imminent outage
+          description: |
+            disk_used_percent is {{ $value }}%. Docker exec, healthchecks,
+            and Traefik label reads start failing around 95%. Truncate the
+            largest container log immediately:
+              sudo truncate -s 0 $(docker inspect <container> --format '{{.LogPath}}')
+
+      - alert: DiskMonitorDown
+        expr: up{job="disk-monitor"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: disk-monitor scrape failing for 5m
+          description: |
+            Prometheus can't scrape disk-monitor:8099/metrics. Disk could
+            be filling without anyone seeing it. Check the container.
