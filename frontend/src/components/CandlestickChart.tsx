@@ -101,8 +101,8 @@ export function CandlestickChart({ symbol, candles }: Props) {
       priceFormat: { type: "volume" },
       priceScaleId: "volume",
     });
-    chart.applyOptions({
-      overlayPriceScales: { scaleMargins: { top: 0.8, bottom: 0 } },
+    chart.priceScale("volume").applyOptions({
+      scaleMargins: { top: 0.8, bottom: 0 },
     });
 
     chartRef.current = chart;
@@ -111,13 +111,15 @@ export function CandlestickChart({ symbol, candles }: Props) {
 
     const ro = new ResizeObserver((entries) => {
       const width = entries[0]?.contentRect.width ?? 0;
-      if (width > 0 && !chartSizedRef.current) {
+      if (width <= 0) return;
+      if (!chartSizedRef.current) {
         chartSizedRef.current = true;
-        ro.disconnect();
         if (pendingLoadRef.current) {
           pendingLoadRef.current();
           pendingLoadRef.current = null;
         }
+      } else if (loadedBarCountRef.current > 0) {
+        chartRef.current?.timeScale().fitContent();
       }
     });
     ro.observe(containerRef.current);
