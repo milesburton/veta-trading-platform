@@ -62,8 +62,8 @@ production unclassified.
   used to push artefacts.
 - **Container escape.** Any service compromise that turns into host
   control via a kernel or runtime bug.
-- **Docker image supply chain.** Watchtower will deploy whatever GHCR
-  serves under the configured tags.
+- **Docker image supply chain.** The homelab auto-pull will deploy
+  whatever GHCR serves under the configured tags.
 
 ## Attack chains and controls
 
@@ -83,8 +83,9 @@ hurdles in order.
    - **Control**: each service has its own env file; no shared secret
      mounts; read-only filesystem on the highest-privilege containers.
 6. They try to escape to the host via the docker socket.
-   - **Control**: only Watchtower has the socket; nothing else mounts
-     it. Disk-monitor was the previous offender and is now socket-free.
+   - **Control**: only Traefik (label discovery) mounts the socket
+     read-only; nothing else mounts it. Disk-monitor was the previous
+     offender and is now socket-free.
 
 ### Chain 2 — Stolen viewer cookie, attacker tries to submit orders
 
@@ -108,7 +109,7 @@ hurdles in order.
 2. CI builds the image with the bad dep and pushes to GHCR.
    - **Control**: Dependabot watches for advisories; planned CodeQL
      and `gitleaks` will catch a class of compromises but not all.
-3. Watchtower deploys the image to UAT.
+3. The homelab auto-pull deploys the image to prod.
    - **Control**: per-container CPU and memory limits cap how much
      the miner can consume; alerts on sustained CPU saturation are
      planned.

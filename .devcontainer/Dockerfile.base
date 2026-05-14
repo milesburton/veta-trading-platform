@@ -115,9 +115,6 @@ RUN mkdir -p /home/deno/.config/fish
 # Install Deno
 RUN curl -fsSL https://deno.land/x/install/install.sh | sh
 
-# Install Fly.io CLI (as deno user, installs to ~/.fly)
-RUN curl -L https://fly.io/install.sh | sh
-
 # Copy Fish shell config (MOTD, aliases, supervisord shortcuts).
 # Edit .devcontainer/config.fish to update — the Dockerfile just copies it.
 COPY --chown=deno:deno config.fish /home/deno/.config/fish/config.fish

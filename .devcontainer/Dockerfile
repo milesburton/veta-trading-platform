@@ -12,11 +12,6 @@ FROM ghcr.io/milesburton/veta-trading-platform-base:latest
 # under a POSIX shell even if the base image default SHELL is fish.
 SHELL ["/bin/bash", "-c"]
 
-# Pinned flyctl version baked into the image. Bump this when intentionally
-# upgrading; post-start.sh warns if the running flyctl differs at startup.
-ARG FLYCTL_VERSION=v0.4.45
-ENV FLYCTL_VERSION=${FLYCTL_VERSION}
-
 # xvfb provides a headless X display for running Electron E2E tests locally.
 # Usage: xvfb-run --auto-servernum npm run test:electron
 USER root
@@ -24,8 +19,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        xvfb libgtk-3-0 libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth libgbm-dev \
     && npm install -g @anthropic-ai/claude-code \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -fsSL https://fly.io/install.sh | FLYCTL_INSTALL=/usr/local sh -s "${FLYCTL_VERSION}"
+    && rm -rf /var/lib/apt/lists/*
 USER deno
 
 # Per-user npm global prefix so `npm install -g <pkg>` works at runtime without sudo.

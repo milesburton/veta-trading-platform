@@ -1,8 +1,6 @@
 # ── Environment ───────────────────────────────────────────────────────────────
 set -gx DENO_INSTALL "$HOME/.deno"
 fish_add_path $DENO_INSTALL/bin
-set -gx FLYCTL_INSTALL "$HOME/.fly"
-fish_add_path $FLYCTL_INSTALL/bin
 set -gx NPM_CONFIG_PREFIX "$HOME/.npm-global"
 fish_add_path $NPM_CONFIG_PREFIX/bin
 set -l WS "/workspaces/virtual-equities-trading-application"

@@ -33,7 +33,7 @@ An SLI is a number you can compute from telemetry, expressed as a ratio or perce
 
 Two components: a number (99.9%) and a window (30 days). The window matters because it bounds the math — a 1-hour outage on an annual SLO is different from the same outage on a monthly SLO.
 
-SLOs are **the right number, not the highest possible number**. 99.9% is a useful target; 100% is impossible (every system has dependencies that fail) and pursuing it makes the team afraid to ship. The SRE book's standard advice: pick the lowest reliability number that keeps users happy. For VETA's UAT-public-demo level we picked 99.9% — generous enough to absorb a few minutes of deploy turbulence per month, tight enough to mean something.
+SLOs are **the right number, not the highest possible number**. 99.9% is a useful target; 100% is impossible (every system has dependencies that fail) and pursuing it makes the team afraid to ship. The SRE book's standard advice: pick the lowest reliability number that keeps users happy. For VETA's public-demo level we picked 99.9% — generous enough to absorb a few minutes of deploy turbulence per month, tight enough to mean something.
 
 ### SLA — Service Level Agreement
 

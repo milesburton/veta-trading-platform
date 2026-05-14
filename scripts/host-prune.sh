@@ -3,7 +3,7 @@
 # disk-monitor container, which is now a passive disk-usage reporter with no
 # Docker socket access.
 #
-# Schedule on UAT via systemd timer or cron, e.g.:
+# Schedule on the homelab via systemd timer or cron, e.g.:
 #   0 4 * * 0  /opt/stacks/veta/scripts/host-prune.sh >> /var/log/veta-prune.log 2>&1
 
 set -euo pipefail

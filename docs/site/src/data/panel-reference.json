@@ -390,8 +390,8 @@
     },
     {
       "panelId": "dev-tools",
-      "title": "Dev Tools (UAT debugging)",
-      "description": "UAT debugging — fire test alerts, inject trades, manage mute rules",
+      "title": "Dev Tools (admin debugging)",
+      "description": "Admin debugging — fire test alerts, inject trades, manage mute rules",
       "rendered": true,
       "notes": null,
       "screenshot": "screenshots/panels/dev-tools.png"

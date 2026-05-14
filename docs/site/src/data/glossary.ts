@@ -545,13 +545,6 @@ export const TERMS: GlossaryTerm[] = [
     source: "backend/src/user-service/user-service.ts",
   },
   {
-    id: "watchtower",
-    term: "Watchtower",
-    category: "infrastructure",
-    short: "Container running on UAT that polls GHCR every 5 minutes and auto-restarts containers when a new :latest image is published.",
-    long: "Containers labelled com.centurylinklabs.watchtower.enable=true are pulled and restarted automatically on new image. WATCHTOWER_INCLUDE_STOPPED + REVIVE_STOPPED ensure that even containers in Exited state pick up fixes once the broken image is replaced.",
-  },
-  {
     id: "kill-switch",
     term: "Kill switch",
     category: "risk",
@@ -619,7 +612,7 @@ export const TERMS: GlossaryTerm[] = [
     id: "lgtm",
     term: "LGTM stack",
     category: "telemetry",
-    short: "Loki + Grafana + Tempo + Mimir/Prometheus. Grafana's bundle for logs, dashboards, traces and metrics. Run on UAT only — production should use a managed vendor.",
+    short: "Loki + Grafana + Tempo + Mimir/Prometheus. Grafana's bundle for logs, dashboards, traces and metrics. Run on the homelab for the demo — a real-bank production should use a managed vendor.",
     seeAlso: ["otel"],
   },
   {
@@ -684,22 +677,14 @@ export const TERMS: GlossaryTerm[] = [
     acronymOf: "GitHub Container Registry",
     category: "infrastructure",
     short: "GitHub's OCI image registry. The CI matrix builds one image per service and pushes to ghcr.io/milesburton/veta-trading-platform/<service>:latest on every merge to main.",
-    seeAlso: ["watchtower", "compose-profile"],
-  },
-  {
-    id: "watchtower",
-    term: "Watchtower",
-    category: "infrastructure",
-    short: "Container that polls a registry every 5 min and recreates any local container whose image tag has a new digest. Used on the homelab as the auto-pull half of the deploy pipeline.",
-    long: "Watchtower only updates *images*, not Compose env or labels. Any change to compose.yml (e.g. new env vars) requires a separate `docker compose up -d` to re-render the container — see homelab-deploy.sh. Gated per-service via the com.centurylinklabs.watchtower.enable=true label on each service.",
-    seeAlso: ["ghcr", "compose-profile"],
+    seeAlso: ["compose-profile"],
   },
   {
     id: "compose-profile",
     term: "Compose profile",
     category: "infrastructure",
     short: "Docker Compose feature that gates services behind named profiles. VETA uses `trading` for the always-on stack and `loadgen` for the on-demand load generator. Services with no profile are always started.",
-    seeAlso: ["loadgen-profile", "watchtower"],
+    seeAlso: ["loadgen-profile"],
   },
   {
     id: "loadgen-profile",

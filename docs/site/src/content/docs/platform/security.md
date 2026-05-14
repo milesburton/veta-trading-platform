@@ -5,7 +5,8 @@ description: Container hardening, threat model, and the residual risks we have n
 
 This page describes the container-level defences applied to the trading
 stack, the residual risks we have deliberately not addressed, and the
-operational steps required when rolling out hardening changes to UAT.
+operational steps required when rolling out hardening changes to the
+homelab.
 
 ## Threat model
 
@@ -85,26 +86,15 @@ persists, and no on-disk artefacts survive a restart.
 
 ## Residual risks (not yet mitigated)
 
-### Watchtower has Docker socket access
-
-The Watchtower container on UAT must have read-write Docker socket access
-to pull images and restart services — that is its job. An RCE in
-Watchtower would yield full host control. The mitigation is treating
-Watchtower's update channel (GHCR pulls) as a supply-chain trust boundary:
-if a malicious image is published to GHCR, Watchtower will deploy it.
-Watchtower itself is small, single-purpose, and pinned to a known image;
-the residual risk is acceptable for the UAT trade-off but would not be
-acceptable in a production-trading deployment.
-
 ### `read_only: true` not yet applied to Deno services
 
 The Deno-based trading services are *not* yet read-only. They could be:
 they don't write to local disk at runtime (logs go to stdout, state goes
 to Postgres or Kafka). The reason it isn't done in this pass is that
-the failure mode of getting it wrong on a live UAT (one service crashes
-in a restart loop on next deploy) outweighs the marginal defence: the
-trading containers are stateless and an RCE attacker only owns them for
-the lifetime of that container instance.
+the failure mode of getting it wrong on a live homelab (one service
+crashes in a restart loop on next deploy) outweighs the marginal defence:
+the trading containers are stateless and an RCE attacker only owns them
+for the lifetime of that container instance.
 
 This is on the queue for a future pass once each service has been
 individually verified as filesystem-clean.
@@ -114,51 +104,13 @@ individually verified as filesystem-clean.
 Docker can be configured to remap container UIDs to a high host UID
 range (`userns-remap`), so even "root in container" is a low-privileged
 host user. This would substantially harden the residual privileged
-containers (Watchtower, Postgres). It is invasive (every existing
-volume needs UID migration) and is queued as its own session.
+containers (Postgres, the swarm-managed Docker daemon). It is invasive
+(every existing volume needs UID migration) and is queued as its own
+session.
 
-## Migration runbook (UAT)
+## Disk-prune cron
 
-:::caution[Required step — without this, four services crash on first start]
-The hardening pass moves the Deno trading services to UID 1000 inside their
-containers. Existing named volumes on UAT contain root-owned files that the
-new non-root services cannot write to. **Watchtower will pull the new images
-automatically within five minutes of the next CI build**, so the migration
-must be run before that pull, or Watchtower must be paused first.
-
-Affected volumes / services:
-
-- `veta_market-data-state` — `market-data`
-- `veta_feature-engine-data` — `feature-engine`
-- `veta_signal-engine-data` — `signal-engine`
-- `veta_llm-advisory-data` — `llm-advisory`
-
-Symptom of skipping the migration: the four services above appear as
-`Restarting` in `docker ps`, and their logs show
-`Permission denied` or `Read-only file system`.
-:::
-
-The safest sequence is to pause Watchtower, run the migration, restart the
-stack, then resume Watchtower:
-
-```bash
-ssh miles@<uat-ip>
-cd /opt/stacks/veta
-git pull
-
-docker stop veta-watchtower
-
-./scripts/fix-uat-permissions.sh
-
-docker compose -f compose.yml -f compose.prod.yml down
-docker compose -f compose.yml -f compose.prod.yml pull
-docker compose -f compose.yml -f compose.prod.yml up -d
-
-docker start veta-watchtower
-```
-
-To schedule disk-prune (replacing the in-container pruning that was
-previously part of disk-monitor):
+To schedule a weekly host-level docker prune:
 
 ```bash
 sudo crontab -e

@@ -2,7 +2,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
-[![Deploy to Fly.io](https://github.com/milesburton/veta-trading-platform/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/deploy.yml)
 [![Docs Pages](https://github.com/milesburton/veta-trading-platform/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/pages.yml)
 [![Release Please](https://github.com/milesburton/veta-trading-platform/actions/workflows/release-please.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/release-please.yml)
 [![Backend unit tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/milesburton/veta-trading-platform/main/docs/badges/backend-tests.json)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
@@ -21,7 +20,7 @@ VETA is a simulation-first equities and fixed-income trading platform designed f
 <p align="center">
   <a href="docs/site/src/content/docs/index.mdx"><strong>View Documentation</strong></a>
   &nbsp;&middot;&nbsp;
-  <a href="https://veta-trading.fly.dev/">Live Demo</a>
+  <a href="https://veta.mnetcs.com/">Live Demo</a>
   &nbsp;&middot;&nbsp;
   <a href="docs/site/src/content/docs/guides/overview.md">Getting Started</a>
   &nbsp;&middot;&nbsp;

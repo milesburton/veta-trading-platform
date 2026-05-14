@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-Every push to any branch triggers the CI workflow. Pushes to `main` additionally trigger GitHub Pages and trigger Watchtower on the homelab via the `:latest` Docker images pushed to GHCR. The entire pipeline runs in parallel where possible.
+Every push to any branch triggers the CI workflow. Pushes to `main` additionally trigger GitHub Pages and are picked up by the homelab's systemd `veta-auto-pull` timer (every 5 minutes) via the `:latest` Docker images pushed to GHCR. The entire pipeline runs in parallel where possible.
 
 ## Pipeline diagram
 
@@ -95,8 +95,9 @@ The homelab is the only deployment target. The application is served at [`https:
 
 ### Homelab
 
-- Watchtower polls GHCR every 5 minutes
-- When a new `:latest` image is detected, the container auto-restarts
+- systemd `veta-auto-pull.timer` polls `origin/main` every 5 minutes
+- When a new SHA is detected, the homelab clones the repo, syncs `compose.yml` + overlays, runs `deploy.sh`
+- `deploy.sh` runs `docker compose up -d` (or `docker stack deploy`, post-Swarm cutover); GHCR images are pulled by the daemon
 - Typical lag: ~5 minutes after Docker build completes
 
 ### GitHub Pages
@@ -124,7 +125,7 @@ Badges are shields.io endpoint badges reading from the raw GitHub file URL.
 
 [`.github/workflows/trusted-automerge.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/trusted-automerge.yml) auto-approves and squash-merges trusted PRs. The `gh pr merge` step authenticates with a fine-grained personal access token stored as the `BOT_PAT` repo secret.
 
-This matters because GitHub's built-in `GITHUB_TOKEN` has an anti-loop limitation: **commits made by `GITHUB_TOKEN` don't fire downstream `on: push` workflows**. Without a PAT, every bot-driven merge to `main` would land silently — no `ci.yml` run, no docker image build, no Watchtower deploy. The PAT bypasses the limitation because it's a user credential, so the merge commit looks like a normal push.
+This matters because GitHub's built-in `GITHUB_TOKEN` has an anti-loop limitation: **commits made by `GITHUB_TOKEN` don't fire downstream `on: push` workflows**. Without a PAT, every bot-driven merge to `main` would land silently — no `ci.yml` run, no docker image build, no auto-pull picks it up because the SHA-comparison still works but the new image never gets built. The PAT bypasses the limitation because it's a user credential, so the merge commit looks like a normal push.
 
 ### What the PAT must allow
 
