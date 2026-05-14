@@ -10,6 +10,15 @@ volumes:
   llm-advisory-data:
   letsencrypt:
 
+# json-file driver caps each container's logs so one chatty service can't fill
+# the host disk. Past incident: kafka-relay + gateway produced 65G of logs in
+# 16 hours and the homelab disk hit 100%, taking the whole stack down.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "100m"
+    max-file: "3"
+
 x-deno-service: &deno-service
   build:
     context: .
@@ -23,6 +32,7 @@ x-deno-service: &deno-service
     - no-new-privileges:true
   tmpfs:
     - /tmp
+  logging: *logging
 
 x-deno-medium: &deno-medium
   build:
@@ -37,6 +47,7 @@ x-deno-medium: &deno-medium
     - no-new-privileges:true
   tmpfs:
     - /tmp
+  logging: *logging
 
 services:
   # ── Service profiles ─────────────────────────────────────────────────────
@@ -71,6 +82,7 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    logging: *logging
     healthcheck:
       test: ["CMD-SHELL", "rpk cluster health || exit 1"]
       interval: 10s
@@ -93,6 +105,7 @@ services:
       redpanda:
         condition: service_healthy
     restart: "no"
+    logging: *logging
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
@@ -124,6 +137,7 @@ services:
     environment:
       KAFKA_BROKERS: redpanda:9092
       SERVER_LISTENPORT: "8081"
+    logging: *logging
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.redpanda-console.rule=PathPrefix(`/admin/redpanda`)"
@@ -173,6 +187,7 @@ services:
       start_period: 10s
     labels:
       - "traefik.enable=false"
+    logging: *logging
 
   db-migrate:
     build:
@@ -192,6 +207,7 @@ services:
     restart: "no"
     labels:
       - "traefik.enable=false"
+    logging: *logging
 
   # ── Traefik ────────────────────────────────────────────────────────────────
   traefik:
@@ -229,6 +245,7 @@ services:
       start_period: 5s
     labels:
       - "traefik.enable=false"
+    logging: *logging
 
   # ── Ollama (local LLM) ─────────────────────────────────────────────────────
   ollama:
@@ -253,6 +270,7 @@ services:
       start_period: 30s
     labels:
       - "traefik.enable=false"
+    logging: *logging
 
   ollama-model-pull:
     image: ollama/ollama:latest
@@ -274,6 +292,7 @@ services:
     restart: "no"
     labels:
       - "traefik.enable=false"
+    logging: *logging
 
   # ── Frontend ───────────────────────────────────────────────────────────────
   frontend:
@@ -304,6 +323,7 @@ services:
       - "traefik.http.routers.frontend.entrypoints=web,websecure"
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
       - "traefik.http.routers.frontend.priority=1"
+    logging: *logging
 
   # ── Market Sim ─────────────────────────────────────────────────────────────
   market-sim:
@@ -1682,6 +1702,7 @@ services:
     labels:
       - "traefik.enable=false"
       - "com.centurylinklabs.watchtower.enable=false"
+    logging: *logging
 
   # ── k6 (load testing, run-once, profile-gated) ────────────────────────────
   # Run with: docker compose --profile loadtest run --rm k6
