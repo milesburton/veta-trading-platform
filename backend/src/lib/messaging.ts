@@ -137,7 +137,9 @@ export function createConsumer(
   groupId: string,
   topics: string[],
   clientId = `veta-${groupId}`,
+  options: { handlerTimeoutMs?: number } = {},
 ): Promise<MsgConsumer> {
+  const handlerTimeoutMs = options.handlerTimeoutMs ?? 5_000;
   const handlers: MessageHandler[] = [];
   let activeConsumer: Consumer | null = null;
   let stopped = false;
@@ -176,8 +178,6 @@ export function createConsumer(
           }
         });
 
-        const HANDLER_TIMEOUT_MS = 5_000;
-
         await consumer.run({
           eachMessage: async (
             { topic, message }: { topic: string; message: KafkaMessage },
@@ -196,7 +196,7 @@ export function createConsumer(
                   await Promise.race([
                     handler(topic, parsed),
                     new Promise((_, reject) =>
-                      setTimeout(() => reject(new Error(`handler timeout (${HANDLER_TIMEOUT_MS}ms)`)), HANDLER_TIMEOUT_MS)
+                      setTimeout(() => reject(new Error(`handler timeout (${handlerTimeoutMs}ms)`)), handlerTimeoutMs)
                     ),
                   ]);
                 } catch (err) {
