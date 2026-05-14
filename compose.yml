@@ -1079,6 +1079,8 @@ services:
       JOURNAL_RETENTION_DAYS: "90"
       DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
       REDPANDA_BROKERS: redpanda:9092
+      FIX_ARCHIVE_HOST: fix-archive
+      FIX_ARCHIVE_PORT: "5012"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5009/health || exit 1"]
       interval: 10s
