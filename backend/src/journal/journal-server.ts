@@ -199,8 +199,7 @@ function ingest(topic: string, value: KafkaEventValue) {
   ]);
 }
 
-const FIX_ARCHIVE_URL = Deno.env.get("FIX_ARCHIVE_URL") ||
-  "http://localhost:5012";
+const FIX_ARCHIVE_URL = `http://${Deno.env.get("FIX_ARCHIVE_HOST") ?? "localhost"}:${Deno.env.get("FIX_ARCHIVE_PORT") ?? "5012"}`;
 
 async function reconcileFillsFromArchive(): Promise<void> {
   try {

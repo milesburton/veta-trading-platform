@@ -127,7 +127,7 @@ async function enqueueIfAllowed(
   return jobId;
 }
 
-createConsumer("orchestrator-signals", ["market.signals"]).then((c) => {
+createConsumer("orchestrator-signals", ["market.signals"], undefined, { handlerTimeoutMs: 30_000 }).then((c) => {
   c.onMessage(async (_topic, raw) => {
     const signal = raw as Signal;
     if (!signal.symbol) return;
@@ -139,7 +139,7 @@ createConsumer("orchestrator-signals", ["market.signals"]).then((c) => {
   });
 }).catch(() => {});
 
-createConsumer("orchestrator-recommendations", ["market.recommendations"]).then(
+createConsumer("orchestrator-recommendations", ["market.recommendations"], undefined, { handlerTimeoutMs: 30_000 }).then(
   (c) => {
     c.onMessage(async (_topic, raw) => {
       const rec = raw as TradeRecommendation;
