@@ -30,7 +30,7 @@ Reconnect logic was designed for "transient blip then heal", not for "the server
 - [x] Add `visibilitychange` and `online` listeners that force an immediate reconnect (PR #194). Owner: M, done.
 - [x] Add health-probe before reconnect to detect 401 (session expired) vs other failures (PR #194). Owner: M, done.
 - [x] `/__version` poll: track consecutive failures; after 60s of outage AND user is anonymous, auto-reload the tab (PR #196). Owner: M, done.
-- [ ] Underlying cause — replacing Watchtower with Swarm (Phase 2) means deploy cycles use rolling restart with `start-first` ordering and zero WS drops. After Phase 2 the tab-stuck class of bug ceases to exist. Owner: M, by: 2026-05-13.
+- [~] Underlying cause — the original plan was to replace Watchtower with Swarm (Phase 2) for `start-first` rolling restarts. Phase 2's Swarm half was descoped; deploys still cause a brief gateway recreate (~10-15s). The WS reconnect work above (PRs #194, #196) covers the tab-recovery part; zero-downtime deploys are deferred until they're a load-bearing problem. See Phase 2 in the [operations strategy](../site/src/content/docs/platform/operations-strategy.mdx).
 - [ ] Add a Playwright test that simulates a 90-second gateway outage and asserts the tab auto-recovers. Owner: M, by: 2026-05-13.
 
 ## Related

@@ -97,7 +97,7 @@ The homelab is the only deployment target. The application is served at [`https:
 
 - systemd `veta-auto-pull.timer` polls `origin/main` every 5 minutes
 - When a new SHA is detected, the homelab clones the repo, syncs `compose.yml` + overlays, runs `deploy.sh`
-- `deploy.sh` runs `docker compose up -d` (or `docker stack deploy`, post-Swarm cutover); GHCR images are pulled by the daemon
+- `deploy.sh` runs `docker compose up -d`; GHCR images are pulled by the daemon
 - Typical lag: ~5 minutes after Docker build completes
 
 ### GitHub Pages

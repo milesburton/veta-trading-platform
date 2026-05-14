@@ -104,7 +104,7 @@ individually verified as filesystem-clean.
 Docker can be configured to remap container UIDs to a high host UID
 range (`userns-remap`), so even "root in container" is a low-privileged
 host user. This would substantially harden the residual privileged
-containers (Postgres, the swarm-managed Docker daemon). It is invasive
+containers (Postgres, Traefik with its docker-socket mount). It is invasive
 (every existing volume needs UID migration) and is queued as its own
 session.
 
