@@ -28,6 +28,13 @@ RUN apt-get update \
     && curl -fsSL https://fly.io/install.sh | FLYCTL_INSTALL=/usr/local sh -s "${FLYCTL_VERSION}"
 USER deno
 
+# Per-user npm global prefix so `npm install -g <pkg>` works at runtime without sudo.
+# The system prefix (/usr) is root-owned; image-baked globals like @anthropic-ai/claude-code
+# live there, but anything installed by the deno user goes here.
+ENV NPM_CONFIG_PREFIX=/home/deno/.npm-global
+ENV PATH=/home/deno/.npm-global/bin:$PATH
+RUN mkdir -p /home/deno/.npm-global
+
 # Bootstrap Fish config: source the live workspace file so changes take effect
 # without rebuilding the container. The workspace is mounted at runtime at
 # /workspaces/virtual-equities-trading-application by the devcontainer.
