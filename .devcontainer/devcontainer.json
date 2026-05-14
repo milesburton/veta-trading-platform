@@ -64,6 +64,8 @@
         "GitHub.copilot-chat",
         "openai.chatgpt",
         "anthropic.claude-code",
+        "saoudrizwan.claude-dev",
+        "rooveterinaryinc.roo-cline",
         "denoland.vscode-deno",
         "foxundermoon.shell-format",
         "eamodio.gitlens",

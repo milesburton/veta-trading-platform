@@ -34,5 +34,10 @@
     "*": true
   },
   "codeium.chat": true,
-  "errorLens.enabledDiagnosticLevels": ["error", "warning"]
+  "errorLens.enabledDiagnosticLevels": ["error", "warning"],
+  "cline.preferredLanguage": "English",
+  "cline.enableCheckpoints": true,
+  "cline.mcpMarketplace.enabled": true,
+  "roo-cline.preferredLanguage": "English",
+  "roo-cline.allowedCommands": ["npm test", "npm run", "deno", "git log", "git diff", "git status"]
 }

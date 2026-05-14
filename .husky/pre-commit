@@ -16,11 +16,13 @@ fi
 echo "Pre-commit checks... (commit: $COMMIT_SHA)"
 
 echo "  [0/8] Verifying clean working directory..."
-# Check for any uncommitted changes (excluding untracked files)
-if ! git diff-index --quiet HEAD --; then
-  echo "❌ ERROR: You have uncommitted changes in your working directory."
-  echo "Please commit or stash your changes before committing:"
-  git diff-index --name-only HEAD --
+# Block unstaged changes to tracked files. Staged changes are expected —
+# those are what we're about to commit. Using `git diff-index HEAD` here
+# would also flag the staged files and make any normal commit fail.
+if ! git diff --quiet; then
+  echo "❌ ERROR: You have unstaged changes to tracked files."
+  echo "Please stage or stash them before committing:"
+  git diff --name-only
   exit 1
 fi
 
