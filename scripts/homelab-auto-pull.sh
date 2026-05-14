@@ -66,14 +66,28 @@ log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — running deploy"
 
 # Self-update deploy.sh from the freshly-fetched repo before running it.
 # Otherwise a fix to deploy.sh in main is unreachable: the script can't
-# update itself.
+# update itself. The chosen source depends on whether Swarm mode is
+# active on this host:
+#   swarm active   → scripts/swarm-deploy.sh    (docker stack deploy)
+#   swarm inactive → scripts/homelab-deploy.sh  (plain docker compose up -d)
+# This makes Swarm bootstrap + rollback (docker swarm leave --force)
+# both self-healing on the next auto-pull tick.
 checkout=$(mktemp -d)
 # shellcheck disable=SC2064
 trap "rm -rf '$checkout'" EXIT
 if git clone --depth 1 --branch "$REPO_REF" --filter=blob:none "$REPO_URL" "$checkout" >/dev/null 2>&1; then
-  if [[ -f "$checkout/scripts/homelab-deploy.sh" ]]; then
-    install -m 0755 "$checkout/scripts/homelab-deploy.sh" "$DEPLOY_SCRIPT"
-    log "refreshed $DEPLOY_SCRIPT from main"
+  if docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null | grep -q active; then
+    source_script="$checkout/scripts/swarm-deploy.sh"
+    mode="swarm"
+  else
+    source_script="$checkout/scripts/homelab-deploy.sh"
+    mode="compose"
+  fi
+  if [[ -f "$source_script" ]]; then
+    install -m 0755 "$source_script" "$DEPLOY_SCRIPT"
+    log "refreshed $DEPLOY_SCRIPT from main ($mode mode)"
+  else
+    log "WARNING: $source_script not found; running existing $DEPLOY_SCRIPT"
   fi
 else
   log "could not refresh $DEPLOY_SCRIPT from main; running existing copy"
