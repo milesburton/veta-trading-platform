@@ -25,9 +25,9 @@ The deeper root cause is **using Watchtower at all** for a platform with availab
 
 ## Action items
 
-- [ ] Replace Watchtower with single-node Docker Swarm + `docker stack deploy` — Phase 2 of [operations strategy](../site/src/content/docs/platform/operations-strategy.mdx). Owner: M, by: 2026-05-13.
+- [x] Replace Watchtower — done via PR #203's auto-pull half (systemd `veta-auto-pull.timer` + `scripts/homelab-auto-pull.sh` running `scripts/homelab-deploy.sh`). Watchtower itself is gone; the partial-recreate bug class can't recur. The originally-planned Swarm half of PR #203 was later descoped — auto-pull alone solved this incident. See Phase 2 in the [operations strategy](../site/src/content/docs/platform/operations-strategy.mdx) for the rationale.
 - [ ] Stand up external synthetic probe so the next outage of this class is detected within 4 minutes, not after a user notices. — Phase 4. Owner: M, by: 2026-05-14.
-- [ ] Add a deploy-time smoke gate that fails non-zero (with rollback) if not every named service is healthy after the deploy completes. — Part of Phase 2. Owner: M, by: 2026-05-13.
+- [x] Add a deploy-time smoke gate that fails non-zero if not every named service is healthy after the deploy completes — `scripts/homelab-deploy.sh` checks `gateway oms ems risk-engine journal market-sim user-service` and exits 1 if any are unhealthy after 180s.
 
 ## Related
 

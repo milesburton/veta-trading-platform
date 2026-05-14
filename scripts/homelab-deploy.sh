@@ -13,7 +13,6 @@ CONFIG_PATHS=(
     "compose.observability.yml"
     "compose.loadgen.yml"
     "compose.loadtest.yml"
-    "compose.swarm.yml"
     "traefik.yml"
     "observability/"
     "scripts/load.sh"

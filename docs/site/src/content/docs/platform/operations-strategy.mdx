@@ -94,44 +94,38 @@ Two environments, no overlap of running services:
 | Env | Host | Purpose | Promotion |
 |---|---|---|---|
 | **dev** | engineer workstation, devcontainer | day-to-day coding, fast iteration. Not 24/7. | n/a |
-| **prod** | homelab Proxmox LXC, ports `5xxx`, public via OVH SSH tunnel at `veta.mnetcs.com` | every merge to `main` deploys here automatically via the systemd auto-pull + swarm-deploy pipeline | continuous |
+| **prod** | homelab Proxmox LXC, ports `5xxx`, public via OVH SSH tunnel at `veta.mnetcs.com` | every merge to `main` deploys here automatically via the systemd auto-pull + plain-compose pipeline | continuous |
 
-A previous version of this doc proposed a third **UAT** environment co-located on the homelab. We dropped it in favour of a simpler two-tier model: the homelab box has plenty of headroom (32 cores, 64 GB RAM, 2 TB SSD), the public demo audience is small, and the discipline of Swarm's `start-first` rolling deploy + healthcheck-gated rollback gives us the deploy-safety properties a UAT step would have caught. If/when a stakeholder audience grows beyond demo-friends, the UAT tier comes back as a port-isolated second compose project on the same box — the operational primitives for that (per-project network, per-project DB, per-project topic prefix) are already in compose.yml.
+A previous version of this doc proposed a third **UAT** environment co-located on the homelab. We dropped it in favour of a simpler two-tier model: the homelab box has plenty of headroom (32 cores, 64 GB RAM, 2 TB SSD), the public demo audience is small, and per-service healthchecks + the auto-pull cadence give us enough deploy safety. If/when a stakeholder audience grows beyond demo-friends, the UAT tier comes back as a port-isolated second compose project on the same box — the operational primitives for that (per-project network, per-project DB, per-project topic prefix) are already in compose.yml.
 
 (Dev runs on the workstation when actively coding; no public route, no automatic promotion path.)
 
-### Single-instance topology: rolling deploys, not high availability
+### Single-instance topology: brief deploy outages, no high availability
 
-Today each environment runs **one replica** of every service. A deploy therefore takes that replica down briefly while the new one starts. That's the gap a real platform would not accept: any deploy = visible downtime, any single-process crash = visible downtime, and we have no second instance to fall back on. The user reporting "the feed is still down" during today's outages was watching exactly this gap.
+Today each environment runs **one replica** of every service. A deploy therefore takes that replica down briefly while the new one starts. That's the gap a real platform would not accept: any deploy = visible downtime, any single-process crash = visible downtime, and we have no second instance to fall back on. The user reporting "the feed is still down" during the 2026-05-12 outage was watching exactly this gap.
 
-We do not yet have the headroom (or operational maturity) to run multi-replica services across multiple hosts — that's Phase 6 (multi-host prod, separate hardware). What we **can** do today, on the same single host, is run deploys in a way the user never sees:
+What we have **today** to mitigate this:
 
-- **`update_config: order: start-first`** (Swarm) — bring the new container up, wait for its healthcheck, then drop the old one. The two coexist briefly on different internal IDs. Memory cost: a few hundred MB during the cutover window. Wall-clock downtime per service: ~0 seconds for stateless services; very brief for the bus-coupled ones.
-- **WebSocket reconnect on the client side** — already shipped in PR #194 and PR #196. A tab that loses its socket during the brief swap reconnects within ~1s and the user sees a 1-frame pause rather than a "Connection lost" banner.
-- **Healthcheck-gated rollback** — if the new container fails its healthcheck, Swarm leaves the old one running and surfaces the failure. The user never sees the broken version.
-
-This is **rolling deploy on a single replica** — the cheap, high-value win we can take immediately. It removes deploy-induced downtime entirely without buying a second host.
+- **`compose.yml` healthchecks + `depends_on: condition: service_healthy`** — each service blocks dependents from starting until its own healthcheck passes. Bad deploys fail-fast at the gateway boundary; the rest of the stack waits for it to recover.
+- **WebSocket reconnect on the client side** — shipped in PR #194 and PR #196. A tab that loses its socket during a deploy reconnects within ~1s and the user sees a 1-frame pause rather than a "Connection lost" banner.
+- **`logging: max-size: 100m`** on every container (PR #222) — a chatty service can't fill the host disk and take the platform down.
+- **5-minute systemd auto-pull cadence** — image rollouts trickle in slowly enough that a bad merge to main has time to be caught and reverted before all replicas pick it up.
 
 What it does **not** give us:
 
-- Crash protection: if the single replica panics, that service is briefly unavailable until Swarm restarts it (typically < 5s with `restart: always` and a watchdog). For order-flow services this can drop in-flight WS messages.
-- Host failure protection: a homelab reboot or hardware fault takes the whole platform down. RTO ≈ time-to-restart-the-host.
+- **Zero-downtime deploys**: gateway recreate today is ~10-15s of HTTP 502 / WS reconnect storm. Tolerable on a low-traffic demo; not tolerable for a real bank.
+- **Crash protection**: if the single replica panics, that service is briefly unavailable until docker restarts it (typically < 5s with `restart: unless-stopped`). For order-flow services this can drop in-flight WS messages.
+- **Host failure protection**: a homelab reboot or hardware fault takes the whole platform down. RTO ≈ time-to-restart-the-host.
 
-Both of those are addressed by Phase 6, when we run multiple replicas across multiple hosts. A second physical node is offered (an additional homelab Proxmox node) but deferred until Phase 6 — the single-node rolling-deploy gain comes first because it solves the user-visible problem today.
+All three are addressed by Phase 6 (multi-host, separate hardware) when the audience justifies the spend.
 
-### Deploy mechanism: Docker Swarm, single-node first
+A previous version of this strategy proposed migrating to **Docker Swarm** to buy zero-downtime rolling deploys via `update_config: order: start-first`. We attempted the bootstrap and hit a fundamental constraint: the homelab's `veta_trading-net` is a bridge network shared with two off-repo compose projects (caddy serving the wiki, lgtm-grafana). Swarm overlays are scope=`swarm`; bridges are scope=`local`; a stack can't attach to a network with mismatched scope. The migration would require coordinated changes to the off-repo projects, plus an outage window each retry, for a benefit (zero-downtime deploys) that the current low-traffic public demo doesn't yet need. We deferred it.
 
-Watchtower is the wrong tool for a real platform. Its design is "pull image, restart container" without coordination, health gating, or rollback. The 2026-05-12 outage was caused by a known Watchtower 1.7.0 bug where stopped containers' names aren't released before recreation, leaving 19 services offline.
+### Deploy mechanism: systemd auto-pull + plain compose
 
-**Replacement**: Docker Swarm (single-node mode to start) with `docker stack deploy`. Same `compose.yml` (95% compatible). Adds:
+`scripts/homelab-auto-pull.sh` runs every 5 minutes via systemd, polls `origin/main`, and runs `scripts/homelab-deploy.sh` when the SHA changes. `homelab-deploy.sh` rsyncs the compose files from the freshly-cloned main, runs `docker compose pull`, then `docker compose up -d`. Per-service healthchecks gate the deploy; the script `exit 1`s if critical services (`gateway oms ems risk-engine journal market-sim user-service`) don't reach healthy within 180s.
 
-- `update_config: order: start-first` — new container ready before old one drops
-- `update_config: failure_action: rollback` — automatic image rollback if healthcheck fails
-- `update_config: parallelism: N` — explicit batch size, not all-at-once
-- `healthcheck: ... start_period: ...` — every service declares its own readiness
-- `rollback_config` — if rollback fires, declared behaviour on the failing replicas
-
-Multi-node Swarm comes later (prod LXC + OVH dedicated + a VPS as Swarm managers in a 3-node quorum). For now, single-node Swarm gives us rolling restarts and rollback. That alone closes the largest current operational gap.
+This is **deliberately simple**. The 2026-05-12 Watchtower outage that originally motivated the Swarm proposal was solved at a lower cost by replacing Watchtower with this systemd pipeline (PR #203's auto-pull half). Watchtower itself is gone.
 
 ### Deploy state machine
 
@@ -139,15 +133,19 @@ Every deploy to prod runs this sequence:
 
 ```
 1. CI publishes new image tag (e.g. veta-gateway:sha-31bbcde)
-2. Deploy controller (Deno script on Swarm manager):
-   a. Validates compose file + env vars + disk space
-   b. docker stack deploy --with-registry-auth veta
-   c. Polls service readiness for up to 5 min
-   d. If any service fails healthcheck → Swarm auto-rollback fires
-   e. Runs post-deploy smoke probe (see below)
-   f. If smoke fails → manual rollback (docker service update --rollback)
-3. Records the deploy in a deploy log (deploys.jsonl, shipped to Loki)
-4. Alerts on failure to veta@mnetcs.com (later: Discord webhook)
+2. Within 5 min, homelab-auto-pull.timer fires:
+   a. Polls origin/main; exits if SHA unchanged.
+   b. Self-installs homelab-deploy.sh from main.
+   c. Runs homelab-deploy.sh:
+      - rsyncs compose.yml + overlays + traefik.yml + observability/ from main
+      - docker compose pull (idempotent)
+      - docker compose up -d (with --scale gateway=N if configured)
+      - polls per-service healthchecks for 180s
+      - exits non-zero if any of gateway/oms/ems/risk-engine/journal/market-sim/user-service
+        fails to reach healthy
+3. last-deployed-sha is bumped only on success.
+4. (Aspirational, not yet shipped) Synthetic probe runs post-deploy; on
+   3 consecutive failures, alerts to veta@mnetcs.com.
 ```
 
 ### Synthetic monitoring
@@ -251,20 +249,21 @@ Five working days. Each phase is a single PR, reviewed and watched before the ne
 - `:latest` image tags only published after this job is green.
 - Existing PR contributors see a single new required check on their PRs.
 
-### Phase 2 — Swarm migration (Day 1, afternoon)
+### Phase 2 — (originally Swarm migration) — descoped
 
-**PR scope**: convert `compose.prod.yml` to Swarm-stack syntax (`docker stack deploy` compatible). Add `update_config`, `rollback_config`, `healthcheck` to every service. Install single-node Swarm on the homelab. Decommission Watchtower (keep as `manual-only` for emergency rollback if needed). New `scripts/deploy.sh` runs `docker stack deploy` with smoke gate.
+Previously planned: migrate the homelab from Watchtower + plain compose to single-node Docker Swarm with `docker stack deploy`, gaining `update_config: order: start-first` (zero-downtime rolling deploys) and `failure_action: rollback` (automatic image rollback on bad healthcheck).
 
-**Acceptance criteria**:
+Why we descoped:
 
-- A deliberately-broken image (e.g. crashing on startup) triggers automatic Swarm rollback to the previous version, no service interruption.
-- Rolling deploys never reduce service-count to 0 (verified by `docker stack ps` history showing `start-first` ordering).
-- The 2026-05-12 Watchtower bug class (name-collision after partial recreate) cannot recur — Swarm handles this natively.
-- `scripts/deploy.sh` exits non-zero and emits an alert if the post-deploy probe fails.
+1. **Watchtower was already gone.** The auto-pull half of PR #203 (the systemd timer + `homelab-auto-pull.sh`) replaced Watchtower's auto-update role on its own. The 2026-05-12 Watchtower-name-conflict outage class can't recur because Watchtower itself isn't running.
+2. **Network constraint.** Swarm overlays are scope=`swarm`; the existing `veta_trading-net` is a bridge (scope=`local`) shared with two off-repo compose projects (caddy + lgtm-grafana). A swarm stack can't attach to a bridge regardless of `external: true`. Resolving this requires coordinated changes to the off-repo projects — meaningful work for benefits we don't yet need.
+3. **No current pain point.** The public demo audience is small. Plain-compose deploys are ~10-15s of HTTP 502 / WS reconnect on gateway recreate; tolerable. Nobody is reporting deploy-induced outages.
+
+The artifacts (`compose.swarm.yml`, `scripts/swarm-deploy.sh`, `docs/incidents/runbooks/swarm-bootstrap.md`) and the swarm-aware branch in `homelab-auto-pull.sh` were removed to keep the repo's deploy story coherent. When zero-downtime deploys become load-bearing — likely tied to Phase 6 (multi-host) anyway — Swarm comes back as a co-design with the network split.
 
 ### Phase 3 — (originally UAT split) — descoped
 
-Previously planned: a second compose project on the homelab (`veta-uat`) bound to ports `8xxx`, separate DB and topic prefix. We dropped this in favour of a two-tier model (dev + prod). Rationale: the discipline gained from Phase 2 (Swarm `start-first` + healthcheck-gated rollback) covers the deploy-safety properties a UAT step would have, the public-demo audience is small, and the operational overhead of keeping a separate UAT env healthy was eating time that better served Phase 5 (discipline tooling). If a stakeholder audience grows, this phase comes back unchanged — `compose.yml` already supports per-project port and network isolation.
+Previously planned: a second compose project on the homelab (`veta-uat`) bound to ports `8xxx`, separate DB and topic prefix. We dropped this in favour of a two-tier model (dev + prod). Rationale: per-service healthchecks + the auto-pull cadence give us enough deploy safety for a small public-demo audience, and the operational overhead of keeping a separate UAT env healthy was eating time that better served Phase 5 (discipline tooling). If a stakeholder audience grows, this phase comes back unchanged — `compose.yml` already supports per-project port and network isolation.
 
 ### Phase 4 — Synthetic monitoring + alerting (Day 3, morning)
 

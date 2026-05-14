@@ -7,7 +7,7 @@ sidebar:
 
 ## Homelab (canonical)
 
-The platform is deployed to a homelab host (Proxmox LXC, 32 cores, 64 GB RAM, 2 TB SSD, NAS-backed storage). Per-service Docker images are built by CI on every `main` push and pushed to GHCR; Watchtower on the homelab polls every five minutes and restarts containers when a new `:latest` tag is available. See the [supporting services overview](/veta-trading-platform/platform/supporting-services/) for the homelab compose layout, and the [operations strategy](/veta-trading-platform/platform/operations-strategy/) for the planned Swarm-based replacement.
+The platform is deployed to a homelab host (Proxmox LXC, 32 cores, 64 GB RAM, 2 TB SSD, NAS-backed storage). Per-service Docker images are built by CI on every `main` push and pushed to GHCR; a systemd timer (`veta-auto-pull.timer`) on the homelab polls `origin/main` every five minutes and runs `scripts/homelab-deploy.sh` when the SHA changes, which rsyncs the latest compose files and runs `docker compose up -d`. See the [supporting services overview](/veta-trading-platform/platform/supporting-services/) for the homelab compose layout, and the [operations strategy](/veta-trading-platform/platform/operations-strategy/) for the full deploy state machine and rationale.
 
 ## Public URLs
 
