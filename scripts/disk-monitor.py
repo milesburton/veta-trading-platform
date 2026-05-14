@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-disk-monitor: HTTP health endpoint for host disk usage.
+disk-monitor: HTTP health + metrics endpoint for host disk usage.
 
-Returns 200 when disk < WARN_PCT, 503 when >= WARN_PCT.
+Endpoints on :8099
+  /health   JSON. 200 when disk < WARN_PCT, 503 when >= WARN_PCT. Used by
+            the docker healthcheck and by humans.
+  /metrics  Prometheus text format. Scraped by lgtm-prometheus so we get
+            history and an alert rule can fire before disk fills.
+
 Read-only by design: the container has no Docker socket access and no
-host filesystem write access. Image pruning is a separate concern,
-handled by an out-of-band host cron (see scripts/host-prune.sh).
-
-Poll on port 8099, path /health (keyword: "ok").
+host filesystem write access.
 """
 import http.server
 import json
@@ -26,7 +28,29 @@ def get_disk() -> dict:
         "used_gb": round(used / 1e9, 1),
         "free_gb": round(free / 1e9, 1),
         "used_pct": pct,
+        "total_bytes": total,
+        "used_bytes": used,
+        "free_bytes": free,
     }
+
+
+def render_metrics(disk: dict) -> bytes:
+    lines = [
+        "# HELP disk_used_percent Host root filesystem used percentage.",
+        "# TYPE disk_used_percent gauge",
+        f"disk_used_percent {disk['used_pct']}",
+        "# HELP disk_used_bytes Host root filesystem used bytes.",
+        "# TYPE disk_used_bytes gauge",
+        f"disk_used_bytes {disk['used_bytes']}",
+        "# HELP disk_free_bytes Host root filesystem free bytes.",
+        "# TYPE disk_free_bytes gauge",
+        f"disk_free_bytes {disk['free_bytes']}",
+        "# HELP disk_total_bytes Host root filesystem total bytes.",
+        "# TYPE disk_total_bytes gauge",
+        f"disk_total_bytes {disk['total_bytes']}",
+        "",
+    ]
+    return "\n".join(lines).encode()
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -35,11 +59,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         disk = get_disk()
+        if self.path == "/metrics":
+            body = render_metrics(disk)
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; version=0.0.4")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         ok = disk["used_pct"] < WARN_PCT
         body = json.dumps(
             {
                 "status": "ok" if ok else "critical",
-                "disk": disk,
+                "disk": {k: v for k, v in disk.items() if not k.endswith("_bytes")},
                 "warn_pct": WARN_PCT,
                 "ts": int(time.time()),
             }
