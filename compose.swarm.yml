@@ -1,7 +1,14 @@
+# `veta_trading-net` already exists on the homelab as a bridge created by
+# other compose projects (caddy serves the wiki; lgtm-grafana provides
+# Grafana). They attach to it to reach trading services. Swapping the
+# driver to `overlay` here would force-recreate the network and disconnect
+# those stacks. Mark it `external: true` instead: swarm joins the existing
+# bridge rather than owning the network. Single-node Swarm doesn't need
+# overlay's cross-host features; revisit if/when multi-host is on the table.
 networks:
   trading-net:
-    driver: overlay
-    attachable: true
+    external: true
+    name: veta_trading-net
 
 x-app-deploy: &app-deploy
   replicas: 1
