@@ -27,6 +27,7 @@ import { handleProxiedRoutes } from "./routes/proxied.ts";
 import { handleWebSocketRoute } from "./routes/websocket.ts";
 import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
 import { makeValidateToken } from "./auth.ts";
+import { decideAccessLog, type ThrottleEntry } from "./accessLogThrottle.ts";
 
 const PORT = Number(Deno.env.get("GATEWAY_PORT")) || 5_011;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -182,6 +183,14 @@ async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; lim
 }
 
 
+// A misconfigured client can produce thousands of identical auth_failure
+// events per second; without a cap the stdout log fills disk in hours. We
+// still publish every event to Kafka (audit trail), but stdout WARN emits
+// are throttled per (action, reason) and the next emit carries a count of
+// suppressed events so the signal isn't lost.
+const ACCESS_WARN_THROTTLE_MS = Number(Deno.env.get("ACCESS_WARN_THROTTLE_MS")) || 1000;
+const accessWarnState = new Map<string, ThrottleEntry>();
+
 /** Publish a user.access event to the bus (best-effort, never throws). */
 function publishAccessEvent(event: {
   action: string;
@@ -200,10 +209,22 @@ function publishAccessEvent(event: {
   // auth_failure and ws_rate_limited are visible at WARN; everything
   // else stays at INFO so non-security events don't pollute alert
   // queries that filter on level.
-  const level = event.action === "auth_failure" || event.action === "ws_rate_limited"
-    ? "warn"
-    : "info";
-  logger[level]("access_event", enriched);
+  const isWarn = event.action === "auth_failure" || event.action === "ws_rate_limited";
+  if (!isWarn) {
+    logger.info("access_event", enriched);
+    return;
+  }
+  const decision = decideAccessLog(
+    accessWarnState,
+    `${event.action}:${event.reason ?? ""}`,
+    enriched.ts,
+    ACCESS_WARN_THROTTLE_MS,
+  );
+  if (!decision.shouldEmit) return;
+  logger.warn(
+    "access_event",
+    decision.suppressedSince > 0 ? { ...enriched, suppressedSince: decision.suppressedSince } : enriched,
+  );
 }
 
 
