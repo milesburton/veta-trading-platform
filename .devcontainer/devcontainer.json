@@ -92,6 +92,6 @@
     "source=${localEnv:HOME}/.gitconfig,target=/home/deno/.gitconfig,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.claude,target=/home/deno/.claude,type=bind,consistency=cached"
   ],
-  "postCreateCommand": "cd ${containerWorkspaceFolder}/frontend && npm ci --ignore-scripts && cd ${containerWorkspaceFolder} && ./frontend/node_modules/.bin/husky install .husky",
+  "postCreateCommand": "cd ${containerWorkspaceFolder}/frontend && npm ci --ignore-scripts && cd ${containerWorkspaceFolder} && ./frontend/node_modules/.bin/husky",
   "postStartCommand": "CONTAINER_WORKSPACE_FOLDER=${containerWorkspaceFolder} bash ${containerWorkspaceFolder}/.devcontainer/post-start.sh"
 }
