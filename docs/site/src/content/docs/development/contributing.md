@@ -7,28 +7,29 @@ sidebar:
 
 ## Development environment
 
-The project uses a **Dev Container** — open the repository in VS Code or JetBrains and accept the "Reopen in Container" prompt. This sets up Deno, Node, PostgreSQL, Redpanda, and all dependencies automatically.
+The project uses a **Dev Container**. Open the repository in VS Code or JetBrains and accept the "Reopen in Container" prompt. This sets up Deno, Node, PostgreSQL, Redpanda, and all dependencies automatically.
 
 ## Code standards
 
-- **TypeScript everywhere** — Deno for backend, Vite + React for frontend
-- **No comments in code** — the codebase should be self-documenting. Exceptions: biome-ignore and eslint-disable directives
-- **Functional where possible** — pure functions with explicit inputs/outputs over mutable module-level state
-- **Single source of truth** — shared types in `backend/src/types/`, shared utilities in `backend/src/lib/`, shared frontend utilities in `frontend/src/utils/`
-- **Import map aliases** — use `@veta/http`, `@veta/messaging`, `@veta/types/orders` etc. instead of relative paths like `../lib/http.ts`
+- **TypeScript everywhere**: Deno for backend, Vite and React for frontend.
+- **No comments in code**: the codebase should be self-documenting. Exceptions: `biome-ignore` and `eslint-disable` directives.
+- **Functional where possible**: pure functions with explicit inputs and outputs over mutable module-level state.
+- **Single source of truth**: shared types in `backend/src/types/`, shared utilities in `backend/src/lib/`, shared frontend utilities in `frontend/src/utils/`.
+- **Import map aliases**: use `@veta/http`, `@veta/messaging`, `@veta/types/orders` etc. instead of relative paths like `../lib/http.ts`.
 
 ## Pre-commit hooks
 
-The pre-commit hook runs 8 checks automatically:
+The pre-commit hook runs 9 checks automatically:
 
-1. Backend lint (`deno lint`)
-2. Backend type-check (`deno task check`)
-3. Backend unit tests (`deno task test`)
-4. Frontend lint (Biome)
-5. Frontend type-check (tsc)
-6. Frontend unit tests (Vitest)
-7. Smoke tests (if services are running)
-8. Integration tests (if services are running)
+1. Verify clean working directory.
+2. Backend lint (`deno lint`).
+3. Backend type-check (`deno task check`).
+4. Backend unit tests (`deno task test`).
+5. Frontend lint (Biome).
+6. Frontend type-check (tsc).
+7. Frontend unit tests (Vitest).
+8. Smoke tests (auto-skipped if local services are not running).
+9. Integration tests (auto-skipped if local services are not running).
 
 You cannot push until all checks pass.
 
@@ -46,13 +47,40 @@ test(replay): add unit tests for session replay panel
 
 ## Pull requests
 
-- Release Please auto-generates version bumps and changelogs
-- Dependabot auto-merges patch-level dependency updates
-- CI must be green before merge (integration tests are `continue-on-error` for known flaky strategies)
+- Release Please auto-generates version bumps and changelogs.
+- Dependabot auto-merges patch-level dependency updates.
+- CI must be green before merge (integration tests are `continue-on-error` for known flaky strategies).
 
 ## Documentation standards
 
 - Use British English spelling and grammar.
 - Use a professional, direct tone. Avoid conversational or jovial phrasing.
+- Do not use em-dashes (`—`). Replace with commas, periods, or restructure the sentence.
 - Mark key documents with a leading star in curated document lists.
-- Do not use ASCII-art diagrams; use the agreed graphics approach.
+- Do not use ASCII-art diagrams; use mermaid (`graph LR` / `graph TD`) rendered by the mermaid integration in `astro.config.mjs`.
+
+## Contributors
+
+VETA is built by a small team of humans and AI assistants. Each contributor below has had a substantive role in shaping the codebase.
+
+### Miles Burton
+
+Founder, lead engineer, and product owner. Designed the platform's architecture, runs the homelab deployment, and reviews every change before merge. Contact: `mail@milesburton.com`.
+
+### Claude (Anthropic)
+
+AI pair programmer used for documentation, devcontainer infrastructure, refactoring, and test scaffolding. Frequent contributor to the docs site, the testing taxonomy, and incremental backend changes. Used via the Claude Code CLI inside the dev container.
+
+### Codex (OpenAI)
+
+AI assistant used for targeted code generation, particularly in the frontend Redux slices and React component layers. Used through the VS Code extension.
+
+### GitHub Copilot
+
+AI completion assistant used for inline code suggestions across both the backend Deno code and the frontend React/Vitest test files. Particularly useful for boilerplate test setup and Zod schema definitions.
+
+### nVidia Spark (DeepSeek R1)
+
+AI reasoning model used for architecture review, complex refactor planning, and reviewing risk-engine logic. Accessed via the nVidia Spark interface.
+
+Each AI assistant's contributions are attributed in commit messages with a `Co-Authored-By` trailer. Humans retain final review authority on all merges to `main`.

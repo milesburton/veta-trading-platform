@@ -1,0 +1,152 @@
+---
+title: Unit tests
+description: Pure-logic tests for backend (Deno) and frontend (Vitest). Locations, conventions, and how to add to each suite.
+---
+
+Unit tests exercise pure functions and isolated components with no HTTP, no Postgres, and no Redpanda. They cover the platform's logic primitives: schema validation, algo slicing math, FIX parsing, Redux reducers, and analytics formulas. Failures here surface as wrong outputs given correct inputs; higher suites cannot localise such failures because they observe symptoms (a 200 response with a wrong field) rather than causes.
+
+Both backend and frontend unit suites run on every commit via the pre-commit hook.
+
+## Backend
+
+**Location:** `backend/src/tests/`
+**Runner:** Deno's built-in `Deno.test`
+**Files:** 53 test files (`.unit.test.ts`, plus `.test.ts` for older files)
+**Tests:** ~470 cases
+**Run:** `deno task test`
+
+### Conventions
+
+Test names are prefixed with the feature in brackets, then a sentence describing the case:
+
+```typescript
+import { assertEquals } from "jsr:@std/assert@0.217";
+import { ZodOrderNew } from "../schemas/orders.ts";
+
+Deno.test("[orders-schema] OrderNewSchema accepts minimal GUI submission", () => {
+  const result = ZodOrderNew.safeParse({
+    clientOrderId: "client-1",
+    userId: "user-1",
+    asset: "AAPL",
+    side: "BUY",
+    quantity: 100,
+    limitPrice: 192.0,
+  });
+  assertEquals(result.success, true);
+});
+```
+
+The bracket prefix is grep-friendly: `deno test backend/ --filter "[orders-schema]"` runs only that module's cases.
+
+### What lives in unit tests
+
+If a test needs a running service (Postgres, Redpanda, an HTTP server), it belongs in the [integration suite](../../testcontainers/) under the `.tc.test.ts` pattern. Unit tests are for pure logic: schemas, algo slicing, FIX parsing, analytics math, grid filtering.
+
+Areas with the densest coverage:
+
+- **Schemas** (`orders-schema.unit.test.ts`, `risk-schema.unit.test.ts`, `user-schema.unit.test.ts`, `zod-helpers.unit.test.ts`): round-trip every shape the platform accepts.
+- **Algo strategies** (`algo.unit.test.ts`): slicing math for TWAP, VWAP, POV, ICEBERG, and the other six strategies given a parent order.
+- **Analytics** (`analytics.unit.test.ts`, `black-scholes.unit.test.ts`, `monte-carlo.unit.test.ts`, `volatility-estimator.unit.test.ts`): pricing math.
+- **OMS / EMS** (`oms.test.ts`, `ems.unit.test.ts`): state transitions and rejection paths.
+- **FIX** (`fixParser.test.ts`): message round-trip.
+- **Devcontainer config** ([`devcontainer.unit.test.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/tests/devcontainer.unit.test.ts)): guards against template-path regressions in `.devcontainer/`. Catches "container won't start" bugs at commit time.
+
+### Shared helpers
+
+`backend/src/tests/test-helpers.ts` provides:
+
+- `timeout(ms?)`: AbortSignal for `fetch()` calls, default 5s. Use this for every HTTP call in tests.
+- OAuth and PKCE helpers for login flows in HTTP tests (used by `.http.test.ts`, not by pure unit tests).
+- Service URL mapping for HTTP tests.
+
+### Adding a test
+
+1. Create `backend/src/tests/my-feature.unit.test.ts`.
+2. Add the path to the `test` task in `deno.json`. The runner does not glob; tests are listed explicitly. Forgetting to add a file means it does not run.
+3. Write `Deno.test("[my-feature] description of the case", () => { ... })`.
+
+## Frontend
+
+**Location:** `frontend/src/**/__tests__/`
+**Runner:** Vitest
+**Config:** [`frontend/vitest.config.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/vitest.config.ts)
+**Files:** 163 test files
+**Tests:** ~1825 cases
+**Run:** `cd frontend && npm run test:unit`
+
+### Conventions
+
+Vitest's `describe` and `it` (or top-level `test`) plus React Testing Library:
+
+```typescript
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
+import { OrderTicket } from "../OrderTicket";
+
+describe("OrderTicket", () => {
+  it("renders strategy selector with all options", () => {
+    render(<OrderTicket />);
+    expect(screen.getByLabelText("Strategy")).toBeInTheDocument();
+  });
+});
+```
+
+Tests live next to the component they test, in a sibling `__tests__/` folder. So `src/components/OrderTicket.tsx` is tested by `src/components/__tests__/OrderTicket.test.tsx`.
+
+### Global mocks
+
+`frontend/src/setupTests.ts` stubs three browser APIs that JSdom does not ship:
+
+- `ResizeObserver`: required by chart components and `flexlayout-react`.
+- `BroadcastChannel`: used by the auth and session pop-out window sync.
+- `Canvas.getContext`: required by chart libraries.
+
+These are set up before every test file runs; individual tests should not re-mock them.
+
+### Setting up the Redux store per-test
+
+Most components read from Redux. Build a store per test with `preloadedState` for the slices the component uses:
+
+```typescript
+function makeStore(connected: boolean) {
+  return configureStore({
+    reducer: {
+      auth: authSlice.reducer,
+      market: marketSlice.reducer,
+      // only the slices the component uses
+      [servicesApi.reducerPath]: servicesApi.reducer,
+    },
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware().concat(servicesApi.middleware),
+    preloadedState: {
+      market: { connected /* ... */ },
+    },
+  });
+}
+
+render(
+  <Provider store={makeStore(true)}>
+    <ComponentUnderTest />
+  </Provider>,
+);
+```
+
+For RTK Query slices (`servicesApi`, `userApi`), mock the hooks at the module level with `vi.mock()`. See `frontend/src/components/__tests__/StatusBar.test.tsx` for a working example.
+
+### Coverage thresholds
+
+Vitest enforces **80%** on statements, branches, functions, and lines. CI fails if coverage drops below this threshold. The configuration is in [vitest.config.ts](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/vitest.config.ts).
+
+### Timeouts
+
+- Test timeout: **15s**
+- Hook timeout (`beforeEach`, `afterEach`): **20s**
+
+These are larger than Vitest defaults (5s) because some component tests render charts with several seconds of animation. A test exceeding 15s usually indicates an unresolved promise; diagnose before extending the timeout.
+
+### Adding a test
+
+1. Create `__tests__/MyComponent.test.tsx` next to the component.
+2. Vitest globs `__tests__/**/*.test.{ts,tsx}`; no manifest update is required (unlike the backend).
+3. If the component reads from Redux, build a per-test store as above.
+4. If it makes API calls, mock the relevant hook from `servicesApi` or `userApi`.

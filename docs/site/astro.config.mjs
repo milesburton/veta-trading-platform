@@ -124,8 +124,18 @@ export default defineConfig({
           items: [
             { label: "Coding approach", slug: "development/coding-approach" },
             { label: "Project structure", slug: "development/structure" },
-            { label: "Testing", slug: "development/testing" },
-            { label: "Testcontainers", slug: "development/testcontainers" },
+            {
+              label: "Testing",
+              items: [
+                { label: "Overview", slug: "development/testing" },
+                { label: "Unit tests", slug: "development/testing/unit" },
+                { label: "Playwright E2E", slug: "development/testing/playwright" },
+                { label: "Electron E2E", slug: "development/testing/electron" },
+                { label: "Smoke tests", slug: "development/testing/smoke" },
+                { label: "Visual anomalies", slug: "development/testing/visual-anomalies" },
+                { label: "Testcontainers", slug: "development/testcontainers" },
+              ],
+            },
             { label: "CI / CD", slug: "development/ci-cd" },
             { label: "Deployment", slug: "development/deployment" },
             { label: "Shared modules", slug: "development/shared-modules" },
