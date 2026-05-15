@@ -1,0 +1,27 @@
+---
+title: Log collection and search
+description: How service stdout reaches Loki, and how the in-app log drawer queries it.
+---
+
+import Svc from "../../../../components/Svc.astro";
+
+## How events get into Loki
+
+The platform's <Svc name="kafka-relay" /> subscribes to every Redpanda topic and forwards each event as a JSON line to stdout. Grafana Alloy tails those lines and ships them to Loki, giving Grafana a unified log search across the entire trading pipeline, including the order lifecycle, fills, algo decisions, and risk events.
+
+The relay also exposes `POST /events/batch` for the frontend. The browser's [error transport middleware](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/store/middleware/errorTransportMiddleware.ts) posts uncaught errors here, so client-side failures show up in Loki alongside backend events.
+
+## In-app log search
+
+The trading UI's header has a **Logs** button that opens a drawer for searching backend log output without leaving the platform. It hits `GET /api/gateway/logs/query` with optional `service`, `level`, `q` (free-text), `since` (5m / 15m / 1h / 6h), and `limit` parameters.
+
+The gateway resolves the query in this order:
+
+1. **Loki** if `LOKI_URL` is configured on the gateway (typical homelab setup). The full LogQL search runs against every service's structured log stream.
+2. **In-process ring buffer** otherwise. The gateway records its own log lines into a 2,000-entry buffer via `registerLogSink()` so at least the gateway's view is searchable when no external log store is available. This is the local-dev mode.
+
+The route is gated to non-viewer roles. Logs may contain user identifiers and other sensitive context, so external-clients and viewers receive a 403 when they hit the endpoint directly.
+
+The drawer's response payload includes a `source: "loki" | "ring-buffer"` field, so operators can tell at a glance which backend answered the query.
+
+![Observability panel inside the trading UI](/veta-trading-platform/screenshots/panels/observability.png)

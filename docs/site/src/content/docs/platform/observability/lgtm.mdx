@@ -1,0 +1,47 @@
+---
+title: LGTM stack
+description: The self-hosted observability stack on the homelab. Loki, Grafana, Tempo, Prometheus, and the Alloy collector.
+---
+
+import GrafanaScreenshots from "../../../../components/GrafanaScreenshots.astro";
+
+A separate Compose stack at [`observability/docker-compose.lgtm.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/docker-compose.lgtm.yml) provides metrics, logs, and traces. It is independent of the trading stack and can run on the same host or be pointed at a remote one.
+
+## Containers
+
+| Container | Image | Port (dev container) | Role |
+|-----------|-------|------|------|
+| `lgtm-grafana` | `grafana/grafana:11.4.0` | 3000 | Dashboards, alerting, datasource UI |
+| `lgtm-prometheus` | `prom/prometheus:v3.1.0` | 9090 | Time-series metrics; remote-write enabled |
+| `lgtm-loki` | `grafana/loki:3.3.2` | 3100 | Log aggregation |
+| `lgtm-tempo` | `grafana/tempo:2.7.1` | 3200 / 4319 | Distributed traces |
+| `lgtm-alloy` | `grafana/alloy:v1.7.0` | 12345 | Log + metric collector; tails service stdout |
+
+Grafana is provisioned with the three datasources and a `Trading` folder containing both the project-specific dashboards and the official k6 Prometheus dashboard.
+
+## Bringing the stack up
+
+```bash
+docker compose -f observability/docker-compose.lgtm.yml up -d
+```
+
+In the dev container, open `http://localhost:3000` once the stack is up. In production, Grafana is reachable at `https://veta.mnetcs.com/grafana/`. Anonymous read access is enabled; admin and edit access remain auth-gated.
+
+## Provisioned dashboards
+
+Grafana is auto-provisioned with the following dashboards under the **Trading** folder. They live in [`observability/grafana/provisioning/dashboards/`](https://github.com/milesburton/veta-trading-platform/tree/main/observability/grafana/provisioning/dashboards) and update on disk-change without a Grafana restart.
+
+| Dashboard | Source | What it shows |
+|-----------|--------|---------------|
+| **Trading Overview** | Loki via kafka-relay | Order pipeline counters, fill rate, algo heartbeat, service version table, live event feeds. Works without OTel; only needs the kafka-relay to Loki path. |
+| **Service Performance (OTel)** | Tempo span-metrics + Loki | Pan-platform request rate, error rate, latency p50/p95/p99 per service. Top-N tables of slowest and busiest spans. Service-scoped log panel at the bottom. |
+| **Order Pipeline (Traces)** | Tempo + Loki | Trace-driven view of the order lifecycle, including per-stage p95 latency across gateway/oms/risk/algos/ems/journal, a live nodeGraph from Tempo's service-graph processor, recent error and slow-trace tables. |
+| **k6 Prometheus** | Prometheus | Bundled k6 dashboard for load-test runs. |
+
+The two OTel dashboards depend on the `compose.observability.yml` overlay being active. Without it there are no spans to render.
+
+## Live snapshots
+
+The screenshots below are captured directly from the homelab Grafana via its [image-renderer](https://grafana.com/docs/grafana/latest/setup-grafana/image-rendering/) by [`docs/site/scripts/capture-grafana-screenshots.mjs`](https://github.com/milesburton/veta-trading-platform/blob/main/docs/site/scripts/capture-grafana-screenshots.mjs). To refresh, run `npm run capture:grafana` from `docs/site/` against a host with the LGTM stack up. Click any panel for the full-resolution version.
+
+<GrafanaScreenshots />
