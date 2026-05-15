@@ -56,6 +56,8 @@ All routes proxy via the gateway with a session cookie. Trader and admin roles c
 
 Add the **Scenarios** panel to any workspace via `+ Add Panel`. It shows your saved scenarios with one-click run, plus the run history for the selected scenario with status pill, fill ratio and slippage in basis points. The panel is gated to `trader` and `admin` roles.
 
+![Scenarios panel: saved scenarios on the left, run history for the selected scenario on the right](/veta-trading-platform/screenshots/panels/scenarios.png)
+
 A run is synchronous from the panel's perspective. Clicking Run waits for the orchestrator to finish (or hit its 30s timeout) before the row appears in history. Run history polls every 5s for any newly-appended rows.
 
 ## Pinned to risk config

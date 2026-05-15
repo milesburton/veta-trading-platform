@@ -9,6 +9,39 @@ Smoke does not assert correctness of business logic; that is the job of [unit](.
 
 The platform has two distinct smoke suites: one backend, one frontend. They run at different lifecycle points.
 
+## Where smoke runs
+
+```mermaid
+graph LR
+    subgraph PRECOMMIT["1. Pre-commit hook (developer machine)"]
+        A1["git commit"] --> A2["check localhost:5000/health"]
+        A2 -->|alive| A3["run backend smoke"]
+        A2 -->|dead| A4["skip smoke<br/>(hook stays fast)"]
+    end
+
+    subgraph CI["2. CI mirror (every PR)"]
+        B1["RUN_TESTCONTAINERS=1"] --> B2["ephemeral stack via Testcontainers"]
+        B2 --> B3["run smoke.tc.test.ts<br/>(12 critical-path checks)"]
+    end
+
+    subgraph DEPLOY["3. Post-deploy gate (homelab)"]
+        C1["git pull + docker compose up -d"] --> C2["wait for services healthy"]
+        C2 --> C3["VETA_BASE_URL=https://veta.mnetcs.com<br/>deno task test:smoke"]
+        C3 -->|pass| C4["deploy live"]
+        C3 -->|fail| C5["docker compose down<br/>+ roll back to previous SHA"]
+    end
+
+    classDef precommit fill:#dcfce7,stroke:#16a34a,color:#000
+    classDef ci fill:#fef3c7,stroke:#d97706,color:#000
+    classDef deploy fill:#fecaca,stroke:#dc2626,color:#000
+
+    class A1,A2,A3,A4 precommit
+    class B1,B2,B3 ci
+    class C1,C2,C3,C4,C5 deploy
+```
+
+Each lifecycle point answers a different question. Pre-commit catches "did I break the local stack". The CI mirror catches "would this break the stack as wired in production". The post-deploy gate catches "is the actual production deployment serving traffic right now". The same source file (`smoke.test.ts`) runs in all three contexts; only the target URLs differ.
+
 ## Backend smoke
 
 **File:** [`backend/src/tests/smoke.test.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/tests/smoke.test.ts)

@@ -12,9 +12,17 @@ The **Mission Control** workspace provides a unified operations view:
 ![Mission Control](/veta-trading-platform/screenshots/10-mission-control.png)
 
 - **Estate Overview**: live health grid for all 30+ backend services with status, version, and event timeline
+
+  ![Estate Overview panel](/veta-trading-platform/screenshots/panels/estate-overview.png)
+
 - **Throughput Gauges**: orders/min, fills/min, and fill rate metrics
+
+  ![Throughput Gauges panel](/veta-trading-platform/screenshots/panels/throughput-gauges.png)
+
 - **News Feed**: live headlines with sentiment scoring
 - **Market Data Sources**: configure per-symbol data sources (synthetic or Alpha Vantage)
+
+  ![Market Data Sources panel](/veta-trading-platform/screenshots/panels/market-data-sources.png)
 
 ## Session Replay
 
@@ -37,6 +45,8 @@ The admin panel includes:
 ## Demo Day
 
 The **Demo Day** panel provides one-click trading scenarios for demonstrations:
+
+![Demo Day panel](/veta-trading-platform/screenshots/panels/demo-day.png)
 
 | Scenario      | Description                                            |
 | ------------- | ------------------------------------------------------ |

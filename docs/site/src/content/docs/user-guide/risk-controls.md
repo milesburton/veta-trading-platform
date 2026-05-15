@@ -50,6 +50,10 @@ The **Risk Dashboard** panel (available to desk-heads, risk-managers, and admins
 - Unrealised and realised P&L per position
 - Total firm P&L aggregated across all traders
 
+![Risk Dashboard panel](/veta-trading-platform/screenshots/panels/risk-dashboard.png)
+
 ## My Positions
 
 Individual traders see the **My Positions** panel with their own open positions, live mark-to-market P&L, average fill price, and number of fills.
+
+![My Positions panel](/veta-trading-platform/screenshots/panels/my-positions.png)

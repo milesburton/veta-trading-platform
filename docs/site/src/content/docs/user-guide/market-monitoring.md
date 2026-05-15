@@ -22,6 +22,8 @@ Features:
 
 The **Candle Chart** panel shows OHLCV candlestick data for the selected instrument. It responds to symbol selection from the market ladder or symbol search.
 
+![Candle Chart panel](/veta-trading-platform/screenshots/panels/candle-chart.png)
+
 ## Market Heatmap
 
 The heatmap shows all instruments as a treemap, sized by market capitalisation and coloured by percentage change from session open.
@@ -39,6 +41,8 @@ The news panel shows live headlines with sentiment scoring:
 - **Positive** sentiment highlighted in green
 - **Negative** sentiment highlighted in red
 - Headlines tagged with related symbols
+
+![News panel](/veta-trading-platform/screenshots/panels/news.png)
 
 ## System Status
 

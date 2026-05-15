@@ -31,6 +31,8 @@ The **Algo Monitor** panel shows all active algo strategies with real-time heart
 
 A heartbeat gap above 10 seconds triggers an alert in the alert centre.
 
+![Algo Monitor panel](/veta-trading-platform/screenshots/panels/algo-monitor.png)
+
 ## Executions Panel
 
 The **Executions** panel shows detailed fill analytics for each order:
@@ -41,6 +43,8 @@ The **Executions** panel shows detailed fill analytics for each order:
 - Commission costs
 - Expandable fill timeline chart
 
+![Executions panel](/veta-trading-platform/screenshots/panels/executions.png)
+
 ## Algo Leaderboard
 
 The **Algo Leaderboard** ranks strategies by performance metrics:
@@ -48,6 +52,8 @@ The **Algo Leaderboard** ranks strategies by performance metrics:
 - Fill rate (percentage of orders fully filled)
 - Average slippage (bps from arrival price)
 - Total filled quantity over the last 5 minutes
+
+![Algo Leaderboard panel](/veta-trading-platform/screenshots/panels/algo-leaderboard.png)
 
 ## Trade Recommendations
 
@@ -57,3 +63,5 @@ The **Trade Recommendation** panel shows rule-based signals scored by the intell
 - Confidence score (0 to 1)
 - Reason text with factor analysis
 - Target price
+
+![Trade Recommendation panel](/veta-trading-platform/screenshots/panels/trade-recommendation.png)

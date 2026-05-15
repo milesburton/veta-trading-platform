@@ -33,6 +33,36 @@ Tests drive a real Chromium instance against the real frontend. The gateway is m
 | `visual-anomalies.spec.ts` | DOM overflows and axe-core (see [Visual anomalies](../visual-anomalies/)) |
 | `screenshots.spec.ts` | Captures published screenshots for the docs site |
 
+## How a Playwright test executes
+
+```mermaid
+graph TD
+    A["npx playwright test"] --> B["Vite dev server starts<br/>(webServer config in playwright.config.ts)"]
+    B --> C["Worker pool spawns<br/>(4 in CI, default locally)"]
+    C --> D["Per-spec: role fixture imported<br/>(traderTest / algoTest / fiTest / adminTest)"]
+    D --> E["GatewayMock.attach() intercepts<br/>the WebSocket route"]
+    E --> F["Fixture logs in, mounts dashboard,<br/>seeds initial prices"]
+    F --> G["test() body runs<br/>against real Chromium"]
+    G --> H{Pass?}
+    H -->|Yes| I["next test"]
+    H -->|No, attempt 1| J["retry once in CI<br/>(0 retries locally)"]
+    J --> K["trace recorded<br/>(on-first-retry)"]
+    K --> G
+    H -->|No, after retry| L["screenshot saved<br/>+ test marked failed"]
+```
+
+Tests run independently. Each spawns its own `GatewayMock`, so message-shape changes in one spec do not bleed into another.
+
+### Local vs CI
+
+| Aspect | Local | CI |
+|---|---|---|
+| Vite dev server | spawned by Playwright | spawned by Playwright |
+| Workers | default (CPU-detected) | 4 |
+| Retries | 0 | 1 |
+| Trace | `on-first-retry` (never recorded locally without `--retries 1`) | recorded on first retry, uploaded as artefact |
+| Browser | Chromium | Chromium (headless) |
+
 ## Custom fixtures (by role)
 
 The suite exports four role-specific fixtures from [`tests/helpers/fixtures.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/tests/helpers/fixtures.ts):

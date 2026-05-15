@@ -70,3 +70,5 @@ Click an order in the blotter to see its child slices in the **Child Orders** pa
 - Fill price and venue
 - Liquidity flag (MAKER/TAKER)
 - Commission
+
+![Child Orders panel](/veta-trading-platform/screenshots/panels/child-orders.png)

@@ -43,6 +43,59 @@ graph TD
 
 Lower entries depend on more of the system being real. The position of a failing suite localises the fault: a probe failure with green unit tests indicates a deployment or ingress regression; a unit failure with a green probe indicates a regression not yet shipped.
 
+## Where each suite runs across the dev lifecycle
+
+```mermaid
+graph LR
+    subgraph LOCAL["Local pre-commit hook"]
+        L1["lint + type-check"]
+        L2["unit (backend + frontend)"]
+        L3["smoke<br/>(auto-skip if stack offline)"]
+        L4["integration<br/>(auto-skip if stack offline)"]
+    end
+
+    subgraph PR["Pull request CI"]
+        P1["lint + type-check"]
+        P2["unit"]
+        P3["integration<br/>(Testcontainers)"]
+        P4["Playwright E2E"]
+        P5["Electron E2E"]
+        P6["visual-anomalies<br/>(non-gating)"]
+        P7["screenshots"]
+    end
+
+    subgraph MAIN["On merge to main"]
+        M1["all PR checks"]
+        M2["coverage badges<br/>auto-committed"]
+        M3["container images<br/>published to GHCR"]
+    end
+
+    subgraph DEPLOY["Homelab deploy (post-push)"]
+        D1["systemd auto-pull<br/>(every 5 min)"]
+        D2["docker compose up -d"]
+        D3["backend smoke<br/>(gates rollout)"]
+        D4["frontend deploy-gate smoke"]
+    end
+
+    subgraph PROD["Live production"]
+        R1["synthetic probe<br/>(every 60s from OVH edge)"]
+    end
+
+    LOCAL --> PR --> MAIN --> DEPLOY --> PROD
+
+    classDef local fill:#dcfce7,stroke:#16a34a,color:#000
+    classDef ci fill:#fef3c7,stroke:#d97706,color:#000
+    classDef deploy fill:#fecaca,stroke:#dc2626,color:#000
+    classDef prod fill:#e0e7ff,stroke:#4f46e5,color:#000
+
+    class L1,L2,L3,L4 local
+    class P1,P2,P3,P4,P5,P6,P7,M1,M2,M3 ci
+    class D1,D2,D3,D4 deploy
+    class R1 prod
+```
+
+Each suite has a defined trigger and a defined fallback. The pre-commit hook is the first line; smoke and integration auto-skip locally to keep the hook fast, but the same suites run in CI without the auto-skip. The post-deploy gate is the last gate before users see new code; a smoke failure here rolls back the deploy.
+
 ## Where to start
 
 <CardGrid>
