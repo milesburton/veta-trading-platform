@@ -5,6 +5,8 @@ description: Event-driven microservices connected by a Redpanda message bus.
 
 VETA is a multi-service trading platform connected by a **Redpanda message bus** (Kafka-compatible). The React frontend talks to a single **API Gateway**, which is the only service the browser can reach. Everything else communicates via bus topics.
 
+The `:5xxx` port numbers in the diagrams below are the **dev container and docker compose internal ports**. They are not exposed publicly in production: external traffic enters through the [Traefik](./supporting/traefik/) ingress and is routed to services over the internal Docker network. The public-ingress diagram in the next section uses real public-facing ports (`:443`).
+
 ## System architecture
 
 The architecture is split into focused diagrams below. Each one fits the
