@@ -102,6 +102,16 @@ export const userApi = createApi({
         method: "DELETE",
       }),
     }),
+    // Public/anonymous sign-in. Server creates an ephemeral guest-<hex> user
+    // with role=guest, returns a session cookie. Gated by PUBLIC_GUEST_TRADING
+    // on the server; returns 403 if disabled. Guest orders are rate-limited
+    // per-IP by the gateway.
+    loginAsGuest: builder.mutation<OAuthTokenResponse, void>({
+      query: () => ({
+        url: "/oauth/guest",
+        method: "POST",
+      }),
+    }),
     getUsers: builder.query<UserRow[], void>({
       query: () => "/users",
     }),
@@ -142,6 +152,7 @@ export const {
   useExchangeOAuthCodeMutation,
   useRegisterOAuthUserMutation,
   useDeleteSessionMutation,
+  useLoginAsGuestMutation,
   useGetUsersQuery,
   useGetUserLimitsQuery,
   useUpdateUserLimitsMutation,

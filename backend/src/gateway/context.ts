@@ -1,4 +1,5 @@
 import type { MsgProducer } from "@veta/messaging";
+import type { RateLimiter } from "@veta/rate-limit";
 import type { LoadAgent } from "./loadAgent.ts";
 
 export interface AuthenticatedUser {
@@ -29,6 +30,8 @@ export interface GatewayContext {
   publishAccessEvent: (event: AccessEvent) => void;
   urls: ServiceUrls;
   loadAgent: LoadAgent;
+  guestSubmitLimiter: RateLimiter;
+  publicGuestTradingEnabled: boolean;
 }
 
 export interface AccessEvent {

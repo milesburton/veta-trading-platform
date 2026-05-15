@@ -15,7 +15,7 @@ import {
   TokenRequestSchema,
 } from "@veta/schemas/user";
 
-const AUTH_ROLES = ["trader", "admin", "compliance", "sales", "external-client", "viewer", "desk-head", "risk-manager", "oncall"] as const;
+const AUTH_ROLES = ["trader", "admin", "compliance", "sales", "external-client", "viewer", "desk-head", "risk-manager", "oncall", "guest"] as const;
 type AuthRole = typeof AUTH_ROLES[number];
 
 function parseOAuthClients(config: string): Map<string, {
@@ -698,6 +698,37 @@ async function handle(req: Request): Promise<Response> {
       });
 
       return json({ code, redirect_uri: redirectUri, expires_in: 60, scope, token_type: "none" });
+    } finally { client.release(); }
+  }
+
+  // Guest mode: any client can POST /oauth/guest (no auth, no PKCE) and
+  // get a short-lived session for an ephemeral `guest-<hex>` user with
+  // role=guest. Off by default. The gateway rate-limits order submissions
+  // from guests (see PUBLIC_GUEST_TRADING in gateway.ts).
+  if (req.method === "POST" && path === "/oauth/guest") {
+    if (Deno.env.get("PUBLIC_GUEST_TRADING") !== "true") {
+      return jsonError("guest mode disabled", 403);
+    }
+    const guestId = "guest-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+    const client = await usersPool.connect();
+    try {
+      await client.queryArray(
+        "INSERT INTO users.users (id, name, role, avatar_emoji) VALUES ($1, $1, 'guest', '👤')",
+        [guestId],
+      );
+      const session = await createSessionForUser(client, guestId);
+      if (!session) return jsonError("guest provisioning failed", 500);
+      return json(
+        {
+          access_token: session.token,
+          token_type: "bearer",
+          expires_in: 28800,
+          scope: "openid profile",
+          user: session.user,
+        },
+        200,
+        { "Set-Cookie": `veta_user=${session.token}; ${COOKIE_BASE}; Max-Age=28800` },
+      );
     } finally { client.release(); }
   }
 
