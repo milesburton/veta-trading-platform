@@ -18,11 +18,11 @@ graph LR
     USER["Internet user"]:::client
     OVH["OVH edge box<br/>ovh.agileview.co.uk<br/><i>Traefik :443 + LE TLS</i>"]:::edge
     TUNNEL["Reverse SSH tunnel<br/><i>autossh, dialled OUT from homelab</i>"]:::edge
-    HL["Homelab Traefik :443<br/>192.168.1.245 LAN-only"]:::gateway
+    HL["Homelab Traefik :443<br/>private LAN, no inbound NAT"]:::gateway
     SVC["frontend / gateway / etc."]:::support
 
     USER -->|"HTTPS veta.mnetcs.com"| OVH
-    OVH -->|"127.0.0.1:18443"| TUNNEL
+    OVH -->|"localhost:18443"| TUNNEL
     TUNNEL -->|"private LAN :443"| HL
     HL -->|"PathPrefix routing"| SVC
 

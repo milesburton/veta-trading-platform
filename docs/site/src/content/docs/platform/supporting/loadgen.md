@@ -33,7 +33,7 @@ loadgen tests throughput, not liveness.
 
 ```bash
 # On the homelab, drop the credentials file (mode 600)
-ssh miles@192.168.1.245
+ssh miles@homelab
 ADMIN_PW=$(sudo grep ^OAUTH2_USER_SECRETS /opt/stacks/veta/.env \
   | head -1 | cut -d= -f2- | tr ';' '\n' | grep ^admin: | cut -d: -f2-)
 echo "LOADGEN_OAUTH_PASSWORD=$ADMIN_PW" | sudo tee /opt/stacks/veta/.env.loadgen

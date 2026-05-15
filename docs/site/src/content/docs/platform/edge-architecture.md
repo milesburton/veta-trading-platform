@@ -22,17 +22,17 @@ internet
 ovh.agileview.co.uk (37.187.109.170)            ← OVH edge box
    • Traefik v3.3 (network_mode: host)
    • Let's Encrypt TLS for veta.mnetcs.com
-   • single backend: https://127.0.0.1:18443
+   • single backend: https://localhost:18443
             │
             ▼ HTTPS (self-signed, verify skipped — see below)
-   127.0.0.1:18443 ← sshd reverse-forward listener
+   localhost:18443 ← sshd reverse-forward listener
             │
             ▼ over the SSH tunnel
    autossh on the homelab dialled OUT
-   ssh -R 18443:127.0.0.1:443 veta-tunnel@ovh.agileview.co.uk
+   ssh -R 18443:localhost:443 veta-tunnel@ovh.agileview.co.uk
             │
             ▼
-   homelab Traefik :443 (192.168.1.245)
+   homelab Traefik :443 (private LAN address)
    • reads Docker labels via /var/run/docker.sock
    • matches by PathPrefix (no Host header check — anything
      reaching :443 routes)
@@ -62,7 +62,7 @@ Static config in [`edge/traefik.yml`](https://github.com/milesburton/veta-tradin
 
 Dynamic config in [`edge/dynamic.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/edge/dynamic.yml):
 
-- Single router: `Host(\`veta.mnetcs.com\`)` → backend `https://127.0.0.1:18443`
+- Single router: `Host(\`veta.mnetcs.com\`)` → backend `https://localhost:18443`
 - Rate-limit middleware: 60 req/avg, 120 burst, sourced from client IP
   (`ipStrategy.depth: 0` — trusts no proxies; correct when Cloudflare
   proxy is in DNS-only mode)
@@ -70,7 +70,7 @@ Dynamic config in [`edge/dynamic.yml`](https://github.com/milesburton/veta-tradi
 
 ### Why `insecureSkipVerify: true` is correct here
 
-The destination is `127.0.0.1:18443`, reached only via the SSH reverse
+The destination is `localhost:18443`, reached only via the SSH reverse
 tunnel from the homelab. The homelab Traefik presents a self-signed cert
 on `:443`, and the SSH transport provides the real security. Cert
 verification at this hop would be meaningless (it'd require shipping the
@@ -93,12 +93,12 @@ autossh -M 0 -N \
   -o ExitOnForwardFailure=yes \
   -o IdentitiesOnly=yes \
   -i /etc/veta-tunnel/id_ed25519 \
-  -R 18443:127.0.0.1:443 \
+  -R 18443:localhost:443 \
   veta-tunnel@ovh.agileview.co.uk
 ```
 
-The `-R 18443:127.0.0.1:443` reverse-forward tells the OVH SSH daemon
-to listen on `127.0.0.1:18443` and forward any connection to the
+The `-R 18443:localhost:443` reverse-forward tells the OVH SSH daemon
+to listen on `localhost:18443` and forward any connection to the
 homelab's `:443`. `autossh` restarts the underlying `ssh` if it
 exits (network blip, OVH reboot, etc.).
 
@@ -155,7 +155,7 @@ edge nodes and break per-IP rate limiting.
 
 - **Edge Traefik dead** → all HTTPS connections fail at TLS handshake
 - **SSH tunnel down** → edge Traefik returns 502 (no backend listening on
-  `127.0.0.1:18443`)
+  `localhost:18443`)
 - **Homelab Traefik dead** → edge Traefik can connect through the tunnel
   but the request hangs or returns connection-reset
 - **Homelab gateway / user-service dead** → tunnel works, Traefik routes,

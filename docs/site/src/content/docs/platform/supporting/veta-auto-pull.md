@@ -21,7 +21,7 @@ collision bug that left the platform half-deployed indefinitely).
 ## Why not GitHub Actions?
 
 `.github/workflows/ci.yml` originally had a `deploy-homelab` job that
-SSHed from a GH runner to `192.168.1.245`. GitHub runners are on public
+SSHed from a GH runner to the homelab's LAN address. GitHub runners are on public
 IPs; the homelab is on a private LAN. The `ssh-keyscan` step always
 failed.
 
