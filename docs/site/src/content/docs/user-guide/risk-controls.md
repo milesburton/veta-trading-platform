@@ -9,14 +9,14 @@ VETA enforces real-time risk controls at every stage of the order lifecycle.
 
 Every order passes through the risk engine before reaching the market. Six checks run in parallel:
 
-| Check | Description |
-|-------|-------------|
-| Fat-finger collar | Rejects orders where the limit price deviates > 5% from the current market price |
-| Duplicate detection | Blocks identical orders submitted within 500 ms |
-| Self-cross prevention | Prevents a trader from having both a buy and sell order on the same instrument |
-| Rate limiting | Caps order submission rate per trader (default: 10/sec) |
-| ADV check | Rejects single orders exceeding 10% of average daily volume |
-| Max open orders | Limits the number of concurrent active orders per trader |
+| Check                  | Description                                                                            |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| Fat-finger collar      | Rejects orders where the limit price deviates more than 5% from the current market price |
+| Duplicate detection    | Blocks identical orders submitted within 500 ms                                        |
+| Self-cross prevention  | Prevents a trader from holding both a buy and a sell order on the same instrument      |
+| Rate limiting          | Caps order submission rate per trader (default: 10/sec)                                |
+| ADV check              | Rejects single orders exceeding 10% of average daily volume                            |
+| Max open orders        | Limits the number of concurrent active orders per trader                               |
 
 If the risk engine is unavailable, orders are **blocked, not bypassed** (hard-fail on outage).
 
@@ -24,21 +24,21 @@ If the risk engine is unavailable, orders are **blocked, not bypassed** (hard-fa
 
 Each trader has personal limits enforced by the order ticket:
 
-- **Max order quantity** — the largest single order allowed (e.g. 10,000 shares)
-- **Max daily notional** — the total notional value allowed per day (e.g. $1,000,000)
-- **Allowed strategies** — which algo strategies the trader can use
+- **Max order quantity**: the largest single order allowed (e.g. 10,000 shares)
+- **Max daily notional**: the total notional value allowed per day (e.g. $1,000,000)
+- **Allowed strategies**: which algo strategies the trader can use
 
 Limit violations show amber warnings in the order ticket and prevent submission.
 
 ## Kill Switch
 
-The kill switch allows traders and administrators to immediately halt all trading activity.
+The kill switch allows traders and administrators to halt trading activity immediately.
 
 ![Kill Switch](/veta-trading-platform/screenshots/08-kill-switch.png)
 
-- **Traders** can kill their own orders
-- **Admins** can kill all orders firm-wide
-- **Scope options**: all orders, specific symbol, specific strategy, or specific user
+- **Traders** can kill their own orders.
+- **Admins** can kill all orders firm-wide.
+- **Scope options**: all orders, specific symbol, specific strategy, or specific user.
 
 The kill switch broadcasts to all connected clients and cancels active orders on the bus.
 

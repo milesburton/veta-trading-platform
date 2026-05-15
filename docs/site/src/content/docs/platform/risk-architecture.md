@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-This page describes the **single chokepoint** through which every
+This page describes the single chokepoint through which every
 order in the platform must pass to reach execution, and the
 guarantees that follow.
 
@@ -26,14 +26,14 @@ The OMS performs three pre-trade checks before publishing
    and returns `{ allowed, reasons, warnings }`.
 3. **Risk-engine availability gate**. If the risk-engine call fails
    (timeout, network error, non-200), the OMS publishes
-   `orders.rejected` with reason `"Risk engine unavailable — all orders
-   are blocked until the risk service is restored"`. **Fail-closed,
-   not fail-open**.
+   `orders.rejected` with reason `"Risk engine unavailable. All orders
+   are blocked until the risk service is restored"`. Fail-closed,
+   not fail-open.
 
 If any check rejects, the order is published to `orders.rejected`
 with a structured reason and never reaches `orders.submitted`. No
 downstream service (algo strategies, EMS, dark-pool router,
-RFQ service) consumes from `orders.new` directly — they all
+RFQ service) consumes from `orders.new` directly; they all
 consume `orders.submitted` (or further-downstream topics).
 
 ## Producers of `orders.new`
@@ -45,7 +45,7 @@ the allowlist.
 
 | Source | Producer | Trigger |
 |---|---|---|
-| User browser → Gateway WS | `backend/src/gateway/routes/websocket.ts` | Trader submits order via UI |
+| User browser to Gateway WS | `backend/src/gateway/routes/websocket.ts` | Trader submits order via UI |
 | Admin / load-test | `backend/src/gateway/routes/admin.ts` | Admin endpoint for stress testing |
 | Admin scenario | `backend/src/gateway/routes/admin.ts` | Admin "demo day" canned sequence |
 | Admin replay | `backend/src/gateway/routes/admin.ts` | Replay a saved scenario |
@@ -65,7 +65,7 @@ or downstream topics directly.
   requires modifying OMS, not a new feature service.
 - **Risk-engine outages reject, not allow.** The catch branch in
   OMS publishes `orders.rejected` with a "risk service unavailable"
-  reason. The platform is unavailable when risk is down — by design.
+  reason. The platform is unavailable when risk is down, by design.
 - **Per-user limits are versioned.** Migration `0014_risk_config_versions`
   added a versioned config table so risk rules can be changed
   without restarting services and so a regression in rule behaviour
@@ -81,8 +81,8 @@ page.
   This env var exists for local development convenience. In any
   production-like deployment it must not be set to `false`. There is
   not yet a startup-time guard that refuses to start the OMS with
-  this set on a non-development deployment. **Follow-up: fail loudly
-  on startup if `RISK_ENGINE_ENABLED=false` and `DEPLOYMENT != local`.**
+  this set on a non-development deployment. Follow-up: fail loudly
+  on startup if `RISK_ENGINE_ENABLED=false` and `DEPLOYMENT != local`.
 - **Direct database write.** Anyone with Postgres credentials can
   insert into `journal.events` directly, bypassing the entire pipeline.
   This is the same reason audit-log integrity (hash-chained appends)
@@ -91,11 +91,11 @@ page.
   on the docker network and knows the topic name can publish to
   `orders.submitted` directly, bypassing OMS. The defence is
   network-level: only OMS, EMS, the journal, and the algo strategies
-  are on the trading-net network. **Follow-up: ACLs on Redpanda
-  topics so only OMS can publish to `orders.submitted`.**
+  are on the trading-net network. Follow-up: ACLs on Redpanda
+  topics so only OMS can publish to `orders.submitted`.
 - **A new service that produces to `orders.new` without going via
   the gateway/OMS path.** Caught at PR review by the integration
-  test described next, but only at PR time — a malicious commit to
+  test described next, but only at PR time. A malicious commit to
   main would bypass the test. Branch protection requiring CI green
   is the mitigation.
 
@@ -109,8 +109,8 @@ file is not in the allowlist.
 
 The allowlist is small and the rule is simple:
 
-- **`orders.new` producers** — six files listed above.
-- **`orders.submitted` producers** — exactly one file: `oms/oms-server.ts`.
+- **`orders.new` producers**: six files listed above.
+- **`orders.submitted` producers**: exactly one file, `oms/oms-server.ts`.
 
 If a future PR adds a producer outside this set, the test fails. The
 PR author then either adds the producer to the allowlist with a clear

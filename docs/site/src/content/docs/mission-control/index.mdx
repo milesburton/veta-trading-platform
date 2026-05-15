@@ -1,11 +1,11 @@
 ---
 title: Mission Control
-description: One page, every operational link — diagnostic dashboards, runbooks, log search, deploy status.
+description: "One page indexing every operational link: diagnostic dashboards, runbooks, log search, deploy status."
 ---
 
 import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
-When something is wrong, you need three things in front of you fast: **what's broken**, **where to look**, and **what to do about it**. This page is the index. Everything below is a hop, not a hub.
+When something is wrong, three pieces of information are needed: **what is broken**, **where to look**, and **what to do about it**. This page is the index. Everything below is a hop, not a hub.
 
 <Aside type="note">
 These diagnostic tools are operator-only and live on a private network. URLs and access instructions are kept in the team password manager rather than in public docs.
@@ -13,7 +13,7 @@ These diagnostic tools are operator-only and live on a private network. URLs and
 
 ## Live diagnostics (operator access)
 
-The platform uses the standard Grafana LGTM stack for live observability — Grafana for dashboards, Tempo for traces, Loki for logs — plus Traefik's built-in dashboard for routing state, Redpanda Console for Kafka topic inspection, and Uptime Kuma for external health checks.
+The platform uses the standard Grafana LGTM stack for live observability (Grafana for dashboards, Tempo for traces, Loki for logs), plus Traefik's built-in dashboard for routing state, Redpanda Console for Kafka topic inspection, and Uptime Kuma for external health checks.
 
 These run inside the deployment's private network and aren't exposed publicly. Operator-only credentials and URLs are in the team password manager.
 
@@ -23,12 +23,12 @@ These run inside the deployment's private network and aren't exposed publicly. O
   <LinkCard
     title="Logs drawer (in trading UI)"
     href="https://milesburton.github.io/veta-trading-platform/platform/observability/#in-app-log-search"
-    description="Header → Logs button. Loki when it's reachable, gateway in-process ring buffer when it isn't."
+    description="Header to Logs button. Loki when it's reachable, gateway in-process ring buffer when it isn't."
   />
   <LinkCard
     title="Service Health panel"
     href="https://milesburton.github.io/veta-trading-platform/platform/services/"
-    description="Live status of every backend service. Add via + Add Panel → Service Health."
+    description="Live status of every backend service. Add via + Add Panel, then Service Health."
   />
   <LinkCard
     title="Decision Log panel"
@@ -58,7 +58,7 @@ These run inside the deployment's private network and aren't exposed publicly. O
   <LinkCard
     title="Login is broken"
     href="https://milesburton.github.io/veta-trading-platform/reference/rbac/"
-    description="user-service is the failure surface. Check Postgres, validate the cookie, look at gateway → user-service traces."
+    description="user-service is the failure surface. Check Postgres, validate the cookie, look at gateway to user-service traces."
   />
   <LinkCard
     title="Market ladder shows no prices"
@@ -74,20 +74,20 @@ These run inside the deployment's private network and aren't exposed publicly. O
 
 ### Service restart loop
 
-Read the failing service's logs first — Grafana → Loki → `{service_name="<svc>"}`. Common causes ordered by frequency:
+Read the failing service's logs first via Grafana, Loki, `{service_name="<svc>"}`. Common causes ordered by frequency:
 
 1. **Missing env var.** Most often a database URL or service host. Compare the service's `compose.yml` block to its consumer module.
-2. **Schema migration not yet applied.** The service depends on `db-migrate` completing. Check `docker logs veta-db-migrate-1` — exit 0 means done; anything else means a migration failed.
+2. **Schema migration not yet applied.** The service depends on `db-migrate` completing. Check `docker logs veta-db-migrate-1`: exit 0 means done; anything else means a migration failed.
 3. **Dependency not healthy.** A `depends_on: condition: service_healthy` will hold the dependent service back. The unhealthy upstream is where the real problem is.
 4. **Port collision.** Rare in compose. Check `docker ps` for duplicate names.
 
-Trick: if the service has been deleted manually, the next auto-pull tick (every 5 min) will run `deploy.sh` which brings the full compose stack back up. So a restart loop *can't* be papered over by stopping the container — fix the underlying issue.
+Note: if the service has been deleted manually, the next auto-pull tick (every 5 min) will run `deploy.sh`, which brings the full compose stack back up. A restart loop cannot be papered over by stopping the container; fix the underlying issue.
 
 ## Deploy and CI
 
 <CardGrid>
   <LinkCard
-    title="GitHub Actions — main branch"
+    title="GitHub Actions, main branch"
     href="https://github.com/milesburton/veta-trading-platform/actions?query=branch%3Amain"
     description="CI run for the latest commit. Should be green within ~12 minutes of a push."
   />

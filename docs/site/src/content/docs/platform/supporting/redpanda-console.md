@@ -19,4 +19,4 @@ Useful for confirming event flow during integration debugging or when investigat
 http://<host>:8080/
 ```
 
-On the homelab it is reverse-proxied via Traefik but typically not exposed on the public URL — operators reach it over LAN.
+On the homelab it is reverse-proxied via Traefik but typically not exposed on the public URL. Operators reach it over LAN.

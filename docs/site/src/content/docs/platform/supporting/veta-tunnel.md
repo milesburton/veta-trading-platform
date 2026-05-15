@@ -1,6 +1,6 @@
 ---
 title: veta-tunnel (reverse SSH tunnel)
-description: autossh-managed reverse SSH tunnel that exposes the homelab publicly via the OVH edge box. The homelab dials out — no inbound NAT required.
+description: autossh-managed reverse SSH tunnel that exposes the homelab publicly via the OVH edge box. The homelab dials out, so no inbound NAT is required.
 ---
 
 The homelab sits on a private LAN with **no inbound
@@ -25,15 +25,15 @@ autossh -M 0 -N \
 
 The `-R 18443:localhost:443` instructs the OVH SSH daemon to listen on
 `localhost:18443` and forward connections back to the homelab's `:443`.
-`autossh` restarts the underlying `ssh` if it exits — network blip,
-OVH reboot, etc.
+`autossh` restarts the underlying `ssh` if it exits, covering network
+blips, OVH reboots, and similar disruptions.
 
 `-o ExitOnForwardFailure=yes` ensures `ssh` exits non-zero rather than
-holding a connection open without the reverse forward bound — important
+holding a connection open without the reverse forward bound. This matters
 because we want `autossh` to retry rather than appear connected while
 the public route is silently dead.
 
-## Install — homelab side
+## Install on the homelab side
 
 ```bash
 # Install autossh
@@ -44,7 +44,7 @@ sudo install -d -m 0700 -o root -g root /etc/veta-tunnel
 sudo ssh-keygen -t ed25519 -N "" -C veta-tunnel@homelab \
   -f /etc/veta-tunnel/id_ed25519
 
-# Print the public key — paste this into the OVH edge box (next section)
+# Print the public key. Paste this into the OVH edge box (next section).
 sudo cat /etc/veta-tunnel/id_ed25519.pub
 
 # Install + start the systemd unit
@@ -55,7 +55,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now veta-tunnel.service
 ```
 
-## Install — OVH side (tunnel user)
+## Install on the OVH side (tunnel user)
 
 Provision a dedicated `veta-tunnel` user whose only capability is to
 hold port 18443 open:
@@ -77,7 +77,7 @@ sudo chmod 0600 /home/veta-tunnel/.ssh/authorized_keys
 sudo sshd -T | grep -E "allowtcpforwarding|gatewayports"
 ```
 
-## Restricted `authorized_keys` line — what each part does
+## Restricted `authorized_keys` line: what each part does
 
 ```
 restrict,port-forwarding,permitlisten="18443" ssh-ed25519 AAAAC3N...
@@ -90,9 +90,9 @@ restrict,port-forwarding,permitlisten="18443" ssh-ed25519 AAAAC3N...
 | `permitlisten="18443"` | Allows the reverse-forward to bind only port 18443. Any other `-R` request is rejected. |
 
 If the homelab is ever compromised, the worst an attacker can do via
-this key is hold port 18443 open on OVH — no shell, no other forwards.
-They'd see the inbound HTTPS connections proxied through the tunnel,
-but that's the public traffic anyway.
+this key is hold port 18443 open on OVH. No shell and no other forwards.
+They would see the inbound HTTPS connections proxied through the tunnel,
+but that traffic is public anyway.
 
 ## Daily use
 
@@ -106,10 +106,10 @@ journalctl -u veta-tunnel.service -n 50 --no-pager
 # Restart (e.g. after rotating keys)
 sudo systemctl restart veta-tunnel.service
 
-# Quick health check — port 18443 should be listening on the OVH side
+# Quick health check: port 18443 should be listening on the OVH side
 ssh ubuntu@ovh.agileview.co.uk 'ss -tlnp | grep :18443'
 
-# From inside the homelab — make sure the local :443 is up too
+# From inside the homelab, make sure the local :443 is up too
 ss -tlnp | grep :443
 ```
 
@@ -118,7 +118,7 @@ ss -tlnp | grep :443
 | Symptom | Likely cause |
 |---|---|
 | Edge Traefik returns 502 | Tunnel down. Check `journalctl -u veta-tunnel` |
-| Tunnel runs but public URL returns 503 from homelab Traefik | Homelab Traefik dead — separate problem |
+| Tunnel runs but public URL returns 503 from homelab Traefik | Homelab Traefik dead, a separate problem |
 | Tunnel restarts every few seconds | OVH SSH daemon rejecting the key. Check `journalctl -u veta-tunnel` for the error |
 | Tunnel runs but `:18443` not listening on OVH | `permitlisten` mismatch, or sshd rejected the `-R` request |
 
@@ -151,10 +151,10 @@ sudo nano /home/veta-tunnel/.ssh/authorized_keys
 ## Source
 
 - [`scripts/homelab-systemd/veta-tunnel.service`](https://github.com/milesburton/veta-trading-platform/blob/main/scripts/homelab-systemd/veta-tunnel.service)
-- [`edge/README.md`](https://github.com/milesburton/veta-trading-platform/blob/main/edge/README.md) — original OVH-side documentation
+- [`edge/README.md`](https://github.com/milesburton/veta-trading-platform/blob/main/edge/README.md): original OVH-side documentation
 
 ## Related
 
-- [Edge architecture](../edge-architecture) — full chain from internet to backend services
-- [Synthetic probe](./synthetic-probe) — outside-in liveness check that traverses this tunnel
-- [veta-auto-pull](./veta-auto-pull) — the deploy mechanism that runs on the homelab
+- [Edge architecture](../edge-architecture): full chain from internet to backend services
+- [Synthetic probe](./synthetic-probe): outside-in liveness check that traverses this tunnel
+- [veta-auto-pull](./veta-auto-pull): the deploy mechanism that runs on the homelab

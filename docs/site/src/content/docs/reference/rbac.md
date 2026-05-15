@@ -22,13 +22,13 @@ Every panel has a `PANEL_PERMISSIONS` entry defining which roles can access it, 
 
 The `canAccessPanel(panelId, role, tradingStyle)` function is the single source of truth, used by:
 
-- **ComponentPicker** — filters the "Add Panel" dropdown
-- **DashboardLayout factory** — renders "no permission" message for unauthorized panels in saved layouts
+- **ComponentPicker**: filters the "Add Panel" dropdown
+- **DashboardLayout factory**: renders "no permission" message for unauthorised panels in saved layouts
 
 ## Enforcement points
 
 1. **Frontend ComponentPicker**: panel not shown if role/style does not match
-2. **Frontend DashboardLayout factory**: unauthorized panel renders denial message
+2. **Frontend DashboardLayout factory**: unauthorised panel renders denial message
 3. **Frontend Order Ticket role-check**: blocks order submission with per-role/per-style messages
 4. **Backend OMS**: rejects orders from non-trader roles
 5. **Backend OMS**: rejects orders failing risk-engine checks

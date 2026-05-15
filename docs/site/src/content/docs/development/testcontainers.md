@@ -1,19 +1,19 @@
 ---
 title: Testcontainers
-description: Per-test ephemeral stacks for backend integration tests — helpers, patterns, and the run-testcontainers wrapper.
+description: Per-test ephemeral stacks for backend integration tests, including helpers, patterns, and the run-testcontainers wrapper.
 sidebar:
   order: 7
 ---
 
-The integration test suite runs on per-test ephemeral stacks via [Testcontainers](https://testcontainers.com/). Every `.tc.test.ts` file boots its own Postgres, Redpanda, and the subset of services it actually exercises, then tears them all down at the end.
+The integration test suite runs on per-test ephemeral stacks via [Testcontainers](https://testcontainers.com/). Every `.tc.test.ts` file boots its own Postgres, Redpanda, and the subset of services it exercises, then tears them all down at the end.
 
 This is the only integration path CI runs. The older `*.integration.test.ts` files (shared compose stack on `localhost:50xx`) still exist in the repo for local debugging, but no CI step references them.
 
 ## Why per-test isolation
 
-The shared-stack approach worked but coupled tests to each other through Postgres rows, Redpanda offsets, OMS in-memory state, and risk-engine rate limits. We worked around it with `Date.now()`-suffixed scenario names and per-test cascade deletes — the underlying coupling stayed real.
+The shared-stack approach worked, but coupled tests to each other through Postgres rows, Redpanda offsets, OMS in-memory state, and risk-engine rate limits. We worked around it with `Date.now()`-suffixed scenario names and per-test cascade deletes, but the underlying coupling remained.
 
-Real trading shops use per-test isolation; the platform's remit is to demonstrate how a real system *should* be built. The migration also surfaced five real bugs the legacy compose-stack tests had been masking — see [What the migration found](#what-the-migration-found) below.
+Real trading shops use per-test isolation, and the platform's remit is to demonstrate how a real system should be built. The migration also surfaced five real bugs the legacy compose-stack tests had been masking (see [What the migration found](#what-the-migration-found) below).
 
 ## Running
 
@@ -23,7 +23,7 @@ deno task test:testcontainers
 
 The task wraps each `.tc.test.ts` file in `scripts/run-testcontainers.sh`, which sets up the Docker plumbing the helpers need (see [Dev-container quirks](#dev-container-quirks)).
 
-End-to-end runtime is around 80 seconds across the full suite. Each individual file boots its slice of the stack in 5–15 seconds depending on how many services it needs.
+End-to-end runtime is around 80 seconds across the full suite. Each individual file boots its slice of the stack in 5 to 15 seconds depending on how many services it needs.
 
 ## Suites
 
@@ -31,13 +31,13 @@ All seven suites run as part of `deno task test:testcontainers`:
 
 | File | Boots | What it covers |
 |------|-------|----------------|
-| `testcontainers.smoke.test.ts` | postgres + redpanda | Helpers themselves — connection works, migrations apply, broker accepts |
-| `testcontainers.stack.test.ts` | postgres + redpanda + 2 services | Helper API — `startStack()` brings up multiple services and tears them down |
+| `testcontainers.smoke.test.ts` | postgres + redpanda | Helpers themselves: connection works, migrations apply, broker accepts |
+| `testcontainers.stack.test.ts` | postgres + redpanda + 2 services | Helper API: `startStack()` brings up multiple services and tears them down |
 | `journal.http.tc.test.ts` | journal | Journal HTTP contracts (8 steps) |
 | `market-data.http.tc.test.ts` | market-data | Market-data HTTP contracts (9 steps) |
 | `intelligence.integration.tc.test.ts` | feature/signal/scenario engines + gateway | Intelligence pipeline + gateway proxy (10 steps) |
 | `integration.tc.test.ts` | full service surface | Service contracts + order flow + shared-workspaces lifecycle (20 steps) |
-| `scenarios.integration.tc.test.ts` | scenarios stack | Same-seed determinism (±5bps tolerance) + different-seed divergence |
+| `scenarios.integration.tc.test.ts` | scenarios stack | Same-seed determinism (plus or minus 5bps tolerance) and different-seed divergence |
 | `algo.integration.tc.test.ts` | gateway + journal + 9 algo services | All 9 algo strategies via WebSocket (10 steps; 4 timing-sensitive steps gated behind `RUN_FLAKY_ALGOS=1`) |
 
 ## Helper API
@@ -52,12 +52,12 @@ Boots a `postgres:16-alpine` container, picks a free port, and returns a `Manage
 import { startEphemeralPostgres } from "./testcontainers/postgres.ts";
 
 const pg = await startEphemeralPostgres();
-// pg.url — postgres://veta:veta@host:port/veta_test
+// pg.url is postgres://veta:veta@host:port/veta_test
 // pg.host, pg.port, pg.user, pg.password, pg.database
 await pg.teardown();
 ```
 
-`startEphemeralPostgres({ database, user, password, startupTimeoutMs })` — defaults are `veta_test` / `veta` / `veta` / 60s.
+`startEphemeralPostgres({ database, user, password, startupTimeoutMs })` defaults to `veta_test` / `veta` / `veta` / 60s.
 
 ### `startEphemeralRedpanda()`
 
@@ -67,13 +67,13 @@ Boots a `redpandadata/redpanda:v24.3.4` container in `dev-container` mode with a
 import { startEphemeralRedpanda } from "./testcontainers/redpanda.ts";
 
 const rp = await startEphemeralRedpanda();
-// rp.brokers — host:port string for KAFKA_BROKERS
+// rp.brokers is the host:port string for KAFKA_BROKERS
 await rp.teardown();
 ```
 
 ### `applyMigrations(databaseUrl)`
 
-Runs the production migration runner against an ephemeral Postgres URL. Use this after `startEphemeralPostgres()` to get the same schema CI/prod uses.
+Runs the production migration runner against an ephemeral Postgres URL. Use this after `startEphemeralPostgres()` to get the same schema CI and prod use.
 
 ### `startStack({ services, ... })`
 
@@ -87,10 +87,10 @@ const stack = await startStack({
   startupTimeoutMs: 30_000,
 });
 
-// stack.urls.journal — http://localhost:5009
-// stack.urls.gateway — http://localhost:5011
-// stack.dumpLogs() — concatenated logs across all services (for assert failures)
-// stack.inspectLogs("oms") — single-service logs
+// stack.urls.journal is http://localhost:5009
+// stack.urls.gateway is http://localhost:5011
+// stack.dumpLogs() returns concatenated logs across all services (for assert failures)
+// stack.inspectLogs("oms") returns single-service logs
 
 await stack.teardown();
 ```
@@ -99,7 +99,7 @@ Available service names are listed in `backend/src/tests/testcontainers/services
 
 ### `login(stack, username)` and `submitOrderViaWs(stack, token, order)`
 
-Auth and order helpers in `auth.ts`. `login()` performs the OAuth2 PKCE flow against the booted `user-service` and returns a session cookie. `submitOrderViaWs()` opens a WebSocket to the gateway, authenticates, sends a `submitOrder`, and resolves with the `orderAck` / `orderRejected` / `error` event.
+Auth and order helpers in `auth.ts`. `login()` performs the OAuth2 PKCE flow against the booted `user-service` and returns a session cookie. `submitOrderViaWs()` opens a WebSocket to the gateway, authenticates, sends a `submitOrder`, and resolves with the `orderAck`, `orderRejected`, or `error` event.
 
 ## Test pattern
 
@@ -132,34 +132,34 @@ Deno.test({
 Three things to notice:
 
 1. **`RUN_TESTCONTAINERS=1` gate.** The wrapper sets it; running `deno test` directly skips every TC file. This keeps the regular `deno task test` fast and side-effect-free.
-2. **`Deno.test({ ignore })`** rather than `if (!SHOULD_RUN) return` — the runner reports the test as ignored, not silently passed.
-3. **`try { … } finally { teardown() }`** — every test owns its lifecycle. Ryuk is disabled, so containers won't get reaped if the test forgets to clean up.
+2. **`Deno.test({ ignore })`** rather than `if (!SHOULD_RUN) return`, so the runner reports the test as ignored rather than silently passed.
+3. **`try { … } finally { teardown() }`**: every test owns its lifecycle. Ryuk is disabled, so containers will not get reaped if the test forgets to clean up.
 
 ## Adding a new test
 
 1. Create `backend/src/tests/<name>.tc.test.ts` following the pattern above.
-2. List the minimum services your test needs in `startStack({ services: [...] })`. Adding a service costs ~2-5 seconds of boot time.
+2. List the minimum services your test needs in `startStack({ services: [...] })`. Adding a service costs around 2 to 5 seconds of boot time.
 3. Append the file to the `test:testcontainers` task in `deno.json`:
    ```jsonc
    "test:testcontainers": "./scripts/run-testcontainers.sh deno test --allow-all backend/src/tests/<name>.tc.test.ts && …"
    ```
-4. Run `deno task test:testcontainers` locally before pushing — CI runs the same task, so anything that passes locally inside the dev container will pass on the runner.
+4. Run `deno task test:testcontainers` locally before pushing. CI runs the same task, so anything that passes locally inside the dev container will pass on the runner.
 
 ## The wrapper script
 
 `scripts/run-testcontainers.sh` handles three Docker plumbing problems that affect dev containers, GitHub Codespaces, and GitHub Actions runners alike:
 
-1. **Unix-socket → TCP shim.** Deno's `node:http` polyfill can't write to Docker's unix socket (a `Symbol(Deno.internal.rid)` polyfill gap), so the wrapper runs an `alpine/socat` sidecar that proxies `tcp://<bridge>:2375` → `/var/run/docker.sock`. `DOCKER_HOST` is pointed at the sidecar's bridge IP.
+1. **Unix-socket to TCP shim.** Deno's `node:http` polyfill cannot write to Docker's unix socket (a `Symbol(Deno.internal.rid)` polyfill gap), so the wrapper runs an `alpine/socat` sidecar that proxies `tcp://<bridge>:2375` to `/var/run/docker.sock`. `DOCKER_HOST` is pointed at the sidecar's bridge IP.
 2. **`TESTCONTAINERS_HOST_OVERRIDE`.** `container.getHost()` returns `localhost`, but the published port lives on the Docker host's loopback rather than the test process's. The override is set to the bridge gateway IP, which is reachable from both dev containers and CI runners.
 3. **Clean `DOCKER_CONFIG`.** When `~/.docker/config.json` declares a `credsStore` helper that exits 1 for unauthenticated public-registry pulls (Codespaces installs one), Testcontainers treats the failure as fatal. The wrapper points `DOCKER_CONFIG` at an empty config dir to bypass it.
 
-It also sets `TESTCONTAINERS_RYUK_DISABLED=true` — the helpers stop containers in `finally` blocks already, and Ryuk's published port is its own loopback puzzle inside dev containers.
+It also sets `TESTCONTAINERS_RYUK_DISABLED=true`. The helpers stop containers in `finally` blocks already, and Ryuk's published port is its own loopback puzzle inside dev containers.
 
 The wrapper finishes by setting `RUN_TESTCONTAINERS=1` and `exec`-ing the rest of the command line.
 
 ### Dev-container quirks
 
-The wrapper is required when running locally inside the project's dev container or in Codespaces. On a bare workstation with `/var/run/docker.sock` writable directly by Deno, you can technically run the test files without it, but using the wrapper everywhere keeps environments consistent and is what CI does.
+The wrapper is required when running locally inside the project's dev container or in Codespaces. On a bare workstation with `/var/run/docker.sock` writable directly by Deno, you can technically run the test files without it, but using the wrapper everywhere keeps environments consistent and matches what CI does.
 
 ## What the migration found
 
@@ -169,10 +169,10 @@ The Testcontainers harness caught five real bugs on its first pilot run that the
 - **scenarios orchestrator parsed the wrong response shape**: journal `/orders` returns a bare array, but the orchestrator did `body.orders ?? []`, always seeing zero orders.
 - **scenarios orchestrator matched on the wrong field**: it looked for `o.clientOrderId`, but the journal returns it as `id`.
 - **journal never populated child fill state**: `orders.filled` events only updated the parent's filled total, leaving child `status="pending"` and `avgFillPrice=0` forever.
-- **market-sim `/seed` reset only the RNG**: `marketMinute`, `tickCount`, regime state, and price levels persisted between runs, so "same seed" runs weren't actually repeatable from a clean state.
+- **market-sim `/seed` reset only the RNG**: `marketMinute`, `tickCount`, regime state, and price levels persisted between runs, so "same seed" runs were not repeatable from a clean state.
 
-The legacy `scenarios.integration.test.ts` was wired into `deno.json`'s `test:integration` task but never invoked by any CI step — it claimed bit-identical replay across three runs but in fact never ran.
+The legacy `scenarios.integration.test.ts` was wired into `deno.json`'s `test:integration` task but never invoked by any CI step. It claimed bit-identical replay across three runs but in fact never ran.
 
 ### A note on replay tolerance
 
-Bit-identical fill prices across same-seed runs would require pausing the live tick clock during a scenario; the architecture today generates ticks continuously while orders flow through Kafka. The harness asserts ±5bps tolerance, which captures the messaging-bus jitter while still proving determinism.
+Bit-identical fill prices across same-seed runs would require pausing the live tick clock during a scenario; the architecture today generates ticks continuously while orders flow through Kafka. The harness asserts plus or minus 5bps tolerance, which captures the messaging-bus jitter while still proving determinism.

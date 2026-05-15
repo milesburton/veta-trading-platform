@@ -3,7 +3,7 @@ title: Overview
 description: What VETA is and what it provides.
 ---
 
-VETA is a near real-world equities and fixed income trading platform. It enables paper trading through the platform's algorithmic execution services and is designed to support practical market-structure learning.
+VETA is a near real-world equities and fixed income trading platform. It supports paper trading through the platform's algorithmic execution services and is designed for practical market-structure learning.
 
 ## What's included
 
@@ -21,10 +21,13 @@ VETA is a near real-world equities and fixed income trading platform. It enables
 
 ## Architecture
 
-The platform is a collection of Deno microservices connected by a Redpanda (Kafka-compatible) message bus. The React frontend talks to a single API Gateway — the only service the browser can reach.
+The platform is a collection of Deno microservices connected by a Redpanda (Kafka-compatible) message bus. The React frontend talks to a single API Gateway, which is the only service the browser can reach.
 
-```
-Frontend → Gateway (WebSocket + HTTP) → Redpanda bus → Services
+```mermaid
+flowchart LR
+  Frontend --> Gateway
+  Gateway -->|WebSocket + HTTP| Redpanda[Redpanda bus]
+  Redpanda --> Services
 ```
 
 See [Architecture](/veta-trading-platform/platform/architecture/) for the full service map.

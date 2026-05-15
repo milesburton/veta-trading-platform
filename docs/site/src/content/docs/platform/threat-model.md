@@ -13,14 +13,14 @@ step of the chain. It is the companion to
 adversaries and chains those capabilities exist to disrupt). Container
 hardening details are kept on the [Security posture](../security/)
 page and only referenced here. The residual-risks section is
-deliberately honest about gaps, and each gap maps back to a "Deferred"
+honest about gaps, and each gap maps back to a "Deferred"
 or "Partially" row on the standards checklist.
 
 ## Adversaries
 
 | Adversary | Capability | What they want | Out of scope |
 |---|---|---|---|
-| Casual external attacker | Mass scanners, public CVE exploits, no targeted research | Any easy win — exposed admin panel, default credentials, leaked secrets | Targeted social engineering of the operator |
+| Casual external attacker | Mass scanners, public CVE exploits, no targeted research | Any easy win such as an exposed admin panel, default credentials, or leaked secrets | Targeted social engineering of the operator |
 | Skilled remote attacker | Custom exploits, RCE chains, lateral movement, willing to spend days | Persistence inside the trading network, data exfiltration, ransom | Nation-state-grade zero-days |
 | Compromised dependency author | Indirect access via a malicious npm/Deno package update | Supply-chain foothold inside any service that imports the package | A backdoored Postgres or Linux kernel |
 | Insider with viewer credentials | Legitimate session cookie, viewer role only | Privilege escalation to trader or admin; reading data outside their role | Physical access to the host |
@@ -35,13 +35,13 @@ they cannot trivially compromise GitHub itself or GHCR.
 
 | Asset | Sensitivity | Where it lives | Who legitimately reads it |
 |---|---|---|---|
-| Trading limits and risk configuration | High — bypass = unbounded loss | Postgres `risk_config_versions` | `risk-engine`, admin role |
-| Order history | High — regulatory artefact, must be tamper-evident | Postgres `orders`, journal Kafka topic | `journal`, trader, admin |
-| User session tokens | High — direct authentication bypass | Browser cookie, validated by `user-service` per request | `user-service` |
-| Backend service credentials | High — DB password, broker keys when wired | `.env` files, host environment | The service that owns the credential |
-| Trading-decision pipeline | High — manipulation is market abuse | In-memory state across `feature-engine`, `signal-engine`, `risk-engine` | The pipeline services |
-| Audit log integrity | High — needed to reconstruct any incident | Postgres `audit_events`, journal Kafka topic | `journal`, admin (read), no one (write) |
-| Market data | Low — synthetic or delayed-public | `market-data` service memory, Redpanda topics | All trading services |
+| Trading limits and risk configuration | High (bypass equals unbounded loss) | Postgres `risk_config_versions` | `risk-engine`, admin role |
+| Order history | High (regulatory artefact, must be tamper-evident) | Postgres `orders`, journal Kafka topic | `journal`, trader, admin |
+| User session tokens | High (direct authentication bypass) | Browser cookie, validated by `user-service` per request | `user-service` |
+| Backend service credentials | High (DB password, broker keys when wired) | `.env` files, host environment | The service that owns the credential |
+| Trading-decision pipeline | High (manipulation is market abuse) | In-memory state across `feature-engine`, `signal-engine`, `risk-engine` | The pipeline services |
+| Audit log integrity | High (needed to reconstruct any incident) | Postgres `audit_events`, journal Kafka topic | `journal`, admin (read), no one (write) |
+| Market data | Low (synthetic or delayed-public) | `market-data` service memory, Redpanda topics | All trading services |
 
 ## Attack surfaces
 
@@ -70,7 +70,7 @@ production unclassified.
 Each chain is a plausible end-to-end path; the bullets are the
 hurdles in order.
 
-### Chain 1 — RCE in any service, attacker pivots to read another service's data
+### Chain 1: RCE in any service, attacker pivots to read another service's data
 
 1. Attacker finds a remote-code-execution bug in a service.
 2. They get shell as the service's UID inside its container.
@@ -87,7 +87,7 @@ hurdles in order.
      read-only; nothing else mounts it. Disk-monitor was the previous
      offender and is now socket-free.
 
-### Chain 2 — Stolen viewer cookie, attacker tries to submit orders
+### Chain 2: Stolen viewer cookie, attacker tries to submit orders
 
 1. Attacker steals a session cookie (XSS, malware, shared device).
 2. They replay the cookie against an order-submission endpoint.
@@ -103,7 +103,7 @@ hurdles in order.
      the deferred list (see professional-standards: *Bypass-resistance
      proven by integration test*).
 
-### Chain 3 — Compromised npm dependency ships a crypto-miner
+### Chain 3: Compromised npm dependency ships a crypto-miner
 
 1. A transitive dep is hijacked and pushes a malicious patch release.
 2. CI builds the image with the bad dep and pushes to GHCR.
@@ -116,7 +116,7 @@ hurdles in order.
 4. The miner attempts to phone home.
    - **Control**: no current egress firewall; this is a known gap.
 
-### Chain 4 — Bot exhausts Kafka topics to OOM the journal
+### Chain 4: Bot exhausts Kafka topics to OOM the journal
 
 1. Attacker, authenticated or otherwise, finds a write-amplifying
    endpoint.
@@ -128,21 +128,20 @@ hurdles in order.
      limiting per consumer is planned (see professional-standards:
      *Rate limiting per endpoint, per IP, per user*).
 
-### Chain 5 — XSS via a market-data string, attacker reads session token
+### Chain 5: XSS via a market-data string, attacker reads session token
 
 1. Attacker arranges for a malicious string to appear in market-data
    (synthetic feed manipulation, future broker integration).
 2. The frontend renders it.
-   - **Control**: React escapes content by default; we do not use
-     `dangerouslySetInnerHTML` on untrusted strings; no inline event
-     handlers.
+   - **Control**: React escapes content by default; `dangerouslySetInnerHTML`
+     is not used on untrusted strings; no inline event handlers.
 3. They try to read the cookie from JavaScript.
    - **Control**: session cookie is `httpOnly`, so JS cannot read it.
 4. They try to exfiltrate other DOM state.
    - **Control**: a Content Security Policy is on the deferred list;
      today the defence is React's escaping plus the `httpOnly` cookie.
 
-### Chain 6 — Replay attack with an old auth token after revocation
+### Chain 6: Replay attack with an old auth token after revocation
 
 1. Attacker obtains a valid token, then the user logs out.
 2. They replay the token.
@@ -155,7 +154,7 @@ hurdles in order.
 
 ## Residual risks
 
-These are the chains we know we currently lose. Each one corresponds
+These are the chains we currently lose. Each one corresponds
 to a row on [Professional standards](../professional-standards/) that
 is "Deferred" or "Partially".
 
@@ -174,14 +173,14 @@ is "Deferred" or "Partially".
 - **No restore drill.** Backups themselves are deferred; the rehearsal
   is consequently deferred too.
 
-## Out of scope (deliberate)
+## Out of scope (intentional)
 
 Real-money execution, customer fund custody, multi-tenancy,
 regulatory submission, and surveillance hooks (spoofing/layering/wash
 detection) are all out of scope. The reasoning is on
 [Professional standards: Deliberate non-goals](../professional-standards/#deliberate-non-goals).
 The threat model assumes those features do not exist and therefore are
-not attack surfaces — if any of them is ever wired up, this page must
+not attack surfaces. If any of them is ever wired up, this page must
 gain a new chain before the feature ships.
 
 ## How this page stays current
@@ -191,11 +190,11 @@ an attack-surface file: the gateway, any auth path, the risk engine,
 the journal, container compose files, or CI workflows. New surface
 area means a new row in *Attack surfaces* and a new chain if it
 introduces a class of attack that the existing chains do not already
-cover. New control means the relevant chain gets a new bullet. New
+cover. A new control means the relevant chain gets a new bullet. A new
 residual risk means a new entry both here and on
 [Professional standards](../professional-standards/) so the two pages
 do not drift.
 
 If a chain reads as defended but the underlying control has rotted,
-that is a bug — open an issue and either fix the control or downgrade
+that is a bug. Open an issue and either fix the control or downgrade
 this page to match reality.
