@@ -601,6 +601,30 @@ export function AppHeader() {
             <ServiceStatus services={services} />
           </div>
           <a
+            href="https://veta.mnetcs.com/grafana/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open Grafana dashboards"
+            data-testid="grafana-link"
+            className="text-label hover:text-secondary transition-colors"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 3v18h18" />
+              <path d="M7 14l4-4 4 4 5-5" />
+            </svg>
+            <span className="sr-only">Open Grafana</span>
+          </a>
+          <a
             href="https://milesburton.github.io/veta-trading-platform/"
             target="_blank"
             rel="noopener noreferrer"

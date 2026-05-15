@@ -103,6 +103,18 @@ test("shows brand name and time", () => {
   expect(screen.getByText(/\d{1,2}:\d{2}:\d{2}/)).toBeInTheDocument();
 });
 
+test("header exposes Grafana, Docs, and GitHub external links", () => {
+  renderBar(true);
+  const grafanaLink = screen.getByTestId("grafana-link");
+  expect(grafanaLink).toHaveAttribute("href", "https://veta.mnetcs.com/grafana/");
+  expect(grafanaLink).toHaveAttribute("target", "_blank");
+  expect(grafanaLink).toHaveAttribute("rel", expect.stringContaining("noopener"));
+
+  const docsLink = screen.getByTestId("docs-link");
+  expect(docsLink).toHaveAttribute("href", "https://milesburton.github.io/veta-trading-platform/");
+  expect(docsLink).toHaveAttribute("target", "_blank");
+});
+
 import { describe, expect, it } from "vitest";
 import { alertAdded } from "../../store/alertsSlice";
 
