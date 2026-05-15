@@ -3,8 +3,8 @@ title: ContextMenu
 description: Right-click menu primitive with separators, icons, shortcuts, danger actions.
 ---
 
-import ContextMenuDemo from "../../../../components/demos/ContextMenuDemo.tsx";
-import Source from "../../../../components/Source.astro";
+import ContextMenuDemo from "@docs/components/demos/ContextMenuDemo.tsx";
+import Source from "@docs/components/Source.astro";
 
 A pure-display context menu used across panels and the dashboard. Renders into a portal anchored at `(x, y)`, clamps to the viewport, and closes on outside click or **Esc**. Supports icons, keyboard shortcuts, danger styling, disabled rows, and labelled separator groups.
 
@@ -49,7 +49,7 @@ interface ContextMenuSeparator {
 ## Import
 
 ```tsx
-import { ContextMenu, useContextMenu } from "../components/ContextMenu";
+import { ContextMenu, useContextMenu } from "@docs/components/ContextMenu";
 
 const { menu, openMenu, closeMenu } = useContextMenu();
 

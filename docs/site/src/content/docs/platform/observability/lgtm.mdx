@@ -3,7 +3,7 @@ title: LGTM stack
 description: The self-hosted observability stack on the homelab. Loki, Grafana, Tempo, Prometheus, and the Alloy collector.
 ---
 
-import GrafanaScreenshots from "../../../../components/GrafanaScreenshots.astro";
+import GrafanaScreenshots from "@docs/components/GrafanaScreenshots.astro";
 
 A separate Compose stack at [`observability/docker-compose.lgtm.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/docker-compose.lgtm.yml) provides metrics, logs, and traces. It is independent of the trading stack and can run on the same host or be pointed at a remote one.
 

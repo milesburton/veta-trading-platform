@@ -4,7 +4,7 @@ description: Compact display of commit SHA and build date for footer/header use.
 ---
 
 import { BuildInfo } from "@veta/frontend/components/BuildInfo";
-import Source from "../../../../components/Source.astro";
+import Source from "@docs/components/Source.astro";
 
 Tiny component used in headers and footers to surface the build's commit SHA and date. Shows nothing if neither is provided; drop-in safe.
 
@@ -28,7 +28,7 @@ Tiny component used in headers and footers to surface the build's commit SHA and
 ## Import
 
 ```tsx
-import { BuildInfo } from "../components/BuildInfo";
+import { BuildInfo } from "@docs/components/BuildInfo";
 
 <BuildInfo buildDate="2026-05-04" commitSha={import.meta.env.VITE_COMMIT_SHA} />
 ```

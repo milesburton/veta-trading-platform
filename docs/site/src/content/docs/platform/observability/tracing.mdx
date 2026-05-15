@@ -3,7 +3,7 @@ title: Distributed tracing
 description: OpenTelemetry traces across HTTP and Kafka hops, plus pipeline-stage latency.
 ---
 
-import Svc from "../../../../components/Svc.astro";
+import Svc from "@docs/components/Svc.astro";
 
 Every Deno service emits OpenTelemetry traces and metrics when started with `OTEL_DENO=true`. The `compose.observability.yml` overlay enables this on the homelab and points each service at the Alloy collector:
 

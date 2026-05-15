@@ -3,9 +3,10 @@ title: Session replay
 description: rrweb-based session capture and the client-side WebM exporter.
 ---
 
-import Svc from "../../../../components/Svc.astro";
+import Svc from "@docs/components/Svc.astro";
+import External from "@docs/components/External.astro";
 
-The <Svc name="replay-service" /> records full browser sessions via [rrweb](https://www.rrweb.io/) when an admin enables recording. Each row in the Session Replay panel offers three exports:
+The <Svc name="replay-service" /> records full browser sessions via <External href="https://www.rrweb.io/" label="rrweb" /> when an admin enables recording. Each row in the Session Replay panel offers three exports:
 
 - **Play**: open the rrweb player inline.
 - **JSON**: download the raw event stream (replays in any rrweb player).

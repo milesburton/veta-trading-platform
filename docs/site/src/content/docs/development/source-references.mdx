@@ -3,8 +3,8 @@ title: Source References
 description: How to link doc pages to source code.
 ---
 
-import Source from "../../../components/Source.astro";
-import CodeBlock from "../../../components/CodeBlock.astro";
+import Source from "@docs/components/Source.astro";
+import CodeBlock from "@docs/components/CodeBlock.astro";
 
 Doc pages link to source code through two MDX components: `<Source>` for inline links and `<CodeBlock>` for embedded code. Both validate at build time. If a referenced file or region is missing, the build fails.
 

@@ -3,6 +3,8 @@ title: Operational discipline
 description: Rollback plans, incident log, postmortems, change-freeze windows, and future on-call rotation.
 ---
 
+import Term from "@docs/components/Term.astro";
+
 ## Rollback plans in every PR
 
 Every PR description must answer: "How do we roll this back if it breaks prod?" Three classes:
@@ -20,7 +22,7 @@ A `docs/incidents/` directory. Every incident gets a timestamped file with:
 - When (UTC start, UTC end)
 - What (user-facing symptom)
 - Root cause
-- MTTR
+- <Term name="mttr" /> (Mean Time To Recovery)
 - Detection (synthetic / user-reported / log alert)
 - Action item with owner + deadline (e.g. "add test that catches this class. Owner: M, by: 2026-05-19")
 
@@ -28,7 +30,7 @@ Backfilled with 2026-05-12 incidents as the first entries. Patterns become visib
 
 ## Postmortems
 
-Blameless template, lives in the same directory. Required for any incident with MTTR > 30 min OR user-visible impact > 5 min. Three sections only: **What happened (timeline)**, **What went well**, **What we'll change**. No long apologies; no individuals named except as note-takers.
+Blameless template, lives in the same directory. Required for any incident with <Term name="mttr" /> > 30 min OR user-visible impact > 5 min. Three sections only: **What happened (timeline)**, **What went well**, **What we'll change**. No long apologies; no individuals named except as note-takers.
 
 ## Change-freeze windows
 

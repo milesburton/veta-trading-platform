@@ -4,7 +4,7 @@ description: Table row rendering a single service's health, version and meta.
 ---
 
 import { ServiceRow } from "@veta/frontend/components/ServiceRow";
-import Source from "../../../../components/Source.astro";
+import Source from "@docs/components/Source.astro";
 
 Renders one row of the Service Health table: a status dot, the service name (optionally a link), an `ok / error / unavailable` label, the version, and a meta blurb. Optional services that are erroring are shown in a faded "unavailable" style instead of red.
 
@@ -53,7 +53,7 @@ interface ServiceHealth {
 ## Import
 
 ```tsx
-import { ServiceRow } from "../components/ServiceRow";
+import { ServiceRow } from "@docs/components/ServiceRow";
 
 <table>
   <tbody>
