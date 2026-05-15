@@ -4443,7 +4443,8 @@
         "npm:vite-plugin-electron@~0.28.8",
         "npm:vite@^7.3.2",
         "npm:vitest@^4.0.18",
-        "npm:ws@^8.20.0"
+        "npm:ws@^8.20.0",
+        "npm:zod@^4.4.3"
       ]
     }
   }
