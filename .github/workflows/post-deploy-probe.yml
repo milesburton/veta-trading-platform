@@ -1,0 +1,83 @@
+name: Post-deploy probe
+
+# Runs after every push to main, waiting long enough for the homelab's
+# 5-minute auto-pull timer to pick up the new commit and roll out the
+# new images, then runs the synthetic probe against the public URL.
+# Detects "your latest deploy broke prod" within ~10 minutes of merge.
+#
+# This is the same Deno probe that runs every 60s on the OVH edge box.
+# CI is a third, independent vantage point — if the OVH probe sees a
+# different result from GitHub runners, the divergence itself is a
+# useful signal (e.g. an OVH-side network issue).
+#
+# Triggered also on manual workflow_dispatch for ad-hoc checks.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      wait_minutes:
+        description: "Minutes to wait for auto-pull before probing"
+        type: number
+        default: 6
+      base_url:
+        description: "Probe target URL"
+        type: string
+        default: "https://veta.mnetcs.com"
+
+permissions:
+  contents: read
+
+concurrency:
+  # Only the most recent push to main needs to run this. If a new push
+  # arrives while this is mid-wait, cancel the in-progress run.
+  group: post-deploy-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    name: Probe ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Only need the probe script — shallow checkout.
+          fetch-depth: 1
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Wait for auto-pull cycle to complete
+        env:
+          WAIT_MIN: ${{ inputs.wait_minutes || 6 }}
+        run: |
+          echo "Waiting ${WAIT_MIN} minutes for homelab auto-pull to deploy ${GITHUB_SHA:0:7}..."
+          sleep "$(( WAIT_MIN * 60 ))"
+
+      - name: Run synthetic probe
+        env:
+          PROBE_BASE_URL: ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
+          PROBE_TIMEOUT_MS: "15000"
+        run: |
+          # Retry up to 3 times — auto-pull cadence has jitter, and the
+          # probe may catch a brief gateway recreate window.
+          for attempt in 1 2 3; do
+            echo "::group::probe attempt ${attempt}"
+            if deno run --allow-net --allow-env synthetic-probe/probe.ts; then
+              echo "::endgroup::"
+              echo "✅ Probe passed on attempt ${attempt}"
+              exit 0
+            fi
+            echo "::endgroup::"
+            if [ "${attempt}" -lt 3 ]; then
+              echo "⚠ Probe failed; retrying in 30s..."
+              sleep 30
+            fi
+          done
+          echo "❌ Probe failed 3 consecutive attempts against ${PROBE_BASE_URL}"
+          echo "::error::Synthetic probe failed against ${PROBE_BASE_URL} after merge of ${GITHUB_SHA:0:7}"
+          exit 1

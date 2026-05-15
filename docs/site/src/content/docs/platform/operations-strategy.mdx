@@ -144,27 +144,37 @@ Every deploy to prod runs this sequence:
       - exits non-zero if any of gateway/oms/ems/risk-engine/journal/market-sim/user-service
         fails to reach healthy
 3. last-deployed-sha is bumped only on success.
-4. (Aspirational, not yet shipped) Synthetic probe runs post-deploy; on
-   3 consecutive failures, alerts to veta@mnetcs.com.
+4. (Optional) The **post-deploy CI probe** workflow runs the same synthetic
+   probe from a GitHub runner ~6 minutes after the merge. Closes the loop on
+   "did my merge actually break prod".
 ```
 
-### Synthetic monitoring
+### Synthetic monitoring (shipped)
 
-Source of truth for "is the platform up". Runs **outside** the homelab so it sees what real users see.
+Source of truth for "is the platform up". Runs **outside** the homelab so it sees what real users see. Detailed page: [synthetic probe](../supporting/synthetic-probe).
 
-- **Host**: one of the spare VPSes (no relation to the homelab — independent failure domain).
-- **Cadence**: every 60 seconds.
-- **Probe** (one end-to-end run):
-  1. GET `https://veta.mnetcs.com/` — expect 200, presence of `__version` hash.
-  2. POST `/api/gateway/api/user-service/oauth/authorize` — sign in as a dedicated `synthetic-monitor` user.
-  3. Open `wss://veta.mnetcs.com/ws/gateway` — count `marketUpdate` frames for 10s, expect ≥ 20.
-  4. POST a tiny test order (10 shares of `AAPL` at `limitPrice = currentPrice * 0.5`, so it never fills) — expect `orderAck` within 500 ms.
-  5. Cancel the test order via WS — expect ack.
-- **Output**: structured log line to Loki tagged `service=synthetic`, `probe=<step>`, `outcome=ok|fail`, `duration_ms=...`.
-- **Alerting**: 3 consecutive failures → email to `veta@mnetcs.com`. Later: Discord webhook. Later again: pager.
-- **The probe doubles as the post-deploy smoke gate.** Same code, same checks.
+- **Host**: the OVH edge box (same machine that terminates TLS). Every probe crosses the reverse SSH tunnel back to the homelab — identical path to real users.
+- **Cadence**: every 60 seconds via systemd timer.
+- **Probe steps** (v1, HTTP only):
+  1. GET `https://veta.mnetcs.com/` — expect 200, body contains `__version` / `VETA` markers.
+  2. POST `/api/gateway/api/user-service/oauth/guest` — expect 200 + `veta_user` session cookie. Uses the public-guest-trading endpoint from [PR #234](https://github.com/milesburton/veta-trading-platform/pull/234) so the probe doesn't need long-lived credentials.
+  3. GET `/api/gateway/ready` with the cookie — expect `{"ready":true}`.
+- **Output**: one JSON line per step to journald (`journalctl -u veta-synthetic-probe.service`). No Loki shipping yet — follow-up.
+- **Alerting**: systemd `OnFailure=` invokes `alert.sh` which counts consecutive failures and POSTs a webhook on the 3rd (configurable) plus on recovery. Webhook URL in `/etc/veta-probe.env` on the OVH box.
+- **Post-deploy CI mirror**: `.github/workflows/post-deploy-probe.yml` runs the same probe script from a GitHub runner ~6 min after every push to `main`. Three retries with 30 s spacing; fails the run on persistent failure. Third independent vantage point — if the OVH probe and the CI probe disagree, the divergence itself is signal (e.g. OVH-local network issue).
 
-The probe runs against prod.
+What v1 catches:
+- Edge Traefik dead / mis-configured
+- SSH tunnel down
+- Homelab Traefik dead
+- Homelab gateway or user-service dead
+- `PUBLIC_GUEST_TRADING` flag accidentally flipped off
+- TLS cert expired or mis-issued
+
+What v1 does **not** catch (queued for v2):
+- WebSocket-only outages (no frame counting yet)
+- OMS pipeline regressions (no order submit + cancel yet)
+- Market data feed stalled (no candle / tick check)
 
 ### Test gate on the deploy
 
@@ -265,16 +275,24 @@ The artifacts (`compose.swarm.yml`, `scripts/swarm-deploy.sh`, `docs/incidents/r
 
 Previously planned: a second compose project on the homelab (`veta-uat`) bound to ports `8xxx`, separate DB and topic prefix. We dropped this in favour of a two-tier model (dev + prod). Rationale: per-service healthchecks + the auto-pull cadence give us enough deploy safety for a small public-demo audience, and the operational overhead of keeping a separate UAT env healthy was eating time that better served Phase 5 (discipline tooling). If a stakeholder audience grows, this phase comes back unchanged — `compose.yml` already supports per-project port and network isolation.
 
-### Phase 4 — Synthetic monitoring + alerting (Day 3, morning)
+### Phase 4 — Synthetic monitoring + alerting (shipped)
 
-**PR scope**: small Deno binary running on one of the spare VPSes. Configurable target (prod). 60-second cadence. Emits structured logs to Loki and to a local file (in case Loki itself is the thing that's down).
+**Shipped**: [PR #236](https://github.com/milesburton/veta-trading-platform/pull/236). Small Deno binary running on the OVH edge box (not a spare VPS — same hardware that terminates TLS, but a different failure domain from the homelab). 60-second cadence via systemd timer. Three HTTP checks (root / guest login / gateway ready). Output to journald; webhook alert after 3 consecutive failures.
 
-**Acceptance criteria**:
+Plus a **post-deploy CI mirror** in `.github/workflows/post-deploy-probe.yml` that runs the same probe from a GitHub runner ~6 minutes after every merge to `main` — closes the "did my merge break prod" loop within ~10 minutes.
 
-- Probe runs continuously for 24 hours with no false positives.
-- A simulated outage (block port 443 at the OVH edge for 90 seconds) results in an email to `veta@mnetcs.com` within 4 minutes of detection.
-- Grafana dashboard `Synthetic SLO` shows rolling 24h / 7d / 30d availability for prod.
-- Probe results are queryable in Loki by `{service="synthetic", env="prod"}`.
+**Acceptance criteria status**:
+
+- ✅ Probe runs continuously since 2026-05-15. Steady ~700-850 ms per cycle. No false positives in initial soak.
+- ⏳ Webhook alert delivery: tested locally with `ALERT_WEBHOOK_URL` unset (logs to journald only). Set the env on the OVH box once you've picked a destination (Slack / Discord / email-gateway).
+- ❌ Grafana `Synthetic SLO` dashboard: not yet built. Requires shipping journald → Loki on OVH (alloy or vector). Follow-up.
+- ❌ Loki query `{service="synthetic", env="prod"}`: same; requires the Loki shipping piece.
+
+**v2 ideas** (deferred — none blocking):
+
+- WebSocket frame-count check (catches WS-only outages)
+- Order submit + cancel (catches OMS pipeline regressions)
+- Market-data feed liveness (e.g. compare `/candles?...` latest timestamp vs now)
 
 ### Phase 5 — Discipline tooling (Day 3, afternoon)
 

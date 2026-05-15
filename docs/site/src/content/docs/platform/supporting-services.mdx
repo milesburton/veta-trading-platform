@@ -14,6 +14,11 @@ The [Service Map](../services/) catalogues the trading pipeline itself — marke
     description="Ingress proxy that fronts every backend service."
   />
   <LinkCard
+    title="Synthetic probe"
+    href="/veta-trading-platform/platform/supporting/synthetic-probe/"
+    description="External 60s liveness check from the OVH edge, with a CI mirror after every merge."
+  />
+  <LinkCard
     title="k6 load testing"
     href="/veta-trading-platform/platform/supporting/k6-load-testing/"
     description="Synthetic load harness that drives orders through the full pipeline."
@@ -21,7 +26,7 @@ The [Service Map](../services/) catalogues the trading pipeline itself — marke
   <LinkCard
     title="Disk monitor"
     href="/veta-trading-platform/platform/supporting/disk-monitor/"
-    description="Auto-pruning host-disk watcher used by Uptime Kuma."
+    description="Read-only host-disk gauge exposed at /metrics for Prometheus scraping; healthcheck-decoupled so a full disk surfaces as an alert, not an unhealthy container."
   />
   <LinkCard
     title="db-migrate"
