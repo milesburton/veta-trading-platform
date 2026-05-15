@@ -1,0 +1,56 @@
+---
+import { TERMS } from "../data/glossary";
+
+interface Props {
+  /** Glossary term id, matching an entry in src/data/glossary.ts. */
+  name: string;
+  /** Optional display label override. Defaults to the glossary entry's `term` field. */
+  label?: string;
+  /** Set to true to render as inline `code` instead of plain text. */
+  code?: boolean;
+}
+
+const { name, label, code = false } = Astro.props;
+
+const entry = TERMS.find((t) => t.id === name);
+
+if (!entry) {
+  throw new Error(
+    `<Term name="${name}" /> references an unknown glossary id. ` +
+      `Add it to docs/site/src/data/glossary.ts or fix the name.`,
+  );
+}
+
+const display = label ?? entry.term;
+const docsBase = "/veta-trading-platform";
+const href = `${docsBase}/reference/glossary/#term-${name}`;
+const tooltip = `${entry.term}: ${entry.short}`;
+---
+
+{code ? (
+  <a class="veta-term-link veta-term-link--code" href={href} title={tooltip}>
+    <code>{display}</code>
+  </a>
+) : (
+  <a class="veta-term-link" href={href} title={tooltip}>{display}</a>
+)}
+
+<style is:global>
+  .veta-term-link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: var(--sl-color-gray-4);
+    text-underline-offset: 2px;
+  }
+  .veta-term-link:hover {
+    color: var(--sl-color-text-accent);
+    text-decoration-color: var(--sl-color-text-accent);
+  }
+  .veta-term-link--code code {
+    color: inherit !important;
+    background: none !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+</style>

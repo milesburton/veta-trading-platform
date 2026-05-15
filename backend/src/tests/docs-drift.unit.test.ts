@@ -222,3 +222,39 @@ Deno.test("[docs-drift] test-inventory.json exists and matches the deno.json tes
     `Inventory says ${inventory.backend.unit.files} backend unit files but the deno.json 'test' task lists ${filesFromTask.size}. Regenerate via 'cd docs/site && npm run generate'.`,
   );
 });
+
+Deno.test("[docs-drift] every <Term name='...'> in docs references a real glossary id", async () => {
+  const docs = await readAllDocsMarkdown();
+  const glossarySource = await Deno.readTextFile(
+    `${REPO_ROOT}docs/site/src/data/glossary.ts`,
+  );
+  const knownIds = new Set<string>();
+  for (const match of glossarySource.matchAll(/^\s*id:\s*"([a-z0-9-]+)"/gm)) {
+    knownIds.add(match[1]);
+  }
+  if (knownIds.size === 0) {
+    throw new Error(
+      "Could not parse any term ids from docs/site/src/data/glossary.ts. " +
+        "If the file format has changed, update this test.",
+    );
+  }
+
+  const pattern = /<Term[^>]*\bname=["']([^"']+)["']/g;
+  const missing: { docPath: string; ref: string }[] = [];
+
+  for (const [docPath, content] of docs) {
+    for (const match of content.matchAll(pattern)) {
+      const ref = match[1];
+      if (!knownIds.has(ref)) {
+        missing.push({ docPath: docPath.replace(REPO_ROOT, ""), ref });
+      }
+    }
+  }
+
+  assertEquals(
+    missing,
+    [],
+    `<Term name="..."> references glossary ids that do not exist in docs/site/src/data/glossary.ts:\n` +
+      missing.map((m) => `  ${m.docPath} -> name="${m.ref}"`).join("\n"),
+  );
+});

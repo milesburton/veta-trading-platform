@@ -1,0 +1,43 @@
+---
+interface Props {
+  /** Destination URL. Must start with http:// or https://. */
+  href: string;
+  /** Optional display label. Defaults to the URL itself. */
+  label?: string;
+}
+
+const { href, label } = Astro.props;
+
+if (!/^https?:\/\//.test(href)) {
+  throw new Error(
+    `<External href="${href}"> must point to a fully-qualified http(s) URL. ` +
+      `Internal docs links should use a relative path instead.`,
+  );
+}
+
+const display = label ?? href;
+const tooltip = `Leaving veta.mnetcs.com: opens ${href} in a new tab`;
+---
+
+<a
+  class="veta-external-link"
+  href={href}
+  target="_blank"
+  rel="noopener noreferrer"
+  title={tooltip}
+>{display}<span class="veta-external-icon" aria-hidden="true">↗</span></a>
+
+<style is:global>
+  .veta-external-link {
+    color: inherit;
+  }
+  .veta-external-icon {
+    display: inline-block;
+    margin-left: 0.15rem;
+    font-size: 0.85em;
+    opacity: 0.7;
+  }
+  .veta-external-link:hover .veta-external-icon {
+    opacity: 1;
+  }
+</style>
