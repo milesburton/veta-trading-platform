@@ -123,6 +123,24 @@ export class AppPage {
     });
   }
 
+  /**
+   * Wait until the market ladder has rendered live price content for at least
+   * one asset row. Useful before taking screenshots so the captured frame
+   * reflects a populated dashboard rather than empty placeholders. Returns
+   * after seeing any tabular numeric content inside an asset-row, which is
+   * what the market ladder renders once the first marketUpdate arrives.
+   */
+  async waitForLivePrices(opts: { timeoutMs?: number } = {}) {
+    await this.page.waitForFunction(
+      () => {
+        const rows = Array.from(document.querySelectorAll('[data-testid^="asset-row-"]'));
+        return rows.some((row) => /\d+\.\d+/.test((row.textContent ?? "").trim()));
+      },
+      undefined,
+      { timeout: opts.timeoutMs ?? 5_000 },
+    );
+  }
+
   async waitForLoginPage() {
     await expect(
       this.page.getByRole("heading", { name: /^sign in$/i }),
