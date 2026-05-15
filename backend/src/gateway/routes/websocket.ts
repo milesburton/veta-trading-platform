@@ -1,6 +1,6 @@
 import { getCookieToken } from "@veta/auth";
 import { logger } from "@veta/logger";
-import { RateLimiter } from "@veta/rate-limit";
+import { clientIp, RateLimiter } from "@veta/rate-limit";
 import {
   addAnonymousSocket,
   addUserSocket,
@@ -31,6 +31,10 @@ export function handleWebSocketRoute(
   }
 
   const token = getCookieToken(req);
+  // Capture the client IP at upgrade time. `req.headers` is unavailable
+  // after the socket is upgraded but we need it later for the per-IP
+  // guest order-submit rate limit.
+  const remoteIp = clientIp(req);
   // Authenticate before upgrading — WebSocket clients can't receive HTTP 401
   // after upgrade. Anonymous connections are allowed for read-only market data.
   const initialAuthPromise: Promise<AuthResult | null> = token
@@ -137,21 +141,44 @@ export function handleWebSocketRoute(
           }));
           return;
         }
-        if (currentAuth.user.role !== "trader") {
+        const role = currentAuth.user.role;
+        const isTrader = role === "trader";
+        const isGuest = role === "guest" && ctx.publicGuestTradingEnabled;
+        if (!isTrader && !isGuest) {
           ctx.publishAccessEvent({
             action: "order_rejected",
-            reason: `role ${currentAuth.user.role} is not permitted to submit orders`,
+            reason: `role ${role} is not permitted to submit orders`,
             userId: currentAuth.user.id,
-            userRole: currentAuth.user.role,
+            userRole: role,
           });
           socket.send(JSON.stringify({
             event: "orderRejected",
             data: {
-              reason: `${currentAuth.user.role} accounts are not permitted to submit orders`,
+              reason: `${role} accounts are not permitted to submit orders`,
               clientOrderId: msg.payload.clientOrderId ?? null,
             },
           }));
           return;
+        }
+        if (isGuest) {
+          const guestResult = ctx.guestSubmitLimiter.consume(`submit:${remoteIp}`);
+          if (!guestResult.allowed) {
+            ctx.publishAccessEvent({
+              action: "order_rejected",
+              reason: `guest rate limit (retry after ${Math.ceil(guestResult.retryAfterMs / 1000)}s)`,
+              userId: currentAuth.user.id,
+              userRole: role,
+            });
+            socket.send(JSON.stringify({
+              event: "orderRejected",
+              data: {
+                reason: `Rate limit — try again in ${Math.ceil(guestResult.retryAfterMs / 1000)}s`,
+                retryAfterMs: guestResult.retryAfterMs,
+                clientOrderId: msg.payload.clientOrderId ?? null,
+              },
+            }));
+            return;
+          }
         }
         if (!ctx.producer.isReady()) {
           socket.send(JSON.stringify({

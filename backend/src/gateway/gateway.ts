@@ -105,6 +105,17 @@ const userLimiter = new RateLimiter({
   refillPerSecond: Number(Deno.env.get("RATE_LIMIT_USER_REFILL")) || 120,
 });
 
+// Per-IP rate limit on guest order submissions. Public/anonymous users can
+// place trades when PUBLIC_GUEST_TRADING=true; this stops one IP from
+// flooding the OMS/journal pipeline. Defaults: 10 burst, 1/sec sustained
+// → ~3,600 orders/hour worst case per IP. Authenticated traders are
+// unaffected.
+const PUBLIC_GUEST_TRADING = (Deno.env.get("PUBLIC_GUEST_TRADING") ?? "false").toLowerCase() === "true";
+const guestSubmitLimiter = new RateLimiter({
+  capacity: Number(Deno.env.get("GUEST_SUBMIT_CAPACITY")) || 10,
+  refillPerSecond: Number(Deno.env.get("GUEST_SUBMIT_REFILL")) || 1,
+});
+
 const RATE_LIMIT_BYPASS_PATHS = new Set([
   "/health",
   "/ready",
@@ -505,6 +516,8 @@ const gatewayContext: GatewayContext = {
     replay: REPLAY_URL,
   },
   loadAgent: makeLoadAgent(),
+  guestSubmitLimiter,
+  publicGuestTradingEnabled: PUBLIC_GUEST_TRADING,
 };
 
 function makeLoadAgent(): LoadAgent {

@@ -8,6 +8,7 @@ import {
   type DemoPersona,
   useAuthorizeOAuthMutation,
   useExchangeOAuthCodeMutation,
+  useLoginAsGuestMutation,
 } from "../store/userApi.ts";
 import type { ServiceHealth } from "../types.ts";
 import { DemoPersonas } from "./DemoPersonas.tsx";
@@ -162,9 +163,10 @@ export function LoginPage() {
   const localError = useSignal<string | null>(null);
   const [authorizeOAuth, authorizeState] = useAuthorizeOAuthMutation();
   const [exchangeOAuthCode, tokenState] = useExchangeOAuthCodeMutation();
+  const [loginAsGuest, guestState] = useLoginAsGuestMutation();
 
-  const isLoading = authorizeState.isLoading || tokenState.isLoading;
-  const apiError = authorizeState.error ?? tokenState.error;
+  const isLoading = authorizeState.isLoading || tokenState.isLoading || guestState.isLoading;
+  const apiError = authorizeState.error ?? tokenState.error ?? guestState.error;
 
   async function performSignIn(overrideUsername?: string, overridePassword?: string) {
     const u = (overrideUsername ?? username.value).trim().toLowerCase();
@@ -229,6 +231,28 @@ export function LoginPage() {
     await performSignIn();
   }
 
+  async function handleGuestLogin() {
+    localError.value = null;
+    authorizeState.reset();
+    tokenState.reset();
+    guestState.reset();
+    try {
+      const result = await loginAsGuest();
+      if ("data" in result && result.data?.user) {
+        dispatch(setUser(result.data.user));
+      } else if ("error" in result) {
+        const err = result.error as { status?: number } | undefined;
+        if (err?.status === 403) {
+          localError.value = "Guest access is not enabled on this deployment.";
+        }
+        // Other errors surface via apiError from guestState.error.
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      localError.value = `Guest sign in failed: ${message}`;
+    }
+  }
+
   async function handlePersonaSelect(persona: DemoPersona) {
     username.value = persona.id;
     if (persona.passcode) password.value = persona.passcode;
@@ -288,6 +312,16 @@ export function LoginPage() {
               />
               <DegradedServicesOverlay />
             </div>
+
+            <button
+              type="button"
+              data-testid="guest-login-button"
+              onClick={handleGuestLogin}
+              disabled={isLoading}
+              className="w-full inline-flex items-center justify-center gap-2 rounded border border-divider bg-page px-4 py-2 text-xs text-muted transition-colors hover:text-default hover:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Continue as guest (rate-limited demo trading)
+            </button>
 
             {(localError.value || apiError) && (
               <div
