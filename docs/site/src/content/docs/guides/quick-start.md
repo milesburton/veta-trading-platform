@@ -37,6 +37,10 @@ Verify the stack is up: `docker compose ps` should show the core services health
 
 The login page has a "Demo personas" panel. Click any card to sign in with one click.
 
+Once signed in, the default workspace looks like this:
+
+![Default trader workspace after sign-in](/veta-trading-platform/screenshots/01-trading-dashboard.png)
+
 ## Where it runs
 
 The canonical deployment is a homelab Proxmox LXC, exposed to the public internet via a reverse SSH tunnel from an OVH dedicated server. The app lives at [`https://veta.mnetcs.com/`](https://veta.mnetcs.com/) and the dashboards at [`https://veta.mnetcs.com/grafana/`](https://veta.mnetcs.com/grafana/). To try it locally, follow the [overview](/veta-trading-platform/guides/overview/).

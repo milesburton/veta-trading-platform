@@ -5,6 +5,15 @@ description: Seeded users, their desks, trading styles, and access levels.
 
 Every trader is modelled on a real-world desk: one primary desk, one trading style. Cross-asset-class traders are not modelled, because regulatory segregation and product specialisation make them unrealistic. Multi-desk oversight is represented through the separate `desk-head` role, which has read-only cross-desk access.
 
+Each persona signs in to a different default workspace. The screenshots below show the four main workspace types.
+
+| Workspace | Used by |
+|-----------|---------|
+| ![Trader workspace](/veta-trading-platform/screenshots/01-trading-dashboard.png) | High-touch equity traders (alice, james, amelia) |
+| ![Algo workspace](/veta-trading-platform/screenshots/04-algo-workspace.png) | Low-touch and algo traders (bob, sofia, dave, iris, omar) |
+| ![Fixed-income workspace](/veta-trading-platform/screenshots/05-fixed-income.png) | FI voice traders (carol, henry) |
+| ![Options workspace](/veta-trading-platform/screenshots/06-option-pricing.png) | Derivatives high-touch (grace, priya) |
+
 ## Equity cash traders
 
 | User       | Style      | Purpose                                                     |

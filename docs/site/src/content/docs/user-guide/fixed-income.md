@@ -22,9 +22,13 @@ Navigate to this workspace via `?ws=ws-fi-trading` or select it from the workspa
 
 The **Yield Curve** panel shows a Nelson-Siegel interpolated spot yield curve with forward rates. It visualises the term structure from 3-month to 30-year maturities.
 
+![Yield Curve panel](/veta-trading-platform/screenshots/panels/yield-curve.png)
+
 ## Spread Analysis
 
 Compute credit spreads for corporate bonds against the government curve:
+
+![Spread Analysis panel](/veta-trading-platform/screenshots/panels/spread-analysis.png)
 
 | Spread    | Description                                                                |
 | --------- | -------------------------------------------------------------------------- |
@@ -42,6 +46,8 @@ The duration ladder shows **DV01 key-rate attribution** across tenor buckets:
 - Stacked bar chart showing exposure by maturity bucket (1y, 2y, 3y, 5y, 7y, 10y, 20y, 30y)
 - Useful for identifying interest rate risk concentrations
 
+![Duration Ladder panel](/veta-trading-platform/screenshots/panels/duration-ladder.png)
+
 ## Vol Surface
 
 The **Vol Surface** panel displays an implied volatility heatmap:
@@ -50,6 +56,8 @@ The **Vol Surface** panel displays an implied volatility heatmap:
 - Click any cell to prefill the Option Pricing panel with that strike and expiry
 - OTM puts show higher IV due to skew
 - Darker colours indicate higher implied volatility
+
+![Vol Surface panel](/veta-trading-platform/screenshots/panels/vol-surface.png)
 
 ## Bond Order Ticket
 

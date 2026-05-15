@@ -15,6 +15,34 @@ The shared-stack approach worked, but coupled tests to each other through Postgr
 
 Real trading shops use per-test isolation, and the platform's remit is to demonstrate how a real system should be built. The migration also surfaced five real bugs the legacy compose-stack tests had been masking (see [What the migration found](#what-the-migration-found) below).
 
+## Per-test container lifecycle
+
+```mermaid
+graph TD
+    A["Deno.test starts"] --> B["startStack({ services: [...] })"]
+    B --> C["startEphemeralPostgres()<br/>random host port, fresh database"]
+    B --> D["startEphemeralRedpanda()<br/>random host port, empty topics"]
+    C --> E["applyMigrations(databaseUrl)<br/>schema + seed data"]
+    D --> F["Redpanda ready,<br/>topics auto-created on first publish"]
+    E --> G["spawn requested services<br/>(journal, oms, market-sim, ...)"]
+    F --> G
+    G --> H["wait for /health on each<br/>(startupTimeoutMs)"]
+    H --> I["return { urls, teardown }"]
+    I --> J["test body runs<br/>(steps via t.step)"]
+    J --> K["finally: stack.teardown()"]
+    K --> L["stop services, drop containers<br/>(Postgres + Redpanda removed)"]
+
+    classDef infra fill:#dcfce7,stroke:#16a34a,color:#000
+    classDef test fill:#fef3c7,stroke:#d97706,color:#000
+    classDef teardown fill:#fecaca,stroke:#dc2626,color:#000
+
+    class B,C,D,E,F,G,H,I infra
+    class A,J test
+    class K,L teardown
+```
+
+Each test owns its containers end to end. Ryuk (the testcontainers reaper) is disabled, so the test must call `teardown()` itself; the standard pattern wraps the test body in `try { ... } finally { await stack.teardown(); }`. Per-test cost: 5 to 15 seconds of container boot, depending on how many services the test exercises.
+
 ## Running
 
 ```bash

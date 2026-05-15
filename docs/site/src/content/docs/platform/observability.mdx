@@ -29,6 +29,8 @@ Logs from the platform appear in three places, depending on what's running. Use 
 
 The in-app Logs drawer always works with zero infrastructure, even on the Fly demo or a fresh dev container. Each row is filterable by service, log level (error/warn/info/debug), time window (5m to 6h), and free-text search.
 
+![Observability panel inside the trading UI](/veta-trading-platform/screenshots/panels/observability.png)
+
 When the LGTM stack is up (`docker compose -f observability/docker-compose.lgtm.yml up -d`) and the gateway has `LOKI_URL=http://localhost:3100` set, the same drawer transparently switches to LogQL queries against Loki. Same UI, full history. The drawer's response includes a `source: "loki" | "ring-buffer"` field so you always know which one answered.
 
 The remainder of this page covers the LGTM stack itself; jump to [In-app log search](#in-app-log-search) if you only want the drawer details, or [How events get into Loki](#how-events-get-into-loki) for the collector path.

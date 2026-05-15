@@ -5,6 +5,8 @@ description: What VETA is and what it provides.
 
 VETA is a near real-world equities and fixed income trading platform. It supports paper trading through the platform's algorithmic execution services and is designed for practical market-structure learning.
 
+![The default trader workspace, showing the market ladder, candle chart, news, and order blotter](/veta-trading-platform/screenshots/01-trading-dashboard.png)
+
 ## What's included
 
 - **React frontend** with Tailwind, FlexLayout drag-and-drop panels, and multiple workspaces

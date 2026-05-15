@@ -40,6 +40,25 @@ await expect(window).toHaveTitle(/VETA/);
 
 `NODE_ENV=test` disables the dev-tools toggle and the auto-update check. `ELECTRON_RUN_AS_NODE` is explicitly unset; if it leaks through from the parent process, Electron starts as a Node shell rather than a desktop app and tests fail in confusing ways.
 
+## Test execution flow
+
+```mermaid
+graph TD
+    A["npm run test:electron"] --> B["Playwright config loaded<br/>(playwright.electron.config.ts)"]
+    B --> C["test.beforeAll:<br/>ElectronMockServer starts<br/>on a random port"]
+    C --> D["_electron.launch():<br/>spawn dist-electron/main.js"]
+    D --> E["Electron main process starts<br/>NODE_ENV=test"]
+    E --> F["main process creates BrowserWindow<br/>+ wires IPC handlers"]
+    F --> G["preload.js exposes electronAPI<br/>via contextBridge"]
+    G --> H["app.firstWindow()<br/>returns Page handle"]
+    H --> I["test body asserts:<br/>title, contextBridge,<br/>contextIsolation, IPC, pop-out"]
+    I --> J{Pass?}
+    J -->|Yes| K["app.close()<br/>+ mock server shut down"]
+    J -->|No| L["trace + screenshot,<br/>retry once in CI"]
+```
+
+Workers are set to 1 because only one packaged app instance can run at a time without port collisions. `app.firstWindow()` waits for the renderer to mount before the test body runs, so per-test setup is implicit.
+
 ## Mocking the backend
 
 `tests-electron/helpers/ElectronMockServer.ts` boots a small HTTP server inside the test that the Electron app talks to instead of the real backend. This keeps the suite independent of whether the homelab is up. The mock server is narrower than `GatewayMock` from the Playwright suite; Electron tests verify desktop-specific plumbing rather than UI flows.
