@@ -5,11 +5,11 @@ description: Always-on synthetic trade flow on the homelab. Two k6 runners (soak
 
 `load.sh on` brings up three containers on the homelab:
 
-- **`loadgen-soak`** — k6 with a steady ~50 VUs, restarts every 50 min to
+- **`loadgen-soak`**: k6 with a steady ~50 VUs, restarts every 50 min to
   pick up rotated tokens
-- **`loadgen-matrix`** — k6 cycling through `baseline-limit → mixed-strategy
-  → burst-open → risk-stress` on a loop
-- **`loadgen-token`** — alpine sidecar doing OAuth PKCE every 50 min and
+- **`loadgen-matrix`**: k6 cycling through `baseline-limit`, `mixed-strategy`,
+  `burst-open`, and `risk-stress` on a loop
+- **`loadgen-token`**: alpine sidecar doing OAuth PKCE every 50 min and
   writing the access token to a shared volume
 
 This is the *continuous* load generator. For the on-demand harness (single
@@ -26,8 +26,8 @@ Useful for:
 - Surfacing regressions: if a deploy slows order acks below baseline,
   the trend on the Grafana dashboard shifts visibly
 
-It is **not** a substitute for the [synthetic probe](./synthetic-probe) —
-loadgen tests throughput, not liveness.
+It is **not** a substitute for the [synthetic probe](./synthetic-probe).
+Loadgen tests throughput, not liveness.
 
 ## One-time setup
 
@@ -43,7 +43,7 @@ sudo chown miles:miles /opt/stacks/veta/.env.loadgen
 
 The password is read from `OAUTH2_USER_SECRETS` (per-user) for the `admin`
 account, **not** from `OAUTH2_SHARED_SECRET`. The two diverged in 2026-05
-and loadgen broke for 5 days before this was figured out — see the history
+and loadgen broke for 5 days before this was diagnosed. See the history
 note below.
 
 Optional tuning vars in the same file:
@@ -75,8 +75,8 @@ ssh miles@homelab '/opt/stacks/veta/scripts/load.sh off'
 ## Auto-start on every deploy
 
 `scripts/homelab-deploy.sh` includes `compose.loadgen.yml` whenever
-`.env.loadgen` exists on the homelab. So every auto-pull tick brings
-loadgen up automatically — there's no "loadgen was off, then a deploy
+`.env.loadgen` exists on the homelab. Every auto-pull tick therefore brings
+loadgen up automatically, so there is no "loadgen was off, then a deploy
 re-started it" surprise.
 
 Removing loadgen permanently: delete `/opt/stacks/veta/.env.loadgen`.
@@ -85,24 +85,24 @@ Removing loadgen permanently: delete `/opt/stacks/veta/.env.loadgen`.
 
 The first loadgen install hard-coded `LOADGEN_OAUTH_PASSWORD` to the value
 of `OAUTH2_SHARED_SECRET`. When `OAUTH2_USER_SECRETS` was added in 2026-05
-(per-user passwords), `admin` got its own secret — and `verifyOAuthCredentials`
+(per-user passwords), `admin` got its own secret, and `verifyOAuthCredentials`
 in user-service prefers the per-user secret over the shared one when a user
 is in the map. Loadgen was sending the wrong password and getting 401, which
 the gateway logged as `auth_failure` ~1,100 lines/sec, contributing to the
 2026-05-14 disk-fill incident.
 
-Fix landed in PR #234's gateway log-throttle + a one-off `.env.loadgen`
+Fix landed in PR #234's gateway log-throttle plus a one-off `.env.loadgen`
 rotation on the homelab. The post-fix install command above extracts the
 correct per-user password automatically.
 
 ## Source
 
-- [`compose.loadgen.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/compose.loadgen.yml) — k6 + token-refresh service definitions
-- [`scripts/load.sh`](https://github.com/milesburton/veta-trading-platform/blob/main/scripts/load.sh) — on/off/status/logs wrapper
-- [`scripts/loadgen/`](https://github.com/milesburton/veta-trading-platform/tree/main/scripts/loadgen) — token-refresh + loop scripts
+- [`compose.loadgen.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/compose.loadgen.yml): k6 + token-refresh service definitions
+- [`scripts/load.sh`](https://github.com/milesburton/veta-trading-platform/blob/main/scripts/load.sh): on/off/status/logs wrapper
+- [`scripts/loadgen/`](https://github.com/milesburton/veta-trading-platform/tree/main/scripts/loadgen): token-refresh + loop scripts
 
 ## Related
 
-- [k6 load testing](./k6-load-testing) — on-demand harness for single runs
-- [Synthetic probe](./synthetic-probe) — liveness check, not throughput
-- [Performance](../../reference/performance) — Grafana percentile baselines that loadgen feeds
+- [k6 load testing](./k6-load-testing): on-demand harness for single runs
+- [Synthetic probe](./synthetic-probe): liveness check, not throughput
+- [Performance](../../reference/performance): Grafana percentile baselines that loadgen feeds

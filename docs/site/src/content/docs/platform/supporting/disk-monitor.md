@@ -18,7 +18,7 @@ GET http://localhost:8099/health
 GET http://localhost:8099/metrics
 ```
 
-### `/health` — JSON
+### `/health`: JSON
 
 Returns disk-usage stats. HTTP status reflects severity:
 
@@ -36,14 +36,14 @@ Example body:
 }
 ```
 
-The 503 is the **signal**, not a failure of the monitor — disk is high
-and you should look. The container's docker healthcheck deliberately
+The 503 is the **signal**, not a failure of the monitor. Disk is high
+and you should look. The container's docker healthcheck intentionally
 does **not** call `/health` to avoid marking the container itself
 unhealthy when the alert is correctly firing (see history: this was the
 confusing UX fixed in [PR #236](https://github.com/milesburton/veta-trading-platform/pull/236)).
 Instead the healthcheck calls `/metrics`, which always returns 200.
 
-### `/metrics` — Prometheus exposition
+### `/metrics`: Prometheus exposition
 
 Always returns 200 with four gauges:
 
@@ -56,9 +56,9 @@ disk_total_bytes 280123076416
 
 Scraped by `lgtm-prometheus` and consumed by three alert rules:
 
-- **DiskUsageHigh** (warn) — `disk_used_percent > 80` for 5 m
-- **DiskUsageCritical** (page) — `disk_used_percent > 92` for 1 m
-- **DiskMonitorDown** (warn) — scrape failing for 5 m
+- **DiskUsageHigh** (warn): `disk_used_percent > 80` for 5 m
+- **DiskUsageCritical** (page): `disk_used_percent > 92` for 1 m
+- **DiskMonitorDown** (warn): scrape failing for 5 m
 
 ## Configuration
 
@@ -77,7 +77,7 @@ Scraped by `lgtm-prometheus` and consumed by three alert rules:
 
 ## Source
 
-- [`scripts/disk-monitor.py`](https://github.com/milesburton/veta-trading-platform/blob/main/scripts/disk-monitor.py) — implementation
-- [`compose.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/compose.yml) — `disk-monitor` service block
-- [`observability/prometheus.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/prometheus.yml) — scrape config
-- [`observability/prometheus-rules.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/prometheus-rules.yml) — alert rules
+- [`scripts/disk-monitor.py`](https://github.com/milesburton/veta-trading-platform/blob/main/scripts/disk-monitor.py): implementation
+- [`compose.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/compose.yml): `disk-monitor` service block
+- [`observability/prometheus.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/prometheus.yml): scrape config
+- [`observability/prometheus-rules.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/prometheus-rules.yml): alert rules

@@ -4,16 +4,16 @@ description: Weekly systemd timer that prunes dangling Docker images, exited con
 ---
 
 The homelab pulls a new `:latest` image per service on every CI build.
-Over a few weeks that's hundreds of dangling images — easily 50–60 GB
-of accumulated layers. The 2026-05-14 disk-fill incident was triggered
+Over a few weeks that adds up to hundreds of dangling images, easily 50 to
+60 GB of accumulated layers. The 2026-05-14 disk-fill incident was triggered
 by *log* growth, but the *image* churn was the next-largest disk
 consumer and would have hit 100% on its own within a couple more weeks.
 
 `veta-host-prune` runs every Sunday at 04:00 UTC and prunes:
 
-1. **Always** — dangling images, exited containers, and build cache older
+1. **Always**: dangling images, exited containers, and build cache older
    than 24h. Preventive.
-2. **If disk ≥ `THRESHOLD_PCT` (default 90%)** — also prune *all*
+2. **If disk ≥ `THRESHOLD_PCT` (default 90%)**: also prune *all*
    untagged images and the full builder cache. Emergency mode.
 
 ## Install (one-time, on the homelab)
@@ -61,15 +61,15 @@ The disk-pressure alert rules in
 [`observability/prometheus-rules.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/prometheus-rules.yml)
 fire at:
 
-- `DiskUsageHigh` — `disk_used_percent > 80%` for 5 min (warning)
-- `DiskUsageCritical` — `disk_used_percent > 92%` for 1 min (page)
+- `DiskUsageHigh`: `disk_used_percent > 80%` for 5 min (warning)
+- `DiskUsageCritical`: `disk_used_percent > 92%` for 1 min (page)
 
 These are **independent** of `veta-host-prune` on purpose:
 
 - The timer is preventive; it runs on a weekly schedule regardless of
   current disk usage.
 - The alerts are reactive; they tell you when disk is climbing for
-  reasons the prune can't fix (data growth, log spam, etc.).
+  reasons the prune cannot fix (data growth, log spam, etc.).
 
 If `DiskUsageHigh` fires before the next weekly tick, run the timer
 manually:
@@ -78,7 +78,7 @@ manually:
 sudo systemctl start veta-host-prune.service
 ```
 
-If `DiskUsageCritical` fires, the prune may not be enough — investigate
+If `DiskUsageCritical` fires, the prune may not be enough. Investigate
 container log file sizes:
 
 ```bash
@@ -96,5 +96,5 @@ in 16 h, well beyond what an image prune could fix.
 
 ## Related
 
-- [Disk monitor](./disk-monitor) — the gauge that feeds the alert rules
-- [veta-auto-pull](./veta-auto-pull) — the deploy mechanism whose image churn this cleans up
+- [Disk monitor](./disk-monitor): the gauge that feeds the alert rules
+- [veta-auto-pull](./veta-auto-pull): the deploy mechanism whose image churn this cleans up

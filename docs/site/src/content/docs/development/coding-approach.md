@@ -1,6 +1,6 @@
 ---
 title: Coding Approach
-description: How the platform is built, tested, and shipped — from first line to production.
+description: How the platform is built, tested, and shipped, from first line to production.
 sidebar:
   order: 1
 ---
@@ -17,7 +17,7 @@ The repository ships a `.devcontainer/devcontainer.json` that configures VS Code
 - **Redpanda** (Kafka-compatible) for the message bus
 - **Supervisord** managing 30+ microservices
 
-When you open the repository in VS Code and accept "Reopen in Container", you get a fully functional trading platform with zero local setup. The MOTD shows available commands.
+When you open the repository in VS Code and accept "Reopen in Container", you get a functional trading platform with zero local setup. The MOTD shows available commands.
 
 ```sh
 supervisorctl status          # see all services
@@ -37,9 +37,9 @@ The project enforces testing at four levels, each catching different classes of 
 ### Integration tests (services + database)
 
 - 15+ test files run against the full service stack with PostgreSQL and Redpanda.
-- Test real order flow: submit via WebSocket → OMS validates → algo routes → EMS fills → journal persists.
+- Test real order flow: submit via WebSocket, OMS validates, algo routes, EMS fills, journal persists.
 - Each algo strategy verified: LIMIT, TWAP, POV, VWAP, ICEBERG, SNIPER, ARRIVAL_PRICE, IS, MOMENTUM.
-- Intelligence pipeline: feature engine → signal engine → recommendation engine.
+- Intelligence pipeline: feature engine, signal engine, recommendation engine.
 - Journal and market-data HTTP contract tests.
 
 ### E2E tests (browser automation)
@@ -54,7 +54,7 @@ The project enforces testing at four levels, each catching different classes of 
 - 87+ tests run against the deployed homelab instance ([`https://veta.mnetcs.com/`](https://veta.mnetcs.com/)) after every deploy.
 - Health checks for all backend services.
 - Full OAuth login flow with browser-style headers.
-- Order lifecycle: submit → fill or expire within timeout.
+- Order lifecycle: submit, then fill or expire within timeout.
 - Risk-engine CRUD: create session, upload chunks, query events, delete.
 - Disk usage assertion: fail if >95% full (prevents the disk-fill incident from recurring).
 
@@ -62,20 +62,20 @@ The project enforces testing at four levels, each catching different classes of 
 
 The pre-commit hook runs 8 checks. You cannot push until all pass:
 
-1. `deno lint` — backend linting
-2. `deno task check` — backend type-checking (56 files)
-3. `deno task test` — backend unit tests
-4. `npx @biomejs/biome check src/` — frontend linting
-5. `tsc --noEmit` — frontend type-checking
-6. `vitest run` — frontend unit tests
+1. `deno lint`: backend linting
+2. `deno task check`: backend type-checking (56 files)
+3. `deno task test`: backend unit tests
+4. `npx @biomejs/biome check src/`: frontend linting
+5. `tsc --noEmit`: frontend type-checking
+6. `vitest run`: frontend unit tests
 7. Smoke tests (if services are running locally)
 8. Integration tests (if services are running locally)
 
 ## Code conventions
 
-- **TypeScript everywhere** — Deno for backend, Vite + React for frontend
-- **No comments** — code should be self-documenting
-- **Functional where possible** — pure functions over mutable module state
-- **Single source of truth** — shared types in `@veta/types/*`, shared utilities in `@veta/*`
-- **Import map aliases** — `@veta/http` not `../lib/http.ts`
-- **Conventional commits** — `feat(risk):`, `fix(ci):`, `refactor:`, `docs:`
+- **TypeScript everywhere**: Deno for backend, Vite + React for frontend
+- **No comments**: code should be self-documenting
+- **Functional where possible**: pure functions over mutable module state
+- **Single source of truth**: shared types in `@veta/types/*`, shared utilities in `@veta/*`
+- **Import map aliases**: `@veta/http` not `../lib/http.ts`
+- **Conventional commits**: `feat(risk):`, `fix(ci):`, `refactor:`, `docs:`

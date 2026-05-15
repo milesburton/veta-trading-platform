@@ -5,7 +5,7 @@ description: Ingress, load testing and infrastructure utilities that surround th
 
 import { CardGrid, LinkCard } from "@astrojs/starlight/components";
 
-The [Service Map](../services/) catalogues the trading pipeline itself — market sim, OMS, EMS, algos, journal, FIX, and the analytics services. This section covers the supporting infrastructure that surrounds it: ingress, load testing, and operational utilities. Metrics/logs/traces have moved to their own [Observability page](../observability/).
+The [Service Map](../services/) catalogues the trading pipeline itself (market sim, OMS, EMS, algos, journal, FIX, and the analytics services). This section covers the supporting infrastructure that surrounds it: ingress, load testing, and operational utilities. Metrics, logs and traces have moved to their own [Observability page](../observability/).
 
 <CardGrid>
   <LinkCard
@@ -26,7 +26,7 @@ The [Service Map](../services/) catalogues the trading pipeline itself — marke
   <LinkCard
     title="veta-tunnel"
     href="/veta-trading-platform/platform/supporting/veta-tunnel/"
-    description="autossh-managed reverse SSH tunnel that exposes the homelab publicly via the OVH edge — the homelab dials out, no inbound NAT."
+    description="autossh-managed reverse SSH tunnel that exposes the homelab publicly via the OVH edge. The homelab dials out, so no inbound NAT is required."
   />
   <LinkCard
     title="veta-host-prune"
@@ -41,7 +41,7 @@ The [Service Map](../services/) catalogues the trading pipeline itself — marke
   <LinkCard
     title="Continuous load generator"
     href="/veta-trading-platform/platform/supporting/loadgen/"
-    description="Always-on trade flow on the homelab — soak + matrix runners with OAuth refresh."
+    description="Always-on trade flow on the homelab: soak and matrix runners with OAuth refresh."
   />
   <LinkCard
     title="Disk monitor"
@@ -67,4 +67,4 @@ The [Service Map](../services/) catalogues the trading pipeline itself — marke
 | `local` (devcontainer) | yes | optional | optional |
 | `homelab prod` (`veta.mnetcs.com`) | yes | yes | manual |
 
-LGTM and k6 are deliberately optional locally — they add real overhead and the platform runs fine without them. Bring them up when you are investigating performance, debugging event flow, or generating data for the performance docs.
+LGTM and k6 are optional locally. They add real overhead and the platform runs fine without them. Bring them up when investigating performance, debugging event flow, or generating data for the performance docs.

@@ -13,13 +13,13 @@ Planned features and improvements, roughly prioritised. Complexity is in story p
 | Upgrade-in-progress banner | Orange pulsing banner when system upgrade in progress, admin-toggled via API | 2 |
 | E2E user workflow tests | 12 Playwright tests covering equity, algo, risk rejection, system status, and order expiry | 8 |
 | Multi-select on grids | Checkbox column, shift-click range, ctrl-click toggle in order blotter | 3 |
-| Right-click context menus | Hold, unhold, cancel, force kill — permission-gated by role | 5 |
+| Right-click context menus | Hold, unhold, cancel, force kill, permission-gated by role | 5 |
 | Symbol search bar | Typeahead search on symbol, RIC, BBG, ISIN with Bloomberg trade paste parser | 5 |
 | Identifier aliases | RIC, BBG ticker, ISIN, and company names on all 270+ instruments | 3 |
 | User guide documentation | 7 pages with auto-generated screenshots and stale-detection mapping | 5 |
-| Registry-driven panel factory | Plugin-ready panel system — `registerPanel()` replaces 100-line switch | 3 |
-| Kafka consumer crash watchdog | Auto-reconnect on Redpanda group eviction — eliminates manual restarts | 2 |
-| No-any enforcement | `noExplicitAny: "error"` in biome — builds fail on any usage | 2 |
+| Registry-driven panel factory | Plugin-ready panel system; `registerPanel()` replaces 100-line switch | 3 |
+| Kafka consumer crash watchdog | Auto-reconnect on Redpanda group eviction, eliminates manual restarts | 2 |
+| No-any enforcement | `noExplicitAny: "error"` in biome; builds fail on any usage | 2 |
 | Signals-first migration | All 80+ useState calls migrated to useSignal (8 remain for React interop) | 5 |
 | Type system strengthening | OrderSide, branded IDs, ObsEventType union, OrderFillPayload, tightened FillEvent | 5 |
 | Electron desktop app | Native menus, pop-out panels, dual-stack (web + desktop) shipping in CI | 8 |

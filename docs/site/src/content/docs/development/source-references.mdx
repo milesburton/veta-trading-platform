@@ -6,9 +6,9 @@ description: How to link doc pages to source code.
 import Source from "../../../components/Source.astro";
 import CodeBlock from "../../../components/CodeBlock.astro";
 
-Doc pages link to source code through two MDX components: `<Source>` for inline links and `<CodeBlock>` for embedded code. Both validate at build time — if a referenced file or region is missing, the build fails.
+Doc pages link to source code through two MDX components: `<Source>` for inline links and `<CodeBlock>` for embedded code. Both validate at build time. If a referenced file or region is missing, the build fails.
 
-## Inline links — `<Source>`
+## Inline links: `<Source>`
 
 Use `<Source>` to point at a file, a line, or a named region.
 
@@ -38,9 +38,9 @@ Renders: <Source path="backend/src/schemas/orders.ts" region="docs:order-new-sch
 
 The label defaults to `path:start-end`. Pass `label` to override.
 
-## Embedded code — `<CodeBlock>`
+## Embedded code: `<CodeBlock>`
 
-Use `<CodeBlock>` when the actual code is the point — schemas, formulas, topic constants, type definitions.
+Use `<CodeBlock>` when the actual code is the point: schemas, formulas, topic constants, type definitions.
 
 ```mdx
 <CodeBlock
@@ -58,7 +58,7 @@ Renders:
   title="Order submission schema"
 />
 
-`<CodeBlock>` requires a region — pinning by line number is too brittle for embedded code.
+`<CodeBlock>` requires a region. Pinning by line number is too brittle for embedded code.
 
 ## Region markers
 

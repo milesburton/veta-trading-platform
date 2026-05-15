@@ -10,7 +10,7 @@ A controlled search-as-you-type dropdown for picking an asset from a list, with 
 
 ## Live demo
 
-Try typing `AA`, `JPM`, or `EUR` — clicking a row in the dropdown calls `onSelect`.
+Try typing `AA`, `JPM`, or `EUR`. Clicking a row in the dropdown calls `onSelect`.
 
 <div className="not-content" style={{ padding: "1rem", background: "#0f172a", borderRadius: "8px" }}>
   <AssetSelectorDemo client:load />
@@ -24,7 +24,7 @@ Try typing `AA`, `JPM`, or `EUR` — clicking a row in the dropdown calls `onSel
 | `value` | `string` | The current text in the search box (controlled). |
 | `onChange` | `(v: string) => void` | Called as the user types. |
 | `onSelect` | `(symbol: string) => void` | Called when the user clicks a row in the dropdown. |
-| `prices` | `MarketPrices` | Map of `{ [symbol]: price }`. The price for the selected/typed symbol is shown inline. |
+| `prices` | `MarketPrices` | Map of `{ [symbol]: price }`. The price for the selected or typed symbol is shown inline. |
 | `inputRef` | `RefObject<HTMLInputElement>?` | Optional ref for focus management. |
 
 ## Import

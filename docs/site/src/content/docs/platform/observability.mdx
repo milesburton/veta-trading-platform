@@ -7,29 +7,29 @@ import { Aside } from "@astrojs/starlight/components";
 import Svc from "../../../components/Svc.astro";
 import GrafanaScreenshots from "../../../components/GrafanaScreenshots.astro";
 
-VETA emits metrics, logs and traces to a separate **LGTM** stack — Loki, Grafana, Tempo and Mimir/Prometheus, with Grafana Alloy collecting events. The trading stack runs fine without it; bring it up when investigating performance, debugging event flow, or generating data for the [Performance reference page](../../reference/performance/).
+VETA emits metrics, logs and traces to a separate **LGTM** stack: Loki, Grafana, Tempo and Mimir/Prometheus, with Grafana Alloy collecting events. The trading stack runs fine without it; bring it up when investigating performance, debugging event flow, or generating data for the [Performance reference page](../../reference/performance/).
 
 <Aside type="caution" title="Not for a real-bank production">
 The self-hosted LGTM stack and the OTel auto-instrumentation overlay described on this page are intended for the homelab demo. A real production deployment should send OTLP to a managed observability vendor (Grafana Cloud, Honeycomb, Datadog, New Relic) rather than running its own collector + storage on the same host as the trading platform. Co-locating the observability backend with the workload it observes creates a noisy-neighbour failure mode where a metric spike crashes both the platform and the dashboard you would have used to diagnose it.
 
-The instrumentation itself — `OTEL_DENO=true`, the trace-propagating Kafka helpers, the `withSpan()` calls — works against any OTLP receiver. Only the receiver and storage choice changes.
+The instrumentation itself (`OTEL_DENO=true`, the trace-propagating Kafka helpers, the `withSpan()` calls) works against any OTLP receiver. Only the receiver and storage choice changes.
 </Aside>
 
 ## Where logs surface
 
-Logs from the platform appear in **three places**, depending on what's running. Use this decision tree:
+Logs from the platform appear in three places, depending on what's running. Use this decision tree:
 
 | You want to… | Use this | What it shows |
 |---|---|---|
 | Search recent logs from inside the app, no extra setup | **Logs drawer** in the app's status bar (`Logs` button, top-right) | Last ~2,000 lines from the gateway's in-memory ring buffer; falls back to Loki if `LOKI_URL` is set |
-| Full historical search across every service | **Grafana → Explore → Loki datasource** at `http://localhost:3000` | Everything Alloy has shipped to Loki; backed by the LGTM stack |
+| Full historical search across every service | **Grafana > Explore > Loki datasource** at `http://localhost:3000` | Everything Alloy has shipped to Loki; backed by the LGTM stack |
 | Tail a single service's stdout while debugging | **`supervisorctl tail -f <service>`** on the host running the platform | Live stdout/stderr from supervisord; same lines that Alloy is collecting |
-| Track an order through the whole pipeline | **Grafana → Tempo → search by trace ID** | Distributed trace spanning gateway → OMS → algos → EMS → journal, with linked log lines |
+| Track an order through the whole pipeline | **Grafana > Tempo > search by trace ID** | Distributed trace spanning gateway, OMS, algos, EMS and journal, with linked log lines |
 | Per-service container logs (Docker / k8s) | **`docker logs <container>`** | Raw stdout from a single service container |
 
-**Quickest win**: the in-app Logs drawer always works with zero infrastructure — even on the Fly demo or a fresh dev container. Each row is filterable by service, log level (error/warn/info/debug), time window (5m–6h), and free-text search.
+The in-app Logs drawer always works with zero infrastructure, even on the Fly demo or a fresh dev container. Each row is filterable by service, log level (error/warn/info/debug), time window (5m to 6h), and free-text search.
 
-When the LGTM stack is up (`docker compose -f observability/docker-compose.lgtm.yml up -d`) and the gateway has `LOKI_URL=http://localhost:3100` set, the same drawer transparently switches to LogQL queries against Loki — same UI, full history. The drawer's response includes a `source: "loki" | "ring-buffer"` field so you always know which one answered.
+When the LGTM stack is up (`docker compose -f observability/docker-compose.lgtm.yml up -d`) and the gateway has `LOKI_URL=http://localhost:3100` set, the same drawer transparently switches to LogQL queries against Loki. Same UI, full history. The drawer's response includes a `source: "loki" | "ring-buffer"` field so you always know which one answered.
 
 The remainder of this page covers the LGTM stack itself; jump to [In-app log search](#in-app-log-search) if you only want the drawer details, or [How events get into Loki](#how-events-get-into-loki) for the collector path.
 
@@ -55,7 +55,7 @@ Open `http://localhost:3000` once the stack is up. Anonymous read access is enab
 
 ## How events get into Loki
 
-The platform's <Svc name="kafka-relay" /> subscribes to every Redpanda topic and forwards each event as a JSON line to stdout. Grafana Alloy tails those lines and ships them to Loki, giving Grafana a unified log search across the entire trading pipeline — including the order lifecycle, fills, algo decisions and risk events.
+The platform's <Svc name="kafka-relay" /> subscribes to every Redpanda topic and forwards each event as a JSON line to stdout. Grafana Alloy tails those lines and ships them to Loki, giving Grafana a unified log search across the entire trading pipeline, including the order lifecycle, fills, algo decisions and risk events.
 
 The relay also exposes `POST /events/batch` for the frontend. The browser's [error transport middleware](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/store/middleware/errorTransportMiddleware.ts) posts uncaught errors here, so client-side failures show up in Loki alongside backend events.
 
@@ -67,12 +67,12 @@ Every Deno service emits OTel traces and metrics when started with `OTEL_DENO=tr
 docker compose -f compose.yml -f compose.prod.yml -f compose.observability.yml up -d
 ```
 
-The overlay is opt-in — Fly and bare local development don't ship traces by default to keep the attack surface small and the bandwidth cost zero. Service names are auto-derived from the container hostname inside [`backend/src/lib/telemetry.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/telemetry.ts), so each service appears in Tempo without having to plumb `OTEL_SERVICE_NAME` into 37 compose blocks individually.
+The overlay is opt-in. Fly and bare local development don't ship traces by default to keep the attack surface small and the bandwidth cost zero. Service names are auto-derived from the container hostname inside [`backend/src/lib/telemetry.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/telemetry.ts), so each service appears in Tempo without having to plumb `OTEL_SERVICE_NAME` into 37 compose blocks individually.
 
 Trace context propagates automatically:
 
-- **HTTP**: Deno's auto-instrumentation injects/extracts `traceparent` on every `fetch` and `Deno.serve` call. So an order flowing Gateway → OMS → Risk Engine → EMS shows up as one connected trace in Tempo.
-- **Kafka**: the producer in [`messaging.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/messaging.ts) injects `traceparent` into Kafka message headers; the consumer extracts it before invoking the handler. So the chain extends across every bus hop too — `orders.routed → orders.child → orders.filled` all appear in one trace.
+- **HTTP**: Deno's auto-instrumentation injects/extracts `traceparent` on every `fetch` and `Deno.serve` call. So an order flowing Gateway, OMS, Risk Engine, EMS shows up as one connected trace in Tempo.
+- **Kafka**: the producer in [`messaging.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/messaging.ts) injects `traceparent` into Kafka message headers; the consumer extracts it before invoking the handler. So the chain extends across every bus hop too: `orders.routed`, `orders.child`, and `orders.filled` all appear in one trace.
 
 Custom business spans are added with the `withSpan()` helper:
 
@@ -85,7 +85,7 @@ await withSpan("score-signal", async (span) => {
 });
 ```
 
-When `OTEL_DENO` is unset, `withSpan()` is a no-op zero-cost call — safe to leave in production code paths.
+When `OTEL_DENO` is unset, `withSpan()` is a no-op zero-cost call, safe to leave in production code paths.
 
 ## Provisioned dashboards
 
@@ -93,12 +93,12 @@ Grafana is auto-provisioned with the following dashboards under the **Trading** 
 
 | Dashboard | Source | What it shows |
 |-----------|--------|---------------|
-| **Trading Overview** | Loki via kafka-relay | Order pipeline counters, fill rate, algo heartbeat, service version table, live event feeds. Works without OTel — just needs the kafka-relay → Loki path. |
+| **Trading Overview** | Loki via kafka-relay | Order pipeline counters, fill rate, algo heartbeat, service version table, live event feeds. Works without OTel; only needs the kafka-relay to Loki path. |
 | **Service Performance (OTel)** | Tempo span-metrics + Loki | Pan-platform request rate, error rate, latency p50/p95/p99 per service. Top-N tables of slowest and busiest spans. Service-scoped log panel at the bottom. |
 | **Order Pipeline (Traces)** | Tempo + Loki | Trace-driven view of the order lifecycle, including per-stage p95 latency across gateway/oms/risk/algos/ems/journal, a live nodeGraph from Tempo's service-graph processor, recent error and slow-trace tables. |
 | **k6 Prometheus** | Prometheus | Bundled k6 dashboard for load-test runs. |
 
-The two OTel dashboards depend on the `compose.observability.yml` overlay being active — without it there are no spans to render.
+The two OTel dashboards depend on the `compose.observability.yml` overlay being active. Without it there are no spans to render.
 
 ### Live snapshots
 
@@ -112,22 +112,22 @@ The trading UI's header has a **Logs** button that opens a drawer for searching 
 
 The gateway resolves the query in this order:
 
-1. **Loki** if `LOKI_URL` is configured on the gateway (typical homelab setup) — the full LogQL search runs against every service's structured log stream.
-2. **In-process ring buffer** otherwise — the gateway records its own log lines into a 2,000-entry buffer via `registerLogSink()` so at least the gateway's view is searchable when no external log store is available. This is the local-dev mode.
+1. **Loki** if `LOKI_URL` is configured on the gateway (typical homelab setup). The full LogQL search runs against every service's structured log stream.
+2. **In-process ring buffer** otherwise. The gateway records its own log lines into a 2,000-entry buffer via `registerLogSink()` so at least the gateway's view is searchable when no external log store is available. This is the local-dev mode.
 
 The route is gated to non-viewer roles. Logs may contain user identifiers and other sensitive context, so external-clients and viewers see a 403 when they hit the endpoint directly.
 
 ## Pipeline-stage latency
 
-The <Svc name="journal" /> service exposes `GET /metrics/latency` returning per-stage `p50`/`p95`/`p99` for the order pipeline (`gateway → bus → oms → routedToChild → emsAck → filled`). Recent baselines and how they were measured live on the [Performance page](../../reference/performance/).
+The <Svc name="journal" /> service exposes `GET /metrics/latency` returning per-stage `p50`/`p95`/`p99` for the order pipeline (`gateway`, `bus`, `oms`, `routedToChild`, `emsAck`, `filled`). Recent baselines and how they were measured live on the [Performance page](../../reference/performance/).
 
 ## Session replay
 
 The <Svc name="replay-service" /> records full browser sessions via [rrweb](https://www.rrweb.io/) when an admin enables recording. Each row in the Session Replay panel offers three exports:
 
-- **Play** — open the rrweb player inline.
-- **JSON** — download the raw event stream (replays in any rrweb player).
-- **Video** — render a WebM in the browser using `MediaRecorder`. The renderer steps through the rrweb events, snapshots each frame at 10 fps, and encodes via VP9/VP8. Runs entirely client-side (no server-side ffmpeg or headless Chromium), which keeps the attack surface small at the cost of needing the operator's tab to stay open during render. WebM plays in every modern browser, Slack, and most video tools.
+- **Play**: open the rrweb player inline.
+- **JSON**: download the raw event stream (replays in any rrweb player).
+- **Video**: render a WebM in the browser using `MediaRecorder`. The renderer steps through the rrweb events, snapshots each frame at 10 fps, and encodes via VP9/VP8. Runs entirely client-side (no server-side ffmpeg or headless Chromium), which keeps the attack surface small at the cost of needing the operator's tab to stay open during render. WebM plays in every modern browser, Slack, and most video tools.
 
 ## Where to run what
 
@@ -136,4 +136,4 @@ The <Svc name="replay-service" /> records full browser sessions via [rrweb](http
 | `local` (devcontainer) | yes | optional | optional |
 | `homelab` (public demo at veta.mnetcs.com) | yes | yes | manual |
 
-LGTM and k6 are deliberately optional locally — they add real overhead and the platform runs fine without them.
+LGTM and k6 are optional locally. They add real overhead and the platform runs fine without them.

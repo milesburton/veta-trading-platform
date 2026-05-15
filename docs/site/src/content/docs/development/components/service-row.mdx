@@ -6,7 +6,7 @@ description: Table row rendering a single service's health, version and meta.
 import { ServiceRow } from "@veta/frontend/components/ServiceRow";
 import Source from "../../../../components/Source.astro";
 
-Renders one row of the Service Health table — a status dot, the service name (optionally a link), an `ok / error / unavailable` label, the version, and a meta blurb. Optional services that are erroring are shown in a faded "unavailable" style instead of red.
+Renders one row of the Service Health table: a status dot, the service name (optionally a link), an `ok / error / unavailable` label, the version, and a meta blurb. Optional services that are erroring are shown in a faded "unavailable" style instead of red.
 
 ## Live demo
 
@@ -46,7 +46,7 @@ interface ServiceHealth {
   meta: Record<string, string | number>;
   lastChecked?: number;  // unix ms
   link?: string;
-  optional?: boolean;     // if true, error → "unavailable" instead of red
+  optional?: boolean;     // if true, error renders as "unavailable" instead of red
 }
 ```
 

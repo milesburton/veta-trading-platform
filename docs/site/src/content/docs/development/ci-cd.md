@@ -1,6 +1,6 @@
 ---
 title: CI/CD Pipeline
-description: From push to production — every automated step in the deployment pipeline.
+description: Every automated step in the deployment pipeline, from push to production.
 sidebar:
   order: 2
 ---
@@ -41,34 +41,34 @@ flowchart LR
   classDef deploy fill:#f472b6,stroke:#ec4899,color:#000
 ```
 
-Integration covers service contracts, algo strategies (retry), the intelligence pipeline, journal HTTP, market-data HTTP, and smoke tests (87+). Playwright/screenshots/Electron/Docker builds run in parallel with integration — they only wait on the frontend job, not the 15-minute integration suite.
+Integration covers service contracts, algo strategies (retry), the intelligence pipeline, journal HTTP, market-data HTTP, and smoke tests (87+). Playwright, screenshots, Electron, and Docker builds run in parallel with integration. They only wait on the frontend job, not the 15-minute integration suite.
 
 ## Parallelisation
 
-Playwright, screenshots, Electron, and Docker builds run **in parallel with** integration tests. They only depend on the frontend job (~70 seconds), not the 15-minute integration suite. This saves ~10-12 minutes off the critical path.
+Playwright, screenshots, Electron, and Docker builds run **in parallel with** integration tests. They only depend on the frontend job (~70 seconds), not the 15-minute integration suite. This saves around 10 to 12 minutes off the critical path.
 
-GitHub Pro provides 20 concurrent jobs — we use up to 40 matrix slots (37 Docker builds run in a matrix) but they queue efficiently.
+GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (37 Docker builds run in a matrix) but they queue efficiently.
 
 ## What each job does
 
 ### lint-and-test (~30 seconds)
 
-- `deno lint` — 113 backend files
-- `deno task check` — type-check 56 entry points
-- `deno task test:coverage` — 230+ unit tests with lcov output
+- `deno lint`: 113 backend files
+- `deno task check`: type-check 56 entry points
+- `deno task test:coverage`: 230+ unit tests with lcov output
 - Generates `docs/badges/backend-tests.json` with test count
 
 ### frontend (~70 seconds)
 
-- `npx @biomejs/biome check src/` — lint 221 files
-- `tsc --noEmit` — type-check
-- `npm run test:coverage` — 797+ unit tests with v8 coverage
+- `npx @biomejs/biome check src/`: lint 221 files
+- `tsc --noEmit`: type-check
+- `npm run test:coverage`: 797+ unit tests with v8 coverage
 - Generates `docs/badges/frontend-tests.json` and `docs/badges/coverage.json`
 
 ### integration (~15 minutes)
 
 - Starts PostgreSQL, Redpanda, and all 30+ services
-- Runs database migrations (0001–0013)
+- Runs database migrations (0001 to 0013)
 - Waits for all services to be healthy (port polling)
 - Waits for market-sim to produce prices
 - Waits for risk-engine to have prices tracked
@@ -83,7 +83,7 @@ GitHub Pro provides 20 concurrent jobs — we use up to 40 matrix slots (37 Dock
 - GatewayMock provides deterministic backend responses
 - Generates `docs/badges/e2e-tests.json`
 
-### docker-services (~3-5 minutes per image, parallel)
+### docker-services (~3 to 5 minutes per image, parallel)
 
 - Builds 37 individual service Docker images
 - Pushes to GHCR (`ghcr.io/milesburton/veta-trading-platform/<service>:latest`)
@@ -98,7 +98,7 @@ The homelab is the only deployment target. The application is served at [`https:
 - systemd `veta-auto-pull.timer` polls `origin/main` every 5 minutes
 - When a new SHA is detected, the homelab clones the repo, syncs `compose.yml` + overlays, runs `deploy.sh`
 - `deploy.sh` runs `docker compose up -d`; GHCR images are pulled by the daemon
-- Typical lag: ~5 minutes after Docker build completes
+- Typical lag: around 5 minutes after Docker build completes
 
 ### GitHub Pages
 
@@ -125,23 +125,23 @@ Badges are shields.io endpoint badges reading from the raw GitHub file URL.
 
 [`.github/workflows/trusted-automerge.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/trusted-automerge.yml) auto-approves and squash-merges trusted PRs. The `gh pr merge` step authenticates with a fine-grained personal access token stored as the `BOT_PAT` repo secret.
 
-This matters because GitHub's built-in `GITHUB_TOKEN` has an anti-loop limitation: **commits made by `GITHUB_TOKEN` don't fire downstream `on: push` workflows**. Without a PAT, every bot-driven merge to `main` would land silently — no `ci.yml` run, no docker image build, no auto-pull picks it up because the SHA-comparison still works but the new image never gets built. The PAT bypasses the limitation because it's a user credential, so the merge commit looks like a normal push.
+This matters because GitHub's built-in `GITHUB_TOKEN` has an anti-loop limitation: **commits made by `GITHUB_TOKEN` do not fire downstream `on: push` workflows**. Without a PAT, every bot-driven merge to `main` would land silently: no `ci.yml` run, no docker image build, and no auto-pull picks it up because the SHA-comparison still works but the new image never gets built. The PAT bypasses the limitation because it is a user credential, so the merge commit looks like a normal push.
 
 ### What the PAT must allow
 
 - Repository access: **this repo only**
 - Permissions:
-  - `Contents`: Read and write — required to create the merge commit
-  - `Pull requests`: Read and write — required to enable auto-merge
-  - `Metadata`: Read-only — mandatory boilerplate
+  - `Contents`: Read and write, required to create the merge commit
+  - `Pull requests`: Read and write, required to enable auto-merge
+  - `Metadata`: Read-only, mandatory boilerplate
 - Expiration: rotate annually. When the token expires, auto-merge silently starts failing with auth errors; check the `trusted-automerge` workflow run output if merges suddenly stop landing.
 
 ### Rotating the PAT
 
 When the existing `BOT_PAT` is approaching expiry:
 
-1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token (same scopes as above).
-2. Repo → Settings → Secrets and variables → Actions → click `BOT_PAT` → Update value.
+1. GitHub, then Settings, Developer settings, Personal access tokens, Fine-grained tokens, Generate new token (same scopes as above).
+2. Repo, then Settings, Secrets and variables, Actions, click `BOT_PAT`, Update value.
 3. No workflow change needed; the secret name stays the same.
 4. Revoke the old token from the same fine-grained tokens page.
 

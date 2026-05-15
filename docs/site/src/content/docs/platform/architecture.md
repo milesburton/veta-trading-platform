@@ -3,7 +3,7 @@ title: Architecture
 description: Event-driven microservices connected by a Redpanda message bus.
 ---
 
-VETA is a multi-service trading platform connected by a **Redpanda message bus** (Kafka-compatible). The React frontend talks to a single **API Gateway** — the only service the browser can reach. Everything else communicates via bus topics.
+VETA is a multi-service trading platform connected by a **Redpanda message bus** (Kafka-compatible). The React frontend talks to a single **API Gateway**, which is the only service the browser can reach. Everything else communicates via bus topics.
 
 ## System architecture
 
@@ -46,7 +46,7 @@ OVH edge every 60s to catch outages anywhere along this chain. Full detail:
 ```mermaid
 graph TD
     FE["React Frontend<br/><i>Vite / Electron</i>"]:::client
-    GW["API Gateway :5011<br/><i>BFF — WebSocket hub + HTTP proxy</i>"]:::gateway
+    GW["API Gateway :5011<br/><i>BFF, WebSocket hub + HTTP proxy</i>"]:::gateway
     KAFKA["Redpanda Message Bus :9092<br/><i>Kafka-compatible pub/sub</i>"]:::bus
     SVCS["~30 backend services<br/><i>see diagrams below</i>"]:::support
 
@@ -90,7 +90,7 @@ graph LR
     classDef storage fill:#2dd4bf,stroke:#14b8a6,color:#000
 ```
 
-### Algo strategies — all 9 are independent Kafka consumers
+### Algo strategies (all 9 are independent Kafka consumers)
 
 ```mermaid
 graph TB

@@ -8,7 +8,7 @@ import Source from "../../../../components/Source.astro";
 
 A pure-display context menu used across panels and the dashboard. Renders into a portal anchored at `(x, y)`, clamps to the viewport, and closes on outside click or **Esc**. Supports icons, keyboard shortcuts, danger styling, disabled rows, and labelled separator groups.
 
-The companion `useContextMenu()` hook (in the same file) wires up open/close state with signals — but the component itself is pure props, so you can hook it up to any state source.
+The companion `useContextMenu()` hook (in the same file) wires up open/close state with signals, but the component itself is pure props, so you can hook it up to any state source.
 
 ## Live demo
 
@@ -20,10 +20,10 @@ The companion `useContextMenu()` hook (in the same file) wires up open/close sta
 
 | Prop | Type | Description |
 | --- | --- | --- |
-| `items` | `ContextMenuEntry[]` | Menu rows — either an action (`label`, `onClick`, etc.) or a separator. |
+| `items` | `ContextMenuEntry[]` | Menu rows: either an action (`label`, `onClick`, etc.) or a separator. |
 | `x` | `number` | Viewport X coordinate to anchor the menu at. Will be clamped if it would overflow. |
 | `y` | `number` | Viewport Y coordinate to anchor the menu at. Will be clamped if it would overflow. |
-| `onClose` | `() => void` | Called when the menu should close (outside click / Esc / item clicked). |
+| `onClose` | `() => void` | Called when the menu should close (outside click, Esc, or item clicked). |
 
 `ContextMenuEntry` shape:
 
@@ -34,7 +34,7 @@ interface ContextMenuItem {
   label: string;
   onClick: () => void;
   icon?: string;       // emoji or single char
-  shortcut?: string;   // e.g. "⌘O", "⌫"
+  shortcut?: string;   // e.g. "Ctrl+O", "Backspace"
   danger?: boolean;    // red text + red hover bg
   disabled?: boolean;
   title?: string;      // tooltip

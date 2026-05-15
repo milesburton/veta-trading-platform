@@ -17,15 +17,15 @@ labels:
   - "traefik.http.services.<svc>.loadbalancer.server.port=<port>"
 ```
 
-Traefik does **not** match on `Host` headers, so any hostname or IP that resolves to the host works. That keeps the LAN dev experience simple — a LAN IP and the public hostname are interchangeable.
+Traefik does **not** match on `Host` headers, so any hostname or IP that resolves to the host works. That keeps the LAN dev experience straightforward, so a LAN IP and the public hostname are interchangeable.
 
 ## TLS
 
 | Environment | TLS terminator |
 |-------------|----------------|
-| `local` (devcontainer) | none — plain HTTP |
+| `local` (devcontainer) | none (plain HTTP) |
 | `homelab prod` (`veta.mnetcs.com`) | OVH edge terminates TLS, then tunnels HTTP into homelab Traefik |
 
 ## Dashboard
 
-The dashboard is exposed at `http://<host>:8888/dashboard/`. It is **not** behind auth — only LAN-reachable on the homelab, and not exposed publicly. The Service Health panel surfaces it on `local` deployments only; on homelab it is hidden because the dashboard port is not reachable from a remote browser even though the proxy itself is healthy.
+The dashboard is exposed at `http://<host>:8888/dashboard/`. It is **not** behind auth: only LAN-reachable on the homelab, and not exposed publicly. The Service Health panel surfaces it on `local` deployments only; on homelab it is hidden because the dashboard port is not reachable from a remote browser even though the proxy itself is healthy.

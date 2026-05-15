@@ -4,22 +4,22 @@ description: Container hardening, threat model, and the residual risks we have n
 ---
 
 This page describes the container-level defences applied to the trading
-stack, the residual risks we have deliberately not addressed, and the
+stack, the residual risks we have not addressed, and the
 operational steps required when rolling out hardening changes to the
 homelab.
 
 ## Threat model
 
-The primary attacker we defend against is **a remote actor with network
-access to the trading network** (LAN attacker on the homelab, or someone
+The primary attacker we defend against is a remote actor with network
+access to the trading network (a LAN attacker on the homelab, or someone
 who has compromised a public-facing service reachable through the OVH
 edge at [`veta.mnetcs.com`](https://veta.mnetcs.com/)). The exploit chain
-we are most concerned with:
+of greatest concern:
 
 1. Find a remote-code-execution bug in any internet-reachable service
    (gateway, frontend, public-facing health endpoints).
 2. Get shell as that service's UID inside its container.
-3. From there, attempt to: read data the service shouldn't access,
+3. From there, attempt to read data the service shouldn't access,
    move laterally to other containers, or escape to the host.
 
 The defences below are arranged so that each step in the chain has a
@@ -58,7 +58,7 @@ of UID 1000, not 0. Combined with capability drop, the post-exploit
 position is meaningfully constrained.
 
 The infrastructure containers (`postgres`, `redpanda`, `traefik`,
-`ollama`) run as their official-image user models — those upstream
+`ollama`) run as their official-image user models. Those upstream
 images already enforce non-root execution internally.
 
 ### Read-only-by-default disk-monitor
@@ -81,7 +81,7 @@ on the host (see `scripts/host-prune.sh`).
 ### `tmpfs:/tmp`
 
 Each Deno service gets `/tmp` as a tmpfs mount. Anything that does land
-in `/tmp` exists only in RAM and dies with the container — nothing
+in `/tmp` exists only in RAM and dies with the container. Nothing
 persists, and no on-disk artefacts survive a restart.
 
 ## Residual risks (not yet mitigated)

@@ -6,11 +6,11 @@ description: systemd timer that polls origin/main every 5 minutes and runs deplo
 `veta-auto-pull` is the **continuous deployment** mechanism for the
 homelab. Every 5 minutes a systemd timer fires a script that:
 
-1. Polls `origin/main` via `git ls-remote` — no full clone
+1. Polls `origin/main` via `git ls-remote` (no full clone)
 2. Compares the remote SHA against `state/last-deployed-sha`
-3. If different, clones main shallow + self-installs the latest
+3. If different, clones main shallow and self-installs the latest
    `homelab-deploy.sh` over `/opt/stacks/veta/deploy.sh`
-4. Runs `deploy.sh` which rsyncs compose files + runs
+4. Runs `deploy.sh` which rsyncs compose files and runs
    `docker compose up -d` with healthcheck gating
 5. On success, writes the new SHA to `state/last-deployed-sha`
 6. On failure, leaves the file unchanged so the next tick retries
@@ -25,13 +25,13 @@ SSHed from a GH runner to the homelab's LAN address. GitHub runners are on publi
 IPs; the homelab is on a private LAN. The `ssh-keyscan` step always
 failed.
 
-Inverting the direction — the homelab polls GitHub — sidesteps the
+Inverting the direction so the homelab polls GitHub sidesteps the
 network problem entirely without a tunnel, a Tailscale, or a self-hosted
 runner.
 
 The 5-minute cadence is the sweet spot:
 
-- Fast enough that operators don't notice the lag (~3.5 min mean)
+- Fast enough that operators do not notice the lag (~3.5 min mean)
 - Slow enough to avoid hammering GitHub's API
 - Aligns with the 6-minute wait in the
   [post-deploy CI probe](../../platform/supporting/synthetic-probe#ci-mirror)
@@ -67,7 +67,7 @@ sudo systemctl enable --now veta-auto-pull.timer
 | `.good-sha` | `deploy.sh` | Last SHA the gateway *reported* as its baked-in version after a successful deploy |
 
 `.good-sha` and `last-deployed-sha` may legitimately diverge by one CI
-cycle — they answer different questions and one isn't a corrupted copy
+cycle. They answer different questions and one is not a corrupted copy
 of the other. See
 [the SHA semantics note](#sha-semantics) below.
 
@@ -99,7 +99,7 @@ The two SHA files answer different questions:
   version after the deploy succeeded?"
 
 These may diverge by one CI cycle: if main moves twice in 5 min
-(dependabot + a feature merge), CI rebuilds the gateway image twice.
+(dependabot plus a feature merge), CI rebuilds the gateway image twice.
 By the time the second auto-pull tick fires, the gateway image for the
 *newer* SHA might not be ready yet on GHCR. The pull picks up the
 older image, the gateway reports `version = X`, and `.good-sha = X`
@@ -116,8 +116,8 @@ This is **expected, not a drift bug**.
 
 ## Related
 
-- [Edge architecture](../edge-architecture) — how public traffic reaches what auto-pull deploys
-- [CI/CD pipeline](../../development/ci-cd) — what happens *before* the homelab pulls the image
-- [veta-tunnel](./veta-tunnel) — the reverse SSH tunnel that exposes the homelab publicly
-- [veta-host-prune](./veta-host-prune) — weekly cleanup of dangling images
-- [Synthetic probe](./synthetic-probe) — closes the loop with a post-deploy check
+- [Edge architecture](../edge-architecture): how public traffic reaches what auto-pull deploys
+- [CI/CD pipeline](../../development/ci-cd): what happens *before* the homelab pulls the image
+- [veta-tunnel](./veta-tunnel): the reverse SSH tunnel that exposes the homelab publicly
+- [veta-host-prune](./veta-host-prune): weekly cleanup of dangling images
+- [Synthetic probe](./synthetic-probe): closes the loop with a post-deploy check

@@ -13,7 +13,7 @@ docker compose --profile loadtest run --rm k6
 K6_SCRIPT=mixed-strategy.js \
   docker compose --profile loadtest run --rm k6
 
-# Open-bell burst (zero → 200 VUs in 30s, hold 5min)
+# Open-bell burst (zero to 200 VUs in 30s, hold 5min)
 K6_SCRIPT=burst-open.js \
   docker compose --profile loadtest run --rm k6
 
@@ -36,9 +36,9 @@ known failure mode the platform should withstand.
 
 ## Scenario reference
 
-### `baseline-limit.js` — pipeline sanity check
+### `baseline-limit.js`: pipeline sanity check
 
-Single algo (LIMIT), gentle ramp 1 → 50 VUs over 2.5 minutes. **Use this
+Single algo (LIMIT), gentle ramp 1 to 50 VUs over 2.5 minutes. **Use this
 to confirm the pipeline is up before running anything else.** Three
 seconds of failure here means a deeper problem and any further test
 will be misleading.
@@ -50,7 +50,7 @@ will be misleading.
 | Threshold | submit_ok rate > 95%, http p99 < 500ms |
 | Output | `docs/site/src/data/loadtest/<date>.{json,csv}` |
 
-### `mixed-strategy.js` — realistic algo mix
+### `mixed-strategy.js`: realistic algo mix
 
 All nine algo strategies in flight simultaneously, weighted to mimic
 buy-side trading distribution: 30% LIMIT, 20% TWAP, 15% VWAP, 12% POV,
@@ -64,9 +64,9 @@ buy-side trading distribution: 30% LIMIT, 20% TWAP, 15% VWAP, 12% POV,
 | Threshold | submit_ok rate > 95%, http p99 < 800ms |
 | What it tests | Cross-strategy contention on shared services (risk-engine, OMS, EMS) |
 
-### `burst-open.js` — open-bell spike
+### `burst-open.js`: open-bell spike
 
-Zero → 200 VUs in 30 seconds, sustained for 5 minutes, ramp back to
+Zero to 200 VUs in 30 seconds, sustained for 5 minutes, ramp back to
 zero. Mimics the cohort of orders that hit a venue at 09:30 when the
 market opens. Five strategies in roughly equal proportions.
 
@@ -77,10 +77,10 @@ market opens. Five strategies in roughly equal proportions.
 | Threshold | submit_ok rate > 90%, http p95 < 2s |
 | What it tests | Cold-cache behaviour, queue saturation, kafka backpressure under burst |
 
-### `soak.js` — sustained load for memory leaks
+### `soak.js`: sustained load for memory leaks
 
 Constant 25 VUs for 30 minutes (configurable via `SOAK_DURATION` and
-`SOAK_VUS`). The aim isn't peak performance — it's to surface slow
+`SOAK_VUS`). The aim is not peak performance, it is to surface slow
 leaks: growing heap, unbounded caches, file-descriptor exhaustion.
 
 | Property | Value |
@@ -91,7 +91,7 @@ leaks: growing heap, unbounded caches, file-descriptor exhaustion.
 | What it tests | Memory, FD, connection leaks; supervisord stability |
 | Tunable | `SOAK_DURATION=2h`, `SOAK_VUS=50` |
 
-### `risk-stress.js` — risk-engine pressure
+### `risk-stress.js`: risk-engine pressure
 
 LIMIT orders only, but with quantity drawn from a weighted mix that
 includes order sizes well under the limit, just under, at the limit,
@@ -135,9 +135,9 @@ The [Performance reference page](../../../reference/performance/) renders the mo
 
 Three things matter:
 
-1. **`thresholdsBreached`** — if non-empty, the run failed its own success criteria. Investigate before declaring the build healthy.
-2. **`failureRate`** — submit_ok rate inverted. Anything above ~5% under sustained load is a real problem. Above 1% on the soak is a leak signal.
-3. **`stages.submitDurationMs.p99`** — gateway-side perceived latency. Should track the journal's per-stage `submittedToFilled` p99 within a few hundred ms (the gap is gateway → risk-engine roundtrip).
+1. **`thresholdsBreached`**: if non-empty, the run failed its own success criteria. Investigate before declaring the build healthy.
+2. **`failureRate`**: submit_ok rate inverted. Anything above ~5% under sustained load is a real problem. Above 1% on the soak is a leak signal.
+3. **`stages.submitDurationMs.p99`**: gateway-side perceived latency. Should track the journal's per-stage `submittedToFilled` p99 within a few hundred ms (the gap is gateway to risk-engine roundtrip).
 
 When in doubt, open the **Order Pipeline (Traces)** dashboard while a run is in flight. The Sankey panel and per-stage latency lines tell the same story the JSON summary does, but live.
 
@@ -165,9 +165,9 @@ docker compose --profile loadtest run --rm k6
 The k6 service has `cap_drop: ALL` and `no-new-privileges`, same
 posture as the rest of the platform.
 
-## What's intentionally not exercised
+## What is intentionally not exercised
 
-- **Real OAuth sign-in flow** — pre-shared token used; sign-in latency is in the Playwright E2E suite.
-- **WebSocket order submission** — k6 only hits the `/load-test` HTTP endpoint, which queues to the same `orders.new` Kafka topic as a WebSocket-submitted order, so the downstream pipeline is identical. The WebSocket-frame parsing is exercised by Playwright.
-- **Realistic order placement timing** — load-test endpoint accepts 1 order per HTTP request; real users submit at ~1/sec at peak. The harness is denser than reality on purpose, to find ceilings.
-- **Cross-region failover** — single-region only.
+- **Real OAuth sign-in flow**: pre-shared token used; sign-in latency is in the Playwright E2E suite.
+- **WebSocket order submission**: k6 only hits the `/load-test` HTTP endpoint, which queues to the same `orders.new` Kafka topic as a WebSocket-submitted order, so the downstream pipeline is identical. The WebSocket-frame parsing is exercised by Playwright.
+- **Realistic order placement timing**: load-test endpoint accepts 1 order per HTTP request; real users submit at ~1/sec at peak. The harness is denser than reality on purpose, to find ceilings.
+- **Cross-region failover**: single-region only.
