@@ -1703,10 +1703,16 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    # /health returns HTTP 503 when disk >= WARN_PCT — that's the signal,
+    # not a failure. The healthcheck checks /metrics (which always returns
+    # 200 because it's a passive gauge endpoint) so the *container* is
+    # marked unhealthy only when the process is genuinely unresponsive.
+    # Disk pressure surfaces via the Prometheus alert rules in
+    # observability/prometheus-rules.yml, not via this healthcheck.
     healthcheck:
       test: [
         "CMD-SHELL",
-        "wget -qO- http://localhost:8099/ > /dev/null 2>&1 || exit 1",
+        "wget -qO- http://localhost:8099/metrics > /dev/null 2>&1 || exit 1",
       ]
       interval: 30s
       timeout: 5s

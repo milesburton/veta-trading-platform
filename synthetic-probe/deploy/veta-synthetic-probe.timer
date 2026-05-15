@@ -1,0 +1,12 @@
+[Unit]
+Description=Run VETA synthetic probe every 60s
+Documentation=https://github.com/milesburton/veta-trading-platform/blob/main/synthetic-probe/README.md
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=60s
+AccuracySec=5s
+Persistent=false
+
+[Install]
+WantedBy=timers.target
