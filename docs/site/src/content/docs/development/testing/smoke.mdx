@@ -1,77 +1,41 @@
 ---
 title: Smoke tests
-description: Fast health-check suites that prove the running stack is serving traffic. Run pre-commit, in CI, and as the post-deploy gate.
+description: Health and reachability checks for the backend stack and the deployed frontend. Run in CI against an ephemeral testcontainers stack.
 ---
 
 import testInventory from "@docs/data/test-inventory.json";
 
-Smoke tests cover the deployment layer: Traefik routing, OAuth client configuration, environment variables in the systemd unit, gateway-to-service connectivity. These failures do not appear in source-controlled code and therefore cannot be caught by any other suite. Smoke runs against the live stack and verifies each service is reachable through its production-equivalent ingress path.
+Smoke tests cover the service-reachability and end-to-end-pipeline layer: every service responds to `/health`, the gateway can accept and route orders, OAuth flows succeed, and core data paths return expected shapes. The platform has two distinct smoke surfaces: backend smoke (run in CI against a testcontainers stack) and frontend deploy-gate smoke (run in CI against a deployed Vite build).
 
-Smoke does not assert correctness of business logic; that is the job of [unit](../unit/) and [integration](../../testcontainers/) tests. It asserts only that requests reach handlers and return well-formed responses. The homelab deploy script gates rollout on smoke success and rolls back on failure.
-
-The platform has two distinct smoke suites: one backend, one frontend. They run at different lifecycle points.
-
-## Where smoke runs
-
-```mermaid
-graph LR
-    subgraph PRECOMMIT["1. Pre-commit hook (developer machine)"]
-        A1["git commit"] --> A2["check localhost:5000/health"]
-        A2 -->|alive| A3["run backend smoke"]
-        A2 -->|dead| A4["skip smoke<br/>(hook stays fast)"]
-    end
-
-    subgraph CI["2. CI mirror (every PR)"]
-        B1["RUN_TESTCONTAINERS=1"] --> B2["ephemeral stack via Testcontainers"]
-        B2 --> B3["run smoke.tc.test.ts<br/>(critical-path checks only)"]
-    end
-
-    subgraph DEPLOY["3. Post-deploy gate (homelab)"]
-        C1["git pull + docker compose up -d"] --> C2["wait for services healthy"]
-        C2 --> C3["VETA_BASE_URL=https://veta.mnetcs.com<br/>deno task test:smoke"]
-        C3 -->|pass| C4["deploy live"]
-        C3 -->|fail| C5["docker compose down<br/>+ roll back to previous SHA"]
-    end
-
-    classDef precommit fill:#dcfce7,stroke:#16a34a,color:#000
-    classDef ci fill:#fef3c7,stroke:#d97706,color:#000
-    classDef deploy fill:#fecaca,stroke:#dc2626,color:#000
-
-    class A1,A2,A3,A4 precommit
-    class B1,B2,B3 ci
-    class C1,C2,C3,C4,C5 deploy
-```
-
-Each lifecycle point answers a different question. Pre-commit catches "did I break the local stack". The CI mirror catches "would this break the stack as wired in production". The post-deploy gate catches "is the actual production deployment serving traffic right now". The same source file (`smoke.test.ts`) runs in all three contexts; only the target URLs differ.
+Smoke does not assert correctness of business logic; that is the job of [unit](../unit/) and [integration](../../testcontainers/) tests. It asserts only that requests reach handlers and return well-formed responses.
 
 ## Backend smoke
 
-**File:** [`backend/src/tests/smoke.test.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/tests/smoke.test.ts)
-**Run:** `deno task test:smoke`
-**Checks:** {testInventory.backend.smoke.cases} cases across all {testInventory.platform.supervisordServices} services in `supervisord.conf`
+**File:** [`backend/src/tests/smoke.full.tc.test.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/tests/smoke.full.tc.test.ts) (full suite) and [`backend/src/tests/smoke.tc.test.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/tests/smoke.tc.test.ts) (fast critical-path subset)
+**Run:** `deno task test:testcontainers`
+**Checks:** {testInventory.backend.testcontainers.perFile["smoke.tc.test.ts"]} critical-path checks (fast subset), plus {testInventory.backend.testcontainers.perFile["smoke.full.tc.test.ts"]} end-to-end checks across the full suite
 
-The backend smoke suite walks every service URL and asserts:
+The full backend smoke (`smoke.full.tc.test.ts`) groups its 62 checks into three top-level `Deno.test` blocks so each block can boot the minimum service set it needs:
 
-- `/health` returns 200 with the expected JSON shape (`status`, `version`, `uptime`).
-- Service-specific endpoints (`/prices` for market-sim, `/orders` for OMS, `/strategies` for algo services, etc.) reach their handlers without 5xx errors.
-- WebSocket gateways accept connections and emit at least one frame within 5 seconds.
+| Block | Services booted | Checks |
+|-------|-----------------|--------|
+| Service health and version | All 29 services | 3 |
+| Core trading flows | Market-sim, EMS, OMS, user-service, journal, gateway, fix-archive, observability, risk-engine, all 9 algo strategies | 41 |
+| Peripheral services | Market-sim, journal, user-service, gateway, plus news, analytics, recommendation, feature, signal, scenario, llm-advisory, replay, rfq, dark-pool, ccp, market-data | 18 |
 
-It targets a real running stack: local dev compose, the homelab, or a remote URL via `VETA_BASE_URL`:
-
-```sh
-deno task test:smoke                              # localhost
-VETA_BASE_URL=https://veta.mnetcs.com deno task test:smoke
-```
-
-When `VETA_BASE_URL` is set, the URL mapping switches from `http://localhost:5xxx` to public paths like `/api/oms` so the same suite works against Traefik-fronted deployments.
+Every block is gated on `RUN_TESTCONTAINERS=1`, runs inside `scripts/run-testcontainers.sh`, and wraps its body in `try { ... } finally { await stack.teardown() }`.
 
 ### Where it runs
 
-- **Pre-commit hook** ([.husky/pre-commit](https://github.com/milesburton/veta-trading-platform/blob/main/.husky/pre-commit), step `[7/9]`): runs if a stack is detected on localhost, otherwise auto-skips so the hook stays fast.
-- **Post-deploy gate** on the homelab: after `git pull && docker compose up -d` the deploy script runs smoke against the freshly-restarted stack. A failure rolls the deploy back.
-- **CI testcontainers mirror** (`smoke.tc.test.ts`): {testInventory.backend.testcontainers.perFile["smoke.tc.test.ts"]} critical-path checks against an ephemeral testcontainers stack. Runs in CI when `RUN_TESTCONTAINERS=1`.
+- **CI** (`test:testcontainers` task): runs on every push and PR. `scripts/run-testcontainers.sh` sets `RUN_TESTCONTAINERS=1` and brings up an ephemeral Postgres + Redpanda per Deno.test block.
+- **Local development**: `deno task test:testcontainers` works in the dev container with Docker available. The full smoke suite (`smoke.full.tc.test.ts`) takes 90 to 150 seconds depending on how many services each block boots.
+- **Pre-commit**: testcontainers smoke is **not** run by the pre-commit hook because the hook stays fast for tight edit loops. Pre-commit covers unit tests + integration tests (the latter auto-skipped if the local stack is offline).
 
-The Testcontainers variant ([`smoke.tc.test.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/tests/smoke.tc.test.ts)) is a curated subset of the full smoke suite, including only checks that do not require external API credentials. It mirrors the post-deploy gate inside CI, catching the same class of bug (a service unreachable from its peers) without needing the homelab to be reachable from the CI runner.
+### Why two files
+
+`smoke.tc.test.ts` is a curated {testInventory.backend.testcontainers.perFile["smoke.tc.test.ts"]}-check subset that boots a small 8-service stack and runs in around 30 seconds. It catches the most common deployment-class bugs quickly. `smoke.full.tc.test.ts` is the comprehensive 62-check port; it boots larger stacks and takes longer, but covers every check the legacy `smoke.test.ts` used to assert.
+
+Both files use the same testcontainers helpers (`startStack`, `login` from `./testcontainers/auth.ts`) and the same `RUN_TESTCONTAINERS=1` gate.
 
 ## Frontend deploy-gate smoke
 
@@ -88,17 +52,12 @@ The frontend smoke is a small Playwright suite that runs against a deployed envi
 
 This is the gate that decides whether a deploy is good. If the backend smoke passes but this fails, the deployment's plumbing (Traefik routes, OAuth client config, WebSocket upgrade headers) is wrong: the services are up but the user-facing path is broken.
 
-## Pre-commit auto-skip behaviour
+## What smoke is not
 
-The pre-commit hook checks whether `http://localhost:5000/health` responds with HTTP 200 before running smoke. If not, it prints `Services not fully running - skipping smoke tests.` and continues. Two reasons:
+Smoke does not verify trading logic, P&L math, FIX message shapes, or any business behaviour. Those are covered by [unit](../unit/) and [integration](../../testcontainers/) tests. Smoke is the layer that verifies delivery: that the unit-tested code is reachable from a fresh stack boot, with services correctly wired to Postgres and Redpanda, and that the gateway can authenticate users and route orders.
 
-- **Tight edit loop:** iterating on a backend file without the stack running would otherwise spuriously fail every commit.
-- **CI safety net:** the `lint-and-test` CI job spins up the full stack with docker-compose before running smoke, so the local auto-skip does not hide regressions; they are caught one push later.
+A smoke failure means a routing, wiring, or auth path is broken. A unit or integration failure means the code logic is broken. The runbooks for these two are different.
 
-The same skip applies to integration tests at step `[8/9]`.
+## History
 
-## Scope
-
-Smoke does not verify trading logic, P&L math, FIX message shapes, or any business behaviour. Those are covered by [unit](../unit/) and [integration](../../testcontainers/) tests. Smoke is the layer that verifies delivery: that the unit-tested code reached production unmangled.
-
-A smoke failure means the deploy is broken. A unit or integration failure means the code is broken. The runbooks for these two are different.
+The legacy `smoke.test.ts` (now removed) ran against localhost or a remote `VETA_BASE_URL` and contained 62 checks. It was originally written as a manual post-deploy gate, but in practice ran nowhere: the pre-commit hook auto-skipped it when local services were offline, CI did not invoke it, and the homelab deploy script uses container healthchecks rather than this suite. The 62 checks were ported to `smoke.full.tc.test.ts` (which runs in CI via the testcontainers gate) and the legacy file was removed.

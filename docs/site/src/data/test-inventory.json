@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-15T22:26:52.005Z",
+  "generatedAt": "2026-05-15T23:26:28.673Z",
   "backend": {
     "unit": {
       "files": 33,
@@ -53,15 +53,13 @@
       }
     },
     "smoke": {
-      "files": 1,
-      "cases": 62,
-      "perFile": {
-        "smoke.test.ts": 62
-      }
+      "files": 0,
+      "cases": 0,
+      "perFile": {}
     },
     "testcontainers": {
-      "files": 9,
-      "cases": 82,
+      "files": 10,
+      "cases": 147,
       "perFile": {
         "testcontainers.smoke.test.ts": 2,
         "testcontainers.stack.test.ts": 1,
@@ -71,7 +69,8 @@
         "intelligence.integration.tc.test.ts": 11,
         "integration.tc.test.ts": 21,
         "scenarios.integration.tc.test.ts": 2,
-        "algo.integration.tc.test.ts": 15
+        "algo.integration.tc.test.ts": 15,
+        "smoke.full.tc.test.ts": 65
       }
     }
   },
