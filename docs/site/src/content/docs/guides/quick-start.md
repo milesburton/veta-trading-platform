@@ -28,7 +28,7 @@ cd frontend && npm run dev
 cd frontend && npm run electron:dev
 ```
 
-Verify the stack is up: `docker compose ps` should show the core services healthy. The frontend dev server proxies API calls to the gateway at port 5011.
+Verify the stack is up: `docker compose ps` should show the core services healthy. The frontend dev server proxies API calls to the gateway at port 5011 (dev container only; production traffic enters via Traefik).
 
 ## Default credentials
 
