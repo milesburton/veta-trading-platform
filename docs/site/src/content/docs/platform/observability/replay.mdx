@@ -1,0 +1,20 @@
+---
+title: Session replay
+description: rrweb-based session capture and the client-side WebM exporter.
+---
+
+import Svc from "../../../../components/Svc.astro";
+
+The <Svc name="replay-service" /> records full browser sessions via [rrweb](https://www.rrweb.io/) when an admin enables recording. Each row in the Session Replay panel offers three exports:
+
+- **Play**: open the rrweb player inline.
+- **JSON**: download the raw event stream (replays in any rrweb player).
+- **Video**: render a WebM in the browser using `MediaRecorder`.
+
+## Client-side video rendering
+
+The WebM exporter steps through the rrweb events, snapshots each frame at 10 fps, and encodes via VP9 (or VP8 fallback). It runs entirely client-side: no server-side ffmpeg or headless Chromium. This keeps the attack surface small, at the cost of needing the operator's tab to stay open during render.
+
+WebM plays in every modern browser, Slack, and most video tools, so the rendered file works for incident write-ups without an extra conversion step.
+
+![Session Replay panel](/veta-trading-platform/screenshots/11-session-replay.png)

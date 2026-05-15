@@ -101,7 +101,16 @@ export default defineConfig({
           label: "Operations",
           items: [
             { label: "Strategy", slug: "platform/operations-strategy" },
-            { label: "Observability", slug: "platform/observability" },
+            {
+              label: "Observability",
+              items: [
+                { label: "Overview", slug: "platform/observability" },
+                { label: "LGTM stack", slug: "platform/observability/lgtm" },
+                { label: "Log collection and search", slug: "platform/observability/logs" },
+                { label: "Distributed tracing", slug: "platform/observability/tracing" },
+                { label: "Session replay", slug: "platform/observability/replay" },
+              ],
+            },
             { label: "Mission Control", slug: "mission-control" },
             {
               label: "Supporting services",
