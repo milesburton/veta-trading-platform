@@ -93,5 +93,5 @@
     "source=${localEnv:HOME}/.claude,target=/home/deno/.claude,type=bind,consistency=cached"
   ],
   "postCreateCommand": "cd ${containerWorkspaceFolder}/frontend && npm ci --ignore-scripts && cd ${containerWorkspaceFolder} && ./frontend/node_modules/.bin/husky install .husky",
-  "postStartCommand": "bash ${containerWorkspaceFolder}/.devcontainer/post-start.sh"
+  "postStartCommand": "CONTAINER_WORKSPACE_FOLDER=${containerWorkspaceFolder} bash ${containerWorkspaceFolder}/.devcontainer/post-start.sh"
 }

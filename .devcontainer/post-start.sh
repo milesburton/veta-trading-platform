@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-workspace_dir="/workspaces/project"
+workspace_dir="${CONTAINER_WORKSPACE_FOLDER:-/workspaces/virtual-equities-trading-application}"
 
 # Keep SSH mount permissions sane for tools that require strict key perms.
 chmod 700 /home/deno/.ssh 2>/dev/null || true
