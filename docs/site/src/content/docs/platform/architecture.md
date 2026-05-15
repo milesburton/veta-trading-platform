@@ -11,6 +11,36 @@ The architecture is split into focused diagrams below. Each one fits the
 text column at readable size; the previous single-diagram view became
 unreadable as the service count grew. **Click any diagram to expand.**
 
+### Public ingress: how traffic reaches the platform
+
+```mermaid
+graph LR
+    USER["Internet user"]:::client
+    OVH["OVH edge box<br/>ovh.agileview.co.uk<br/><i>Traefik :443 + LE TLS</i>"]:::edge
+    TUNNEL["Reverse SSH tunnel<br/><i>autossh, dialled OUT from homelab</i>"]:::edge
+    HL["Homelab Traefik :443<br/>192.168.1.245 LAN-only"]:::gateway
+    SVC["frontend / gateway / etc."]:::support
+
+    USER -->|"HTTPS veta.mnetcs.com"| OVH
+    OVH -->|"127.0.0.1:18443"| TUNNEL
+    TUNNEL -->|"private LAN :443"| HL
+    HL -->|"PathPrefix routing"| SVC
+
+    classDef client fill:#818cf8,stroke:#6366f1,color:#fff
+    classDef edge fill:#a78bfa,stroke:#7c3aed,color:#fff
+    classDef gateway fill:#f59e0b,stroke:#d97706,color:#000
+    classDef support fill:#94a3b8,stroke:#64748b,color:#000
+```
+
+The homelab is on a private LAN with **no inbound NAT**. Public traffic
+reaches it through a reverse SSH tunnel dialled out from the homelab to
+an OVH dedicated server, which terminates TLS and forwards into the
+tunnel.
+
+A separate [synthetic probe](./supporting/synthetic-probe) runs on the
+OVH edge every 60s to catch outages anywhere along this chain. Full detail:
+[Edge architecture](./edge-architecture).
+
 ### High-level: how a request flows
 
 ```mermaid
