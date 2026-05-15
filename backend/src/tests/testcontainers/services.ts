@@ -28,7 +28,15 @@ export type ServiceName =
   | "market-data-adapters"
   | "fix-archive"
   | "observability"
-  | "gateway";
+  | "gateway"
+  | "news-aggregator"
+  | "analytics"
+  | "recommendation-engine"
+  | "llm-advisory"
+  | "replay"
+  | "rfq-service"
+  | "dark-pool"
+  | "ccp-service";
 
 interface ServiceDescriptor {
   entrypoint: string;
@@ -63,6 +71,14 @@ const SERVICES: Record<ServiceName, ServiceDescriptor> = {
   "signal-engine":   { entrypoint: "backend/src/signal-engine/signal-engine.ts",                 port: 5018, health: "/health" },
   "scenario-engine": { entrypoint: "backend/src/scenario-engine/scenario-server.ts",             port: 5020, health: "/health" },
   "risk-engine":     { entrypoint: "backend/src/risk-engine/risk-engine.ts",                     port: 5032, health: "/health" },
+  "news-aggregator":      { entrypoint: "backend/src/news/news-aggregator.ts",                   port: 5013, health: "/health" },
+  "analytics":            { entrypoint: "backend/src/analytics/analytics-server.ts",             port: 5014, health: "/health" },
+  "recommendation-engine":{ entrypoint: "backend/src/recommendation-engine/recommendation-server.ts", port: 5019, health: "/health" },
+  "llm-advisory":         { entrypoint: "backend/src/llm-advisory/orchestrator.ts",              port: 5024, health: "/health" },
+  "replay":               { entrypoint: "backend/src/replay/replay-service.ts",                  port: 5031, health: "/health" },
+  "rfq-service":          { entrypoint: "backend/src/rfq/rfq-service.ts",                        port: 5029, health: "/health" },
+  "dark-pool":            { entrypoint: "backend/src/dark-pool/dark-pool-server.ts",             port: 5027, health: "/health" },
+  "ccp-service":          { entrypoint: "backend/src/ccp/ccp-service.ts",                        port: 5028, health: "/health" },
 };
 
 interface RunningService {
