@@ -4,13 +4,16 @@ Polls `origin/main` every 5 minutes and runs `deploy.sh` when a new commit
 lands. Replaces the `deploy-homelab` GitHub Actions job — GH runners can't
 reach the homelab's private LAN, so we invert the direction.
 
-There are two services managed via systemd on the homelab:
+There are three services managed via systemd on the homelab:
 
 - `veta-auto-pull.{service,timer}` — polls `origin/main`, runs `deploy.sh` on SHA change.
 - `veta-tunnel.service` — `autossh` reverse tunnel to the OVH edge box, exposes
   the homelab Traefik at `127.0.0.1:18443` on OVH so the edge's Let's Encrypt
   Traefik can proxy `https://veta.mnetcs.com/` into the homelab. See
   [`edge/README.md`](../../edge/README.md) for the edge side.
+- `veta-host-prune.{service,timer}` — weekly Docker prune (Sundays 04:00 UTC).
+  Without this, dangling images from auto-pull churn accumulate to tens of GB
+  in a few weeks. Backed by [`scripts/host-prune.sh`](../host-prune.sh).
 
 ## Install (one-time, on the homelab)
 
@@ -218,6 +221,54 @@ That's how you'd log in to provision dashboards or change settings.
 If you want fully gated Grafana even from LAN, set
 `GF_SECURITY_ADMIN_PASSWORD` + drop `GF_AUTH_ANONYMOUS_ENABLED`. A
 follow-up.
+
+---
+
+# Host prune (`veta-host-prune.service`)
+
+Auto-pull pulls a new `:latest` image per service on every CI build. Over a
+few weeks that's hundreds of dangling images — easily 50 GB. The 2026-05-14
+disk-fill incident was logs (now capped via `logging: max-size`), but the
+*image* churn is the next-largest contributor and isn't capped anywhere.
+
+This timer runs weekly on Sundays at 04:00 UTC. The script
+([`scripts/host-prune.sh`](../host-prune.sh)) does two passes:
+
+1. **Always**: prune dangling images, exited containers, and build cache
+   older than 24h.
+2. **If disk ≥ THRESHOLD_PCT** (default 90%): also prune *all* untagged
+   images and the full builder cache — emergency mode.
+
+## Install (one-time, on the homelab)
+
+```bash
+# Install the systemd unit + timer
+sudo install -m 0644 \
+  /path/to/repo/scripts/homelab-systemd/veta-host-prune.service \
+  /etc/systemd/system/
+sudo install -m 0644 \
+  /path/to/repo/scripts/homelab-systemd/veta-host-prune.timer \
+  /etc/systemd/system/
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now veta-host-prune.timer
+```
+
+The script lives at `/opt/stacks/veta/scripts/host-prune.sh` and is rsynced
+in by `homelab-deploy.sh` (`scripts/` is in `CONFIG_PATHS`).
+
+## Daily use
+
+```bash
+# When does it next run?
+systemctl list-timers veta-host-prune.timer
+
+# Run it manually right now
+sudo systemctl start veta-host-prune.service
+
+# See what it did last time
+journalctl -u veta-host-prune.service -n 50 --no-pager
+```
 
 ---
 
