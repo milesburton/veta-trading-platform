@@ -19,9 +19,29 @@ The [Service Map](../services/) catalogues the trading pipeline itself — marke
     description="External 60s liveness check from the OVH edge, with a CI mirror after every merge."
   />
   <LinkCard
+    title="veta-auto-pull"
+    href="/veta-trading-platform/platform/supporting/veta-auto-pull/"
+    description="Systemd timer that polls origin/main every 5 min and deploys when a new commit lands. The homelab's continuous deployment."
+  />
+  <LinkCard
+    title="veta-tunnel"
+    href="/veta-trading-platform/platform/supporting/veta-tunnel/"
+    description="autossh-managed reverse SSH tunnel that exposes the homelab publicly via the OVH edge — the homelab dials out, no inbound NAT."
+  />
+  <LinkCard
+    title="veta-host-prune"
+    href="/veta-trading-platform/platform/supporting/veta-host-prune/"
+    description="Weekly Docker prune timer. Prevents image churn from filling the homelab disk."
+  />
+  <LinkCard
     title="k6 load testing"
     href="/veta-trading-platform/platform/supporting/k6-load-testing/"
-    description="Synthetic load harness that drives orders through the full pipeline."
+    description="On-demand synthetic load harness for single runs against a local stack."
+  />
+  <LinkCard
+    title="Continuous load generator"
+    href="/veta-trading-platform/platform/supporting/loadgen/"
+    description="Always-on trade flow on the homelab — soak + matrix runners with OAuth refresh."
   />
   <LinkCard
     title="Disk monitor"
