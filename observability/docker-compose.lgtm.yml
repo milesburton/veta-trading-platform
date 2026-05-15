@@ -64,9 +64,20 @@ services:
     ports:
       - "3000:3000"
     environment:
+      # Anonymous users get read-only Viewer access: they can open
+      # dashboards and explore data, but cannot edit panels, save
+      # changes, install plugins, or manage users. Editing requires
+      # signing in as an admin via the login form.
       GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
-      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"
+      # Admin credentials. Override GF_SECURITY_ADMIN_PASSWORD in
+      # /opt/stacks/veta/.env (or per-environment .env) to a strong
+      # value before exposing publicly. The default is intentionally
+      # not "admin/admin" so an unconfigured deploy fails to log in
+      # rather than silently inheriting the well-known credential.
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-CHANGE_ME_IN_DOTENV}"
       GF_FEATURE_TOGGLES_ENABLE: "traceToMetrics,traceToLogs"
       GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana/"
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
