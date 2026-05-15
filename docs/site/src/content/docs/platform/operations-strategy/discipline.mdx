@@ -1,0 +1,45 @@
+---
+title: Operational discipline
+description: Rollback plans, incident log, postmortems, change-freeze windows, and future on-call rotation.
+---
+
+## Rollback plans in every PR
+
+Every PR description must answer: "How do we roll this back if it breaks prod?" Three classes:
+
+- **Pure code change**: revert the commit, redeploy. Default; needs no special handling.
+- **Schema migration**: must include a working `down` migration AND be deployed in two phases: expand (schema accepts old + new code), then contract (after rollout settles), then drop (after a soak). Single-phase migrations are forbidden.
+- **Config / env change**: captured in version control; rollback is reverting the config commit, never editing on the box.
+
+The PR template enforces this with a required `## Rollback plan` section.
+
+## Incident log
+
+A `docs/incidents/` directory. Every incident gets a timestamped file with:
+
+- When (UTC start, UTC end)
+- What (user-facing symptom)
+- Root cause
+- MTTR
+- Detection (synthetic / user-reported / log alert)
+- Action item with owner + deadline (e.g. "add test that catches this class. Owner: M, by: 2026-05-19")
+
+Backfilled with 2026-05-12 incidents as the first entries. Patterns become visible after ~10 entries.
+
+## Postmortems
+
+Blameless template, lives in the same directory. Required for any incident with MTTR > 30 min OR user-visible impact > 5 min. Three sections only: **What happened (timeline)**, **What went well**, **What we'll change**. No long apologies; no individuals named except as note-takers.
+
+## Change-freeze windows
+
+`scripts/deploy.sh` checks for an active freeze window (file or env var) and refuses to deploy without an explicit `--hotfix` flag, which is logged. Typical freezes:
+
+- Demo windows (announced in advance)
+- The first 30 min after another deploy (let the platform settle)
+- Weekends outside hotfixes
+
+Cheap to implement, prevents the "user is watching the dashboard while the deploy trashes it" scenario from 2026-05-12.
+
+## On-call rotation (future)
+
+Solo project today, but worth defining the shape. When a second person joins, on-call becomes a named role with a known pager (email / Discord / SMS). Until then, the synthetic probe still emails `veta@mnetcs.com` and we treat it as the pager.

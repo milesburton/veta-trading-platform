@@ -1,0 +1,38 @@
+---
+title: SLOs and DORA
+description: Service-level objectives, error budgets, and progress against the four DORA metrics.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+A platform that wants to be taken seriously needs explicit targets, error budgets, and the discipline to stop shipping features when the budget is exhausted.
+
+<Aside type="note" title="Terms used here">
+This page uses standard Site Reliability Engineering vocabulary: **SLI** (the metric you measure), **SLO** (the target you commit to over a time window), **SLA** (the contractual promise if you miss the SLO), and **error budget** (the downtime the SLO mathematically allows). If any of these are new, see [SRE terminology](../../../reference/sre-terminology/) for one page that defines every term used here with VETA examples and the standard error-budget policy.
+
+In short: an SLO is a promise about user experience, an error budget is how much you're allowed to break it, and the budget makes the risk-versus-velocity trade-off explicit instead of leaving it to a manager's gut.
+</Aside>
+
+## Targets
+
+| SLI | Target | Window | Error budget |
+|---|---|---|---|
+| **User-facing availability** (`/` returns 200 + WS handshake succeeds) | 99.9% | 30 days | 43 min/month downtime |
+| **Order-ack latency p99** (submit to orderAck on WS) | < 300 ms | 7 days | 1% of orders may exceed |
+| **WS-feed continuity** (no `marketUpdate` gaps > 2 s) | 99.5% | 24 hours | ~7 min of feed outage / day |
+| **Deploy success rate** | > 95% | rolling 30 deploys | One bad deploy in 20 |
+| **MTTR** (page-able alert fires, all green again) | < 30 min | per incident | (none) |
+| **Change failure rate** | < 15% | 30 days | 3 in 20 deploys may cause incident |
+| **RPO** (data loss tolerated on disaster) | < 5 min | (none) | (none) |
+| **RTO** (time to recover from total disaster) | < 30 min | (none) | (none) |
+
+## DORA metrics
+
+| DORA metric | Target | Status |
+|---|---|---|
+| Deployment frequency | Multiple per day | yes |
+| Lead time for changes | < 1 hour PR to prod | yes |
+| Change failure rate | < 15% | no, currently ~40% |
+| Mean time to recovery | < 1 hour | no, currently unmeasured, often hours |
+
+The first two are "elite" by DORA's classification. The last two are "low performer". The gap is operations, not engineering velocity.

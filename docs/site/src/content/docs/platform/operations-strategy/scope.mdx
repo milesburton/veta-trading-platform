@@ -1,0 +1,16 @@
+---
+title: Scope and decisions
+description: What this strategy is not. Owner, review cadence, decision log.
+---
+
+## What this is not
+
+- Not a hobby checklist. Each phase has an acceptance criterion that is verifiable by an outside observer. We measure success, not effort.
+- Not yet enterprise-grade. A real bank has multi-region active/active, chaos engineering, formal change advisory boards, SOC2 compliance audits, and a 24/7 SRE rotation. We are aiming at "small fintech that has not burned its customers yet", a meaningful gap above where we are now.
+- Not a one-time push. Phase 5's discipline tooling is the part that matters long-term. The shiny infrastructure changes (Swarm, multi-host) decay without the practices around them.
+
+## Decision log
+
+- 2026-05-12: adopted. Replaces the implicit "homelab + Watchtower" model that produced 3+ outages in 24 hours.
+- Owner: Miles Burton.
+- Review cadence: end of phase 5 (after first incident under the new model), then quarterly.

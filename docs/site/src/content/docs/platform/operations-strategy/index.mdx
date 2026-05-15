@@ -1,0 +1,47 @@
+---
+title: Operations strategy
+description: How VETA is operated like a real trading platform. SLOs, environments, deploys, and incident response.
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+VETA is a simulation, but the discipline around running it is not. This section is the **plan of record** for how the platform is operated, what we measure, and how we recover when things break. New work should reference these pages before changing anything in the deploy or monitoring path.
+
+<Aside type="note" title="Why this document exists">
+On 2026-05-12 the platform suffered multiple back-to-back partial outages caused by deploy-mechanism failure (Watchtower stopping containers it then couldn't recreate). The outages were invisible to monitoring and only surfaced when a human noticed the UI was broken. That is not the operational posture of a system anyone would be willing to trade real money against. This document defines the posture we **will** operate to instead.
+</Aside>
+
+## Sub-pages
+
+<CardGrid>
+  <LinkCard
+    title="Current state"
+    href="./current-state/"
+    description="Honest snapshot of where the platform is today: single-host, no SLOs, no alerts, human-detected outages."
+  />
+  <LinkCard
+    title="SLOs and DORA"
+    href="./slos/"
+    description="The targets we commit to: availability, order-ack latency, WS continuity, MTTR, RPO/RTO. DORA progress."
+  />
+  <LinkCard
+    title="Target architecture"
+    href="./target-architecture/"
+    description="Two-tier environments, single-instance topology trade-offs, deploy mechanism, synthetic monitoring, test gate, multi-host roadmap."
+  />
+  <LinkCard
+    title="Operational discipline"
+    href="./discipline/"
+    description="Rollback plans, incident log, postmortems, change-freeze windows, future on-call rotation."
+  />
+  <LinkCard
+    title="Migration path"
+    href="./migration-path/"
+    description="Phased plan from today to target. Deploy gate, descoped Swarm and UAT phases, synthetic monitoring (shipped), discipline tooling, multi-host prod."
+  />
+  <LinkCard
+    title="Scope and decisions"
+    href="./scope/"
+    description="What this strategy is not. Owner, review cadence, and the decision log."
+  />
+</CardGrid>
