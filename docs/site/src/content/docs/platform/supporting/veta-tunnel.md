@@ -3,7 +3,7 @@ title: veta-tunnel (reverse SSH tunnel)
 description: autossh-managed reverse SSH tunnel that exposes the homelab publicly via the OVH edge box. The homelab dials out — no inbound NAT required.
 ---
 
-The homelab sits on a private LAN (`192.168.1.0/24`) with **no inbound
+The homelab sits on a private LAN with **no inbound
 port forwards**. Public traffic reaches it through a reverse SSH tunnel
 that the homelab dials *out* to the OVH edge box (`ovh.agileview.co.uk`).
 The OVH side terminates Let's Encrypt TLS and forwards into the tunnel.
@@ -19,12 +19,12 @@ autossh -M 0 -N \
   -o ExitOnForwardFailure=yes \
   -o IdentitiesOnly=yes \
   -i /etc/veta-tunnel/id_ed25519 \
-  -R 18443:127.0.0.1:443 \
+  -R 18443:localhost:443 \
   veta-tunnel@ovh.agileview.co.uk
 ```
 
-The `-R 18443:127.0.0.1:443` instructs the OVH SSH daemon to listen on
-`127.0.0.1:18443` and forward connections back to the homelab's `:443`.
+The `-R 18443:localhost:443` instructs the OVH SSH daemon to listen on
+`localhost:18443` and forward connections back to the homelab's `:443`.
 `autossh` restarts the underlying `ssh` if it exits — network blip,
 OVH reboot, etc.
 
