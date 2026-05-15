@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.38.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.37.1...veta-trading-platform-v1.38.0) (2026-05-15)
+
+
+### Features
+
+* **docs:** auto-generate test inventory + add docs-drift detection tests ([#245](https://github.com/milesburton/veta-trading-platform/issues/245)) ([ae9403b](https://github.com/milesburton/veta-trading-platform/commit/ae9403b735d040196b5d37e45e769ad83d2225d0))
+* **gateway+user-service:** public/anonymous trading via /oauth/guest with per-IP rate limit ([#234](https://github.com/milesburton/veta-trading-platform/issues/234)) ([283ad2c](https://github.com/milesburton/veta-trading-platform/commit/283ad2c3de29fde470b54611e40b97b3261b7709))
+* **probe:** post-deploy CI mirror + Astro documentation + runbook polish ([#237](https://github.com/milesburton/veta-trading-platform/issues/237)) ([808c4a6](https://github.com/milesburton/veta-trading-platform/commit/808c4a6b3d4bedbb09c76428527660f9a97614d0))
+* **synthetic-probe:** external prober on OVH edge + cleanup follow-ups ([#236](https://github.com/milesburton/veta-trading-platform/issues/236)) ([f9afb92](https://github.com/milesburton/veta-trading-platform/commit/f9afb923fe8f68d81b6c0b80e2888c479e0418b9))
+
+
+### Bug Fixes
+
+* **auto-pull:** pick swarm-deploy.sh vs homelab-deploy.sh based on Swarm mode ([#224](https://github.com/milesburton/veta-trading-platform/issues/224)) ([b10881d](https://github.com/milesburton/veta-trading-platform/commit/b10881df2478f4a788c11e2112adb2a3c340713f))
+* **deploy:** include compose.swarm.yml in homelab-deploy.sh sync list ([#229](https://github.com/milesburton/veta-trading-platform/issues/229)) ([8470356](https://github.com/milesburton/veta-trading-platform/commit/84703562571d65576a404072a0952777fe2faa02))
+* **devcontainer:** post-start.sh workspace path + husky deprecation + regression test ([#240](https://github.com/milesburton/veta-trading-platform/issues/240)) ([2da2505](https://github.com/milesburton/veta-trading-platform/commit/2da25056ac8b52d19ec4c05838fab85d69f97ab6))
+* **docs+app:** cross-link the platform and Grafana from the header ([#241](https://github.com/milesburton/veta-trading-platform/issues/241)) ([555491e](https://github.com/milesburton/veta-trading-platform/commit/555491e477729f8efdfb81c3e6ed7b62b47b493a))
+* **docs:** redact private IPs from new Astro pages ([#239](https://github.com/milesburton/veta-trading-platform/issues/239)) ([371ca58](https://github.com/milesburton/veta-trading-platform/commit/371ca58a1b463f353d47162bb5b25d8e393008f5))
+* **docs:** remove deleted Watchtower entry from Starlight sidebar ([#231](https://github.com/milesburton/veta-trading-platform/issues/231)) ([a88c966](https://github.com/milesburton/veta-trading-platform/commit/a88c966f18dc26294626a91875ac7225f03ad8a6))
+* journal fix-archive hostname + llm-advisory handler timeout ([#228](https://github.com/milesburton/veta-trading-platform/issues/228)) ([0877b15](https://github.com/milesburton/veta-trading-platform/commit/0877b1554b32ff27858a99911f29cb58ec119882))
+* **swarm:** use existing veta_trading-net bridge instead of creating an overlay ([#226](https://github.com/milesburton/veta-trading-platform/issues/226)) ([dbfa175](https://github.com/milesburton/veta-trading-platform/commit/dbfa1758e3689382c3ca39b39bf0df5e6b5dce0e))
+
+
+### Performance Improvements
+
+* **llm-advisory:** in-process cache for runtime-config to remove hot-path DB queries ([#232](https://github.com/milesburton/veta-trading-platform/issues/232)) ([3b780b5](https://github.com/milesburton/veta-trading-platform/commit/3b780b57093ff6b733e8207991d98d36959e777f))
+
 ## [1.37.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.37.0...veta-trading-platform-v1.37.1) (2026-05-13)
 
 
