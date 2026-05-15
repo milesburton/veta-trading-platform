@@ -40,6 +40,9 @@ After the first 5-minute tick (or run `sudo systemctl start veta-auto-pull.servi
 
 - `/opt/stacks/veta/state/last-deployed-sha` — full 40-char SHA most recently deployed
 - `/opt/stacks/veta/state/auto-pull.lock` — flock for single-instance guard
+- `/opt/stacks/veta/.good-sha` — full 40-char SHA the *gateway container reported* after the most recent successful deploy. May lag `last-deployed-sha` by one CI cycle if the gateway image for the latest main SHA hasn't finished building when auto-pull fires. The two diverging is **not** an error — they answer different questions:
+  - `last-deployed-sha`: "what main SHA did I last try to deploy?"
+  - `.good-sha`: "what SHA did the gateway report as its baked-in version after the deploy succeeded?"
 
 ## Daily use
 

@@ -1,0 +1,12 @@
+[Unit]
+Description=VETA synthetic probe alert handler (%i)
+Documentation=https://github.com/milesburton/veta-trading-platform/blob/main/synthetic-probe/README.md
+
+[Service]
+Type=oneshot
+User=veta-probe
+EnvironmentFile=-/etc/veta-probe.env
+ExecStart=/opt/veta-probe/alert.sh %i
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=30s
