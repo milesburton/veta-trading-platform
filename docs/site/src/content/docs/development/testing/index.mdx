@@ -4,6 +4,7 @@ description: Test suite taxonomy. What each suite catches, where it runs, and ho
 ---
 
 import { CardGrid, LinkCard } from "@astrojs/starlight/components";
+import testInventory from "@docs/data/test-inventory.json";
 
 VETA has eight test suites. Each addresses a distinct failure class: unit suites cover logic primitives, integration covers service boundaries, E2E covers UI composition, smoke covers deployment plumbing, and the synthetic probe covers public reachability. The taxonomy below is organised by failure class rather than by tooling.
 
@@ -107,17 +108,17 @@ Each suite has a defined trigger and a defined fallback. The pre-commit hook is 
   <LinkCard
     title="Backend unit tests"
     href="./unit/"
-    description="53 files, ~470 Deno.test cases covering algos, OMS, EMS, schemas, and analytics."
+    description={`${testInventory.backend.unit.files} files, ${testInventory.backend.unit.cases} Deno.test cases covering algos, OMS, EMS, schemas, and analytics.`}
   />
   <LinkCard
     title="Frontend unit tests"
     href="./unit/#frontend"
-    description="163 files, ~1825 Vitest cases covering components, Redux slices, hooks, panel registry, and layout models."
+    description={`${testInventory.frontend.unit.files} files, ${testInventory.frontend.unit.cases} Vitest cases covering components, Redux slices, hooks, panel registry, and layout models.`}
   />
   <LinkCard
     title="Playwright E2E"
     href="./playwright/"
-    description="16 spec files using AppPage, GatewayMock, and role-scoped fixtures (traderTest, algoTest, fiTest, adminTest)."
+    description={`${testInventory.frontend.playwright.files} spec files using AppPage, GatewayMock, and role-scoped fixtures (traderTest, algoTest, fiTest, adminTest).`}
   />
 </CardGrid>
 

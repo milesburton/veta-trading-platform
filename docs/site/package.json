@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "generate": "node scripts/generate-tech-stack.mjs && node scripts/generate-build-info.mjs && node scripts/generate-service-map.mjs && node scripts/generate-algos.mjs && node scripts/generate-panel-matrix.mjs && node scripts/generate-panel-reference.mjs && node scripts/generate-migrations.mjs",
+    "generate": "node scripts/generate-tech-stack.mjs && node scripts/generate-build-info.mjs && node scripts/generate-service-map.mjs && node scripts/generate-algos.mjs && node scripts/generate-panel-matrix.mjs && node scripts/generate-panel-reference.mjs && node scripts/generate-migrations.mjs && node scripts/generate-test-inventory.mjs",
     "predev": "npm run generate",
     "dev": "astro dev",
     "prebuild": "npm run generate",

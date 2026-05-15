@@ -1,0 +1,211 @@
+import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import { walk } from "jsr:@std/fs@0.217/walk";
+
+const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
+const DOCS_ROOT = `${REPO_ROOT}docs/site/src/content/docs`;
+const SUPERVISORD_CONF = `${REPO_ROOT}supervisord.conf`;
+const ALGO_DIR = `${REPO_ROOT}backend/src/algo`;
+const BACKEND_TESTS_DIR = `${REPO_ROOT}backend/src/tests`;
+const SCREENSHOTS_PUBLIC_DIR = `${REPO_ROOT}docs/site/public`;
+
+const GRAFANA_SCREENSHOT_PREFIX = "/veta-trading-platform/screenshots/grafana/";
+const KNOWN_PENDING_SCREENSHOTS = new Set([
+  "ug-blotter-multiselect.png",
+  "ug-symbol-search.png",
+  "ug-trade-paste.png",
+]);
+
+async function readAllDocsMarkdown(): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  for await (
+    const entry of walk(DOCS_ROOT, {
+      includeDirs: false,
+      exts: [".md", ".mdx"],
+    })
+  ) {
+    out.set(entry.path, await Deno.readTextFile(entry.path));
+  }
+  return out;
+}
+
+async function listAlgoStrategyFiles(): Promise<Set<string>> {
+  const out = new Set<string>();
+  for await (const entry of Deno.readDir(ALGO_DIR)) {
+    if (entry.isFile && entry.name.endsWith("-strategy.ts")) {
+      out.add(entry.name.replace("-strategy.ts", ""));
+    }
+  }
+  return out;
+}
+
+async function listBackendTestFiles(): Promise<Set<string>> {
+  const out = new Set<string>();
+  for await (
+    const entry of walk(BACKEND_TESTS_DIR, {
+      includeDirs: false,
+      exts: [".ts"],
+    })
+  ) {
+    out.add(entry.path.replace(REPO_ROOT, ""));
+  }
+  return out;
+}
+
+function parseSupervisordPrograms(conf: string): Set<string> {
+  const programs = new Set<string>();
+  for (const match of conf.matchAll(/^\[program:([^\]]+)\]/gm)) {
+    programs.add(match[1]);
+  }
+  return programs;
+}
+
+Deno.test("[docs-drift] every backend test file referenced in docs exists on disk", async () => {
+  const docs = await readAllDocsMarkdown();
+  const existingTestFiles = await listBackendTestFiles();
+  const pattern = /backend\/src\/tests\/[a-zA-Z0-9._-]+\.test\.ts/g;
+  const PLACEHOLDER_TOKENS = ["my-feature", "your-feature", "<name>", "example"];
+  const missing: { docPath: string; ref: string }[] = [];
+
+  for (const [docPath, content] of docs) {
+    for (const match of content.matchAll(pattern)) {
+      const ref = match[0];
+      if (PLACEHOLDER_TOKENS.some((t) => ref.includes(t))) continue;
+      if (!existingTestFiles.has(ref)) {
+        missing.push({ docPath: docPath.replace(REPO_ROOT, ""), ref });
+      }
+    }
+  }
+
+  assertEquals(
+    missing,
+    [],
+    `Found references to backend test files in docs that do not exist on disk:\n` +
+      missing.map((m) => `  ${m.docPath} -> ${m.ref}`).join("\n"),
+  );
+});
+
+Deno.test("[docs-drift] every screenshot referenced in docs resolves to a file", async () => {
+  const docs = await readAllDocsMarkdown();
+  const pattern = /\/veta-trading-platform\/screenshots\/[a-zA-Z0-9/_.-]+\.(?:png|jpg|jpeg|svg)/g;
+  const missing: { docPath: string; ref: string }[] = [];
+
+  for (const [docPath, content] of docs) {
+    for (const match of content.matchAll(pattern)) {
+      const ref = match[0];
+      if (ref.startsWith(GRAFANA_SCREENSHOT_PREFIX)) continue;
+      const filename = ref.split("/").pop()!;
+      if (KNOWN_PENDING_SCREENSHOTS.has(filename)) continue;
+      const onDisk = `${SCREENSHOTS_PUBLIC_DIR}${ref.replace("/veta-trading-platform", "")}`;
+      try {
+        await Deno.stat(onDisk);
+      } catch {
+        missing.push({ docPath: docPath.replace(REPO_ROOT, ""), ref });
+      }
+    }
+  }
+
+  assertEquals(
+    missing,
+    [],
+    `Screenshot references in docs do not resolve to files on disk:\n` +
+      missing.map((m) => `  ${m.docPath} -> ${m.ref}`).join("\n"),
+  );
+});
+
+Deno.test("[docs-drift] every algo strategy named in docs prose exists in backend/src/algo", async () => {
+  const existing = await listAlgoStrategyFiles();
+  const docPath = `${DOCS_ROOT}/user-guide/algo-trading.md`;
+  const content = await Deno.readTextFile(docPath);
+
+  const tableRowPattern = /^\| (LIMIT|TWAP|VWAP|POV|ICEBERG|SNIPER|ARRIVAL_PRICE|IS|MOMENTUM)\b/gm;
+  const namedInTable = new Set<string>();
+  for (const match of content.matchAll(tableRowPattern)) {
+    namedInTable.add(match[1].toLowerCase().replace("_", "-"));
+  }
+
+  const docNameToFile: Record<string, string> = {
+    "limit": "limit",
+    "twap": "twap",
+    "vwap": "vwap",
+    "pov": "pov",
+    "iceberg": "iceberg",
+    "sniper": "sniper",
+    "arrival-price": "arrival-price",
+    "is": "is",
+    "momentum": "momentum",
+  };
+
+  for (const name of namedInTable) {
+    const fileStem = docNameToFile[name];
+    assert(
+      fileStem !== undefined && existing.has(fileStem),
+      `Docs mention algo '${name}' but no backend/src/algo/${name}-strategy.ts found. Existing: ${[...existing].sort().join(", ")}`,
+    );
+  }
+  assertEquals(
+    namedInTable.size > 0,
+    true,
+    "Expected to find at least one algo named in the user-guide/algo-trading.md table",
+  );
+});
+
+Deno.test("[docs-drift] every service named in supervisord.conf comment of platform/services.md exists in supervisord", async () => {
+  const services = parseSupervisordPrograms(
+    await Deno.readTextFile(SUPERVISORD_CONF),
+  );
+  const servicesMd = await Deno.readTextFile(`${DOCS_ROOT}/platform/services.md`);
+
+  const backtickedServices = [
+    ...servicesMd.matchAll(/`([a-z][a-z0-9-]+)`/g),
+  ].map((m) => m[1]);
+
+  const referenced = backtickedServices.filter((name) => services.has(name));
+  assert(
+    referenced.length > 0,
+    "Expected platform/services.md to mention at least one service from supervisord.conf",
+  );
+
+  const explicitlyClaimedAsService = backtickedServices.filter((name) =>
+    /^[a-z]+(-[a-z0-9]+)*$/.test(name) && name.includes("-")
+  );
+  const missing = explicitlyClaimedAsService.filter(
+    (name) =>
+      !services.has(name) &&
+      !["docker-compose", "deno-task", "deno-test"].includes(name),
+  );
+
+  assertEquals(
+    missing.filter((name) => /algo|svc|gateway|engine|sim/.test(name)),
+    [],
+    `Names appearing in platform/services.md that look like services but are not in supervisord.conf: ${missing.join(", ")}`,
+  );
+});
+
+Deno.test("[docs-drift] test-inventory.json exists and matches the deno.json test task file count", async () => {
+  const inventoryPath = `${REPO_ROOT}docs/site/src/data/test-inventory.json`;
+  let inventory: {
+    backend: { unit: { files: number } };
+  };
+  try {
+    const raw = await Deno.readTextFile(inventoryPath);
+    inventory = JSON.parse(raw);
+  } catch {
+    throw new Error(
+      `${inventoryPath} is missing. Run 'cd docs/site && npm run generate' to produce it.`,
+    );
+  }
+
+  const denoJson = JSON.parse(
+    await Deno.readTextFile(`${REPO_ROOT}deno.json`),
+  );
+  const testTaskCmd = denoJson.tasks?.test ?? "";
+  const filesFromTask = new Set(
+    (testTaskCmd as string).match(/backend\/src\/tests\/[^\s&]+\.ts/g) ?? [],
+  );
+
+  assertEquals(
+    inventory.backend.unit.files,
+    filesFromTask.size,
+    `Inventory says ${inventory.backend.unit.files} backend unit files but the deno.json 'test' task lists ${filesFromTask.size}. Regenerate via 'cd docs/site && npm run generate'.`,
+  );
+});

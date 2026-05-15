@@ -1,0 +1,118 @@
+{
+  "generatedAt": "2026-05-15T22:26:52.005Z",
+  "backend": {
+    "unit": {
+      "files": 33,
+      "cases": 475,
+      "perFile": {
+        "unit.test.ts": 16,
+        "fixParser.test.ts": 19,
+        "marketSim.test.ts": 10,
+        "rng.test.ts": 5,
+        "scenarios.diff.test.ts": 5,
+        "scenarios.outcome.test.ts": 7,
+        "oms.test.ts": 16,
+        "journal.test.ts": 10,
+        "gridQuery.test.ts": 31,
+        "analytics.unit.test.ts": 22,
+        "llm-policy.test.ts": 9,
+        "llm-dedupe.test.ts": 13,
+        "feature-engine.test.ts": 14,
+        "signal-engine.test.ts": 7,
+        "algo.unit.test.ts": 43,
+        "ems.unit.test.ts": 22,
+        "zod-helpers.unit.test.ts": 9,
+        "orders-schema.unit.test.ts": 21,
+        "user-schema.unit.test.ts": 14,
+        "risk-schema.unit.test.ts": 19,
+        "logger.unit.test.ts": 14,
+        "rateLimit.test.ts": 6,
+        "risk-bypass.test.ts": 2,
+        "loadAgent.test.ts": 8,
+        "risk-checks.unit.test.ts": 40,
+        "black-scholes.unit.test.ts": 19,
+        "monte-carlo.unit.test.ts": 16,
+        "lib.unit.test.ts": 13,
+        "prompt-builder.unit.test.ts": 10,
+        "trigger-rules.unit.test.ts": 17,
+        "volatility-estimator.unit.test.ts": 7,
+        "devcontainer.unit.test.ts": 6,
+        "docs-drift.unit.test.ts": 5
+      }
+    },
+    "integration": {
+      "files": 6,
+      "cases": 76,
+      "perFile": {
+        "integration.test.ts": 21,
+        "algo.integration.test.ts": 15,
+        "intelligence.integration.test.ts": 14,
+        "scenarios.integration.test.ts": 2,
+        "journal.http.test.ts": 13,
+        "market-data.http.test.ts": 11
+      }
+    },
+    "smoke": {
+      "files": 1,
+      "cases": 62,
+      "perFile": {
+        "smoke.test.ts": 62
+      }
+    },
+    "testcontainers": {
+      "files": 9,
+      "cases": 82,
+      "perFile": {
+        "testcontainers.smoke.test.ts": 2,
+        "testcontainers.stack.test.ts": 1,
+        "smoke.tc.test.ts": 11,
+        "journal.http.tc.test.ts": 9,
+        "market-data.http.tc.test.ts": 10,
+        "intelligence.integration.tc.test.ts": 11,
+        "integration.tc.test.ts": 21,
+        "scenarios.integration.tc.test.ts": 2,
+        "algo.integration.tc.test.ts": 15
+      }
+    }
+  },
+  "frontend": {
+    "unit": {
+      "files": 163,
+      "cases": 1711
+    },
+    "playwright": {
+      "files": 16,
+      "specs": [
+        "algo-orders.spec.ts",
+        "auth.spec.ts",
+        "connection-recovery.spec.ts",
+        "dashboard-drag.spec.ts",
+        "fixed-income.spec.ts",
+        "intelligence.spec.ts",
+        "market-data.spec.ts",
+        "observability.spec.ts",
+        "orders.spec.ts",
+        "panel-walkthrough.spec.ts",
+        "panels.spec.ts",
+        "screenshots.spec.ts",
+        "session-replay.spec.ts",
+        "ui.spec.ts",
+        "visual-anomalies.spec.ts",
+        "workflows.spec.ts"
+      ]
+    },
+    "electron": {
+      "files": 2,
+      "specs": [
+        "electron.spec.ts",
+        "screenshots.spec.ts"
+      ]
+    },
+    "gateSmoke": {
+      "cases": 5
+    }
+  },
+  "platform": {
+    "supervisordServices": 39
+  }
+}
