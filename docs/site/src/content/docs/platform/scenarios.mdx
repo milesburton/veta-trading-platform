@@ -4,7 +4,7 @@ description: Save a trade, run it again, prove the algo behaves the same.
 ---
 
 import { Aside } from "@astrojs/starlight/components";
-import Svc from "../../../components/Svc.astro";
+import Svc from "@docs/components/Svc.astro";
 
 A **scenario** is a saved description of a single trade: symbol, side, quantity, limit price, strategy, plus a numeric seed for the market simulator's PRNG. Running the same scenario twice should produce the same fills, the same slippage, and the same child-order count. If it doesn't, the algo behaviour has changed, which is something a regression test should catch automatically.
 

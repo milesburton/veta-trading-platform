@@ -3,8 +3,8 @@ title: AssetSelector
 description: Search-as-you-type asset picker with live price display.
 ---
 
-import AssetSelectorDemo from "../../../../components/demos/AssetSelectorDemo.tsx";
-import Source from "../../../../components/Source.astro";
+import AssetSelectorDemo from "@docs/components/demos/AssetSelectorDemo.tsx";
+import Source from "@docs/components/Source.astro";
 
 A controlled search-as-you-type dropdown for picking an asset from a list, with the current market price displayed inline. Used inside the order ticket and a few panels.
 
@@ -30,7 +30,7 @@ Try typing `AA`, `JPM`, or `EUR`. Clicking a row in the dropdown calls `onSelect
 ## Import
 
 ```tsx
-import { AssetSelector } from "../components/AssetSelector";
+import { AssetSelector } from "@docs/components/AssetSelector";
 
 const [value, setValue] = useState("");
 
