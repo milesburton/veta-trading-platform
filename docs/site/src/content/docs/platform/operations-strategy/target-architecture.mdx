@@ -1,0 +1,118 @@
+---
+title: Target architecture
+description: Two environments, single-instance trade-offs, deploy mechanism, synthetic monitoring, test gate, multi-host roadmap.
+---
+
+## Environments
+
+Two environments, no overlap of running services:
+
+| Env | Host | Purpose | Promotion |
+|---|---|---|---|
+| **dev** | engineer workstation, devcontainer | day-to-day coding, fast iteration. Not 24/7. | n/a |
+| **prod** | homelab Proxmox LXC, ports `5xxx` (dev container internal), public via OVH SSH tunnel at `veta.mnetcs.com` | every merge to `main` deploys here automatically via the systemd auto-pull + plain-compose pipeline | continuous |
+
+A previous version of this doc proposed a third **UAT** environment co-located on the homelab. We dropped it in favour of a simpler two-tier model: the homelab box has plenty of headroom (32 cores, 64 GB RAM, 2 TB SSD), the public demo audience is small, and per-service healthchecks plus the auto-pull cadence give us enough deploy safety. If a stakeholder audience grows beyond demo-friends, the UAT tier comes back as a port-isolated second compose project on the same box. The operational primitives for that (per-project network, per-project DB, per-project topic prefix) are already in `compose.yml`.
+
+Dev runs on the workstation when actively coding; no public route, no automatic promotion path.
+
+## Single-instance topology: brief deploy outages, no high availability
+
+Today each environment runs **one replica** of every service. A deploy therefore takes that replica down briefly while the new one starts. That is the gap a real platform would not accept: any deploy means visible downtime, any single-process crash means visible downtime, and we have no second instance to fall back on. The user reporting "the feed is still down" during the 2026-05-12 outage was watching this gap.
+
+What we have **today** to mitigate this:
+
+- **`compose.yml` healthchecks + `depends_on: condition: service_healthy`**: each service blocks dependents from starting until its own healthcheck passes. Bad deploys fail-fast at the gateway boundary; the rest of the stack waits for it to recover.
+- **WebSocket reconnect on the client side** (PR #194, PR #196). A tab that loses its socket during a deploy reconnects within ~1s and the user sees a 1-frame pause rather than a "Connection lost" banner.
+- **`logging: max-size: 100m`** on every container (PR #222): a chatty service cannot fill the host disk and take the platform down.
+- **5-minute systemd auto-pull cadence**: image rollouts trickle in slowly enough that a bad merge to main has time to be caught and reverted before all replicas pick it up.
+
+What it does **not** give us:
+
+- **Zero-downtime deploys**: gateway recreate today is ~10-15s of HTTP 502 and WS reconnect storm. Tolerable on a low-traffic demo; not tolerable for a real bank.
+- **Crash protection**: if the single replica panics, that service is briefly unavailable until docker restarts it (typically < 5s with `restart: unless-stopped`). For order-flow services this can drop in-flight WS messages.
+- **Host failure protection**: a homelab reboot or hardware fault takes the whole platform down. RTO roughly equals time-to-restart-the-host.
+
+All three are addressed by the multi-host phase (see [migration path](../migration-path/)) when the audience justifies the spend.
+
+A previous version of this strategy proposed migrating to **Docker Swarm** to buy zero-downtime rolling deploys via `update_config: order: start-first`. We attempted the bootstrap and hit a fundamental constraint: the homelab's `veta_trading-net` is a bridge network shared with two off-repo compose projects (caddy serving the wiki, lgtm-grafana). Swarm overlays are scope=`swarm`; bridges are scope=`local`; a stack cannot attach to a network with mismatched scope. The migration would require coordinated changes to the off-repo projects, plus an outage window each retry, for a benefit (zero-downtime deploys) that the current low-traffic public demo does not yet need. We deferred it.
+
+## Deploy mechanism: systemd auto-pull + plain compose
+
+`scripts/homelab-auto-pull.sh` runs every 5 minutes via systemd, polls `origin/main`, and runs `scripts/homelab-deploy.sh` when the SHA changes. `homelab-deploy.sh` rsyncs the compose files from the freshly-cloned main, runs `docker compose pull`, then `docker compose up -d`. Per-service healthchecks gate the deploy; the script `exit 1`s if critical services (`gateway oms ems risk-engine journal market-sim user-service`) do not reach healthy within 180s.
+
+This is intentionally simple. The 2026-05-12 Watchtower outage that originally motivated the Swarm proposal was solved at a lower cost by replacing Watchtower with this systemd pipeline (PR #203's auto-pull half). Watchtower itself is gone.
+
+### Deploy state machine
+
+Every deploy to prod runs this sequence:
+
+```
+1. CI publishes new image tag (e.g. veta-gateway:sha-31bbcde)
+2. Within 5 min, homelab-auto-pull.timer fires:
+   a. Polls origin/main; exits if SHA unchanged.
+   b. Self-installs homelab-deploy.sh from main.
+   c. Runs homelab-deploy.sh:
+      - rsyncs compose.yml + overlays + traefik.yml + observability/ from main
+      - docker compose pull (idempotent)
+      - docker compose up -d (with --scale gateway=N if configured)
+      - polls per-service healthchecks for 180s
+      - exits non-zero if any of gateway/oms/ems/risk-engine/journal/market-sim/user-service
+        fails to reach healthy
+3. last-deployed-sha is bumped only on success.
+4. (Optional) The post-deploy CI probe workflow runs the same synthetic
+   probe from a GitHub runner ~6 minutes after the merge. Closes the loop on
+   "did my merge actually break prod".
+```
+
+## Synthetic monitoring (shipped)
+
+Source of truth for "is the platform up". Runs outside the homelab so it sees what real users see. Detailed page: [synthetic probe](../../supporting/synthetic-probe/).
+
+- **Host**: the OVH edge box (same machine that terminates TLS, but a different failure domain from the homelab). Every probe crosses the reverse SSH tunnel back to the homelab, identical path to real users.
+- **Cadence**: every 60 seconds via systemd timer.
+- **Probe steps** (v1, HTTP only):
+  1. GET `https://veta.mnetcs.com/`, expect 200, body contains `__version` / `VETA` markers.
+  2. POST `/api/gateway/api/user-service/oauth/guest`, expect 200 + `veta_user` session cookie. Uses the public-guest-trading endpoint from [PR #234](https://github.com/milesburton/veta-trading-platform/pull/234) so the probe does not need long-lived credentials.
+  3. GET `/api/gateway/ready` with the cookie, expect `{"ready":true}`.
+- **Output**: one JSON line per step to journald (`journalctl -u veta-synthetic-probe.service`). No Loki shipping yet (follow-up).
+- **Alerting**: systemd `OnFailure=` invokes `alert.sh` which counts consecutive failures and POSTs a webhook on the 3rd (configurable) plus on recovery. Webhook URL in `/etc/veta-probe.env` on the OVH box.
+- **Post-deploy CI mirror**: `.github/workflows/post-deploy-probe.yml` runs the same probe script from a GitHub runner ~6 min after every push to `main`. Three retries with 30 s spacing; fails the run on persistent failure. A third independent vantage point: if the OVH probe and the CI probe disagree, the divergence itself is signal (e.g. OVH-local network issue).
+
+What v1 catches:
+- Edge Traefik dead or mis-configured
+- SSH tunnel down
+- Homelab Traefik dead
+- Homelab gateway or user-service dead
+- `PUBLIC_GUEST_TRADING` flag accidentally flipped off
+- TLS cert expired or mis-issued
+
+What v1 does **not** catch (queued for v2):
+- WebSocket-only outages (no frame counting yet)
+- OMS pipeline regressions (no order submit + cancel yet)
+- Market data feed stalled (no candle / tick check)
+
+## Test gate on the deploy
+
+CI today proves code is correct in isolation. It does not prove that the **built containers** wired together actually work. Today's deploy regressions (the `/sessions/me` route mismatch in PR #192; the Watchtower name-conflict) would have been caught by a build-and-run gate.
+
+Addition to CI: a **deploy-gate** job that:
+
+1. Builds every container image.
+2. Brings them up via `docker compose up -d` inside the GitHub Actions runner.
+3. Runs the Playwright suite against the running stack (not the Vite dev server).
+4. Runs the synthetic probe against the stack.
+5. Only on green does CI publish the image tags.
+
+This is slower (5-10 minutes) but it shifts left every kind of failure we hit on 2026-05-12.
+
+## Multi-host prod, eventually
+
+A single Proxmox LXC cannot survive single-host failure. The strategic target is:
+
+- **2-3 Swarm manager nodes**: homelab Proxmox + OVH dedicated + a VPS. Quorum survives one-host loss.
+- **Postgres**: streaming replication, automatic failover (Patroni or pg-auto-failover). Async is OK for our RPO of 5 min.
+- **Redpanda**: 3-broker cluster with `replication.factor=3` on critical topics. Bus survives one-broker loss.
+- **Traefik**: keep on OVH edge with health-checked upstream pool (homelab + OVH-local replicas).
+
+This is the hard part of the strategy: distributed-systems work, not ops-tools work. Multi-host comes after the single-node operations posture is solid.

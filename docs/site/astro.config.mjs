@@ -100,7 +100,18 @@ export default defineConfig({
         {
           label: "Operations",
           items: [
-            { label: "Strategy", slug: "platform/operations-strategy" },
+            {
+              label: "Strategy",
+              items: [
+                { label: "Overview", slug: "platform/operations-strategy" },
+                { label: "Current state", slug: "platform/operations-strategy/current-state" },
+                { label: "SLOs and DORA", slug: "platform/operations-strategy/slos" },
+                { label: "Target architecture", slug: "platform/operations-strategy/target-architecture" },
+                { label: "Operational discipline", slug: "platform/operations-strategy/discipline" },
+                { label: "Migration path", slug: "platform/operations-strategy/migration-path" },
+                { label: "Scope and decisions", slug: "platform/operations-strategy/scope" },
+              ],
+            },
             {
               label: "Observability",
               items: [

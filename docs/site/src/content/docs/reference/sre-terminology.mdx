@@ -23,7 +23,7 @@ Bad SLI:
 
 > "CPU usage on the homelab." This is an internal system metric, not user-facing.
 
-An SLI is a number you can compute from telemetry, expressed as a ratio or percentage. VETA's SLIs come from Loki query results, gateway access logs, and the [synthetic probe](../../platform/operations-strategy#synthetic-monitoring).
+An SLI is a number you can compute from telemetry, expressed as a ratio or percentage. VETA's SLIs come from Loki query results, gateway access logs, and the [synthetic probe](../../platform/operations-strategy/target-architecture/#synthetic-monitoring-shipped).
 
 ### SLO: Service Level Objective
 
@@ -74,7 +74,7 @@ An SLO without a budget policy is theatre. The policy says what happens when the
 - Budget exhausted → freeze feature work; reliability fixes only.
 - Two consecutive budget-exhausted periods → executive review.
 
-VETA's policy lives in the [operations strategy](../../platform/operations-strategy).
+VETA's policy lives in the [operations strategy](../../platform/operations-strategy/).
 </Aside>
 
 ## Recovery and detection metrics

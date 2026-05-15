@@ -1,0 +1,44 @@
+---
+title: Current state
+description: Honest snapshot of where the platform is operationally today, before applying the strategy.
+---
+
+## Architecture
+
+- Single homelab host (Proxmox LXC) runs the full backend, frontend, observability stack, and ingress (Traefik).
+- A reverse SSH tunnel from the homelab to an OVH dedicated server exposes the platform to the public internet as `veta.mnetcs.com`.
+- Two further VPS hosts exist but are unused.
+- All environments collapse into one: the homelab serves dev playground, integration testing, and "production" simultaneously.
+
+## Tests
+
+- **1,825 vitest** unit tests covering frontend slices, middleware, components, and parsers.
+- **147 Playwright** end-to-end tests, but against the **Vite dev server**, not the built container.
+- **11 backend handler** unit tests for the LLM parse-ticket endpoint.
+- **`*.integration.tc.test.ts`** suites use Testcontainers. These are the only tests that exercise real wired services, and they only run in CI.
+- The legacy localhost-or-`VETA_BASE_URL` smoke suite has been ported to `smoke.full.tc.test.ts`; see the [smoke testing page](../../../development/testing/smoke/).
+
+## CI/CD
+
+- Every PR runs lint, typecheck, vitest, Playwright, CodeQL, secret scan, image builds.
+- On `main` merge, CI publishes container images to `ghcr.io` with the `:latest` tag.
+- A systemd auto-pull timer polls the homelab every ~5 minutes, pulls new `:latest` images, and runs `docker compose up -d` when the main-branch SHA changes.
+- No pre-deploy verification beyond container healthchecks. No staging. No automated rollback. No on-failure alerts (the synthetic probe shipped 2026-05-15 covers that gap; see [target architecture](../target-architecture/) for current monitoring state).
+
+## Observability
+
+- LGTM stack on the homelab (Loki + Grafana + Tempo + Prometheus + Alloy).
+- Frontend ships warnings and errors to Loki via the gateway to kafka-relay path (after PR #191).
+- Backend services emit structured logs and OTLP traces.
+- No SLO dashboards. No alerts beyond the synthetic probe. No formal error-budget tracking yet.
+
+## What this combination produces
+
+Failures are detected by:
+
+1. A human notices the UI is broken.
+2. Asks an engineer.
+3. Engineer SSHes into the homelab to diagnose.
+4. Engineer fixes manually.
+
+That is the same loop a hobbyist project runs. It is not the loop a regulated trading venue runs.
