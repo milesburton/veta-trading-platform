@@ -16,7 +16,34 @@ Target: **Ubuntu 24.04.4 LTS** (Noble Numbat). Direct upgrade is supported
 - `apt` / `dpkg` state can be left broken if `do-release-upgrade` fails
   mid-flight; recovery is manual
 
-## Pre-upgrade checklist
+## Recommended: clone-first dry run
+
+Before touching prod, prove the upgrade works on a clone. Proxmox makes
+this cheap:
+
+```bash
+# From the Proxmox host (not the LXC):
+# 1. Note the VM/CT ID of the homelab (e.g. 100). Stop briefly:
+pct stop 100  # ~30s outage if no live-clone, or skip + use snapshot mode
+
+# 2. Clone:
+pct clone 100 999 --full --hostname homelab-upgrade-test
+
+# 3. Start the clone (it'll come up with the same IP if you don't change
+#    networking — most setups need to edit /etc/network/interfaces inside
+#    the clone before boot or use a different bridge). Disconnect prod
+#    network first if both will be up at once.
+
+# 4. SSH to the clone, run the full upgrade procedure below, verify
+#    everything comes back up, **then destroy the clone**:
+pct stop 999 && pct destroy 999
+```
+
+If the dry run reveals an issue (e.g. a third-party apt source no longer
+exists in 24.04 repos, or Docker config breaks), fix the runbook below
+**before** touching prod.
+
+## Pre-upgrade checklist (prod)
 
 ```bash
 ssh miles@192.168.1.245
@@ -32,11 +59,22 @@ df -h /
 docker ps --format '{{.Names}} {{.Status}}' > /tmp/pre-upgrade-containers.txt
 docker version > /tmp/pre-upgrade-docker.txt
 systemctl list-unit-files --state=enabled > /tmp/pre-upgrade-units.txt
+systemctl list-units --type=service --state=running > /tmp/pre-upgrade-services.txt
 
-# 4. Make sure the systemd timers are paused so they don't fire during
-#    the upgrade window:
+# 4. Pause the systemd timers so they don't fire during the upgrade:
 sudo systemctl stop veta-auto-pull.timer
 sudo systemctl stop veta-host-prune.timer
+
+# 5. Pause the synthetic probe on OVH so the reboot doesn't trigger a
+#    false-positive page. (Skip if you WANT to verify the alert path.)
+ssh ubuntu@ovh.agileview.co.uk \
+    'sudo systemctl stop veta-synthetic-probe.timer'
+
+# 6. Sanity check: confirm /etc/network/interfaces and netplan config
+#    won't change. (Ubuntu 24.04 changed netplan defaults in some
+#    edge cases. If you see "renderer: networkd" in /etc/netplan/*.yaml
+#    and it Just Works today, you're fine.)
+ls /etc/netplan/ /etc/network/interfaces.d/ 2>/dev/null
 ```
 
 ## The upgrade
@@ -70,22 +108,36 @@ After reboot, SSH back in and verify:
 # 1. OS version
 cat /etc/os-release | head -3   # expect 24.04 Noble
 
-# 2. Docker came back up + all containers running
+# 2. Reverse SSH tunnel back up — without this, the public URL stays
+#    down even if the homelab is healthy
+systemctl status veta-tunnel.service --no-pager
+# Expect: active (running). If not, restart:
+sudo systemctl restart veta-tunnel.service
+
+# 3. Docker came back up + all containers running
 docker ps --format '{{.Names}} {{.Status}}' | sort > /tmp/post-upgrade-containers.txt
 diff /tmp/pre-upgrade-containers.txt /tmp/post-upgrade-containers.txt
+# Any "Restarting" or missing containers warrant investigation before
+# resuming the timers.
 
-# 3. Critical services healthy
-curl -sf http://localhost:5011/health     # gateway
-curl -sf https://veta.mnetcs.com/         # public — through tunnel
+# 4. Critical services healthy
+docker exec veta-traefik-1 wget -qO- http://gateway:5011/ready  # internal
+curl -sf https://veta.mnetcs.com/                                # public — through tunnel
 
-# 4. Synthetic probe on OVH should already be green again
+# 5. Resume the synthetic probe on OVH (it was paused in pre-flight)
 ssh ubuntu@ovh.agileview.co.uk \
-    'journalctl -u veta-synthetic-probe.service -n 10 --no-pager'
+    'sudo systemctl start veta-synthetic-probe.timer
+     sudo journalctl -u veta-synthetic-probe.service -n 5 --no-pager'
 
-# 5. Re-enable timers
+# 6. Re-enable homelab timers
 sudo systemctl start veta-auto-pull.timer
 sudo systemctl start veta-host-prune.timer
 sudo systemctl list-timers --no-pager | grep veta
+
+# 7. Watch for ~5 min — probe should fire 5x with all-green outcomes:
+ssh ubuntu@ovh.agileview.co.uk \
+    'sudo journalctl -u veta-synthetic-probe.service -n 25 --no-pager \
+     | grep probe_done'
 ```
 
 ## Rollback

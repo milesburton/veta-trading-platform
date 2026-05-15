@@ -111,6 +111,7 @@ export default defineConfig({
                   items: [
                     { label: "Overview", slug: "platform/supporting-services" },
                     { label: "Traefik", slug: "platform/supporting/traefik" },
+                    { label: "Synthetic probe", slug: "platform/supporting/synthetic-probe" },
                     { label: "k6 load testing", slug: "platform/supporting/k6-load-testing" },
                     { label: "Disk monitor", slug: "platform/supporting/disk-monitor" },
                     { label: "db-migrate", slug: "platform/supporting/db-migrate" },
