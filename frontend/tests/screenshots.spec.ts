@@ -344,6 +344,7 @@ test("screenshot: trading dashboard", async ({ page }) => {
   await app.gotoAsTrader(MARKET_ASSETS);
   await app.waitForOverlayGone();
   seedMarket(app);
+  await app.waitForLivePrices().catch(() => {});
   await page.waitForTimeout(600);
 
   seedOrdersHealthy(app);
@@ -383,6 +384,7 @@ test("screenshot: order ticket pre-filled", async ({ page }) => {
   await app.gotoAsTrader(MARKET_ASSETS);
   await app.waitForOverlayGone();
   seedMarket(app);
+  await app.waitForLivePrices().catch(() => {});
   await page.waitForTimeout(600);
 
   const ticket = await app.getOrderTicket();
@@ -396,6 +398,7 @@ test("screenshot: order blotter with lifecycle", async ({ page }) => {
   await app.gotoAsTrader(MARKET_ASSETS);
   await app.waitForOverlayGone();
   seedMarket(app);
+  await app.waitForLivePrices().catch(() => {});
   await page.waitForTimeout(600);
 
   seedOrders(app);
@@ -413,6 +416,7 @@ test("screenshot: algo trading workspace", async ({ page }) => {
   await app.gotoAsAlgoTrader(MARKET_ASSETS);
   await app.waitForOverlayGone();
   seedMarket(app);
+  await app.waitForLivePrices().catch(() => {});
   await page.waitForTimeout(600);
 
   app.gateway.injectOrder({
@@ -568,6 +572,7 @@ test("screenshot: option pricing (Black-Scholes)", async ({ page }) => {
   });
   await app.waitForOverlayGone();
   seedMarket(app);
+  await app.waitForLivePrices().catch(() => {});
   await page.waitForTimeout(400);
 
   await page.route(
@@ -606,6 +611,7 @@ test("screenshot: kill switch dialog", async ({ page }) => {
   await app.gotoAsTrader(MARKET_ASSETS);
   await app.waitForOverlayGone();
   seedMarket(app);
+  await app.waitForLivePrices().catch(() => {});
   await page.waitForTimeout(400);
 
   seedOrders(app);
@@ -790,6 +796,7 @@ test("screenshot: order blotter with formatting", async ({ page }) => {
   await app.gotoAsTrader(MARKET_ASSETS);
   await app.waitForOverlayGone();
   seedMarket(app);
+  await app.waitForLivePrices().catch(() => {});
   await page.waitForTimeout(600);
 
   seedOrders(app);
@@ -836,6 +843,7 @@ test("screenshot: symbol search with results", async ({ page }) => {
   await app.gotoAsTrader(MARKET_ASSETS);
   await app.waitForOverlayGone();
   seedMarket(app);
+  await app.waitForLivePrices().catch(() => {});
   await page.waitForTimeout(400);
 
   const searchInput = page.getByTestId("symbol-search-input");
@@ -854,6 +862,7 @@ test("screenshot: trade paste preview", async ({ page }) => {
   await app.gotoAsTrader(MARKET_ASSETS);
   await app.waitForOverlayGone();
   seedMarket(app);
+  await app.waitForLivePrices().catch(() => {});
   await page.waitForTimeout(400);
 
   const searchInput = page.getByTestId("symbol-search-input");
@@ -872,6 +881,7 @@ test("screenshot: blotter multi-select", async ({ page }) => {
   await app.gotoAsTrader(MARKET_ASSETS);
   await app.waitForOverlayGone();
   seedMarket(app);
+  await app.waitForLivePrices().catch(() => {});
   await page.waitForTimeout(400);
 
   seedOrders(app);
