@@ -1,0 +1,14 @@
+[Unit]
+Description=VETA homelab Docker prune (preventive + aggressive)
+Documentation=https://github.com/milesburton/veta-trading-platform/blob/main/scripts/host-prune.sh
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=miles
+WorkingDirectory=/opt/stacks/veta
+ExecStart=/opt/stacks/veta/scripts/host-prune.sh
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=15min

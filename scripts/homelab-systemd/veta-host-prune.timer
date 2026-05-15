@@ -1,0 +1,13 @@
+[Unit]
+Description=Run VETA host-prune weekly (Sunday 04:00 UTC)
+Documentation=https://github.com/milesburton/veta-trading-platform/blob/main/scripts/host-prune.sh
+
+[Timer]
+# Sunday at 04:00 UTC — low-traffic window. If the box is off at that time,
+# `Persistent=true` runs it on next boot.
+OnCalendar=Sun *-*-* 04:00:00
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
