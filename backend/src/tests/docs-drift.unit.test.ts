@@ -6,7 +6,9 @@ const DOCS_ROOT = `${REPO_ROOT}docs/site/src/content/docs`;
 const SUPERVISORD_CONF = `${REPO_ROOT}supervisord.conf`;
 const ALGO_DIR = `${REPO_ROOT}backend/src/algo`;
 const BACKEND_TESTS_DIR = `${REPO_ROOT}backend/src/tests`;
-const SCREENSHOTS_PUBLIC_DIR = `${REPO_ROOT}docs/site/public`;
+const SCREENSHOTS_CANONICAL_DIR = `${REPO_ROOT}docs/screenshots`;
+const PANEL_SCREENSHOTS_CANONICAL_DIR =
+  `${REPO_ROOT}docs/panel-walkthrough/screenshots`;
 
 const GRAFANA_SCREENSHOT_PREFIX = "/veta-trading-platform/screenshots/grafana/";
 const KNOWN_PENDING_SCREENSHOTS = new Set([
@@ -84,6 +86,14 @@ Deno.test("[docs-drift] every backend test file referenced in docs exists on dis
   );
 });
 
+function resolveScreenshotRef(ref: string): string {
+  const relative = ref.replace("/veta-trading-platform/screenshots/", "");
+  if (relative.startsWith("panels/")) {
+    return `${PANEL_SCREENSHOTS_CANONICAL_DIR}/${relative.slice("panels/".length)}`;
+  }
+  return `${SCREENSHOTS_CANONICAL_DIR}/${relative}`;
+}
+
 Deno.test("[docs-drift] every screenshot referenced in docs resolves to a file", async () => {
   const docs = await readAllDocsMarkdown();
   const pattern = /\/veta-trading-platform\/screenshots\/[a-zA-Z0-9/_.-]+\.(?:png|jpg|jpeg|svg)/g;
@@ -95,7 +105,7 @@ Deno.test("[docs-drift] every screenshot referenced in docs resolves to a file",
       if (ref.startsWith(GRAFANA_SCREENSHOT_PREFIX)) continue;
       const filename = ref.split("/").pop()!;
       if (KNOWN_PENDING_SCREENSHOTS.has(filename)) continue;
-      const onDisk = `${SCREENSHOTS_PUBLIC_DIR}${ref.replace("/veta-trading-platform", "")}`;
+      const onDisk = resolveScreenshotRef(ref);
       try {
         await Deno.stat(onDisk);
       } catch {
@@ -107,7 +117,10 @@ Deno.test("[docs-drift] every screenshot referenced in docs resolves to a file",
   assertEquals(
     missing,
     [],
-    `Screenshot references in docs do not resolve to files on disk:\n` +
+    `Screenshot references in docs do not resolve to canonical source files. ` +
+      `Top-level screenshots come from docs/screenshots/ and panel/* from ` +
+      `docs/panel-walkthrough/screenshots/; both are committed to git and ` +
+      `copied into docs/site/public/screenshots/ at Pages build time.\n` +
       missing.map((m) => `  ${m.docPath} -> ${m.ref}`).join("\n"),
   );
 });
