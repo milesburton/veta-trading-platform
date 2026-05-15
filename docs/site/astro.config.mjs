@@ -12,6 +12,11 @@ const docsNodeModules = fileURLToPath(
   new URL("./node_modules", import.meta.url),
 );
 
+const docsData = fileURLToPath(new URL("./src/data", import.meta.url));
+const docsComponents = fileURLToPath(
+  new URL("./src/components", import.meta.url),
+);
+
 export default defineConfig({
   site: "https://milesburton.github.io",
   base: docsBase,
@@ -19,6 +24,8 @@ export default defineConfig({
     resolve: {
       alias: {
         "@veta/frontend": frontendSrc,
+        "@docs/data": docsData,
+        "@docs/components": docsComponents,
         "@preact/signals-react": `${docsNodeModules}/@preact/signals-react`,
         react: `${docsNodeModules}/react`,
         "react-dom": `${docsNodeModules}/react-dom`,

@@ -3,6 +3,8 @@ title: Unit tests
 description: Pure-logic tests for backend (Deno) and frontend (Vitest). Locations, conventions, and how to add to each suite.
 ---
 
+import testInventory from "@docs/data/test-inventory.json";
+
 Unit tests exercise pure functions and isolated components with no HTTP, no Postgres, and no Redpanda. They cover the platform's logic primitives: schema validation, algo slicing math, FIX parsing, Redux reducers, and analytics formulas. Failures here surface as wrong outputs given correct inputs; higher suites cannot localise such failures because they observe symptoms (a 200 response with a wrong field) rather than causes.
 
 Both backend and frontend unit suites run on every commit via the pre-commit hook.
@@ -11,8 +13,8 @@ Both backend and frontend unit suites run on every commit via the pre-commit hoo
 
 **Location:** `backend/src/tests/`
 **Runner:** Deno's built-in `Deno.test`
-**Files:** 53 test files (`.unit.test.ts`, plus `.test.ts` for older files)
-**Tests:** ~470 cases
+**Files:** {testInventory.backend.unit.files} test files (`.unit.test.ts`, plus `.test.ts` for older files)
+**Tests:** {testInventory.backend.unit.cases} cases
 **Run:** `deno task test`
 
 ### Conventions
@@ -70,8 +72,8 @@ Areas with the densest coverage:
 **Location:** `frontend/src/**/__tests__/`
 **Runner:** Vitest
 **Config:** [`frontend/vitest.config.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/vitest.config.ts)
-**Files:** 163 test files
-**Tests:** ~1825 cases
+**Files:** {testInventory.frontend.unit.files} test files
+**Tests:** {testInventory.frontend.unit.cases} cases
 **Run:** `cd frontend && npm run test:unit`
 
 ### Conventions
