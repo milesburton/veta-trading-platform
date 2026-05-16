@@ -258,3 +258,135 @@ Deno.test("[docs-drift] every <Term name='...'> in docs references a real glossa
       missing.map((m) => `  ${m.docPath} -> name="${m.ref}"`).join("\n"),
   );
 });
+
+const DOCS_BASE = "/veta-trading-platform";
+
+/**
+ * Convert a slug like "platform/observability/lgtm" or "platform/observability"
+ * into the on-disk content path we'd expect Astro to serve from.
+ * Returns the resolved file path if it exists, or null if no such file exists.
+ */
+async function resolveSlugToFile(slug: string): Promise<string | null> {
+  const cleaned = slug.replace(/^\/+|\/+$/g, "");
+  if (!cleaned) return `${DOCS_ROOT}/index.mdx`;
+  const candidates = [
+    `${DOCS_ROOT}/${cleaned}.mdx`,
+    `${DOCS_ROOT}/${cleaned}.md`,
+    `${DOCS_ROOT}/${cleaned}/index.mdx`,
+    `${DOCS_ROOT}/${cleaned}/index.md`,
+  ];
+  for (const c of candidates) {
+    try {
+      await Deno.stat(c);
+      return c;
+    } catch {
+      // continue
+    }
+  }
+  return null;
+}
+
+/** Slugify heading text the way Starlight / GitHub do. Lowercase, alnum + hyphens. */
+function slugifyHeading(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+}
+
+/** Extract all heading anchors from a markdown/mdx file. */
+async function extractAnchors(filePath: string): Promise<Set<string>> {
+  const content = await Deno.readTextFile(filePath);
+  const anchors = new Set<string>();
+  // ATX headings: `# Heading`, `## Heading`, etc.
+  for (const match of content.matchAll(/^#{1,6}\s+(.+?)\s*$/gm)) {
+    anchors.add(slugifyHeading(match[1]));
+  }
+  // Explicit `<h1 id="x">` / `<h2 id="x">` in MDX
+  for (const match of content.matchAll(/<h[1-6][^>]*\bid=["']([^"']+)["']/g)) {
+    anchors.add(match[1]);
+  }
+  return anchors;
+}
+
+Deno.test("[docs-drift] every cross-page heading anchor link resolves to a real heading", async () => {
+  // Focused test: catches the failure mode we hit three times in the recent
+  // docs reorgs: a heading moves to a new sub-page, but a link from another
+  // page still references the old #anchor. Build doesn't warn; the link
+  // silently 404s on the anchor.
+  //
+  // Scoped to anchored absolute links (basepath-prefixed) for now, which is
+  // the unambiguous case. Relative links across docs have Astro/Starlight
+  // URL-resolution semantics (trailing-slash directory-style) that need
+  // careful modelling to test reliably; that's a follow-up.
+  const docs = await readAllDocsMarkdown();
+  // Markdown link syntax `[text](url)` and JSX/HTML href attributes.
+  const mdLinkPattern = /(?<!!)\[([^\]\n]*?)\]\(([^)\n\s]+?)\)/g;
+  const hrefPattern = /\bhref=["']([^"']+)["']/g;
+  const anchorCache = new Map<string, Set<string>>();
+  const broken: { docPath: string; link: string; reason: string }[] = [];
+
+  const PUBLIC_DOCS_HOST = "https://milesburton.github.io/veta-trading-platform";
+
+  function* extractLinks(content: string): Generator<string> {
+    for (const m of content.matchAll(mdLinkPattern)) yield m[2];
+    for (const m of content.matchAll(hrefPattern)) yield m[1];
+  }
+
+  for (const [docPath, content] of docs) {
+    for (const url of extractLinks(content)) {
+      if (!url.includes("#")) continue;
+
+      // Two flavours of in-site link we can resolve unambiguously:
+      // 1. /veta-trading-platform/... (basepath-prefixed)
+      // 2. https://milesburton.github.io/veta-trading-platform/... (the deployed docs URL)
+      let inSitePath: string | null = null;
+      if (url.startsWith(`${DOCS_BASE}/`)) {
+        inSitePath = url.slice(DOCS_BASE.length);
+      } else if (url.startsWith(`${PUBLIC_DOCS_HOST}/`)) {
+        inSitePath = url.slice(PUBLIC_DOCS_HOST.length);
+      } else if (url === DOCS_BASE || url === PUBLIC_DOCS_HOST) {
+        // Root with a fragment is unusual but valid.
+        inSitePath = "/";
+      }
+      if (inSitePath === null) continue;
+
+      const [pathPart, fragment] = inSitePath.split("#", 2);
+      const targetSlug = pathPart.replace(/^\/+|\/+$/g, "");
+
+      const resolved = await resolveSlugToFile(targetSlug);
+      if (!resolved) {
+        broken.push({
+          docPath: docPath.replace(REPO_ROOT, ""),
+          link: url,
+          reason: `target page "${targetSlug}" does not exist`,
+        });
+        continue;
+      }
+
+      let anchors = anchorCache.get(resolved);
+      if (!anchors) {
+        anchors = await extractAnchors(resolved);
+        anchorCache.set(resolved, anchors);
+      }
+      if (!anchors.has(fragment)) {
+        const sample = [...anchors].slice(0, 5).join(", ");
+        broken.push({
+          docPath: docPath.replace(REPO_ROOT, ""),
+          link: url,
+          reason: `anchor #${fragment} not found in ${resolved.replace(REPO_ROOT, "")} (have: ${sample}${anchors.size > 5 ? ", ..." : ""})`,
+        });
+      }
+    }
+  }
+
+  assertEquals(
+    broken,
+    [],
+    `Cross-page heading anchor links in docs do not resolve:\n` +
+      broken
+        .map((b) => `  ${b.docPath} -> ${b.link}\n      (${b.reason})`)
+        .join("\n"),
+  );
+});
