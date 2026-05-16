@@ -25,6 +25,23 @@ cd "$STACK_DIR"
 
 log() { echo "[veta-deploy] $(date -u +%H:%M:%S) $*"; }
 
+check_ownership() {
+    # rsync as the deploying user cannot overwrite files owned by other
+    # users; the failure mode is silent per-file errors that the previous
+    # `2>&1 || true` swallowed. The 2026-05-16 LGTM-deploy incident was
+    # caused by /opt/stacks/veta/observability/ being root-owned from an
+    # earlier setup, leaving the auto-pull unable to sync compose changes
+    # for ~3 days.
+    local foreign
+    foreign=$(find "$STACK_DIR" -not -user "$(id -un)" 2>/dev/null | head -10)
+    if [[ -n "$foreign" ]]; then
+        log "❌ ERROR: files in $STACK_DIR are not owned by $(id -un):"
+        echo "$foreign" | sed 's/^/  /'
+        log "  Fix: sudo chown -R $(id -un):$(id -un) $STACK_DIR"
+        return 1
+    fi
+}
+
 sync_configs() {
     local checkout_dir
     checkout_dir=$(mktemp -d)
@@ -34,6 +51,7 @@ sync_configs() {
     log "Fetching $REPO_REF from $REPO_URL..."
     git clone --depth 1 --branch "$REPO_REF" --filter=blob:none "$REPO_URL" "$checkout_dir" >/dev/null 2>&1
 
+    local any_error=0
     for path in "${CONFIG_PATHS[@]}"; do
         local src="$checkout_dir/$path"
         local dst="$STACK_DIR/$path"
@@ -43,17 +61,40 @@ sync_configs() {
         fi
         mkdir -p "$(dirname "$dst")"
         local out
-        out=$(rsync -ai --delete "$src" "$dst" 2>&1 || true)
+        local rc
+        out=$(rsync -ai --delete "$src" "$dst" 2>&1)
+        rc=$?
         if [[ -n "$out" ]]; then
             echo "$out" | sed 's/^/  /'
         fi
+        if [[ $rc -ne 0 ]]; then
+            log "  ❌ rsync $path failed with exit $rc"
+            any_error=1
+            continue
+        fi
+        # Detect partial-failure (permission denied) lines that rsync prints
+        # to stderr but masks behind exit 0 when other files in the same
+        # transfer succeeded.
+        if echo "$out" | grep -qE "Permission denied|failed: Permission"; then
+            log "  ❌ rsync $path reported permission errors (see above)"
+            any_error=1
+        fi
     done
+    return $any_error
 }
 
 CRITICAL_SERVICES="gateway oms ems risk-engine journal market-sim user-service"
 
+log "Checking ownership of $STACK_DIR..."
+if ! check_ownership; then
+    exit 1
+fi
+
 log "Syncing config files from repo..."
-sync_configs
+if ! sync_configs; then
+    log "❌ Config sync failed; aborting deploy. Investigate the rsync errors above."
+    exit 1
+fi
 
 # Compose files in load order (later overlays merge on top of earlier ones).
 # - compose.yml: base service definitions
