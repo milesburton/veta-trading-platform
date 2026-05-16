@@ -112,11 +112,16 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=veta_trading-net"
-      - "traefik.http.middlewares.grafana-auth.basicauth.users=${GRAFANA_BASICAUTH_HTPASSWD:-veta:$$apr1$$placeholder$$placeholder}"
+      # Authentication is enforced by Grafana itself: anonymous visitors
+      # get Viewer (read-only) access; admin and edit operations require
+      # signing in via the Grafana login form (see GF_AUTH_ANONYMOUS_*
+      # and GF_SECURITY_ADMIN_PASSWORD above). The previous Traefik
+      # BasicAuth middleware was removed because it short-circuited the
+      # request before Grafana could serve the anonymous read view.
       - "traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)"
       - "traefik.http.routers.grafana.entrypoints=websecure"
       - "traefik.http.routers.grafana.tls=true"
-      - "traefik.http.routers.grafana.middlewares=grafana-auth,origin-ratelimit"
+      - "traefik.http.routers.grafana.middlewares=origin-ratelimit"
       - "traefik.http.routers.grafana.priority=30"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
 
