@@ -15,54 +15,67 @@ const tooltip = `Docs built ${
 
 <Default><slot /></Default>
 
-<a
-  class="veta-platform-cta"
-  data-testid="platform-cta"
-  href={platformUrl}
-  target="_blank"
-  rel="noopener"
-  title="Open the live VETA trading platform"
->
-  <span class="veta-platform-cta-label">Open platform</span>
-  <svg
-    class="veta-platform-cta-icon"
-    xmlns="http://www.w3.org/2000/svg"
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
+<div class="veta-header-actions">
+  <a
+    class="veta-build-chip"
+    data-testid="build-info"
+    href={commitUrl ?? repoUrl}
+    target="_blank"
+    rel="noopener"
+    title={tooltip}
   >
-    <path d="M7 17 17 7"></path>
-    <path d="M7 7h10v10"></path>
-  </svg>
-</a>
+    <span class="veta-env">DOCS</span>
+    <span class="veta-version">v{BUILD_INFO.version}</span>
+    <span class="veta-sep">·</span>
+    <span class="veta-sha">{BUILD_INFO.commitSha}</span>
+  </a>
 
-<a
-  class="veta-build-chip"
-  data-testid="build-info"
-  href={commitUrl ?? repoUrl}
-  target="_blank"
-  rel="noopener"
-  title={tooltip}
->
-  <span class="veta-env">DOCS</span>
-  <span class="veta-version">v{BUILD_INFO.version}</span>
-  <span class="veta-sep">·</span>
-  <span class="veta-sha">{BUILD_INFO.commitSha}</span>
-</a>
+  <a
+    class="veta-platform-cta"
+    data-testid="platform-cta"
+    href={platformUrl}
+    target="_blank"
+    rel="noopener"
+    title="Open the live VETA trading platform"
+  >
+    <span class="veta-platform-cta-label">Open platform</span>
+    <svg
+      class="veta-platform-cta-icon"
+      xmlns="http://www.w3.org/2000/svg"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M7 17 17 7"></path>
+      <path d="M7 7h10v10"></path>
+    </svg>
+  </a>
+</div>
 
 <style>
-  .veta-platform-cta {
+  .veta-header-actions {
     display: none;
     position: absolute;
     top: 50%;
-    right: calc(var(--sl-nav-pad-x) + 19rem);
+    right: calc(var(--sl-nav-pad-x) + 9rem);
     transform: translateY(-50%);
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 1;
+  }
+  @media (min-width: 60rem) {
+    .veta-header-actions {
+      display: inline-flex;
+    }
+  }
+  .veta-platform-cta {
+    display: inline-flex;
     align-items: center;
     gap: 0.4rem;
     padding: 0.35rem 0.75rem;
@@ -74,11 +87,10 @@ const tooltip = `Docs built ${
     text-decoration: none;
     white-space: nowrap;
     transition: filter 0.15s, transform 0.15s;
-    z-index: 1;
   }
   .veta-platform-cta:hover {
     filter: brightness(1.1);
-    transform: translateY(-50%) translateY(-1px);
+    transform: translateY(-1px);
   }
   .veta-platform-cta:focus-visible {
     outline: 2px solid var(--sl-color-white);
@@ -87,17 +99,8 @@ const tooltip = `Docs built ${
   .veta-platform-cta-icon {
     flex-shrink: 0;
   }
-  @media (min-width: 60rem) {
-    .veta-platform-cta {
-      display: inline-flex;
-    }
-  }
   .veta-build-chip {
-    display: none;
-    position: absolute;
-    top: 50%;
-    right: calc(var(--sl-nav-pad-x) + 11rem);
-    transform: translateY(-50%);
+    display: inline-flex;
     align-items: center;
     gap: 0.4rem;
     padding: 0.15rem 0.55rem;
@@ -109,7 +112,6 @@ const tooltip = `Docs built ${
     text-decoration: none;
     white-space: nowrap;
     transition: color 0.15s, border-color 0.15s;
-    z-index: 1;
   }
   .veta-build-chip:hover {
     color: var(--sl-color-white);
@@ -128,10 +130,5 @@ const tooltip = `Docs built ${
   }
   .veta-sha {
     opacity: 0.8;
-  }
-  @media (min-width: 60rem) {
-    .veta-build-chip {
-      display: inline-flex;
-    }
   }
 </style>

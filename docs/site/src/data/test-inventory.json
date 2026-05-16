@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-15T23:26:28.673Z",
+  "generatedAt": "2026-05-16T19:30:22.039Z",
   "backend": {
     "unit": {
       "files": 33,
-      "cases": 475,
+      "cases": 477,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -37,7 +37,7 @@
         "trigger-rules.unit.test.ts": 17,
         "volatility-estimator.unit.test.ts": 7,
         "devcontainer.unit.test.ts": 6,
-        "docs-drift.unit.test.ts": 5
+        "docs-drift.unit.test.ts": 7
       }
     },
     "integration": {
@@ -76,11 +76,11 @@
   },
   "frontend": {
     "unit": {
-      "files": 163,
-      "cases": 1711
+      "files": 164,
+      "cases": 1717
     },
     "playwright": {
-      "files": 16,
+      "files": 17,
       "specs": [
         "algo-orders.spec.ts",
         "auth.spec.ts",
@@ -93,6 +93,7 @@
         "orders.spec.ts",
         "panel-walkthrough.spec.ts",
         "panels.spec.ts",
+        "price-format.spec.ts",
         "screenshots.spec.ts",
         "session-replay.spec.ts",
         "ui.spec.ts",
