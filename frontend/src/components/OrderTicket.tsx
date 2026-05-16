@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { useEffect, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useTradingContext } from "../context/TradingContext.tsx";
@@ -31,10 +32,6 @@ import type {
 } from "../types.ts";
 import { AssetSelector } from "./AssetSelector";
 import { StrategyParams } from "./StrategyParams";
-
-function formatPrice(symbol: string, price: number) {
-  return symbol.includes("/") ? price.toFixed(4) : price.toFixed(2);
-}
 
 function fmt2(n: number) {
   return n.toFixed(2);

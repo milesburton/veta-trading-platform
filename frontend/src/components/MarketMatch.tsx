@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { useMemo } from "react";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
@@ -108,10 +109,6 @@ const VENUE_FLAGS: Record<string, string> = {
   XCBO: "US",
 };
 
-function formatPrice(p: number, symbol: string) {
-  return symbol.includes("/") ? p.toFixed(4) : p.toFixed(2);
-}
-
 function formatQty(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
@@ -161,10 +158,10 @@ function BookPosition({
   return (
     <div
       className="flex flex-col gap-0.5"
-      title={`Fill price ${formatPrice(orderPrice, symbol)} vs bid ${formatPrice(
-        bestBid,
-        symbol
-      )} / ask ${formatPrice(bestAsk, symbol)}`}
+      title={`Fill price ${formatPrice(symbol, orderPrice)} vs bid ${formatPrice(
+        symbol,
+        bestBid
+      )} / ask ${formatPrice(symbol, bestAsk)}`}
     >
       <div className="relative h-2 w-full bg-panel rounded overflow-hidden">
         {/* Bid zone */}
@@ -180,8 +177,8 @@ function BookPosition({
         />
       </div>
       <div className="flex justify-between text-[8px] text-divider">
-        <span>BID {formatPrice(bestBid, symbol)}</span>
-        <span>ASK {formatPrice(bestAsk, symbol)}</span>
+        <span>BID {formatPrice(symbol, bestBid)}</span>
+        <span>ASK {formatPrice(symbol, bestAsk)}</span>
       </div>
     </div>
   );
@@ -440,7 +437,7 @@ export function MarketMatch() {
                         {formatQty(f.filledQty)}
                       </td>
                       <td className="px-2 py-1.5 text-right tabular-nums font-mono text-secondary">
-                        {formatPrice(f.avgFillPrice, f.asset || asset)}
+                        {formatPrice(f.asset || asset, f.avgFillPrice)}
                       </td>
                       <td className="px-2 py-1.5 w-32">
                         <BookPosition

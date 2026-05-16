@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { memo, useEffect, useMemo, useRef } from "react";
 import { List } from "react-window";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
@@ -56,10 +57,6 @@ const LADDER_COLS: ColDef[] = [
     align: "right",
   },
 ];
-
-function formatPrice(symbol: string, price: number) {
-  return symbol.includes("/") ? price.toFixed(4) : price.toFixed(2);
-}
 
 function PriceFlash({ value, asset }: { value: number; asset: string }) {
   const prevRef = useRef<number | null>(null);

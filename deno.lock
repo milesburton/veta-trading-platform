@@ -10,6 +10,7 @@
     "jsr:@std/fmt@0.217": "0.217.0",
     "jsr:@std/fmt@1": "1.0.9",
     "jsr:@std/fmt@^1.0.9": "1.0.9",
+    "jsr:@std/fs@0.217": "0.217.0",
     "jsr:@std/fs@1": "1.0.23",
     "jsr:@std/fs@1.0.0": "1.0.0",
     "jsr:@std/fs@^1.0.23": "1.0.23",
@@ -68,6 +69,12 @@
     },
     "@std/fmt@1.0.9": {
       "integrity": "2487343e8899fb2be5d0e3d35013e54477ada198854e52dd05ed0422eddcabe0"
+    },
+    "@std/fs@0.217.0": {
+      "integrity": "0bfff5f3618d68c385b28b4ffbf3a15c98293a0f1186444458b62e0111ce77b2",
+      "dependencies": [
+        "jsr:@std/path@0.217"
+      ]
     },
     "@std/fs@1.0.0": {
       "integrity": "d72e4a125af7168d717a2ed1dca77a728b422b0d138fd20579e3fa41a77da943",

@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { useMemo } from "react";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
@@ -44,10 +45,6 @@ const TOPIC_LABELS: Record<string, { label: string; icon: string; color: string 
   "algo.heartbeat": { label: "Heartbeat", icon: "♡", color: "text-divider" },
 };
 
-function formatPrice(p: number) {
-  return p.toFixed(2);
-}
-
 function formatQty(n: number) {
   return n % 1 === 0 ? n.toLocaleString() : n.toFixed(1);
 }
@@ -57,7 +54,7 @@ function eventSummary(topic: string, ev: AlgoEvent): string {
     case "orders.submitted":
       return `${ev.algo ?? ""} ${ev.side ?? ""} ${
         ev.qty ? formatQty(ev.qty) : ""
-      } ${ev.asset ?? ""} @ ${ev.price ? formatPrice(ev.price) : "mkt"}`;
+      } ${ev.asset ?? ""} @ ${ev.price ? formatPrice(ev.asset, ev.price) : "mkt"}`;
     case "orders.routed":
       return `→ ${ev.algo ?? ""} engine`;
     case "orders.child": {
@@ -67,7 +64,7 @@ function eventSummary(topic: string, ev: AlgoEvent): string {
           : "";
       return `${ev.algo ?? ""}${slice} ${ev.side ?? ""} ${
         ev.qty ? formatQty(ev.qty) : ""
-      } ${ev.asset ?? ""} @ ${ev.price ? formatPrice(ev.price) : "—"}`;
+      } ${ev.asset ?? ""} @ ${ev.price ? formatPrice(ev.asset, ev.price) : "—"}`;
     }
     case "orders.filled": {
       const impact =
@@ -81,7 +78,7 @@ function eventSummary(topic: string, ev: AlgoEvent): string {
       return `${ev.algo ?? ""} filled ${
         ev.filledQty ? formatQty(ev.filledQty) : ""
       } ${ev.asset ?? ""}${progress} @ ${
-        ev.avgFillPrice ? formatPrice(ev.avgFillPrice) : "—"
+        ev.avgFillPrice ? formatPrice(ev.asset, ev.avgFillPrice) : "—"
       }${impact}`;
     }
     case "orders.expired":
@@ -94,7 +91,7 @@ function eventSummary(topic: string, ev: AlgoEvent): string {
       }
       if (ev.event === "complete") {
         return `${ev.algo ?? ""} complete ${ev.asset ?? ""} — avg ${
-          ev.avgFillPrice ? formatPrice(ev.avgFillPrice) : "—"
+          ev.avgFillPrice ? formatPrice(ev.asset, ev.avgFillPrice) : "—"
         }`;
       }
       return `${ev.algo ?? ""} alive · ${ev.pendingOrders ?? ev.activeOrders ?? 0} active`;
