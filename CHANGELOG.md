@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.39.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.38.0...veta-trading-platform-v1.39.0) (2026-05-17)
+
+
+### Features
+
+* **docs:** glossary &lt;Term&gt; + &lt;External&gt; components + alias sweep ([#255](https://github.com/milesburton/veta-trading-platform/issues/255)) ([4f10e85](https://github.com/milesburton/veta-trading-platform/commit/4f10e858a54fca5c52f68328e113d3c31a2b6638))
+* **smoke:** port legacy smoke.test.ts to testcontainers, delete dead code ([#249](https://github.com/milesburton/veta-trading-platform/issues/249)) ([7f7ccb0](https://github.com/milesburton/veta-trading-platform/commit/7f7ccb033f27c9168207ca0a292f92cce0c98027))
+
+
+### Bug Fixes
+
+* **docs-drift:** resolve screenshot refs to canonical committed sources ([#247](https://github.com/milesburton/veta-trading-platform/issues/247)) ([a53dcf8](https://github.com/milesburton/veta-trading-platform/commit/a53dcf8d2659c29131274d6e8e8334e8a7ebcd46))
+* **homelab-deploy:** detect foreign-owned files + surface rsync errors ([#257](https://github.com/milesburton/veta-trading-platform/issues/257)) ([3fa305f](https://github.com/milesburton/veta-trading-platform/commit/3fa305f82d9541f7a8b0a0b54d2144c1761251c7))
+* observability dashboards + GUI header overlap + formatPrice refactor ([#259](https://github.com/milesburton/veta-trading-platform/issues/259)) ([85c69a2](https://github.com/milesburton/veta-trading-platform/commit/85c69a24a08b42395a01fb7e50c98185d4b9dc43))
+* **observability:** Grafana anonymous = Viewer, login form re-enabled ([#254](https://github.com/milesburton/veta-trading-platform/issues/254)) ([ff22c3e](https://github.com/milesburton/veta-trading-platform/commit/ff22c3e39339214a34e388dcf9f24af547248610))
+* **observability:** remove Traefik BasicAuth on /grafana/ ([#256](https://github.com/milesburton/veta-trading-platform/issues/256)) ([79276ad](https://github.com/milesburton/veta-trading-platform/commit/79276ada47f70cfdf713343a3faff8ec95012164))
+
 ## [1.38.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.37.1...veta-trading-platform-v1.38.0) (2026-05-15)
 
 
