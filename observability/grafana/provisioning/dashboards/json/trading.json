@@ -92,8 +92,8 @@
       },
       "targets": [
         {
-          "expr": "sum by (service_name) (rate(http_server_request_duration_seconds_count[1m]))",
-          "legendFormat": "{{service_name}}",
+          "expr": "sum by (job) (rate(http_server_request_duration_seconds_count[1m]))",
+          "legendFormat": "{{job}}",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
       ]
@@ -115,8 +115,8 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (service_name, le) (rate(http_server_request_duration_seconds_bucket[5m])))",
-          "legendFormat": "{{service_name}} p99",
+          "expr": "histogram_quantile(0.99, sum by (job, le) (rate(http_server_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{job}} p99",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
       ]
@@ -376,7 +376,7 @@
       "targets": [
         {
           "expr": "process_resident_memory_bytes / 1024 / 1024",
-          "legendFormat": "{{service_name}}",
+          "legendFormat": "{{job}}",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
       ]

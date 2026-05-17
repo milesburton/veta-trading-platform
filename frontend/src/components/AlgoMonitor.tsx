@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { Fragment } from "react";
 import { useChannelIn } from "../hooks/useChannelIn.ts";
 import { useColumnLayout } from "../hooks/useColumnLayout.ts";
@@ -146,10 +147,6 @@ function ProgressBar({ pct }: { pct: number }) {
 
 function formatQty(n: number) {
   return n % 1 === 0 ? n.toLocaleString() : n.toFixed(1);
-}
-
-function formatPrice(price: number) {
-  return price.toFixed(2);
 }
 
 const LIQ_STYLES: Record<LiquidityFlag, string> = {
@@ -309,7 +306,7 @@ function TradeAtLastButton({
       }}
       data-testid="trade-at-last-btn"
       className="px-2 py-0.5 text-[10px] font-semibold rounded border border-amber-600/60 text-amber-400 hover:bg-amber-900/30 transition-colors whitespace-nowrap"
-      title={`Submit LIMIT order for ${formatQty(remaining)} @ ${formatPrice(marketPrice)}`}
+      title={`Submit LIMIT order for ${formatQty(remaining)} @ ${formatPrice(order.asset, marketPrice)}`}
     >
       Trade at Last
     </button>
@@ -542,7 +539,7 @@ export function AlgoMonitor() {
                         </div>
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums text-label">
-                        {formatPrice(order.limitPrice)}
+                        {formatPrice(order.asset, order.limitPrice)}
                       </td>
                       <td
                         className={`px-3 py-2 text-right tabular-nums ${
@@ -554,7 +551,7 @@ export function AlgoMonitor() {
                             : "text-subtle"
                         }`}
                       >
-                        {marketPrice !== undefined ? formatPrice(marketPrice) : "—"}
+                        {marketPrice !== undefined ? formatPrice(order.asset, marketPrice) : "—"}
                       </td>
                       <td
                         className={`px-3 py-2 text-right tabular-nums text-[10px] ${
