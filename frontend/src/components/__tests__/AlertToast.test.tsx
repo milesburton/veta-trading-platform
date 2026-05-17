@@ -124,6 +124,21 @@ describe("AlertToast", () => {
     expect(openDrawer).toHaveBeenCalled();
   });
 
+  it("Dismiss all is hidden when the queue has a single alert", () => {
+    mockQueue = [makeAlert({ id: "solo" })];
+    render(<AlertToast />);
+    expect(screen.queryByTestId("alert-toast-dismiss-all")).toBeNull();
+  });
+
+  it("Dismiss all dispatches allAlertsDismissed when the queue has multiple alerts", () => {
+    mockQueue = [makeAlert({ id: "a-1" }), makeAlert({ id: "a-2" })];
+    render(<AlertToast />);
+    fireEvent.click(screen.getByTestId("alert-toast-dismiss-all"));
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "alerts/allAlertsDismissed" })
+    );
+  });
+
   it("position indicator shows 1/N for the latest alert in a multi-alert queue", () => {
     mockQueue = [makeAlert({ id: "newest" }), makeAlert({ id: "older" })];
     render(<AlertToast />);

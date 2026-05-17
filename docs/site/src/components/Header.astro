@@ -4,6 +4,7 @@ import { BUILD_INFO } from "../generated/build-info";
 
 const repoUrl = "https://github.com/milesburton/veta-trading-platform";
 const platformUrl = "https://veta.mnetcs.com/";
+const grafanaUrl = "https://veta.mnetcs.com/grafana/";
 const commitUrl =
   BUILD_INFO.commitSha === "unknown"
     ? null
@@ -28,6 +29,17 @@ const tooltip = `Docs built ${
     <span class="veta-version">v{BUILD_INFO.version}</span>
     <span class="veta-sep">·</span>
     <span class="veta-sha">{BUILD_INFO.commitSha}</span>
+  </a>
+
+  <a
+    class="veta-secondary-link"
+    data-testid="grafana-link"
+    href={grafanaUrl}
+    target="_blank"
+    rel="noopener"
+    title="Open Grafana (observability dashboards)"
+  >
+    Grafana
   </a>
 
   <a
@@ -98,6 +110,25 @@ const tooltip = `Docs built ${
   }
   .veta-platform-cta-icon {
     flex-shrink: 0;
+  }
+  .veta-secondary-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.15s, background-color 0.15s;
+  }
+  .veta-secondary-link:hover {
+    color: var(--sl-color-white);
+    background: var(--sl-color-gray-6);
+  }
+  .veta-secondary-link:focus-visible {
+    outline: 2px solid var(--sl-color-text-accent);
+    outline-offset: 2px;
   }
   .veta-build-chip {
     display: inline-flex;
