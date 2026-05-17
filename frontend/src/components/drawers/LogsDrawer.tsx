@@ -100,9 +100,9 @@ export function LogsDrawer() {
     }
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
   useEffect(() => {
     runQuery();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function scheduleRun(delayMs = 250) {
