@@ -11,197 +11,18 @@ import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { submitOrderThunk } from "@veta/frontend/store/ordersSlice.ts";
 import { setActiveSide, setActiveStrategy } from "@veta/frontend/store/uiSlice.ts";
 import type { BondPriceResponse, OptionQuoteResponse } from "@veta/frontend/types/analytics.ts";
-import type {
-  AlgoParams,
-  ArrivalPriceParams,
-  BondSpec,
-  IcebergParams,
-  InstrumentType,
-  IsParams,
-  LimitParams,
-  MomentumParams,
-  OrderSide,
-  PovParams,
-  SniperParams,
-  Trade,
-  TwapParams,
-  VwapParams,
-} from "@veta/frontend/types.ts";
+import type { InstrumentType, Trade } from "@veta/frontend/types.ts";
 import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { useEffect, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { AssetSelector } from "./AssetSelector";
+import { AssetInfoBar } from "./OrderTicket/AssetInfoBar";
+import { buildAlgoParams } from "./OrderTicket/buildAlgoParams";
+import { buildTrade } from "./OrderTicket/buildTrade";
+import { OPTION_EXPIRIES, TIF_OPTIONS, type TifValue } from "./OrderTicket/constants";
+import { OptionPreview } from "./OrderTicket/OptionPreview";
+import { OrderPreview } from "./OrderTicket/OrderPreview";
 import { StrategyParams } from "./StrategyParams";
-
-function fmt2(n: number) {
-  return n.toFixed(2);
-}
-
-function AssetInfoBar({ symbol }: { symbol: string }) {
-  const assets = useAppSelector((s) => s.market.assets);
-  const orderBook = useAppSelector((s) => s.market.orderBook);
-  const asset = assets.find((a) => a.symbol === symbol);
-  if (!asset) return null;
-
-  const book = orderBook[symbol];
-  const bid = book?.bids[0]?.price;
-  const ask = book?.asks[0]?.price;
-  const spreadBps = bid && ask ? (((ask - bid) / ((bid + ask) / 2)) * 10_000).toFixed(1) : null;
-
-  return (
-    <div
-      className="rounded bg-panel/60 border border-divider/50 px-2.5 py-2 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1"
-      data-testid="asset-info-bar"
-    >
-      <div className="flex justify-between">
-        <span className="text-muted">Bid</span>
-        <span className="tabular-nums text-sky-400">{bid ? formatPrice(symbol, bid) : "—"}</span>
-      </div>
-      <div className="flex justify-between">
-        <span className="text-muted">Ask</span>
-        <span className="tabular-nums text-red-400">{ask ? formatPrice(symbol, ask) : "—"}</span>
-      </div>
-      <div className="flex justify-between">
-        <span className="text-muted">Spread</span>
-        <span className="tabular-nums text-label">{spreadBps ? `${spreadBps}bp` : "—"}</span>
-      </div>
-      <div className="flex justify-between">
-        <span className="text-muted">Beta</span>
-        <span className="tabular-nums text-label">
-          {asset.beta !== undefined ? asset.beta.toFixed(2) : "—"}
-        </span>
-      </div>
-      <div className="flex justify-between">
-        <span className="text-muted">Mkt Cap</span>
-        <span className="tabular-nums text-label">
-          {asset.marketCapB !== undefined
-            ? asset.marketCapB >= 1000
-              ? `$${(asset.marketCapB / 1000).toFixed(1)}T`
-              : `$${asset.marketCapB.toFixed(0)}B`
-            : "—"}
-        </span>
-      </div>
-      <div className="flex justify-between">
-        <span className="text-muted">Div Yld</span>
-        <span className="tabular-nums text-label">
-          {asset.dividendYield !== undefined && asset.dividendYield > 0
-            ? `${(asset.dividendYield * 100).toFixed(2)}%`
-            : "—"}
-        </span>
-      </div>
-      <div className="flex justify-between">
-        <span className="text-muted">P/E</span>
-        <span className="tabular-nums text-label">
-          {asset.peRatio !== undefined && asset.peRatio > 0 ? asset.peRatio.toFixed(1) : "—"}
-        </span>
-      </div>
-      <div className="flex justify-between">
-        <span className="text-muted">Exchange</span>
-        <span className="tabular-nums text-label">{asset.exchange ?? "—"}</span>
-      </div>
-    </div>
-  );
-}
-
-function OrderPreview({
-  symbol,
-  qty,
-  limitPx,
-  side,
-}: {
-  symbol: string;
-  qty: number;
-  limitPx: number;
-  side: OrderSide;
-}) {
-  const orderBook = useAppSelector((s) => s.market.orderBook);
-  if (qty <= 0 || limitPx <= 0) return null;
-
-  const notional = qty * limitPx;
-  const book = orderBook[symbol];
-  const mid = book?.mid;
-  const arrivalSlippageBps =
-    mid && mid > 0 ? ((limitPx - mid) / mid) * 10_000 * (side === "BUY" ? 1 : -1) : null;
-
-  return (
-    <div className="rounded bg-panel/40 border border-divider/40 px-2.5 py-1.5 text-[10px] flex items-center justify-between gap-3">
-      <div className="flex gap-3">
-        <span className="text-muted">Notional</span>
-        <span className="tabular-nums text-secondary font-semibold">
-          $
-          {notional >= 1_000_000
-            ? `${(notional / 1_000_000).toFixed(2)}M`
-            : notional >= 1_000
-              ? `${(notional / 1_000).toFixed(1)}K`
-              : fmt2(notional)}
-        </span>
-      </div>
-      {arrivalSlippageBps !== null && (
-        <div className="flex gap-1.5 items-center">
-          <span className="text-muted">vs Mid</span>
-          <span
-            className={`tabular-nums font-semibold ${
-              arrivalSlippageBps > 5
-                ? "text-red-400"
-                : arrivalSlippageBps < -5
-                  ? "text-emerald-400"
-                  : "text-label"
-            }`}
-          >
-            {arrivalSlippageBps > 0 ? "+" : ""}
-            {arrivalSlippageBps.toFixed(1)}bp
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function OptionPreview({ qty, premium }: { qty: number; premium: number }) {
-  if (qty <= 0 || premium <= 0) return null;
-  const notional = qty * 100 * premium;
-  return (
-    <div className="rounded bg-panel/40 border border-divider/40 px-2.5 py-1.5 text-[10px] flex items-center justify-between gap-3">
-      <span className="text-muted">
-        {qty} contract{qty !== 1 ? "s" : ""}
-      </span>
-      <span className="tabular-nums text-secondary font-semibold">
-        $
-        {notional >= 1_000_000
-          ? `${(notional / 1_000_000).toFixed(2)}M`
-          : notional >= 1_000
-            ? `${(notional / 1_000).toFixed(1)}K`
-            : fmt2(notional)}
-        {" notional"}
-      </span>
-    </div>
-  );
-}
-
-const TIF_OPTIONS = [
-  { value: "DAY", label: "DAY", title: "Day order — expires at market close" },
-  { value: "GTC", label: "GTC", title: "Good Till Cancelled" },
-  {
-    value: "IOC",
-    label: "IOC",
-    title: "Immediate Or Cancel — fill what you can instantly",
-  },
-  {
-    value: "FOK",
-    label: "FOK",
-    title: "Fill Or Kill — all or nothing immediately",
-  },
-] as const;
-
-type TifValue = (typeof TIF_OPTIONS)[number]["value"];
-
-const OPTION_EXPIRIES = [
-  { label: "7d", secs: 7 * 86400 },
-  { label: "14d", secs: 14 * 86400 },
-  { label: "30d", secs: 30 * 86400 },
-  { label: "60d", secs: 60 * 86400 },
-  { label: "90d", secs: 90 * 86400 },
-];
 
 export function OrderTicket() {
   const dispatch = useAppDispatch();
@@ -474,79 +295,31 @@ export function OrderTicket() {
   ];
   const isValid = resolution.canSubmit;
 
-  function buildAlgoParams(): AlgoParams {
-    if (activeStrategy === "TWAP") {
-      const p: TwapParams = {
-        strategy: "TWAP",
-        numSlices: Number(twapSlices.value),
-        participationCap: Number(twapCap.value),
-      };
-      return p;
-    }
-    if (activeStrategy === "POV") {
-      const p: PovParams = {
-        strategy: "POV",
-        participationRate: Number(povRate.value),
-        minSliceSize: Number(povMin.value),
-        maxSliceSize: Number(povMax.value),
-      };
-      return p;
-    }
-    if (activeStrategy === "VWAP") {
-      const p: VwapParams = {
-        strategy: "VWAP",
-        maxDeviation: Number(vwapDev.value) / 100,
-        startOffsetSecs: Number(vwapStart.value),
-        endOffsetSecs: Number(vwapEnd.value),
-      };
-      return p;
-    }
-    if (activeStrategy === "ICEBERG") {
-      const p: IcebergParams = {
-        strategy: "ICEBERG",
-        visibleQty: Number(icebergVisible.value),
-      };
-      return p;
-    }
-    if (activeStrategy === "SNIPER") {
-      const p: SniperParams = {
-        strategy: "SNIPER",
-        aggressionPct: Number(sniperAggression.value),
-        maxVenues: Number(sniperMaxVenues.value),
-      };
-      return p;
-    }
-    if (activeStrategy === "ARRIVAL_PRICE") {
-      const p: ArrivalPriceParams = {
-        strategy: "ARRIVAL_PRICE",
-        urgency: Number(apUrgency.value),
-        maxSlippageBps: Number(apMaxSlippageBps.value),
-      };
-      return p;
-    }
-    if (activeStrategy === "IS") {
-      const p: IsParams = {
-        strategy: "IS",
-        urgency: Number(isUrgency.value),
-        maxSlippageBps: Number(isMaxSlippageBps.value),
-        minSlices: Number(isMinSlices.value),
-        maxSlices: Number(isMaxSlices.value),
-      };
-      return p;
-    }
-    if (activeStrategy === "MOMENTUM") {
-      const p: MomentumParams = {
-        strategy: "MOMENTUM",
-        entryThresholdBps: Number(momentumThreshold.value),
-        maxTranches: Number(momentumMaxTranches.value),
-        shortEmaPeriod: Number(momentumShortEma.value),
-        longEmaPeriod: Number(momentumLongEma.value),
-        cooldownTicks: Number(momentumCooldown.value),
-      };
-      return p;
-    }
-    const p: LimitParams = { strategy: "LIMIT" };
-    return p;
+  function currentAlgoParams() {
+    return buildAlgoParams(activeStrategy, {
+      twapSlices: twapSlices.value,
+      twapCap: twapCap.value,
+      povRate: povRate.value,
+      povMin: povMin.value,
+      povMax: povMax.value,
+      vwapDev: vwapDev.value,
+      vwapStart: vwapStart.value,
+      vwapEnd: vwapEnd.value,
+      icebergVisible: icebergVisible.value,
+      sniperAggression: sniperAggression.value,
+      sniperMaxVenues: sniperMaxVenues.value,
+      apUrgency: apUrgency.value,
+      apMaxSlippageBps: apMaxSlippageBps.value,
+      isUrgency: isUrgency.value,
+      isMaxSlippageBps: isMaxSlippageBps.value,
+      isMinSlices: isMinSlices.value,
+      isMaxSlices: isMaxSlices.value,
+      momentumThreshold: momentumThreshold.value,
+      momentumMaxTranches: momentumMaxTranches.value,
+      momentumShortEma: momentumShortEma.value,
+      momentumLongEma: momentumLongEma.value,
+      momentumCooldown: momentumCooldown.value,
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -556,67 +329,24 @@ export function OrderTicket() {
     submitting.value = true;
     feedback.value = null;
 
-    const algoParams: LimitParams = { strategy: "LIMIT" };
-
-    let trade: Trade;
-    if (isOptions) {
-      trade = {
-        asset: selectedAsset.symbol,
-        side: activeSide,
-        quantity: qty,
-        limitPrice: lx,
-        expiresAt: 300,
-        algoParams,
-        instrumentType: "option" as const,
-        optionSpec: {
-          optionType: optionType.value,
-          strike: optionStrikeNum,
-          expirySecs: Number(optionExpiry.value),
-          premium: optionQuote.value?.price,
-        },
-      };
-    } else if (isBond && selectedBondDef) {
-      const yldDecimal =
-        Number(bondYield.value) > 0 ? Number(bondYield.value) / 100 : selectedBondDef.initialYield;
-      const bondSpec: BondSpec = {
-        isin: selectedBondDef.isin,
-        symbol: selectedBondDef.symbol,
-        description: selectedBondDef.description,
-        couponRate: selectedBondDef.couponRate,
-        maturityDate: selectedBondDef.maturityDate,
-        totalPeriods: selectedBondDef.totalPeriods,
-        periodsPerYear: selectedBondDef.periodsPerYear,
-        faceValue: selectedBondDef.faceValue,
-        yieldAtOrder: yldDecimal,
-        creditRating: selectedBondDef.creditRating,
-      };
-      trade = {
-        asset: selectedBondDef.symbol,
-        side: activeSide,
-        quantity: qty,
-        limitPrice: bondQuote.value?.price ?? 0,
-        expiresAt: 300,
-        algoParams,
-        instrumentType: "bond" as const,
-        bondSpec,
-      };
-    } else {
-      const itype =
-        instrumentType.value === "fx"
-          ? ("fx" as const)
-          : instrumentType.value === "commodity"
-            ? ("commodity" as const)
-            : undefined;
-      trade = {
-        asset: selectedAsset.symbol,
-        side: activeSide,
-        quantity: qty,
-        limitPrice: lx,
-        expiresAt: Number(expiresAt.value),
-        algoParams: buildAlgoParams(),
-        ...(itype ? { instrumentType: itype } : {}),
-      };
-    }
+    const trade: Trade = buildTrade({
+      selectedAsset,
+      activeSide,
+      qty,
+      isOptions,
+      isBond,
+      selectedBondDef,
+      optionType: optionType.value,
+      optionStrikeNum,
+      optionExpirySecs: Number(optionExpiry.value),
+      optionPremium: optionQuote.value?.price,
+      bondPrice: bondQuote.value?.price,
+      bondYieldValue: bondYield.value,
+      lx,
+      expiresAtSecs: Number(expiresAt.value),
+      instrumentType: instrumentType.value,
+      algoParams: currentAlgoParams(),
+    });
 
     try {
       await dispatch(submitOrderThunk(trade)).unwrap();
