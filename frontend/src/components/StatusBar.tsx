@@ -533,6 +533,9 @@ export function AppHeader() {
         localStorage.removeItem("veta:last-known-user");
       } catch {}
       dispatch(clearUser());
+      if (typeof window !== "undefined") {
+        window.location.assign("/");
+      }
     }
   }
 

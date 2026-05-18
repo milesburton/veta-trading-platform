@@ -53,13 +53,13 @@ export default defineConfig(async ({ mode }) => {
     base: isElectronMode ? "./" : "/",
     define: {
       "import.meta.env.VITE_BUILD_DATE": JSON.stringify(
-        process.env.VITE_BUILD_DATE ?? new Date().toISOString().slice(0, 10),
+        process.env.VITE_BUILD_DATE || new Date().toISOString().slice(0, 10),
       ),
       "import.meta.env.VITE_COMMIT_SHA": JSON.stringify(
-        process.env.VITE_COMMIT_SHA ?? "dev",
+        process.env.VITE_COMMIT_SHA || "dev",
       ),
       "import.meta.env.VITE_APP_VERSION": JSON.stringify(
-        process.env.VITE_APP_VERSION ?? readPlatformVersion(),
+        process.env.VITE_APP_VERSION || readPlatformVersion(),
       ),
     },
     plugins: [

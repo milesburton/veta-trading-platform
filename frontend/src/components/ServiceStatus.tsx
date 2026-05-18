@@ -59,7 +59,11 @@ export function ServiceStatus({ services }: Props) {
           <span className="tabular-nums text-muted">
             {okCount}/{totalCount}
           </span>
-          {consistent && version && <span className="ml-1 font-mono text-muted">v{version}</span>}
+          {consistent && version && (
+            <span className="ml-1 font-mono text-muted" title={`All services on v${version}`}>
+              v{version.length > 8 ? `${version.slice(0, 7)}…` : version}
+            </span>
+          )}
         </span>
       </button>
 

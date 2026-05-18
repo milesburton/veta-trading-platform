@@ -7,10 +7,11 @@ interface Props {
 
 export function BuildInfo({ buildDate, commitSha, version, className }: Props) {
   const shortSha = commitSha ? commitSha.slice(0, 7) : null;
+  const dateOnly = buildDate ? buildDate.slice(0, 10) : null;
   const parts: string[] = [];
   if (version) parts.push(version);
   if (shortSha) parts.push(shortSha);
-  if (buildDate) parts.push(buildDate);
+  if (dateOnly) parts.push(dateOnly);
   if (parts.length === 0) return null;
 
   const tooltipBits: string[] = [];
