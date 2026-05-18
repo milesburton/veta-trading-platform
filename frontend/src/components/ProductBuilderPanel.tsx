@@ -1,29 +1,13 @@
 import { useSignal } from "@preact/signals-react";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
-
-type LegType = "equity" | "bond" | "option";
-type ProductState = "draft" | "structured" | "issued" | "sold" | "unwound";
-
-interface DraftLeg {
-  _key: string;
-  type: LegType;
-  symbol: string;
-  weight: number;
-  isin?: string;
-  optionStrike?: string;
-  optionExpiry?: string;
-  optionPutCall?: "CALL" | "PUT";
-}
-
-interface SavedProduct {
-  productId: string;
-  state: ProductState;
-}
-
-let _legKey = 0;
-function newLegKey(): string {
-  return `dleg-${++_legKey}`;
-}
+import {
+  createProduct,
+  type ProductState,
+  type SavedProduct,
+  transitionProduct,
+  updateProductLegs,
+} from "./ProductBuilder/api";
+import { type DraftLeg, type LegType, newLegKey, toLegPayloads } from "./ProductBuilder/legs";
 
 const STATE_COLOURS: Record<ProductState, string> = {
   draft: "bg-zinc-800 text-zinc-300 border-zinc-600",
@@ -70,30 +54,37 @@ export function ProductBuilderPanel() {
     legs.value = legs.value.filter((l) => l._key !== key);
   }
 
-  function legPayload() {
-    return legs.value.map((l) => {
-      const base: Record<string, unknown> = {
-        type: l.type,
-        symbol: l.symbol,
-        weight: l.weight / 100,
-      };
-      if (l.isin) base.isin = l.isin;
-      if (l.type === "option" && l.optionStrike && l.optionExpiry) {
-        base.optionSpec = {
-          strike: parseFloat(l.optionStrike),
-          expiry: l.optionExpiry,
-          putCall: l.optionPutCall ?? "CALL",
-        };
-      }
-      return base;
-    });
-  }
-
   function showFeedback(ok: boolean, msg: string) {
     feedback.value = { ok, msg };
     setTimeout(() => {
       feedback.value = null;
     }, 5_000);
+  }
+
+  function applyResult(
+    result: { ok: boolean; saved?: SavedProduct; error?: string },
+    successMsg: string
+  ) {
+    if (!result.ok || !result.saved) {
+      showFeedback(false, result.error ?? "Request failed.");
+      return false;
+    }
+    savedProduct.value = result.saved;
+    showFeedback(true, successMsg);
+    return true;
+  }
+
+  async function runWhileBusy<T>(fn: () => Promise<T>): Promise<T | undefined> {
+    if (busy.value) return undefined;
+    busy.value = true;
+    try {
+      return await fn();
+    } catch (err) {
+      showFeedback(false, (err as Error).message);
+      return undefined;
+    } finally {
+      busy.value = false;
+    }
   }
 
   async function handleSaveDraft() {
@@ -108,123 +99,42 @@ export function ProductBuilderPanel() {
       return;
     }
 
-    busy.value = true;
-    try {
+    await runWhileBusy(async () => {
       const existing = savedProduct.value;
-
+      const legPayloads = toLegPayloads(legs.value);
       if (existing) {
-        const res = await fetch(`/api/gateway/products/${existing.productId}/legs`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ legs: legPayload() }),
-        });
-        const data = (await res.json()) as {
-          productId?: string;
-          state?: ProductState;
-          error?: string;
-        };
-        if (!res.ok) {
-          showFeedback(false, data.error ?? "Failed to update legs.");
-          return;
-        }
-        savedProduct.value = {
-          productId: data.productId as string,
-          state: data.state as ProductState,
-        };
-        showFeedback(true, "Legs updated.");
+        const result = await updateProductLegs(existing.productId, legPayloads);
+        applyResult(result, "Legs updated.");
       } else {
-        const res = await fetch("/api/gateway/products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: name.value.trim(),
-            description: description.value.trim(),
-            targetNotional: notional,
-            currency: "USD",
-            createdBy: user?.id ?? "unknown",
-            legs: legPayload(),
-          }),
+        const result = await createProduct({
+          name: name.value.trim(),
+          description: description.value.trim(),
+          targetNotional: notional,
+          currency: "USD",
+          createdBy: user?.id ?? "unknown",
+          legs: legPayloads,
         });
-        const data = (await res.json()) as {
-          productId?: string;
-          state?: ProductState;
-          error?: string;
-        };
-        if (!res.ok) {
-          showFeedback(false, data.error ?? "Failed to create product.");
-          return;
-        }
-        savedProduct.value = {
-          productId: data.productId as string,
-          state: data.state as ProductState,
-        };
-        showFeedback(true, `Draft product ${data.productId} created.`);
+        if (applyResult(result, `Draft product ${result.saved?.productId} created.`)) return;
       }
-    } catch (err) {
-      showFeedback(false, (err as Error).message);
-    } finally {
-      busy.value = false;
-    }
+    });
   }
 
   async function handleStructure() {
-    if (busy.value || !savedProduct.value) return;
-    busy.value = true;
-    try {
-      const res = await fetch(`/api/gateway/products/${savedProduct.value.productId}/structure`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: "{}",
-      });
-      const data = (await res.json()) as {
-        productId?: string;
-        state?: ProductState;
-        error?: string;
-      };
-      if (!res.ok) {
-        showFeedback(false, data.error ?? "Failed to structure product.");
-        return;
-      }
-      savedProduct.value = {
-        productId: data.productId as string,
-        state: data.state as ProductState,
-      };
-      showFeedback(true, "Product structured.");
-    } catch (err) {
-      showFeedback(false, (err as Error).message);
-    } finally {
-      busy.value = false;
-    }
+    if (!savedProduct.value) return;
+    const productId = savedProduct.value.productId;
+    await runWhileBusy(async () => {
+      const result = await transitionProduct(productId, "structure");
+      applyResult(result, "Product structured.");
+    });
   }
 
   async function handleIssue() {
-    if (busy.value || !savedProduct.value) return;
-    busy.value = true;
-    try {
-      const res = await fetch(`/api/gateway/products/${savedProduct.value.productId}/issue`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: "{}",
-      });
-      const data = (await res.json()) as {
-        productId?: string;
-        state?: ProductState;
-        error?: string;
-      };
-      if (!res.ok) {
-        showFeedback(false, data.error ?? "Failed to issue product.");
-        return;
-      }
-      savedProduct.value = {
-        productId: data.productId as string,
-        state: data.state as ProductState,
-      };
-      showFeedback(true, "Product issued and visible to clients.");
-    } catch (err) {
-      showFeedback(false, (err as Error).message);
-    } finally {
-      busy.value = false;
-    }
+    if (!savedProduct.value) return;
+    const productId = savedProduct.value.productId;
+    await runWhileBusy(async () => {
+      const result = await transitionProduct(productId, "issue");
+      applyResult(result, "Product issued and visible to clients.");
+    });
   }
 
   const currentState = savedProduct.value?.state ?? null;
