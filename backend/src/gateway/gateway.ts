@@ -23,6 +23,7 @@ import { handleAdminRoute } from "./routes/admin.ts";
 import { handleAlertsRoute } from "./routes/alerts.ts";
 import { handleAnalyticsRoute } from "./routes/analytics.ts";
 import { handleLogsRoute, recordLogLine } from "./routes/logs.ts";
+import { handleBugReportRoute } from "./routes/bug-report.ts";
 import { handleTelemetryRoute } from "./routes/telemetry.ts";
 import { handleScenariosRoute } from "./routes/scenarios.ts";
 import { handleProxiedRoutes } from "./routes/proxied.ts";
@@ -681,6 +682,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   const telemetryResponse = await handleTelemetryRoute(req, path, gatewayContext);
   if (telemetryResponse) return telemetryResponse;
+
+  const bugReportResponse = await handleBugReportRoute(req, path, gatewayContext);
+  if (bugReportResponse) return bugReportResponse;
 
   const scenariosResponse = await handleScenariosRoute(req, path, gatewayContext);
   if (scenariosResponse) return scenariosResponse;
