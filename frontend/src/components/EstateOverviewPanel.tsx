@@ -9,6 +9,7 @@ import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { SERVICES, useGetServiceHealthQuery } from "@veta/frontend/store/servicesApi.ts";
 import { COLOR } from "@veta/frontend/tokens.ts";
 import type { ObsEvent } from "@veta/frontend/types.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { useEffect, useRef } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
@@ -336,11 +337,7 @@ function eventStyle(type: string) {
 
 function formatTs(ts: number | undefined): string {
   if (!ts) return "";
-  return new Date(ts).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  return formatUtcTime(ts);
 }
 
 function EventRow({ ev }: { ev: ObsEvent }) {

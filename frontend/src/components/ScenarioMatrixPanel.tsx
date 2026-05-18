@@ -3,6 +3,7 @@ import { useGetScenarioMutation } from "@veta/frontend/store/analyticsApi.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { selectSymbols } from "@veta/frontend/store/selectors.ts";
 import type { OptionType, ScenarioCell, ScenarioResponse } from "@veta/frontend/types/analytics.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { useMemo } from "react";
 
 const EXPIRY_OPTIONS = [
@@ -423,7 +424,7 @@ export function ScenarioMatrixPanel() {
             )}
 
             <div className="text-[9px] text-divider mt-2 text-right">
-              {new Date(result.value.computedAt).toLocaleTimeString()} · 1000 MC paths/cell
+              {formatUtcTime(result.value.computedAt)} · 1000 MC paths/cell
             </div>
           </div>
         </>

@@ -22,6 +22,7 @@ import {
 } from "@veta/frontend/store/uiSlice.ts";
 import { useDeleteSessionMutation } from "@veta/frontend/store/userApi.ts";
 import type { ServiceHealth } from "@veta/frontend/types.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { openOrderTicketWindow } from "@veta/frontend/utils/orderTicketWindow.ts";
 import type { IJsonModel, TabNode } from "flexlayout-react";
 import { Actions, Model } from "flexlayout-react";
@@ -549,13 +550,13 @@ export function AppHeader() {
   const user = useAppSelector((s) => s.auth.user);
   const orderTicketWindowSize = useAppSelector(selectOrderTicketWindowSize);
   const services = useAllServiceHealth();
-  const time = useSignal(new Date().toLocaleTimeString());
+  const time = useSignal(formatUtcTime(new Date()));
   const dispatch = useAppDispatch();
   const [deleteSession] = useDeleteSessionMutation();
 
   useEffect(() => {
     const id = setInterval(() => {
-      time.value = new Date().toLocaleTimeString();
+      time.value = formatUtcTime(new Date());
     }, 1000);
     return () => clearInterval(id);
   }, [time]);

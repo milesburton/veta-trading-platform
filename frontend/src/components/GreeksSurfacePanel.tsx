@@ -10,6 +10,7 @@ import { useGetGreeksSurfaceQuery } from "@veta/frontend/store/analyticsApi.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { selectSymbols } from "@veta/frontend/store/selectors.ts";
 import { COLOR } from "@veta/frontend/tokens.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import {
   CartesianGrid,
   ComposedChart,
@@ -217,7 +218,7 @@ export function GreeksSurfacePanel() {
 
       {data && (
         <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-divider">
-          {new Date(data.computedAt).toLocaleTimeString()} · For educational use only
+          {formatUtcTime(data.computedAt)} · For educational use only
         </div>
       )}
     </div>

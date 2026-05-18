@@ -1,5 +1,6 @@
 import { useSignal } from "@preact/signals-react";
 import type { ServiceHealth, ServiceState } from "@veta/frontend/types.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { commitUrl, isShortSha } from "@veta/frontend/utils/githubLinks";
 import { ServiceRow } from "./ServiceRow";
 import { StatusDot } from "./StatusDot";
@@ -115,9 +116,7 @@ export function ServiceStatus({ services }: Props) {
                   )}
                 </span>
                 <span className="text-subtle h-[1.1em] tabular-nums">
-                  {lastChecked
-                    ? `checked ${new Date(lastChecked).toLocaleTimeString()}`
-                    : "polls every 10s"}
+                  {lastChecked ? `checked ${formatUtcTime(lastChecked)}` : "polls every 10s"}
                 </span>
               </div>
             </div>
