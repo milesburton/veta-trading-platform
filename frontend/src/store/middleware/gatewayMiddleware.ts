@@ -651,17 +651,19 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     }
   }
 
-  function nudgeReconnectIfStuck(reason: string) {
+  function nudgeReconnectIfStuck(reason: string, silent = false) {
     const state = storeAPI.getState() as { market?: { connected?: boolean } };
     if (state.market?.connected) return;
     if (!started) return;
-    storeAPI.dispatch(
-      reportError({
-        message: `Nudging reconnect: ${reason}`,
-        source: "gatewayMiddleware",
-        severity: "info",
-      })
-    );
+    if (!silent) {
+      storeAPI.dispatch(
+        reportError({
+          message: `Nudging reconnect: ${reason}`,
+          source: "gatewayMiddleware",
+          severity: "info",
+        })
+      );
+    }
     manualReconnect();
   }
 
@@ -675,12 +677,15 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
         nudgeReconnectIfStuck("tab became visible");
       }
     });
-    let lastUserNudgeAt = 0;
+    // User-activity nudges are opportunistic (every focus/click while
+    // disconnected). They're not errors, so dispatched silently to avoid
+    // flooding the error transport during outages.
+    let lastUserNudgeAt = Number.NEGATIVE_INFINITY;
     const onUserActivity = () => {
       const now = Date.now();
       if (now - lastUserNudgeAt < 5_000) return;
       lastUserNudgeAt = now;
-      nudgeReconnectIfStuck("user activity");
+      nudgeReconnectIfStuck("user activity", true);
     };
     window.addEventListener("focus", onUserActivity);
     document.addEventListener("click", onUserActivity);
