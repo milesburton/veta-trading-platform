@@ -5,8 +5,8 @@
   --gray-200: 214 224 236; /* strong secondary text (~12:1) */
   --gray-300: 182 196 212; /* body / value text (~8:1) */
   --gray-400: 152 165 182; /* secondary labels (~5.5:1) */
-  --gray-500: 122 135 152; /* muted labels (~3.5:1) */
-  --gray-600: 78 90 106; /* disabled / decorative */
+  --gray-500: 142 156 175; /* muted labels (AA on panel) */
+  --gray-600: 78 90 106; /* disabled / decorative — fails AA by design */
   --gray-700: 52 64 80; /* subtle borders */
   --gray-800: 30 41 55; /* panel backgrounds */
   --gray-900: 15 23 38; /* surface backgrounds */
@@ -22,12 +22,12 @@
   --semantic-maker: 16 185 129;       /* emerald-500  */
   --semantic-taker: 245 158 11;       /* amber-500    */
   --semantic-cross: 56 189 248;       /* sky-400      */
-  --semantic-limit: 59 130 246;       /* blue-500     */
-  --semantic-twap: 168 85 247;        /* purple-500   */
+  --semantic-limit: 96 165 250;       /* blue-400 — AA on panel */
+  --semantic-twap: 196 132 252;       /* purple-400 — AA on panel */
   --semantic-pov: 249 115 22;         /* orange-500   */
   --semantic-vwap: 234 179 8;         /* yellow-500   */
   --semantic-iceberg: 34 211 238;     /* cyan-400     */
-  --semantic-sniper: 244 63 94;       /* rose-500     */
+  --semantic-sniper: 251 113 133;     /* rose-400 — AA on panel */
   --semantic-arrival-price: 129 140 248; /* indigo-400 */
 
   /* Chart chrome */
@@ -85,6 +85,25 @@
   --gray-200: 30 41 59; /* headings — slate-800 */
   --gray-100: 15 23 42; /* primary text, near-black — slate-900 */
   --gray-50: 2 6 23; /* max contrast — slate-950 */
+
+  /* Light-mode semantic overrides — darker variants for AA on light bgs.
+     The dark-mode defaults are tuned for dark backgrounds and fail WCAG
+     contrast when used on slate-50/100. */
+  --semantic-up: 4 120 87;            /* emerald-700 */
+  --semantic-up-dark: 4 120 87;
+  --semantic-down: 185 28 28;         /* red-700 */
+  --semantic-down-dark: 153 27 27;    /* red-800 */
+  --semantic-neutral: 75 85 99;       /* gray-600 */
+  --semantic-maker: 4 120 87;         /* emerald-700 */
+  --semantic-taker: 180 83 9;         /* amber-700 */
+  --semantic-cross: 3 105 161;        /* sky-700 */
+  --semantic-limit: 29 78 216;        /* blue-700 */
+  --semantic-twap: 126 34 206;        /* purple-700 */
+  --semantic-pov: 194 65 12;          /* orange-700 */
+  --semantic-vwap: 161 98 7;          /* yellow-700 */
+  --semantic-iceberg: 14 116 144;     /* cyan-700 */
+  --semantic-sniper: 190 18 60;       /* rose-700 */
+  --semantic-arrival-price: 67 56 202; /* indigo-700 */
 }
 
 [data-theme="high-contrast"] {
