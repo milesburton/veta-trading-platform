@@ -4,6 +4,7 @@ import type { IJsonModel, Model } from "flexlayout-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   makeAdministrationModel,
+  makeAdminObservabilityModel,
   makeAlgoModel,
   makeAnalysisModel,
   makeCommoditiesAnalysisModel,
@@ -115,6 +116,12 @@ const ADMIN_PRESET_WORKSPACES: {
     name: "System Status",
     locked: true,
     makeModel: makeSystemStatusModel,
+  },
+  {
+    id: "ws-observability",
+    name: "Observability",
+    locked: true,
+    makeModel: makeAdminObservabilityModel,
   },
   {
     id: "ws-pipeline-ops",

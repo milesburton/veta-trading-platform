@@ -213,8 +213,13 @@ describe("makeAlgoPipelineModel", () => {
 });
 
 describe("LAYOUT_TEMPLATES", () => {
-  it("has 22 templates", () => {
-    expect(LAYOUT_TEMPLATES).toHaveLength(22);
+  it("has 23 templates", () => {
+    expect(LAYOUT_TEMPLATES).toHaveLength(23);
+  });
+
+  it("includes the admin Observability superset template", () => {
+    const ids = new Set(LAYOUT_TEMPLATES.map((t) => t.id));
+    expect(ids.has("admin-observability")).toBe(true);
   });
 
   it("every template has id, label, description, and a valid model", () => {

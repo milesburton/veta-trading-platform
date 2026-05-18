@@ -15,6 +15,7 @@ export {
   LAYOUT_TEMPLATES,
   makeAdministrationModel,
   makeAdminModel,
+  makeAdminObservabilityModel,
   makeAlgoModel,
   makeAnalysisModel,
   makeClearModel,
