@@ -12,6 +12,7 @@ import {
 import type { ServiceHealth } from "@veta/frontend/types.ts";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DemoPersonas } from "./DemoPersonas.tsx";
+import { RegistrationForm } from "./LoginPage/RegistrationForm.tsx";
 import { AppHeader, useAllServiceHealth } from "./StatusBar.tsx";
 
 interface DegradedOverlayState {
@@ -331,6 +332,8 @@ export function LoginPage() {
                 {localError.value ?? formatApiError(apiError)}
               </div>
             )}
+
+            <RegistrationForm />
           </div>
 
           <div className="min-h-0">

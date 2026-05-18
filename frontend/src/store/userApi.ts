@@ -150,6 +150,7 @@ export interface DemoPersona {
 export const {
   useAuthorizeOAuthMutation,
   useExchangeOAuthCodeMutation,
+  useRegisterOAuthUserMutation,
   useDeleteSessionMutation,
   useLoginAsGuestMutation,
   useGetUsersQuery,

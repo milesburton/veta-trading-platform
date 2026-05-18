@@ -36,6 +36,13 @@ const mockAuthorizeOAuth =
   vi.fn<() => Promise<{ data?: { code: string }; error?: { status: number } }>>();
 const mockExchangeOAuthCode =
   vi.fn<() => Promise<{ data?: { user: AuthUser }; error?: { status: number } }>>();
+const mockRegisterOAuthUser =
+  vi.fn<
+    () => Promise<{
+      data?: { userId: string; name: string; role: string };
+      error?: { status: number; data?: { error?: string } };
+    }>
+  >();
 
 vi.mock("../../store/userApi", async (importOriginal) => {
   const original = await importOriginal<typeof import("../../store/userApi")>();
@@ -47,6 +54,10 @@ vi.mock("../../store/userApi", async (importOriginal) => {
     ],
     useExchangeOAuthCodeMutation: () => [
       mockExchangeOAuthCode,
+      { isLoading: false, error: undefined, reset: vi.fn() },
+    ],
+    useRegisterOAuthUserMutation: () => [
+      mockRegisterOAuthUser,
       { isLoading: false, error: undefined, reset: vi.fn() },
     ],
   };
@@ -86,6 +97,9 @@ describe("LoginPage", () => {
         },
       },
     });
+    mockRegisterOAuthUser.mockResolvedValue({
+      data: { userId: "newbie", name: "New User", role: "trader" },
+    });
   });
 
   test("embeds the shared app header and renders the credential form", () => {
@@ -98,11 +112,76 @@ describe("LoginPage", () => {
     expect(screen.getByTestId("oauth-submit")).toBeInTheDocument();
   });
 
-  test("does not render registration mode controls", () => {
+  test("renders the registration form below the sign-in card", () => {
     renderLogin();
-    expect(screen.queryByTestId("oauth-mode-register")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("oauth-mode-signin")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("oauth-display-name")).not.toBeInTheDocument();
+    expect(screen.getByTestId("registration-form")).toBeInTheDocument();
+    expect(screen.getByTestId("register-username")).toBeInTheDocument();
+    expect(screen.getByTestId("register-display-name")).toBeInTheDocument();
+    expect(screen.getByTestId("register-password")).toBeInTheDocument();
+    expect(screen.getByTestId("register-submit")).toBeInTheDocument();
+  });
+
+  test("registration: rejects passwords shorter than 8 chars locally", async () => {
+    renderLogin();
+    fireEvent.change(screen.getByTestId("register-username"), {
+      target: { value: "newbie" },
+    });
+    fireEvent.change(screen.getByTestId("register-display-name"), {
+      target: { value: "New User" },
+    });
+    fireEvent.change(screen.getByTestId("register-password"), {
+      target: { value: "short" },
+    });
+    fireEvent.click(screen.getByTestId("register-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("register-error")).toHaveTextContent(/at least 8/i);
+    });
+    expect(mockRegisterOAuthUser).not.toHaveBeenCalled();
+  });
+
+  test("registration: dispatches setUser after register + authorize + exchange flow", async () => {
+    const { store } = renderLogin();
+    fireEvent.change(screen.getByTestId("register-username"), {
+      target: { value: "newbie" },
+    });
+    fireEvent.change(screen.getByTestId("register-display-name"), {
+      target: { value: "New User" },
+    });
+    fireEvent.change(screen.getByTestId("register-password"), {
+      target: { value: "longenough123" },
+    });
+    fireEvent.click(screen.getByTestId("register-submit"));
+    await waitFor(() => {
+      expect(mockRegisterOAuthUser).toHaveBeenCalledTimes(1);
+    });
+    expect(mockAuthorizeOAuth).toHaveBeenCalled();
+    expect(mockExchangeOAuthCode).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(store.getState().auth.user?.id).toBe("alice");
+    });
+  });
+
+  test("registration: shows 409 error when username taken", async () => {
+    mockRegisterOAuthUser.mockResolvedValueOnce({
+      error: { status: 409, data: { error: "username already exists" } },
+    });
+    renderLogin();
+    fireEvent.change(screen.getByTestId("register-username"), {
+      target: { value: "taken" },
+    });
+    fireEvent.change(screen.getByTestId("register-display-name"), {
+      target: { value: "Already Taken" },
+    });
+    fireEvent.change(screen.getByTestId("register-password"), {
+      target: { value: "longenough123" },
+    });
+    fireEvent.click(screen.getByTestId("register-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("register-error")).toHaveTextContent(
+        /already taken|already exists/i
+      );
+    });
+    expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
   });
 
   test("dispatches setUser on successful OAuth exchange", async () => {

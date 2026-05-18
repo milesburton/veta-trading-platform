@@ -64,7 +64,7 @@ export const RegisterRequestSchema = z.object({
   username: z.string().optional(),
   userId: UserIdSchema.optional(),
   name: z.string().min(1),
-  password: z.string().optional(),
+  password: z.string().min(8).max(200),
 }).refine((v) => Boolean(v.username || v.userId), {
   message: "username or userId required",
   path: ["username"],
