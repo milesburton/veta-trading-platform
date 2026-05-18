@@ -191,118 +191,114 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     if (!tickTimer) tickTimer = setTimeout(flushTick, UI_TICK_INTERVAL_MS);
   }
 
-  function handleOrderEvent(topic: string, data: OrderEventData) {
-    switch (topic) {
-      case "orders.submitted":
-      case "orders.new": {
-        if (data.orderId) {
-          storeAPI.dispatch(
-            orderPatched({
-              id: data.clientOrderId ?? data.orderId,
-              patch: { status: "pending" },
-            })
-          );
-        }
-        break;
-      }
-      case "orders.routed": {
-        if (data.orderId) {
-          storeAPI.dispatch(
-            orderPatched({
-              id: data.clientOrderId ?? data.orderId,
-              patch: { status: "working" },
-            })
-          );
-        }
-        break;
-      }
-      case "orders.child": {
-        if (data.parentOrderId && data.childId) {
-          storeAPI.dispatch(
-            childAdded({
-              parentId: data.clientOrderId ?? data.parentOrderId,
-              child: {
-                id: data.childId,
-                parentId: data.clientOrderId ?? data.parentOrderId,
-                asset: data.asset ?? "",
-                side: data.side ?? "BUY",
-                quantity: data.quantity ?? 0,
-                limitPrice: data.limitPrice ?? 0,
-                status: "working",
-                filled: 0,
-                submittedAt: data.ts ?? Date.now(),
-              },
-            })
-          );
-        }
-        break;
-      }
-      case "orders.filled": {
-        if (data.parentOrderId && data.filledQty != null) {
-          storeAPI.dispatch(
-            fillReceived({
-              clOrdId: data.clientOrderId ?? data.parentOrderId,
-              filledQty: data.filledQty,
-              avgFillPrice: data.avgFillPrice ?? 0,
-              leavesQty: data.remainingQty ?? 0,
-            })
-          );
-          if (data.childId) {
-            storeAPI.dispatch(
-              childAdded({
-                parentId: data.clientOrderId ?? data.parentOrderId,
-                child: {
-                  id: data.childId,
-                  parentId: data.clientOrderId ?? data.parentOrderId,
-                  asset: data.asset ?? "",
-                  side: data.side ?? "BUY",
-                  quantity: data.filledQty,
-                  limitPrice: data.avgFillPrice ?? 0,
-                  status: "filled",
-                  filled: data.filledQty,
-                  submittedAt: data.ts ?? Date.now(),
-                  avgFillPrice: data.avgFillPrice,
-                  commissionUSD: data.commissionUSD,
-                  venue: data.venue as import("../../types.ts").VenueMIC | undefined,
-                  counterparty: data.counterparty,
-                  liquidityFlag: data.liquidityFlag,
-                  settlementDate: data.settlementDate,
-                },
-              })
-            );
-          }
-        }
-        break;
-      }
-      case "orders.expired": {
-        if (data.orderId) {
-          storeAPI.dispatch(
-            orderPatched({
-              id: data.clientOrderId ?? data.orderId,
-              patch: { status: "expired" },
-            })
-          );
-        }
-        break;
-      }
-      case "orders.rejected": {
-        if (data.clientOrderId) {
-          storeAPI.dispatch(
-            orderPatched({
-              id: data.clientOrderId,
-              patch: { status: "rejected" },
-            })
-          );
-        }
-        break;
-      }
-      case "orders.cancelled": {
-        if (data.clientOrderId) {
-          storeAPI.dispatch(orderCancelled({ clientOrderId: data.clientOrderId as string }));
-        }
-        break;
-      }
+  function patchOrderStatus(data: OrderEventData, status: "pending" | "working" | "expired") {
+    if (!data.orderId) return;
+    storeAPI.dispatch(orderPatched({ id: data.clientOrderId ?? data.orderId, patch: { status } }));
+  }
+
+  function dispatchChildAddedFromEvent(
+    data: OrderEventData,
+    opts: {
+      quantity: number;
+      limitPrice: number;
+      status: "working" | "filled";
+      filled: number;
+      enrichedWithFill?: boolean;
     }
+  ) {
+    if (!data.parentOrderId || !data.childId) return;
+    const parentId = data.clientOrderId ?? data.parentOrderId;
+    storeAPI.dispatch(
+      childAdded({
+        parentId,
+        child: {
+          id: data.childId,
+          parentId,
+          asset: data.asset ?? "",
+          side: data.side ?? "BUY",
+          quantity: opts.quantity,
+          limitPrice: opts.limitPrice,
+          status: opts.status,
+          filled: opts.filled,
+          submittedAt: data.ts ?? Date.now(),
+          ...(opts.enrichedWithFill
+            ? {
+                avgFillPrice: data.avgFillPrice,
+                commissionUSD: data.commissionUSD,
+                venue: data.venue as import("../../types.ts").VenueMIC | undefined,
+                counterparty: data.counterparty,
+                liquidityFlag: data.liquidityFlag,
+                settlementDate: data.settlementDate,
+              }
+            : {}),
+        },
+      })
+    );
+  }
+
+  function onOrderSubmittedOrNew(data: OrderEventData) {
+    patchOrderStatus(data, "pending");
+  }
+
+  function onOrderRouted(data: OrderEventData) {
+    patchOrderStatus(data, "working");
+  }
+
+  function onOrderChild(data: OrderEventData) {
+    dispatchChildAddedFromEvent(data, {
+      quantity: data.quantity ?? 0,
+      limitPrice: data.limitPrice ?? 0,
+      status: "working",
+      filled: 0,
+    });
+  }
+
+  function onOrderFilled(data: OrderEventData) {
+    if (!data.parentOrderId || data.filledQty == null) return;
+    storeAPI.dispatch(
+      fillReceived({
+        clOrdId: data.clientOrderId ?? data.parentOrderId,
+        filledQty: data.filledQty,
+        avgFillPrice: data.avgFillPrice ?? 0,
+        leavesQty: data.remainingQty ?? 0,
+      })
+    );
+    dispatchChildAddedFromEvent(data, {
+      quantity: data.filledQty,
+      limitPrice: data.avgFillPrice ?? 0,
+      status: "filled",
+      filled: data.filledQty,
+      enrichedWithFill: true,
+    });
+  }
+
+  function onOrderExpired(data: OrderEventData) {
+    patchOrderStatus(data, "expired");
+  }
+
+  function onOrderRejectedTopic(data: OrderEventData) {
+    if (!data.clientOrderId) return;
+    storeAPI.dispatch(orderPatched({ id: data.clientOrderId, patch: { status: "rejected" } }));
+  }
+
+  function onOrderCancelled(data: OrderEventData) {
+    if (!data.clientOrderId) return;
+    storeAPI.dispatch(orderCancelled({ clientOrderId: data.clientOrderId as string }));
+  }
+
+  const ORDER_EVENT_HANDLERS: Record<string, ((data: OrderEventData) => void) | undefined> = {
+    "orders.submitted": onOrderSubmittedOrNew,
+    "orders.new": onOrderSubmittedOrNew,
+    "orders.routed": onOrderRouted,
+    "orders.child": onOrderChild,
+    "orders.filled": onOrderFilled,
+    "orders.expired": onOrderExpired,
+    "orders.rejected": onOrderRejectedTopic,
+    "orders.cancelled": onOrderCancelled,
+  };
+
+  function handleOrderEvent(topic: string, data: OrderEventData) {
+    ORDER_EVENT_HANDLERS[topic]?.(data);
     storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
   }
 
@@ -336,233 +332,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     };
 
     ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data as string) as {
-          event: string;
-          topic?: string;
-          data: unknown;
-        };
-
-        switch (msg.event) {
-          case "marketUpdate":
-            handleMarketUpdate(msg.data as MarketUpdateData);
-            storeAPI.dispatch(feedReceived("market"));
-            break;
-          case "orderEvent":
-            handleOrderEvent(msg.topic ?? "", msg.data as OrderEventData);
-            storeAPI.dispatch(feedReceived("orders"));
-            break;
-          case "orderAck": {
-            storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
-            break;
-          }
-          case "orderRejected": {
-            const parsed = OrderRejectedSchema.safeParse(msg.data);
-            if (!parsed.success) {
-              console.warn(
-                "[gateway] orderRejected frame failed validation",
-                JSON.stringify({ issues: parsed.error.issues, raw: msg.data }).slice(0, 1000)
-              );
-              storeAPI.dispatch(
-                reportError({
-                  message: "orderRejected frame failed validation",
-                  source: "gatewayMiddleware",
-                  severity: "warn",
-                  detail: { issues: parsed.error.issues, raw: msg.data },
-                })
-              );
-              break;
-            }
-            const { reason, clientOrderId } = parsed.data;
-            console.warn("[gateway] Order rejected by gateway:", reason ?? "");
-            storeAPI.dispatch(
-              reportError({
-                message: `Order rejected by gateway: ${reason ?? "(no reason)"}`,
-                source: "gatewayMiddleware",
-                severity: "warn",
-                detail: { clientOrderId },
-              })
-            );
-            if (clientOrderId) {
-              storeAPI.dispatch(
-                orderPatched({
-                  id: clientOrderId,
-                  patch: { status: "rejected" },
-                })
-              );
-            }
-            storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
-            break;
-          }
-          case "authIdentity": {
-            const identityData = msg.data as {
-              user: AuthUser;
-              limits: TradingLimits;
-            };
-            storeAPI.dispatch(setUserWithLimits(identityData));
-            storeAPI.dispatch(loadGridPrefs() as unknown as UnknownAction);
-            storeAPI.dispatch(loadUiPrefs() as unknown as UnknownAction);
-            break;
-          }
-          case "killAck": {
-            const killData = msg.data as {
-              scope: KillBlock["scope"];
-              scopeValues?: string[];
-              scopeValue?: string;
-              targetUserId?: string;
-              issuedBy: string;
-            };
-            storeAPI.dispatch(
-              blockAdded({
-                id: `block-${Date.now()}`,
-                scope: killData.scope,
-                scopeValues:
-                  killData.scopeValues ?? (killData.scopeValue ? [killData.scopeValue] : []),
-                targetUserId: killData.targetUserId,
-                issuedBy: killData.issuedBy,
-                issuedAt: Date.now(),
-                fromGateway: true,
-              })
-            );
-            storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
-            break;
-          }
-          case "resumeAck":
-            storeAPI.dispatch(allBlocksCleared());
-            storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
-            break;
-          case "algoHeartbeat": {
-            const hb = msg.data as { algo: string; ts?: number };
-            if (!isSafeKey(hb.algo)) break;
-            const now = Date.now();
-            const prev = algoLastSeen[hb.algo];
-            algoLastSeen[hb.algo] = now;
-            storeAPI.dispatch(feedReceived("algo"));
-            if (prev && now - prev > ALGO_HEARTBEAT_TIMEOUT_MS) {
-              const gapSeconds = Math.round((now - prev) / 1000);
-              storeAPI.dispatch(
-                alertAdded({
-                  severity: "WARNING",
-                  source: "algo",
-                  message: `Algo ${hb.algo} heartbeat gap detected`,
-                  detail: `Last seen ${gapSeconds}s ago — heartbeat resumed`,
-                  ts: now,
-                  relatedTopic: "algo.heartbeat",
-                  relatedAt: prev,
-                })
-              );
-            }
-            break;
-          }
-          case "newsUpdate":
-            storeAPI.dispatch(newsItemReceived(msg.data as NewsItem));
-            storeAPI.dispatch(feedReceived("news"));
-            break;
-          case "signalUpdate":
-            storeAPI.dispatch(signalReceived(msg.data as Signal));
-            break;
-          case "featureUpdate":
-            storeAPI.dispatch(featureReceived(msg.data as FeatureVector));
-            break;
-          case "recommendationUpdate":
-            storeAPI.dispatch(recommendationReceived(msg.data as TradeRecommendation));
-            break;
-          case "advisoryUpdate": {
-            const advisoryData = msg.data as {
-              jobId: string;
-              symbol: string;
-              noteId: string;
-              content: string;
-              provider: string;
-              modelId: string;
-              createdAt: number;
-            };
-            storeAPI.dispatch(advisoryNoteReceived(advisoryData));
-            break;
-          }
-          case "llmStateUpdate":
-            storeAPI.dispatch(llmStateReceived(msg.data as LlmSubsystemStatus));
-            break;
-          case "riskBreaker": {
-            const br = msg.data as {
-              type: "market-move" | "user-pnl";
-              scope: "symbol" | "user";
-              scopeValue?: string;
-              targetUserId?: string;
-              observedValue: number;
-              threshold: number;
-              ts: number;
-            };
-            const target = br.scope === "symbol" ? (br.scopeValue ?? "") : (br.targetUserId ?? "");
-            if (target) {
-              storeAPI.dispatch(
-                blockAdded({
-                  id: `breaker-${br.ts}-${br.scope}-${target}`,
-                  scope: br.scope,
-                  scopeValues: br.scope === "symbol" ? [target] : [],
-                  targetUserId: br.scope === "user" ? target : undefined,
-                  issuedBy: "circuit-breaker",
-                  issuedAt: br.ts,
-                  fromGateway: true,
-                })
-              );
-              storeAPI.dispatch(breakerFired(br));
-            }
-            break;
-          }
-          case "upgradeStatus": {
-            const upgrade = msg.data as { inProgress: boolean; message?: string | null };
-            storeAPI.dispatch(
-              setUpgradeStatus({ inProgress: upgrade.inProgress, message: upgrade.message ?? null })
-            );
-            break;
-          }
-          case "error": {
-            const parsed = ServerErrorSchema.safeParse(msg.data);
-            if (parsed.success) {
-              const message = parsed.data.message ?? "";
-              console.error("[gateway] Server error:", message);
-              storeAPI.dispatch(
-                reportError({
-                  message: `Server error: ${message}`,
-                  source: "gatewayMiddleware",
-                  severity: "error",
-                })
-              );
-            } else {
-              console.error(
-                "[gateway] Server error frame failed validation",
-                JSON.stringify({ issues: parsed.error.issues, raw: msg.data }).slice(0, 1000)
-              );
-              storeAPI.dispatch(
-                reportError({
-                  message: "Server error frame failed validation",
-                  source: "gatewayMiddleware",
-                  severity: "error",
-                  detail: { issues: parsed.error.issues, raw: msg.data },
-                })
-              );
-            }
-            break;
-          }
-        }
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        const rawSnippet = typeof event.data === "string" ? event.data.slice(0, 500) : "<binary>";
-        console.warn(
-          "[gateway] Unparseable frame",
-          JSON.stringify({ err: errMsg, raw: rawSnippet })
-        );
-        storeAPI.dispatch(
-          reportError({
-            message: `Unparseable gateway frame: ${errMsg}`,
-            source: "gatewayMiddleware",
-            severity: "warn",
-            stack: err instanceof Error ? err.stack : undefined,
-            detail: { raw: typeof event.data === "string" ? event.data.slice(0, 500) : "<binary>" },
-          })
-        );
-      }
+      handleGatewayMessage(event);
     };
 
     ws.onclose = (event?: CloseEvent) => {
@@ -610,6 +380,255 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       ws?.close();
     };
   }
+
+  function handleGatewayMessage(event: MessageEvent) {
+    let msg: { event: string; topic?: string; data: unknown };
+    try {
+      msg = JSON.parse(event.data as string) as typeof msg;
+    } catch (err) {
+      reportUnparseableFrame(event, err);
+      return;
+    }
+    const handler = MESSAGE_HANDLERS[msg.event];
+    handler?.(msg.data, msg.topic);
+  }
+
+  function reportUnparseableFrame(event: MessageEvent, err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    const rawSnippet = typeof event.data === "string" ? event.data.slice(0, 500) : "<binary>";
+    console.warn("[gateway] Unparseable frame", JSON.stringify({ err: errMsg, raw: rawSnippet }));
+    storeAPI.dispatch(
+      reportError({
+        message: `Unparseable gateway frame: ${errMsg}`,
+        source: "gatewayMiddleware",
+        severity: "warn",
+        stack: err instanceof Error ? err.stack : undefined,
+        detail: { raw: rawSnippet },
+      })
+    );
+  }
+
+  function onMarketUpdate(data: unknown) {
+    handleMarketUpdate(data as MarketUpdateData);
+    storeAPI.dispatch(feedReceived("market"));
+  }
+
+  function onOrderEvent(data: unknown, topic?: string) {
+    handleOrderEvent(topic ?? "", data as OrderEventData);
+    storeAPI.dispatch(feedReceived("orders"));
+  }
+
+  function onOrderAck() {
+    storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
+  }
+
+  function onOrderRejected(data: unknown) {
+    const parsed = OrderRejectedSchema.safeParse(data);
+    if (!parsed.success) {
+      console.warn(
+        "[gateway] orderRejected frame failed validation",
+        JSON.stringify({ issues: parsed.error.issues, raw: data }).slice(0, 1000)
+      );
+      storeAPI.dispatch(
+        reportError({
+          message: "orderRejected frame failed validation",
+          source: "gatewayMiddleware",
+          severity: "warn",
+          detail: { issues: parsed.error.issues, raw: data },
+        })
+      );
+      return;
+    }
+    const { reason, clientOrderId } = parsed.data;
+    console.warn("[gateway] Order rejected by gateway:", reason ?? "");
+    storeAPI.dispatch(
+      reportError({
+        message: `Order rejected by gateway: ${reason ?? "(no reason)"}`,
+        source: "gatewayMiddleware",
+        severity: "warn",
+        detail: { clientOrderId },
+      })
+    );
+    if (clientOrderId) {
+      storeAPI.dispatch(orderPatched({ id: clientOrderId, patch: { status: "rejected" } }));
+    }
+    storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
+  }
+
+  function onAuthIdentity(data: unknown) {
+    const identityData = data as { user: AuthUser; limits: TradingLimits };
+    storeAPI.dispatch(setUserWithLimits(identityData));
+    storeAPI.dispatch(loadGridPrefs() as unknown as UnknownAction);
+    storeAPI.dispatch(loadUiPrefs() as unknown as UnknownAction);
+  }
+
+  function onKillAck(data: unknown) {
+    const killData = data as {
+      scope: KillBlock["scope"];
+      scopeValues?: string[];
+      scopeValue?: string;
+      targetUserId?: string;
+      issuedBy: string;
+    };
+    storeAPI.dispatch(
+      blockAdded({
+        id: `block-${Date.now()}`,
+        scope: killData.scope,
+        scopeValues: killData.scopeValues ?? (killData.scopeValue ? [killData.scopeValue] : []),
+        targetUserId: killData.targetUserId,
+        issuedBy: killData.issuedBy,
+        issuedAt: Date.now(),
+        fromGateway: true,
+      })
+    );
+    storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
+  }
+
+  function onResumeAck() {
+    storeAPI.dispatch(allBlocksCleared());
+    storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
+  }
+
+  function onAlgoHeartbeat(data: unknown) {
+    const hb = data as { algo: string; ts?: number };
+    if (!isSafeKey(hb.algo)) return;
+    const now = Date.now();
+    const prev = algoLastSeen[hb.algo];
+    algoLastSeen[hb.algo] = now;
+    storeAPI.dispatch(feedReceived("algo"));
+    if (prev && now - prev > ALGO_HEARTBEAT_TIMEOUT_MS) {
+      const gapSeconds = Math.round((now - prev) / 1000);
+      storeAPI.dispatch(
+        alertAdded({
+          severity: "WARNING",
+          source: "algo",
+          message: `Algo ${hb.algo} heartbeat gap detected`,
+          detail: `Last seen ${gapSeconds}s ago — heartbeat resumed`,
+          ts: now,
+          relatedTopic: "algo.heartbeat",
+          relatedAt: prev,
+        })
+      );
+    }
+  }
+
+  function onNewsUpdate(data: unknown) {
+    storeAPI.dispatch(newsItemReceived(data as NewsItem));
+    storeAPI.dispatch(feedReceived("news"));
+  }
+
+  function onSignalUpdate(data: unknown) {
+    storeAPI.dispatch(signalReceived(data as Signal));
+  }
+
+  function onFeatureUpdate(data: unknown) {
+    storeAPI.dispatch(featureReceived(data as FeatureVector));
+  }
+
+  function onRecommendationUpdate(data: unknown) {
+    storeAPI.dispatch(recommendationReceived(data as TradeRecommendation));
+  }
+
+  function onAdvisoryUpdate(data: unknown) {
+    storeAPI.dispatch(
+      advisoryNoteReceived(
+        data as {
+          jobId: string;
+          symbol: string;
+          noteId: string;
+          content: string;
+          provider: string;
+          modelId: string;
+          createdAt: number;
+        }
+      )
+    );
+  }
+
+  function onLlmStateUpdate(data: unknown) {
+    storeAPI.dispatch(llmStateReceived(data as LlmSubsystemStatus));
+  }
+
+  function onRiskBreaker(data: unknown) {
+    const br = data as {
+      type: "market-move" | "user-pnl";
+      scope: "symbol" | "user";
+      scopeValue?: string;
+      targetUserId?: string;
+      observedValue: number;
+      threshold: number;
+      ts: number;
+    };
+    const target = br.scope === "symbol" ? (br.scopeValue ?? "") : (br.targetUserId ?? "");
+    if (!target) return;
+    storeAPI.dispatch(
+      blockAdded({
+        id: `breaker-${br.ts}-${br.scope}-${target}`,
+        scope: br.scope,
+        scopeValues: br.scope === "symbol" ? [target] : [],
+        targetUserId: br.scope === "user" ? target : undefined,
+        issuedBy: "circuit-breaker",
+        issuedAt: br.ts,
+        fromGateway: true,
+      })
+    );
+    storeAPI.dispatch(breakerFired(br));
+  }
+
+  function onUpgradeStatus(data: unknown) {
+    const upgrade = data as { inProgress: boolean; message?: string | null };
+    storeAPI.dispatch(
+      setUpgradeStatus({ inProgress: upgrade.inProgress, message: upgrade.message ?? null })
+    );
+  }
+
+  function onServerError(data: unknown) {
+    const parsed = ServerErrorSchema.safeParse(data);
+    if (parsed.success) {
+      const message = parsed.data.message ?? "";
+      console.error("[gateway] Server error:", message);
+      storeAPI.dispatch(
+        reportError({
+          message: `Server error: ${message}`,
+          source: "gatewayMiddleware",
+          severity: "error",
+        })
+      );
+      return;
+    }
+    console.error(
+      "[gateway] Server error frame failed validation",
+      JSON.stringify({ issues: parsed.error.issues, raw: data }).slice(0, 1000)
+    );
+    storeAPI.dispatch(
+      reportError({
+        message: "Server error frame failed validation",
+        source: "gatewayMiddleware",
+        severity: "error",
+        detail: { issues: parsed.error.issues, raw: data },
+      })
+    );
+  }
+
+  const MESSAGE_HANDLERS: Record<string, ((data: unknown, topic?: string) => void) | undefined> = {
+    marketUpdate: onMarketUpdate,
+    orderEvent: onOrderEvent,
+    orderAck: onOrderAck,
+    orderRejected: onOrderRejected,
+    authIdentity: onAuthIdentity,
+    killAck: onKillAck,
+    resumeAck: onResumeAck,
+    algoHeartbeat: onAlgoHeartbeat,
+    newsUpdate: onNewsUpdate,
+    signalUpdate: onSignalUpdate,
+    featureUpdate: onFeatureUpdate,
+    recommendationUpdate: onRecommendationUpdate,
+    advisoryUpdate: onAdvisoryUpdate,
+    llmStateUpdate: onLlmStateUpdate,
+    riskBreaker: onRiskBreaker,
+    upgradeStatus: onUpgradeStatus,
+    error: onServerError,
+  };
 
   async function scheduledReconnect() {
     try {
