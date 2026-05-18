@@ -13,7 +13,15 @@ git clone https://github.com/milesburton/veta-trading-platform.git /opt/veta-edg
 cd /opt/veta-edge/edge
 echo "ACME_EMAIL=your-email@example.com" | sudo tee .env
 sudo docker compose up -d
+
+# Install sshd liveness probing for the veta-tunnel user
+sudo install -m 0644 sshd/veta-tunnel.conf /etc/ssh/sshd_config.d/veta-tunnel.conf
+sudo sshd -t && sudo systemctl reload ssh
 ```
+
+Without the sshd snippet, a homelab internet outage leaves a stale port
+binding on `:18443` and the tunnel cannot reconnect for ~2 hours. See
+[edge/sshd/README.md](./sshd/README.md) for the full diagnosis.
 
 The first request to `https://veta.mnetcs.com/` triggers an HTTP-01
 challenge — port 80 must be reachable from the internet (which it is
