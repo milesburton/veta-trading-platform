@@ -110,6 +110,7 @@ export function VolSurfacePanel() {
         <div className="flex items-center gap-2">
           {isFetching && <span className="text-[10px] text-muted">refreshing…</span>}
           <select
+            aria-label="Symbol"
             className="rounded border border-divider bg-panel px-2 py-0.5 text-xs focus:border-blue-500 focus:outline-none"
             value={symbol.value}
             onChange={(e) => {
