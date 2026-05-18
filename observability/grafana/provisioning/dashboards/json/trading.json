@@ -46,8 +46,8 @@
       },
       "targets": [
         {
-          "expr": "up",
-          "legendFormat": "{{service}}",
+          "expr": "clamp_max(count by (job) (rate(http_server_request_duration_seconds_count[2m])), 1)",
+          "legendFormat": "{{job}}",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
       ]
@@ -235,52 +235,6 @@
     },
 
     {
-      "id": 8,
-      "type": "table",
-      "title": "Service Versions",
-      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 5 },
-      "datasource": { "uid": "prometheus", "type": "prometheus" },
-      "fieldConfig": {
-        "defaults": { "custom": { "align": "left" } },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "service" },
-            "properties": [{ "id": "displayName", "value": "Service" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "version" },
-            "properties": [{ "id": "displayName", "value": "Version" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Value" },
-            "properties": [{ "id": "custom.hidden", "value": true }]
-          }
-        ]
-      },
-      "options": {
-        "sortBy": [{ "displayName": "Service", "desc": false }],
-        "footer": { "show": false }
-      },
-      "transformations": [
-        { "id": "labelsToFields", "options": { "mode": "columns" } },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": { "Time": true, "__name__": true, "job": true }
-          }
-        }
-      ],
-      "targets": [
-        {
-          "expr": "build_info",
-          "legendFormat": "",
-          "instant": true,
-          "datasource": { "uid": "prometheus", "type": "prometheus" }
-        }
-      ]
-    },
-
-    {
       "id": 9,
       "type": "logs",
       "title": "Order Events — live stream",
@@ -375,7 +329,7 @@
       },
       "targets": [
         {
-          "expr": "process_memory_usage_bytes / 1024 / 1024",
+          "expr": "v8js_memory_heap_size_bytes / 1024 / 1024",
           "legendFormat": "{{job}}",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }

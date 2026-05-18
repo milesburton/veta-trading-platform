@@ -89,22 +89,9 @@ loki.source.docker "containers" {
   forward_to = [loki.write.default.receiver]
 }
 
-prometheus.scrape "deno_services" {
-  targets = [
-    {"__address__" = "host.docker.internal:5000", "service" = "market-sim"},
-    {"__address__" = "host.docker.internal:5001", "service" = "ems"},
-    {"__address__" = "host.docker.internal:5002", "service" = "oms"},
-    {"__address__" = "host.docker.internal:5003", "service" = "limit-algo"},
-    {"__address__" = "host.docker.internal:5004", "service" = "twap-algo"},
-    {"__address__" = "host.docker.internal:5005", "service" = "pov-algo"},
-    {"__address__" = "host.docker.internal:5006", "service" = "vwap-algo"},
-    {"__address__" = "host.docker.internal:5007", "service" = "kafka-relay"},
-    {"__address__" = "host.docker.internal:5008", "service" = "user-service"},
-    {"__address__" = "host.docker.internal:5009", "service" = "journal"},
-    {"__address__" = "host.docker.internal:5011", "service" = "gateway"},
-    {"__address__" = "host.docker.internal:5014", "service" = "analytics"},
-    {"__address__" = "host.docker.internal:5015", "service" = "market-data-service"},
-  ]
-  scrape_interval = "15s"
-  forward_to = [prometheus.remote_write.default.receiver]
-}
+// Direct /metrics scrape removed 2026-05-18 — host.docker.internal:5xxx
+// addresses never worked because services don't bind those ports on the host
+// (only on the docker network). OTel metric push via OTEL_METRICS_EXPORTER=otlp
+// (enabled in PR #262) provides the same data path: every Deno service pushes
+// to alloy's OTLP receiver which forwards to prometheus.remote_write.
+// The full backend service list is reported under the `job` label.
