@@ -15,7 +15,7 @@ fi
 
 echo "Pre-commit checks... (commit: $COMMIT_SHA)"
 
-echo "  [0/7] Verifying clean working directory..."
+echo "  [0/8] Verifying clean working directory..."
 # Block unstaged changes to tracked files. Staged changes are expected —
 # those are what we're about to commit. Using `git diff-index HEAD` here
 # would also flag the staged files and make any normal commit fail.
@@ -26,32 +26,43 @@ if ! git diff --quiet; then
   exit 1
 fi
 
-echo "  [1/7] Backend lint..."
+echo "  [1/8] Backend lint..."
 cd "$REPO_ROOT"
 deno task lint
 
-echo "  [2/7] Backend type-check..."
+echo "  [2/8] Backend type-check..."
 deno task check
 
-echo "  [3/7] Backend unit tests..."
+echo "  [3/8] Backend unit tests..."
 deno task test
 
-echo "  [4/7] Frontend lint (all files)..."
+echo "  [4/8] Frontend lint (all files)..."
 cd "$REPO_ROOT/frontend"
 deno run -A npm:@biomejs/biome check src/
 
-echo "  [5/7] Frontend type-check (all files)..."
+echo "  [5/8] Frontend type-check (all files)..."
 ./node_modules/.bin/tsc --noEmit --skipLibCheck
 
-echo "  [6/7] Frontend unit tests..."
+echo "  [6/8] Frontend unit tests..."
 ./node_modules/.bin/vitest run
 
-echo "  [7/7] Integration tests (skipped if services offline)..."
+echo "  [7/8] Integration tests (skipped if services offline)..."
 cd "$REPO_ROOT"
 if curl -sf http://localhost:5000/health >/dev/null 2>&1 && curl -sf http://localhost:5032/health >/dev/null 2>&1; then
   deno task test:integration
 else
   echo "       Services not fully running — skipping integration tests."
+fi
+
+echo "  [8/8] Fallow audit (changed files vs main; new findings only)..."
+# `fallow audit` only fails on findings introduced by the changeset.
+# Inherited findings (already on main) are reported but don't block.
+# Skipped when fallow isn't installed (e.g. fresh clone before npm ci).
+cd "$REPO_ROOT/frontend"
+if [ -x "./node_modules/.bin/fallow" ]; then
+  ./node_modules/.bin/fallow audit --root "$REPO_ROOT"
+else
+  echo "       fallow not installed in frontend/node_modules — skipping (run npm ci)."
 fi
 
 echo "Pre-commit checks passed."
