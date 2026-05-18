@@ -16,6 +16,7 @@ frontend/test-results/
 frontend/playwright-report/
 frontend/dist-app/
 frontend/dist-electron/
+frontend/public/mockServiceWorker.js
 .claude/worktrees/
 .vite/
 test-results/
