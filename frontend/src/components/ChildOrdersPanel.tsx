@@ -8,7 +8,7 @@ import type { ColDef } from "../types/gridPrefs.ts";
 import type { ChildOrder, LiquidityFlag, OrderRecord, OrderStatus } from "../types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
 import { formatTime } from "../utils/format.ts";
-import { CHANNEL_COLOURS } from "./DashboardLayout.tsx";
+import { CHANNEL_COLOURS } from "./dashboard/panelRegistry.ts";
 import { ResizableHeader } from "./grid/ResizableHeader.tsx";
 
 const CHILD_COL_TOOLTIPS: Partial<Record<string, string>> = {
