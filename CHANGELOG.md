@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.39.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.39.0...veta-trading-platform-v1.39.1) (2026-05-18)
+
+
+### Bug Fixes
+
+* candlestick seed + Dismiss-all + memory caps + Deno process metrics ([#260](https://github.com/milesburton/veta-trading-platform/issues/260)) ([2fb33cb](https://github.com/milesburton/veta-trading-platform/commit/2fb33cbab66a6ac2aa6f34a26634e28168e8536d))
+* **llm-advisory:** four reliability fixes so the AI advisory panel works end-to-end ([#262](https://github.com/milesburton/veta-trading-platform/issues/262)) ([406cbdc](https://github.com/milesburton/veta-trading-platform/commit/406cbdce7c069c88a3d4e1ab1d6a723623bb787f))
+
 ## [1.39.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.38.0...veta-trading-platform-v1.39.0) (2026-05-17)
 
 
