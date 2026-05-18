@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-18T22:56:34.241Z",
+  "generatedAt": "2026-05-18T23:13:02.402Z",
   "backend": {
     "unit": {
-      "files": 37,
-      "cases": 507,
+      "files": 38,
+      "cases": 517,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -40,6 +40,7 @@
         "devcontainer.unit.test.ts": 6,
         "docs-drift.unit.test.ts": 7,
         "credentials.unit.test.ts": 8,
+        "bug-report-route.unit.test.ts": 10,
         "telemetry-route.unit.test.ts": 6,
         "discord-notifier.unit.test.ts": 5
       }
@@ -81,7 +82,7 @@
   "frontend": {
     "unit": {
       "files": 172,
-      "cases": 1784
+      "cases": 1788
     },
     "playwright": {
       "files": 17,
