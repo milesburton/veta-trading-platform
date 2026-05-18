@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.40.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.39.2...veta-trading-platform-v1.40.0) (2026-05-18)
+
+
+### Features
+
+* **alerts:** wire Discord for platform + user-level alerts ([#280](https://github.com/milesburton/veta-trading-platform/issues/280)) ([ad78282](https://github.com/milesburton/veta-trading-platform/commit/ad782825457db0bb5e5922281df0f9474dd2d311))
+* **observability:** add memory-growth alert rules ([3164f39](https://github.com/milesburton/veta-trading-platform/commit/3164f39865d0f14ede822d320adf83bc7aa4aeec))
+* **observability:** add memory-growth alert rules to Prometheus ([870f64e](https://github.com/milesburton/veta-trading-platform/commit/870f64e513ec3b09bd06328c4c32f991d6f263b2))
+* **telemetry:** frontend memory polling + gateway ingestion endpoint ([#279](https://github.com/milesburton/veta-trading-platform/issues/279)) ([e2b8312](https://github.com/milesburton/veta-trading-platform/commit/e2b8312b6375399394569127ce65750d60f5bf88))
+
+
+### Bug Fixes
+
+* **a11y:** add aria-label to 5 unlabelled symbol/source selects ([#276](https://github.com/milesburton/veta-trading-platform/issues/276)) ([4cfd024](https://github.com/milesburton/veta-trading-platform/commit/4cfd024bdf9e2df0b0b8101264469f4da80f4798))
+* **a11y:** bump contrast ratios for failing token colours ([#281](https://github.com/milesburton/veta-trading-platform/issues/281)) ([372c6ad](https://github.com/milesburton/veta-trading-platform/commit/372c6ad4d6ff5d804dc6131a04df8e58e958c0fe))
+* **frontend:** give the breaker-expiry janitor a stop handle ([#271](https://github.com/milesburton/veta-trading-platform/issues/271)) ([ae854e2](https://github.com/milesburton/veta-trading-platform/commit/ae854e2e2bc58981ab9d62a13aea9acb3a7d506f))
+* **frontend:** Market Data indicator uses avgDays + relaxed threshold ([#272](https://github.com/milesburton/veta-trading-platform/issues/272)) ([ef20045](https://github.com/milesburton/veta-trading-platform/commit/ef200458ced258004a1f07e3d0d0e4da7d72a737))
+* **frontend:** tighten gateway WS reconnect backoff after outage ([#267](https://github.com/milesburton/veta-trading-platform/issues/267)) ([19f7871](https://github.com/milesburton/veta-trading-platform/commit/19f78719a6056a1909098159acca152bca08ef30))
+* **llm-advisory:** prompt-builder tolerates partial data instead of crashing ([#270](https://github.com/milesburton/veta-trading-platform/issues/270)) ([3fe630f](https://github.com/milesburton/veta-trading-platform/commit/3fe630fa4c6bd82b306a2f832a409c56336804b4))
+* **observability:** repair Trading Overview dashboard health signals ([#268](https://github.com/milesburton/veta-trading-platform/issues/268)) ([3fff644](https://github.com/milesburton/veta-trading-platform/commit/3fff64411a4e7bb2e38ad7281a00bf6ac3b721f2))
+
 ## [1.39.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.39.1...veta-trading-platform-v1.39.2) (2026-05-18)
 
 
