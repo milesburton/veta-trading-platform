@@ -11,7 +11,7 @@ import type { ColDef } from "../types/gridPrefs.ts";
 import type { AssetDef, MarketPrices, OrderBookSnapshot, PriceHistory } from "../types.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
-import { CHANNEL_COLOURS } from "./DashboardLayout.tsx";
+import { CHANNEL_COLOURS } from "./dashboard/panelRegistry.ts";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 const ROW_HEIGHT = 48;

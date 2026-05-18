@@ -19,7 +19,7 @@ import { formatTime } from "../utils/format.ts";
 import { applyCfRules } from "../utils/gridFilter.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
-import { CHANNEL_COLOURS } from "./DashboardLayout.tsx";
+import { CHANNEL_COLOURS } from "./dashboard/panelRegistry.ts";
 import { CfRuleEditor } from "./grid/CfRuleEditor.tsx";
 import { FilterBar } from "./grid/FilterBar.tsx";
 import { ResizableHeader } from "./grid/ResizableHeader.tsx";

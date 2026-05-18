@@ -1,4 +1,4 @@
-import { useDashboard } from "../components/DashboardLayout.tsx";
+import { useDashboard } from "../components/dashboard/DashboardContext.tsx";
 import { useChannelContext } from "../contexts/ChannelContext.tsx";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
 import { panelClosed, panelPopped } from "../store/windowSlice.ts";
