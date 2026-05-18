@@ -37,3 +37,44 @@ groups:
           description: |
             Prometheus can't scrape disk-monitor:8099/metrics. Disk could
             be filling without anyone seeing it. Check the container.
+
+  - name: memory
+    rules:
+      - alert: ServiceMemoryGrowthSustained
+        expr: rate(v8js_memory_heap_size_bytes[5m]) > 1048576
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} heap growing >1 MiB/s for 15m"
+          description: |
+            v8js_memory_heap_size_bytes for {{ $labels.job }} has been
+            growing at {{ $value | humanize }} bytes/s for 15 minutes.
+            Likely a leak similar to the Firefox/Redux .push case on
+            2026-05-18. Check unbounded slice growth, missing
+            clearInterval / clearTimeout, or accumulating event handlers.
+
+      - alert: ServiceMemoryHigh
+        expr: v8js_memory_heap_size_bytes > 1.5e9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} heap above 1.5 GiB for 10m"
+          description: |
+            v8js_memory_heap_size_bytes is {{ $value | humanize }}.
+            The 12 GiB homelab VM has limited headroom across 21 services;
+            sustained 1.5 GiB per service starves the rest.
+
+      - alert: ServiceMemoryCritical
+        expr: v8js_memory_heap_size_bytes > 3e9
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} heap above 3 GiB — imminent OOM"
+          description: |
+            v8js_memory_heap_size_bytes is {{ $value | humanize }}.
+            Deno usually OOMs around 4 GiB without --max-old-space-size.
+            Restart the container and capture a heap snapshot via
+            chrome://inspect before it dies on its own.
