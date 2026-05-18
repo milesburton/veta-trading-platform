@@ -73,8 +73,8 @@ const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? `${_origin}/api/gateway`
 const UI_TICK_INTERVAL_MS = 250;
 const ALGO_HEARTBEAT_TIMEOUT_MS = 30_000;
 const RECONNECT_DELAY_INITIAL_MS = 2_000;
-const RECONNECT_DELAY_MAX_MS = 30_000;
-const RECONNECT_DELAY_AFTER_GIVE_UP_MS = 60_000;
+const RECONNECT_DELAY_MAX_MS = 15_000;
+const RECONNECT_DELAY_AFTER_GIVE_UP_MS = 20_000;
 const SHOW_BANNER_AFTER_FAILURES = 3;
 
 const OrderRejectedSchema = z.object({
@@ -652,17 +652,19 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     }
   }
 
-  function nudgeReconnectIfStuck(reason: string) {
+  function nudgeReconnectIfStuck(reason: string, silent = false) {
     const state = storeAPI.getState() as { market?: { connected?: boolean } };
     if (state.market?.connected) return;
     if (!started) return;
-    storeAPI.dispatch(
-      reportError({
-        message: `Nudging reconnect: ${reason}`,
-        source: "gatewayMiddleware",
-        severity: "info",
-      })
-    );
+    if (!silent) {
+      storeAPI.dispatch(
+        reportError({
+          message: `Nudging reconnect: ${reason}`,
+          source: "gatewayMiddleware",
+          severity: "info",
+        })
+      );
+    }
     manualReconnect();
   }
 
@@ -676,6 +678,18 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
         nudgeReconnectIfStuck("tab became visible");
       }
     });
+    // User-activity nudges are opportunistic (every focus/click while
+    // disconnected). They're not errors, so dispatched silently to avoid
+    // flooding the error transport during outages.
+    let lastUserNudgeAt = Number.NEGATIVE_INFINITY;
+    const onUserActivity = () => {
+      const now = Date.now();
+      if (now - lastUserNudgeAt < 5_000) return;
+      lastUserNudgeAt = now;
+      nudgeReconnectIfStuck("user activity", true);
+    };
+    window.addEventListener("focus", onUserActivity);
+    document.addEventListener("click", onUserActivity);
   }
 
   async function fetchCandlesForAsset(symbol: string) {
