@@ -189,6 +189,7 @@ export function MarketDataSourcesPanel() {
                     <td className="px-4 py-1.5 text-right">
                       {isAdmin ? (
                         <select
+                          aria-label={`Data source for ${sym}`}
                           value={currentSource}
                           onChange={(e) => handleSourceChange(sym, e.target.value)}
                           disabled={!anyExternalAvailable && currentSource === "synthetic"}

@@ -237,6 +237,7 @@ export function TradeRecommendationPanel() {
 
       <div className="flex items-center gap-2 px-4 py-2 border-b border-panel shrink-0">
         <select
+          aria-label="Symbol"
           value={symbol.value}
           onChange={(e) => {
             symbol.value = e.target.value;
