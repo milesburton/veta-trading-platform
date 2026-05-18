@@ -85,7 +85,7 @@ test.describe("visual anomalies (informational, non-gating)", () => {
       page.route("/api/gateway/ready", (r) =>
         r.fulfill({ status: 200, contentType: "application/json", body: READY_BODY }),
       ),
-      page.route("/api/user-service/sessions/me", (r) =>
+      page.route("**/api/user-service/sessions/me", (r) =>
         r.fulfill({ status: 401, body: "" }),
       ),
     ]);
