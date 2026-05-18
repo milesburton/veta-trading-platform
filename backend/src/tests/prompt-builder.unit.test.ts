@@ -117,3 +117,75 @@ Deno.test("[prompt-builder] buildPrompt: short direction when score is negative"
   assertStringIncludes(out, "Signal: short");
   assertStringIncludes(out, "score -0.700");
 });
+
+Deno.test("[prompt-builder] buildPrompt tolerates feature vector with null/undefined fields", () => {
+  // Regression: 2026-05-18 worker crashed with 'v.toFixed is not a function'
+  // when feature-engine returned partial data (null fields). Guard each
+  // toFixed with a numeric check; render '—' for missing values.
+  const partialFv = {
+    momentum: 0.12,
+    relativeVolume: null,
+    realisedVol: undefined,
+    sectorRelativeStrength: 0.04,
+    eventScore: "not-a-number",
+    newsVelocity: NaN,
+    sentimentDelta: 0.01,
+  } as unknown as FeatureVector;
+  const out = buildPrompt("AAPL", baseSignal, partialFv, null, []);
+  assertStringIncludes(out, "momentum=0.1200");
+  assertStringIncludes(out, "relVol=—");
+  assertStringIncludes(out, "realisedVol=—");
+  assertStringIncludes(out, "sectorRS=0.0400");
+  assertStringIncludes(out, "eventScore=—");
+  assertStringIncludes(out, "newsVel=—");
+  assertStringIncludes(out, "sentDelta=0.010");
+});
+
+Deno.test("[prompt-builder] buildPrompt tolerates signal with NaN score / missing confidence", () => {
+  const wonkySignal = {
+    symbol: "AAPL",
+    score: Number.NaN,
+    direction: "neutral" as const,
+    confidence: undefined as unknown as number,
+    factors: [{ name: "momentum", weight: 0.4, contribution: 0.32 }],
+    ts: Date.now(),
+  } as unknown as Signal;
+  const out = buildPrompt("AAPL", wonkySignal, null, null, []);
+  assertStringIncludes(out, "score —");
+  assertStringIncludes(out, "confidence —");
+});
+
+Deno.test("[prompt-builder] buildPrompt tolerates signal.factors being missing or empty", () => {
+  const emptyFactorsSignal = { ...baseSignal, factors: [] };
+  const out = buildPrompt("AAPL", emptyFactorsSignal, null, null, []);
+  assertStringIncludes(out, "Top factors: —");
+});
+
+Deno.test("[prompt-builder] buildPrompt filters non-numeric contribution from factors", () => {
+  const wonkyFactors = {
+    ...baseSignal,
+    factors: [
+      { name: "momentum", weight: 0.4, contribution: 0.5 },
+      { name: "relativeVolume", weight: 0.3, contribution: null as unknown as number },
+      { name: "realisedVol", weight: 0.2, contribution: "0.1" as unknown as number },
+    ],
+  } as unknown as Signal;
+  const out = buildPrompt("AAPL", wonkyFactors, null, null, []);
+  assertStringIncludes(out, "momentum(+0.500)");
+  assert(!out.includes("relativeVolume("));
+  assert(!out.includes("realisedVol("));
+});
+
+Deno.test("[prompt-builder] buildPrompt tolerates recommendation with missing fields", () => {
+  const partialRec = {
+    symbol: "AAPL",
+    action: "BUY",
+    suggestedQty: undefined as unknown as number,
+    confidence: null as unknown as number,
+    rationale: undefined as unknown as string,
+    ts: Date.now(),
+  } as unknown as TradeRecommendation;
+  const out = buildPrompt("AAPL", baseSignal, null, partialRec, []);
+  assertStringIncludes(out, "Recommendation: BUY | qty — | confidence —");
+  assertStringIncludes(out, "Rationale: —");
+});

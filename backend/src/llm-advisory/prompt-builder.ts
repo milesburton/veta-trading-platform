@@ -20,6 +20,11 @@ export async function computeSystemPromptHash(): Promise<string> {
   ).join("");
 }
 
+function fmt(n: number | null | undefined, places: number): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "—";
+  return n.toFixed(places);
+}
+
 export function buildPrompt(
   symbol: string,
   signal: Signal,
@@ -27,51 +32,46 @@ export function buildPrompt(
   rec: TradeRecommendation | null,
   recentCloses: number[],
 ): string {
-  const topFactors = [...signal.factors]
+  const topFactors = [...(signal.factors ?? [])]
+    .filter((f) => typeof f.contribution === "number" && Number.isFinite(f.contribution))
     .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
     .slice(0, 2)
-    .map((f) =>
-      `${f.name}(${f.contribution >= 0 ? "+" : ""}${f.contribution.toFixed(3)})`
-    )
+    .map((f) => `${f.name}(${f.contribution >= 0 ? "+" : ""}${fmt(f.contribution, 3)})`)
     .join(", ");
+
+  const confidencePct = typeof signal.confidence === "number" && Number.isFinite(signal.confidence)
+    ? `${(signal.confidence * 100).toFixed(0)}%`
+    : "—";
 
   const lines: string[] = [
     `Symbol: ${symbol}`,
-    `Signal: ${signal.direction} | score ${
-      signal.score.toFixed(3)
-    } | confidence ${(signal.confidence * 100).toFixed(0)}%`,
-    `Top factors: ${topFactors}`,
+    `Signal: ${signal.direction} | score ${fmt(signal.score, 3)} | confidence ${confidencePct}`,
+    `Top factors: ${topFactors || "—"}`,
   ];
 
   if (fv) {
     lines.push(
-      `Features: momentum=${fv.momentum.toFixed(4)}, relVol=${
-        fv.relativeVolume.toFixed(2)
-      }, ` +
-        `realisedVol=${fv.realisedVol.toFixed(4)}, sectorRS=${
-          fv.sectorRelativeStrength.toFixed(4)
-        }, ` +
-        `eventScore=${fv.eventScore.toFixed(2)}, newsVel=${
-          fv.newsVelocity.toFixed(1)
-        }, ` +
-        `sentDelta=${fv.sentimentDelta.toFixed(3)}`,
+      `Features: momentum=${fmt(fv.momentum, 4)}, relVol=${fmt(fv.relativeVolume, 2)}, ` +
+        `realisedVol=${fmt(fv.realisedVol, 4)}, sectorRS=${fmt(fv.sectorRelativeStrength, 4)}, ` +
+        `eventScore=${fmt(fv.eventScore, 2)}, newsVel=${fmt(fv.newsVelocity, 1)}, ` +
+        `sentDelta=${fmt(fv.sentimentDelta, 3)}`,
     );
   }
 
   if (rec) {
+    const recConfidencePct =
+      typeof rec.confidence === "number" && Number.isFinite(rec.confidence)
+        ? `${(rec.confidence * 100).toFixed(0)}%`
+        : "—";
     lines.push(
-      `Recommendation: ${rec.action} | qty ${rec.suggestedQty} | confidence ${
-        (rec.confidence * 100).toFixed(0)
-      }%`,
-      `Rationale: ${rec.rationale}`,
+      `Recommendation: ${rec.action} | qty ${rec.suggestedQty ?? "—"} | confidence ${recConfidencePct}`,
+      `Rationale: ${rec.rationale ?? "—"}`,
     );
   }
 
   if (recentCloses.length > 0) {
     lines.push(
-      `Recent closes: ${
-        recentCloses.slice(-5).map((v) => v.toFixed(2)).join(", ")
-      }`,
+      `Recent closes: ${recentCloses.slice(-5).map((v) => fmt(v, 2)).join(", ")}`,
     );
   }
 
