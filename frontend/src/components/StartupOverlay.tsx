@@ -1,23 +1,9 @@
 import { useSignal } from "@preact/signals-react";
 import { useEffect, useRef } from "react";
 import { BuildInfo } from "./BuildInfo.tsx";
+import { catalogEntry, STARTUP_SERVICE_KEYS } from "./StartupOverlay/serviceCatalog.ts";
 
-interface ReadyServices {
-  marketSim: boolean;
-  journal: boolean;
-  userService: boolean;
-  bus: boolean;
-  ems?: boolean;
-  oms?: boolean;
-  analytics?: boolean;
-  marketData?: boolean;
-  featureEngine?: boolean;
-  signalEngine?: boolean;
-  recommendationEngine?: boolean;
-  scenarioEngine?: boolean;
-  llmAdvisory?: boolean;
-  gateway?: boolean;
-}
+type ReadyServices = Record<string, boolean | undefined>;
 
 interface ReadyResponse {
   ready: boolean;
@@ -25,59 +11,13 @@ interface ReadyResponse {
   services: ReadyServices;
 }
 
-// How long after gateway startedAt we consider the platform to still be "booting"
 const BOOTING_WINDOW_MS = 120_000;
 
-export const SERVICE_LABELS: Record<keyof ReadyServices, string> = {
-  gateway: "Gateway (BFF)",
-  bus: "Message Bus",
-  marketSim: "Market Simulator",
-  userService: "User Service",
-  journal: "Trade Journal",
-  ems: "Execution Engine",
-  oms: "Order Manager",
-  analytics: "Analytics",
-  marketData: "Market Data",
-  featureEngine: "Feature Engine",
-  signalEngine: "Signal Engine",
-  recommendationEngine: "Recommendation Engine",
-  scenarioEngine: "Scenario Engine",
-  llmAdvisory: "LLM Advisory",
-};
-
-export const SERVICE_DESCRIPTIONS: Record<keyof ReadyServices, string> = {
-  gateway: "Single entry point for the UI — proxies HTTP and WebSocket to all backend services",
-  bus: "Redpanda message bus — event streaming backbone for all inter-service communication",
-  marketSim: "Simulates live equity prices using Geometric Brownian Motion",
-  userService: "Session management, authentication and per-user trading limits",
-  journal: "Persistent store for orders, fills and OHLCV candlestick data",
-  ems: "Routes child orders to the exchange and records execution fills",
-  oms: "Validates orders against RBAC limits and routes to the correct strategy",
-  analytics: "Black-Scholes option pricing, Monte Carlo scenario grid and trade recommendations",
-  marketData: "Polls Alpha Vantage for real prices and applies per-symbol source overrides",
-  featureEngine: "Computes technical indicators (RSI, Bollinger, MACD) from market data streams",
-  signalEngine: "Generates directional buy/sell signals from feature vectors",
-  recommendationEngine: "Combines signals into ranked trade recommendations for the UI",
-  scenarioEngine: "Runs what-if simulations against the current portfolio and market state",
-  llmAdvisory: "LLM-powered trade commentary and natural-language market insights",
-};
-
-const SERVICE_ORDER: (keyof ReadyServices)[] = [
-  "gateway",
-  "bus",
-  "marketSim",
-  "userService",
-  "journal",
-  "ems",
-  "oms",
-  "analytics",
-  "marketData",
-  "featureEngine",
-  "signalEngine",
-  "recommendationEngine",
-  "scenarioEngine",
-  "llmAdvisory",
-];
+function orderServiceKeys(keys: string[]): string[] {
+  const known = STARTUP_SERVICE_KEYS.filter((k) => keys.includes(k));
+  const extras = keys.filter((k) => !STARTUP_SERVICE_KEYS.includes(k)).sort();
+  return [...known, ...extras];
+}
 
 const POLL_INTERVAL_MS = 2_000;
 
@@ -102,6 +42,7 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
 
   useEffect(() => {
     const clock = setInterval(() => {
+      if (!anchoredRef.current) return;
       elapsed.value = Math.floor((Date.now() - startRef.current) / 1000);
     }, 1_000);
     return () => clearInterval(clock);
@@ -156,8 +97,11 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
   const secs = elapsed.value % 60;
   const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
-  const upCount = SERVICE_ORDER.filter((k) => services.value?.[k]).length;
-  const totalCount = SERVICE_ORDER.length;
+  const reportedKeys = Object.keys(services.value ?? {});
+  const orderedKeys =
+    reportedKeys.length > 0 ? orderServiceKeys(reportedKeys) : STARTUP_SERVICE_KEYS.slice();
+  const upCount = orderedKeys.filter((k) => services.value?.[k]).length;
+  const totalCount = orderedKeys.length;
 
   const isBooting = mode.value === "booting";
 
@@ -195,8 +139,9 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
           <div className="mt-6 overflow-x-auto rounded-lg border border-panel bg-surface/65 p-4 sm:p-5">
             <table className="w-full border-collapse text-sm">
               <tbody>
-                {SERVICE_ORDER.map((key) => {
+                {orderedKeys.map((key) => {
                   const up = services.value?.[key];
+                  const entry = catalogEntry(key);
                   return (
                     <tr key={key} data-testid={`service-indicator-${key}`}>
                       <td className="w-6 pr-3 py-0.5 align-middle">
@@ -211,10 +156,10 @@ export function StartupOverlay({ onReady, buildDate, commitSha }: Props) {
                           up ? "text-secondary" : "text-muted"
                         }`}
                       >
-                        {SERVICE_LABELS[key]}
+                        {entry.label}
                       </td>
                       <td className="py-0.5 align-middle text-[11px] text-label">
-                        {SERVICE_DESCRIPTIONS[key]}
+                        {entry.description}
                       </td>
                       <td className="pl-4 py-0.5 align-middle text-[10px] text-muted whitespace-nowrap">
                         {up ? "ready" : ""}

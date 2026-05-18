@@ -2,13 +2,17 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import { StartupOverlay } from "@veta/frontend/components/StartupOverlay";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
+const STARTED_AT = 1_700_000_000_000;
+
 const READY_RESPONSE = {
   ready: true,
+  startedAt: STARTED_AT,
   services: { marketSim: true, journal: true, userService: true, bus: true },
 };
 
 const NOT_READY_RESPONSE = {
   ready: false,
+  startedAt: STARTED_AT,
   services: { marketSim: true, journal: false, userService: false, bus: false },
 };
 
@@ -45,15 +49,19 @@ describe("StartupOverlay", () => {
 
   test("shows elapsed time counter ticking up", async () => {
     vi.useFakeTimers();
+    vi.setSystemTime(STARTED_AT);
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify(NOT_READY_RESPONSE), { status: 200 })
     );
     render(<StartupOverlay onReady={vi.fn()} />);
 
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
     expect(screen.getByTestId("startup-elapsed")).toHaveTextContent("0s elapsed");
 
     await act(async () => {
-      vi.advanceTimersByTime(3_000);
+      await vi.advanceTimersByTimeAsync(3_000);
     });
 
     expect(screen.getByTestId("startup-elapsed")).toHaveTextContent("3s elapsed");
@@ -62,13 +70,14 @@ describe("StartupOverlay", () => {
 
   test("formats elapsed time as minutes when >= 60s", async () => {
     vi.useFakeTimers();
+    vi.setSystemTime(STARTED_AT);
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify(NOT_READY_RESPONSE), { status: 200 })
     );
     render(<StartupOverlay onReady={vi.fn()} />);
 
     await act(async () => {
-      vi.advanceTimersByTime(75_000);
+      await vi.advanceTimersByTimeAsync(75_000);
     });
 
     expect(screen.getByTestId("startup-elapsed")).toHaveTextContent("1m 15s elapsed");
