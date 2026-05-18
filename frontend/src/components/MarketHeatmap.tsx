@@ -4,6 +4,7 @@ import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { COLOR } from "@veta/frontend/tokens.ts";
 import type { AssetDef } from "@veta/frontend/types.ts";
 import { useEffect, useMemo, useRef } from "react";
+import { OtherTooltip, SymbolTooltip, tooltipPosition } from "./MarketHeatmap/Tooltip";
 
 export function pctToColor(pct: number): string {
   if (pct >= 4) return COLOR.HEAT_STRONG_UP;
@@ -313,6 +314,36 @@ export function MarketHeatmap() {
     };
   }
 
+  function renderTooltip() {
+    if (!tooltip.value) return null;
+    const { mouseX, mouseY, symbol } = tooltip.value;
+
+    if (symbol.includes(":OTHER")) {
+      const sector = symbol.split(":")[0];
+      const otherTile = (sectorBlocks ?? [])
+        .flatMap((b) => b.layoutTiles)
+        .find((t) => t.symbol === symbol);
+      if (!otherTile) return null;
+      const position = tooltipPosition(mouseX, mouseY, cw, ch, 148, 64);
+      return (
+        <OtherTooltip
+          position={position}
+          data={{ sector, otherCount: otherTile.otherCount ?? 0, pct: otherTile.pct }}
+        />
+      );
+    }
+
+    if (!tooltipTile || !tooltipAsset) return null;
+    const price = prices[tooltipAsset.symbol] ?? tooltipAsset.initialPrice;
+    const position = tooltipPosition(mouseX, mouseY, cw, ch, 160, 130);
+    return (
+      <SymbolTooltip
+        position={position}
+        data={{ asset: tooltipAsset, pct: tooltipTile.pct, price }}
+      />
+    );
+  }
+
   function renderTile(tile: LayoutTile, onClickOther?: (sector: string) => void) {
     const isHovered = tooltip.value?.symbol === tile.symbol;
     const pct = Number.isFinite(tile.pct) ? tile.pct : 0;
@@ -585,130 +616,7 @@ export function MarketHeatmap() {
               })}
         </svg>
 
-        {tooltip.value &&
-          (() => {
-            const { mouseX, mouseY, symbol } = tooltip.value;
-
-            if (symbol.includes(":OTHER")) {
-              const sector = symbol.split(":")[0];
-              const otherTile = (sectorBlocks ?? [])
-                .flatMap((b) => b.layoutTiles)
-                .find((t) => t.symbol === symbol);
-              if (!otherTile) return null;
-              const TOOLTIP_W = 148;
-              const TOOLTIP_H = 64;
-              const OFFSET = 12;
-              const left =
-                mouseX + OFFSET + TOOLTIP_W > cw ? mouseX - TOOLTIP_W - OFFSET : mouseX + OFFSET;
-              const top =
-                mouseY + OFFSET + TOOLTIP_H > ch ? mouseY - TOOLTIP_H - OFFSET : mouseY + OFFSET;
-              return (
-                <div
-                  className="absolute bg-surface/95 border border-divider rounded shadow-xl px-3 py-2 text-[11px] pointer-events-none z-10"
-                  style={{ left, top, width: TOOLTIP_W }}
-                  aria-live="polite"
-                >
-                  <div className="font-bold text-primary text-sm mb-0.5">{sector} — Other</div>
-                  <div className="text-label text-[10px] mb-1">
-                    {otherTile.otherCount} stocks too small to display
-                  </div>
-                  <div
-                    className={`font-semibold text-[10px] ${
-                      otherTile.pct >= 0 ? "text-emerald-400" : "text-red-400"
-                    }`}
-                  >
-                    Avg {otherTile.pct >= 0 ? "+" : ""}
-                    {otherTile.pct.toFixed(2)}%
-                  </div>
-                  <div className="text-subtle text-[9px] mt-1.5 border-t border-panel pt-1">
-                    Click to zoom in →
-                  </div>
-                </div>
-              );
-            }
-
-            if (!tooltipTile || !tooltipAsset) return null;
-            const price = prices[tooltipAsset.symbol] ?? tooltipAsset.initialPrice;
-            const capB = tooltipAsset.marketCapB;
-            const TOOLTIP_W = 160;
-            const TOOLTIP_H = 130;
-            const OFFSET = 12;
-            const left =
-              mouseX + OFFSET + TOOLTIP_W > cw ? mouseX - TOOLTIP_W - OFFSET : mouseX + OFFSET;
-            const top =
-              mouseY + OFFSET + TOOLTIP_H > ch ? mouseY - TOOLTIP_H - OFFSET : mouseY + OFFSET;
-            return (
-              <div
-                className="absolute bg-surface/95 border border-divider rounded shadow-xl px-3 py-2 text-[11px] pointer-events-none z-10"
-                style={{ left, top, width: TOOLTIP_W }}
-                aria-live="polite"
-              >
-                <div className="flex items-baseline justify-between mb-1">
-                  <span className="font-bold text-primary text-sm">{tooltipAsset.symbol}</span>
-                  <span
-                    className={`font-bold text-sm ${
-                      tooltipTile.pct >= 0 ? "text-emerald-400" : "text-red-400"
-                    }`}
-                  >
-                    {tooltipTile.pct >= 0 ? "+" : ""}
-                    {tooltipTile.pct.toFixed(2)}%
-                  </span>
-                </div>
-                <div className="text-muted text-[10px] mb-2">{tooltipAsset.sector}</div>
-                <div className="space-y-0.5 text-[10px]">
-                  <div className="flex justify-between">
-                    <span className="text-muted">Price</span>
-                    <span className="text-secondary tabular-nums">${price.toFixed(2)}</span>
-                  </div>
-                  {capB != null && (
-                    <div className="flex justify-between">
-                      <span className="text-muted">Mkt Cap</span>
-                      <span className="text-secondary tabular-nums">
-                        {capB >= 1000 ? `$${(capB / 1000).toFixed(1)}T` : `$${capB.toFixed(0)}B`}
-                      </span>
-                    </div>
-                  )}
-                  {tooltipAsset.beta != null && (
-                    <div className="flex justify-between">
-                      <span className="text-muted">Beta</span>
-                      <span className="text-secondary tabular-nums">
-                        {tooltipAsset.beta.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                  {tooltipAsset.peRatio != null && (
-                    <div className="flex justify-between">
-                      <span className="text-muted">P/E</span>
-                      <span className="text-secondary tabular-nums">
-                        {tooltipAsset.peRatio.toFixed(1)}x
-                      </span>
-                    </div>
-                  )}
-                  {tooltipAsset.dividendYield != null && tooltipAsset.dividendYield > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted">Div Yield</span>
-                      <span className="text-secondary tabular-nums">
-                        {tooltipAsset.dividendYield.toFixed(2)}%
-                      </span>
-                    </div>
-                  )}
-                  {tooltipAsset.dailyVolume != null && (
-                    <div className="flex justify-between">
-                      <span className="text-muted">Volume</span>
-                      <span className="text-secondary tabular-nums">
-                        {tooltipAsset.dailyVolume >= 1e6
-                          ? `${(tooltipAsset.dailyVolume / 1e6).toFixed(1)}M`
-                          : `${(tooltipAsset.dailyVolume / 1e3).toFixed(0)}K`}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="text-subtle text-[9px] mt-1.5 border-t border-panel pt-1">
-                  Click to broadcast →
-                </div>
-              </div>
-            );
-          })()}
+        {tooltip.value && renderTooltip()}
       </div>
     </div>
   );
