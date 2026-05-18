@@ -2,14 +2,11 @@ import { useSignal } from "@preact/signals-react";
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import type { KillBlock } from "@veta/frontend/store/killSwitchSlice.ts";
 import { blockAdded, blockRemoved } from "@veta/frontend/store/killSwitchSlice.ts";
-import type {
-  KillOrdersPayload,
-  KillScope,
-  ResumeOrdersPayload,
-} from "@veta/frontend/store/ordersSlice.ts";
+import type { KillScope } from "@veta/frontend/store/ordersSlice.ts";
 import { killOrdersThunk, resumeOrdersThunk } from "@veta/frontend/store/ordersSlice.ts";
 import { selectSymbols } from "@veta/frontend/store/selectors.ts";
 import { v4 as uuidv4 } from "uuid";
+import { buildKillPayloads, buildResumePayload } from "./KillSwitchButton/payloads";
 
 type DialogTab = "kill" | "resume";
 
@@ -177,16 +174,17 @@ export function KillSwitchButton() {
     isSending.value = true;
     try {
       const scopeVals = [...selectedValues.value];
+      const payloadBase = {
+        scope: scope.value,
+        scopeValues: scopeVals,
+        isAdmin,
+        targetUserId: targetUserId.value,
+      };
+
       if (tab.value === "kill") {
-        for (const val of scopeVals.length > 0 ? scopeVals : [undefined]) {
-          const payload: KillOrdersPayload = { scope: scope.value };
-          if (val) payload.scopeValue = val;
-          if (scope.value === "user" && isAdmin && targetUserId.value) {
-            payload.targetUserId = targetUserId.value;
-          }
+        for (const payload of buildKillPayloads(payloadBase)) {
           await dispatch(killOrdersThunk(payload));
         }
-        // Optimistic local block
         dispatch(
           blockAdded({
             id: uuidv4(),
@@ -199,16 +197,15 @@ export function KillSwitchButton() {
           })
         );
       } else {
-        const payload: ResumeOrdersPayload = { scope: scope.value };
-        if (scopeVals.length > 0) payload.scopeValue = scopeVals[0];
-        if (scope.value === "user" && isAdmin && targetUserId.value) {
-          payload.targetUserId = targetUserId.value;
-        }
-        if (resumeMode.value === "scheduled" && resumeMinutes.value) {
-          payload.resumeAt = Date.now() + Number(resumeMinutes.value) * 60_000;
-        }
-        await dispatch(resumeOrdersThunk(payload));
-        // Clear local blocks (server will send resumeAck which also clears)
+        await dispatch(
+          resumeOrdersThunk(
+            buildResumePayload({
+              ...payloadBase,
+              resumeMode: resumeMode.value,
+              resumeMinutes: resumeMinutes.value,
+            })
+          )
+        );
         dispatch({ type: "killSwitch/allBlocksCleared" });
       }
       close();
