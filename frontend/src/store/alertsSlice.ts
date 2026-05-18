@@ -125,9 +125,6 @@ export const alertsSlice = createSlice({
       const a = state.alerts.find((x) => x.id === action.payload);
       if (a) a.acknowledged = true;
     },
-    allAlertsAcknowledged(state) {
-      for (const a of state.alerts) a.acknowledged = true;
-    },
     alertsLoaded(state, action: PayloadAction<Alert[]>) {
       state.alerts = action.payload.slice(0, MAX_ALERTS).map((a) => ({
         ...a,
@@ -158,7 +155,6 @@ export const {
   alertAcknowledged,
   alertAdded,
   alertDismissed,
-  allAlertsAcknowledged,
   allAlertsDismissed,
   alertsLoaded,
   purgeServiceAlerts,

@@ -91,32 +91,14 @@ export const authSlice = createSlice({
     setStatus(state, action: PayloadAction<AuthState["status"]>) {
       state.status = action.payload;
     },
-    setShowLogin(state, action: PayloadAction<boolean>) {
-      state.showLogin = action.payload;
-    },
     sessionExpired(state) {
       state.user = null;
       state.limits = DEFAULT_LIMITS;
       state.status = "unauthenticated";
       state.sessionExpired = true;
     },
-    dismissSessionExpired(state) {
-      state.sessionExpired = false;
-    },
   },
 });
 
-export const {
-  setUser,
-  setUserWithLimits,
-  setLimits,
-  clearUser,
-  setStatus,
-  setShowLogin,
-  sessionExpired,
-  dismissSessionExpired,
-} = authSlice.actions;
-
-export function selectIsReadOnly(state: { auth: AuthState }): boolean {
-  return state.auth.user === null;
-}
+export const { setUser, setUserWithLimits, setLimits, clearUser, setStatus, sessionExpired } =
+  authSlice.actions;

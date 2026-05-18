@@ -197,10 +197,6 @@ export function reconcilePresetWorkspaces(
   };
 }
 
-export function workspaceStorageKey(_userId: string, _workspaceId: string): string {
-  return "";
-}
-
 function loadPinned(): boolean {
   return localStorage.getItem("sidebar-pinned") !== "false";
 }
