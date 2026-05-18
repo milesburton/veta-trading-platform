@@ -433,30 +433,27 @@ function LogsButton() {
   );
 }
 
-const DATA_DEPTH_THRESHOLDS = { good: 7, limited: 1 };
+const DATA_DEPTH_THRESHOLDS = { good: 7, limited: 0.25 };
+
+function depthLabelOnly(days: number): string {
+  if (days >= 1) return `${Math.round(days)}d`;
+  if (days > 0) return `${Math.round(days * 24)}h`;
+  return "none";
+}
 
 function dataQualityLabel(days: number): {
   label: string;
   color: string;
   dotColor: string;
 } {
-  if (days >= DATA_DEPTH_THRESHOLDS.good)
-    return {
-      label: `${Math.round(days)}d`,
-      color: "text-emerald-400",
-      dotColor: "bg-emerald-500",
-    };
-  if (days >= DATA_DEPTH_THRESHOLDS.limited)
-    return {
-      label: `${Math.round(days)}d`,
-      color: "text-amber-400",
-      dotColor: "bg-amber-400",
-    };
-  return {
-    label: days > 0 ? `${Math.round(days * 24)}h` : "none",
-    color: "text-red-400",
-    dotColor: "bg-red-500",
-  };
+  const label = depthLabelOnly(days);
+  if (days >= DATA_DEPTH_THRESHOLDS.good) {
+    return { label, color: "text-emerald-400", dotColor: "bg-emerald-500" };
+  }
+  if (days >= DATA_DEPTH_THRESHOLDS.limited) {
+    return { label, color: "text-amber-400", dotColor: "bg-amber-400" };
+  }
+  return { label, color: "text-red-400", dotColor: "bg-red-500" };
 }
 
 export function DataDepthIndicator() {
@@ -475,7 +472,10 @@ export function DataDepthIndicator() {
     );
   }
 
-  const { label, color, dotColor } = dataQualityLabel(data.minDays);
+  // Use avgDays for the headline indicator so one shallow new symbol
+  // doesn't drag the whole platform's signal red. minDays still drives
+  // the warning messages and is shown in the tooltip.
+  const { label, color, dotColor } = dataQualityLabel(data.avgDays);
   const warnings: string[] = [];
   if (data.minDays < DATA_DEPTH_THRESHOLDS.good) {
     warnings.push("Analytics accuracy is limited with less than 7 days of market data");
@@ -486,8 +486,8 @@ export function DataDepthIndicator() {
 
   const tooltip = [
     `${data.totalSymbols} symbols tracked`,
-    `Min depth: ${label}`,
-    `Avg depth: ${Math.round(data.avgDays)}d`,
+    `Min depth: ${depthLabelOnly(data.minDays)}`,
+    `Avg depth: ${depthLabelOnly(data.avgDays)}`,
     ...warnings,
     "Click for per-symbol detail",
   ].join("\n");
