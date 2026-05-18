@@ -36,4 +36,18 @@ describe("BuildInfo", () => {
     expect(info.getAttribute("title")).toContain("Build abc1234567890");
     expect(info.getAttribute("title")).toContain("2026-05-04");
   });
+
+  it("trims ISO timestamp build date to date-only in the visible chip", () => {
+    render(<BuildInfo version="1.39.0" commitSha="406cbdc" buildDate="2026-05-18T17:31:18Z" />);
+    const info = screen.getByTestId("build-info");
+    expect(info).toHaveTextContent("1.39.0 · 406cbdc · 2026-05-18");
+    expect(info.textContent).not.toContain("T17:31:18Z");
+  });
+
+  it("keeps full ISO timestamp in the tooltip", () => {
+    render(<BuildInfo version="1.39.0" commitSha="406cbdc" buildDate="2026-05-18T17:31:18Z" />);
+    expect(screen.getByTestId("build-info").getAttribute("title")).toContain(
+      "2026-05-18T17:31:18Z"
+    );
+  });
 });
