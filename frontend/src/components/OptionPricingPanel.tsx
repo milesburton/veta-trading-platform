@@ -5,6 +5,7 @@ import { selectSymbols } from "@veta/frontend/store/selectors.ts";
 import { setOptionPrefill } from "@veta/frontend/store/uiSlice.ts";
 import { COLOR } from "@veta/frontend/tokens.ts";
 import type { OptionQuoteResponse, OptionType } from "@veta/frontend/types/analytics.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { useEffect, useMemo } from "react";
 import {
   CartesianGrid,
@@ -426,7 +427,7 @@ export function OptionPricingPanel() {
           )}
 
           <div className="text-[9px] text-divider text-right">
-            Computed {new Date(result.value.computedAt).toLocaleTimeString()} · EWMA vol
+            Computed {formatUtcTime(result.value.computedAt)} · EWMA vol
           </div>
         </div>
       )}

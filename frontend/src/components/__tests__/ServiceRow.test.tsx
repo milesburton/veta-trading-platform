@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { ServiceRow } from "@veta/frontend/components/ServiceRow";
 import { StatusDot } from "@veta/frontend/components/StatusDot";
 import type { ServiceHealth } from "@veta/frontend/types";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 function makeSvc(overrides: Partial<ServiceHealth> = {}): ServiceHealth {
   return {
@@ -71,10 +71,7 @@ describe("ServiceRow", () => {
   });
 
   it("falls back to lastChecked time or dash", () => {
-    const timeSpy = vi
-      .spyOn(Date.prototype, "toLocaleTimeString")
-      .mockReturnValue("12:34:56 PM" as unknown as string);
-
+    // 2023-11-14T22:13:20.000Z = 1_700_000_000_000ms
     const { rerender } = render(
       <table>
         <tbody>
@@ -82,7 +79,7 @@ describe("ServiceRow", () => {
         </tbody>
       </table>
     );
-    expect(screen.getByText("12:34:56 PM")).toBeInTheDocument();
+    expect(screen.getByText("22:13:20 UTC")).toBeInTheDocument();
 
     rerender(
       <table>
@@ -92,7 +89,5 @@ describe("ServiceRow", () => {
       </table>
     );
     expect(screen.getByText("—")).toBeInTheDocument();
-
-    timeSpy.mockRestore();
   });
 });

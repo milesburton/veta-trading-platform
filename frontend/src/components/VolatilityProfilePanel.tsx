@@ -11,6 +11,7 @@ import { useGetVolProfileQuery } from "@veta/frontend/store/analyticsApi.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { selectSymbols } from "@veta/frontend/store/selectors.ts";
 import { COLOR } from "@veta/frontend/tokens.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import {
   Area,
   AreaChart,
@@ -41,7 +42,7 @@ function VolTooltip({
   const vol = payload[0]?.value as number | undefined;
   return (
     <div className="bg-surface border border-divider rounded px-2 py-1.5 text-[10px]">
-      <div className="text-muted mb-0.5">{new Date(label as number).toLocaleTimeString()}</div>
+      <div className="text-muted mb-0.5">{formatUtcTime(label as number)}</div>
       {vol !== undefined && (
         <div className="text-blue-400 tabular-nums">EWMA Vol: {(vol * 100).toFixed(2)}%</div>
       )}
@@ -173,7 +174,7 @@ export function VolatilityProfilePanel() {
 
       {data && (
         <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-divider">
-          {new Date(data.computedAt).toLocaleTimeString()} · EWMA λ=0.94 · Auto-refreshes every 60s
+          {formatUtcTime(data.computedAt)} · EWMA λ=0.94 · Auto-refreshes every 60s
         </div>
       )}
     </div>

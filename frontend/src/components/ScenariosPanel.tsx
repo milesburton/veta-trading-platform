@@ -8,6 +8,7 @@ import {
   useListScenariosQuery,
   useRunScenarioMutation,
 } from "@veta/frontend/store/scenariosApi.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 
 const STATUS_STYLE: Record<string, string> = {
   pending: "bg-divider text-secondary",
@@ -17,7 +18,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString();
+  return formatUtcTime(iso);
 }
 
 function ScenarioRow({

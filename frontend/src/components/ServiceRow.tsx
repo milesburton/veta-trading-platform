@@ -1,4 +1,5 @@
 import type { ServiceHealth } from "@veta/frontend/types.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { StatusDot } from "./StatusDot";
 
 export function ServiceRow({ svc }: { svc: ServiceHealth }) {
@@ -17,7 +18,7 @@ export function ServiceRow({ svc }: { svc: ServiceHealth }) {
           .map(([k, v]) => `${k}: ${v}`)
           .join(", ")
       : svc.lastChecked
-        ? new Date(svc.lastChecked).toLocaleTimeString()
+        ? formatUtcTime(svc.lastChecked)
         : "—";
 
   return (

@@ -11,6 +11,7 @@ import { useSignal } from "@preact/signals-react";
 import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { COLOR } from "@veta/frontend/tokens.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { useMemo } from "react";
 import {
   CartesianGrid,
@@ -88,9 +89,7 @@ function ReplayTooltip({
   const price = payload.find((p: { dataKey: string }) => p.dataKey === "close");
   return (
     <div className="bg-surface border border-divider rounded px-2 py-1 text-[10px]">
-      <div className="text-muted mb-0.5">
-        {label != null ? new Date(label).toLocaleTimeString() : ""}
-      </div>
+      <div className="text-muted mb-0.5">{label != null ? formatUtcTime(label) : ""}</div>
       {price && (
         <div className="text-default">
           Price: <span className="tabular-nums">${(price.value as number).toFixed(2)}</span>

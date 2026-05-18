@@ -7,6 +7,7 @@ import {
 } from "@veta/frontend/store/advisoryApi.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import type { LlmSubsystemState, LlmTriggerMode } from "@veta/frontend/store/llmSubsystemSlice.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 
 const STATE_CONFIGS: Record<LlmSubsystemState, { label: string; dot: string }> = {
   disabled: { label: "Disabled", dot: "bg-subtle" },
@@ -186,7 +187,7 @@ export function LlmSubsystemPanel() {
             {status?.ts && (
               <div className="flex justify-between">
                 <span className="text-muted">Last update</span>
-                <span className="text-muted">{new Date(status.ts).toLocaleTimeString()}</span>
+                <span className="text-muted">{formatUtcTime(status.ts)}</span>
               </div>
             )}
           </div>

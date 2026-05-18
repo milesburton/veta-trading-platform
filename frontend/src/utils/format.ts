@@ -1,9 +1,10 @@
-export function formatTime(ms: number) {
-  return new Date(ms).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+function pad(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+export function formatTime(ms: number): string {
+  const d = new Date(ms);
+  return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} UTC`;
 }
 
 export function formatBps(bps: number) {

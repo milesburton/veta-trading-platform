@@ -6,6 +6,7 @@ import {
   useGetUsersQuery,
   useUpdateUserLimitsMutation,
 } from "@veta/frontend/store/userApi.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { useEffect } from "react";
 
 interface JournalEntry {
@@ -275,7 +276,7 @@ export function AdminPanel() {
                     }`}
                   >
                     <td className="px-3 py-1.5 text-muted tabular-nums whitespace-nowrap">
-                      {new Date(entry.ts).toLocaleTimeString()}
+                      {formatUtcTime(entry.ts)}
                     </td>
                     <td className="px-3 py-1.5">
                       <span

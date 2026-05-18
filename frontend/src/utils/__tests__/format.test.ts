@@ -1,16 +1,15 @@
 import { formatBps, formatCurrency, formatTime, pnlColor } from "@veta/frontend/utils/format";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 describe("format utilities", () => {
-  it("formats time using locale time string", () => {
-    const spy = vi
-      .spyOn(Date.prototype, "toLocaleTimeString")
-      .mockReturnValue("10:11:12 AM" as unknown as string);
+  it("formats time as zero-padded UTC HH:MM:SS suffixed with UTC", () => {
+    const ms = Date.UTC(2026, 4, 18, 10, 11, 12);
+    expect(formatTime(ms)).toBe("10:11:12 UTC");
+  });
 
-    expect(formatTime(1_700_000_000_000)).toBe("10:11:12 AM");
-    expect(spy).toHaveBeenCalled();
-
-    spy.mockRestore();
+  it("formatTime is independent of host TZ", () => {
+    const ms = Date.UTC(2026, 0, 1, 23, 59, 59);
+    expect(formatTime(ms)).toBe("23:59:59 UTC");
   });
 
   it("formats bps with sign", () => {

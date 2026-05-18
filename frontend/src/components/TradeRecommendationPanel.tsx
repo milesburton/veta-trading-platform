@@ -7,6 +7,7 @@ import type {
   RecommendationResponse,
   SignalStrength,
 } from "@veta/frontend/types/analytics.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 
 const SIGNAL_STYLES: Record<SignalStrength, { badge: string; dot: string }> = {
   STRONG_BUY: {
@@ -358,7 +359,7 @@ export function TradeRecommendationPanel() {
           </div>
 
           <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-divider">
-            {new Date(result.value.computedAt).toLocaleTimeString()} ·{" "}
+            {formatUtcTime(result.value.computedAt)} ·{" "}
             {signal ? "Signal-driven scoring" : "Rule-based scoring"} · For educational use only
           </div>
         </>

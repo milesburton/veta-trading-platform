@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { submitOrderThunk } from "@veta/frontend/store/ordersSlice.ts";
 import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
 import type { ChildOrder, LiquidityFlag, OrderRecord } from "@veta/frontend/types.ts";
+import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { formatBps } from "@veta/frontend/utils/format.ts";
 import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { Fragment } from "react";
@@ -226,11 +227,7 @@ function ChildRows({ rows, asset }: { rows: ChildOrder[]; asset: string }) {
       {rows.map((c) => (
         <tr key={c.id} className="bg-surface/30 border-b border-panel/20">
           <td className="pl-8 pr-3 py-1 text-muted font-mono tabular-nums whitespace-nowrap">
-            {new Date(c.submittedAt).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            })}
+            {formatUtcTime(c.submittedAt)}
           </td>
           <td
             className={`px-3 py-1 text-[10px] font-semibold ${
