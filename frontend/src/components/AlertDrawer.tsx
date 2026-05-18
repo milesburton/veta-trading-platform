@@ -261,7 +261,11 @@ export function AlertDrawer({ onClose }: Props) {
       {alerts.length > 0 && (
         <button
           type="button"
-          onClick={() => dispatch(allAlertsDismissed())}
+          onClick={() => {
+            dispatch(allAlertsDismissed());
+            onClose();
+          }}
+          data-testid="alert-drawer-dismiss-all"
           className="text-[11px] text-muted hover:text-default transition-colors"
         >
           Dismiss all

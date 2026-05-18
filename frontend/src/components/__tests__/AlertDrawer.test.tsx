@@ -387,14 +387,16 @@ describe("AlertDrawer", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("dismisses all alerts from header action", () => {
-    renderOpenAlertDrawer(() => {});
+  it("dismisses all alerts and closes the drawer from header action", () => {
+    const onClose = vi.fn();
+    renderOpenAlertDrawer(onClose);
 
-    fireEvent.click(screen.getByText(/Dismiss all/i));
+    fireEvent.click(screen.getByTestId("alert-drawer-dismiss-all"));
 
     expect(dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "alerts/allAlertsDismissed" })
     );
+    expect(onClose).toHaveBeenCalled();
   });
 
   it("hides the Dismiss all button when there are no alerts", () => {
