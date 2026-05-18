@@ -44,7 +44,6 @@ function renderPanel() {
           dark_pool_access: false,
         },
         status: "authenticated" as const,
-        showLogin: false,
         sessionExpired: false,
       },
     },

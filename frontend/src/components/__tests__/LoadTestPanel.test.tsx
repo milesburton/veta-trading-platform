@@ -41,7 +41,6 @@ function renderPanel(role: "admin" | "viewer" = "admin") {
           dark_pool_access: false,
         },
         status: "authenticated" as const,
-        showLogin: false,
         sessionExpired: false,
       },
     },
