@@ -1,109 +1,15 @@
 import type { SessionState } from "@veta/frontend/domain/market/market-session";
 import { resolveTicket } from "@veta/frontend/domain/ticket/resolve-ticket";
 import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
-import type { TradingLimits } from "@veta/frontend/store/authSlice";
 import { describe, expect, it } from "vitest";
-
-const DEFAULT_LIMITS: TradingLimits = {
-  max_order_qty: 10_000,
-  max_daily_notional: 1_000_000,
-  allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
-  allowed_desks: ["equity"],
-  dark_pool_access: false,
-};
-
-const CONTINUOUS_SESSION: SessionState = {
-  phase: "CONTINUOUS",
-  allowsOrderEntry: true,
-  allowsAmend: true,
-  allowsCancel: true,
-  supportedStrategies: [
-    "LIMIT",
-    "TWAP",
-    "POV",
-    "VWAP",
-    "ICEBERG",
-    "SNIPER",
-    "ARRIVAL_PRICE",
-    "IS",
-    "MOMENTUM",
-  ],
-  phaseLabel: "Continuous Trading",
-};
-
-const HALTED_SESSION: SessionState = {
-  phase: "HALTED",
-  allowsOrderEntry: false,
-  allowsAmend: false,
-  allowsCancel: true,
-  supportedStrategies: [],
-  phaseLabel: "Trading Halted",
-};
-
-const AUCTION_SESSION: SessionState = {
-  phase: "OPENING_AUCTION",
-  allowsOrderEntry: true,
-  allowsAmend: true,
-  allowsCancel: true,
-  supportedStrategies: ["LIMIT"],
-  phaseLabel: "Opening Auction",
-};
-
-const VALID_OPTION = {
-  optionType: "call" as const,
-  strike: 150,
-  expirySecs: 86400,
-  hasQuote: true,
-  isFetching: false,
-};
-const VALID_BOND = {
-  symbol: "US10Y",
-  yieldPct: 4.5,
-  hasQuote: true,
-  isFetching: false,
-  hasBondDef: true,
-};
-
-function makeCtx(overrides: Partial<TicketContext> = {}): TicketContext {
-  return {
-    userId: "user-1",
-    userRole: "trader",
-    limits: DEFAULT_LIMITS,
-    killBlocks: [],
-    instrument: {
-      instrumentType: "equity",
-      symbol: "AAPL",
-      lotSize: 1,
-      currentPrice: 189.5,
-      orderBookMid: 189.45,
-    },
-    draft: {
-      side: "BUY",
-      quantity: 100,
-      limitPrice: 189.5,
-      strategy: "LIMIT",
-      expiresAtSecs: 300,
-      tif: "DAY",
-    },
-    option: {
-      optionType: "call",
-      strike: 0,
-      expirySecs: 0,
-      hasQuote: false,
-      isFetching: false,
-    },
-    bond: {
-      symbol: "",
-      yieldPct: 0,
-      hasQuote: false,
-      isFetching: false,
-      hasBondDef: false,
-    },
-    session: CONTINUOUS_SESSION,
-    dirtyFields: new Set(),
-    ...overrides,
-  };
-}
+import {
+  AUCTION_SESSION,
+  DEFAULT_LIMITS,
+  HALTED_SESSION,
+  makeCtx,
+  VALID_BOND,
+  VALID_OPTION,
+} from "./fixtures";
 
 function withDraft(overrides: Partial<TicketContext["draft"]>): Partial<TicketContext> {
   return { draft: { ...makeCtx().draft, ...overrides } };

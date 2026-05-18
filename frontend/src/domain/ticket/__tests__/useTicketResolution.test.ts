@@ -1,75 +1,9 @@
 import { renderHook } from "@testing-library/react";
-import type { SessionState } from "@veta/frontend/domain/market/market-session";
 import * as resolver from "@veta/frontend/domain/ticket/resolve-ticket";
 import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
 import { useTicketResolution } from "@veta/frontend/domain/ticket/useTicketResolution";
 import { describe, expect, it, vi } from "vitest";
-
-const CONTINUOUS_SESSION: SessionState = {
-  phase: "CONTINUOUS",
-  allowsOrderEntry: true,
-  allowsAmend: true,
-  allowsCancel: true,
-  supportedStrategies: [
-    "LIMIT",
-    "TWAP",
-    "POV",
-    "VWAP",
-    "ICEBERG",
-    "SNIPER",
-    "ARRIVAL_PRICE",
-    "IS",
-    "MOMENTUM",
-  ],
-  phaseLabel: "Continuous Trading",
-};
-
-function makeCtx(overrides: Partial<TicketContext> = {}): TicketContext {
-  return {
-    userId: "user-1",
-    userRole: "trader",
-    limits: {
-      max_order_qty: 10_000,
-      max_daily_notional: 1_000_000,
-      allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
-      allowed_desks: ["equity"],
-      dark_pool_access: false,
-    },
-    killBlocks: [],
-    instrument: {
-      instrumentType: "equity",
-      symbol: "AAPL",
-      lotSize: 1,
-      currentPrice: 189.5,
-      orderBookMid: 189.45,
-    },
-    draft: {
-      side: "BUY",
-      quantity: 100,
-      limitPrice: 189.5,
-      strategy: "LIMIT",
-      expiresAtSecs: 300,
-      tif: "DAY",
-    },
-    option: {
-      optionType: "call",
-      strike: 0,
-      expirySecs: 0,
-      hasQuote: false,
-      isFetching: false,
-    },
-    bond: {
-      symbol: "",
-      yieldPct: 0,
-      hasQuote: false,
-      isFetching: false,
-      hasBondDef: false,
-    },
-    session: CONTINUOUS_SESSION,
-    dirtyFields: new Set(),
-    ...overrides,
-  };
-}
+import { CONTINUOUS_SESSION, makeCtx } from "./fixtures";
 
 describe("useTicketResolution", () => {
   it("memoizes result for structurally equal contexts", () => {
