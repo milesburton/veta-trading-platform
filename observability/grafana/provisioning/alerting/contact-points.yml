@@ -1,37 +1,45 @@
 apiVersion: 1
 
-# Alert contact points + notification policy. The default route uses
-# `grafana-default-email` which sends to whatever SMTP Grafana is
-# configured with (none, in this stack — so alerts will fire but
-# notifications won't deliver). To actually receive notifications:
-#
-# 1. Set up an SMTP provider in Grafana settings, or
-# 2. Replace `grafana-default-email` below with a `webhook` type
-#    pointing at a Slack incoming-webhook URL or similar, or
-# 3. Configure an Alertmanager external receiver via env.
-#
-# This file just declares the routing; the heavy lifting is operator
-# config.
+# Alert contact points + notification policy. Routes alerts to Discord via
+# DISCORD_WEBHOOK_URL (per-host secret, never committed). Falls back to
+# the generic ALERT_WEBHOOK_URL receiver if Discord is unset — Grafana 11.4
+# refuses to provision a webhook receiver with an empty URL.
 
 contactPoints:
+  - orgId: 1
+    name: veta-alerts
+    receivers:
+      - uid: discord-veta-alerts
+        type: discord
+        settings:
+          url: ${DISCORD_WEBHOOK_URL}
+          title: |
+            {{ .CommonLabels.alertname }} ({{ .CommonLabels.severity }})
+          message: |
+            {{ range .Alerts }}
+            **{{ .Annotations.summary }}**
+            {{ .Annotations.description }}
+            {{ end }}
+        disableResolveMessage: false
+
   - orgId: 1
     name: security-alerts
     receivers:
       - uid: security-webhook
         type: webhook
         settings:
-          # Set ALERT_WEBHOOK_URL in the homelab .env to enable.
-          # docker-compose.lgtm.yml supplies an unreachable sentinel
-          # default — Grafana 11.4 refuses to provision a webhook
-          # receiver with an empty url and crash-loops the container.
           url: ${ALERT_WEBHOOK_URL}
           httpMethod: POST
         disableResolveMessage: false
 
 policies:
   - orgId: 1
-    receiver: security-alerts
+    receiver: veta-alerts
     group_by: [alertname, severity]
     repeat_interval: 4h
     group_wait: 30s
     group_interval: 5m
+    routes:
+      - receiver: security-alerts
+        matchers:
+          - category = security
