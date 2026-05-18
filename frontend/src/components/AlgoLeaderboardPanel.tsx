@@ -1,7 +1,7 @@
 import { useSignal } from "@preact/signals-react";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { OrderRecord } from "@veta/frontend/types.ts";
 import { useEffect, useMemo, useRef } from "react";
-import { useAppSelector } from "../store/hooks.ts";
-import type { OrderRecord } from "../types.ts";
 
 interface StrategyMetrics {
   strategy: string;

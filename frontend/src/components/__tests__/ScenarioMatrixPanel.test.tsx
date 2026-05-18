@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { ScenarioMatrixPanel } from "@veta/frontend/components/ScenarioMatrixPanel";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ScenarioMatrixPanel } from "../ScenarioMatrixPanel";
 
 const getScenario = vi.fn();
 

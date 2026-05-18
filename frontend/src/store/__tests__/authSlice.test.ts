@@ -1,5 +1,4 @@
-import { describe, expect, it } from "vitest";
-import type { AuthUser, TradingLimits } from "../authSlice";
+import type { AuthUser, TradingLimits } from "@veta/frontend/store/authSlice";
 import {
   authSlice,
   clearUser,
@@ -7,7 +6,8 @@ import {
   setStatus,
   setUser,
   setUserWithLimits,
-} from "../authSlice";
+} from "@veta/frontend/store/authSlice";
+import { describe, expect, it } from "vitest";
 
 const { reducer } = authSlice;
 

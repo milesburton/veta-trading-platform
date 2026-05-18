@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
+import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useColumnLayout } from "../useColumnLayout";
 
 const dispatch = vi.fn();
 const state = {

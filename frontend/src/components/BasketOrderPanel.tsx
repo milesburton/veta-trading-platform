@@ -1,7 +1,7 @@
 import { useSignal } from "@preact/signals-react";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { submitOrderThunk } from "../store/ordersSlice.ts";
-import type { LimitParams, OrderSide, Trade } from "../types.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { submitOrderThunk } from "@veta/frontend/store/ordersSlice.ts";
+import type { LimitParams, OrderSide, Trade } from "@veta/frontend/types.ts";
 
 interface BasketLeg {
   id: string;

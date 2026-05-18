@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { QuickTradeIntent } from "../domain/quickTrade/parse.ts";
+import type { QuickTradeIntent } from "@veta/frontend/domain/quickTrade/parse.ts";
 
 export interface ParseTicketRequest {
   input: string;

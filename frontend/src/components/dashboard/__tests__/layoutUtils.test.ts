@@ -1,14 +1,14 @@
-import { Model } from "flexlayout-react";
-import { describe, expect, it } from "vitest";
-import type { ChannelNumber } from "../../../store/channelsSlice.ts";
-import { makeDefaultModel } from "../layoutModels.ts";
-import type { LayoutItem } from "../layoutUtils.ts";
+import { makeDefaultModel } from "@veta/frontend/components/dashboard/layoutModels.ts";
+import type { LayoutItem } from "@veta/frontend/components/dashboard/layoutUtils.ts";
 import {
   DEFAULT_LAYOUT,
   modelToLayoutItems,
   wouldCreateCycleIn,
   wouldCreateCycleOut,
-} from "../layoutUtils.ts";
+} from "@veta/frontend/components/dashboard/layoutUtils.ts";
+import type { ChannelNumber } from "@veta/frontend/store/channelsSlice.ts";
+import { Model } from "flexlayout-react";
+import { describe, expect, it } from "vitest";
 
 // Helpers
 

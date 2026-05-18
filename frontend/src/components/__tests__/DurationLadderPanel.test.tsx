@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { DurationLadderPanel } from "@veta/frontend/components/DurationLadderPanel";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DurationLadderPanel } from "../DurationLadderPanel";
 
 const compute = vi.fn();
 

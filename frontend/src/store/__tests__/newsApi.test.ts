@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { newsApi } from "@veta/frontend/store/newsApi";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { newsApi } from "../newsApi";
 
 const NativeRequest = Request;
 

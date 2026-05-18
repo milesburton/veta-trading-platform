@@ -1,11 +1,11 @@
 import { useSignal } from "@preact/signals-react";
-import { useEffect, useMemo } from "react";
-import { useAppSelector } from "../store/hooks.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import {
   useGetOverridesQuery,
   useGetSourcesQuery,
   useToggleFeedMutation,
-} from "../store/marketDataApi.ts";
+} from "@veta/frontend/store/marketDataApi.ts";
+import { useEffect, useMemo } from "react";
 
 type MarketSession = "pre-market" | "open" | "after-hours" | "closed";
 

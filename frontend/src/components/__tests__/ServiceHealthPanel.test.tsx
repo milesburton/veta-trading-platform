@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { render, screen } from "@testing-library/react";
+import { ServiceHealthPanel } from "@veta/frontend/components/ServiceHealthPanel";
+import { alertsSlice } from "@veta/frontend/store/alertsSlice";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { alertsSlice } from "../../store/alertsSlice";
-import { ServiceHealthPanel } from "../ServiceHealthPanel";
 
 const state: {
   byService: Record<string, { kind: "ok" | "error"; version: string }>;

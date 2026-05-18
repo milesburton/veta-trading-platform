@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { NewsSourcesPanel } from "@veta/frontend/components/NewsSourcesPanel";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NewsSourcesPanel } from "../NewsSourcesPanel";
 
 const refetch = vi.fn();
 const toggleNewsSource = vi.fn();

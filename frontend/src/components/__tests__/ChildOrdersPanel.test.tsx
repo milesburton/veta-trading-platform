@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { ChildOrdersPanel } from "@veta/frontend/components/ChildOrdersPanel";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ChildOrdersPanel } from "../ChildOrdersPanel";
 
 const broadcast = vi.fn();
 let selectedOrderId: string | null = "parent-1";

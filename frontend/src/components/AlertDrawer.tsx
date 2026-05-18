@@ -1,13 +1,13 @@
 import { useSignal } from "@preact/signals-react";
-import type { Alert, AlertSeverity, AlertSource } from "../store/alertsSlice.ts";
+import type { Alert, AlertSeverity, AlertSource } from "@veta/frontend/store/alertsSlice.ts";
 import {
   alertDismissed,
   allAlertsDismissed,
   muteRuleAdded,
   selectActiveAlerts,
   selectMuteRules,
-} from "../store/alertsSlice.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+} from "@veta/frontend/store/alertsSlice.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { useDashboard } from "./dashboard/DashboardContext.tsx";
 import { Drawer } from "./drawers/Drawer.tsx";
 

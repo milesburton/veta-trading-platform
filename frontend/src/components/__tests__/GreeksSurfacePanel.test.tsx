@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { GreeksSurfacePanel } from "@veta/frontend/components/GreeksSurfacePanel";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GreeksSurfacePanel } from "../GreeksSurfacePanel";
 
 vi.mock("../../store/analyticsApi.ts", () => ({
   useGetGreeksSurfaceQuery: (params: { symbol: string; expirySecs: number }) => {

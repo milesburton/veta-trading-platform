@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { render, screen } from "@testing-library/react";
+import { MyPositionsPanel } from "@veta/frontend/components/MyPositionsPanel";
+import { authSlice } from "@veta/frontend/store/authSlice";
+import type { RiskPosition } from "@veta/frontend/store/riskApi";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { authSlice } from "../../store/authSlice";
-import type { RiskPosition } from "../../store/riskApi";
-import { MyPositionsPanel } from "../MyPositionsPanel";
 
 const state: {
   isLoading: boolean;

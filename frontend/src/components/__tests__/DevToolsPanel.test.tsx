@@ -1,11 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { DevToolsPanel } from "@veta/frontend/components/DevToolsPanel";
+import { alertsSlice } from "@veta/frontend/store/alertsSlice";
+import { authSlice } from "@veta/frontend/store/authSlice";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { alertsSlice } from "../../store/alertsSlice";
-import { authSlice } from "../../store/authSlice";
-import { marketSlice } from "../../store/marketSlice";
-import { DevToolsPanel } from "../DevToolsPanel";
 
 const runDemoDay = vi.fn();
 const runLoadTest = vi.fn();

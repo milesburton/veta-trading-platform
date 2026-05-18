@@ -1,7 +1,7 @@
 import { useSignal } from "@preact/signals-react";
+import { publishSharedWorkspace } from "@veta/frontend/hooks/useWorkspaceSync.ts";
 import type { IJsonModel, Model } from "flexlayout-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { publishSharedWorkspace } from "../hooks/useWorkspaceSync.ts";
 import {
   makeAdministrationModel,
   makeAlgoModel,

@@ -1,5 +1,5 @@
-import type { AuthRole } from "../../auth/rbac.ts";
-import type { ChannelNumber } from "../../store/channelsSlice.ts";
+import type { AuthRole } from "@veta/frontend/auth/rbac.ts";
+import type { ChannelNumber } from "@veta/frontend/store/channelsSlice.ts";
 
 export type { ChannelNumber };
 

@@ -7,7 +7,7 @@ import type {
   ExprRule,
   FieldDef,
   FilterCriteria,
-} from "../types/gridPrefs.ts";
+} from "@veta/frontend/types/gridPrefs.ts";
 
 function getField(row: Record<string, unknown>, field: string): unknown {
   return row[field];

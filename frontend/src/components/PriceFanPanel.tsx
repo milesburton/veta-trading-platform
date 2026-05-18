@@ -6,6 +6,8 @@
  */
 
 import { useSignal } from "@preact/signals-react";
+import { useGetPriceFanQuery } from "@veta/frontend/store/analyticsApi.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
 import {
   Area,
   CartesianGrid,
@@ -17,8 +19,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useGetPriceFanQuery } from "../store/analyticsApi.ts";
-import { COLOR } from "../tokens.ts";
 
 interface HorizonPreset {
   label: string;

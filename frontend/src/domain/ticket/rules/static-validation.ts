@@ -1,4 +1,4 @@
-import type { Diagnostic, TicketContext } from "../ticket-types";
+import type { Diagnostic, TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
 
 export function runStaticValidation(ctx: TicketContext): Diagnostic[] {
   const { draft, instrument } = ctx;

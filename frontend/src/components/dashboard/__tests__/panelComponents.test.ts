@@ -1,5 +1,5 @@
+import { getPanelComponent } from "@veta/frontend/components/dashboard/panelComponents";
 import { describe, expect, it } from "vitest";
-import { getPanelComponent } from "../panelComponents";
 
 describe("panelComponents registry", () => {
   it("returns a component for market-ladder", () => {

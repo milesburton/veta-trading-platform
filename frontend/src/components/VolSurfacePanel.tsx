@@ -1,9 +1,9 @@
 import { useSignal } from "@preact/signals-react";
+import { useGetVolSurfaceQuery } from "@veta/frontend/store/analyticsApi.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { setOptionPrefill } from "@veta/frontend/store/uiSlice.ts";
+import type { VolSurfacePoint } from "@veta/frontend/types/analytics.ts";
 import { useEffect, useRef } from "react";
-import { useGetVolSurfaceQuery } from "../store/analyticsApi.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { setOptionPrefill } from "../store/uiSlice.ts";
-import type { VolSurfacePoint } from "../types/analytics.ts";
 
 const MONEYNESS_LABELS: Record<number, string> = {
   0.7: "70%",

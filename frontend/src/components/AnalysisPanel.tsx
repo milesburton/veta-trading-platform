@@ -1,8 +1,8 @@
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { useGetNewsBySymbolQuery } from "@veta/frontend/store/newsApi.ts";
+import type { NewsItem } from "@veta/frontend/store/newsSlice.ts";
+import { newsBatchReceived, selectNewsForSymbol } from "@veta/frontend/store/newsSlice.ts";
 import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { useGetNewsBySymbolQuery } from "../store/newsApi.ts";
-import type { NewsItem } from "../store/newsSlice.ts";
-import { newsBatchReceived, selectNewsForSymbol } from "../store/newsSlice.ts";
 
 function relativeTime(ms: number): string {
   const diff = Date.now() - ms;

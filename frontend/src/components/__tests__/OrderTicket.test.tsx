@@ -1,18 +1,18 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { OrderTicket } from "@veta/frontend/components/OrderTicket";
+import { TradingProvider } from "@veta/frontend/context/TradingContext";
+import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
+import { authSlice } from "@veta/frontend/store/authSlice";
+import { channelsSlice } from "@veta/frontend/store/channelsSlice";
+import { killSwitchSlice } from "@veta/frontend/store/killSwitchSlice";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
+import { ordersSlice } from "@veta/frontend/store/ordersSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
+import { windowSlice } from "@veta/frontend/store/windowSlice";
+import type { AssetDef, MarketPrices } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
-import { TradingProvider } from "../../context/TradingContext";
-import { ChannelContext } from "../../contexts/ChannelContext";
-import { authSlice } from "../../store/authSlice";
-import { channelsSlice } from "../../store/channelsSlice";
-import { killSwitchSlice } from "../../store/killSwitchSlice";
-import { marketSlice } from "../../store/marketSlice";
-import { ordersSlice } from "../../store/ordersSlice";
-import { uiSlice } from "../../store/uiSlice";
-import { windowSlice } from "../../store/windowSlice";
-import type { AssetDef, MarketPrices } from "../../types";
-import { OrderTicket } from "../OrderTicket";
 
 const MOCK_QUOTE = {
   symbol: "AAPL",

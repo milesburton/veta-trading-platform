@@ -8,6 +8,16 @@
  */
 
 import { useSignal } from "@preact/signals-react";
+import {
+  useGetBondPriceMutation,
+  useGetYieldCurveMutation,
+} from "@veta/frontend/store/analyticsApi.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
+import type {
+  BondPriceResponse,
+  ForwardRate,
+  YieldCurvePoint,
+} from "@veta/frontend/types/analytics.ts";
 import { useEffect } from "react";
 import {
   CartesianGrid,
@@ -18,9 +28,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useGetBondPriceMutation, useGetYieldCurveMutation } from "../store/analyticsApi.ts";
-import { COLOR } from "../tokens.ts";
-import type { BondPriceResponse, ForwardRate, YieldCurvePoint } from "../types/analytics.ts";
 
 function ForwardChip({ fwd, prevRate }: { fwd: ForwardRate; prevRate?: number }) {
   const isInverted = prevRate !== undefined && fwd.rate < prevRate;

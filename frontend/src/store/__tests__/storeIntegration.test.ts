@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // versionWatchMiddleware starts polling on init — stub fetch to avoid noise
 vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
 
-import { store } from "../index";
+import { store } from "@veta/frontend/store/index";
 
 afterEach(() => {
   vi.unstubAllGlobals();

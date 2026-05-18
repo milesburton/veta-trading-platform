@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { StrategyParams } from "@veta/frontend/components/StrategyParams";
 import { vi } from "vitest";
-import { StrategyParams } from "../StrategyParams";
 
 const defaultProps = {
   activeStrategy: "LIMIT",

@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { AnalysisPanel } from "@veta/frontend/components/AnalysisPanel";
+import { type NewsItem, newsSlice } from "@veta/frontend/store/newsSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { type NewsItem, newsSlice } from "../../store/newsSlice";
-import { uiSlice } from "../../store/uiSlice";
-import { AnalysisPanel } from "../AnalysisPanel";
 
 const refetch = vi.fn();
 const queryState: {

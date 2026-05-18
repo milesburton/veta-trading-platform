@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals-react";
-import { useAppSelector } from "../store/hooks.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 
 type LegType = "equity" | "bond" | "option";
 type ProductState = "draft" | "structured" | "issued" | "sold" | "unwound";

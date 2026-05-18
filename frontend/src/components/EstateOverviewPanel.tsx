@@ -1,16 +1,16 @@
 import { useSignal } from "@preact/signals-react";
-import { useEffect, useRef } from "react";
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import {
   alertAdded,
   alertDismissed,
   purgeServiceAlerts,
   selectActiveAlerts,
-} from "../store/alertsSlice.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { SERVICES, useGetServiceHealthQuery } from "../store/servicesApi.ts";
-import { COLOR } from "../tokens.ts";
-import type { ObsEvent } from "../types.ts";
+} from "@veta/frontend/store/alertsSlice.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { SERVICES, useGetServiceHealthQuery } from "@veta/frontend/store/servicesApi.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
+import type { ObsEvent } from "@veta/frontend/types.ts";
+import { useEffect, useRef } from "react";
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
 const WINDOW_MS = 60_000;
 

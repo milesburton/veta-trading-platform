@@ -16,7 +16,7 @@ import {
   recordingDurationMs,
   startRecording,
   stopRecording,
-} from "../sessionRecorder";
+} from "@veta/frontend/lib/sessionRecorder";
 
 function fakeEvent(timestamp: number): eventWithTime {
   return { type: 2, data: {}, timestamp } as unknown as eventWithTime;

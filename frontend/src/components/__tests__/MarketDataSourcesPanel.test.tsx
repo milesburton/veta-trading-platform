@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MarketDataSourcesPanel } from "@veta/frontend/components/MarketDataSourcesPanel";
+import { authSlice } from "@veta/frontend/store/authSlice";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { authSlice } from "../../store/authSlice";
-import { marketSlice } from "../../store/marketSlice";
-import { MarketDataSourcesPanel } from "../MarketDataSourcesPanel";
 
 const useGetSourcesQuery = vi.fn();
 const useGetOverridesQuery = vi.fn();

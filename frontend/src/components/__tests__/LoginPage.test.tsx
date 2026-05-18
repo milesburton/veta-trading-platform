@@ -1,11 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { LoginPage } from "@veta/frontend/components/LoginPage";
+import { type AuthUser, authSlice } from "@veta/frontend/store/authSlice";
+import { servicesApi } from "@veta/frontend/store/servicesApi";
+import { userApi } from "@veta/frontend/store/userApi";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { type AuthUser, authSlice } from "../../store/authSlice";
-import { servicesApi } from "../../store/servicesApi";
-import { userApi } from "../../store/userApi";
-import { LoginPage } from "../LoginPage";
 
 // LoginPage now embeds the shared <AppHeader />. The chrome itself is tested
 // in StatusBar.test.tsx; here we mock it so these tests stay focused on the

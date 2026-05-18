@@ -1,13 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { renderHook } from "@testing-library/react";
+import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
+import { useChannelIn } from "@veta/frontend/hooks/useChannelIn";
+import { useChannelOut } from "@veta/frontend/hooks/useChannelOut";
+import { channelsSlice } from "@veta/frontend/store/channelsSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
 import type { ReactNode } from "react";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
-import { ChannelContext } from "../../contexts/ChannelContext";
-import { channelsSlice } from "../../store/channelsSlice";
-import { uiSlice } from "../../store/uiSlice";
-import { useChannelIn } from "../useChannelIn";
-import { useChannelOut } from "../useChannelOut";
 
 function makeStore() {
   return configureStore({

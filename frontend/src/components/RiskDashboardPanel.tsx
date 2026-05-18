@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { useAppSelector } from "../store/hooks.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import {
   type RiskConfig,
   type RiskPosition,
@@ -7,8 +6,9 @@ import {
   useGetPositionsQuery,
   useGetRiskConfigQuery,
   useUpdateRiskConfigMutation,
-} from "../store/riskApi.ts";
-import { formatCurrency, pnlColor } from "../utils/format.ts";
+} from "@veta/frontend/store/riskApi.ts";
+import { formatCurrency, pnlColor } from "@veta/frontend/utils/format.ts";
+import { useEffect, useState } from "react";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 interface BreakerStripEntry {

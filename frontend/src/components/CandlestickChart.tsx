@@ -1,4 +1,7 @@
 import { useSignal } from "@preact/signals-react";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
+import type { OhlcCandle } from "@veta/frontend/types.ts";
 import type { IChartApi, ISeriesApi, UTCTimestamp } from "lightweight-charts";
 import {
   CandlestickSeries,
@@ -8,9 +11,6 @@ import {
   HistogramSeries,
 } from "lightweight-charts";
 import { useEffect, useRef } from "react";
-import { useAppSelector } from "../store/hooks.ts";
-import { COLOR } from "../tokens.ts";
-import type { OhlcCandle } from "../types.ts";
 
 type Interval = "1m" | "5m";
 

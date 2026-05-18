@@ -1,5 +1,9 @@
+import {
+  isAuction,
+  isStrategyAllowedInSession,
+  resolveSession,
+} from "@veta/frontend/domain/market/market-session";
 import { describe, expect, it } from "vitest";
-import { isAuction, isStrategyAllowedInSession, resolveSession } from "../market-session";
 
 describe("resolveSession", () => {
   it.each([

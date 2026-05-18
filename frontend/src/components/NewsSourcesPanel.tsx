@@ -6,7 +6,7 @@ import {
   useGetNewsSourcesQuery,
   useToggleNewsSourceMutation,
   useUpdateNewsSourceMutation,
-} from "../store/newsApi.ts";
+} from "@veta/frontend/store/newsApi.ts";
 
 interface SourceFormProps {
   initial?: NewsSource;

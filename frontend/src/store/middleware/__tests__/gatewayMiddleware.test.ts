@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { setUser } from "@veta/frontend/store/authSlice";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
+import { gatewayMiddleware } from "@veta/frontend/store/middleware/gatewayMiddleware";
+import { setSelectedAsset } from "@veta/frontend/store/uiSlice";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { setUser } from "../../authSlice";
-import { marketSlice } from "../../marketSlice";
-import { setSelectedAsset } from "../../uiSlice";
-import { gatewayMiddleware } from "../gatewayMiddleware";
 
 class FakeWebSocket {
   static instances: FakeWebSocket[] = [];

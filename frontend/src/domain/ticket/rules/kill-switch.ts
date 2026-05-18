@@ -1,5 +1,5 @@
-import { isOrderBlocked } from "../../../store/killSwitchSlice";
-import type { Diagnostic, TicketContext } from "../ticket-types";
+import type { Diagnostic, TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
+import { isOrderBlocked } from "@veta/frontend/store/killSwitchSlice";
 
 export function runKillSwitchCheck(ctx: TicketContext): Diagnostic[] {
   const blocked = isOrderBlocked(ctx.killBlocks, {

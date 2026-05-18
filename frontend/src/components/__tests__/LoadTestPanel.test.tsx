@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { LoadTestPanel } from "@veta/frontend/components/LoadTestPanel";
+import { authSlice } from "@veta/frontend/store/authSlice";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { authSlice } from "../../store/authSlice";
-import { LoadTestPanel } from "../LoadTestPanel";
 
 const runLoadTest = vi.fn();
 

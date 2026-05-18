@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals-react";
-import { type DemoPersona, useGetDemoPersonasQuery } from "../store/userApi.ts";
+import { type DemoPersona, useGetDemoPersonasQuery } from "@veta/frontend/store/userApi.ts";
 
 const STYLE_LABELS: Record<string, string> = {
   high_touch: "High touch",

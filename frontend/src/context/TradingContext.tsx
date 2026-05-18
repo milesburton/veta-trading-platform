@@ -4,18 +4,19 @@
  * This context manages only the ticketRef (DOM element ref) which is
  * not serializable and must NOT go into Redux state.
  */
-import { createContext, useCallback, useContext, useRef } from "react";
-import { useHotkeys } from "react-hotkeys-hook";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import {
   hideShortcuts,
   selectOrderTicketWindowSize,
   setActiveSide,
   setActiveStrategy,
   toggleShortcuts,
-} from "../store/uiSlice.ts";
-import type { Strategy } from "../types.ts";
-import { openOrderTicketWindow } from "../utils/orderTicketWindow.ts";
+} from "@veta/frontend/store/uiSlice.ts";
+import type { Strategy } from "@veta/frontend/types.ts";
+import { openOrderTicketWindow } from "@veta/frontend/utils/orderTicketWindow.ts";
+import { createContext, useCallback, useContext, useRef } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
 
 interface TradingContextValue {
   focusTicket: () => void;

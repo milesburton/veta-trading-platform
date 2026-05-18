@@ -6,6 +6,10 @@
  */
 
 import { useSignal } from "@preact/signals-react";
+import { useGetGreeksSurfaceQuery } from "@veta/frontend/store/analyticsApi.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { selectSymbols } from "@veta/frontend/store/selectors.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
 import {
   CartesianGrid,
   ComposedChart,
@@ -17,10 +21,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useGetGreeksSurfaceQuery } from "../store/analyticsApi.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import { selectSymbols } from "../store/selectors.ts";
-import { COLOR } from "../tokens.ts";
 
 const EXPIRY_PRESETS = [
   { label: "7d", secs: 7 * 86400 },

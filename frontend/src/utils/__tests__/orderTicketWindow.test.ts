@@ -1,5 +1,5 @@
+import { openOrderTicketWindow } from "@veta/frontend/utils/orderTicketWindow.ts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { openOrderTicketWindow } from "../orderTicketWindow.ts";
 
 describe("openOrderTicketWindow", () => {
   beforeEach(() => {

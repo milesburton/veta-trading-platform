@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
 import {
   panelClosed,
   panelDialogClosed,
   panelDialogOpened,
   panelPopped,
   windowSlice,
-} from "../windowSlice";
+} from "@veta/frontend/store/windowSlice";
+import { describe, expect, it } from "vitest";
 
 const { reducer } = windowSlice;
 const initial = reducer(undefined, { type: "@@init" });

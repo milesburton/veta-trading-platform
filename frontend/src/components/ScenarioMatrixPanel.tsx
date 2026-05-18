@@ -1,9 +1,9 @@
 import { useSignal } from "@preact/signals-react";
+import { useGetScenarioMutation } from "@veta/frontend/store/analyticsApi.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { selectSymbols } from "@veta/frontend/store/selectors.ts";
+import type { OptionType, ScenarioCell, ScenarioResponse } from "@veta/frontend/types/analytics.ts";
 import { useMemo } from "react";
-import { useGetScenarioMutation } from "../store/analyticsApi.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import { selectSymbols } from "../store/selectors.ts";
-import type { OptionType, ScenarioCell, ScenarioResponse } from "../types/analytics.ts";
 
 const EXPIRY_OPTIONS = [
   { label: "7d", secs: 7 * 86400 },

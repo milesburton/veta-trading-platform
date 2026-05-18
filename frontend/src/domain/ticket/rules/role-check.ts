@@ -1,5 +1,5 @@
-import { NON_TRADING_ROLES } from "../../../auth/rbac.ts";
-import type { TicketContext } from "../ticket-types";
+import { NON_TRADING_ROLES } from "@veta/frontend/auth/rbac.ts";
+import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
 
 const ROLE_MESSAGES: Record<string, string> = {
   admin: "Administrators cannot submit orders. This panel is reserved for trader accounts.",

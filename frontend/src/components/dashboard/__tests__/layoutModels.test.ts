@@ -1,5 +1,3 @@
-import { Model } from "flexlayout-react";
-import { describe, expect, it } from "vitest";
 import {
   LAYOUT_TEMPLATES,
   makeAdminModel,
@@ -13,7 +11,9 @@ import {
   makeOverviewModel,
   STORAGE_KEY,
   STORAGE_KEY_PREFIX,
-} from "../layoutModels.ts";
+} from "@veta/frontend/components/dashboard/layoutModels.ts";
+import { Model } from "flexlayout-react";
+import { describe, expect, it } from "vitest";
 
 function countTabs(model: ReturnType<typeof makeDefaultModel>): number {
   let count = 0;

@@ -1,6 +1,10 @@
+import {
+  eventReceived,
+  historicEventsLoaded,
+  observabilitySlice,
+} from "@veta/frontend/store/observabilitySlice";
+import type { ObsEvent } from "@veta/frontend/types";
 import { describe, expect, it } from "vitest";
-import type { ObsEvent } from "../../types";
-import { eventReceived, historicEventsLoaded, observabilitySlice } from "../observabilitySlice";
 
 const { reducer } = observabilitySlice;
 

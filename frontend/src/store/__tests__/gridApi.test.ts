@@ -1,5 +1,5 @@
+import { gridApi } from "@veta/frontend/store/gridApi";
 import { describe, expect, it } from "vitest";
-import { gridApi } from "../gridApi";
 
 describe("gridApi – endpoint definitions", () => {
   it("uses gridApi as the reducer path", () => {

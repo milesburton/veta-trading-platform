@@ -1,12 +1,12 @@
 import { useSignal } from "@preact/signals-react";
-import { useEffect } from "react";
-import { useAppSelector } from "../store/hooks.ts";
-import type { UserLimits, UserRow } from "../store/userApi.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { UserLimits, UserRow } from "@veta/frontend/store/userApi.ts";
 import {
   useGetUserLimitsQuery,
   useGetUsersQuery,
   useUpdateUserLimitsMutation,
-} from "../store/userApi.ts";
+} from "@veta/frontend/store/userApi.ts";
+import { useEffect } from "react";
 
 interface JournalEntry {
   id: number;

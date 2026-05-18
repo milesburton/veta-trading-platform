@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
+import { BuildInfo } from "@veta/frontend/components/BuildInfo";
 import { describe, expect, it } from "vitest";
-import { BuildInfo } from "../BuildInfo";
 
 describe("BuildInfo", () => {
   it("renders nothing when no version, sha or date are provided", () => {

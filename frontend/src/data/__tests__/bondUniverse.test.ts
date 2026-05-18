@@ -1,5 +1,5 @@
+import { BOND_UNIVERSE, getBond, getBonds } from "@veta/frontend/data/bondUniverse";
 import { describe, expect, it } from "vitest";
-import { BOND_UNIVERSE, getBond, getBonds } from "../bondUniverse";
 
 describe("BOND_UNIVERSE – data integrity", () => {
   it("contains at least 10 bonds", () => {

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { SortableHeader } from "@veta/frontend/components/grid/SortableHeader";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SortableHeader } from "../grid/SortableHeader";
 
 const dispatch = vi.fn();
 const state: {

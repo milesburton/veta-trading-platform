@@ -1,9 +1,9 @@
-import type { AuthRole } from "../../auth/rbac";
-import type { TradingLimits } from "../../store/authSlice";
-import type { KillBlock } from "../../store/killSwitchSlice";
-import type { InstrumentType, Strategy, TimeInForce } from "../../types";
-import type { SessionState } from "../market/market-session";
-import type { VenueMIC } from "../market/venue-capabilities";
+import type { AuthRole } from "@veta/frontend/auth/rbac";
+import type { SessionState } from "@veta/frontend/domain/market/market-session";
+import type { VenueMIC } from "@veta/frontend/domain/market/venue-capabilities";
+import type { TradingLimits } from "@veta/frontend/store/authSlice";
+import type { KillBlock } from "@veta/frontend/store/killSwitchSlice";
+import type { InstrumentType, Strategy, TimeInForce } from "@veta/frontend/types";
 
 export type Side = "BUY" | "SELL";
 

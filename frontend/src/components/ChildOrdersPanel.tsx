@@ -1,13 +1,13 @@
 import { useSignal } from "@preact/signals-react";
-import { useChannelContext } from "../contexts/ChannelContext.tsx";
-import { useChannelIn } from "../hooks/useChannelIn.ts";
-import { useChannelOut } from "../hooks/useChannelOut.ts";
-import { useColumnLayout } from "../hooks/useColumnLayout.ts";
-import { useQueryGridQuery } from "../store/gridApi.ts";
-import type { ColDef } from "../types/gridPrefs.ts";
-import type { ChildOrder, LiquidityFlag, OrderRecord, OrderStatus } from "../types.ts";
-import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
-import { formatTime } from "../utils/format.ts";
+import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
+import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
+import { useChannelOut } from "@veta/frontend/hooks/useChannelOut.ts";
+import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
+import { useQueryGridQuery } from "@veta/frontend/store/gridApi.ts";
+import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
+import type { ChildOrder, LiquidityFlag, OrderRecord, OrderStatus } from "@veta/frontend/types.ts";
+import { ORDER_STATUS_DESCRIPTIONS } from "@veta/frontend/types.ts";
+import { formatTime } from "@veta/frontend/utils/format.ts";
 import { CHANNEL_COLOURS } from "./dashboard/panelRegistry.ts";
 import { ResizableHeader } from "./grid/ResizableHeader.tsx";
 

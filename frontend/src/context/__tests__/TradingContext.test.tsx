@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { act, render, renderHook, screen } from "@testing-library/react";
+import { TradingProvider, useTradingContext } from "@veta/frontend/context/TradingContext";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
+import { windowSlice } from "@veta/frontend/store/windowSlice";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
-import { uiSlice } from "../../store/uiSlice";
-import { windowSlice } from "../../store/windowSlice";
-import { TradingProvider, useTradingContext } from "../TradingContext";
 
 function makeStore() {
   return configureStore({

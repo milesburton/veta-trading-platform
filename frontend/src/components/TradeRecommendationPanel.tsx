@@ -1,8 +1,12 @@
 import { useSignal } from "@preact/signals-react";
-import { useGetRecommendationsMutation } from "../store/analyticsApi.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import { selectSymbols } from "../store/selectors.ts";
-import type { Recommendation, RecommendationResponse, SignalStrength } from "../types/analytics.ts";
+import { useGetRecommendationsMutation } from "@veta/frontend/store/analyticsApi.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { selectSymbols } from "@veta/frontend/store/selectors.ts";
+import type {
+  Recommendation,
+  RecommendationResponse,
+  SignalStrength,
+} from "@veta/frontend/types/analytics.ts";
 
 const SIGNAL_STYLES: Record<SignalStrength, { badge: string; dot: string }> = {
   STRONG_BUY: {

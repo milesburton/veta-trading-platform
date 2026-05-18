@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { CfRuleEditor } from "@veta/frontend/components/grid/CfRuleEditor";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { CfRuleEditor } from "../CfRuleEditor";
 
 const dispatch = vi.fn();
 let cfRules: unknown[] = [];

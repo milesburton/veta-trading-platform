@@ -1,4 +1,4 @@
-import type { Strategy } from "../../types";
+import type { Strategy } from "@veta/frontend/types";
 
 export interface StrategyMeta {
   value: Strategy;

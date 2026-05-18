@@ -2,7 +2,7 @@
 // Manages sequence numbers, heartbeats, Logon/Logout, and message building.
 // Mirrors backend/src/fix/fixSession.ts — same protocol, browser-compatible.
 
-import type { OrderRecord } from "../types.ts";
+import type { OrderRecord } from "@veta/frontend/types.ts";
 import {
   decode,
   EncryptMethod,

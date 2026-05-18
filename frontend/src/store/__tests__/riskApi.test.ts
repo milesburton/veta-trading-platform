@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { riskApi } from "@veta/frontend/store/riskApi";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { riskApi } from "../riskApi";
 
 const NativeRequest = Request;
 

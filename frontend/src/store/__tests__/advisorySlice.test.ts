@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
   advisoryFailed,
   advisoryJobRunning,
@@ -8,7 +7,8 @@ import {
   advisorySlice,
   MAX_NOTE_AGE_MS,
   selectAdvisoryForSymbol,
-} from "../advisorySlice";
+} from "@veta/frontend/store/advisorySlice";
+import { describe, expect, it } from "vitest";
 
 const { reducer } = advisorySlice;
 

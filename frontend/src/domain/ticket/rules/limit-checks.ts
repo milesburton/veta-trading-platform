@@ -1,4 +1,4 @@
-import type { Diagnostic, TicketContext } from "../ticket-types";
+import type { Diagnostic, TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
 
 export function runLimitChecks(ctx: TicketContext): Diagnostic[] {
   const { draft, instrument, limits } = ctx;

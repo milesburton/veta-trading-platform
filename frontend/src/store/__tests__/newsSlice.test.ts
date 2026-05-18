@@ -1,6 +1,6 @@
+import type { NewsItem } from "@veta/frontend/store/newsSlice";
+import { newsBatchReceived, newsItemReceived, newsSlice } from "@veta/frontend/store/newsSlice";
 import { describe, expect, it } from "vitest";
-import type { NewsItem } from "../newsSlice";
-import { newsBatchReceived, newsItemReceived, newsSlice } from "../newsSlice";
 
 const { reducer } = newsSlice;
 

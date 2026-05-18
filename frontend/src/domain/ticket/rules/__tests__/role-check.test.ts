@@ -1,6 +1,6 @@
+import { checkRoleLocked } from "@veta/frontend/domain/ticket/rules/role-check";
+import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
 import { describe, expect, it } from "vitest";
-import type { TicketContext } from "../../ticket-types";
-import { checkRoleLocked } from "../role-check";
 
 function ctx(role: string | undefined, tradingStyle?: string): TicketContext {
   return {

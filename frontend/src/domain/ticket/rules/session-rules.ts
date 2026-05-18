@@ -1,5 +1,5 @@
-import { isAuction, isStrategyAllowedInSession } from "../../market/market-session";
-import type { Diagnostic, TicketContext } from "../ticket-types";
+import { isAuction, isStrategyAllowedInSession } from "@veta/frontend/domain/market/market-session";
+import type { Diagnostic, TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
 
 export function runSessionRules(ctx: TicketContext): Diagnostic[] {
   const { session, draft, instrument } = ctx;

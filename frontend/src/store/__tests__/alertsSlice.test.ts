@@ -1,5 +1,5 @@
+import { alertAdded, alertsSlice } from "@veta/frontend/store/alertsSlice";
 import { describe, expect, it } from "vitest";
-import { alertAdded, alertsSlice } from "../alertsSlice";
 
 const { reducer } = alertsSlice;
 

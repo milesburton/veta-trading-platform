@@ -1,10 +1,10 @@
 import { useSignal } from "@preact/signals-react";
+import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
+import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { formatTime } from "@veta/frontend/utils/format.ts";
 import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { useMemo } from "react";
-import { useChannelContext } from "../contexts/ChannelContext.tsx";
-import { useChannelIn } from "../hooks/useChannelIn.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import { formatTime } from "../utils/format.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
 

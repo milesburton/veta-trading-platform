@@ -1,9 +1,9 @@
+import type { Alert, AlertSeverity } from "@veta/frontend/store/alertsSlice";
+import { alertAdded, alertDismissed, allAlertsDismissed } from "@veta/frontend/store/alertsSlice";
+import { allBlocksCleared, blockAdded } from "@veta/frontend/store/killSwitchSlice";
+import { alertsMiddleware } from "@veta/frontend/store/middleware/alertsMiddleware";
+import { orderPatched } from "@veta/frontend/store/ordersSlice";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Alert, AlertSeverity } from "../alertsSlice";
-import { alertAdded, alertDismissed, allAlertsDismissed } from "../alertsSlice";
-import { allBlocksCleared, blockAdded } from "../killSwitchSlice";
-import { alertsMiddleware } from "../middleware/alertsMiddleware";
-import { orderPatched } from "../ordersSlice";
 
 function createHarness(
   authUser: { id: string } | null = { id: "u1" },

@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MarketFeedControlPanel } from "@veta/frontend/components/MarketFeedControlPanel";
+import { authSlice } from "@veta/frontend/store/authSlice";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { authSlice } from "../../store/authSlice";
-import { marketSlice } from "../../store/marketSlice";
-import { MarketFeedControlPanel } from "../MarketFeedControlPanel";
 
 const toggleFeed = vi.fn();
 const apiState = {

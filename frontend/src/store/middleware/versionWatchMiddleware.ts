@@ -1,6 +1,6 @@
 import type { Middleware } from "@reduxjs/toolkit";
-import { servicesApi } from "../servicesApi.ts";
-import { setUpdateAvailable } from "../uiSlice.ts";
+import { servicesApi } from "@veta/frontend/store/servicesApi.ts";
+import { setUpdateAvailable } from "@veta/frontend/store/uiSlice.ts";
 
 const FRONTEND_VERSION_URL = "/__version";
 const POLL_INTERVAL_MS = 15_000;

@@ -1,13 +1,13 @@
 import { useSignal } from "@preact/signals-react";
-import type { IJsonModel } from "flexlayout-react";
-import { useEffect } from "react";
-import type { SharedWorkspaceEntry } from "../hooks/useWorkspaceSync.ts";
+import type { SharedWorkspaceEntry } from "@veta/frontend/hooks/useWorkspaceSync.ts";
 import {
   deleteSharedWorkspace,
   fetchSharedWorkspace,
   listSharedWorkspaces,
-} from "../hooks/useWorkspaceSync.ts";
-import { useAppSelector } from "../store/hooks.ts";
+} from "@veta/frontend/hooks/useWorkspaceSync.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { IJsonModel } from "flexlayout-react";
+import { useEffect } from "react";
 
 interface Props {
   onClose: () => void;

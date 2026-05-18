@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { ThemeSwitcher } from "@veta/frontend/components/StatusBar";
+import { themeSlice } from "@veta/frontend/store/themeSlice";
 import { Provider } from "react-redux";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { themeSlice } from "../../store/themeSlice";
-import { ThemeSwitcher } from "../StatusBar";
 
 vi.mock("../../store/themeSlice", async (importOriginal) => {
   const original = await importOriginal<typeof import("../../store/themeSlice")>();

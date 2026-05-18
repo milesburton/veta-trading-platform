@@ -1,4 +1,4 @@
-import type { AssetDef, OrderSide, Strategy } from "../types.ts";
+import type { AssetDef, OrderSide, Strategy } from "@veta/frontend/types.ts";
 
 const STRATEGIES: Strategy[] = [
   "LIMIT",

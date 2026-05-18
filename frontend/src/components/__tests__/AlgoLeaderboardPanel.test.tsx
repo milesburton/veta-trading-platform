@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { render, screen, within } from "@testing-library/react";
+import { AlgoLeaderboardPanel } from "@veta/frontend/components/AlgoLeaderboardPanel";
+import { ordersSlice } from "@veta/frontend/store/ordersSlice";
+import type { OrderRecord } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
-import { ordersSlice } from "../../store/ordersSlice";
-import type { OrderRecord } from "../../types";
-import { AlgoLeaderboardPanel } from "../AlgoLeaderboardPanel";
 
 function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
   return {

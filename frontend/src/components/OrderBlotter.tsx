@@ -1,22 +1,22 @@
 import { useSignal } from "@preact/signals-react";
-import { Fragment, useEffect } from "react";
-import { useChannelContext } from "../contexts/ChannelContext.tsx";
-import { useChannelOut } from "../hooks/useChannelOut.ts";
-import { useColumnLayout } from "../hooks/useColumnLayout.ts";
-import { useContainerLimit, useGridQuery } from "../hooks/useGridQuery.ts";
-import { saveGridPrefs, setSort } from "../store/gridPrefsSlice.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
+import { useChannelOut } from "@veta/frontend/hooks/useChannelOut.ts";
+import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
+import { useContainerLimit, useGridQuery } from "@veta/frontend/hooks/useGridQuery.ts";
+import { saveGridPrefs, setSort } from "@veta/frontend/store/gridPrefsSlice.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import {
   cancelOrdersThunk,
   holdOrdersThunk,
   orderPatched,
   unholdOrdersThunk,
-} from "../store/ordersSlice.ts";
-import type { ColDef } from "../types/gridPrefs.ts";
-import type { ChildOrder, OrderRecord, OrderStatus } from "../types.ts";
-import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
-import { formatTime } from "../utils/format.ts";
-import { applyCfRules } from "../utils/gridFilter.ts";
+} from "@veta/frontend/store/ordersSlice.ts";
+import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
+import type { ChildOrder, OrderRecord, OrderStatus } from "@veta/frontend/types.ts";
+import { ORDER_STATUS_DESCRIPTIONS } from "@veta/frontend/types.ts";
+import { formatTime } from "@veta/frontend/utils/format.ts";
+import { applyCfRules } from "@veta/frontend/utils/gridFilter.ts";
+import { Fragment, useEffect } from "react";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
 import { CHANNEL_COLOURS } from "./dashboard/panelRegistry.ts";

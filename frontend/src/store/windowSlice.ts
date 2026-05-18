@@ -52,4 +52,4 @@ export const windowSlice = createSlice({
 export const { panelPopped, panelClosed, panelDialogOpened, panelDialogClosed } =
   windowSlice.actions;
 
-export type { PanelId } from "../components/dashboard/panelRegistry.ts";
+export type { PanelId } from "@veta/frontend/components/dashboard/panelRegistry.ts";

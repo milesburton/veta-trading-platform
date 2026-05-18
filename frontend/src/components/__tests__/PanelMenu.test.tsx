@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { PanelMenu } from "@veta/frontend/components/PanelMenu";
+import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
+import { windowSlice } from "@veta/frontend/store/windowSlice";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ChannelContext } from "../../contexts/ChannelContext";
-import { windowSlice } from "../../store/windowSlice";
-import { PanelMenu } from "../PanelMenu";
 
 const removeTabById = vi.fn();
 

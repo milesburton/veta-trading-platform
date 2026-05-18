@@ -1,11 +1,11 @@
 import { useSignal } from "@preact/signals-react";
-import { useEffect } from "react";
-import { useAppSelector } from "../store/hooks.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import {
   useGetOverridesQuery,
   useGetSourcesQuery,
   useSetOverridesMutation,
-} from "../store/marketDataApi.ts";
+} from "@veta/frontend/store/marketDataApi.ts";
+import { useEffect } from "react";
 
 export function MarketDataSourcesPanel() {
   const userRole = useAppSelector((s) => s.auth.user?.role);

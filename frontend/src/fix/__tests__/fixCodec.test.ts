@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
   BEGIN_STRING,
   decode,
@@ -8,7 +7,8 @@ import {
   splitMessages,
   Tag,
   utcTimestamp,
-} from "../fixCodec";
+} from "@veta/frontend/fix/fixCodec";
+import { describe, expect, it } from "vitest";
 
 // ─── encode ───────────────────────────────────────────────────────────────────
 

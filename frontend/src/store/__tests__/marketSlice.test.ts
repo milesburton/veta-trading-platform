@@ -1,5 +1,3 @@
-import { describe, expect, it } from "vitest";
-import type { OhlcCandle } from "../../types";
 import {
   applyTick,
   applyTickMut,
@@ -10,7 +8,9 @@ import {
   orderBookUpdated,
   setAssets,
   tickReceived,
-} from "../marketSlice";
+} from "@veta/frontend/store/marketSlice";
+import type { OhlcCandle } from "@veta/frontend/types";
+import { describe, expect, it } from "vitest";
 
 const { reducer } = marketSlice;
 

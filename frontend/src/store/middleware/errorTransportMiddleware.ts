@@ -1,5 +1,5 @@
 import type { Middleware } from "@reduxjs/toolkit";
-import { reportError } from "../observabilitySlice.ts";
+import { reportError } from "@veta/frontend/store/observabilitySlice.ts";
 
 const OBS_URL = "/api/gateway/api/kafka-relay/events/batch";
 const BATCH_FLUSH_MS = 500;

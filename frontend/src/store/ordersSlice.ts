@@ -1,7 +1,7 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import type { ChildOrder, MarketPrices, OrderRecord, Trade } from "@veta/frontend/types.ts";
 import { v4 as uuidv4 } from "uuid";
-import type { ChildOrder, MarketPrices, OrderRecord, Trade } from "../types.ts";
 
 export type KillScope = "all" | "user" | "algo" | "market" | "symbol";
 

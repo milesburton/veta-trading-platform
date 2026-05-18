@@ -1,9 +1,9 @@
+import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
+import type { ChannelData } from "@veta/frontend/store/channelsSlice.ts";
+import { channelUpdated } from "@veta/frontend/store/channelsSlice.ts";
+import { useAppDispatch } from "@veta/frontend/store/hooks.ts";
+import { setSelectedAsset } from "@veta/frontend/store/uiSlice.ts";
 import { useCallback } from "react";
-import { useChannelContext } from "../contexts/ChannelContext.tsx";
-import type { ChannelData } from "../store/channelsSlice.ts";
-import { channelUpdated } from "../store/channelsSlice.ts";
-import { useAppDispatch } from "../store/hooks.ts";
-import { setSelectedAsset } from "../store/uiSlice.ts";
 
 /**
  * Returns a broadcast function for the panel's outgoing channel.

@@ -1,6 +1,6 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import type { OrderSide, Strategy } from "../types.ts";
+import type { OrderSide, Strategy } from "@veta/frontend/types.ts";
 import type { RootState } from "./index.ts";
 
 const GATEWAY_PREFS_URL = `${import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway"}/preferences`;

@@ -1,24 +1,31 @@
 import { useSignal } from "@preact/signals-react";
-import type { IJsonModel, TabNode } from "flexlayout-react";
-import { Actions, Model } from "flexlayout-react";
-import { useEffect, useRef } from "react";
-import { useFrontendMemoryTelemetry } from "../hooks/useFrontendMemoryTelemetry.ts";
-import type { AlertSeverity } from "../store/alertsSlice.ts";
-import { alertAdded, selectAlertCount, selectHighestSeverity } from "../store/alertsSlice.ts";
-import { clearUser } from "../store/authSlice.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+import { useFrontendMemoryTelemetry } from "@veta/frontend/hooks/useFrontendMemoryTelemetry.ts";
+import type { AlertSeverity } from "@veta/frontend/store/alertsSlice.ts";
+import {
+  alertAdded,
+  selectAlertCount,
+  selectHighestSeverity,
+} from "@veta/frontend/store/alertsSlice.ts";
+import { clearUser } from "@veta/frontend/store/authSlice.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import {
   DEPLOYMENT,
   SERVICES,
   useGetDataDepthQuery,
   useGetServiceHealthQuery,
-} from "../store/servicesApi.ts";
-import type { Theme } from "../store/themeSlice.ts";
-import { saveTheme, setTheme } from "../store/themeSlice.ts";
-import { dismissUpdateAvailable, selectOrderTicketWindowSize } from "../store/uiSlice.ts";
-import { useDeleteSessionMutation } from "../store/userApi.ts";
-import type { ServiceHealth } from "../types.ts";
-import { openOrderTicketWindow } from "../utils/orderTicketWindow.ts";
+} from "@veta/frontend/store/servicesApi.ts";
+import type { Theme } from "@veta/frontend/store/themeSlice.ts";
+import { saveTheme, setTheme } from "@veta/frontend/store/themeSlice.ts";
+import {
+  dismissUpdateAvailable,
+  selectOrderTicketWindowSize,
+} from "@veta/frontend/store/uiSlice.ts";
+import { useDeleteSessionMutation } from "@veta/frontend/store/userApi.ts";
+import type { ServiceHealth } from "@veta/frontend/types.ts";
+import { openOrderTicketWindow } from "@veta/frontend/utils/orderTicketWindow.ts";
+import type { IJsonModel, TabNode } from "flexlayout-react";
+import { Actions, Model } from "flexlayout-react";
+import { useEffect, useRef } from "react";
 import { ALERTS_DRAWER_ID, AlertDrawer } from "./AlertDrawer.tsx";
 import { BuildInfo } from "./BuildInfo.tsx";
 import { ComponentPicker } from "./ComponentPicker.tsx";

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { DemoPersonas } from "@veta/frontend/components/DemoPersonas";
+import type { DemoPersona } from "@veta/frontend/store/userApi";
 import { describe, expect, it, vi } from "vitest";
-import type { DemoPersona } from "../../store/userApi";
-import { DemoPersonas } from "../DemoPersonas";
 
 const baseQueryResult = {
   data: undefined as { personas: DemoPersona[] } | undefined,

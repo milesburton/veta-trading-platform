@@ -1,6 +1,6 @@
 import { useSignal } from "@preact/signals-react";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { useEffect, useRef } from "react";
-import { useAppSelector } from "../store/hooks.ts";
 import { SELL_SIDE_RFQ_STATE_COLORS, type SellSideRfq } from "./rfq/shared.ts";
 
 function ageLabel(createdAt: number): string {

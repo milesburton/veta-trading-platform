@@ -1,14 +1,19 @@
 import { useSignal } from "@preact/signals-react";
+import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
+import { useChannelOut } from "@veta/frontend/hooks/useChannelOut.ts";
+import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
+import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
+import type {
+  AssetDef,
+  MarketPrices,
+  OrderBookSnapshot,
+  PriceHistory,
+} from "@veta/frontend/types.ts";
 import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { memo, useEffect, useMemo, useRef } from "react";
 import { List } from "react-window";
-import { useChannelContext } from "../contexts/ChannelContext.tsx";
-import { useChannelOut } from "../hooks/useChannelOut.ts";
-import { useColumnLayout } from "../hooks/useColumnLayout.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import { COLOR } from "../tokens.ts";
-import type { ColDef } from "../types/gridPrefs.ts";
-import type { AssetDef, MarketPrices, OrderBookSnapshot, PriceHistory } from "../types.ts";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
 import { CHANNEL_COLOURS } from "./dashboard/panelRegistry.ts";

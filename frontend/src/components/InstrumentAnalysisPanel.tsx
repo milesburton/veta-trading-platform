@@ -8,6 +8,9 @@
  */
 
 import { useSignal } from "@preact/signals-react";
+import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
 import { useMemo } from "react";
 import {
   CartesianGrid,
@@ -19,9 +22,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useChannelIn } from "../hooks/useChannelIn.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import { COLOR } from "../tokens.ts";
 import { AdvisoryPanel } from "./AdvisoryPanel.tsx";
 
 const FEATURE_LABELS: Record<string, string> = {

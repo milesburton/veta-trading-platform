@@ -1,5 +1,5 @@
+import type { AssetDef, MarketPrices } from "@veta/frontend/types.ts";
 import type React from "react";
-import type { AssetDef, MarketPrices } from "../types.ts";
 
 interface Props {
   assets: AssetDef[];

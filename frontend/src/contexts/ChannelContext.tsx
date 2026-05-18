@@ -1,6 +1,6 @@
+import type { PanelId } from "@veta/frontend/components/DashboardLayout.tsx";
+import type { ChannelNumber } from "@veta/frontend/store/channelsSlice.ts";
 import { createContext, useContext } from "react";
-import type { PanelId } from "../components/DashboardLayout.tsx";
-import type { ChannelNumber } from "../store/channelsSlice.ts";
 
 export interface ChannelContextValue {
   instanceId: string;

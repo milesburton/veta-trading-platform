@@ -1,7 +1,7 @@
 import { useSignal } from "@preact/signals-react";
-import type { AlertSeverity, AlertSource } from "../store/alertsSlice.ts";
-import { allAlertsDismissed, selectActiveAlerts } from "../store/alertsSlice.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+import type { AlertSeverity, AlertSource } from "@veta/frontend/store/alertsSlice.ts";
+import { allAlertsDismissed, selectActiveAlerts } from "@veta/frontend/store/alertsSlice.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { AlertList } from "./AlertDrawer.tsx";
 
 type Filter = "ALL" | AlertSeverity;

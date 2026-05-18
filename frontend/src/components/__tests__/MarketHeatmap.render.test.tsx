@@ -1,13 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MarketHeatmap } from "@veta/frontend/components/MarketHeatmap";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
+import { ordersSlice } from "@veta/frontend/store/ordersSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
+import { windowSlice } from "@veta/frontend/store/windowSlice";
+import type { AssetDef } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
-import { marketSlice } from "../../store/marketSlice";
-import { ordersSlice } from "../../store/ordersSlice";
-import { uiSlice } from "../../store/uiSlice";
-import { windowSlice } from "../../store/windowSlice";
-import type { AssetDef } from "../../types";
-import { MarketHeatmap } from "../MarketHeatmap";
 
 function makeAsset(over: Partial<AssetDef>): AssetDef {
   return {

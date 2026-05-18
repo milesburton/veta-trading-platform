@@ -1,4 +1,7 @@
 import { useSignal } from "@preact/signals-react";
+import { useGetDurationLadderMutation } from "@veta/frontend/store/analyticsApi.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
+import type { BondPosition } from "@veta/frontend/types/analytics.ts";
 import {
   Bar,
   BarChart,
@@ -9,9 +12,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useGetDurationLadderMutation } from "../store/analyticsApi.ts";
-import { COLOR } from "../tokens.ts";
-import type { BondPosition } from "../types/analytics.ts";
 
 interface PositionRow {
   faceValue: string;

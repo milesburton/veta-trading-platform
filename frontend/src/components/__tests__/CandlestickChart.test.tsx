@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { CandlestickChart } from "@veta/frontend/components/CandlestickChart";
+import { themeSlice } from "@veta/frontend/store/themeSlice.ts";
+import type { OhlcCandle } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
-import { themeSlice } from "../../store/themeSlice.ts";
-import type { OhlcCandle } from "../../types";
-import { CandlestickChart } from "../CandlestickChart";
 
 function renderWithStore(ui: React.ReactElement) {
   const testStore = configureStore({ reducer: { theme: themeSlice.reducer } });

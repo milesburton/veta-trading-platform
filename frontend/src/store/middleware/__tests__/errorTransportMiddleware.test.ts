@@ -1,7 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { errorTransportMiddleware } from "@veta/frontend/store/middleware/errorTransportMiddleware";
+import { observabilitySlice, reportError } from "@veta/frontend/store/observabilitySlice";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { observabilitySlice, reportError } from "../../observabilitySlice";
-import { errorTransportMiddleware } from "../errorTransportMiddleware";
 
 function makeStore() {
   return configureStore({

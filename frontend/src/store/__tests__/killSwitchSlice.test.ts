@@ -1,11 +1,11 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   allBlocksCleared,
   blockAdded,
   blockRemoved,
   isOrderBlocked,
   killSwitchSlice,
-} from "../killSwitchSlice";
+} from "@veta/frontend/store/killSwitchSlice";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("killSwitchSlice", () => {
   afterEach(() => {

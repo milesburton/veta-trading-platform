@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { VolSurfacePanel } from "@veta/frontend/components/VolSurfacePanel";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { VolSurfacePanel } from "../VolSurfacePanel";
 
 const dispatch = vi.fn();
 

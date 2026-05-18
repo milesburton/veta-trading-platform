@@ -1,7 +1,7 @@
-import { useDashboard } from "../components/dashboard/DashboardContext.tsx";
-import { useChannelContext } from "../contexts/ChannelContext.tsx";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { panelClosed, panelPopped } from "../store/windowSlice.ts";
+import { useDashboard } from "@veta/frontend/components/dashboard/DashboardContext.tsx";
+import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { panelClosed, panelPopped } from "@veta/frontend/store/windowSlice.ts";
 
 /**
  * Provides pop-out functionality for a panel instance.
