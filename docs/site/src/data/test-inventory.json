@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-18T14:12:58.528Z",
+  "generatedAt": "2026-05-18T17:29:03.239Z",
   "backend": {
     "unit": {
-      "files": 33,
-      "cases": 477,
+      "files": 34,
+      "cases": 483,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -17,6 +17,7 @@
         "analytics.unit.test.ts": 22,
         "llm-policy.test.ts": 9,
         "llm-dedupe.test.ts": 13,
+        "llm-pg-retry.unit.test.ts": 6,
         "feature-engine.test.ts": 14,
         "signal-engine.test.ts": 7,
         "algo.unit.test.ts": 43,

@@ -134,6 +134,44 @@ function rowToNote(row: unknown[]): AdvisoryNote {
   };
 }
 
+export function isTransientPgError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const haystack = `${err.name} ${err.message}`.toLowerCase();
+  return (
+    haystack.includes("connectionreset") ||
+    haystack.includes("connection reset") ||
+    haystack.includes("connection refused") ||
+    haystack.includes("connection closed") ||
+    haystack.includes("connection terminated") ||
+    haystack.includes("econnreset") ||
+    haystack.includes("econnrefused") ||
+    haystack.includes("broken pipe") ||
+    haystack.includes("server closed the connection")
+  );
+}
+
+export async function withPgRetry<T>(
+  op: () => Promise<T>,
+  opts: { maxAttempts?: number; baseDelayMs?: number; label: string } = {
+    label: "pg-op",
+  },
+): Promise<T> {
+  const maxAttempts = opts.maxAttempts ?? 3;
+  const baseDelayMs = opts.baseDelayMs ?? 250;
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await op();
+    } catch (err) {
+      lastErr = err;
+      if (attempt === maxAttempts || !isTransientPgError(err)) throw err;
+      const delay = baseDelayMs * 2 ** (attempt - 1);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
+
 export function createJobStore(pool: Pool): JobStore {
   async function getJob(jobId: string): Promise<LlmJob | null> {
     const client = await pool.connect();
@@ -182,39 +220,41 @@ export function createJobStore(pool: Pool): JobStore {
       return id;
     },
 
-    async claimNextJob(workerSessionId: string): Promise<LlmJob | null> {
-      const client = await pool.connect();
-      try {
-        await client.queryArray("BEGIN");
-        const { rows } = await client.queryArray(
-          `UPDATE llm_advisory.jobs
-           SET status = 'running', claimed_at = $1, worker_session_id = $2
-           WHERE id = (
-             SELECT id FROM llm_advisory.jobs
-             WHERE status = 'queued'
-             ORDER BY priority DESC, created_at ASC
-             LIMIT 1
-             FOR UPDATE SKIP LOCKED
-           )
-           RETURNING id, symbol, trigger_reason, status, context_hash, priority, requested_by,
-                     created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count`,
-          [Date.now(), workerSessionId],
-        );
-        if (rows.length === 0) {
-          await client.queryArray("ROLLBACK");
-          return null;
+    claimNextJob(workerSessionId: string): Promise<LlmJob | null> {
+      return withPgRetry(async () => {
+        const client = await pool.connect();
+        try {
+          await client.queryArray("BEGIN");
+          const { rows } = await client.queryArray(
+            `UPDATE llm_advisory.jobs
+             SET status = 'running', claimed_at = $1, worker_session_id = $2
+             WHERE id = (
+               SELECT id FROM llm_advisory.jobs
+               WHERE status = 'queued'
+               ORDER BY priority DESC, created_at ASC
+               LIMIT 1
+               FOR UPDATE SKIP LOCKED
+             )
+             RETURNING id, symbol, trigger_reason, status, context_hash, priority, requested_by,
+                       created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count`,
+            [Date.now(), workerSessionId],
+          );
+          if (rows.length === 0) {
+            await client.queryArray("ROLLBACK");
+            return null;
+          }
+          await client.queryArray("COMMIT");
+          return rowToJob(rows[0]);
+        } catch (err) {
+          await client.queryArray("ROLLBACK").catch(() => {});
+          throw err;
+        } finally {
+          client.release();
         }
-        await client.queryArray("COMMIT");
-        return rowToJob(rows[0]);
-      } catch (err) {
-        await client.queryArray("ROLLBACK").catch(() => {});
-        throw err;
-      } finally {
-        client.release();
-      }
+      }, { label: "claimNextJob" });
     },
 
-    async updateJobStatus(
+    updateJobStatus(
       jobId: string,
       status: LlmJobStatus,
       fields?: {
@@ -223,26 +263,28 @@ export function createJobStore(pool: Pool): JobStore {
         retryCount?: number;
       },
     ): Promise<void> {
-      const client = await pool.connect();
-      try {
-        await client.queryArray(
-          `UPDATE llm_advisory.jobs
-           SET status = $1,
-               completed_at = COALESCE($2, completed_at),
-               error_message = COALESCE($3, error_message),
-               retry_count = COALESCE($4, retry_count)
-           WHERE id = $5`,
-          [
-            status,
-            fields?.completedAt ?? null,
-            fields?.errorMessage ?? null,
-            fields?.retryCount ?? null,
-            jobId,
-          ],
-        );
-      } finally {
-        client.release();
-      }
+      return withPgRetry(async () => {
+        const client = await pool.connect();
+        try {
+          await client.queryArray(
+            `UPDATE llm_advisory.jobs
+             SET status = $1,
+                 completed_at = COALESCE($2, completed_at),
+                 error_message = COALESCE($3, error_message),
+                 retry_count = COALESCE($4, retry_count)
+             WHERE id = $5`,
+            [
+              status,
+              fields?.completedAt ?? null,
+              fields?.errorMessage ?? null,
+              fields?.retryCount ?? null,
+              jobId,
+            ],
+          );
+        } finally {
+          client.release();
+        }
+      }, { label: "updateJobStatus" });
     },
 
     getJob,
