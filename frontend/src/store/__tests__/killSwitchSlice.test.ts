@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   allBlocksCleared,
   blockAdded,
@@ -8,6 +8,10 @@ import {
 } from "../killSwitchSlice";
 
 describe("killSwitchSlice", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("adds, removes, and clears blocks", () => {
     const block = {
       id: "b1",

@@ -3,7 +3,7 @@ Description=Run VETA host-prune daily (04:00 UTC)
 Documentation=https://github.com/milesburton/veta-trading-platform/blob/main/scripts/host-prune.sh
 
 [Timer]
-OnCalendar=*-*-* 04:00:00
+OnCalendar=*-*-* 04:00:00 UTC
 AccuracySec=1min
 Persistent=true
 

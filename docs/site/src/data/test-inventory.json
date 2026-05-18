@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T18:54:30.059Z",
+  "generatedAt": "2026-05-18T14:12:58.528Z",
   "backend": {
     "unit": {
       "files": 33,
@@ -77,7 +77,7 @@
   "frontend": {
     "unit": {
       "files": 164,
-      "cases": 1719
+      "cases": 1722
     },
     "playwright": {
       "files": 17,
