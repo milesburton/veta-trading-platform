@@ -146,6 +146,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   let consecutiveFailures = 0;
   let started = false;
   let visibilityListenerInstalled = false;
+  let breakerJanitorTimer: ReturnType<typeof setInterval> | null = null;
 
   const algoLastSeen: Record<string, number> = {};
 
@@ -743,16 +744,25 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       if (state.ui.selectedAsset) hydrateNewsForSymbol(state.ui.selectedAsset);
     });
     connect();
-    setInterval(() => {
-      const state = storeAPI.getState() as {
-        breakers?: { active: Array<{ key: string; expiresAt: number }> };
-      };
-      const active = state.breakers?.active ?? [];
-      const now = Date.now();
-      for (const a of active) {
-        if (a.expiresAt <= now) storeAPI.dispatch(breakerExpired({ key: a.key }));
-      }
-    }, 1_000);
+    if (breakerJanitorTimer === null) {
+      breakerJanitorTimer = setInterval(() => {
+        const state = storeAPI.getState() as {
+          breakers?: { active: Array<{ key: string; expiresAt: number }> };
+        };
+        const active = state.breakers?.active ?? [];
+        const now = Date.now();
+        for (const a of active) {
+          if (a.expiresAt <= now) storeAPI.dispatch(breakerExpired({ key: a.key }));
+        }
+      }, 1_000);
+    }
+  }
+
+  function stopBreakerJanitor() {
+    if (breakerJanitorTimer !== null) {
+      clearInterval(breakerJanitorTimer);
+      breakerJanitorTimer = null;
+    }
   }
 
   return (next) => (action: unknown) => {
@@ -771,6 +781,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     if (type === "marketFeed/stop") {
       ws?.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
+      stopBreakerJanitor();
     }
     if (type === "gateway/reconnect") {
       manualReconnect();
