@@ -1,3 +1,4 @@
+// fallow-ignore-file unused-file
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { getCookieToken } from "@veta/auth";
 import { logger, registerLogSink } from "@veta/logger";
@@ -22,6 +23,7 @@ import { handleAdminRoute } from "./routes/admin.ts";
 import { handleAlertsRoute } from "./routes/alerts.ts";
 import { handleAnalyticsRoute } from "./routes/analytics.ts";
 import { handleLogsRoute, recordLogLine } from "./routes/logs.ts";
+import { handleTelemetryRoute } from "./routes/telemetry.ts";
 import { handleScenariosRoute } from "./routes/scenarios.ts";
 import { handleProxiedRoutes } from "./routes/proxied.ts";
 import { handleWebSocketRoute } from "./routes/websocket.ts";
@@ -676,6 +678,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   const logsResponse = await handleLogsRoute(req, path, gatewayContext);
   if (logsResponse) return logsResponse;
+
+  const telemetryResponse = await handleTelemetryRoute(req, path, gatewayContext);
+  if (telemetryResponse) return telemetryResponse;
 
   const scenariosResponse = await handleScenariosRoute(req, path, gatewayContext);
   if (scenariosResponse) return scenariosResponse;

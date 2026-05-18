@@ -54,13 +54,17 @@ else
   echo "       Services not fully running — skipping integration tests."
 fi
 
-echo "  [8/8] Fallow audit (changed files vs main; new findings only)..."
-# `fallow audit` only fails on findings introduced by the changeset.
-# Inherited findings (already on main) are reported but don't block.
+echo "  [8/8] Fallow audit (staged vs HEAD; advisory)..."
+# `fallow audit` reports new findings introduced by the changeset.
+# Run as advisory rather than blocking: fallow's introduced/inherited
+# attribution flags line-shifted clones from sibling PRs as "new" even
+# when the code is identical to main. CI runs the strict version, this
+# is a fast local heads-up. The signal goes to stdout regardless.
 # Skipped when fallow isn't installed (e.g. fresh clone before npm ci).
 cd "$REPO_ROOT/frontend"
 if [ -x "./node_modules/.bin/fallow" ]; then
-  ./node_modules/.bin/fallow audit --root "$REPO_ROOT"
+  ./node_modules/.bin/fallow audit --root "$REPO_ROOT" --changed-since HEAD || \
+    echo "       fallow audit flagged findings (advisory; see CI for the hard gate)."
 else
   echo "       fallow not installed in frontend/node_modules — skipping (run npm ci)."
 fi

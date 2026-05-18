@@ -2,6 +2,7 @@ import { useSignal } from "@preact/signals-react";
 import type { IJsonModel, TabNode } from "flexlayout-react";
 import { Actions, Model } from "flexlayout-react";
 import { useEffect, useRef } from "react";
+import { useFrontendMemoryTelemetry } from "../hooks/useFrontendMemoryTelemetry.ts";
 import type { AlertSeverity } from "../store/alertsSlice.ts";
 import { alertAdded, selectAlertCount, selectHighestSeverity } from "../store/alertsSlice.ts";
 import { clearUser } from "../store/authSlice.ts";
@@ -508,6 +509,33 @@ export function DataDepthIndicator() {
   );
 }
 
+function MemoryIndicator() {
+  const snapshot = useFrontendMemoryTelemetry();
+  if (!snapshot) {
+    return null;
+  }
+  const usedRounded = Math.round(snapshot.usedMb);
+  const color =
+    snapshot.pct > 75 ? "text-down" : snapshot.pct > 50 ? "text-amber-400" : "text-muted";
+  const tooltip = [
+    `JS heap: ${usedRounded} MB used`,
+    `Total: ${Math.round(snapshot.totalMb)} MB`,
+    `Limit: ${Math.round(snapshot.limitMb)} MB`,
+    `${snapshot.pct.toFixed(1)}% of limit`,
+    "Polls every 30s. Posted to /api/gateway/telemetry/frontend for ops.",
+  ].join("\n");
+  return (
+    <span
+      data-testid="memory-indicator"
+      title={tooltip}
+      className={`flex items-center gap-1.5 text-[10px] tabular-nums ${color}`}
+    >
+      <span className="text-muted">Heap</span>
+      {usedRounded} MB
+    </span>
+  );
+}
+
 export function AppHeader() {
   const updateAvailable = useAppSelector((s) => s.ui.updateAvailable);
   const upgradeStatus = useAppSelector((s) => s.ui.upgradeStatus);
@@ -600,6 +628,7 @@ export function AppHeader() {
         <div className="flex items-center gap-4">
           <DataFreshness />
           <DataDepthIndicator />
+          <MemoryIndicator />
           <div data-testid="service-health-cluster">
             <ServiceStatus services={services} />
           </div>
