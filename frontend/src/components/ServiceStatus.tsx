@@ -1,5 +1,6 @@
 import { useSignal } from "@preact/signals-react";
 import type { ServiceHealth, ServiceState } from "@veta/frontend/types.ts";
+import { commitUrl, isShortSha } from "@veta/frontend/utils/githubLinks";
 import { ServiceRow } from "./ServiceRow";
 import { StatusDot } from "./StatusDot";
 
@@ -14,34 +15,36 @@ function aggregateState(services: ServiceHealth[]): ServiceState {
   return "ok";
 }
 
-/** Returns { consistent: true, version } if all healthy required services share one version. */
-function versionSummary(services: ServiceHealth[]): {
+function commitSummary(services: ServiceHealth[]): {
   consistent: boolean;
-  version: string | null;
+  commit: string | null;
   lastChecked: number | null;
 } {
   const checked = services.filter((s) => !s.optional && s.state === "ok" && s.version !== "—");
-  const versions = [...new Set(checked.map((s) => s.version))];
+  const commits = [...new Set(checked.map((s) => s.version))];
   const lastChecked = checked.reduce<number | null>((max, s) => {
     if (s.lastChecked === null) return max;
     return max === null ? s.lastChecked : Math.max(max, s.lastChecked);
   }, null);
-  if (versions.length === 0) {
-    return { consistent: false, version: null, lastChecked };
+  if (commits.length === 0) {
+    return { consistent: false, commit: null, lastChecked };
   }
-  if (versions.length === 1) {
-    return { consistent: true, version: versions[0], lastChecked };
+  if (commits.length === 1) {
+    return { consistent: true, commit: commits[0], lastChecked };
   }
-  return { consistent: false, version: null, lastChecked };
+  return { consistent: false, commit: null, lastChecked };
 }
 
 export function ServiceStatus({ services }: Props) {
   const open = useSignal(false);
   const overall = aggregateState(services);
-  const { consistent, version, lastChecked } = versionSummary(services);
+  const { consistent, commit, lastChecked } = commitSummary(services);
 
   const okCount = services.filter((s) => s.state === "ok").length;
   const totalCount = services.length;
+
+  const shortCommit = commit && isShortSha(commit) ? commit.slice(0, 7) : null;
+  const commitHref = commit ? commitUrl(commit) : null;
 
   return (
     <div className="relative">
@@ -59,9 +62,9 @@ export function ServiceStatus({ services }: Props) {
           <span className="tabular-nums text-muted">
             {okCount}/{totalCount}
           </span>
-          {consistent && version && (
-            <span className="ml-1 font-mono text-muted" title={`All services on v${version}`}>
-              v{version.length > 8 ? `${version.slice(0, 7)}…` : version}
+          {consistent && shortCommit && (
+            <span className="ml-1 font-mono text-muted" title={`All services on commit ${commit}`}>
+              {shortCommit}
             </span>
           )}
         </span>
@@ -85,13 +88,29 @@ export function ServiceStatus({ services }: Props) {
               </span>
               <div className="flex flex-col items-end gap-0.5 min-w-[9rem]">
                 <span className="font-mono h-[1.1em]">
-                  {consistent && version ? (
-                    <span className="text-emerald-400">v{version}</span>
+                  {consistent && commit ? (
+                    commitHref ? (
+                      <a
+                        href={commitHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid="service-health-commit-link"
+                        className="text-emerald-400 hover:underline"
+                        title={`View commit ${commit} on GitHub`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {shortCommit ?? commit}
+                      </a>
+                    ) : (
+                      <span className="text-emerald-400" title={`Commit ${commit}`}>
+                        {shortCommit ?? commit}
+                      </span>
+                    )
                   ) : (
                     <span className="text-amber-400">
-                      {version === null && services.every((s) => s.state === "unknown")
+                      {commit === null && services.every((s) => s.state === "unknown")
                         ? "loading…"
-                        : "version mismatch"}
+                        : "commit mismatch"}
                     </span>
                   )}
                 </span>

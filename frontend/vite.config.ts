@@ -61,6 +61,9 @@ export default defineConfig(async ({ mode }) => {
       "import.meta.env.VITE_APP_VERSION": JSON.stringify(
         process.env.VITE_APP_VERSION || readPlatformVersion(),
       ),
+      "import.meta.env.VITE_GITHUB_REPO_URL": JSON.stringify(
+        process.env.VITE_GITHUB_REPO_URL || "https://github.com/milesburton/veta-trading-platform",
+      ),
     },
     plugins: [
       react({
