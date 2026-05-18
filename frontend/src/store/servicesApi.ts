@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { ServiceHealth } from "../types.ts";
+import type { ServiceHealth } from "@veta/frontend/types.ts";
 
 export interface DiskMetrics {
   total_gb: number;

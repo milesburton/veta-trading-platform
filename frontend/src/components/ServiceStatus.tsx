@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals-react";
-import type { ServiceHealth, ServiceState } from "../types.ts";
+import type { ServiceHealth, ServiceState } from "@veta/frontend/types.ts";
 import { ServiceRow } from "./ServiceRow";
 import { StatusDot } from "./StatusDot";
 

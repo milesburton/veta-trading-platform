@@ -1,12 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { ComponentPicker } from "@veta/frontend/components/ComponentPicker";
+import type { PanelId } from "@veta/frontend/components/DashboardLayout";
+import { DashboardContext, DEFAULT_LAYOUT } from "@veta/frontend/components/DashboardLayout";
+import { authSlice } from "@veta/frontend/store/authSlice";
 import { Model } from "flexlayout-react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
-import { authSlice } from "../../store/authSlice";
-import { ComponentPicker } from "../ComponentPicker";
-import type { PanelId } from "../DashboardLayout";
-import { DashboardContext, DEFAULT_LAYOUT } from "../DashboardLayout";
 
 function makeStore(
   role:

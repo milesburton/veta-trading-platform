@@ -1,8 +1,8 @@
 import { useSignal } from "@preact/signals-react";
-import { useRequestAdvisoryMutation } from "../store/advisoryApi.ts";
-import type { AdvisoryStatus } from "../store/advisorySlice.ts";
-import { selectAdvisoryForSymbol } from "../store/advisorySlice.ts";
-import { useAppSelector } from "../store/hooks.ts";
+import { useRequestAdvisoryMutation } from "@veta/frontend/store/advisoryApi.ts";
+import type { AdvisoryStatus } from "@veta/frontend/store/advisorySlice.ts";
+import { selectAdvisoryForSymbol } from "@veta/frontend/store/advisorySlice.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 
 interface AdvisoryPanelProps {
   symbol: string;

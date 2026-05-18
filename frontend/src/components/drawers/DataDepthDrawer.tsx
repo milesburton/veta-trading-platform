@@ -1,5 +1,5 @@
-import { type DataDepthSymbol, useGetDataDepthQuery } from "../../store/servicesApi.ts";
-import { useDashboard } from "../dashboard/DashboardContext.tsx";
+import { useDashboard } from "@veta/frontend/components/dashboard/DashboardContext.tsx";
+import { type DataDepthSymbol, useGetDataDepthQuery } from "@veta/frontend/store/servicesApi.ts";
 import { Drawer } from "./Drawer.tsx";
 import { useDrawers } from "./DrawersContext.tsx";
 

@@ -8,6 +8,9 @@
  */
 
 import { useSignal } from "@preact/signals-react";
+import { useChannelOut } from "@veta/frontend/hooks/useChannelOut.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
 import { useMemo } from "react";
 import {
   CartesianGrid,
@@ -21,9 +24,6 @@ import {
   YAxis,
   ZAxis,
 } from "recharts";
-import { useChannelOut } from "../hooks/useChannelOut.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import { COLOR } from "../tokens.ts";
 
 const DIR_COLOUR: Record<string, string> = {
   get long() {

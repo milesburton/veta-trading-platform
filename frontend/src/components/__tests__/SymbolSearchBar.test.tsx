@@ -1,13 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { SymbolSearchBar } from "@veta/frontend/components/SymbolSearchBar";
+import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
+import { channelsSlice } from "@veta/frontend/store/channelsSlice";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
+import type { AssetDef } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
-import { ChannelContext } from "../../contexts/ChannelContext";
-import { channelsSlice } from "../../store/channelsSlice";
-import { marketSlice } from "../../store/marketSlice";
-import { uiSlice } from "../../store/uiSlice";
-import type { AssetDef } from "../../types";
-import { SymbolSearchBar } from "../SymbolSearchBar";
 
 const assets: AssetDef[] = [
   {

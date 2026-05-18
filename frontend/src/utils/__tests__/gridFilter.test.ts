@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
-import type { ConditionalFormatRule, ExprGroup, FilterCriteria } from "../../types/gridPrefs.ts";
+import type {
+  ConditionalFormatRule,
+  ExprGroup,
+  FilterCriteria,
+} from "@veta/frontend/types/gridPrefs.ts";
 import {
   applyCfRules,
   applyExprGroup,
@@ -7,7 +10,8 @@ import {
   applySort,
   evalExprGroup,
   exprGroupToDisplay,
-} from "../gridFilter.ts";
+} from "@veta/frontend/utils/gridFilter.ts";
+import { describe, expect, it } from "vitest";
 
 // ── Test data ──────────────────────────────────────────────────────────────────
 

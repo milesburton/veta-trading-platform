@@ -1,13 +1,13 @@
 import type { UnknownAction } from "@reduxjs/toolkit";
+import type { ChannelContextValue } from "@veta/frontend/contexts/ChannelContext.tsx";
+import { ChannelContext, useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { DEPLOYMENT } from "@veta/frontend/store/servicesApi.ts";
+import { saveOrderTicketWindowSize } from "@veta/frontend/store/uiSlice.ts";
 import type { IJsonModel } from "flexlayout-react";
 import { Model } from "flexlayout-react";
 import type React from "react";
 import { useEffect } from "react";
-import type { ChannelContextValue } from "../contexts/ChannelContext.tsx";
-import { ChannelContext, useChannelContext } from "../contexts/ChannelContext.tsx";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { DEPLOYMENT } from "../store/servicesApi.ts";
-import { saveOrderTicketWindowSize } from "../store/uiSlice.ts";
 import { AdminPanel } from "./AdminPanel.tsx";
 import { AlgoMonitor } from "./AlgoMonitor.tsx";
 import { AnalysisPanel } from "./AnalysisPanel.tsx";

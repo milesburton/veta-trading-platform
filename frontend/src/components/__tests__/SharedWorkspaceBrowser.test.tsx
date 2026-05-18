@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { SharedWorkspaceBrowser } from "@veta/frontend/components/SharedWorkspaceBrowser";
+import { authSlice } from "@veta/frontend/store/authSlice";
 import type { IJsonModel } from "flexlayout-react";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { authSlice } from "../../store/authSlice";
-import { SharedWorkspaceBrowser } from "../SharedWorkspaceBrowser";
 
 const listSharedWorkspaces = vi.fn();
 const fetchSharedWorkspace = vi.fn();

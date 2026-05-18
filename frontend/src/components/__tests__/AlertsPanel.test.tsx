@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { AlertsPanel } from "@veta/frontend/components/AlertsPanel";
+import { alertsSlice } from "@veta/frontend/store/alertsSlice";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { alertsSlice } from "../../store/alertsSlice";
-import { AlertsPanel } from "../AlertsPanel";
 
 vi.mock("../AlertDrawer.tsx", () => ({
   AlertList: ({

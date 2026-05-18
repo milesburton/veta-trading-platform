@@ -4,9 +4,9 @@ import {
   useRequestWatchlistBriefMutation,
   useTriggerWorkerMutation,
   useUpdateLlmSubsystemStateMutation,
-} from "../store/advisoryApi.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import type { LlmSubsystemState, LlmTriggerMode } from "../store/llmSubsystemSlice.ts";
+} from "@veta/frontend/store/advisoryApi.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { LlmSubsystemState, LlmTriggerMode } from "@veta/frontend/store/llmSubsystemSlice.ts";
 
 const STATE_CONFIGS: Record<LlmSubsystemState, { label: string; dot: string }> = {
   disabled: { label: "Disabled", dot: "bg-subtle" },

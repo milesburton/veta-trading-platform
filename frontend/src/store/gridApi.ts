@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { GridQueryRequest, GridQueryResponse } from "../types/gridQuery.ts";
+import type { GridQueryRequest, GridQueryResponse } from "@veta/frontend/types/gridQuery.ts";
 
 export const gridApi = createApi({
   reducerPath: "gridApi",

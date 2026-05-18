@@ -9,11 +9,15 @@
  * live order events to trigger a background refetch.
  */
 
+import { useQueryGridQuery } from "@veta/frontend/store/gridApi.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { EMPTY_EXPR_GROUP } from "@veta/frontend/types/gridPrefs.ts";
+import type {
+  GridId,
+  GridQueryRequest,
+  GridQueryResponse,
+} from "@veta/frontend/types/gridQuery.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQueryGridQuery } from "../store/gridApi.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import { EMPTY_EXPR_GROUP } from "../types/gridPrefs.ts";
-import type { GridId, GridQueryRequest, GridQueryResponse } from "../types/gridQuery.ts";
 
 const ROW_HEIGHT_PX = 30;
 const BUFFER_FACTOR = 1.2;

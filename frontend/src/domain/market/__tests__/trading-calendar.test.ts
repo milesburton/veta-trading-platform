@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
   buildSessionSchedule,
   isEarlyClose,
@@ -6,7 +5,8 @@ import {
   resolvePhaseFromMinute,
   totalTradingMinutes,
   US_EQUITY_CALENDAR,
-} from "../trading-calendar";
+} from "@veta/frontend/domain/market/trading-calendar";
+import { describe, expect, it } from "vitest";
 
 describe("buildSessionSchedule", () => {
   const schedule = buildSessionSchedule(US_EQUITY_CALENDAR);

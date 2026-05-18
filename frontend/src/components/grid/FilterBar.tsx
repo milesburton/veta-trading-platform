@@ -1,10 +1,10 @@
 import { useSignal } from "@preact/signals-react";
-import type { GridId } from "../../store/gridPrefsSlice.ts";
-import { saveGridPrefs, setFilterExpr } from "../../store/gridPrefsSlice.ts";
-import { useAppDispatch, useAppSelector } from "../../store/hooks.ts";
-import type { ExprGroup, FieldDef } from "../../types/gridPrefs.ts";
-import { EMPTY_EXPR_GROUP } from "../../types/gridPrefs.ts";
-import { exprGroupToDisplay } from "../../utils/gridFilter.ts";
+import type { GridId } from "@veta/frontend/store/gridPrefsSlice.ts";
+import { saveGridPrefs, setFilterExpr } from "@veta/frontend/store/gridPrefsSlice.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { ExprGroup, FieldDef } from "@veta/frontend/types/gridPrefs.ts";
+import { EMPTY_EXPR_GROUP } from "@veta/frontend/types/gridPrefs.ts";
+import { exprGroupToDisplay } from "@veta/frontend/utils/gridFilter.ts";
 import { ExpressionBuilder } from "./ExpressionBuilder.tsx";
 
 interface Props {

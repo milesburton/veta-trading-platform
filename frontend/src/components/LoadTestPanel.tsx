@@ -1,7 +1,7 @@
 import { useSignal } from "@preact/signals-react";
-import type { LoadTestResult } from "../store/gatewayApi.ts";
-import { useRunLoadTestMutation } from "../store/gatewayApi.ts";
-import { useAppSelector } from "../store/hooks.ts";
+import type { LoadTestResult } from "@veta/frontend/store/gatewayApi.ts";
+import { useRunLoadTestMutation } from "@veta/frontend/store/gatewayApi.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 
 const STRATEGIES = ["LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE"] as const;
 

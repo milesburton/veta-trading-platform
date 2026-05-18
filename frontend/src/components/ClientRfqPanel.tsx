@@ -1,7 +1,7 @@
 import { useSignal } from "@preact/signals-react";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { OrderSide } from "@veta/frontend/types.ts";
 import { useEffect } from "react";
-import { useAppSelector } from "../store/hooks.ts";
-import type { OrderSide } from "../types.ts";
 import { SELL_SIDE_RFQ_STATE_COLORS, type SellSideRfq } from "./rfq/shared.ts";
 
 export function ClientRfqPanel() {

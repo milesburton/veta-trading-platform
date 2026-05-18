@@ -1,6 +1,6 @@
-import { useAppSelector } from "../store/hooks.ts";
-import { type RiskPosition, useGetUserPositionsQuery } from "../store/riskApi.ts";
-import { formatCurrency, pnlColor } from "../utils/format.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { type RiskPosition, useGetUserPositionsQuery } from "@veta/frontend/store/riskApi.ts";
+import { formatCurrency, pnlColor } from "@veta/frontend/utils/format.ts";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 function PositionRow({ pos }: { pos: RiskPosition }) {

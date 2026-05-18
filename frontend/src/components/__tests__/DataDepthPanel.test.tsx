@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { render, screen } from "@testing-library/react";
+import { DataDepthPanel } from "@veta/frontend/components/DataDepthPanel";
+import { servicesApi } from "@veta/frontend/store/servicesApi";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
-import { servicesApi } from "../../store/servicesApi";
-import { DataDepthPanel } from "../DataDepthPanel";
 
 const sampleResponse = {
   totalSymbols: 2,

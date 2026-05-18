@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { PopOutPlaceholder } from "@veta/frontend/components/PopOutPlaceholder";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { PopOutPlaceholder } from "../PopOutPlaceholder";
 
 const dispatch = vi.fn();
 

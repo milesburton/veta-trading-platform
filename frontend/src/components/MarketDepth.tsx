@@ -1,6 +1,6 @@
+import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { useMemo } from "react";
-import { useChannelIn } from "../hooks/useChannelIn.ts";
-import { useAppSelector } from "../store/hooks.ts";
 
 interface Props {
   symbol: string;

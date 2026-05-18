@@ -1,13 +1,13 @@
 import { useSignal } from "@preact/signals-react";
+import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
+import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { submitOrderThunk } from "@veta/frontend/store/ordersSlice.ts";
+import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
+import type { ChildOrder, LiquidityFlag, OrderRecord } from "@veta/frontend/types.ts";
+import { formatBps } from "@veta/frontend/utils/format.ts";
 import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { Fragment } from "react";
-import { useChannelIn } from "../hooks/useChannelIn.ts";
-import { useColumnLayout } from "../hooks/useColumnLayout.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { submitOrderThunk } from "../store/ordersSlice.ts";
-import type { ColDef } from "../types/gridPrefs.ts";
-import type { ChildOrder, LiquidityFlag, OrderRecord } from "../types.ts";
-import { formatBps } from "../utils/format.ts";
 import { ResizableHeader } from "./grid/ResizableHeader.tsx";
 import { PopOutButton } from "./PopOutButton.tsx";
 

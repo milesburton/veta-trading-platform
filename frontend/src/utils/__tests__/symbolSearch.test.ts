@@ -1,6 +1,6 @@
+import type { AssetDef } from "@veta/frontend/types";
+import { matchAssets, parseTradePaste } from "@veta/frontend/utils/symbolSearch";
 import { describe, expect, it } from "vitest";
-import type { AssetDef } from "../../types";
-import { matchAssets, parseTradePaste } from "../symbolSearch";
 
 const ASSETS: AssetDef[] = [
   {

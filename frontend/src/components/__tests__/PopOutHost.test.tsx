@@ -1,12 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { render, screen } from "@testing-library/react";
+import { PopOutHost } from "@veta/frontend/components/PopOutHost";
+import { channelsSlice } from "@veta/frontend/store/channelsSlice";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
+import { themeSlice } from "@veta/frontend/store/themeSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
-import { channelsSlice } from "../../store/channelsSlice";
-import { marketSlice } from "../../store/marketSlice";
-import { themeSlice } from "../../store/themeSlice";
-import { uiSlice } from "../../store/uiSlice";
-import { PopOutHost } from "../PopOutHost";
 
 vi.mock("../MarketLadder.tsx", () => ({
   MarketLadder: () => <div data-testid="market-ladder-panel">Market Ladder Panel</div>,

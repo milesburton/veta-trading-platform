@@ -1,4 +1,15 @@
 import { useSignal } from "@preact/signals-react";
+import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
+import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
+import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
+import { useContainerLimit, useGridQuery } from "@veta/frontend/hooks/useGridQuery.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
+import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
+import type { LiquidityFlag, OrderRecord } from "@veta/frontend/types.ts";
+import { ORDER_STATUS_DESCRIPTIONS } from "@veta/frontend/types.ts";
+import { formatBps, formatTime } from "@veta/frontend/utils/format.ts";
+import { applyCfRules } from "@veta/frontend/utils/gridFilter.ts";
 import { useMemo } from "react";
 import {
   CartesianGrid,
@@ -10,17 +21,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useChannelContext } from "../contexts/ChannelContext.tsx";
-import { useChannelIn } from "../hooks/useChannelIn.ts";
-import { useColumnLayout } from "../hooks/useColumnLayout.ts";
-import { useContainerLimit, useGridQuery } from "../hooks/useGridQuery.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import { COLOR } from "../tokens.ts";
-import type { ColDef } from "../types/gridPrefs.ts";
-import type { LiquidityFlag, OrderRecord } from "../types.ts";
-import { ORDER_STATUS_DESCRIPTIONS } from "../types.ts";
-import { formatBps, formatTime } from "../utils/format.ts";
-import { applyCfRules } from "../utils/gridFilter.ts";
 import { CfRuleEditor } from "./grid/CfRuleEditor.tsx";
 import { FilterBar } from "./grid/FilterBar.tsx";
 import { ResizableHeader } from "./grid/ResizableHeader.tsx";

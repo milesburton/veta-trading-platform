@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals-react";
-import { useAppSelector } from "../store/hooks.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import type { PanelId } from "./DashboardLayout.tsx";
 import { PANEL_IDS, PANEL_TITLES, SINGLETON_PANELS, useDashboard } from "./DashboardLayout.tsx";
 import { canAccessPanel } from "./dashboard/panelRegistry.ts";

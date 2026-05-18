@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
   featureReceived,
   featuresBatchReceived,
@@ -6,7 +5,8 @@ import {
   recommendationReceived,
   signalReceived,
   signalsBatchReceived,
-} from "../intelligenceSlice";
+} from "@veta/frontend/store/intelligenceSlice";
+import { describe, expect, it } from "vitest";
 
 const { reducer } = intelligenceSlice;
 

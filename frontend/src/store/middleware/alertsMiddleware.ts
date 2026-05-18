@@ -1,7 +1,11 @@
 import type { Middleware } from "@reduxjs/toolkit";
-import { alertAdded, alertDismissed, allAlertsDismissed } from "../alertsSlice.ts";
-import { allBlocksCleared, blockAdded } from "../killSwitchSlice.ts";
-import { orderPatched } from "../ordersSlice.ts";
+import {
+  alertAdded,
+  alertDismissed,
+  allAlertsDismissed,
+} from "@veta/frontend/store/alertsSlice.ts";
+import { allBlocksCleared, blockAdded } from "@veta/frontend/store/killSwitchSlice.ts";
+import { orderPatched } from "@veta/frontend/store/ordersSlice.ts";
 
 const _origin = typeof window !== "undefined" ? window.location.origin : "";
 const ALERTS_URL = `${_origin}/api/gateway/alerts`;

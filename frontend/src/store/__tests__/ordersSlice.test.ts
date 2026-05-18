@@ -1,5 +1,3 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ChildOrder, OrderRecord } from "../../types";
 import {
   cancelOrdersThunk,
   childAdded,
@@ -12,7 +10,9 @@ import {
   ordersSlice,
   setGatewayWs,
   submitOrderThunk,
-} from "../ordersSlice";
+} from "@veta/frontend/store/ordersSlice";
+import type { ChildOrder, OrderRecord } from "@veta/frontend/types";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { reducer } = ordersSlice;
 const initial = { orders: [], lastSubmittedOrderId: null };

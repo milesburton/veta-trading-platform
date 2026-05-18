@@ -1,15 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MarketLadder } from "@veta/frontend/components/MarketLadder";
+import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
+import { channelsSlice } from "@veta/frontend/store/channelsSlice";
+import { gridPrefsSlice } from "@veta/frontend/store/gridPrefsSlice";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
+import { windowSlice } from "@veta/frontend/store/windowSlice";
+import type { AssetDef, MarketPrices, PriceHistory } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
-import { ChannelContext } from "../../contexts/ChannelContext";
-import { channelsSlice } from "../../store/channelsSlice";
-import { gridPrefsSlice } from "../../store/gridPrefsSlice";
-import { marketSlice } from "../../store/marketSlice";
-import { uiSlice } from "../../store/uiSlice";
-import { windowSlice } from "../../store/windowSlice";
-import type { AssetDef, MarketPrices, PriceHistory } from "../../types";
-import { MarketLadder } from "../MarketLadder";
 
 const assets: AssetDef[] = [
   { symbol: "AAPL", initialPrice: 150, volatility: 0.02, sector: "Technology" },

@@ -1,9 +1,9 @@
 import { renderHook } from "@testing-library/react";
+import type { SessionState } from "@veta/frontend/domain/market/market-session";
+import * as resolver from "@veta/frontend/domain/ticket/resolve-ticket";
+import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
+import { useTicketResolution } from "@veta/frontend/domain/ticket/useTicketResolution";
 import { describe, expect, it, vi } from "vitest";
-import type { SessionState } from "../../market/market-session";
-import * as resolver from "../resolve-ticket";
-import type { TicketContext } from "../ticket-types";
-import { useTicketResolution } from "../useTicketResolution";
 
 const CONTINUOUS_SESSION: SessionState = {
   phase: "CONTINUOUS",

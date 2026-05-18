@@ -1,13 +1,13 @@
 import { useSignal } from "@preact/signals-react";
-import type { AlertSeverity, AlertSource, MuteRule } from "../store/alertsSlice.ts";
+import type { AlertSeverity, AlertSource, MuteRule } from "@veta/frontend/store/alertsSlice.ts";
 import {
   alertAdded,
   allMuteRulesCleared,
   muteRuleRemoved,
   selectMuteRules,
-} from "../store/alertsSlice.ts";
-import { useRunDemoDayMutation, useRunLoadTestMutation } from "../store/gatewayApi.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+} from "@veta/frontend/store/alertsSlice.ts";
+import { useRunDemoDayMutation, useRunLoadTestMutation } from "@veta/frontend/store/gatewayApi.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 
 const ALERT_SEVERITIES: AlertSeverity[] = ["CRITICAL", "WARNING", "INFO"];
 const ALERT_SOURCES: AlertSource[] = ["kill-switch", "service", "algo", "order", "workspace"];

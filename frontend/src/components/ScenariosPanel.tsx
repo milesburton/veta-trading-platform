@@ -7,7 +7,7 @@ import {
   useListRunsQuery,
   useListScenariosQuery,
   useRunScenarioMutation,
-} from "../store/scenariosApi.ts";
+} from "@veta/frontend/store/scenariosApi.ts";
 
 const STATUS_STYLE: Record<string, string> = {
   pending: "bg-divider text-secondary",

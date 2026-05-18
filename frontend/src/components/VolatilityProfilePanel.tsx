@@ -7,6 +7,10 @@
  */
 
 import { useSignal } from "@preact/signals-react";
+import { useGetVolProfileQuery } from "@veta/frontend/store/analyticsApi.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { selectSymbols } from "@veta/frontend/store/selectors.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
 import {
   Area,
   AreaChart,
@@ -17,10 +21,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useGetVolProfileQuery } from "../store/analyticsApi.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import { selectSymbols } from "../store/selectors.ts";
-import { COLOR } from "../tokens.ts";
 
 interface TooltipPayloadItem {
   name: string;

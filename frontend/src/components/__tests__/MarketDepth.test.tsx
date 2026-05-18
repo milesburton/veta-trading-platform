@@ -1,13 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { render, screen } from "@testing-library/react";
+import { MarketDepth } from "@veta/frontend/components/MarketDepth";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
+import { ordersSlice } from "@veta/frontend/store/ordersSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
+import { windowSlice } from "@veta/frontend/store/windowSlice";
+import type { OrderBookSnapshot } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
-import { marketSlice } from "../../store/marketSlice";
-import { ordersSlice } from "../../store/ordersSlice";
-import { uiSlice } from "../../store/uiSlice";
-import { windowSlice } from "../../store/windowSlice";
-import type { OrderBookSnapshot } from "../../types";
-import { MarketDepth } from "../MarketDepth";
 
 // lightweight-charts renders to canvas — stub it
 vi.mock("lightweight-charts", () => {

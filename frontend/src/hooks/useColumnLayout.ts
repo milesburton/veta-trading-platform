@@ -1,8 +1,12 @@
+import type { GridId } from "@veta/frontend/store/gridPrefsSlice.ts";
+import {
+  saveGridPrefs,
+  setColumnOrder,
+  setColumnWidth,
+} from "@veta/frontend/store/gridPrefsSlice.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
 import { useMemo } from "react";
-import type { GridId } from "../store/gridPrefsSlice.ts";
-import { saveGridPrefs, setColumnOrder, setColumnWidth } from "../store/gridPrefsSlice.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import type { ColDef } from "../types/gridPrefs.ts";
 
 export function useColumnLayout(
   gridId: GridId,

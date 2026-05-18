@@ -1,13 +1,13 @@
 import { useSignal } from "@preact/signals-react";
-import { useCallback, useEffect, useMemo } from "react";
 import {
   type Alert as AlertType,
   alertAcknowledged,
   alertDismissed,
   allAlertsDismissed,
   selectToastQueue,
-} from "../store/alertsSlice.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
+} from "@veta/frontend/store/alertsSlice.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { useCallback, useEffect, useMemo } from "react";
 import { ALERTS_DRAWER_ID } from "./AlertDrawer.tsx";
 import { useDrawers } from "./drawers/DrawersContext.tsx";
 

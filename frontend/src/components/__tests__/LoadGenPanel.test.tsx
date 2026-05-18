@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { LoadGenPanel } from "@veta/frontend/components/LoadGenPanel";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { LoadGenPanel } from "../LoadGenPanel";
 
 const startMutation = vi.fn();
 const stopMutation = vi.fn();

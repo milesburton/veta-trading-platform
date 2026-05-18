@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { BasketOrderPanel } from "@veta/frontend/components/BasketOrderPanel";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { BasketOrderPanel } from "../BasketOrderPanel";
 
 const dispatch = vi.fn();
 

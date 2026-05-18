@@ -1,15 +1,19 @@
+import { resolveSession, type SessionState } from "@veta/frontend/domain/market/market-session";
+import { checkDarkPoolEligible } from "@veta/frontend/domain/ticket/rules/dark-pool";
+import {
+  availableInstrumentTypes,
+  deriveDesk,
+  runDeskAccessCheck,
+} from "@veta/frontend/domain/ticket/rules/desk-access";
+import { runKillSwitchCheck } from "@veta/frontend/domain/ticket/rules/kill-switch";
+import { runLimitChecks } from "@veta/frontend/domain/ticket/rules/limit-checks";
+import { runPriceCollarCheck } from "@veta/frontend/domain/ticket/rules/price-collar";
+import { runSessionRules } from "@veta/frontend/domain/ticket/rules/session-rules";
+import { runSpreadCheck } from "@veta/frontend/domain/ticket/rules/spread-check";
+import { runStaticValidation } from "@veta/frontend/domain/ticket/rules/static-validation";
+import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
+import type { TradingLimits } from "@veta/frontend/store/authSlice";
 import { describe, expect, it } from "vitest";
-import type { TradingLimits } from "../../../store/authSlice";
-import { resolveSession, type SessionState } from "../../market/market-session";
-import { checkDarkPoolEligible } from "../rules/dark-pool";
-import { availableInstrumentTypes, deriveDesk, runDeskAccessCheck } from "../rules/desk-access";
-import { runKillSwitchCheck } from "../rules/kill-switch";
-import { runLimitChecks } from "../rules/limit-checks";
-import { runPriceCollarCheck } from "../rules/price-collar";
-import { runSessionRules } from "../rules/session-rules";
-import { runSpreadCheck } from "../rules/spread-check";
-import { runStaticValidation } from "../rules/static-validation";
-import type { TicketContext } from "../ticket-types";
 
 const LIMITS: TradingLimits = {
   max_order_qty: 10_000,

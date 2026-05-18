@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { AdminPanel } from "@veta/frontend/components/AdminPanel";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AdminPanel } from "../AdminPanel";
 
 const updateLimits = vi.fn();
 

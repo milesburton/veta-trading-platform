@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
   CHANNEL_COLOURS,
   canAccessPanel,
@@ -8,7 +7,8 @@ import {
   PANEL_PERMISSIONS,
   PANEL_TITLES,
   SINGLETON_PANELS,
-} from "../panelRegistry.ts";
+} from "@veta/frontend/components/dashboard/panelRegistry.ts";
+import { describe, expect, it } from "vitest";
 
 describe("PANEL_IDS completeness", () => {
   it("contains at least 15 panels", () => {

@@ -1,8 +1,8 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { authSlice, setUser } from "@veta/frontend/store/authSlice";
+import { versionWatchMiddleware } from "@veta/frontend/store/middleware/versionWatchMiddleware";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { authSlice, setUser } from "../../authSlice";
-import { uiSlice } from "../../uiSlice";
-import { versionWatchMiddleware } from "../versionWatchMiddleware";
 
 function makeStore() {
   const store = configureStore({

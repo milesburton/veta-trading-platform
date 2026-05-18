@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
+import { StartupOverlay } from "@veta/frontend/components/StartupOverlay";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { StartupOverlay } from "../StartupOverlay";
 
 const READY_RESPONSE = {
   ready: true,

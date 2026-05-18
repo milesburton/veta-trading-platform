@@ -1,4 +1,4 @@
-import type { TicketContext } from "../ticket-types";
+import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
 
 const DARK_POOL_MIN_BLOCK = 10_000;
 

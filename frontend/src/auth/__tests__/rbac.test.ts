@@ -1,5 +1,10 @@
+import {
+  AUTH_ROLES,
+  canSubmitOrders,
+  NON_TRADING_ROLES,
+  ROLE_LABELS,
+} from "@veta/frontend/auth/rbac";
 import { describe, expect, it } from "vitest";
-import { AUTH_ROLES, canSubmitOrders, NON_TRADING_ROLES, ROLE_LABELS } from "../rbac";
 
 describe("auth/rbac", () => {
   describe("AUTH_ROLES", () => {

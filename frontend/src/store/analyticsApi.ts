@@ -18,7 +18,7 @@ import type {
   VolSurfaceResponse,
   YieldCurveRequest,
   YieldCurveResponse,
-} from "../types/analytics.ts";
+} from "@veta/frontend/types/analytics.ts";
 
 export const analyticsApi = createApi({
   reducerPath: "analyticsApi",

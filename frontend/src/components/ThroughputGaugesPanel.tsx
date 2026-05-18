@@ -1,9 +1,9 @@
 import { useSignal } from "@preact/signals-react";
+import { alertAdded } from "@veta/frontend/store/alertsSlice.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
 import { useEffect, useRef } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { alertAdded } from "../store/alertsSlice.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { COLOR } from "../tokens.ts";
 
 interface SparkPoint {
   t: number;

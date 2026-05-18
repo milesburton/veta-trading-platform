@@ -1,8 +1,8 @@
+import type { SessionState } from "@veta/frontend/domain/market/market-session";
+import { resolveTicket } from "@veta/frontend/domain/ticket/resolve-ticket";
+import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
+import type { TradingLimits } from "@veta/frontend/store/authSlice";
 import { describe, expect, it } from "vitest";
-import type { TradingLimits } from "../../../store/authSlice";
-import type { SessionState } from "../../market/market-session";
-import { resolveTicket } from "../resolve-ticket";
-import type { TicketContext } from "../ticket-types";
 
 const DEFAULT_LIMITS: TradingLimits = {
   max_order_qty: 10_000,

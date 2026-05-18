@@ -1,6 +1,10 @@
+import {
+  quantityLabel,
+  quantitySubLabel,
+  STRATEGY_OPTIONS,
+} from "@veta/frontend/domain/ticket/field-definitions";
+import { FIELD_REGISTRY, FK, getFieldDef } from "@veta/frontend/domain/ticket/field-registry";
 import { describe, expect, it } from "vitest";
-import { quantityLabel, quantitySubLabel, STRATEGY_OPTIONS } from "../field-definitions";
-import { FIELD_REGISTRY, FK, getFieldDef } from "../field-registry";
 
 describe("ticket field definitions", () => {
   it("contains all supported strategy options", () => {

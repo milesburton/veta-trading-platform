@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { ConnectionLostBanner } from "@veta/frontend/components/ConnectionLostBanner";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
-import { marketSlice } from "../../store/marketSlice";
-import { ConnectionLostBanner } from "../ConnectionLostBanner";
 
 function makeStore(opts: { connected: boolean; connectionFailures: number }) {
   return configureStore({

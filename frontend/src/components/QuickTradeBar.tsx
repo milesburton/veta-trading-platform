@@ -1,15 +1,15 @@
 import { useSignal } from "@preact/signals-react";
-import type React from "react";
-import { useMemo } from "react";
 import {
   parseQuickTrade,
   type QuickTradeIntent,
   QuickTradeIntentSchema,
-} from "../domain/quickTrade/parse.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import { useParseTicketMutation } from "../store/parseTicketApi.ts";
-import { selectOrderTicketWindowSize } from "../store/uiSlice.ts";
-import { openOrderTicketWindow } from "../utils/orderTicketWindow.ts";
+} from "@veta/frontend/domain/quickTrade/parse.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { useParseTicketMutation } from "@veta/frontend/store/parseTicketApi.ts";
+import { selectOrderTicketWindowSize } from "@veta/frontend/store/uiSlice.ts";
+import { openOrderTicketWindow } from "@veta/frontend/utils/orderTicketWindow.ts";
+import type React from "react";
+import { useMemo } from "react";
 
 function formatIntent(intent: QuickTradeIntent): string {
   const parts: string[] = [intent.side, intent.symbol];

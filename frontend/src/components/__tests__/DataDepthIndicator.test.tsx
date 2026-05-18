@@ -1,11 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { DATA_DEPTH_DRAWER_ID } from "@veta/frontend/components/drawers/DataDepthDrawer";
+import { DrawersProvider, useDrawers } from "@veta/frontend/components/drawers/DrawersContext";
+import { DataDepthIndicator } from "@veta/frontend/components/StatusBar";
+import { servicesApi } from "@veta/frontend/store/servicesApi";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
-import { servicesApi } from "../../store/servicesApi";
-import { DATA_DEPTH_DRAWER_ID } from "../drawers/DataDepthDrawer";
-import { DrawersProvider, useDrawers } from "../drawers/DrawersContext";
-import { DataDepthIndicator } from "../StatusBar";
 
 const sampleData = {
   totalSymbols: 5,

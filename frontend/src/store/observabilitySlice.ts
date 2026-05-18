@@ -1,6 +1,6 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
-import type { ObsEvent } from "../types.ts";
+import type { ObsEvent } from "@veta/frontend/types.ts";
 
 interface ObservabilityState {
   events: ObsEvent[];

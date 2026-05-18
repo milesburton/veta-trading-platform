@@ -1,4 +1,4 @@
-import type { Diagnostic, TicketContext } from "../ticket-types";
+import type { Diagnostic, TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
 
 const COLLAR_WARNING_PCT = 0.02;
 const COLLAR_ERROR_PCT = 0.05;

@@ -1,11 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { authSlice } from "@veta/frontend/store/authSlice";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
+import * as orderTicketWindow from "@veta/frontend/utils/orderTicketWindow";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { authSlice } from "../../store/authSlice";
-import { marketSlice } from "../../store/marketSlice";
-import { uiSlice } from "../../store/uiSlice";
-import * as orderTicketWindow from "../../utils/orderTicketWindow";
 
 const parseTicketMock = vi.fn();
 const useParseTicketMutationMock = vi.fn();
@@ -29,7 +29,7 @@ function setMutationResult(opts: { loading?: boolean; result?: unknown; error?: 
   ]);
 }
 
-import { QuickTradeBar } from "../QuickTradeBar";
+import { QuickTradeBar } from "@veta/frontend/components/QuickTradeBar";
 
 beforeEach(() => {
   setMutationResult();

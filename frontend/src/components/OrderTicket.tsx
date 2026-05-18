@@ -1,19 +1,16 @@
 import { useSignal } from "@preact/signals-react";
-import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
-import { useEffect, useRef } from "react";
-import { useHotkeys } from "react-hotkeys-hook";
-import { useTradingContext } from "../context/TradingContext.tsx";
-import { BOND_UNIVERSE } from "../data/bondUniverse.ts";
-import { resolveSession } from "../domain/market/market-session.ts";
-import { QuickTradeIntentSchema } from "../domain/quickTrade/parse.ts";
-import type { TicketContext } from "../domain/ticket/ticket-types.ts";
-import { useTicketResolution } from "../domain/ticket/useTicketResolution.ts";
-import { useChannelIn } from "../hooks/useChannelIn.ts";
-import { useGetBondPriceMutation, useGetQuoteMutation } from "../store/analyticsApi.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { submitOrderThunk } from "../store/ordersSlice.ts";
-import { setActiveSide, setActiveStrategy } from "../store/uiSlice.ts";
-import type { BondPriceResponse, OptionQuoteResponse } from "../types/analytics.ts";
+import { useTradingContext } from "@veta/frontend/context/TradingContext.tsx";
+import { BOND_UNIVERSE } from "@veta/frontend/data/bondUniverse.ts";
+import { resolveSession } from "@veta/frontend/domain/market/market-session.ts";
+import { QuickTradeIntentSchema } from "@veta/frontend/domain/quickTrade/parse.ts";
+import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types.ts";
+import { useTicketResolution } from "@veta/frontend/domain/ticket/useTicketResolution.ts";
+import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
+import { useGetBondPriceMutation, useGetQuoteMutation } from "@veta/frontend/store/analyticsApi.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { submitOrderThunk } from "@veta/frontend/store/ordersSlice.ts";
+import { setActiveSide, setActiveStrategy } from "@veta/frontend/store/uiSlice.ts";
+import type { BondPriceResponse, OptionQuoteResponse } from "@veta/frontend/types/analytics.ts";
 import type {
   AlgoParams,
   ArrivalPriceParams,
@@ -29,7 +26,10 @@ import type {
   Trade,
   TwapParams,
   VwapParams,
-} from "../types.ts";
+} from "@veta/frontend/types.ts";
+import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
+import { useEffect, useRef } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
 import { AssetSelector } from "./AssetSelector";
 import { StrategyParams } from "./StrategyParams";
 

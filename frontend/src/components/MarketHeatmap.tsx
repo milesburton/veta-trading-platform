@@ -1,9 +1,9 @@
 import { useSignal } from "@preact/signals-react";
+import { useChannelOut } from "@veta/frontend/hooks/useChannelOut.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
+import type { AssetDef } from "@veta/frontend/types.ts";
 import { useEffect, useMemo, useRef } from "react";
-import { useChannelOut } from "../hooks/useChannelOut.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import { COLOR } from "../tokens.ts";
-import type { AssetDef } from "../types.ts";
 
 export function pctToColor(pct: number): string {
   if (pct >= 4) return COLOR.HEAT_STRONG_UP;

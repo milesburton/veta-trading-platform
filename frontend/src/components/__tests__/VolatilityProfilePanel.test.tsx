@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { VolatilityProfilePanel } from "@veta/frontend/components/VolatilityProfilePanel";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { marketSlice } from "../../store/marketSlice";
-import { VolatilityProfilePanel } from "../VolatilityProfilePanel";
 
 const useGetVolProfileQuery = vi.fn();
 

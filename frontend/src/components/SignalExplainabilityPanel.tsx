@@ -5,10 +5,10 @@
  * signal score for the symbol received on the incoming channel.
  */
 
-import { useChannelIn } from "../hooks/useChannelIn.ts";
-import { useAppSelector } from "../store/hooks.ts";
-import type { SignalFactor } from "../store/intelligenceSlice.ts";
-import { COLOR } from "../tokens.ts";
+import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { SignalFactor } from "@veta/frontend/store/intelligenceSlice.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
 
 const FEATURE_LABELS: Record<string, string> = {
   momentum: "Momentum",

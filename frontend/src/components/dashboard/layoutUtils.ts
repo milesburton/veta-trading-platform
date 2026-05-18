@@ -1,6 +1,6 @@
+import type { ChannelNumber } from "@veta/frontend/store/channelsSlice.ts";
 import type { TabNode } from "flexlayout-react";
 import { Model } from "flexlayout-react";
-import type { ChannelNumber } from "../../store/channelsSlice.ts";
 import { makeDefaultModel } from "./layoutModels.ts";
 import type { PanelId, TabChannelConfig } from "./panelRegistry.ts";
 

@@ -1,5 +1,5 @@
-import { getVenueCapabilities } from "../../market/venue-capabilities";
-import type { Diagnostic, TicketContext } from "../ticket-types";
+import { getVenueCapabilities } from "@veta/frontend/domain/market/venue-capabilities";
+import type { Diagnostic, TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
 
 export function runVenueRules(ctx: TicketContext): Diagnostic[] {
   const { selectedVenue, draft, session } = ctx;

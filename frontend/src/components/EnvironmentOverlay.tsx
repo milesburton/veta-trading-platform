@@ -1,4 +1,4 @@
-import { DEPLOYMENT } from "../store/servicesApi.ts";
+import { DEPLOYMENT } from "@veta/frontend/store/servicesApi.ts";
 
 export function EnvironmentOverlay() {
   if (import.meta.env.VITE_DISABLE_ENV_OVERLAY === "1") return null;

@@ -1,4 +1,3 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   deleteSharedWorkspace,
   fetchSharedWorkspace,
@@ -6,7 +5,8 @@ import {
   loadWorkspacePrefs,
   publishSharedWorkspace,
   saveWorkspacePrefs,
-} from "../useWorkspaceSync";
+} from "@veta/frontend/hooks/useWorkspaceSync";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("useWorkspaceSync helpers", () => {
   const fetchMock = vi.fn();

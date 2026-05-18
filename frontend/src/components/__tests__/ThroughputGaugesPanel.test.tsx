@@ -1,12 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { render, screen, waitFor } from "@testing-library/react";
+import { ThroughputGaugesPanel } from "@veta/frontend/components/ThroughputGaugesPanel";
+import { alertsSlice } from "@veta/frontend/store/alertsSlice";
+import { observabilitySlice } from "@veta/frontend/store/observabilitySlice";
+import { ordersSlice } from "@veta/frontend/store/ordersSlice";
+import type { ObsEvent, OrderRecord, Strategy } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
-import { alertsSlice } from "../../store/alertsSlice";
-import { observabilitySlice } from "../../store/observabilitySlice";
-import { ordersSlice } from "../../store/ordersSlice";
-import type { ObsEvent, OrderRecord, Strategy } from "../../types";
-import { ThroughputGaugesPanel } from "../ThroughputGaugesPanel";
 
 vi.mock("recharts", () => {
   const MockContainer = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;

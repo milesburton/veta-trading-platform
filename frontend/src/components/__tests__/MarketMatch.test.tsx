@@ -1,17 +1,17 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MarketMatch } from "@veta/frontend/components/MarketMatch";
+import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
+import { channelsSlice } from "@veta/frontend/store/channelsSlice";
+import { gridPrefsSlice } from "@veta/frontend/store/gridPrefsSlice";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
+import { observabilitySlice } from "@veta/frontend/store/observabilitySlice";
+import { ordersSlice } from "@veta/frontend/store/ordersSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
+import { windowSlice } from "@veta/frontend/store/windowSlice";
+import type { ObsEvent, Strategy } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ChannelContext } from "../../contexts/ChannelContext";
-import { channelsSlice } from "../../store/channelsSlice";
-import { gridPrefsSlice } from "../../store/gridPrefsSlice";
-import { marketSlice } from "../../store/marketSlice";
-import { observabilitySlice } from "../../store/observabilitySlice";
-import { ordersSlice } from "../../store/ordersSlice";
-import { uiSlice } from "../../store/uiSlice";
-import { windowSlice } from "../../store/windowSlice";
-import type { ObsEvent, Strategy } from "../../types";
-import { MarketMatch } from "../MarketMatch";
 
 afterEach(() => {
   vi.restoreAllMocks();

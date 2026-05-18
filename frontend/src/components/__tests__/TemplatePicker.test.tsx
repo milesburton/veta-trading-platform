@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { TemplatePicker } from "@veta/frontend/components/TemplatePicker";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TemplatePicker } from "../TemplatePicker";
 
 const resetLayout = vi.fn();
 const useAppSelectorMock = vi.fn();

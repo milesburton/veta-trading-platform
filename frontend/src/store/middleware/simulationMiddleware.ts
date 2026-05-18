@@ -1,15 +1,15 @@
 import type { Dispatch, ListenerEffectAPI, UnknownAction } from "@reduxjs/toolkit";
 import { createListenerMiddleware } from "@reduxjs/toolkit";
-import { v4 as uuidv4 } from "uuid";
+import { marketSlice } from "@veta/frontend/store/marketSlice.ts";
+import { ordersSlice } from "@veta/frontend/store/ordersSlice.ts";
 import type {
   ChildOrder,
   LiquidityFlag,
   MarketPrices,
   OrderRecord,
   VenueMIC,
-} from "../../types.ts";
-import { marketSlice } from "../marketSlice.ts";
-import { ordersSlice } from "../ordersSlice.ts";
+} from "@veta/frontend/types.ts";
+import { v4 as uuidv4 } from "uuid";
 
 const VENUES: { mic: VenueMIC; weight: number }[] = [
   { mic: "XNAS", weight: 30 },

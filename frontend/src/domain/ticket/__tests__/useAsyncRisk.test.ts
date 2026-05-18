@@ -1,9 +1,9 @@
 import { act, renderHook } from "@testing-library/react";
+import type { SessionState } from "@veta/frontend/domain/market/market-session";
+import * as risk from "@veta/frontend/domain/ticket/async-risk";
+import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
+import { useAsyncRisk } from "@veta/frontend/domain/ticket/useAsyncRisk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { SessionState } from "../../market/market-session";
-import * as risk from "../async-risk";
-import type { TicketContext } from "../ticket-types";
-import { useAsyncRisk } from "../useAsyncRisk";
 
 const CONTINUOUS_SESSION: SessionState = {
   phase: "CONTINUOUS",

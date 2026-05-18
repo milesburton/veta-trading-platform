@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { DEPLOYMENT, SERVICES, servicesApi } from "@veta/frontend/store/servicesApi";
 import { describe, expect, it, vi } from "vitest";
-import { DEPLOYMENT, SERVICES, servicesApi } from "../servicesApi";
 
 describe("servicesApi – SERVICES list", () => {
   it("exports a non-empty list of services", () => {

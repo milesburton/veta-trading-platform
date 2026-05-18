@@ -1,11 +1,15 @@
 import { useSignal } from "@preact/signals-react";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { KillBlock } from "@veta/frontend/store/killSwitchSlice.ts";
+import { blockAdded, blockRemoved } from "@veta/frontend/store/killSwitchSlice.ts";
+import type {
+  KillOrdersPayload,
+  KillScope,
+  ResumeOrdersPayload,
+} from "@veta/frontend/store/ordersSlice.ts";
+import { killOrdersThunk, resumeOrdersThunk } from "@veta/frontend/store/ordersSlice.ts";
+import { selectSymbols } from "@veta/frontend/store/selectors.ts";
 import { v4 as uuidv4 } from "uuid";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import type { KillBlock } from "../store/killSwitchSlice.ts";
-import { blockAdded, blockRemoved } from "../store/killSwitchSlice.ts";
-import type { KillOrdersPayload, KillScope, ResumeOrdersPayload } from "../store/ordersSlice.ts";
-import { killOrdersThunk, resumeOrdersThunk } from "../store/ordersSlice.ts";
-import { selectSymbols } from "../store/selectors.ts";
 
 type DialogTab = "kill" | "resume";
 

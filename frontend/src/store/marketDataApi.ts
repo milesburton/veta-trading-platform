@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { DataSource, OverridesResponse } from "../types/marketData.ts";
+import type { DataSource, OverridesResponse } from "@veta/frontend/types/marketData.ts";
 
 export const marketDataApi = createApi({
   reducerPath: "marketDataApi",

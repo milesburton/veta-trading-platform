@@ -1,6 +1,6 @@
-import type { GridId } from "../../store/gridPrefsSlice.ts";
-import { saveGridPrefs, setSort } from "../../store/gridPrefsSlice.ts";
-import { useAppDispatch, useAppSelector } from "../../store/hooks.ts";
+import type { GridId } from "@veta/frontend/store/gridPrefsSlice.ts";
+import { saveGridPrefs, setSort } from "@veta/frontend/store/gridPrefsSlice.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 
 interface Props {
   field: string;

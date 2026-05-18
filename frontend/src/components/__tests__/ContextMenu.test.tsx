@@ -1,8 +1,8 @@
 import { act, fireEvent, render, renderHook, screen } from "@testing-library/react";
+import type { ContextMenuEntry } from "@veta/frontend/components/ContextMenu";
+import { ContextMenu, useContextMenu } from "@veta/frontend/components/ContextMenu";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { describe, expect, it, vi } from "vitest";
-import type { ContextMenuEntry } from "../ContextMenu";
-import { ContextMenu, useContextMenu } from "../ContextMenu";
 
 const baseItems: ContextMenuEntry[] = [
   { label: "Copy symbol", icon: "⎘", onClick: vi.fn() },

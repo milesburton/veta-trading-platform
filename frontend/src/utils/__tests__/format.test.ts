@@ -1,5 +1,5 @@
+import { formatBps, formatCurrency, formatTime, pnlColor } from "@veta/frontend/utils/format";
 import { describe, expect, it, vi } from "vitest";
-import { formatBps, formatCurrency, formatTime, pnlColor } from "../format";
 
 describe("format utilities", () => {
   it("formats time using locale time string", () => {

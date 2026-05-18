@@ -1,6 +1,6 @@
-import { useChannelContext } from "../contexts/ChannelContext.tsx";
-import type { ChannelData } from "../store/channelsSlice.ts";
-import { useAppSelector } from "../store/hooks.ts";
+import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
+import type { ChannelData } from "@veta/frontend/store/channelsSlice.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 
 /**
  * Returns the current data from the panel's incoming channel.

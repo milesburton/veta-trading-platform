@@ -1,7 +1,7 @@
+import type { SessionState } from "@veta/frontend/domain/market/market-session";
+import { checkPreTradeRisk, shouldTriggerRiskCheck } from "@veta/frontend/domain/ticket/async-risk";
+import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
 import { describe, expect, it, vi } from "vitest";
-import type { SessionState } from "../../market/market-session";
-import { checkPreTradeRisk, shouldTriggerRiskCheck } from "../async-risk";
-import type { TicketContext } from "../ticket-types";
 
 const CONTINUOUS_SESSION: SessionState = {
   phase: "CONTINUOUS",

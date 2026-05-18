@@ -1,5 +1,5 @@
-import { usePopOut } from "../hooks/usePopOut.ts";
-import type { PanelId } from "../store/windowSlice.ts";
+import { usePopOut } from "@veta/frontend/hooks/usePopOut.ts";
+import type { PanelId } from "@veta/frontend/store/windowSlice.ts";
 
 export function PopOutButton({ panelId }: { panelId: PanelId }) {
   const { isPopOut, popOut } = usePopOut(panelId);

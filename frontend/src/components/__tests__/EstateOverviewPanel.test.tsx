@@ -1,12 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { EstateOverviewPanel } from "@veta/frontend/components/EstateOverviewPanel";
+import type { Alert } from "@veta/frontend/store/alertsSlice";
+import { alertsSlice } from "@veta/frontend/store/alertsSlice";
+import { observabilitySlice } from "@veta/frontend/store/observabilitySlice";
+import { ordersSlice } from "@veta/frontend/store/ordersSlice";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Alert } from "../../store/alertsSlice";
-import { alertsSlice } from "../../store/alertsSlice";
-import { observabilitySlice } from "../../store/observabilitySlice";
-import { ordersSlice } from "../../store/ordersSlice";
-import { EstateOverviewPanel } from "../EstateOverviewPanel";
 
 const byService: Record<string, { ok: boolean; version: string }> = {
   OMS: { ok: true, version: "1.0.0" },

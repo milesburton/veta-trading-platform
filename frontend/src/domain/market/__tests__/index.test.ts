@@ -3,7 +3,7 @@
  * Ensures the index re-exports are wired correctly and the key
  * functions are accessible via the public API.
  */
-import { describe, expect, it } from "vitest";
+
 import {
   buildSessionSchedule,
   isAuction,
@@ -14,7 +14,8 @@ import {
   resolveSession,
   totalTradingMinutes,
   US_EQUITY_CALENDAR,
-} from "../index";
+} from "@veta/frontend/domain/market/index";
+import { describe, expect, it } from "vitest";
 
 describe("domain/market barrel – function availability", () => {
   it("exports isAuction as a function", () => {

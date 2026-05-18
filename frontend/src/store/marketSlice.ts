@@ -7,7 +7,7 @@ import type {
   OhlcCandle,
   OrderBookSnapshot,
   PriceHistory,
-} from "../types.ts";
+} from "@veta/frontend/types.ts";
 
 const HISTORY_LENGTH = 60;
 const MAX_CANDLES = 120;

@@ -20,16 +20,14 @@
  */
 
 import type { Middleware, UnknownAction } from "@reduxjs/toolkit";
-import { z } from "zod";
-import type { AssetDef, OhlcCandle, OrderBookSnapshot, OrderSide } from "../../types.ts";
-import { advisoryNoteReceived } from "../advisorySlice.ts";
-import { alertAdded } from "../alertsSlice.ts";
-import type { AuthUser, TradingLimits } from "../authSlice.ts";
-import { sessionExpired, setUser, setUserWithLimits } from "../authSlice.ts";
-import { breakerExpired, breakerFired } from "../breakersSlice.ts";
-import { feedReceived } from "../feedSlice.ts";
-import { gridApi } from "../gridApi.ts";
-import { loadGridPrefs } from "../gridPrefsSlice.ts";
+import { advisoryNoteReceived } from "@veta/frontend/store/advisorySlice.ts";
+import { alertAdded } from "@veta/frontend/store/alertsSlice.ts";
+import type { AuthUser, TradingLimits } from "@veta/frontend/store/authSlice.ts";
+import { sessionExpired, setUser, setUserWithLimits } from "@veta/frontend/store/authSlice.ts";
+import { breakerExpired, breakerFired } from "@veta/frontend/store/breakersSlice.ts";
+import { feedReceived } from "@veta/frontend/store/feedSlice.ts";
+import { gridApi } from "@veta/frontend/store/gridApi.ts";
+import { loadGridPrefs } from "@veta/frontend/store/gridPrefsSlice.ts";
 import {
   type FeatureVector,
   featureReceived,
@@ -37,10 +35,13 @@ import {
   type Signal,
   signalReceived,
   type TradeRecommendation,
-} from "../intelligenceSlice.ts";
-import type { KillBlock } from "../killSwitchSlice.ts";
-import { allBlocksCleared, blockAdded } from "../killSwitchSlice.ts";
-import { type LlmSubsystemStatus, llmStateReceived } from "../llmSubsystemSlice.ts";
+} from "@veta/frontend/store/intelligenceSlice.ts";
+import type { KillBlock } from "@veta/frontend/store/killSwitchSlice.ts";
+import { allBlocksCleared, blockAdded } from "@veta/frontend/store/killSwitchSlice.ts";
+import {
+  type LlmSubsystemStatus,
+  llmStateReceived,
+} from "@veta/frontend/store/llmSubsystemSlice.ts";
 import {
   candlesSeeded,
   connectionFailed,
@@ -49,20 +50,22 @@ import {
   marketSlice,
   orderBookUpdated,
   setSessionPhase,
-} from "../marketSlice.ts";
-import { newsApi } from "../newsApi.ts";
-import type { NewsItem } from "../newsSlice.ts";
-import { newsBatchReceived, newsItemReceived } from "../newsSlice.ts";
-import { reportError } from "../observabilitySlice.ts";
+} from "@veta/frontend/store/marketSlice.ts";
+import { newsApi } from "@veta/frontend/store/newsApi.ts";
+import type { NewsItem } from "@veta/frontend/store/newsSlice.ts";
+import { newsBatchReceived, newsItemReceived } from "@veta/frontend/store/newsSlice.ts";
+import { reportError } from "@veta/frontend/store/observabilitySlice.ts";
 import {
   childAdded,
   fillReceived,
   orderCancelled,
   orderPatched,
   setGatewayWs,
-} from "../ordersSlice.ts";
-import { isSafeKey } from "../safeKey.ts";
-import { loadUiPrefs, setSelectedAsset, setUpgradeStatus } from "../uiSlice.ts";
+} from "@veta/frontend/store/ordersSlice.ts";
+import { isSafeKey } from "@veta/frontend/store/safeKey.ts";
+import { loadUiPrefs, setSelectedAsset, setUpgradeStatus } from "@veta/frontend/store/uiSlice.ts";
+import type { AssetDef, OhlcCandle, OrderBookSnapshot, OrderSide } from "@veta/frontend/types.ts";
+import { z } from "zod";
 
 const _origin = typeof window !== "undefined" ? window.location.origin : "";
 const _wsOrigin = _origin.replace(/^http/, "ws");

@@ -1,9 +1,9 @@
 import { useSignal } from "@preact/signals-react";
+import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { panelDialogClosed, panelDialogOpened } from "@veta/frontend/store/windowSlice.ts";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useChannelContext } from "../contexts/ChannelContext.tsx";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { panelDialogClosed, panelDialogOpened } from "../store/windowSlice.ts";
 import { useDashboard } from "./DashboardLayout.tsx";
 
 /**

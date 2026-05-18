@@ -1,6 +1,6 @@
+import { setUser } from "@veta/frontend/store/authSlice";
+import { gatewayMiddleware } from "@veta/frontend/store/middleware/gatewayMiddleware";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { setUser } from "../authSlice";
-import { gatewayMiddleware } from "../middleware/gatewayMiddleware";
 
 class MockWebSocket {
   static instances: MockWebSocket[] = [];

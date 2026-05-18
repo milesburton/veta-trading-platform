@@ -1,14 +1,14 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { v4 as uuidv4 } from "uuid";
 import type {
   AllGridPrefs,
   ConditionalFormatRule,
   ExprGroup,
   FilterCriteria,
   GridPrefs,
-} from "../types/gridPrefs.ts";
-import { EMPTY_EXPR_GROUP, EMPTY_GRID_PREFS } from "../types/gridPrefs.ts";
+} from "@veta/frontend/types/gridPrefs.ts";
+import { EMPTY_EXPR_GROUP, EMPTY_GRID_PREFS } from "@veta/frontend/types/gridPrefs.ts";
+import { v4 as uuidv4 } from "uuid";
 import type { RootState } from "./index.ts";
 
 export type GridId =

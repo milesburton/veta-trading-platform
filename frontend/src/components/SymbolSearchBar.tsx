@@ -1,10 +1,10 @@
 import { useSignal } from "@preact/signals-react";
+import { useChannelOut } from "@veta/frontend/hooks/useChannelOut.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { setActiveSide, setActiveStrategy } from "@veta/frontend/store/uiSlice.ts";
+import type { ParsedTrade } from "@veta/frontend/utils/symbolSearch.ts";
+import { matchAssets, parseTradePaste } from "@veta/frontend/utils/symbolSearch.ts";
 import { useEffect, useRef } from "react";
-import { useChannelOut } from "../hooks/useChannelOut.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { setActiveSide, setActiveStrategy } from "../store/uiSlice.ts";
-import type { ParsedTrade } from "../utils/symbolSearch.ts";
-import { matchAssets, parseTradePaste } from "../utils/symbolSearch.ts";
 
 export function SymbolSearchBar() {
   const assets = useAppSelector((s) => s.market.assets);

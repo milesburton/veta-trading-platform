@@ -1,4 +1,4 @@
-import type { Diagnostic, TicketContext } from "../ticket-types";
+import type { Diagnostic, TicketContext } from "@veta/frontend/domain/ticket/ticket-types";
 
 const SPREAD_WARNING_THRESHOLD_BPS = 50;
 const SPREAD_ERROR_THRESHOLD_BPS = 200;

@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useRef } from "react";
-import { startRecording, stopRecording } from "../lib/sessionRecorder.ts";
-import { useAppSelector } from "../store/hooks.ts";
+import { startRecording, stopRecording } from "@veta/frontend/lib/sessionRecorder.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import {
   useCreateSessionMutation,
   useEndSessionMutation,
   useGetReplayConfigQuery,
   useUploadChunkMutation,
-} from "../store/replayApi.ts";
+} from "@veta/frontend/store/replayApi.ts";
+import { useCallback, useEffect, useRef } from "react";
 
 export function useSessionRecording() {
   const user = useAppSelector((s) => s.auth.user);

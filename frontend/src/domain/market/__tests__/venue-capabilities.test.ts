@@ -1,5 +1,9 @@
+import {
+  getVenueCapabilities,
+  LIT_EQUITY_VENUES,
+  VENUE_REGISTRY,
+} from "@veta/frontend/domain/market/venue-capabilities";
 import { describe, expect, it } from "vitest";
-import { getVenueCapabilities, LIT_EQUITY_VENUES, VENUE_REGISTRY } from "../venue-capabilities";
 
 describe("VENUE_REGISTRY", () => {
   it("has entries for all 11 venue MICs", () => {

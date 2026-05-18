@@ -1,11 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createBroadcastChannelMiddleware,
   listenForStateRequests,
   requestStateFromMainWindow,
-} from "../channel";
-import { uiSlice } from "../uiSlice";
+} from "@veta/frontend/store/channel";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // ─── BroadcastChannel mock ───────────────────────────────────────────────────
 // We override the global with an instance that lets us inspect calls and

@@ -1,4 +1,4 @@
-import type { OrderSide } from "../../types.ts";
+import type { OrderSide } from "@veta/frontend/types.ts";
 export type SellSideRfqState =
   | "CLIENT_REQUEST"
   | "SALES_REVIEW"

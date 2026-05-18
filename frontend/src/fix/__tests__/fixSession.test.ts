@@ -1,12 +1,12 @@
+import { decode, encode, MsgType, Tag } from "@veta/frontend/fix/fixCodec";
+import type { SessionConfig } from "@veta/frontend/fix/fixSession";
+import { FIXSession } from "@veta/frontend/fix/fixSession";
+import type { OrderRecord } from "@veta/frontend/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OrderRecord } from "../../types";
-import { decode, encode, MsgType, Tag } from "../fixCodec";
-import type { SessionConfig } from "../fixSession";
-import { FIXSession } from "../fixSession";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-import type { ExecReportPayload } from "../fixSession";
+import type { ExecReportPayload } from "@veta/frontend/fix/fixSession";
 
 function makeSession(overrides?: Partial<SessionConfig>) {
   const sent: string[] = [];

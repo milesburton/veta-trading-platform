@@ -1,6 +1,6 @@
-import { STORAGE_KEY } from "../components/dashboard/layoutModels.ts";
-import type { QuickTradeIntent } from "../domain/quickTrade/parse.ts";
-import type { WindowSize } from "../store/uiSlice.ts";
+import { STORAGE_KEY } from "@veta/frontend/components/dashboard/layoutModels.ts";
+import type { QuickTradeIntent } from "@veta/frontend/domain/quickTrade/parse.ts";
+import type { WindowSize } from "@veta/frontend/store/uiSlice.ts";
 
 const DEFAULT_SIZE: WindowSize = { w: 480, h: 780 };
 

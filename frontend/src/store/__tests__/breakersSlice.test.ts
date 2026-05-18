@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
 import {
   breakerExpired,
   breakerFired,
   breakersReconciled,
   breakersSlice,
   cooldownUpdated,
-} from "../breakersSlice";
+} from "@veta/frontend/store/breakersSlice";
+import { describe, expect, it } from "vitest";
 
 const { reducer } = breakersSlice;
 

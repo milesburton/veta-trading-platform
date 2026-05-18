@@ -1,14 +1,14 @@
 import { useSignal } from "@preact/signals-react";
-import { useCallback, useEffect, useRef } from "react";
-import { alertAdded, purgeServiceAlerts } from "../store/alertsSlice.ts";
-import { useAppDispatch } from "../store/hooks.ts";
-import type { AppDispatch } from "../store/index.ts";
+import { alertAdded, purgeServiceAlerts } from "@veta/frontend/store/alertsSlice.ts";
+import { useAppDispatch } from "@veta/frontend/store/hooks.ts";
+import type { AppDispatch } from "@veta/frontend/store/index.ts";
 import {
   SERVICES,
   useGetServiceHealthQuery,
   useGetSystemMetricsQuery,
-} from "../store/servicesApi.ts";
-import type { ServiceHealth } from "../types.ts";
+} from "@veta/frontend/store/servicesApi.ts";
+import type { ServiceHealth } from "@veta/frontend/types.ts";
+import { useCallback, useEffect, useRef } from "react";
 
 const REQUIRED_SERVICES = new Set([
   "Market Sim",

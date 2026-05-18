@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import type { ServiceHealth } from "../../types";
-import { ServiceStatus } from "../ServiceStatus";
+import { ServiceStatus } from "@veta/frontend/components/ServiceStatus";
+import type { ServiceHealth } from "@veta/frontend/types";
 
 const services: ServiceHealth[] = [
   {

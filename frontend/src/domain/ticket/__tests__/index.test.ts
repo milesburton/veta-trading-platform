@@ -2,7 +2,7 @@
  * Smoke tests for the domain/ticket barrel export.
  * Ensures the index re-exports are wired correctly.
  */
-import { describe, expect, it } from "vitest";
+
 import {
   availableInstrumentTypes,
   checkDarkPoolEligible,
@@ -15,7 +15,8 @@ import {
   resolveTicket,
   STRATEGY_OPTIONS,
   shouldTriggerRiskCheck,
-} from "../index";
+} from "@veta/frontend/domain/ticket/index";
+import { describe, expect, it } from "vitest";
 
 describe("domain/ticket barrel – function availability", () => {
   it("exports checkPreTradeRisk as a function", () => {

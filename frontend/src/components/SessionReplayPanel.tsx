@@ -1,6 +1,5 @@
 import { useSignal } from "@preact/signals-react";
-import { useCallback, useEffect, useRef } from "react";
-import { useAppSelector } from "../store/hooks.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import {
   type ReplaySession,
   useDeleteSessionMutation,
@@ -8,8 +7,9 @@ import {
   useGetSessionEventsQuery,
   useListSessionsQuery,
   useUpdateReplayConfigMutation,
-} from "../store/replayApi.ts";
-import { formatTime } from "../utils/format.ts";
+} from "@veta/frontend/store/replayApi.ts";
+import { formatTime } from "@veta/frontend/utils/format.ts";
+import { useCallback, useEffect, useRef } from "react";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 function formatDuration(ms: number | null): string {

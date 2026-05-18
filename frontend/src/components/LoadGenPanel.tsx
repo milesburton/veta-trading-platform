@@ -3,8 +3,8 @@ import {
   useGetLoadGenStatusQuery,
   useStartLoadGenMutation,
   useStopLoadGenMutation,
-} from "../store/gatewayApi.ts";
-import { useAppSelector } from "../store/hooks.ts";
+} from "@veta/frontend/store/gatewayApi.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 
 const RATE_PRESETS = [10, 25, 50, 100, 250, 500] as const;
 const AUTO_STOP_PRESETS = [

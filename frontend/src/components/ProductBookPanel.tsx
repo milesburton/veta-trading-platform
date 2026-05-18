@@ -1,6 +1,6 @@
 import { useSignal } from "@preact/signals-react";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { useEffect } from "react";
-import { useAppSelector } from "../store/hooks.ts";
 
 type ProductState = "draft" | "structured" | "issued" | "sold" | "unwound";
 

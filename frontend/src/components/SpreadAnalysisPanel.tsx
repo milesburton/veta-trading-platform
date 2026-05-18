@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals-react";
-import { useGetSpreadAnalysisMutation } from "../store/analyticsApi.ts";
+import { useGetSpreadAnalysisMutation } from "@veta/frontend/store/analyticsApi.ts";
 
 const DEFAULT_COUPON = "5.0";
 const DEFAULT_PERIODS = "20";

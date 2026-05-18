@@ -1,6 +1,6 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
-import type { AuthRole } from "../auth/rbac.ts";
+import type { AuthRole } from "@veta/frontend/auth/rbac.ts";
 
 export type TradingStyle =
   | "high_touch"

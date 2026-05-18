@@ -1,20 +1,20 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { DashboardContext, DEFAULT_LAYOUT } from "@veta/frontend/components/DashboardLayout";
+import { DataDepthIndicator } from "@veta/frontend/components/StatusBar";
+import { alertsSlice } from "@veta/frontend/store/alertsSlice";
+import { authSlice } from "@veta/frontend/store/authSlice";
+import { feedSlice } from "@veta/frontend/store/feedSlice";
+import { killSwitchSlice } from "@veta/frontend/store/killSwitchSlice";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
+import { ordersSlice } from "@veta/frontend/store/ordersSlice";
+import { servicesApi } from "@veta/frontend/store/servicesApi";
+import { themeSlice } from "@veta/frontend/store/themeSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
+import { windowSlice } from "@veta/frontend/store/windowSlice";
 import { Model } from "flexlayout-react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
-import { alertsSlice } from "../../store/alertsSlice";
-import { authSlice } from "../../store/authSlice";
-import { feedSlice } from "../../store/feedSlice";
-import { killSwitchSlice } from "../../store/killSwitchSlice";
-import { marketSlice } from "../../store/marketSlice";
-import { ordersSlice } from "../../store/ordersSlice";
-import { servicesApi } from "../../store/servicesApi";
-import { themeSlice } from "../../store/themeSlice";
-import { uiSlice } from "../../store/uiSlice";
-import { windowSlice } from "../../store/windowSlice";
-import { DashboardContext, DEFAULT_LAYOUT } from "../DashboardLayout";
-import { DataDepthIndicator } from "../StatusBar";
 
 const dataDepthState = {
   data: {

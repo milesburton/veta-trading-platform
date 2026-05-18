@@ -1,15 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { render, screen } from "@testing-library/react";
+import { OrderProgressPanel } from "@veta/frontend/components/OrderProgressPanel";
+import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
+import { channelsSlice } from "@veta/frontend/store/channelsSlice";
+import { marketSlice } from "@veta/frontend/store/marketSlice";
+import { ordersSlice } from "@veta/frontend/store/ordersSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
+import { windowSlice } from "@veta/frontend/store/windowSlice";
+import type { OrderRecord } from "@veta/frontend/types";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
-import { ChannelContext } from "../../contexts/ChannelContext";
-import { channelsSlice } from "../../store/channelsSlice";
-import { marketSlice } from "../../store/marketSlice";
-import { ordersSlice } from "../../store/ordersSlice";
-import { uiSlice } from "../../store/uiSlice";
-import { windowSlice } from "../../store/windowSlice";
-import type { OrderRecord } from "../../types";
-import { OrderProgressPanel } from "../OrderProgressPanel";
 
 const now = Date.now();
 

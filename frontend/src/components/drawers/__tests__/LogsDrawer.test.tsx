@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { DrawersProvider, useDrawers } from "@veta/frontend/components/drawers/DrawersContext";
+import { LOGS_DRAWER_ID, LogsDrawer } from "@veta/frontend/components/drawers/LogsDrawer";
 import { useEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DrawersProvider, useDrawers } from "../DrawersContext";
-import { LOGS_DRAWER_ID, LogsDrawer } from "../LogsDrawer";
 
 function Opener() {
   const { open } = useDrawers();

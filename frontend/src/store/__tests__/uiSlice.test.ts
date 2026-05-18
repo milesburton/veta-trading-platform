@@ -1,4 +1,3 @@
-import { describe, expect, it, vi } from "vitest";
 import {
   hideShortcuts,
   loadUiPrefs,
@@ -8,7 +7,8 @@ import {
   setSelectedAsset,
   toggleShortcuts,
   uiSlice,
-} from "../uiSlice";
+} from "@veta/frontend/store/uiSlice";
+import { describe, expect, it, vi } from "vitest";
 
 const { reducer } = uiSlice;
 const initial = reducer(undefined, { type: "@@init" });

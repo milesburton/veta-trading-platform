@@ -1,5 +1,5 @@
+import { loadTheme, saveTheme, setTheme, themeSlice } from "@veta/frontend/store/themeSlice";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { loadTheme, saveTheme, setTheme, themeSlice } from "../themeSlice";
 
 describe("themeSlice", () => {
   const fetchMock = vi.fn();

@@ -1,7 +1,7 @@
+import type { GridId } from "@veta/frontend/store/gridPrefsSlice.ts";
+import { saveGridPrefs, setSort } from "@veta/frontend/store/gridPrefsSlice.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { useRef } from "react";
-import type { GridId } from "../../store/gridPrefsSlice.ts";
-import { saveGridPrefs, setSort } from "../../store/gridPrefsSlice.ts";
-import { useAppDispatch, useAppSelector } from "../../store/hooks.ts";
 
 interface ResizableHeaderProps {
   colKey: string;

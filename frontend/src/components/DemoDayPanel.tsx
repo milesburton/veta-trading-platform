@@ -1,8 +1,8 @@
 import { useSignal } from "@preact/signals-react";
+import type { DemoDayResult } from "@veta/frontend/store/gatewayApi.ts";
+import { useRunDemoDayMutation } from "@veta/frontend/store/gatewayApi.ts";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { useEffect, useRef } from "react";
-import type { DemoDayResult } from "../store/gatewayApi.ts";
-import { useRunDemoDayMutation } from "../store/gatewayApi.ts";
-import { useAppSelector } from "../store/hooks.ts";
 
 interface LocalDemoResult extends DemoDayResult {
   jobId: string;

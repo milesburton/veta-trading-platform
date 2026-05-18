@@ -1,6 +1,6 @@
 import { useSignal } from "@preact/signals-react";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { useEffect, useRef } from "react";
-import { useAppSelector } from "../store/hooks.ts";
 import { LAYOUT_TEMPLATES, useDashboard } from "./DashboardLayout.tsx";
 
 // Templates only available to admins

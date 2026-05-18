@@ -1,5 +1,5 @@
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { reconnectGateway } from "../store/middleware/gatewayMiddleware.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { reconnectGateway } from "@veta/frontend/store/middleware/gatewayMiddleware.ts";
 
 const SHOW_AFTER_FAILURES = 3;
 

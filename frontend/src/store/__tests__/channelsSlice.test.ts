@@ -1,5 +1,5 @@
+import { channelsSlice } from "@veta/frontend/store/channelsSlice";
 import { describe, expect, it } from "vitest";
-import { channelsSlice } from "../channelsSlice";
 
 describe("channelsSlice", () => {
   it("channelUpdated falls back to emptyChannel when channel is missing", () => {

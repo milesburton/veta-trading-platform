@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { ResizableHeader } from "@veta/frontend/components/grid/ResizableHeader";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ResizableHeader } from "../ResizableHeader";
 
 const dispatch = vi.fn();
 const state = {

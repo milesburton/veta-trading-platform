@@ -1,6 +1,6 @@
-import { useAppDispatch } from "../store/hooks.ts";
-import type { PanelId } from "../store/windowSlice.ts";
-import { panelClosed } from "../store/windowSlice.ts";
+import { useAppDispatch } from "@veta/frontend/store/hooks.ts";
+import type { PanelId } from "@veta/frontend/store/windowSlice.ts";
+import { panelClosed } from "@veta/frontend/store/windowSlice.ts";
 
 export function PopOutPlaceholder({ panelId }: { panelId: PanelId }) {
   const dispatch = useAppDispatch();

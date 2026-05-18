@@ -1,4 +1,4 @@
-import { isStrategyAllowedInSession } from "../market/market-session";
+import { isStrategyAllowedInSession } from "@veta/frontend/domain/market/market-session";
 import { quantityLabel, quantitySubLabel, STRATEGY_OPTIONS } from "./field-definitions";
 import { FIELD_REGISTRY, FK } from "./field-registry";
 import { checkDarkPoolEligible } from "./rules/dark-pool";

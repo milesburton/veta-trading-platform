@@ -1,5 +1,5 @@
+import type { Workspace } from "@veta/frontend/components/WorkspaceBar.tsx";
 import type { IJsonModel } from "flexlayout-react";
-import type { Workspace } from "../components/WorkspaceBar.tsx";
 
 export interface WorkspacePrefs {
   workspaces: Workspace[];

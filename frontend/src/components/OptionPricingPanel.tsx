@@ -1,4 +1,10 @@
 import { useSignal } from "@preact/signals-react";
+import { useGetQuoteMutation } from "@veta/frontend/store/analyticsApi.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { selectSymbols } from "@veta/frontend/store/selectors.ts";
+import { setOptionPrefill } from "@veta/frontend/store/uiSlice.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
+import type { OptionQuoteResponse, OptionType } from "@veta/frontend/types/analytics.ts";
 import { useEffect, useMemo } from "react";
 import {
   CartesianGrid,
@@ -10,12 +16,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useGetQuoteMutation } from "../store/analyticsApi.ts";
-import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
-import { selectSymbols } from "../store/selectors.ts";
-import { setOptionPrefill } from "../store/uiSlice.ts";
-import { COLOR } from "../tokens.ts";
-import type { OptionQuoteResponse, OptionType } from "../types/analytics.ts";
 
 function normCdf(x: number): number {
   const sign = x < 0 ? -1 : 1;

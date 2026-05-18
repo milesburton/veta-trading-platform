@@ -1,5 +1,4 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { describe, expect, it } from "vitest";
 import {
   alertAdded,
   alertsSlice,
@@ -11,8 +10,9 @@ import {
   selectCriticalAlerts,
   selectHighestSeverity,
   selectMuteRules,
-} from "../alertsSlice";
-import type { RootState } from "../index";
+} from "@veta/frontend/store/alertsSlice";
+import type { RootState } from "@veta/frontend/store/index";
+import { describe, expect, it } from "vitest";
 
 const { reducer } = alertsSlice;
 

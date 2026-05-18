@@ -1,5 +1,3 @@
-import { describe, expect, it } from "vitest";
-import type { AllGridPrefs } from "../../types/gridPrefs.ts";
 import {
   gridPrefsSlice,
   loadGridPrefs,
@@ -11,7 +9,9 @@ import {
   setFilterExpr,
   setFilters,
   setSort,
-} from "../gridPrefsSlice.ts";
+} from "@veta/frontend/store/gridPrefsSlice.ts";
+import type { AllGridPrefs } from "@veta/frontend/types/gridPrefs.ts";
+import { describe, expect, it } from "vitest";
 
 const { reducer } = gridPrefsSlice;
 

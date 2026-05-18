@@ -1,5 +1,5 @@
+import { gatewayApi } from "@veta/frontend/store/gatewayApi";
 import { describe, expect, it } from "vitest";
-import { gatewayApi } from "../gatewayApi";
 
 describe("gatewayApi – endpoint definitions", () => {
   it("exposes runLoadTest mutation", () => {

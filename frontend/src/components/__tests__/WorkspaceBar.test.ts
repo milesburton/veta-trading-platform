@@ -1,17 +1,17 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
-import type { IJsonModel } from "flexlayout-react";
-import { type ComponentType, createElement, type ReactNode } from "react";
-import { Provider } from "react-redux";
-import { afterEach, describe, expect, test, vi } from "vitest";
-import type { Workspace } from "../WorkspaceBar";
+import type { Workspace } from "@veta/frontend/components/WorkspaceBar";
 import {
   defaultWorkspaceForStyle,
   reconcilePresetWorkspaces,
   seedWorkspaces,
   useWorkspaces,
   WorkspaceSidebar,
-} from "../WorkspaceBar";
+} from "@veta/frontend/components/WorkspaceBar";
+import type { IJsonModel } from "flexlayout-react";
+import { type ComponentType, createElement, type ReactNode } from "react";
+import { Provider } from "react-redux";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 const publishSharedWorkspaceMock = vi.fn();
 

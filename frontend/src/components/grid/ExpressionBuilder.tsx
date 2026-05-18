@@ -1,9 +1,7 @@
 import { useSignal } from "@preact/signals-react";
-import { useEffect, useRef } from "react";
-import { v4 as uuidv4 } from "uuid";
-import type { GridId } from "../../store/gridPrefsSlice.ts";
-import { saveGridPrefs, setFilterExpr } from "../../store/gridPrefsSlice.ts";
-import { useAppDispatch } from "../../store/hooks.ts";
+import type { GridId } from "@veta/frontend/store/gridPrefsSlice.ts";
+import { saveGridPrefs, setFilterExpr } from "@veta/frontend/store/gridPrefsSlice.ts";
+import { useAppDispatch } from "@veta/frontend/store/hooks.ts";
 import type {
   ExprGroup,
   ExprJoin,
@@ -11,8 +9,10 @@ import type {
   ExprOp,
   ExprRule,
   FieldDef,
-} from "../../types/gridPrefs.ts";
-import { EMPTY_EXPR_GROUP } from "../../types/gridPrefs.ts";
+} from "@veta/frontend/types/gridPrefs.ts";
+import { EMPTY_EXPR_GROUP } from "@veta/frontend/types/gridPrefs.ts";
+import { useEffect, useRef } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 const OPS_BY_TYPE: Record<FieldDef["type"], ExprOp[]> = {
   string: ["=", "!=", "contains", "starts_with", "ends_with", "is_null", "is_not_null"],

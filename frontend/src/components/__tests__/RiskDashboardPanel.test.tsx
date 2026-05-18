@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { RiskDashboardPanel } from "@veta/frontend/components/RiskDashboardPanel";
+import { breakersSlice } from "@veta/frontend/store/breakersSlice";
+import type { RiskConfig, RiskPosition } from "@veta/frontend/store/riskApi";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { breakersSlice } from "../../store/breakersSlice";
-import type { RiskConfig, RiskPosition } from "../../store/riskApi";
-import { RiskDashboardPanel } from "../RiskDashboardPanel";
 
 const updateRiskConfig = vi.fn();
 

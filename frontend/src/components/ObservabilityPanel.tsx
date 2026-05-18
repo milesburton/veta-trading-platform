@@ -1,4 +1,8 @@
 import { useSignal } from "@preact/signals-react";
+import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { COLOR } from "@veta/frontend/tokens.ts";
+import type { ObsEvent, OrderRecord } from "@veta/frontend/types.ts";
+import { formatBps, formatTime } from "@veta/frontend/utils/format.ts";
 import { useMemo } from "react";
 import {
   CartesianGrid,
@@ -10,10 +14,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useAppSelector } from "../store/hooks.ts";
-import { COLOR } from "../tokens.ts";
-import type { ObsEvent, OrderRecord } from "../types.ts";
-import { formatBps, formatTime } from "../utils/format.ts";
 import { PopOutButton } from "./PopOutButton.tsx";
 
 type ObsTab = "summary" | "trades" | "events";

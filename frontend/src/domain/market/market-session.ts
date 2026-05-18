@@ -1,4 +1,4 @@
-import type { Strategy } from "../../types";
+import type { Strategy } from "@veta/frontend/types";
 
 export type MarketPhase =
   | "PRE_OPEN"

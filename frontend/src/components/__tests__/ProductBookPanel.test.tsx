@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { ProductBookPanel } from "@veta/frontend/components/ProductBookPanel";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ProductBookPanel } from "../ProductBookPanel";
 
 let role = "sales";
 

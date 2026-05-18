@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { AssetSelector } from "@veta/frontend/components/AssetSelector";
+import type { AssetDef } from "@veta/frontend/types";
 import { vi } from "vitest";
-import type { AssetDef } from "../../types";
-import { AssetSelector } from "../AssetSelector";
 
 const assets: AssetDef[] = [
   { symbol: "AAPL", initialPrice: 150, volatility: 0.02, sector: "Tech" },

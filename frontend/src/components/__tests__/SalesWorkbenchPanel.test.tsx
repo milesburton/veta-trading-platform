@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { SellSideRfq } from "@veta/frontend/components/rfq/shared";
+import { SalesWorkbenchPanel } from "@veta/frontend/components/SalesWorkbenchPanel";
+import { authSlice } from "@veta/frontend/store/authSlice";
 import { Provider } from "react-redux";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { authSlice } from "../../store/authSlice";
-import type { SellSideRfq } from "../rfq/shared";
-import { SalesWorkbenchPanel } from "../SalesWorkbenchPanel";
 
 function makeStore() {
   return configureStore({

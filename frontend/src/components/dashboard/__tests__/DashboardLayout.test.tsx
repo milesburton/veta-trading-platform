@@ -1,12 +1,20 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  DashboardContext,
+  DashboardProvider,
+  useDashboard,
+} from "@veta/frontend/components/dashboard/DashboardContext";
+import { makeDefaultModel } from "@veta/frontend/components/dashboard/layoutModels";
+import { DEFAULT_LAYOUT } from "@veta/frontend/components/dashboard/layoutUtils";
+import type { PanelId } from "@veta/frontend/components/dashboard/panelRegistry";
+import {
+  PANEL_DESCRIPTIONS,
+  PANEL_IDS,
+  PANEL_TITLES,
+} from "@veta/frontend/components/dashboard/panelRegistry";
 import { type IJsonModel, Model } from "flexlayout-react";
 import { useContext } from "react";
 import { describe, expect, it } from "vitest";
-import { DashboardContext, DashboardProvider, useDashboard } from "../DashboardContext";
-import { makeDefaultModel } from "../layoutModels";
-import { DEFAULT_LAYOUT } from "../layoutUtils";
-import type { PanelId } from "../panelRegistry";
-import { PANEL_DESCRIPTIONS, PANEL_IDS, PANEL_TITLES } from "../panelRegistry";
 
 /** Build a minimal flexlayout JSON model with the given panel types */
 function makeMinimalModel(panelTypes: PanelId[]): IJsonModel {

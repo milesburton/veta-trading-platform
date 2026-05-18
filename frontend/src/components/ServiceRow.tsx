@@ -1,4 +1,4 @@
-import type { ServiceHealth } from "../types.ts";
+import type { ServiceHealth } from "@veta/frontend/types.ts";
 import { StatusDot } from "./StatusDot";
 
 export function ServiceRow({ svc }: { svc: ServiceHealth }) {

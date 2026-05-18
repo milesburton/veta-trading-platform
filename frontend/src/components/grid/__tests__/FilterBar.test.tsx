@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { FilterBar } from "@veta/frontend/components/grid/FilterBar";
+import type { ExprGroup, FieldDef } from "@veta/frontend/types/gridPrefs";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ExprGroup, FieldDef } from "../../../types/gridPrefs";
-import { FilterBar } from "../FilterBar";
 
 const dispatch = vi.fn();
 

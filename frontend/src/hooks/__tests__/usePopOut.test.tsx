@@ -1,14 +1,18 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { renderHook } from "@testing-library/react";
+import type { DashboardContextValue } from "@veta/frontend/components/DashboardLayout";
+import {
+  DashboardContext,
+  DEFAULT_LAYOUT,
+  STORAGE_KEY,
+} from "@veta/frontend/components/DashboardLayout";
+import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
+import { usePopOut } from "@veta/frontend/hooks/usePopOut";
+import { windowSlice } from "@veta/frontend/store/windowSlice";
 import { Model } from "flexlayout-react";
 import type { ReactNode } from "react";
 import { Provider } from "react-redux";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DashboardContextValue } from "../../components/DashboardLayout";
-import { DashboardContext, DEFAULT_LAYOUT, STORAGE_KEY } from "../../components/DashboardLayout";
-import { ChannelContext } from "../../contexts/ChannelContext";
-import { windowSlice } from "../../store/windowSlice";
-import { usePopOut } from "../usePopOut";
 
 function makeStore() {
   return configureStore({
