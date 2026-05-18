@@ -109,7 +109,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
 
-    const ro = new ResizeObserver((entries) => {
+    const ro = new ResizeObserver((entries, _observer) => {
       const width = entries[0]?.contentRect.width ?? 0;
       if (width <= 0) return;
       if (!chartSizedRef.current) {
