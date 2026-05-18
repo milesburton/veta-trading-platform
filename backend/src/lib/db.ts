@@ -21,7 +21,7 @@ const SPECS: PoolSpec[] = [
   { key: "FIX_ARCHIVE", size: 3, lazy: true },
   { key: "USERS", size: 12, lazy: true },
   { key: "INTELLIGENCE", size: 3, lazy: true },
-  { key: "LLM_ADVISORY", size: 3, lazy: true },
+  { key: "LLM_ADVISORY", size: 12, lazy: true },
   { key: "REPLAY", size: 3, lazy: true },
   { key: "RISK", size: 3, lazy: true },
   { key: "SCENARIOS", size: 4, lazy: true },
@@ -48,7 +48,7 @@ export const journalPool = lazyExport("JOURNAL", 12, true);
 export const fixArchivePool = lazyExport("FIX_ARCHIVE", 3, true);
 export const usersPool = lazyExport("USERS", 12, true);
 export const intelligencePool = lazyExport("INTELLIGENCE", 3, true);
-export const llmAdvisoryPool = lazyExport("LLM_ADVISORY", 3, true);
+export const llmAdvisoryPool = lazyExport("LLM_ADVISORY", 12, true);
 export const replayPool = lazyExport("REPLAY", 3, true);
 export const riskPool = lazyExport("RISK", 3, true);
 export const scenariosPool = lazyExport("SCENARIOS", 4, true);

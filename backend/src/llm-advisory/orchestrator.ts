@@ -220,22 +220,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return corsOptions();
 
   if (path === "/health" && req.method === "GET") {
-    const effectivePolicy = await getEffectivePolicy();
-    const pending = await store.getPendingJobCount();
     return json({
       service: "llm-advisory-orchestrator",
       version: VERSION,
       status: "ok",
-      subsystemState: deriveSubsystemState(
-        effectivePolicy,
-        pending,
-        lastErrorMs,
-        lastActivityMs,
-      ),
-      policyEnabled: effectivePolicy.enabled,
-      workerEnabled: effectivePolicy.workerEnabled,
-      triggerMode: effectivePolicy.triggerMode,
-      pendingJobs: pending,
       trackedSymbols: latestSignals.size,
     });
   }

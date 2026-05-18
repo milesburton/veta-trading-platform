@@ -410,7 +410,6 @@ services:
     image: ghcr.io/milesburton/veta-trading-platform/llm-worker:latest
     build: !reset null
     profiles: !reset []
-    restart: "no"
     depends_on: !reset
       redpanda:
         condition: service_healthy
