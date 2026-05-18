@@ -3,6 +3,8 @@ x-otel-common: &otel-common
   OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_ENDPOINT:-http://host.docker.internal:4318}
   OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
   OTEL_RESOURCE_ATTRIBUTES: deployment.environment=${VITE_DEPLOYMENT:-local}
+  OTEL_METRICS_EXPORTER: otlp
+  OTEL_METRIC_EXPORT_INTERVAL: "15000"
 
 x-otel-extra-hosts: &otel-extra-hosts
   - "host.docker.internal:host-gateway"

@@ -124,6 +124,7 @@ interface OrdersState {
 }
 
 const MAX_ORDERS = 500;
+const MAX_CHILDREN_PER_PARENT = 200;
 
 const initialState: OrdersState = { orders: [], lastSubmittedOrderId: null };
 
@@ -147,8 +148,14 @@ export const ordersSlice = createSlice({
       const parent = state.orders.find((o) => o.id === parentId);
       if (parent) {
         const exists = parent.children.find((c) => c.id === child.id);
-        if (!exists) parent.children.push(child);
-        else Object.assign(exists, child);
+        if (exists) {
+          Object.assign(exists, child);
+        } else {
+          parent.children.push(child);
+          if (parent.children.length > MAX_CHILDREN_PER_PARENT) {
+            parent.children.splice(0, parent.children.length - MAX_CHILDREN_PER_PARENT);
+          }
+        }
       }
     },
     limitOrdersChecked(state, action: PayloadAction<MarketPrices>) {

@@ -359,7 +359,7 @@
     {
       "id": 12,
       "type": "timeseries",
-      "title": "Process Resident Memory (MB) per service",
+      "title": "Process Memory (MB) per service",
       "gridPos": { "x": 12, "y": 35, "w": 12, "h": 8 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "fieldConfig": {
@@ -375,7 +375,7 @@
       },
       "targets": [
         {
-          "expr": "process_resident_memory_bytes / 1024 / 1024",
+          "expr": "process_memory_usage_bytes / 1024 / 1024",
           "legendFormat": "{{job}}",
           "datasource": { "uid": "prometheus", "type": "prometheus" }
         }
