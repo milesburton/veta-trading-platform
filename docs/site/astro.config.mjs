@@ -119,6 +119,7 @@ export default defineConfig({
                 { label: "LGTM stack", slug: "platform/observability/lgtm" },
                 { label: "Log collection and search", slug: "platform/observability/logs" },
                 { label: "Distributed tracing", slug: "platform/observability/tracing" },
+                { label: "Alert routing", slug: "platform/observability/alerts" },
                 { label: "Session replay", slug: "platform/observability/replay" },
               ],
             },

@@ -865,4 +865,19 @@ export const TERMS: GlossaryTerm[] = [
     short: "Automated probe that performs a complete user journey on a schedule (sign in, open WS, submit a test order, cancel it). Source of truth for 'is the platform up'. Runs outside the cluster to see what real users see.",
     seeAlso: ["mttd", "slo"],
   },
+  {
+    id: "discord-webhook",
+    term: "Discord webhook",
+    category: "telemetry",
+    short: "URL credential that lets a service POST messages into a Discord channel. VETA uses one webhook to route CRITICAL and WARNING alerts from both the gateway (user-level events) and Grafana (platform alerts) into a single on-call channel. Injected via DISCORD_WEBHOOK_URL; never committed.",
+    seeAlso: ["alert-routing"],
+    source: "backend/src/gateway/discord-notifier.ts",
+  },
+  {
+    id: "alert-routing",
+    term: "Alert routing",
+    category: "telemetry",
+    short: "The end-to-end path an alert travels from origin (Prometheus rule or Redux action) through the gateway or Grafana AlertManager to the Discord channel. See platform/observability/alerts for the full flow and operator runbook.",
+    seeAlso: ["discord-webhook"],
+  },
 ];
