@@ -2332,6 +2332,161 @@ export function makeObservabilityModel(): IJsonModel {
   };
 }
 
+export function makeAdminObservabilityModel(): IJsonModel {
+  return {
+    global: makeDefaultModel().global,
+    layout: {
+      type: "row",
+      children: [
+        {
+          type: "row",
+          weight: 30,
+          children: [
+            {
+              type: "tabset",
+              weight: 55,
+              children: [
+                {
+                  type: "tab",
+                  id: "estate-overview",
+                  name: PANEL_TITLES["estate-overview"],
+                  component: "estate-overview",
+                  config: { panelType: "estate-overview" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "service-health",
+                  name: PANEL_TITLES["service-health"],
+                  component: "service-health",
+                  config: { panelType: "service-health" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 45,
+              children: [
+                {
+                  type: "tab",
+                  id: "throughput-gauges",
+                  name: PANEL_TITLES["throughput-gauges"],
+                  component: "throughput-gauges",
+                  config: { panelType: "throughput-gauges" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "alerts",
+                  name: PANEL_TITLES.alerts,
+                  component: "alerts",
+                  config: { panelType: "alerts" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "risk-dashboard",
+                  name: PANEL_TITLES["risk-dashboard"],
+                  component: "risk-dashboard",
+                  config: { panelType: "risk-dashboard" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "row",
+          weight: 35,
+          children: [
+            {
+              type: "tabset",
+              weight: 60,
+              children: [
+                {
+                  type: "tab",
+                  id: "observability",
+                  name: PANEL_TITLES.observability,
+                  component: "observability",
+                  config: { panelType: "observability" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 40,
+              children: [
+                {
+                  type: "tab",
+                  id: "session-replay",
+                  name: PANEL_TITLES["session-replay"],
+                  component: "session-replay",
+                  config: { panelType: "session-replay" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "algo-leaderboard",
+                  name: PANEL_TITLES["algo-leaderboard"],
+                  component: "algo-leaderboard",
+                  config: { panelType: "algo-leaderboard" } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "order-progress",
+                  name: PANEL_TITLES["order-progress"],
+                  component: "order-progress",
+                  config: { panelType: "order-progress" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "row",
+          weight: 35,
+          children: [
+            {
+              type: "tabset",
+              weight: 55,
+              children: [
+                {
+                  type: "tab",
+                  id: "decision-log",
+                  name: PANEL_TITLES["decision-log"],
+                  component: "decision-log",
+                  config: {
+                    panelType: "decision-log",
+                    incoming: 1,
+                  } satisfies TabChannelConfig,
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 45,
+              children: [
+                {
+                  type: "tab",
+                  id: "order-blotter",
+                  name: PANEL_TITLES["order-blotter"],
+                  component: "order-blotter",
+                  config: {
+                    panelType: "order-blotter",
+                    outgoing: 1,
+                  } satisfies TabChannelConfig,
+                },
+                {
+                  type: "tab",
+                  id: "executions",
+                  name: PANEL_TITLES.executions,
+                  component: "executions",
+                  config: { panelType: "executions" } satisfies TabChannelConfig,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
 export function makeAlgoPipelineModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,
@@ -2630,6 +2785,14 @@ export const LAYOUT_TEMPLATES: {
     description:
       "System health command centre — service status, throughput gauges, observability panel, algo leaderboard, and order audit trail",
     model: makeObservabilityModel(),
+  },
+  {
+    id: "admin-observability",
+    locked: true,
+    label: "Observability (admin)",
+    description:
+      "Admin superset: estate, service health, throughput, alerts, risk dashboard, observability panel, session replay, algo leaderboard, order progress, decision log, blotter, executions.",
+    model: makeAdminObservabilityModel(),
   },
   {
     id: "algo-pipeline",
