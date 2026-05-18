@@ -4,6 +4,7 @@ import {
   type Alert as AlertType,
   alertAcknowledged,
   alertDismissed,
+  allAlertsDismissed,
   selectToastQueue,
 } from "../store/alertsSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.ts";
@@ -86,6 +87,11 @@ export function AlertToast() {
   const onNext = useCallback(() => {
     if (hasNext) index.value = safeIndex - 1;
   }, [hasNext, index, safeIndex]);
+
+  const onDismissAll = useCallback(() => {
+    dispatch(allAlertsDismissed());
+    index.value = 0;
+  }, [dispatch, index]);
 
   const onViewAll = useCallback(() => {
     dispatch(alertAcknowledged(current?.id ?? ""));
@@ -192,6 +198,16 @@ export function AlertToast() {
           >
             Got it
           </button>
+          {total > 1 && (
+            <button
+              type="button"
+              onClick={onDismissAll}
+              className="px-2 py-0.5 rounded text-muted hover:text-default hover:bg-panel transition-colors"
+              data-testid="alert-toast-dismiss-all"
+            >
+              Dismiss all
+            </button>
+          )}
           <button
             type="button"
             onClick={onViewAll}

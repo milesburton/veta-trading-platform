@@ -606,7 +606,7 @@ export function AppHeader() {
             rel="noopener noreferrer"
             title="Open Grafana dashboards"
             data-testid="grafana-link"
-            className="text-label hover:text-secondary transition-colors"
+            className="flex items-center gap-1 text-[11px] text-label hover:text-secondary transition-colors"
           >
             <svg
               aria-hidden="true"
@@ -622,7 +622,7 @@ export function AppHeader() {
               <path d="M3 3v18h18" />
               <path d="M7 14l4-4 4 4 5-5" />
             </svg>
-            <span className="sr-only">Open Grafana</span>
+            <span>Grafana</span>
           </a>
           <a
             href="https://milesburton.github.io/veta-trading-platform/"

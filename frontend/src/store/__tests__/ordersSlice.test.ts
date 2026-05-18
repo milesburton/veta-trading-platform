@@ -111,6 +111,20 @@ describe("ordersSlice – childAdded", () => {
     state = reducer(state, childAdded({ parentId: "order-1", child: { ...child, id: "c2" } }));
     expect(state.orders[0].children).toHaveLength(2);
   });
+
+  it("caps children at 200 per parent (memory-leak guard)", () => {
+    const order = makeOrder();
+    let state = reducer(initial, orderAdded(order));
+    for (let i = 0; i < 250; i++) {
+      state = reducer(
+        state,
+        childAdded({ parentId: "order-1", child: { ...child, id: `c-${i}` } })
+      );
+    }
+    expect(state.orders[0].children).toHaveLength(200);
+    expect(state.orders[0].children[0].id).toBe("c-50");
+    expect(state.orders[0].children[199].id).toBe("c-249");
+  });
 });
 
 describe("ordersSlice – limitOrdersChecked", () => {

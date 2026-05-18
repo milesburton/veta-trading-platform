@@ -8,7 +8,7 @@ services:
       - "12345:12345" # Alloy UI
     volumes:
       - ./alloy-config.alloy:/etc/alloy/config.alloy:ro
-      - /tmp:/var/log/supervisor:ro # supervisord stdout dir; available for a future loki.source.file{} block in alloy-config.alloy. Logs currently arrive via OTLP from each Deno service when OTEL_DENO=true is set.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     command: run /etc/alloy/config.alloy --server.http.listen-addr=0.0.0.0:12345
     extra_hosts:
       - "host.docker.internal:host-gateway"

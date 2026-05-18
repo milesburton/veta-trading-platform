@@ -19,12 +19,19 @@ interface KillSwitchState {
 
 const initialState: KillSwitchState = { blocks: [] };
 
+const MAX_BLOCKS = 200;
+
 export const killSwitchSlice = createSlice({
   name: "killSwitch",
   initialState,
   reducers: {
     blockAdded(state, action: PayloadAction<KillBlock>) {
+      const now = Date.now();
+      state.blocks = state.blocks.filter((b) => !b.resumeAt || b.resumeAt > now);
       state.blocks.push(action.payload);
+      if (state.blocks.length > MAX_BLOCKS) {
+        state.blocks.splice(0, state.blocks.length - MAX_BLOCKS);
+      }
     },
     blockRemoved(state, action: PayloadAction<{ id: string }>) {
       state.blocks = state.blocks.filter((b) => b.id !== action.payload.id);

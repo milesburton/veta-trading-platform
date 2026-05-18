@@ -1,6 +1,6 @@
 ---
 title: veta-host-prune (Docker prune timer)
-description: Weekly systemd timer that prunes dangling Docker images, exited containers, and build cache. Prevents homelab disk fill from auto-pull churn.
+description: Daily systemd timer that prunes dangling Docker images, exited containers, and build cache. Prevents homelab disk fill from auto-pull churn.
 ---
 
 The homelab pulls a new `:latest` image per service on every CI build.
@@ -9,7 +9,7 @@ Over a few weeks that adds up to hundreds of dangling images, easily 50 to
 by *log* growth, but the *image* churn was the next-largest disk
 consumer and would have hit 100% on its own within a couple more weeks.
 
-`veta-host-prune` runs every Sunday at 04:00 UTC and prunes:
+`veta-host-prune` runs daily at 04:00 UTC and prunes:
 
 1. **Always**: dangling images, exited containers, and build cache older
    than 24h. Preventive.
@@ -66,12 +66,12 @@ fire at:
 
 These are **independent** of `veta-host-prune` on purpose:
 
-- The timer is preventive; it runs on a weekly schedule regardless of
-  current disk usage.
+- The timer is preventive; it runs daily regardless of current disk
+  usage.
 - The alerts are reactive; they tell you when disk is climbing for
   reasons the prune cannot fix (data growth, log spam, etc.).
 
-If `DiskUsageHigh` fires before the next weekly tick, run the timer
+If `DiskUsageHigh` fires before the next daily tick, run the timer
 manually:
 
 ```bash

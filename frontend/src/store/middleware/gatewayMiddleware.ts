@@ -680,8 +680,12 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   async function fetchCandlesForAsset(symbol: string) {
     try {
       const [res1m, res5m] = await Promise.all([
-        fetch(`${GATEWAY_URL}/candles?instrument=${symbol}&interval=1m&limit=120`),
-        fetch(`${GATEWAY_URL}/candles?instrument=${symbol}&interval=5m&limit=120`),
+        fetch(`${GATEWAY_URL}/candles?instrument=${symbol}&interval=1m&limit=120`, {
+          credentials: "include",
+        }),
+        fetch(`${GATEWAY_URL}/candles?instrument=${symbol}&interval=5m&limit=120`, {
+          credentials: "include",
+        }),
       ]);
       const candles1m: OhlcCandle[] = res1m.ok ? await res1m.json() : [];
       const candles5m: OhlcCandle[] = res5m.ok ? await res5m.json() : [];
@@ -698,7 +702,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
 
   async function fetchAssetsAndSeedCandles() {
     try {
-      const r = await fetch(`${GATEWAY_URL}/assets`);
+      const r = await fetch(`${GATEWAY_URL}/assets`, { credentials: "include" });
       if (!r.ok) return;
       const data: AssetDef[] = await r.json();
       storeAPI.dispatch(marketSlice.actions.setAssets(data));

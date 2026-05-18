@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   allBlocksCleared,
   blockAdded,
@@ -8,6 +8,10 @@ import {
 } from "../killSwitchSlice";
 
 describe("killSwitchSlice", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("adds, removes, and clears blocks", () => {
     const block = {
       id: "b1",
@@ -105,6 +109,59 @@ describe("killSwitchSlice", () => {
 
     expect(isOrderBlocked([blocks[0]], { asset: "ANY" })).toBe(true);
     expect(isOrderBlocked([blocks[1]], { userId: "someone" })).toBe(true);
+  });
+
+  it("auto-prunes expired blocks when adding a new one", () => {
+    vi.spyOn(Date, "now").mockReturnValue(10_000);
+    const expired = {
+      id: "expired",
+      scope: "all" as const,
+      scopeValues: [],
+      issuedBy: "admin",
+      issuedAt: 1,
+      resumeAt: 5_000,
+    };
+    const fresh = {
+      id: "fresh",
+      scope: "symbol" as const,
+      scopeValues: ["AAPL"],
+      issuedBy: "admin",
+      issuedAt: 9_000,
+    };
+
+    const withExpired = killSwitchSlice.reducer(undefined, blockAdded(expired));
+    expect(withExpired.blocks).toHaveLength(1);
+
+    const afterPrune = killSwitchSlice.reducer(withExpired, blockAdded(fresh));
+    expect(afterPrune.blocks).toHaveLength(1);
+    expect(afterPrune.blocks[0].id).toBe("fresh");
+  });
+
+  it("caps blocks at 200 (memory-leak guard)", () => {
+    let state = killSwitchSlice.reducer(
+      undefined,
+      blockAdded({
+        id: "first",
+        scope: "symbol",
+        scopeValues: ["AAPL"],
+        issuedBy: "admin",
+        issuedAt: 1,
+      })
+    );
+    for (let i = 0; i < 250; i++) {
+      state = killSwitchSlice.reducer(
+        state,
+        blockAdded({
+          id: `b-${i}`,
+          scope: "symbol",
+          scopeValues: ["MSFT"],
+          issuedBy: "admin",
+          issuedAt: i + 100,
+        })
+      );
+    }
+    expect(state.blocks).toHaveLength(200);
+    expect(state.blocks[199].id).toBe("b-249");
   });
 
   it("ignores expired blocks and returns false for non-matches", () => {
