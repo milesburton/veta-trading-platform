@@ -51,7 +51,6 @@ interface AuthState {
   user: AuthUser | null;
   limits: TradingLimits;
   status: "loading" | "authenticated" | "unauthenticated";
-  showLogin: boolean;
   sessionExpired: boolean;
 }
 
@@ -59,7 +58,6 @@ const initialState: AuthState = {
   user: null,
   limits: DEFAULT_LIMITS,
   status: "loading",
-  showLogin: false,
   sessionExpired: false,
 };
 
@@ -70,14 +68,12 @@ export const authSlice = createSlice({
     setUser(state, action: PayloadAction<AuthUser>) {
       state.user = action.payload;
       state.status = "authenticated";
-      state.showLogin = false;
       state.sessionExpired = false;
     },
     setUserWithLimits(state, action: PayloadAction<{ user: AuthUser; limits: TradingLimits }>) {
       state.user = action.payload.user;
       state.limits = action.payload.limits;
       state.status = "authenticated";
-      state.showLogin = false;
       state.sessionExpired = false;
     },
     setLimits(state, action: PayloadAction<TradingLimits>) {
