@@ -53,6 +53,20 @@ interface LoadGenStartRequest {
   strategyMix?: ReadonlyArray<{ strategy: string; weight: number }>;
 }
 
+export type BugCategory = "ui" | "data" | "auth" | "performance" | "other";
+
+export interface BugReportRequest {
+  title: string;
+  description: string;
+  category?: BugCategory;
+  url?: string;
+}
+
+export interface BugReportResponse {
+  ok: boolean;
+  error?: string;
+}
+
 export const gatewayApi = createApi({
   reducerPath: "gatewayApi",
   baseQuery: fetchBaseQuery({
@@ -90,6 +104,13 @@ export const gatewayApi = createApi({
     getLoadGenStatus: builder.query<LoadGenStatus, void>({
       query: () => "/load-gen/status",
     }),
+    submitBugReport: builder.mutation<BugReportResponse, BugReportRequest>({
+      query: (body) => ({
+        url: "/bug-report",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -99,4 +120,5 @@ export const {
   useStartLoadGenMutation,
   useStopLoadGenMutation,
   useGetLoadGenStatusQuery,
+  useSubmitBugReportMutation,
 } = gatewayApi;
