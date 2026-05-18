@@ -84,27 +84,38 @@ function renderIndicator() {
 }
 
 describe("DataDepthIndicator – data quality branches", () => {
-  it("renders 'good' state with green dot when minDays >= 7", () => {
+  // Indicator color is now driven by avgDays so a single shallow new symbol
+  // doesn't drag the headline red. minDays still appears in the tooltip and
+  // gates the warning messages. See backlog #10d (2026-05-18).
+
+  it("renders avgDays as the headline label", () => {
     dataDepthState.data = { totalSymbols: 25, minDays: 14, avgDays: 30, symbols: [] };
     renderIndicator();
     expect(screen.getByTestId("data-depth")).toBeInTheDocument();
-    expect(screen.getByText(/14d/)).toBeInTheDocument();
+    expect(screen.getByText(/30d/)).toBeInTheDocument();
   });
 
-  it("renders 'limited' state when 1 <= minDays < 7", () => {
+  it("renders 'limited' state when 0.25 <= avgDays < 7 (amber)", () => {
     dataDepthState.data = { totalSymbols: 25, minDays: 3, avgDays: 5, symbols: [] };
     renderIndicator();
-    expect(screen.getByText(/3d/)).toBeInTheDocument();
+    expect(screen.getByText(/5d/)).toBeInTheDocument();
   });
 
-  it("renders 'hours' state when minDays < 1 but > 0", () => {
+  it("renders hours label when avgDays < 1 but > 0.25 (amber)", () => {
+    // avg 0.5d = 12h is amber (above the 0.25d red threshold)
     dataDepthState.data = { totalSymbols: 25, minDays: 0.25, avgDays: 0.5, symbols: [] };
     renderIndicator();
-    // 0.25 days = 6 hours
-    expect(screen.getByText(/6h/)).toBeInTheDocument();
+    expect(screen.getByText(/12h/)).toBeInTheDocument();
   });
 
-  it("renders 'none' state when minDays = 0", () => {
+  it("renders red hours label when avgDays < 0.25 (red)", () => {
+    dataDepthState.data = { totalSymbols: 25, minDays: 0.05, avgDays: 0.1, symbols: [] };
+    renderIndicator();
+    // 0.1 days = 2.4h, rounds to 2h
+    expect(screen.getByText(/2h/)).toBeInTheDocument();
+  });
+
+  it("renders 'none' state when avgDays = 0", () => {
     dataDepthState.data = { totalSymbols: 0, minDays: 0, avgDays: 0, symbols: [] };
     renderIndicator();
     expect(screen.getByText(/none/)).toBeInTheDocument();
