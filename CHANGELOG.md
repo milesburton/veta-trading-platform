@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.39.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.39.1...veta-trading-platform-v1.39.2) (2026-05-18)
+
+
+### Bug Fixes
+
+* **edge:** sshd ClientAlive on veta-tunnel so the tunnel auto-recovers from outages ([#264](https://github.com/milesburton/veta-trading-platform/issues/264)) ([bac8c79](https://github.com/milesburton/veta-trading-platform/commit/bac8c79e19de362164195057130155709b9a548b))
+* **frontend:** header polish — short SHA in services, build date back, hard-reload on logout ([#266](https://github.com/milesburton/veta-trading-platform/issues/266)) ([0586945](https://github.com/milesburton/veta-trading-platform/commit/0586945f39c5cc14cb7c06f24e1f488869c5e064))
+
 ## [1.39.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.39.0...veta-trading-platform-v1.39.1) (2026-05-18)
 
 
