@@ -73,8 +73,8 @@ const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL ?? `${_origin}/api/gateway`
 const UI_TICK_INTERVAL_MS = 250;
 const ALGO_HEARTBEAT_TIMEOUT_MS = 30_000;
 const RECONNECT_DELAY_INITIAL_MS = 2_000;
-const RECONNECT_DELAY_MAX_MS = 30_000;
-const RECONNECT_DELAY_AFTER_GIVE_UP_MS = 60_000;
+const RECONNECT_DELAY_MAX_MS = 15_000;
+const RECONNECT_DELAY_AFTER_GIVE_UP_MS = 20_000;
 const SHOW_BANNER_AFTER_FAILURES = 3;
 
 const OrderRejectedSchema = z.object({
@@ -675,6 +675,15 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
         nudgeReconnectIfStuck("tab became visible");
       }
     });
+    let lastUserNudgeAt = 0;
+    const onUserActivity = () => {
+      const now = Date.now();
+      if (now - lastUserNudgeAt < 5_000) return;
+      lastUserNudgeAt = now;
+      nudgeReconnectIfStuck("user activity");
+    };
+    window.addEventListener("focus", onUserActivity);
+    document.addEventListener("click", onUserActivity);
   }
 
   async function fetchCandlesForAsset(symbol: string) {
