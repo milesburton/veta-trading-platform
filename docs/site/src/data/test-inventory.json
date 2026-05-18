@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-18T17:29:03.239Z",
+  "generatedAt": "2026-05-18T20:40:19.881Z",
   "backend": {
     "unit": {
-      "files": 34,
-      "cases": 483,
+      "files": 36,
+      "cases": 499,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -34,11 +34,13 @@
         "black-scholes.unit.test.ts": 19,
         "monte-carlo.unit.test.ts": 16,
         "lib.unit.test.ts": 13,
-        "prompt-builder.unit.test.ts": 10,
+        "prompt-builder.unit.test.ts": 15,
         "trigger-rules.unit.test.ts": 17,
         "volatility-estimator.unit.test.ts": 7,
         "devcontainer.unit.test.ts": 6,
-        "docs-drift.unit.test.ts": 7
+        "docs-drift.unit.test.ts": 7,
+        "telemetry-route.unit.test.ts": 6,
+        "discord-notifier.unit.test.ts": 5
       }
     },
     "integration": {
@@ -77,8 +79,8 @@
   },
   "frontend": {
     "unit": {
-      "files": 164,
-      "cases": 1722
+      "files": 165,
+      "cases": 1728
     },
     "playwright": {
       "files": 17,

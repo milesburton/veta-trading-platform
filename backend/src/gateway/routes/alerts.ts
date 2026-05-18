@@ -1,5 +1,6 @@
 import { CORS_HEADERS } from "@veta/http";
 import { type GatewayContext, isResponse } from "../context.ts";
+import { notifyDiscord } from "../discord-notifier.ts";
 
 export async function handleAlertsRoute(
   req: Request,
@@ -16,6 +17,7 @@ export async function handleAlertsRoute(
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
     const body = await req.arrayBuffer();
+    void notifyDiscordFromBody(body, auth.user.id);
     return forward(`${ctx.urls.userService}/users/${auth.user.id}/alerts`, req, {
       method: "POST",
       body,
@@ -45,6 +47,15 @@ export async function handleAlertsRoute(
   }
 
   return null;
+}
+
+async function notifyDiscordFromBody(body: ArrayBuffer, userId: string): Promise<void> {
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(body));
+    await notifyDiscord(parsed, userId);
+  } catch {
+    // ignore parse failures; user-service will reject with a 400
+  }
 }
 
 interface ForwardOptions {

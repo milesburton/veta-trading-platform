@@ -99,6 +99,7 @@ services:
       # by Grafana, but the UI keeps working. Override in
       # /opt/stacks/veta/.env to actually deliver alerts.
       ALERT_WEBHOOK_URL: "${ALERT_WEBHOOK_URL:-http://alerts-not-configured.invalid/}"
+      DISCORD_WEBHOOK_URL: "${DISCORD_WEBHOOK_URL:-https://discord.com/api/webhooks/0/REPLACE_ME}"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana-data:/var/lib/grafana
