@@ -29,12 +29,25 @@ describe("BuildInfo", () => {
     expect(screen.getByTestId("build-info")).toHaveTextContent("1.24.0");
   });
 
-  it("title attribute includes version, build sha and date", () => {
+  it("title attribute includes version, commit sha and build date", () => {
     render(<BuildInfo version="1.24.0" commitSha="abc1234567890" buildDate="2026-05-04" />);
     const info = screen.getByTestId("build-info");
     expect(info.getAttribute("title")).toContain("Version 1.24.0");
-    expect(info.getAttribute("title")).toContain("Build abc1234567890");
+    expect(info.getAttribute("title")).toContain("Commit abc1234567890");
     expect(info.getAttribute("title")).toContain("2026-05-04");
+  });
+
+  it("renders the short sha as a GitHub commit link when sha is real", () => {
+    render(<BuildInfo version="1.24.0" commitSha="abc1234567890" />);
+    const link = screen.getByTestId("build-info-commit-link") as HTMLAnchorElement;
+    expect(link.href).toContain("/commit/abc1234567890");
+    expect(link.target).toBe("_blank");
+    expect(link.rel).toContain("noopener");
+  });
+
+  it("does not render a commit link for the 'dev' sentinel", () => {
+    render(<BuildInfo version="1.24.0" commitSha="dev" />);
+    expect(screen.queryByTestId("build-info-commit-link")).toBeNull();
   });
 
   it("trims ISO timestamp build date to date-only in the visible chip", () => {

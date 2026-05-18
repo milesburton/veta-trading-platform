@@ -24,19 +24,14 @@ const services: ServiceHealth[] = [
 test("renders aggregate dot and opens panel with service rows", () => {
   render(<ServiceStatus services={services} />);
 
-  // Button exists
   const btn = screen.getByRole("button", { name: /services/i });
   expect(btn).toBeInTheDocument();
 
-  // Click to open panel
   fireEvent.click(btn);
 
-  // Expect service names to be visible
   expect(screen.getByText("market-sim")).toBeInTheDocument();
   expect(screen.getByText("ems")).toBeInTheDocument();
-
-  // Version string present (in table)
-  expect(screen.getByText("1.2.3")).toBeInTheDocument();
+  expect(screen.getAllByText("1.2.3").length).toBeGreaterThan(0);
 });
 
 test("shows ok/total count in the Services button", () => {
@@ -46,12 +41,12 @@ test("shows ok/total count in the Services button", () => {
   expect(btn.textContent).toMatch(/1\/2/);
 });
 
-test("shows version in button when all required services have consistent version", () => {
+test("shows short commit SHA in button when all required services share one", () => {
   const allOk: ServiceHealth[] = [
     {
       name: "svc-a",
       state: "ok",
-      version: "9.9.9",
+      version: "abc1234567",
       meta: {},
       lastChecked: Date.now(),
       url: "",
@@ -59,7 +54,7 @@ test("shows version in button when all required services have consistent version
     {
       name: "svc-b",
       state: "ok",
-      version: "9.9.9",
+      version: "abc1234567",
       meta: {},
       lastChecked: Date.now(),
       url: "",
@@ -67,7 +62,26 @@ test("shows version in button when all required services have consistent version
   ];
   render(<ServiceStatus services={allOk} />);
   const btn = screen.getByRole("button", { name: /services/i });
-  expect(btn.textContent).toContain("v9.9.9");
+  expect(btn.textContent).toContain("abc1234");
+  expect(btn.textContent).not.toContain("vabc1234");
+});
+
+test("links the panel-header commit to GitHub when sha is real", () => {
+  const allOk: ServiceHealth[] = [
+    {
+      name: "svc-a",
+      state: "ok",
+      version: "abc1234567",
+      meta: {},
+      lastChecked: Date.now(),
+      url: "",
+    },
+  ];
+  render(<ServiceStatus services={allOk} />);
+  fireEvent.click(screen.getByRole("button", { name: /services/i }));
+  const link = screen.getByTestId("service-health-commit-link") as HTMLAnchorElement;
+  expect(link.href).toContain("/commit/abc1234567");
+  expect(link.target).toBe("_blank");
 });
 
 test("renders error dot when services are down", () => {
