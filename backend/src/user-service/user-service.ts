@@ -4,6 +4,7 @@ import { usersPool } from "@veta/db";
 import { parseBody } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createProducer } from "@veta/messaging";
+import { hashPassword, verifyPassword } from "./credentials.ts";
 import {
   AlertCreateSchema,
   AuthorizeRequestSchema,
@@ -222,9 +223,26 @@ async function derivePkceChallenge(verifier: string): Promise<string> {
     .replace(/=+$/g, "");
 }
 
-function verifyOAuthCredentials(userId: string, providedPassword: string | undefined): boolean {
+async function verifyOAuthCredentials(
+  userId: string,
+  providedPassword: string | undefined,
+): Promise<boolean> {
   const candidate = (providedPassword ?? "").trim();
   if (!candidate) return false;
+
+  const client = await usersPool.connect();
+  try {
+    const { rows } = await client.queryArray<[string | null]>(
+      "SELECT password_hash FROM users.users WHERE id = $1",
+      [userId],
+    );
+    const stored = rows[0]?.[0];
+    if (stored) {
+      return await verifyPassword(candidate, stored);
+    }
+  } finally {
+    client.release();
+  }
 
   const userSecret = OAUTH_USER_SECRETS.get(userId);
   if (userSecret) return userSecret === candidate;
@@ -781,26 +799,36 @@ async function handle(req: Request): Promise<Response> {
 
     const userId = normalizeUserId(body.username ?? body.userId ?? "");
     if (userId.length < 2) return jsonError("username too short", 400);
-    if (!await verifyOAuthCredentials(userId, body.password)) return jsonError("invalid_credentials", 401);
+    if (!body.password || body.password.length < 8) {
+      return jsonError("password must be at least 8 characters", 400);
+    }
+    if (!body.name || body.name.trim().length < 1) {
+      return jsonError("display name required", 400);
+    }
+
+    const passwordHash = await hashPassword(body.password);
 
     const client = await usersPool.connect();
     try {
       const { rows: existing } = await client.queryArray(
-        "SELECT id FROM users.users WHERE id = $1", [userId],
+        "SELECT id FROM users.users WHERE id = $1",
+        [userId],
       );
       if (existing.length > 0) return jsonError("username already exists", 409);
 
       await client.queryArray(
-        "INSERT INTO users.users (id, name, role, avatar_emoji) VALUES ($1, $2, 'viewer', '👁')",
-        [userId, body.name],
+        "INSERT INTO users.users (id, name, role, avatar_emoji, password_hash) VALUES ($1, $2, 'trader', '🧑‍💻', $3)",
+        [userId, body.name.trim(), passwordHash],
       );
       await client.queryArray(
-        "INSERT INTO users.trading_limits (user_id, max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access) VALUES ($1, 0, 0, '', '', false)",
+        "INSERT INTO users.trading_limits (user_id, max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access) VALUES ($1, 10000, 1000000, 'LIMIT,TWAP,POV,VWAP', 'equity', false)",
         [userId],
       );
       producer?.send("user.session", { event: "register", userId, ts: Date.now() }).catch(() => {});
-      return json({ userId, name: body.name, role: "viewer" }, 201);
-    } finally { client.release(); }
+      return json({ userId, name: body.name.trim(), role: "trader" }, 201);
+    } finally {
+      client.release();
+    }
   }
 
   // ---------------------------------------------------------------------------

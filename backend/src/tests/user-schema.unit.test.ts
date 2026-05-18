@@ -103,11 +103,22 @@ Deno.test("[user-schema] TokenRequestSchema requires grant_type=authorization_co
   );
 });
 
-Deno.test("[user-schema] RegisterRequestSchema requires name and username-or-userId", () => {
-  assert(RegisterRequestSchema.safeParse({ username: "alice", name: "Alice" }).success);
-  assert(RegisterRequestSchema.safeParse({ userId: "alice", name: "Alice" }).success);
-  assert(!RegisterRequestSchema.safeParse({ name: "Alice" }).success);
-  assert(!RegisterRequestSchema.safeParse({ username: "alice" }).success);
+Deno.test("[user-schema] RegisterRequestSchema requires name, password >=8, and username-or-userId", () => {
+  assert(
+    RegisterRequestSchema.safeParse({ username: "alice", name: "Alice", password: "longenough" })
+      .success,
+  );
+  assert(
+    RegisterRequestSchema.safeParse({ userId: "alice", name: "Alice", password: "longenough" })
+      .success,
+  );
+  assert(!RegisterRequestSchema.safeParse({ name: "Alice", password: "longenough" }).success);
+  assert(!RegisterRequestSchema.safeParse({ username: "alice", password: "longenough" }).success);
+  assert(!RegisterRequestSchema.safeParse({ username: "alice", name: "Alice" }).success);
+  assert(
+    !RegisterRequestSchema.safeParse({ username: "alice", name: "Alice", password: "short" })
+      .success,
+  );
 });
 
 Deno.test("[user-schema] LimitsUpdateSchema accepts all fields optional", () => {

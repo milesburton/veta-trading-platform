@@ -1048,6 +1048,10 @@ services:
       # PUBLIC_GUEST_TRADING so the two services agree on whether the
       # endpoint exists. Default false so guest mode is explicit per env.
       PUBLIC_GUEST_TRADING: ${PUBLIC_GUEST_TRADING:-false}
+      # /oauth/register is gated by this flag. When true, the homepage
+      # Create-account form will work; new users land as trader with
+      # starter limits ($10k qty / $1M daily notional, basic strategies).
+      OAUTH_ALLOW_PUBLIC_REGISTER: ${OAUTH_ALLOW_PUBLIC_REGISTER:-true}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5008/health || exit 1"]
       interval: 10s
