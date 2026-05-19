@@ -162,6 +162,43 @@ if [[ -f "$STACK_DIR/observability/docker-compose.lgtm.yml" ]]; then
     (cd "$STACK_DIR/observability" && \
         docker compose -f docker-compose.lgtm.yml up -d 2>&1 | sed 's/^/  /') \
         || log "⚠ observability up -d returned non-zero; continuing"
+
+    # `docker compose up -d` only recreates a container when the *service
+    # definition* changes — not when a bind-mounted single file is replaced.
+    # rsync atomic-replaces the file with a new inode, which the container's
+    # mount can't follow, so Prometheus/Alloy/Tempo silently keep serving the
+    # old config until they're restarted. 2026-05-19: ServiceMemoryGrowth/
+    # High/Critical rules sat in the host's prometheus-rules.yml for a day
+    # without ever loading because of this. Hash the single-file mounts
+    # against what the running container sees and restart on mismatch.
+    declare -A CONFIG_TO_CONTAINER=(
+        ["observability/prometheus.yml"]="lgtm-prometheus:/etc/prometheus/prometheus.yml"
+        ["observability/prometheus-rules.yml"]="lgtm-prometheus:/etc/prometheus/rules.yml"
+        ["observability/alloy-config.alloy"]="lgtm-alloy:/etc/alloy/config.alloy"
+        ["observability/tempo.yaml"]="lgtm-tempo:/etc/tempo/tempo.yaml"
+    )
+    declare -A RESTART_NEEDED=()
+    for host_rel in "${!CONFIG_TO_CONTAINER[@]}"; do
+        host_file="$STACK_DIR/$host_rel"
+        [[ -f "$host_file" ]] || continue
+        target="${CONFIG_TO_CONTAINER[$host_rel]}"
+        container="${target%%:*}"
+        in_container="${target#*:}"
+        host_sum=$(sha256sum "$host_file" | awk '{print $1}')
+        cont_sum=$(docker exec "$container" sha256sum "$in_container" 2>/dev/null | awk '{print $1}')
+        if [[ -n "$cont_sum" && "$host_sum" != "$cont_sum" ]]; then
+            log "  ⚠ $host_rel differs from $container view — bind-mount went stale"
+            RESTART_NEEDED["$container"]=1
+        fi
+    done
+    if [[ ${#RESTART_NEEDED[@]} -gt 0 ]]; then
+        log "  restarting ${#RESTART_NEEDED[@]} container(s) to pick up new mount inodes: ${!RESTART_NEEDED[*]}"
+        for container in "${!RESTART_NEEDED[@]}"; do
+            docker restart "$container" >/dev/null \
+                && log "    ✅ restarted $container" \
+                || log "    ❌ failed to restart $container"
+        done
+    fi
 fi
 
 log "Waiting up to ${MAX_WAIT}s for critical services to be healthy..."
