@@ -1,0 +1,50 @@
+---
+title: Add a new algo strategy
+description: How to land a new execution algorithm (TWAP, POV, etc. shape) in the platform. Files to create, events to produce, tests to add, docs that update automatically.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+## When to use
+
+You are adding a new execution algorithm (e.g., `OPPORTUNISTIC`, `LIQUIDITY-SEEKING`) that consumes the parent-order stream and emits child orders.
+
+## Inputs needed
+
+- A docker-compose stack running locally so the bus exists (`docker compose up -d redpanda`)
+- Familiarity with the [Algo strategies](../../platform/algos/) page
+
+## Steps
+
+1. **Create the strategy file** at `backend/src/algo/<lowercase-name>-strategy.ts`. Pattern to follow: [`backend/src/algo/twap-strategy.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/algo/twap-strategy.ts) is the most digestible reference. Required behaviour:
+   - Subscribe to `orders.routed` for parents that name your strategy
+   - Subscribe to `orders.filled` so you can mark active orders complete
+   - Publish to `orders.child` for each child slice you generate
+   - Emit `algo.heartbeat` every 5s so the frontend's AlgoHeartbeat panel stays green
+2. **Add a port + env var** to `compose.yml`. Use the next free port in the 5000-range. Add `<UPPER>_ALGO_PORT` and `<UPPER>_ALGO_HOST` to the `gateway` service env block so SVC_PROXY can route to it.
+3. **Update the params type** in `frontend/src/types.ts`. Add a `<Name>Params` interface and union member in `AlgoParams`.
+4. **Wire the order-ticket UI** by adding a strategy option in [`StrategyParams.tsx`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/StrategyParams.tsx). Add a builder branch in [`OrderTicket/buildAlgoParams.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/OrderTicket/buildAlgoParams.ts).
+5. **Document** in the strategy file's leading JSDoc. The first line becomes the title and the body becomes the description on [Algo strategies](../../platform/algos/) — picked up automatically by `docs/site/scripts/generate-algos.mjs` on the next docs build.
+
+## Verification
+
+```bash
+# Unit tests for the new strategy
+deno test --allow-all backend/src/tests/algo.unit.test.ts
+
+# Integration smoke (start the algo + submit a parent order)
+deno task test:smoke -- --grep "<your-algo>"
+
+# Frontend tests covering the new strategy in OrderTicket
+cd frontend && ./node_modules/.bin/vitest run src/components/OrderTicket/
+
+# Docs site rebuild picks up the new algo
+cd docs/site && npm run generate
+```
+
+## Common pitfalls
+
+- **Forgetting the heartbeat** — frontend's algo health turns amber after 30s. The base `commonHttp.ts` helper provides `subscribeNewsSignals()` and a heartbeat publisher; use them.
+- **Hardcoding venue selection** — child orders should let the EMS choose the venue (see [Smart Order Router](../../platform/smart-order-router/)). Only set `venue` explicitly if your algo is doing best-price routing like SNIPER.
+- **Missing tests in `deno.json`** — new test files are not auto-picked-up. Add the path to all three `test*` task definitions in `deno.json`.
+- **Docs auto-gen swallows your description** — the algo generator reads the first sentence (split on `. <Capital>`). Keep the first sentence punchy.

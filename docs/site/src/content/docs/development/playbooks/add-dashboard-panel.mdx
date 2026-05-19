@@ -1,0 +1,48 @@
+---
+title: Add a new dashboard panel
+description: The minimum surface to make a new panel render and ship to a workspace. Touches panelRegistry, panelComponents, layoutModels, and tests.
+---
+
+## When to use
+
+You are adding a new flexlayout panel to one or more workspaces.
+
+## Inputs needed
+
+- The frontend dev server running so you can render the new panel quickly (`cd frontend && npm run dev`)
+
+## Steps
+
+1. **Create the component** at `frontend/src/components/<PanelName>Panel.tsx`. Use `useAppSelector` for store reads, `useChannelIn` if it should listen to a workspace channel, `useChannelOut` if it should broadcast to one.
+2. **Register the panel id** in [`panelRegistry.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/dashboard/panelRegistry.ts):
+   - Add the id to `PANEL_IDS`
+   - Add the title to `PANEL_TITLES`
+   - Add the description to `PANEL_DESCRIPTIONS`
+   - Add the channel cap to `PANEL_CHANNEL_CAPS` (default 1)
+   - Optionally restrict by trading style via `PANEL_TRADING_STYLES`
+3. **Wire the renderer** in [`panelComponents.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/dashboard/panelComponents.ts) by adding the panel id to the component map.
+4. **Add to a workspace** in [`layoutModels.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/dashboard/layoutModels.ts). Either add a `tab` to an existing model or include it in a new layout.
+5. **Add a vitest** at `frontend/src/components/__tests__/<PanelName>Panel.test.tsx`. Cover: it renders with a populated store, it handles empty data gracefully, it dispatches the right actions on user interaction.
+
+## Verification
+
+```bash
+# Component tests
+cd frontend && ./node_modules/.bin/vitest run src/components/__tests__/<PanelName>Panel
+
+# Type-check everything (catches missing PANEL_TITLES entries)
+./node_modules/.bin/tsc --noEmit --skipLibCheck
+
+# Visual: panel-walkthrough screenshot test renders every panel via the
+# panel picker and ships the screenshot to docs/panel-walkthrough/
+cd frontend && npx playwright test tests/panel-walkthrough.spec.ts
+```
+
+The Panel Reference page in the Astro docs picks up the new panel automatically on the next site build (`generate-panel-reference.mjs` reads `panel-walkthrough/report.json`).
+
+## Common pitfalls
+
+- **Forgetting the panel-id type union** — `PanelId` is a string-literal union derived from `PANEL_IDS`. If you add a panel but forget to update the registry, every consumer using `PanelId` will silently miss it.
+- **Channel-cap default** — panels default to channel cap 1 (one instance per workspace). If users should be able to add multiple instances, set the cap explicitly.
+- **Test-state shape** — many tests preload Redux state; if your panel reads a slice that test fixtures haven't populated, you'll see `Cannot read properties of undefined`. Either add the field to the fixture or default it in the panel.
+- **Stale screenshots** — if you edit the panel, re-run `panel-walkthrough.spec.ts` before merging or the docs site will show the old screenshot. CI does this automatically on main.
