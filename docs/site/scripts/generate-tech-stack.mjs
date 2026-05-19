@@ -1,17 +1,6 @@
-import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-
-function safeCommitDate() {
-  try {
-    return execSync("git log -1 --format=%cI", { stdio: ["ignore", "pipe", "ignore"] })
-      .toString()
-      .trim();
-  } catch {
-    return "unknown";
-  }
-}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -265,7 +254,6 @@ function generate() {
     }
   }
 
-  const generatedAt = safeCommitDate();
   const content = [
     "---",
     "title: Tech Stack",
@@ -273,8 +261,6 @@ function generate() {
     "---",
     "",
     "This page is generated automatically during docs build and should not be edited manually.",
-    "",
-    `Generated at: \`${generatedAt}\`.`,
     "",
     renderCoreTechnologies(),
     renderPackageTable(

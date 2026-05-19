@@ -1654,6 +1654,8 @@ services:
       CCP_SERVICE_PORT: "5028"
       RFQ_SERVICE_HOST: rfq-service
       RFQ_SERVICE_PORT: "5029"
+      PRODUCT_SERVICE_HOST: product-service
+      PRODUCT_SERVICE_PORT: "5030"
       FIX_GATEWAY_HOST: fix-gateway
       FIX_GATEWAY_PORT: "9881"
       REPLAY_HOST: replay-service
