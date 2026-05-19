@@ -1,0 +1,49 @@
+{
+  "roles": [
+    {
+      "id": "trader",
+      "label": "Trader",
+      "canTrade": true
+    },
+    {
+      "id": "desk-head",
+      "label": "Desk Head",
+      "canTrade": false
+    },
+    {
+      "id": "risk-manager",
+      "label": "Risk Manager",
+      "canTrade": false
+    },
+    {
+      "id": "admin",
+      "label": "Administrator",
+      "canTrade": false
+    },
+    {
+      "id": "compliance",
+      "label": "Compliance",
+      "canTrade": false
+    },
+    {
+      "id": "sales",
+      "label": "Sales",
+      "canTrade": false
+    },
+    {
+      "id": "oncall",
+      "label": "Oncall Engineer",
+      "canTrade": false
+    },
+    {
+      "id": "external-client",
+      "label": "External Client",
+      "canTrade": false
+    },
+    {
+      "id": "viewer",
+      "label": "Viewer",
+      "canTrade": false
+    }
+  ]
+}

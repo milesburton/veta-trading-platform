@@ -124,6 +124,48 @@ function resolveScriptAbsPath(scriptPath) {
   return path.join(repoRoot, scriptPath);
 }
 
+function extractDescription(scriptAbs) {
+  if (!scriptAbs || !fs.existsSync(scriptAbs)) return null;
+  const src = fs.readFileSync(scriptAbs, "utf8");
+  const m = src.match(/^\s*\/\*\*\s*([\s\S]*?)\s*\*\//);
+  if (!m) return null;
+  // Split into paragraphs by blank line. The leading JSDoc usually has the
+  // structure:
+  //   /**
+  //    * Title line.
+  //    *
+  //    * First paragraph — short summary, what this page should show.
+  //    *
+  //    * Longer operational detail (events, endpoints, lifecycle) below.
+  //    */
+  // We want the title plus the first paragraph; anything past the next blank
+  // line stays in the source code as long-form context.
+  const rawLines = m[1].split("\n").map((l) => l.replace(/^\s*\*\s?/, "").trimEnd());
+  const paragraphs = [];
+  let current = [];
+  for (const line of rawLines) {
+    if (line.trim().length === 0) {
+      if (current.length > 0) paragraphs.push(current.join(" ").trim());
+      current = [];
+    } else {
+      current.push(line);
+    }
+  }
+  if (current.length > 0) paragraphs.push(current.join(" ").trim());
+  if (paragraphs.length === 0) return null;
+  // The first paragraph is the title + summary; if it fits on a single line
+  // there's no separate summary, return the line; otherwise drop the title
+  // and return the summary.
+  const firstPara = paragraphs[0];
+  if (paragraphs.length >= 2) {
+    return paragraphs[1];
+  }
+  // No blank-line summary; return everything truncated at the first
+  // sentence boundary so the table cell stays readable.
+  const idx = firstPara.search(/\.\s+[A-Z]/);
+  return idx > 0 ? `${firstPara.slice(0, idx + 1).trim()}` : firstPara;
+}
+
 function extractDefaultPort(scriptAbs, programName) {
   if (!scriptAbs || !fs.existsSync(scriptAbs)) return null;
   const src = fs.readFileSync(scriptAbs, "utf8");
@@ -159,11 +201,18 @@ for (const program of programs) {
   const scriptPath = findScriptPath(program.command);
   const scriptAbs = resolveScriptAbsPath(scriptPath);
   const port = extractDefaultPort(scriptAbs, program.name);
+  // Hand-typed descriptions in DESCRIPTIONS take priority because they have
+  // been tuned for a single-cell table format. Source JSDoc is fallback for
+  // services we forget to add to the map. Audit the table after adding a
+  // new service to see whether the JSDoc-derived fallback reads well or
+  // needs a hand-tuned override.
+  const description =
+    DESCRIPTIONS[program.name] ?? extractDescription(scriptAbs) ?? "—";
   rows.push({
     name: program.name,
     port,
     display: DISPLAY_NAMES[program.name] ?? program.name,
-    description: DESCRIPTIONS[program.name] ?? "—",
+    description,
   });
 }
 
