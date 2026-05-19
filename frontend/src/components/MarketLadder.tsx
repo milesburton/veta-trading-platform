@@ -225,9 +225,9 @@ const Row = memo(function Row({
           >
             {asset.symbol}
           </div>
-          <div className="text-subtle text-[9px] leading-tight truncate">{asset.sector}</div>
+          <div className="text-muted text-[9px] leading-tight truncate">{asset.sector}</div>
           {asset.beta !== undefined && (
-            <div className="text-divider text-[9px] leading-tight">
+            <div className="text-muted text-[9px] leading-tight">
               β{asset.beta.toFixed(2)}
               {asset.marketCapB !== undefined && (
                 <span className="ml-1">
@@ -444,7 +444,7 @@ export function MarketLadder() {
       )}
       <div className="px-2 py-1.5 border-b border-panel flex gap-1.5 items-center">
         <PopOutButton panelId="market-ladder" />
-        <span className="text-subtle text-[10px] tabular-nums ml-auto">
+        <span className="text-muted text-[10px] tabular-nums ml-auto">
           {filtered.length}/{assets.length}
         </span>
       </div>

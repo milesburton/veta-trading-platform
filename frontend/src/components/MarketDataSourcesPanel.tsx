@@ -134,7 +134,7 @@ export function MarketDataSourcesPanel() {
           onChange={(e) => {
             search.value = e.target.value;
           }}
-          className="flex-1 bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary placeholder:text-subtle"
+          className="flex-1 bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary placeholder:text-muted"
         />
         <button
           type="button"
@@ -151,19 +151,24 @@ export function MarketDataSourcesPanel() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <section
+        className="flex-1 overflow-y-auto"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: scrollable region needs keyboard focus (WCAG SC 2.1.1)
+        tabIndex={0}
+        aria-label="Market data sources"
+      >
         {overridesLoading ? (
-          <div className="flex items-center justify-center h-24 text-subtle text-[11px]">
+          <div className="flex items-center justify-center h-24 text-muted text-[11px]">
             Loading…
           </div>
         ) : (
           <table className="w-full border-collapse">
             <thead className="sticky top-0 bg-page z-10">
               <tr className="border-b border-panel">
-                <th className="text-left px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium">
+                <th className="text-left px-4 py-1.5 text-[10px] text-muted uppercase tracking-wide font-medium">
                   Symbol
                 </th>
-                <th className="text-right px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium">
+                <th className="text-right px-4 py-1.5 text-[10px] text-muted uppercase tracking-wide font-medium">
                   Source
                 </th>
               </tr>
@@ -222,7 +227,7 @@ export function MarketDataSourcesPanel() {
               })}
               {filteredSymbols.length === 0 && (
                 <tr>
-                  <td colSpan={2} className="px-4 py-6 text-center text-subtle text-[11px]">
+                  <td colSpan={2} className="px-4 py-6 text-center text-muted text-[11px]">
                     No symbols match
                   </td>
                 </tr>
@@ -230,7 +235,7 @@ export function MarketDataSourcesPanel() {
             </tbody>
           </table>
         )}
-      </div>
+      </section>
 
       {isAdmin && (
         <div className="px-4 py-2.5 border-t border-panel shrink-0 flex items-center gap-2">
@@ -258,7 +263,7 @@ export function MarketDataSourcesPanel() {
       )}
 
       {/* Footer */}
-      <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-divider">
+      <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-muted">
         {externalCount} symbol{externalCount !== 1 ? "s" : ""} on external sources ·{" "}
         {sources.filter((s) => s.id !== "synthetic" && s.enabled).length} provider
         {sources.filter((s) => s.id !== "synthetic" && s.enabled).length !== 1 ? "s" : ""}{" "}

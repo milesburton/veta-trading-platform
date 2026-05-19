@@ -75,7 +75,7 @@ function computeMetrics(orders: OrderRecord[], windowMs: number): StrategyMetric
 
 function FillRateBar({ rate }: { rate: number | null }) {
   if (rate === null) {
-    return <span className="text-subtle text-[10px]">—</span>;
+    return <span className="text-muted text-[10px]">—</span>;
   }
 
   const pct = Math.round(rate * 100);
@@ -94,7 +94,7 @@ function FillRateBar({ rate }: { rate: number | null }) {
 
 function SlippageCell({ bps }: { bps: number | null }) {
   if (bps === null) {
-    return <span className="text-subtle text-[10px]">—</span>;
+    return <span className="text-muted text-[10px]">—</span>;
   }
 
   const colourClass =
@@ -131,32 +131,37 @@ export function AlgoLeaderboardPanel() {
           <span className="text-[11px] font-semibold text-secondary uppercase tracking-wide">
             Algo Leaderboard (last 5 min)
           </span>
-          <span className="text-[10px] text-subtle">Updates from live order flow</span>
+          <span className="text-[10px] text-muted">Updates from live order flow</span>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <section
+        className="flex-1 overflow-y-auto"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: scrollable region needs keyboard focus (WCAG SC 2.1.1)
+        tabIndex={0}
+        aria-label="Algo leaderboard"
+      >
         {metrics.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-subtle text-[11px]">
+          <div className="flex items-center justify-center h-24 text-muted text-[11px]">
             No order data in last 5 minutes
           </div>
         ) : (
           <table className="w-full border-collapse">
             <thead className="sticky top-0 bg-page z-10">
               <tr className="border-b border-panel">
-                <th className="text-left px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium">
+                <th className="text-left px-4 py-1.5 text-[10px] text-muted uppercase tracking-wide font-medium">
                   Strategy
                 </th>
-                <th className="text-right px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium">
+                <th className="text-right px-4 py-1.5 text-[10px] text-muted uppercase tracking-wide font-medium">
                   Orders (5m)
                 </th>
-                <th className="px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium">
+                <th className="px-4 py-1.5 text-[10px] text-muted uppercase tracking-wide font-medium">
                   Fill Rate
                 </th>
-                <th className="text-right px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium">
+                <th className="text-right px-4 py-1.5 text-[10px] text-muted uppercase tracking-wide font-medium">
                   Avg Slippage
                 </th>
-                <th className="text-right px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium">
+                <th className="text-right px-4 py-1.5 text-[10px] text-muted uppercase tracking-wide font-medium">
                   Total Filled Qty
                 </th>
               </tr>
@@ -191,7 +196,7 @@ export function AlgoLeaderboardPanel() {
             </tbody>
           </table>
         )}
-      </div>
+      </section>
     </div>
   );
 }

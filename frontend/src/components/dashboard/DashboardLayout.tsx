@@ -161,7 +161,7 @@ function ChannelPicker({
             : "text-muted hover:bg-divider/40 border border-dashed border-divider/60 hover:border-muted hover:text-label"
         }`}
       >
-        <span className={colour ? "text-muted" : "text-subtle"}>{isOut ? "Out:" : "In:"}</span>
+        <span className="text-muted">{isOut ? "Out:" : "In:"}</span>
         {colour ? (
           <>
             <span
@@ -351,7 +351,7 @@ function PanelDialog({
               {DialogPanel ? (
                 <DialogPanel />
               ) : (
-                <div className="flex items-center justify-center h-full text-subtle text-xs">
+                <div className="flex items-center justify-center h-full text-muted text-xs">
                   Panel not available in dialog mode
                 </div>
               )}
@@ -401,7 +401,7 @@ function CandleChartPanel({ incoming }: { incoming: ChannelNumber | null }) {
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
         />
       </svg>
-      <span className="text-[11px] text-subtle">Connecting to market…</span>
+      <span className="text-[11px] text-muted">Connecting to market…</span>
     </div>
   );
 }
@@ -420,7 +420,7 @@ function EmptyWorkspace() {
     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-page gap-6 px-8">
       <div className="text-center">
         <div className="text-2xl text-divider mb-2">Empty workspace</div>
-        <p className="text-sm text-subtle">Choose a layout to get started.</p>
+        <p className="text-sm text-muted">Choose a layout to get started.</p>
       </div>
 
       <div className="grid grid-cols-3 gap-3 w-full max-w-lg">
@@ -435,7 +435,7 @@ function EmptyWorkspace() {
               {tpl.locked && <span className="text-[10px] text-muted">🔒</span>}
               {tpl.label}
             </span>
-            <span className="text-[9px] text-subtle leading-tight">{tpl.description}</span>
+            <span className="text-[9px] text-muted leading-tight">{tpl.description}</span>
           </button>
         ))}
       </div>
@@ -565,7 +565,7 @@ export function DashboardLayout() {
 
       if (!canAccessPanel(panelType, userRole, tradingStyle)) {
         return wrap(
-          <div className="h-full flex items-center justify-center text-subtle text-xs p-4 text-center">
+          <div className="h-full flex items-center justify-center text-muted text-xs p-4 text-center">
             You do not have permission to view this panel.
           </div>
         );
@@ -578,7 +578,7 @@ export function DashboardLayout() {
       if (PanelComponent) {
         return wrap(<PanelComponent />);
       }
-      return wrap(<div className="text-subtle text-xs p-4">Unknown panel: {panelType}</div>);
+      return wrap(<div className="text-muted text-xs p-4">Unknown panel: {panelType}</div>);
     },
     [userRole, tradingStyle]
   );

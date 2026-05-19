@@ -170,7 +170,7 @@ export function NewsSourcesPanel() {
 
         {isLoading && (
           <div className="flex items-center justify-center flex-1">
-            <span className="text-[11px] text-subtle">Loading sources…</span>
+            <span className="text-[11px] text-muted">Loading sources…</span>
           </div>
         )}
 
@@ -191,7 +191,7 @@ export function NewsSourcesPanel() {
 
         {!isLoading && !isError && sources.length === 0 && !showAddForm.value && (
           <div className="flex items-center justify-center flex-1">
-            <span className="text-[11px] text-subtle">
+            <span className="text-[11px] text-muted">
               No sources configured. Click + Add to create one.
             </span>
           </div>
@@ -259,7 +259,7 @@ export function NewsSourcesPanel() {
                     </div>
                     {source.rssTemplate && (
                       <span
-                        className="text-[9px] text-subtle truncate block"
+                        className="text-[9px] text-muted truncate block"
                         title={source.rssTemplate}
                       >
                         {source.rssTemplate}
@@ -276,7 +276,7 @@ export function NewsSourcesPanel() {
                         showAddForm.value = false;
                       }}
                       title={`Edit ${source.label}`}
-                      className="text-[10px] text-subtle hover:text-default opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded border border-divider hover:border-muted transition-all"
+                      className="text-[10px] text-muted hover:text-default opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded border border-divider hover:border-muted transition-all"
                     >
                       Edit
                     </button>
@@ -286,7 +286,7 @@ export function NewsSourcesPanel() {
                         confirmDeleteId.value = source.id;
                       }}
                       title={`Delete ${source.label}`}
-                      className="text-[10px] text-subtle hover:text-red-400 opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded border border-divider hover:border-red-700/50 transition-all"
+                      className="text-[10px] text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded border border-divider hover:border-red-700/50 transition-all"
                     >
                       ✕
                     </button>

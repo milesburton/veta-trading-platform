@@ -414,7 +414,7 @@ export function OrderBlotter() {
             ↗ {selectedOrderId.value.slice(0, 8)}
           </span>
         )}
-        <span className="text-[10px] text-subtle ml-auto">
+        <span className="text-[10px] text-muted ml-auto">
           {isLoading
             ? "…"
             : displayOrders.length !== total
@@ -430,7 +430,7 @@ export function OrderBlotter() {
           className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
             showCfEditor.value
               ? "bg-sky-900/50 text-sky-400"
-              : "text-subtle hover:text-label hover:bg-panel"
+              : "text-muted hover:text-label hover:bg-panel"
           }`}
         >
           Format ⚙
@@ -460,13 +460,13 @@ export function OrderBlotter() {
 
       <div ref={containerRef} className="overflow-auto flex-1">
         {isLoading && displayOrders.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-subtle text-xs">Loading…</div>
+          <div className="flex items-center justify-center h-24 text-muted text-xs">Loading…</div>
         ) : total === 0 ? (
-          <div className="flex items-center justify-center h-24 text-subtle text-xs">
+          <div className="flex items-center justify-center h-24 text-muted text-xs">
             No orders submitted yet
           </div>
         ) : displayOrders.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-subtle text-xs">
+          <div className="flex items-center justify-center h-24 text-muted text-xs">
             No orders match the active filters
           </div>
         ) : (
@@ -584,7 +584,7 @@ export function OrderBlotter() {
                                 <span className="flex items-center gap-1.5">
                                   {order.id.slice(0, 8)}
                                   {order.children.length > 0 && (
-                                    <span className="text-[9px] text-subtle bg-panel rounded px-1 tabular-nums">
+                                    <span className="text-[9px] text-muted bg-panel rounded px-1 tabular-nums">
                                       {order.children.length}
                                     </span>
                                   )}
@@ -663,13 +663,13 @@ export function OrderBlotter() {
                             );
                           case "counterparty":
                             return (
-                              <td key={col.key} className="px-3 py-1.5 text-subtle">
+                              <td key={col.key} className="px-3 py-1.5 text-muted">
                                 —
                               </td>
                             );
                           case "liquidityFlag":
                             return (
-                              <td key={col.key} className="px-3 py-1.5 text-subtle">
+                              <td key={col.key} className="px-3 py-1.5 text-muted">
                                 —
                               </td>
                             );
@@ -686,13 +686,13 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className="px-3 py-1.5 text-subtle font-mono text-[9px]"
+                                className="px-3 py-1.5 text-muted font-mono text-[9px]"
                               >
                                 {order.settlementDate ?? "—"}
                               </td>
                             );
                           default:
-                            return <td key={col.key} className="px-3 py-1.5 text-subtle" />;
+                            return <td key={col.key} className="px-3 py-1.5 text-muted" />;
                         }
                       })}
                     </tr>

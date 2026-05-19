@@ -212,7 +212,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
           ))}
         </div>
         {raw.length > 0 && (
-          <span className="ml-auto text-[10px] text-subtle tabular-nums">{raw.length} bars</span>
+          <span className="ml-auto text-[10px] text-muted tabular-nums">{raw.length} bars</span>
         )}
       </div>
 
@@ -239,7 +239,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          <span className="text-[11px] text-subtle">Collecting {interval.value} candles…</span>
+          <span className="text-[11px] text-muted">Collecting {interval.value} candles…</span>
         </div>
       )}
       <div
