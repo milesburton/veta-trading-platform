@@ -262,6 +262,15 @@ for line in sys.stdin:
             log "ℹ Non-critical services in non-healthy state:"
             echo "$ALL_UNHEALTHY"
         fi
+
+        # `image prune -f` removes the now-dangling images from the
+        # previous deploy. Without this, dangling layers accumulate
+        # between veta-host-prune runs (disk hit 100% on 2026-05-17).
+        PRUNED=$(docker image prune -f 2>/dev/null | tail -1 || true)
+        if [[ -n "$PRUNED" ]]; then
+            log "🧹 $PRUNED"
+        fi
+
         exit 0
     fi
     sleep 5
