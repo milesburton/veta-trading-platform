@@ -40,118 +40,26 @@ import { ServiceStatus } from "./ServiceStatus.tsx";
 import { TemplatePicker } from "./TemplatePicker.tsx";
 
 function useAllServiceHealth(): ServiceHealth[] {
-  const r0 = useGetServiceHealthQuery(SERVICES[0], { pollingInterval: 10_000 });
-  const r1 = useGetServiceHealthQuery(SERVICES[1], { pollingInterval: 10_000 });
-  const r2 = useGetServiceHealthQuery(SERVICES[2], { pollingInterval: 10_000 });
-  const r3 = useGetServiceHealthQuery(SERVICES[3], { pollingInterval: 10_000 });
-  const r4 = useGetServiceHealthQuery(SERVICES[4], { pollingInterval: 10_000 });
-  const r5 = useGetServiceHealthQuery(SERVICES[5], { pollingInterval: 10_000 });
-  const r6 = useGetServiceHealthQuery(SERVICES[6], { pollingInterval: 10_000 });
-  const r7 = useGetServiceHealthQuery(SERVICES[7], { pollingInterval: 10_000 });
-  const r8 = useGetServiceHealthQuery(SERVICES[8], { pollingInterval: 10_000 });
-  const r9 = useGetServiceHealthQuery(SERVICES[9], { pollingInterval: 10_000 });
-  const r10 = useGetServiceHealthQuery(SERVICES[10], {
-    pollingInterval: 10_000,
-  });
-  const r11 = useGetServiceHealthQuery(SERVICES[11], {
-    pollingInterval: 10_000,
-  });
-  const r12 = useGetServiceHealthQuery(SERVICES[12], {
-    pollingInterval: 10_000,
-    skip: !SERVICES[12],
-  });
-  const r13 = useGetServiceHealthQuery(SERVICES[13], {
-    pollingInterval: 10_000,
-    skip: !SERVICES[13],
-  });
-  const r14 = useGetServiceHealthQuery(SERVICES[14], {
-    pollingInterval: 10_000,
-    skip: !SERVICES[14],
-  });
-  const r15 = useGetServiceHealthQuery(SERVICES[15], {
-    pollingInterval: 10_000,
-    skip: !SERVICES[15],
-  });
-  const r16 = useGetServiceHealthQuery(SERVICES[16], {
-    pollingInterval: 10_000,
-    skip: !SERVICES[16],
-  });
-  const r17 = useGetServiceHealthQuery(SERVICES[17], {
-    pollingInterval: 10_000,
-    skip: !SERVICES[17],
-  });
-  const r18 = useGetServiceHealthQuery(SERVICES[18], {
-    pollingInterval: 10_000,
-    skip: !SERVICES[18],
-  });
-  const r19 = useGetServiceHealthQuery(SERVICES[19], {
-    pollingInterval: 10_000,
-    skip: !SERVICES[19],
-  });
-  const r20 = useGetServiceHealthQuery(SERVICES[20], {
-    pollingInterval: 10_000,
-    skip: !SERVICES[20],
-  });
-  const r21 = useGetServiceHealthQuery(SERVICES[21], {
-    pollingInterval: 10_000,
-    skip: !SERVICES[21],
-  });
-  const r22 = useGetServiceHealthQuery(SERVICES[22], {
-    pollingInterval: 10_000,
-    skip: !SERVICES[22],
-  });
-
-  return SERVICES.map((svc, i) => {
-    const result = [
-      r0,
-      r1,
-      r2,
-      r3,
-      r4,
-      r5,
-      r6,
-      r7,
-      r8,
-      r9,
-      r10,
-      r11,
-      r12,
-      r13,
-      r14,
-      r15,
-      r16,
-      r17,
-      r18,
-      r19,
-      r20,
-      r21,
-      r22,
-    ][i];
+  return SERVICES.map((svc) => {
+    // SERVICES is a module-level constant array; iteration order is stable
+    // across every render so hook order is preserved. Rule of Hooks is
+    // satisfied semantically — biome's static analysis can't see this.
+    // biome-ignore lint/correctness/useHookAtTopLevel: stable iteration over module-level constant
+    const result = useGetServiceHealthQuery(svc, { pollingInterval: 10_000 });
     if (result.data) return result.data;
-    if (result.isError) {
-      return {
-        name: svc.name,
-        url: svc.url,
-        link: svc.link,
-        optional: svc.optional,
-        alertOnDeployments: svc.alertOnDeployments,
-        state: "error" as const,
-        version: "—",
-        meta: {},
-        lastChecked: Date.now(),
-      };
-    }
-    return {
+    const base = {
       name: svc.name,
       url: svc.url,
       link: svc.link,
       optional: svc.optional,
       alertOnDeployments: svc.alertOnDeployments,
-      state: "unknown" as const,
       version: "—",
       meta: {},
-      lastChecked: null,
     };
+    if (result.isError) {
+      return { ...base, state: "error" as const, lastChecked: Date.now() };
+    }
+    return { ...base, state: "unknown" as const, lastChecked: null };
   });
 }
 
