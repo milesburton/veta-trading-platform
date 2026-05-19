@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-05-18T23:20:03.710Z",
+  "generatedAt": "2026-05-19T09:59:19.081Z",
   "totalPanels": 51,
-  "rendered": 47,
-  "withConsoleErrors": 47,
+  "rendered": 51,
+  "withConsoleErrors": 51,
   "withPageErrors": 47,
-  "skipped": 4,
+  "skipped": 0,
   "panels": [
     {
       "panelId": "market-ladder",
@@ -28,11 +28,15 @@
     },
     {
       "panelId": "order-ticket",
-      "rendered": false,
-      "consoleErrors": [],
+      "rendered": true,
+      "consoleErrors": [
+        "Warning: Invalid DOM property `%s`. Did you mean `%s`?%s stroke-width strokeWidth \n    at svg\n    at a\n    at div\n    at div\n    at div\n    at AppHeader (http://localhost:5173/src/components/StatusBar.tsx:719:18)\n    at div\n    at DrawersProvider (http://localhost:5173/src/components/drawers/DrawersContext.tsx:36:35)\n    at TradingProvider (http://localhost:5173/src/context/TradingContext.tsx:31:35)\n    at TradingApp (http://localhost:5173/src/App.tsx:191:17)\n    at AuthGate (http://localhost:5173/src/App.tsx:121:21)\n    at ErrorBoundary (http://localhost:5173/src/App.tsx:63:1)\n    at App (http://localhost:5173/src/App.tsx:615:45)\n    at Provider (http://localhost:5173/node_modules/.vite/deps/chunk-F6HJRDUB.js?v=bd4f5061:923:11)",
+        "Warning: Invalid DOM property `%s`. Did you mean `%s`?%s stroke-linecap strokeLinecap \n    at svg\n    at a\n    at div\n    at div\n    at div\n    at AppHeader (http://localhost:5173/src/components/StatusBar.tsx:719:18)\n    at div\n    at DrawersProvider (http://localhost:5173/src/components/drawers/DrawersContext.tsx:36:35)\n    at TradingProvider (http://localhost:5173/src/context/TradingContext.tsx:31:35)\n    at TradingApp (http://localhost:5173/src/App.tsx:191:17)\n    at AuthGate (http://localhost:5173/src/App.tsx:121:21)\n    at ErrorBoundary (http://localhost:5173/src/App.tsx:63:1)\n    at App (http://localhost:5173/src/App.tsx:615:45)\n    at Provider (http://localhost:5173/node_modules/.vite/deps/chunk-F6HJRDUB.js?v=bd4f5061:923:11)",
+        "Warning: Invalid DOM property `%s`. Did you mean `%s`?%s stroke-linejoin strokeLinejoin \n    at svg\n    at a\n    at div\n    at div\n    at div\n    at AppHeader (http://localhost:5173/src/components/StatusBar.tsx:719:18)\n    at div\n    at DrawersProvider (http://localhost:5173/src/components/drawers/DrawersContext.tsx:36:35)\n    at TradingProvider (http://localhost:5173/src/context/TradingContext.tsx:31:35)\n    at TradingApp (http://localhost:5173/src/App.tsx:191:17)\n    at AuthGate (http://localhost:5173/src/App.tsx:121:21)\n    at ErrorBoundary (http://localhost:5173/src/App.tsx:63:1)\n    at App (http://localhost:5173/src/App.tsx:615:45)\n    at Provider (http://localhost:5173/node_modules/.vite/deps/chunk-F6HJRDUB.js?v=bd4f5061:923:11)"
+      ],
       "pageErrors": [],
-      "screenshot": null,
-      "notes": "not accessible to admin role"
+      "screenshot": "screenshots/order-ticket.png",
+      "notes": "captured by trader walkthrough"
     },
     {
       "panelId": "order-blotter",
@@ -883,27 +887,39 @@
     },
     {
       "panelId": "basket-order",
-      "rendered": false,
-      "consoleErrors": [],
+      "rendered": true,
+      "consoleErrors": [
+        "Warning: Invalid DOM property `%s`. Did you mean `%s`?%s stroke-width strokeWidth \n    at svg\n    at a\n    at div\n    at div\n    at div\n    at AppHeader (http://localhost:5173/src/components/StatusBar.tsx:719:18)\n    at div\n    at DrawersProvider (http://localhost:5173/src/components/drawers/DrawersContext.tsx:36:35)\n    at TradingProvider (http://localhost:5173/src/context/TradingContext.tsx:31:35)\n    at TradingApp (http://localhost:5173/src/App.tsx:191:17)\n    at AuthGate (http://localhost:5173/src/App.tsx:121:21)\n    at ErrorBoundary (http://localhost:5173/src/App.tsx:63:1)\n    at App (http://localhost:5173/src/App.tsx:615:45)\n    at Provider (http://localhost:5173/node_modules/.vite/deps/chunk-F6HJRDUB.js?v=bd4f5061:923:11)",
+        "Warning: Invalid DOM property `%s`. Did you mean `%s`?%s stroke-linecap strokeLinecap \n    at svg\n    at a\n    at div\n    at div\n    at div\n    at AppHeader (http://localhost:5173/src/components/StatusBar.tsx:719:18)\n    at div\n    at DrawersProvider (http://localhost:5173/src/components/drawers/DrawersContext.tsx:36:35)\n    at TradingProvider (http://localhost:5173/src/context/TradingContext.tsx:31:35)\n    at TradingApp (http://localhost:5173/src/App.tsx:191:17)\n    at AuthGate (http://localhost:5173/src/App.tsx:121:21)\n    at ErrorBoundary (http://localhost:5173/src/App.tsx:63:1)\n    at App (http://localhost:5173/src/App.tsx:615:45)\n    at Provider (http://localhost:5173/node_modules/.vite/deps/chunk-F6HJRDUB.js?v=bd4f5061:923:11)",
+        "Warning: Invalid DOM property `%s`. Did you mean `%s`?%s stroke-linejoin strokeLinejoin \n    at svg\n    at a\n    at div\n    at div\n    at div\n    at AppHeader (http://localhost:5173/src/components/StatusBar.tsx:719:18)\n    at div\n    at DrawersProvider (http://localhost:5173/src/components/drawers/DrawersContext.tsx:36:35)\n    at TradingProvider (http://localhost:5173/src/context/TradingContext.tsx:31:35)\n    at TradingApp (http://localhost:5173/src/App.tsx:191:17)\n    at AuthGate (http://localhost:5173/src/App.tsx:121:21)\n    at ErrorBoundary (http://localhost:5173/src/App.tsx:63:1)\n    at App (http://localhost:5173/src/App.tsx:615:45)\n    at Provider (http://localhost:5173/node_modules/.vite/deps/chunk-F6HJRDUB.js?v=bd4f5061:923:11)"
+      ],
       "pageErrors": [],
-      "screenshot": null,
-      "notes": "not accessible to admin role"
+      "screenshot": "screenshots/basket-order.png",
+      "notes": "captured by trader walkthrough"
     },
     {
       "panelId": "client-rfq",
-      "rendered": false,
-      "consoleErrors": [],
+      "rendered": true,
+      "consoleErrors": [
+        "Warning: Invalid DOM property `%s`. Did you mean `%s`?%s stroke-width strokeWidth \n    at svg\n    at a\n    at div\n    at div\n    at div\n    at AppHeader (http://localhost:5173/src/components/StatusBar.tsx:719:18)\n    at div\n    at DrawersProvider (http://localhost:5173/src/components/drawers/DrawersContext.tsx:36:35)\n    at TradingProvider (http://localhost:5173/src/context/TradingContext.tsx:31:35)\n    at TradingApp (http://localhost:5173/src/App.tsx:191:17)\n    at AuthGate (http://localhost:5173/src/App.tsx:121:21)\n    at ErrorBoundary (http://localhost:5173/src/App.tsx:63:1)\n    at App (http://localhost:5173/src/App.tsx:615:45)\n    at Provider (http://localhost:5173/node_modules/.vite/deps/chunk-F6HJRDUB.js?v=bd4f5061:923:11)",
+        "Warning: Invalid DOM property `%s`. Did you mean `%s`?%s stroke-linecap strokeLinecap \n    at svg\n    at a\n    at div\n    at div\n    at div\n    at AppHeader (http://localhost:5173/src/components/StatusBar.tsx:719:18)\n    at div\n    at DrawersProvider (http://localhost:5173/src/components/drawers/DrawersContext.tsx:36:35)\n    at TradingProvider (http://localhost:5173/src/context/TradingContext.tsx:31:35)\n    at TradingApp (http://localhost:5173/src/App.tsx:191:17)\n    at AuthGate (http://localhost:5173/src/App.tsx:121:21)\n    at ErrorBoundary (http://localhost:5173/src/App.tsx:63:1)\n    at App (http://localhost:5173/src/App.tsx:615:45)\n    at Provider (http://localhost:5173/node_modules/.vite/deps/chunk-F6HJRDUB.js?v=bd4f5061:923:11)",
+        "Warning: Invalid DOM property `%s`. Did you mean `%s`?%s stroke-linejoin strokeLinejoin \n    at svg\n    at a\n    at div\n    at div\n    at div\n    at AppHeader (http://localhost:5173/src/components/StatusBar.tsx:719:18)\n    at div\n    at DrawersProvider (http://localhost:5173/src/components/drawers/DrawersContext.tsx:36:35)\n    at TradingProvider (http://localhost:5173/src/context/TradingContext.tsx:31:35)\n    at TradingApp (http://localhost:5173/src/App.tsx:191:17)\n    at AuthGate (http://localhost:5173/src/App.tsx:121:21)\n    at ErrorBoundary (http://localhost:5173/src/App.tsx:63:1)\n    at App (http://localhost:5173/src/App.tsx:615:45)\n    at Provider (http://localhost:5173/node_modules/.vite/deps/chunk-F6HJRDUB.js?v=bd4f5061:923:11)"
+      ],
       "pageErrors": [],
-      "screenshot": null,
-      "notes": "not accessible to admin role"
+      "screenshot": "screenshots/client-rfq.png",
+      "notes": "captured by external-client walkthrough"
     },
     {
       "panelId": "sales-workbench",
-      "rendered": false,
-      "consoleErrors": [],
+      "rendered": true,
+      "consoleErrors": [
+        "Warning: Invalid DOM property `%s`. Did you mean `%s`?%s stroke-width strokeWidth \n    at svg\n    at a\n    at div\n    at div\n    at div\n    at AppHeader (http://localhost:5173/src/components/StatusBar.tsx:719:18)\n    at div\n    at DrawersProvider (http://localhost:5173/src/components/drawers/DrawersContext.tsx:36:35)\n    at TradingProvider (http://localhost:5173/src/context/TradingContext.tsx:31:35)\n    at TradingApp (http://localhost:5173/src/App.tsx:191:17)\n    at AuthGate (http://localhost:5173/src/App.tsx:121:21)\n    at ErrorBoundary (http://localhost:5173/src/App.tsx:63:1)\n    at App (http://localhost:5173/src/App.tsx:615:45)\n    at Provider (http://localhost:5173/node_modules/.vite/deps/chunk-F6HJRDUB.js?v=bd4f5061:923:11)",
+        "Warning: Invalid DOM property `%s`. Did you mean `%s`?%s stroke-linecap strokeLinecap \n    at svg\n    at a\n    at div\n    at div\n    at div\n    at AppHeader (http://localhost:5173/src/components/StatusBar.tsx:719:18)\n    at div\n    at DrawersProvider (http://localhost:5173/src/components/drawers/DrawersContext.tsx:36:35)\n    at TradingProvider (http://localhost:5173/src/context/TradingContext.tsx:31:35)\n    at TradingApp (http://localhost:5173/src/App.tsx:191:17)\n    at AuthGate (http://localhost:5173/src/App.tsx:121:21)\n    at ErrorBoundary (http://localhost:5173/src/App.tsx:63:1)\n    at App (http://localhost:5173/src/App.tsx:615:45)\n    at Provider (http://localhost:5173/node_modules/.vite/deps/chunk-F6HJRDUB.js?v=bd4f5061:923:11)",
+        "Warning: Invalid DOM property `%s`. Did you mean `%s`?%s stroke-linejoin strokeLinejoin \n    at svg\n    at a\n    at div\n    at div\n    at div\n    at AppHeader (http://localhost:5173/src/components/StatusBar.tsx:719:18)\n    at div\n    at DrawersProvider (http://localhost:5173/src/components/drawers/DrawersContext.tsx:36:35)\n    at TradingProvider (http://localhost:5173/src/context/TradingContext.tsx:31:35)\n    at TradingApp (http://localhost:5173/src/App.tsx:191:17)\n    at AuthGate (http://localhost:5173/src/App.tsx:121:21)\n    at ErrorBoundary (http://localhost:5173/src/App.tsx:63:1)\n    at App (http://localhost:5173/src/App.tsx:615:45)\n    at Provider (http://localhost:5173/node_modules/.vite/deps/chunk-F6HJRDUB.js?v=bd4f5061:923:11)"
+      ],
       "pageErrors": [],
-      "screenshot": null,
-      "notes": "not accessible to admin role"
+      "screenshot": "screenshots/sales-workbench.png",
+      "notes": "captured by sales walkthrough"
     },
     {
       "panelId": "product-builder",
