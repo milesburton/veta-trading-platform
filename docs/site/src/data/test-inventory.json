@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-19T02:59:29.322Z",
+  "generatedAt": "2026-05-19T03:09:54.139Z",
   "backend": {
     "unit": {
-      "files": 38,
-      "cases": 517,
+      "files": 39,
+      "cases": 527,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -41,6 +41,7 @@
         "docs-drift.unit.test.ts": 7,
         "credentials.unit.test.ts": 8,
         "bug-report-route.unit.test.ts": 10,
+        "playbooks.unit.test.ts": 10,
         "telemetry-route.unit.test.ts": 6,
         "discord-notifier.unit.test.ts": 5
       }

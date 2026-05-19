@@ -171,6 +171,15 @@ export default defineConfig({
             { label: "Shared modules", slug: "development/shared-modules" },
             { label: "Source references", slug: "development/source-references" },
             { label: "Contributing", slug: "development/contributing" },
+            {
+              label: "AI playbooks",
+              items: [
+                { label: "Overview", slug: "development/playbooks" },
+                { label: "Add a new algo", slug: "development/playbooks/add-algo-strategy" },
+                { label: "Add a dashboard panel", slug: "development/playbooks/add-dashboard-panel" },
+                { label: "Debug a Grafana panel", slug: "development/playbooks/debug-grafana-panel" },
+              ],
+            },
             { label: "Roadmap", slug: "development/roadmap" },
           ],
         },
