@@ -116,3 +116,81 @@ export async function notifyDiscordBug(
 function sanitiseMultiline(s: string, max: number): string {
   return s.replace(/\r/g, "").slice(0, max);
 }
+
+const DEFAULT_HEARTBEAT_INTERVAL_MS = 60 * 1000;
+
+export interface HeartbeatSnapshot {
+  version: string;
+  environment: string;
+  uptimeMs: number;
+  services: Record<string, boolean>;
+  ts: number;
+}
+
+function formatUptime(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+const DISCORD_MAX_MESSAGE_CHARS = 1900;
+
+export function buildHeartbeatMessage(snap: HeartbeatSnapshot): string {
+  const sha = snap.version.length > 7 ? snap.version.slice(0, 7) : snap.version;
+  const entries = Object.entries(snap.services).sort(([a], [b]) => a.localeCompare(b));
+  const up = entries.filter(([, ok]) => ok).length;
+  const total = entries.length;
+  const allUp = up === total;
+  const headerEmoji = allUp ? "✅" : up >= total - 2 ? "⚠️" : "🚨";
+  const header = `${headerEmoji} **VETA** \`${sha}\` (${snap.environment}) — ${up}/${total} services up · uptime ${formatUptime(snap.uptimeMs)}`;
+  const lines: string[] = entries.map(([name, ok]) => `${ok ? "🟢" : "🔴"} \`${name}\``);
+  let body = `${header}\n${lines.join(" ")}`;
+  if (body.length > DISCORD_MAX_MESSAGE_CHARS) {
+    body = body.slice(0, DISCORD_MAX_MESSAGE_CHARS - 1) + "…";
+  }
+  return body;
+}
+
+export async function sendHeartbeat(snap: HeartbeatSnapshot): Promise<boolean> {
+  const url = getAlertsWebhookUrl();
+  if (!url) return false;
+  return await postToDiscord({
+    url,
+    username: "VETA Heartbeat",
+    content: buildHeartbeatMessage(snap),
+  });
+}
+
+export interface HeartbeatOptions {
+  version: string;
+  environment: string;
+  startedAt: number;
+  getServices: () => Record<string, boolean> | null;
+  intervalMs?: number;
+  sender?: (snap: HeartbeatSnapshot) => Promise<boolean>;
+}
+
+export function startHeartbeat(opts: HeartbeatOptions): { stop: () => void } {
+  const envInterval = Number(Deno.env.get("DISCORD_HEARTBEAT_INTERVAL_MS"));
+  const intervalMs = opts.intervalMs
+    ?? (Number.isFinite(envInterval) && envInterval > 0 ? envInterval : DEFAULT_HEARTBEAT_INTERVAL_MS);
+  const send = opts.sender ?? sendHeartbeat;
+  const fire = () => {
+    const services = opts.getServices();
+    if (!services) return;
+    send({
+      version: opts.version,
+      environment: opts.environment,
+      uptimeMs: Date.now() - opts.startedAt,
+      services,
+      ts: Date.now(),
+    }).catch(() => {});
+  };
+  fire();
+  const handle = setInterval(fire, intervalMs);
+  return { stop: () => clearInterval(handle) };
+}
