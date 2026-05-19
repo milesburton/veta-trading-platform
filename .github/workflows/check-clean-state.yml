@@ -38,29 +38,44 @@ jobs:
       - name: Install frontend dependencies
         run: cd frontend && npm ci
 
+      - name: Install docs/site dependencies
+        working-directory: docs/site
+        run: npm ci
+
+      - name: Regenerate derived docs files
+        working-directory: docs/site
+        run: npm run generate
+
       - name: Check for uncommitted changes
         run: |
           echo "Checking for uncommitted changes in working directory..."
-          
+
           # Run a quick lint to ensure any generated files are up-to-date
           deno task lint --fix || true
           cd frontend && deno run -A npm:@biomejs/biome check --write src/ || true
           cd ..
-          
+
           # Check if there are any uncommitted changes
           if ! git diff-index --quiet HEAD --; then
-            echo "❌ ERROR: Uncommitted changes detected after running linters"
+            echo "❌ ERROR: Uncommitted changes detected after running linters and docs generators"
             echo "The following files have uncommitted changes:"
             git diff-index --name-only HEAD --
             echo ""
-            echo "This typically means:"
+            echo "This typically means one of:"
             echo "  - Lock files were modified and not committed"
-            echo "  - Generated files were not properly committed"
+            echo "  - Generated docs files are stale: a code change (services, algos,"
+            echo "    RBAC roles, panels, migrations, etc) means 'npm run generate'"
+            echo "    in docs/site/ produces different output than what's committed"
             echo "  - Lint/format rules were not applied before committing"
             echo ""
-            echo "Please run 'deno task lint' and 'cd frontend && npm run lint' locally,"
-            echo "commit any changes, and push again."
+            echo "Fix locally with:"
+            echo "  cd docs/site && npm run generate"
+            echo "  deno task lint"
+            echo "  cd frontend && npm run lint"
+            echo "  git add -A && git commit -m 'chore(docs): regenerate'"
+            echo ""
+            echo "Pre-commit hook does this automatically — see .husky/pre-commit."
             exit 1
           fi
-          
-          echo "✅ Working directory is clean - all files are properly committed"
+
+          echo "✅ Working directory is clean — all generated docs are in sync with source code"

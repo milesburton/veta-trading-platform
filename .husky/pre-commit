@@ -15,7 +15,7 @@ fi
 
 echo "Pre-commit checks... (commit: $COMMIT_SHA)"
 
-echo "  [0/8] Verifying clean working directory..."
+echo "  [0/9] Verifying clean working directory..."
 # Block unstaged changes to tracked files. Staged changes are expected —
 # those are what we're about to commit. Using `git diff-index HEAD` here
 # would also flag the staged files and make any normal commit fail.
@@ -26,27 +26,27 @@ if ! git diff --quiet; then
   exit 1
 fi
 
-echo "  [1/8] Backend lint..."
+echo "  [1/9] Backend lint..."
 cd "$REPO_ROOT"
 deno task lint
 
-echo "  [2/8] Backend type-check..."
+echo "  [2/9] Backend type-check..."
 deno task check
 
-echo "  [3/8] Backend unit tests..."
+echo "  [3/9] Backend unit tests..."
 deno task test
 
-echo "  [4/8] Frontend lint (all files)..."
+echo "  [4/9] Frontend lint (all files)..."
 cd "$REPO_ROOT/frontend"
 deno run -A npm:@biomejs/biome check src/
 
-echo "  [5/8] Frontend type-check (all files)..."
+echo "  [5/9] Frontend type-check (all files)..."
 ./node_modules/.bin/tsc --noEmit --skipLibCheck
 
-echo "  [6/8] Frontend unit tests..."
+echo "  [6/9] Frontend unit tests..."
 ./node_modules/.bin/vitest run
 
-echo "  [7/8] Integration tests (skipped if services offline)..."
+echo "  [7/9] Integration tests (skipped if services offline)..."
 cd "$REPO_ROOT"
 if curl -sf http://localhost:5000/health >/dev/null 2>&1 && curl -sf http://localhost:5032/health >/dev/null 2>&1; then
   deno task test:integration
@@ -54,7 +54,30 @@ else
   echo "       Services not fully running — skipping integration tests."
 fi
 
-echo "  [8/8] Fallow audit (staged vs HEAD; advisory)..."
+echo "  [8/9] Docs drift check (regenerate derived files)..."
+# `npm run generate` rebuilds rbac-roles.json, panel-matrix.json,
+# services.md, algos.md, tech-stack.mdx, migrations.md, etc. from
+# the live source. If anything drifts, the gate blocks the commit
+# and tells you what to do. Skipped when docs/site deps aren't
+# installed (fresh clone before `cd docs/site && npm ci`).
+if [ -d "$REPO_ROOT/docs/site/node_modules" ]; then
+  (cd "$REPO_ROOT/docs/site" && npm run generate >/dev/null 2>&1)
+  cd "$REPO_ROOT"
+  if ! git diff --quiet -- docs/site/; then
+    echo "❌ ERROR: Generated docs files are out of sync with source code."
+    echo "The following files would change after running 'npm run generate':"
+    git diff --name-only -- docs/site/
+    echo ""
+    echo "Stage and amend / re-commit:"
+    echo "  git add docs/site"
+    echo "  # then re-run your git commit command"
+    exit 1
+  fi
+else
+  echo "       docs/site/node_modules missing — skipping (run 'cd docs/site && npm ci')."
+fi
+
+echo "  [9/9] Fallow audit (staged vs HEAD; advisory)..."
 # `fallow audit` reports new findings introduced by the changeset.
 # Run as advisory rather than blocking: fallow's introduced/inherited
 # attribution flags line-shifted clones from sibling PRs as "new" even
