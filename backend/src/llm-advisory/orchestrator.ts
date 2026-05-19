@@ -177,23 +177,41 @@ createConsumer("orchestrator-worker-status", ["llm.worker.status"]).then(
   },
 ).catch(() => {});
 
+const STALENESS_QUERY_CONCURRENCY = 4;
+
+async function mapWithConcurrency<T, U>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T) => Promise<U>,
+): Promise<U[]> {
+  const out: U[] = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      out[i] = await fn(items[i]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
 setInterval(async () => {
   const effectivePolicy = await getEffectivePolicy();
   if (!canAutoTrigger(effectivePolicy)) return;
   const symbols = [...latestSignals.keys()];
   if (symbols.length === 0) return;
-  const [pendingJobs, latestNotes] = await Promise.all([
-    Promise.all(
-      symbols.map((s) =>
-        store.getJobsBySymbol(s, 5).then((jobs) => ({ s, jobs }))
-      ),
-    ),
-    Promise.all(
-      symbols.map((s) => store.getLatestNote(s).then((note) => ({ s, note }))),
-    ),
-  ]);
-  const pendingMap = new Map(pendingJobs.map(({ s, jobs }) => [s, jobs]));
-  const noteMap = new Map(latestNotes.map(({ s, note }) => [s, note]));
+  const pendingMap = new Map<string, LlmJob[]>();
+  const noteMap = new Map<string, Awaited<ReturnType<typeof store.getLatestNote>>>();
+  await mapWithConcurrency(symbols, STALENESS_QUERY_CONCURRENCY, async (s) => {
+    const [jobs, note] = await Promise.all([
+      store.getJobsBySymbol(s, 5),
+      store.getLatestNote(s),
+    ]);
+    pendingMap.set(s, jobs);
+    noteMap.set(s, note);
+  });
   for (const symbol of symbols) {
     const jobs = pendingMap.get(symbol) ?? [];
     if (jobs.some((j) => j.status === "queued" || j.status === "running")) {
