@@ -1,0 +1,62 @@
+---
+title: Central Counterparty Clearing (CCP)
+description: Novation, margin, and settlement for every fill on the platform.
+---
+
+import Svc from "../../../components/Svc.astro";
+
+The CCP service interposes itself as the legal counterparty to every trade. It novates fills into CCP-vs-participant legs, posts initial margin, marks margin to market on a fixed cadence, and tracks settlement obligations through to settlement date.
+
+## Why a CCP
+
+In a bilateral world, every fill leaves two participants exposed to each other's credit until settlement. A central counterparty replaces that bilateral relationship with two new contracts: the CCP becomes the buyer to every seller and the seller to every buyer. Counterparty risk is mutualised across the clearing pool, and post-trade processing converges on a single risk-managed entity.
+
+The platform's CCP is a simplified educational simulation, but it implements the three core jobs of a real clearing house: novation, margin, and settlement.
+
+## Inputs
+
+The CCP consumes two streams from the message bus:
+
+- `orders.filled` — lit-market and dark-pool fills produced by the EMS and the dark-pool ATS
+- `rfq.executed` — bond executions produced by the [RFQ service](./post-trade-rfq/)
+
+Both streams carry the same fill shape (instrument, side, quantity, price, counterparty), so the CCP can clear lit, dark, and RFQ trades through a single pipeline.
+
+## Per-fill processing
+
+For each fill the CCP performs the following work:
+
+1. **Novation.** The bilateral counterparty relationship is replaced by two CCP-vs-participant legs. A novation record for each leg is published on `ccp.novation`.
+2. **Initial margin.** Margin is posted to both buyer and seller accounts at an asset-class-specific rate:
+
+   | Asset class | Initial margin |
+   |-------------|---------------:|
+   | Equity      | 10% notional |
+   | Fixed income| 2% notional |
+   | Derivatives | 15% notional |
+   | OTC default | 5% notional |
+
+   A `ccp.margin` event is published for each margin movement.
+3. **Settlement queueing.** The trade is added to the settlement queue under its settlement date. A `ccp.settlement.queued` event records the obligation.
+
+## Mark-to-market and variation margin
+
+Every `CCP_MARGIN_MTM_MS` (10 s by default) the CCP revalues outstanding positions against the latest prices from <Svc name="market-sim" />. Where current exposure exceeds the maintenance margin threshold (which is below the initial margin rate by asset class), a variation margin call is published on `ccp.margin`.
+
+## Settlement sweep
+
+Every `CCP_SETTLEMENT_SWEEP_MS` (30 s by default) a sweep walks the queue, picks obligations whose settlement date has arrived, and publishes `ccp.settlement.complete` for each one. The compressed time base means T+2 equity settlement, T+1 FI, and same-day derivatives can all be exercised in a short demo session.
+
+## HTTP surface
+
+| Path | Purpose |
+|------|---------|
+| `GET /health` | liveness |
+| `GET /ccp/margin/:userId` | account margin summary |
+| `GET /ccp/settlements` | pending settlement queue |
+| `GET /ccp/settlements/:date` | obligations on a specific date |
+| `GET /ccp/stats` | aggregate clearing stats |
+
+## Source
+
+`backend/src/ccp/ccp-service.ts`

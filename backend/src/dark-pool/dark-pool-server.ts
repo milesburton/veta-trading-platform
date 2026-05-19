@@ -1,23 +1,7 @@
 /**
- * Dark Pool ATS (Alternative Trading System)
- *
- * Subscribes to "orders.routed" on the message bus and admits orders with
- * destinationVenue === "DARK1". Runs periodic midpoint matching cycles.
- *
- * On match:
- *   - Publishes "dark.execution"  — paired trade record for audit
- *   - Publishes "orders.filled"   — one per side (buy + sell), mirrors EMS shape
- *   - Publishes "fix.execution"   — one per side, consumed by fix-archive
- *
- * Unmatched orders that exceed ORDER_TIMEOUT_MS are either:
- *   - Re-routed to the lit market (RESIDUAL_ACTION=reroute, default), or
- *   - Expired (RESIDUAL_ACTION=expire)
- *
- * No pre-trade transparency: limit prices, queue depth, and counterparty
- * identity are never exposed externally. The /pool/stats endpoint returns
- * only aggregate quantities, not prices.
- *
- * HTTP surface: GET /health, GET /pool/stats
+ * Dark Pool ATS (Alternative Trading System).
+ * See platform/dark-pool for midpoint matching, residual handling, and
+ * the pre-trade transparency policy.
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";

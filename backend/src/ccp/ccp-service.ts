@@ -1,36 +1,6 @@
 /**
- * Central Counterparty Clearing (CCP) Service
- *
- * Interposes itself as the legal counterparty to every trade (novation),
- * manages margin accounts, and tracks settlement obligations.
- *
- * Consumes:
- *   "orders.filled"   — lit-market and dark-pool fills (from EMS + dark-pool)
- *   "rfq.executed"    — FI bond executions (from rfq-service)
- *
- * On each fill, the CCP:
- *   1. Novates the trade — replaces the bilateral counterparty relationship
- *      with two CCP-vs-participant legs
- *   2. Posts initial margin to both buyer and seller accounts
- *      (equity 10% notional, FI 2%, derivatives 15%)
- *   3. Adds the trade to the settlement queue at the correct settlement date
- *   4. Publishes "ccp.novation"  — novation record for each leg
- *   5. Publishes "ccp.margin"    — margin call events
- *   6. Publishes "ccp.settlement.queued" — settlement obligation added
- *
- * A daily settlement sweep (every SETTLEMENT_SWEEP_MS) processes obligations
- * whose settlement date has arrived and publishes "ccp.settlement.complete".
- *
- * Margin is marked-to-market every MARGIN_MTM_MS using the latest prices
- * from market-sim. Variation margin calls are published when exposure
- * exceeds the maintenance margin threshold.
- *
- * HTTP surface:
- *   GET /health
- *   GET /ccp/margin/:userId         — account margin summary
- *   GET /ccp/settlements            — pending settlement queue
- *   GET /ccp/settlements/:date      — obligations for a specific date
- *   GET /ccp/stats                  — aggregate clearing stats
+ * Central Counterparty Clearing (CCP) Service.
+ * See platform/post-trade-ccp for novation, margin, and settlement details.
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
