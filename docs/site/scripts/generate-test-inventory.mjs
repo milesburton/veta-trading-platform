@@ -1,6 +1,17 @@
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+function safeCommitDate() {
+  try {
+    return execSync("git log -1 --format=%cI", { stdio: ["ignore", "pipe", "ignore"] })
+      .toString()
+      .trim();
+  } catch {
+    return "unknown";
+  }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -108,7 +119,7 @@ const supervisordServiceCount = (
 ).length;
 
 const inventory = {
-  generatedAt: new Date().toISOString(),
+  generatedAt: safeCommitDate(),
   backend: {
     unit: backendUnit,
     integration: backendIntegration,

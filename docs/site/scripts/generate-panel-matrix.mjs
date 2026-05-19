@@ -10,25 +10,33 @@ const registryPath = path.join(
   repoRoot,
   "frontend/src/components/dashboard/panelRegistry.ts",
 );
+const authSlicePath = path.join(
+  repoRoot,
+  "frontend/src/store/authSlice.ts",
+);
 const targetPath = path.resolve(
   docsSiteRoot,
   "src/data/panel-matrix.json",
 );
 
 const src = fs.readFileSync(registryPath, "utf8");
+const authSliceSrc = fs.readFileSync(authSlicePath, "utf8");
 
-function parseTradingStyles(text) {
-  const m = text.match(/export type TradingStyle\s*=\s*([\s\S]*?);/);
-  if (!m) throw new Error("TradingStyle union not found");
-  const styles = [];
-  const re = /"([a-z_]+)"/g;
-  let match;
-  match = re.exec(m[1]);
-  while (match !== null) {
-    styles.push(match[1]);
-    match = re.exec(m[1]);
+function parseTradingStyles() {
+  const sources = [src, authSliceSrc];
+  for (const text of sources) {
+    const m = text.match(/export type TradingStyle\s*=\s*([\s\S]*?);/);
+    if (!m) continue;
+    const styles = [];
+    const re = /"([a-z_]+)"/g;
+    let match = re.exec(m[1]);
+    while (match !== null) {
+      styles.push(match[1]);
+      match = re.exec(m[1]);
+    }
+    if (styles.length > 0) return styles;
   }
-  return styles;
+  throw new Error("TradingStyle union not found in panelRegistry.ts or authSlice.ts");
 }
 
 function parsePanelTitles(text) {
@@ -90,7 +98,7 @@ function parsePanelStyles(text) {
   return result;
 }
 
-const tradingStyles = parseTradingStyles(src);
+const tradingStyles = parseTradingStyles();
 const titles = parsePanelTitles(src);
 const panelStyles = parsePanelStyles(src);
 
