@@ -173,51 +173,55 @@ export async function withPgRetry<T>(
 }
 
 export function createJobStore(pool: Pool): JobStore {
-  async function getJob(jobId: string): Promise<LlmJob | null> {
-    const client = await pool.connect();
-    try {
-      const { rows } = await client.queryArray(
-        `SELECT id, symbol, trigger_reason, status, context_hash, priority, requested_by,
-                created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count
-         FROM llm_advisory.jobs WHERE id = $1`,
-        [jobId],
-      );
-      return rows.length === 0 ? null : rowToJob(rows[0]);
-    } finally {
-      client.release();
-    }
-  }
-
-  return {
-    async insertJob(job: Omit<LlmJob, "id">): Promise<string> {
-      const id = crypto.randomUUID();
+  function getJob(jobId: string): Promise<LlmJob | null> {
+    return withPgRetry(async () => {
       const client = await pool.connect();
       try {
-        await client.queryArray(
-          `INSERT INTO llm_advisory.jobs
-            (id, symbol, trigger_reason, status, context_hash, priority, requested_by,
-             created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-          [
-            id,
-            job.symbol,
-            job.triggerReason,
-            job.status,
-            job.contextHash,
-            job.priority,
-            job.requestedBy ?? null,
-            job.createdAt,
-            job.claimedAt ?? null,
-            job.completedAt ?? null,
-            job.workerSessionId ?? null,
-            job.errorMessage ?? null,
-            job.retryCount,
-          ],
+        const { rows } = await client.queryArray(
+          `SELECT id, symbol, trigger_reason, status, context_hash, priority, requested_by,
+                  created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count
+           FROM llm_advisory.jobs WHERE id = $1`,
+          [jobId],
         );
+        return rows.length === 0 ? null : rowToJob(rows[0]);
       } finally {
         client.release();
       }
-      return id;
+    }, { label: "getJob" });
+  }
+
+  return {
+    insertJob(job: Omit<LlmJob, "id">): Promise<string> {
+      return withPgRetry(async () => {
+        const id = crypto.randomUUID();
+        const client = await pool.connect();
+        try {
+          await client.queryArray(
+            `INSERT INTO llm_advisory.jobs
+              (id, symbol, trigger_reason, status, context_hash, priority, requested_by,
+               created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+            [
+              id,
+              job.symbol,
+              job.triggerReason,
+              job.status,
+              job.contextHash,
+              job.priority,
+              job.requestedBy ?? null,
+              job.createdAt,
+              job.claimedAt ?? null,
+              job.completedAt ?? null,
+              job.workerSessionId ?? null,
+              job.errorMessage ?? null,
+              job.retryCount,
+            ],
+          );
+        } finally {
+          client.release();
+        }
+        return id;
+      }, { label: "insertJob" });
     },
 
     claimNextJob(workerSessionId: string): Promise<LlmJob | null> {
@@ -289,185 +293,203 @@ export function createJobStore(pool: Pool): JobStore {
 
     getJob,
 
-    async getJobsBySymbol(symbol: string, limit = 20): Promise<LlmJob[]> {
-      const client = await pool.connect();
-      try {
-        const { rows } = await client.queryArray(
-          `SELECT id, symbol, trigger_reason, status, context_hash, priority, requested_by,
-                  created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count
-           FROM llm_advisory.jobs WHERE symbol = $1 ORDER BY created_at DESC LIMIT $2`,
-          [symbol, limit],
-        );
-        return rows.map(rowToJob);
-      } finally {
-        client.release();
-      }
+    getJobsBySymbol(symbol: string, limit = 20): Promise<LlmJob[]> {
+      return withPgRetry(async () => {
+        const client = await pool.connect();
+        try {
+          const { rows } = await client.queryArray(
+            `SELECT id, symbol, trigger_reason, status, context_hash, priority, requested_by,
+                    created_at, claimed_at, completed_at, worker_session_id, error_message, retry_count
+             FROM llm_advisory.jobs WHERE symbol = $1 ORDER BY created_at DESC LIMIT $2`,
+            [symbol, limit],
+          );
+          return rows.map(rowToJob);
+        } finally {
+          client.release();
+        }
+      }, { label: "getJobsBySymbol" });
     },
 
-    async getPendingJobCount(): Promise<number> {
-      const client = await pool.connect();
-      try {
-        const { rows } = await client.queryArray<[bigint | number]>(
-          `SELECT COUNT(*) FROM llm_advisory.jobs WHERE status IN ('queued', 'running')`,
-        );
-        return Number(rows[0]?.[0] ?? 0);
-      } finally {
-        client.release();
-      }
+    getPendingJobCount(): Promise<number> {
+      return withPgRetry(async () => {
+        const client = await pool.connect();
+        try {
+          const { rows } = await client.queryArray<[bigint | number]>(
+            `SELECT COUNT(*) FROM llm_advisory.jobs WHERE status IN ('queued', 'running')`,
+          );
+          return Number(rows[0]?.[0] ?? 0);
+        } finally {
+          client.release();
+        }
+      }, { label: "getPendingJobCount" });
     },
 
-    async hasRecentJob(
+    hasRecentJob(
       contextHash: string,
       windowMs: number,
     ): Promise<boolean> {
-      const client = await pool.connect();
-      try {
-        const { rows } = await client.queryArray<[bigint | number]>(
-          `SELECT COUNT(*) FROM llm_advisory.jobs
-           WHERE context_hash = $1 AND created_at > $2 AND status != 'cancelled'`,
-          [contextHash, Date.now() - windowMs],
-        );
-        return Number(rows[0]?.[0] ?? 0) > 0;
-      } finally {
-        client.release();
-      }
+      return withPgRetry(async () => {
+        const client = await pool.connect();
+        try {
+          const { rows } = await client.queryArray<[bigint | number]>(
+            `SELECT COUNT(*) FROM llm_advisory.jobs
+             WHERE context_hash = $1 AND created_at > $2 AND status != 'cancelled'`,
+            [contextHash, Date.now() - windowMs],
+          );
+          return Number(rows[0]?.[0] ?? 0) > 0;
+        } finally {
+          client.release();
+        }
+      }, { label: "hasRecentJob" });
     },
 
-    async cancelJobsForSymbol(symbol: string): Promise<number> {
-      const client = await pool.connect();
-      try {
-        const { rows } = await client.queryArray<[bigint | number]>(
-          `WITH updated AS (
-             UPDATE llm_advisory.jobs SET status = 'cancelled'
-             WHERE symbol = $1 AND status = 'queued'
-             RETURNING id
-           ) SELECT COUNT(*) FROM updated`,
-          [symbol],
-        );
-        return Number(rows[0]?.[0] ?? 0);
-      } finally {
-        client.release();
-      }
+    cancelJobsForSymbol(symbol: string): Promise<number> {
+      return withPgRetry(async () => {
+        const client = await pool.connect();
+        try {
+          const { rows } = await client.queryArray<[bigint | number]>(
+            `WITH updated AS (
+               UPDATE llm_advisory.jobs SET status = 'cancelled'
+               WHERE symbol = $1 AND status = 'queued'
+               RETURNING id
+             ) SELECT COUNT(*) FROM updated`,
+            [symbol],
+          );
+          return Number(rows[0]?.[0] ?? 0);
+        } finally {
+          client.release();
+        }
+      }, { label: "cancelJobsForSymbol" });
     },
 
-    async insertNote(note: Omit<AdvisoryNote, "id">): Promise<string> {
-      const id = crypto.randomUUID();
-      const client = await pool.connect();
-      try {
-        await client.queryArray(
-          `INSERT INTO llm_advisory.advisory_notes
-            (id, job_id, symbol, content, provider, model_id, prompt_tokens, completion_tokens,
-             latency_ms, signal_snapshot, recommendation_snapshot, created_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-          [
-            id,
-            note.jobId,
-            note.symbol,
-            note.content,
-            note.provider,
-            note.modelId,
-            note.promptTokens,
-            note.completionTokens,
-            note.latencyMs,
-            note.signalSnapshot,
-            note.recommendationSnapshot ?? null,
-            note.createdAt,
-          ],
-        );
-      } finally {
-        client.release();
-      }
-      return id;
+    insertNote(note: Omit<AdvisoryNote, "id">): Promise<string> {
+      return withPgRetry(async () => {
+        const id = crypto.randomUUID();
+        const client = await pool.connect();
+        try {
+          await client.queryArray(
+            `INSERT INTO llm_advisory.advisory_notes
+              (id, job_id, symbol, content, provider, model_id, prompt_tokens, completion_tokens,
+               latency_ms, signal_snapshot, recommendation_snapshot, created_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+            [
+              id,
+              note.jobId,
+              note.symbol,
+              note.content,
+              note.provider,
+              note.modelId,
+              note.promptTokens,
+              note.completionTokens,
+              note.latencyMs,
+              note.signalSnapshot,
+              note.recommendationSnapshot ?? null,
+              note.createdAt,
+            ],
+          );
+        } finally {
+          client.release();
+        }
+        return id;
+      }, { label: "insertNote" });
     },
 
-    async getLatestNote(symbol: string): Promise<AdvisoryNote | null> {
-      const client = await pool.connect();
-      try {
-        const { rows } = await client.queryArray(
-          `SELECT id, job_id, symbol, content, provider, model_id, prompt_tokens,
-                  completion_tokens, latency_ms, signal_snapshot, recommendation_snapshot, created_at
-           FROM llm_advisory.advisory_notes WHERE symbol = $1 ORDER BY created_at DESC LIMIT 1`,
-          [symbol],
-        );
-        return rows.length === 0 ? null : rowToNote(rows[0]);
-      } finally {
-        client.release();
-      }
+    getLatestNote(symbol: string): Promise<AdvisoryNote | null> {
+      return withPgRetry(async () => {
+        const client = await pool.connect();
+        try {
+          const { rows } = await client.queryArray(
+            `SELECT id, job_id, symbol, content, provider, model_id, prompt_tokens,
+                    completion_tokens, latency_ms, signal_snapshot, recommendation_snapshot, created_at
+             FROM llm_advisory.advisory_notes WHERE symbol = $1 ORDER BY created_at DESC LIMIT 1`,
+            [symbol],
+          );
+          return rows.length === 0 ? null : rowToNote(rows[0]);
+        } finally {
+          client.release();
+        }
+      }, { label: "getLatestNote" });
     },
 
-    async insertPromptAudit(audit: Omit<LlmPromptAudit, "id">): Promise<void> {
-      const client = await pool.connect();
-      try {
-        await client.queryArray(
-          `INSERT INTO llm_advisory.prompt_audit
-            (id, job_id, prompt_text, system_prompt_hash, context_size_chars, ts)
-           VALUES ($1,$2,$3,$4,$5,$6)`,
-          [
-            crypto.randomUUID(),
-            audit.jobId,
-            audit.promptText,
-            audit.systemPromptHash,
-            audit.contextSizeChars,
-            audit.ts,
-          ],
-        );
-      } finally {
-        client.release();
-      }
+    insertPromptAudit(audit: Omit<LlmPromptAudit, "id">): Promise<void> {
+      return withPgRetry(async () => {
+        const client = await pool.connect();
+        try {
+          await client.queryArray(
+            `INSERT INTO llm_advisory.prompt_audit
+              (id, job_id, prompt_text, system_prompt_hash, context_size_chars, ts)
+             VALUES ($1,$2,$3,$4,$5,$6)`,
+            [
+              crypto.randomUUID(),
+              audit.jobId,
+              audit.promptText,
+              audit.systemPromptHash,
+              audit.contextSizeChars,
+              audit.ts,
+            ],
+          );
+        } finally {
+          client.release();
+        }
+      }, { label: "insertPromptAudit" });
     },
 
-    async insertResponseAudit(
+    insertResponseAudit(
       audit: Omit<LlmResponseAudit, "id">,
     ): Promise<void> {
-      const client = await pool.connect();
-      try {
-        await client.queryArray(
-          `INSERT INTO llm_advisory.response_audit
-            (id, job_id, raw_response, parsed_successfully, parse_error_message, ts)
-           VALUES ($1,$2,$3,$4,$5,$6)`,
-          [
-            crypto.randomUUID(),
-            audit.jobId,
-            audit.rawResponse,
-            audit.parsedSuccessfully,
-            audit.parseErrorMessage ?? null,
-            audit.ts,
-          ],
-        );
-      } finally {
-        client.release();
-      }
+      return withPgRetry(async () => {
+        const client = await pool.connect();
+        try {
+          await client.queryArray(
+            `INSERT INTO llm_advisory.response_audit
+              (id, job_id, raw_response, parsed_successfully, parse_error_message, ts)
+             VALUES ($1,$2,$3,$4,$5,$6)`,
+            [
+              crypto.randomUUID(),
+              audit.jobId,
+              audit.rawResponse,
+              audit.parsedSuccessfully,
+              audit.parseErrorMessage ?? null,
+              audit.ts,
+            ],
+          );
+        } finally {
+          client.release();
+        }
+      }, { label: "insertResponseAudit" });
     },
 
-    async insertWorkerSession(
+    insertWorkerSession(
       session: Omit<LlmWorkerSession, "id">,
     ): Promise<string> {
-      const id = crypto.randomUUID();
-      const client = await pool.connect();
-      try {
-        await client.queryArray(
-          `INSERT INTO llm_advisory.worker_sessions
-            (id, started_at, ended_at, provider, model_id, jobs_processed, jobs_failed, pid, exit_reason)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-          [
-            id,
-            session.startedAt,
-            session.endedAt ?? null,
-            session.provider,
-            session.modelId,
-            session.jobsProcessed,
-            session.jobsFailed,
-            session.pid,
-            session.exitReason ?? null,
-          ],
-        );
-      } finally {
-        client.release();
-      }
-      return id;
+      return withPgRetry(async () => {
+        const id = crypto.randomUUID();
+        const client = await pool.connect();
+        try {
+          await client.queryArray(
+            `INSERT INTO llm_advisory.worker_sessions
+              (id, started_at, ended_at, provider, model_id, jobs_processed, jobs_failed, pid, exit_reason)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+            [
+              id,
+              session.startedAt,
+              session.endedAt ?? null,
+              session.provider,
+              session.modelId,
+              session.jobsProcessed,
+              session.jobsFailed,
+              session.pid,
+              session.exitReason ?? null,
+            ],
+          );
+        } finally {
+          client.release();
+        }
+        return id;
+      }, { label: "insertWorkerSession" });
     },
 
-    async updateWorkerSession(
+    updateWorkerSession(
       sessionId: string,
       fields: {
         endedAt?: number;
@@ -476,69 +498,75 @@ export function createJobStore(pool: Pool): JobStore {
         exitReason?: string;
       },
     ): Promise<void> {
-      const client = await pool.connect();
-      try {
-        await client.queryArray(
-          `UPDATE llm_advisory.worker_sessions
-           SET ended_at = COALESCE($1, ended_at),
-               jobs_processed = COALESCE($2, jobs_processed),
-               jobs_failed = COALESCE($3, jobs_failed),
-               exit_reason = COALESCE($4, exit_reason)
-           WHERE id = $5`,
-          [
-            fields.endedAt ?? null,
-            fields.jobsProcessed ?? null,
-            fields.jobsFailed ?? null,
-            fields.exitReason ?? null,
-            sessionId,
-          ],
-        );
-      } finally {
-        client.release();
-      }
+      return withPgRetry(async () => {
+        const client = await pool.connect();
+        try {
+          await client.queryArray(
+            `UPDATE llm_advisory.worker_sessions
+             SET ended_at = COALESCE($1, ended_at),
+                 jobs_processed = COALESCE($2, jobs_processed),
+                 jobs_failed = COALESCE($3, jobs_failed),
+                 exit_reason = COALESCE($4, exit_reason)
+             WHERE id = $5`,
+            [
+              fields.endedAt ?? null,
+              fields.jobsProcessed ?? null,
+              fields.jobsFailed ?? null,
+              fields.exitReason ?? null,
+              sessionId,
+            ],
+          );
+        } finally {
+          client.release();
+        }
+      }, { label: "updateWorkerSession" });
     },
 
-    async sweepStuckJobs(maxRunningAgeMs: number): Promise<number> {
-      const client = await pool.connect();
-      try {
-        const { rows } = await client.queryArray<[bigint | number]>(
-          `WITH updated AS (
-             UPDATE llm_advisory.jobs
-             SET status = 'queued', claimed_at = NULL, worker_session_id = NULL
-             WHERE status = 'running' AND claimed_at < $1
-             RETURNING id
-           ) SELECT COUNT(*) FROM updated`,
-          [Date.now() - maxRunningAgeMs],
-        );
-        return Number(rows[0]?.[0] ?? 0);
-      } finally {
-        client.release();
-      }
+    sweepStuckJobs(maxRunningAgeMs: number): Promise<number> {
+      return withPgRetry(async () => {
+        const client = await pool.connect();
+        try {
+          const { rows } = await client.queryArray<[bigint | number]>(
+            `WITH updated AS (
+               UPDATE llm_advisory.jobs
+               SET status = 'queued', claimed_at = NULL, worker_session_id = NULL
+               WHERE status = 'running' AND claimed_at < $1
+               RETURNING id
+             ) SELECT COUNT(*) FROM updated`,
+            [Date.now() - maxRunningAgeMs],
+          );
+          return Number(rows[0]?.[0] ?? 0);
+        } finally {
+          client.release();
+        }
+      }, { label: "sweepStuckJobs" });
     },
 
-    async pruneOldData(retentionMs: number): Promise<void> {
-      const cutoff = Date.now() - retentionMs;
-      const client = await pool.connect();
-      try {
-        await client.queryArray(
-          `DELETE FROM llm_advisory.jobs WHERE status IN ('done', 'failed', 'cancelled') AND created_at < $1`,
-          [cutoff],
-        );
-        await client.queryArray(
-          `DELETE FROM llm_advisory.advisory_notes WHERE created_at < $1`,
-          [cutoff],
-        );
-        await client.queryArray(
-          `DELETE FROM llm_advisory.prompt_audit WHERE ts < $1`,
-          [cutoff],
-        );
-        await client.queryArray(
-          `DELETE FROM llm_advisory.response_audit WHERE ts < $1`,
-          [cutoff],
-        );
-      } finally {
-        client.release();
-      }
+    pruneOldData(retentionMs: number): Promise<void> {
+      return withPgRetry(async () => {
+        const cutoff = Date.now() - retentionMs;
+        const client = await pool.connect();
+        try {
+          await client.queryArray(
+            `DELETE FROM llm_advisory.jobs WHERE status IN ('done', 'failed', 'cancelled') AND created_at < $1`,
+            [cutoff],
+          );
+          await client.queryArray(
+            `DELETE FROM llm_advisory.advisory_notes WHERE created_at < $1`,
+            [cutoff],
+          );
+          await client.queryArray(
+            `DELETE FROM llm_advisory.prompt_audit WHERE ts < $1`,
+            [cutoff],
+          );
+          await client.queryArray(
+            `DELETE FROM llm_advisory.response_audit WHERE ts < $1`,
+            [cutoff],
+          );
+        } finally {
+          client.release();
+        }
+      }, { label: "pruneOldData" });
     },
   };
 }
