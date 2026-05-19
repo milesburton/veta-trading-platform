@@ -39,12 +39,19 @@ are documented on each Astro page linked above.
 Two homelab `.env` settings are required for production routes to work
 end-to-end. Both live in `/opt/stacks/veta/.env`:
 
-- **`OAUTH2_SHARED_SECRET`** and **`OAUTH2_USER_SECRETS`** — see
+- **`OAUTH_SHARED_SECRET`** and **`OAUTH_USER_SECRETS`** — see
   [Security posture](https://milesburton.github.io/veta-trading-platform/platform/security/)
 - **`GRAFANA_BASICAUTH_HTPASSWD`** — gates the public `/grafana` route.
   See [Observability](https://milesburton.github.io/veta-trading-platform/platform/observability/)
-- **`ALERT_WEBHOOK_URL`** — delivery destination for security alerts.
-  See [Observability](https://milesburton.github.io/veta-trading-platform/platform/observability/)
+- **`DISCORD_WEBHOOK_URL`** — alerts channel for both Grafana platform
+  alerts and frontend-emitted user alerts (kill switch, order rejected).
+  See [Alert routing](https://milesburton.github.io/veta-trading-platform/platform/observability/alerts/)
+- **`DISCORD_BUG_WEBHOOK_URL`** — dedicated webhook for user-submitted
+  bug reports. Falls back to `DISCORD_WEBHOOK_URL` when unset. See
+  [User bug reports](https://milesburton.github.io/veta-trading-platform/platform/observability/bug-reports/)
+- **`OAUTH_ALLOW_PUBLIC_REGISTER`** — when `true`, the LoginPage
+  Create-account form is reachable and new users land as trader with
+  starter limits.
 - **`PUBLIC_GUEST_TRADING`** — when `true`, anonymous users can place
   rate-limited orders via the `/oauth/guest` endpoint. See
   [synthetic probe](https://milesburton.github.io/veta-trading-platform/platform/supporting/synthetic-probe/)

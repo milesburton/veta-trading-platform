@@ -125,6 +125,56 @@ ss -tlnp | grep :443
 The [synthetic probe](./synthetic-probe) catches all four classes within
 ~3 min as a webhook alert.
 
+## Stale port-binding recovery (OVH sshd hardening)
+
+When the homelab loses internet connectivity, the reverse SSH session
+appears alive to OVH's sshd and the `-R 18443:127.0.0.1:443` port
+binding stays held. When the homelab regains internet and autossh
+tries to re-establish, every new ssh attempt fails with:
+
+    Error: remote port forwarding failed for listen port 18443
+
+`autossh` loops indefinitely (162+ restarts observed during a
+2026-05-18 outage) until the edge kernel TCP timeout finally releases
+the dead socket — that takes around two hours by default. During the
+window, `veta.mnetcs.com` is unreachable.
+
+The fix is server-side keepalive on the OVH sshd, scoped to the
+`veta-tunnel` user so interactive sessions for `miles` or `root` are
+unaffected. The snippet at
+[`edge/sshd/veta-tunnel.conf`](https://github.com/milesburton/veta-trading-platform/blob/main/edge/sshd/veta-tunnel.conf)
+contains:
+
+```sshd_config
+Match User veta-tunnel
+    ClientAliveInterval 30
+    ClientAliveCountMax 3
+```
+
+Install:
+
+```bash
+sudo install -m 0644 /path/to/repo/edge/sshd/veta-tunnel.conf \
+  /etc/ssh/sshd_config.d/veta-tunnel.conf
+sudo sshd -t           # validate before reload
+sudo systemctl reload ssh
+
+# Force-cycle the existing veta-tunnel session and confirm reconnect
+sudo pkill -u veta-tunnel sshd || true
+sleep 60
+sudo ss -tlnp '( sport = :18443 )'   # should show a fresh listener
+```
+
+With this in place the recovery sequence is:
+
+- sshd sends a keepalive every 30 seconds
+- after 3 missed responses (90 seconds) the connection is killed
+- the port-forward is released as part of session teardown
+- autossh reconnects on its next 30-second poll
+
+End-to-end: dead-client detection plus recovery in under two minutes,
+versus the previous two-hour outage window.
+
 ## Rotating the tunnel key
 
 If the homelab is rebuilt or the key needs rotation:
