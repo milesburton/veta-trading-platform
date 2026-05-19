@@ -131,14 +131,19 @@ export function MarketFeedControlPanel() {
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <section
+        className="flex-1 overflow-y-auto"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: scrollable region needs keyboard focus (WCAG SC 2.1.1)
+        tabIndex={0}
+        aria-label="Market data feed controls"
+      >
         {/* ── Feed Status ── */}
         <div className="px-4 pt-3 pb-2 border-b border-panel/60">
-          <div className="text-[10px] font-semibold text-subtle uppercase tracking-wide mb-2">
+          <div className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-2">
             Feed Status
           </div>
           {sourcesLoading ? (
-            <div className="text-[11px] text-subtle">Loading…</div>
+            <div className="text-[11px] text-muted">Loading…</div>
           ) : (
             <div className="flex gap-2">
               {sources.map((src) => {
@@ -203,7 +208,7 @@ export function MarketFeedControlPanel() {
 
         {/* ── Market Hours ── */}
         <div className="px-4 pt-3 pb-2 border-b border-panel/60">
-          <div className="text-[10px] font-semibold text-subtle uppercase tracking-wide mb-2">
+          <div className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-2">
             Market Hours <span className="text-divider normal-case font-normal">(US Eastern)</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -211,7 +216,7 @@ export function MarketFeedControlPanel() {
               <div key={ex.mic} className="bg-surface rounded p-2.5 border border-panel">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[11px] font-semibold text-secondary">{ex.name}</span>
-                  <span className="text-[9px] font-mono text-subtle">{ex.mic}</span>
+                  <span className="text-[9px] font-mono text-muted">{ex.mic}</span>
                 </div>
                 <div className="text-[10px] text-muted mb-1.5">{ex.hours}</div>
                 <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${badge.cls}`}>
@@ -227,7 +232,7 @@ export function MarketFeedControlPanel() {
 
         {/* ── Symbol Overview ── */}
         <div className="px-4 pt-3 pb-2">
-          <div className="text-[10px] font-semibold text-subtle uppercase tracking-wide mb-2">
+          <div className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-2">
             Symbol Overview
           </div>
           <input
@@ -237,7 +242,7 @@ export function MarketFeedControlPanel() {
             onChange={(e) => {
               search.value = e.target.value;
             }}
-            className="w-full mb-2 bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary placeholder:text-subtle"
+            className="w-full mb-2 bg-panel border border-divider rounded px-2 py-1 text-[11px] text-secondary placeholder:text-muted"
           />
         </div>
 
@@ -245,25 +250,25 @@ export function MarketFeedControlPanel() {
           <thead className="sticky top-0 bg-page z-10">
             <tr className="border-b border-panel">
               <th
-                className="text-left px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium"
+                className="text-left px-4 py-1.5 text-[10px] text-muted uppercase tracking-wide font-medium"
                 title="Instrument ticker symbol"
               >
                 Symbol
               </th>
               <th
-                className="text-left px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium"
+                className="text-left px-4 py-1.5 text-[10px] text-muted uppercase tracking-wide font-medium"
                 title="Exchange or venue providing the feed"
               >
                 Exchange
               </th>
               <th
-                className="text-left px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium"
+                className="text-left px-4 py-1.5 text-[10px] text-muted uppercase tracking-wide font-medium"
                 title="Market data source adapter"
               >
                 Source
               </th>
               <th
-                className="text-right px-4 py-1.5 text-[10px] text-subtle uppercase tracking-wide font-medium"
+                className="text-right px-4 py-1.5 text-[10px] text-muted uppercase tracking-wide font-medium"
                 title="Feed status: live or paused"
               >
                 Status
@@ -291,17 +296,17 @@ export function MarketFeedControlPanel() {
             ))}
             {symbolRows.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-subtle text-[11px]">
+                <td colSpan={4} className="px-4 py-6 text-center text-muted text-[11px]">
                   No symbols match
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-      </div>
+      </section>
 
       {/* Footer */}
-      <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-divider">
+      <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-muted">
         {symbolRows.length} symbol{symbolRows.length !== 1 ? "s" : ""} · {externalCount} on external
         feeds · {anySourcePaused ? "some feeds paused" : "all active"}
       </div>

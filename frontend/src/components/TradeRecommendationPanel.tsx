@@ -341,9 +341,14 @@ export function TradeRecommendationPanel() {
           </div>
 
           {/* List */}
-          <div className="flex-1 overflow-y-auto">
+          <section
+            className="flex-1 overflow-y-auto"
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: scrollable region needs keyboard focus (WCAG SC 2.1.1)
+            tabIndex={0}
+            aria-label="Trade recommendation"
+          >
             {filtered.length === 0 ? (
-              <div className="flex items-center justify-center h-24 text-subtle text-[11px]">
+              <div className="flex items-center justify-center h-24 text-muted text-[11px]">
                 No recommendations match this filter
               </div>
             ) : (
@@ -356,9 +361,9 @@ export function TradeRecommendationPanel() {
                 ))}
               </ul>
             )}
-          </div>
+          </section>
 
-          <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-divider">
+          <div className="px-4 py-1.5 border-t border-panel shrink-0 text-[9px] text-muted">
             {formatUtcTime(result.value.computedAt)} ·{" "}
             {signal ? "Signal-driven scoring" : "Rule-based scoring"} · For educational use only
           </div>
@@ -366,7 +371,7 @@ export function TradeRecommendationPanel() {
       )}
 
       {!result.value && !isLoading && (
-        <div className="flex-1 flex items-center justify-center text-divider text-[11px]">
+        <div className="flex-1 flex items-center justify-center text-muted text-[11px]">
           Select a symbol and click Analyse
         </div>
       )}

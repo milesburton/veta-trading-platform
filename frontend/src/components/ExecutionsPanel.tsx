@@ -270,13 +270,13 @@ function TradeRow({
                 <td
                   key={col.key}
                   style={{ width: w }}
-                  className="px-3 py-1.5 text-subtle text-[10px]"
+                  className="px-3 py-1.5 text-muted text-[10px]"
                 >
                   {expanded.value ? "▾" : "▸"}
                 </td>
               );
             default:
-              return <td key={col.key} style={{ width: w }} className="px-3 py-1.5 text-subtle" />;
+              return <td key={col.key} style={{ width: w }} className="px-3 py-1.5 text-muted" />;
           }
         })}
       </tr>
@@ -382,7 +382,7 @@ function TradeRow({
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="text-subtle text-[10px]">
+                <div className="text-muted text-[10px]">
                   {filledChildren.length === 0
                     ? "No fills recorded"
                     : "Need ≥2 fills to render chart"}
@@ -448,7 +448,7 @@ export function ExecutionsPanel() {
           <span className="text-[10px] text-muted font-mono">{filterAsset}</span>
         )}
         {!isLoading && tradeOrders.length > 0 && (
-          <span className="text-[10px] text-subtle ml-auto">
+          <span className="text-[10px] text-muted ml-auto">
             {tradeOrders.length !== total ? `${tradeOrders.length} / ${total}` : tradeOrders.length}
           </span>
         )}
@@ -461,7 +461,7 @@ export function ExecutionsPanel() {
           className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
             showCfEditor.value
               ? "bg-sky-900/50 text-sky-400"
-              : "text-subtle hover:text-label hover:bg-panel"
+              : "text-muted hover:text-label hover:bg-panel"
           }`}
         >
           Format ⚙
@@ -473,9 +473,9 @@ export function ExecutionsPanel() {
 
       <div ref={containerRef} className="flex-1 overflow-auto">
         {isLoading && tradeOrders.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-subtle">Loading…</div>
+          <div className="flex items-center justify-center h-24 text-muted">Loading…</div>
         ) : tradeOrders.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-subtle">
+          <div className="flex items-center justify-center h-24 text-muted">
             {filterOrderId
               ? `No executions for order ${filterOrderId.slice(0, 8)}`
               : filterAsset
