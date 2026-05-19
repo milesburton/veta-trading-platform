@@ -43,6 +43,16 @@ The gateway only fans CRITICAL and WARNING out to Discord. INFO alerts (workspac
 
 Grafana applies its own routing by `category` label: anything matched by `category=security` goes to the legacy `security-webhook` contact point so security alerts can be split out later if needed.
 
+## Ticketing for CRITICAL alerts
+
+CRITICAL alerts also auto-create a GitHub issue. The gateway's alerts route runs `notifyDiscord` and `createTicketForAlert` side-by-side via `Promise.allSettled`, so a Discord-delivery failure can't block ticket creation and vice versa.
+
+The issue body captures severity, source, message, detail, timestamp, and the user who triggered it. Labels: `prod-issue`, `auto-created`, `severity:critical`, plus `source:<name>` when the alert names one.
+
+Duplicate suppression: before creating an issue, the gateway searches for an open issue with the same title created within the last hour. If one exists, it adds a comment to that issue instead of opening a duplicate. This keeps recurring alerts (e.g. a flapping service) on one ticket.
+
+See the [ticketing runbook](./ticketing) for env wiring, token scopes, and end-to-end verification.
+
 ## Configuration
 
 The webhook URL is injected at runtime via the `DISCORD_WEBHOOK_URL` environment variable. It is never committed to the repository.

@@ -1667,6 +1667,8 @@ services:
       REDPANDA_BROKERS: redpanda:9092
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       DISCORD_BUG_WEBHOOK_URL: ${DISCORD_BUG_WEBHOOK_URL:-}
+      GITHUB_TICKETING_TOKEN: ${GITHUB_TICKETING_TOKEN:-}
+      GITHUB_TICKETING_REPO: ${GITHUB_TICKETING_REPO:-milesburton/veta-trading-platform}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5011/health || exit 1"]
       interval: 10s

@@ -1,6 +1,7 @@
 import { CORS_HEADERS } from "@veta/http";
 import { type GatewayContext, isResponse } from "../context.ts";
 import { notifyDiscord } from "../discord-notifier.ts";
+import { createTicketForAlert } from "../ticketing.ts";
 
 export async function handleAlertsRoute(
   req: Request,
@@ -52,7 +53,10 @@ export async function handleAlertsRoute(
 async function notifyDiscordFromBody(body: ArrayBuffer, userId: string): Promise<void> {
   try {
     const parsed = JSON.parse(new TextDecoder().decode(body));
-    await notifyDiscord(parsed, userId);
+    await Promise.allSettled([
+      notifyDiscord(parsed, userId),
+      createTicketForAlert(parsed, userId),
+    ]);
   } catch {
     // ignore parse failures; user-service will reject with a 400
   }
