@@ -3,18 +3,13 @@ title: RBAC & Permissions
 description: Role-based access control for panels, orders, and admin functions.
 ---
 
+import RbacTable from "../../../components/RbacTable.astro";
+
+{/* The role rows and `Can trade` column are generated from frontend/src/auth/rbac.ts by docs/site/scripts/generate-rbac.mjs. The `Can admin` and `Panel access` columns live in the RbacTable component because they describe panel-permission policy that spans PANEL_PERMISSIONS and PANEL_TRADING_STYLES, not rbac.ts. */}
+
 ## Roles
 
-| Role              | Can trade | Can admin | Panel access                         |
-| ----------------- | --------- | --------- | ------------------------------------ |
-| `trader`          | Yes       | No        | Style-dependent (see Trading Styles) |
-| `desk-head`       | No        | No        | Read-only cross-desk oversight       |
-| `risk-manager`    | No        | No        | Read-only all desks + session replay |
-| `admin`           | No        | Yes       | Everything except order-ticket       |
-| `compliance`      | No        | No        | Read-only + session replay           |
-| `sales`           | No        | No        | Sales workbench, market data         |
-| `external-client` | No        | No        | Client RFQ only                      |
-| `viewer`          | No        | No        | Market data + analytics read-only    |
+<RbacTable />
 
 ## Panel permissions
 

@@ -310,6 +310,59 @@ async function extractAnchors(filePath: string): Promise<Set<string>> {
   return anchors;
 }
 
+Deno.test("[docs-drift] rbac-roles.json matches AUTH_ROLES in frontend/src/auth/rbac.ts", async () => {
+  const rbacSrc = await Deno.readTextFile(
+    `${REPO_ROOT}frontend/src/auth/rbac.ts`,
+  );
+  const arrMatch = rbacSrc.match(
+    /export const AUTH_ROLES\s*=\s*\[([\s\S]*?)\]/,
+  );
+  assert(arrMatch, "Could not find AUTH_ROLES in frontend/src/auth/rbac.ts");
+  const sourceRoles = arrMatch[1]
+    .split(",")
+    .map((s) => s.trim().replace(/^["'`]|["'`]$/g, ""))
+    .filter((s) => s.length > 0 && !s.startsWith("//"));
+
+  let generated: { roles: { id: string; canTrade: boolean }[] };
+  try {
+    generated = JSON.parse(
+      await Deno.readTextFile(
+        `${REPO_ROOT}docs/site/src/data/rbac-roles.json`,
+      ),
+    );
+  } catch {
+    throw new Error(
+      "docs/site/src/data/rbac-roles.json is missing. Run 'cd docs/site && npm run generate' to produce it.",
+    );
+  }
+
+  assertEquals(
+    generated.roles.map((r) => r.id),
+    sourceRoles,
+    "rbac-roles.json is stale; regenerate via 'cd docs/site && npm run generate'.",
+  );
+
+  const tableSrc = await Deno.readTextFile(
+    `${REPO_ROOT}docs/site/src/components/RbacTable.astro`,
+  );
+  const notesMatch = tableSrc.match(/ACCESS_NOTES[^=]*=\s*\{([\s\S]*?)\};/);
+  assert(
+    notesMatch,
+    "Could not find ACCESS_NOTES in docs/site/src/components/RbacTable.astro",
+  );
+  const notesKeys = new Set<string>();
+  for (const m of notesMatch[1].matchAll(/^\s*["']?([\w-]+)["']?\s*:/gm)) {
+    notesKeys.add(m[1]);
+  }
+  const missing = sourceRoles.filter((r) => !notesKeys.has(r));
+  assertEquals(
+    missing,
+    [],
+    `RbacTable.astro ACCESS_NOTES is missing entries for roles: ${missing.join(", ")}. ` +
+      `Add admin/access policy notes for each role declared in rbac.ts.`,
+  );
+});
+
 Deno.test("[docs-drift] every cross-page heading anchor link resolves to a real heading", async () => {
   // Focused test: catches the failure mode we hit three times in the recent
   // docs reorgs: a heading moves to a new sub-page, but a link from another

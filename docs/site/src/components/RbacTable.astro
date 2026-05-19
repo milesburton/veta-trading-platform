@@ -1,0 +1,46 @@
+---
+import data from "../data/rbac-roles.json";
+
+const ACCESS_NOTES: Record<string, { admin: string; access: string }> = {
+  trader: { admin: "No", access: "Style-dependent (see Trading Styles)" },
+  "desk-head": { admin: "No", access: "Read-only cross-desk oversight" },
+  "risk-manager": {
+    admin: "No",
+    access: "Read-only all desks + session replay",
+  },
+  admin: { admin: "Yes", access: "Everything except order-ticket" },
+  compliance: { admin: "No", access: "Read-only + session replay" },
+  sales: { admin: "No", access: "Sales workbench, market data" },
+  oncall: { admin: "No", access: "Observability + service health panels" },
+  "external-client": { admin: "No", access: "Client RFQ only" },
+  viewer: { admin: "No", access: "Market data + analytics read-only" },
+};
+---
+
+<table>
+  <thead>
+    <tr>
+      <th>Role</th>
+      <th>Label</th>
+      <th>Can trade</th>
+      <th>Can admin</th>
+      <th>Panel access</th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      data.roles.map((r) => {
+        const notes = ACCESS_NOTES[r.id] ?? { admin: "No", access: "—" };
+        return (
+          <tr>
+            <td><code>{r.id}</code></td>
+            <td>{r.label}</td>
+            <td>{r.canTrade ? "Yes" : "No"}</td>
+            <td>{notes.admin}</td>
+            <td>{notes.access}</td>
+          </tr>
+        );
+      })
+    }
+  </tbody>
+</table>
