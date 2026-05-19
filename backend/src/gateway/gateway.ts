@@ -24,6 +24,7 @@ import { handleAlertsRoute } from "./routes/alerts.ts";
 import { handleAnalyticsRoute } from "./routes/analytics.ts";
 import { handleLogsRoute, recordLogLine } from "./routes/logs.ts";
 import { handleBugReportRoute } from "./routes/bug-report.ts";
+import { startHeartbeat } from "./discord-notifier.ts";
 import { handleTelemetryRoute } from "./routes/telemetry.ts";
 import { handleScenariosRoute } from "./routes/scenarios.ts";
 import { handleProxiedRoutes } from "./routes/proxied.ts";
@@ -489,6 +490,13 @@ refreshHealth();
 refreshDataDepth();
 setInterval(refreshHealth, HEALTH_REFRESH_MS);
 setInterval(refreshDataDepth, 30_000);
+
+startHeartbeat({
+  version: VERSION,
+  environment: Deno.env.get("VETA_ENV") ?? "dev",
+  startedAt: STARTED_AT,
+  getServices: () => cachedHealth,
+});
 
 const gatewayContext: GatewayContext = {
   requireAuth,

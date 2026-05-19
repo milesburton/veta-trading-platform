@@ -1,6 +1,10 @@
 // fallow-ignore-file unused-file
 import { assertEquals } from "jsr:@std/assert@0.217";
-import { notifyDiscord } from "../gateway/discord-notifier.ts";
+import {
+  buildHeartbeatMessage,
+  notifyDiscord,
+  startHeartbeat,
+} from "../gateway/discord-notifier.ts";
 
 const REAL_WEBHOOK = Deno.env.get("DISCORD_WEBHOOK_URL");
 const realFetch = globalThis.fetch;
@@ -95,4 +99,82 @@ Deno.test("notifyDiscord rejects sentinel placeholder URL", async () => {
       f.restore();
     }
   });
+});
+
+Deno.test("buildHeartbeatMessage shows ✅ when all services up", () => {
+  const msg = buildHeartbeatMessage({
+    version: "abc1234567",
+    environment: "prod",
+    uptimeMs: 3 * 60 * 60 * 1000,
+    services: { gateway: true, oms: true, ems: true },
+    ts: 0,
+  });
+  assertEquals(msg.startsWith("✅"), true);
+  assertEquals(msg.includes("3/3 services up"), true);
+  assertEquals(msg.includes("`abc1234`"), true);
+  assertEquals(msg.includes("(prod)"), true);
+  assertEquals(msg.includes("🟢 `gateway`"), true);
+});
+
+Deno.test("buildHeartbeatMessage shows 🚨 when more than two services down", () => {
+  const msg = buildHeartbeatMessage({
+    version: "v1",
+    environment: "dev",
+    uptimeMs: 60_000,
+    services: { gateway: true, oms: false, ems: false, journal: false },
+    ts: 0,
+  });
+  assertEquals(msg.startsWith("🚨"), true);
+  assertEquals(msg.includes("1/4 services up"), true);
+  assertEquals(msg.includes("🔴 `oms`"), true);
+});
+
+Deno.test("buildHeartbeatMessage shows ⚠️ when one or two services down", () => {
+  const msg = buildHeartbeatMessage({
+    version: "v1",
+    environment: "dev",
+    uptimeMs: 60_000,
+    services: { gateway: true, oms: true, ems: false },
+    ts: 0,
+  });
+  assertEquals(msg.startsWith("⚠️"), true);
+});
+
+Deno.test("startHeartbeat fires immediately and on interval", async () => {
+  const snapshots: number[] = [];
+  const handle = startHeartbeat({
+    version: "test",
+    environment: "test",
+    startedAt: Date.now(),
+    getServices: () => ({ gateway: true }),
+    intervalMs: 50,
+    sender: () => {
+      snapshots.push(Date.now());
+      return Promise.resolve(true);
+    },
+  });
+  await new Promise((r) => setTimeout(r, 175));
+  handle.stop();
+  // 1 immediate + ~3 interval fires within 175ms
+  if (snapshots.length < 3) {
+    throw new Error(`expected at least 3 fires, got ${snapshots.length}`);
+  }
+});
+
+Deno.test("startHeartbeat skips fire when services snapshot is null", async () => {
+  let sent = 0;
+  const handle = startHeartbeat({
+    version: "test",
+    environment: "test",
+    startedAt: Date.now(),
+    getServices: () => null,
+    intervalMs: 50,
+    sender: () => {
+      sent++;
+      return Promise.resolve(true);
+    },
+  });
+  await new Promise((r) => setTimeout(r, 175));
+  handle.stop();
+  assertEquals(sent, 0);
 });
