@@ -161,10 +161,12 @@ jobs:
         run: |
           # The Astro/Starlight site under docs/site/src/ is built and
           # published to GitHub Pages. Anything in there is internet-public.
-          # Reject RFC1918 (10/8, 172.16/12, 192.168/16) and loopback
-          # (127/8) addresses appearing in source files, which would
-          # advertise internal infrastructure to the world.
-          if grep -rnE '\b(10\.[0-9]+\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|127\.[0-9]+\.[0-9]+\.[0-9]+)\b' \
+          # Reject RFC1918 (10/8, 172.16/12, 192.168/16) addresses appearing
+          # in source files, which would advertise internal infrastructure
+          # to the world. Loopback (127/8) is excluded because it is a
+          # generic "this machine" address and leaks no infra information,
+          # so command syntax like `ssh -R 18443:127.0.0.1:443` is allowed.
+          if grep -rnE '\b(10\.[0-9]+\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+)\b' \
               docs/site/src/ \
               --include='*.md' --include='*.mdx' --include='*.html' --include='*.tsx' --include='*.ts'; then
             echo "::error::Private IP address(es) leaked into public docs (docs/site/src/). Remove or describe abstractly."
