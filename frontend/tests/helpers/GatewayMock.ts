@@ -7,9 +7,13 @@ import {
   DEFAULT_ASSETS,
   DEFAULT_LIMITS,
   DEFAULT_TRADER,
+  EXTERNAL_CLIENT_LIMITS,
+  EXTERNAL_CLIENT_USER,
   FI_TRADER,
   FI_TRADER_LIMITS,
   RESEARCH_ANALYST,
+  SALES_LIMITS,
+  SALES_USER,
 } from "./authFixtures.ts";
 import type { AssetDef, AuthUser, TradingLimits } from "./authFixtures.ts";
 export {
@@ -20,9 +24,13 @@ export {
   DEFAULT_ASSETS,
   DEFAULT_LIMITS,
   DEFAULT_TRADER,
+  EXTERNAL_CLIENT_LIMITS,
+  EXTERNAL_CLIENT_USER,
   FI_TRADER,
   FI_TRADER_LIMITS,
   RESEARCH_ANALYST,
+  SALES_LIMITS,
+  SALES_USER,
 };
 export type { AssetDef, AuthUser, TradingLimits };
 

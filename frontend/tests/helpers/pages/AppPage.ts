@@ -6,10 +6,14 @@ import {
   DEFAULT_TRADER,
   ALGO_TRADER,
   ALGO_TRADER_LIMITS,
+  EXTERNAL_CLIENT_LIMITS,
+  EXTERNAL_CLIENT_USER,
   FI_TRADER,
   FI_TRADER_LIMITS,
   RESEARCH_ANALYST,
   ANALYST_LIMITS,
+  SALES_LIMITS,
+  SALES_USER,
 } from "../GatewayMock.ts";
 import type { AuthUser, AssetDef } from "../GatewayMock.ts";
 import { MarketLadderPage } from "./MarketLadderPage.ts";
@@ -83,6 +87,26 @@ export class AppPage {
     this.gateway.sendAuthIdentity({
       user: RESEARCH_ANALYST,
       limits: ANALYST_LIMITS,
+    });
+    return this;
+  }
+
+  async gotoAsSales(assets?: AssetDef[]): Promise<this> {
+    await this.goto({ user: SALES_USER, assets });
+    await this.waitForDashboard();
+    this.gateway.sendAuthIdentity({
+      user: SALES_USER,
+      limits: SALES_LIMITS,
+    });
+    return this;
+  }
+
+  async gotoAsExternalClient(assets?: AssetDef[]): Promise<this> {
+    await this.goto({ user: EXTERNAL_CLIENT_USER, assets });
+    await this.waitForDashboard();
+    this.gateway.sendAuthIdentity({
+      user: EXTERNAL_CLIENT_USER,
+      limits: EXTERNAL_CLIENT_LIMITS,
     });
     return this;
   }

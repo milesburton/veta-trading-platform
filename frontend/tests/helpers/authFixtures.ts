@@ -80,6 +80,20 @@ export const DEFAULT_ADMIN: AuthUser = {
   avatar_emoji: "AD",
 };
 
+export const SALES_USER: AuthUser = {
+  id: "sales-1",
+  name: "Sam Park",
+  role: "sales",
+  avatar_emoji: "SP",
+};
+
+export const EXTERNAL_CLIENT_USER: AuthUser = {
+  id: "client-1",
+  name: "Erin Lee",
+  role: "external-client",
+  avatar_emoji: "EL",
+};
+
 export const DEFAULT_LIMITS: TradingLimits = {
   max_order_qty: 10_000,
   max_daily_notional: 1_000_000,
@@ -111,6 +125,22 @@ export const FI_TRADER_LIMITS: TradingLimits = {
 };
 
 export const ANALYST_LIMITS: TradingLimits = {
+  max_order_qty: 0,
+  max_daily_notional: 0,
+  allowed_strategies: [],
+  allowed_desks: [],
+  dark_pool_access: false,
+};
+
+export const SALES_LIMITS: TradingLimits = {
+  max_order_qty: 0,
+  max_daily_notional: 0,
+  allowed_strategies: [],
+  allowed_desks: ["equity", "fi"],
+  dark_pool_access: false,
+};
+
+export const EXTERNAL_CLIENT_LIMITS: TradingLimits = {
   max_order_qty: 0,
   max_daily_notional: 0,
   allowed_strategies: [],
