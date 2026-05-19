@@ -1,0 +1,52 @@
+---
+title: Dark Pool
+description: Simulated ATS that matches orders at the lit-market midpoint with no pre-trade transparency.
+---
+
+The dark pool is a simulated Alternative Trading System. It accepts a slice of routed flow, holds the orders without exposing them, and matches them in periodic crossing cycles at the lit-market midpoint price.
+
+## Why a dark pool
+
+Lit venues are great for price discovery, but a large parent order routed straight to the book pushes price against the participant before it's fully filled. Dark pools solve this by holding orders without showing quotes or queue depth, then crossing them at a reference price taken from the lit market. The trade-off is that fills are uncertain (no guaranteed counterparty) and slower than a lit aggression.
+
+The platform's dark pool is a single-venue ATS labelled `DARK1`. The [Smart Order Router](./smart-order-router/) and the dark-pool routing strategies decide which slices to send to it.
+
+## Inputs and matching
+
+The service subscribes to `orders.routed` and admits any order with `destinationVenue === "DARK1"`. It then runs a periodic matching cycle:
+
+1. Take a midpoint price from the latest lit-market quote for the instrument.
+2. Walk the resting book on both sides looking for compatible buy/sell pairs.
+3. Cross them at the midpoint, splitting fills proportionally if quantities don't line up.
+
+Two events fan out on each match: `dark.execution` carries the paired trade record (one event per cross, both sides referenced), and `orders.filled` is published once per side so downstream consumers (journal, gateway, CCP) treat dark fills the same as lit fills. A `fix.execution` event is published per side for [fix-archive](../supporting/db-migrate/).
+
+## Pre-trade transparency
+
+The defining property of a dark venue is that nothing about the resting book is exposed externally:
+
+- Limit prices are never published.
+- Queue depth is never published.
+- Counterparty identity is never published.
+
+The `/pool/stats` endpoint deliberately returns only aggregate quantities, not prices. This mirrors how real dark pools publish post-trade volume reports without leaking pre-trade signal.
+
+## Residual handling
+
+Orders that sit unmatched longer than `ORDER_TIMEOUT_MS` are dealt with according to `RESIDUAL_ACTION`:
+
+- `reroute` (default) — the residual quantity is sent back to the lit market via the EMS.
+- `expire` — the residual is cancelled outright.
+
+`reroute` is the realistic default for a serious participant: don't leave shares unfilled, but don't print the whole order on the lit book the second the dark cross expires either.
+
+## HTTP surface
+
+| Path | Purpose |
+|------|---------|
+| `GET /health` | liveness |
+| `GET /pool/stats` | aggregate volume by side and instrument (no prices, no depth) |
+
+## Source
+
+`backend/src/dark-pool/dark-pool-server.ts`

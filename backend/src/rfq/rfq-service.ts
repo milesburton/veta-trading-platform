@@ -1,26 +1,6 @@
 /**
- * Fixed Income RFQ (Request for Quote) Service
- *
- * Implements a dealer-driven RFQ workflow for bond orders.
- *
- * Flow:
- *   1. OMS publishes bond orders to "orders.fi.rfq"
- *   2. RFQ service creates an RFQ record (state: PENDING)
- *   3. Service sends the RFQ to 3–5 simulated dealers in parallel
- *   4. Dealers respond with quotes after a random delay (50–800ms)
- *   5. Best quote (tightest spread) auto-executes after QUOTE_WINDOW_MS
- *   6. On execution:
- *      - Publishes "rfq.executed"      — full trade record
- *      - Publishes "orders.filled"     — mirrors EMS shape (picked up by journal/gateway)
- *      - Publishes "fix.execution"     — consumed by fix-archive
- *      - Publishes "rfq.quote.update"  — real-time quote feed for the frontend
- *   7. Unexecuted RFQs expire after QUOTE_WINDOW_MS
- *
- * HTTP surface:
- *   GET  /health
- *   GET  /rfq/:id        — fetch single RFQ with quotes
- *   GET  /rfq            — list recent RFQs (last 100)
- *   POST /rfq/:id/execute — manually select a specific dealer quote
+ * Fixed Income RFQ (Request for Quote) Service.
+ * See platform/post-trade-rfq for the dealer-driven workflow details.
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
