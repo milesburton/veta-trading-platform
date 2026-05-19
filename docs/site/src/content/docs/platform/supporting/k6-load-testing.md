@@ -131,6 +131,26 @@ Each scenario writes:
 
 The [Performance reference page](../../../reference/performance/) renders the most recent JSON; comparing across `<date>-<scenario>.json` files shows whether perf regressed.
 
+## `/load-test` endpoint contract
+
+All five k6 scripts hit a single gateway endpoint: `POST /api/gateway/load-test`. Admin role only.
+
+Request body:
+
+```json
+{
+  "symbols": ["AAPL", "MSFT"],     // optional; defaults to AAPL, MSFT, GOOGL, AMZN, TSLA
+  "orderCount": 100,                // optional; default 100, capped at 500
+  "strategy": "LIMIT"                // optional; LIMIT | TWAP | POV | VWAP | …; default LIMIT
+}
+```
+
+The gateway randomises every per-order parameter for the duration of the job: symbol picked uniformly from `symbols`, side `BUY` or `SELL` with 50/50 weight, user picked from `LOAD_TEST_USER_IDS` env, quantity `10 + floor(random()*90)`, limit price `mid * (1 ± random()*2%) * (1.02 if BUY else 0.98)`. The `clientOrderId` is `<jobId>-<i>-<random-suffix>` so risk-engine never sees duplicates.
+
+Earlier shape (`i % len` selectors) failed when `orderCount=1` because every selector returned index 0 — see the [loadgen duplicate-order incident notes](https://github.com/milesburton/veta-trading-platform/blob/main/.claude/projects/-workspaces-virtual-equities-trading-application/memory/project_loadgen_duplicate_order_spam.md). Randomised selectors fix that and produce a realistic distribution regardless of orderCount.
+
+Response: `202 Accepted` with `{ jobId, submitted, symbols, strategy, paced: true }`. Pacing is `1000 / (ORDERS_PER_SECOND_PER_USER * LOAD_TEST_USERS.length)` ms between orders.
+
 ## Reading the results
 
 Three things matter:

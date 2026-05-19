@@ -121,6 +121,37 @@ Every CI run on `main` generates JSON badge files committed to `docs/badges/`:
 
 Badges are shields.io endpoint badges reading from the raw GitHub file URL.
 
+## Merge gate
+
+Branch protection on `main` requires the following CI checks to pass before a PR can merge:
+
+- `Detect changed paths`
+- `Lint, type-check, unit tests`
+- `Frontend lint & type-check`
+- `Integration tests`
+- `Playwright UI tests`
+
+These are the five always-running gating jobs. Path-conditional jobs (`Build base image`, `Capture UI screenshots`, `PR screenshot diff`, the per-service `Build *` matrix, the `Publish *` jobs) are intentionally **not** in the required set — they're either main-only or path-gated, and requiring a skipped check would deadlock merges.
+
+The full ruleset:
+
+```bash
+gh api repos/:owner/:repo/branches/main/protection --jq '.required_status_checks.contexts'
+```
+
+To update which checks are required, the same endpoint accepts a `PUT` with the new context list. There's a CODEOWNERS-style review gate too — `required_pull_request_reviews` requires one approval before merging, which `trusted-automerge` provides automatically.
+
+### Known failure modes
+
+The auto-merge waits on *all* check suites GitHub knows about, not just the required ones. If a third-party GitHub App is installed and stops reporting (e.g. expired token, the app was removed but the check_suite remained queued), every PR shows `mergeable_state: BLOCKED` indefinitely. Diagnose with:
+
+```bash
+gh api "repos/:owner/:repo/commits/$(gh pr view <N> --json headRefOid --jq .headRefOid)/check-suites" \
+  --jq '.check_suites[] | {app: .app.name, status, conclusion}'
+```
+
+Anything `status: queued, conclusion: null` from an app you don't actively use is the blocker. Either uninstall the app at `Settings → Integrations`, or `gh pr merge --admin` to bypass the stuck check while waiting for the cleanup.
+
 ## Bot PAT for auto-merge
 
 [`.github/workflows/trusted-automerge.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/trusted-automerge.yml) auto-approves and squash-merges trusted PRs. The `gh pr merge` step authenticates with a fine-grained personal access token stored as the `BOT_PAT` repo secret.

@@ -110,11 +110,43 @@ Discord webhook URLs are bearer credentials. Rotate immediately if the URL appea
 Anyone with the webhook URL can post arbitrary messages to the channel as VETA Alerts. Treat the URL like an API key. Never commit it, never paste it in PR descriptions, and rotate after any exposure.
 </Aside>
 
+## Per-minute heartbeat
+
+Independent of alerts, the gateway posts a per-minute status rollup of every monitored service to the same Discord webhook. This signals "the platform is alive" — without it, the channel only speaks when something has gone wrong, leaving operators without a positive liveness signal.
+
+The message shape:
+
+```
+✅ **VETA** `a1b2c3d` (prod) — 32/32 services up · uptime 2d 14h 3m
+🟢 `analytics` 🟢 `arrivalPriceAlgo` 🟢 `bus` 🟢 `ccpService` 🟢 `darkPool` 🟢 `ems` …
+```
+
+Header emoji switches by availability: ✅ all up, ⚠️ 1–2 down, 🚨 3+ down. Body lists every service with 🟢/🔴.
+
+Implementation in [`backend/src/gateway/discord-notifier.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/discord-notifier.ts). The interval defaults to 60s; override via `DISCORD_HEARTBEAT_INTERVAL_MS` on the gateway. On a quiet day that's 1440 messages — set the env to e.g. `300000` (5 min) if the noise floor is too high. The first heartbeat fires immediately on boot so a successful deploy shows up in the channel within seconds.
+
+Heartbeat reads from the same `cachedHealth` map populated by `refreshHealth()`, so there's no extra polling cost.
+
+## Frontend memory metric
+
+The gateway emits `frontend_memory_heap_used_max_bytes` as an OTEL gauge — the max `jsHeapSizeUsed` across all live browser sessions reporting via the `useFrontendMemoryTelemetry` hook. The metric flows via the existing OTLP plumbing → Alloy → Prometheus.
+
+Two alert rules consume it:
+
+| Rule | Threshold | Duration | Severity |
+|---|---|---|---|
+| `FrontendHeapHigh` | > 2 GiB | 10m | warning |
+| `FrontendHeapCritical` | > 4 GiB | 2m | critical |
+
+Hitting `Critical` typically precedes a frozen tab (Firefox starts swapping at 4 GiB). Get the affected user to hard-refresh and grab a heap snapshot from `about:memory` if you want to investigate further.
+
+The metric is per-gateway (one value for "max across all users") rather than per-user. Cardinality stays bounded regardless of user count, but specific-user tracing requires looking at the raw POSTs to `/telemetry/frontend`.
+
 ## Adding new alert rules
 
 Backend Prometheus rules live in [`observability/prometheus-rules.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/prometheus-rules.yml). They auto-load when Grafana boots; no migration step.
 
-User-level alerts are dispatched by `alertsMiddleware` reacting to Redux actions. Add a new branch to the middleware to emit on additional event types. Severity ≥ WARNING reaches Discord automatically.
+User-level alerts are dispatched by `alertsMiddleware` reacting to Redux actions. Add a new branch to the middleware to emit on additional event types. Severity ≥ WARNING reaches Discord automatically; CRITICAL also opens a [GitHub ticket](./ticketing).
 
 ## Troubleshooting
 
