@@ -1,5 +1,6 @@
 // fallow-ignore-file unused-file
 import { CORS_HEADERS } from "@veta/http";
+import { recordGauge } from "@veta/telemetry";
 import { type GatewayContext, isResponse } from "../context.ts";
 
 interface FrontendMemorySample {
@@ -56,7 +57,20 @@ async function handlePost(req: Request, userId: string): Promise<Response> {
     jsHeapSizeLimit: body.jsHeapSizeLimit,
     userAgent: req.headers.get("user-agent") ?? "unknown",
   });
+  recordFrontendHeapMax();
   return jsonResponse({ ok: true }, 200);
+}
+
+function recordFrontendHeapMax(): void {
+  let max = 0;
+  for (const arr of samples.values()) {
+    const latest = arr[arr.length - 1];
+    if (latest && latest.jsHeapSizeUsed > max) max = latest.jsHeapSizeUsed;
+  }
+  recordGauge("frontend_memory_heap_used_max_bytes", max, {
+    description: "Max jsHeapSizeUsed across all live browser sessions (last sample per user)",
+    unit: "By",
+  }).catch(() => {});
 }
 
 function handleGet(role: string): Response {
