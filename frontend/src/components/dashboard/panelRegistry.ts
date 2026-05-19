@@ -1,5 +1,8 @@
 import type { AuthRole } from "@veta/frontend/auth/rbac.ts";
+import type { TradingStyle } from "@veta/frontend/store/authSlice.ts";
 import type { ChannelNumber } from "@veta/frontend/store/channelsSlice.ts";
+
+export type { TradingStyle };
 
 export type { ChannelNumber };
 
@@ -308,16 +311,6 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "data-depth": { out: false, in: false },
   scenarios: { out: false, in: false },
 };
-
-export type TradingStyle =
-  | "high_touch"
-  | "low_touch"
-  | "fi_voice"
-  | "fx_electronic"
-  | "commodities_voice"
-  | "derivatives_high_touch"
-  | "derivatives_low_touch"
-  | "oversight";
 
 const ALL_READ_ROLES: AuthRole[] = [
   "trader",

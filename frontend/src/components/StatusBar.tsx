@@ -20,7 +20,7 @@ import {
   dismissUpdateAvailable,
   selectOrderTicketWindowSize,
 } from "@veta/frontend/store/uiSlice.ts";
-import { useDeleteSessionMutation } from "@veta/frontend/store/userApi.ts";
+import { useLogoutMutation } from "@veta/frontend/store/userApi.ts";
 import type { ServiceHealth } from "@veta/frontend/types.ts";
 import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { openOrderTicketWindow } from "@veta/frontend/utils/orderTicketWindow.ts";
@@ -552,7 +552,7 @@ export function AppHeader() {
   const services = useAllServiceHealth();
   const time = useSignal(formatUtcTime(new Date()));
   const dispatch = useAppDispatch();
-  const [deleteSession] = useDeleteSessionMutation();
+  const [logout] = useLogoutMutation();
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -563,7 +563,7 @@ export function AppHeader() {
 
   async function handleLogout() {
     try {
-      await deleteSession();
+      await logout();
     } finally {
       try {
         localStorage.removeItem("veta:last-known-user");

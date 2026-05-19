@@ -96,7 +96,7 @@ export const userApi = createApi({
         body,
       }),
     }),
-    deleteSession: builder.mutation<void, void>({
+    logout: builder.mutation<void, void>({
       query: () => ({
         url: "/sessions",
         method: "DELETE",
@@ -151,7 +151,7 @@ export const {
   useAuthorizeOAuthMutation,
   useExchangeOAuthCodeMutation,
   useRegisterOAuthUserMutation,
-  useDeleteSessionMutation,
+  useLogoutMutation,
   useLoginAsGuestMutation,
   useGetUsersQuery,
   useGetUserLimitsQuery,

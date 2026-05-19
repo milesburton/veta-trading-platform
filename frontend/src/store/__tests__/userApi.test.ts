@@ -90,7 +90,7 @@ describe("userApi", () => {
         password: "z",
       })
     );
-    await store.dispatch(userApi.endpoints.deleteSession.initiate());
+    await store.dispatch(userApi.endpoints.logout.initiate());
     await store.dispatch(userApi.endpoints.getUsers.initiate());
     await store.dispatch(userApi.endpoints.getUserLimits.initiate("user/a b"));
     await store.dispatch(

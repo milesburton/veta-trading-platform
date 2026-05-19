@@ -22,7 +22,14 @@
     "@veta/logger",
     "@veta/messaging",
     "@veta/rate-limit",
-    "jsr:@std"
+    "jsr:@std",
+    "@preact/signals-react-transform",
+    "vite-plugin-electron-renderer"
+  ],
+  "dynamicallyLoaded": [
+    "electron/preload.ts",
+    "playwright.gate.config.ts",
+    "scripts/generate-icons.mjs"
   ],
   "duplicates": {
     "minOccurrences": 3
