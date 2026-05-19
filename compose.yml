@@ -1482,6 +1482,7 @@ services:
   llm-advisory:
     <<: *deno-medium
     profiles: [trading]
+    restart: unless-stopped
     command: [
       "deno",
       "run",
@@ -1530,6 +1531,7 @@ services:
   llm-worker:
     <<: *deno-medium
     profiles: [trading]
+    restart: unless-stopped
     command: [
       "deno",
       "run",
