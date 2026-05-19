@@ -92,6 +92,7 @@ export default defineConfig({
             { label: "Edge architecture", slug: "platform/edge-architecture" },
             { label: "Service map", slug: "platform/services" },
             { label: "Algo strategies", slug: "platform/algos" },
+            { label: "Smart Order Router", slug: "platform/smart-order-router" },
             { label: "Risk controls", slug: "platform/risk" },
             { label: "Risk architecture", slug: "platform/risk-architecture" },
             { label: "Scenarios", slug: "platform/scenarios" },

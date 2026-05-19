@@ -880,4 +880,13 @@ export const TERMS: GlossaryTerm[] = [
     short: "The end-to-end path an alert travels from origin (Prometheus rule or Redux action) through the gateway or Grafana AlertManager to the Discord channel. See platform/observability/alerts for the full flow and operator runbook.",
     seeAlso: ["discord-webhook"],
   },
+  {
+    id: "smart-order-router",
+    term: "Smart Order Router",
+    acronymOf: "SOR",
+    category: "execution",
+    short: "The logic that picks which venue a child order goes to. VETA has two SOR modes: an EMS-level weighted-random pick across 7 simulated US venues (default for every algo except SNIPER), and SNIPER's best-effective-price selection across the top N venues simultaneously. Spread and depth multipliers per venue drive realistic fill behaviour.",
+    seeAlso: ["sniper"],
+    source: "backend/src/ems/fill-math.ts",
+  },
 ];

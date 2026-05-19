@@ -1,18 +1,6 @@
 /**
  * SNIPER order algorithm
- *
- * Multi-venue smart routing strategy. Simulates 3 execution venues (XNAS, ARCX, BATS)
- * each with slightly different effective prices. When the price trigger fires, the algo
- * scores venues by best effective price and routes a configurable portion of the remaining
- * quantity across the top venues simultaneously.
- *
- * algoParams.aggressionPct controls what % of remaining qty to route per trigger (default 80).
- * algoParams.maxVenues    controls how many venues to split across (1–3, default 2).
- *
- * A 2-second cooldown between routing events prevents flooding the bus on every tick.
- *
- * Subscribes to: orders.routed, orders.filled
- * Publishes to:  orders.child, orders.expired, algo.heartbeat
+ * Multi-venue smart routing strategy. Picks the best-price venues from the EMS venue set on each price trigger and splits an aggression-controlled share of remaining quantity across them. See platform/smart-order-router for the full routing model.
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
