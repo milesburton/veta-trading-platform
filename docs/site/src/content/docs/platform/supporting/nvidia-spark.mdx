@@ -1,0 +1,80 @@
+---
+title: NVIDIA Spark (homelab LLM host)
+description: The Spark workstation at 192.168.1.204 hosts Ollama with a handful of local models. LLM-advisory and any other inference-heavy workload should target it rather than reaching out to external APIs.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+The homelab has a dedicated NVIDIA Spark workstation that hosts a local Ollama instance. Inference workloads that previously required external API calls (OpenAI, Anthropic, Groq) now stay on the LAN.
+
+## Network position
+
+- **IP**: `192.168.1.204` (separate machine from the homelab proper at `.245`)
+- **Ollama API**: `http://192.168.1.204:11434` (raw API, no auth on the LAN)
+- **Open WebUI**: `http://192.168.1.204:3000` (interactive UI, auth required)
+
+The Spark is on the same LAN as the homelab so latency is single-digit milliseconds. Traffic does not traverse the OVH edge.
+
+## Models loaded
+
+| Model | Quant | Size | Best for |
+|---|---|---|---|
+| `qwen3-coder:30b` | Q4_K_M | 19 GB | Code edits, agent loops, structured outputs |
+| `deepseek-r1:70b` | Q4_K_M | 43 GB | Chain-of-thought planning, harder reasoning |
+| `gpt-oss:120b` | MXFP4 | 65 GB | Heavy reasoning, longest-context jobs |
+| `llama2-uncensored:70b` | Q4_0 | 39 GB | Legacy; rarely the right tool |
+
+`qwen3-coder:30b` is the default recommendation for VETA's LLM-advisory service because it balances quality and VRAM footprint, and it is tuned for code-context generation.
+
+## Pointing LLM-advisory at the Spark
+
+The advisory service reads its base URL and model from environment variables, both of which fall through to compose defaults. Override either on the homelab.
+
+In `/opt/stacks/veta/.env`:
+
+```bash
+LLM_OLLAMA_BASE_URL=http://192.168.1.204:11434
+LLM_MODEL_ID=qwen3-coder:30b
+```
+
+Then restart the consumers so they pick up the new config:
+
+```bash
+cd /opt/stacks/veta
+docker compose up -d llm-advisory llm-advisory-worker
+```
+
+The dev-container compose file keeps `http://ollama:11434` as the default so a developer running the local stack still gets the small `qwen2.5:3b` model and does not depend on the Spark being reachable.
+
+## Smoke-testing
+
+Direct probe of the Ollama API:
+
+```bash
+curl -sS http://192.168.1.204:11434/api/tags | jq '.models[].name'
+```
+
+End-to-end check of LLM-advisory:
+
+```bash
+curl -sS -X POST http://veta.home/api/llm-advisory/advisories \
+  -H 'Content-Type: application/json' \
+  --cookie "$YOUR_SESSION_COOKIE" \
+  -d '{"symbol":"AAPL"}'
+```
+
+## When not to use it
+
+- Anything that needs sub-second latency at scale (the 70-120B models can take 2-5s per response under load)
+- Workloads that run inside `compose.yml`'s `trading-net` Docker network but cannot reach the homelab LAN (none currently)
+- Tasks where the response should be reproducible across deployments — the Spark model set is homelab-specific
+
+<Aside type="note" title="No auth on the Ollama API">
+Port 11434 is open on the LAN with no authentication. Treat it as trusted-network access only. If the Spark ever needs to be reachable from the public edge, put it behind Traefik with a strong auth layer first.
+</Aside>
+
+## Future uses
+
+- Parallel-agent work: a local agent pulling tickets from a queue and running `qwen3-coder:30b` against a worktree of this repo to draft patches on a side branch
+- Monte Carlo and vol-surface fitting offload from the CPU-bound analytics service
+- Heavy backtests
