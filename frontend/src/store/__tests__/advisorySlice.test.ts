@@ -5,6 +5,7 @@ import {
   advisoryNoteReceived,
   advisoryRequested,
   advisorySlice,
+  MAX_ENTRIES,
   MAX_NOTE_AGE_MS,
   selectAdvisoryForSymbol,
 } from "@veta/frontend/store/advisorySlice";
@@ -87,6 +88,7 @@ describe("selectAdvisoryForSymbol", () => {
           },
           errorMessage: null,
           requestedAt: now - MAX_NOTE_AGE_MS - 1,
+          lastTouchedAt: now - MAX_NOTE_AGE_MS - 1,
         },
       },
       "AAPL",
@@ -94,5 +96,29 @@ describe("selectAdvisoryForSymbol", () => {
     );
 
     expect(entry.status).toBe("stale");
+  });
+});
+
+describe("advisorySlice LRU cap", () => {
+  it("evicts the least-recently-touched entry when over MAX_ENTRIES", () => {
+    let state = reducer(undefined, advisoryRequested({ symbol: "SYM0", jobId: "j0" }));
+    for (let i = 1; i <= MAX_ENTRIES; i++) {
+      state = reducer(state, advisoryRequested({ symbol: `SYM${i}`, jobId: `j${i}` }));
+    }
+    expect(Object.keys(state.bySymbol).length).toBe(MAX_ENTRIES);
+    expect(state.bySymbol.SYM0).toBeUndefined();
+    expect(state.bySymbol[`SYM${MAX_ENTRIES}`]).toBeDefined();
+  });
+
+  it("touching an entry keeps it from being evicted", () => {
+    let state = reducer(undefined, advisoryRequested({ symbol: "KEEP", jobId: "j-keep" }));
+    for (let i = 0; i < 10; i++) {
+      state = reducer(state, advisoryRequested({ symbol: `S${i}`, jobId: `j${i}` }));
+    }
+    state = reducer(state, advisoryJobRunning({ symbol: "KEEP", jobId: "j-keep" }));
+    for (let i = 10; i < MAX_ENTRIES + 5; i++) {
+      state = reducer(state, advisoryRequested({ symbol: `S${i}`, jobId: `j${i}` }));
+    }
+    expect(state.bySymbol.KEEP).toBeDefined();
   });
 });
