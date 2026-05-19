@@ -24,6 +24,7 @@ export interface AdvisoryEntry {
   note: AdvisoryNoteData | null;
   errorMessage: string | null;
   requestedAt: number | null;
+  lastTouchedAt: number;
 }
 
 interface AdvisoryState {
@@ -34,10 +35,32 @@ const initialState: AdvisoryState = {
   bySymbol: {},
 };
 
+export const MAX_ENTRIES = 100;
+
+let touchCounter = 0;
+function nextTouch(): number {
+  touchCounter += 1;
+  return touchCounter;
+}
+
+function evictIfOverCap(state: AdvisoryState): void {
+  const symbols = Object.keys(state.bySymbol);
+  if (symbols.length <= MAX_ENTRIES) return;
+  const sorted = symbols.sort(
+    (a, b) => state.bySymbol[a].lastTouchedAt - state.bySymbol[b].lastTouchedAt
+  );
+  for (const sym of sorted.slice(0, symbols.length - MAX_ENTRIES)) {
+    delete state.bySymbol[sym];
+  }
+}
+
 function ensureEntry(state: AdvisoryState, symbol: string): AdvisoryEntry | null {
   if (!isSafeKey(symbol)) return null;
   const existing = state.bySymbol[symbol];
-  if (existing) return existing;
+  if (existing) {
+    existing.lastTouchedAt = nextTouch();
+    return existing;
+  }
   const fresh: AdvisoryEntry = {
     symbol,
     status: "not-requested",
@@ -45,8 +68,10 @@ function ensureEntry(state: AdvisoryState, symbol: string): AdvisoryEntry | null
     note: null,
     errorMessage: null,
     requestedAt: null,
+    lastTouchedAt: nextTouch(),
   };
   state.bySymbol[symbol] = fresh;
+  evictIfOverCap(state);
   return fresh;
 }
 
@@ -138,6 +163,7 @@ export function selectAdvisoryForSymbol(
     note: null,
     errorMessage: null,
     requestedAt: null,
+    lastTouchedAt: now,
   };
   if (
     entry.status === "ready" &&
