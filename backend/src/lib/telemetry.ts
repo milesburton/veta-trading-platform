@@ -32,7 +32,17 @@ interface TracerLike {
   startActiveSpan<T>(name: string, fn: (span: SpanLike) => Promise<T> | T): Promise<T>;
 }
 
+interface GaugeLike {
+  record(value: number, attributes?: Record<string, string | number | boolean>): void;
+}
+
+interface MeterLike {
+  createGauge(name: string, options?: { description?: string; unit?: string }): GaugeLike;
+}
+
 let tracerCache: TracerLike | null = null;
+let meterCache: MeterLike | null = null;
+const gaugeCache = new Map<string, GaugeLike>();
 
 async function getTracer(): Promise<TracerLike | null> {
   if (!OTEL_ENABLED) return null;
@@ -44,6 +54,41 @@ async function getTracer(): Promise<TracerLike | null> {
   } catch {
     return null;
   }
+}
+
+async function getMeter(): Promise<MeterLike | null> {
+  if (!OTEL_ENABLED) return null;
+  if (meterCache) return meterCache;
+  try {
+    const api = await import("@opentelemetry/api");
+    meterCache = api.metrics.getMeter("veta") as unknown as MeterLike;
+    return meterCache;
+  } catch {
+    return null;
+  }
+}
+
+export async function recordGauge(
+  name: string,
+  value: number,
+  options?: {
+    description?: string;
+    unit?: string;
+    attributes?: Record<string, string | number | boolean>;
+  },
+): Promise<void> {
+  if (!OTEL_ENABLED) return;
+  const meter = await getMeter();
+  if (!meter) return;
+  let gauge = gaugeCache.get(name);
+  if (!gauge) {
+    gauge = meter.createGauge(name, {
+      description: options?.description,
+      unit: options?.unit,
+    });
+    gaugeCache.set(name, gauge);
+  }
+  gauge.record(value, options?.attributes);
 }
 
 const NOOP_SPAN: SpanLike = {

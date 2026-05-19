@@ -78,3 +78,31 @@ groups:
             Deno usually OOMs around 4 GiB without --max-old-space-size.
             Restart the container and capture a heap snapshot via
             chrome://inspect before it dies on its own.
+
+  - name: frontend-memory
+    rules:
+      - alert: FrontendHeapHigh
+        expr: frontend_memory_heap_used_max_bytes > 2e9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Browser heap above 2 GiB across at least one user for 10m
+          description: |
+            frontend_memory_heap_used_max_bytes is {{ $value | humanize }}.
+            At least one live browser session is sitting on >2 GiB heap.
+            Similar pattern to the Firefox 13 GB leak on 2026-05-18 —
+            check for new unbounded growth in Redux slices.
+
+      - alert: FrontendHeapCritical
+        expr: frontend_memory_heap_used_max_bytes > 4e9
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Browser heap above 4 GiB — likely frozen tab imminent
+          description: |
+            frontend_memory_heap_used_max_bytes is {{ $value | humanize }}.
+            At 4 GiB Firefox typically starts swapping. Get the user to
+            hard-refresh before the tab becomes unresponsive, and grab a
+            heap snapshot from about:memory.

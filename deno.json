@@ -9,6 +9,7 @@
     "@veta/db": "./backend/src/lib/db.ts",
     "@veta/logger": "./backend/src/lib/logger.ts",
     "@veta/messaging": "./backend/src/lib/messaging.ts",
+    "@veta/telemetry": "./backend/src/lib/telemetry.ts",
     "@veta/market-client": "./backend/src/lib/marketSimClient.ts",
     "@veta/grid-query": "./backend/src/lib/gridQuery.ts",
     "@veta/settlement": "./backend/src/lib/settlement.ts",
