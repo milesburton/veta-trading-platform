@@ -143,21 +143,23 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
   const refPrice = (sym: string) => prices[sym] ?? FALLBACK_REF[sym] ?? 100;
 
   const stride = 1000 / (ORDERS_PER_SECOND_PER_USER * LOAD_TEST_USERS.length);
+  const pickFrom = <T>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)];
   (async () => {
     for (let i = 0; i < orderCount; i++) {
-      const symbol = symbols[i % symbols.length];
-      const side = i % 2 === 0 ? "BUY" : "SELL";
-      const userId = LOAD_TEST_USERS[i % LOAD_TEST_USERS.length];
+      const symbol = pickFrom(symbols);
+      const side = Math.random() < 0.5 ? "BUY" : "SELL";
+      const userId = pickFrom(LOAD_TEST_USERS);
       const mid = refPrice(symbol);
+      const jitter = 1 + (Math.random() - 0.5) * 0.04;
       const limitPrice = side === "BUY"
-        ? Number((mid * 1.02).toFixed(2))
-        : Number((mid * 0.98).toFixed(2));
+        ? Number((mid * jitter * 1.02).toFixed(2))
+        : Number((mid * jitter * 0.98).toFixed(2));
 
       ctx.producer.send("orders.new", {
-        clientOrderId: `${jobId}-${i}`,
+        clientOrderId: `${jobId}-${i}-${Math.random().toString(36).slice(2, 8)}`,
         asset: symbol,
         side,
-        quantity: 10 + (i % 90),
+        quantity: 10 + Math.floor(Math.random() * 90),
         limitPrice,
         expiresAt: 300,
         strategy,
