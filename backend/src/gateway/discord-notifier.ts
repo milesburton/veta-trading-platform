@@ -1,4 +1,6 @@
 // fallow-ignore-file unused-file
+import { lookupPanel, renderGrafanaPanel } from "./grafana-renderer.ts";
+
 const SEVERITY_EMOJI: Record<string, string> = {
   CRITICAL: "🚨",
   WARNING: "⚠️",
@@ -34,14 +36,37 @@ interface DiscordPostOptions {
   url: string;
   username: string;
   content: string;
+  attachment?: { filename: string; bytes: Uint8Array };
 }
 
-async function postToDiscord({ url, username, content }: DiscordPostOptions): Promise<boolean> {
+async function postToDiscord(opts: DiscordPostOptions): Promise<boolean> {
   try {
-    const res = await fetch(url, {
+    if (opts.attachment) {
+      const form = new FormData();
+      form.append(
+        "payload_json",
+        JSON.stringify({
+          username: opts.username,
+          content: opts.content,
+          attachments: [{ id: 0, filename: opts.attachment.filename }],
+        }),
+      );
+      form.append(
+        "files[0]",
+        new Blob([opts.attachment.bytes as BlobPart], { type: "image/png" }),
+        opts.attachment.filename,
+      );
+      const res = await fetch(opts.url, {
+        method: "POST",
+        body: form,
+        signal: AbortSignal.timeout(10_000),
+      });
+      return res.ok;
+    }
+    const res = await fetch(opts.url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, content }),
+      body: JSON.stringify({ username: opts.username, content: opts.content }),
       signal: AbortSignal.timeout(5_000),
     });
     return res.ok;
@@ -62,7 +87,25 @@ export async function notifyDiscord(alert: AlertPayload, userId: string): Promis
   if (alert.detail) lines.push(`> ${alert.detail}`);
   lines.push(`_user: ${userId}_`);
 
-  await postToDiscord({ url, username: "VETA Alerts", content: lines.join("\n") });
+  // Best-effort: render the Grafana panel that contextualises the alert.
+  // The render call has its own 15s timeout and returns null on any
+  // failure, so a broken renderer never blocks the text-only message
+  // from reaching Discord.
+  const panel = lookupPanel(alert.source);
+  const bytes = panel
+    ? await renderGrafanaPanel({ panelUid: panel.panelUid, panelId: panel.panelId })
+    : null;
+
+  const attachment = bytes
+    ? { filename: buildAttachmentFilename(alert.source), bytes }
+    : undefined;
+
+  await postToDiscord({
+    url,
+    username: "VETA Alerts",
+    content: lines.join("\n"),
+    attachment,
+  });
 }
 
 export interface BugReport {
@@ -115,6 +158,19 @@ export async function notifyDiscordBug(
 
 function sanitiseMultiline(s: string, max: number): string {
   return s.replace(/\r/g, "").slice(0, max);
+}
+
+// Discord rejects multipart filenames containing control characters,
+// quotes, slashes, and a few other specials; long names also have
+// historically caused upload failures. Strip the alert source down to a
+// safe character class, cap length, and fall back to `panel` if the
+// sanitised form is empty.
+const FILENAME_SAFE_RE = /[^A-Za-z0-9._-]+/g;
+const FILENAME_MAX = 60;
+function buildAttachmentFilename(source: string | undefined): string {
+  const cleaned = (source ?? "panel").replace(FILENAME_SAFE_RE, "-").slice(0, FILENAME_MAX);
+  const safe = cleaned.replace(/^[.-]+/, "") || "panel";
+  return `alert-${safe}-${Date.now()}.png`;
 }
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 60 * 1000;
