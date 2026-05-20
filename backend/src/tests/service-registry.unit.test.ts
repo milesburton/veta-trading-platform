@@ -53,6 +53,30 @@ Deno.test("[registry] gateway HOST env block in compose.yml matches generated ou
   }
 });
 
+Deno.test("[registry] SVC_PROXY in gateway.ts covers every registry composeName", () => {
+  const gatewayPath = new URL("../gateway/gateway.ts", import.meta.url).pathname;
+  const text = Deno.readTextFileSync(gatewayPath);
+  const proxyStart = text.indexOf("SVC_PROXY: Record<string, string>");
+  if (proxyStart === -1) throw new Error("SVC_PROXY not found in gateway.ts");
+  const proxyEnd = text.indexOf("};", proxyStart);
+  const block = text.slice(proxyStart, proxyEnd);
+  const proxiedNames = new Set(
+    [...block.matchAll(/"([a-z][a-z0-9-]+)":\s+/g)].map((m) => m[1]),
+  );
+  const missing: string[] = [];
+  for (const svc of SERVICE_REGISTRY) {
+    if (svc.excludeFromGatewayHostEnv) continue;
+    if (!proxiedNames.has(svc.composeName)) missing.push(svc.composeName);
+  }
+  if (missing.length > 0) {
+    throw new Error(
+      `SVC_PROXY in gateway.ts is missing entries for: ${missing.join(", ")}.\n` +
+        `Every service in shared/serviceRegistry.ts (except those with excludeFromGatewayHostEnv:true) ` +
+        `must have a SVC_PROXY entry so /api/<service>/* routes to it.`,
+    );
+  }
+});
+
 Deno.test("[registry] every service has a unique id, envPrefix, composeName, port", () => {
   const ids = new Set<string>();
   const envPrefixes = new Set<string>();
