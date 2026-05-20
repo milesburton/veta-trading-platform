@@ -144,6 +144,20 @@ Implementation in [`backend/src/gateway/daily-summary.ts`](https://github.com/mi
 
 Replaces the per-minute heartbeat that landed in #319 — 1440 messages/day buried real alerts.
 
+## CI/CD notifications
+
+Three GitHub workflow events fire into the same channel:
+
+| Event | Trigger | Message format |
+|---|---|---|
+| **CI failure on main** | `workflow_run.conclusion == 'failure'` | 🚨 `<workflow>` failed on main · `<sha>` by `<actor>` |
+| **Docs deploy success** | `Deploy GitHub Pages` completed on main | 📘 Docs deployed · `<sha>` |
+| **PR merged to main** | `pull_request_target.merged == true` | ✅ Merged **#N** — `<title>` (by `<author>`) |
+
+Bot-authored merges (release-please, dependabot, github-actions[bot]) are filtered out so the channel doesn't fill with screenshot/badge auto-commits.
+
+Wired in [`.github/workflows/notify-discord.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/notify-discord.yml). The workflow reads `secrets.DISCORD_WEBHOOK_URL` — set the same webhook URL as a repo secret. If the secret is unset, every job logs "skipping" and exits 0, so the workflow is safe to land before the secret is wired up.
+
 ## Frontend memory metric
 
 The gateway emits `frontend_memory_heap_used_max_bytes` as an OTEL gauge — the max `jsHeapSizeUsed` across all live browser sessions reporting via the `useFrontendMemoryTelemetry` hook. The metric flows via the existing OTLP plumbing → Alloy → Prometheus.
