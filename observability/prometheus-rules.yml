@@ -124,16 +124,19 @@ groups:
 
       - alert: RedpandaTopicWriteRateHigh
         expr: |
-          sum by (topic) (
-            rate(redpanda_kafka_request_bytes_total{redpanda_request="produce"}[10m])
+          sum by (redpanda_topic) (
+            rate(redpanda_kafka_request_bytes_total{
+              redpanda_request="produce",
+              redpanda_topic!~"market\\.ticks|market\\.features|market\\.signals"
+            }[10m])
           ) > 524288
         for: 30m
         labels:
           severity: warning
         annotations:
-          summary: "{{ $labels.topic }} producing >512 KiB/s for 30m"
+          summary: "{{ $labels.redpanda_topic }} producing >512 KiB/s for 30m"
           description: |
-            Topic {{ $labels.topic }} is taking writes at >512 KiB/s
+            Topic {{ $labels.redpanda_topic }} is taking writes at >512 KiB/s
             sustained — that's ~1.5 GiB/hour, ~36 GiB/day. At the cluster
             default retention.bytes=1 GiB and log_retention_ms=24h the
             partition will hit the byte cap and start tombstoning, but
@@ -141,19 +144,25 @@ groups:
             (2026-05-19): loadgen produced 322k duplicate AAPL orders/hr
             that all rejected to orders.rejected. Check producer
             identity and message content before assuming it's organic.
+            The market.* topics are excluded — they're high-frequency
+            by design (market-sim produces ~700 KiB/s of ticks at steady
+            state).
 
       - alert: RedpandaTopicWriteRateCritical
         expr: |
-          sum by (topic) (
-            rate(redpanda_kafka_request_bytes_total{redpanda_request="produce"}[10m])
+          sum by (redpanda_topic) (
+            rate(redpanda_kafka_request_bytes_total{
+              redpanda_request="produce",
+              redpanda_topic!~"market\\.ticks|market\\.features|market\\.signals"
+            }[10m])
           ) > 2097152
         for: 10m
         labels:
           severity: critical
         annotations:
-          summary: "{{ $labels.topic }} producing >2 MiB/s for 10m — disk-fill imminent"
+          summary: "{{ $labels.redpanda_topic }} producing >2 MiB/s for 10m — disk-fill imminent"
           description: |
-            Topic {{ $labels.topic }} is taking writes at >2 MiB/s.
+            Topic {{ $labels.redpanda_topic }} is taking writes at >2 MiB/s.
             That's ~7 GiB/hour. Per-partition retention.bytes will
             tombstone, but multiple hot topics together can still
             outpace deletion. Confirm the producer is intentional and
