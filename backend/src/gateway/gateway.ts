@@ -219,11 +219,7 @@ function publishAccessEvent(event: {
 }) {
   const enriched = { ...event, ts: Date.now() };
   producer?.send("user.access", enriched).catch(() => {});
-  // F-11: also emit via the logger so events reach Loki via OTLP,
-  // not just Kafka. Loki is where alert rules query from.
-  // auth_failure and ws_rate_limited are visible at WARN; everything
-  // else stays at INFO so non-security events don't pollute alert
-  // queries that filter on level.
+  // Emit via logger too: alert rules query Loki, not Kafka.
   const isWarn = event.action === "auth_failure" || event.action === "ws_rate_limited";
   if (!isWarn) {
     logger.info("access_event", enriched);
@@ -258,7 +254,6 @@ const ORDER_TOPICS = [
 ];
 
 function startConsumers(): void {
-  // WS fallback so market ticks flow even when Kafka is unavailable.
   let lastKafkaTick = 0;
   createConsumer("gateway-market", ["market.ticks"]).then((c) => {
     c.onMessage((_topic, value) => {
@@ -266,7 +261,6 @@ function startConsumers(): void {
       broadcastAll({ event: "marketUpdate", data: value });
     });
   });
-  // WS fallback: relay market-sim ticks directly when Kafka hasn't delivered recently
   const MARKET_SIM_WS = `ws://${Deno.env.get("MARKET_SIM_HOST") ?? "localhost"}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
   const connectWsFallback = () => {
     const ws = new WebSocket(MARKET_SIM_WS);
@@ -294,7 +288,6 @@ function startConsumers(): void {
           broadcastToRoles(["compliance", "admin"], { event: "orderEvent", topic, data: value });
         }
       } else {
-        // Fallback: no userId on message (legacy path) — broadcast to all
         broadcastAll({ event: "orderEvent", topic, data: value });
       }
     });
@@ -372,7 +365,6 @@ function startConsumers(): void {
       if (v.userId) {
         broadcastToUser(v.userId, { event: "rfqUpdate", topic, data: value });
       }
-      // Sell-side RFQ updates: broadcast to both client and sales user
       const sv = value as { clientUserId?: string; salesUserId?: string };
       if (sv.clientUserId) broadcastToUser(sv.clientUserId, { event: "rfqSellSideUpdate", data: value });
       if (sv.salesUserId) broadcastToUser(sv.salesUserId, { event: "rfqSellSideUpdate", data: value });
@@ -559,10 +551,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   if (path === "/ready" && req.method === "GET") {
     const h = cachedHealth;
-    // Per-service detail leaks the backend topology to anonymous
-    // scanners (F-9 in docs/security-audit-2026-05-11.md). Return a
-    // boolean-only response for unauthenticated callers, full detail
-    // (needed by StartupOverlay) only for authenticated sessions.
+    // Anon callers get a boolean; authed callers get per-service detail.
+    // Per-service detail leaks backend topology to anonymous scanners.
     const tokenCookie = getCookieToken(req);
     const isAuthed = tokenCookie ? (await validateToken(tokenCookie)) !== null : false;
 
@@ -611,8 +601,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   }
 
   if (path === "/system" && req.method === "GET") {
-    // F-9: /system exposes the full backend topology, ports, and
-    // health states. Require an authenticated session to view it.
     const auth = await requireAuth(req);
     if (isResponse(auth)) return auth;
     return handleSystemStatus();
@@ -697,8 +685,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const scenariosResponse = await handleScenariosRoute(req, path, gatewayContext);
   if (scenariosResponse) return scenariosResponse;
 
-  // Self-alias: /api/gateway/* → strip prefix and re-issue to gateway's own routes.
-  // Must forward Cookie so auth-protected routes work correctly.
   if (path.startsWith("/api/gateway/")) {
     const stripped = path.slice("/api/gateway".length);
     const targetUrl = `http://localhost:${PORT}${stripped}${url.search}`;
@@ -726,18 +712,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
   }
 
-  // Generic service proxy — /api/<service>/* → <SERVICE>_URL/*
-  // The URL constants at the top of the file already honour
-  // <SERVICE>_HOST + <SERVICE>_PORT envs, defaulting to localhost for
-  // the Fly.io monolith case where every service binds to localhost
-  // and only port 5011 is publicly exposed. On the homelab each
-  // service runs in its own container with hostname == service name
-  // (e.g. OMS_HOST=oms via compose env).
-  //
-  // Pre-2026-05-11 this map hardcoded `http://localhost:` for most
-  // entries, ignoring the *_HOST overrides — so /api/<svc>/health
-  // returned 502 on the homelab because gateway tried localhost:<port>
-  // instead of oms:5002 / ems:5001 / etc.
   const SVC_PROXY: Record<string, string> = {
     "market-sim":           MARKET_SIM_URL,
     "ems":                  EMS_URL,
@@ -776,23 +750,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "risk-engine":          RISK_ENGINE_URL,
   };
 
-  // F-17: gate SVC_PROXY access by role. Without this, any logged-in
-  // viewer could hit /api/risk-engine/config, /api/journal/grid/query,
-  // /api/oms/orders, etc. The internal services trust the gateway and
-  // don't re-check the caller, so the gateway is the single
-  // enforcement point.
-  //
-  // Roles in use: trader, desk-head, risk-manager, compliance, sales,
-  // oncall, admin, external-client, viewer.
-  //
-  // Default-deny: services not in this map require `admin`.
+  // The gateway is the single enforcement point: internal services trust
+  // the gateway and don't re-check the caller. Default-deny: anything not
+  // in this map requires `admin`.
   const SVC_MIN_ROLES: Record<string, Set<string>> = {
-    // Pre-login surface (already in PROXY_PUBLIC below):
     "user-service": new Set([
       "viewer", "trader", "desk-head", "risk-manager", "compliance",
       "sales", "oncall", "admin", "external-client",
     ]),
-    // Read-only market info — fine for any logged-in role.
     "market-sim": new Set([
       "viewer", "trader", "desk-head", "risk-manager", "compliance",
       "sales", "oncall", "admin", "external-client",
@@ -813,13 +778,11 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       "viewer", "trader", "desk-head", "risk-manager", "compliance",
       "sales", "oncall", "admin", "external-client",
     ]),
-    // Order surface — traders and supervisors.
     "ems": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
     "oms": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
     "journal": new Set([
       "trader", "desk-head", "risk-manager", "compliance", "oncall", "admin",
     ]),
-    // Algos — traders use them, but only desk-head+ to configure.
     "limit-algo":           new Set(["trader", "desk-head", "risk-manager", "admin"]),
     "twap-algo":            new Set(["trader", "desk-head", "risk-manager", "admin"]),
     "pov-algo":             new Set(["trader", "desk-head", "risk-manager", "admin"]),
@@ -829,23 +792,19 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "arrival-price-algo":   new Set(["trader", "desk-head", "risk-manager", "admin"]),
     "momentum-algo":        new Set(["trader", "desk-head", "risk-manager", "admin"]),
     "is-algo":              new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    // Recommendation/feature/signal engines: read by trader, configured by quant.
     "feature-engine":       new Set(["trader", "desk-head", "risk-manager", "admin"]),
     "signal-engine":        new Set(["trader", "desk-head", "risk-manager", "admin"]),
     "recommendation-engine":new Set(["trader", "desk-head", "risk-manager", "admin"]),
     "scenario-engine":      new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
     "llm-advisory":         new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
     "llm-worker":           new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    // Dark pool / CCP / RFQ — desk-head+.
     "dark-pool":            new Set(["desk-head", "risk-manager", "compliance", "admin"]),
     "ccp-service":          new Set(["desk-head", "risk-manager", "compliance", "admin"]),
     "rfq-service":          new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
-    // Instrument reference data — read-anyone.
     "product-service":      new Set([
       "viewer", "trader", "desk-head", "risk-manager", "compliance",
       "sales", "oncall", "admin", "external-client",
     ]),
-    // FIX surface, replay, risk-engine — risk/oncall/admin only.
     "fix-archive":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
     "fix-gateway":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
     "kafka-relay":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
@@ -861,23 +820,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const svcPath = svcMatch[2] ?? "/";
     const target = SVC_PROXY[svcName];
     if (target) {
-      // Allowlist of unauthenticated proxy paths. Everything else needs
-      // a valid veta_user cookie. Four categories of pre-login traffic:
-      //  - /api/user-service/oauth/* and /auth/* — the OAuth login flow
-      //    itself runs before there's a session cookie to validate.
-      //  - /api/user-service/personas — read-only demo persona catalogue
-      //    powering the Sign-in panel. Gated by VETA_DEMO_MODE on the
-      //    user-service; safe to expose because it only returns avatar,
-      //    role, desk and trading style — never credentials.
-      //  - /api/<svc>/health — the login page polls every service's
-      //    /health endpoint to render the "platform degraded" indicator
-      //    before the user is signed in. F-17 broke this; F-9 trimmed
-      //    /ready detail so /health is now the only anon-readable
-      //    health probe. The endpoints return service+version+ok and
-      //    leak nothing actionable.
-      //  - /metrics is intentionally NOT in this list — Prometheus
-      //    scrape is internal-network-only and shouldn't be reachable
-      //    via the public gateway anyway.
+      // Pre-login allowlist: OAuth flow, demo persona catalogue, /health
+      // probes (the sign-in page renders a degraded-platform indicator
+      // before any session cookie exists). /metrics is deliberately
+      // excluded so Prometheus scrape never leaks via the public gateway.
       const PROXY_PUBLIC = (
         svcName === "user-service" &&
         (svcPath.startsWith("/oauth/") || svcPath.startsWith("/auth/") || svcPath === "/personas")
@@ -887,8 +833,6 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       if (!PROXY_PUBLIC) {
         const auth = await requireAuth(req);
         if (isResponse(auth)) return auth;
-        // F-17: check the caller's role against the per-service allowlist.
-        // Default-deny: services not in SVC_MIN_ROLES require admin.
         const allowedRoles = SVC_MIN_ROLES[svcName] ?? new Set(["admin"]);
         if (!allowedRoles.has(auth.user.role)) {
           publishAccessEvent({
