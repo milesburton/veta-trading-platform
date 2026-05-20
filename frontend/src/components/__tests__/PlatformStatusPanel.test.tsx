@@ -3,7 +3,20 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const useGetPlatformStatusQueryMock = vi.fn();
-let nextSubmitResponse: { ok: boolean; error?: string } | "error" = { ok: true };
+
+interface SubmitOk {
+  ok: boolean;
+  error?: string;
+}
+interface SubmitReject {
+  reject: true;
+}
+type NextSubmitResponse = SubmitOk | SubmitReject;
+function isReject(r: NextSubmitResponse): r is SubmitReject {
+  return "reject" in r && r.reject === true;
+}
+
+let nextSubmitResponse: NextSubmitResponse = { ok: true };
 let submitBugSpy: (arg: unknown) => void = () => {};
 
 vi.mock("@veta/frontend/store/servicesApi.ts", async () => {
@@ -22,7 +35,7 @@ vi.mock("@veta/frontend/store/servicesApi.ts", async () => {
       const trigger = vi.fn((_arg: unknown) => {
         submitBugSpy(_arg);
         const promise = (async () => {
-          if (nextSubmitResponse === "error") {
+          if (isReject(nextSubmitResponse)) {
             setState({ isLoading: false, error: { status: 500 } });
             throw new Error("submission failed");
           }
@@ -340,7 +353,7 @@ describe("PlatformStatusPanel", () => {
   });
 
   it("shows submission-failed error when mutation rejects", async () => {
-    nextSubmitResponse = "error";
+    nextSubmitResponse = { reject: true };
     useGetPlatformStatusQueryMock.mockReturnValue({ data: baseStatus });
     render(<PlatformStatusPanel />);
     fireEvent.click(screen.getByTestId("open-bug-report"));
