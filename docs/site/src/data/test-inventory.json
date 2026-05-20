@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 42,
-      "cases": 557,
+      "cases": 560,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -42,10 +42,10 @@
         "bug-report-route.unit.test.ts": 10,
         "playbooks.unit.test.ts": 10,
         "telemetry-route.unit.test.ts": 6,
-        "discord-notifier.unit.test.ts": 13,
+        "discord-notifier.unit.test.ts": 14,
         "ticketing.unit.test.ts": 7,
         "service-registry.unit.test.ts": 3,
-        "grafana-renderer.unit.test.ts": 11
+        "grafana-renderer.unit.test.ts": 13
       }
     },
     "integration": {

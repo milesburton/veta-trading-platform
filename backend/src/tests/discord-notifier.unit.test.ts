@@ -272,6 +272,62 @@ Deno.test("notifyDiscord falls back to text-only when render returns non-image",
   });
 });
 
+Deno.test("notifyDiscord sanitises attachment filename derived from alert.source", async () => {
+  await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
+    const png = new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+    ]);
+    // Intercept the FormData object before stringification so we can
+    // inspect the actual filename Discord would see.
+    const seenFilenames: string[] = [];
+    const baseFetch: typeof fetch = ((url: string, init?: RequestInit) => {
+      if (String(url).includes("discord.com/api/webhooks/") && init?.body instanceof FormData) {
+        const fileEntry = (init.body as FormData).get("files[0]");
+        if (fileEntry instanceof File) {
+          seenFilenames.push(fileEntry.name);
+        }
+      }
+      if (String(url).includes("/render/d-solo/")) {
+        return Promise.resolve(
+          new Response(png as BodyInit, {
+            status: 200,
+            headers: { "Content-Type": "image/png" },
+          }),
+        );
+      }
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }) as typeof fetch;
+    globalThis.fetch = baseFetch;
+    try {
+      await notifyDiscord(
+        {
+          severity: "CRITICAL",
+          // Hostile source: slashes, quotes, newlines, control chars.
+          source: '../etc/passwd"\r\n; rm -rf /',
+          message: "fired",
+        },
+        "u-1",
+      );
+      assertEquals(seenFilenames.length, 1, "expected one multipart attachment");
+      const name = seenFilenames[0];
+      // No path separators or quotes
+      assertEquals(name.includes("/"), false);
+      assertEquals(name.includes('"'), false);
+      assertEquals(name.includes("\\"), false);
+      assertEquals(name.includes("\r"), false);
+      assertEquals(name.includes("\n"), false);
+      // Length capped
+      assertEquals(name.length <= 100, true, `filename too long: ${name.length}`);
+      // Still starts with the alert-... prefix and ends with .png
+      assertEquals(name.startsWith("alert-"), true);
+      assertEquals(name.endsWith(".png"), true);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});
+
 Deno.test("notifyDiscord skips renderer entirely when DISCORD_ATTACH_GRAFANA_PANELS=false", async () => {
   Deno.env.set("DISCORD_ATTACH_GRAFANA_PANELS", "false");
   try {

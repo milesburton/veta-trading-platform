@@ -49,9 +49,44 @@ export async function renderGrafanaPanel(opts: RenderOptions): Promise<Uint8Arra
     if (!res.ok) return null;
     const ct = res.headers.get("content-type") ?? "";
     if (!ct.includes("image/")) return null;
-    const buf = new Uint8Array(await res.arrayBuffer());
-    if (buf.byteLength === 0 || buf.byteLength > MAX_PNG_BYTES) return null;
-    return buf;
+
+    // Early reject by advertised length. Saves us from buffering a
+    // misbehaving multi-GB response into memory just to throw it away.
+    const lenHeader = res.headers.get("content-length");
+    if (lenHeader) {
+      const advertised = Number(lenHeader);
+      if (Number.isFinite(advertised) && advertised > MAX_PNG_BYTES) {
+        try { await res.body?.cancel(); } catch { /* already drained */ }
+        return null;
+      }
+    }
+
+    // Stream the body in chunks and abort once we exceed the cap.
+    // Without this, a renderer that omits or lies about Content-Length
+    // could still grow our buffer past MAX_PNG_BYTES before we noticed.
+    if (!res.body) return null;
+    const reader = res.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.byteLength;
+      if (total > MAX_PNG_BYTES) {
+        try { await reader.cancel(); } catch { /* already drained */ }
+        return null;
+      }
+      chunks.push(value);
+    }
+    if (total === 0) return null;
+    const out = new Uint8Array(total);
+    let offset = 0;
+    for (const c of chunks) {
+      out.set(c, offset);
+      offset += c.byteLength;
+    }
+    return out;
   } catch {
     return null;
   }

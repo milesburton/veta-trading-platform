@@ -97,7 +97,7 @@ export async function notifyDiscord(alert: AlertPayload, userId: string): Promis
     : null;
 
   const attachment = bytes
-    ? { filename: `alert-${alert.source ?? "panel"}-${Date.now()}.png`, bytes }
+    ? { filename: buildAttachmentFilename(alert.source), bytes }
     : undefined;
 
   await postToDiscord({
@@ -158,6 +158,19 @@ export async function notifyDiscordBug(
 
 function sanitiseMultiline(s: string, max: number): string {
   return s.replace(/\r/g, "").slice(0, max);
+}
+
+// Discord rejects multipart filenames containing control characters,
+// quotes, slashes, and a few other specials; long names also have
+// historically caused upload failures. Strip the alert source down to a
+// safe character class, cap length, and fall back to `panel` if the
+// sanitised form is empty.
+const FILENAME_SAFE_RE = /[^A-Za-z0-9._-]+/g;
+const FILENAME_MAX = 60;
+function buildAttachmentFilename(source: string | undefined): string {
+  const cleaned = (source ?? "panel").replace(FILENAME_SAFE_RE, "-").slice(0, FILENAME_MAX);
+  const safe = cleaned.replace(/^[.-]+/, "") || "panel";
+  return `alert-${safe}-${Date.now()}.png`;
 }
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 60 * 1000;

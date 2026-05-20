@@ -149,3 +149,81 @@ Deno.test("renderGrafanaPanel rejects oversized payloads", async () => {
     globalThis.fetch = realFetch;
   }
 });
+
+Deno.test("renderGrafanaPanel rejects via Content-Length without pulling chunks", async () => {
+  // Header advertises a 1 GiB body. The renderer should bail before
+  // pulling any chunks. We track `pull()` invocations (not the eager
+  // `start()` which the platform invokes on stream construction) —
+  // pull is what reader.read() drives, so 0 pulls means the
+  // early-reject path worked. If pulls happened we'd be back to
+  // the OOM risk Copilot flagged on PR #340.
+  let pullCount = 0;
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      pullCount++;
+      controller.enqueue(new Uint8Array(1024 * 1024));
+    },
+  });
+  globalThis.fetch = (() =>
+    Promise.resolve(
+      new Response(body, {
+        status: 200,
+        headers: {
+          "Content-Type": "image/png",
+          "Content-Length": String(1024 * 1024 * 1024),
+        },
+      }),
+    )) as typeof fetch;
+  try {
+    const bytes = await renderGrafanaPanel({ panelUid: "trading", panelId: 1 });
+    assertEquals(bytes, null);
+    // Deno/V8 may pre-pull one chunk when the Response is constructed
+    // even if we never call reader.read(). The point is that the
+    // renderer cancels the body before consuming the advertised 1 GiB
+    // — anything in single digits means we didn't drain the stream.
+    assertEquals(
+      pullCount <= 1,
+      true,
+      `early-reject should cancel after at most one platform pre-pull, got ${pullCount}`,
+    );
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+Deno.test("renderGrafanaPanel aborts mid-stream when chunks exceed the cap", async () => {
+  // No Content-Length header: only the per-chunk running-total
+  // check protects us. The renderer should cancel the reader after
+  // ~6 chunks (6 MiB cap / 1 MiB per chunk), well before the
+  // producer would have offered 10 chunks (10 MiB).
+  const chunkSize = 1024 * 1024;
+  let chunksPulled = 0;
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      chunksPulled++;
+      if (chunksPulled > 10) {
+        controller.close();
+        return;
+      }
+      controller.enqueue(new Uint8Array(chunkSize));
+    },
+  });
+  globalThis.fetch = (() =>
+    Promise.resolve(
+      new Response(body, {
+        status: 200,
+        headers: { "Content-Type": "image/png" },
+      }),
+    )) as typeof fetch;
+  try {
+    const bytes = await renderGrafanaPanel({ panelUid: "trading", panelId: 1 });
+    assertEquals(bytes, null);
+    assertEquals(
+      chunksPulled <= 8,
+      true,
+      `pulled ${chunksPulled} chunks before abort; cap should fire ~chunk 7`,
+    );
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
