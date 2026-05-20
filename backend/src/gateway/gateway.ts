@@ -24,7 +24,9 @@ import { handleAlertsRoute } from "./routes/alerts.ts";
 import { handleAnalyticsRoute } from "./routes/analytics.ts";
 import { handleLogsRoute, recordLogLine } from "./routes/logs.ts";
 import { handleBugReportRoute } from "./routes/bug-report.ts";
-import { startHeartbeat } from "./discord-notifier.ts";
+import { sendDailySummary } from "./discord-notifier.ts";
+import { startDailySummary } from "./daily-summary.ts";
+import { platformStats } from "./platform-stats.ts";
 import { handleTelemetryRoute } from "./routes/telemetry.ts";
 import { handleScenariosRoute } from "./routes/scenarios.ts";
 import { handleProxiedRoutes } from "./routes/proxied.ts";
@@ -486,16 +488,30 @@ async function refreshHealth(): Promise<void> {
   };
 }
 
-refreshHealth();
+async function refreshHealthAndRecord(): Promise<void> {
+  await refreshHealth();
+  if (cachedHealth) {
+    const entries = Object.values(cachedHealth);
+    const up = entries.filter((ok) => ok).length;
+    platformStats.recordServiceSnapshot(up, entries.length);
+  }
+}
+
+refreshHealthAndRecord();
 refreshDataDepth();
-setInterval(refreshHealth, HEALTH_REFRESH_MS);
+setInterval(refreshHealthAndRecord, HEALTH_REFRESH_MS);
 setInterval(refreshDataDepth, 30_000);
 
-startHeartbeat({
+platformStats.setDeploySha(VERSION);
+
+startDailySummary({
   version: VERSION,
   environment: Deno.env.get("VETA_ENV") ?? "dev",
   startedAt: STARTED_AT,
+  getStats: () => platformStats.snapshot(),
   getServices: () => cachedHealth,
+  hourUtc: Number(Deno.env.get("DISCORD_DAILY_SUMMARY_HOUR_UTC") ?? "9"),
+  sender: sendDailySummary,
 });
 
 const gatewayContext: GatewayContext = {
@@ -555,6 +571,31 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   if (path === "/health" && req.method === "GET") {
     return handleHealth(VERSION);
+  }
+
+  if (path === "/platform-status" && req.method === "GET") {
+    const tokenCookie = getCookieToken(req);
+    const auth = tokenCookie ? await validateToken(tokenCookie) : null;
+    if (!auth || (auth.user.role !== "admin" && auth.user.role !== "oncall")) {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+      });
+    }
+    return new Response(
+      JSON.stringify({
+        version: VERSION,
+        environment: Deno.env.get("VETA_ENV") ?? "dev",
+        startedAt: STARTED_AT,
+        uptimeMs: Date.now() - STARTED_AT,
+        services: cachedHealth ?? {},
+        stats: platformStats.snapshot(),
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+      },
+    );
   }
 
   if (path === "/ready" && req.method === "GET") {

@@ -2,6 +2,7 @@
 import { CORS_HEADERS } from "@veta/http";
 import { type GatewayContext, isResponse } from "../context.ts";
 import { type BugReport, isBugReportValid, notifyDiscordBug } from "../discord-notifier.ts";
+import { platformStats } from "../platform-stats.ts";
 
 const ALLOWED_CATEGORIES = new Set(["ui", "data", "auth", "performance", "other"]);
 
@@ -52,6 +53,11 @@ export async function handleBugReportRoute(
 
   const userAgent = req.headers.get("user-agent") ?? "unknown";
   const reportWithUA: BugReport = { ...report, userAgent };
+  platformStats.recordBug({
+    title: report.title,
+    userId: authResult.user.id,
+    ts: Date.now(),
+  });
   const sent = await notifyDiscordBug(
     reportWithUA,
     authResult.user.id,

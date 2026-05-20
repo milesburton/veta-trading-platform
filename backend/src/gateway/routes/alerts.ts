@@ -1,6 +1,7 @@
 import { CORS_HEADERS } from "@veta/http";
 import { type GatewayContext, isResponse } from "../context.ts";
 import { notifyDiscord } from "../discord-notifier.ts";
+import { platformStats } from "../platform-stats.ts";
 import { createTicketForAlert } from "../ticketing.ts";
 
 export async function handleAlertsRoute(
@@ -53,6 +54,12 @@ export async function handleAlertsRoute(
 async function notifyDiscordFromBody(body: ArrayBuffer, userId: string): Promise<void> {
   try {
     const parsed = JSON.parse(new TextDecoder().decode(body));
+    platformStats.recordAlert({
+      severity: parsed.severity ?? "UNKNOWN",
+      source: parsed.source ?? "unknown",
+      message: parsed.message ?? "",
+      ts: Date.now(),
+    });
     await Promise.allSettled([
       notifyDiscord(parsed, userId),
       createTicketForAlert(parsed, userId),
