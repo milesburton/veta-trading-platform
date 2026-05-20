@@ -20,6 +20,7 @@ jobs:
     outputs:
       docker: ${{ steps.filter.outputs.docker }}
       electron: ${{ steps.filter.outputs.electron }}
+      fallow: ${{ steps.filter.outputs.fallow }}
     steps:
       - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v4
@@ -41,6 +42,10 @@ jobs:
             electron:
               - 'frontend/**'
               - 'electron/**'
+              - '.github/workflows/ci.yml'
+            fallow:
+              - 'frontend/**'
+              - 'shared/**'
               - '.github/workflows/ci.yml'
 
   lint-and-test:
@@ -264,14 +269,15 @@ jobs:
   fallow:
     name: Fallow audit (PR diff)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.fallow == 'true'
     permissions:
       contents: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v5
@@ -295,27 +301,26 @@ jobs:
       - name: Ensure base ref is available
         run: git fetch --no-tags --depth=50 origin "${{ github.base_ref }}"
 
-      - name: Fallow audit (fails on introduced findings)
+      - name: "Fallow audit (single run: SARIF + gate)"
+        id: audit
         working-directory: frontend
         env:
           BASE_REF: origin/${{ github.base_ref }}
         run: |
-          ./node_modules/.bin/fallow audit \
-            --root .. \
-            --changed-since "$BASE_REF" \
-            --fail-on-issues
-
-      - name: Capture SARIF
-        if: always()
-        working-directory: frontend
-        env:
-          BASE_REF: origin/${{ github.base_ref }}
-        run: |
+          set +e
           ./node_modules/.bin/fallow audit \
             --root .. \
             --changed-since "$BASE_REF" \
             --format sarif \
-            --quiet > ../fallow-audit.sarif || true
+            --fail-on-issues \
+            --quiet > ../fallow-audit.sarif 2>/dev/null
+          status=$?
+          if [ -s ../fallow-audit.sarif ]; then
+            count=$(jq '.runs[0].results | length' ../fallow-audit.sarif 2>/dev/null || echo "?")
+            echo "Introduced findings: $count"
+            jq -r '.runs[0].results | group_by(.ruleId) | map("  \(.[0].ruleId): \(length)") | .[]' ../fallow-audit.sarif 2>/dev/null || true
+          fi
+          exit $status
 
       - name: Upload SARIF
         if: always()
