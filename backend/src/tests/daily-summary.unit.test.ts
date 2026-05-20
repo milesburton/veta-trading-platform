@@ -110,7 +110,6 @@ Deno.test("buildDailySummary lists bug counts with unique reporter count", () =>
 });
 
 Deno.test("startDailySummary schedules next fire at 09:00 UTC", () => {
-  // Force a "now" of 2026-05-20T05:00:00 UTC
   const baseNow = Date.UTC(2026, 4, 20, 5, 0, 0);
   let calls = 0;
   const h = startDailySummary({
@@ -131,7 +130,6 @@ Deno.test("startDailySummary schedules next fire at 09:00 UTC", () => {
 });
 
 Deno.test("startDailySummary nextFire rolls over to tomorrow if past today's hour", () => {
-  // Force a now of 2026-05-20T14:30:00 UTC
   const baseNow = Date.UTC(2026, 4, 20, 14, 30, 0);
   const h = startDailySummary({
     version: "v",
