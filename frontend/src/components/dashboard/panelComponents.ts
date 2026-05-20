@@ -32,6 +32,7 @@ import { OptionPricingPanel } from "@veta/frontend/components/OptionPricingPanel
 import { OrderBlotter } from "@veta/frontend/components/OrderBlotter.tsx";
 import { OrderProgressPanel } from "@veta/frontend/components/OrderProgressPanel.tsx";
 import { OrderTicket } from "@veta/frontend/components/OrderTicket.tsx";
+import { PlatformStatusPanel } from "@veta/frontend/components/PlatformStatusPanel.tsx";
 import { PriceFanPanel } from "@veta/frontend/components/PriceFanPanel.tsx";
 import { ProductBookPanel } from "@veta/frontend/components/ProductBookPanel.tsx";
 import { ProductBuilderPanel } from "@veta/frontend/components/ProductBuilderPanel.tsx";
@@ -91,6 +92,7 @@ registerPanel("research-radar", ResearchRadarPanel);
 registerPanel("instrument-analysis", InstrumentAnalysisPanel);
 registerPanel("signal-explainability", SignalExplainabilityPanel);
 registerPanel("service-health", ServiceHealthPanel);
+registerPanel("platform-status", PlatformStatusPanel);
 registerPanel("throughput-gauges", ThroughputGaugesPanel);
 registerPanel("algo-leaderboard", AlgoLeaderboardPanel);
 registerPanel("load-test", LoadTestPanel);
