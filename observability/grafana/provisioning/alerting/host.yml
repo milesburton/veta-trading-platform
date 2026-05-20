@@ -1,13 +1,20 @@
 apiVersion: 1
 
-# Grafana-managed alert rules for host, service-memory, frontend, and
-# Redpanda metrics. These mirror the same expressions as
+# Grafana-managed alert rules for the **host and Redpanda** groups.
+# These mirror the same expressions as the same-named groups in
 # observability/prometheus-rules.yml so Prometheus and Grafana agree
 # on alert state, but they need to live here too because Grafana's
 # notification policy + Discord contact point only fires for
 # Grafana-managed rules. Prometheus-side rules are not wired into
 # any alertmanager, so before this file existed they evaluated
 # silently and never reached the channel.
+#
+# Out of scope for this file (still Prometheus-only, not Discord-routed):
+#   - the `memory` group (ServiceMemoryGrowth/High/Critical)
+#   - the `frontend-memory` group (FrontendHeapHigh/Critical)
+# Migrating those is a follow-up — they need the same per-rule
+# Grafana provisioning shape and were left out of PR #338 to keep
+# the scope tight on the disk-fill incident pipeline.
 
 groups:
   - orgId: 1

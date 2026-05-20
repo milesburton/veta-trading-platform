@@ -166,9 +166,18 @@ if [[ -f "$STACK_DIR/observability/docker-compose.lgtm.yml" ]]; then
     # existed (2026-05-20 disk-fill postmortem), Grafana's Discord
     # contact point resolved to the REPLACE_ME sentinel and silently
     # dropped every alert.
-    if [[ -f "$STACK_DIR/.env" && ! -e "$STACK_DIR/observability/.env" ]]; then
-        ln -s ../.env "$STACK_DIR/observability/.env"
-        log "  Created observability/.env -> ../.env symlink"
+    # `-e` is false for a broken symlink, so a previous run that left a
+    # stale symlink would re-enter the branch and `ln -s` would fail
+    # with "File exists". `ln -sfn` replaces whatever's there
+    # (file, broken symlink, correct symlink) atomically, and -n stops
+    # ln from descending into a target dir if .env happens to already
+    # be a symlink to a directory.
+    if [[ -f "$STACK_DIR/.env" ]]; then
+        if [[ ! -L "$STACK_DIR/observability/.env" || \
+              "$(readlink "$STACK_DIR/observability/.env")" != "../.env" ]]; then
+            ln -sfn ../.env "$STACK_DIR/observability/.env"
+            log "  Ensured observability/.env -> ../.env symlink"
+        fi
     fi
 
     log "Updating observability (LGTM) stack..."
