@@ -177,6 +177,23 @@ The metric is per-gateway (one value for "max across all users") rather than per
 
 Backend Prometheus rules live in [`observability/prometheus-rules.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/prometheus-rules.yml). They auto-load when Grafana boots; no migration step.
 
+Every rule has a `promtool` unit test in [`observability/prometheus-rules.test.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/prometheus-rules.test.yml). Tests cover the positive case (rule fires when threshold is breached for the configured `for:` window) and the locked-in negatives (no false positives below the threshold, market.* topics excluded from the topic-rate rules, per-group fan-out for consumer lag). Run them locally:
+
+```bash
+promtool test rules observability/prometheus-rules.test.yml
+```
+
+Or via docker if promtool is not installed:
+
+```bash
+docker run --rm \
+  -v "$PWD/observability/prometheus-rules.yml":/prometheus-rules.yml \
+  -v "$PWD/observability/prometheus-rules.test.yml":/test.yml \
+  --entrypoint promtool prom/prometheus:v3.1.0 test rules /test.yml
+```
+
+Pre-commit runs these automatically when either file is staged. CI runs them on every PR that touches either file.
+
 User-level alerts are dispatched by `alertsMiddleware` reacting to Redux actions. Add a new branch to the middleware to emit on additional event types. Severity ≥ WARNING reaches Discord automatically; CRITICAL also opens a [GitHub ticket](./ticketing).
 
 ## Troubleshooting
