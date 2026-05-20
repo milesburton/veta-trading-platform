@@ -74,3 +74,46 @@ Deno.test("PlatformStats setDeploySha surfaces in snapshot", () => {
   const snap = s.snapshot();
   assertEquals(snap.lastDeploySha, "deadbeef1234");
 });
+
+Deno.test("PlatformStats snapshot(now) re-prunes using the supplied now", () => {
+  const s = new PlatformStats();
+  const now = Date.now();
+  s.recordAlert({ severity: "CRITICAL", source: "x", message: "earlier", ts: now });
+  s.recordAlert({ severity: "CRITICAL", source: "x", message: "later", ts: now + 6 * 60 * 60 * 1000 });
+  const futureNow = now + 25 * 60 * 60 * 1000;
+  const snap = s.snapshot(futureNow);
+  assertEquals(snap.alertsBySeverity.CRITICAL, 1);
+  assertEquals(snap.lastCritical?.message, "later");
+});
+
+Deno.test("PlatformStats event at exact cutoff is included (>= boundary)", () => {
+  const s = new PlatformStats();
+  const now = Date.now();
+  s.recordAlert({ severity: "CRITICAL", source: "x", message: "fresh", ts: now });
+  const exactlyAtBoundary = now + 24 * 60 * 60 * 1000;
+  const snap = s.snapshot(exactlyAtBoundary);
+  assertEquals(snap.alertsBySeverity.CRITICAL, 1);
+  assertEquals(snap.lastCritical?.message, "fresh");
+});
+
+Deno.test("PlatformStats serviceUpRatio treats total=0 snapshots as 100% up", () => {
+  const s = new PlatformStats();
+  s.recordServiceSnapshot(0, 0);
+  s.recordServiceSnapshot(8, 10);
+  const snap = s.snapshot();
+  if (snap.serviceUpRatio === null) throw new Error("expected ratio");
+  const expected = (1 + 0.8) / 2;
+  if (Math.abs(snap.serviceUpRatio - expected) > 0.001) {
+    throw new Error(`expected ${expected}, got ${snap.serviceUpRatio}`);
+  }
+  assertEquals(snap.worstServiceUpRatio, 0.8);
+});
+
+Deno.test("PlatformStats deploy SHA can be updated mid-window", () => {
+  const s = new PlatformStats();
+  s.setDeploySha("aaaa1111");
+  s.recordAlert({ severity: "CRITICAL", source: "x", message: "before", ts: Date.now() });
+  s.setDeploySha("bbbb2222");
+  const snap = s.snapshot();
+  assertEquals(snap.lastDeploySha, "bbbb2222");
+});

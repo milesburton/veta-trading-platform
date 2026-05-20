@@ -42,7 +42,7 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
 
   const overallEmoji = stats.worstServiceUpRatio === null
     ? "ℹ️"
-    : stats.worstServiceUpRatio >= 0.999
+    : stats.worstServiceUpRatio >= 1
     ? "✅"
     : stats.worstServiceUpRatio >= 0.95
     ? "⚠️"
@@ -53,7 +53,6 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
     "",
   ];
 
-  // Service availability section
   if (stats.serviceUpRatio !== null) {
     lines.push(
       `**Services (last 24h):** mean ${formatPct(stats.serviceUpRatio)} up · worst window ${formatPct(stats.worstServiceUpRatio ?? 0)}`,
@@ -72,15 +71,22 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
   }
   lines.push("");
 
-  // Alerts section
-  const sevOrder = ["CRITICAL", "WARNING", "INFO"];
+  const known = ["CRITICAL", "WARNING", "INFO"];
   const totalAlerts = Object.values(stats.alertsBySeverity).reduce((s, n) => s + n, 0);
   if (totalAlerts === 0) {
     lines.push("**Alerts (last 24h):** none 🎯");
   } else {
-    const parts = sevOrder
-      .filter((s) => stats.alertsBySeverity[s])
-      .map((s) => `${s.toLowerCase()}: ${stats.alertsBySeverity[s]}`);
+    const parts: string[] = [];
+    for (const sev of known) {
+      if (stats.alertsBySeverity[sev]) {
+        parts.push(`${sev.toLowerCase()}: ${stats.alertsBySeverity[sev]}`);
+      }
+    }
+    for (const [sev, n] of Object.entries(stats.alertsBySeverity)) {
+      if (!known.includes(sev) && n > 0) {
+        parts.push(`${sev.toLowerCase()}: ${n}`);
+      }
+    }
     lines.push(`**Alerts (last 24h):** ${totalAlerts} total · ${parts.join(", ")}`);
     if (stats.lastCritical) {
       const ago = Math.round((nowMs - stats.lastCritical.ts) / 60000);
@@ -91,7 +97,6 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
   }
   lines.push("");
 
-  // Bug reports
   if (stats.bugReports === 0) {
     lines.push("**Bug reports (last 24h):** none");
   } else {
@@ -101,7 +106,6 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
   }
   lines.push("");
 
-  // Deploy info
   if (stats.lastDeploySha) {
     lines.push(`**Deployed SHA:** \`${shortSha(stats.lastDeploySha)}\``);
   }
@@ -112,14 +116,22 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
 function nextFireTime(now: number, hourUtc: number): number {
   const d = new Date(now);
   const candidate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hourUtc, 0, 0, 0));
-  if (candidate.getTime() <= now) {
+  if (candidate.getTime() < now) {
     candidate.setUTCDate(candidate.getUTCDate() + 1);
   }
   return candidate.getTime();
 }
 
+function validHourUtc(value: number | undefined): number {
+  if (value === undefined) return DEFAULT_HOUR_UTC;
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0 || value > 23) {
+    return DEFAULT_HOUR_UTC;
+  }
+  return value;
+}
+
 export function startDailySummary(opts: DailySummaryOptions): { stop: () => void; nextFireAt: () => number } {
-  const hourUtc = opts.hourUtc ?? DEFAULT_HOUR_UTC;
+  const hourUtc = validHourUtc(opts.hourUtc);
   const sender = opts.sender ?? (() => Promise.resolve(false));
   const now = opts.now ?? (() => Date.now());
   let nextFire = nextFireTime(now(), hourUtc);

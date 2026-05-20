@@ -504,13 +504,19 @@ setInterval(refreshDataDepth, 30_000);
 
 platformStats.setDeploySha(VERSION);
 
+function resolveDailySummaryHourUtc(raw: string | undefined): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0 || n > 23) return 9;
+  return n;
+}
+
 startDailySummary({
   version: VERSION,
   environment: Deno.env.get("VETA_ENV") ?? "dev",
   startedAt: STARTED_AT,
   getStats: () => platformStats.snapshot(),
   getServices: () => cachedHealth,
-  hourUtc: Number(Deno.env.get("DISCORD_DAILY_SUMMARY_HOUR_UTC") ?? "9"),
+  hourUtc: resolveDailySummaryHourUtc(Deno.env.get("DISCORD_DAILY_SUMMARY_HOUR_UTC")),
   sender: sendDailySummary,
 });
 

@@ -39,32 +39,32 @@ export class PlatformStats {
 
   recordAlert(ev: AlertEvent): void {
     this.alerts.push(ev);
-    this.prune();
+    this.prune(Date.now());
   }
 
   recordBug(ev: BugEvent): void {
     this.bugs.push(ev);
-    this.prune();
+    this.prune(Date.now());
   }
 
   recordServiceSnapshot(up: number, total: number, ts: number = Date.now()): void {
     this.snapshots.push({ ts, up, total });
-    this.prune();
+    this.prune(Date.now());
   }
 
   setDeploySha(sha: string): void {
     this.currentDeploySha = sha;
   }
 
-  private prune(): void {
-    const cutoff = Date.now() - WINDOW_MS;
+  private prune(now: number): void {
+    const cutoff = now - WINDOW_MS;
     this.alerts = this.alerts.filter((e) => e.ts >= cutoff);
     this.bugs = this.bugs.filter((e) => e.ts >= cutoff);
     this.snapshots = this.snapshots.filter((s) => s.ts >= cutoff);
   }
 
   snapshot(now: number = Date.now()): PlatformStatsSnapshot {
-    this.prune();
+    this.prune(now);
     const alertsBySeverity: Record<string, number> = {};
     let lastCritical: AlertEvent | null = null;
     for (const a of this.alerts) {

@@ -22,11 +22,32 @@ Deno.test("buildDailySummary header: ✅ when worst window is 100%", () => {
   if (!msg.includes("(prod)")) throw new Error("expected env in header");
 });
 
-Deno.test("buildDailySummary header: ⚠️ when worst window 95-99.9%", () => {
+Deno.test("buildDailySummary header: ⚠️ when worst window below 100% but at-or-above 95%", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(31, 32);
   const msg = buildDailySummary(ctx(stats));
   if (!msg.startsWith("⚠️")) throw new Error(`expected ⚠️ start, got: ${msg.slice(0, 20)}`);
+});
+
+Deno.test("buildDailySummary header: ⚠️ when worst window is exactly 99.9% (not ✅)", () => {
+  const stats = new PlatformStats();
+  stats.recordServiceSnapshot(999, 1000);
+  const msg = buildDailySummary(ctx(stats));
+  if (!msg.startsWith("⚠️")) throw new Error(`expected ⚠️ at 99.9%, got: ${msg.slice(0, 20)}`);
+});
+
+Deno.test("buildDailySummary header: ⚠️ at exactly 95% (boundary)", () => {
+  const stats = new PlatformStats();
+  stats.recordServiceSnapshot(95, 100);
+  const msg = buildDailySummary(ctx(stats));
+  if (!msg.startsWith("⚠️")) throw new Error(`expected ⚠️ at 95%, got: ${msg.slice(0, 20)}`);
+});
+
+Deno.test("buildDailySummary header: 🚨 just below 95%", () => {
+  const stats = new PlatformStats();
+  stats.recordServiceSnapshot(94, 100);
+  const msg = buildDailySummary(ctx(stats));
+  if (!msg.startsWith("🚨")) throw new Error(`expected 🚨 below 95%, got: ${msg.slice(0, 20)}`);
 });
 
 Deno.test("buildDailySummary header: 🚨 when worst window below 95%", () => {
@@ -56,6 +77,17 @@ Deno.test("buildDailySummary breaks down alerts by severity", () => {
   if (!msg.includes("critical: 1")) throw new Error("expected critical count");
   if (!msg.includes("warning: 2")) throw new Error("expected warning count");
   if (!msg.includes("Last critical")) throw new Error("expected last-critical line");
+});
+
+Deno.test("buildDailySummary surfaces unknown-severity alerts in the breakdown", () => {
+  const stats = new PlatformStats();
+  stats.recordServiceSnapshot(32, 32);
+  stats.recordAlert({ severity: "UNKNOWN", source: "x", message: "weird", ts: Date.now() });
+  stats.recordAlert({ severity: "DEBUG", source: "x", message: "trace", ts: Date.now() });
+  const msg = buildDailySummary(ctx(stats));
+  if (!msg.includes("2 total")) throw new Error("expected total to include all severities");
+  if (!msg.includes("unknown: 1")) throw new Error("expected unknown shown in breakdown");
+  if (!msg.includes("debug: 1")) throw new Error("expected debug shown in breakdown");
 });
 
 Deno.test("buildDailySummary lists down services in 'now' line", () => {
