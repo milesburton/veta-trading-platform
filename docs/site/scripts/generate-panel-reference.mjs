@@ -101,7 +101,6 @@ const panels = report.panels.map((entry) => {
 });
 
 const data = {
-  generatedAt: report.generatedAt,
   totalPanels: report.totalPanels,
   rendered: report.rendered,
   skipped: report.skipped,
