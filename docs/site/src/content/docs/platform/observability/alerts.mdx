@@ -110,22 +110,53 @@ Discord webhook URLs are bearer credentials. Rotate immediately if the URL appea
 Anyone with the webhook URL can post arbitrary messages to the channel as VETA Alerts. Treat the URL like an API key. Never commit it, never paste it in PR descriptions, and rotate after any exposure.
 </Aside>
 
-## Per-minute heartbeat
+## Daily summary
 
-Independent of alerts, the gateway posts a per-minute status rollup of every monitored service to the same Discord webhook. This signals "the platform is alive" — without it, the channel only speaks when something has gone wrong, leaving operators without a positive liveness signal.
+Once a day at 09:00 UTC, the gateway posts a 24h rollup of platform health to the same Discord webhook. Override the hour via `DISCORD_DAILY_SUMMARY_HOUR_UTC` (valid range 0–23; invalid values fall back to 9).
 
 The message shape:
 
 ```
-✅ **VETA** `a1b2c3d` (prod) — 32/32 services up · uptime 2d 14h 3m
-🟢 `analytics` 🟢 `arrivalPriceAlgo` 🟢 `bus` 🟢 `ccpService` 🟢 `darkPool` 🟢 `ems` …
+✅ **VETA daily summary** · `a1b2c3d` (prod) · gateway uptime 2d 14h 3m
+
+**Services (last 24h):** mean 99.8% up · worst window 96.9%
+Now: 32/32 up · ✅
+
+**Alerts (last 24h):** 7 total · critical: 1, warning: 6
+Last critical: 47m ago — `kill-switch` admin halt for AAPL
+
+**Bug reports (last 24h):** 2 from 2 users
+
+**Deployed SHA:** `a1b2c3d`
 ```
 
-Header emoji switches by availability: ✅ all up, ⚠️ 1–2 down, 🚨 3+ down. Body lists every service with 🟢/🔴.
+Header emoji follows the **worst** service-availability window seen in the day:
 
-Implementation in [`backend/src/gateway/discord-notifier.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/discord-notifier.ts). The interval defaults to 60s; override via `DISCORD_HEARTBEAT_INTERVAL_MS` on the gateway. On a quiet day that's 1440 messages — set the env to e.g. `300000` (5 min) if the noise floor is too high. The first heartbeat fires immediately on boot so a successful deploy shows up in the channel within seconds.
+| Emoji | Worst-window service ratio |
+|---|---|
+| ✅ | 100% (no service ever dropped) |
+| ⚠️ | 95% ≤ ratio < 100% |
+| 🚨 | below 95% |
 
-Heartbeat reads from the same `cachedHealth` map populated by `refreshHealth()`, so there's no extra polling cost.
+So ✅ means the platform was fully healthy every 5-second sample during the day. Drop below 100% even briefly and the rollup downgrades.
+
+Implementation in [`backend/src/gateway/daily-summary.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/daily-summary.ts), backed by the in-memory ring buffer in [`platform-stats.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/platform-stats.ts). Events older than 24h are pruned on every snapshot read. No background polling — service availability is sampled from the same `refreshHealth` loop the gateway already runs.
+
+Replaces the per-minute heartbeat that landed in #319 — 1440 messages/day buried real alerts.
+
+## CI/CD notifications
+
+Three GitHub workflow events fire into the same channel:
+
+| Event | Trigger | Message format |
+|---|---|---|
+| **CI failure on main** | `workflow_run.conclusion == 'failure'` | 🚨 `<workflow>` failed on main · `<sha>` by `<actor>` |
+| **Docs deploy success** | `Deploy GitHub Pages` completed on main | 📘 Docs deployed · `<sha>` |
+| **PR merged to main** | `pull_request_target.merged == true` | ✅ Merged **#N** — `<title>` (by `<author>`) |
+
+Bot-authored merges (release-please, dependabot, github-actions[bot]) are filtered out so the channel doesn't fill with screenshot/badge auto-commits.
+
+Wired in [`.github/workflows/notify-discord.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/notify-discord.yml). The workflow reads `secrets.DISCORD_WEBHOOK_URL` — set the same webhook URL as a repo secret. If the secret is unset, every job logs "skipping" and exits 0, so the workflow is safe to land before the secret is wired up.
 
 ## Frontend memory metric
 

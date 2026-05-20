@@ -117,9 +117,26 @@ function findScriptPath(command) {
 
 function resolveScriptAbsPath(scriptPath) {
   if (!scriptPath) return null;
-  if (scriptPath.startsWith("/workspaces/")) return scriptPath;
-  if (scriptPath.startsWith("/app/")) {
-    return path.join(repoRoot, scriptPath.slice("/app/".length));
+  // supervisord.conf hard-codes container-style absolute paths like
+  //   /workspaces/virtual-equities-trading-application/backend/...
+  //   /app/...
+  // Those resolve fine inside the devcontainer but not on GitHub
+  // Actions runners where the checkout is at
+  //   /home/runner/work/<repo>/<repo>/.
+  // Strip any known container prefix and re-rebase under the actual
+  // repoRoot. The previous version accepted /workspaces/... unchanged,
+  // which silently returned a non-existent path on CI ->
+  // extractDefaultPort returned null -> every service rendered with
+  // port `—` and the table re-sorted alphabetically. That diff
+  // blocked every PR on check-clean-state.
+  const KNOWN_CONTAINER_PREFIXES = [
+    "/workspaces/virtual-equities-trading-application/",
+    "/app/",
+  ];
+  for (const prefix of KNOWN_CONTAINER_PREFIXES) {
+    if (scriptPath.startsWith(prefix)) {
+      return path.join(repoRoot, scriptPath.slice(prefix.length));
+    }
   }
   return path.join(repoRoot, scriptPath);
 }

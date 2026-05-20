@@ -106,3 +106,90 @@ groups:
             At 4 GiB Firefox typically starts swapping. Get the user to
             hard-refresh before the tab becomes unresponsive, and grab a
             heap snapshot from about:memory.
+
+  - name: redpanda
+    rules:
+      - alert: RedpandaScrapeDown
+        expr: up{job="redpanda"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Redpanda scrape failing for 5m
+          description: |
+            Prometheus can't scrape redpanda:9644/public_metrics. Topic
+            growth, consumer lag, and partition health are invisible
+            while this is down. Check the broker:
+              docker exec redpanda rpk cluster health
+
+      - alert: RedpandaTopicWriteRateHigh
+        expr: |
+          sum by (topic) (
+            rate(redpanda_kafka_request_bytes_total{redpanda_request="produce"}[10m])
+          ) > 524288
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.topic }} producing >512 KiB/s for 30m"
+          description: |
+            Topic {{ $labels.topic }} is taking writes at >512 KiB/s
+            sustained — that's ~1.5 GiB/hour, ~36 GiB/day. At the cluster
+            default retention.bytes=1 GiB and log_retention_ms=24h the
+            partition will hit the byte cap and start tombstoning, but
+            this rate also signals upstream spam. Past incident
+            (2026-05-19): loadgen produced 322k duplicate AAPL orders/hr
+            that all rejected to orders.rejected. Check producer
+            identity and message content before assuming it's organic.
+
+      - alert: RedpandaTopicWriteRateCritical
+        expr: |
+          sum by (topic) (
+            rate(redpanda_kafka_request_bytes_total{redpanda_request="produce"}[10m])
+          ) > 2097152
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.topic }} producing >2 MiB/s for 10m — disk-fill imminent"
+          description: |
+            Topic {{ $labels.topic }} is taking writes at >2 MiB/s.
+            That's ~7 GiB/hour. Per-partition retention.bytes will
+            tombstone, but multiple hot topics together can still
+            outpace deletion. Confirm the producer is intentional and
+            consider stopping the offending service.
+
+      - alert: RedpandaConsumerLagSustained
+        expr: |
+          (
+            redpanda_kafka_max_offset
+            - on(topic, partition) group_right(group)
+              redpanda_kafka_consumer_group_committed_offset
+          ) > 100000
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.group }} on {{ $labels.topic }} lagging >100k offsets for 15m"
+          description: |
+            Consumer group {{ $labels.group }} on topic {{ $labels.topic }}
+            partition {{ $labels.partition }} has >100k unconsumed offsets
+            sustained for 15m. The query keeps the `group` label so one
+            healthy group on the same topic won't mask another lagging
+            group. If the topic is in the order pipeline (orders.*,
+            market.ticks) trading is degraded; otherwise check the
+            relevant service container is healthy.
+
+      - alert: RedpandaUnavailablePartitions
+        expr: redpanda_cluster_unavailable_partitions > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Redpanda has {{ $value }} partitions without quorum
+          description: |
+            redpanda_cluster_unavailable_partitions is {{ $value }}.
+            Producers writing to these partitions block; consumers
+            can't read. Check broker health and storage. If the cluster
+            is in a stuck state-machine-apply loop (like 2026-05-20),
+            the only recovery is to stop+wipe the data volume.

@@ -18,7 +18,7 @@ export interface ResumeOrdersPayload {
   resumeAt?: number;
 }
 
-export interface FillReceivedPayload {
+interface FillReceivedPayload {
   clOrdId: string;
   filledQty: number;
   avgFillPrice: number;

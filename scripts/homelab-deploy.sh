@@ -154,51 +154,121 @@ if ! docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d \
         || log "⚠ retry also returned non-zero; per-service verification will decide"
 fi
 
-# Observability (LGTM) is a separate compose project. Recreate it so config
-# changes in observability/docker-compose.lgtm.yml take effect — e.g.
-# Grafana's sub-path env + Traefik labels for the public /grafana route.
-if [[ -f "$STACK_DIR/observability/docker-compose.lgtm.yml" ]]; then
-    log "Updating observability (LGTM) stack..."
-    (cd "$STACK_DIR/observability" && \
-        docker compose -f docker-compose.lgtm.yml up -d 2>&1 | sed 's/^/  /') \
-        || log "⚠ observability up -d returned non-zero; continuing"
+# Detect bind-mount drift on single-file mounts and restart the affected
+# container so the new inode takes effect. `docker compose up -d` only
+# recreates a container when the *service definition* changes — not
+# when a bind-mounted single file is replaced. rsync atomic-replaces
+# the file with a new inode, which the container's mount can't follow,
+# so the container silently keeps serving the old content.
+#
+# Input is an associative array. Each entry's key is the host-relative
+# path; the value is "<container-or-service>:<in-container-path>".
+# The resolver tries the literal name first (works for services that
+# set `container_name:` explicitly), then falls back to compose service
+# resolution (`docker compose ps -q <svc>`), which handles the default
+# `<project>_<service>_<n>` form.
+#
+# 2026-05-20: disk-monitor.py was stale by this exact mechanism —
+# the new /metrics-serving script was on the host but the container
+# had the old single-handler version, so Prometheus scrape silently
+# failed and the disk fill went undetected. See PR #309 for the
+# original observability-stack fix.
+resolve_container() {
+    local name="$1"
+    # Direct hit: explicit container_name or already-running ID/name.
+    if docker inspect "$name" >/dev/null 2>&1; then
+        echo "$name"
+        return 0
+    fi
+    # Compose-service form: ask compose for the running container ID.
+    local cid
+    cid=$(docker compose "${COMPOSE_FILES[@]}" ps -q "$name" 2>/dev/null | head -1)
+    if [[ -n "$cid" ]]; then
+        echo "$cid"
+        return 0
+    fi
+    return 1
+}
 
-    # `docker compose up -d` only recreates a container when the *service
-    # definition* changes — not when a bind-mounted single file is replaced.
-    # rsync atomic-replaces the file with a new inode, which the container's
-    # mount can't follow, so Prometheus/Alloy/Tempo silently keep serving the
-    # old config until they're restarted. 2026-05-19: ServiceMemoryGrowth/
-    # High/Critical rules sat in the host's prometheus-rules.yml for a day
-    # without ever loading because of this. Hash the single-file mounts
-    # against what the running container sees and restart on mismatch.
-    declare -A CONFIG_TO_CONTAINER=(
-        ["observability/prometheus.yml"]="lgtm-prometheus:/etc/prometheus/prometheus.yml"
-        ["observability/prometheus-rules.yml"]="lgtm-prometheus:/etc/prometheus/rules.yml"
-        ["observability/alloy-config.alloy"]="lgtm-alloy:/etc/alloy/config.alloy"
-        ["observability/tempo.yaml"]="lgtm-tempo:/etc/tempo/tempo.yaml"
-    )
-    declare -A RESTART_NEEDED=()
-    for host_rel in "${!CONFIG_TO_CONTAINER[@]}"; do
-        host_file="$STACK_DIR/$host_rel"
+check_bind_mount_drift() {
+    local -n drift_map=$1
+    local -A restart_needed=()
+    for host_rel in "${!drift_map[@]}"; do
+        local host_file="$STACK_DIR/$host_rel"
         [[ -f "$host_file" ]] || continue
-        target="${CONFIG_TO_CONTAINER[$host_rel]}"
-        container="${target%%:*}"
-        in_container="${target#*:}"
+        local target="${drift_map[$host_rel]}"
+        local container_ref="${target%%:*}"
+        local in_container="${target#*:}"
+        local container
+        if ! container=$(resolve_container "$container_ref"); then
+            log "  ⚠ $host_rel: no running container matches '$container_ref' — skipping drift check"
+            continue
+        fi
+        local host_sum cont_sum
         host_sum=$(sha256sum "$host_file" | awk '{print $1}')
         cont_sum=$(docker exec "$container" sha256sum "$in_container" 2>/dev/null | awk '{print $1}')
         if [[ -n "$cont_sum" && "$host_sum" != "$cont_sum" ]]; then
-            log "  ⚠ $host_rel differs from $container view — bind-mount went stale"
-            RESTART_NEEDED["$container"]=1
+            log "  ⚠ $host_rel differs from $container_ref view — bind-mount went stale"
+            restart_needed["$container"]=1
         fi
     done
-    if [[ ${#RESTART_NEEDED[@]} -gt 0 ]]; then
-        log "  restarting ${#RESTART_NEEDED[@]} container(s) to pick up new mount inodes: ${!RESTART_NEEDED[*]}"
-        for container in "${!RESTART_NEEDED[@]}"; do
+    if [[ ${#restart_needed[@]} -gt 0 ]]; then
+        log "  restarting ${#restart_needed[@]} container(s) to pick up new mount inodes: ${!restart_needed[*]}"
+        for container in "${!restart_needed[@]}"; do
             docker restart "$container" >/dev/null \
                 && log "    ✅ restarted $container" \
                 || log "    ❌ failed to restart $container"
         done
     fi
+}
+
+# Single-file bind mounts in the main veta stack. The key on the right
+# is whatever resolve_container() can find: an explicit container_name
+# (disk-monitor sets one) or a compose service name (traefik doesn't).
+declare -A VETA_BIND_MOUNTS=(
+    ["scripts/disk-monitor.py"]="veta-disk-monitor:/scripts/disk-monitor.py"
+    ["traefik.yml"]="traefik:/traefik.yml"
+)
+check_bind_mount_drift VETA_BIND_MOUNTS
+
+# Observability (LGTM) is a separate compose project. Recreate it so config
+# changes in observability/docker-compose.lgtm.yml take effect — e.g.
+# Grafana's sub-path env + Traefik labels for the public /grafana route.
+if [[ -f "$STACK_DIR/observability/docker-compose.lgtm.yml" ]]; then
+    # Docker compose loads .env from the project directory (which is
+    # observability/), so it doesn't see the parent stack's
+    # DISCORD_WEBHOOK_URL / ALERT_WEBHOOK_URL by default. Symlink the
+    # parent .env into the observability dir so compose-time variable
+    # interpolation pulls those values through. Before this symlink
+    # existed (2026-05-20 disk-fill postmortem), Grafana's Discord
+    # contact point resolved to the REPLACE_ME sentinel and silently
+    # dropped every alert.
+    # `-e` is false for a broken symlink, so a previous run that left a
+    # stale symlink would re-enter the branch and `ln -s` would fail
+    # with "File exists". `ln -sfn` replaces whatever's there
+    # (file, broken symlink, correct symlink) atomically, and -n stops
+    # ln from descending into a target dir if .env happens to already
+    # be a symlink to a directory.
+    if [[ -f "$STACK_DIR/.env" ]]; then
+        if [[ ! -L "$STACK_DIR/observability/.env" || \
+              "$(readlink "$STACK_DIR/observability/.env")" != "../.env" ]]; then
+            ln -sfn ../.env "$STACK_DIR/observability/.env"
+            log "  Ensured observability/.env -> ../.env symlink"
+        fi
+    fi
+
+    log "Updating observability (LGTM) stack..."
+    (cd "$STACK_DIR/observability" && \
+        docker compose -f docker-compose.lgtm.yml up -d 2>&1 | sed 's/^/  /') \
+        || log "⚠ observability up -d returned non-zero; continuing"
+
+    declare -A LGTM_BIND_MOUNTS=(
+        ["observability/prometheus.yml"]="lgtm-prometheus:/etc/prometheus/prometheus.yml"
+        ["observability/prometheus-rules.yml"]="lgtm-prometheus:/etc/prometheus/rules.yml"
+        ["observability/alloy-config.alloy"]="lgtm-alloy:/etc/alloy/config.alloy"
+        ["observability/tempo.yaml"]="lgtm-tempo:/etc/tempo/tempo.yaml"
+    )
+    check_bind_mount_drift LGTM_BIND_MOUNTS
 fi
 
 log "Waiting up to ${MAX_WAIT}s for critical services to be healthy..."

@@ -11,7 +11,7 @@ export interface ReplaySession {
   metadata: Record<string, unknown>;
 }
 
-export interface ReplayConfig {
+interface ReplayConfig {
   recordingEnabled: boolean;
   updatedBy: string | null;
   updatedAt: string;

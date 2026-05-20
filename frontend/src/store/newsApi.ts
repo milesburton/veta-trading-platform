@@ -13,14 +13,14 @@ export interface NewsSource {
   symbolSpecific: boolean;
 }
 
-export interface CreateNewsSourcePayload {
+interface CreateNewsSourcePayload {
   label: string;
   rssTemplate: string;
   symbolSpecific: boolean;
   enabled: boolean;
 }
 
-export interface UpdateNewsSourcePayload {
+interface UpdateNewsSourcePayload {
   id: string;
   label?: string;
   rssTemplate?: string;
