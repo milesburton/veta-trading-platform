@@ -47,4 +47,4 @@ export const channelsSlice = createSlice({
   },
 });
 
-export const { channelUpdated, channelCleared } = channelsSlice.actions;
+export const { channelUpdated } = channelsSlice.actions;

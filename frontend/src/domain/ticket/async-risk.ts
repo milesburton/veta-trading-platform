@@ -9,7 +9,7 @@ export interface RiskCheckResult {
   checkedAt?: number;
 }
 
-export interface PreTradeRiskRequest {
+interface PreTradeRiskRequest {
   userId: string;
   symbol: string;
   side: OrderSide;
@@ -19,7 +19,7 @@ export interface PreTradeRiskRequest {
   strategy: string;
 }
 
-export interface PreTradeRiskResponse {
+interface PreTradeRiskResponse {
   approved: boolean;
   violations: Array<{
     ruleId: string;

@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 42,
-      "cases": 560,
+      "files": 43,
+      "cases": 564,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -45,6 +45,7 @@
         "discord-notifier.unit.test.ts": 14,
         "ticketing.unit.test.ts": 7,
         "service-registry.unit.test.ts": 3,
+        "pipeline.bug-and-alert.unit.test.ts": 4,
         "grafana-renderer.unit.test.ts": 13
       }
     },
@@ -84,8 +85,8 @@
   },
   "frontend": {
     "unit": {
-      "files": 172,
-      "cases": 1790
+      "files": 170,
+      "cases": 1770
     },
     "playwright": {
       "files": 17,

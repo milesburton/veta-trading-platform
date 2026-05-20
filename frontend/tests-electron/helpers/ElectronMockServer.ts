@@ -186,11 +186,6 @@ export class ElectronMockServer {
     this.broadcast("marketUpdate", { prices, volumes: vols });
   }
 
-  /** Send an order lifecycle event. */
-  sendOrderEvent(topic: string, data: Record<string, unknown>) {
-    this.broadcast("orderEvent", { ...data, _topic: topic });
-  }
-
   // ── Teardown ─────────────────────────────────────────────────────────────
 
   async stop(): Promise<void> {

@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-export interface LoadTestRequest {
+interface LoadTestRequest {
   orderCount: number;
   strategy: string;
   symbols: string[];
@@ -13,7 +13,7 @@ export interface LoadTestResult {
   elapsedMs: number;
 }
 
-export interface DemoDayRequest {
+interface DemoDayRequest {
   scenario: string;
 }
 
@@ -23,7 +23,7 @@ export interface DemoDayResult {
   elapsedMs: number;
 }
 
-export interface LoadGenConfig {
+interface LoadGenConfig {
   ratePerSecond: number;
   strategyMix: ReadonlyArray<{ strategy: string; weight: number }>;
   symbols: ReadonlyArray<string>;
@@ -33,7 +33,7 @@ export interface LoadGenConfig {
   autoStopAfterMs: number;
 }
 
-export interface LoadGenStatus {
+interface LoadGenStatus {
   running: boolean;
   startedAt: number | null;
   stopAt: number | null;
@@ -44,7 +44,7 @@ export interface LoadGenStatus {
   lastError: string | null;
 }
 
-export interface LoadGenStartRequest {
+interface LoadGenStartRequest {
   ratePerSecond?: number;
   symbols?: string[];
   sizeMin?: number;

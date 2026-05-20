@@ -20,6 +20,7 @@ jobs:
     outputs:
       docker: ${{ steps.filter.outputs.docker }}
       electron: ${{ steps.filter.outputs.electron }}
+      fallow: ${{ steps.filter.outputs.fallow }}
     steps:
       - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v4
@@ -41,6 +42,10 @@ jobs:
             electron:
               - 'frontend/**'
               - 'electron/**'
+              - '.github/workflows/ci.yml'
+            fallow:
+              - 'frontend/**'
+              - 'shared/**'
               - '.github/workflows/ci.yml'
 
   lint-and-test:
@@ -260,6 +265,70 @@ jobs:
             echo "⚠️ Failed to publish frontend test badge after 3 attempts (likely branch protection) — treating as non-fatal"
             exit 0
           fi
+
+  fallow:
+    name: Fallow audit (PR diff)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.fallow == 'true'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      - name: Cache npm
+        uses: actions/cache@v5
+        with:
+          path: |
+            frontend/node_modules
+            ~/.npm
+          key: npm-${{ runner.os }}-frontend-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-frontend-
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Ensure base ref is available
+        run: git fetch --no-tags --depth=50 origin "${{ github.base_ref }}"
+
+      - name: "Fallow audit (single run: SARIF + gate)"
+        id: audit
+        working-directory: frontend
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: |
+          set +e
+          ./node_modules/.bin/fallow audit \
+            --root .. \
+            --changed-since "$BASE_REF" \
+            --format sarif \
+            --fail-on-issues \
+            --quiet > ../fallow-audit.sarif 2>/dev/null
+          status=$?
+          if [ -s ../fallow-audit.sarif ]; then
+            count=$(jq '.runs[0].results | length' ../fallow-audit.sarif 2>/dev/null || echo "?")
+            echo "Introduced findings: $count"
+            jq -r '.runs[0].results | group_by(.ruleId) | map("  \(.[0].ruleId): \(length)") | .[]' ../fallow-audit.sarif 2>/dev/null || true
+          fi
+          exit $status
+
+      - name: Upload SARIF
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: fallow-audit-sarif
+          path: fallow-audit.sarif
+          retention-days: 14
 
   coverage-badges:
     name: Publish coverage badges

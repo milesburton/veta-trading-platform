@@ -55,11 +55,26 @@ jobs:
           cd frontend && deno run -A npm:@biomejs/biome check --write src/ || true
           cd ..
 
+          # Refresh the index first. Without this, `git diff-index` can
+          # report a file as changed when only its stat-info (mtime,
+          # size) differs — a no-op rewrite of an identical file is
+          # enough to trip it. `git diff` shows zero content diff in
+          # that case, which is exactly what we observed on PR #341.
+          git update-index --refresh >/dev/null 2>&1 || true
+
           # Check if there are any uncommitted changes
           if ! git diff-index --quiet HEAD --; then
             echo "❌ ERROR: Uncommitted changes detected after running linters and docs generators"
             echo "The following files have uncommitted changes:"
             git diff-index --name-only HEAD --
+            echo ""
+            echo "── DIFF (first ~200 lines per file) ──────────────────"
+            # Print the diff content so we can see WHY each file
+            # differs — the local pre-commit hook never produces drift,
+            # so the difference must be environment-specific (Node
+            # version, line endings, fs order, etc).
+            git diff HEAD -- | head -300
+            echo "── END DIFF ─────────────────────────────────────────"
             echo ""
             echo "This typically means one of:"
             echo "  - Lock files were modified and not committed"

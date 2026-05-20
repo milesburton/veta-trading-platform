@@ -3,10 +3,15 @@
 disk-monitor: HTTP health + metrics endpoint for host disk usage.
 
 Endpoints on :8099
-  /health   JSON. 200 when disk < WARN_PCT, 503 when >= WARN_PCT. Used by
-            the docker healthcheck and by humans.
-  /metrics  Prometheus text format. Scraped by lgtm-prometheus so we get
-            history and an alert rule can fire before disk fills.
+  /health   JSON. 200 when disk < WARN_PCT, 503 when >= WARN_PCT. The
+            503 is the *signal* that disk pressure has crossed the
+            warning line, surfaced via Prometheus alert rules. Use this
+            for human checks and alerting, not for container liveness.
+  /metrics  Prometheus text format. Scraped by lgtm-prometheus so we
+            get history and an alert rule can fire before disk fills.
+            Also probed by the docker healthcheck so the container is
+            only marked unhealthy when the process is genuinely
+            unresponsive, not when disk crosses WARN_PCT.
 
 Read-only by design: the container has no Docker socket access and no
 host filesystem write access.

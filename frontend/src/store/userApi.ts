@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { AuthUser, TradingLimits } from "./authSlice.ts";
 
-export interface OAuthAuthorizeRequest {
+interface OAuthAuthorizeRequest {
   client_id: string;
   username: string;
   password: string;
@@ -12,7 +12,7 @@ export interface OAuthAuthorizeRequest {
   code_challenge_method: "S256";
 }
 
-export interface OAuthAuthorizeResponse {
+interface OAuthAuthorizeResponse {
   code: string;
   redirect_uri: string;
   expires_in: number;
@@ -20,7 +20,7 @@ export interface OAuthAuthorizeResponse {
   token_type: "none";
 }
 
-export interface OAuthTokenRequest {
+interface OAuthTokenRequest {
   client_id: string;
   code: string;
   grant_type: "authorization_code";
@@ -28,7 +28,7 @@ export interface OAuthTokenRequest {
   code_verifier: string;
 }
 
-export interface OAuthTokenResponse {
+interface OAuthTokenResponse {
   access_token: string;
   token_type: "bearer";
   expires_in: number;
@@ -36,7 +36,7 @@ export interface OAuthTokenResponse {
   user: AuthUser;
 }
 
-export interface OAuthRegisterRequest {
+interface OAuthRegisterRequest {
   username: string;
   name: string;
   password: string;
@@ -53,7 +53,7 @@ export interface UserLimits extends TradingLimits {
   userId: string;
 }
 
-export interface UpdateLimitsRequest {
+interface UpdateLimitsRequest {
   userId: string;
   max_order_qty: number;
   max_daily_notional: number;
@@ -62,10 +62,6 @@ export interface UpdateLimitsRequest {
 
 export const userApi = createApi({
   reducerPath: "userApi",
-  // /api/user-service has no direct Traefik route since PR #144 (only the
-  // gateway is publicly reachable). Go through /api/gateway/api/user-service,
-  // which SVC_PROXY forwards to the user-service container. Local dev with a
-  // bound port can still override via VITE_USER_SERVICE_URL.
   baseQuery: fetchBaseQuery({
     baseUrl: import.meta.env.VITE_USER_SERVICE_URL ?? "/api/gateway/api/user-service",
     credentials: "include",
