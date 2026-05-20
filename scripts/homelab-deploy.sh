@@ -158,6 +158,19 @@ fi
 # changes in observability/docker-compose.lgtm.yml take effect — e.g.
 # Grafana's sub-path env + Traefik labels for the public /grafana route.
 if [[ -f "$STACK_DIR/observability/docker-compose.lgtm.yml" ]]; then
+    # Docker compose loads .env from the project directory (which is
+    # observability/), so it doesn't see the parent stack's
+    # DISCORD_WEBHOOK_URL / ALERT_WEBHOOK_URL by default. Symlink the
+    # parent .env into the observability dir so compose-time variable
+    # interpolation pulls those values through. Before this symlink
+    # existed (2026-05-20 disk-fill postmortem), Grafana's Discord
+    # contact point resolved to the REPLACE_ME sentinel and silently
+    # dropped every alert.
+    if [[ -f "$STACK_DIR/.env" && ! -e "$STACK_DIR/observability/.env" ]]; then
+        ln -s ../.env "$STACK_DIR/observability/.env"
+        log "  Created observability/.env -> ../.env symlink"
+    fi
+
     log "Updating observability (LGTM) stack..."
     (cd "$STACK_DIR/observability" && \
         docker compose -f docker-compose.lgtm.yml up -d 2>&1 | sed 's/^/  /') \

@@ -92,12 +92,18 @@ services:
       # "panel not installed" until a working mermaid/flowchart plugin is
       # picked. Trading is unaffected.
       # Used by provisioning/alerting/contact-points.yml. Grafana 11.4
-      # rejects an empty `url` on a webhook receiver at provisioning time
-      # and crash-loops the container, so the default has to be a
-      # syntactically valid URL. The sentinel below is unreachable —
+      # rejects an empty `url` on a webhook receiver at provisioning
+      # time and crash-loops the container, so the default has to be a
+      # syntactically valid URL. The sentinels below are unreachable —
       # webhook send attempts will fail with a connection error logged
-      # by Grafana, but the UI keeps working. Override in
-      # /opt/stacks/veta/.env to actually deliver alerts.
+      # by Grafana, but the UI keeps working.
+      #
+      # On the homelab, /opt/stacks/veta/observability/.env is a symlink
+      # to ../.env so compose's project-local env lookup picks up the
+      # parent stack's DISCORD_WEBHOOK_URL. Without the symlink the
+      # observability compose project would only see vars defined in
+      # its own dir (which is empty by default), and the sentinels
+      # would win. The deploy script ensures the symlink exists.
       ALERT_WEBHOOK_URL: "${ALERT_WEBHOOK_URL:-http://alerts-not-configured.invalid/}"
       DISCORD_WEBHOOK_URL: "${DISCORD_WEBHOOK_URL:-https://discord.com/api/webhooks/0/REPLACE_ME}"
     volumes:
