@@ -235,6 +235,28 @@ check_bind_mount_drift VETA_BIND_MOUNTS
 # changes in observability/docker-compose.lgtm.yml take effect — e.g.
 # Grafana's sub-path env + Traefik labels for the public /grafana route.
 if [[ -f "$STACK_DIR/observability/docker-compose.lgtm.yml" ]]; then
+    # Docker compose loads .env from the project directory (which is
+    # observability/), so it doesn't see the parent stack's
+    # DISCORD_WEBHOOK_URL / ALERT_WEBHOOK_URL by default. Symlink the
+    # parent .env into the observability dir so compose-time variable
+    # interpolation pulls those values through. Before this symlink
+    # existed (2026-05-20 disk-fill postmortem), Grafana's Discord
+    # contact point resolved to the REPLACE_ME sentinel and silently
+    # dropped every alert.
+    # `-e` is false for a broken symlink, so a previous run that left a
+    # stale symlink would re-enter the branch and `ln -s` would fail
+    # with "File exists". `ln -sfn` replaces whatever's there
+    # (file, broken symlink, correct symlink) atomically, and -n stops
+    # ln from descending into a target dir if .env happens to already
+    # be a symlink to a directory.
+    if [[ -f "$STACK_DIR/.env" ]]; then
+        if [[ ! -L "$STACK_DIR/observability/.env" || \
+              "$(readlink "$STACK_DIR/observability/.env")" != "../.env" ]]; then
+            ln -sfn ../.env "$STACK_DIR/observability/.env"
+            log "  Ensured observability/.env -> ../.env symlink"
+        fi
+    fi
+
     log "Updating observability (LGTM) stack..."
     (cd "$STACK_DIR/observability" && \
         docker compose -f docker-compose.lgtm.yml up -d 2>&1 | sed 's/^/  /') \
