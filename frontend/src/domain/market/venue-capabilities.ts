@@ -166,8 +166,12 @@ export const VENUE_REGISTRY: Record<RegisteredVenueMIC, VenueCapabilities> = {
   },
 };
 
+function isRegistered(mic: VenueMIC): mic is RegisteredVenueMIC {
+  return mic in VENUE_REGISTRY;
+}
+
 export function getVenueCapabilities(mic: VenueMIC): VenueCapabilities | undefined {
-  return VENUE_REGISTRY[mic as RegisteredVenueMIC];
+  return isRegistered(mic) ? VENUE_REGISTRY[mic] : undefined;
 }
 
 export const LIT_EQUITY_VENUES: RegisteredVenueMIC[] = [
