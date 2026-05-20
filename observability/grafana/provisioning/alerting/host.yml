@@ -225,8 +225,11 @@ groups:
             model:
               datasource: { type: prometheus, uid: prometheus }
               expr: |
-                sum by (topic) (
-                  rate(redpanda_kafka_request_bytes_total{redpanda_request="produce"}[10m])
+                sum by (redpanda_topic) (
+                  rate(redpanda_kafka_request_bytes_total{
+                    redpanda_request="produce",
+                    redpanda_topic!~"market\\.ticks|market\\.features|market\\.signals"
+                  }[10m])
                 )
               intervalMs: 1000
               maxDataPoints: 43200
@@ -279,8 +282,11 @@ groups:
             model:
               datasource: { type: prometheus, uid: prometheus }
               expr: |
-                sum by (topic) (
-                  rate(redpanda_kafka_request_bytes_total{redpanda_request="produce"}[10m])
+                sum by (redpanda_topic) (
+                  rate(redpanda_kafka_request_bytes_total{
+                    redpanda_request="produce",
+                    redpanda_topic!~"market\\.ticks|market\\.features|market\\.signals"
+                  }[10m])
                 )
               intervalMs: 1000
               maxDataPoints: 43200
