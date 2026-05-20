@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 40,
-      "cases": 540,
+      "files": 41,
+      "cases": 542,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -43,7 +43,8 @@
         "playbooks.unit.test.ts": 10,
         "telemetry-route.unit.test.ts": 6,
         "discord-notifier.unit.test.ts": 10,
-        "ticketing.unit.test.ts": 7
+        "ticketing.unit.test.ts": 7,
+        "service-registry.unit.test.ts": 2
       }
     },
     "integration": {

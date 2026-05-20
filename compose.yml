@@ -1628,6 +1628,8 @@ services:
       ANALYTICS_PORT: "5014"
       MARKET_DATA_HOST: market-data
       MARKET_DATA_PORT: "5015"
+      MARKET_DATA_ADAPTERS_HOST: market-data-adapters
+      MARKET_DATA_ADAPTERS_PORT: "5016"
       FEATURE_ENGINE_HOST: feature-engine
       FEATURE_ENGINE_PORT: "5017"
       SIGNAL_ENGINE_HOST: signal-engine
@@ -1656,14 +1658,12 @@ services:
       RFQ_SERVICE_PORT: "5029"
       PRODUCT_SERVICE_HOST: product-service
       PRODUCT_SERVICE_PORT: "5030"
-      FIX_GATEWAY_HOST: fix-gateway
-      FIX_GATEWAY_PORT: "9881"
       REPLAY_HOST: replay-service
       REPLAY_PORT: "5031"
       RISK_ENGINE_HOST: risk-engine
       RISK_ENGINE_PORT: "5032"
-      MARKET_DATA_ADAPTERS_HOST: market-data-adapters
-      MARKET_DATA_ADAPTERS_PORT: "5016"
+      FIX_GATEWAY_HOST: fix-gateway
+      FIX_GATEWAY_PORT: "9881"
       REDPANDA_BROKERS: redpanda:9092
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       DISCORD_BUG_WEBHOOK_URL: ${DISCORD_BUG_WEBHOOK_URL:-}
