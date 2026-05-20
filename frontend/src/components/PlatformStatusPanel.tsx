@@ -1,10 +1,11 @@
 import { useSignal } from "@preact/signals-react";
 import {
+  type BugReportResponse,
   type BugReportSubmission,
   useGetPlatformStatusQuery,
   useSubmitBugReportMutation,
 } from "@veta/frontend/store/servicesApi.ts";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const BUG_CATEGORIES = ["ui", "data", "auth", "performance", "other"] as const;
 type BugCategory = (typeof BUG_CATEGORIES)[number];
@@ -31,6 +32,22 @@ function relativeTime(now: number, ts: number): string {
   return `${Math.floor(ago / 86400)}d ago`;
 }
 
+function describeError(error: unknown): string {
+  if (error && typeof error === "object" && "status" in error) {
+    const status = (error as { status?: number | string }).status;
+    if (status === 401 || status === 403) {
+      return "This panel requires the admin or oncall role.";
+    }
+    if (typeof status === "number") {
+      return `Unable to load platform status (HTTP ${status}).`;
+    }
+    if (status === "FETCH_ERROR") {
+      return "Unable to reach the gateway.";
+    }
+  }
+  return "Unable to load platform status.";
+}
+
 function StatLine({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-3 py-1 text-xs">
@@ -44,9 +61,23 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<BugCategory>("ui");
-  const [submitBug, { isLoading, isSuccess, error, reset }] = useSubmitBugReportMutation();
+  const [submitBug, { isLoading, data, error, reset }] = useSubmitBugReportMutation();
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
+
+  const response = data as BugReportResponse | undefined;
+  const delivered = response?.ok === true;
+  const queuedButNotDelivered = response !== undefined && response.ok === false;
 
   const canSubmit = title.trim().length >= 3 && description.trim().length >= 10 && !isLoading;
+
+  useEffect(() => {
+    titleInputRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,44 +91,60 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
     try {
       await submitBug(payload).unwrap();
     } catch {
-      // surfaced via the `error` field
+      // RTK Query surfaces the failure via the `error` field
     }
+  }
+
+  function resetForNext() {
+    setTitle("");
+    setDescription("");
+    setCategory("ui");
+    reset();
   }
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bug-report-dialog-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       data-testid="bug-report-dialog"
     >
       <div className="w-full max-w-lg rounded-lg border border-divider bg-surface p-5 shadow-2xl">
         <div className="flex items-start justify-between gap-3 pb-3">
-          <h2 className="text-sm font-semibold text-primary uppercase tracking-wide">
+          <h2
+            id="bug-report-dialog-title"
+            className="text-sm font-semibold text-primary uppercase tracking-wide"
+          >
             Report a bug
           </h2>
           <button
             type="button"
             data-testid="bug-report-close"
             onClick={onClose}
+            aria-label="Close bug report dialog"
             className="text-label hover:text-primary text-xs font-mono"
           >
             ✕ Close
           </button>
         </div>
 
-        {isSuccess ? (
-          <div className="space-y-3">
-            <p className="text-xs text-green-400">
-              ✅ Bug report submitted. Thank you — it has been posted to the Discord bug channel.
-            </p>
+        {delivered || queuedButNotDelivered ? (
+          <div className="space-y-3" data-testid="bug-report-result">
+            {delivered ? (
+              <p className="text-xs text-green-400">
+                ✅ Bug report submitted and posted to the Discord bug channel.
+              </p>
+            ) : (
+              <p className="text-xs text-amber-300" data-testid="bug-report-queued">
+                ⚠️ Bug report received but the Discord webhook isn't configured, so it wasn't
+                delivered. Ask an admin to set <code>DISCORD_WEBHOOK_URL</code>.
+              </p>
+            )}
             <button
               type="button"
               data-testid="bug-report-submit-another"
-              onClick={() => {
-                setTitle("");
-                setDescription("");
-                setCategory("ui");
-                reset();
-              }}
+              onClick={resetForNext}
               className="rounded border border-divider bg-panel px-3 py-1.5 text-xs text-default hover:bg-divider"
             >
               Submit another
@@ -114,6 +161,7 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
               </label>
               <input
                 id="bug-report-title-input"
+                ref={titleInputRef}
                 data-testid="bug-report-title"
                 type="text"
                 value={title}
@@ -194,7 +242,7 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
 }
 
 function PlatformStatusContent() {
-  const { data, isLoading, isError } = useGetPlatformStatusQuery(undefined, {
+  const { data, isLoading, isError, error } = useGetPlatformStatusQuery(undefined, {
     pollingInterval: 30_000,
   });
   const showBugDialog = useSignal(false);
@@ -204,8 +252,8 @@ function PlatformStatusContent() {
   }
   if (isError || !data) {
     return (
-      <div className="p-3 text-xs font-mono text-red-400">
-        Unable to load platform status. The endpoint requires admin or oncall role.
+      <div className="p-3 text-xs font-mono text-red-400" data-testid="platform-status-error">
+        {describeError(error)}
       </div>
     );
   }
@@ -220,11 +268,16 @@ function PlatformStatusContent() {
   const headerEmoji =
     stats.worstServiceUpRatio === null
       ? "ℹ️"
-      : stats.worstServiceUpRatio >= 0.999
+      : stats.worstServiceUpRatio >= 1
         ? "✅"
         : stats.worstServiceUpRatio >= 0.95
           ? "⚠️"
           : "🚨";
+
+  const knownSeverities = ["CRITICAL", "WARNING", "INFO"];
+  const otherSeverities = Object.keys(stats.alertsBySeverity).filter(
+    (s) => !knownSeverities.includes(s) && stats.alertsBySeverity[s] > 0
+  );
 
   return (
     <div className="h-full flex flex-col bg-page text-secondary overflow-auto">
@@ -290,7 +343,7 @@ function PlatformStatusContent() {
           <div className="text-xs text-muted">none 🎯</div>
         ) : (
           <>
-            {["CRITICAL", "WARNING", "INFO"].map((sev) => {
+            {knownSeverities.map((sev) => {
               const n = stats.alertsBySeverity[sev];
               if (!n) return null;
               return (
@@ -299,6 +352,11 @@ function PlatformStatusContent() {
                 </StatLine>
               );
             })}
+            {otherSeverities.map((sev) => (
+              <StatLine key={sev} label={sev.toLowerCase()}>
+                {stats.alertsBySeverity[sev]}
+              </StatLine>
+            ))}
             {stats.lastCritical && (
               <div className="text-[10px] text-muted pt-1 font-mono">
                 last critical {relativeTime(now, stats.lastCritical.ts)} —{" "}

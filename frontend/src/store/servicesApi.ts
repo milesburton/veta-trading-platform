@@ -166,7 +166,7 @@ export const servicesApi = createApi({
     getPlatformStatus: builder.query<PlatformStatus, void>({
       query: () => ({ url: "/api/gateway/platform-status" }),
     }),
-    submitBugReport: builder.mutation<{ ok: boolean }, BugReportSubmission>({
+    submitBugReport: builder.mutation<BugReportResponse, BugReportSubmission>({
       query: (body) => ({
         url: "/api/gateway/bug-report",
         method: "POST",
@@ -226,6 +226,11 @@ export interface BugReportSubmission {
   description: string;
   category?: "ui" | "data" | "auth" | "performance" | "other";
   url?: string;
+}
+
+export interface BugReportResponse {
+  ok: boolean;
+  error?: string;
 }
 
 export const {
