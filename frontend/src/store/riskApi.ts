@@ -26,7 +26,7 @@ export interface RiskConfig {
   breakersEnabled: boolean;
 }
 
-export interface ActiveBreaker {
+interface ActiveBreaker {
   key: string;
   type: "market-move" | "user-pnl";
   target: string;
@@ -34,7 +34,7 @@ export interface ActiveBreaker {
   expiresAt: number;
 }
 
-export interface BreakerFire {
+interface BreakerFire {
   type: "market-move" | "user-pnl";
   scope: "symbol" | "user";
   target: string;
@@ -43,7 +43,7 @@ export interface BreakerFire {
   firedAt: number;
 }
 
-export interface BreakersResponse {
+interface BreakersResponse {
   active: ActiveBreaker[];
   history: BreakerFire[];
   fireCount: number;

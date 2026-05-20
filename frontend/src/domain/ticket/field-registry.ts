@@ -150,5 +150,3 @@ export const FIELD_REGISTRY: FieldDefinition[] = [
 export function getFieldDef(key: string): FieldDefinition | undefined {
   return FIELD_REGISTRY.find((f) => f.key === key);
 }
-
-export type FieldKey = (typeof FIELD_REGISTRY)[number]["key"];

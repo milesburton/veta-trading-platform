@@ -1,12 +1,12 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { QuickTradeIntent } from "@veta/frontend/domain/quickTrade/parse.ts";
 
-export interface ParseTicketRequest {
+interface ParseTicketRequest {
   input: string;
   symbols?: string[];
 }
 
-export type ParseTicketResponse = { intent: QuickTradeIntent } | { error: string };
+type ParseTicketResponse = { intent: QuickTradeIntent } | { error: string };
 
 export const parseTicketApi = createApi({
   reducerPath: "parseTicketApi",

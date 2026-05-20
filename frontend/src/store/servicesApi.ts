@@ -1,22 +1,26 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { type ServiceSpec as RegistrySpec, SERVICE_REGISTRY } from "@shared/serviceRegistry";
+import {
+  type ServiceSpec as RegistrySpec,
+  SERVICE_REGISTRY,
+  type ServiceCategory,
+} from "@shared/serviceRegistry";
 import type { ServiceHealth } from "@veta/frontend/types.ts";
 
-export interface DiskMetrics {
+interface DiskMetrics {
   total_gb: number;
   used_gb: number;
   free_gb: number;
   used_pct: number;
 }
 
-export interface MemoryMetrics {
+interface MemoryMetrics {
   rss_mb: number;
   heap_used_mb: number;
   heap_total_mb: number;
   external_mb: number;
 }
 
-export interface SystemMetrics {
+interface SystemMetrics {
   disk: DiskMetrics | null;
   diskStatus: "ok" | "critical" | "unavailable";
   diskWarnPct: number;
@@ -25,24 +29,11 @@ export interface SystemMetrics {
 
 const _origin = typeof window !== "undefined" ? window.location.origin : "";
 
-// All public health probes go through the gateway's SVC_PROXY. PR #144
-// (and later F-17) removed direct Traefik routers for internal services
-// — only the gateway, frontend and admin paths are reachable directly,
-// so `/api/<svc>/health` no longer routes anywhere and falls through to
-// the SPA. The correct path is `/api/gateway/api/<svc>/health`, which
-// hits the gateway and is proxied to the named service.
 const _api = `${_origin}/api/gateway/api`;
 
-// Traefik dashboard URL is opt-in via env. The fallback used to hardcode
-// `${_origin}:8888` which advertised the dashboard port to anyone reading
-// the production bundle. The Traefik tile is showOnDeployments=["local"]
-// anyway, so production callers never see it — but the string was still in
-// the bundle. Now: unset env → empty URL → tile hides itself.
 const _traefik = (import.meta.env.VITE_TRAEFIK_DASHBOARD_URL as string | undefined) ?? "";
 
 export const DEPLOYMENT = (import.meta.env.VITE_DEPLOYMENT as string | undefined) ?? "local";
-
-export type ServiceCategory = "core" | "algo" | "data" | "infra" | "observability";
 
 interface FrontendServiceSpec {
   name: string;
@@ -87,10 +78,6 @@ const GATEWAY_SPEC: FrontendServiceSpec = {
   port: 5011,
 };
 
-// Traefik dashboard isn't in the gateway's cachedHealth shape (it doesn't
-// expose a /health probe to the gateway). The frontend probes it directly
-// via the dashboard URL when VITE_TRAEFIK_DASHBOARD_URL is set. The tile
-// is hidden in non-local deployments.
 const TRAEFIK_SPEC: FrontendServiceSpec = {
   name: "Traefik",
   url: `${_traefik}/api/overview`,
@@ -109,7 +96,6 @@ const SERVICES_ALL: readonly FrontendServiceSpec[] = [
   TRAEFIK_SPEC,
 ];
 
-// Filter out services that are restricted to specific deployments
 export const SERVICES = SERVICES_ALL.filter(
   (s) => !s.showOnDeployments || s.showOnDeployments.includes(DEPLOYMENT)
 );
@@ -174,7 +160,7 @@ export interface DataDepthSymbol {
   spanDays: number;
 }
 
-export interface DataDepth {
+interface DataDepth {
   totalSymbols: number;
   avgDays: number;
   minDays: number;

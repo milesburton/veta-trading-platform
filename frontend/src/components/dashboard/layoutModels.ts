@@ -1438,7 +1438,7 @@ export function makePipelineOpsModel(): IJsonModel {
   };
 }
 
-export function makeAiAdvisoryModel(): IJsonModel {
+function makeAiAdvisoryModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,
     layout: {
@@ -1578,7 +1578,7 @@ export function makeAiAdvisoryModel(): IJsonModel {
   };
 }
 
-export function makeIntelligenceModel(): IJsonModel {
+function makeIntelligenceModel(): IJsonModel {
   return {
     global: makeDefaultModel().global,
     layout: {
