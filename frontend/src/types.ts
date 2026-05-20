@@ -15,14 +15,6 @@ export type {
   Strategy,
 } from "@shared/primitives";
 
-declare const __brand: unique symbol;
-type Brand<T, B extends string> = T & { readonly [__brand]: B };
-
-export type OrderId = Brand<string, "OrderId">;
-export type ChildOrderId = Brand<string, "ChildOrderId">;
-export type UserId = Brand<string, "UserId">;
-export type ClientOrderId = Brand<string, "ClientOrderId">;
-
 export type MarketType = "lit" | "dark" | "otc";
 
 export interface AssetDef {
@@ -109,7 +101,11 @@ export type VenueMIC =
   | "XTSE"
   | "XASX"
   | "XPAR"
-  | "XFRA";
+  | "XFRA"
+  | "XCME"
+  | "EBS"
+  | "DARK1"
+  | "RFQ";
 
 export type InstrumentType = "equity" | "option" | "bond" | "fx" | "commodity";
 

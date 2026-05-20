@@ -1,22 +1,26 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { type ServiceSpec as RegistrySpec, SERVICE_REGISTRY } from "@shared/serviceRegistry";
+import {
+  type ServiceSpec as RegistrySpec,
+  SERVICE_REGISTRY,
+  type ServiceCategory,
+} from "@shared/serviceRegistry";
 import type { ServiceHealth } from "@veta/frontend/types.ts";
 
-export interface DiskMetrics {
+interface DiskMetrics {
   total_gb: number;
   used_gb: number;
   free_gb: number;
   used_pct: number;
 }
 
-export interface MemoryMetrics {
+interface MemoryMetrics {
   rss_mb: number;
   heap_used_mb: number;
   heap_total_mb: number;
   external_mb: number;
 }
 
-export interface SystemMetrics {
+interface SystemMetrics {
   disk: DiskMetrics | null;
   diskStatus: "ok" | "critical" | "unavailable";
   diskWarnPct: number;
@@ -30,8 +34,6 @@ const _api = `${_origin}/api/gateway/api`;
 const _traefik = (import.meta.env.VITE_TRAEFIK_DASHBOARD_URL as string | undefined) ?? "";
 
 export const DEPLOYMENT = (import.meta.env.VITE_DEPLOYMENT as string | undefined) ?? "local";
-
-export type ServiceCategory = "core" | "algo" | "data" | "infra" | "observability";
 
 interface FrontendServiceSpec {
   name: string;
@@ -158,7 +160,7 @@ export interface DataDepthSymbol {
   spanDays: number;
 }
 
-export interface DataDepth {
+interface DataDepth {
   totalSymbols: number;
   avgDays: number;
   minDays: number;

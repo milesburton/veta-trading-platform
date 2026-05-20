@@ -14,7 +14,7 @@ export interface DrawersContextValue {
 
 const NOOP = () => {};
 
-export const DrawersContext = createContext<DrawersContextValue>({
+const DrawersContext = createContext<DrawersContextValue>({
   openDrawers: [],
   open: NOOP,
   close: NOOP,

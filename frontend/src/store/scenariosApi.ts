@@ -60,7 +60,7 @@ export interface ScenarioRun {
   error: string | null;
 }
 
-export interface ScenarioCreateInput {
+interface ScenarioCreateInput {
   name: string;
   description?: string;
   spec: ScenarioSpec;

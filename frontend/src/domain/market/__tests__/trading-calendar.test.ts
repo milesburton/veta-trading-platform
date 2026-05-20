@@ -42,8 +42,11 @@ describe("buildSessionSchedule", () => {
     const earlySchedule = buildSessionSchedule(US_EQUITY_CALENDAR, "2026-11-27");
     const continuous = earlySchedule.find((s) => s.phase === "CONTINUOUS");
     const normalContinuous = schedule.find((s) => s.phase === "CONTINUOUS");
-    expect(continuous!.endMinute - continuous!.startMinute).toBeLessThan(
-      normalContinuous!.endMinute - normalContinuous!.startMinute
+    expect(continuous).toBeDefined();
+    expect(normalContinuous).toBeDefined();
+    if (!continuous || !normalContinuous) return;
+    expect(continuous.endMinute - continuous.startMinute).toBeLessThan(
+      normalContinuous.endMinute - normalContinuous.startMinute
     );
   });
 });

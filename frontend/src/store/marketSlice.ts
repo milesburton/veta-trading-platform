@@ -200,7 +200,6 @@ export const marketSlice = createSlice({
 
 export const {
   setAssets,
-  setConnected,
   connectionFailed,
   connectionRecovered,
   setSessionPhase,

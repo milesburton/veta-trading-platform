@@ -2,10 +2,6 @@ function repoUrl(): string {
   return (import.meta.env.VITE_GITHUB_REPO_URL as string | undefined) ?? "";
 }
 
-export function githubRepoUrl(): string | null {
-  return repoUrl() || null;
-}
-
 export function commitUrl(sha: string): string | null {
   const url = repoUrl();
   if (!url || !sha || sha === "dev") return null;
