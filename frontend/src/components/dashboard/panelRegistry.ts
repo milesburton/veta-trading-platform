@@ -571,6 +571,7 @@ const ONCALL_EXCLUDED_PANELS: ReadonlySet<PanelId> = new Set<PanelId>([
     roles.add("oncall");
   });
 
+// fallow-ignore-next-line unused-exports
 export const PANEL_TRADING_STYLES: Partial<Record<PanelId, ReadonlySet<TradingStyle>>> = {
   "order-ticket": new Set<TradingStyle>([
     "high_touch",

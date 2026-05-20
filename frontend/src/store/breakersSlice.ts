@@ -1,7 +1,7 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
 
-export interface ActiveBreakerEntry {
+interface ActiveBreakerEntry {
   key: string;
   type: "market-move" | "user-pnl";
   scope: "symbol" | "user";

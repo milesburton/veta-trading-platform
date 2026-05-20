@@ -15,15 +15,6 @@ export interface DataSource {
   pollIntervalMs?: number;
 }
 
-export interface CachedQuote {
-  symbol: string;
-  price: number;
-  volume: number;
-  latestTradingDay: string;
-  fetchedAt: number;
-  stale: boolean;
-}
-
 export interface OverridesResponse {
   overrides: Record<string, string>;
 }

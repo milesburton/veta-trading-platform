@@ -1,6 +1,6 @@
-import type { Strategy } from "@veta/frontend/types";
+import type { Strategy, VenueMIC } from "@veta/frontend/types";
 
-export type VenueMIC =
+type RegisteredVenueMIC =
   | "XNAS"
   | "XNYS"
   | "ARCX"
@@ -14,7 +14,7 @@ export type VenueMIC =
   | "XCME";
 
 export interface VenueCapabilities {
-  mic: VenueMIC;
+  mic: RegisteredVenueMIC;
   name: string;
   supportedStrategies: Strategy[];
   supportsMarketOrders: boolean;
@@ -41,7 +41,7 @@ const ALL_LIT_STRATEGIES: Strategy[] = [
   "MOMENTUM",
 ];
 
-export const VENUE_REGISTRY: Record<VenueMIC, VenueCapabilities> = {
+export const VENUE_REGISTRY: Record<RegisteredVenueMIC, VenueCapabilities> = {
   XNAS: {
     mic: "XNAS",
     name: "Nasdaq",
@@ -167,10 +167,10 @@ export const VENUE_REGISTRY: Record<VenueMIC, VenueCapabilities> = {
 };
 
 export function getVenueCapabilities(mic: VenueMIC): VenueCapabilities | undefined {
-  return VENUE_REGISTRY[mic];
+  return VENUE_REGISTRY[mic as RegisteredVenueMIC];
 }
 
-export const LIT_EQUITY_VENUES: VenueMIC[] = [
+export const LIT_EQUITY_VENUES: RegisteredVenueMIC[] = [
   "XNAS",
   "XNYS",
   "ARCX",

@@ -57,7 +57,7 @@ type PanelComponent = ComponentType<Record<string, never>>;
 
 const registry = new Map<PanelId, PanelComponent>();
 
-export function registerPanel(id: PanelId, component: PanelComponent): void {
+function registerPanel(id: PanelId, component: PanelComponent): void {
   registry.set(id, component);
 }
 

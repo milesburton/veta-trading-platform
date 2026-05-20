@@ -21,26 +21,25 @@ function relativeTime(ts: number): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export const SEVERITY_STYLES: Record<AlertSeverity, { dot: string; badge: string; label: string }> =
-  {
-    CRITICAL: {
-      dot: "bg-red-500",
-      badge: "bg-red-900/60 text-red-300 border border-red-800",
-      label: "CRITICAL",
-    },
-    WARNING: {
-      dot: "bg-amber-400",
-      badge: "bg-amber-900/60 text-amber-300 border border-amber-800",
-      label: "WARNING",
-    },
-    INFO: {
-      dot: "bg-blue-400",
-      badge: "bg-blue-900/40 text-blue-300 border border-blue-800",
-      label: "INFO",
-    },
-  };
+const SEVERITY_STYLES: Record<AlertSeverity, { dot: string; badge: string; label: string }> = {
+  CRITICAL: {
+    dot: "bg-red-500",
+    badge: "bg-red-900/60 text-red-300 border border-red-800",
+    label: "CRITICAL",
+  },
+  WARNING: {
+    dot: "bg-amber-400",
+    badge: "bg-amber-900/60 text-amber-300 border border-amber-800",
+    label: "WARNING",
+  },
+  INFO: {
+    dot: "bg-blue-400",
+    badge: "bg-blue-900/40 text-blue-300 border border-blue-800",
+    label: "INFO",
+  },
+};
 
-export const SOURCE_LABELS: Record<Alert["source"], string> = {
+const SOURCE_LABELS: Record<Alert["source"], string> = {
   "kill-switch": "Kill Switch",
   service: "Service",
   algo: "Algo",
