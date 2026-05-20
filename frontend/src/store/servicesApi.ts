@@ -149,6 +149,17 @@ export const servicesApi = createApi({
     getDataDepth: builder.query<DataDepth, void>({
       query: () => ({ url: "/api/gateway/data-depth" }),
     }),
+    getPlatformStatus: builder.query<PlatformStatus, void>({
+      query: () => ({ url: "/api/gateway/platform-status" }),
+    }),
+    submitBugReport: builder.mutation<BugReportResponse, BugReportSubmission>({
+      query: (body) => ({
+        url: "/api/gateway/bug-report",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      }),
+    }),
   }),
 });
 
@@ -168,5 +179,50 @@ interface DataDepth {
   symbols: DataDepthSymbol[];
 }
 
-export const { useGetServiceHealthQuery, useGetSystemMetricsQuery, useGetDataDepthQuery } =
-  servicesApi;
+export interface PlatformStatsLastCritical {
+  severity: string;
+  source: string;
+  message: string;
+  ts: number;
+}
+
+export interface PlatformStatsSnapshot {
+  windowStart: number;
+  windowEnd: number;
+  alertsBySeverity: Record<string, number>;
+  bugReports: number;
+  uniqueBugReporters: number;
+  serviceUpRatio: number | null;
+  worstServiceUpRatio: number | null;
+  lastCritical: PlatformStatsLastCritical | null;
+  lastDeploySha: string | null;
+}
+
+export interface PlatformStatus {
+  version: string;
+  environment: string;
+  startedAt: number;
+  uptimeMs: number;
+  services: Record<string, boolean>;
+  stats: PlatformStatsSnapshot;
+}
+
+export interface BugReportSubmission {
+  title: string;
+  description: string;
+  category?: "ui" | "data" | "auth" | "performance" | "other";
+  url?: string;
+}
+
+export interface BugReportResponse {
+  ok: boolean;
+  error?: string;
+}
+
+export const {
+  useGetServiceHealthQuery,
+  useGetSystemMetricsQuery,
+  useGetDataDepthQuery,
+  useGetPlatformStatusQuery,
+  useSubmitBugReportMutation,
+} = servicesApi;

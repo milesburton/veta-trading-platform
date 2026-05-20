@@ -87,8 +87,8 @@
   },
   "frontend": {
     "unit": {
-      "files": 170,
-      "cases": 1770
+      "files": 171,
+      "cases": 1800
     },
     "playwright": {
       "files": 17,

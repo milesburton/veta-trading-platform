@@ -68,6 +68,7 @@ export const PANEL_IDS = [
   "dev-tools",
   "data-depth",
   "scenarios",
+  "platform-status",
 ] as const;
 
 export type PanelId = (typeof PANEL_IDS)[number];
@@ -125,6 +126,7 @@ export const PANEL_TITLES: Record<PanelId, string> = {
   "dev-tools": "Dev Tools (admin debugging)",
   "data-depth": "Market Data Depth (per-symbol history)",
   scenarios: "Scenarios (deterministic replay)",
+  "platform-status": "Platform Status (CI/CD, alerts, bugs)",
 };
 
 export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
@@ -219,6 +221,8 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
     "Per-symbol market data depth — sortable list of all tracked symbols with candle count, span days, and warning thresholds",
   scenarios:
     "Save and replay deterministic trading scenarios — same seed reproduces the same fills, so an algo regression is visible immediately",
+  "platform-status":
+    "Last 24h roll-up: service availability, alert counts, bug reports, and last critical event. Bug-report button posts directly to the Discord bug channel. Drives the daily Discord summary at 09:00 UTC.",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
@@ -248,6 +252,7 @@ export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([
   "symbol-search",
   "dev-tools",
   "data-depth",
+  "platform-status",
 ]);
 
 export interface TabChannelConfig {
@@ -310,6 +315,7 @@ export const PANEL_CHANNEL_CAPS: Record<PanelId, { out: boolean; in: boolean }> 
   "dev-tools": { out: false, in: false },
   "data-depth": { out: false, in: false },
   scenarios: { out: false, in: false },
+  "platform-status": { out: false, in: false },
 };
 
 const ALL_READ_ROLES: AuthRole[] = [
@@ -551,6 +557,7 @@ export const PANEL_PERMISSIONS: Record<PanelId, ReadonlySet<AuthRole>> = {
   "dev-tools": new Set<AuthRole>(["admin"]),
   "data-depth": new Set<AuthRole>(DESK_ROLES),
   scenarios: new Set<AuthRole>(["trader", "admin"]),
+  "platform-status": new Set<AuthRole>(["admin", "oncall"]),
 };
 
 const ONCALL_EXCLUDED_PANELS: ReadonlySet<PanelId> = new Set<PanelId>([
