@@ -329,7 +329,7 @@ export interface ServiceHealth {
   url: string;
   link?: string;
   optional?: boolean;
-  alertOnDeployments?: string[];
+  alertOnDeployments?: readonly string[];
   state: ServiceState;
   version: string;
   meta: Record<string, unknown>;
