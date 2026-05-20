@@ -770,7 +770,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "dark-pool":            DARK_POOL_URL,
     "ccp-service":          CCP_SERVICE_URL,
     "rfq-service":          RFQ_SERVICE_URL,
+    "product-service":      PRODUCT_SERVICE_URL,
     "replay":               REPLAY_URL,
+    "replay-service":       REPLAY_URL,
     "risk-engine":          RISK_ENGINE_URL,
   };
 
@@ -838,12 +840,18 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "dark-pool":            new Set(["desk-head", "risk-manager", "compliance", "admin"]),
     "ccp-service":          new Set(["desk-head", "risk-manager", "compliance", "admin"]),
     "rfq-service":          new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+    // Instrument reference data — read-anyone.
+    "product-service":      new Set([
+      "viewer", "trader", "desk-head", "risk-manager", "compliance",
+      "sales", "oncall", "admin", "external-client",
+    ]),
     // FIX surface, replay, risk-engine — risk/oncall/admin only.
     "fix-archive":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
     "fix-gateway":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
     "kafka-relay":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
     "observability":        new Set(["risk-manager", "compliance", "oncall", "admin"]),
     "replay":               new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    "replay-service":       new Set(["risk-manager", "compliance", "oncall", "admin"]),
     "risk-engine":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
   };
 
