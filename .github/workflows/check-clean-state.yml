@@ -61,6 +61,14 @@ jobs:
             echo "The following files have uncommitted changes:"
             git diff-index --name-only HEAD --
             echo ""
+            echo "── DIFF (first ~200 lines per file) ──────────────────"
+            # Print the diff content so we can see WHY each file
+            # differs — the local pre-commit hook never produces drift,
+            # so the difference must be environment-specific (Node
+            # version, line endings, fs order, etc).
+            git diff HEAD -- | head -300
+            echo "── END DIFF ─────────────────────────────────────────"
+            echo ""
             echo "This typically means one of:"
             echo "  - Lock files were modified and not committed"
             echo "  - Generated docs files are stale: a code change (services, algos,"
