@@ -261,6 +261,70 @@ jobs:
             exit 0
           fi
 
+  fallow:
+    name: Fallow audit (PR diff)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      - name: Cache npm
+        uses: actions/cache@v5
+        with:
+          path: |
+            frontend/node_modules
+            ~/.npm
+          key: npm-${{ runner.os }}-frontend-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-frontend-
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Ensure base ref is available
+        run: git fetch --no-tags --depth=50 origin "${{ github.base_ref }}"
+
+      - name: Fallow audit (fails on introduced findings)
+        working-directory: frontend
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: |
+          ./node_modules/.bin/fallow audit \
+            --root .. \
+            --changed-since "$BASE_REF" \
+            --fail-on-issues
+
+      - name: Capture SARIF
+        if: always()
+        working-directory: frontend
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: |
+          ./node_modules/.bin/fallow audit \
+            --root .. \
+            --changed-since "$BASE_REF" \
+            --format sarif \
+            --quiet > ../fallow-audit.sarif || true
+
+      - name: Upload SARIF
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: fallow-audit-sarif
+          path: fallow-audit.sarif
+          retention-days: 14
+
   coverage-badges:
     name: Publish coverage badges
     runs-on: ubuntu-latest
