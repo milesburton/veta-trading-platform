@@ -163,22 +163,22 @@ groups:
         expr: |
           (
             redpanda_kafka_max_offset
-            - on(topic, partition) group_left
-              max by (topic, partition) (
-                redpanda_kafka_consumer_group_committed_offset
-              )
+            - on(topic, partition) group_right(group)
+              redpanda_kafka_consumer_group_committed_offset
           ) > 100000
         for: 15m
         labels:
           severity: warning
         annotations:
-          summary: "{{ $labels.topic }} consumer lag >100k offsets for 15m"
+          summary: "{{ $labels.group }} on {{ $labels.topic }} lagging >100k offsets for 15m"
           description: |
-            Topic {{ $labels.topic }} partition {{ $labels.partition }}
-            has >100k unconsumed offsets sustained for 15m. A consumer
-            is either dead or far behind. If the topic is in the order
-            pipeline (orders.*, market.ticks) trading is degraded;
-            otherwise check the relevant service container is healthy.
+            Consumer group {{ $labels.group }} on topic {{ $labels.topic }}
+            partition {{ $labels.partition }} has >100k unconsumed offsets
+            sustained for 15m. The query keeps the `group` label so one
+            healthy group on the same topic won't mask another lagging
+            group. If the topic is in the order pipeline (orders.*,
+            market.ticks) trading is degraded; otherwise check the
+            relevant service container is healthy.
 
       - alert: RedpandaUnavailablePartitions
         expr: redpanda_cluster_unavailable_partitions > 0
