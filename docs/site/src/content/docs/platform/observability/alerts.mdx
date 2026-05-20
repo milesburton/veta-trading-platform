@@ -112,27 +112,37 @@ Anyone with the webhook URL can post arbitrary messages to the channel as VETA A
 
 ## Daily summary
 
-Once a day at 09:00 UTC (override via `DISCORD_DAILY_SUMMARY_HOUR_UTC`), the gateway posts a rollup of the last 24 hours to the same Discord webhook:
+Once a day at 09:00 UTC, the gateway posts a 24h rollup of platform health to the same Discord webhook. Override the hour via `DISCORD_DAILY_SUMMARY_HOUR_UTC` (valid range 0–23; invalid values fall back to 9).
+
+The message shape:
 
 ```
 ✅ **VETA daily summary** · `a1b2c3d` (prod) · gateway uptime 2d 14h 3m
 
 **Services (last 24h):** mean 99.8% up · worst window 96.9%
-Now: all 32 services up ✅
+Now: 32/32 up · ✅
 
 **Alerts (last 24h):** 7 total · critical: 1, warning: 6
-Last critical: 47m ago — `kill-switch` admin-triggered halt for AAPL
+Last critical: 47m ago — `kill-switch` admin halt for AAPL
 
 **Bug reports (last 24h):** 2 from 2 users
 
 **Deployed SHA:** `a1b2c3d`
 ```
 
-Header emoji follows the worst service-availability window in the day: ✅ 100%, ⚠️ at-or-above 95% but below 100%, 🚨 below 95%. So a daily summary with ✅ means every 5-second sample saw every non-optional service up.
+Header emoji follows the **worst** service-availability window seen in the day:
 
-Implementation in [`backend/src/gateway/daily-summary.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/daily-summary.ts), backed by the in-memory ring buffer in [`platform-stats.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/platform-stats.ts). Events older than 24h are pruned on every read.
+| Emoji | Worst-window service ratio |
+|---|---|
+| ✅ | 100% (no service ever dropped) |
+| ⚠️ | 95% ≤ ratio < 100% |
+| 🚨 | below 95% |
 
-The previous per-minute heartbeat (#319) was retired in #330 — 1440 messages/day buried real alerts under positive-liveness spam. The daily summary captures the same "is the platform alive" signal without the noise; real problems still arrive in real-time as severity-CRITICAL/WARNING alerts.
+So ✅ means the platform was fully healthy every 5-second sample during the day. Drop below 100% even briefly and the rollup downgrades.
+
+Implementation in [`backend/src/gateway/daily-summary.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/daily-summary.ts), backed by the in-memory ring buffer in [`platform-stats.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/platform-stats.ts). Events older than 24h are pruned on every snapshot read. No background polling — service availability is sampled from the same `refreshHealth` loop the gateway already runs.
+
+Replaces the per-minute heartbeat that landed in #319 — 1440 messages/day buried real alerts.
 
 ## CI/CD notifications
 

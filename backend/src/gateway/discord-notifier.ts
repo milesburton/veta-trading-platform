@@ -1,4 +1,6 @@
 // fallow-ignore-file unused-file
+import { lookupPanel, renderGrafanaPanel } from "./grafana-renderer.ts";
+
 const SEVERITY_EMOJI: Record<string, string> = {
   CRITICAL: "🚨",
   WARNING: "⚠️",
@@ -34,14 +36,37 @@ interface DiscordPostOptions {
   url: string;
   username: string;
   content: string;
+  attachment?: { filename: string; bytes: Uint8Array };
 }
 
-async function postToDiscord({ url, username, content }: DiscordPostOptions): Promise<boolean> {
+async function postToDiscord(opts: DiscordPostOptions): Promise<boolean> {
   try {
-    const res = await fetch(url, {
+    if (opts.attachment) {
+      const form = new FormData();
+      form.append(
+        "payload_json",
+        JSON.stringify({
+          username: opts.username,
+          content: opts.content,
+          attachments: [{ id: 0, filename: opts.attachment.filename }],
+        }),
+      );
+      form.append(
+        "files[0]",
+        new Blob([opts.attachment.bytes as BlobPart], { type: "image/png" }),
+        opts.attachment.filename,
+      );
+      const res = await fetch(opts.url, {
+        method: "POST",
+        body: form,
+        signal: AbortSignal.timeout(10_000),
+      });
+      return res.ok;
+    }
+    const res = await fetch(opts.url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, content }),
+      body: JSON.stringify({ username: opts.username, content: opts.content }),
       signal: AbortSignal.timeout(5_000),
     });
     return res.ok;
@@ -62,7 +87,21 @@ export async function notifyDiscord(alert: AlertPayload, userId: string): Promis
   if (alert.detail) lines.push(`> ${alert.detail}`);
   lines.push(`_user: ${userId}_`);
 
-  await postToDiscord({ url, username: "VETA Alerts", content: lines.join("\n") });
+  const panel = lookupPanel(alert.source);
+  const bytes = panel
+    ? await renderGrafanaPanel({ panelUid: panel.panelUid, panelId: panel.panelId })
+    : null;
+
+  const attachment = bytes
+    ? { filename: buildAttachmentFilename(alert.source), bytes }
+    : undefined;
+
+  await postToDiscord({
+    url,
+    username: "VETA Alerts",
+    content: lines.join("\n"),
+    attachment,
+  });
 }
 
 export interface BugReport {
@@ -117,80 +156,25 @@ function sanitiseMultiline(s: string, max: number): string {
   return s.replace(/\r/g, "").slice(0, max);
 }
 
-const DEFAULT_HEARTBEAT_INTERVAL_MS = 60 * 1000;
-
-export interface HeartbeatSnapshot {
-  version: string;
-  environment: string;
-  uptimeMs: number;
-  services: Record<string, boolean>;
-  ts: number;
-}
-
-function formatUptime(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
+const FILENAME_SAFE_RE = /[^A-Za-z0-9._-]+/g;
+const FILENAME_MAX = 60;
+function buildAttachmentFilename(source: string | undefined): string {
+  const cleaned = (source ?? "panel").replace(FILENAME_SAFE_RE, "-").slice(0, FILENAME_MAX);
+  const safe = cleaned.replace(/^[.-]+/, "") || "panel";
+  return `alert-${safe}-${Date.now()}.png`;
 }
 
 const DISCORD_MAX_MESSAGE_CHARS = 1900;
 
-export function buildHeartbeatMessage(snap: HeartbeatSnapshot): string {
-  const sha = snap.version.length > 7 ? snap.version.slice(0, 7) : snap.version;
-  const entries = Object.entries(snap.services).sort(([a], [b]) => a.localeCompare(b));
-  const up = entries.filter(([, ok]) => ok).length;
-  const total = entries.length;
-  const allUp = up === total;
-  const headerEmoji = allUp ? "✅" : up >= total - 2 ? "⚠️" : "🚨";
-  const header = `${headerEmoji} **VETA** \`${sha}\` (${snap.environment}) — ${up}/${total} services up · uptime ${formatUptime(snap.uptimeMs)}`;
-  const lines: string[] = entries.map(([name, ok]) => `${ok ? "🟢" : "🔴"} \`${name}\``);
-  let body = `${header}\n${lines.join(" ")}`;
-  if (body.length > DISCORD_MAX_MESSAGE_CHARS) {
-    body = body.slice(0, DISCORD_MAX_MESSAGE_CHARS - 1) + "…";
-  }
-  return body;
-}
-
-export async function sendHeartbeat(snap: HeartbeatSnapshot): Promise<boolean> {
+export async function sendDailySummary(content: string): Promise<boolean> {
   const url = getAlertsWebhookUrl();
   if (!url) return false;
+  const body = content.length > DISCORD_MAX_MESSAGE_CHARS
+    ? content.slice(0, DISCORD_MAX_MESSAGE_CHARS - 1) + "…"
+    : content;
   return await postToDiscord({
     url,
-    username: "VETA Heartbeat",
-    content: buildHeartbeatMessage(snap),
+    username: "VETA Daily",
+    content: body,
   });
-}
-
-export interface HeartbeatOptions {
-  version: string;
-  environment: string;
-  startedAt: number;
-  getServices: () => Record<string, boolean> | null;
-  intervalMs?: number;
-  sender?: (snap: HeartbeatSnapshot) => Promise<boolean>;
-}
-
-export function startHeartbeat(opts: HeartbeatOptions): { stop: () => void } {
-  const envInterval = Number(Deno.env.get("DISCORD_HEARTBEAT_INTERVAL_MS"));
-  const intervalMs = opts.intervalMs
-    ?? (Number.isFinite(envInterval) && envInterval > 0 ? envInterval : DEFAULT_HEARTBEAT_INTERVAL_MS);
-  const send = opts.sender ?? sendHeartbeat;
-  const fire = () => {
-    const services = opts.getServices();
-    if (!services) return;
-    send({
-      version: opts.version,
-      environment: opts.environment,
-      uptimeMs: Date.now() - opts.startedAt,
-      services,
-      ts: Date.now(),
-    }).catch(() => {});
-  };
-  fire();
-  const handle = setInterval(fire, intervalMs);
-  return { stop: () => clearInterval(handle) };
 }

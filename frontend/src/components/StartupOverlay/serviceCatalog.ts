@@ -4,7 +4,7 @@ export interface ServiceCatalogEntry {
   description: string;
 }
 
-export const STARTUP_SERVICE_CATALOG: ServiceCatalogEntry[] = [
+const STARTUP_SERVICE_CATALOG: ServiceCatalogEntry[] = [
   {
     key: "gateway",
     label: "Gateway (BFF)",

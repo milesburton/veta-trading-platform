@@ -198,5 +198,3 @@ export const COLOR = {
     return rgb("--gray-800");
   },
 } as const;
-
-export type ColorKey = keyof typeof COLOR;

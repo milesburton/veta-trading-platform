@@ -1,8 +1,3 @@
-/**
- * Re-export barrel — all public symbols from the dashboard module.
- * Consumers continue to import from this path unchanged.
- */
-
 export type { DashboardContextValue } from "./dashboard/DashboardContext.tsx";
 export {
   DashboardContext,
@@ -21,7 +16,6 @@ export {
   makeClearModel,
   makeCommoditiesAnalysisModel,
   makeCommoditiesTradingModel,
-  makeDefaultModel,
   makeExecutionModel,
   makeFiAnalysisModel,
   makeFiResearchModel,
@@ -33,25 +27,15 @@ export {
   makeResearchModel,
   makeSystemStatusModel,
   STORAGE_KEY,
-  STORAGE_KEY_PREFIX,
 } from "./dashboard/layoutModels.ts";
 
 export type { LayoutItem } from "./dashboard/layoutUtils.ts";
 export {
   DEFAULT_LAYOUT,
   modelToLayoutItems,
-  wouldCreateCycleIn,
-  wouldCreateCycleOut,
 } from "./dashboard/layoutUtils.ts";
-export type {
-  ChannelNumber,
-  PanelId,
-  TabChannelConfig,
-} from "./dashboard/panelRegistry.ts";
+export type { PanelId } from "./dashboard/panelRegistry.ts";
 export {
-  CHANNEL_COLOURS,
-  PANEL_CHANNEL_CAPS,
-  PANEL_DESCRIPTIONS,
   PANEL_IDS,
   PANEL_TITLES,
   SINGLETON_PANELS,

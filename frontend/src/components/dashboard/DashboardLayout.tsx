@@ -14,7 +14,7 @@ import { ChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
 import type { ChannelNumber } from "@veta/frontend/store/channelsSlice.ts";
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { panelDialogClosed, panelDialogOpened } from "@veta/frontend/store/windowSlice.ts";
-import { DashboardContext, useDashboard } from "./DashboardContext.tsx";
+import { useDashboard } from "./DashboardContext.tsx";
 import { LAYOUT_TEMPLATES } from "./layoutModels.ts";
 import type { LayoutItem } from "./layoutUtils.ts";
 import { wouldCreateCycleIn, wouldCreateCycleOut } from "./layoutUtils.ts";
@@ -29,8 +29,6 @@ import {
   PANEL_TITLES,
   SINGLETON_PANELS,
 } from "./panelRegistry.ts";
-
-export { DashboardContext, useDashboard };
 
 interface ChannelPickerProps {
   dir: "out" | "in";

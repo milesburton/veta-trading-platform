@@ -10,9 +10,6 @@ volumes:
   llm-advisory-data:
   letsencrypt:
 
-# json-file driver caps each container's logs so one chatty service can't fill
-# the host disk. Past incident: kafka-relay + gateway produced 65G of logs in
-# 16 hours and the homelab disk hit 100%, taking the whole stack down.
 x-logging: &logging
   driver: json-file
   options:
@@ -50,20 +47,6 @@ x-deno-medium: &deno-medium
   logging: *logging
 
 services:
-  # ── Service profiles ─────────────────────────────────────────────────────
-  # No profile (always-on): redpanda, postgres, market-sim, journal,
-  #   user-service, ems, oms, gateway, frontend, db-migrate, traefik, disk-monitor
-  #
-  # profile=trading (idle-safe — start/stop together):
-  #   algos, microstructure (dark-pool/ccp/rfq/fix-*), analytics pipeline,
-  #   feature/signal/recommendation/scenario engines, llm-advisory, news-aggregator,
-  #   observability (kafka-relay), ollama
-  #
-  # Start idle-safe services:  docker compose --profile trading up -d
-  # Stop  idle-safe services:  docker compose --profile trading stop
-  # Full  status:              docker compose --profile trading ps
-
-  # ── Message Bus ───────────────────────────────────────────────────────────
   redpanda:
     image: redpandadata/redpanda:v24.3.6
     container_name: redpanda
@@ -147,7 +130,6 @@ services:
       - "traefik.http.services.redpanda-console.loadbalancer.server.port=8081"
       - "traefik.http.routers.redpanda-console.priority=15"
 
-  # ── PostgreSQL ─────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     networks:
@@ -209,7 +191,6 @@ services:
       - "traefik.enable=false"
     logging: *logging
 
-  # ── Traefik ────────────────────────────────────────────────────────────────
   traefik:
     image: traefik:v3.3
     restart: unless-stopped
@@ -230,13 +211,6 @@ services:
       - NET_BIND_SERVICE
     security_opt:
       - no-new-privileges:true
-    # No `traefik.enable=true` for the Traefik service itself — the
-    # `api.insecure: true` dashboard at :8080 is published only on the
-    # host's :8888 port (LAN-only on the homelab; the SSH tunnel forwards
-    # :443, never :8888). Exposing /admin/traefik through the normal
-    # entrypoints would route the dashboard through the public hostname
-    # the moment a tunnel forwarding rule changes. Reach the dashboard
-    # at http://192.168.1.245:8888/dashboard/ from the LAN.
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 10s
@@ -244,10 +218,11 @@ services:
       retries: 3
       start_period: 5s
     labels:
+      # Dashboard is LAN-only on :8888; do not enable Traefik for itself
+      # or a forwarding-rule change will publish it on the public hostname.
       - "traefik.enable=false"
     logging: *logging
 
-  # ── Ollama (local LLM) ─────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
     profiles: [trading]
@@ -261,8 +236,7 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      # ollama:latest no longer ships wget/curl. Use the bundled CLI which
-      # talks to the local server over the same HTTP API.
+      # ollama:latest ships without wget/curl; use the bundled CLI.
       test: ["CMD", "ollama", "list"]
       interval: 15s
       timeout: 5s
@@ -294,7 +268,6 @@ services:
       - "traefik.enable=false"
     logging: *logging
 
-  # ── Frontend ───────────────────────────────────────────────────────────────
   frontend:
     build:
       context: .
@@ -325,7 +298,6 @@ services:
       - "traefik.http.routers.frontend.priority=1"
     logging: *logging
 
-  # ── Market Sim ─────────────────────────────────────────────────────────────
   market-sim:
     <<: *deno-medium
     command: [
@@ -359,7 +331,6 @@ services:
       - "traefik.http.services.market-sim.loadbalancer.server.port=5000"
       - "traefik.http.routers.market-sim.priority=10"
 
-  # ── EMS ────────────────────────────────────────────────────────────────────
   ems:
     <<: *deno-medium
     command: [
@@ -395,7 +366,6 @@ services:
       - "traefik.http.services.ems.loadbalancer.server.port=5001"
       - "traefik.http.routers.ems.priority=10"
 
-  # ── OMS ────────────────────────────────────────────────────────────────────
   oms:
     <<: *deno-medium
     command: [
@@ -445,7 +415,6 @@ services:
       - "traefik.http.services.oms.loadbalancer.server.port=5002"
       - "traefik.http.routers.oms.priority=10"
 
-  # ── Algo strategies ────────────────────────────────────────────────────────
   limit-algo:
     <<: *deno-service
     profiles: [trading]
@@ -793,7 +762,6 @@ services:
       - "traefik.http.services.is-algo.loadbalancer.server.port=5026"
       - "traefik.http.routers.is-algo.priority=10"
 
-  # ── Alternative Trading Systems & Fixed Income ─────────────────────────────
   rfq-service:
     <<: *deno-service
     profiles: [trading]
@@ -1000,7 +968,6 @@ services:
       - "traefik.http.services.dark-pool.loadbalancer.server.port=5027"
       - "traefik.http.routers.dark-pool.priority=10"
 
-  # ── Kafka Relay (HTTP→Kafka bridge for browser/event ingestion) ────────────
   kafka-relay:
     <<: *deno-service
     profiles: [trading]
@@ -1026,7 +993,6 @@ services:
       - "traefik.http.services.kafka-relay.loadbalancer.server.port=5007"
       - "traefik.http.routers.kafka-relay.priority=10"
 
-  # ── User Service ───────────────────────────────────────────────────────────
   user-service:
     <<: *deno-medium
     command: [
@@ -1044,13 +1010,9 @@ services:
       USER_SERVICE_PORT: "5008"
       DATABASE_URL: postgres://${POSTGRES_USER:-veta}:${POSTGRES_PASSWORD:-veta}@postgres:5432/${POSTGRES_DB:-veta}
       REDPANDA_BROKERS: redpanda:9092
-      # /oauth/guest is gated by this flag. Keep aligned with gateway's
-      # PUBLIC_GUEST_TRADING so the two services agree on whether the
-      # endpoint exists. Default false so guest mode is explicit per env.
+      # Keep aligned with the gateway's PUBLIC_GUEST_TRADING so the two
+      # services agree on whether /oauth/guest exists.
       PUBLIC_GUEST_TRADING: ${PUBLIC_GUEST_TRADING:-false}
-      # /oauth/register is gated by this flag. When true, the homepage
-      # Create-account form will work; new users land as trader with
-      # starter limits ($10k qty / $1M daily notional, basic strategies).
       OAUTH_ALLOW_PUBLIC_REGISTER: ${OAUTH_ALLOW_PUBLIC_REGISTER:-true}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5008/health || exit 1"]
@@ -1067,7 +1029,6 @@ services:
       - "traefik.http.services.user-service.loadbalancer.server.port=5008"
       - "traefik.http.routers.user-service.priority=10"
 
-  # ── Journal ────────────────────────────────────────────────────────────────
   journal:
     <<: *deno-medium
     mem_limit: 512m
@@ -1104,7 +1065,6 @@ services:
       - "traefik.http.services.journal.loadbalancer.server.port=5009"
       - "traefik.http.routers.journal.priority=10"
 
-  # ── FIX Services ───────────────────────────────────────────────────────────
   fix-exchange:
     <<: *deno-service
     profiles: [trading]
@@ -1201,7 +1161,6 @@ services:
       - "traefik.http.services.fix-archive.loadbalancer.server.port=5012"
       - "traefik.http.routers.fix-archive.priority=10"
 
-  # ── Analytics ──────────────────────────────────────────────────────────────
   analytics:
     <<: *deno-medium
     profiles: [trading]
@@ -1238,7 +1197,6 @@ services:
       - "traefik.http.services.analytics.loadbalancer.server.port=5014"
       - "traefik.http.routers.analytics.priority=10"
 
-  # ── Market Data ────────────────────────────────────────────────────────────
   market-data:
     <<: *deno-medium
     profiles: [trading]
@@ -1307,7 +1265,6 @@ services:
       - "traefik.http.services.market-data-adapters.loadbalancer.server.port=5016"
       - "traefik.http.routers.market-data-adapters.priority=10"
 
-  # ── Intelligence Engines ───────────────────────────────────────────────────
   feature-engine:
     <<: *deno-medium
     profiles: [trading]
@@ -1450,7 +1407,6 @@ services:
       - "traefik.http.services.scenario-engine.loadbalancer.server.port=5020"
       - "traefik.http.routers.scenario-engine.priority=10"
 
-  # ── News Aggregator ────────────────────────────────────────────────────────
   news-aggregator:
     <<: *deno-service
     profiles: [trading]
@@ -1478,7 +1434,6 @@ services:
     labels:
       - "traefik.enable=false"
 
-  # ── LLM Advisory ──────────────────────────────────────────────────────────
   llm-advisory:
     <<: *deno-medium
     profiles: [trading]
@@ -1568,7 +1523,6 @@ services:
     labels:
       - "traefik.enable=false"
 
-  # ── Gateway (BFF) ──────────────────────────────────────────────────────────
   gateway:
     <<: *deno-medium
     command: [
@@ -1593,10 +1547,6 @@ services:
       DATABASE_URL: postgres://veta:veta@postgres:5432/veta
       SCENARIOS_DATABASE_URL: postgres://veta:veta@postgres:5432/veta
       LOAD_TEST_USER_IDS: ${LOAD_TEST_USER_IDS:-alice,amelia,bob,dave}
-      # Public/anonymous trade submission via /oauth/guest (in user-service).
-      # When true, anonymous clients can request a short-lived guest token
-      # and submit orders rate-limited per-IP. Default false so this is
-      # opt-in per deployment.
       PUBLIC_GUEST_TRADING: ${PUBLIC_GUEST_TRADING:-false}
       GUEST_SUBMIT_CAPACITY: "${GUEST_SUBMIT_CAPACITY:-10}"
       GUEST_SUBMIT_REFILL: "${GUEST_SUBMIT_REFILL:-1}"
@@ -1692,7 +1642,6 @@ services:
       - "traefik.http.routers.health.service=gateway"
       - "traefik.http.routers.health.priority=25"
 
-  # ── Disk Monitor ───────────────────────────────────────────────────────────
   disk-monitor:
     image: python:3.12-alpine
     container_name: veta-disk-monitor
@@ -1715,13 +1664,9 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    # /health returns HTTP 503 when disk >= WARN_PCT — that's the signal,
-    # not a failure. The healthcheck checks /metrics (which always returns
-    # 200 because it's a passive gauge endpoint) so the *container* is
-    # marked unhealthy only when the process is genuinely unresponsive.
-    # Disk pressure surfaces via the Prometheus alert rules in
-    # observability/prometheus-rules.yml, not via this healthcheck.
     healthcheck:
+      # Probe /metrics, not /health: /health returns 503 when disk is
+      # over WARN_PCT (that's the signal, surfaced via Prometheus rules).
       test: [
         "CMD-SHELL",
         "wget -qO- http://localhost:8099/metrics > /dev/null 2>&1 || exit 1",
@@ -1735,13 +1680,6 @@ services:
       - "com.centurylinklabs.watchtower.enable=false"
     logging: *logging
 
-  # ── k6 (load testing, run-once, profile-gated) ────────────────────────────
-  # Run with: docker compose --profile loadtest run --rm k6
-  # Requires: K6_TOKEN env var set on the host (admin OAuth access token).
-  # Optional: BASE_URL overrides target (default http://gateway:5011).
-  # If the LGTM stack is running on the host, k6 writes percentile metrics
-  # to Prometheus at host.docker.internal:9090; otherwise the run still
-  # completes and Grafana shows nothing.
   k6:
     image: grafana/k6:0.55.0
     profiles: [loadtest]
