@@ -154,17 +154,42 @@ if ! docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d \
         || log "⚠ retry also returned non-zero; per-service verification will decide"
 fi
 
-# `docker compose up -d` only recreates a container when the *service
-# definition* changes — not when a bind-mounted single file is replaced.
-# rsync atomic-replaces the file with a new inode, which the container's
-# mount can't follow, so the container silently keeps serving the old
-# content. Pass a map of "host-relative-path:container:in-container-path"
-# entries; restart each container whose host file no longer matches what
-# the container sees. 2026-05-20: disk-monitor.py was stale by this exact
-# mechanism — the new /metrics-serving script was on the host but the
-# container had the old single-handler version, so Prometheus scrape
-# silently failed and disk fill went undetected. See PR #309 for the
+# Detect bind-mount drift on single-file mounts and restart the affected
+# container so the new inode takes effect. `docker compose up -d` only
+# recreates a container when the *service definition* changes — not
+# when a bind-mounted single file is replaced. rsync atomic-replaces
+# the file with a new inode, which the container's mount can't follow,
+# so the container silently keeps serving the old content.
+#
+# Input is an associative array. Each entry's key is the host-relative
+# path; the value is "<container-or-service>:<in-container-path>".
+# The resolver tries the literal name first (works for services that
+# set `container_name:` explicitly), then falls back to compose service
+# resolution (`docker compose ps -q <svc>`), which handles the default
+# `<project>_<service>_<n>` form.
+#
+# 2026-05-20: disk-monitor.py was stale by this exact mechanism —
+# the new /metrics-serving script was on the host but the container
+# had the old single-handler version, so Prometheus scrape silently
+# failed and the disk fill went undetected. See PR #309 for the
 # original observability-stack fix.
+resolve_container() {
+    local name="$1"
+    # Direct hit: explicit container_name or already-running ID/name.
+    if docker inspect "$name" >/dev/null 2>&1; then
+        echo "$name"
+        return 0
+    fi
+    # Compose-service form: ask compose for the running container ID.
+    local cid
+    cid=$(docker compose "${COMPOSE_FILES[@]}" ps -q "$name" 2>/dev/null | head -1)
+    if [[ -n "$cid" ]]; then
+        echo "$cid"
+        return 0
+    fi
+    return 1
+}
+
 check_bind_mount_drift() {
     local -n drift_map=$1
     local -A restart_needed=()
@@ -172,13 +197,18 @@ check_bind_mount_drift() {
         local host_file="$STACK_DIR/$host_rel"
         [[ -f "$host_file" ]] || continue
         local target="${drift_map[$host_rel]}"
-        local container="${target%%:*}"
+        local container_ref="${target%%:*}"
         local in_container="${target#*:}"
+        local container
+        if ! container=$(resolve_container "$container_ref"); then
+            log "  ⚠ $host_rel: no running container matches '$container_ref' — skipping drift check"
+            continue
+        fi
         local host_sum cont_sum
         host_sum=$(sha256sum "$host_file" | awk '{print $1}')
         cont_sum=$(docker exec "$container" sha256sum "$in_container" 2>/dev/null | awk '{print $1}')
         if [[ -n "$cont_sum" && "$host_sum" != "$cont_sum" ]]; then
-            log "  ⚠ $host_rel differs from $container view — bind-mount went stale"
+            log "  ⚠ $host_rel differs from $container_ref view — bind-mount went stale"
             restart_needed["$container"]=1
         fi
     done
@@ -192,12 +222,12 @@ check_bind_mount_drift() {
     fi
 }
 
-# Single-file bind mounts in the main veta stack. Container names use the
-# `container_name:` from compose.yml (set explicitly there) rather than the
-# `<project>-<service>-<n>` form, so docker exec resolves directly.
+# Single-file bind mounts in the main veta stack. The key on the right
+# is whatever resolve_container() can find: an explicit container_name
+# (disk-monitor sets one) or a compose service name (traefik doesn't).
 declare -A VETA_BIND_MOUNTS=(
     ["scripts/disk-monitor.py"]="veta-disk-monitor:/scripts/disk-monitor.py"
-    ["traefik.yml"]="veta-traefik:/traefik.yml"
+    ["traefik.yml"]="traefik:/traefik.yml"
 )
 check_bind_mount_drift VETA_BIND_MOUNTS
 
