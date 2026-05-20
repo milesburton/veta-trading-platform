@@ -128,7 +128,7 @@ Last critical: 47m ago — `kill-switch` admin-triggered halt for AAPL
 **Deployed SHA:** `a1b2c3d`
 ```
 
-Header emoji follows the worst service-availability window in the day: ✅ 100%, ⚠️ 95–99.9%, 🚨 below 95%. So a daily summary with ✅ means no service flapped past 99.9% in any 5-second sample during the day.
+Header emoji follows the worst service-availability window in the day: ✅ 100%, ⚠️ at-or-above 95% but below 100%, 🚨 below 95%. So a daily summary with ✅ means every 5-second sample saw every non-optional service up.
 
 Implementation in [`backend/src/gateway/daily-summary.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/daily-summary.ts), backed by the in-memory ring buffer in [`platform-stats.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/platform-stats.ts). Events older than 24h are pruned on every read.
 
