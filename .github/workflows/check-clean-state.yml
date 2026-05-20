@@ -55,6 +55,13 @@ jobs:
           cd frontend && deno run -A npm:@biomejs/biome check --write src/ || true
           cd ..
 
+          # Refresh the index first. Without this, `git diff-index` can
+          # report a file as changed when only its stat-info (mtime,
+          # size) differs — a no-op rewrite of an identical file is
+          # enough to trip it. `git diff` shows zero content diff in
+          # that case, which is exactly what we observed on PR #341.
+          git update-index --refresh >/dev/null 2>&1 || true
+
           # Check if there are any uncommitted changes
           if ! git diff-index --quiet HEAD --; then
             echo "❌ ERROR: Uncommitted changes detected after running linters and docs generators"
