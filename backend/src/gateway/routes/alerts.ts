@@ -1,6 +1,7 @@
 import { CORS_HEADERS } from "@veta/http";
 import { type GatewayContext, isResponse } from "../context.ts";
 import { notifyDiscord } from "../discord-notifier.ts";
+import { platformStats } from "../platform-stats.ts";
 import { createTicketForAlert } from "../ticketing.ts";
 
 export async function handleAlertsRoute(
@@ -50,16 +51,46 @@ export async function handleAlertsRoute(
   return null;
 }
 
-async function notifyDiscordFromBody(body: ArrayBuffer, userId: string): Promise<void> {
+function pickString(v: unknown): string | undefined {
+  return typeof v === "string" ? v : undefined;
+}
+
+interface SanitisedAlert {
+  severity?: string;
+  source?: string;
+  message?: string;
+  detail?: string;
+}
+
+function sanitiseAlert(body: ArrayBuffer): SanitisedAlert | null {
   try {
-    const parsed = JSON.parse(new TextDecoder().decode(body));
-    await Promise.allSettled([
-      notifyDiscord(parsed, userId),
-      createTicketForAlert(parsed, userId),
-    ]);
+    const candidate = JSON.parse(new TextDecoder().decode(body));
+    if (!candidate || typeof candidate !== "object") return null;
+    const raw = candidate as Record<string, unknown>;
+    return {
+      severity: pickString(raw.severity),
+      source: pickString(raw.source),
+      message: pickString(raw.message),
+      detail: pickString(raw.detail),
+    };
   } catch {
-    // ignore parse failures; user-service will reject with a 400
+    return null;
   }
+}
+
+async function notifyDiscordFromBody(body: ArrayBuffer, userId: string): Promise<void> {
+  const alert = sanitiseAlert(body);
+  if (!alert) return;
+  platformStats.recordAlert({
+    severity: alert.severity ?? "UNKNOWN",
+    source: alert.source ?? "unknown",
+    message: alert.message ?? "",
+    ts: Date.now(),
+  });
+  await Promise.allSettled([
+    notifyDiscord(alert, userId),
+    createTicketForAlert(alert, userId),
+  ]);
 }
 
 interface ForwardOptions {
