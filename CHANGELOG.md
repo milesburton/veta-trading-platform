@@ -1,5 +1,61 @@
 # Changelog
 
+## [1.41.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.40.0...veta-trading-platform-v1.41.0) (2026-05-21)
+
+
+### Features
+
+* **alerts:** attach Grafana panel screenshots to Discord alerts ([#340](https://github.com/milesburton/veta-trading-platform/issues/340)) ([0066418](https://github.com/milesburton/veta-trading-platform/commit/0066418e8338b007c8746641411da00a6cc19ccc))
+* **auth:** self-service registration with PBKDF2 password storage ([#297](https://github.com/milesburton/veta-trading-platform/issues/297)) ([7406471](https://github.com/milesburton/veta-trading-platform/commit/740647199e1d8f984da98e13e7662f442c2d8de2))
+* **ci:** post CI failures, PR merges, and docs deploys to Discord ([#331](https://github.com/milesburton/veta-trading-platform/issues/331)) ([c884cbf](https://github.com/milesburton/veta-trading-platform/commit/c884cbf8a6feec877d4f437c46a8bfd09432e3d1))
+* **docs:** block PRs that ship stale generated docs ([#320](https://github.com/milesburton/veta-trading-platform/issues/320)) ([9ec44e3](https://github.com/milesburton/veta-trading-platform/commit/9ec44e3466988c9b3c02bbf1c188379197ecff0c))
+* **frontend:** admin-only Observability superset workspace ([#298](https://github.com/milesburton/veta-trading-platform/issues/298)) ([a78f236](https://github.com/milesburton/veta-trading-platform/commit/a78f2362e298f7b5ec32b2ee7add3ff0f7ac9fc0))
+* **frontend:** derive SERVICES list from shared/serviceRegistry ([#328](https://github.com/milesburton/veta-trading-platform/issues/328)) ([7105e75](https://github.com/milesburton/veta-trading-platform/commit/7105e75f5a6b450b12bda1095de8c7df2a3c597e))
+* **frontend:** Discord link in header next to Grafana/Docs ([#296](https://github.com/milesburton/veta-trading-platform/issues/296)) ([b94f7ae](https://github.com/milesburton/veta-trading-platform/commit/b94f7ae4f81ad3350343e4aae08b28030a371f74))
+* **frontend:** Platform Status panel with bug-report submission ([#332](https://github.com/milesburton/veta-trading-platform/issues/332)) ([40bfb14](https://github.com/milesburton/veta-trading-platform/commit/40bfb1435bfb625fc85227279923af3dca8e1e41))
+* **gateway:** /bug-report endpoint with dedicated Discord channel ([#299](https://github.com/milesburton/veta-trading-platform/issues/299)) ([36f4334](https://github.com/milesburton/veta-trading-platform/commit/36f4334eba522238b0f99eeb4d36894efae5dcdd))
+* **gateway:** auto-create GitHub issues from CRITICAL Discord alerts ([#323](https://github.com/milesburton/veta-trading-platform/issues/323)) ([412fa08](https://github.com/milesburton/veta-trading-platform/commit/412fa0826c9d6ad56692f02668df73c66f83dd6a))
+* **gateway:** per-minute Discord status heartbeat with full service rollup ([#319](https://github.com/milesburton/veta-trading-platform/issues/319)) ([f76ca9d](https://github.com/milesburton/veta-trading-platform/commit/f76ca9df80d6559fdc0665ef1925eb87d92a9f9f))
+* **gateway:** replace per-minute heartbeat with daily summary + /platform-status endpoint ([#330](https://github.com/milesburton/veta-trading-platform/issues/330)) ([a9c3e3b](https://github.com/milesburton/veta-trading-platform/commit/a9c3e3b18bf46bc50c4883841f6ddf127a2acec9))
+* **homelab-deploy:** docker image prune -f after successful deploy ([#317](https://github.com/milesburton/veta-trading-platform/issues/317)) ([be3020d](https://github.com/milesburton/veta-trading-platform/commit/be3020d8f8efb6eb19afc9603cbe1eae906cd7c5))
+* **llm-advisory:** inference target configurable so the homelab can use the Spark ([#301](https://github.com/milesburton/veta-trading-platform/issues/301)) ([8ac00b2](https://github.com/milesburton/veta-trading-platform/commit/8ac00b2cfe01825c34b9a15dd40e9c07318a6e51))
+* **observability:** emit process_memory_usage_bytes from every Deno service ([#345](https://github.com/milesburton/veta-trading-platform/issues/345)) ([f907275](https://github.com/milesburton/veta-trading-platform/commit/f9072751edc28c0ebc7fca06debff31cb5b3b540))
+* **observability:** frontend heap OTEL gauge + Prometheus alerts ([#318](https://github.com/milesburton/veta-trading-platform/issues/318)) ([3d00d93](https://github.com/milesburton/veta-trading-platform/commit/3d00d938e798cbc62a0d301f3529a1f4d7a0f0f3))
+* **observability:** scrape Redpanda + alert on topic growth & consumer lag ([#336](https://github.com/milesburton/veta-trading-platform/issues/336)) ([b423865](https://github.com/milesburton/veta-trading-platform/commit/b42386510b7d9d880a10f59eeed3ec834ca81e3a))
+* **panel-walkthrough:** role-specific walkthroughs for trader/sales/external-client panels ([#310](https://github.com/milesburton/veta-trading-platform/issues/310)) ([5ab5637](https://github.com/milesburton/veta-trading-platform/commit/5ab5637b872992971cc31f85a39f7c611fc0d812))
+* **playbooks:** scaffold AI playbook surfaces (runtime + developer-facing) ([#304](https://github.com/milesburton/veta-trading-platform/issues/304)) ([70881c1](https://github.com/milesburton/veta-trading-platform/commit/70881c1726fb91aa0c8e832ac5d6819bf2b05fcf))
+* **registry:** single-source-of-truth for service IDs, ports, compose names ([#327](https://github.com/milesburton/veta-trading-platform/issues/327)) ([6239f35](https://github.com/milesburton/veta-trading-platform/commit/6239f3587878dae610c7d0b02f7540e6fd7b883a))
+
+
+### Bug Fixes
+
+* **a11y:** clear all axe contrast violations on dashboard scenarios ([#307](https://github.com/milesburton/veta-trading-platform/issues/307)) ([1d37750](https://github.com/milesburton/veta-trading-platform/commit/1d37750df33ba3175ae3128dc8f06098e0c8d6ad))
+* **alerts:** Dismiss-all on the drawer closes the drawer ([#293](https://github.com/milesburton/veta-trading-platform/issues/293)) ([2fd1121](https://github.com/milesburton/veta-trading-platform/commit/2fd1121015d73617d47b2a2e12b23e8023a5d6e7))
+* **ci:** align check-clean-state Node to v24 like the rest of CI ([#325](https://github.com/milesburton/veta-trading-platform/issues/325)) ([d2e74cc](https://github.com/milesburton/veta-trading-platform/commit/d2e74ccef3132c41b5a5e4277b214b922db3730c))
+* **ci:** test:coverage task had compose-restart-policies in wrong position ([#349](https://github.com/milesburton/veta-trading-platform/issues/349)) ([5b59831](https://github.com/milesburton/veta-trading-platform/commit/5b59831817bb45aeb98a449a215345f31322b11d))
+* **compose:** llm-advisory + llm-worker auto-restart on crash ([#314](https://github.com/milesburton/veta-trading-platform/issues/314)) ([35397e1](https://github.com/milesburton/veta-trading-platform/commit/35397e17b517133e66a77315e487b586dfb7f9ef))
+* **docs:** drop generatedAt from panel-reference.json ([#326](https://github.com/milesburton/veta-trading-platform/issues/326)) ([2bfc71c](https://github.com/milesburton/veta-trading-platform/commit/2bfc71c1ef4762840da7cbfa5a974c4dfabbc64e))
+* **docs:** replace homelab/Spark IPs with hostname placeholders ([#311](https://github.com/milesburton/veta-trading-platform/issues/311)) ([0ba7012](https://github.com/milesburton/veta-trading-platform/commit/0ba701263e1b8154fd1df1551340d363a0a624e5))
+* **docs:** resolve script paths in CI so service-map generator doesn't drift ([#341](https://github.com/milesburton/veta-trading-platform/issues/341)) ([1dbd81f](https://github.com/milesburton/veta-trading-platform/commit/1dbd81ff59a7695fd61ceea1b4ae3b76ddea9266))
+* **frontend:** add 11 missing services to health panel; refactor hook fanout ([#322](https://github.com/milesburton/veta-trading-platform/issues/322)) ([7d79a7d](https://github.com/milesburton/veta-trading-platform/commit/7d79a7da172f251fa8981a36109a60f2219834b3))
+* **frontend:** all wall clocks render in UTC with explicit suffix ([#294](https://github.com/milesburton/veta-trading-platform/issues/294)) ([7005559](https://github.com/milesburton/veta-trading-platform/commit/7005559218758877aaf1b34168430aade735cbd9))
+* **frontend:** cap advisorySlice.bySymbol at 100 entries with LRU eviction ([#313](https://github.com/milesburton/veta-trading-platform/issues/313)) ([a1d3d9c](https://github.com/milesburton/veta-trading-platform/commit/a1d3d9c768cc93a644eda2979aaa4b65d11686ca))
+* **frontend:** commit SHA labelled as commit, linked to GitHub ([#291](https://github.com/milesburton/veta-trading-platform/issues/291)) ([aaf774f](https://github.com/milesburton/veta-trading-platform/commit/aaf774ffe6d71e5e7b759ffd01f3fe340ebb2cda))
+* **frontend:** startup overlay derives services from gateway response ([#295](https://github.com/milesburton/veta-trading-platform/issues/295)) ([75d030a](https://github.com/milesburton/veta-trading-platform/commit/75d030acca749f84b36ecef50ba224d33e80cf8d))
+* **gateway:** add missing PRODUCT_SERVICE_HOST + make doc timestamps stable ([#321](https://github.com/milesburton/veta-trading-platform/issues/321)) ([2ab65a9](https://github.com/milesburton/veta-trading-platform/commit/2ab65a91b9de848f7c758ebc2ae3795381496fd2))
+* **gateway:** add missing SVC_PROXY entries for product-service + replay-service ([#329](https://github.com/milesburton/veta-trading-platform/issues/329)) ([71419fc](https://github.com/milesburton/veta-trading-platform/commit/71419fca41af7172529c5e0539a9c6685d73e914))
+* **homelab-deploy:** restart containers when bind-mounted single files drift ([#309](https://github.com/milesburton/veta-trading-platform/issues/309)) ([1be5611](https://github.com/milesburton/veta-trading-platform/commit/1be5611f726f13ec0737e564ff9b0a406f1c4d2f))
+* **homelab-deploy:** widen bind-mount drift check beyond observability ([#337](https://github.com/milesburton/veta-trading-platform/issues/337)) ([84e3d36](https://github.com/milesburton/veta-trading-platform/commit/84e3d365704f8a6a7ea2e63d66c077363ac817f3))
+* **infra:** auto-restart every long-running container + structural guard ([#348](https://github.com/milesburton/veta-trading-platform/issues/348)) ([ac608c6](https://github.com/milesburton/veta-trading-platform/commit/ac608c648b7ffcb3b8b8b879fa5bfd140938ef65))
+* **infra:** cap memory on every container + structural guard ([#346](https://github.com/milesburton/veta-trading-platform/issues/346)) ([21a03b1](https://github.com/milesburton/veta-trading-platform/commit/21a03b1019f3b60924907f73f20f2d4ca9b135ab))
+* **llm-advisory:** cap orchestrator staleness-refresh query concurrency ([#316](https://github.com/milesburton/veta-trading-platform/issues/316)) ([6974dad](https://github.com/milesburton/veta-trading-platform/commit/6974dadc9ec37743f809ee71b75e49fad395e6f6))
+* **llm-advisory:** wrap all 15 JobStore methods in withPgRetry ([#315](https://github.com/milesburton/veta-trading-platform/issues/315)) ([34aa4b1](https://github.com/milesburton/veta-trading-platform/commit/34aa4b1f87986574005488ce17b090ac6fc2a352))
+* **loadgen:** randomise /load-test selectors so 1-order calls vary ([#312](https://github.com/milesburton/veta-trading-platform/issues/312)) ([cfc0d02](https://github.com/milesburton/veta-trading-platform/commit/cfc0d0252bd3ba685dafd17a0efed53ce331cab7))
+* **market-sim:** diff-encode market.ticks (17x bandwidth cut) ([#344](https://github.com/milesburton/veta-trading-platform/issues/344)) ([a3ecd51](https://github.com/milesburton/veta-trading-platform/commit/a3ecd515d4900822f711758b3e63e4cb9904efea))
+* **observability:** persist Alloy positions.yml + bound retry loop ([#347](https://github.com/milesburton/veta-trading-platform/issues/347)) ([5196c4d](https://github.com/milesburton/veta-trading-platform/commit/5196c4dc7202c80c6848bb79fd6b3583079b1988))
+* **observability:** stop Discord noise from Redpanda topic-rate rules ([#342](https://github.com/milesburton/veta-trading-platform/issues/342)) ([6ad71d4](https://github.com/milesburton/veta-trading-platform/commit/6ad71d42b80fbecc411902880fc87971f4494de6))
+* **observability:** wire Grafana Discord routing for all alert rules ([#338](https://github.com/milesburton/veta-trading-platform/issues/338)) ([934c9ca](https://github.com/milesburton/veta-trading-platform/commit/934c9ca80c1de49a17bd32e2085bcac3ca195eed))
+
 ## [1.40.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.39.2...veta-trading-platform-v1.40.0) (2026-05-18)
 
 
