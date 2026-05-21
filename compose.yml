@@ -23,6 +23,7 @@ x-deno-service: &deno-service
   networks:
     - trading-net
   mem_limit: 512m
+  restart: unless-stopped
   cap_drop:
     - ALL
   security_opt:
@@ -38,6 +39,7 @@ x-deno-medium: &deno-medium
   networks:
     - trading-net
   mem_limit: 768m
+  restart: unless-stopped
   cap_drop:
     - ALL
   security_opt:
@@ -62,6 +64,7 @@ services:
     networks:
       - trading-net
     mem_limit: 1536m
+    restart: unless-stopped
     cap_drop:
       - ALL
     security_opt:
@@ -112,6 +115,7 @@ services:
     networks:
       - trading-net
     mem_limit: 128m
+    restart: unless-stopped
     cap_drop:
       - ALL
     security_opt:
@@ -149,6 +153,7 @@ services:
       -c maintenance_work_mem=32MB
       -c max_connections=50
     mem_limit: 384m
+    restart: unless-stopped
     ports:
       - "5432:5432"
     volumes:
@@ -236,6 +241,7 @@ services:
     environment:
       OLLAMA_KEEP_ALIVE: 5m
     mem_limit: 3g
+    restart: unless-stopped
     security_opt:
       - no-new-privileges:true
     healthcheck:
@@ -279,6 +285,7 @@ services:
         VITE_DEPLOYMENT: ${VITE_DEPLOYMENT:-local}
         VITE_BUILD_DATE: ${BUILD_DATE:-dev}
     mem_limit: 128m
+    restart: unless-stopped
     networks:
       - trading-net
     environment:
