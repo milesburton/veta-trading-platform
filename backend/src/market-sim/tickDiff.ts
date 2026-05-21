@@ -19,6 +19,7 @@ export interface TickPayload {
 
 export interface TickDiffState {
   lastPrices: Record<string, number>;
+  lastVolumes: Record<string, number>;
   lastBookPrices: Record<string, number>;
   lastOpenPrices: Record<string, number>;
   lastMarketMinute: number | null;
@@ -29,18 +30,35 @@ export interface TickDiffState {
 export type TickDiff = Partial<TickPayload> & { full?: true };
 
 export const PRICE_EPSILON = 0.0001;
+export const VOLUME_EPSILON = 1;
 export const BOOK_MATERIAL_BPS = 5;
 export const FULL_SNAPSHOT_INTERVAL_MS = 60_000;
 
 export function createTickDiffState(): TickDiffState {
   return {
     lastPrices: {},
+    lastVolumes: {},
     lastBookPrices: {},
     lastOpenPrices: {},
     lastMarketMinute: null,
     lastSessionPhase: null,
     lastFullSnapshotAt: null,
   };
+}
+
+function changedNumericSymbols(
+  current: Record<string, number>,
+  previous: Record<string, number>,
+  threshold: number,
+): string[] {
+  const changed: string[] = [];
+  for (const [sym, value] of Object.entries(current)) {
+    const prev = previous[sym];
+    if (prev === undefined || Math.abs(value - prev) >= threshold) {
+      changed.push(sym);
+    }
+  }
+  return changed;
 }
 
 function changedPriceSymbols(
@@ -50,7 +68,7 @@ function changedPriceSymbols(
   const changed: string[] = [];
   for (const [sym, price] of Object.entries(current)) {
     const prev = previous[sym];
-    if (prev === undefined || Math.abs(price - prev) > PRICE_EPSILON) {
+    if (prev === undefined || Math.abs(price - prev) >= PRICE_EPSILON) {
       changed.push(sym);
     }
   }
@@ -107,6 +125,7 @@ export function buildTickDiff(
       },
       nextState: {
         lastPrices: { ...payload.prices },
+        lastVolumes: { ...payload.volumes },
         lastBookPrices: { ...payload.prices },
         lastOpenPrices: { ...payload.openPrices },
         lastMarketMinute: payload.marketMinute,
@@ -117,6 +136,11 @@ export function buildTickDiff(
   }
 
   const movedSymbols = changedPriceSymbols(payload.prices, state.lastPrices);
+  const volumeChangedSymbols = changedNumericSymbols(
+    payload.volumes,
+    state.lastVolumes,
+    VOLUME_EPSILON,
+  );
   const bookSymbols = bookWorthyMovedSymbols(
     payload.prices,
     state.lastBookPrices,
@@ -131,7 +155,9 @@ export function buildTickDiff(
   const diff: TickDiff = {};
   if (movedSymbols.length > 0) {
     diff.prices = pick(payload.prices, movedSymbols);
-    diff.volumes = pick(payload.volumes, movedSymbols);
+  }
+  if (volumeChangedSymbols.length > 0) {
+    diff.volumes = pick(payload.volumes, volumeChangedSymbols);
   }
   if (bookSymbols.length > 0) {
     diff.orderBook = pick(payload.orderBook, bookSymbols);
@@ -145,6 +171,9 @@ export function buildTickDiff(
   const nextLastPrices = movedSymbols.length > 0
     ? { ...state.lastPrices, ...diff.prices }
     : state.lastPrices;
+  const nextLastVolumes = volumeChangedSymbols.length > 0
+    ? { ...state.lastVolumes, ...diff.volumes }
+    : state.lastVolumes;
   const nextLastBookPrices = bookSymbols.length > 0
     ? { ...state.lastBookPrices, ...pick(payload.prices, bookSymbols) }
     : state.lastBookPrices;
@@ -156,6 +185,7 @@ export function buildTickDiff(
     diff,
     nextState: {
       lastPrices: nextLastPrices,
+      lastVolumes: nextLastVolumes,
       lastBookPrices: nextLastBookPrices,
       lastOpenPrices: nextLastOpenPrices,
       lastMarketMinute: payload.marketMinute,

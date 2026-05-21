@@ -347,6 +347,7 @@ Deno.serve({ port: PORT }, (req) => {
       onReset: () => {
         marketMinute = 0;
         tickCount = 0;
+        tickDiffState = createTickDiffState();
       },
     });
   }

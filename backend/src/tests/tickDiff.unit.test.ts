@@ -1,5 +1,6 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import {
+  BOOK_MATERIAL_BPS,
   buildTickDiff,
   createTickDiffState,
   FULL_SNAPSHOT_INTERVAL_MS,
@@ -64,10 +65,11 @@ Deno.test("only moved symbols appear in subsequent diff", () => {
   const { nextState: afterFull } = buildTickDiff(initial, state, 1_000);
 
   const moved = makePayload({ AAPL: 191, MSFT: 400, GOOG: 170 });
+  moved.volumes = { AAPL: 2_000, MSFT: 1_000, GOOG: 1_000 };
   const { diff } = buildTickDiff(moved, afterFull, 1_250);
 
   assertEquals(diff.prices, { AAPL: 191 });
-  assertEquals(diff.volumes, { AAPL: 1_000 });
+  assertEquals(diff.volumes, { AAPL: 2_000 });
   assert(diff.orderBook?.AAPL !== undefined);
   assert(diff.orderBook?.MSFT === undefined);
   assert(diff.orderBook?.GOOG === undefined);
@@ -210,41 +212,138 @@ Deno.test("realistic 287-symbol stream stays well under the alert bandwidth budg
   );
 });
 
+interface ConsumerState {
+  prices: Record<string, number>;
+  openPrices: Record<string, number>;
+  volumes: Record<string, number>;
+  orderBook: Record<string, { mid: number }>;
+  marketMinute: number | null;
+  sessionPhase: string | null;
+}
+
+function newConsumer(): ConsumerState {
+  return {
+    prices: {},
+    openPrices: {},
+    volumes: {},
+    orderBook: {},
+    marketMinute: null,
+    sessionPhase: null,
+  };
+}
+
 function applyDiff(
-  consumer: Record<string, number>,
+  consumer: ConsumerState,
   diff: ReturnType<typeof buildTickDiff>["diff"],
 ): void {
   if (diff.full) {
-    for (const key of Object.keys(consumer)) delete consumer[key];
+    consumer.prices = {};
+    consumer.openPrices = {};
+    consumer.volumes = {};
+    consumer.orderBook = {};
   }
   if (diff.prices) {
-    for (const [sym, price] of Object.entries(diff.prices)) {
-      consumer[sym] = price;
+    for (const [sym, v] of Object.entries(diff.prices)) consumer.prices[sym] = v;
+  }
+  if (diff.openPrices) {
+    for (const [sym, v] of Object.entries(diff.openPrices)) {
+      consumer.openPrices[sym] = v;
     }
   }
+  if (diff.volumes) {
+    for (const [sym, v] of Object.entries(diff.volumes)) consumer.volumes[sym] = v;
+  }
+  if (diff.orderBook) {
+    for (const [sym, v] of Object.entries(diff.orderBook)) {
+      consumer.orderBook[sym] = { mid: v.mid };
+    }
+  }
+  if (diff.marketMinute !== undefined) consumer.marketMinute = diff.marketMinute;
+  if (diff.sessionPhase !== undefined) consumer.sessionPhase = diff.sessionPhase;
 }
 
-Deno.test("consumer state after applying diffs matches full-snapshot state", () => {
+Deno.test("consumer state after applying diffs matches full-snapshot state for every field", () => {
   const rng = seededRng(42);
   let prices = makeUniverse(50);
   let state = createTickDiffState();
-  const consumer: Record<string, number> = {};
+  const consumer = newConsumer();
+  let payload = makePayload(prices);
 
   for (let i = 0; i < 500; i++) {
     prices = jitterPrices(prices, rng);
-    const { diff, nextState } = buildTickDiff(makePayload(prices), state, i * 250);
+    payload = makePayload(prices);
+    if (i % 17 === 0) {
+      payload.marketMinute = (payload.marketMinute + 1) % 390;
+    }
+    if (i === 250) payload.sessionPhase = "CLOSING_AUCTION";
+    const { diff, nextState } = buildTickDiff(payload, state, i * 250);
     state = nextState;
     applyDiff(consumer, diff);
   }
 
-  for (const [sym, expected] of Object.entries(prices)) {
-    const actual = consumer[sym];
+  for (const [sym, expected] of Object.entries(payload.prices)) {
+    const actual = consumer.prices[sym];
     assert(
       actual !== undefined && Math.abs(actual - expected) < 1e-6,
-      `consumer drift on ${sym}: expected ${expected}, got ${actual}`,
+      `prices drift on ${sym}: expected ${expected}, got ${actual}`,
+    );
+    const expectedVol = payload.volumes[sym];
+    const actualVol = consumer.volumes[sym];
+    assert(
+      actualVol !== undefined && Math.abs(actualVol - expectedVol) < 1e-6,
+      `volumes drift on ${sym}: expected ${expectedVol}, got ${actualVol}`,
+    );
+    const expectedOpen = payload.openPrices[sym];
+    const actualOpen = consumer.openPrices[sym];
+    assert(
+      actualOpen !== undefined && Math.abs(actualOpen - expectedOpen) < 1e-6,
+      `openPrices drift on ${sym}: expected ${expectedOpen}, got ${actualOpen}`,
     );
   }
-  assertEquals(Object.keys(consumer).sort(), Object.keys(prices).sort());
+  assertEquals(consumer.marketMinute, payload.marketMinute);
+  assertEquals(consumer.sessionPhase, payload.sessionPhase);
+});
+
+Deno.test("orderBook is emitted around the BOOK_MATERIAL_BPS gate boundary", () => {
+  const state = createTickDiffState();
+  const initial = makePayload({ AAPL: 100 });
+  const { nextState } = buildTickDiff(initial, state, 1_000);
+
+  const justBelow = makePayload({
+    AAPL: 100 * (1 + (BOOK_MATERIAL_BPS - 0.5) / 10_000),
+  });
+  const { diff: belowDiff, nextState: afterBelow } = buildTickDiff(
+    justBelow,
+    nextState,
+    1_250,
+  );
+  assert(
+    belowDiff.orderBook === undefined,
+    `expected no book under ${BOOK_MATERIAL_BPS} bps move, got ${JSON.stringify(belowDiff.orderBook)}`,
+  );
+
+  const justAbove = makePayload({
+    AAPL: 100 * (1 + (BOOK_MATERIAL_BPS + 0.5) / 10_000),
+  });
+  const { diff: aboveDiff } = buildTickDiff(justAbove, afterBelow, 1_500);
+  assert(
+    aboveDiff.orderBook?.AAPL !== undefined,
+    `expected book at or above ${BOOK_MATERIAL_BPS} bps move`,
+  );
+});
+
+Deno.test("volumes diff is independent of price movement", () => {
+  const state = createTickDiffState();
+  const initial = makePayload({ AAPL: 100 });
+  initial.volumes = { AAPL: 1_000 };
+  const { nextState } = buildTickDiff(initial, state, 1_000);
+
+  const samePrice = makePayload({ AAPL: 100 });
+  samePrice.volumes = { AAPL: 2_500 };
+  const { diff } = buildTickDiff(samePrice, nextState, 1_250);
+
+  assert(diff.prices === undefined, "price unchanged should produce no prices diff");
+  assertEquals(diff.volumes, { AAPL: 2_500 });
 });
 
 Deno.test("buildTickDiff never produces a full snapshot more often than the configured interval", () => {
@@ -264,7 +363,7 @@ Deno.test("buildTickDiff never produces a full snapshot more often than the conf
   for (let i = 1; i < fullSnapshotTimestamps.length; i++) {
     const gap = fullSnapshotTimestamps[i] - fullSnapshotTimestamps[i - 1];
     assert(
-      gap >= 60_000,
+      gap >= FULL_SNAPSHOT_INTERVAL_MS,
       `full snapshot gap ${gap}ms < FULL_SNAPSHOT_INTERVAL_MS`,
     );
   }
