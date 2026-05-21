@@ -15,6 +15,7 @@ services:
     networks:
       - lgtm
     restart: unless-stopped
+    mem_limit: 512m
 
   loki:
     image: grafana/loki:3.3.2
@@ -25,6 +26,7 @@ services:
     networks:
       - lgtm
     restart: unless-stopped
+    mem_limit: 512m
 
   prometheus:
     image: prom/prometheus:v3.1.0
@@ -43,6 +45,7 @@ services:
       - lgtm
       - veta_trading-net
     restart: unless-stopped
+    mem_limit: 768m
 
   tempo:
     image: grafana/tempo:2.7.1
@@ -57,6 +60,7 @@ services:
     networks:
       - lgtm
     restart: unless-stopped
+    mem_limit: 512m
 
   grafana:
     image: grafana/grafana:11.4.0
@@ -140,6 +144,7 @@ services:
       - "traefik.http.routers.grafana.middlewares=origin-ratelimit"
       - "traefik.http.routers.grafana.priority=30"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    mem_limit: 512m
 
   renderer:
     image: grafana/grafana-image-renderer:3.12.5
@@ -149,6 +154,7 @@ services:
     networks:
       - lgtm
     restart: unless-stopped
+    mem_limit: 768m
 
 volumes:
   prometheus-data:

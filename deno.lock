@@ -28,6 +28,7 @@
     "jsr:@std/path@^1.0.2": "1.1.4",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/streams@^1.0.17": "1.0.17",
+    "jsr:@std/yaml@0.217": "0.217.0",
     "npm:@biomejs/biome@*": "2.4.4",
     "npm:@opentelemetry/api@^1.9.0": "1.9.1",
     "npm:kafkajs@2.2.4": "2.2.4",
@@ -141,6 +142,9 @@
     },
     "@std/streams@1.0.17": {
       "integrity": "7859f3d9deed83cf4b41f19223d4a67661b3d3819e9fc117698f493bf5992140"
+    },
+    "@std/yaml@0.217.0": {
+      "integrity": "cfc7f6ae8463a4591bffc6e4d1fc4eba4387e920b9777672f0d0c0874e2d4651"
     }
   },
   "npm": {

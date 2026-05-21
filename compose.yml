@@ -61,6 +61,7 @@ services:
       - --advertise-kafka-addr=redpanda:9092
     networks:
       - trading-net
+    mem_limit: 1536m
     cap_drop:
       - ALL
     security_opt:
@@ -80,6 +81,7 @@ services:
     container_name: redpanda-init
     networks:
       - trading-net
+    mem_limit: 256m
     cap_drop:
       - ALL
     security_opt:
@@ -177,6 +179,7 @@ services:
       dockerfile: docker/db-migrate/Dockerfile
     networks:
       - trading-net
+    mem_limit: 256m
     cap_drop:
       - ALL
     security_opt:
@@ -1660,6 +1663,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+    mem_limit: 128m
     cap_drop:
       - ALL
     security_opt:

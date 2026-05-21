@@ -35,6 +35,7 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    mem_limit: 128m
 
   # ── Soak runner ──────────────────────────────────────────────────────────
   # Constant ~50 VUs forever. Restarts soak.js every 50min to pick up rotated
@@ -68,6 +69,7 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    mem_limit: 256m
 
   # ── Matrix runner ────────────────────────────────────────────────────────
   # Cycles baseline → mixed → burst-open → risk-stress on a loop.
@@ -100,6 +102,7 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    mem_limit: 256m
 
 volumes:
   loadgen-shared:
