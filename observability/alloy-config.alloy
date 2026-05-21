@@ -51,7 +51,12 @@ otelcol.exporter.loki "default" {
 
 loki.write "default" {
   endpoint {
-    url = "http://loki:3100/loki/api/v1/push"
+    url                 = "http://loki:3100/loki/api/v1/push"
+    // Give up on a batch after a bounded set of retries instead of holding
+    // it in memory forever. Loki's "entry too far behind" rejection is
+    // not transient, so retrying won't help and we'd rather drop than OOM.
+    max_backoff_retries = 5
+    max_backoff_period  = "30s"
   }
 }
 
