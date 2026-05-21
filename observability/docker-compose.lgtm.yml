@@ -9,7 +9,13 @@ services:
     volumes:
       - ./alloy-config.alloy:/etc/alloy/config.alloy:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: run /etc/alloy/config.alloy --server.http.listen-addr=0.0.0.0:12345
+      # Persist the docker tailer's positions.yml so an Alloy restart resumes
+      # from the last seen log line instead of replaying every container's
+      # log file from creation. Without this, Loki rejects the old entries
+      # with "entry too far behind" and Alloy retries them indefinitely,
+      # holding the unwritable backlog in memory until OOM.
+      - alloy-data:/var/lib/alloy/data
+    command: run /etc/alloy/config.alloy --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -160,6 +166,7 @@ volumes:
   prometheus-data:
   tempo-data:
   grafana-data:
+  alloy-data:
 
 networks:
   lgtm:
