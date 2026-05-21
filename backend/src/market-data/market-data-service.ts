@@ -1,3 +1,4 @@
+import "@veta/bootstrap";
 /**
  * Market Data Service — port 5015
  *

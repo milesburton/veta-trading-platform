@@ -1,3 +1,4 @@
+import "@veta/bootstrap";
 /**
  * Analytics Service — port 5014
  *

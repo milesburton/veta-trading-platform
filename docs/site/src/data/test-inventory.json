@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 47,
-      "cases": 600,
+      "files": 48,
+      "cases": 604,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -50,7 +50,8 @@
         "platform-stats.unit.test.ts": 11,
         "daily-summary.unit.test.ts": 13,
         "tickDiff.unit.test.ts": 13,
-        "compose-mem-limits.unit.test.ts": 1
+        "compose-mem-limits.unit.test.ts": 1,
+        "process-metrics.unit.test.ts": 4
       }
     },
     "integration": {

@@ -1,3 +1,4 @@
+import "@veta/bootstrap";
 // fallow-ignore-file unused-file
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { getCookieToken } from "@veta/auth";

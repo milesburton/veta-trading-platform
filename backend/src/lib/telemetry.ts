@@ -20,6 +20,14 @@ if (OTEL_ENABLED) {
     service: Deno.env.get("OTEL_SERVICE_NAME"),
     endpoint: Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT"),
   });
+  queueMicrotask(() => {
+    setupProcessMetrics().catch((err) => {
+      logger.warn("setupProcessMetrics failed", {
+        component: "telemetry",
+        err: err instanceof Error ? err.message : String(err),
+      });
+    });
+  });
 }
 
 interface SpanLike {
@@ -36,8 +44,21 @@ interface GaugeLike {
   record(value: number, attributes?: Record<string, string | number | boolean>): void;
 }
 
+interface ObservableResultLike {
+  observe(value: number, attributes?: Record<string, string | number | boolean>): void;
+}
+
+interface ObservableLike {
+  addCallback(callback: (result: ObservableResultLike) => void | Promise<void>): void;
+  removeCallback(callback: (result: ObservableResultLike) => void | Promise<void>): void;
+}
+
 interface MeterLike {
   createGauge(name: string, options?: { description?: string; unit?: string }): GaugeLike;
+  createObservableGauge(
+    name: string,
+    options?: { description?: string; unit?: string },
+  ): ObservableLike;
 }
 
 let tracerCache: TracerLike | null = null;
@@ -66,6 +87,99 @@ async function getMeter(): Promise<MeterLike | null> {
   } catch {
     return null;
   }
+}
+
+interface ProcessMetricsHandle {
+  stop(): void;
+}
+
+let processMetricsHandle: ProcessMetricsHandle | null = null;
+
+export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null> {
+  if (!OTEL_ENABLED) return null;
+  if (processMetricsHandle) return processMetricsHandle;
+  const meter = await getMeter();
+  if (!meter) return null;
+
+  const cpuStart = readCpuTimeSeconds();
+  const wallStart = performance.now() / 1000;
+
+  const rssGauge = meter.createObservableGauge("process_memory_usage_bytes", {
+    description: "Resident set size of the Deno process",
+    unit: "By",
+  });
+  const heapUsedGauge = meter.createObservableGauge("process_runtime_deno_memory_heap_used_bytes", {
+    description: "V8 heap used by the Deno runtime",
+    unit: "By",
+  });
+  const heapTotalGauge = meter.createObservableGauge(
+    "process_runtime_deno_memory_heap_total_bytes",
+    {
+      description: "V8 heap total allocated by the Deno runtime",
+      unit: "By",
+    },
+  );
+  const externalGauge = meter.createObservableGauge("process_runtime_deno_memory_external_bytes", {
+    description: "Memory used by C++ objects bound to JavaScript",
+    unit: "By",
+  });
+  const cpuGauge = meter.createObservableGauge("process_cpu_seconds_total", {
+    description: "Total CPU time consumed by the process since startup",
+    unit: "s",
+  });
+  const uptimeGauge = meter.createObservableGauge("process_uptime_seconds", {
+    description: "Wall-clock seconds since the process started",
+    unit: "s",
+  });
+
+  const rssCb = (r: ObservableResultLike) => {
+    const mem = Deno.memoryUsage();
+    r.observe(mem.rss);
+  };
+  const heapUsedCb = (r: ObservableResultLike) => r.observe(Deno.memoryUsage().heapUsed);
+  const heapTotalCb = (r: ObservableResultLike) => r.observe(Deno.memoryUsage().heapTotal);
+  const externalCb = (r: ObservableResultLike) => r.observe(Deno.memoryUsage().external);
+  const cpuCb = (r: ObservableResultLike) => {
+    const now = readCpuTimeSeconds();
+    if (now !== null) r.observe(now - (cpuStart ?? 0));
+  };
+  const uptimeCb = (r: ObservableResultLike) => r.observe(performance.now() / 1000 - wallStart);
+
+  rssGauge.addCallback(rssCb);
+  heapUsedGauge.addCallback(heapUsedCb);
+  heapTotalGauge.addCallback(heapTotalCb);
+  externalGauge.addCallback(externalCb);
+  cpuGauge.addCallback(cpuCb);
+  uptimeGauge.addCallback(uptimeCb);
+
+  logger.info("process metrics registered", {
+    component: "telemetry",
+    service: Deno.env.get("OTEL_SERVICE_NAME"),
+  });
+
+  processMetricsHandle = {
+    stop: () => {
+      rssGauge.removeCallback(rssCb);
+      heapUsedGauge.removeCallback(heapUsedCb);
+      heapTotalGauge.removeCallback(heapTotalCb);
+      externalGauge.removeCallback(externalCb);
+      cpuGauge.removeCallback(cpuCb);
+      uptimeGauge.removeCallback(uptimeCb);
+      processMetricsHandle = null;
+    },
+  };
+  return processMetricsHandle;
+}
+
+function readCpuTimeSeconds(): number | null {
+  try {
+    const usage = (Deno as unknown as { cpuUsage?: () => { user: number; system: number } })
+      .cpuUsage?.();
+    if (usage) return (usage.user + usage.system) / 1_000_000;
+  } catch {
+    /* ignore */
+  }
+  return null;
 }
 
 export async function recordGauge(

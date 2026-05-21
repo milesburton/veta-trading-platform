@@ -1,3 +1,4 @@
+import "@veta/bootstrap";
 /**
  * SNIPER order algorithm
  * Multi-venue smart routing strategy. Picks the best-price venues from the EMS venue set on each price trigger and splits an aggression-controlled share of remaining quantity across them. See platform/smart-order-router for the full routing model.

@@ -1,3 +1,4 @@
+import "@veta/bootstrap";
 /**
  * VWAP (Volume-Weighted Average Price) algorithm
  *

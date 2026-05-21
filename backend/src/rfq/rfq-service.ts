@@ -1,3 +1,4 @@
+import "@veta/bootstrap";
 /**
  * Fixed Income RFQ (Request for Quote) Service.
  * See platform/post-trade-rfq for the dealer-driven workflow details.

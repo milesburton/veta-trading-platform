@@ -1,3 +1,4 @@
+import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { corsOptions, json, parseBody } from "@veta/http";
 import { logger } from "@veta/logger";
