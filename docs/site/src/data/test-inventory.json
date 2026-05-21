@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 45,
-      "cases": 586,
+      "files": 46,
+      "cases": 599,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -48,7 +48,8 @@
         "pipeline.bug-and-alert.unit.test.ts": 4,
         "grafana-renderer.unit.test.ts": 13,
         "platform-stats.unit.test.ts": 11,
-        "daily-summary.unit.test.ts": 13
+        "daily-summary.unit.test.ts": 13,
+        "tickDiff.unit.test.ts": 13
       }
     },
     "integration": {

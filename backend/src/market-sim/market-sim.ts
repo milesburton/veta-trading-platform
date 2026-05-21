@@ -22,6 +22,7 @@ import type {
   OrderBookLevel,
   OrderBookSnapshot,
 } from "@veta/market-client";
+import { buildTickDiff, createTickDiffState, isEmptyDiff } from "./tickDiff.ts";
 
 const PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -262,6 +263,8 @@ function deriveSessionPhase(minute: number): SessionPhase {
 
 const clients = new Set<WebSocket>();
 
+let tickDiffState = createTickDiffState();
+
 setInterval(() => {
   tickCount++;
   if (tickCount % TICKS_PER_MINUTE === 0) {
@@ -297,16 +300,22 @@ setInterval(() => {
     }
   }
 
-  // Publish to Redpanda without venueBooks (too large for default message limits;
-  // algo services consume venue data via the direct WebSocket connection instead)
-  producer?.send("market.ticks", {
-    prices: tick.prices,
-    openPrices: tick.openPrices,
-    volumes: tick.volumes,
-    marketMinute: tick.marketMinute,
-    orderBook: tick.orderBook,
-    sessionPhase: tick.sessionPhase,
-  }).catch(() => {});
+  const { diff, nextState } = buildTickDiff(
+    {
+      prices: tick.prices,
+      openPrices: tick.openPrices,
+      volumes: tick.volumes,
+      marketMinute: tick.marketMinute,
+      orderBook: tick.orderBook,
+      sessionPhase: tick.sessionPhase,
+    },
+    tickDiffState,
+    Date.now(),
+  );
+  tickDiffState = nextState;
+  if (!isEmptyDiff(diff)) {
+    producer?.send("market.ticks", diff).catch(() => {});
+  }
 }, 250);
 
 logger.info(`Market Simulator running on ws://localhost:${PORT}`);
@@ -338,6 +347,7 @@ Deno.serve({ port: PORT }, (req) => {
       onReset: () => {
         marketMinute = 0;
         tickCount = 0;
+        tickDiffState = createTickDiffState();
       },
     });
   }
