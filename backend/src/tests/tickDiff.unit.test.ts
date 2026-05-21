@@ -145,7 +145,7 @@ const SYMBOL_COUNT = 287;
 const TICKS_PER_SECOND = 4;
 const SECONDS = 60;
 const ALERT_THRESHOLD_BYTES_PER_SEC = 512 * 1024;
-const MOVE_PROBABILITY = 0.10;
+const PER_TICK_STDEV_BPS = 5;
 
 function makeUniverse(count: number): Record<string, number> {
   const prices: Record<string, number> = {};
@@ -155,18 +155,20 @@ function makeUniverse(count: number): Record<string, number> {
   return prices;
 }
 
+function gaussian(rng: () => number): number {
+  const u1 = Math.max(rng(), 1e-9);
+  const u2 = rng();
+  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
 function jitterPrices(
   prices: Record<string, number>,
   rng: () => number,
 ): Record<string, number> {
   const next: Record<string, number> = {};
   for (const [sym, price] of Object.entries(prices)) {
-    if (rng() < MOVE_PROBABILITY) {
-      const delta = (rng() - 0.5) * 0.5;
-      next[sym] = parseFloat((price + delta).toFixed(4));
-    } else {
-      next[sym] = price;
-    }
+    const stepBps = gaussian(rng) * PER_TICK_STDEV_BPS;
+    next[sym] = parseFloat((price * (1 + stepBps / 10_000)).toFixed(4));
   }
   return next;
 }

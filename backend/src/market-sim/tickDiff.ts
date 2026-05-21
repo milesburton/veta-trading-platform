@@ -19,6 +19,7 @@ export interface TickPayload {
 
 export interface TickDiffState {
   lastPrices: Record<string, number>;
+  lastBookPrices: Record<string, number>;
   lastOpenPrices: Record<string, number>;
   lastMarketMinute: number | null;
   lastSessionPhase: SessionPhase | null;
@@ -28,11 +29,13 @@ export interface TickDiffState {
 export type TickDiff = Partial<TickPayload> & { full?: true };
 
 export const PRICE_EPSILON = 0.0001;
+export const BOOK_MATERIAL_BPS = 5;
 export const FULL_SNAPSHOT_INTERVAL_MS = 60_000;
 
 export function createTickDiffState(): TickDiffState {
   return {
     lastPrices: {},
+    lastBookPrices: {},
     lastOpenPrices: {},
     lastMarketMinute: null,
     lastSessionPhase: null,
@@ -50,6 +53,23 @@ function changedPriceSymbols(
     if (prev === undefined || Math.abs(price - prev) > PRICE_EPSILON) {
       changed.push(sym);
     }
+  }
+  return changed;
+}
+
+function bookWorthyMovedSymbols(
+  current: Record<string, number>,
+  lastBook: Record<string, number>,
+): string[] {
+  const changed: string[] = [];
+  for (const [sym, price] of Object.entries(current)) {
+    const prev = lastBook[sym];
+    if (prev === undefined) {
+      changed.push(sym);
+      continue;
+    }
+    const bps = Math.abs(price - prev) / prev * 10_000;
+    if (bps >= BOOK_MATERIAL_BPS) changed.push(sym);
   }
   return changed;
 }
@@ -87,6 +107,7 @@ export function buildTickDiff(
       },
       nextState: {
         lastPrices: { ...payload.prices },
+        lastBookPrices: { ...payload.prices },
         lastOpenPrices: { ...payload.openPrices },
         lastMarketMinute: payload.marketMinute,
         lastSessionPhase: payload.sessionPhase,
@@ -96,6 +117,10 @@ export function buildTickDiff(
   }
 
   const movedSymbols = changedPriceSymbols(payload.prices, state.lastPrices);
+  const bookSymbols = bookWorthyMovedSymbols(
+    payload.prices,
+    state.lastBookPrices,
+  );
   const openChangedSymbols = changedPriceSymbols(
     payload.openPrices,
     state.lastOpenPrices,
@@ -107,7 +132,9 @@ export function buildTickDiff(
   if (movedSymbols.length > 0) {
     diff.prices = pick(payload.prices, movedSymbols);
     diff.volumes = pick(payload.volumes, movedSymbols);
-    diff.orderBook = pick(payload.orderBook, movedSymbols);
+  }
+  if (bookSymbols.length > 0) {
+    diff.orderBook = pick(payload.orderBook, bookSymbols);
   }
   if (openChangedSymbols.length > 0) {
     diff.openPrices = pick(payload.openPrices, openChangedSymbols);
@@ -118,6 +145,9 @@ export function buildTickDiff(
   const nextLastPrices = movedSymbols.length > 0
     ? { ...state.lastPrices, ...diff.prices }
     : state.lastPrices;
+  const nextLastBookPrices = bookSymbols.length > 0
+    ? { ...state.lastBookPrices, ...pick(payload.prices, bookSymbols) }
+    : state.lastBookPrices;
   const nextLastOpenPrices = openChangedSymbols.length > 0
     ? { ...state.lastOpenPrices, ...diff.openPrices }
     : state.lastOpenPrices;
@@ -126,6 +156,7 @@ export function buildTickDiff(
     diff,
     nextState: {
       lastPrices: nextLastPrices,
+      lastBookPrices: nextLastBookPrices,
       lastOpenPrices: nextLastOpenPrices,
       lastMarketMinute: payload.marketMinute,
       lastSessionPhase: payload.sessionPhase,
