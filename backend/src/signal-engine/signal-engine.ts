@@ -1,3 +1,4 @@
+import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { FeatureVector, Signal } from "@veta/types/intelligence";

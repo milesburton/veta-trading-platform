@@ -1,3 +1,4 @@
+import "@veta/bootstrap";
 // FIX 4.4 Exchange — TCP listener on port 9880 (internal only)
 // Accepts FIX sessions from fix-gateway, processes NewOrderSingle messages,
 // and returns ExecutionReports using simulated fills from the market-sim.

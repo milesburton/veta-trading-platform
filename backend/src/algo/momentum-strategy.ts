@@ -1,3 +1,4 @@
+import "@veta/bootstrap";
 /**
  * MOMENTUM order algorithm
  *

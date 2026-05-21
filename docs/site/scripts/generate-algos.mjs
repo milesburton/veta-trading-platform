@@ -13,7 +13,7 @@ const outputPath = path.resolve(
 );
 
 function parseLeadJsdoc(src) {
-  const m = src.match(/^\s*\/\*\*\s*([\s\S]*?)\s*\*\//);
+  const m = src.match(/\/\*\*\s*([\s\S]*?)\s*\*\//);
   if (!m) return { title: "", summary: "" };
   const lines = m[1]
     .split("\n")

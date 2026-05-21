@@ -1,3 +1,4 @@
+import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { replayPool } from "@veta/db";
 import { corsOptions, json } from "@veta/http";

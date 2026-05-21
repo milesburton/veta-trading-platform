@@ -1,3 +1,4 @@
+import "@veta/bootstrap";
 /**
  * Product Service — Structured product builder
  *
