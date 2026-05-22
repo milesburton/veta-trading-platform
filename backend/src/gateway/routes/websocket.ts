@@ -2,6 +2,7 @@ import { getCookieToken } from "@veta/auth";
 import { logger } from "@veta/logger";
 import { clientIp, RateLimiter } from "@veta/rate-limit";
 import { AbuseTracker } from "../abuseTracker.ts";
+import { classifyRequestSource } from "../requestSource.ts";
 import {
   addAnonymousSocket,
   addUserSocket,
@@ -40,6 +41,9 @@ export async function handleWebSocketRoute(
   // after the socket is upgraded but we need it later for the per-IP
   // guest order-submit rate limit.
   const remoteIp = clientIp(req);
+  // Same — capture once at upgrade so we can tag every access event the
+  // socket emits later (UA isn't visible post-upgrade either).
+  const source = classifyRequestSource(req.headers.get("user-agent"));
   // Authenticate before upgrading — WebSocket clients can't receive HTTP 401
   // after upgrade. Anonymous connections are allowed for read-only market data.
   const initialAuthPromise: Promise<AuthResult | null> = token
@@ -57,6 +61,7 @@ export async function handleWebSocketRoute(
       action: "ws_blocked",
       userId: pendingUserId ?? undefined,
       reason: upgradeDecision.reason,
+      source,
     });
     const retryAfterSec = Math.max(1, Math.ceil((upgradeDecision.until - Date.now()) / 1000));
     return new Response(
@@ -112,6 +117,7 @@ export async function handleWebSocketRoute(
         action: "ws_rate_limited",
         userId: socketUserId ?? undefined,
         reason: `retryAfterMs=${limit.retryAfterMs}`,
+        source,
       });
       socket.send(JSON.stringify({
         event: "rateLimited",
@@ -253,6 +259,7 @@ export async function handleWebSocketRoute(
           ctx.publishAccessEvent({
             action: "auth_failure",
             reason: "killOrders — unauthenticated",
+            source,
           });
           socket.send(JSON.stringify({
             event: "error",
@@ -265,6 +272,7 @@ export async function handleWebSocketRoute(
             action: "auth_failure",
             reason: `killOrders — role ${currentAuth.user.role} not permitted`,
             userId: currentAuth.user.id,
+            source,
           });
           socket.send(JSON.stringify({
             event: "error",
@@ -302,6 +310,7 @@ export async function handleWebSocketRoute(
           ctx.publishAccessEvent({
             action: "auth_failure",
             reason: "resumeOrders — unauthenticated",
+            source,
           });
           socket.send(JSON.stringify({
             event: "error",
@@ -314,6 +323,7 @@ export async function handleWebSocketRoute(
             action: "auth_failure",
             reason: `resumeOrders — role ${currentAuth.user.role} not permitted`,
             userId: currentAuth.user.id,
+            source,
           });
           socket.send(JSON.stringify({
             event: "error",
