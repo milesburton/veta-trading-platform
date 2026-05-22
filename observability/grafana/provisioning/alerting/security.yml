@@ -117,3 +117,111 @@ groups:
         labels:
           severity: medium
         isPaused: false
+
+      - uid: ws-abuse-disconnect
+        title: WebSocket force-closed for abuse
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki
+            model:
+              datasource:
+                type: loki
+                uid: loki
+              expr: 'sum(count_over_time({service_name="gateway"} |= "ws_disconnected_abuse" [5m]))'
+              intervalMs: 1000
+              maxDataPoints: 43200
+              queryType: instant
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [3]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'More than 3 ws_disconnected_abuse events in 5 minutes. The gateway escalated past rate-limiting to force-closing sockets. Check the userId in the log lines — if one user is repeatedly hitting this, consider revoking their session.'
+          summary: WebSocket sockets force-closed for abuse
+        labels:
+          severity: high
+        isPaused: false
+
+      - uid: ws-user-backoff
+        title: User blocked from new WebSocket connections
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: loki
+            model:
+              datasource:
+                type: loki
+                uid: loki
+              expr: 'sum(count_over_time({service_name="gateway"} |= "ws_blocked" [10m]))'
+              intervalMs: 1000
+              maxDataPoints: 43200
+              queryType: instant
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          description: 'A user-level WebSocket backoff is active. The gateway accumulated enough force-closes for one userId in 5 minutes to refuse new upgrades. Find the userId in the ws_blocked log line; the backoff auto-clears after 5 minutes but if it recurs, treat as a real abuse case.'
+          summary: WebSocket user-level backoff engaged
+        labels:
+          severity: high
+        isPaused: false

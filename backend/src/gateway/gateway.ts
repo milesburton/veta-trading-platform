@@ -706,7 +706,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     );
   }
 
-  const wsResponse = handleWebSocketRoute(req, path, gatewayContext, { validateToken });
+  const wsResponse = await handleWebSocketRoute(req, path, gatewayContext, { validateToken });
   if (wsResponse) return wsResponse;
 
   const proxiedResponse = await handleProxiedRoutes(req, path, gatewayContext);

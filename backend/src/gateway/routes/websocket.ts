@@ -1,6 +1,7 @@
 import { getCookieToken } from "@veta/auth";
 import { logger } from "@veta/logger";
 import { clientIp, RateLimiter } from "@veta/rate-limit";
+import { AbuseTracker } from "../abuseTracker.ts";
 import {
   addAnonymousSocket,
   addUserSocket,
@@ -13,18 +14,22 @@ import type { AuthResult, GatewayContext } from "../context.ts";
 const WS_FRAME_CAPACITY = Number(Deno.env.get("WS_FRAME_CAPACITY")) || 100;
 const WS_FRAME_REFILL_PER_SECOND = Number(Deno.env.get("WS_FRAME_REFILL_PER_SECOND")) || 10;
 
+// One AbuseTracker per gateway process. Persists across socket lifetimes so
+// that user-level backoff outlives any single connection.
+const abuseTracker = new AbuseTracker();
+
 export interface WebSocketRouteDeps {
   validateToken: (token: string) => Promise<AuthResult | null>;
 }
 
 const TRADER_ROLES_FOR_MGMT = ["trader", "desk-head", "risk-manager", "admin"];
 
-export function handleWebSocketRoute(
+export async function handleWebSocketRoute(
   req: Request,
   path: string,
   ctx: GatewayContext,
   deps: WebSocketRouteDeps,
-): Response | null {
+): Promise<Response | null> {
   if (path !== "/ws" && path !== "/ws/gateway") return null;
   if (req.headers.get("upgrade") !== "websocket") {
     return new Response("Expected WebSocket upgrade", { status: 426 });
@@ -41,18 +46,39 @@ export function handleWebSocketRoute(
     ? deps.validateToken(token)
     : Promise.resolve(null);
 
+  // Resolve auth eagerly here so the upgrade-time abuse check knows which user
+  // it's deciding for. If the upgrade is allowed we re-use `pendingAuth` below
+  // instead of re-validating the token.
+  const pendingAuth = await initialAuthPromise;
+  const pendingUserId = pendingAuth?.user.id ?? null;
+  const upgradeDecision = abuseTracker.upgradeDecision(pendingUserId);
+  if (upgradeDecision.kind === "blockUser") {
+    ctx.publishAccessEvent({
+      action: "ws_blocked",
+      userId: pendingUserId ?? undefined,
+      reason: upgradeDecision.reason,
+    });
+    const retryAfterSec = Math.max(1, Math.ceil((upgradeDecision.until - Date.now()) / 1000));
+    return new Response(
+      JSON.stringify({
+        error: "user_backoff",
+        retryAfterSeconds: retryAfterSec,
+        message: upgradeDecision.reason,
+      }),
+      {
+        status: 429,
+        headers: { "Content-Type": "application/json", "Retry-After": String(retryAfterSec) },
+      },
+    );
+  }
+
   const { socket, response } = Deno.upgradeWebSocket(req);
-  let auth: AuthResult | null = null;
-  let socketUserId: string | null = null;
+  let auth: AuthResult | null = pendingAuth;
+  let socketUserId: string | null = pendingUserId;
 
   const frameLimiter = new RateLimiter({
     capacity: WS_FRAME_CAPACITY,
     refillPerSecond: WS_FRAME_REFILL_PER_SECOND,
-  });
-
-  initialAuthPromise.then((result) => {
-    auth = result;
-    socketUserId = result?.user.id ?? null;
   });
 
   socket.onopen = () => {
@@ -91,6 +117,23 @@ export function handleWebSocketRoute(
         event: "rateLimited",
         data: { retryAfterMs: limit.retryAfterMs },
       }));
+      const decision = abuseTracker.recordRateLimited(socket, socketUserId);
+      if (decision.kind !== "ok") {
+        ctx.publishAccessEvent({
+          action: "ws_disconnected_abuse",
+          userId: socketUserId ?? undefined,
+          reason: decision.reason,
+        });
+        try {
+          socket.send(JSON.stringify({
+            event: "disconnectedAbuse",
+            data: { reason: decision.reason },
+          }));
+        } catch {
+          // socket may already be tearing down — ignore
+        }
+        socket.close(1008, "abuse — too many rate-limited frames");
+      }
       return;
     }
     try {
@@ -371,6 +414,7 @@ export function handleWebSocketRoute(
 
   socket.onclose = () => {
     removeSocket(socketUserId, socket);
+    abuseTracker.forgetSocket(socket);
     logger.info(
       `Client disconnected user=${socketUserId ?? "anonymous"} (total=${totalConnections()})`,
     );
