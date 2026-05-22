@@ -28,6 +28,7 @@ import type { IJsonModel, TabNode } from "flexlayout-react";
 import { Actions, Model } from "flexlayout-react";
 import { useEffect, useRef } from "react";
 import { ALERTS_DRAWER_ID, AlertDrawer } from "./AlertDrawer.tsx";
+import { BugReportModal } from "./BugReportModal.tsx";
 import { BuildInfo } from "./BuildInfo.tsx";
 import { ComponentPicker } from "./ComponentPicker.tsx";
 import { useDashboard } from "./dashboard/DashboardContext.tsx";
@@ -459,6 +460,7 @@ export function AppHeader() {
   const orderTicketWindowSize = useAppSelector(selectOrderTicketWindowSize);
   const services = useAllServiceHealth();
   const time = useSignal(formatUtcTime(new Date()));
+  const bugReportOpen = useSignal(false);
   const dispatch = useAppDispatch();
   const [logout] = useLogoutMutation();
 
@@ -585,6 +587,42 @@ export function AppHeader() {
             </svg>
             <span className="sr-only">Join the VETA Discord</span>
           </a>
+          {user && (
+            <button
+              type="button"
+              onClick={() => {
+                bugReportOpen.value = true;
+              }}
+              data-testid="bug-report-trigger"
+              title="Report a bug"
+              className="text-label hover:text-secondary transition-colors"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M8 2l1.88 1.88" />
+                <path d="M14.12 3.88L16 2" />
+                <path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1" />
+                <path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6Z" />
+                <path d="M12 20v-9" />
+                <path d="M6 13H2" />
+                <path d="M22 13h-4" />
+                <path d="M6 17l-3.5 3" />
+                <path d="M18 17l3.5 3" />
+                <path d="M6 9l-3.5-3" />
+                <path d="M18 9l3.5-3" />
+              </svg>
+              <span className="sr-only">Report a bug</span>
+            </button>
+          )}
           <a
             href="https://milesburton.github.io/veta-trading-platform/"
             target="_blank"
@@ -678,6 +716,12 @@ export function AppHeader() {
       </div>
       <DataDepthDrawer />
       <LogsDrawer />
+      <BugReportModal
+        open={bugReportOpen.value}
+        onClose={() => {
+          bugReportOpen.value = false;
+        }}
+      />
     </div>
   );
 }

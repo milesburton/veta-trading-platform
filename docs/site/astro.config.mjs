@@ -125,6 +125,7 @@ export default defineConfig({
                 { label: "Log collection and search", slug: "platform/observability/logs" },
                 { label: "Distributed tracing", slug: "platform/observability/tracing" },
                 { label: "Alert routing", slug: "platform/observability/alerts" },
+                { label: "User bug reports", slug: "platform/observability/bug-reports" },
                 { label: "Session replay", slug: "platform/observability/replay" },
               ],
             },
