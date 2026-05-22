@@ -14,6 +14,7 @@ import {
 import { proxyGet, proxyPost, proxyPut } from "./proxy.ts";
 import { LoadAgent } from "./loadAgent.ts";
 import { createRefPriceCache } from "./refPrices.ts";
+import { classifyRequestSource } from "./requestSource.ts";
 import {
   type AuthenticatedUser,
   type GatewayContext,
@@ -164,9 +165,10 @@ function originIsAllowed(req: Request): boolean {
 
 async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; limits: UserLimits } | Response> {
   const url = new URL(req.url);
+  const source = classifyRequestSource(req.headers.get("user-agent"));
   const token = getCookieToken(req);
   if (!token) {
-    publishAccessEvent({ action: "auth_failure", path: url.pathname, reason: "no session cookie" });
+    publishAccessEvent({ action: "auth_failure", path: url.pathname, reason: "no session cookie", source });
     return new Response(JSON.stringify({ error: "unauthenticated" }), {
       status: 401,
       headers: { "Content-Type": "application/json", ...corsHeaders(req) },
@@ -179,6 +181,7 @@ async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; lim
       action: "auth_failure",
       path: url.pathname,
       reason: `csrf — origin=${req.headers.get("origin") ?? "none"} method=${req.method}`,
+      source,
     });
     return new Response(JSON.stringify({ error: "forbidden" }), {
       status: 403,
@@ -187,7 +190,7 @@ async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; lim
   }
   const auth = await validateToken(token);
   if (!auth) {
-    publishAccessEvent({ action: "auth_failure", path: url.pathname, reason: "invalid or expired token" });
+    publishAccessEvent({ action: "auth_failure", path: url.pathname, reason: "invalid or expired token", source });
     return new Response(JSON.stringify({ error: "unauthenticated" }), {
       status: 401,
       headers: { "Content-Type": "application/json", ...corsHeaders(req) },
@@ -197,7 +200,7 @@ async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; lim
     const userResult = userLimiter.consume(`user:${auth.user.id}`);
     if (!userResult.allowed) return rateLimitResponse(userResult.retryAfterMs);
   }
-  publishAccessEvent({ action: "http_request", userId: auth.user.id, userRole: auth.user.role, path: url.pathname });
+  publishAccessEvent({ action: "http_request", userId: auth.user.id, userRole: auth.user.role, path: url.pathname, source });
   return auth;
 }
 
@@ -220,6 +223,7 @@ function publishAccessEvent(event: {
   orderId?: string;
   scope?: string;
   scopeValue?: string;
+  source?: "loadgen";
 }) {
   const enriched = { ...event, ts: Date.now() };
   producer?.send("user.access", enriched).catch(() => {});

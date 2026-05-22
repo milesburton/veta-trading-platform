@@ -12,7 +12,10 @@ groups:
         # Loki query: counts auth_failure events from the gateway over the
         # last 5 minutes. Both the WARN logger.info(access_event)
         # serialisation and the underlying access-log lines should match
-        # `auth_failure` in body.
+        # `auth_failure` in body. Excludes events tagged with
+        # `"source":"loadgen"` — loadgen tooling (k6) is identified by its
+        # User-Agent at access-event time and noise from automated traffic
+        # would otherwise drown real signal during a load run.
         data:
           - refId: A
             relativeTimeRange:
@@ -23,7 +26,7 @@ groups:
               datasource:
                 type: loki
                 uid: loki
-              expr: 'sum(count_over_time({service_name="gateway"} |= "auth_failure" [5m]))'
+              expr: 'sum(count_over_time({service_name="gateway"} |= "auth_failure" != "\"source\":\"loadgen\"" [5m]))'
               intervalMs: 1000
               maxDataPoints: 43200
               queryType: instant
@@ -77,7 +80,7 @@ groups:
               datasource:
                 type: loki
                 uid: loki
-              expr: 'sum(count_over_time({service_name="gateway"} |= "ws_rate_limited" [5m]))'
+              expr: 'sum(count_over_time({service_name="gateway"} |= "ws_rate_limited" != "\"source\":\"loadgen\"" [5m]))'
               intervalMs: 1000
               maxDataPoints: 43200
               queryType: instant

@@ -43,6 +43,7 @@ export interface AccessEvent {
   orderId?: string;
   scope?: string;
   scopeValue?: string;
+  source?: "loadgen";
 }
 
 export interface ServiceUrls {
