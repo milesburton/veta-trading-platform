@@ -147,8 +147,8 @@ tests:
                 disk_used_percent is 94%. Docker exec, healthchecks,
                 and Traefik label reads start failing around 95%. Truncate the
                 largest container log immediately — find its log path with
-                `docker inspect --format LogPath`, then `sudo truncate -s 0`
-                the resulting file.
+                `docker inspect <container> | jq -r '.[0].LogPath'`, then
+                `sudo truncate -s 0` the resulting file.
 
   - name: DiskMonitorDown fires when the scrape target is down for 5m
     interval: 1m
