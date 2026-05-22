@@ -8,7 +8,9 @@ VETA Trading Platform is under active development. Security fixes are provided f
 
 Please do not report security vulnerabilities through public GitHub issues.
 
-If you believe you have found a vulnerability, use GitHub's private vulnerability reporting feature from the repository Security tab. If that is unavailable, open a public issue that asks for a preferred private security contact, but do not include exploit details, credentials, logs, tokens, or reproduction steps.
+If you believe you have found a vulnerability, use GitHub's private vulnerability reporting feature from the repository Security tab.
+
+If private vulnerability reporting is unavailable, open a public issue only to request a preferred private security contact. Do not include exploit details, credentials, logs, tokens, or reproduction steps.
 
 Useful reports include:
 
