@@ -111,7 +111,11 @@ async function fetchPrices(): Promise<void> {
 }
 
 function trackOrderCounts() {
-  createConsumer(`risk-engine-orders-${Date.now()}`, [
+  // Stable group id (not timestamped) so each restart rejoins the same
+  // Kafka group instead of orphaning the previous one. Orphan groups never
+  // commit their offset again, so Redpanda's reported "lag" against them
+  // grows unboundedly and trips the RedpandaConsumerLagSustained alert.
+  createConsumer("risk-engine-orders", [
     "orders.submitted",
     "orders.routed",
     "orders.filled",
@@ -328,7 +332,8 @@ function evaluateBreakers(): void {
 }
 
 function consumeMarketTicks(): void {
-  createConsumer(`risk-engine-ticks-${Date.now()}`, ["market.ticks"])
+  // Stable group id (not timestamped) — see trackOrderCounts() above.
+  createConsumer("risk-engine-ticks", ["market.ticks"])
     .then((consumer) => {
       consumer.onMessage((_topic, raw) => {
         const tick = raw as {

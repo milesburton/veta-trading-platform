@@ -279,6 +279,15 @@ let journalRowCount = 0;
     }
   }
 }
+// Fresh-DB case uses a timestamped group so we start consuming from
+// the broker's earliest retained offset (Kafka semantics: a new group
+// with auto.offset.reset=earliest starts at the head of every partition;
+// a resumed group starts at last commit). Once the table has rows, we
+// flip to the stable "journal-group" / "journal-market" names so
+// restarts don't orphan groups on every boot and trip the
+// RedpandaConsumerLagSustained alert. The fresh case is rare — only
+// happens on a Postgres volume wipe — so a single orphan-per-reset is
+// acceptable noise.
 const journalGroupId = journalRowCount === 0
   ? `journal-fresh-${Date.now().toString(36)}`
   : "journal-group";
