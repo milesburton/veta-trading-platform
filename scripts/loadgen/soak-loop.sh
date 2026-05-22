@@ -10,8 +10,28 @@ BASE_URL="${BASE_URL:-http://gateway:5011}"
 SOAK_SCRIPT="${SOAK_SCRIPT:-/scripts/soak.js}"
 SOAK_DURATION="${SOAK_DURATION:-50m}"
 SOAK_VUS="${SOAK_VUS:-50}"
+LOADGEN_ANNOUNCE_TOKEN="${LOADGEN_ANNOUNCE_TOKEN:-}"
+RUNNER_NAME="${LOADGEN_RUNNER_NAME:-soak}"
 
 log() { echo "[soak] $(date -u +%H:%M:%S) $*"; }
+
+announce() {
+  event="$1"
+  note="${2:-}"
+  if [ -z "$LOADGEN_ANNOUNCE_TOKEN" ]; then return 0; fi
+  body=$(printf '{"event":"%s","runner":"%s","note":"%s"}' "$event" "$RUNNER_NAME" "$note")
+  # k6 image ships busybox wget, not curl. -q silences output, -O- discards
+  # the response body, --post-data is the busybox POST form.
+  wget -q -O- --timeout=5 \
+    --header="Content-Type: application/json" \
+    --header="X-Loadgen-Token: $LOADGEN_ANNOUNCE_TOKEN" \
+    --post-data="$body" \
+    "$BASE_URL/loadgen-announce" >/dev/null 2>&1 || \
+    log "loadgen-announce failed (continuing)"
+}
+
+# Fire stop announcement on SIGTERM (compose down) or SIGINT (Ctrl+C).
+trap 'announce stop "container stopping"; exit 0' TERM INT
 
 wait_for_token() {
   i=0
@@ -27,6 +47,8 @@ wait_for_token() {
 }
 
 wait_for_token
+
+announce start "vus=$SOAK_VUS, duration=$SOAK_DURATION"
 
 while true; do
   TOKEN=$(cat "$TOKEN_FILE")

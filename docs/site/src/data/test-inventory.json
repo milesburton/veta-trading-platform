@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 50,
-      "cases": 615,
+      "files": 51,
+      "cases": 629,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -53,7 +53,8 @@
         "compose-mem-limits.unit.test.ts": 1,
         "process-metrics.unit.test.ts": 4,
         "compose-restart-policies.unit.test.ts": 1,
-        "abuse-tracker.unit.test.ts": 10
+        "abuse-tracker.unit.test.ts": 10,
+        "loadgen-announce.unit.test.ts": 14
       }
     },
     "integration": {

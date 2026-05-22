@@ -25,6 +25,7 @@ import { handleAlertsRoute } from "./routes/alerts.ts";
 import { handleAnalyticsRoute } from "./routes/analytics.ts";
 import { handleLogsRoute, recordLogLine } from "./routes/logs.ts";
 import { handleBugReportRoute } from "./routes/bug-report.ts";
+import { handleLoadgenAnnounceRoute } from "./routes/loadgen-announce.ts";
 import { sendDailySummary } from "./discord-notifier.ts";
 import { startDailySummary } from "./daily-summary.ts";
 import { platformStats } from "./platform-stats.ts";
@@ -729,6 +730,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   const bugReportResponse = await handleBugReportRoute(req, path, gatewayContext);
   if (bugReportResponse) return bugReportResponse;
+
+  const loadgenAnnounceResponse = await handleLoadgenAnnounceRoute(req, path, gatewayContext);
+  if (loadgenAnnounceResponse) return loadgenAnnounceResponse;
 
   const scenariosResponse = await handleScenariosRoute(req, path, gatewayContext);
   if (scenariosResponse) return scenariosResponse;

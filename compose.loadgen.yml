@@ -64,6 +64,13 @@ services:
       SOAK_DURATION: "${LOADGEN_SOAK_DURATION:-50m}"
       K6_PROMETHEUS_RW_SERVER_URL: http://host.docker.internal:9090/api/v1/write
       K6_PROMETHEUS_RW_TREND_STATS: "p(50),p(90),p(95),p(99),min,max"
+      # Optional. When set, the loop posts start/stop notifications to
+      # /loadgen-announce so the Discord alerts channel knows to disregard
+      # bus + WS rate alerts while loadgen is active. The same token must
+      # be set on the gateway as LOADGEN_ANNOUNCE_TOKEN. Leave unset to
+      # disable.
+      LOADGEN_ANNOUNCE_TOKEN: "${LOADGEN_ANNOUNCE_TOKEN:-}"
+      LOADGEN_RUNNER_NAME: "soak"
     entrypoint: ["/bin/sh", "/loop.sh"]
     cap_drop:
       - ALL
@@ -97,6 +104,8 @@ services:
       SLEEP_BETWEEN: "${LOADGEN_MATRIX_SLEEP:-30}"
       K6_PROMETHEUS_RW_SERVER_URL: http://host.docker.internal:9090/api/v1/write
       K6_PROMETHEUS_RW_TREND_STATS: "p(50),p(90),p(95),p(99),min,max"
+      LOADGEN_ANNOUNCE_TOKEN: "${LOADGEN_ANNOUNCE_TOKEN:-}"
+      LOADGEN_RUNNER_NAME: "matrix"
     entrypoint: ["/bin/sh", "/loop.sh"]
     cap_drop:
       - ALL
