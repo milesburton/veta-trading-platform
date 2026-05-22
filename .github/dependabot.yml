@@ -1,4 +1,19 @@
 version: 2
+
+# This repo is Deno (backend) + Vite/Astro frontend. The frontend has a real
+# package.json, so npm is the only ecosystem worth running Dependabot for.
+# The other ecosystems (pip, gradle, maven, composer, bundler, pub, cargo,
+# nuget) were inherited template defaults — they had no manifests to scan, but
+# the nuget entry was still triggering GitHub's auto-dependency-submission
+# job (`submit-nuget`) which then failed on every PR with "No .NET project
+# files found in repository". Removing the unused ecosystems silences the
+# noise and matches what's actually in the repo.
+#
+# Auto-merge for Dependabot PRs is handled by .github/workflows/trusted-automerge.yml
+# which fires `gh pr merge --auto` on every non-draft PR. The `auto-merge`
+# block previously present here was not a valid Dependabot option and was
+# being silently ignored.
+
 updates:
   - package-ecosystem: "npm"
     directory: "/"
@@ -6,71 +21,5 @@ updates:
       interval: "daily"
     pull-request-branch-name:
       separator: "/"
-    auto-merge:
-      auto: true
-    allow:
-      - dependency-type: "all"
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    auto-merge:
-      auto: true
-    allow:
-      - dependency-type: "all"
-  - package-ecosystem: "gradle"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    auto-merge:
-      auto: true
-    allow:
-      - dependency-type: "all"
-  - package-ecosystem: "maven"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    auto-merge:
-      auto: true
-    allow:
-      - dependency-type: "all"
-  - package-ecosystem: "composer"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    auto-merge:
-      auto: true
-    allow:
-      - dependency-type: "all"
-  - package-ecosystem: "bundler"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    auto-merge:
-      auto: true
-    allow:
-      - dependency-type: "all"
-  - package-ecosystem: "pub"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    auto-merge:
-      auto: true
-    allow:
-      - dependency-type: "all"
-  - package-ecosystem: "cargo"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    auto-merge:
-      auto: true
-    allow:
-      - dependency-type: "all"
-  - package-ecosystem: "nuget"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    auto-merge:
-      auto: true
     allow:
       - dependency-type: "all"
