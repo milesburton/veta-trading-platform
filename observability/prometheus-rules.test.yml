@@ -1,0 +1,259 @@
+rule_files:
+  - prometheus-rules.yml
+
+evaluation_interval: 1m
+
+tests:
+  - name: RedpandaTopicWriteRateHigh fires when a non-market topic sustains >512 KiB/s
+    interval: 1m
+    input_series:
+      - series: 'redpanda_kafka_request_bytes_total{redpanda_request="produce",redpanda_topic="orders.new"}'
+        values: '0+36864000x60'
+    alert_rule_test:
+      - eval_time: 50m
+        alertname: RedpandaTopicWriteRateHigh
+        exp_alerts:
+          - exp_labels:
+              alertname: RedpandaTopicWriteRateHigh
+              redpanda_topic: orders.new
+              severity: warning
+            exp_annotations:
+              summary: "orders.new producing >512 KiB/s for 30m"
+              description: |
+                Topic orders.new is taking writes at >512 KiB/s
+                sustained — that's ~1.5 GiB/hour, ~36 GiB/day. At the cluster
+                default retention.bytes=1 GiB and log_retention_ms=24h the
+                partition will hit the byte cap and start tombstoning, but
+                this rate also signals upstream spam. Past incident
+                (2026-05-19): loadgen produced 322k duplicate AAPL orders/hr
+                that all rejected to orders.rejected. Check producer
+                identity and message content before assuming it's organic.
+                The market.* topics are excluded — they're high-frequency
+                by design (market-sim produces ~700 KiB/s of ticks at steady
+                state).
+
+  - name: RedpandaTopicWriteRateHigh does NOT fire for market.ticks
+    interval: 1m
+    input_series:
+      - series: 'redpanda_kafka_request_bytes_total{redpanda_request="produce",redpanda_topic="market.ticks"}'
+        values: '0+61440000x45'
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: RedpandaTopicWriteRateHigh
+        exp_alerts: []
+
+  - name: RedpandaTopicWriteRateHigh does NOT fire for market.features or market.signals
+    interval: 1m
+    input_series:
+      - series: 'redpanda_kafka_request_bytes_total{redpanda_request="produce",redpanda_topic="market.features"}'
+        values: '0+61440000x45'
+      - series: 'redpanda_kafka_request_bytes_total{redpanda_request="produce",redpanda_topic="market.signals"}'
+        values: '0+61440000x45'
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: RedpandaTopicWriteRateHigh
+        exp_alerts: []
+
+  - name: RedpandaTopicWriteRateHigh stays quiet below the threshold
+    interval: 1m
+    input_series:
+      - series: 'redpanda_kafka_request_bytes_total{redpanda_request="produce",redpanda_topic="orders.new"}'
+        values: '0+12288000x45'
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: RedpandaTopicWriteRateHigh
+        exp_alerts: []
+
+  - name: RedpandaTopicWriteRateCritical fires when a non-market topic sustains >2 MiB/s
+    interval: 1m
+    input_series:
+      - series: 'redpanda_kafka_request_bytes_total{redpanda_request="produce",redpanda_topic="orders.new"}'
+        values: '0+188743680x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: RedpandaTopicWriteRateCritical
+        exp_alerts:
+          - exp_labels:
+              alertname: RedpandaTopicWriteRateCritical
+              redpanda_topic: orders.new
+              severity: critical
+            exp_annotations:
+              summary: "orders.new producing >2 MiB/s for 10m — disk-fill imminent"
+              description: |
+                Topic orders.new is taking writes at >2 MiB/s.
+                That's ~7 GiB/hour. Per-partition retention.bytes will
+                tombstone, but multiple hot topics together can still
+                outpace deletion. Confirm the producer is intentional and
+                consider stopping the offending service.
+
+  - name: RedpandaTopicWriteRateCritical does NOT fire for market.ticks at 5 MiB/s
+    interval: 1m
+    input_series:
+      - series: 'redpanda_kafka_request_bytes_total{redpanda_request="produce",redpanda_topic="market.ticks"}'
+        values: '0+314572800x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: RedpandaTopicWriteRateCritical
+        exp_alerts: []
+
+  - name: DiskUsageHigh fires above 80% sustained for 5m
+    interval: 1m
+    input_series:
+      - series: 'disk_used_percent'
+        values: '85x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: DiskUsageHigh
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: DiskUsageHigh
+        exp_alerts:
+          - exp_labels:
+              alertname: DiskUsageHigh
+              severity: warning
+            exp_annotations:
+              summary: Host disk above 80% for 5m
+              description: |
+                disk_used_percent is 85%. Past incident: kafka-relay
+                log spam filled the disk at 100% and took out the site. Investigate
+                container log file sizes:
+                  sudo du -sh /var/lib/docker/containers/*/*.log | sort -h | tail -5
+
+  - name: DiskUsageHigh stays quiet at 79%
+    interval: 1m
+    input_series:
+      - series: 'disk_used_percent'
+        values: '79x10'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: DiskUsageHigh
+        exp_alerts: []
+
+  - name: DiskUsageCritical fires above 92% sustained for 1m
+    interval: 1m
+    input_series:
+      - series: 'disk_used_percent'
+        values: '94x5'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: DiskUsageCritical
+        exp_alerts:
+          - exp_labels:
+              alertname: DiskUsageCritical
+              severity: critical
+            exp_annotations:
+              summary: "Host disk above 92% — imminent outage"
+              description: |
+                disk_used_percent is 94%. Docker exec, healthchecks,
+                and Traefik label reads start failing around 95%. Truncate the
+                largest container log immediately — find its log path with
+                `docker inspect <container> | jq -r '.[0].LogPath'`, then
+                `sudo truncate -s 0` the resulting file.
+
+  - name: DiskMonitorDown fires when the scrape target is down for 5m
+    interval: 1m
+    input_series:
+      - series: 'up{job="disk-monitor"}'
+        values: '0x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: DiskMonitorDown
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: DiskMonitorDown
+        exp_alerts:
+          - exp_labels:
+              alertname: DiskMonitorDown
+              job: disk-monitor
+              severity: warning
+            exp_annotations:
+              summary: disk-monitor scrape failing for 5m
+              description: |
+                Prometheus can't scrape disk-monitor:8099/metrics. Disk could
+                be filling without anyone seeing it. Check the container.
+
+  - name: RedpandaScrapeDown fires when the redpanda scrape target is down for 5m
+    interval: 1m
+    input_series:
+      - series: 'up{job="redpanda"}'
+        values: '0x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: RedpandaScrapeDown
+        exp_alerts:
+          - exp_labels:
+              alertname: RedpandaScrapeDown
+              job: redpanda
+              severity: warning
+            exp_annotations:
+              summary: Redpanda scrape failing for 5m
+              description: |
+                Prometheus can't scrape redpanda:9644/public_metrics. Topic
+                growth, consumer lag, and partition health are invisible
+                while this is down. Check the broker:
+                  docker exec redpanda rpk cluster health
+
+  - name: RedpandaUnavailablePartitions fires immediately when any partition lacks quorum
+    interval: 1m
+    input_series:
+      - series: 'redpanda_cluster_unavailable_partitions'
+        values: '2x5'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: RedpandaUnavailablePartitions
+        exp_alerts:
+          - exp_labels:
+              alertname: RedpandaUnavailablePartitions
+              severity: critical
+            exp_annotations:
+              summary: Redpanda has 2 partitions without quorum
+              description: |
+                redpanda_cluster_unavailable_partitions is 2.
+                Producers writing to these partitions block; consumers
+                can't read. Check broker health and storage. If the cluster
+                is in a stuck state-machine-apply loop (like 2026-05-20),
+                the only recovery is to stop+wipe the data volume.
+
+  - name: RedpandaConsumerLagSustained fires per-group when one group stalls
+    interval: 1m
+    input_series:
+      - series: 'redpanda_kafka_max_offset{redpanda_topic="orders.new",redpanda_partition="0"}'
+        values: '0+200000x20'
+      - series: 'redpanda_kafka_consumer_group_committed_offset{redpanda_group="group-a",redpanda_topic="orders.new",redpanda_partition="0"}'
+        values: '0+200000x20'
+      - series: 'redpanda_kafka_consumer_group_committed_offset{redpanda_group="group-b",redpanda_topic="orders.new",redpanda_partition="0"}'
+        values: '0x20'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: RedpandaConsumerLagSustained
+        exp_alerts:
+          - exp_labels:
+              alertname: RedpandaConsumerLagSustained
+              redpanda_group: group-b
+              redpanda_topic: orders.new
+              redpanda_partition: "0"
+              severity: warning
+            exp_annotations:
+              summary: "group-b on orders.new lagging >100k offsets for 15m"
+              description: |
+                Consumer group group-b on topic orders.new
+                partition 0 has >100k unconsumed
+                offsets sustained for 15m. The query keeps the
+                `redpanda_group` label so one healthy group on the same
+                topic won't mask another lagging group. If the topic is in
+                the order pipeline (orders.*, market.ticks) trading is
+                degraded; otherwise check the relevant service container.
+
+  - name: RedpandaConsumerLagSustained stays quiet when all groups are caught up
+    interval: 1m
+    input_series:
+      - series: 'redpanda_kafka_max_offset{redpanda_topic="orders.new",redpanda_partition="0"}'
+        values: '0+200000x20'
+      - series: 'redpanda_kafka_consumer_group_committed_offset{redpanda_group="group-a",redpanda_topic="orders.new",redpanda_partition="0"}'
+        values: '0+200000x20'
+      - series: 'redpanda_kafka_consumer_group_committed_offset{redpanda_group="group-b",redpanda_topic="orders.new",redpanda_partition="0"}'
+        values: '0+200000x20'
+    alert_rule_test:
+      - eval_time: 18m
+        alertname: RedpandaConsumerLagSustained
+        exp_alerts: []

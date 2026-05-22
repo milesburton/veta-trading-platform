@@ -21,6 +21,7 @@ jobs:
       docker: ${{ steps.filter.outputs.docker }}
       electron: ${{ steps.filter.outputs.electron }}
       fallow: ${{ steps.filter.outputs.fallow }}
+      prometheus_rules: ${{ steps.filter.outputs.prometheus_rules }}
     steps:
       - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v4
@@ -46,6 +47,10 @@ jobs:
             fallow:
               - 'frontend/**'
               - 'shared/**'
+              - '.github/workflows/ci.yml'
+            prometheus_rules:
+              - 'observability/prometheus-rules.yml'
+              - 'observability/prometheus-rules.test.yml'
               - '.github/workflows/ci.yml'
 
   lint-and-test:
@@ -329,6 +334,30 @@ jobs:
           name: fallow-audit-sarif
           path: fallow-audit.sarif
           retention-days: 14
+
+  prometheus-rules:
+    name: Prometheus alert rules
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.prometheus_rules == 'true'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install promtool
+        run: |
+          set -e
+          PROM_VERSION=3.1.0
+          curl -fsSL "https://github.com/prometheus/prometheus/releases/download/v${PROM_VERSION}/prometheus-${PROM_VERSION}.linux-amd64.tar.gz" \
+            | tar -xz --strip-components=1 -C /usr/local/bin "prometheus-${PROM_VERSION}.linux-amd64/promtool"
+          promtool --version
+
+      - name: Check rule syntax
+        run: promtool check rules observability/prometheus-rules.yml
+
+      - name: Run unit tests
+        run: promtool test rules observability/prometheus-rules.test.yml
 
   coverage-badges:
     name: Publish coverage badges

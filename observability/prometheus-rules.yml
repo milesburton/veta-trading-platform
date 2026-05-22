@@ -24,8 +24,9 @@ groups:
           description: |
             disk_used_percent is {{ $value }}%. Docker exec, healthchecks,
             and Traefik label reads start failing around 95%. Truncate the
-            largest container log immediately:
-              sudo truncate -s 0 $(docker inspect <container> --format '{{.LogPath}}')
+            largest container log immediately — find its log path with
+            `docker inspect <container> | jq -r '.[0].LogPath'`, then
+            `sudo truncate -s 0` the resulting file.
 
       - alert: DiskMonitorDown
         expr: up{job="disk-monitor"} == 0
@@ -172,22 +173,22 @@ groups:
         expr: |
           (
             redpanda_kafka_max_offset
-            - on(topic, partition) group_right(group)
+            - on(redpanda_topic, redpanda_partition) group_right
               redpanda_kafka_consumer_group_committed_offset
           ) > 100000
         for: 15m
         labels:
           severity: warning
         annotations:
-          summary: "{{ $labels.group }} on {{ $labels.topic }} lagging >100k offsets for 15m"
+          summary: "{{ $labels.redpanda_group }} on {{ $labels.redpanda_topic }} lagging >100k offsets for 15m"
           description: |
-            Consumer group {{ $labels.group }} on topic {{ $labels.topic }}
-            partition {{ $labels.partition }} has >100k unconsumed offsets
-            sustained for 15m. The query keeps the `group` label so one
-            healthy group on the same topic won't mask another lagging
-            group. If the topic is in the order pipeline (orders.*,
-            market.ticks) trading is degraded; otherwise check the
-            relevant service container is healthy.
+            Consumer group {{ $labels.redpanda_group }} on topic {{ $labels.redpanda_topic }}
+            partition {{ $labels.redpanda_partition }} has >100k unconsumed
+            offsets sustained for 15m. The query keeps the
+            `redpanda_group` label so one healthy group on the same
+            topic won't mask another lagging group. If the topic is in
+            the order pipeline (orders.*, market.ticks) trading is
+            degraded; otherwise check the relevant service container.
 
       - alert: RedpandaUnavailablePartitions
         expr: redpanda_cluster_unavailable_partitions > 0
