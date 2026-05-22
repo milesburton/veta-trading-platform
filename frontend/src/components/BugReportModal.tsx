@@ -27,13 +27,20 @@ export function BugReportModal({ open, onClose }: Props) {
   const [submitBugReport, { isLoading }] = useSubmitBugReportMutation();
 
   useEffect(() => {
-    if (open) {
-      submitted.value = false;
-      undelivered.value = false;
-      localError.value = null;
-      setTimeout(() => titleRef.current?.focus(), 30);
-    }
-  }, [open, submitted, undelivered, localError]);
+    if (!open) return;
+    submitted.value = false;
+    undelivered.value = false;
+    localError.value = null;
+    const focusTimer = setTimeout(() => titleRef.current?.focus(), 30);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      clearTimeout(focusTimer);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, onClose, submitted, undelivered, localError]);
 
   if (!open) return null;
 
@@ -54,7 +61,7 @@ export function BugReportModal({ open, onClose }: Props) {
       title: t,
       description: d,
       category: category.value,
-      url: typeof window !== "undefined" ? window.location.pathname + window.location.search : "",
+      url: typeof window !== "undefined" ? window.location.pathname : "",
     });
     if ("error" in result) {
       const e = result.error as { status?: number; data?: { error?: string } };

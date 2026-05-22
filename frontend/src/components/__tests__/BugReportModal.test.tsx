@@ -7,8 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockSubmit = vi.fn();
 
-vi.mock("../../store/gatewayApi", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../store/gatewayApi")>();
+vi.mock("@veta/frontend/store/gatewayApi", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@veta/frontend/store/gatewayApi")>();
   return {
     ...original,
     useSubmitBugReportMutation: () => [mockSubmit, { isLoading: false }],
@@ -131,5 +131,41 @@ describe("BugReportModal", () => {
     const { onClose } = renderModal();
     fireEvent.click(screen.getByTestId("bug-report-close"));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("closes on Escape key", () => {
+    const { onClose } = renderModal();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("submits only the pathname, never query strings", async () => {
+    mockSubmit.mockResolvedValueOnce({ data: { ok: true } });
+    const original = window.location.pathname;
+    Object.defineProperty(window, "location", {
+      value: { pathname: "/dashboard", search: "?token=should-not-leak" },
+      writable: true,
+    });
+    try {
+      renderModal();
+      fireEvent.change(screen.getByTestId("bug-report-title"), {
+        target: { value: "Real bug title" },
+      });
+      fireEvent.change(screen.getByTestId("bug-report-description"), {
+        target: { value: "Long-enough description of what happened." },
+      });
+      fireEvent.click(screen.getByTestId("bug-report-submit"));
+      await waitFor(() => {
+        expect(mockSubmit).toHaveBeenCalledTimes(1);
+      });
+      const arg = mockSubmit.mock.calls[0][0];
+      expect(arg.url).toBe("/dashboard");
+      expect(arg.url).not.toContain("token");
+    } finally {
+      Object.defineProperty(window, "location", {
+        value: { pathname: original, search: "" },
+        writable: true,
+      });
+    }
   });
 });
