@@ -9,8 +9,27 @@ TOKEN_FILE="${TOKEN_FILE:-/loadgen/token}"
 BASE_URL="${BASE_URL:-http://gateway:5011}"
 SCENARIOS="${SCENARIOS:-baseline-limit.js mixed-strategy.js burst-open.js risk-stress.js}"
 SLEEP_BETWEEN="${SLEEP_BETWEEN:-30}"
+LOADGEN_ANNOUNCE_TOKEN="${LOADGEN_ANNOUNCE_TOKEN:-}"
+RUNNER_NAME="${LOADGEN_RUNNER_NAME:-matrix}"
 
 log() { echo "[matrix] $(date -u +%H:%M:%S) $*"; }
+
+announce() {
+  event="$1"
+  note="${2:-}"
+  if [ -z "$LOADGEN_ANNOUNCE_TOKEN" ]; then return 0; fi
+  body=$(printf '{"event":"%s","runner":"%s","note":"%s"}' "$event" "$RUNNER_NAME" "$note")
+  # k6 image ships busybox wget, not curl. -q silences output, -O- discards
+  # the response body, --post-data is the busybox POST form.
+  wget -q -O- --timeout=5 \
+    --header="Content-Type: application/json" \
+    --header="X-Loadgen-Token: $LOADGEN_ANNOUNCE_TOKEN" \
+    --post-data="$body" \
+    "$BASE_URL/loadgen-announce" >/dev/null 2>&1 || \
+    log "loadgen-announce failed (continuing)"
+}
+
+trap 'announce stop "container stopping"; exit 0' TERM INT
 
 wait_for_token() {
   i=0
@@ -26,6 +45,8 @@ wait_for_token() {
 }
 
 wait_for_token
+
+announce start "scenarios=$SCENARIOS"
 
 while true; do
   for script in $SCENARIOS; do

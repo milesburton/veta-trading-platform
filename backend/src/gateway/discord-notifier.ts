@@ -178,3 +178,37 @@ export async function sendDailySummary(content: string): Promise<boolean> {
     content: body,
   });
 }
+
+export type LoadgenEvent = "start" | "stop";
+
+export interface LoadgenAnnouncement {
+  event: LoadgenEvent;
+  runner: string;
+  note?: string;
+}
+
+const LOADGEN_RUNNER_MAX = 40;
+const LOADGEN_NOTE_MAX = 200;
+
+function loadgenRunnerSafe(s: string): string {
+  return sanitise(s, LOADGEN_RUNNER_MAX);
+}
+
+export function buildLoadgenMessage(a: LoadgenAnnouncement): string {
+  const runner = loadgenRunnerSafe(a.runner);
+  const note = a.note ? ` — ${sanitise(a.note, LOADGEN_NOTE_MAX)}` : "";
+  if (a.event === "start") {
+    return `🧪 **Loadgen \`${runner}\` started**${note}\n_Expect bus + WS rate alerts to be noisy until it stops; disregard for now._`;
+  }
+  return `✅ **Loadgen \`${runner}\` stopped**${note}\n_Alerts from now on are real signal again._`;
+}
+
+export async function notifyDiscordLoadgen(a: LoadgenAnnouncement): Promise<boolean> {
+  const url = getAlertsWebhookUrl();
+  if (!url) return false;
+  return await postToDiscord({
+    url,
+    username: "VETA Loadgen",
+    content: buildLoadgenMessage(a),
+  });
+}
