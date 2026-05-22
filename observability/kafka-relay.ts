@@ -37,10 +37,21 @@ const HIGH_FREQ_TOPICS = [
 ];
 const HEARTBEAT_TOPICS = ["algo.heartbeat"];
 
-const instanceId = Date.now().toString(36);
-const ORDER_GROUP = `relay-ord-${instanceId}`;
-const HIGH_GROUP = `relay-high-${instanceId}`;
-const HB_GROUP = `relay-hb-${instanceId}`;
+// Stable group ids (not timestamped) so each kafka-relay restart rejoins
+// the same Kafka groups instead of orphaning the previous ones. Orphan
+// groups never commit their offset again, so Redpanda's reported "lag"
+// against them grows unboundedly and trips the
+// RedpandaConsumerLagSustained alert (one alert per orphaned
+// group × partition, fast).
+//
+// We currently run a single relay replica so the consumer groups don't
+// need to be unique-per-instance. If the relay ever scales out, each
+// replica would need a stable replica-id (e.g. POD_NAME or COMPOSE_PROJECT
+// + container index) baked into the group name — never a wall-clock
+// timestamp, which makes every restart a new orphan.
+const ORDER_GROUP = "relay-ord";
+const HIGH_GROUP = "relay-high";
+const HB_GROUP = "relay-hb";
 
 function relayTopic(group: string, topics: string[]) {
   createConsumer(group, topics).then((consumer) => {
