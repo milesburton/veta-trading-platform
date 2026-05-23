@@ -314,7 +314,6 @@ jobs:
         run: |
           set +e
           ./node_modules/.bin/fallow audit \
-            --root .. \
             --changed-since "$BASE_REF" \
             --format sarif \
             --fail-on-issues \
