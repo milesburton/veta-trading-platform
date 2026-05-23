@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 58,
-      "cases": 694,
+      "cases": 704,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -43,7 +43,7 @@
         "playbooks.unit.test.ts": 10,
         "telemetry-route.unit.test.ts": 6,
         "discord-notifier.unit.test.ts": 12,
-        "ticketing.unit.test.ts": 7,
+        "ticketing.unit.test.ts": 17,
         "service-registry.unit.test.ts": 3,
         "pipeline.bug-and-alert.unit.test.ts": 4,
         "grafana-renderer.unit.test.ts": 13,
@@ -82,8 +82,8 @@
       "perFile": {}
     },
     "testcontainers": {
-      "files": 10,
-      "cases": 147,
+      "files": 12,
+      "cases": 167,
       "perFile": {
         "testcontainers.smoke.test.ts": 2,
         "testcontainers.stack.test.ts": 1,
@@ -94,7 +94,9 @@
         "integration.tc.test.ts": 21,
         "scenarios.integration.tc.test.ts": 2,
         "algo.integration.tc.test.ts": 15,
-        "smoke.full.tc.test.ts": 65
+        "smoke.full.tc.test.ts": 65,
+        "job-store.integration.tc.test.ts": 15,
+        "weight-store.integration.tc.test.ts": 5
       }
     }
   },
