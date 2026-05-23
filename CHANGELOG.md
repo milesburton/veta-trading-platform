@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.42.1...veta-trading-platform-v1.43.0) (2026-05-23)
+
+
+### Features
+
+* **messaging:** createTypedConsumer + EMS first adopter ([#371](https://github.com/milesburton/veta-trading-platform/issues/371)) ([5cdcbfd](https://github.com/milesburton/veta-trading-platform/commit/5cdcbfd27b83f3c43052c23a1df82f37e2769680))
+
 ## [1.42.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.42.0...veta-trading-platform-v1.42.1) (2026-05-23)
 
 
