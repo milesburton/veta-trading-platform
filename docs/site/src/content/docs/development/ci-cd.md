@@ -141,7 +141,44 @@ gh api repos/:owner/:repo/branches/main/protection --jq '.required_status_checks
 
 To update which checks are required, the same endpoint accepts a `PUT` with the new context list. There's a CODEOWNERS-style review gate too — `required_pull_request_reviews` requires one approval before merging, which `trusted-automerge` provides automatically.
 
-### Known failure modes
+## Troubleshooting CI failures
+
+### First check: is GitHub itself broken?
+
+When CI suddenly regresses from steady-green to red across multiple unrelated PRs in a short window, **check GitHub's status before touching any code**. A green-to-red transition that hits jobs you didn't change is almost always an upstream incident, not a regression.
+
+```bash
+curl -s https://www.githubstatus.com/api/v2/incidents/unresolved.json \
+  | jq '.incidents[] | {name, status, impact, created_at}'
+```
+
+Things GitHub's status page reports as "operational" can still be silently degraded. Two specific symptoms map to specific incidents:
+
+| Symptom | Likely incident |
+|---------|-----------------|
+| `Error response from daemon: Get "https://ghcr.io/v2/": denied: denied` on `docker login` | App installation token auth |
+| `failed to fetch oauth token: denied: denied` inside `buildx` (pull or push) | App installation token auth |
+| `Bad credentials` from `peter-evans/find-comment`, `dorny/paths-filter`, or other API-calling actions | App installation token auth |
+| `fatal: could not read Username for 'https://github.com'` on `actions/checkout` for a `pull_request` event | App installation token auth, or a checkout wrapper stripping the implicit `token` input |
+
+For all of these, **the right response is rerun**, not mitigation:
+
+```bash
+gh run rerun <run-id> --failed
+```
+
+Mitigations like retry wrappers, throttles, or version pins added under incident conditions tend to be wrong by the time the incident clears. We learned this in May 2026 after shipping four CI patches in a single afternoon chasing what turned out to be a GitHub auth incident; one of those patches (a `wretry.action` wrap around `actions/checkout`) actively broke PR-event auth and had to be reverted.
+
+### When it really is us
+
+If the status page is clean and the failures correlate with a specific PR or service, the failure is real. Common patterns:
+
+- **One service consistently fails to build but others pass**: check that service's `Dockerfile` and the runtime dependencies in `deno.json` or `frontend/package.json` haven't drifted.
+- **`Detect changed paths` fails with a JSON parse error**: the `paths-filter` step never ran and `fromJSON(...)` saw an empty string. Check the preceding `actions/checkout` step.
+- **`Deploy gate` Playwright test times out at 60s**: usually CI runner slowness, but check the trace artifact under `gate-diagnostics` for what state the page actually reached. Real backend regressions show up as Playwright passing but the test asserting wrong content; CI-load failures show the dashboard rendered but the test gave up.
+- **`Publish *-algo :latest (gated)` fails after `Deploy gate` passed**: a GHCR push flake. Rerun. If it persists across reruns, check whether GHCR has the previous image tag (rare cache-state issue).
+
+### Stuck check suites
 
 The auto-merge waits on *all* check suites GitHub knows about, not just the required ones. If a third-party GitHub App is installed and stops reporting (e.g. expired token, the app was removed but the check_suite remained queued), every PR shows `mergeable_state: BLOCKED` indefinitely. Diagnose with:
 
@@ -150,7 +187,7 @@ gh api "repos/:owner/:repo/commits/$(gh pr view <N> --json headRefOid --jq .head
   --jq '.check_suites[] | {app: .app.name, status, conclusion}'
 ```
 
-Anything `status: queued, conclusion: null` from an app you don't actively use is the blocker. Either uninstall the app at `Settings → Integrations`, or `gh pr merge --admin` to bypass the stuck check while waiting for the cleanup.
+Anything `status: queued, conclusion: null` from an app you don't actively use is the blocker. Either uninstall the app at `Settings, Integrations`, or `gh pr merge --admin` to bypass the stuck check while waiting for the cleanup.
 
 ## Bot PAT for auto-merge
 
