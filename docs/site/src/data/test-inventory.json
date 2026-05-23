@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 60,
-      "cases": 779,
+      "files": 61,
+      "cases": 789,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -63,7 +63,8 @@
         "runtime-config-store.test.ts": 13,
         "price-fan.unit.test.ts": 9,
         "alerts-route.unit.test.ts": 15,
-        "timeScale.unit.test.ts": 8
+        "timeScale.unit.test.ts": 8,
+        "small-gap-fills.unit.test.ts": 10
       }
     },
     "integration": {
