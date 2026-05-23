@@ -14,6 +14,35 @@ on:
   workflow_dispatch:
 
 jobs:
+  github-health:
+    name: GitHub status (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check for unresolved GitHub incidents
+        run: |
+          set -euo pipefail
+          incidents=$(curl -fsSL --max-time 15 \
+            https://www.githubstatus.com/api/v2/incidents/unresolved.json \
+            || echo '{"incidents":[]}')
+
+          count=$(echo "$incidents" | jq '.incidents | length')
+
+          if [[ "$count" -eq 0 ]]; then
+            echo "GitHub reports no unresolved incidents."
+            exit 0
+          fi
+
+          echo "$incidents" | jq -r '
+            .incidents[] |
+            "::warning title=GitHub incident affecting CI may be in progress::\(.name) [\(.impact)] — \(.shortlink)"
+          '
+
+          echo ""
+          echo "GitHub has $count unresolved incident(s). If CI failures look like auth/registry/checkout flakes (denied: denied, Bad credentials, could not read Username), they are likely upstream. Rerun the failed jobs before changing code. See docs/development/ci-cd#troubleshooting-ci-failures."
+          # Never block CI on this check.
+          exit 0
+
   changes:
     name: Detect changed paths
     runs-on: ubuntu-latest
