@@ -26,6 +26,12 @@ interface VolCacheEntry {
 // Cache volatility estimates for 60 seconds to avoid hammering the journal
 const volCache = new Map<string, VolCacheEntry>();
 
+export const _internalForTests = {
+  resetVolCache(): void {
+    volCache.clear();
+  },
+};
+
 export interface VolResult {
   ewmaVol: number;
   rollingVol: number;

@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 52,
-      "cases": 643,
+      "files": 58,
+      "cases": 704,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -35,7 +35,7 @@
         "lib.unit.test.ts": 13,
         "prompt-builder.unit.test.ts": 15,
         "trigger-rules.unit.test.ts": 17,
-        "volatility-estimator.unit.test.ts": 7,
+        "volatility-estimator.unit.test.ts": 21,
         "devcontainer.unit.test.ts": 6,
         "docs-drift.unit.test.ts": 8,
         "credentials.unit.test.ts": 8,
@@ -55,7 +55,13 @@
         "compose-restart-policies.unit.test.ts": 1,
         "abuse-tracker.unit.test.ts": 10,
         "loadgen-announce.unit.test.ts": 14,
-        "request-source.unit.test.ts": 4
+        "request-source.unit.test.ts": 4,
+        "yield-curve.unit.test.ts": 15,
+        "accessLogThrottle.test.ts": 5,
+        "messaging.test.ts": 3,
+        "parse-ticket-handler.unit.test.ts": 11,
+        "runtime-config-store.test.ts": 4,
+        "price-fan.unit.test.ts": 9
       }
     },
     "integration": {
