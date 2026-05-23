@@ -305,7 +305,6 @@ Deno.test("[llm-policy] isWithinAllowedHours wraps midnight for ranges where sta
   assertEquals(result, expected);
 });
 
-Deno.test("[llm-policy] isWithinAllowedHours respects same-day windows", () => {
-  // 0-24 should always be true
+Deno.test("[llm-policy] isWithinAllowedHours returns true for 0-24 all-day window", () => {
   assert(isWithinAllowedHours(policy({ allowedHours: "0-24" })));
 });

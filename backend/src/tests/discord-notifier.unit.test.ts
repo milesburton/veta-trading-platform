@@ -324,7 +324,6 @@ Deno.test("notifyDiscord swallows fetch errors and continues", async () => {
   await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
     globalThis.fetch = (() => Promise.reject(new Error("net down"))) as typeof fetch;
     try {
-      // Should not throw — fetch error inside postToDiscord is caught.
       await notifyDiscord({ severity: "CRITICAL", source: "kill-switch", message: "x" }, "u-1");
     } finally {
       globalThis.fetch = realFetch;
@@ -446,7 +445,6 @@ Deno.test("buildLoadgenMessage sanitises newlines in runner / note", () => {
     note: "ev\nil",
   });
   assertEquals(msg.includes("\n", msg.indexOf("Loadgen")), true);
-  // Inside the backticks, the newline in runner must have been replaced
   const runnerPart = msg.match(/`([^`]+)`/)?.[1] ?? "";
   assertEquals(runnerPart.includes("\n"), false);
 });

@@ -11,8 +11,7 @@ Deno.test("[timeScale] TRADING_DAY_MINUTES is 390", () => {
   assertEquals(TRADING_DAY_MINUTES, 390);
 });
 
-Deno.test("[timeScale] TIME_SCALE defaults to 60 when env unset", () => {
-  // Just confirm it's a positive number in the test environment
+Deno.test("[timeScale] TIME_SCALE is a positive number", () => {
   assert(TIME_SCALE > 0);
 });
 
@@ -22,18 +21,15 @@ Deno.test("[timeScale] currentMarketMinute returns an int in [0, TRADING_DAY_MIN
   assert(m >= 0 && m < TRADING_DAY_MINUTES);
 });
 
-Deno.test("[timeScale] intradayVolumeFactor peaks near open (minute 0)", () => {
-  // cos²(0) = 1 → factor = 1.0
+Deno.test("[timeScale] intradayVolumeFactor peaks at the open (minute 0)", () => {
   assertAlmostEquals(intradayVolumeFactor(0), 1.0, 1e-9);
 });
 
-Deno.test("[timeScale] intradayVolumeFactor peaks near close (minute TRADING_DAY_MINUTES)", () => {
-  // cos²(π) = 1 → factor = 1.0
+Deno.test("[timeScale] intradayVolumeFactor peaks at the close (minute TRADING_DAY_MINUTES)", () => {
   assertAlmostEquals(intradayVolumeFactor(TRADING_DAY_MINUTES), 1.0, 1e-9);
 });
 
-Deno.test("[timeScale] intradayVolumeFactor troughs near midday", () => {
-  // cos²(π/2) = 0 → factor = 0.3 (floor)
+Deno.test("[timeScale] intradayVolumeFactor troughs at midday (clamps to 0.3 floor)", () => {
   assertAlmostEquals(intradayVolumeFactor(TRADING_DAY_MINUTES / 2), 0.3, 1e-9);
 });
 
@@ -44,8 +40,7 @@ Deno.test("[timeScale] intradayVolumeFactor stays within [0.3, 1.0] for all minu
   }
 });
 
-Deno.test("[timeScale] realMsToMarketMinutes scales linearly with TIME_SCALE", () => {
-  // 1000ms real-time × TIME_SCALE = market minutes for 1 wall second
+Deno.test("[timeScale] realMsToMarketMinutes scales 1000ms wall-clock by TIME_SCALE", () => {
   const v = realMsToMarketMinutes(1_000);
   assertAlmostEquals(v, TIME_SCALE, 1e-9);
   assertEquals(realMsToMarketMinutes(0), 0);

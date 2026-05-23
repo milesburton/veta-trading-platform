@@ -143,7 +143,6 @@ Deno.test("[alerts-route] POST /alerts forwards body + invokes downstream notifi
     );
     assert(res);
     assertEquals(res.status, 201);
-    // Should have hit the user-service /alerts endpoint
     const forwardCall = f.calls.find((c) => c.url.endsWith("/users/u-1/alerts"));
     assertEquals(forwardCall?.method, "POST");
     const sent = forwardCall?.body instanceof ArrayBuffer
