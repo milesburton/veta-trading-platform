@@ -143,12 +143,20 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
   const refPrice = (sym: string) => prices[sym] ?? FALLBACK_REF[sym] ?? 100;
 
   const stride = 1000 / (ORDERS_PER_SECOND_PER_USER * LOAD_TEST_USERS.length);
+  // Non-cryptographic synthetic-order generator. All randomness below
+  // (pickFrom, side coin-flip, jitter, clientOrderId suffix, quantity)
+  // is for shaping fake test traffic, NOT for any security/auth decision.
+  // The picked trader id is a fixed test persona from LOAD_TEST_USER_IDS;
+  // requireAdmin(auth) above gates who can invoke this endpoint, so the
+  // randomness is post-auth.
+  // lgtm[js/insecure-randomness] — see comment above; Math.random is
+  // intentional for load-test shape, not for security.
   const pickFrom = <T>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)];
   (async () => {
     for (let i = 0; i < orderCount; i++) {
       const symbol = pickFrom(symbols);
       const side = Math.random() < 0.5 ? "BUY" : "SELL";
-      const userId = pickFrom(LOAD_TEST_USERS);
+      const attributedTrader = pickFrom(LOAD_TEST_USERS);
       const mid = refPrice(symbol);
       const jitter = 1 + (Math.random() - 0.5) * 0.04;
       const limitPrice = side === "BUY"
@@ -164,7 +172,7 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
         expiresAt: 300,
         strategy,
         algoParams: { strategy },
-        userId,
+        userId: attributedTrader,
         userRole: "trader",
         _loadTestJobId: jobId,
       }).catch(() => {});
