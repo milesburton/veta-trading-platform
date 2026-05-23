@@ -86,8 +86,8 @@
       "perFile": {}
     },
     "testcontainers": {
-      "files": 12,
-      "cases": 167,
+      "files": 13,
+      "cases": 173,
       "perFile": {
         "testcontainers.smoke.test.ts": 2,
         "testcontainers.stack.test.ts": 1,
@@ -100,7 +100,8 @@
         "algo.integration.tc.test.ts": 15,
         "smoke.full.tc.test.ts": 65,
         "job-store.integration.tc.test.ts": 15,
-        "weight-store.integration.tc.test.ts": 5
+        "weight-store.integration.tc.test.ts": 5,
+        "messaging.integration.tc.test.ts": 6
       }
     }
   },
