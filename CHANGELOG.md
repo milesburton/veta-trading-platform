@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.42.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.41.0...veta-trading-platform-v1.42.0) (2026-05-22)
+
+
+### Features
+
+* **frontend:** bug-report icon + modal that posts to gateway ([#300](https://github.com/milesburton/veta-trading-platform/issues/300)) ([e262e52](https://github.com/milesburton/veta-trading-platform/commit/e262e5215fcbb9f32726ffb760c1e0b21ec4dd16))
+* **gateway:** escalate abuse from frame rate-limit to force-close + user-level backoff ([#350](https://github.com/milesburton/veta-trading-platform/issues/350)) ([a0552a6](https://github.com/milesburton/veta-trading-platform/commit/a0552a687c09d93a06923878d65d05122f71cc8d))
+* **loadgen:** announce start/stop to Discord so alerts channel knows to disregard ([#354](https://github.com/milesburton/veta-trading-platform/issues/354)) ([b5533f8](https://github.com/milesburton/veta-trading-platform/commit/b5533f88b90c58598cc4c24f4b48d30a54b15370))
+* **security:** tag loadgen-driven auth_failure / ws_rate_limited so alerts filter the noise ([#355](https://github.com/milesburton/veta-trading-platform/issues/355)) ([4476e4c](https://github.com/milesburton/veta-trading-platform/commit/4476e4cf366db08d146abf0beca30ba4b3a7cf05))
+
+
+### Bug Fixes
+
+* **consumers:** use stable Kafka group ids to stop orphan-group lag alerts ([#356](https://github.com/milesburton/veta-trading-platform/issues/356)) ([d8a50b9](https://github.com/milesburton/veta-trading-platform/commit/d8a50b97f6a51cd61533ac678fc92ad8970be6c2))
+
 ## [1.41.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.40.0...veta-trading-platform-v1.41.0) (2026-05-21)
 
 
