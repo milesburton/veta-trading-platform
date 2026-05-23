@@ -24,9 +24,9 @@ import "@veta/bootstrap";
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "@veta/market-client";
-import { createConsumer, createProducer } from "@veta/messaging";
+import { createProducer, createTypedConsumer } from "@veta/messaging";
+import { FillEventSchema, RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
-import type { RoutedOrder, FillEvent } from "@veta/types/orders";
 import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("MOMENTUM_ALGO_PORT")) || 5_025;
@@ -79,140 +79,130 @@ interface ActiveMomentum {
 /** Active momentum orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveMomentum>();
 
-const routedConsumer = await createConsumer("momentum-algo-routed", [
-  "orders.routed",
-]).catch(
-  (err) => {
-    logger.warn("Cannot subscribe to orders.routed", { err });
-    return null;
-  },
-);
+await createTypedConsumer("momentum-algo-routed", [{
+  topic: "orders.routed",
+  schema: RoutedOrderSchema,
+  handler: (order) => {
+    if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
+    if (order.limitPrice === undefined) {
+      logger.warn(`Rejecting ${order.orderId}: missing limitPrice`);
+      return;
+    }
 
-routedConsumer?.onMessage((_topic, raw) => {
-  const order = raw as RoutedOrder;
-  if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
+    const params = order.algoParams ?? {};
+    const entryThresholdBps = Math.max(
+      0.1,
+      Number(params.entryThresholdBps ?? 10),
+    );
+    const maxTranches = Math.max(1, Number(params.maxTranches ?? 5));
+    const shortEmaPeriod = Math.max(
+      2,
+      Number(params.shortEmaPeriod ?? 3),
+    );
+    const longEmaPeriod = Math.max(
+      shortEmaPeriod + 1,
+      Number(params.longEmaPeriod ?? 8),
+    );
+    const cooldownTicks = Math.max(
+      1,
+      Number(params.cooldownTicks ?? 3),
+    );
 
-  const params = order.algoParams as {
-    entryThresholdBps?: number;
-    maxTranches?: number;
-    shortEmaPeriod?: number;
-    longEmaPeriod?: number;
-    cooldownTicks?: number;
-  } | undefined;
-  const entryThresholdBps = Math.max(
-    0.1,
-    Number(params?.entryThresholdBps ?? 10),
-  );
-  const maxTranches = Math.max(1, Number(params?.maxTranches ?? 5));
-  const shortEmaPeriod = Math.max(
-    2,
-    Number(params?.shortEmaPeriod ?? 3),
-  );
-  const longEmaPeriod = Math.max(
-    shortEmaPeriod + 1,
-    Number(params?.longEmaPeriod ?? 8),
-  );
-  const cooldownTicks = Math.max(
-    1,
-    Number(params?.cooldownTicks ?? 3),
-  );
+    const entryPrice = marketClient.getLatest()?.prices[order.asset] ??
+      order.limitPrice;
 
-  // Capture entry price from market client's last known tick; fall back to limitPrice
-  const entryPrice = marketClient.getLatest()?.prices[order.asset] ??
-    order.limitPrice;
+    const mom: ActiveMomentum = {
+      orderId: order.orderId,
+      clientOrderId: order.clientOrderId,
+      asset: order.asset,
+      side: order.side,
+      limitPrice: order.limitPrice,
+      expiresAt: Date.now() + (Number(order.expiresAt ?? 300)) * 1_000,
+      entryPrice,
+      entryThresholdBps,
+      maxTranches,
+      shortEmaPeriod,
+      longEmaPeriod,
+      cooldownTicks,
+      shortEma: entryPrice,
+      longEma: entryPrice,
+      ticksSeen: 0,
+      cooldownRemaining: 0,
+      tranchesRouted: 0,
+      trancheSize: Math.max(1, Math.ceil(order.quantity / maxTranches)),
+      totalQty: order.quantity,
+      remainingQty: order.quantity,
+      filledQty: 0,
+      costBasis: 0,
+    };
 
-  // Seed both EMAs with the entry price (warm start — will refine as ticks arrive)
-  const mom: ActiveMomentum = {
-    orderId: order.orderId,
-    clientOrderId: order.clientOrderId,
-    asset: order.asset,
-    side: order.side,
-    limitPrice: order.limitPrice,
-    expiresAt: Date.now() + (Number(order.expiresAt ?? 300)) * 1_000,
-    entryPrice,
-    entryThresholdBps,
-    maxTranches,
-    shortEmaPeriod,
-    longEmaPeriod,
-    cooldownTicks,
-    shortEma: entryPrice,
-    longEma: entryPrice,
-    ticksSeen: 0,
-    cooldownRemaining: 0,
-    tranchesRouted: 0,
-    trancheSize: Math.max(1, Math.ceil(order.quantity / maxTranches)),
-    totalQty: order.quantity,
-    remainingQty: order.quantity,
-    filledQty: 0,
-    costBasis: 0,
-  };
+    activeOrders.set(order.orderId, mom);
 
-  activeOrders.set(order.orderId, mom);
+    logger.info(`Queued ${order.orderId}: ${order.quantity} ${order.asset} entry=${
+        entryPrice.toFixed(4)
+      } threshold=${entryThresholdBps}bps maxTranches=${maxTranches}`);
 
-  logger.info(`Queued ${order.orderId}: ${order.quantity} ${order.asset} entry=${
-      entryPrice.toFixed(4)
-    } threshold=${entryThresholdBps}bps maxTranches=${maxTranches}`);
-
-  producer?.send("algo.heartbeat", {
-    algo: ALGO,
-    orderId: order.orderId,
-    event: "start",
-    asset: order.asset,
-    quantity: order.quantity,
-    entryPrice,
-    entryThresholdBps,
-    maxTranches,
-    shortEmaPeriod,
-    longEmaPeriod,
-    cooldownTicks,
-    ts: Date.now(),
-  }).catch(() => {});
-});
-
-const fillsConsumer = await createConsumer("momentum-algo-fills", [
-  "orders.filled",
-]).catch(
-  (err) => {
-    logger.warn("Cannot subscribe to orders.filled", { err });
-    return null;
-  },
-);
-
-fillsConsumer?.onMessage((_topic, raw) => {
-  const fill = raw as FillEvent;
-  if ((fill.algo ?? "").toUpperCase() !== ALGO) return;
-
-  const order = fill.parentOrderId
-    ? activeOrders.get(fill.parentOrderId)
-    : undefined;
-  if (!order) return;
-
-  const qty = fill.filledQty ?? 0;
-  const price = fill.avgFillPrice ?? 0;
-  order.filledQty += qty;
-  order.costBasis += qty * price;
-  order.remainingQty = Math.max(0, order.remainingQty - qty);
-
-  logger.info(`Fill ${order.orderId}: +${qty} @ ${
-      price.toFixed(2)
-    } | remaining=${order.remainingQty}`);
-
-  if (order.remainingQty <= 0) {
-    const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-    logger.info(`Complete ${order.orderId}: filled=${order.filledQty} avg=${
-        avgFill.toFixed(4)
-      }`);
-    activeOrders.delete(order.orderId);
     producer?.send("algo.heartbeat", {
       algo: ALGO,
       orderId: order.orderId,
-      event: "complete",
+      event: "start",
       asset: order.asset,
-      filled: order.filledQty,
-      avgFillPrice: avgFill.toFixed(4),
+      quantity: order.quantity,
+      entryPrice,
+      entryThresholdBps,
+      maxTranches,
+      shortEmaPeriod,
+      longEmaPeriod,
+      cooldownTicks,
       ts: Date.now(),
     }).catch(() => {});
-  }
+  },
+}]).catch((err) => {
+  logger.warn("Cannot subscribe to orders.routed", { err });
+  return null;
+});
+
+await createTypedConsumer("momentum-algo-fills", [{
+  topic: "orders.filled",
+  schema: FillEventSchema,
+  handler: (fill) => {
+    if ((fill.algo ?? "").toUpperCase() !== ALGO) return;
+
+    const order = fill.parentOrderId
+      ? activeOrders.get(fill.parentOrderId)
+      : undefined;
+    if (!order) return;
+
+    const qty = fill.filledQty ?? 0;
+    const price = fill.avgFillPrice ?? 0;
+    order.filledQty += qty;
+    order.costBasis += qty * price;
+    order.remainingQty = Math.max(0, order.remainingQty - qty);
+
+    logger.info(`Fill ${order.orderId}: +${qty} @ ${
+        price.toFixed(2)
+      } | remaining=${order.remainingQty}`);
+
+    if (order.remainingQty <= 0) {
+      const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
+      logger.info(`Complete ${order.orderId}: filled=${order.filledQty} avg=${
+          avgFill.toFixed(4)
+        }`);
+      activeOrders.delete(order.orderId);
+      producer?.send("algo.heartbeat", {
+        algo: ALGO,
+        orderId: order.orderId,
+        event: "complete",
+        asset: order.asset,
+        filled: order.filledQty,
+        avgFillPrice: avgFill.toFixed(4),
+        ts: Date.now(),
+      }).catch(() => {});
+    }
+  },
+}]).catch((err) => {
+  logger.warn("Cannot subscribe to orders.filled", { err });
+  return null;
 });
 
 marketClient.onTick(async (tick) => {

@@ -9,9 +9,10 @@ import "@veta/bootstrap";
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "@veta/market-client";
-import { createConsumer, createProducer } from "@veta/messaging";
+import { createProducer, createTypedConsumer } from "@veta/messaging";
+import { RoutedOrderSchema } from "@veta/schemas/orders";
+import type { RoutedOrder } from "@veta/schemas/orders";
 import { serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
-import type { RoutedOrder } from "@veta/types/orders";
 import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("TWAP_ALGO_PORT")) || 5_004;
@@ -106,16 +107,16 @@ async function executeTWAP(order: RoutedOrder): Promise<void> {
   logger.info(`Complete ${order.orderId}: filled=${filledQty}/${order.quantity} avg=${avgFill}`);
 }
 
-const consumer = await createConsumer("twap-algo-routed", ["orders.routed"])
-  .catch((err) => {
-    logger.warn("Cannot subscribe to orders.routed", { err });
-    return null;
-  });
-
-consumer?.onMessage((_topic, raw) => {
-  const order = raw as RoutedOrder;
-  if ((order.strategy ?? "").toUpperCase() !== "TWAP") return;
-  executeTWAP(order); // fire-and-forget; errors are caught internally
+await createTypedConsumer("twap-algo-routed", [{
+  topic: "orders.routed",
+  schema: RoutedOrderSchema,
+  handler: (order) => {
+    if ((order.strategy ?? "").toUpperCase() !== "TWAP") return;
+    executeTWAP(order);
+  },
+}]).catch((err) => {
+  logger.warn("Cannot subscribe to orders.routed", { err });
+  return null;
 });
 
 serveAlgoHealth(PORT, "twap", VERSION, () => 0);
