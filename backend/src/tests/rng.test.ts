@@ -49,3 +49,51 @@ Deno.test("seeded mean approximates 0.5 over many draws", () => {
   assertAlmostEquals(sum / n, 0.5, 0.02);
   seedRng(null);
 });
+
+Deno.test("MARKET_SIM_SEED env applies a deterministic seed at module load (subprocess)", async () => {
+  const cmd = new Deno.Command(Deno.execPath(), {
+    args: ["eval", "--quiet", `
+      import { currentSeed, nextRandom } from "${new URL("../market-sim/rng.ts", import.meta.url).href}";
+      console.log(JSON.stringify({ seed: currentSeed(), first: nextRandom() }));
+    `],
+    env: { MARKET_SIM_SEED: "12345" },
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const { stdout } = await cmd.output();
+  const out = JSON.parse(new TextDecoder().decode(stdout));
+  if (out.seed !== 12345) throw new Error(`expected seed 12345, got ${out.seed}`);
+  if (typeof out.first !== "number" || out.first < 0 || out.first >= 1) {
+    throw new Error(`expected a number in [0,1), got ${out.first}`);
+  }
+});
+
+Deno.test("MARKET_SIM_SEED with non-numeric value leaves RNG unseeded (subprocess)", async () => {
+  const cmd = new Deno.Command(Deno.execPath(), {
+    args: ["eval", "--quiet", `
+      import { currentSeed } from "${new URL("../market-sim/rng.ts", import.meta.url).href}";
+      console.log(JSON.stringify({ seed: currentSeed() }));
+    `],
+    env: { MARKET_SIM_SEED: "not-a-number" },
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const { stdout } = await cmd.output();
+  const out = JSON.parse(new TextDecoder().decode(stdout));
+  if (out.seed !== null) throw new Error(`expected null seed, got ${out.seed}`);
+});
+
+Deno.test("MARKET_SIM_SEED empty string leaves RNG unseeded (subprocess)", async () => {
+  const cmd = new Deno.Command(Deno.execPath(), {
+    args: ["eval", "--quiet", `
+      import { currentSeed } from "${new URL("../market-sim/rng.ts", import.meta.url).href}";
+      console.log(JSON.stringify({ seed: currentSeed() }));
+    `],
+    env: { MARKET_SIM_SEED: "" },
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const { stdout } = await cmd.output();
+  const out = JSON.parse(new TextDecoder().decode(stdout));
+  if (out.seed !== null) throw new Error(`expected null seed, got ${out.seed}`);
+});

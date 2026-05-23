@@ -2,12 +2,12 @@
   "backend": {
     "unit": {
       "files": 60,
-      "cases": 747,
+      "cases": 779,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
-        "marketSim.test.ts": 10,
-        "rng.test.ts": 5,
+        "marketSim.test.ts": 13,
+        "rng.test.ts": 8,
         "scenarios.diff.test.ts": 5,
         "scenarios.outcome.test.ts": 7,
         "oms.test.ts": 16,
@@ -25,8 +25,8 @@
         "orders-schema.unit.test.ts": 21,
         "user-schema.unit.test.ts": 14,
         "risk-schema.unit.test.ts": 19,
-        "logger.unit.test.ts": 14,
-        "rateLimit.test.ts": 6,
+        "logger.unit.test.ts": 17,
+        "rateLimit.test.ts": 9,
         "risk-bypass.test.ts": 2,
         "loadAgent.test.ts": 8,
         "risk-checks.unit.test.ts": 40,
@@ -40,7 +40,7 @@
         "docs-drift.unit.test.ts": 8,
         "credentials.unit.test.ts": 8,
         "bug-report-route.unit.test.ts": 10,
-        "playbooks.unit.test.ts": 10,
+        "playbooks.unit.test.ts": 14,
         "telemetry-route.unit.test.ts": 6,
         "discord-notifier.unit.test.ts": 23,
         "ticketing.unit.test.ts": 17,
@@ -48,7 +48,7 @@
         "pipeline.bug-and-alert.unit.test.ts": 4,
         "grafana-renderer.unit.test.ts": 13,
         "platform-stats.unit.test.ts": 11,
-        "daily-summary.unit.test.ts": 13,
+        "daily-summary.unit.test.ts": 20,
         "tickDiff.unit.test.ts": 13,
         "compose-mem-limits.unit.test.ts": 1,
         "process-metrics.unit.test.ts": 4,
@@ -60,22 +60,23 @@
         "accessLogThrottle.test.ts": 5,
         "messaging.test.ts": 3,
         "parse-ticket-handler.unit.test.ts": 11,
-        "runtime-config-store.test.ts": 4,
+        "runtime-config-store.test.ts": 13,
         "price-fan.unit.test.ts": 9,
         "alerts-route.unit.test.ts": 15,
         "timeScale.unit.test.ts": 8
       }
     },
     "integration": {
-      "files": 6,
-      "cases": 76,
+      "files": 7,
+      "cases": 105,
       "perFile": {
         "integration.test.ts": 21,
         "algo.integration.test.ts": 15,
         "intelligence.integration.test.ts": 14,
         "scenarios.integration.test.ts": 2,
         "journal.http.test.ts": 13,
-        "market-data.http.test.ts": 11
+        "market-data.http.test.ts": 11,
+        "risk-engine.unit.test.ts": 29
       }
     },
     "smoke": {
