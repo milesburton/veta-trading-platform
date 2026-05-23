@@ -72,8 +72,8 @@ discovery.relabel "containers" {
   targets = discovery.docker.containers.targets
 
   rule {
-    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
-    regex         = ".+"
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    regex         = "veta|observability"
     action        = "keep"
   }
 

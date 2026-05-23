@@ -1,3 +1,5 @@
+name: veta
+
 networks:
   trading-net:
     driver: bridge
