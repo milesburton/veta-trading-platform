@@ -1093,6 +1093,7 @@ jobs:
       packages: write
     strategy:
       fail-fast: false
+      max-parallel: 12
       matrix:
         include:
           - service: frontend
@@ -1351,6 +1352,7 @@ jobs:
       packages: write
     strategy:
       fail-fast: false
+      max-parallel: 12
       matrix:
         include:
           - service: frontend
