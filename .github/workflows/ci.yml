@@ -314,7 +314,6 @@ jobs:
         run: |
           set +e
           ./node_modules/.bin/fallow audit \
-            --root .. \
             --changed-since "$BASE_REF" \
             --format sarif \
             --fail-on-issues \
@@ -388,11 +387,14 @@ jobs:
       - name: Combine backend coverage (unit + TC)
         id: combine
         run: |
-          # Concatenating LCOV records is the standard merge —
-          # lines for the same file are added together by tools.
-          : > coverage-combined.lcov
-          [[ -f cov-unit/coverage.lcov ]] && cat cov-unit/coverage.lcov >> coverage-combined.lcov
-          [[ -f cov-tc/coverage-tc.lcov ]] && cat cov-tc/coverage-tc.lcov >> coverage-combined.lcov
+          inputs=()
+          [[ -f cov-unit/coverage.lcov ]] && inputs+=(cov-unit/coverage.lcov)
+          [[ -f cov-tc/coverage-tc.lcov ]] && inputs+=(cov-tc/coverage-tc.lcov)
+          if [[ ${#inputs[@]} -eq 0 ]]; then
+            : > coverage-combined.lcov
+          else
+            python3 scripts/merge-lcov.py "${inputs[@]}" > coverage-combined.lcov
+          fi
           PCT=$(awk -F: '/^LF:/{lf+=$2}/^LH:/{lh+=$2} END { if (lf > 0) printf "%.1f", (lh*100/lf); else print "0.0" }' coverage-combined.lcov)
           echo "backend=${PCT}" >> "$GITHUB_OUTPUT"
 

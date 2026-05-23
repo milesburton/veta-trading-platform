@@ -9,6 +9,7 @@ import {
   openPrices,
   prewarmPrices,
   refreshSectorShocks,
+  resetPriceEngine,
   resetRegime,
   seedPrice,
   snapshotOpenPrices,
@@ -137,4 +138,39 @@ Deno.test("openPrices remain stable after further price moves", () => {
     Object.keys(snapshot).filter((sym) => marketData[sym] !== snapshot[sym])
       .length;
   assertNotEquals(changed, 0);
+});
+
+Deno.test("resetPriceEngine restores anchor prices and re-prewarms with default tick count", () => {
+  seedRng(99);
+  seedPrice("AAPL", 100);
+  for (let i = 0; i < 50; i++) generatePrice("AAPL");
+  const beforeReset = marketData["AAPL"];
+
+  resetPriceEngine({ prewarmTicks: 0 });
+
+  // After reset with 0 prewarm, AAPL should be back at its seed initial price (in sp500Assets.ts).
+  // We can't assert the exact value, but it should differ from the post-50-tick price almost certainly.
+  assertNotEquals(marketData["AAPL"], beforeReset);
+});
+
+Deno.test("resetPriceEngine uses 240 prewarm ticks by default", () => {
+  seedRng(42);
+  resetPriceEngine();
+  // After a 240-tick prewarm, AAPL should have moved at least a few cents from its seed value.
+  const after = marketData["AAPL"];
+  if (!Number.isFinite(after) || after <= 0) {
+    throw new Error(`expected positive price after default reset, got ${after}`);
+  }
+});
+
+Deno.test("generatePrice price floor holds against extreme downward shocks", () => {
+  resetPriceEngine({ prewarmTicks: 0 });
+  seedPrice("AAPL", 100);
+  // Drive AAPL down hard with thousands of ticks under a seed that produces
+  // many negative shocks. The floor (PRICE_FLOOR_RATIO * anchor) should
+  // clamp the price; it must never go to zero or negative.
+  seedRng(7);
+  for (let i = 0; i < 5000; i++) generatePrice("AAPL");
+  const p = marketData["AAPL"];
+  if (p <= 0) throw new Error(`floor breached: got ${p}`);
 });

@@ -146,3 +146,95 @@ Deno.test("startDailySummary nextFire rolls over to tomorrow if past today's hou
   const expected = Date.UTC(2026, 4, 21, 9, 0, 0);
   assertEquals(nextFire, expected);
 });
+
+Deno.test("buildDailySummary uptime formats <1h as Nm only", () => {
+  const stats = new PlatformStats();
+  const baseNow = 1_700_000_000_000;
+  const c = {
+    version: "v",
+    environment: "test",
+    startedAt: baseNow - 45 * 60 * 1000,
+    getStats: () => stats.snapshot(baseNow),
+    getServices: () => null,
+  };
+  const msg = buildDailySummary(c, baseNow);
+  if (!msg.includes("gateway uptime 45m")) throw new Error(`got: ${msg.split('\n')[0]}`);
+});
+
+Deno.test("buildDailySummary uptime formats >=1d as Nd Nh Nm", () => {
+  const stats = new PlatformStats();
+  const baseNow = 1_700_000_000_000;
+  const c = {
+    version: "v",
+    environment: "test",
+    startedAt: baseNow - (2 * 86400 + 3 * 3600 + 7 * 60) * 1000,
+    getStats: () => stats.snapshot(baseNow),
+    getServices: () => null,
+  };
+  const msg = buildDailySummary(c, baseNow);
+  if (!msg.includes("gateway uptime 2d 3h 7m")) throw new Error(`got: ${msg.split('\n')[0]}`);
+});
+
+Deno.test("buildDailySummary 'no samples in window yet' path when no service snapshots", () => {
+  const stats = new PlatformStats();
+  const msg = buildDailySummary(ctx(stats, null));
+  if (!msg.includes("**Services:** no samples in window yet")) {
+    throw new Error(`expected no-samples line, got:\n${msg}`);
+  }
+});
+
+Deno.test("buildDailySummary includes Deployed SHA when setDeploySha was called", () => {
+  const stats = new PlatformStats();
+  stats.setDeploySha("deadbeef1234567");
+  stats.recordServiceSnapshot(10, 10);
+  const msg = buildDailySummary(ctx(stats));
+  if (!msg.includes("**Deployed SHA:** `deadbee`")) {
+    throw new Error(`expected Deployed SHA line, got tail:\n${msg.split('\n').slice(-3).join('\n')}`);
+  }
+});
+
+Deno.test("buildDailySummary omits Deployed SHA when none set", () => {
+  const stats = new PlatformStats();
+  stats.recordServiceSnapshot(10, 10);
+  const msg = buildDailySummary(ctx(stats));
+  if (msg.includes("**Deployed SHA:**")) {
+    throw new Error("did not expect Deployed SHA line");
+  }
+});
+
+Deno.test("startDailySummary clamps hourUtc to the default for invalid input", () => {
+  const stats = new PlatformStats();
+  const baseNow = Date.UTC(2026, 4, 20, 14, 30, 0);
+  const c = {
+    version: "v",
+    environment: "test",
+    startedAt: baseNow - 1000,
+    getStats: () => stats.snapshot(baseNow),
+    getServices: () => null,
+    now: () => baseNow,
+    sender: () => Promise.resolve(true),
+  };
+  for (const bad of [-1, 24, 99, NaN, Infinity, 1.5]) {
+    const h = startDailySummary({ ...c, hourUtc: bad });
+    const next = h.nextFireAt();
+    h.stop();
+    const d = new Date(next);
+    assertEquals(d.getUTCHours(), 9, `hourUtc=${bad} should fall back to 9`);
+  }
+});
+
+Deno.test("startDailySummary uses default sender (resolves false) when none provided", async () => {
+  const stats = new PlatformStats();
+  const baseNow = Date.UTC(2026, 4, 20, 8, 59, 59, 500);
+  const h = startDailySummary({
+    version: "v",
+    environment: "test",
+    startedAt: baseNow - 1000,
+    getStats: () => stats.snapshot(baseNow),
+    getServices: () => null,
+    hourUtc: 9,
+    now: () => baseNow,
+  });
+  await new Promise((r) => setTimeout(r, 1100));
+  h.stop();
+});

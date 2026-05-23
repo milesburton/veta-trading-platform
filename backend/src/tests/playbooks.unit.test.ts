@@ -105,3 +105,27 @@ Deno.test("[playbooks] bearish contextLines includes drawdown percent", () => {
   const joined = lines.join(" ");
   assert(joined.includes("-9.09%"), `expected '-9.09%' in: ${joined}`);
 });
+
+Deno.test("[playbooks] bearish-reversal.contextLines returns [] with fewer than 3 closes", () => {
+  const c = ctx({ recentCloses: [100, 95] });
+  const lines = playbookById("bearish-reversal")?.contextLines(c) ?? [];
+  assertEquals(lines, []);
+});
+
+Deno.test("[playbooks] bearish-reversal.contextLines returns [] when high is 0", () => {
+  const c = ctx({ recentCloses: [0, 0, 0] });
+  const lines = playbookById("bearish-reversal")?.contextLines(c) ?? [];
+  assertEquals(lines, []);
+});
+
+Deno.test("[playbooks] bearish-reversal.contextLines returns [] when closes include NaN", () => {
+  const c = ctx({ recentCloses: [100, NaN, 90] });
+  const lines = playbookById("bearish-reversal")?.contextLines(c) ?? [];
+  assertEquals(lines, []);
+});
+
+Deno.test("[playbooks] neutral-context.contextLines always returns []", () => {
+  const c = ctx({ recentCloses: [100, 99, 101, 102, 103] });
+  const lines = playbookById("neutral-context")?.contextLines(c) ?? null;
+  assertEquals(lines, []);
+});

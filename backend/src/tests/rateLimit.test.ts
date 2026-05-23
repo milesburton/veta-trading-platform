@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { clientIp, RateLimiter } from "@veta/rate-limit";
+import { clientIp, RateLimiter, rateLimitResponse } from "@veta/rate-limit";
 
 Deno.test("RateLimiter: allows requests up to capacity, then blocks", () => {
   const limiter = new RateLimiter({ capacity: 3, refillPerSecond: 1 });
@@ -59,4 +59,26 @@ Deno.test("clientIp: prefers X-Forwarded-For, falls back to X-Real-IP, then unkn
 
   const r3 = new Request("http://x");
   assertEquals(clientIp(r3), "unknown");
+});
+
+Deno.test("rateLimitResponse returns a 429 with JSON body + Retry-After header", async () => {
+  const res = rateLimitResponse(5_500);
+  assertEquals(res.status, 429);
+  assertEquals(res.headers.get("Content-Type"), "application/json");
+  assertEquals(res.headers.get("Retry-After"), "6");
+  const body = await res.json();
+  assertEquals(body.error, "rate_limited");
+  assertEquals(body.retryAfterSeconds, 6);
+});
+
+Deno.test("rateLimitResponse clamps Retry-After to a minimum of 1 second", async () => {
+  const res = rateLimitResponse(0);
+  assertEquals(res.headers.get("Retry-After"), "1");
+  const body = await res.json();
+  assertEquals(body.retryAfterSeconds, 1);
+});
+
+Deno.test("rateLimitResponse rounds up sub-second remainders", () => {
+  const res = rateLimitResponse(1_001);
+  assertEquals(res.headers.get("Retry-After"), "2");
 });

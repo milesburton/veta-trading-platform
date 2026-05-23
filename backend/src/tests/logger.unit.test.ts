@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
 
-import { logger } from "../lib/logger.ts";
+import { logger, type LogLevel, registerLogSink } from "../lib/logger.ts";
 
 function captureStdout<T>(fn: () => T): { result: T; lines: string[] } {
   const originalWriteSync = Deno.stdout.writeSync;
@@ -199,4 +199,47 @@ Deno.test("[logger] invalid LOG_LEVEL falls back to info (subprocess)", async ()
   const lines = text.split("\n").filter((l) => l.length > 0);
   assertEquals(lines.length, 1);
   assertEquals(JSON.parse(lines[0]).level, "info");
+});
+
+Deno.test("[logger] registerLogSink forwards every emit until unsubscribed", () => {
+  const events: { level: LogLevel; msg: string; line: string; ctx?: Record<string, unknown> }[] = [];
+  const unsubscribe = registerLogSink((level, msg, line, ctx) => {
+    events.push({ level, msg, line, ctx });
+  });
+  try {
+    captureStdout(() => logger.info("hello", { user: "alice" }));
+    captureStdout(() => logger.warn("oops"));
+  } finally {
+    unsubscribe();
+  }
+  captureStdout(() => logger.info("after-unsubscribe"));
+  assertEquals(events.length, 2);
+  assertEquals(events[0].level, "info");
+  assertEquals(events[0].msg, "hello");
+  assertEquals(events[0].ctx?.user, "alice");
+  assertEquals(events[1].level, "warn");
+  assert(events[0].line.includes('"msg":"hello"'));
+});
+
+Deno.test("[logger] sink that throws does not break subsequent sinks or emit", () => {
+  const events: string[] = [];
+  const u1 = registerLogSink(() => {
+    throw new Error("boom");
+  });
+  const u2 = registerLogSink((_l, msg) => {
+    events.push(msg);
+  });
+  try {
+    captureStdout(() => logger.info("via-throwing-sink"));
+  } finally {
+    u1();
+    u2();
+  }
+  assertEquals(events, ["via-throwing-sink"]);
+});
+
+Deno.test("[logger] unsubscribe is idempotent (calling twice is harmless)", () => {
+  const u = registerLogSink(() => {});
+  u();
+  u();
 });
