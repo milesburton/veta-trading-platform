@@ -2,12 +2,38 @@ import {
   assert,
   assertEquals,
 } from "jsr:@std/assert@0.217";
+import type { LlmPolicy, LlmTriggerMode } from "../types/llm-advisory.ts";
 import {
   canAutoTrigger,
+  canTriggerFromUi,
   isPolicyEnabled,
+  isWithinAllowedHours,
+  isWorkerAllowed,
   loadPolicy,
   meetsConvictionThreshold,
 } from "../llm-advisory/policy.ts";
+
+function policy(overrides: Partial<LlmPolicy> = {}): LlmPolicy {
+  return {
+    enabled: true,
+    workerEnabled: true,
+    triggerMode: "manual" as LlmTriggerMode,
+    provider: "mock",
+    modelId: "mock-v1",
+    ollamaBaseUrl: "",
+    maxConcurrentJobs: 1,
+    maxNoteAgeMs: 300_000,
+    minRefreshMinutes: 60,
+    workerIdleTimeoutSeconds: 300,
+    workerMaxJobsPerSession: 10,
+    allowedHours: null,
+    signalConvictionThreshold: 0.7,
+    confidenceThreshold: 0.8,
+    dedupeWindowMs: 60_000,
+    autoTriggerEnabled: true,
+    ...overrides,
+  };
+}
 
 Deno.test("[llm-policy] loadPolicy: all defaults are safe when no env vars set", () => {
   // Unset all LLM vars before testing defaults
@@ -217,4 +243,69 @@ Deno.test("[llm-policy] canAutoTrigger: returns false when disabled even with au
     autoTriggerEnabled: true,
   };
   assertEquals(canAutoTrigger(policy), false);
+});
+
+Deno.test("[llm-policy] loadPolicy falls back to 'manual' when LLM_TRIGGER_MODE is invalid", () => {
+  const prev = Deno.env.get("LLM_TRIGGER_MODE");
+  Deno.env.set("LLM_TRIGGER_MODE", "nonsense-mode");
+  try {
+    const p = loadPolicy();
+    assertEquals(p.triggerMode, "manual");
+  } finally {
+    if (prev !== undefined) Deno.env.set("LLM_TRIGGER_MODE", prev);
+    else Deno.env.delete("LLM_TRIGGER_MODE");
+  }
+});
+
+Deno.test("[llm-policy] loadPolicy accepts the valid trigger modes", () => {
+  const prev = Deno.env.get("LLM_TRIGGER_MODE");
+  for (const mode of ["disabled", "manual", "on-demand-ui", "scheduled-batch", "event-driven"]) {
+    Deno.env.set("LLM_TRIGGER_MODE", mode);
+    const p = loadPolicy();
+    assertEquals(p.triggerMode, mode);
+  }
+  if (prev !== undefined) Deno.env.set("LLM_TRIGGER_MODE", prev);
+  else Deno.env.delete("LLM_TRIGGER_MODE");
+});
+
+Deno.test("[llm-policy] isWorkerAllowed requires both enabled and workerEnabled", () => {
+  assertEquals(isWorkerAllowed(policy({ enabled: false, workerEnabled: true })), false);
+  assertEquals(isWorkerAllowed(policy({ enabled: true, workerEnabled: false })), false);
+  assertEquals(isWorkerAllowed(policy({ enabled: true, workerEnabled: true })), true);
+});
+
+Deno.test("[llm-policy] canAutoTrigger fires for event-driven and scheduled-batch", () => {
+  assert(canAutoTrigger(policy({ triggerMode: "event-driven" })));
+  assert(canAutoTrigger(policy({ triggerMode: "scheduled-batch" })));
+  assertEquals(canAutoTrigger(policy({ triggerMode: "on-demand-ui" })), false);
+  assertEquals(canAutoTrigger(policy({ triggerMode: "disabled" })), false);
+});
+
+Deno.test("[llm-policy] canTriggerFromUi requires enabled + non-disabled mode", () => {
+  assertEquals(canTriggerFromUi(policy({ enabled: false })), false);
+  assertEquals(canTriggerFromUi(policy({ triggerMode: "disabled" })), false);
+  assert(canTriggerFromUi(policy({ triggerMode: "on-demand-ui" })));
+  assert(canTriggerFromUi(policy({ triggerMode: "manual" })));
+});
+
+Deno.test("[llm-policy] isWithinAllowedHours returns true when allowedHours is null", () => {
+  assert(isWithinAllowedHours(policy({ allowedHours: null })));
+});
+
+Deno.test("[llm-policy] isWithinAllowedHours returns true for malformed input", () => {
+  assert(isWithinAllowedHours(policy({ allowedHours: "abc" })));
+  assert(isWithinAllowedHours(policy({ allowedHours: "9" })));
+  assert(isWithinAllowedHours(policy({ allowedHours: "9-x" })));
+});
+
+Deno.test("[llm-policy] isWithinAllowedHours wraps midnight for ranges where start > end", () => {
+  const result = isWithinAllowedHours(policy({ allowedHours: "22-2" }));
+  const hour = new Date().getUTCHours();
+  const expected = hour >= 22 || hour < 2;
+  assertEquals(result, expected);
+});
+
+Deno.test("[llm-policy] isWithinAllowedHours respects same-day windows", () => {
+  // 0-24 should always be true
+  assert(isWithinAllowedHours(policy({ allowedHours: "0-24" })));
 });
