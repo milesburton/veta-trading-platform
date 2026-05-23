@@ -209,5 +209,258 @@ Deno.test("buildTitle and buildBody sanitise newlines in messages", () => {
   assertEquals(title.includes("\r"), false);
 });
 
+Deno.test("readTokenEnv rejects REPLACE_ME placeholder tokens", () => {
+  const prev = Deno.env.get("GITHUB_TICKETING_TOKEN");
+  Deno.env.set("GITHUB_TICKETING_TOKEN", "ghp_REPLACE_ME_with_real_token_here");
+  try {
+    assertEquals(_internalForTests.readTokenEnv(), null);
+  } finally {
+    if (prev !== undefined) Deno.env.set("GITHUB_TICKETING_TOKEN", prev);
+    else Deno.env.delete("GITHUB_TICKETING_TOKEN");
+  }
+});
+
+Deno.test("readRepoEnv rejects invalid repo formats", () => {
+  const prev = Deno.env.get("GITHUB_TICKETING_REPO");
+  Deno.env.set("GITHUB_TICKETING_REPO", "no-slash-here");
+  try {
+    assertEquals(_internalForTests.readRepoEnv(), null);
+  } finally {
+    if (prev !== undefined) Deno.env.set("GITHUB_TICKETING_REPO", prev);
+    else Deno.env.delete("GITHUB_TICKETING_REPO");
+  }
+});
+
+Deno.test("buildBody includes Correlation line when runId is provided", () => {
+  const body = _internalForTests.buildBody(
+    { severity: "CRITICAL", source: "src", message: "m" },
+    "u-1",
+    "run-abc",
+  );
+  assertEquals(body.includes("_Correlation: run-abc_"), true);
+});
+
+Deno.test("buildBody includes Detail block when detail is provided", () => {
+  const body = _internalForTests.buildBody(
+    { severity: "CRITICAL", source: "src", message: "m", detail: "stack trace here" },
+    "u-1",
+    null,
+  );
+  assertEquals(body.includes("**Detail:**"), true);
+  assertEquals(body.includes("stack trace here"), true);
+});
+
+Deno.test("createTicketForAlert ignores deduplicate hits older than the 1h window", async () => {
+  await withEnv(
+    {
+      GITHUB_TICKETING_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      GITHUB_TICKETING_REPO: "foo/bar",
+    },
+    async () => {
+      const tooOld = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+      const f = captureFetch((url) => {
+        if (url.includes("/search/issues")) {
+          return new Response(
+            JSON.stringify({
+              items: [
+                {
+                  number: 7,
+                  html_url: "https://github.com/foo/bar/issues/7",
+                  state: "open",
+                  title: "[CRITICAL] src: m",
+                  created_at: tooOld,
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        return new Response(
+          JSON.stringify({ number: 100, html_url: "https://github.com/foo/bar/issues/100" }),
+          { status: 201 },
+        );
+      });
+      try {
+        const r = await createTicketForAlert(
+          { severity: "CRITICAL", source: "src", message: "m" },
+          "u-1",
+        );
+        assertEquals(r.created, true);
+        assertEquals(r.issueNumber, 100);
+      } finally {
+        f.restore();
+      }
+    },
+  );
+});
+
+Deno.test("createTicketForAlert returns github-api-failed when issue creation 5xx", async () => {
+  await withEnv(
+    {
+      GITHUB_TICKETING_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      GITHUB_TICKETING_REPO: "foo/bar",
+    },
+    async () => {
+      const f = captureFetch((url) => {
+        if (url.includes("/search/issues")) {
+          return new Response(JSON.stringify({ items: [] }), { status: 200 });
+        }
+        return new Response("upstream blew up", { status: 502 });
+      });
+      try {
+        const r = await createTicketForAlert(
+          { severity: "CRITICAL", source: "src", message: "m" },
+          "u-1",
+        );
+        assertEquals(r.created, false);
+        assertEquals(r.reason, "github-api-failed");
+      } finally {
+        f.restore();
+      }
+    },
+  );
+});
+
+Deno.test("createTicketForAlert handles findOpenDuplicate non-OK by creating", async () => {
+  await withEnv(
+    {
+      GITHUB_TICKETING_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      GITHUB_TICKETING_REPO: "foo/bar",
+    },
+    async () => {
+      const f = captureFetch((url) => {
+        if (url.includes("/search/issues")) {
+          return new Response("auth bad", { status: 401 });
+        }
+        return new Response(
+          JSON.stringify({ number: 11, html_url: "https://github.com/foo/bar/issues/11" }),
+          { status: 201 },
+        );
+      });
+      try {
+        const r = await createTicketForAlert(
+          { severity: "CRITICAL", source: "src", message: "m" },
+          "u-1",
+        );
+        assertEquals(r.created, true);
+        assertEquals(r.issueNumber, 11);
+      } finally {
+        f.restore();
+      }
+    },
+  );
+});
+
+Deno.test("createTicketForAlert handles findOpenDuplicate fetch throw by creating", async () => {
+  await withEnv(
+    {
+      GITHUB_TICKETING_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      GITHUB_TICKETING_REPO: "foo/bar",
+    },
+    async () => {
+      let isSearch = true;
+      globalThis.fetch = ((_url: string, _init?: RequestInit) => {
+        if (isSearch) {
+          isSearch = false;
+          return Promise.reject(new Error("network down"));
+        }
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ number: 22, html_url: "https://github.com/foo/bar/issues/22" }),
+            { status: 201 },
+          ),
+        );
+      }) as typeof fetch;
+      try {
+        const r = await createTicketForAlert(
+          { severity: "CRITICAL", source: "src", message: "m" },
+          "u-1",
+        );
+        assertEquals(r.created, true);
+        assertEquals(r.issueNumber, 22);
+      } finally {
+        globalThis.fetch = realFetch;
+      }
+    },
+  );
+});
+
+Deno.test("createTicketForAlert handles createIssue fetch throw", async () => {
+  await withEnv(
+    {
+      GITHUB_TICKETING_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      GITHUB_TICKETING_REPO: "foo/bar",
+    },
+    async () => {
+      let call = 0;
+      globalThis.fetch = ((_url: string) => {
+        call++;
+        if (call === 1) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ items: [] }), { status: 200 }),
+          );
+        }
+        return Promise.reject(new Error("connect ETIMEDOUT"));
+      }) as typeof fetch;
+      try {
+        const r = await createTicketForAlert(
+          { severity: "CRITICAL", source: "src", message: "m" },
+          "u-1",
+        );
+        assertEquals(r.created, false);
+        assertEquals(r.reason, "github-api-failed");
+      } finally {
+        globalThis.fetch = realFetch;
+      }
+    },
+  );
+});
+
+Deno.test("createTicketForAlert handles commentOnIssue throw silently while deduping", async () => {
+  await withEnv(
+    {
+      GITHUB_TICKETING_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      GITHUB_TICKETING_REPO: "foo/bar",
+    },
+    async () => {
+      const recent = new Date(Date.now() - 60_000).toISOString();
+      let call = 0;
+      globalThis.fetch = ((_url: string) => {
+        call++;
+        if (call === 1) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                items: [
+                  {
+                    number: 33,
+                    html_url: "https://github.com/foo/bar/issues/33",
+                    state: "open",
+                    title: "[CRITICAL] src: m",
+                    created_at: recent,
+                  },
+                ],
+              }),
+              { status: 200 },
+            ),
+          );
+        }
+        return Promise.reject(new Error("comment write fail"));
+      }) as typeof fetch;
+      try {
+        const r = await createTicketForAlert(
+          { severity: "CRITICAL", source: "src", message: "m" },
+          "u-1",
+        );
+        assertEquals(r.created, false);
+        assertEquals(r.issueNumber, 33);
+        assertEquals(r.reason, "deduped-onto-existing");
+      } finally {
+        globalThis.fetch = realFetch;
+      }
+    },
+  );
+});
+
 if (REAL_TOKEN !== undefined) Deno.env.set("GITHUB_TICKETING_TOKEN", REAL_TOKEN);
 if (REAL_REPO !== undefined) Deno.env.set("GITHUB_TICKETING_REPO", REAL_REPO);
