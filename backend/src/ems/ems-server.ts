@@ -13,7 +13,9 @@ import "@veta/bootstrap";
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "@veta/market-client";
-import { createConsumer, createProducer } from "@veta/messaging";
+import { createProducer, createTypedConsumer } from "@veta/messaging";
+import { OrderChildSchema } from "@veta/schemas/orders";
+import type { OrderChild } from "@veta/schemas/orders";
 import { type Desk, settlementDate } from "@veta/settlement";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
@@ -79,41 +81,11 @@ const producer = await createProducer("ems").catch((err) => {
   return null;
 });
 
-interface ChildOrder {
-  childId: string;
-  parentOrderId: string;
-  clientOrderId?: string;
-  algo: string;
-  asset: string;
-  side: "BUY" | "SELL";
-  quantity: number;
-  limitPrice?: number;
-  marketPrice?: number;
-  venue?: string;
-  effectivePrice?: number;
-  sliceIndex?: number;
-  numSlices?: number;
-  vwap?: number;
-  deviation?: number;
-  tickVolume?: number;
-  algoParams?: Record<string, unknown>;
-  instrumentType?: string;
-  desk?: string;
-  marketType?: string;
-  userId?: string;
-  ts: number;
-}
-
-const consumer = await createConsumer("ems-child-orders", ["orders.child"])
-  .catch((err) => {
-    logger.warn("Cannot subscribe to orders.child", { err });
-    return null;
-  });
+type ChildOrder = OrderChild;
 
 let fillSeq = 1;
 
-consumer?.onMessage(async (_topic, raw) => {
-  const child = raw as ChildOrder;
+async function handleChildOrder(child: ChildOrder): Promise<void> {
   const tick = marketClient.getLatest();
   const midPrice = tick.prices[child.asset];
 
@@ -211,9 +183,16 @@ consumer?.onMessage(async (_topic, raw) => {
       ts: Date.now(),
     }).catch(() => {});
   }
+}
+
+const consumer = await createTypedConsumer("ems-child-orders", [
+  { topic: "orders.child", schema: OrderChildSchema, handler: handleChildOrder },
+]).catch((err) => {
+  logger.warn("Cannot subscribe to orders.child", { err });
+  return null;
 });
 
-logger.info(`Listening for orders.child on message bus`);
+logger.info(`Listening for orders.child on message bus (consumer=${consumer ? "ok" : "skipped"})`);
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
