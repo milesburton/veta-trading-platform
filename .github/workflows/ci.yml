@@ -18,40 +18,49 @@ jobs:
     name: Detect changed paths
     runs-on: ubuntu-latest
     outputs:
-      docker: ${{ steps.filter.outputs.docker }}
-      electron: ${{ steps.filter.outputs.electron }}
-      fallow: ${{ steps.filter.outputs.fallow }}
-      prometheus_rules: ${{ steps.filter.outputs.prometheus_rules }}
+      docker: ${{ fromJSON(steps.filter.outputs.outputs).docker }}
+      electron: ${{ fromJSON(steps.filter.outputs.outputs).electron }}
+      fallow: ${{ fromJSON(steps.filter.outputs.outputs).fallow }}
+      prometheus_rules: ${{ fromJSON(steps.filter.outputs.outputs).prometheus_rules }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: dorny/paths-filter@v4
+      - uses: Wandalen/wretry.action@v3.8.0
+        with:
+          action: actions/checkout@v5
+          attempt_limit: 3
+          attempt_delay: 5000
+
+      - uses: Wandalen/wretry.action@v3.8.0
         id: filter
         with:
-          filters: |
-            docker:
-              - 'docker/**'
-              - 'compose*.yml'
-              - 'backend/**'
-              - 'frontend/src/**'
-              - 'frontend/public/**'
-              - 'frontend/package.json'
-              - 'frontend/package-lock.json'
-              - 'shared/**'
-              - 'deno.json'
-              - 'deno.lock'
-              - '.github/workflows/ci.yml'
-            electron:
-              - 'frontend/**'
-              - 'electron/**'
-              - '.github/workflows/ci.yml'
-            fallow:
-              - 'frontend/**'
-              - 'shared/**'
-              - '.github/workflows/ci.yml'
-            prometheus_rules:
-              - 'observability/prometheus-rules.yml'
-              - 'observability/prometheus-rules.test.yml'
-              - '.github/workflows/ci.yml'
+          action: dorny/paths-filter@v4
+          attempt_limit: 3
+          attempt_delay: 5000
+          with: |
+            filters: |
+              docker:
+                - 'docker/**'
+                - 'compose*.yml'
+                - 'backend/**'
+                - 'frontend/src/**'
+                - 'frontend/public/**'
+                - 'frontend/package.json'
+                - 'frontend/package-lock.json'
+                - 'shared/**'
+                - 'deno.json'
+                - 'deno.lock'
+                - '.github/workflows/ci.yml'
+              electron:
+                - 'frontend/**'
+                - 'electron/**'
+                - '.github/workflows/ci.yml'
+              fallow:
+                - 'frontend/**'
+                - 'shared/**'
+                - '.github/workflows/ci.yml'
+              prometheus_rules:
+                - 'observability/prometheus-rules.yml'
+                - 'observability/prometheus-rules.test.yml'
+                - '.github/workflows/ci.yml'
 
   lint-and-test:
     name: Lint, type-check, unit tests
@@ -1042,9 +1051,13 @@ jobs:
       contents: read
       packages: write
     outputs:
-      base-tag: ${{ steps.meta.outputs.version }}
+      base-tag: ${{ fromJSON(steps.meta.outputs.outputs).version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: Wandalen/wretry.action@v3.8.0
+        with:
+          action: actions/checkout@v5
+          attempt_limit: 3
+          attempt_delay: 5000
 
       - name: Log in to GitHub Container Registry (with retry)
         env:
@@ -1065,12 +1078,16 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v6
+        uses: Wandalen/wretry.action@v3.8.0
         with:
-          images: ghcr.io/milesburton/veta-trading-platform/base
-          tags: |
-            type=sha,prefix=
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+          action: docker/metadata-action@v6
+          attempt_limit: 3
+          attempt_delay: 5000
+          with: |
+            images: ghcr.io/milesburton/veta-trading-platform/base
+            tags: |
+              type=sha,prefix=
+              type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push base image
         uses: docker/build-push-action@v7
@@ -1078,7 +1095,7 @@ jobs:
           context: .
           file: docker/base/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ fromJSON(steps.meta.outputs.outputs).tags }}
           build-args: |
             COMMIT_SHA=${{ github.sha }}
           cache-from: type=gha
@@ -1171,7 +1188,11 @@ jobs:
           - service: db-migrate
             file: docker/db-migrate/Dockerfile
     steps:
-      - uses: actions/checkout@v5
+      - uses: Wandalen/wretry.action@v3.8.0
+        with:
+          action: actions/checkout@v5
+          attempt_limit: 3
+          attempt_delay: 5000
 
       - name: Log in to GitHub Container Registry (with retry)
         env:
@@ -1196,11 +1217,15 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v6
+        uses: Wandalen/wretry.action@v3.8.0
         with:
-          images: ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}
-          tags: |
-            type=raw,value=${{ steps.sha.outputs.short }}
+          action: docker/metadata-action@v6
+          attempt_limit: 3
+          attempt_delay: 5000
+          with: |
+            images: ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}
+            tags: |
+              type=raw,value=${{ steps.sha.outputs.short }}
 
       - name: Read app version
         id: appver
@@ -1213,7 +1238,7 @@ jobs:
           file: ${{ matrix.file }}
           push: false
           load: false
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ fromJSON(steps.meta.outputs.outputs).tags }}
           build-args: |
             BASE_TAG=${{ needs.docker-base.outputs.base-tag }}
             COMMIT_SHA=${{ github.sha }}
@@ -1430,7 +1455,11 @@ jobs:
           - service: db-migrate
             file: docker/db-migrate/Dockerfile
     steps:
-      - uses: actions/checkout@v5
+      - uses: Wandalen/wretry.action@v3.8.0
+        with:
+          action: actions/checkout@v5
+          attempt_limit: 3
+          attempt_delay: 5000
 
       - name: Compute short SHA
         id: sha
