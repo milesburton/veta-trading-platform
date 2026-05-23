@@ -223,9 +223,9 @@ Deno.test("startDailySummary clamps hourUtc to the default for invalid input", (
   }
 });
 
-Deno.test("startDailySummary uses default sender (resolves false) when none provided", async () => {
+Deno.test("startDailySummary constructs successfully with no sender (uses default)", () => {
   const stats = new PlatformStats();
-  const baseNow = Date.UTC(2026, 4, 20, 8, 59, 59, 500);
+  const baseNow = Date.UTC(2026, 4, 20, 8, 30, 0);
   const h = startDailySummary({
     version: "v",
     environment: "test",
@@ -235,6 +235,7 @@ Deno.test("startDailySummary uses default sender (resolves false) when none prov
     hourUtc: 9,
     now: () => baseNow,
   });
-  await new Promise((r) => setTimeout(r, 1100));
+  const next = h.nextFireAt();
   h.stop();
+  assertEquals(next, Date.UTC(2026, 4, 20, 9, 0, 0));
 });

@@ -241,4 +241,5 @@ export const _internalForTests = {
     cachedFredParams = null;
     fredCacheExpiry = 0;
   },
+  nelsonSiegel,
 };

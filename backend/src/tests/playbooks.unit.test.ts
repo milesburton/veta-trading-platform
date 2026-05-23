@@ -107,25 +107,25 @@ Deno.test("[playbooks] bearish contextLines includes drawdown percent", () => {
 });
 
 Deno.test("[playbooks] bearish-reversal.contextLines returns [] with fewer than 3 closes", () => {
-  const c = ctx({ recentCloses: [100, 95] });
-  const lines = playbookById("bearish-reversal")?.contextLines(c) ?? [];
-  assertEquals(lines, []);
+  const pb = playbookById("bearish-reversal");
+  assert(pb, "bearish-reversal playbook must exist");
+  assertEquals(pb.contextLines(ctx({ recentCloses: [100, 95] })), []);
 });
 
 Deno.test("[playbooks] bearish-reversal.contextLines returns [] when high is 0", () => {
-  const c = ctx({ recentCloses: [0, 0, 0] });
-  const lines = playbookById("bearish-reversal")?.contextLines(c) ?? [];
-  assertEquals(lines, []);
+  const pb = playbookById("bearish-reversal");
+  assert(pb);
+  assertEquals(pb.contextLines(ctx({ recentCloses: [0, 0, 0] })), []);
 });
 
 Deno.test("[playbooks] bearish-reversal.contextLines returns [] when closes include NaN", () => {
-  const c = ctx({ recentCloses: [100, NaN, 90] });
-  const lines = playbookById("bearish-reversal")?.contextLines(c) ?? [];
-  assertEquals(lines, []);
+  const pb = playbookById("bearish-reversal");
+  assert(pb);
+  assertEquals(pb.contextLines(ctx({ recentCloses: [100, NaN, 90] })), []);
 });
 
 Deno.test("[playbooks] neutral-context.contextLines always returns []", () => {
-  const c = ctx({ recentCloses: [100, 99, 101, 102, 103] });
-  const lines = playbookById("neutral-context")?.contextLines(c) ?? null;
-  assertEquals(lines, []);
+  const pb = playbookById("neutral-context");
+  assert(pb);
+  assertEquals(pb.contextLines(ctx({ recentCloses: [100, 99, 101, 102, 103] })), []);
 });
