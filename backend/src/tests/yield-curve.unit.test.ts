@@ -197,7 +197,6 @@ Deno.test("[yield-curve] fetchFredParams fits to observed FRED rates and caches 
   await resetFredCache();
   const orig = Deno.env.get("FRED_KEY");
   Deno.env.set("FRED_KEY", "test-key");
-  // Construct a roughly normal upward-sloping curve in percent
   const series: Record<string, string> = {
     DGS3MO: "5.40",
     DGS6MO: "5.20",
@@ -222,7 +221,6 @@ Deno.test("[yield-curve] fetchFredParams fits to observed FRED rates and caches 
   const f = mockFred(map);
   try {
     const params = await fetchFredParams(store);
-    // Fit should pick something other than the defaults given the inputs.
     assert(
       params.beta0 !== 0.045 ||
         params.beta1 !== -0.015 ||
@@ -230,19 +228,15 @@ Deno.test("[yield-curve] fetchFredParams fits to observed FRED rates and caches 
         params.lambda !== 2.5,
       `expected fit to differ from defaults, got ${JSON.stringify(params)}`,
     );
-    // Long-run level should land near the 10y/30y values (~4.4-4.55%).
     assertGreater(params.beta0, 0.035);
     assertLess(params.beta0, 0.06);
-    // One snapshot persisted via the store hook.
     assertEquals(inserts.length, 1);
     assertEquals(inserts[0].source, "fred");
 
-    // Second call within the cache window must not hit the network again.
     const before = f.calls.length;
     const cached = await fetchFredParams(store);
     assertEquals(cached, params);
     assertEquals(f.calls.length, before);
-    // Cached calls do not re-persist.
     assertEquals(inserts.length, 1);
   } finally {
     f.restore();
@@ -269,7 +263,6 @@ Deno.test("[yield-curve] fetchFredParams deduplicates concurrent calls into one 
   try {
     const [a, b] = await Promise.all([fetchFredParams(), fetchFredParams()]);
     assertEquals(a, b);
-    // 7 series × one set of fetches, not two.
     assertEquals(f.calls.length, 7);
   } finally {
     f.restore();

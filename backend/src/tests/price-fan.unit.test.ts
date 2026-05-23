@@ -23,7 +23,6 @@ Deno.test("[price-fan] quantiles are non-decreasing within a step", () => {
 Deno.test("[price-fan] median (p50) close to spot at the first step", () => {
   const S = 100;
   const r = priceFan(S, 0.2, 0.05, 1, 60, 4_000, "median-test");
-  // A single 60s step with moderate vol should leave the median near spot
   const drift = (r[0].p50 - S) / S;
   assert(Math.abs(drift) < 0.005, `expected small drift, got ${drift}`);
 });
