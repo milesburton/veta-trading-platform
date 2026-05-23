@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.44.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.43.0...veta-trading-platform-v1.44.0) (2026-05-23)
+
+
+### Features
+
+* **algos:** migrate remaining 8 strategies to createTypedConsumer ([#376](https://github.com/milesburton/veta-trading-platform/issues/376)) ([b25701d](https://github.com/milesburton/veta-trading-platform/commit/b25701d8f6c67ab794db2c18d4b726b71f2dc87b))
+* **messaging:** migrate subscribeNewsSignals + limit-strategy to createTypedConsumer ([#374](https://github.com/milesburton/veta-trading-platform/issues/374)) ([70ea5e9](https://github.com/milesburton/veta-trading-platform/commit/70ea5e949d3bc798290b958eabd6dff29c390c72))
+
 ## [1.43.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.42.1...veta-trading-platform-v1.43.0) (2026-05-23)
 
 
