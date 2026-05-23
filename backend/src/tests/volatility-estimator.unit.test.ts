@@ -5,7 +5,7 @@ import {
   assertGreater,
 } from "jsr:@std/assert@0.217";
 import {
-  _resetVolCacheForTests,
+  _internalForTests,
   computeVol,
   estimateVol,
   estimateVolProfile,
@@ -112,7 +112,7 @@ Deno.test("[volatility-estimator] computeVol ewma reacts faster to recent shocks
 });
 
 Deno.test("[volatility-estimator] estimateVol returns fallback when fetch fails", async () => {
-  _resetVolCacheForTests();
+  _internalForTests.resetVolCache();
   scriptFetch([() => new Response("nope", { status: 500 })]);
   try {
     const v = await estimateVol("http://j", "AAPL", 0.33);
@@ -123,7 +123,7 @@ Deno.test("[volatility-estimator] estimateVol returns fallback when fetch fails"
 });
 
 Deno.test("[volatility-estimator] estimateVol returns fallback when fetch throws", async () => {
-  _resetVolCacheForTests();
+  _internalForTests.resetVolCache();
   scriptFetch([() => Promise.reject(new Error("boom"))]);
   try {
     const v = await estimateVol("http://j", "AAPL");
@@ -134,7 +134,7 @@ Deno.test("[volatility-estimator] estimateVol returns fallback when fetch throws
 });
 
 Deno.test("[volatility-estimator] estimateVol returns fallback when fewer than 2 candles", async () => {
-  _resetVolCacheForTests();
+  _internalForTests.resetVolCache();
   scriptFetch([() => new Response(candleBody([100]), { status: 200 })]);
   try {
     const v = await estimateVol("http://j", "MSFT", 0.42);
@@ -145,7 +145,7 @@ Deno.test("[volatility-estimator] estimateVol returns fallback when fewer than 2
 });
 
 Deno.test("[volatility-estimator] estimateVol returns fallback when fewer than 2 positive closes", async () => {
-  _resetVolCacheForTests();
+  _internalForTests.resetVolCache();
   scriptFetch([() => new Response(candleBody([0, -1, 100]), { status: 200 })]);
   try {
     const v = await estimateVol("http://j", "GOOG", 0.5);
@@ -156,7 +156,7 @@ Deno.test("[volatility-estimator] estimateVol returns fallback when fewer than 2
 });
 
 Deno.test("[volatility-estimator] estimateVol computes from candles and caches subsequent calls", async () => {
-  _resetVolCacheForTests();
+  _internalForTests.resetVolCache();
   const closes = Array.from({ length: 30 }, (_, i) => 100 + Math.sin(i / 3));
   const s = scriptFetch([
     () => new Response(candleBody(closes), { status: 200 }),
@@ -174,7 +174,7 @@ Deno.test("[volatility-estimator] estimateVol computes from candles and caches s
 });
 
 Deno.test("[volatility-estimator] estimateVolProfile returns null when fetch fails", async () => {
-  _resetVolCacheForTests();
+  _internalForTests.resetVolCache();
   scriptFetch([() => new Response("err", { status: 500 })]);
   try {
     const v = await estimateVolProfile("http://j", "AMZN");
@@ -185,7 +185,7 @@ Deno.test("[volatility-estimator] estimateVolProfile returns null when fetch fai
 });
 
 Deno.test("[volatility-estimator] estimateVolProfile returns null with insufficient candles", async () => {
-  _resetVolCacheForTests();
+  _internalForTests.resetVolCache();
   scriptFetch([() => new Response(candleBody([100]), { status: 200 })]);
   try {
     const v = await estimateVolProfile("http://j", "AMZN");
@@ -196,7 +196,7 @@ Deno.test("[volatility-estimator] estimateVolProfile returns null with insuffici
 });
 
 Deno.test("[volatility-estimator] estimateVolProfile returns full series and caches result", async () => {
-  _resetVolCacheForTests();
+  _internalForTests.resetVolCache();
   const closes = Array.from({ length: 30 }, (_, i) => 100 + Math.cos(i / 4));
   const s = scriptFetch([
     () => new Response(candleBody(closes), { status: 200 }),
@@ -217,7 +217,7 @@ Deno.test("[volatility-estimator] estimateVolProfile returns full series and cac
 });
 
 Deno.test("[volatility-estimator] estimateVolProfile synthesises timestamps when ts field absent", async () => {
-  _resetVolCacheForTests();
+  _internalForTests.resetVolCache();
   const closes = Array.from({ length: 20 }, (_, i) => 100 + i * 0.1);
   const body = JSON.stringify(closes.map((c) => ({ close: c })));
   scriptFetch([() => new Response(body, { status: 200 })]);

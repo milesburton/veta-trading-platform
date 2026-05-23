@@ -236,7 +236,9 @@ export function fetchFredParams(
   });
 }
 
-export function _resetFredCacheForTests(): void {
-  cachedFredParams = null;
-  fredCacheExpiry = 0;
-}
+export const _internalForTests = {
+  resetFredCache(): void {
+    cachedFredParams = null;
+    fredCacheExpiry = 0;
+  },
+};

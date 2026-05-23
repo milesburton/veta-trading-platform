@@ -6,7 +6,7 @@ import {
   assertLess,
 } from "jsr:@std/assert@0.217";
 import {
-  _resetFredCacheForTests,
+  _internalForTests,
   buildYieldCurveResponse,
   computeYieldCurve,
   fetchFredParams,
@@ -50,7 +50,7 @@ function mockFred(map: SeriesMap): { calls: string[]; restore: () => void } {
 }
 
 function resetFredCache(): Promise<void> {
-  _resetFredCacheForTests();
+  _internalForTests.resetFredCache();
   return Promise.resolve();
 }
 
