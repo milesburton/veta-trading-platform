@@ -235,3 +235,8 @@ export function fetchFredParams(
     throw err;
   });
 }
+
+export function _resetFredCacheForTests(): void {
+  cachedFredParams = null;
+  fredCacheExpiry = 0;
+}

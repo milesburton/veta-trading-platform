@@ -4,7 +4,43 @@ import {
   assertEquals,
   assertGreater,
 } from "jsr:@std/assert@0.217";
-import { computeVol } from "../analytics/volatility-estimator.ts";
+import {
+  _resetVolCacheForTests,
+  computeVol,
+  estimateVol,
+  estimateVolProfile,
+  fetchSpotPrice,
+} from "../analytics/volatility-estimator.ts";
+
+const realFetch = globalThis.fetch;
+
+interface FetchScript {
+  responses: (() => Response | Promise<Response>)[];
+  calls: string[];
+}
+
+function scriptFetch(responses: (() => Response | Promise<Response>)[]): FetchScript {
+  const calls: string[] = [];
+  let idx = 0;
+  globalThis.fetch = ((url: string | URL | Request) => {
+    calls.push(String(url));
+    const handler = responses[Math.min(idx, responses.length - 1)];
+    idx++;
+    return Promise.resolve(handler());
+  }) as typeof fetch;
+  return { responses, calls };
+}
+
+function restoreFetch() {
+  globalThis.fetch = realFetch;
+}
+
+function candleBody(closes: number[]) {
+  const base = 1_700_000_000_000;
+  return JSON.stringify(
+    closes.map((c, i) => ({ close: c, ts: base + i * 60_000 })),
+  );
+}
 
 function timestamps(n: number, stepMs = 60_000, start = 1_700_000_000_000): number[] {
   return Array.from({ length: n }, (_, i) => start + i * stepMs);
@@ -74,3 +110,180 @@ Deno.test("[volatility-estimator] computeVol ewma reacts faster to recent shocks
   const r = computeVol(closes, ts);
   assert(r.ewmaVol > r.rollingVol * 0.5, "EWMA should be responsive to the recent shock cluster");
 });
+
+Deno.test("[volatility-estimator] estimateVol returns fallback when fetch fails", async () => {
+  _resetVolCacheForTests();
+  scriptFetch([() => new Response("nope", { status: 500 })]);
+  try {
+    const v = await estimateVol("http://j", "AAPL", 0.33);
+    assertEquals(v, 0.33);
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] estimateVol returns fallback when fetch throws", async () => {
+  _resetVolCacheForTests();
+  scriptFetch([() => Promise.reject(new Error("boom"))]);
+  try {
+    const v = await estimateVol("http://j", "AAPL");
+    assertEquals(v, 0.25);
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] estimateVol returns fallback when fewer than 2 candles", async () => {
+  _resetVolCacheForTests();
+  scriptFetch([() => new Response(candleBody([100]), { status: 200 })]);
+  try {
+    const v = await estimateVol("http://j", "MSFT", 0.42);
+    assertEquals(v, 0.42);
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] estimateVol returns fallback when fewer than 2 positive closes", async () => {
+  _resetVolCacheForTests();
+  scriptFetch([() => new Response(candleBody([0, -1, 100]), { status: 200 })]);
+  try {
+    const v = await estimateVol("http://j", "GOOG", 0.5);
+    assertEquals(v, 0.5);
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] estimateVol computes from candles and caches subsequent calls", async () => {
+  _resetVolCacheForTests();
+  const closes = Array.from({ length: 30 }, (_, i) => 100 + Math.sin(i / 3));
+  const s = scriptFetch([
+    () => new Response(candleBody(closes), { status: 200 }),
+    () => new Response("should not be called", { status: 500 }),
+  ]);
+  try {
+    const v1 = await estimateVol("http://j", "TSLA");
+    assertGreater(v1, 0);
+    const v2 = await estimateVol("http://j", "TSLA");
+    assertAlmostEquals(v1, v2, 1e-12);
+    assertEquals(s.calls.length, 1);
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] estimateVolProfile returns null when fetch fails", async () => {
+  _resetVolCacheForTests();
+  scriptFetch([() => new Response("err", { status: 500 })]);
+  try {
+    const v = await estimateVolProfile("http://j", "AMZN");
+    assertEquals(v, null);
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] estimateVolProfile returns null with insufficient candles", async () => {
+  _resetVolCacheForTests();
+  scriptFetch([() => new Response(candleBody([100]), { status: 200 })]);
+  try {
+    const v = await estimateVolProfile("http://j", "AMZN");
+    assertEquals(v, null);
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] estimateVolProfile returns full series and caches result", async () => {
+  _resetVolCacheForTests();
+  const closes = Array.from({ length: 30 }, (_, i) => 100 + Math.cos(i / 4));
+  const s = scriptFetch([
+    () => new Response(candleBody(closes), { status: 200 }),
+    () => new Response("should not be called", { status: 500 }),
+  ]);
+  try {
+    const a = await estimateVolProfile("http://j", "NVDA");
+    assert(a !== null);
+    assertEquals(a!.ewmaSeries.length, closes.length - 1);
+    assertGreater(a!.ewmaVol, 0);
+    assertGreater(a!.rollingVol, 0);
+    const b = await estimateVolProfile("http://j", "NVDA");
+    assertEquals(b!.ewmaVol, a!.ewmaVol);
+    assertEquals(s.calls.length, 1);
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] estimateVolProfile synthesises timestamps when ts field absent", async () => {
+  _resetVolCacheForTests();
+  const closes = Array.from({ length: 20 }, (_, i) => 100 + i * 0.1);
+  const body = JSON.stringify(closes.map((c) => ({ close: c })));
+  scriptFetch([() => new Response(body, { status: 200 })]);
+  try {
+    const v = await estimateVolProfile("http://j", "META");
+    assert(v !== null);
+    assertEquals(v!.ewmaSeries.length, closes.length - 1);
+    for (const sample of v!.ewmaSeries) {
+      assert(Number.isFinite(sample.ts));
+    }
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] fetchSpotPrice returns last close on success", async () => {
+  scriptFetch([
+    () => new Response(JSON.stringify([{ close: 192.5 }]), { status: 200 }),
+  ]);
+  try {
+    const p = await fetchSpotPrice("http://j", "AAPL");
+    assertEquals(p, 192.5);
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] fetchSpotPrice returns null on HTTP error", async () => {
+  scriptFetch([() => new Response("err", { status: 503 })]);
+  try {
+    const p = await fetchSpotPrice("http://j", "AAPL");
+    assertEquals(p, null);
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] fetchSpotPrice returns null when fetch throws", async () => {
+  scriptFetch([() => Promise.reject(new Error("net"))]);
+  try {
+    const p = await fetchSpotPrice("http://j", "AAPL");
+    assertEquals(p, null);
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] fetchSpotPrice returns null on empty candle array", async () => {
+  scriptFetch([() => new Response("[]", { status: 200 })]);
+  try {
+    const p = await fetchSpotPrice("http://j", "AAPL");
+    assertEquals(p, null);
+  } finally {
+    restoreFetch();
+  }
+});
+
+Deno.test("[volatility-estimator] fetchSpotPrice returns null when close is non-positive", async () => {
+  scriptFetch([
+    () => new Response(JSON.stringify([{ close: 0 }]), { status: 200 }),
+  ]);
+  try {
+    const p = await fetchSpotPrice("http://j", "AAPL");
+    assertEquals(p, null);
+  } finally {
+    restoreFetch();
+  }
+});
+
