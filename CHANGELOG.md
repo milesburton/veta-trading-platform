@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.42.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.42.0...veta-trading-platform-v1.42.1) (2026-05-23)
+
+
+### Bug Fixes
+
+* **observability:** scope Alloy docker discovery to our compose projects ([#363](https://github.com/milesburton/veta-trading-platform/issues/363)) ([54871c3](https://github.com/milesburton/veta-trading-platform/commit/54871c3c0ac6f423ed21114852ce699cd1a4b3ac))
+
 ## [1.42.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.41.0...veta-trading-platform-v1.42.0) (2026-05-23)
 
 
