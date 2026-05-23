@@ -147,6 +147,10 @@ To update which checks are required, the same endpoint accepts a `PUT` with the 
 
 When CI suddenly regresses from steady-green to red across multiple unrelated PRs in a short window, **check GitHub's status before touching any code**. A green-to-red transition that hits jobs you didn't change is almost always an upstream incident, not a regression.
 
+Every CI run starts with a `GitHub status (advisory)` job that hits `githubstatus.com`'s unresolved-incidents API. If anything is open, the job emits a yellow `::warning::` annotation visible at the top of the run summary. The job never blocks the merge; it exists purely to surface the upstream state.
+
+To check manually:
+
 ```bash
 curl -s https://www.githubstatus.com/api/v2/incidents/unresolved.json \
   | jq '.incidents[] | {name, status, impact, created_at}'
