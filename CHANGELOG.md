@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.42.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.41.0...veta-trading-platform-v1.42.0) (2026-05-22)
+## [1.42.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.41.0...veta-trading-platform-v1.42.0) (2026-05-23)
 
 
 ### Features
@@ -14,6 +14,7 @@
 ### Bug Fixes
 
 * **consumers:** use stable Kafka group ids to stop orphan-group lag alerts ([#356](https://github.com/milesburton/veta-trading-platform/issues/356)) ([d8a50b9](https://github.com/milesburton/veta-trading-platform/commit/d8a50b97f6a51cd61533ac678fc92ad8970be6c2))
+* **security:** silence two CodeQL warnings ([#357](https://github.com/milesburton/veta-trading-platform/issues/357)) ([b254e57](https://github.com/milesburton/veta-trading-platform/commit/b254e57c2ebd7ec650313b5d2ebfaad1fbb36439))
 
 ## [1.41.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.40.0...veta-trading-platform-v1.41.0) (2026-05-21)
 
