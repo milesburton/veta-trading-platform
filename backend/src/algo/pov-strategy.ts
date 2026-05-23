@@ -9,7 +9,8 @@ import "@veta/bootstrap";
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient, type MarketTick } from "@veta/market-client";
-import { createConsumer, createProducer } from "@veta/messaging";
+import { createProducer, createTypedConsumer } from "@veta/messaging";
+import { RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
 import { logger } from "@veta/logger";
 
@@ -38,7 +39,7 @@ interface PovOrder {
   asset: string;
   side: "BUY" | "SELL";
   quantity: number;
-  limitPrice: number;
+  limitPrice?: number;
   expiresAt: number; // absolute ms
   filledQty: number;
   costBasis: number;
@@ -72,30 +73,31 @@ async function processTickForOrder(state: PovOrder, tick: MarketTick): Promise<v
   }).catch(() => {});
 }
 
-const consumer = await createConsumer("pov-algo-routed", ["orders.routed"]).catch((err) => {
+await createTypedConsumer("pov-algo-routed", [{
+  topic: "orders.routed",
+  schema: RoutedOrderSchema,
+  handler: (order) => {
+    if ((order.strategy ?? "").toUpperCase() !== "POV") return;
+
+    const id = nextId++;
+    const state: PovOrder = {
+      id,
+      orderId: order.orderId,
+      clientOrderId: order.clientOrderId,
+      asset: order.asset,
+      side: order.side,
+      quantity: order.quantity,
+      limitPrice: order.limitPrice,
+      expiresAt: Date.now() + (Number(order.expiresAt ?? 300)) * 1_000,
+      filledQty: 0,
+      costBasis: 0,
+    };
+    activeOrders.set(id, state);
+    logger.info(`Queued [${id}] ${state.side} ${state.quantity} ${state.asset} (${state.orderId})`);
+  },
+}]).catch((err) => {
   logger.warn("Cannot subscribe to orders.routed", { err });
   return null;
-});
-
-consumer?.onMessage((_topic, raw) => {
-  const order = raw as PovOrder & { strategy?: string; expiresAt?: number };
-  if ((order.strategy ?? "").toUpperCase() !== "POV") return;
-
-  const id = nextId++;
-  const state: PovOrder = {
-    id,
-    orderId: order.orderId,
-    clientOrderId: order.clientOrderId,
-    asset: order.asset,
-    side: order.side,
-    quantity: order.quantity,
-    limitPrice: order.limitPrice,
-    expiresAt: Date.now() + (Number(order.expiresAt ?? 300)) * 1_000,
-    filledQty: 0,
-    costBasis: 0,
-  };
-  activeOrders.set(id, state);
-  logger.info(`Queued [${id}] ${state.side} ${state.quantity} ${state.asset} (${state.orderId})`);
 });
 
 marketClient.onTick(async (tick) => {

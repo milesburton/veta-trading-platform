@@ -10,7 +10,8 @@ import "@veta/bootstrap";
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient, type MarketTick } from "@veta/market-client";
-import { createConsumer, createProducer } from "@veta/messaging";
+import { createProducer, createTypedConsumer } from "@veta/messaging";
+import { RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
 import { logger } from "@veta/logger";
 
@@ -102,32 +103,34 @@ async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<
   }).catch(() => {});
 }
 
-const consumer = await createConsumer("vwap-algo-routed", ["orders.routed"]).catch((err) => {
+await createTypedConsumer("vwap-algo-routed", [{
+  topic: "orders.routed",
+  schema: RoutedOrderSchema,
+  handler: (order) => {
+    if ((order.strategy ?? "").toUpperCase() !== "VWAP") return;
+
+    const params = order.algoParams ?? {};
+    const id = nextId++;
+    const state: VwapOrder = {
+      id,
+      orderId: order.orderId,
+      clientOrderId: order.clientOrderId,
+      asset: order.asset,
+      side: order.side,
+      totalQty: order.quantity,
+      filledQty: 0,
+      costBasis: 0,
+      expiresAt: Date.now() + (Number(order.expiresAt ?? 300)) * 1_000,
+      maxDeviation: Number(params.maxDeviation ?? 0.005),
+      maxSlice: Number(params.maxSlice ?? 1_000),
+      limitPrice: order.limitPrice ?? 0,
+    };
+    activeOrders.set(id, state);
+    logger.info(`Queued [${id}] ${state.side} ${state.totalQty} ${state.asset} (${state.orderId})`);
+  },
+}]).catch((err) => {
   logger.warn("Cannot subscribe to orders.routed", { err });
   return null;
-});
-
-consumer?.onMessage((_topic, raw) => {
-  const order = raw as VwapOrder & { strategy?: string; expiresAt?: number; quantity?: number; algoParams?: { maxDeviation?: number; maxSlice?: number } };
-  if ((order.strategy ?? "").toUpperCase() !== "VWAP") return;
-
-  const id = nextId++;
-  const state: VwapOrder = {
-    id,
-    orderId: order.orderId,
-    clientOrderId: order.clientOrderId,
-    asset: order.asset,
-    side: order.side,
-    totalQty: order.totalQty ?? order.quantity ?? 0,
-    filledQty: 0,
-    costBasis: 0,
-    expiresAt: Date.now() + (Number(order.expiresAt ?? 300)) * 1_000,
-    maxDeviation: order.algoParams?.maxDeviation ?? 0.005,
-    maxSlice: order.algoParams?.maxSlice ?? 1_000,
-    limitPrice: order.limitPrice ?? 0,
-  };
-  activeOrders.set(id, state);
-  logger.info(`Queued [${id}] ${state.side} ${state.totalQty} ${state.asset} (${state.orderId})`);
 });
 
 marketClient.onTick(async (tick) => {
