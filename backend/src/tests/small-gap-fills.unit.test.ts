@@ -5,15 +5,11 @@ import {
   type BondPosition,
 } from "../analytics/duration-ladder.ts";
 import { rateAt } from "../analytics/spread-analysis.ts";
-import {
-  buildYieldCurveResponse,
-  computeYieldCurve,
-  rateAt as yieldCurveRateAt,
-} from "../analytics/yield-curve.ts";
+import { _internalForTests } from "../analytics/yield-curve.ts";
 import type { YieldCurvePoint } from "../analytics/types.ts";
 import { getBond, getBonds } from "../market-sim/bondUniverse.ts";
 
-Deno.test("[duration-ladder] short-tenor bond (<3m) attributes entirely to the 3m bucket", () => {
+Deno.test("[duration-ladder] cash flow at the 3m boundary attributes entirely to the 3m bucket", () => {
   const bond: BondPosition = {
     faceValue: 1_000,
     couponRate: 0.04,
@@ -32,7 +28,7 @@ Deno.test("[duration-ladder] short-tenor bond (<3m) attributes entirely to the 3
   }
 });
 
-Deno.test("[duration-ladder] long-tenor bond (>30y) attributes entirely to the 30y bucket", () => {
+Deno.test("[duration-ladder] 50y bond places its largest bucket weight in 30y (clamps cash flows >30y)", () => {
   const bond: BondPosition = {
     faceValue: 1_000,
     couponRate: 0.05,
@@ -42,9 +38,8 @@ Deno.test("[duration-ladder] long-tenor bond (>30y) attributes entirely to the 3
     quantity: 1,
   };
   const res = computeDurationLadder([bond]);
-  const bucket30y = res.buckets.find((b) => b.tenorLabel === "30y");
-  assert(bucket30y, "30y bucket missing");
-  assert(Math.abs(bucket30y.netDv01) > 0, "30y bucket should carry positive DV01");
+  const sorted = [...res.buckets].sort((a, b) => Math.abs(b.netDv01) - Math.abs(a.netDv01));
+  assertEquals(sorted[0].tenorLabel, "30y", `largest bucket should be 30y, got ${sorted[0].tenorLabel}`);
 });
 
 Deno.test("[spread-analysis rateAt] clamps below the lowest tenor to the lowest spot", () => {
@@ -65,16 +60,14 @@ Deno.test("[spread-analysis rateAt] clamps above the highest tenor to the highes
   assertEquals(rateAt(curve, 5), 0.04);
 });
 
-Deno.test("[yield-curve] nelsonSiegel: tau=0 returns beta0 + beta1", () => {
-  const r = buildYieldCurveResponse({ beta0: 0.05, beta1: -0.02, beta2: 0.01, lambda: 2.5 });
-  assert(r.curve.length > 0);
+Deno.test("[yield-curve] nelsonSiegel: tau=0 returns beta0 + beta1 (short-circuit branch)", () => {
+  const params = { beta0: 0.05, beta1: -0.02, beta2: 0.01, lambda: 2.5 };
+  assertAlmostEquals(_internalForTests.nelsonSiegel(0, params), 0.03, 1e-12);
 });
 
-Deno.test("[yield-curve rateAt] handles tau=0 via the tau<=0 nelsonSiegel branch", () => {
+Deno.test("[yield-curve] nelsonSiegel: tau<0 also returns beta0 + beta1", () => {
   const params = { beta0: 0.05, beta1: -0.02, beta2: 0.01, lambda: 2.5 };
-  const curve = computeYieldCurve(params);
-  const r0 = yieldCurveRateAt(curve, 0);
-  assertAlmostEquals(r0, curve[0].spotRate, 1e-9);
+  assertAlmostEquals(_internalForTests.nelsonSiegel(-1, params), 0.03, 1e-12);
 });
 
 Deno.test("[bondUniverse] getBond returns the matching definition for a known symbol", () => {
