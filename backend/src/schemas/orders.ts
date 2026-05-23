@@ -116,6 +116,8 @@ export const OrderChildSchema = z.object({
   entryPrice: z.number().positive().optional(),
   signalBps: z.number().optional(),
   trancheIndex: z.number().int().nonnegative().optional(),
+  effectivePrice: z.number().positive().optional(),
+  tickVolume: z.number().nonnegative().optional(),
 });
 export type OrderChild = z.infer<typeof OrderChildSchema>;
 

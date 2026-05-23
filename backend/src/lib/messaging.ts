@@ -20,6 +20,7 @@ import {
   type KafkaMessage,
   type Producer,
 } from "npm:kafkajs@2.2.4";
+import type { z } from "@veta/zod";
 import { logger } from "@veta/logger";
 import { injectTraceContext, withExtractedContext } from "./telemetry.ts";
 
@@ -240,5 +241,65 @@ export function createConsumer(
       generation++;
       await activeConsumer?.disconnect();
     },
+  });
+}
+
+export interface TopicBinding<T> {
+  topic: string;
+  schema: z.ZodType<T>;
+  handler: (value: T) => Promise<void> | void;
+}
+
+// deno-lint-ignore no-explicit-any
+type AnyTopicBinding = TopicBinding<any>;
+
+export interface TypedConsumerOptions {
+  handlerTimeoutMs?: number;
+  onInvalid?: (topic: string, raw: unknown, error: z.ZodError) => void;
+}
+
+export function createTypedConsumer(
+  groupId: string,
+  bindings: AnyTopicBinding[],
+  options: TypedConsumerOptions = {},
+): Promise<MsgConsumer> {
+  const byTopic = new Map<string, AnyTopicBinding>();
+  for (const b of bindings) {
+    if (byTopic.has(b.topic)) {
+      throw new Error(`createTypedConsumer: duplicate binding for topic '${b.topic}'`);
+    }
+    byTopic.set(b.topic, b);
+  }
+
+  const onInvalid = options.onInvalid ?? ((topic, _raw, err) => {
+    logger.warn("typed consumer dropped invalid message", {
+      ...LIB,
+      groupId,
+      topic,
+      err,
+    });
+  });
+
+  return createConsumer(groupId, [...byTopic.keys()], `veta-${groupId}`, {
+    handlerTimeoutMs: options.handlerTimeoutMs,
+  }).then((consumer) => {
+    consumer.onMessage(async (topic, raw) => {
+      const binding = byTopic.get(topic);
+      if (!binding) {
+        logger.warn("typed consumer received message for unbound topic", {
+          ...LIB,
+          groupId,
+          topic,
+        });
+        return;
+      }
+      const result = binding.schema.safeParse(raw);
+      if (!result.success) {
+        onInvalid(topic, raw, result.error);
+        return;
+      }
+      await binding.handler(result.data);
+    });
+    return consumer;
   });
 }

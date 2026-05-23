@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 61,
-      "cases": 789,
+      "cases": 790,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -58,7 +58,7 @@
         "request-source.unit.test.ts": 4,
         "yield-curve.unit.test.ts": 15,
         "accessLogThrottle.test.ts": 5,
-        "messaging.test.ts": 3,
+        "messaging.test.ts": 4,
         "parse-ticket-handler.unit.test.ts": 11,
         "runtime-config-store.test.ts": 13,
         "price-fan.unit.test.ts": 9,
@@ -86,8 +86,8 @@
       "perFile": {}
     },
     "testcontainers": {
-      "files": 13,
-      "cases": 173,
+      "files": 14,
+      "cases": 178,
       "perFile": {
         "testcontainers.smoke.test.ts": 2,
         "testcontainers.stack.test.ts": 1,
@@ -101,7 +101,8 @@
         "smoke.full.tc.test.ts": 65,
         "job-store.integration.tc.test.ts": 15,
         "weight-store.integration.tc.test.ts": 5,
-        "messaging.integration.tc.test.ts": 6
+        "messaging.integration.tc.test.ts": 6,
+        "typed-consumer.integration.tc.test.ts": 5
       }
     }
   },
