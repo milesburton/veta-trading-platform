@@ -23,11 +23,7 @@ jobs:
       fallow: ${{ fromJSON(steps.filter.outputs.outputs).fallow }}
       prometheus_rules: ${{ fromJSON(steps.filter.outputs.outputs).prometheus_rules }}
     steps:
-      - uses: Wandalen/wretry.action@v3.8.0
-        with:
-          action: actions/checkout@v5
-          attempt_limit: 3
-          attempt_delay: 5000
+      - uses: actions/checkout@v5
 
       - uses: Wandalen/wretry.action@v3.8.0
         id: filter
@@ -1053,11 +1049,7 @@ jobs:
     outputs:
       base-tag: ${{ fromJSON(steps.meta.outputs.outputs).version }}
     steps:
-      - uses: Wandalen/wretry.action@v3.8.0
-        with:
-          action: actions/checkout@v5
-          attempt_limit: 3
-          attempt_delay: 5000
+      - uses: actions/checkout@v5
 
       - name: Log in to GitHub Container Registry (with retry)
         env:
@@ -1188,11 +1180,7 @@ jobs:
           - service: db-migrate
             file: docker/db-migrate/Dockerfile
     steps:
-      - uses: Wandalen/wretry.action@v3.8.0
-        with:
-          action: actions/checkout@v5
-          attempt_limit: 3
-          attempt_delay: 5000
+      - uses: actions/checkout@v5
 
       - name: Log in to GitHub Container Registry (with retry)
         env:
@@ -1455,11 +1443,7 @@ jobs:
           - service: db-migrate
             file: docker/db-migrate/Dockerfile
     steps:
-      - uses: Wandalen/wretry.action@v3.8.0
-        with:
-          action: actions/checkout@v5
-          attempt_limit: 3
-          attempt_delay: 5000
+      - uses: actions/checkout@v5
 
       - name: Compute short SHA
         id: sha
