@@ -44,6 +44,11 @@ export default defineConfig({
           label: "GitHub",
           href: "https://github.com/milesburton/veta-trading-platform",
         },
+        {
+          icon: "discord",
+          label: "Discord",
+          href: "https://discord.gg/tSGgsKnz",
+        },
       ],
       logo: {
         alt: "VETA",
