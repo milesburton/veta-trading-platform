@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 58,
-      "cases": 704,
+      "files": 60,
+      "cases": 747,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -14,7 +14,7 @@
         "journal.test.ts": 10,
         "gridQuery.test.ts": 31,
         "analytics.unit.test.ts": 22,
-        "llm-policy.test.ts": 9,
+        "llm-policy.test.ts": 18,
         "llm-dedupe.test.ts": 13,
         "llm-pg-retry.unit.test.ts": 6,
         "feature-engine.test.ts": 14,
@@ -42,7 +42,7 @@
         "bug-report-route.unit.test.ts": 10,
         "playbooks.unit.test.ts": 10,
         "telemetry-route.unit.test.ts": 6,
-        "discord-notifier.unit.test.ts": 12,
+        "discord-notifier.unit.test.ts": 23,
         "ticketing.unit.test.ts": 17,
         "service-registry.unit.test.ts": 3,
         "pipeline.bug-and-alert.unit.test.ts": 4,
@@ -61,7 +61,9 @@
         "messaging.test.ts": 3,
         "parse-ticket-handler.unit.test.ts": 11,
         "runtime-config-store.test.ts": 4,
-        "price-fan.unit.test.ts": 9
+        "price-fan.unit.test.ts": 9,
+        "alerts-route.unit.test.ts": 15,
+        "timeScale.unit.test.ts": 8
       }
     },
     "integration": {

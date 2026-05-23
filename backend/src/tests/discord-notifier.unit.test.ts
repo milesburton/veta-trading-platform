@@ -1,6 +1,13 @@
 // fallow-ignore-file unused-file
-import { assertEquals } from "jsr:@std/assert@0.217";
-import { notifyDiscord, sendDailySummary } from "../gateway/discord-notifier.ts";
+import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import {
+  buildLoadgenMessage,
+  isBugReportValid,
+  notifyDiscord,
+  notifyDiscordBug,
+  notifyDiscordLoadgen,
+  sendDailySummary,
+} from "../gateway/discord-notifier.ts";
 
 const REAL_WEBHOOK = Deno.env.get("DISCORD_WEBHOOK_URL");
 const realFetch = globalThis.fetch;
@@ -311,4 +318,160 @@ Deno.test("notifyDiscord skips renderer entirely when DISCORD_ATTACH_GRAFANA_PAN
   } finally {
     Deno.env.delete("DISCORD_ATTACH_GRAFANA_PANELS");
   }
+});
+
+Deno.test("notifyDiscord swallows fetch errors and continues", async () => {
+  await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
+    globalThis.fetch = (() => Promise.reject(new Error("net down"))) as typeof fetch;
+    try {
+      await notifyDiscord({ severity: "CRITICAL", source: "kill-switch", message: "x" }, "u-1");
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});
+
+Deno.test("isBugReportValid rejects empty title / short description", () => {
+  assertEquals(isBugReportValid({ title: "", description: "long enough body" }), false);
+  assertEquals(isBugReportValid({ title: "ok", description: "short" }), false);
+  assertEquals(isBugReportValid({ title: "ab", description: "long enough body" }), false);
+  assertEquals(isBugReportValid({ title: "good title", description: "long enough body" }), true);
+});
+
+Deno.test("notifyDiscordBug returns false when report is invalid", async () => {
+  await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
+    const f = captureFetch();
+    try {
+      const ok = await notifyDiscordBug(
+        { title: "x", description: "y" },
+        "u-1",
+        "Alice",
+      );
+      assertEquals(ok, false);
+      assertEquals(f.calls.length, 0);
+    } finally {
+      f.restore();
+    }
+  });
+});
+
+Deno.test("notifyDiscordBug returns false when no webhook is configured", async () => {
+  const prev = Deno.env.get("DISCORD_WEBHOOK_URL");
+  const prevBug = Deno.env.get("DISCORD_BUG_WEBHOOK_URL");
+  Deno.env.delete("DISCORD_WEBHOOK_URL");
+  Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
+  try {
+    const ok = await notifyDiscordBug(
+      { title: "valid title", description: "valid description here" },
+      "u-1",
+      "Alice",
+    );
+    assertEquals(ok, false);
+  } finally {
+    if (prev !== undefined) Deno.env.set("DISCORD_WEBHOOK_URL", prev);
+    if (prevBug !== undefined) Deno.env.set("DISCORD_BUG_WEBHOOK_URL", prevBug);
+  }
+});
+
+Deno.test("notifyDiscordBug posts as 'VETA Bug Reports' with all optional fields", async () => {
+  await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
+    const f = captureFetch();
+    try {
+      const ok = await notifyDiscordBug(
+        {
+          title: "Chart freezes on tab switch",
+          description: "Steps to reproduce: 1. Open dashboard 2. Switch tab. Result: spinner.",
+          category: "ui",
+          url: "https://veta/dashboard",
+          userAgent: "Mozilla/5.0 Firefox",
+        },
+        "u-42",
+        "Alice",
+      );
+      assertEquals(ok, true);
+      const calls = f.discordCalls();
+      assertEquals(calls.length, 1);
+      const body = JSON.parse(calls[0].body);
+      assertEquals(body.username, "VETA Bug Reports");
+      assert(body.content.includes("Chart freezes"));
+      assert(body.content.includes("Alice"));
+      assert(body.content.includes("Category: `ui`"));
+      assert(body.content.includes("Page: https://veta/dashboard"));
+      assert(body.content.includes("UA: `Mozilla/5.0 Firefox`"));
+    } finally {
+      f.restore();
+    }
+  });
+});
+
+Deno.test("notifyDiscordBug prefers DISCORD_BUG_WEBHOOK_URL when set", async () => {
+  const prevBug = Deno.env.get("DISCORD_BUG_WEBHOOK_URL");
+  Deno.env.set("DISCORD_BUG_WEBHOOK_URL", "https://discord.com/api/webhooks/999/bug");
+  await withWebhook("https://discord.com/api/webhooks/123/alerts", async () => {
+    const f = captureFetch();
+    try {
+      await notifyDiscordBug(
+        { title: "valid title", description: "valid description here" },
+        "u-1",
+        "Alice",
+      );
+      const calls = f.discordCalls();
+      assertEquals(calls.length, 1);
+      assertEquals(calls[0].url, "https://discord.com/api/webhooks/999/bug");
+    } finally {
+      f.restore();
+    }
+  });
+  if (prevBug === undefined) Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
+  else Deno.env.set("DISCORD_BUG_WEBHOOK_URL", prevBug);
+});
+
+Deno.test("buildLoadgenMessage formats start with a runner and note", () => {
+  const msg = buildLoadgenMessage({ event: "start", runner: "k6-burst-2026-05-23", note: "30m" });
+  assert(msg.startsWith("🧪 **Loadgen `k6-burst-2026-05-23` started** — 30m"));
+  assert(msg.includes("disregard"));
+});
+
+Deno.test("buildLoadgenMessage formats stop without a note", () => {
+  const msg = buildLoadgenMessage({ event: "stop", runner: "k6" });
+  assert(msg.startsWith("✅ **Loadgen `k6` stopped**"));
+  assert(msg.includes("real signal"));
+});
+
+Deno.test("buildLoadgenMessage sanitises newlines in runner / note", () => {
+  const msg = buildLoadgenMessage({
+    event: "start",
+    runner: "k6\nbad",
+    note: "ev\nil",
+  });
+  assertEquals(msg.includes("\n", msg.indexOf("Loadgen")), true);
+  const runnerPart = msg.match(/`([^`]+)`/)?.[1] ?? "";
+  assertEquals(runnerPart.includes("\n"), false);
+});
+
+Deno.test("notifyDiscordLoadgen returns false when webhook is missing", async () => {
+  const prev = Deno.env.get("DISCORD_WEBHOOK_URL");
+  Deno.env.delete("DISCORD_WEBHOOK_URL");
+  try {
+    const ok = await notifyDiscordLoadgen({ event: "start", runner: "k6" });
+    assertEquals(ok, false);
+  } finally {
+    if (prev !== undefined) Deno.env.set("DISCORD_WEBHOOK_URL", prev);
+  }
+});
+
+Deno.test("notifyDiscordLoadgen posts as 'VETA Loadgen'", async () => {
+  await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
+    const f = captureFetch();
+    try {
+      const ok = await notifyDiscordLoadgen({ event: "stop", runner: "k6" });
+      assertEquals(ok, true);
+      const calls = f.discordCalls();
+      assertEquals(calls.length, 1);
+      const body = JSON.parse(calls[0].body);
+      assertEquals(body.username, "VETA Loadgen");
+    } finally {
+      f.restore();
+    }
+  });
 });
