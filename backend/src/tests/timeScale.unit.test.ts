@@ -11,8 +11,11 @@ Deno.test("[timeScale] TRADING_DAY_MINUTES is 390", () => {
   assertEquals(TRADING_DAY_MINUTES, 390);
 });
 
-Deno.test("[timeScale] TIME_SCALE is a positive number", () => {
+Deno.test("[timeScale] TIME_SCALE reflects env override or the 60 default", () => {
   assert(TIME_SCALE > 0);
+  const envVal = Number(Deno.env.get("TIME_SCALE"));
+  const expected = envVal || 60;
+  assertEquals(TIME_SCALE, expected);
 });
 
 Deno.test("[timeScale] currentMarketMinute returns an int in [0, TRADING_DAY_MINUTES)", () => {

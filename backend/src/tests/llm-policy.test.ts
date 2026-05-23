@@ -259,13 +259,16 @@ Deno.test("[llm-policy] loadPolicy falls back to 'manual' when LLM_TRIGGER_MODE 
 
 Deno.test("[llm-policy] loadPolicy accepts the valid trigger modes", () => {
   const prev = Deno.env.get("LLM_TRIGGER_MODE");
-  for (const mode of ["disabled", "manual", "on-demand-ui", "scheduled-batch", "event-driven"]) {
-    Deno.env.set("LLM_TRIGGER_MODE", mode);
-    const p = loadPolicy();
-    assertEquals(p.triggerMode, mode);
+  try {
+    for (const mode of ["disabled", "manual", "on-demand-ui", "scheduled-batch", "event-driven"]) {
+      Deno.env.set("LLM_TRIGGER_MODE", mode);
+      const p = loadPolicy();
+      assertEquals(p.triggerMode, mode);
+    }
+  } finally {
+    if (prev !== undefined) Deno.env.set("LLM_TRIGGER_MODE", prev);
+    else Deno.env.delete("LLM_TRIGGER_MODE");
   }
-  if (prev !== undefined) Deno.env.set("LLM_TRIGGER_MODE", prev);
-  else Deno.env.delete("LLM_TRIGGER_MODE");
 });
 
 Deno.test("[llm-policy] isWorkerAllowed requires both enabled and workerEnabled", () => {
