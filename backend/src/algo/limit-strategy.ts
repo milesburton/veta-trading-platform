@@ -10,7 +10,8 @@ import "@veta/bootstrap";
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { createMarketSimClient } from "@veta/market-client";
-import { createConsumer, createProducer } from "@veta/messaging";
+import { createProducer, createTypedConsumer } from "@veta/messaging";
+import { RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
 import { logger } from "@veta/logger";
 
@@ -42,33 +43,33 @@ interface PendingLimit {
 
 const pendingOrders: PendingLimit[] = [];
 
-// Subscribe to orders.routed — filter for LIMIT strategy
-const consumer = await createConsumer("limit-algo-routed", ["orders.routed"])
-  .catch((err) => {
-    logger.warn("Cannot subscribe to orders.routed", { err });
-    return null;
-  });
-
-consumer?.onMessage((_topic, raw) => {
-  const order = raw as PendingLimit & { strategy?: string; expiresAt?: number };
-  if ((order.strategy ?? "LIMIT").toUpperCase() !== "LIMIT") return;
-
-  const pending: PendingLimit = {
-    orderId: order.orderId,
-    clientOrderId: order.clientOrderId,
-    asset: order.asset,
-    side: order.side,
-    quantity: order.quantity,
-    limitPrice: order.limitPrice,
-    // expiresAt from OMS is seconds duration; convert to absolute ms
-    expiresAt: Date.now() + (Number(order.expiresAt ?? 300)) * 1_000,
-    remainingQty: order.quantity,
-    filledQty: 0,
-    avgFillPrice: 0,
-  };
-
-  logger.info(`Queued ${pending.side} ${pending.quantity} ${pending.asset} @ ${pending.limitPrice} (${pending.orderId})`);
-  pendingOrders.push(pending);
+await createTypedConsumer("limit-algo-routed", [{
+  topic: "orders.routed",
+  schema: RoutedOrderSchema,
+  handler: (order) => {
+    if ((order.strategy ?? "LIMIT").toUpperCase() !== "LIMIT") return;
+    if (order.limitPrice === undefined) {
+      logger.warn(`LIMIT order ${order.orderId} missing limitPrice`);
+      return;
+    }
+    const pending: PendingLimit = {
+      orderId: order.orderId,
+      clientOrderId: order.clientOrderId,
+      asset: order.asset,
+      side: order.side,
+      quantity: order.quantity,
+      limitPrice: order.limitPrice,
+      expiresAt: Date.now() + (Number(order.expiresAt ?? 300)) * 1_000,
+      remainingQty: order.quantity,
+      filledQty: 0,
+      avgFillPrice: 0,
+    };
+    logger.info(`Queued ${pending.side} ${pending.quantity} ${pending.asset} @ ${pending.limitPrice} (${pending.orderId})`);
+    pendingOrders.push(pending);
+  },
+}]).catch((err) => {
+  logger.warn("Cannot subscribe to orders.routed", { err });
+  return null;
 });
 
 marketClient.onTick(async (tick) => {

@@ -1,4 +1,5 @@
-import { createConsumer } from "@veta/messaging";
+import { createTypedConsumer } from "@veta/messaging";
+import { NewsSignalSchema } from "@veta/schemas/news";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
 
@@ -88,10 +89,11 @@ export function subscribeNewsSignals(
   groupId: string,
   label: string,
 ): void {
-  createConsumer(groupId, ["news.signal"]).then((consumer) => {
-    consumer.onMessage((_topic, raw) => {
-      const sig = raw as { symbol: string; sentiment: string; score: number };
+  createTypedConsumer(groupId, [{
+    topic: "news.signal",
+    schema: NewsSignalSchema,
+    handler: (sig) => {
       logger.info(`[${label}] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`);
-    });
-  }).catch(() => {}); // non-fatal
+    },
+  }]).catch(() => {});
 }

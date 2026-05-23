@@ -22,6 +22,7 @@
     "@veta/schemas/orders": "./backend/src/schemas/orders.ts",
     "@veta/schemas/risk": "./backend/src/schemas/risk.ts",
     "@veta/schemas/user": "./backend/src/schemas/user.ts",
+    "@veta/schemas/news": "./backend/src/schemas/news.ts",
     "@veta/types/orders": "./backend/src/types/orders.ts",
     "@veta/types/trade": "./backend/src/types/types.ts",
     "@veta/types/intelligence": "./backend/src/types/intelligence.ts",
