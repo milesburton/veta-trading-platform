@@ -118,7 +118,6 @@ Deno.test({
         await t.step(
           "claimNextJob picks highest priority then oldest createdAt and marks it running",
           async () => {
-            // Fresh table state: cancel anything we left behind
             await store.cancelJobsForSymbol("MSFT");
 
             const now = Date.now();
@@ -138,9 +137,8 @@ Deno.test({
         );
 
         await t.step("claimNextJob returns null when no queued jobs remain", async () => {
-          // Drain whatever is still queued from the previous step
           while ((await store.claimNextJob("drainer")) !== null) {
-            // loop
+            /* drain */
           }
           assertEquals(await store.claimNextJob("worker-B"), null);
         });
@@ -173,17 +171,27 @@ Deno.test({
           assertEquals(limited.length, 1);
         });
 
-        await t.step("getPendingJobCount counts queued + running only", async () => {
-          // Wipe via cancel + complete so the count is deterministic
+        await t.step("getPendingJobCount counts queued + running only, not terminal", async () => {
+          const before = await store.getPendingJobCount();
           const sym = "CNT-" + crypto.randomUUID().slice(0, 6);
           const q = await store.insertJob(baseJob({ symbol: sym }));
           const r = await store.insertJob(baseJob({ symbol: sym }));
-          const d = await store.insertJob(baseJob({ symbol: sym }));
+          const done = await store.insertJob(baseJob({ symbol: sym }));
+          const failed = await store.insertJob(baseJob({ symbol: sym }));
+          const cancelled = await store.insertJob(baseJob({ symbol: sym }));
           await store.updateJobStatus(r, "running");
-          await store.updateJobStatus(d, "done", { completedAt: Date.now() });
-          const count = await store.getPendingJobCount();
-          assert(count >= 2, `expected >= 2 pending, got ${count}`);
-          // Cleanup the queued so later sweeps don't trip
+          await store.updateJobStatus(done, "done", { completedAt: Date.now() });
+          await store.updateJobStatus(failed, "failed", {
+            completedAt: Date.now(),
+            errorMessage: "boom",
+          });
+          await store.updateJobStatus(cancelled, "cancelled");
+          const after = await store.getPendingJobCount();
+          assertEquals(
+            after - before,
+            2,
+            `expected exactly +2 pending (queued + running), saw before=${before} after=${after}`,
+          );
           await store.updateJobStatus(q, "cancelled");
           await store.updateJobStatus(r, "done", { completedAt: Date.now() });
         });
@@ -192,7 +200,6 @@ Deno.test({
           const hash = "hh-" + crypto.randomUUID();
           await store.insertJob(baseJob({ contextHash: hash, createdAt: Date.now() }));
           assertEquals(await store.hasRecentJob(hash, 10_000), true);
-          // Zero-width window: nothing is "more recent than now()"
           assertEquals(await store.hasRecentJob(hash, 0), false);
           assertEquals(await store.hasRecentJob("missing-hash", 10_000), false);
         });
@@ -222,7 +229,6 @@ Deno.test({
             endedAt: Date.now(),
             exitReason: "idle-timeout",
           });
-          // No getter, but we can confirm via direct query
           const client = await pool.connect();
           try {
             const { rows } = await client.queryArray<
@@ -264,7 +270,6 @@ Deno.test({
 
         await t.step("sweepStuckJobs requeues old running jobs", async () => {
           const stuck = await store.insertJob(baseJob({ symbol: "STK" }));
-          // Mark running with an old claimedAt by direct SQL
           const client = await pool.connect();
           try {
             await client.queryArray(

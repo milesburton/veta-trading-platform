@@ -1,5 +1,5 @@
 import { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
-import { assertEquals, assertNotEquals } from "jsr:@std/assert@0.217";
+import { assertEquals, assertNotEquals, assertStrictEquals } from "jsr:@std/assert@0.217";
 import {
   createWeightStore,
   DEFAULT_WEIGHTS,
@@ -26,10 +26,10 @@ Deno.test({
           assertEquals(w, DEFAULT_WEIGHTS);
         });
 
-        await t.step("second getWeights hits the in-memory cache", async () => {
+        await t.step("second getWeights returns the cached object (same reference)", async () => {
           const a = await store.getWeights();
           const b = await store.getWeights();
-          assertEquals(a, b);
+          assertStrictEquals(a, b);
         });
 
         await t.step(
@@ -56,7 +56,6 @@ Deno.test({
           async () => {
             const fresh = await createWeightStore(pool);
             const w = await fresh.getWeights();
-            // Whatever the previous step saved should still be there
             assertEquals(typeof w.momentum, "number");
             assertEquals(w.momentum, 0.5);
           },
