@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.45.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.44.0...veta-trading-platform-v1.45.0) (2026-05-26)
+
+
+### Features
+
+* **risk:** add selfCrossEnabled config toggle ([#380](https://github.com/milesburton/veta-trading-platform/issues/380)) ([0ffcf53](https://github.com/milesburton/veta-trading-platform/commit/0ffcf5374f5ec49471c201b771ae4c7276ed3ff5))
+
 ## [1.44.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.43.0...veta-trading-platform-v1.44.0) (2026-05-23)
 
 
