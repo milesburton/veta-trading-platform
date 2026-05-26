@@ -16,7 +16,7 @@ The platform is deployed to a homelab host (Proxmox LXC, 32 cores, 64 GB RAM, 2 
 | Application | [`https://veta.mnetcs.com/`](https://veta.mnetcs.com/) |
 | Grafana dashboards | [`https://veta.mnetcs.com/grafana/`](https://veta.mnetcs.com/grafana/) |
 
-Both are served by Traefik on the homelab and exposed to the public internet through a reverse SSH tunnel from an OVH dedicated server. There is no Fly.io deployment.
+Both are served by Traefik on the homelab and exposed to the public internet through a reverse SSH tunnel from an OVH dedicated server.
 
 ## Local development
 

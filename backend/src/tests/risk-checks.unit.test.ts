@@ -37,6 +37,7 @@ const DEFAULT_CONFIG: RiskConfig = {
   haltMovePercent: 5,
   breakerCooldownMs: 60_000,
   breakersEnabled: true,
+  selfCrossEnabled: true,
 };
 
 function makeState(overrides: Partial<RiskState> = {}): RiskState {

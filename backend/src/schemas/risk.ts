@@ -17,6 +17,7 @@ export const RiskConfigSchema = z.object({
   haltMovePercent: z.number(),
   breakerCooldownMs: z.number().int(),
   breakersEnabled: z.boolean(),
+  selfCrossEnabled: z.boolean().default(true),
 });
 export type RiskConfig = z.infer<typeof RiskConfigSchema>;
 
