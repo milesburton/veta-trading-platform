@@ -38,6 +38,7 @@ const config: RiskConfig = {
   haltMovePercent: 10,
   breakerCooldownMs: 60_000,
   breakersEnabled: true,
+  selfCrossEnabled: true,
 };
 
 const configStore = createConfigStore(config);
@@ -525,6 +526,7 @@ Deno.serve({ port: PORT }, async (req) => {
       next.breakerCooldownMs = Math.max(1_000, body.breakerCooldownMs);
     }
     if (body.breakersEnabled !== undefined) next.breakersEnabled = body.breakersEnabled;
+    if (body.selfCrossEnabled !== undefined) next.selfCrossEnabled = body.selfCrossEnabled;
 
     if (TEST_MODE) {
       Object.assign(config, next);

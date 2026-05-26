@@ -102,6 +102,7 @@ Deno.test("[risk-schema] RiskConfigUpdateSchema accepts all fields", () => {
     haltMovePercent: 10,
     breakerCooldownMs: 60_000,
     breakersEnabled: true,
+    selfCrossEnabled: true,
   });
   assert(ok.success, JSON.stringify(ok));
 });

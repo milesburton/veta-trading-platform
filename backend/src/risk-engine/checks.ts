@@ -157,6 +157,7 @@ export function checkMaxOpenOrders(state: RiskState, req: CheckRequest): CheckHi
 }
 
 export function checkSelfCross(state: RiskState, req: CheckRequest): CheckHit {
+  if (state.config.selfCrossEnabled === false) return null;
   const oppositeSide = req.side === "BUY" ? "SELL" : "BUY";
   const conflict = state.workingOrders.find(
     (o) => o.userId === req.userId && o.symbol === req.symbol && o.side === oppositeSide,
