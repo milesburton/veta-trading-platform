@@ -6,29 +6,15 @@ description: Run VETA locally in under five minutes.
 ## Prerequisites
 
 - Docker and VS Code (or JetBrains) with Dev Containers support
-- OR Deno 2.7+, Node 24+, and PostgreSQL 16+
 
-## Dev Container (recommended)
+## Dev Container
 
 1. Clone the repository.
 2. Open in VS Code and select "Reopen in Container".
 3. The MOTD lists the available commands.
 4. Run `cd frontend && npm run dev` for the browser UI.
 
-## Manual setup (without Dev Container)
-
-```sh
-# Backend services. Docker Compose runs the full stack.
-docker compose --profile trading up -d
-
-# Frontend dev server (separate terminal)
-cd frontend && npm run dev
-
-# Electron desktop app
-cd frontend && npm run electron:dev
-```
-
-Verify the stack is up: `docker compose ps` should show the core services healthy. The frontend dev server proxies API calls to the gateway at port 5011 (dev container only; production traffic enters via Traefik).
+The dev container starts the full backend stack via `docker compose up -d` on attach. To restart it inside the container: `docker compose --profile trading up -d`. The frontend dev server proxies API calls to the gateway at port 5011 (dev container only; production traffic enters via Traefik).
 
 ## Default credentials
 
