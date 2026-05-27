@@ -1,22 +1,24 @@
 /**
- * Panel walkthrough — opens every panel from PANEL_IDS, captures any console
- * errors, and screenshots each panel for review. Generates a JSON report at
- * docs/panel-walkthrough/report.json that lists per-panel verdicts.
+ * Panel walkthrough: opens every panel from PANEL_IDS, captures console and
+ * page errors, scans the rendered DOM for known error markers (flexlayout's
+ * "Error rendering component" banner, the app-level boundary, per-panel
+ * "Could not reach ... service" states), and screenshots each panel. Writes
+ * a JSON report at docs/panel-walkthrough/report.json.
  *
- * This is informational, not gating: the test always passes (apart from the
- * runner harness). The point is the report + screenshots, which provide a
- * baseline for spotting "this panel used to render, now it's blank" issues
- * without spending 30 minutes manually clicking through 51 panels.
+ * Four persona tests (admin / trader / sales / external-client) are
+ * informational and always emit a verdict. A final "no panel captured with
+ * error markers" test gates the run: if any panel ended up screenshotted in
+ * an errored state, it throws, which fails the Playwright job and prevents
+ * the workflow's commit-back step from publishing broken screenshots.
  *
- * Persona: logs in as admin first; admin is the most permissive role (can
- * see all admin-only panels and all read-only panels). Trader-only panels
- * (order-ticket, order-blotter etc.) are skipped — covered separately by
- * the persona-specific dashboards in visual-anomalies.spec.ts.
+ * Admin runs first as the most permissive role. Trader-only, sales-only,
+ * and external-client-only panels are covered by the matching persona
+ * tests because admin can't see them.
  */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect, test } from "@playwright/test";
+import { expect, type Locator, test } from "@playwright/test";
 import {
   EXTERNAL_CLIENT_LIMITS,
   EXTERNAL_CLIENT_USER,
@@ -24,6 +26,7 @@ import {
   SALES_USER,
 } from "./helpers/GatewayMock.ts";
 import { AppPage } from "./helpers/pages/AppPage.ts";
+import { findErrorMarkers } from "./helpers/screenshotGuard.ts";
 
 const REPORT_DIR = path.resolve(
   fileURLToPath(import.meta.url),
@@ -92,6 +95,7 @@ type PanelVerdict = {
   rendered: boolean;
   consoleErrors: string[];
   pageErrors: string[];
+  errorMarkers?: string[];
   screenshot: string | null;
   notes: string | null;
 };
@@ -204,12 +208,26 @@ async function walkPanels(
       await page.waitForTimeout(200);
       const screenshotPath = path.join(REPORT_DIR, "screenshots", `${panelId}.png`);
       fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
+      const layout = page.locator(".flexlayout__layout");
+      const scope = (await layout.count()) > 0 ? layout.first() : page;
+      const markers = await findErrorMarkers(scope);
+      if (markers.length > 0) {
+        verdicts.push({
+          panelId,
+          rendered: false,
+          consoleErrors: [...consoleErrors],
+          pageErrors: [...pageErrors],
+          errorMarkers: markers,
+          screenshot: null,
+          notes: `[${roleLabel}] error markers in singleton view: ${markers.join(", ")}`,
+        });
+        continue;
+      }
       try {
-        const layout = page.locator(".flexlayout__layout");
-        if ((await layout.count()) > 0) {
-          await layout.first().screenshot({ path: screenshotPath });
-        } else {
+        if (scope === page) {
           await page.screenshot({ path: screenshotPath, fullPage: false });
+        } else {
+          await (scope as Locator).screenshot({ path: screenshotPath });
         }
         verdicts.push({
           panelId,
@@ -251,12 +269,26 @@ async function walkPanels(
 
     const screenshotPath = path.join(REPORT_DIR, "screenshots", `${panelId}.png`);
     fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
+    const layout = page.locator(".flexlayout__layout");
+    const scope = (await layout.count()) > 0 ? layout.first() : page;
+    const markers = await findErrorMarkers(scope);
+    if (markers.length > 0) {
+      verdicts.push({
+        panelId,
+        rendered: false,
+        consoleErrors: [...consoleErrors],
+        pageErrors: [...pageErrors],
+        errorMarkers: markers,
+        screenshot: null,
+        notes: `[${roleLabel}] error markers after mount: ${markers.join(", ")}`,
+      });
+      continue;
+    }
     try {
-      const layout = page.locator(".flexlayout__layout");
-      if ((await layout.count()) > 0) {
-        await layout.first().screenshot({ path: screenshotPath });
-      } else {
+      if (scope === page) {
         await page.screenshot({ path: screenshotPath, fullPage: false });
+      } else {
+        await (scope as Locator).screenshot({ path: screenshotPath });
       }
     } catch (err) {
       verdicts.push({
@@ -281,7 +313,7 @@ async function walkPanels(
   }
 }
 
-test.describe("panel walkthrough (informational, non-gating)", () => {
+test.describe("panel walkthrough", () => {
   test("admin walks through every panel they can access", async ({ page }) => {
     test.setTimeout(15 * 60_000);
     const consoleErrors: string[] = [];
@@ -351,12 +383,26 @@ test.describe("panel walkthrough (informational, non-gating)", () => {
         await page.waitForTimeout(200);
         const screenshotPath = path.join(REPORT_DIR, "screenshots", `${panelId}.png`);
         fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
+        const layout = page.locator(".flexlayout__layout");
+        const scope = (await layout.count()) > 0 ? layout.first() : page;
+        const markers = await findErrorMarkers(scope);
+        if (markers.length > 0) {
+          verdicts.push({
+            panelId,
+            rendered: false,
+            consoleErrors: [...consoleErrors],
+            pageErrors: [...pageErrors],
+            errorMarkers: markers,
+            screenshot: null,
+            notes: `error markers in singleton view: ${markers.join(", ")}`,
+          });
+          continue;
+        }
         try {
-          const layout = page.locator(".flexlayout__layout");
-          if ((await layout.count()) > 0) {
-            await layout.first().screenshot({ path: screenshotPath });
-          } else {
+          if (scope === page) {
             await page.screenshot({ path: screenshotPath, fullPage: false });
+          } else {
+            await (scope as Locator).screenshot({ path: screenshotPath });
           }
           verdicts.push({
             panelId,
@@ -399,12 +445,26 @@ test.describe("panel walkthrough (informational, non-gating)", () => {
 
       const screenshotPath = path.join(REPORT_DIR, "screenshots", `${panelId}.png`);
       fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
+      const layout = page.locator(".flexlayout__layout");
+      const scope = (await layout.count()) > 0 ? layout.first() : page;
+      const markers = await findErrorMarkers(scope);
+      if (markers.length > 0) {
+        verdicts.push({
+          panelId,
+          rendered: false,
+          consoleErrors: [...consoleErrors],
+          pageErrors: [...pageErrors],
+          errorMarkers: markers,
+          screenshot: null,
+          notes: `error markers after mount: ${markers.join(", ")}`,
+        });
+        continue;
+      }
       try {
-        const layout = page.locator(".flexlayout__layout");
-        if ((await layout.count()) > 0) {
-          await layout.first().screenshot({ path: screenshotPath });
-        } else {
+        if (scope === page) {
           await page.screenshot({ path: screenshotPath, fullPage: false });
+        } else {
+          await (scope as Locator).screenshot({ path: screenshotPath });
         }
       } catch (err) {
         verdicts.push({
@@ -518,5 +578,31 @@ test.describe("panel walkthrough (informational, non-gating)", () => {
         }),
     );
     expect(verdicts.length).toBe(before + EXTERNAL_CLIENT_ONLY_PANELS.length);
+  });
+
+  // Gate: refuse to publish the walkthrough when any panel was captured in a
+  // visibly errored state (flexlayout "Error rendering component", App-level
+  // boundary, or a known per-panel error banner). The earlier persona tests
+  // remain informational; this assertion fails the job and the workflow's
+  // commit-back step never runs.
+  //
+  // Dedupe matches the afterAll logic: keep the rendered verdict if both a
+  // rendered and an errored verdict exist for the same panel.
+  test("no panel captured with error markers", () => {
+    const byPanel = new Map<string, PanelVerdict>();
+    for (const v of verdicts) {
+      const prev = byPanel.get(v.panelId);
+      if (!prev || (!prev.rendered && v.rendered)) {
+        byPanel.set(v.panelId, v);
+      }
+    }
+    const broken = [...byPanel.values()].filter((v) => (v.errorMarkers ?? []).length > 0);
+    if (broken.length > 0) {
+      const lines = broken.map((v) => `  ${v.panelId}: ${(v.errorMarkers ?? []).join(", ")}`);
+      throw new Error(
+        `${broken.length} panel(s) captured in an errored state. ` +
+          `Refusing to publish screenshots.\n${lines.join("\n")}`,
+      );
+    }
   });
 });

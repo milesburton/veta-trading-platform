@@ -11,6 +11,18 @@ import {
   MOCK_VOL_SURFACE_RESPONSE,
 } from "./helpers/GatewayMock.ts";
 import { AppPage } from "./helpers/pages/AppPage.ts";
+import { findErrorMarkers } from "./helpers/screenshotGuard.ts";
+
+test.afterEach(async ({ page }, testInfo) => {
+  if (testInfo.status !== "passed") return;
+  const markers = await findErrorMarkers(page);
+  if (markers.length > 0) {
+    throw new Error(
+      `Screenshot captured a visibly errored UI (${markers.join(", ")}). ` +
+        `Refusing to publish ${testInfo.title}.`,
+    );
+  }
+});
 
 const OUT_DIR = path.resolve(
   fileURLToPath(import.meta.url),
