@@ -34,7 +34,7 @@ The 5-minute cadence is the sweet spot:
 - Fast enough that operators do not notice the lag (~3.5 min mean)
 - Slow enough to avoid hammering GitHub's API
 - Aligns with the 6-minute wait in the
-  [post-deploy CI probe](../../platform/supporting/synthetic-probe#ci-mirror)
+  [post-deploy CI probe](../synthetic-probe/#ci-mirror)
 
 ## Install (one-time, on the homelab)
 
@@ -116,8 +116,8 @@ This is **expected, not a drift bug**.
 
 ## Related
 
-- [Edge architecture](../edge-architecture): how public traffic reaches what auto-pull deploys
-- [CI/CD pipeline](../../development/ci-cd): what happens *before* the homelab pulls the image
-- [veta-tunnel](./veta-tunnel): the reverse SSH tunnel that exposes the homelab publicly
-- [veta-host-prune](./veta-host-prune): weekly cleanup of dangling images
-- [Synthetic probe](./synthetic-probe): closes the loop with a post-deploy check
+- [Edge architecture](/veta-trading-platform/platform/edge-architecture/): how public traffic reaches what auto-pull deploys
+- [CI/CD pipeline](/veta-trading-platform/development/ci-cd/): what happens *before* the homelab pulls the image
+- [veta-tunnel](../veta-tunnel/): the reverse SSH tunnel that exposes the homelab publicly
+- [veta-host-prune](../veta-host-prune/): weekly cleanup of dangling images
+- [Synthetic probe](../synthetic-probe/): closes the loop with a post-deploy check

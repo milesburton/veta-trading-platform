@@ -37,6 +37,7 @@ Prometheus metrics use `{job=...}` or `{service=...}`. Loki logs use `{service_n
 ## Verification
 
 After applying a fix:
+
 - Reload the Grafana panel; the data should appear within the scrape interval (15s default).
 - Confirm any other panels using the same source also work.
 - If you changed a provisioned dashboard, restart Grafana: `docker compose up -d lgtm-grafana`.

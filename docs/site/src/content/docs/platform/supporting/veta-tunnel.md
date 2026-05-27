@@ -8,7 +8,7 @@ port forwards**. Public traffic reaches it through a reverse SSH tunnel
 that the homelab dials *out* to the OVH edge box (`ovh.agileview.co.uk`).
 The OVH side terminates Let's Encrypt TLS and forwards into the tunnel.
 
-For the full chain see [Edge architecture](../edge-architecture).
+For the full chain see [Edge architecture](/veta-trading-platform/platform/edge-architecture/).
 
 ## How it works
 
@@ -122,7 +122,7 @@ ss -tlnp | grep :443
 | Tunnel restarts every few seconds | OVH SSH daemon rejecting the key. Check `journalctl -u veta-tunnel` for the error |
 | Tunnel runs but `:18443` not listening on OVH | `permitlisten` mismatch, or sshd rejected the `-R` request |
 
-The [synthetic probe](./synthetic-probe) catches all four classes within
+The [synthetic probe](../synthetic-probe/) catches all four classes within
 ~3 min as a webhook alert.
 
 ## Stale port-binding recovery (OVH sshd hardening)
@@ -205,6 +205,6 @@ sudo nano /home/veta-tunnel/.ssh/authorized_keys
 
 ## Related
 
-- [Edge architecture](../edge-architecture): full chain from internet to backend services
-- [Synthetic probe](./synthetic-probe): outside-in liveness check that traverses this tunnel
-- [veta-auto-pull](./veta-auto-pull): the deploy mechanism that runs on the homelab
+- [Edge architecture](/veta-trading-platform/platform/edge-architecture/): full chain from internet to backend services
+- [Synthetic probe](../synthetic-probe/): outside-in liveness check that traverses this tunnel
+- [veta-auto-pull](../veta-auto-pull/): the deploy mechanism that runs on the homelab
