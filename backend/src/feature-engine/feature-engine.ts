@@ -158,24 +158,45 @@ const producer = await createProducer("feature-engine").catch((err) => {
 });
 
 const pendingFeatures = new Map<string, FeatureVector>();
+let flushInFlight = false;
+let consecutiveInsertFailures = 0;
 
 async function flushFeatures(): Promise<void> {
-  if (pendingFeatures.size === 0) return;
+  if (flushInFlight || pendingFeatures.size === 0) return;
+  flushInFlight = true;
   const batch = [...pendingFeatures.values()];
   pendingFeatures.clear();
 
   for (const fv of batch) {
     latestFeatures.set(fv.symbol, fv);
-    await store.insert(fv).catch((err) => {
-      logger.warn("DB insert error", { err });
-    });
-    if (producer) {
-      await producer.send("market.features", fv).catch(() => {});
+  }
+
+  try {
+    await store.insertBatch(batch);
+    consecutiveInsertFailures = 0;
+  } catch (err) {
+    consecutiveInsertFailures++;
+    if (consecutiveInsertFailures === 1 || consecutiveInsertFailures % 50 === 0) {
+      logger.warn("feature batch insert failed", {
+        err,
+        consecutiveInsertFailures,
+        batchSize: batch.length,
+      });
     }
   }
+
+  if (producer) {
+    await Promise.all(
+      batch.map((fv) => producer.send("market.features", fv).catch(() => {})),
+    );
+  }
+
+  flushInFlight = false;
 }
 
-setInterval(flushFeatures, 250);
+setInterval(() => {
+  void flushFeatures();
+}, 250);
 
 const tickConsumer = await createConsumer("feature-engine-ticks", [
   "market.ticks",

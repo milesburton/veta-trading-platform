@@ -3,9 +3,34 @@ import type { FeatureVector } from "@veta/types/intelligence";
 import { logger } from "@veta/logger";
 
 const MAX_PER_SYMBOL = 500;
+const FEATURE_COLS = 9;
+
+export function buildBatchInsert(fvs: FeatureVector[]): {
+  placeholders: string;
+  values: unknown[];
+} {
+  const values: unknown[] = [];
+  const tuples = fvs.map((fv, i) => {
+    const b = i * FEATURE_COLS;
+    values.push(
+      fv.symbol,
+      fv.ts,
+      fv.momentum,
+      fv.relativeVolume,
+      fv.realisedVol,
+      fv.sectorRelativeStrength,
+      fv.eventScore,
+      fv.newsVelocity,
+      fv.sentimentDelta,
+    );
+    return `($${b + 1},$${b + 2},$${b + 3},$${b + 4},$${b + 5},$${b + 6},$${b + 7},$${b + 8},$${b + 9})`;
+  });
+  return { placeholders: tuples.join(","), values };
+}
 
 export interface FeatureStore {
   insert(fv: FeatureVector): Promise<void>;
+  insertBatch(fvs: FeatureVector[]): Promise<void>;
   getLatest(symbol: string): Promise<FeatureVector | null>;
   getHistory(symbol: string, limit: number): Promise<FeatureVector[]>;
   startCleanup(intervalMs?: number): ReturnType<typeof setInterval>;
@@ -66,6 +91,22 @@ export function createFeatureStore(pool: Pool): FeatureStore {
             fv.newsVelocity,
             fv.sentimentDelta,
           ],
+        );
+      } finally {
+        client.release();
+      }
+    },
+
+    async insertBatch(fvs: FeatureVector[]): Promise<void> {
+      if (fvs.length === 0) return;
+      const { placeholders, values } = buildBatchInsert(fvs);
+      const client = await pool.connect();
+      try {
+        await client.queryArray(
+          `INSERT INTO intelligence.feature_vectors
+            (symbol, ts, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta)
+           VALUES ${placeholders}`,
+          values,
         );
       } finally {
         client.release();
