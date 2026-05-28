@@ -18,6 +18,8 @@ services:
     depends_on:
       gateway:
         condition: service_healthy
+      user-service:
+        condition: service_healthy
     volumes:
       - loadgen-shared:/loadgen
       - ./scripts/loadgen/token-refresh.sh:/entrypoint.sh:ro
@@ -43,7 +45,9 @@ services:
   loadgen-soak:
     image: grafana/k6:0.55.0
     profiles: [loadgen]
-    restart: unless-stopped
+    # on-failure (not unless-stopped) so the loop's clean exit on
+    # LOADGEN_MAX_RUNTIME_MIN stays stopped instead of being restarted.
+    restart: on-failure
     user: "${K6_UID:-1000}:${K6_GID:-1000}"
     networks:
       - trading-net
@@ -62,6 +66,7 @@ services:
       SOAK_SCRIPT: /scripts/soak.js
       SOAK_VUS: "${LOADGEN_SOAK_VUS:-50}"
       SOAK_DURATION: "${LOADGEN_SOAK_DURATION:-50m}"
+      LOADGEN_MAX_RUNTIME_MIN: "${LOADGEN_MAX_RUNTIME_MIN:-720}"
       K6_PROMETHEUS_RW_SERVER_URL: http://host.docker.internal:9090/api/v1/write
       K6_PROMETHEUS_RW_TREND_STATS: "p(50),p(90),p(95),p(99),min,max"
       # Optional. When set, the loop posts start/stop notifications to
@@ -84,7 +89,9 @@ services:
   loadgen-matrix:
     image: grafana/k6:0.55.0
     profiles: [loadgen]
-    restart: unless-stopped
+    # on-failure (not unless-stopped) so the loop's clean exit on
+    # LOADGEN_MAX_RUNTIME_MIN stays stopped instead of being restarted.
+    restart: on-failure
     user: "${K6_UID:-1000}:${K6_GID:-1000}"
     networks:
       - trading-net
@@ -102,6 +109,7 @@ services:
       TOKEN_FILE: /loadgen/token
       SCENARIOS: "${LOADGEN_MATRIX_SCENARIOS:-baseline-limit.js mixed-strategy.js burst-open.js risk-stress.js}"
       SLEEP_BETWEEN: "${LOADGEN_MATRIX_SLEEP:-30}"
+      LOADGEN_MAX_RUNTIME_MIN: "${LOADGEN_MAX_RUNTIME_MIN:-720}"
       K6_PROMETHEUS_RW_SERVER_URL: http://host.docker.internal:9090/api/v1/write
       K6_PROMETHEUS_RW_TREND_STATS: "p(50),p(90),p(95),p(99),min,max"
       LOADGEN_ANNOUNCE_TOKEN: "${LOADGEN_ANNOUNCE_TOKEN:-}"
