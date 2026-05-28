@@ -5,7 +5,7 @@ description: Architecture of the LLM-backed advisory service — orchestrator + 
 
 import { Aside } from "@astrojs/starlight/components";
 
-LLM advisory generates short trade notes per symbol on demand, using a self-hosted Ollama instance on the [NVIDIA Spark](./supporting/nvidia-spark) workstation. The service is two containers: an HTTP-facing **orchestrator** that triggers jobs, and a stateless **worker** that consumes them.
+LLM advisory generates short trade notes per symbol on demand, using a self-hosted Ollama instance on the [NVIDIA Spark](../supporting/nvidia-spark/) workstation. The service is two containers: an HTTP-facing **orchestrator** that triggers jobs, and a stateless **worker** that consumes them.
 
 ## Topology
 
@@ -75,4 +75,4 @@ Runtime policy is also stored in postgres (`llm_advisory.runtime_config`) and ov
 - **`/admin/state` slow during staleness scan.** Pool exhaustion. Reduce `STALENESS_QUERY_CONCURRENCY` further, or grow the pool size in `backend/src/lib/db.ts`.
 - **All jobs failing with the same transient PG error.** `withPgRetry` exhausted. Postgres is unhealthy enough that retries don't help. Check the Postgres container and `pg_stat_activity` for connection storms.
 
-See also: [Discord ticketing](./observability/ticketing) — failed worker sessions surface as CRITICAL alerts that auto-create issues.
+See also: [Discord ticketing](../observability/ticketing/) — failed worker sessions surface as CRITICAL alerts that auto-create issues.

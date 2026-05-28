@@ -51,7 +51,7 @@ The issue body captures severity, source, message, detail, timestamp, and the us
 
 Duplicate suppression: before creating an issue, the gateway searches for an open issue with the same title created within the last hour. If one exists, it adds a comment to that issue instead of opening a duplicate. This keeps recurring alerts (e.g. a flapping service) on one ticket.
 
-See the [ticketing runbook](./ticketing) for env wiring, token scopes, and end-to-end verification.
+See the [ticketing runbook](../ticketing/) for env wiring, token scopes, and end-to-end verification.
 
 ## Configuration
 
@@ -194,7 +194,7 @@ docker run --rm \
 
 Pre-commit runs these automatically when either file is staged. CI runs them on every PR that touches either file.
 
-User-level alerts are dispatched by `alertsMiddleware` reacting to Redux actions. Add a new branch to the middleware to emit on additional event types. Severity ≥ WARNING reaches Discord automatically; CRITICAL also opens a [GitHub ticket](./ticketing).
+User-level alerts are dispatched by `alertsMiddleware` reacting to Redux actions. Add a new branch to the middleware to emit on additional event types. Severity ≥ WARNING reaches Discord automatically; CRITICAL also opens a [GitHub ticket](../ticketing/).
 
 ## Troubleshooting
 

@@ -44,6 +44,7 @@ import type { RoutedOrder } from "@veta/types/orders";
 ## Convention
 
 When adding a new shared module:
+
 1. Create the file in `backend/src/lib/` or `backend/src/types/`
 2. Add an alias to `deno.json` under `imports`
 3. Use the alias in all consumers; never use relative paths for shared code

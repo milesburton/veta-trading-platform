@@ -168,9 +168,11 @@ Three things to notice:
 1. Create `backend/src/tests/<name>.tc.test.ts` following the pattern above.
 2. List the minimum services your test needs in `startStack({ services: [...] })`. Adding a service costs around 2 to 5 seconds of boot time.
 3. Append the file to the `test:testcontainers` task in `deno.json`:
+
    ```jsonc
    "test:testcontainers": "./scripts/run-testcontainers.sh deno test --allow-all backend/src/tests/<name>.tc.test.ts && …"
    ```
+
 4. Run `deno task test:testcontainers` locally before pushing. CI runs the same task, so anything that passes locally inside the dev container will pass on the runner.
 
 ## The wrapper script

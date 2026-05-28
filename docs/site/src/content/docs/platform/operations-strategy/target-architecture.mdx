@@ -80,6 +80,7 @@ Source of truth for "is the platform up". Runs outside the homelab so it sees wh
 - **Post-deploy CI mirror**: `.github/workflows/post-deploy-probe.yml` runs the same probe script from a GitHub runner ~6 min after every push to `main`. Three retries with 30 s spacing; fails the run on persistent failure. A third independent vantage point: if the OVH probe and the CI probe disagree, the divergence itself is signal (e.g. OVH-local network issue).
 
 What v1 catches:
+
 - Edge Traefik dead or mis-configured
 - SSH tunnel down
 - Homelab Traefik dead
@@ -88,6 +89,7 @@ What v1 catches:
 - TLS cert expired or mis-issued
 
 What v1 does **not** catch (queued for v2):
+
 - WebSocket-only outages (no frame counting yet)
 - OMS pipeline regressions (no order submit + cancel yet)
 - Market data feed stalled (no candle / tick check)

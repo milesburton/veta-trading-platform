@@ -18,7 +18,7 @@ The platform's CCP is a simplified educational simulation, but it implements the
 The CCP consumes two streams from the message bus:
 
 - `orders.filled` — lit-market and dark-pool fills produced by the EMS and the dark-pool ATS
-- `rfq.executed` — bond executions produced by the [RFQ service](./post-trade-rfq/)
+- `rfq.executed` — bond executions produced by the [RFQ service](../post-trade-rfq/)
 
 Both streams carry the same fill shape (instrument, side, quantity, price, counterparty), so the CCP can clear lit, dark, and RFQ trades through a single pipeline.
 

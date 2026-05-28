@@ -12,7 +12,7 @@ You are adding a new execution algorithm (e.g., `OPPORTUNISTIC`, `LIQUIDITY-SEEK
 ## Inputs needed
 
 - A docker-compose stack running locally so the bus exists (`docker compose up -d redpanda`)
-- Familiarity with the [Algo strategies](../../platform/algos/) page
+- Familiarity with the [Algo strategies](/veta-trading-platform/platform/algos/) page
 
 ## Steps
 
@@ -24,7 +24,7 @@ You are adding a new execution algorithm (e.g., `OPPORTUNISTIC`, `LIQUIDITY-SEEK
 2. **Add a port + env var** to `compose.yml`. Use the next free port in the 5000-range. Add `<UPPER>_ALGO_PORT` and `<UPPER>_ALGO_HOST` to the `gateway` service env block so SVC_PROXY can route to it.
 3. **Update the params type** in `frontend/src/types.ts`. Add a `<Name>Params` interface and union member in `AlgoParams`.
 4. **Wire the order-ticket UI** by adding a strategy option in [`StrategyParams.tsx`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/StrategyParams.tsx). Add a builder branch in [`OrderTicket/buildAlgoParams.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/OrderTicket/buildAlgoParams.ts).
-5. **Document** in the strategy file's leading JSDoc. The first line becomes the title and the body becomes the description on [Algo strategies](../../platform/algos/) — picked up automatically by `docs/site/scripts/generate-algos.mjs` on the next docs build.
+5. **Document** in the strategy file's leading JSDoc. The first line becomes the title and the body becomes the description on [Algo strategies](/veta-trading-platform/platform/algos/) — picked up automatically by `docs/site/scripts/generate-algos.mjs` on the next docs build.
 
 ## Verification
 
@@ -45,6 +45,6 @@ cd docs/site && npm run generate
 ## Common pitfalls
 
 - **Forgetting the heartbeat** — frontend's algo health turns amber after 30s. The base `commonHttp.ts` helper provides `subscribeNewsSignals()` and a heartbeat publisher; use them.
-- **Hardcoding venue selection** — child orders should let the EMS choose the venue (see [Smart Order Router](../../platform/smart-order-router/)). Only set `venue` explicitly if your algo is doing best-price routing like SNIPER.
+- **Hardcoding venue selection** — child orders should let the EMS choose the venue (see [Smart Order Router](/veta-trading-platform/platform/smart-order-router/)). Only set `venue` explicitly if your algo is doing best-price routing like SNIPER.
 - **Missing tests in `deno.json`** — new test files are not auto-picked-up. Add the path to all three `test*` task definitions in `deno.json`.
 - **Docs auto-gen swallows your description** — the algo generator reads the first sentence (split on `. <Capital>`). Keep the first sentence punchy.

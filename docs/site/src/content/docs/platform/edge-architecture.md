@@ -56,7 +56,7 @@ Static config in [`edge/traefik.yml`](https://github.com/milesburton/veta-tradin
 
 Dynamic config in [`edge/dynamic.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/edge/dynamic.yml):
 
-- Single router: `Host(\`veta.mnetcs.com\`)` to backend `https://localhost:18443`
+- Single router: ``Host(`veta.mnetcs.com`)`` to backend `https://localhost:18443`
 - Rate-limit middleware: 60 req/avg, 120 burst, sourced from client IP
   (`ipStrategy.depth: 0` trusts no proxies; correct when Cloudflare
   proxy is in DNS-only mode)
@@ -181,15 +181,15 @@ Concrete implications:
 - A separate security audit (deferred) should walk the gateway's auth
   surface before broadcasting the URL publicly.
 
-See [Security posture](./security) and
-[Threat model](./threat-model).
+See [Security posture](../security/) and
+[Threat model](../threat-model/).
 
 ## Install / rebuild
 
 If the OVH box is rebuilt from scratch, follow these in order:
 
 1. Clone repo to OVH, install Traefik via `edge/compose.yml`
-   (see [edge install](../platform/supporting/edge-traefik)).
+   (see [edge install](../supporting/traefik/)).
 2. Provision a dedicated `veta-tunnel` user on OVH with restricted
    `authorized_keys` (see [veta-tunnel.service](../supporting/veta-tunnel)).
 3. Generate the tunnel keypair on the homelab and install

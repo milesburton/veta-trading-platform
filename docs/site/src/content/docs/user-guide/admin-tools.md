@@ -11,7 +11,7 @@ The **Mission Control** workspace provides a unified operations view:
 
 ![Mission Control](/veta-trading-platform/screenshots/10-mission-control.png)
 
-- **Estate Overview**: live health grid for all 32 backend services with status, version, and event timeline. The same set drives the per-minute Discord [heartbeat](../platform/observability/alerts#per-minute-heartbeat) — frontend grid and Discord rollup are always in sync.
+- **Estate Overview**: live health grid for all 32 backend services with status, version, and event timeline. The same set drives the [daily Discord summary](/veta-trading-platform/platform/observability/alerts/#daily-summary) — frontend grid and Discord rollup are always in sync.
 
   ![Estate Overview panel](/veta-trading-platform/screenshots/panels/estate-overview.png)
 

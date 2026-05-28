@@ -96,5 +96,5 @@ in 16 h, well beyond what an image prune could fix.
 
 ## Related
 
-- [Disk monitor](./disk-monitor): the gauge that feeds the alert rules
-- [veta-auto-pull](./veta-auto-pull): the deploy mechanism whose image churn this cleans up
+- [Disk monitor](../disk-monitor/): the gauge that feeds the alert rules
+- [veta-auto-pull](../veta-auto-pull/): the deploy mechanism whose image churn this cleans up

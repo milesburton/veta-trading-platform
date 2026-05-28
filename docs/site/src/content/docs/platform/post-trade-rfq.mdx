@@ -44,7 +44,7 @@ Each successful execution fans out across four streams so downstream consumers d
 - `fix.execution` — picked up by [fix-archive](../supporting/db-migrate/) for execution-report persistence
 - `rfq.quote.update` — real-time stream for the frontend RFQ panel
 
-The fan-out is the reason the [CCP](./post-trade-ccp/) can clear RFQ trades through the same pipeline as lit and dark fills.
+The fan-out is the reason the [CCP](../post-trade-ccp/) can clear RFQ trades through the same pipeline as lit and dark fills.
 
 ## HTTP surface
 

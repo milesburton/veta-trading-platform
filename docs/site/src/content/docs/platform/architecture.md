@@ -5,7 +5,7 @@ description: Event-driven microservices connected by a Redpanda message bus.
 
 VETA is a multi-service trading platform connected by a **Redpanda message bus** (Kafka-compatible). The React frontend talks to a single **API Gateway**, which is the only service the browser can reach. Everything else communicates via bus topics.
 
-The `:5xxx` port numbers in the diagrams below are the **dev container and docker compose internal ports**. They are not exposed publicly in production: external traffic enters through the [Traefik](./supporting/traefik/) ingress and is routed to services over the internal Docker network. The public-ingress diagram in the next section uses real public-facing ports (`:443`).
+The `:5xxx` port numbers in the diagrams below are the **dev container and docker compose internal ports**. They are not exposed publicly in production: external traffic enters through the [Traefik](/veta-trading-platform/platform/supporting/traefik/) ingress and is routed to services over the internal Docker network. The public-ingress diagram in the next section uses real public-facing ports (`:443`).
 
 ## System architecture
 
@@ -39,9 +39,9 @@ reaches it through a reverse SSH tunnel dialled out from the homelab to
 an OVH dedicated server, which terminates TLS and forwards into the
 tunnel.
 
-A separate [synthetic probe](./supporting/synthetic-probe) runs on the
+A separate [synthetic probe](/veta-trading-platform/platform/supporting/synthetic-probe/) runs on the
 OVH edge every 60s to catch outages anywhere along this chain. Full detail:
-[Edge architecture](./edge-architecture).
+[Edge architecture](/veta-trading-platform/platform/edge-architecture/).
 
 ### High-level: how a request flows
 

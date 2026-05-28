@@ -13,7 +13,7 @@ description: Always-on synthetic trade flow on the homelab. Two k6 runners (soak
   writing the access token to a shared volume
 
 This is the *continuous* load generator. For the on-demand harness (single
-runs against local dev) see [k6 load testing](./k6-load-testing).
+runs against local dev) see [k6 load testing](../k6-load-testing/).
 
 ## What it's for
 
@@ -26,7 +26,7 @@ Useful for:
 - Surfacing regressions: if a deploy slows order acks below baseline,
   the trend on the Grafana dashboard shifts visibly
 
-It is **not** a substitute for the [synthetic probe](./synthetic-probe).
+It is **not** a substitute for the [synthetic probe](../synthetic-probe/).
 Loadgen tests throughput, not liveness.
 
 ## One-time setup
@@ -103,6 +103,6 @@ correct per-user password automatically.
 
 ## Related
 
-- [k6 load testing](./k6-load-testing): on-demand harness for single runs
-- [Synthetic probe](./synthetic-probe): liveness check, not throughput
-- [Performance](../../reference/performance): Grafana percentile baselines that loadgen feeds
+- [k6 load testing](../k6-load-testing/): on-demand harness for single runs
+- [Synthetic probe](../synthetic-probe/): liveness check, not throughput
+- [Performance](/veta-trading-platform/reference/performance/): Grafana percentile baselines that loadgen feeds
