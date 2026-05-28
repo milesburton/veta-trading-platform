@@ -1,6 +1,6 @@
 import { readFile, glob } from "node:fs/promises";
-import { resolve, dirname, posix } from "node:path";
-import { existsSync, statSync } from "node:fs";
+import { resolve, posix } from "node:path";
+import { existsSync } from "node:fs";
 
 const DIST = resolve(import.meta.dirname, "../dist");
 const BASE = "/veta-trading-platform";
@@ -38,12 +38,15 @@ function targetExists(fsPath) {
 async function loadFragmentIds(fsPath) {
   const candidates = [fsPath, fsPath + "index.html", fsPath + "/index.html", fsPath + ".html"];
   for (const c of candidates) {
-    if (existsSync(c) && statSync(c).isFile()) {
-      const html = await readFile(c, "utf8");
-      const ids = new Set();
-      for (const m of html.matchAll(/\bid="([^"]+)"/g)) ids.add(m[1]);
-      return ids;
+    let html;
+    try {
+      html = await readFile(c, "utf8");
+    } catch {
+      continue;
     }
+    const ids = new Set();
+    for (const m of html.matchAll(/\bid="([^"]+)"/g)) ids.add(m[1]);
+    return ids;
   }
   return null;
 }
