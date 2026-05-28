@@ -11,7 +11,12 @@ import {
   computeSectorRelativeStrength,
   computeSentimentDelta,
 } from "../feature-engine/feature-computers.ts";
-import type { MarketAdapterEvent, NewsEvent } from "../types/intelligence.ts";
+import { buildBatchInsert } from "../feature-engine/feature-store.ts";
+import type {
+  FeatureVector,
+  MarketAdapterEvent,
+  NewsEvent,
+} from "../types/intelligence.ts";
 
 Deno.test("computeMomentum: insufficient history → 0", () => {
   assertEquals(computeMomentum([]), 0);
@@ -260,4 +265,52 @@ Deno.test("computeSentimentDelta: improving sentiment → positive; worsening �
     true,
     "worsening",
   );
+});
+
+function makeFv(symbol: string, ts: number): FeatureVector {
+  return {
+    symbol,
+    ts,
+    momentum: 0.1,
+    relativeVolume: 1.2,
+    realisedVol: 0.3,
+    sectorRelativeStrength: 0.05,
+    eventScore: 0,
+    newsVelocity: 0,
+    sentimentDelta: 0,
+  };
+}
+
+Deno.test("buildBatchInsert: empty batch produces no placeholders or values", () => {
+  const { placeholders, values } = buildBatchInsert([]);
+  assertEquals(placeholders, "");
+  assertEquals(values.length, 0);
+});
+
+Deno.test("buildBatchInsert: single row uses placeholders $1..$9", () => {
+  const { placeholders, values } = buildBatchInsert([makeFv("AAPL", 1000)]);
+  assertEquals(placeholders, "($1,$2,$3,$4,$5,$6,$7,$8,$9)");
+  assertEquals(values.length, 9);
+  assertEquals(values[0], "AAPL");
+  assertEquals(values[1], 1000);
+});
+
+Deno.test("buildBatchInsert: multi-row offsets each tuple by 9 with contiguous params", () => {
+  const { placeholders, values } = buildBatchInsert([
+    makeFv("AAPL", 1),
+    makeFv("MSFT", 2),
+    makeFv("NVDA", 3),
+  ]);
+  assertEquals(
+    placeholders,
+    "($1,$2,$3,$4,$5,$6,$7,$8,$9),($10,$11,$12,$13,$14,$15,$16,$17,$18),($19,$20,$21,$22,$23,$24,$25,$26,$27)",
+  );
+  assertEquals(values.length, 27);
+  assertEquals(values[0], "AAPL");
+  assertEquals(values[9], "MSFT");
+  assertEquals(values[18], "NVDA");
+  const maxParam = Math.max(
+    ...placeholders.matchAll(/\$(\d+)/g).map((m) => Number(m[1])),
+  );
+  assertEquals(maxParam, values.length);
 });
