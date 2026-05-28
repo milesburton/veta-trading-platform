@@ -12,6 +12,8 @@ SOAK_DURATION="${SOAK_DURATION:-50m}"
 SOAK_VUS="${SOAK_VUS:-50}"
 LOADGEN_ANNOUNCE_TOKEN="${LOADGEN_ANNOUNCE_TOKEN:-}"
 RUNNER_NAME="${LOADGEN_RUNNER_NAME:-soak}"
+MAX_RUNTIME_MIN="${LOADGEN_MAX_RUNTIME_MIN:-720}"
+STARTED_AT="$(date +%s)"
 
 log() { echo "[soak] $(date -u +%H:%M:%S) $*"; }
 
@@ -51,6 +53,14 @@ wait_for_token
 announce start "vus=$SOAK_VUS, duration=$SOAK_DURATION"
 
 while true; do
+  if [ "$MAX_RUNTIME_MIN" -gt 0 ]; then
+    elapsed_min=$(( ( $(date +%s) - STARTED_AT ) / 60 ))
+    if [ "$elapsed_min" -ge "$MAX_RUNTIME_MIN" ]; then
+      log "max runtime ${MAX_RUNTIME_MIN}m reached; stopping (set LOADGEN_MAX_RUNTIME_MIN=0 to disable)"
+      announce stop "max runtime ${MAX_RUNTIME_MIN}m reached"
+      exit 0
+    fi
+  fi
   TOKEN=$(cat "$TOKEN_FILE")
   log "▶ soak (vus=$SOAK_VUS, duration=$SOAK_DURATION)"
   K6_NO_THRESHOLDS=true \
