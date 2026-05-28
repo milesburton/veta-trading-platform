@@ -12,13 +12,18 @@
 // by counting consecutive non-zero exits via the OnFailure handler or a
 // Loki query.
 //
-// Steps in v1 — HTTP only, no WS, no order placement:
+// Steps:
 //   1. GET /                           → 200, body contains "__version"
 //   2. POST /api/gateway/api/user-service/oauth/guest → 200, sets veta_user
 //   3. GET  /api/gateway/ready  (with cookie) → 200, ready:true
+//   4. GET  /api/gateway/api/user-service/personas → 200, non-empty list
+//   5. WS   /ws → a marketUpdate frame arrives within the timeout
 //
-// Future v2 additions, when v1 is reliable: WS market-frame count, order
-// submit + cancel via the guest session.
+// Steps 4 and 5 were added after the 2026-05-28 outage, which surfaced
+// as "Failed to load personas" (a user-service/DB stall returning 502)
+// and "Feed disconnected" (no market frames) while the root GET and
+// /ready still passed. Future additions: order submit + cancel via the
+// guest session.
 
 const BASE_URL = Deno.env.get("PROBE_BASE_URL") ?? "https://veta.mnetcs.com";
 const TIMEOUT_MS = Number(Deno.env.get("PROBE_TIMEOUT_MS")) || 10_000;
@@ -148,6 +153,77 @@ async function step3GatewayReady(cookie: string | null): Promise<StepResult> {
   }
 }
 
+async function step4Personas(cookie: string | null): Promise<StepResult> {
+  const t0 = nowMs();
+  const name = "personas";
+  try {
+    const headers: HeadersInit = cookie ? { Cookie: cookie } : {};
+    const res = await withTimeout(
+      fetch(BASE_URL + "/api/gateway/api/user-service/personas", { headers }),
+      TIMEOUT_MS,
+      name,
+    );
+    const body = await res.text();
+    if (res.status !== 200) {
+      return { step: 4, name, outcome: "fail", durationMs: nowMs() - t0, status: res.status, error: `expected 200, got ${res.status}` };
+    }
+    try {
+      const parsed = JSON.parse(body) as { personas?: unknown[] };
+      if (!Array.isArray(parsed.personas) || parsed.personas.length === 0) {
+        return { step: 4, name, outcome: "fail", durationMs: nowMs() - t0, status: 200, error: "personas list empty or missing" };
+      }
+    } catch {
+      return { step: 4, name, outcome: "fail", durationMs: nowMs() - t0, status: 200, error: "non-JSON body" };
+    }
+    return { step: 4, name, outcome: "ok", durationMs: nowMs() - t0, status: 200 };
+  } catch (err) {
+    return { step: 4, name, outcome: "fail", durationMs: nowMs() - t0, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+async function step5MarketFeed(): Promise<StepResult> {
+  const t0 = nowMs();
+  const name = "market_feed";
+  const wsUrl = BASE_URL.replace(/^http/, "ws") + "/ws";
+  let ws: WebSocket;
+  try {
+    ws = new WebSocket(wsUrl);
+  } catch (err) {
+    return { step: 5, name, outcome: "fail", durationMs: nowMs() - t0, error: err instanceof Error ? err.message : String(err) };
+  }
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`no marketUpdate frame within ${TIMEOUT_MS}ms (feed disconnected?)`));
+      }, TIMEOUT_MS);
+      ws.onmessage = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.data as string) as { event?: string };
+          if (parsed.event === "marketUpdate") {
+            clearTimeout(timer);
+            resolve();
+          }
+        } catch {
+          // ignore non-JSON frames
+        }
+      };
+      ws.onerror = () => {
+        clearTimeout(timer);
+        reject(new Error("WebSocket error"));
+      };
+    });
+    return { step: 5, name, outcome: "ok", durationMs: nowMs() - t0 };
+  } catch (err) {
+    return { step: 5, name, outcome: "fail", durationMs: nowMs() - t0, error: err instanceof Error ? err.message : String(err) };
+  } finally {
+    try {
+      ws.close();
+    } catch {
+      // already closed
+    }
+  }
+}
+
 async function main(): Promise<void> {
   const runStart = nowMs();
   const results: StepResult[] = [];
@@ -176,6 +252,22 @@ async function main(): Promise<void> {
     Deno.exit(1);
   }
 
+  const r4 = await step4Personas(cookie);
+  results.push(r4);
+  emit({ event: "step", ...r4 });
+  if (r4.outcome === "fail") {
+    emit({ event: "probe_done", outcome: "fail", failedAtStep: 4, totalMs: nowMs() - runStart });
+    Deno.exit(1);
+  }
+
+  const r5 = await step5MarketFeed();
+  results.push(r5);
+  emit({ event: "step", ...r5 });
+  if (r5.outcome === "fail") {
+    emit({ event: "probe_done", outcome: "fail", failedAtStep: 5, totalMs: nowMs() - runStart });
+    Deno.exit(1);
+  }
+
   emit({ event: "probe_done", outcome: "ok", totalMs: nowMs() - runStart });
 }
 
@@ -183,4 +275,10 @@ if (import.meta.main) {
   await main();
 }
 
-export { step1Root, step2GuestLogin, step3GatewayReady };
+export {
+  step1Root,
+  step2GuestLogin,
+  step3GatewayReady,
+  step4Personas,
+  step5MarketFeed,
+};
