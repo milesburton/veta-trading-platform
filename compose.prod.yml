@@ -14,16 +14,24 @@ services:
       - start
       - --mode=dev-container
       - --smp=2
-      - --memory=512M
+      - --memory=1536M
       - --default-log-level=warn
       - --kafka-addr=0.0.0.0:9092
       - --advertise-kafka-addr=redpanda:9092
-    mem_limit: 768m
+    mem_limit: 2g
     labels:
       - "traefik.enable=false"
 
   postgres:
     <<: *prod-defaults
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=768MB
+      -c work_mem=8MB
+      -c maintenance_work_mem=64MB
+      -c max_connections=50
+    mem_limit: 1g
     labels:
       - "traefik.enable=false"
 
