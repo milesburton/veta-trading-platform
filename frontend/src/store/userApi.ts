@@ -40,6 +40,7 @@ interface OAuthRegisterRequest {
   username: string;
   name: string;
   password: string;
+  archetype: string;
 }
 
 export interface UserRow {

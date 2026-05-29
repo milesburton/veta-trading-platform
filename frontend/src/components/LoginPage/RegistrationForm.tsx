@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { TRADER_ARCHETYPES } from "@shared/traderArchetypes";
 import { setUser } from "@veta/frontend/store/authSlice.ts";
 import { useAppDispatch } from "@veta/frontend/store/hooks.ts";
 import {
@@ -42,6 +43,7 @@ export function RegistrationForm() {
   const username = useSignal("");
   const displayName = useSignal("");
   const password = useSignal("");
+  const archetype = useSignal(TRADER_ARCHETYPES[0].id);
   const localError = useSignal<string | null>(null);
   const [registerOAuthUser, registerState] = useRegisterOAuthUserMutation();
   const [authorizeOAuth, authorizeState] = useAuthorizeOAuthMutation();
@@ -72,7 +74,12 @@ export function RegistrationForm() {
       return;
     }
 
-    const registerResult = await registerOAuthUser({ username: u, name: n, password: p });
+    const registerResult = await registerOAuthUser({
+      username: u,
+      name: n,
+      password: p,
+      archetype: archetype.value,
+    });
     if (!("data" in registerResult) || !registerResult.data) {
       localError.value = describeError(registerResult.error);
       return;
@@ -116,9 +123,33 @@ export function RegistrationForm() {
       <div>
         <h2 className="text-sm font-semibold text-primary">Create an account</h2>
         <p className="text-[10px] text-muted">
-          New here? Sign up as a trader with starter limits ($10k max order, $1M daily notional).
+          New here? Pick a trader type and sign up with starter limits ($10k max order, $1M daily
+          notional).
         </p>
       </div>
+      <label className="space-y-1.5 block">
+        <span className="block text-[10px] font-medium uppercase tracking-wider text-muted">
+          Trader type
+        </span>
+        <select
+          data-testid="register-archetype"
+          value={archetype.value}
+          onChange={(e) => {
+            archetype.value = e.target.value;
+          }}
+          disabled={isLoading}
+          className="w-full rounded border border-divider bg-page px-3 py-1.5 text-xs text-primary outline-none transition-colors focus:border-emerald-500 disabled:opacity-50"
+        >
+          {TRADER_ARCHETYPES.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.label}
+            </option>
+          ))}
+        </select>
+        <span className="block text-[10px] text-muted">
+          {TRADER_ARCHETYPES.find((a) => a.id === archetype.value)?.description}
+        </span>
+      </label>
       <label className="space-y-1.5 block">
         <span className="block text-[10px] font-medium uppercase tracking-wider text-muted">
           Username

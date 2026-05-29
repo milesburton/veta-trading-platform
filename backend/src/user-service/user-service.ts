@@ -16,6 +16,11 @@ import {
   SharedWorkspaceCreateSchema,
   TokenRequestSchema,
 } from "@veta/schemas/user";
+import {
+  getTraderArchetype,
+  STARTER_MAX_DAILY_NOTIONAL,
+  STARTER_MAX_ORDER_QTY,
+} from "@veta/trader-archetypes";
 
 const AUTH_ROLES = ["trader", "admin", "compliance", "sales", "external-client", "viewer", "desk-head", "risk-manager", "oncall", "guest"] as const;
 type AuthRole = typeof AUTH_ROLES[number];
@@ -806,6 +811,8 @@ async function handle(req: Request): Promise<Response> {
     if (!body.name || body.name.trim().length < 1) {
       return jsonError("display name required", 400);
     }
+    const archetype = getTraderArchetype(body.archetype);
+    if (!archetype) return jsonError("unknown trader archetype", 400);
 
     const passwordHash = await hashPassword(body.password);
 
@@ -818,15 +825,26 @@ async function handle(req: Request): Promise<Response> {
       if (existing.length > 0) return jsonError("username already exists", 409);
 
       await client.queryArray(
-        "INSERT INTO users.users (id, name, role, avatar_emoji, password_hash) VALUES ($1, $2, 'trader', '🧑‍💻', $3)",
-        [userId, body.name.trim(), passwordHash],
+        "INSERT INTO users.users (id, name, role, avatar_emoji, password_hash, description) VALUES ($1, $2, 'trader', '🧑‍💻', $3, $4)",
+        [userId, body.name.trim(), passwordHash, archetype.label],
       );
       await client.queryArray(
-        "INSERT INTO users.trading_limits (user_id, max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access) VALUES ($1, 10000, 1000000, 'LIMIT,TWAP,POV,VWAP', 'equity', false)",
-        [userId],
+        `INSERT INTO users.trading_limits
+          (user_id, max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          userId,
+          STARTER_MAX_ORDER_QTY,
+          STARTER_MAX_DAILY_NOTIONAL,
+          archetype.allowedStrategies,
+          archetype.allowedDesks,
+          archetype.darkPoolAccess,
+          archetype.tradingStyle,
+          archetype.primaryDesk,
+        ],
       );
-      producer?.send("user.session", { event: "register", userId, ts: Date.now() }).catch(() => {});
-      return json({ userId, name: body.name.trim(), role: "trader" }, 201);
+      producer?.send("user.session", { event: "register", userId, archetype: archetype.id, ts: Date.now() }).catch(() => {});
+      return json({ userId, name: body.name.trim(), role: "trader", archetype: archetype.id }, 201);
     } finally {
       client.release();
     }
