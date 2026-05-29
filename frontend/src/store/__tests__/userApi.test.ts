@@ -88,6 +88,7 @@ describe("userApi", () => {
         username: "x",
         name: "y",
         password: "z",
+        archetype: "equity-high-touch",
       })
     );
     await store.dispatch(userApi.endpoints.logout.initiate());

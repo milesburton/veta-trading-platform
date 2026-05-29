@@ -103,21 +103,52 @@ Deno.test("[user-schema] TokenRequestSchema requires grant_type=authorization_co
   );
 });
 
-Deno.test("[user-schema] RegisterRequestSchema requires name, password >=8, and username-or-userId", () => {
+Deno.test("[user-schema] RegisterRequestSchema requires name, password >=8, username-or-userId, and a valid archetype", () => {
   assert(
-    RegisterRequestSchema.safeParse({ username: "alice", name: "Alice", password: "longenough" })
+    RegisterRequestSchema.safeParse({
+      username: "alice",
+      name: "Alice",
+      password: "longenough",
+      archetype: "equity-high-touch",
+    }).success,
+  );
+  assert(
+    RegisterRequestSchema.safeParse({
+      userId: "alice",
+      name: "Alice",
+      password: "longenough",
+      archetype: "fi-voice",
+    }).success,
+  );
+  assert(
+    !RegisterRequestSchema.safeParse({ name: "Alice", password: "longenough", archetype: "equity-high-touch" }).success,
+  );
+  assert(
+    !RegisterRequestSchema.safeParse({ username: "alice", password: "longenough", archetype: "equity-high-touch" })
       .success,
   );
   assert(
-    RegisterRequestSchema.safeParse({ userId: "alice", name: "Alice", password: "longenough" })
-      .success,
+    !RegisterRequestSchema.safeParse({ username: "alice", name: "Alice", archetype: "equity-high-touch" }).success,
   );
-  assert(!RegisterRequestSchema.safeParse({ name: "Alice", password: "longenough" }).success);
-  assert(!RegisterRequestSchema.safeParse({ username: "alice", password: "longenough" }).success);
-  assert(!RegisterRequestSchema.safeParse({ username: "alice", name: "Alice" }).success);
   assert(
-    !RegisterRequestSchema.safeParse({ username: "alice", name: "Alice", password: "short" })
-      .success,
+    !RegisterRequestSchema.safeParse({
+      username: "alice",
+      name: "Alice",
+      password: "short",
+      archetype: "equity-high-touch",
+    }).success,
+  );
+  // archetype is required and must be a known id.
+  assert(
+    !RegisterRequestSchema.safeParse({ username: "alice", name: "Alice", password: "longenough" }).success,
+  );
+  assert(
+    !RegisterRequestSchema.safeParse({
+      username: "alice",
+      name: "Alice",
+      password: "longenough",
+      archetype: "not-a-real-archetype",
+    }).success,
   );
 });
 

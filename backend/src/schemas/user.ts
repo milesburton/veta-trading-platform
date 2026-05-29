@@ -1,5 +1,6 @@
 import { z } from "@veta/zod";
 import { UserIdSchema } from "./primitives.ts";
+import { TRADER_ARCHETYPE_IDS } from "@veta/trader-archetypes";
 
 export const SessionValidateSchema = z.object({
   token: z.string().optional(),
@@ -65,6 +66,7 @@ export const RegisterRequestSchema = z.object({
   userId: UserIdSchema.optional(),
   name: z.string().min(1),
   password: z.string().min(8).max(200),
+  archetype: z.enum(TRADER_ARCHETYPE_IDS as [string, ...string[]]),
 }).refine((v) => Boolean(v.username || v.userId), {
   message: "username or userId required",
   path: ["username"],

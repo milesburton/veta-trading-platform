@@ -4,6 +4,7 @@
     "@opentelemetry/api": "npm:@opentelemetry/api@^1.9.0",
     "testcontainers": "npm:testcontainers@^10.13.2",
     "@veta/primitives": "./shared/primitives.ts",
+    "@veta/trader-archetypes": "./shared/traderArchetypes.ts",
     "@veta/http": "./backend/src/lib/http.ts",
     "@veta/auth": "./backend/src/lib/auth.ts",
     "@veta/db": "./backend/src/lib/db.ts",
