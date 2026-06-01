@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { TRADER_ARCHETYPES } from "@shared/traderArchetypes";
-import { RegistrationForm } from "@veta/frontend/components/LoginPage/RegistrationForm";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { RegistrationForm } from "../RegistrationForm.tsx";
 
 const registerOAuthUser = vi.fn();
 const authorizeOAuth = vi.fn();
@@ -28,7 +28,9 @@ describe("RegistrationForm", () => {
     exchangeOAuthCode.mockReset();
     // Default: register succeeds, then stop the chain at authorize so the
     // test only asserts what was sent to register.
-    registerOAuthUser.mockReturnValue(Promise.resolve({ data: { userId: "x", name: "X", role: "trader" } }));
+    registerOAuthUser.mockReturnValue(
+      Promise.resolve({ data: { userId: "x", name: "X", role: "trader" } })
+    );
     authorizeOAuth.mockReturnValue(Promise.resolve({ error: { status: 400 } }));
   });
 
@@ -52,7 +54,9 @@ describe("RegistrationForm", () => {
     render(<RegistrationForm />);
 
     fireEvent.change(screen.getByTestId("register-username"), { target: { value: "newtrader" } });
-    fireEvent.change(screen.getByTestId("register-display-name"), { target: { value: "New Trader" } });
+    fireEvent.change(screen.getByTestId("register-display-name"), {
+      target: { value: "New Trader" },
+    });
     fireEvent.change(screen.getByTestId("register-password"), { target: { value: "longenough" } });
     fireEvent.change(screen.getByTestId("register-archetype"), { target: { value: "fi-voice" } });
 
@@ -71,7 +75,9 @@ describe("RegistrationForm", () => {
     render(<RegistrationForm />);
 
     fireEvent.change(screen.getByTestId("register-username"), { target: { value: "newtrader" } });
-    fireEvent.change(screen.getByTestId("register-display-name"), { target: { value: "New Trader" } });
+    fireEvent.change(screen.getByTestId("register-display-name"), {
+      target: { value: "New Trader" },
+    });
     fireEvent.change(screen.getByTestId("register-password"), { target: { value: "short" } });
 
     fireEvent.submit(screen.getByTestId("registration-form"));

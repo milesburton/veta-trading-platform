@@ -2,9 +2,7 @@ import type { AuthRole } from "@veta/frontend/auth/rbac.ts";
 import type { TradingStyle } from "@veta/frontend/store/authSlice.ts";
 import type { ChannelNumber } from "@veta/frontend/store/channelsSlice.ts";
 
-export type { TradingStyle };
-
-export type { ChannelNumber };
+export type { ChannelNumber, TradingStyle };
 
 export const CHANNEL_COLOURS: Record<ChannelNumber, { hex: string; tw: string; label: string }> = {
   1: { hex: "#3b82f6", tw: "blue", label: "Blue" },
