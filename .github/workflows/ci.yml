@@ -434,8 +434,9 @@ jobs:
 
       - name: Copy screenshots into Astro public
         run: |
-          mkdir -p docs/site/public/screenshots
+          mkdir -p docs/site/public/screenshots/panels
           cp -r docs/screenshots/. docs/site/public/screenshots/
+          cp -r docs/panel-walkthrough/screenshots/. docs/site/public/screenshots/panels/
 
       - name: Build Astro site
         working-directory: docs/site
