@@ -7,25 +7,25 @@ Every trader is modelled on a real-world desk: one primary desk, one trading sty
 
 Each persona signs in to a different default workspace. The four main workspace types:
 
-### Trader workspace
+## Trader workspace
 
 Used by high-touch equity traders: alice, james, amelia.
 
 ![Trader workspace](/veta-trading-platform/screenshots/01-trading-dashboard.png)
 
-### Algo workspace
+## Algo workspace
 
 Used by low-touch and algo traders: bob, sofia, dave, iris, omar.
 
 ![Algo workspace](/veta-trading-platform/screenshots/04-algo-workspace.png)
 
-### Fixed-income workspace
+## Fixed-income workspace
 
 Used by FI voice traders: carol, henry.
 
 ![Fixed-income workspace](/veta-trading-platform/screenshots/05-fixed-income.png)
 
-### Options workspace
+## Options workspace
 
 Used by derivatives high-touch traders: grace, priya.
 
