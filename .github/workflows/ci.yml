@@ -99,6 +99,8 @@ jobs:
     outputs:
       backend-coverage: ${{ steps.backend_coverage.outputs.value }}
     steps:
+      # PR runs use the default token (no push needed); push runs use the bot
+      # token so badge commits fire downstream workflows. See ci-cd docs.
       - uses: actions/checkout@v5
         with:
           token: ${{ github.event_name == 'pull_request' && secrets.GITHUB_TOKEN || secrets.BOT_PAT }}

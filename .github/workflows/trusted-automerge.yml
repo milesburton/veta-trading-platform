@@ -21,6 +21,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # BOT_PAT scopes and rotation are documented in
+      # docs/development/ci-cd.md "Bot PAT for auto-merge".
       - name: Enable auto-merge once checks pass
         env:
           GH_TOKEN: ${{ secrets.BOT_PAT }}
