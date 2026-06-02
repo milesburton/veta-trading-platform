@@ -249,6 +249,21 @@ export function checkConcentration(state: RiskState, req: CheckRequest): CheckHi
   return null;
 }
 
+export function checkMaxPositionSize(state: RiskState, req: CheckRequest): CheckHit {
+  const proposed = orderNotional(req);
+  const currentSymbol = userSymbolNotional(state, req.userId, req.symbol);
+  const postSymbol = currentSymbol + proposed;
+
+  if (postSymbol > state.config.maxGrossNotional) {
+    return {
+      code: "MAX_POSITION_SIZE",
+      message: `Position in ${req.symbol} would exceed max gross notional $${state.config.maxGrossNotional.toFixed(0)}`,
+    };
+  }
+
+  return null;
+}
+
 export function runChecks(state: RiskState, req: CheckRequest): CheckResult {
   const reasons: string[] = [];
   const warnings: string[] = [];
@@ -262,6 +277,7 @@ export function runChecks(state: RiskState, req: CheckRequest): CheckResult {
     checkPositionNotional,
     checkDailyPnlStop,
     checkConcentration,
+    checkMaxPositionSize,
   ];
   for (const check of checks) {
     const hit = check(state, req);

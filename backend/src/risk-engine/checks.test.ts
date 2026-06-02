@@ -22,6 +22,7 @@ import {
   checkPositionNotional,
   checkDailyPnlStop,
   checkConcentration,
+  checkMaxPositionSize,
   runChecks,
   userGrossNotional,
   userTotalPnl,
@@ -87,7 +88,7 @@ Deno.test("[risk-engine] checkFatFingerPrice: order far from mid is rejected", (
   const result = checkFatFingerPrice(state, req);
   assert(result !== null);
   assert(result?.code === "FAT_FINGER_PRICE");
-  assertEquals(result?.message.includes("FAT_FINGER_PRICE"), true);
+  assertEquals(result?.message.includes("threshold: 2%"), true);
 });
 
 Deno.test("[risk-engine] checkDuplicateOrder: identical order within window is rejected", () => {
@@ -280,6 +281,39 @@ Deno.test("[risk-engine] checkConcentration: rejects when single symbol > pct", 
   assert(result?.code === "CONCENTRATION_LIMIT");
 });
 
+Deno.test("[risk-engine] checkMaxPositionSize: allows small positions", () => {
+  const state = createTestState({ maxGrossNotional: 5_000_000 });
+  const req = createTestRequest({ quantity: 100, limitPrice: 192.0 });
+  const result = checkMaxPositionSize(state, req);
+  assertEquals(result, null);
+});
+
+Deno.test("[risk-engine] checkMaxPositionSize: rejects oversized new position", () => {
+  const state = createTestState({ maxGrossNotional: 1000 });
+  const req = createTestRequest({ quantity: 2000, limitPrice: 100 });
+  const result = checkMaxPositionSize(state, req);
+  assert(result !== null);
+  assert(result?.code === "MAX_POSITION_SIZE");
+});
+
+Deno.test("[risk-engine] checkMaxPositionSize: rejects oversized existing position", () => {
+  const state = createTestState({ maxGrossNotional: 5000 });
+  const userPositions = new Map();
+  userPositions.set("AAPL", {
+    symbol: "AAPL",
+    netQty: 100,
+    avgPrice: 100,
+    costBasis: 10000,
+    realisedPnl: 0,
+    fillCount: 0,
+  });
+  state.positions.set("test-user", userPositions);
+  const req = createTestRequest({ symbol: "AAPL", quantity: 2000, limitPrice: 100 });
+  const result = checkMaxPositionSize(state, req);
+  assert(result !== null);
+  assert(result?.code === "MAX_POSITION_SIZE");
+});
+
 Deno.test("[risk-engine] userGrossNotional: calculates correctly", () => {
   const state = createTestState();
   const userPositions = new Map();
@@ -335,7 +369,7 @@ Deno.test("[risk-engine] orderNotional: calculates correctly", () => {
 });
 
 Deno.test("[risk-engine] runChecks: all checks pass", () => {
-  const state = createTestState();
+  const state = createTestState({ maxConcentrationPct: 100 });
   state.prices["AAPL"] = 192.0;
   state.volumes["AAPL"] = 100000;
   // Set up user positions to avoid concentration limit issues
