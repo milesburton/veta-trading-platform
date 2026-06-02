@@ -1356,18 +1356,28 @@ jobs:
             file="docker/${svc}/Dockerfile"
             tag="ghcr.io/milesburton/veta-trading-platform/${svc}:${GATE_TAG}"
             echo "::group::Build $svc from cache"
-            docker buildx build \
-              --file "$file" \
-              --tag "$tag" \
-              --build-arg "BASE_TAG=${BASE_TAG}" \
-              --build-arg "COMMIT_SHA=${COMMIT_SHA}" \
-              --build-arg "VITE_DEPLOYMENT=${VITE_DEPLOYMENT}" \
-              --build-arg "VITE_COMMIT_SHA=${COMMIT_SHA}" \
-              --build-arg "VITE_BUILD_DATE=${BUILD_DATE}" \
-              --build-arg "VITE_APP_VERSION=${APP_VERSION}" \
-              --cache-from "type=gha,scope=${svc}" \
-              --load \
-              .
+            for attempt in 1 2 3; do
+              if docker buildx build \
+                --file "$file" \
+                --tag "$tag" \
+                --build-arg "BASE_TAG=${BASE_TAG}" \
+                --build-arg "COMMIT_SHA=${COMMIT_SHA}" \
+                --build-arg "VITE_DEPLOYMENT=${VITE_DEPLOYMENT}" \
+                --build-arg "VITE_COMMIT_SHA=${COMMIT_SHA}" \
+                --build-arg "VITE_BUILD_DATE=${BUILD_DATE}" \
+                --build-arg "VITE_APP_VERSION=${APP_VERSION}" \
+                --cache-from "type=gha,scope=${svc}" \
+                --load \
+                .; then
+                break
+              fi
+              if [[ "$attempt" -eq 3 ]]; then
+                echo "Build $svc failed after $attempt attempts" >&2
+                exit 1
+              fi
+              echo "Build $svc failed on attempt $attempt; retrying in 5s"
+              sleep 5
+            done
             echo "::endgroup::"
           done < scripts/gate-services.txt
           docker image ls "ghcr.io/milesburton/veta-trading-platform/*" --format '{{.Repository}}:{{.Tag}} {{.Size}}' | sort
