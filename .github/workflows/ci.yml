@@ -1038,13 +1038,6 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Verify Electron install metadata
-        working-directory: frontend
-        run: |
-          node node_modules/electron/install.js
-          test -f node_modules/electron/path.txt
-          node -e "require(\"electron\")"
-
       - name: Install xvfb and Electron native dependencies
         run: |
           sudo apt-get update

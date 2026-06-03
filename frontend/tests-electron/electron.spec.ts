@@ -22,6 +22,7 @@ import {
   test,
 } from "@playwright/test";
 import { _electron as electron } from "playwright";
+import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
@@ -29,6 +30,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Path to the compiled main process entry (produced by electron:build)
 const MAIN_PATH = path.join(__dirname, "../dist-electron/main.js");
+const PACKAGED_ELECTRON_PATH = path.join(
+  __dirname,
+  "../dist-app/linux-unpacked/veta-trading-platform",
+);
+
+function packagedElectronExecutablePath() {
+  if (process.env.ELECTRON_EXECUTABLE_PATH) {
+    return process.env.ELECTRON_EXECUTABLE_PATH;
+  }
+  return fs.existsSync(PACKAGED_ELECTRON_PATH)
+    ? PACKAGED_ELECTRON_PATH
+    : undefined;
+}
 
 let electronApp: ElectronApplication;
 let page: Page;
@@ -40,7 +54,9 @@ test.beforeAll(async () => {
   // ELECTRON_RUN_AS_NODE causes the binary to start in Node.js mode and reject
   // Chromium flags. Strip it before launching so Playwright's CDP handshake works.
   const { ELECTRON_RUN_AS_NODE: _drop, ...cleanEnv } = process.env;
+  const executablePath = packagedElectronExecutablePath();
   electronApp = await electron.launch({
+    ...(executablePath ? { executablePath } : {}),
     args: [
       MAIN_PATH,
       "--no-sandbox",

@@ -24,6 +24,10 @@ import { ElectronMockServer } from "./helpers/ElectronMockServer.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MAIN_PATH = path.join(__dirname, "../dist-electron/main.js");
+const PACKAGED_ELECTRON_PATH = path.join(
+  __dirname,
+  "../dist-app/linux-unpacked/veta-trading-platform",
+);
 const OUT_DIR = path.resolve(__dirname, "../../docs/screenshots");
 
 const PRICES = {
@@ -33,6 +37,15 @@ const PRICES = {
   NVDA: 876.4,
   AMZN: 224.8,
 };
+function packagedElectronExecutablePath() {
+  if (process.env.ELECTRON_EXECUTABLE_PATH) {
+    return process.env.ELECTRON_EXECUTABLE_PATH;
+  }
+  return fs.existsSync(PACKAGED_ELECTRON_PATH)
+    ? PACKAGED_ELECTRON_PATH
+    : undefined;
+}
+
 const VOLUMES = {
   AAPL: 1_200_000,
   MSFT: 980_000,
@@ -52,7 +65,9 @@ test.beforeAll(async () => {
   mockServer = await ElectronMockServer.start(7777);
 
   const { ELECTRON_RUN_AS_NODE: _drop, ...cleanEnv } = process.env;
+  const executablePath = packagedElectronExecutablePath();
   electronApp = await electron.launch({
+    ...(executablePath ? { executablePath } : {}),
     args: [
       MAIN_PATH,
       "--no-sandbox",
