@@ -1038,6 +1038,12 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Verify Electron install metadata
+        working-directory: frontend
+        run: |
+          npm rebuild electron
+          node -e "require(\"electron\")"
+
       - name: Install xvfb and Electron native dependencies
         run: |
           sudo apt-get update
@@ -1566,19 +1572,28 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Push ${{ matrix.service }} (:sha + :latest from cache)
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: ${{ matrix.file }}
-          push: true
-          tags: |
-            ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}:${{ steps.sha.outputs.short }}
-            ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}:latest
-          build-args: |
-            BASE_TAG=${{ needs.docker-base.outputs.base-tag }}
-            COMMIT_SHA=${{ github.sha }}
-            VITE_DEPLOYMENT=prod
-            VITE_COMMIT_SHA=${{ github.sha }}
-            VITE_BUILD_DATE=${{ github.run_started_at }}
-            VITE_APP_VERSION=${{ steps.appver.outputs.version }}
-          cache-from: type=gha,scope=${{ matrix.service }}
+        run: |
+          set -euo pipefail
+
+          for attempt in 1 2 3; do
+            if docker buildx build . \
+              --file "${{ matrix.file }}" \
+              --push \
+              --tag "ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}:${{ steps.sha.outputs.short }}" \
+              --tag "ghcr.io/milesburton/veta-trading-platform/${{ matrix.service }}:latest" \
+              --build-arg "BASE_TAG=${{ needs.docker-base.outputs.base-tag }}" \
+              --build-arg "COMMIT_SHA=${{ github.sha }}" \
+              --build-arg "VITE_DEPLOYMENT=prod" \
+              --build-arg "VITE_COMMIT_SHA=${{ github.sha }}" \
+              --build-arg "VITE_BUILD_DATE=${{ github.run_started_at }}" \
+              --build-arg "VITE_APP_VERSION=${{ steps.appver.outputs.version }}" \
+              --cache-from "type=gha,scope=${{ matrix.service }}"; then
+              exit 0
+            fi
+
+            echo "publish attempt $attempt for ${{ matrix.service }} failed; retrying in 10s"
+            sleep 10
+          done
+
+          echo "publish failed after 3 attempts for ${{ matrix.service }}" >&2
+          exit 1
