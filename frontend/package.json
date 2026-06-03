@@ -114,7 +114,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.4.19",
-    "electron": "^39.8.5",
+    "electron": "^42.3.0",
     "electron-builder": "^26.8.1",
     "fallow": "^2.75.0",
     "husky": "^9.1.7",
@@ -135,5 +135,8 @@
     "workerDirectory": [
       "public"
     ]
+  },
+  "overrides": {
+    "tmp": "^0.2.6"
   }
 }

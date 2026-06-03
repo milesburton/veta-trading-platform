@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 61,
-      "cases": 790,
+      "files": 62,
+      "cases": 800,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -17,13 +17,14 @@
         "llm-policy.test.ts": 18,
         "llm-dedupe.test.ts": 13,
         "llm-pg-retry.unit.test.ts": 6,
-        "feature-engine.test.ts": 14,
+        "feature-engine.test.ts": 17,
         "signal-engine.test.ts": 7,
         "algo.unit.test.ts": 43,
         "ems.unit.test.ts": 22,
         "zod-helpers.unit.test.ts": 9,
         "orders-schema.unit.test.ts": 21,
         "user-schema.unit.test.ts": 14,
+        "trader-archetypes.unit.test.ts": 7,
         "risk-schema.unit.test.ts": 19,
         "logger.unit.test.ts": 17,
         "rateLimit.test.ts": 9,
@@ -86,8 +87,8 @@
       "perFile": {}
     },
     "testcontainers": {
-      "files": 14,
-      "cases": 178,
+      "files": 15,
+      "cases": 183,
       "perFile": {
         "testcontainers.smoke.test.ts": 2,
         "testcontainers.stack.test.ts": 1,
@@ -102,17 +103,18 @@
         "job-store.integration.tc.test.ts": 15,
         "weight-store.integration.tc.test.ts": 5,
         "messaging.integration.tc.test.ts": 6,
-        "typed-consumer.integration.tc.test.ts": 5
+        "typed-consumer.integration.tc.test.ts": 5,
+        "registration.integration.tc.test.ts": 5
       }
     }
   },
   "frontend": {
     "unit": {
-      "files": 172,
-      "cases": 1810
+      "files": 173,
+      "cases": 1814
     },
     "playwright": {
-      "files": 17,
+      "files": 18,
       "specs": [
         "algo-orders.spec.ts",
         "auth.spec.ts",
@@ -126,6 +128,7 @@
         "panel-walkthrough.spec.ts",
         "panels.spec.ts",
         "price-format.spec.ts",
+        "registration.spec.ts",
         "screenshots.spec.ts",
         "session-replay.spec.ts",
         "ui.spec.ts",

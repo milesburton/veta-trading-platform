@@ -199,23 +199,37 @@ Anything `status: queued, conclusion: null` from an app you don't actively use i
 
 This matters because GitHub's built-in `GITHUB_TOKEN` has an anti-loop limitation: **commits made by `GITHUB_TOKEN` do not fire downstream `on: push` workflows**. Without a PAT, every bot-driven merge to `main` would land silently: no `ci.yml` run, no docker image build, and no auto-pull picks it up because the SHA-comparison still works but the new image never gets built. The PAT bypasses the limitation because it is a user credential, so the merge commit looks like a normal push.
 
+The same secret is also used by [`ci.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/ci.yml) for the checkout step of every job that pushes back to `main` (coverage badges, screenshot captures). Those checkouts run on `push` events only; on `pull_request` events the workflow falls back to `GITHUB_TOKEN`, because PR runs never push and so never need the PAT. A dead `BOT_PAT` therefore breaks `push`-event checkout with `fatal: could not read Username for 'https://github.com'` while leaving `pull_request`-event runs green.
+
 ### What the PAT must allow
 
 - Repository access: **this repo only**
 - Permissions:
-  - `Contents`: Read and write, required to create the merge commit
+  - `Contents`: Read and write, required to create the merge commit and to check out in `push`-event badge jobs
   - `Pull requests`: Read and write, required to enable auto-merge
   - `Metadata`: Read-only, mandatory boilerplate
-- Expiration: rotate annually. When the token expires, auto-merge silently starts failing with auth errors; check the `trusted-automerge` workflow run output if merges suddenly stop landing.
+- Expiration: a no-expiry token avoids the silent annual breakage; if you set an expiry, put a reminder to rotate before it lapses.
+
+### Symptoms of a broken PAT
+
+A fine-grained PAT can fail for reasons that are not obvious from the token page:
+
+- Auth errors appear in the auto-merge workflow run and in `push`-event `ci.yml` checkout steps, while `pull_request`-event CI stays green. The failure therefore looks like it only affects merges and badges.
+- An auth failure is not always a permission failure. A token missing a required permission can surface the same error as an invalid value, so do not assume the value is dead just because authentication failed.
+- The token page can look healthy (valid, no expiry) while the value stored in the secret is stale. Regenerating a fine-grained token mints a new value and invalidates the old one, but it does not update the secret. The secret keeps the previous value until you re-save it.
+- To tell a stale value from a missing permission, regenerate the token and re-save the secret first (this clears the most common cause), then re-check the required permissions if the error persists.
 
 ### Rotating the PAT
 
-When the existing `BOT_PAT` is approaching expiry:
+When `BOT_PAT` is approaching expiry, or when the symptoms above appear:
 
-1. GitHub, then Settings, Developer settings, Personal access tokens, Fine-grained tokens, Generate new token (same scopes as above).
-2. Repo, then Settings, Secrets and variables, Actions, click `BOT_PAT`, Update value.
-3. No workflow change needed; the secret name stays the same.
-4. Revoke the old token from the same fine-grained tokens page.
+1. GitHub, then Settings, Developer settings, Personal access tokens, Fine-grained tokens, open the token. Confirm the permissions match the list above before regenerating.
+2. Regenerate the token (or generate a new one with the scopes above) and copy the new value. GitHub shows it once.
+3. Repo, then Settings, Secrets and variables, Actions, click `BOT_PAT`, Update value, paste, save. Re-save even if the displayed token looks unchanged: the secret holds its own copy of the value, and that copy is what GitHub authenticates.
+4. Paste the value with no trailing space or newline; stray whitespace causes auth to fail on its own.
+5. No workflow change needed; the secret name stays the same.
+6. Verify by re-running the last auto-merge workflow run and a `push`-event CI run; both should clear the auth errors.
+7. Revoke any superseded token from the same fine-grained tokens page.
 
 ### Manual escape hatch
 

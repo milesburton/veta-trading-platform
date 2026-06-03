@@ -4,18 +4,6 @@
     "src/index.{ts,tsx,js,jsx}",
     "src/main.{ts,tsx,js,jsx}"
   ],
-  "ignorePatterns": [
-    "../backend/**",
-    "../shared/**",
-    "../observability/**",
-    "../homelab/**",
-    "../edge/**",
-    "../docs/**",
-    "../packages/**",
-    "../scripts/**",
-    "../.husky/**",
-    "../.github/**"
-  ],
   "ignoreDependencies": [
     "@veta/auth",
     "@veta/http",

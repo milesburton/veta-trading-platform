@@ -39,6 +39,7 @@ export const newsApi = createApi({
     }),
     getNewsSources: builder.query<NewsSource[], void>({
       query: () => "/sources",
+      transformResponse: (response: NewsSource[] | null): NewsSource[] => response ?? [],
       providesTags: ["NewsSources"],
     }),
     toggleNewsSource: builder.mutation<NewsSource, string>({

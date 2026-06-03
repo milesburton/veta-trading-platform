@@ -4058,8 +4058,8 @@
         "tmp"
       ]
     },
-    "tmp@0.2.5": {
-      "integrity": "sha512-voyz6MApa1rQGUxT3E+BK7/ROe8itEx7vD8/HEvt4xwXucvQ5G5oeEiHkmHZJuBO21RpOf+YYm9MOivj709jow=="
+    "tmp@0.2.7": {
+      "integrity": "sha512-e0votIpp4Uo2AJYSzVHV6xCcawuiez3DzqDAbrTc3YxBkplN6e+dM13ZeIcZnDg/QpSuU2zfZ3rzwY8ukEnaXw=="
     },
     "to-regex-range@5.0.1": {
       "integrity": "sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==",
@@ -4418,7 +4418,7 @@
         "npm:@vitest/coverage-v8@^4.0.18",
         "npm:autoprefixer@^10.4.19",
         "npm:electron-builder@^26.8.1",
-        "npm:electron@^39.8.5",
+        "npm:electron@^42.3.0",
         "npm:fallow@^2.75.0",
         "npm:flexlayout-react@~0.8.18",
         "npm:html-to-image@^1.11.13",
@@ -4446,7 +4446,10 @@
         "npm:vitest@^4.0.18",
         "npm:ws@^8.20.0",
         "npm:zod@^4.4.3"
-      ]
+      ],
+      "overrides": {
+        "tmp": "^0.2.6"
+      }
     }
   }
 }

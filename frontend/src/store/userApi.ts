@@ -111,6 +111,7 @@ export const userApi = createApi({
     }),
     getUsers: builder.query<UserRow[], void>({
       query: () => "/users",
+      transformResponse: (response: UserRow[] | null): UserRow[] => response ?? [],
     }),
     getUserLimits: builder.query<UserLimits, string>({
       query: (userId) => `/users/${encodeURIComponent(userId)}/limits`,
