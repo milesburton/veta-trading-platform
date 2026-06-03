@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.46.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.45.0...veta-trading-platform-v1.46.0) (2026-06-03)
+
+
+### Features
+
+* **registration:** require a trader archetype on sign-up ([#393](https://github.com/milesburton/veta-trading-platform/issues/393)) ([c1c5161](https://github.com/milesburton/veta-trading-platform/commit/c1c516139492b859fa49f1805a49e110d834b813))
+* **synthetic-probe:** assert personas load + market feed connected ([#392](https://github.com/milesburton/veta-trading-platform/issues/392)) ([ae8efbb](https://github.com/milesburton/veta-trading-platform/commit/ae8efbbf2ace725e05e195c3d62e8116950063f0))
+
+
+### Bug Fixes
+
+* **compose:** raise Postgres and Redpanda memory limits ([#390](https://github.com/milesburton/veta-trading-platform/issues/390)) ([dc291e6](https://github.com/milesburton/veta-trading-platform/commit/dc291e66c2e54fd21d18d8f84361810f1e90c967))
+* **feature-engine:** batch inserts + guard against overlapping flushes ([#388](https://github.com/milesburton/veta-trading-platform/issues/388)) ([4ed9ee9](https://github.com/milesburton/veta-trading-platform/commit/4ed9ee9f3e0492595bd314322d8966aa49034fce))
+* **loadgen:** max-runtime TTL + wait for user-service before token refresh ([#391](https://github.com/milesburton/veta-trading-platform/issues/391)) ([d36ce23](https://github.com/milesburton/veta-trading-platform/commit/d36ce238ab681b9815f08f4a4e42e023c52bc939))
+* **redpanda:** cap retention on market.features/market.signals + cluster default ([#387](https://github.com/milesburton/veta-trading-platform/issues/387)) ([5140fbd](https://github.com/milesburton/veta-trading-platform/commit/5140fbde07c6c696cf5d62dda05165585d137c9e))
+* **security:** patch tmp path-traversal (GHSA-ph9p-34f9-6g65) ([d159dfd](https://github.com/milesburton/veta-trading-platform/commit/d159dfdeee18a6d0628bde16547d7f9f15fbe93b))
+
 ## [1.45.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.44.0...veta-trading-platform-v1.45.0) (2026-05-26)
 
 
