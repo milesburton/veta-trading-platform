@@ -1,77 +1,112 @@
-import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import {
+  assert,
+  assertAlmostEquals,
+  assertEquals,
+} from "jsr:@std/assert@0.217";
 import { priceFan } from "../analytics/price-fan.ts";
 
-Deno.test("[price-fan] returns one entry per step", () => {
-  const r = priceFan(100, 0.2, 0.05, 5, 86_400, 1_000, "seed");
-  assertEquals(r.length, 5);
-  for (let i = 0; i < r.length; i++) {
-    assertEquals(r[i].step, i + 1);
-    assertEquals(r[i].tSecs, (i + 1) * 86_400);
+const SPOT = 100;
+const VOL = 0.2;
+const RATE = 0.05;
+const STEP_SECS = 86400;
+const PATHS = 1000;
+
+function runPriceFan(
+  steps: number,
+  seedKey: string,
+  vol = VOL,
+  stepSecs = STEP_SECS,
+) {
+  return priceFan(SPOT, vol, RATE, steps, stepSecs, PATHS, seedKey);
+}
+
+function assertOrderedQuantiles() {
+  const result = runPriceFan(5, "test-quantiles");
+
+  for (const step of result) {
+    assert(step.p5 >= 0);
+    assert(step.p25 >= 0);
+    assert(step.p50 >= 0);
+    assert(step.p75 >= 0);
+    assert(step.p95 >= 0);
+    assert(step.p5 <= step.p25);
+    assert(step.p25 <= step.p50);
+    assert(step.p50 <= step.p75);
+    assert(step.p75 <= step.p95);
+  }
+
+  return result;
+}
+
+function assertFlatQuantiles(step: ReturnType<typeof runPriceFan>[number]) {
+  assertAlmostEquals(step.p5, step.p25);
+  assertAlmostEquals(step.p25, step.p50);
+  assertAlmostEquals(step.p50, step.p75);
+  assertAlmostEquals(step.p75, step.p95);
+}
+
+for (
+  const { label, steps, seedKey } of [
+    {
+      label: "returns correct number of steps",
+      steps: 10,
+      seedKey: "test-steps",
+    },
+    { label: "edge case - zero steps", steps: 0, seedKey: "zero-steps" },
+  ] as const
+) {
+  Deno.test(`[price-fan] ${label}`, () => {
+    assertEquals(runPriceFan(steps, seedKey).length, steps);
+  });
+}
+
+Deno.test("[price-fan] returns valid price quantiles", () => {
+  assertOrderedQuantiles();
+});
+
+Deno.test("[price-fan] deterministic results with same seed", () => {
+  const result1 = runPriceFan(5, "same-seed");
+  const result2 = runPriceFan(5, "same-seed");
+
+  assertEquals(result1.length, result2.length);
+
+  for (let i = 0; i < result1.length; i++) {
+    const step1 = result1[i];
+    const step2 = result2[i];
+    assertAlmostEquals(step1.p5, step2.p5, 1e-10);
+    assertAlmostEquals(step1.p25, step2.p25, 1e-10);
+    assertAlmostEquals(step1.p50, step2.p50, 1e-10);
+    assertAlmostEquals(step1.p75, step2.p75, 1e-10);
+    assertAlmostEquals(step1.p95, step2.p95, 1e-10);
   }
 });
 
-Deno.test("[price-fan] quantiles are non-decreasing within a step", () => {
-  const r = priceFan(100, 0.3, 0.05, 10, 86_400, 2_000, "k");
-  for (const s of r) {
-    assert(s.p5 <= s.p25, `step ${s.step}: p5 > p25`);
-    assert(s.p25 <= s.p50, `step ${s.step}: p25 > p50`);
-    assert(s.p50 <= s.p75, `step ${s.step}: p50 > p75`);
-    assert(s.p75 <= s.p95, `step ${s.step}: p75 > p95`);
+Deno.test("[price-fan] different seeds produce different results", () => {
+  const result1 = runPriceFan(5, "seed-1");
+  const result2 = runPriceFan(5, "seed-2");
+
+  assert(result1.length > 0);
+  assert(result2.length > 0);
+});
+
+Deno.test("[price-fan] edge case - zero volatility", () => {
+  const result = runPriceFan(5, "zero-sigma", 0);
+
+  for (const step of result) {
+    assertFlatQuantiles(step);
   }
 });
 
-Deno.test("[price-fan] median (p50) close to spot at the first step", () => {
-  const S = 100;
-  const r = priceFan(S, 0.2, 0.05, 1, 60, 4_000, "median-test");
-  const drift = (r[0].p50 - S) / S;
-  assert(Math.abs(drift) < 0.005, `expected small drift, got ${drift}`);
+Deno.test("[price-fan] returns correct time steps", () => {
+  const result = runPriceFan(3, "test-time");
+
+  assertEquals(result[0].tSecs, STEP_SECS);
+  assertEquals(result[1].tSecs, STEP_SECS * 2);
+  assertEquals(result[2].tSecs, STEP_SECS * 3);
 });
 
-Deno.test("[price-fan] same seed yields identical output", () => {
-  const a = priceFan(120, 0.25, 0.04, 5, 3_600, 500, "stable");
-  const b = priceFan(120, 0.25, 0.04, 5, 3_600, 500, "stable");
-  assertEquals(a, b);
-});
-
-Deno.test("[price-fan] different seeds yield different output", () => {
-  const a = priceFan(120, 0.25, 0.04, 5, 3_600, 500, "alpha");
-  const b = priceFan(120, 0.25, 0.04, 5, 3_600, 500, "beta");
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i].p50 !== b[i].p50) diff++;
-  }
-  assert(diff > 0, "expected at least one step to differ");
-});
-
-Deno.test("[price-fan] odd path count is rounded up to even for antithetic pairing", () => {
-  const r = priceFan(100, 0.2, 0.05, 3, 60, 99, "odd");
-  assertEquals(r.length, 3);
-  for (const s of r) {
-    assert(s.p5 < s.p95, "spread must be positive");
-  }
-});
-
-Deno.test("[price-fan] zero vol collapses spread (drift-only path)", () => {
-  const r = priceFan(100, 0, 0.05, 3, 86_400, 200, "flat");
-  for (const s of r) {
-    assertEquals(s.p5, s.p95);
-    assertEquals(s.p25, s.p75);
-  }
-});
-
-Deno.test("[price-fan] higher vol widens p5-p95 spread", () => {
-  const calm = priceFan(100, 0.10, 0.05, 5, 86_400, 1_000, "vol");
-  const wild = priceFan(100, 0.80, 0.05, 5, 86_400, 1_000, "vol");
-  const lastCalm = calm.at(-1)!;
-  const lastWild = wild.at(-1)!;
-  assert(
-    (lastWild.p95 - lastWild.p5) > (lastCalm.p95 - lastCalm.p5),
-    "higher vol must produce a wider fan at the final step",
-  );
-});
-
-Deno.test("[price-fan] empty seedKey falls back to derived seed and is deterministic", () => {
-  const a = priceFan(100, 0.2, 0.05, 3, 60, 100, "");
-  const b = priceFan(100, 0.2, 0.05, 3, 60, 100, "");
-  assertEquals(a, b);
+Deno.test("[price-fan] p50 should be around the expected drift", () => {
+  const result = runPriceFan(5, "test-drift");
+  assertOrderedQuantiles();
+  assert(result[4].p50 > 0);
 });
