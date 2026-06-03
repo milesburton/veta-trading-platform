@@ -1041,7 +1041,8 @@ jobs:
       - name: Verify Electron install metadata
         working-directory: frontend
         run: |
-          npm rebuild electron
+          node node_modules/electron/install.js
+          test -f node_modules/electron/path.txt
           node -e "require(\"electron\")"
 
       - name: Install xvfb and Electron native dependencies
