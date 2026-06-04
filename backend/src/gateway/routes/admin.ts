@@ -40,6 +40,14 @@ function busUnavailable(producerReady: boolean): Response | null {
   });
 }
 
+function secureRandomFloat(): number {
+  return crypto.getRandomValues(new Uint32Array(1))[0] / 0x1_0000_0000;
+}
+
+function secureRandomInt(maxExclusive: number): number {
+  return Math.floor(secureRandomFloat() * maxExclusive);
+}
+
 function makeWave(
   assets: string[],
   count: number,
@@ -52,17 +60,17 @@ function makeWave(
   const orders: OrderSpec[] = [];
   for (let i = 0; i < count; i++) {
     const asset = assets[i % assets.length];
-    const side: "BUY" | "SELL" = Math.random() < sideRatio ? "BUY" : "SELL";
-    const tier = Math.random();
+    const side: "BUY" | "SELL" = secureRandomFloat() < sideRatio ? "BUY" : "SELL";
+    const tier = secureRandomFloat();
     const quantity =
       tier < 0.6
-        ? Math.round(10 + Math.random() * 90)
+        ? Math.round(10 + secureRandomFloat() * 90)
         : tier < 0.9
-          ? Math.round(100 + Math.random() * 400)
-          : Math.round(500 + Math.random() * 1500);
-    const spread = Math.random() * 0.03 * (side === "BUY" ? 1 : -1);
+          ? Math.round(100 + secureRandomFloat() * 400)
+          : Math.round(500 + secureRandomFloat() * 1500);
+    const spread = secureRandomFloat() * 0.03 * (side === "BUY" ? 1 : -1);
     const limitPriceFactor = 1 + spread;
-    let r = Math.random() * totalWeight;
+    let r = secureRandomFloat() * totalWeight;
     let chosen = strategyMix[0];
     for (const m of strategyMix) {
       r -= m.weight;
@@ -78,8 +86,8 @@ function makeWave(
       limitPriceFactor,
       strategy: chosen.strategy,
       algoParams: chosen.algoParams,
-      expiresAt: 300 + Math.round(Math.random() * 600),
-      delayMs: baseDelay + Math.round(Math.random() * spreadMs),
+      expiresAt: 300 + Math.round(secureRandomFloat() * 600),
+      delayMs: baseDelay + Math.round(secureRandomFloat() * spreadMs),
     });
   }
   return orders;
@@ -153,16 +161,14 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
   // The picked trader id is a fixed test persona from LOAD_TEST_USER_IDS;
   // requireAdmin(auth) above gates who can invoke this endpoint, so the
   // randomness is post-auth.
-  // lgtm[js/insecure-randomness] — see comment above; Math.random is
-  // intentional for load-test shape, not for security.
-  const pickFrom = <T>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)];
+  const pickFrom = <T>(xs: readonly T[]): T => xs[secureRandomInt(xs.length)];
   (async () => {
     for (let i = 0; i < orderCount; i++) {
       const symbol = pickFrom(symbols);
-      const side = Math.random() < 0.5 ? "BUY" : "SELL";
+      const side = secureRandomFloat() < 0.5 ? "BUY" : "SELL";
       const attributedTrader = pickFrom(LOAD_TEST_USERS);
       const mid = refPrice(symbol);
-      const jitter = 1 + (Math.random() - 0.5) * 0.04;
+      const jitter = 1 + (secureRandomFloat() - 0.5) * 0.04;
       const limitPrice =
         side === "BUY"
           ? Number((mid * jitter * 1.02).toFixed(2))
@@ -170,10 +176,10 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
 
       ctx.producer
         .send("orders.new", {
-          clientOrderId: `${jobId}-${i}-${Math.random().toString(36).slice(2, 8)}`,
+          clientOrderId: `${jobId}-${i}-${crypto.randomUUID().slice(0, 8)}`,
           asset: symbol,
           side,
-          quantity: 10 + Math.floor(Math.random() * 90),
+          quantity: 10 + secureRandomInt(90),
           limitPrice,
           expiresAt: 300,
           strategy,
