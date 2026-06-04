@@ -32,7 +32,7 @@ const SCENARIO_RUNS_RE = /^\/scenarios\/([a-z0-9-]+)\/runs$/;
 export async function handleScenariosRoute(
   req: Request,
   path: string,
-  ctx: GatewayContext,
+  ctx: GatewayContext
 ): Promise<Response | null> {
   if (!path.startsWith("/scenarios")) return null;
 
@@ -47,13 +47,8 @@ export async function handleScenariosRoute(
   if (path === "/scenarios" && req.method === "POST") {
     const denied = requireTrader(auth.user.role);
     if (denied) return denied;
-    let parsed;
     try {
-      parsed = ScenarioCreateSchema.parse(await req.json());
-    } catch (err) {
-      return json(400, { error: "Invalid scenario", detail: (err as Error).message });
-    }
-    try {
+      const parsed = ScenarioCreateSchema.parse(await req.json());
       const created = await createScenario({
         userId: auth.user.id,
         name: parsed.name,
@@ -81,15 +76,14 @@ export async function handleScenariosRoute(
     if (req.method === "PUT") {
       const denied = requireTrader(auth.user.role);
       if (denied) return denied;
-      let parsed;
       try {
-        parsed = ScenarioUpdateSchema.parse(await req.json());
+        const parsed = ScenarioUpdateSchema.parse(await req.json());
+        const updated = await updateScenario(auth.user.id, id, parsed);
+        if (!updated) return json(404, { error: "Not found" });
+        return json(200, { scenario: updated });
       } catch (err) {
         return json(400, { error: "Invalid scenario", detail: (err as Error).message });
       }
-      const updated = await updateScenario(auth.user.id, id, parsed);
-      if (!updated) return json(404, { error: "Not found" });
-      return json(200, { scenario: updated });
     }
     if (req.method === "DELETE") {
       const denied = requireTrader(auth.user.role);

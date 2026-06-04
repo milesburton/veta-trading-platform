@@ -1,7 +1,5 @@
 import { test as base, expect } from "@playwright/test";
 import { fiTest } from "./helpers/fixtures.ts";
-import { AppPage } from "./helpers/pages/AppPage.ts";
-import { OrderTicketPage } from "./helpers/pages/OrderTicketPage.ts";
 import {
   DEFAULT_ASSETS,
   MOCK_BOND_PRICE_RESPONSE,
@@ -9,6 +7,8 @@ import {
   MOCK_SPREAD_ANALYSIS_RESPONSE,
   MOCK_VOL_SURFACE_RESPONSE,
 } from "./helpers/GatewayMock.ts";
+import { AppPage } from "./helpers/pages/AppPage.ts";
+import type { OrderTicketPage } from "./helpers/pages/OrderTicketPage.ts";
 
 const BOND_PRICES: Record<string, number> = {
   AAPL: 189.5,
@@ -33,10 +33,9 @@ fiTest.describe("Fixed Income — Spread Analysis Panel", () => {
   fiTest("compute button triggers request and result chips are visible", async ({ app }) => {
     const panel = await app.panelByTitle(/Spread Analysis/i);
 
-    await expect(panel.getByRole("button", { name: /Compute Spreads/i }))
-      .toBeVisible({
-        timeout: 10_000,
-      });
+    await expect(panel.getByRole("button", { name: /Compute Spreads/i })).toBeVisible({
+      timeout: 10_000,
+    });
 
     await panel.getByRole("button", { name: /Compute Spreads/i }).click();
 
@@ -72,10 +71,9 @@ fiTest.describe("Fixed Income — Duration Ladder Panel", () => {
   fiTest("compute ladder renders portfolio DV01 summary", async ({ app }) => {
     const panel = await app.panelByTitle(/Duration Ladder/i);
 
-    await expect(panel.getByRole("button", { name: /Compute Ladder/i }))
-      .toBeVisible({
-        timeout: 10_000,
-      });
+    await expect(panel.getByRole("button", { name: /Compute Ladder/i })).toBeVisible({
+      timeout: 10_000,
+    });
 
     await panel.getByRole("button", { name: /Compute Ladder/i }).click();
 
@@ -83,8 +81,7 @@ fiTest.describe("Fixed Income — Duration Ladder Panel", () => {
       timeout: 5_000,
     });
 
-    const totalDv01 = Math.abs(MOCK_DURATION_LADDER_RESPONSE.totalPortfolioDv01)
-      .toFixed(2);
+    const totalDv01 = Math.abs(MOCK_DURATION_LADDER_RESPONSE.totalPortfolioDv01).toFixed(2);
     await expect(panel.getByText(new RegExp(totalDv01)).first()).toBeVisible({
       timeout: 3_000,
     });
@@ -108,10 +105,9 @@ fiTest.describe("Fixed Income — Vol Surface Panel", () => {
     const panel = await app.panelByTitle(/Vol Surface/i);
 
     const atmPct = (MOCK_VOL_SURFACE_RESPONSE.atTheMoneyVol * 100).toFixed(1);
-    await expect(panel.getByText(new RegExp(`ATM Vol.*${atmPct}%`, "i")))
-      .toBeVisible({
-        timeout: 10_000,
-      });
+    await expect(panel.getByText(new RegExp(`ATM Vol.*${atmPct}%`, "i"))).toBeVisible({
+      timeout: 10_000,
+    });
 
     await expect(panel.getByText("ATM").first()).toBeVisible({
       timeout: 3_000,
@@ -128,11 +124,11 @@ fiTest.describe("Fixed Income — Vol Surface Panel", () => {
     const firstCell = panel.getByRole("button").first();
     await firstCell.click();
 
-    await expect(page.locator("body")).not.toContainText("Uncaught", {
-      timeout: 1_000,
-    }).catch(
-      () => {},
-    );
+    await expect(page.locator("body"))
+      .not.toContainText("Uncaught", {
+        timeout: 1_000,
+      })
+      .catch(() => {});
   });
 });
 
@@ -172,20 +168,23 @@ bondTest.describe("Fixed Income — Bond Order Ticket", () => {
     await ticket.expectBondSubmitEnabled(5_000);
   });
 
-  bondTest("submitting bond order sends a submitOrder WS message with instrumentType=bond", async ({ app, ticket }) => {
-    await ticket.switchToBond();
-    await ticket.waitForBondQuote(8_000);
+  bondTest(
+    "submitting bond order sends a submitOrder WS message with instrumentType=bond",
+    async ({ app, ticket }) => {
+      await ticket.switchToBond();
+      await ticket.waitForBondQuote(8_000);
 
-    await ticket.locator.getByLabel("Order quantity in shares").fill("5");
+      await ticket.locator.getByLabel("Order quantity in shares").fill("5");
 
-    await ticket.expectBondSubmitEnabled(5_000);
-    const msgPromise = app.gateway.nextOutbound("submitOrder", 8_000);
-    await ticket.submitBond();
+      await ticket.expectBondSubmitEnabled(5_000);
+      const msgPromise = app.gateway.nextOutbound("submitOrder", 8_000);
+      await ticket.submitBond();
 
-    const msg = await msgPromise;
-    expect(msg.payload.instrumentType).toBe("bond");
-    expect(msg.payload.quantity).toBe(5);
-  });
+      const msg = await msgPromise;
+      expect(msg.payload.instrumentType).toBe("bond");
+      expect(msg.payload.quantity).toBe(5);
+    }
+  );
 
   bondTest("success feedback is shown after bond order submission", async ({ ticket }) => {
     await ticket.switchToBond();
@@ -218,5 +217,7 @@ base.describe("Trader personas", () => {
     await app.expectUserVisible("David Kim");
   });
 
-  base.skip("research analyst has no trading permission — order ticket not accessible (RBAC blocks)");
+  base.skip(
+    "research analyst has no trading permission — order ticket not accessible (RBAC blocks)"
+  );
 });

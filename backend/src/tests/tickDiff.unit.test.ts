@@ -102,11 +102,7 @@ Deno.test("marketMinute change is emitted on its own", () => {
 
 Deno.test("sessionPhase change is emitted on its own", () => {
   const state = createTickDiffState();
-  const { nextState } = buildTickDiff(
-    makePayload({ AAPL: 190 }),
-    state,
-    1_000,
-  );
+  const { nextState } = buildTickDiff(makePayload({ AAPL: 190 }), state, 1_000);
 
   const next = makePayload({ AAPL: 190 });
   next.sessionPhase = "CLOSING_AUCTION";
@@ -130,11 +126,7 @@ Deno.test("periodic full snapshot fires after the interval elapses", () => {
 
 Deno.test("a newly-introduced symbol always appears in the diff", () => {
   const state = createTickDiffState();
-  const { nextState } = buildTickDiff(
-    makePayload({ AAPL: 190 }),
-    state,
-    1_000,
-  );
+  const { nextState } = buildTickDiff(makePayload({ AAPL: 190 }), state, 1_000);
 
   const withNew = makePayload({ AAPL: 190, NEWCO: 50 });
   const { diff } = buildTickDiff(withNew, nextState, 1_250);
@@ -163,10 +155,7 @@ function gaussian(rng: () => number): number {
   return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
 }
 
-function jitterPrices(
-  prices: Record<string, number>,
-  rng: () => number,
-): Record<string, number> {
+function jitterPrices(prices: Record<string, number>, rng: () => number): Record<string, number> {
   const next: Record<string, number> = {};
   for (const [sym, price] of Object.entries(prices)) {
     const stepBps = gaussian(rng) * PER_TICK_STDEV_BPS;
@@ -208,7 +197,7 @@ Deno.test("realistic 287-symbol stream stays well under the alert bandwidth budg
   const headroomRatio = bytesPerSec / ALERT_THRESHOLD_BYTES_PER_SEC;
   assert(
     headroomRatio < 0.5,
-    `bandwidth ${(bytesPerSec / 1024).toFixed(1)} KiB/s exceeds 50% of alert threshold (512 KiB/s); ratio=${headroomRatio.toFixed(2)} msgs=${totalMessages}`,
+    `bandwidth ${(bytesPerSec / 1024).toFixed(1)} KiB/s exceeds 50% of alert threshold (512 KiB/s); ratio=${headroomRatio.toFixed(2)} msgs=${totalMessages}`
   );
 });
 
@@ -232,10 +221,7 @@ function newConsumer(): ConsumerState {
   };
 }
 
-function applyDiff(
-  consumer: ConsumerState,
-  diff: ReturnType<typeof buildTickDiff>["diff"],
-): void {
+function applyDiff(consumer: ConsumerState, diff: ReturnType<typeof buildTickDiff>["diff"]): void {
   if (diff.full) {
     consumer.prices = {};
     consumer.openPrices = {};
@@ -285,19 +271,19 @@ Deno.test("consumer state after applying diffs matches full-snapshot state for e
     const actual = consumer.prices[sym];
     assert(
       actual !== undefined && Math.abs(actual - expected) < 1e-6,
-      `prices drift on ${sym}: expected ${expected}, got ${actual}`,
+      `prices drift on ${sym}: expected ${expected}, got ${actual}`
     );
     const expectedVol = payload.volumes[sym];
     const actualVol = consumer.volumes[sym];
     assert(
       actualVol !== undefined && Math.abs(actualVol - expectedVol) < 1e-6,
-      `volumes drift on ${sym}: expected ${expectedVol}, got ${actualVol}`,
+      `volumes drift on ${sym}: expected ${expectedVol}, got ${actualVol}`
     );
     const expectedOpen = payload.openPrices[sym];
     const actualOpen = consumer.openPrices[sym];
     assert(
       actualOpen !== undefined && Math.abs(actualOpen - expectedOpen) < 1e-6,
-      `openPrices drift on ${sym}: expected ${expectedOpen}, got ${actualOpen}`,
+      `openPrices drift on ${sym}: expected ${expectedOpen}, got ${actualOpen}`
     );
   }
   assertEquals(consumer.marketMinute, payload.marketMinute);
@@ -312,14 +298,10 @@ Deno.test("orderBook is emitted around the BOOK_MATERIAL_BPS gate boundary", () 
   const justBelow = makePayload({
     AAPL: 100 * (1 + (BOOK_MATERIAL_BPS - 0.5) / 10_000),
   });
-  const { diff: belowDiff, nextState: afterBelow } = buildTickDiff(
-    justBelow,
-    nextState,
-    1_250,
-  );
+  const { diff: belowDiff, nextState: afterBelow } = buildTickDiff(justBelow, nextState, 1_250);
   assert(
     belowDiff.orderBook === undefined,
-    `expected no book under ${BOOK_MATERIAL_BPS} bps move, got ${JSON.stringify(belowDiff.orderBook)}`,
+    `expected no book under ${BOOK_MATERIAL_BPS} bps move, got ${JSON.stringify(belowDiff.orderBook)}`
   );
 
   const justAbove = makePayload({
@@ -328,7 +310,7 @@ Deno.test("orderBook is emitted around the BOOK_MATERIAL_BPS gate boundary", () 
   const { diff: aboveDiff } = buildTickDiff(justAbove, afterBelow, 1_500);
   assert(
     aboveDiff.orderBook?.AAPL !== undefined,
-    `expected book at or above ${BOOK_MATERIAL_BPS} bps move`,
+    `expected book at or above ${BOOK_MATERIAL_BPS} bps move`
   );
 });
 
@@ -364,7 +346,7 @@ Deno.test("buildTickDiff never produces a full snapshot more often than the conf
     const gap = fullSnapshotTimestamps[i] - fullSnapshotTimestamps[i - 1];
     assert(
       gap >= FULL_SNAPSHOT_INTERVAL_MS,
-      `full snapshot gap ${gap}ms < FULL_SNAPSHOT_INTERVAL_MS`,
+      `full snapshot gap ${gap}ms < FULL_SNAPSHOT_INTERVAL_MS`
     );
   }
 });

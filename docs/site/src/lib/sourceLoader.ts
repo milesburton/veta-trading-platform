@@ -5,11 +5,10 @@ const REPO_ROOT = resolve(process.cwd(), "../..");
 const REPO_URL = "https://github.com/milesburton/veta-trading-platform";
 const GIT_REF = process.env.DOCS_GIT_REF ?? "main";
 
-const REGION_RE = (id: string) =>
-  new RegExp(`^\\s*(?://|#)\\s*#region\\s+${escape(id)}\\s*$`);
+const REGION_RE = (id: string) => new RegExp(`^\\s*(?://|#)\\s*#region\\s+${escape(id)}\\s*$`);
 const REGION_END_RE = /^\s*(?:\/\/|#)\s*#endregion\b/;
 
-function escape(s: string): string {
+function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
@@ -22,10 +21,7 @@ export interface SourceRegion {
   url: string;
 }
 
-export async function loadRegion(
-  path: string,
-  region: string,
-): Promise<SourceRegion> {
+export async function loadRegion(path: string, region: string): Promise<SourceRegion> {
   if (path.startsWith("/") || path.includes("..")) {
     throw new Error(`Source path must be repo-relative: ${path}`);
   }
@@ -86,9 +82,7 @@ export function fileUrl(path: string, line?: number): string {
 function dedent(lines: string[]): string[] {
   const nonEmpty = lines.filter((l) => l.trim().length > 0);
   if (nonEmpty.length === 0) return lines;
-  const indent = Math.min(
-    ...nonEmpty.map((l) => l.match(/^[ \t]*/)?.[0].length ?? 0),
-  );
+  const indent = Math.min(...nonEmpty.map((l) => l.match(/^[ \t]*/)?.[0].length ?? 0));
   return lines.map((l) => l.slice(indent));
 }
 

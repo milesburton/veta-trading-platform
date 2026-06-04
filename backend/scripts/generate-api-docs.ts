@@ -5,16 +5,16 @@ const OUTPUT_FILE = "./docs/api-endpoints.md";
 
 const SERVICE_MAPPINGS: Record<string, string> = {
   "user-service": "User Service",
-  "analytics": "Analytics Service",
+  analytics: "Analytics Service",
   "market-data": "Market Data Service",
   "feature-engine": "Feature Engine",
   "signal-engine": "Signal Engine",
   "recommendation-engine": "Recommendation Engine",
   "scenario-engine": "Scenario Engine",
   "llm-advisory": "LLM Advisory Service",
-  "ems": "EMS (Execution Management System)",
-  "oms": "OMS (Order Management System)",
-  "journal": "Journal Service",
+  ems: "EMS (Execution Management System)",
+  oms: "OMS (Order Management System)",
+  journal: "Journal Service",
   "market-sim": "Market Simulator",
   "fix-archive": "FIX Archive",
   "fix-gateway": "FIX Gateway",
@@ -24,7 +24,7 @@ const SERVICE_MAPPINGS: Record<string, string> = {
   "ccp-service": "CCP Service",
   "rfq-service": "RFQ Service",
   "product-service": "Product Service",
-  "replay": "Replay Service",
+  replay: "Replay Service",
   "risk-engine": "Risk Engine",
 };
 
@@ -129,7 +129,10 @@ const groupByService = (endpoints: Endpoint[]): Record<string, Endpoint[]> => {
   const grouped: Record<string, Endpoint[]> = {};
   for (const endpoint of endpoints) {
     const service = endpoint.service ?? "General";
-    (grouped[service] ??= []).push(endpoint);
+    if (!grouped[service]) {
+      grouped[service] = [];
+    }
+    grouped[service].push(endpoint);
   }
   return grouped;
 };

@@ -1,10 +1,6 @@
 // fallow-ignore-file unused-file
 import { assertEquals } from "jsr:@std/assert@0.217";
-import {
-  _internalForTests,
-  lookupPanel,
-  renderGrafanaPanel,
-} from "../gateway/grafana-renderer.ts";
+import { _internalForTests, lookupPanel, renderGrafanaPanel } from "../gateway/grafana-renderer.ts";
 
 const realFetch = globalThis.fetch;
 
@@ -87,7 +83,7 @@ Deno.test("renderGrafanaPanel returns null when content-type is not an image", a
       new Response("not an image", {
         status: 200,
         headers: { "Content-Type": "text/html" },
-      }),
+      })
     )) as typeof fetch;
   try {
     const bytes = await renderGrafanaPanel({ panelUid: "trading", panelId: 1 });
@@ -104,7 +100,7 @@ Deno.test("renderGrafanaPanel returns the PNG bytes on success", async () => {
       new Response(png as BodyInit, {
         status: 200,
         headers: { "Content-Type": "image/png" },
-      }),
+      })
     )) as typeof fetch;
   try {
     const bytes = await renderGrafanaPanel({ panelUid: "trading", panelId: 1 });
@@ -140,7 +136,7 @@ Deno.test("renderGrafanaPanel rejects oversized payloads", async () => {
       new Response(oversized as BodyInit, {
         status: 200,
         headers: { "Content-Type": "image/png" },
-      }),
+      })
     )) as typeof fetch;
   try {
     const bytes = await renderGrafanaPanel({ panelUid: "trading", panelId: 1 });
@@ -172,7 +168,7 @@ Deno.test("renderGrafanaPanel rejects via Content-Length without pulling chunks"
           "Content-Type": "image/png",
           "Content-Length": String(1024 * 1024 * 1024),
         },
-      }),
+      })
     )) as typeof fetch;
   try {
     const bytes = await renderGrafanaPanel({ panelUid: "trading", panelId: 1 });
@@ -184,7 +180,7 @@ Deno.test("renderGrafanaPanel rejects via Content-Length without pulling chunks"
     assertEquals(
       pullCount <= 1,
       true,
-      `early-reject should cancel after at most one platform pre-pull, got ${pullCount}`,
+      `early-reject should cancel after at most one platform pre-pull, got ${pullCount}`
     );
   } finally {
     globalThis.fetch = realFetch;
@@ -213,7 +209,7 @@ Deno.test("renderGrafanaPanel aborts mid-stream when chunks exceed the cap", asy
       new Response(body, {
         status: 200,
         headers: { "Content-Type": "image/png" },
-      }),
+      })
     )) as typeof fetch;
   try {
     const bytes = await renderGrafanaPanel({ panelUid: "trading", panelId: 1 });
@@ -221,7 +217,7 @@ Deno.test("renderGrafanaPanel aborts mid-stream when chunks exceed the cap", asy
     assertEquals(
       chunksPulled <= 8,
       true,
-      `pulled ${chunksPulled} chunks before abort; cap should fire ~chunk 7`,
+      `pulled ${chunksPulled} chunks before abort; cap should fire ~chunk 7`
     );
   } finally {
     globalThis.fetch = realFetch;

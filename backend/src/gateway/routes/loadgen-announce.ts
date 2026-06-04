@@ -29,7 +29,7 @@ export function parseAnnouncement(body: unknown): LoadgenAnnouncement | null {
 export async function handleLoadgenAnnounceRoute(
   req: Request,
   path: string,
-  _context: GatewayContext,
+  _context: GatewayContext
 ): Promise<Response | null> {
   if (path !== "/loadgen-announce") return null;
   if (req.method !== "POST") return null;
@@ -54,16 +54,13 @@ export async function handleLoadgenAnnounceRoute(
   if (!announcement) {
     return jsonResponse(
       { error: "expected { event: 'start'|'stop', runner: string, note?: string }" },
-      400,
+      400
     );
   }
 
   const sent = await notifyDiscordLoadgen(announcement);
   if (!sent) {
-    return jsonResponse(
-      { ok: false, error: "received but Discord webhook not configured" },
-      202,
-    );
+    return jsonResponse({ ok: false, error: "received but Discord webhook not configured" }, 202);
   }
   return jsonResponse({ ok: true }, 200);
 }

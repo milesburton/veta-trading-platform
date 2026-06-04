@@ -25,7 +25,10 @@ const refPriceFor = () => 100;
 Deno.test("LoadAgent: starts and stops cleanly", () => {
   const { producer } = makeFakeProducer();
   const agent = new LoadAgent({ producer, refPriceFor, publishAccessEvent: noopPublish });
-  const status = agent.start({ ratePerSecond: 1, autoStopAfterMs: 60_000 }, { userId: "admin", role: "admin" });
+  const status = agent.start(
+    { ratePerSecond: 1, autoStopAfterMs: 60_000 },
+    { userId: "admin", role: "admin" }
+  );
   assert(status.running);
   assert(status.startedAt !== null);
   agent.stop({ userId: "admin", role: "admin" });
@@ -50,7 +53,7 @@ Deno.test("LoadAgent: clamps rate to safety ceiling", () => {
   const { producer } = makeFakeProducer();
   const agent = new LoadAgent({ producer, refPriceFor, publishAccessEvent: noopPublish });
   const status = agent.start({ ratePerSecond: 10_000 }, { userId: "admin", role: "admin" });
-  assertEquals(status.config!.ratePerSecond, 1_000);
+  assertEquals(status.config?.ratePerSecond, 1_000);
   agent.stop({ userId: "admin", role: "admin" });
 });
 
@@ -59,9 +62,9 @@ Deno.test("LoadAgent: clamps autoStop to 24h ceiling", () => {
   const agent = new LoadAgent({ producer, refPriceFor, publishAccessEvent: noopPublish });
   const status = agent.start(
     { ratePerSecond: 1, autoStopAfterMs: 99 * 60 * 60 * 1000 },
-    { userId: "admin", role: "admin" },
+    { userId: "admin", role: "admin" }
   );
-  assertEquals(status.config!.autoStopAfterMs, 24 * 60 * 60 * 1000);
+  assertEquals(status.config?.autoStopAfterMs, 24 * 60 * 60 * 1000);
   agent.stop({ userId: "admin", role: "admin" });
 });
 
@@ -77,7 +80,7 @@ Deno.test("LoadAgent: defaults to equity symbols when none provided", () => {
   const { producer } = makeFakeProducer();
   const agent = new LoadAgent({ producer, refPriceFor, publishAccessEvent: noopPublish });
   const status = agent.start({ ratePerSecond: 1 }, { userId: "admin", role: "admin" });
-  assertEquals(status.config!.symbols.length, DEFAULT_EQUITY_SYMBOLS.length);
+  assertEquals(status.config?.symbols.length, DEFAULT_EQUITY_SYMBOLS.length);
   agent.stop({ userId: "admin", role: "admin" });
 });
 
@@ -95,7 +98,13 @@ Deno.test("LoadAgent: emits orders to orders.new topic when ticking", async () =
 
 Deno.test("LoadAgent: publishAccessEvent fires on start and stop", () => {
   const events: { action: string; userId: string }[] = [];
-  const publishAccessEvent = (e: { action: string; userId?: string; userRole?: string; path?: string; reason?: string }) => {
+  const publishAccessEvent = (e: {
+    action: string;
+    userId?: string;
+    userRole?: string;
+    path?: string;
+    reason?: string;
+  }) => {
     events.push({ action: e.action, userId: e.userId ?? "" });
   };
   const { producer } = makeFakeProducer();

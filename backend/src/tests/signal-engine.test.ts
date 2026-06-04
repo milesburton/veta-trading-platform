@@ -1,7 +1,4 @@
-import {
-  assertAlmostEquals,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
+import { assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 import { scoreFeatureVector } from "../signal-engine/scorer.ts";
 import { DEFAULT_WEIGHTS } from "../signal-engine/weight-store.ts";
 import type { FeatureVector } from "../types/intelligence.ts";
@@ -27,10 +24,7 @@ Deno.test("default weights: all 7 features present, realisedVol is negative, abs
   assertEquals("realisedVol" in DEFAULT_WEIGHTS, true);
   assertEquals(DEFAULT_WEIGHTS.realisedVol < 0, true);
 
-  const absSum = Object.values(DEFAULT_WEIGHTS).reduce(
-    (a, b) => a + Math.abs(b),
-    0,
-  );
+  const absSum = Object.values(DEFAULT_WEIGHTS).reduce((a, b) => a + Math.abs(b), 0);
   assertAlmostEquals(absSum, 1.0, 0.001);
 });
 
@@ -73,17 +67,15 @@ Deno.test("scorer: score is clamped to [-1, 1] even when all features are maxed"
 Deno.test("scorer: factors array contains all 7 named features", () => {
   const sig = scoreFeatureVector(makeNeutralFv(), DEFAULT_WEIGHTS);
   const names = new Set(sig.factors.map((f) => f.name));
-  for (
-    const name of [
-      "momentum",
-      "relativeVolume",
-      "realisedVol",
-      "sectorRelativeStrength",
-      "eventScore",
-      "newsVelocity",
-      "sentimentDelta",
-    ]
-  ) {
+  for (const name of [
+    "momentum",
+    "relativeVolume",
+    "realisedVol",
+    "sectorRelativeStrength",
+    "eventScore",
+    "newsVelocity",
+    "sentimentDelta",
+  ]) {
     assertEquals(names.has(name as never), true, `missing factor: ${name}`);
   }
 });

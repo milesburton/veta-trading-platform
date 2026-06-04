@@ -1,14 +1,6 @@
-import {
-  assert,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
+import { assert, assertEquals } from "jsr:@std/assert@0.217";
 
-import {
-  applyExprGroup,
-  applySort,
-  evalExprGroup,
-  evalOp,
-} from "../lib/gridQuery.ts";
+import { applyExprGroup, applySort, evalExprGroup, evalOp } from "../lib/gridQuery.ts";
 import type { ExprGroup } from "../types/gridQuery.ts";
 
 const rows = [
@@ -144,7 +136,10 @@ Deno.test("[gridQuery/evalExprGroup] AND group — all rules must match", () => 
     ],
   };
   const result = applyExprGroup(rows, g);
-  assertEquals(result.map((r) => r.id), ["1"]); // AAPL BUY 10000
+  assertEquals(
+    result.map((r) => r.id),
+    ["1"]
+  ); // AAPL BUY 10000
 });
 
 Deno.test("[gridQuery/evalExprGroup] OR group — any rule matches", () => {
@@ -222,13 +217,15 @@ Deno.test("[gridQuery/evalExprGroup] is_null on null and empty-string userId", (
     kind: "group",
     id: "root",
     join: "AND",
-    rules: [{
-      kind: "rule",
-      id: "r1",
-      field: "userId",
-      op: "is_null",
-      value: "",
-    }],
+    rules: [
+      {
+        kind: "rule",
+        id: "r1",
+        field: "userId",
+        op: "is_null",
+        value: "",
+      },
+    ],
   };
   const result = applyExprGroup(rows, g);
   assertEquals(result.map((r) => r.id).sort(), ["2", "4"]);
@@ -239,13 +236,15 @@ Deno.test("[gridQuery/evalExprGroup] is_not_null on userId", () => {
     kind: "group",
     id: "root",
     join: "AND",
-    rules: [{
-      kind: "rule",
-      id: "r1",
-      field: "userId",
-      op: "is_not_null",
-      value: "",
-    }],
+    rules: [
+      {
+        kind: "rule",
+        id: "r1",
+        field: "userId",
+        op: "is_not_null",
+        value: "",
+      },
+    ],
   };
   const result = applyExprGroup(rows, g);
   assertEquals(result.map((r) => r.id).sort(), ["1", "3"]);
@@ -256,13 +255,15 @@ Deno.test("[gridQuery/evalExprGroup] between on quantity", () => {
     kind: "group",
     id: "root",
     join: "AND",
-    rules: [{
-      kind: "rule",
-      id: "r1",
-      field: "quantity",
-      op: "between",
-      value: [5000, 50000],
-    }],
+    rules: [
+      {
+        kind: "rule",
+        id: "r1",
+        field: "quantity",
+        op: "between",
+        value: [5000, 50000],
+      },
+    ],
   };
   const result = applyExprGroup(rows, g);
   assertEquals(result.map((r) => r.id).sort(), ["1", "2", "3"]);
@@ -273,31 +274,45 @@ Deno.test("[gridQuery/evalExprGroup] starts_with on asset", () => {
     kind: "group",
     id: "root",
     join: "AND",
-    rules: [{
-      kind: "rule",
-      id: "r1",
-      field: "asset",
-      op: "starts_with",
-      value: "A",
-    }],
+    rules: [
+      {
+        kind: "rule",
+        id: "r1",
+        field: "asset",
+        op: "starts_with",
+        value: "A",
+      },
+    ],
   };
   const result = applyExprGroup(rows, g);
-  assertEquals(result.map((r) => r.id), ["1"]); // AAPL
+  assertEquals(
+    result.map((r) => r.id),
+    ["1"]
+  ); // AAPL
 });
 
 Deno.test("[gridQuery/applySort] ascending by quantity", () => {
   const sorted = applySort([...rows], "quantity", "asc");
-  assertEquals(sorted.map((r) => r.id), ["3", "1", "2", "4"]);
+  assertEquals(
+    sorted.map((r) => r.id),
+    ["3", "1", "2", "4"]
+  );
 });
 
 Deno.test("[gridQuery/applySort] descending by quantity", () => {
   const sorted = applySort([...rows], "quantity", "desc");
-  assertEquals(sorted.map((r) => r.id), ["4", "2", "1", "3"]);
+  assertEquals(
+    sorted.map((r) => r.id),
+    ["4", "2", "1", "3"]
+  );
 });
 
 Deno.test("[gridQuery/applySort] ascending by string field (asset)", () => {
   const sorted = applySort([...rows], "asset", "asc");
-  assertEquals(sorted.map((r) => r.asset), ["AAPL", "GOOG", "MSFT", "TSLA"]);
+  assertEquals(
+    sorted.map((r) => r.asset),
+    ["AAPL", "GOOG", "MSFT", "TSLA"]
+  );
 });
 
 Deno.test("[gridQuery/applySort] null field returns input unchanged", () => {

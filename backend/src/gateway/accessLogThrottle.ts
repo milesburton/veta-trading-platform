@@ -12,7 +12,7 @@ export function decideAccessLog(
   state: Map<string, ThrottleEntry>,
   key: string,
   nowMs: number,
-  throttleMs: number,
+  throttleMs: number
 ): ThrottleDecision {
   const entry = state.get(key);
   if (entry && nowMs - entry.lastEmitMs < throttleMs) {

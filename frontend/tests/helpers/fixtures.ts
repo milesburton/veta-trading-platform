@@ -1,13 +1,9 @@
 import { test as base, expect } from "@playwright/test";
-import {
-  DEFAULT_ASSETS,
-  DEFAULT_LIMITS,
-  GatewayMock,
-} from "./GatewayMock.ts";
+import { DEFAULT_ASSETS, DEFAULT_LIMITS, type GatewayMock } from "./GatewayMock.ts";
 import { AppPage } from "./pages/AppPage.ts";
-import { MarketLadderPage } from "./pages/MarketLadderPage.ts";
-import { OrderBlotterPage } from "./pages/OrderBlotterPage.ts";
-import { OrderTicketPage } from "./pages/OrderTicketPage.ts";
+import type { MarketLadderPage } from "./pages/MarketLadderPage.ts";
+import type { OrderBlotterPage } from "./pages/OrderBlotterPage.ts";
+import type { OrderTicketPage } from "./pages/OrderTicketPage.ts";
 
 const PRICES: Record<string, number> = {
   AAPL: 185.5,

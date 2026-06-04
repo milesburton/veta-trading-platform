@@ -39,7 +39,9 @@ function sendTo(ws: WebSocket, frame: string): void {
     if (ws.readyState !== WebSocket.OPEN) return;
     if (ws.bufferedAmount > MAX_BUFFERED_AMOUNT) return;
     ws.send(frame);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function broadcastAll(msg: unknown): void {

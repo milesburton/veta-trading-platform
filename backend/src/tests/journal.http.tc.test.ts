@@ -19,7 +19,11 @@ Deno.test({
       await t.step("GET /health returns ok with retentionDays", async () => {
         const res = await fetch(`${J}/health`, { signal: AbortSignal.timeout(5_000) });
         assertEquals(res.status, 200);
-        const body = await res.json() as { status: string; retentionDays: number; version: string };
+        const body = (await res.json()) as {
+          status: string;
+          retentionDays: number;
+          version: string;
+        };
         assertEquals(body.status, "ok");
         assert(typeof body.retentionDays === "number" && body.retentionDays > 0);
         assertExists(body.version);
@@ -28,7 +32,7 @@ Deno.test({
       await t.step("GET /candles requires instrument param", async () => {
         const res = await fetch(`${J}/candles`, { signal: AbortSignal.timeout(5_000) });
         assertEquals(res.status, 400);
-        const body = await res.json() as { error: string };
+        const body = (await res.json()) as { error: string };
         assert(body.error.includes("instrument"));
       });
 
@@ -37,7 +41,7 @@ Deno.test({
           signal: AbortSignal.timeout(8_000),
         });
         assertEquals(res.status, 200);
-        const body = await res.json() as unknown[];
+        const body = (await res.json()) as unknown[];
         assert(Array.isArray(body));
       });
 
@@ -54,7 +58,7 @@ Deno.test({
           signal: AbortSignal.timeout(8_000),
         });
         assertEquals(res.status, 200);
-        const body = await res.json() as unknown[];
+        const body = (await res.json()) as unknown[];
         assert(Array.isArray(body));
       });
 
@@ -73,7 +77,7 @@ Deno.test({
           signal: AbortSignal.timeout(8_000),
         });
         assertEquals(res.status, 200);
-        const body = await res.json() as { rows: unknown[]; total: number; evalMs: number };
+        const body = (await res.json()) as { rows: unknown[]; total: number; evalMs: number };
         assert(Array.isArray(body.rows));
         assert(typeof body.total === "number");
         assert(typeof body.evalMs === "number");
@@ -83,7 +87,9 @@ Deno.test({
         const res = await fetch(`${J}/grid/query`, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ filterExpr: { kind: "group", id: "root", join: "AND", rules: [] } }),
+          body: JSON.stringify({
+            filterExpr: { kind: "group", id: "root", join: "AND", rules: [] },
+          }),
           signal: AbortSignal.timeout(5_000),
         });
         assertEquals(res.status, 400);

@@ -47,7 +47,7 @@ export const DEFAULT_ABUSE_CONFIG: AbuseConfig = {
   userForceCloseThreshold: ABUSE_USER_FORCE_CLOSE_THRESHOLD,
   userWindowMs: ABUSE_USER_WINDOW_MS,
   userBackoffMs: ABUSE_USER_BACKOFF_MS,
-}
+};
 
 export type AbuseDecision =
   | { kind: "ok" }
@@ -97,7 +97,7 @@ export class AbuseTracker {
   recordRateLimited(
     socket: object,
     userId: string | null,
-    now: number = Date.now(),
+    now: number = Date.now()
   ): AbuseDecision {
     const ss = this.#getOrCreateSocketState(socket);
     ss.rateLimitedAtMs.push(now);

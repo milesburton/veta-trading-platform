@@ -22,11 +22,7 @@
  * 10. Signal direction is consistent with the reported score
  */
 
-import {
-  assert,
-  assertEquals,
-  assertExists,
-} from "jsr:@std/assert@0.217";
+import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
 import { logger } from "@veta/logger";
 import { loginAs } from "./test-helpers.ts";
 
@@ -49,25 +45,21 @@ async function getJson<T>(url: string, headers?: HeadersInit): Promise<T> {
 // ── Service health ────────────────────────────────────────────────────────────
 
 Deno.test("[intelligence] feature-engine is healthy", async () => {
-  const health = await getJson<{ status: string; service: string }>(
-    `${FEATURE_ENGINE_URL}/health`,
-  );
+  const health = await getJson<{ status: string; service: string }>(`${FEATURE_ENGINE_URL}/health`);
   assertEquals(health.status, "ok");
   assertEquals(health.service, "feature-engine");
 });
 
 Deno.test("[intelligence] signal-engine is healthy", async () => {
-  const health = await getJson<{ status: string; service: string }>(
-    `${SIGNAL_ENGINE_URL}/health`,
-  );
+  const health = await getJson<{ status: string; service: string }>(`${SIGNAL_ENGINE_URL}/health`);
   assertEquals(health.status, "ok");
   assertEquals(health.service, "signal-engine");
 });
 
 Deno.test("[intelligence] market-data-adapters is healthy", async () => {
-  const health = await getJson<
-    { status: string; service: string; eventCount: number }
-  >(`${MARKET_DATA_URL}/health`);
+  const health = await getJson<{ status: string; service: string; eventCount: number }>(
+    `${MARKET_DATA_URL}/health`
+  );
   assertEquals(health.status, "ok");
   assertEquals(health.service, "market-data-adapters");
   assert(health.eventCount >= 0, "eventCount should be non-negative");
@@ -75,7 +67,7 @@ Deno.test("[intelligence] market-data-adapters is healthy", async () => {
 
 Deno.test("[intelligence] scenario-engine is healthy", async () => {
   const health = await getJson<{ status: string; service: string }>(
-    `${SCENARIO_ENGINE_URL}/health`,
+    `${SCENARIO_ENGINE_URL}/health`
   );
   assertEquals(health.status, "ok");
   assertEquals(health.service, "scenario-engine");
@@ -84,9 +76,7 @@ Deno.test("[intelligence] scenario-engine is healthy", async () => {
 // ── Default weights invariants ────────────────────────────────────────────────
 
 Deno.test("[intelligence] signal-engine default weights: abs-sum=1.0, realisedVol<0, all 7 keys present", async () => {
-  const weights = await getJson<Record<string, number>>(
-    `${SIGNAL_ENGINE_URL}/weights`,
-  );
+  const weights = await getJson<Record<string, number>>(`${SIGNAL_ENGINE_URL}/weights`);
 
   const expectedKeys = [
     "momentum",
@@ -104,22 +94,17 @@ Deno.test("[intelligence] signal-engine default weights: abs-sum=1.0, realisedVo
 
   assert(
     weights.realisedVol < 0,
-    `realisedVol weight should be negative, got ${weights.realisedVol}`,
+    `realisedVol weight should be negative, got ${weights.realisedVol}`
   );
 
   const absSum = Object.values(weights).reduce((a, b) => a + Math.abs(b), 0);
-  assert(
-    Math.abs(absSum - 1.0) < 0.01,
-    `abs-sum of weights should be ~1.0, got ${absSum}`,
-  );
+  assert(Math.abs(absSum - 1.0) < 0.01, `abs-sum of weights should be ~1.0, got ${absSum}`);
 });
 
 // ── Weight round-trip ─────────────────────────────────────────────────────────
 
 Deno.test("[intelligence] PUT /weights round-trips a single weight change", async () => {
-  const original = await getJson<Record<string, number>>(
-    `${SIGNAL_ENGINE_URL}/weights`,
-  );
+  const original = await getJson<Record<string, number>>(`${SIGNAL_ENGINE_URL}/weights`);
 
   const patched = { ...original, newsVelocity: original.newsVelocity + 0.01 };
   const putRes = await fetch(`${SIGNAL_ENGINE_URL}/weights`, {
@@ -129,10 +114,10 @@ Deno.test("[intelligence] PUT /weights round-trips a single weight change", asyn
     signal: t(),
   });
   assert(putRes.ok, `PUT /weights → ${putRes.status}`);
-  const returned = await putRes.json() as Record<string, number>;
+  const returned = (await putRes.json()) as Record<string, number>;
   assert(
     Math.abs(returned.newsVelocity - patched.newsVelocity) < 0.0001,
-    `newsVelocity should be ${patched.newsVelocity}, got ${returned.newsVelocity}`,
+    `newsVelocity should be ${patched.newsVelocity}, got ${returned.newsVelocity}`
   );
 
   const restoreRes = await fetch(`${SIGNAL_ENGINE_URL}/weights`, {
@@ -164,29 +149,19 @@ Deno.test("[intelligence] feature-engine returns all 7 feature fields for a trac
       signal: t(),
     });
     if (res.ok) {
-      fv = await res.json() as Record<string, unknown>;
+      fv = (await res.json()) as Record<string, unknown>;
       break;
     }
     await res.body?.cancel();
     await new Promise((r) => setTimeout(r, 2_000));
   }
 
-  assertExists(
-    fv,
-    "Feature-engine did not produce a FeatureVector for AAPL within 45s",
-  );
+  assertExists(fv, "Feature-engine did not produce a FeatureVector for AAPL within 45s");
   assertEquals((fv as Record<string, unknown>).symbol, "AAPL");
 
   for (const field of expectedFields) {
-    assertExists(
-      fv[field] !== undefined ? fv[field] : null,
-      `Missing field: ${field}`,
-    );
-    assertEquals(
-      typeof fv[field],
-      "number",
-      `Field ${field} should be a number`,
-    );
+    assertExists(fv[field] !== undefined ? fv[field] : null, `Missing field: ${field}`);
+    assertEquals(typeof fv[field], "number", `Field ${field} should be a number`);
   }
 });
 
@@ -201,30 +176,27 @@ Deno.test("[intelligence] signal-engine returns a well-formed Signal for a track
       signal: t(),
     });
     if (res.ok) {
-      signal = await res.json() as Record<string, unknown>;
+      signal = (await res.json()) as Record<string, unknown>;
       break;
     }
     await res.body?.cancel();
     await new Promise((r) => setTimeout(r, 2_000));
   }
 
-  assertExists(
-    signal,
-    "Signal-engine did not produce a Signal for AAPL within 45s",
-  );
+  assertExists(signal, "Signal-engine did not produce a Signal for AAPL within 45s");
   assertEquals(signal.symbol, "AAPL");
   assert(typeof signal.score === "number", "score should be a number");
   assert(
     (signal.score as number) >= -1 && (signal.score as number) <= 1,
-    `score ${signal.score} out of [-1, 1]`,
+    `score ${signal.score} out of [-1, 1]`
   );
   assert(
     ["long", "short", "neutral"].includes(signal.direction as string),
-    `invalid direction: ${signal.direction}`,
+    `invalid direction: ${signal.direction}`
   );
   assert(
     Array.isArray(signal.factors) && (signal.factors as unknown[]).length === 7,
-    "factors should have 7 entries",
+    "factors should have 7 entries"
   );
 });
 
@@ -237,7 +209,7 @@ Deno.test("[intelligence] signal direction is consistent with score", async () =
       signal: t(),
     });
     if (res.ok) {
-      signal = await res.json() as { score: number; direction: string };
+      signal = (await res.json()) as { score: number; direction: string };
       break;
     }
     await res.body?.cancel();
@@ -274,7 +246,7 @@ Deno.test("[intelligence] scenario: positive momentum shock increases signal sco
   }
   assert(res.ok, `POST /scenario → ${res.status}`);
 
-  const result = await res.json() as {
+  const result = (await res.json()) as {
     baseline: { score: number; direction: string };
     shocked: { score: number; direction: string };
     delta: number;
@@ -285,7 +257,7 @@ Deno.test("[intelligence] scenario: positive momentum shock increases signal sco
   assert(typeof result.delta === "number", "delta should be a number");
   assert(
     result.shocked.score >= result.baseline.score,
-    `positive momentum shock should increase score: baseline=${result.baseline.score} shocked=${result.shocked.score}`,
+    `positive momentum shock should increase score: baseline=${result.baseline.score} shocked=${result.shocked.score}`
   );
 });
 
@@ -308,7 +280,7 @@ Deno.test("[intelligence] scenario: negative sentiment shock decreases signal sc
   }
   assert(res.ok, `POST /scenario → ${res.status}`);
 
-  const result = await res.json() as {
+  const result = (await res.json()) as {
     baseline: { score: number };
     shocked: { score: number };
     delta: number;
@@ -316,12 +288,9 @@ Deno.test("[intelligence] scenario: negative sentiment shock decreases signal sc
 
   assert(
     result.shocked.score <= result.baseline.score,
-    `negative sentiment shock should reduce score: baseline=${result.baseline.score} shocked=${result.shocked.score}`,
+    `negative sentiment shock should reduce score: baseline=${result.baseline.score} shocked=${result.shocked.score}`
   );
-  assert(
-    result.delta <= 0,
-    `delta should be ≤0 for negative shock, got ${result.delta}`,
-  );
+  assert(result.delta <= 0, `delta should be ≤0 for negative shock, got ${result.delta}`);
 });
 
 // ── Market-data-adapters ──────────────────────────────────────────────────────
@@ -345,14 +314,8 @@ Deno.test("[intelligence] market-data-adapters returns seeded events with valid 
   assertExists(first.id, "event.id");
   assertExists(first.type, "event.type");
   assertExists(first.headline, "event.headline");
-  assert(
-    typeof first.scheduledAt === "number",
-    "scheduledAt should be a number",
-  );
-  assert(
-    ["high", "medium", "low"].includes(first.impact),
-    `invalid impact: ${first.impact}`,
-  );
+  assert(typeof first.scheduledAt === "number", "scheduledAt should be a number");
+  assert(["high", "medium", "low"].includes(first.impact), `invalid impact: ${first.impact}`);
 });
 
 // ── Gateway proxy routes ──────────────────────────────────────────────────────
@@ -364,7 +327,7 @@ Deno.test("[intelligence] gateway proxies GET /intelligence/weights with auth", 
     signal: t(),
   });
   assert(res.ok, `GET /intelligence/weights via gateway → ${res.status}`);
-  const weights = await res.json() as Record<string, number>;
+  const weights = (await res.json()) as Record<string, number>;
   assertEquals(Object.keys(weights).length, 7, "should return 7 weights");
 });
 
@@ -374,9 +337,6 @@ Deno.test("[intelligence] gateway proxies GET /intelligence/signals with auth", 
     headers: { cookie: `veta_user=${token}` },
     signal: t(),
   });
-  assert(
-    res.ok || res.status === 404,
-    `GET /intelligence/signals → ${res.status}`,
-  );
+  assert(res.ok || res.status === 404, `GET /intelligence/signals → ${res.status}`);
   await res.body?.cancel();
 });

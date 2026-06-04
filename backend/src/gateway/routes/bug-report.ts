@@ -28,7 +28,7 @@ function parseReport(body: unknown): BugReport | null {
 export async function handleBugReportRoute(
   req: Request,
   path: string,
-  context: GatewayContext,
+  context: GatewayContext
 ): Promise<Response | null> {
   if (path !== "/bug-report") return null;
   if (req.method !== "POST") return null;
@@ -47,7 +47,7 @@ export async function handleBugReportRoute(
   if (!report || !isBugReportValid(report)) {
     return jsonResponse(
       { error: "title (>= 3 chars) and description (>= 10 chars) required" },
-      400,
+      400
     );
   }
 
@@ -61,13 +61,13 @@ export async function handleBugReportRoute(
   const sent = await notifyDiscordBug(
     reportWithUA,
     authResult.user.id,
-    authResult.user.name ?? authResult.user.id,
+    authResult.user.name ?? authResult.user.id
   );
 
   if (!sent) {
     return jsonResponse(
       { ok: false, error: "bug report received but Discord webhook not configured" },
-      202,
+      202
     );
   }
   return jsonResponse({ ok: true }, 200);

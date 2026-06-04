@@ -29,12 +29,7 @@ const ORDER_LIFECYCLE_TOPICS = [
   "user.session",
 ];
 
-const HIGH_FREQ_TOPICS = [
-  "orders.child",
-  "orders.filled",
-  "user.access",
-  "grid.query",
-];
+const HIGH_FREQ_TOPICS = ["orders.child", "orders.filled", "user.access", "grid.query"];
 const HEARTBEAT_TOPICS = ["algo.heartbeat"];
 
 // Stable group ids (not timestamped) so each kafka-relay restart rejoins
@@ -54,22 +49,24 @@ const HIGH_GROUP = "relay-high";
 const HB_GROUP = "relay-hb";
 
 function relayTopic(group: string, topics: string[]) {
-  createConsumer(group, topics).then((consumer) => {
-    consumer.onMessage((topic, value) => {
-      // Single JSON line → Alloy tails this via supervisord log → Loki
-      console.log(
-        JSON.stringify({
-          type: topic,
-          ts: Date.now(),
-          payload: value,
-          service: "kafka-relay",
-        }),
-      );
+  createConsumer(group, topics)
+    .then((consumer) => {
+      consumer.onMessage((topic, value) => {
+        // Single JSON line → Alloy tails this via supervisord log → Loki
+        console.log(
+          JSON.stringify({
+            type: topic,
+            ts: Date.now(),
+            payload: value,
+            service: "kafka-relay",
+          })
+        );
+      });
+      console.log(`[kafka-relay] ${group} subscribed: ${topics.join(", ")}`);
+    })
+    .catch((err) => {
+      console.warn(`[kafka-relay] ${group} unavailable: ${err.message}`);
     });
-    console.log(`[kafka-relay] ${group} subscribed: ${topics.join(", ")}`);
-  }).catch((err) => {
-    console.warn(`[kafka-relay] ${group} unavailable: ${err.message}`);
-  });
 }
 
 relayTopic(ORDER_GROUP, ORDER_LIFECYCLE_TOPICS);
@@ -106,7 +103,11 @@ Deno.serve({ port: PORT }, async (req: Request) => {
     let arr: unknown[];
     if (Array.isArray(body)) {
       arr = body;
-    } else if (body && typeof body === "object" && Array.isArray((body as { events?: unknown }).events)) {
+    } else if (
+      body &&
+      typeof body === "object" &&
+      Array.isArray((body as { events?: unknown }).events)
+    ) {
       arr = (body as { events: unknown[] }).events;
     } else {
       arr = [body];
@@ -117,7 +118,7 @@ Deno.serve({ port: PORT }, async (req: Request) => {
           ...(ev as object),
           _source: "batch",
           service: "kafka-relay",
-        }),
+        })
       );
     }
     return json({ success: true, count: arr.length });

@@ -1,7 +1,6 @@
 import { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 import { assert, assertEquals, assertGreater } from "jsr:@std/assert@0.217";
 import { createJobStore } from "../llm-advisory/job-store.ts";
-import { AdvisoryTriggerReason } from "../types/llm-advisory.ts";
 import type {
   AdvisoryNote,
   LlmJob,
@@ -9,6 +8,7 @@ import type {
   LlmResponseAudit,
   LlmWorkerSession,
 } from "../types/llm-advisory.ts";
+import { AdvisoryTriggerReason } from "../types/llm-advisory.ts";
 import { applyMigrations } from "./testcontainers/migrations.ts";
 import { startEphemeralPostgres } from "./testcontainers/postgres.ts";
 
@@ -19,7 +19,7 @@ function baseJob(overrides: Partial<Omit<LlmJob, "id">> = {}): Omit<LlmJob, "id"
     symbol: "AAPL",
     triggerReason: AdvisoryTriggerReason.UI_REQUEST,
     status: "queued",
-    contextHash: "ctx-" + crypto.randomUUID(),
+    contextHash: `ctx-${crypto.randomUUID()}`,
     priority: 100,
     requestedBy: "u-1",
     createdAt: Date.now(),
@@ -33,7 +33,7 @@ function baseJob(overrides: Partial<Omit<LlmJob, "id">> = {}): Omit<LlmJob, "id"
 }
 
 function baseSession(
-  overrides: Partial<Omit<LlmWorkerSession, "id">> = {},
+  overrides: Partial<Omit<LlmWorkerSession, "id">> = {}
 ): Omit<LlmWorkerSession, "id"> {
   return {
     startedAt: Date.now(),
@@ -50,7 +50,7 @@ function baseSession(
 
 function baseNote(
   jobId: string,
-  overrides: Partial<Omit<AdvisoryNote, "id">> = {},
+  overrides: Partial<Omit<AdvisoryNote, "id">> = {}
 ): Omit<AdvisoryNote, "id"> {
   return {
     jobId,
@@ -123,7 +123,7 @@ Deno.test({
             const now = Date.now();
             await store.insertJob(baseJob({ symbol: "X", priority: 10, createdAt: now - 100 }));
             const winner = await store.insertJob(
-              baseJob({ symbol: "X", priority: 100, createdAt: now }),
+              baseJob({ symbol: "X", priority: 100, createdAt: now })
             );
             await store.insertJob(baseJob({ symbol: "X", priority: 100, createdAt: now + 100 }));
 
@@ -133,7 +133,7 @@ Deno.test({
             assertEquals(claimed.status, "running");
             assertEquals(claimed.workerSessionId, "worker-A");
             assertGreater(claimed.claimedAt ?? 0, 0);
-          },
+          }
         );
 
         await t.step("claimNextJob returns null when no queued jobs remain", async () => {
@@ -158,7 +158,7 @@ Deno.test({
         });
 
         await t.step("getJobsBySymbol returns newest-first up to limit", async () => {
-          const sym = "LIM-" + crypto.randomUUID().slice(0, 6);
+          const sym = `LIM-${crypto.randomUUID().slice(0, 6)}`;
           const now = Date.now();
           for (let i = 0; i < 3; i++) {
             await store.insertJob(baseJob({ symbol: sym, createdAt: now + i }));
@@ -173,7 +173,7 @@ Deno.test({
 
         await t.step("getPendingJobCount counts queued + running only, not terminal", async () => {
           const before = await store.getPendingJobCount();
-          const sym = "CNT-" + crypto.randomUUID().slice(0, 6);
+          const sym = `CNT-${crypto.randomUUID().slice(0, 6)}`;
           const q = await store.insertJob(baseJob({ symbol: sym }));
           const r = await store.insertJob(baseJob({ symbol: sym }));
           const done = await store.insertJob(baseJob({ symbol: sym }));
@@ -190,14 +190,14 @@ Deno.test({
           assertEquals(
             after - before,
             2,
-            `expected exactly +2 pending (queued + running), saw before=${before} after=${after}`,
+            `expected exactly +2 pending (queued + running), saw before=${before} after=${after}`
           );
           await store.updateJobStatus(q, "cancelled");
           await store.updateJobStatus(r, "done", { completedAt: Date.now() });
         });
 
         await t.step("hasRecentJob respects the time window", async () => {
-          const hash = "hh-" + crypto.randomUUID();
+          const hash = `hh-${crypto.randomUUID()}`;
           await store.insertJob(baseJob({ contextHash: hash, createdAt: Date.now() }));
           assertEquals(await store.hasRecentJob(hash, 10_000), true);
           assertEquals(await store.hasRecentJob(hash, 0), false);
@@ -205,7 +205,7 @@ Deno.test({
         });
 
         await t.step("cancelJobsForSymbol only cancels queued rows", async () => {
-          const sym = "CAN-" + crypto.randomUUID().slice(0, 6);
+          const sym = `CAN-${crypto.randomUUID().slice(0, 6)}`;
           const q1 = await store.insertJob(baseJob({ symbol: sym }));
           const r1 = await store.insertJob(baseJob({ symbol: sym }));
           await store.updateJobStatus(r1, "running");
@@ -220,7 +220,7 @@ Deno.test({
 
         await t.step("worker session insert + update round-trips", async () => {
           const sessionId = await store.insertWorkerSession(
-            baseSession({ jobsProcessed: 0, jobsFailed: 0 }),
+            baseSession({ jobsProcessed: 0, jobsFailed: 0 })
           );
           assert(sessionId);
           await store.updateWorkerSession(sessionId, {
@@ -231,12 +231,10 @@ Deno.test({
           });
           const client = await pool.connect();
           try {
-            const { rows } = await client.queryArray<
-              [number, number, string]
-            >(
+            const { rows } = await client.queryArray<[number, number, string]>(
               `SELECT jobs_processed, jobs_failed, exit_reason
                  FROM llm_advisory.worker_sessions WHERE id = $1`,
-              [sessionId],
+              [sessionId]
             );
             assertEquals(rows.length, 1);
             assertEquals(Number(rows[0][0]), 5);
@@ -249,14 +247,14 @@ Deno.test({
 
         await t.step("note + audit insertion + getLatestNote works", async () => {
           const jobId = await store.insertJob(
-            baseJob({ symbol: "NOTE-SYM", status: "done", completedAt: Date.now() }),
+            baseJob({ symbol: "NOTE-SYM", status: "done", completedAt: Date.now() })
           );
           await store.insertPromptAudit(basePromptAudit(jobId));
           await store.insertResponseAudit(baseResponseAudit(jobId));
           await store.insertNote(baseNote(jobId, { symbol: "NOTE-SYM" }));
           await new Promise((r) => setTimeout(r, 5));
           await store.insertNote(
-            baseNote(jobId, { symbol: "NOTE-SYM", content: "newer", createdAt: Date.now() + 1 }),
+            baseNote(jobId, { symbol: "NOTE-SYM", content: "newer", createdAt: Date.now() + 1 })
           );
           const latest = await store.getLatestNote("NOTE-SYM");
           assert(latest, "expected a latest note");
@@ -264,7 +262,7 @@ Deno.test({
         });
 
         await t.step("getLatestNote returns null when symbol has no notes", async () => {
-          const v = await store.getLatestNote("DEF-NOT-PRESENT-" + crypto.randomUUID());
+          const v = await store.getLatestNote(`DEF-NOT-PRESENT-${crypto.randomUUID()}`);
           assertEquals(v, null);
         });
 
@@ -274,7 +272,7 @@ Deno.test({
           try {
             await client.queryArray(
               `UPDATE llm_advisory.jobs SET status = 'running', claimed_at = $1, worker_session_id = 'gone' WHERE id = $2`,
-              [Date.now() - 10 * 60 * 1000, stuck],
+              [Date.now() - 10 * 60 * 1000, stuck]
             );
           } finally {
             client.release();
@@ -290,14 +288,13 @@ Deno.test({
 
         await t.step("pruneOldData removes terminal jobs older than cutoff", async () => {
           const old = await store.insertJob(
-            baseJob({ symbol: "OLD", status: "done", createdAt: 1, completedAt: 2 }),
+            baseJob({ symbol: "OLD", status: "done", createdAt: 1, completedAt: 2 })
           );
           const client = await pool.connect();
           try {
-            await client.queryArray(
-              `UPDATE llm_advisory.jobs SET created_at = 1 WHERE id = $1`,
-              [old],
-            );
+            await client.queryArray(`UPDATE llm_advisory.jobs SET created_at = 1 WHERE id = $1`, [
+              old,
+            ]);
           } finally {
             client.release();
           }

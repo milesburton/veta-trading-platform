@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 62,
-      "cases": 735,
+      "files": 65,
+      "cases": 752,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -17,8 +17,11 @@
         "llm-policy.test.ts": 18,
         "llm-dedupe.test.ts": 13,
         "llm-pg-retry.unit.test.ts": 6,
+        "job-store.unit.test.ts": 2,
         "feature-engine.test.ts": 17,
+        "feature-store.unit.test.ts": 4,
         "signal-engine.test.ts": 7,
+        "weight-store.unit.test.ts": 3,
         "algo.unit.test.ts": 43,
         "ems.unit.test.ts": 22,
         "zod-helpers.unit.test.ts": 9,
@@ -36,7 +39,7 @@
         "lib.unit.test.ts": 13,
         "prompt-builder.unit.test.ts": 15,
         "trigger-rules.unit.test.ts": 17,
-        "volatility-estimator.unit.test.ts": 1,
+        "volatility-estimator.unit.test.ts": 9,
         "devcontainer.unit.test.ts": 6,
         "docs-drift.unit.test.ts": 8,
         "credentials.unit.test.ts": 8,

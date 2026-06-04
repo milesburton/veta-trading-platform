@@ -1,9 +1,5 @@
 // fallow-ignore-file unused-file
-import type {
-  FeatureVector,
-  Signal,
-  TradeRecommendation,
-} from "@veta/types/intelligence";
+import type { FeatureVector, Signal, TradeRecommendation } from "@veta/types/intelligence";
 
 export interface PlaybookContext {
   symbol: string;

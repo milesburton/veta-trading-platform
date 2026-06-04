@@ -2,7 +2,7 @@ import type { ScenarioActual, ScenarioDiff, ScenarioExpected } from "./types.ts"
 
 export function diffOutcome(
   expected: ScenarioExpected | null,
-  actual: ScenarioActual,
+  actual: ScenarioActual
 ): ScenarioDiff {
   if (!expected) return { matched: true, fields: {} };
 
@@ -12,12 +12,20 @@ export function diffOutcome(
 
   if (expected.fillCount !== undefined) {
     const within = Math.abs(actual.fillCount - expected.fillCount) <= (tol.fillCount ?? 0);
-    fields.fillCount = { expected: expected.fillCount, actual: actual.fillCount, withinTolerance: within };
+    fields.fillCount = {
+      expected: expected.fillCount,
+      actual: actual.fillCount,
+      withinTolerance: within,
+    };
     if (!within) matched = false;
   }
   if (expected.totalFilled !== undefined) {
     const within = Math.abs(actual.totalFilled - expected.totalFilled) <= (tol.totalFilled ?? 0);
-    fields.totalFilled = { expected: expected.totalFilled, actual: actual.totalFilled, withinTolerance: within };
+    fields.totalFilled = {
+      expected: expected.totalFilled,
+      actual: actual.totalFilled,
+      withinTolerance: within,
+    };
     if (!within) matched = false;
   }
   if (expected.avgFillPriceBps !== undefined) {

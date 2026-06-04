@@ -48,37 +48,134 @@ interface ServiceDescriptor {
 const ALGO_READY = /connected to market-sim/;
 
 const SERVICES: Record<ServiceName, ServiceDescriptor> = {
-  "market-sim":      { entrypoint: "backend/src/market-sim/market-sim.ts",                       port: 5000, health: "/health" },
-  "ems":             { entrypoint: "backend/src/ems/ems-server.ts",                              port: 5001, health: "/health" },
-  "oms":             { entrypoint: "backend/src/oms/oms-server.ts",                              port: 5002, health: "/health" },
-  "limit-strategy":  { entrypoint: "backend/src/algo/limit-strategy.ts",                         port: 5003, health: "/health", readyLog: ALGO_READY },
-  "twap-strategy":   { entrypoint: "backend/src/algo/twap-strategy.ts",                          port: 5004, health: "/health", readyLog: ALGO_READY },
-  "pov-strategy":    { entrypoint: "backend/src/algo/pov-strategy.ts",                           port: 5005, health: "/health", readyLog: ALGO_READY },
-  "vwap-strategy":   { entrypoint: "backend/src/algo/vwap-strategy.ts",                          port: 5006, health: "/health", readyLog: ALGO_READY },
-  "observability":   { entrypoint: "observability/kafka-relay.ts",                              port: 5007, health: "/health" },
-  "iceberg-strategy":      { entrypoint: "backend/src/algo/iceberg-strategy.ts",                 port: 5021, health: "/health", readyLog: ALGO_READY },
-  "sniper-strategy":       { entrypoint: "backend/src/algo/sniper-strategy.ts",                  port: 5022, health: "/health", readyLog: ALGO_READY },
-  "arrival-price-strategy":{ entrypoint: "backend/src/algo/arrival-price-strategy.ts",           port: 5023, health: "/health", readyLog: ALGO_READY },
-  "momentum-strategy":     { entrypoint: "backend/src/algo/momentum-strategy.ts",                port: 5025, health: "/health", readyLog: ALGO_READY },
-  "is-strategy":           { entrypoint: "backend/src/algo/is-strategy.ts",                      port: 5026, health: "/health", readyLog: ALGO_READY },
-  "user-service":    { entrypoint: "backend/src/user-service/user-service.ts",                   port: 5008, health: "/health" },
-  "journal":         { entrypoint: "backend/src/journal/journal-server.ts",                      port: 5009, health: "/health" },
-  "gateway":         { entrypoint: "backend/src/gateway/gateway.ts",                             port: 5011, health: "/health" },
-  "fix-archive":     { entrypoint: "backend/src/fix/fix-archive.ts",                             port: 5012, health: "/health" },
-  "market-data":     { entrypoint: "backend/src/market-data/market-data-service.ts",             port: 5015, health: "/health" },
-  "market-data-adapters": { entrypoint: "backend/src/market-data-adapters/adapter-server.ts",    port: 5016, health: "/health" },
-  "feature-engine":  { entrypoint: "backend/src/feature-engine/feature-engine.ts",               port: 5017, health: "/health" },
-  "signal-engine":   { entrypoint: "backend/src/signal-engine/signal-engine.ts",                 port: 5018, health: "/health" },
-  "scenario-engine": { entrypoint: "backend/src/scenario-engine/scenario-server.ts",             port: 5020, health: "/health" },
-  "risk-engine":     { entrypoint: "backend/src/risk-engine/risk-engine.ts",                     port: 5032, health: "/health" },
-  "news-aggregator":      { entrypoint: "backend/src/news/news-aggregator.ts",                   port: 5013, health: "/health" },
-  "analytics":            { entrypoint: "backend/src/analytics/analytics-server.ts",             port: 5014, health: "/health" },
-  "recommendation-engine":{ entrypoint: "backend/src/recommendation-engine/recommendation-server.ts", port: 5019, health: "/health" },
-  "llm-advisory":         { entrypoint: "backend/src/llm-advisory/orchestrator.ts",              port: 5024, health: "/health" },
-  "replay":               { entrypoint: "backend/src/replay/replay-service.ts",                  port: 5031, health: "/health" },
-  "rfq-service":          { entrypoint: "backend/src/rfq/rfq-service.ts",                        port: 5029, health: "/health" },
-  "dark-pool":            { entrypoint: "backend/src/dark-pool/dark-pool-server.ts",             port: 5027, health: "/health" },
-  "ccp-service":          { entrypoint: "backend/src/ccp/ccp-service.ts",                        port: 5028, health: "/health" },
+  "market-sim": {
+    entrypoint: "backend/src/market-sim/market-sim.ts",
+    port: 5000,
+    health: "/health",
+  },
+  ems: { entrypoint: "backend/src/ems/ems-server.ts", port: 5001, health: "/health" },
+  oms: { entrypoint: "backend/src/oms/oms-server.ts", port: 5002, health: "/health" },
+  "limit-strategy": {
+    entrypoint: "backend/src/algo/limit-strategy.ts",
+    port: 5003,
+    health: "/health",
+    readyLog: ALGO_READY,
+  },
+  "twap-strategy": {
+    entrypoint: "backend/src/algo/twap-strategy.ts",
+    port: 5004,
+    health: "/health",
+    readyLog: ALGO_READY,
+  },
+  "pov-strategy": {
+    entrypoint: "backend/src/algo/pov-strategy.ts",
+    port: 5005,
+    health: "/health",
+    readyLog: ALGO_READY,
+  },
+  "vwap-strategy": {
+    entrypoint: "backend/src/algo/vwap-strategy.ts",
+    port: 5006,
+    health: "/health",
+    readyLog: ALGO_READY,
+  },
+  observability: { entrypoint: "observability/kafka-relay.ts", port: 5007, health: "/health" },
+  "iceberg-strategy": {
+    entrypoint: "backend/src/algo/iceberg-strategy.ts",
+    port: 5021,
+    health: "/health",
+    readyLog: ALGO_READY,
+  },
+  "sniper-strategy": {
+    entrypoint: "backend/src/algo/sniper-strategy.ts",
+    port: 5022,
+    health: "/health",
+    readyLog: ALGO_READY,
+  },
+  "arrival-price-strategy": {
+    entrypoint: "backend/src/algo/arrival-price-strategy.ts",
+    port: 5023,
+    health: "/health",
+    readyLog: ALGO_READY,
+  },
+  "momentum-strategy": {
+    entrypoint: "backend/src/algo/momentum-strategy.ts",
+    port: 5025,
+    health: "/health",
+    readyLog: ALGO_READY,
+  },
+  "is-strategy": {
+    entrypoint: "backend/src/algo/is-strategy.ts",
+    port: 5026,
+    health: "/health",
+    readyLog: ALGO_READY,
+  },
+  "user-service": {
+    entrypoint: "backend/src/user-service/user-service.ts",
+    port: 5008,
+    health: "/health",
+  },
+  journal: { entrypoint: "backend/src/journal/journal-server.ts", port: 5009, health: "/health" },
+  gateway: { entrypoint: "backend/src/gateway/gateway.ts", port: 5011, health: "/health" },
+  "fix-archive": { entrypoint: "backend/src/fix/fix-archive.ts", port: 5012, health: "/health" },
+  "market-data": {
+    entrypoint: "backend/src/market-data/market-data-service.ts",
+    port: 5015,
+    health: "/health",
+  },
+  "market-data-adapters": {
+    entrypoint: "backend/src/market-data-adapters/adapter-server.ts",
+    port: 5016,
+    health: "/health",
+  },
+  "feature-engine": {
+    entrypoint: "backend/src/feature-engine/feature-engine.ts",
+    port: 5017,
+    health: "/health",
+  },
+  "signal-engine": {
+    entrypoint: "backend/src/signal-engine/signal-engine.ts",
+    port: 5018,
+    health: "/health",
+  },
+  "scenario-engine": {
+    entrypoint: "backend/src/scenario-engine/scenario-server.ts",
+    port: 5020,
+    health: "/health",
+  },
+  "risk-engine": {
+    entrypoint: "backend/src/risk-engine/risk-engine.ts",
+    port: 5032,
+    health: "/health",
+  },
+  "news-aggregator": {
+    entrypoint: "backend/src/news/news-aggregator.ts",
+    port: 5013,
+    health: "/health",
+  },
+  analytics: {
+    entrypoint: "backend/src/analytics/analytics-server.ts",
+    port: 5014,
+    health: "/health",
+  },
+  "recommendation-engine": {
+    entrypoint: "backend/src/recommendation-engine/recommendation-server.ts",
+    port: 5019,
+    health: "/health",
+  },
+  "llm-advisory": {
+    entrypoint: "backend/src/llm-advisory/orchestrator.ts",
+    port: 5024,
+    health: "/health",
+  },
+  replay: { entrypoint: "backend/src/replay/replay-service.ts", port: 5031, health: "/health" },
+  "rfq-service": { entrypoint: "backend/src/rfq/rfq-service.ts", port: 5029, health: "/health" },
+  "dark-pool": {
+    entrypoint: "backend/src/dark-pool/dark-pool-server.ts",
+    port: 5027,
+    health: "/health",
+  },
+  "ccp-service": { entrypoint: "backend/src/ccp/ccp-service.ts", port: 5028, health: "/health" },
 };
 
 interface RunningService {
@@ -161,7 +258,7 @@ async function waitForLog(
   log: string[],
   pattern: RegExp,
   deadlineMs: number,
-  label: string,
+  label: string
 ): Promise<void> {
   const deadline = Date.now() + deadlineMs;
   while (Date.now() < deadline) {
@@ -172,11 +269,19 @@ async function waitForLog(
 }
 
 async function killProcess(proc: Deno.ChildProcess): Promise<void> {
-  try { proc.kill("SIGTERM"); } catch { /* already dead */ }
+  try {
+    proc.kill("SIGTERM");
+  } catch {
+    /* already dead */
+  }
   let killTimer: number | undefined;
   const killOnTimeout = new Promise<Deno.CommandStatus>((resolve) => {
     killTimer = setTimeout(() => {
-      try { proc.kill("SIGKILL"); } catch { /* */ }
+      try {
+        proc.kill("SIGKILL");
+      } catch {
+        /* */
+      }
       resolve({ success: false, code: -1, signal: "SIGKILL" });
     }, 3_000);
   });
@@ -189,7 +294,7 @@ function pipeToBuffer(
   stream: ReadableStream<Uint8Array>,
   buf: string[],
   prefix: string,
-  echo: boolean,
+  echo: boolean
 ): void {
   const decoder = new TextDecoder();
   const reader = stream.getReader();
@@ -205,7 +310,9 @@ function pipeToBuffer(
           await Deno.stderr.write(new TextEncoder().encode(`[${prefix}] ${text}`));
         }
       }
-    } catch { /* stream cancelled */ }
+    } catch {
+      /* stream cancelled */
+    }
   })();
 }
 
@@ -264,18 +371,23 @@ export async function startStack(opts: StartStackOptions): Promise<TestStack> {
 
     await Promise.all(
       running.map((svc) =>
-        waitForHealth(`http://localhost:${svc.port}${SERVICES[svc.name].health}`, startupTimeoutMs),
-      ),
+        waitForHealth(`http://localhost:${svc.port}${SERVICES[svc.name].health}`, startupTimeoutMs)
+      )
     );
 
     await Promise.all(
-      running
-        .filter((svc) => SERVICES[svc.name].readyLog)
-        .map((svc) => waitForLog(svc.log, SERVICES[svc.name].readyLog!, startupTimeoutMs, svc.name)),
+      running.flatMap((svc) => {
+        const readyLog = SERVICES[svc.name].readyLog;
+        return readyLog ? [waitForLog(svc.log, readyLog, startupTimeoutMs, svc.name)] : [];
+      })
     );
 
-    if (opts.services.includes("limit-strategy") || opts.services.includes("twap-strategy")
-        || opts.services.includes("pov-strategy") || opts.services.includes("vwap-strategy")) {
+    if (
+      opts.services.includes("limit-strategy") ||
+      opts.services.includes("twap-strategy") ||
+      opts.services.includes("pov-strategy") ||
+      opts.services.includes("vwap-strategy")
+    ) {
       await new Promise((r) => setTimeout(r, 1_500));
     }
 
@@ -288,9 +400,7 @@ export async function startStack(opts: StartStackOptions): Promise<TestStack> {
         return svc ? svc.log.join("") : "";
       },
       dumpLogs() {
-        return running
-          .map((svc) => `=== ${svc.name} ===\n${svc.log.join("")}\n`)
-          .join("\n");
+        return running.map((svc) => `=== ${svc.name} ===\n${svc.log.join("")}\n`).join("\n");
       },
       teardown,
     };
@@ -300,7 +410,7 @@ export async function startStack(opts: StartStackOptions): Promise<TestStack> {
       .join("\n");
     if (captured) {
       await Deno.stderr.write(
-        new TextEncoder().encode("\n--- service logs at startup failure ---\n" + captured + "\n"),
+        new TextEncoder().encode(`\n--- service logs at startup failure ---\n${captured}\n`)
       );
     }
     await teardown();

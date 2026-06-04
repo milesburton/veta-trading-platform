@@ -33,7 +33,7 @@ Deno.test("[risk-schema] CheckRequestSchema accepts minimal request", () => {
       side: "BUY",
       quantity: 100,
       limitPrice: 192.0,
-    }).success,
+    }).success
   );
 });
 
@@ -64,7 +64,7 @@ Deno.test("[risk-schema] CheckRequestSchema rejects zero quantity/limitPrice", (
       side: "BUY",
       quantity: 0,
       limitPrice: 192,
-    }).success,
+    }).success
   );
   assert(
     !CheckRequestSchema.safeParse({
@@ -73,7 +73,7 @@ Deno.test("[risk-schema] CheckRequestSchema rejects zero quantity/limitPrice", (
       side: "BUY",
       quantity: 100,
       limitPrice: 0,
-    }).success,
+    }).success
   );
 });
 
@@ -85,7 +85,7 @@ Deno.test("[risk-schema] CheckRequestSchema rejects bad side", () => {
       side: "HOLD",
       quantity: 100,
       limitPrice: 192,
-    }).success,
+    }).success
   );
 });
 
@@ -112,27 +112,19 @@ Deno.test("[risk-schema] RiskConfigUpdateSchema accepts empty body (all optional
 });
 
 Deno.test("[risk-schema] RiskConfigUpdateSchema accepts partial body", () => {
-  assert(
-    RiskConfigUpdateSchema.safeParse({ fatFingerPct: 3, maxOpenOrders: 25 }).success,
-  );
+  assert(RiskConfigUpdateSchema.safeParse({ fatFingerPct: 3, maxOpenOrders: 25 }).success);
 });
 
 Deno.test("[risk-schema] RiskConfigUpdateSchema rejects non-number fatFingerPct", () => {
-  assert(
-    !RiskConfigUpdateSchema.safeParse({ fatFingerPct: "high" }).success,
-  );
+  assert(!RiskConfigUpdateSchema.safeParse({ fatFingerPct: "high" }).success);
 });
 
 Deno.test("[risk-schema] RiskConfigUpdateSchema rejects non-integer maxOpenOrders", () => {
-  assert(
-    !RiskConfigUpdateSchema.safeParse({ maxOpenOrders: 5.5 }).success,
-  );
+  assert(!RiskConfigUpdateSchema.safeParse({ maxOpenOrders: 5.5 }).success);
 });
 
 Deno.test("[risk-schema] RiskConfigUpdateSchema rejects non-boolean breakersEnabled", () => {
-  assert(
-    !RiskConfigUpdateSchema.safeParse({ breakersEnabled: "true" }).success,
-  );
+  assert(!RiskConfigUpdateSchema.safeParse({ breakersEnabled: "true" }).success);
 });
 
 Deno.test("[risk-schema] RiskConfigUpdateSchema allows maxDailyLoss at any sign (business rule handled in handler)", () => {
@@ -153,9 +145,7 @@ Deno.test("[risk-schema] CheckResultSchema shape", () => {
     warnings: [],
   });
   assert(ok.success);
-  assert(
-    !CheckResultSchema.safeParse({ allowed: true, reasons: [], warnings: "none" }).success,
-  );
+  assert(!CheckResultSchema.safeParse({ allowed: true, reasons: [], warnings: "none" }).success);
 });
 
 Deno.test("[risk-schema] BreakerFireSchema accepts both breaker types", () => {
@@ -167,7 +157,7 @@ Deno.test("[risk-schema] BreakerFireSchema accepts both breaker types", () => {
       observedValue: 12.5,
       threshold: 10,
       firedAt: Date.now(),
-    }).success,
+    }).success
   );
   assert(
     BreakerFireSchema.safeParse({
@@ -177,7 +167,7 @@ Deno.test("[risk-schema] BreakerFireSchema accepts both breaker types", () => {
       observedValue: -60_000,
       threshold: -50_000,
       firedAt: Date.now(),
-    }).success,
+    }).success
   );
 });
 
@@ -190,7 +180,7 @@ Deno.test("[risk-schema] BreakerFireSchema rejects unknown type", () => {
       observedValue: 12.5,
       threshold: 10,
       firedAt: 1,
-    }).success,
+    }).success
   );
 });
 
@@ -201,7 +191,7 @@ Deno.test("[risk-schema] TestPositionSchema requires core fields", () => {
       symbol: "AAPL",
       netQty: 100,
       avgPrice: 192.0,
-    }).success,
+    }).success
   );
   assert(
     TestPositionSchema.safeParse({
@@ -210,14 +200,14 @@ Deno.test("[risk-schema] TestPositionSchema requires core fields", () => {
       netQty: -100,
       avgPrice: 192.0,
       realisedPnl: -500,
-    }).success,
+    }).success
   );
   assert(
     !TestPositionSchema.safeParse({
       userId: "user-1",
       symbol: "AAPL",
       netQty: 100,
-    }).success,
+    }).success
   );
 });
 
@@ -230,6 +220,6 @@ Deno.test("[risk-schema] TestTickSchema accepts prices and openPrices", () => {
     TestTickSchema.safeParse({
       prices: { AAPL: 192, MSFT: 420 },
       openPrices: { AAPL: 190 },
-    }).success,
+    }).success
   );
 });

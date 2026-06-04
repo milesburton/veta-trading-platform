@@ -1,30 +1,21 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createProducer } from "@veta/messaging";
-import { createJobStore } from "./job-store.ts";
-import { isWorkerAllowed, loadPolicy } from "./policy.ts";
-import {
-  createRuntimeConfigStore,
-  resolveEffectivePolicy,
-} from "./runtime-config-store.ts";
-import {
-  buildPrompt,
-  computeSystemPromptHash,
-  SYSTEM_PROMPT,
-} from "./prompt-builder.ts";
-import { handleParseTicket } from "./parse-ticket-handler.ts";
-import { createMockProvider } from "./providers/mock.ts";
-import { createOllamaProvider } from "./providers/ollama.ts";
-import type { ILlmProvider } from "./providers/interface.ts";
 import { llmAdvisoryPool } from "@veta/db";
 import { logger } from "@veta/logger";
+import { createProducer } from "@veta/messaging";
+import { createJobStore } from "./job-store.ts";
+import { handleParseTicket } from "./parse-ticket-handler.ts";
+import { isWorkerAllowed, loadPolicy } from "./policy.ts";
+import { buildPrompt, computeSystemPromptHash, SYSTEM_PROMPT } from "./prompt-builder.ts";
+import type { ILlmProvider } from "./providers/interface.ts";
+import { createMockProvider } from "./providers/mock.ts";
+import { createOllamaProvider } from "./providers/ollama.ts";
+import { createRuntimeConfigStore, resolveEffectivePolicy } from "./runtime-config-store.ts";
 
 const PORT = Number(Deno.env.get("LLM_WORKER_PORT")) || 5_033;
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
-const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") ||
-  "http://localhost:5017";
-const SIGNAL_ENGINE_URL = Deno.env.get("SIGNAL_ENGINE_URL") ||
-  "http://localhost:5018";
+const FEATURE_ENGINE_URL = Deno.env.get("FEATURE_ENGINE_URL") || "http://localhost:5017";
+const SIGNAL_ENGINE_URL = Deno.env.get("SIGNAL_ENGINE_URL") || "http://localhost:5018";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MAX_RETRIES = 3;
 
@@ -32,10 +23,7 @@ const basePolicy = loadPolicy();
 const store = createJobStore(llmAdvisoryPool);
 const runtimeConfig = await createRuntimeConfigStore(llmAdvisoryPool);
 
-const effectivePolicy = resolveEffectivePolicy(
-  basePolicy,
-  await runtimeConfig.getConfig(),
-);
+const effectivePolicy = resolveEffectivePolicy(basePolicy, await runtimeConfig.getConfig());
 
 if (!isWorkerAllowed(effectivePolicy)) {
   logger.info("LLM_ENABLED or LLM_WORKER_ENABLED is false — exiting");
@@ -47,10 +35,7 @@ const MAX_JOBS_PER_SESSION = effectivePolicy.workerMaxJobsPerSession;
 
 function buildProvider(): ILlmProvider {
   if (effectivePolicy.provider === "ollama") {
-    return createOllamaProvider(
-      effectivePolicy.modelId,
-      effectivePolicy.ollamaBaseUrl,
-    );
+    return createOllamaProvider(effectivePolicy.modelId, effectivePolicy.ollamaBaseUrl);
   }
   return createMockProvider();
 }
@@ -79,27 +64,31 @@ const sessionId = await store.insertWorkerSession({
   exitReason: null,
 });
 
-logger.info(`Session ${sessionId} started. Provider: ${provider.providerId}. Max jobs: ${MAX_JOBS_PER_SESSION}. Idle timeout: ${IDLE_TIMEOUT_MS}ms`);
+logger.info(
+  `Session ${sessionId} started. Provider: ${provider.providerId}. Max jobs: ${MAX_JOBS_PER_SESSION}. Idle timeout: ${IDLE_TIMEOUT_MS}ms`
+);
 
-producer?.send("llm.worker.status", {
-  event: "started",
-  sessionId,
-  jobsProcessed: 0,
-  jobsFailed: 0,
-  ts: Date.now(),
-}).catch(() => {});
+producer
+  ?.send("llm.worker.status", {
+    event: "started",
+    sessionId,
+    jobsProcessed: 0,
+    jobsFailed: 0,
+    ts: Date.now(),
+  })
+  .catch(() => {});
 
 let jobsProcessed = 0;
 let jobsFailed = 0;
 
 async function fetchRecentCloses(symbol: string): Promise<number[]> {
   try {
-    const url = `${JOURNAL_URL}/candles?instrument=${
-      encodeURIComponent(symbol)
-    }&interval=1m&limit=5`;
+    const url = `${JOURNAL_URL}/candles?instrument=${encodeURIComponent(
+      symbol
+    )}&interval=1m&limit=5`;
     const res = await fetch(url, { signal: AbortSignal.timeout(3_000) });
     if (!res.ok) return [];
-    const candles = await res.json() as Array<{ close: number }>;
+    const candles = (await res.json()) as Array<{ close: number }>;
     return candles.map((c) => c.close).filter((v) => v > 0);
   } catch {
     return [];
@@ -142,7 +131,7 @@ async function processJob(jobId: string): Promise<boolean> {
     ]);
 
     const signalSnapshot = JSON.stringify(
-      signal ?? { symbol: job.symbol, contextHash: job.contextHash },
+      signal ?? { symbol: job.symbol, contextHash: job.contextHash }
     );
     const resolvedSignal = signal ?? {
       symbol: job.symbol,
@@ -190,24 +179,28 @@ async function processJob(jobId: string): Promise<boolean> {
 
     await store.updateJobStatus(job.id, "done", { completedAt: Date.now() });
 
-    producer?.send("llm.advisory.ready", {
-      jobId: job.id,
-      symbol: job.symbol,
-      noteId,
-      content: response.text,
-      provider: provider.providerId,
-      modelId: provider.modelId,
-      createdAt: Date.now(),
-      ts: Date.now(),
-    }).catch(() => {});
+    producer
+      ?.send("llm.advisory.ready", {
+        jobId: job.id,
+        symbol: job.symbol,
+        noteId,
+        content: response.text,
+        provider: provider.providerId,
+        modelId: provider.modelId,
+        createdAt: Date.now(),
+        ts: Date.now(),
+      })
+      .catch(() => {});
 
-    producer?.send("llm.worker.status", {
-      event: "completed",
-      sessionId,
-      symbol: job.symbol,
-      jobId: job.id,
-      ts: Date.now(),
-    }).catch(() => {});
+    producer
+      ?.send("llm.worker.status", {
+        event: "completed",
+        sessionId,
+        symbol: job.symbol,
+        jobId: job.id,
+        ts: Date.now(),
+      })
+      .catch(() => {});
 
     jobsProcessed++;
     await store.updateWorkerSession(sessionId, { jobsProcessed });
@@ -216,14 +209,16 @@ async function processJob(jobId: string): Promise<boolean> {
     const errMsg = (err as Error).message;
     logger.error(`Job ${job.id} failed`, { detail: errMsg });
 
-    producer?.send("llm.worker.status", {
-      event: "error",
-      sessionId,
-      symbol: job.symbol,
-      jobId: job.id,
-      error: errMsg,
-      ts: Date.now(),
-    }).catch(() => {});
+    producer
+      ?.send("llm.worker.status", {
+        event: "error",
+        sessionId,
+        symbol: job.symbol,
+        jobId: job.id,
+        error: errMsg,
+        ts: Date.now(),
+      })
+      .catch(() => {});
 
     const newRetryCount = job.retryCount + 1;
     if (newRetryCount >= MAX_RETRIES) {
@@ -259,7 +254,7 @@ const server = Deno.serve({ port: PORT }, async (req: Request): Promise<Response
       provider: provider.providerId,
       modelId: provider.modelId,
     }),
-    { headers: { "Content-Type": "application/json" } },
+    { headers: { "Content-Type": "application/json" } }
   );
 });
 
@@ -304,16 +299,20 @@ outer: while (true) {
 
 await store.updateWorkerSession(sessionId, { endedAt: Date.now(), exitReason });
 
-producer?.send("llm.worker.status", {
-  event: "stopped",
-  sessionId,
-  jobsProcessed,
-  jobsFailed,
-  exitReason,
-  durationMs: Date.now() - sessionStart,
-  ts: Date.now(),
-}).catch(() => {});
+producer
+  ?.send("llm.worker.status", {
+    event: "stopped",
+    sessionId,
+    jobsProcessed,
+    jobsFailed,
+    exitReason,
+    durationMs: Date.now() - sessionStart,
+    ts: Date.now(),
+  })
+  .catch(() => {});
 
-logger.info(`Session ended. Reason: ${exitReason}. Processed: ${jobsProcessed}, failed: ${jobsFailed}`);
+logger.info(
+  `Session ended. Reason: ${exitReason}. Processed: ${jobsProcessed}, failed: ${jobsFailed}`
+);
 await server.shutdown();
 Deno.exit(0);

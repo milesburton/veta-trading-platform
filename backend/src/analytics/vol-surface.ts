@@ -37,10 +37,10 @@ export interface VolSurfaceResponse {
 const EXPIRY_DAYS = [7, 14, 30, 60, 90];
 const EXPIRY_SECS = EXPIRY_DAYS.map((d) => d * 86_400);
 const EXPIRY_LABELS = ["7d", "14d", "30d", "60d", "90d"];
-const MONEYNESSES = [0.70, 0.775, 0.85, 0.925, 1.00, 1.075, 1.15, 1.225, 1.30];
+const MONEYNESSES = [0.7, 0.775, 0.85, 0.925, 1.0, 1.075, 1.15, 1.225, 1.3];
 
 // Equity skew: negative slope (puts more expensive than calls at same distance from ATM)
-const SKEW = -0.10;
+const SKEW = -0.1;
 // Smile curvature: both deep ITM and OTM trade at higher IV than ATM
 const CURVATURE = 0.05;
 
@@ -54,7 +54,7 @@ const CURVATURE = 0.05;
 export function buildVolSurface(
   symbol: string,
   spot: number,
-  atTheMoneyVol: number,
+  atTheMoneyVol: number
 ): VolSurfaceResponse {
   const F = spot; // Forward ≈ spot (risk-neutral rate adjustment omitted for clarity)
   const surface: VolSurfacePoint[] = [];
@@ -70,8 +70,7 @@ export function buildVolSurface(
       // SABR-inspired smile: skew term gives put skew, curvature adds smile bowl
       const impliedVol = Math.max(
         0.01, // floor at 1% to prevent degenerate pricing
-        atTheMoneyVol *
-          (1 + SKEW * logMoneyness + CURVATURE * logMoneyness * logMoneyness),
+        atTheMoneyVol * (1 + SKEW * logMoneyness + CURVATURE * logMoneyness * logMoneyness)
       );
 
       surface.push({

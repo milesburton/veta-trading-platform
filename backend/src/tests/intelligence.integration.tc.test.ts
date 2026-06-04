@@ -17,10 +17,7 @@ async function getJson<R>(u: string, headers?: HeadersInit): Promise<R> {
   return res.json() as Promise<R>;
 }
 
-async function pollFor<R>(
-  fetcher: () => Promise<Response>,
-  deadlineMs: number,
-): Promise<R | null> {
+async function pollFor<R>(fetcher: () => Promise<Response>, deadlineMs: number): Promise<R | null> {
   const deadline = Date.now() + deadlineMs;
   while (Date.now() < deadline) {
     const res = await fetcher();
@@ -66,7 +63,9 @@ Deno.test({
       });
 
       await t.step("market-data-adapters is healthy", async () => {
-        const h = await getJson<{ status: string; service: string; eventCount: number }>(`${MA}/health`);
+        const h = await getJson<{ status: string; service: string; eventCount: number }>(
+          `${MA}/health`
+        );
         assertEquals(h.status, "ok");
         assertEquals(h.service, "market-data-adapters");
       });
@@ -79,7 +78,15 @@ Deno.test({
 
       await t.step("signal-engine default weights satisfy invariants", async () => {
         const w = await getJson<Record<string, number>>(`${SE}/weights`);
-        const expected = ["momentum", "relativeVolume", "realisedVol", "sectorRelativeStrength", "eventScore", "newsVelocity", "sentimentDelta"];
+        const expected = [
+          "momentum",
+          "relativeVolume",
+          "realisedVol",
+          "sectorRelativeStrength",
+          "eventScore",
+          "newsVelocity",
+          "sentimentDelta",
+        ];
         for (const k of expected) assertExists(w[k]);
         assertEquals(Object.keys(w).length, 7);
         assert(w.realisedVol < 0);
@@ -97,7 +104,7 @@ Deno.test({
           signal: T(),
         });
         assert(putRes.ok);
-        const returned = await putRes.json() as Record<string, number>;
+        const returned = (await putRes.json()) as Record<string, number>;
         assert(Math.abs(returned.newsVelocity - patched.newsVelocity) < 0.0001);
         const restoreRes = await fetch(`${SE}/weights`, {
           method: "PUT",
@@ -111,31 +118,41 @@ Deno.test({
       await t.step("feature-engine returns all 7 fields for AAPL", async () => {
         const fv = await pollFor<Record<string, unknown>>(
           () => fetch(`${FE}/features/AAPL`, { signal: T() }),
-          45_000,
+          45_000
         );
         assertExists(fv, "Feature-engine did not produce a FeatureVector for AAPL within 45s");
-        assertEquals(fv!.symbol, "AAPL");
-        for (const f of ["momentum", "relativeVolume", "realisedVol", "sectorRelativeStrength", "eventScore", "newsVelocity", "sentimentDelta"]) {
-          assertEquals(typeof fv![f], "number", `Field ${f} should be a number`);
+        assertEquals(fv?.symbol, "AAPL");
+        for (const f of [
+          "momentum",
+          "relativeVolume",
+          "realisedVol",
+          "sectorRelativeStrength",
+          "eventScore",
+          "newsVelocity",
+          "sentimentDelta",
+        ]) {
+          assertEquals(typeof fv?.[f], "number", `Field ${f} should be a number`);
         }
       });
 
       await t.step("signal-engine returns a well-formed Signal for AAPL", async () => {
         const signal = await pollFor<Record<string, unknown>>(
           () => fetch(`${SE}/signals/AAPL`, { signal: T() }),
-          45_000,
+          45_000
         );
         assertExists(signal, "Signal-engine did not produce a Signal for AAPL within 45s");
-        assertEquals(signal!.symbol, "AAPL");
-        assert(typeof signal!.score === "number");
-        const score = signal!.score as number;
+        assertEquals(signal?.symbol, "AAPL");
+        assert(typeof signal?.score === "number");
+        const score = signal?.score as number;
         assert(score >= -1 && score <= 1);
-        assert(["long", "short", "neutral"].includes(signal!.direction as string));
-        assert(Array.isArray(signal!.factors) && (signal!.factors as unknown[]).length === 7);
+        assert(["long", "short", "neutral"].includes(signal?.direction as string));
+        assert(Array.isArray(signal?.factors) && (signal?.factors as unknown[]).length === 7);
       });
 
       await t.step("market-data-adapters returns seeded events", async () => {
-        const events = await getJson<Array<{ id: string; type: string; impact: string }>>(`${MA}/events?limit=20`);
+        const events = await getJson<Array<{ id: string; type: string; impact: string }>>(
+          `${MA}/events?limit=20`
+        );
         assert(Array.isArray(events) && events.length > 0);
         const first = events[0];
         assertExists(first.id);
@@ -150,7 +167,7 @@ Deno.test({
           signal: T(),
         });
         assert(res.ok, `GET /intelligence/weights via gateway → ${res.status}`);
-        const weights = await res.json() as Record<string, number>;
+        const weights = (await res.json()) as Record<string, number>;
         assertEquals(Object.keys(weights).length, 7);
       });
     } finally {

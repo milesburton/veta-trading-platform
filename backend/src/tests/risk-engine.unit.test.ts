@@ -1,7 +1,4 @@
-import {
-  assert,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
+import { assert, assertEquals } from "jsr:@std/assert@0.217";
 
 import { timeout } from "./test-helpers.ts";
 
@@ -138,7 +135,11 @@ Deno.test("[risk-engine] max open orders: rejects when at limit", async () => {
 
   await setConfig({ maxOpenOrders: 50 });
 
-  assertEquals(result.allowed, true, "should pass because fake user has 0 active orders tracked via bus");
+  assertEquals(
+    result.allowed,
+    true,
+    "should pass because fake user has 0 active orders tracked via bus"
+  );
 });
 
 Deno.test("[risk-engine] self-cross: BUY is allowed when no opposite working order exists", async () => {

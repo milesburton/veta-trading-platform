@@ -1,7 +1,4 @@
-import type {
-  ILlmProvider,
-  LlmProviderResponse,
-} from "@veta/types/llm-advisory";
+import type { ILlmProvider, LlmProviderResponse } from "@veta/types/llm-advisory";
 
 interface OllamaGenerateResponse {
   response: string;
@@ -9,20 +6,14 @@ interface OllamaGenerateResponse {
   eval_count?: number;
 }
 
-export function createOllamaProvider(
-  modelId: string,
-  baseUrl: string,
-): ILlmProvider {
+export function createOllamaProvider(modelId: string, baseUrl: string): ILlmProvider {
   const base = baseUrl.replace(/\/$/, "");
 
   return {
     providerId: "ollama",
     modelId,
 
-    async generate(
-      prompt: string,
-      systemPrompt: string,
-    ): Promise<LlmProviderResponse> {
+    async generate(prompt: string, systemPrompt: string): Promise<LlmProviderResponse> {
       const start = Date.now();
       const res = await fetch(`${base}/api/generate`, {
         method: "POST",
@@ -39,7 +30,7 @@ export function createOllamaProvider(
         const msg = await res.text();
         throw new Error(`Ollama error ${res.status}: ${msg}`);
       }
-      const data = await res.json() as OllamaGenerateResponse;
+      const data = (await res.json()) as OllamaGenerateResponse;
       const latencyMs = Date.now() - start;
       return {
         text: data.response,

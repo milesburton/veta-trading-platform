@@ -1,24 +1,8 @@
-export type LlmJobStatus =
-  | "queued"
-  | "running"
-  | "done"
-  | "failed"
-  | "cancelled";
+export type LlmJobStatus = "queued" | "running" | "done" | "failed" | "cancelled";
 
-export type AdvisoryStatus =
-  | "not-requested"
-  | "queued"
-  | "running"
-  | "ready"
-  | "failed"
-  | "stale";
+export type AdvisoryStatus = "not-requested" | "queued" | "running" | "ready" | "failed" | "stale";
 
-export type LlmSubsystemState =
-  | "disabled"
-  | "armed"
-  | "active"
-  | "cooldown"
-  | "error";
+export type LlmSubsystemState = "disabled" | "armed" | "active" | "cooldown" | "error";
 
 export type LlmTriggerMode =
   | "disabled"

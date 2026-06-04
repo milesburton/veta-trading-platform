@@ -12,19 +12,19 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createMarketSimClient } from "@veta/market-client";
-import { createProducer, createTypedConsumer } from "@veta/messaging";
-import { OrderChildSchema } from "@veta/schemas/orders";
-import type { OrderChild } from "@veta/schemas/orders";
-import { type Desk, settlementDate } from "@veta/settlement";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
+import { createMarketSimClient } from "@veta/market-client";
+import { createProducer, createTypedConsumer } from "@veta/messaging";
+import type { OrderChild } from "@veta/schemas/orders";
+import { OrderChildSchema } from "@veta/schemas/orders";
+import { type Desk, settlementDate } from "@veta/settlement";
 import {
   computeFees,
   computeFill,
   computeImpactBps,
-  execId as makeExecId,
   IMPACT_PER_1000_DEFAULT,
+  execId as makeExecId,
   PARTICIPATION_CAP_DEFAULT,
   pickWeightedVenue,
   VALID_VENUES,
@@ -38,8 +38,7 @@ const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 const PARTICIPATION_CAP =
   Number(Deno.env.get("EMS_PARTICIPATION_CAP")) || PARTICIPATION_CAP_DEFAULT;
-const IMPACT_PER_1000 =
-  Number(Deno.env.get("EMS_IMPACT_PER_1000_BPS")) || IMPACT_PER_1000_DEFAULT;
+const IMPACT_PER_1000 = Number(Deno.env.get("EMS_IMPACT_PER_1000_BPS")) || IMPACT_PER_1000_DEFAULT;
 
 const marketClient = createMarketSimClient(MARKET_SIM_HOST, MARKET_SIM_PORT);
 marketClient.start();
@@ -67,7 +66,7 @@ function pickCounterparty(): string {
 }
 function pickLiquidityFlag(venue: string): "MAKER" | "TAKER" | "CROSS" {
   const r = Math.random();
-  const makerBias = (venue === "BATS" || venue === "EDGX") ? 0.65 : 0.40;
+  const makerBias = venue === "BATS" || venue === "EDGX" ? 0.65 : 0.4;
   return r < makerBias ? "MAKER" : r < 0.95 ? "TAKER" : "CROSS";
 }
 function deskFromOrder(order: ChildOrder): Desk {
@@ -94,24 +93,19 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
     return;
   }
 
-  const venue = (child.venue && VALID_VENUES.has(child.venue))
-    ? child.venue as VenueMIC
-    : pickWeightedVenue();
+  const venue =
+    child.venue && VALID_VENUES.has(child.venue) ? (child.venue as VenueMIC) : pickWeightedVenue();
 
   const tickVolume = tick.volumes[child.asset] ?? 1_000;
   const { filledQty, remainingQty } = computeFill(
     child.quantity,
     tickVolume,
     venue,
-    PARTICIPATION_CAP,
+    PARTICIPATION_CAP
   );
   const impactBps = computeImpactBps(filledQty, venue, IMPACT_PER_1000);
-  const impactFactor = child.side === "BUY"
-    ? 1 + impactBps / 10_000
-    : 1 - impactBps / 10_000;
-  const avgFillPrice = parseFloat(
-    (child.effectivePrice ?? midPrice * impactFactor).toFixed(4),
-  );
+  const impactFactor = child.side === "BUY" ? 1 + impactBps / 10_000 : 1 - impactBps / 10_000;
+  const avgFillPrice = parseFloat((child.effectivePrice ?? midPrice * impactFactor).toFixed(4));
 
   const counterparty = pickCounterparty();
   const liquidityFlag = pickLiquidityFlag(venue);
@@ -120,15 +114,15 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
     filledQty,
     avgFillPrice,
     child.side,
-    liquidityFlag,
+    liquidityFlag
   );
 
   const execId = makeExecId(fillSeq++);
 
-  logger.info(`Fill ${execId}: ${child.side} ${filledQty}/${child.quantity} ${child.asset} ` +
-      `@ ${avgFillPrice} via ${venue} (${liquidityFlag}) impact=${
-        impactBps.toFixed(2)
-      }bps`);
+  logger.info(
+    `Fill ${execId}: ${child.side} ${filledQty}/${child.quantity} ${child.asset} ` +
+      `@ ${avgFillPrice} via ${venue} (${liquidityFlag}) impact=${impactBps.toFixed(2)}bps`
+  );
 
   if (filledQty > 0) {
     const fillPayload = {
@@ -161,27 +155,29 @@ async function handleChildOrder(child: ChildOrder): Promise<void> {
 
     await producer?.send("orders.filled", fillPayload).catch(() => {});
 
-    await producer?.send("fix.execution", {
-      execId,
-      clOrdId: child.childId,
-      origClOrdId: child.parentOrderId,
-      symbol: child.asset,
-      side: child.side === "BUY" ? "1" : "2",
-      ordType: "2", // Limit
-      execType: remainingQty === 0 ? "2" : "1", // 2=Fill, 1=PartialFill
-      ordStatus: remainingQty === 0 ? "2" : "1",
-      leavesQty: remainingQty,
-      cumQty: filledQty,
-      avgPx: avgFillPrice,
-      lastQty: filledQty,
-      lastPx: avgFillPrice,
-      venue,
-      counterparty,
-      commission: commissionUSD,
-      settlDate: sd,
-      transactTime: new Date().toISOString(),
-      ts: Date.now(),
-    }).catch(() => {});
+    await producer
+      ?.send("fix.execution", {
+        execId,
+        clOrdId: child.childId,
+        origClOrdId: child.parentOrderId,
+        symbol: child.asset,
+        side: child.side === "BUY" ? "1" : "2",
+        ordType: "2", // Limit
+        execType: remainingQty === 0 ? "2" : "1", // 2=Fill, 1=PartialFill
+        ordStatus: remainingQty === 0 ? "2" : "1",
+        leavesQty: remainingQty,
+        cumQty: filledQty,
+        avgPx: avgFillPrice,
+        lastQty: filledQty,
+        lastPx: avgFillPrice,
+        venue,
+        counterparty,
+        commission: commissionUSD,
+        settlDate: sd,
+        transactTime: new Date().toISOString(),
+        ts: Date.now(),
+      })
+      .catch(() => {});
   }
 }
 

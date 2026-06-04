@@ -1,6 +1,6 @@
-import type { RiskConfig } from "@veta/schemas/risk";
-import { logger } from "@veta/logger";
 import { riskPool } from "@veta/db";
+import { logger } from "@veta/logger";
+import type { RiskConfig } from "@veta/schemas/risk";
 
 export interface ConfigVersion {
   id: number;
@@ -43,7 +43,7 @@ export function createConfigStore(initial: RiskConfig): ConfigStore {
           }>(
             `SELECT id, config FROM risk.config_versions
               ORDER BY id DESC
-              LIMIT 1`,
+              LIMIT 1`
           );
           if (res.rows.length > 0) {
             cached = { ...initial, ...res.rows[0].config };
@@ -55,7 +55,7 @@ export function createConfigStore(initial: RiskConfig): ConfigStore {
             `INSERT INTO risk.config_versions (created_by, reason, config)
              VALUES ($1, $2, $3)
              RETURNING id`,
-            ["system", "initial seed", JSON.stringify(initial)],
+            ["system", "initial seed", JSON.stringify(initial)]
           );
           cachedId = Number(seedRes.rows[0].id);
           logger.info("seeded initial risk config", { ...LOG, version: cachedId });
@@ -82,7 +82,7 @@ export function createConfigStore(initial: RiskConfig): ConfigStore {
           `INSERT INTO risk.config_versions (created_by, reason, config)
            VALUES ($1, $2, $3)
            RETURNING id, created_at, created_by, reason, config`,
-          [opts.createdBy, opts.reason ?? null, JSON.stringify(next)],
+          [opts.createdBy, opts.reason ?? null, JSON.stringify(next)]
         );
         const row = res.rows[0];
         cached = { ...next };
@@ -117,7 +117,7 @@ export function createConfigStore(initial: RiskConfig): ConfigStore {
              FROM risk.config_versions
             ORDER BY id DESC
             LIMIT $1`,
-          [limit],
+          [limit]
         );
         return res.rows.map((r) => ({
           id: Number(r.id),

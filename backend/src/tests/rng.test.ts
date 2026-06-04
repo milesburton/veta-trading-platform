@@ -1,5 +1,5 @@
 import { assertAlmostEquals, assertEquals, assertNotEquals } from "jsr:@std/assert@0.217";
-import { currentSeed, nextRandom, seedRng } from "../market-sim/rng.ts";
+import { __applyEnvSeedForTests, currentSeed, nextRandom, seedRng } from "../market-sim/rng.ts";
 
 function take(n: number): number[] {
   const out: number[] = [];
@@ -52,17 +52,25 @@ Deno.test("seeded mean approximates 0.5 over many draws", () => {
 
 Deno.test("MARKET_SIM_SEED env applies a deterministic seed at module load (subprocess)", async () => {
   const cmd = new Deno.Command(Deno.execPath(), {
-    args: ["eval", "--quiet", `
-      import { currentSeed, nextRandom } from "${new URL("../market-sim/rng.ts", import.meta.url).href}";
+    args: [
+      "eval",
+      "--quiet",
+      `
+      import { currentSeed, nextRandom } from "${
+        new URL("../market-sim/rng.ts", import.meta.url).href
+      }";
       console.log(JSON.stringify({ seed: currentSeed(), first: nextRandom() }));
-    `],
+    `,
+    ],
     env: { MARKET_SIM_SEED: "12345" },
     stdout: "piped",
     stderr: "piped",
   });
   const { stdout } = await cmd.output();
   const out = JSON.parse(new TextDecoder().decode(stdout));
-  if (out.seed !== 12345) throw new Error(`expected seed 12345, got ${out.seed}`);
+  if (out.seed !== 12345) {
+    throw new Error(`expected seed 12345, got ${out.seed}`);
+  }
   if (typeof out.first !== "number" || out.first < 0 || out.first >= 1) {
     throw new Error(`expected a number in [0,1), got ${out.first}`);
   }
@@ -70,10 +78,14 @@ Deno.test("MARKET_SIM_SEED env applies a deterministic seed at module load (subp
 
 Deno.test("MARKET_SIM_SEED with non-numeric value leaves RNG unseeded (subprocess)", async () => {
   const cmd = new Deno.Command(Deno.execPath(), {
-    args: ["eval", "--quiet", `
+    args: [
+      "eval",
+      "--quiet",
+      `
       import { currentSeed } from "${new URL("../market-sim/rng.ts", import.meta.url).href}";
       console.log(JSON.stringify({ seed: currentSeed() }));
-    `],
+    `,
+    ],
     env: { MARKET_SIM_SEED: "not-a-number" },
     stdout: "piped",
     stderr: "piped",
@@ -85,10 +97,14 @@ Deno.test("MARKET_SIM_SEED with non-numeric value leaves RNG unseeded (subproces
 
 Deno.test("MARKET_SIM_SEED empty string leaves RNG unseeded (subprocess)", async () => {
   const cmd = new Deno.Command(Deno.execPath(), {
-    args: ["eval", "--quiet", `
+    args: [
+      "eval",
+      "--quiet",
+      `
       import { currentSeed } from "${new URL("../market-sim/rng.ts", import.meta.url).href}";
       console.log(JSON.stringify({ seed: currentSeed() }));
-    `],
+    `,
+    ],
     env: { MARKET_SIM_SEED: "" },
     stdout: "piped",
     stderr: "piped",
@@ -96,4 +112,30 @@ Deno.test("MARKET_SIM_SEED empty string leaves RNG unseeded (subprocess)", async
   const { stdout } = await cmd.output();
   const out = JSON.parse(new TextDecoder().decode(stdout));
   if (out.seed !== null) throw new Error(`expected null seed, got ${out.seed}`);
+});
+
+Deno.test("MARKET_SIM_SEED in-process helper applies finite seed and ignores blank/unset/non-finite values", () => {
+  const previous = Deno.env.get("MARKET_SIM_SEED");
+  try {
+    seedRng(null);
+    Deno.env.delete("MARKET_SIM_SEED");
+    __applyEnvSeedForTests();
+    assertEquals(currentSeed(), null);
+
+    Deno.env.set("MARKET_SIM_SEED", "");
+    __applyEnvSeedForTests();
+    assertEquals(currentSeed(), null);
+
+    Deno.env.set("MARKET_SIM_SEED", "not-finite");
+    __applyEnvSeedForTests();
+    assertEquals(currentSeed(), null);
+
+    Deno.env.set("MARKET_SIM_SEED", "99.8");
+    __applyEnvSeedForTests();
+    assertEquals(currentSeed(), 99);
+  } finally {
+    if (previous === undefined) Deno.env.delete("MARKET_SIM_SEED");
+    else Deno.env.set("MARKET_SIM_SEED", previous);
+    seedRng(null);
+  }
 });

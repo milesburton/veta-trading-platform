@@ -46,14 +46,14 @@ async function createScenario(token: string, name: string, seed: number): Promis
     }),
   });
   assertEquals(res.status, 201, `Expected 201 but got ${res.status}`);
-  const body = await res.json() as { scenario: { id: string } };
+  const body = (await res.json()) as { scenario: { id: string } };
   return body.scenario.id;
 }
 
 async function runOnce(token: string, scenarioId: string): Promise<ScenarioRun> {
   const res = await authedFetch(token, `/scenarios/${scenarioId}/run`, { method: "POST" });
   assertEquals(res.status, 200, `Expected 200 but got ${res.status}`);
-  const body = await res.json() as { run: ScenarioRun };
+  const body = (await res.json()) as { run: ScenarioRun };
   return body.run;
 }
 
@@ -75,16 +75,36 @@ Deno.test({
       const c = await runOnce(token, scenarioId);
 
       for (const r of [a, b, c]) {
-        assertEquals(r.status === "completed" || r.status === "mismatched", true, `run ${r.id} status=${r.status} error=${r.error}`);
+        assertEquals(
+          r.status === "completed" || r.status === "mismatched",
+          true,
+          `run ${r.id} status=${r.status} error=${r.error}`
+        );
         assert(r.actual, `run ${r.id} has no actual outcome`);
       }
 
-      assertEquals(a.actual!.fillCount, b.actual!.fillCount, "fillCount drift between runs A and B");
-      assertEquals(b.actual!.fillCount, c.actual!.fillCount, "fillCount drift between runs B and C");
-      assertEquals(a.actual!.totalFilled, b.actual!.totalFilled, "totalFilled drift A↔B");
-      assertEquals(b.actual!.totalFilled, c.actual!.totalFilled, "totalFilled drift B↔C");
-      assertEquals(a.actual!.avgFillPriceBps, b.actual!.avgFillPriceBps, "avg-fill-price-bps drift A↔B");
-      assertEquals(b.actual!.avgFillPriceBps, c.actual!.avgFillPriceBps, "avg-fill-price-bps drift B↔C");
+      assertEquals(
+        a.actual?.fillCount,
+        b.actual?.fillCount,
+        "fillCount drift between runs A and B"
+      );
+      assertEquals(
+        b.actual?.fillCount,
+        c.actual?.fillCount,
+        "fillCount drift between runs B and C"
+      );
+      assertEquals(a.actual?.totalFilled, b.actual?.totalFilled, "totalFilled drift A↔B");
+      assertEquals(b.actual?.totalFilled, c.actual?.totalFilled, "totalFilled drift B↔C");
+      assertEquals(
+        a.actual?.avgFillPriceBps,
+        b.actual?.avgFillPriceBps,
+        "avg-fill-price-bps drift A↔B"
+      );
+      assertEquals(
+        b.actual?.avgFillPriceBps,
+        c.actual?.avgFillPriceBps,
+        "avg-fill-price-bps drift B↔C"
+      );
     } finally {
       await deleteScenario(token, scenarioId);
     }
@@ -108,7 +128,11 @@ Deno.test({
         a.actual.fillCount === b.actual.fillCount &&
         a.actual.totalFilled === b.actual.totalFilled &&
         a.actual.avgFillPriceBps === b.actual.avgFillPriceBps;
-      assertEquals(same, false, "different seeds produced bit-identical outcomes — seeded RNG isn't actually being used");
+      assertEquals(
+        same,
+        false,
+        "different seeds produced bit-identical outcomes — seeded RNG isn't actually being used"
+      );
     } finally {
       await deleteScenario(token, idA);
       await deleteScenario(token, idB);

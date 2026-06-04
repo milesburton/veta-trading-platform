@@ -49,12 +49,12 @@ async function postToDiscord(opts: DiscordPostOptions): Promise<boolean> {
           username: opts.username,
           content: opts.content,
           attachments: [{ id: 0, filename: opts.attachment.filename }],
-        }),
+        })
       );
       form.append(
         "files[0]",
         new Blob([opts.attachment.bytes as BlobPart], { type: "image/png" }),
-        opts.attachment.filename,
+        opts.attachment.filename
       );
       const res = await fetch(opts.url, {
         method: "POST",
@@ -92,9 +92,7 @@ export async function notifyDiscord(alert: AlertPayload, userId: string): Promis
     ? await renderGrafanaPanel({ panelUid: panel.panelUid, panelId: panel.panelId })
     : null;
 
-  const attachment = bytes
-    ? { filename: buildAttachmentFilename(alert.source), bytes }
-    : undefined;
+  const attachment = bytes ? { filename: buildAttachmentFilename(alert.source), bytes } : undefined;
 
   await postToDiscord({
     url,
@@ -129,7 +127,7 @@ export function isBugReportValid(report: BugReport): boolean {
 export async function notifyDiscordBug(
   report: BugReport,
   userId: string,
-  userName: string,
+  userName: string
 ): Promise<boolean> {
   if (!isBugReportValid(report)) return false;
   const url = getBugWebhookUrl();
@@ -169,9 +167,10 @@ const DISCORD_MAX_MESSAGE_CHARS = 1900;
 export async function sendDailySummary(content: string): Promise<boolean> {
   const url = getAlertsWebhookUrl();
   if (!url) return false;
-  const body = content.length > DISCORD_MAX_MESSAGE_CHARS
-    ? content.slice(0, DISCORD_MAX_MESSAGE_CHARS - 1) + "…"
-    : content;
+  const body =
+    content.length > DISCORD_MAX_MESSAGE_CHARS
+      ? `${content.slice(0, DISCORD_MAX_MESSAGE_CHARS - 1)}…`
+      : content;
   return await postToDiscord({
     url,
     username: "VETA Daily",

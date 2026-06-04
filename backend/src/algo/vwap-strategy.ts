@@ -9,11 +9,11 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { logger } from "@veta/logger";
 import { createMarketSimClient, type MarketTick } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
-import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("VWAP_ALGO_PORT")) || 5_006;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -31,7 +31,10 @@ const producer = await createProducer("vwap-algo").catch((err) => {
   return null;
 });
 
-interface PriceVolPoint { price: number; volume: number; }
+interface PriceVolPoint {
+  price: number;
+  volume: number;
+}
 const priceVolHistory = new Map<string, PriceVolPoint[]>();
 
 function updateHistory(asset: string, price: number, volume: number): void {
@@ -79,56 +82,68 @@ async function processTickForOrder(order: VwapOrder, tick: MarketTick): Promise<
 
   const deviation = Math.abs(price - vwap) / vwap;
   if (deviation > order.maxDeviation) {
-    logger.info(`Skip [${order.id}]: dev=${(deviation * 100).toFixed(2)}% > max ${(order.maxDeviation * 100).toFixed(2)}%`);
+    logger.info(
+      `Skip [${order.id}]: dev=${(deviation * 100).toFixed(2)}% > max ${(order.maxDeviation * 100).toFixed(2)}%`
+    );
     return;
   }
 
   const sliceQty = Math.min(order.maxSlice, remaining);
   const childId = `${order.orderId}-vwap-${Date.now()}`;
 
-  await producer?.send("orders.child", {
-    childId,
-    parentOrderId: order.orderId,
-    clientOrderId: order.clientOrderId,
-    algo: "VWAP",
-    asset: order.asset,
-    side: order.side,
-    quantity: sliceQty,
-    limitPrice: order.limitPrice,
-    marketPrice: price,
-    vwap,
-    deviation,
-    algoParams: { maxDeviation: order.maxDeviation, maxSlice: order.maxSlice, windowTicks: VWAP_WINDOW },
-    ts: Date.now(),
-  }).catch(() => {});
-}
-
-await createTypedConsumer("vwap-algo-routed", [{
-  topic: "orders.routed",
-  schema: RoutedOrderSchema,
-  handler: (order) => {
-    if ((order.strategy ?? "").toUpperCase() !== "VWAP") return;
-
-    const params = order.algoParams ?? {};
-    const id = nextId++;
-    const state: VwapOrder = {
-      id,
-      orderId: order.orderId,
+  await producer
+    ?.send("orders.child", {
+      childId,
+      parentOrderId: order.orderId,
       clientOrderId: order.clientOrderId,
+      algo: "VWAP",
       asset: order.asset,
       side: order.side,
-      totalQty: order.quantity,
-      filledQty: 0,
-      costBasis: 0,
-      expiresAt: Date.now() + (Number(order.expiresAt ?? 300)) * 1_000,
-      maxDeviation: Number(params.maxDeviation ?? 0.005),
-      maxSlice: Number(params.maxSlice ?? 1_000),
-      limitPrice: order.limitPrice ?? 0,
-    };
-    activeOrders.set(id, state);
-    logger.info(`Queued [${id}] ${state.side} ${state.totalQty} ${state.asset} (${state.orderId})`);
+      quantity: sliceQty,
+      limitPrice: order.limitPrice,
+      marketPrice: price,
+      vwap,
+      deviation,
+      algoParams: {
+        maxDeviation: order.maxDeviation,
+        maxSlice: order.maxSlice,
+        windowTicks: VWAP_WINDOW,
+      },
+      ts: Date.now(),
+    })
+    .catch(() => {});
+}
+
+await createTypedConsumer("vwap-algo-routed", [
+  {
+    topic: "orders.routed",
+    schema: RoutedOrderSchema,
+    handler: (order) => {
+      if ((order.strategy ?? "").toUpperCase() !== "VWAP") return;
+
+      const params = order.algoParams ?? {};
+      const id = nextId++;
+      const state: VwapOrder = {
+        id,
+        orderId: order.orderId,
+        clientOrderId: order.clientOrderId,
+        asset: order.asset,
+        side: order.side,
+        totalQty: order.quantity,
+        filledQty: 0,
+        costBasis: 0,
+        expiresAt: Date.now() + Number(order.expiresAt ?? 300) * 1_000,
+        maxDeviation: Number(params.maxDeviation ?? 0.005),
+        maxSlice: Number(params.maxSlice ?? 1_000),
+        limitPrice: order.limitPrice ?? 0,
+      };
+      activeOrders.set(id, state);
+      logger.info(
+        `Queued [${id}] ${state.side} ${state.totalQty} ${state.asset} (${state.orderId})`
+      );
+    },
   },
-}]).catch((err) => {
+]).catch((err) => {
   logger.warn("Cannot subscribe to orders.routed", { err });
   return null;
 });
@@ -139,17 +154,19 @@ marketClient.onTick(async (tick) => {
   for (const [id, order] of activeOrders) {
     if (now >= order.expiresAt || order.filledQty >= order.totalQty) {
       if (now >= order.expiresAt && order.filledQty < order.totalQty) {
-        await producer?.send("orders.expired", {
-          orderId: order.orderId,
-          clientOrderId: order.clientOrderId,
-          algo: "VWAP",
-          asset: order.asset,
-          side: order.side,
-          quantity: order.totalQty,
-          filledQty: order.filledQty,
-          avgFillPrice: order.filledQty > 0 ? order.costBasis / order.filledQty : 0,
-          ts: now,
-        }).catch(() => {});
+        await producer
+          ?.send("orders.expired", {
+            orderId: order.orderId,
+            clientOrderId: order.clientOrderId,
+            algo: "VWAP",
+            asset: order.asset,
+            side: order.side,
+            quantity: order.totalQty,
+            filledQty: order.filledQty,
+            avgFillPrice: order.filledQty > 0 ? order.costBasis / order.filledQty : 0,
+            ts: now,
+          })
+          .catch(() => {});
       }
       activeOrders.delete(id);
       continue;
@@ -157,11 +174,13 @@ marketClient.onTick(async (tick) => {
     await processTickForOrder(order, tick);
   }
 
-  await producer?.send("algo.heartbeat", {
-    algo: "VWAP",
-    ts: now,
-    activeOrders: activeOrders.size,
-  }).catch(() => {});
+  await producer
+    ?.send("algo.heartbeat", {
+      algo: "VWAP",
+      ts: now,
+      activeOrders: activeOrders.size,
+    })
+    .catch(() => {});
 });
 
 startExpirySweepIndexed(activeOrders, producer, "VWAP", "vwap-algo");

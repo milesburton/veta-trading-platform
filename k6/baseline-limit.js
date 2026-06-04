@@ -1,6 +1,6 @@
-import http from "k6/http";
 import { check } from "k6";
-import { Trend, Rate } from "k6/metrics";
+import http from "k6/http";
+import { Rate, Trend } from "k6/metrics";
 
 const BASE_URL = __ENV.BASE_URL || "http://gateway:5011";
 const TOKEN = __ENV.K6_TOKEN || "";
@@ -35,10 +35,10 @@ export function setup() {
     throw new Error(
       "K6_TOKEN env var is required. Obtain via:\n" +
         "  curl -X POST http://localhost:5008/oauth/authorize -H 'Content-Type: application/json' \\\n" +
-        "    -d '{\"client_id\":\"veta-automation\",\"username\":\"admin\",\"password\":\"veta-dev-passcode\"," +
-        "\"redirect_uri\":\"postmessage\",\"response_type\":\"code\",\"scope\":\"openid profile\"," +
-        "\"code_challenge\":\"...\",\"code_challenge_method\":\"S256\"}'\n" +
-        "Then exchange the code at /oauth/token to get the access token.",
+        '    -d \'{"client_id":"veta-automation","username":"admin","password":"veta-dev-passcode",' +
+        '"redirect_uri":"postmessage","response_type":"code","scope":"openid profile",' +
+        '"code_challenge":"...","code_challenge_method":"S256"}\'\n' +
+        "Then exchange the code at /oauth/token to get the access token."
     );
   }
   return { token: TOKEN };
@@ -55,7 +55,7 @@ export default function (data) {
         Cookie: `veta_user=${data.token}`,
       },
       tags: { endpoint: "load-test" },
-    },
+    }
   );
   submitDuration.add(Date.now() - t0);
   submitOk.add(res.status === 202);
@@ -115,7 +115,7 @@ export function handleSummary(data) {
   ].join("\n");
 
   return {
-    stdout: JSON.stringify(summary, null, 2) + "\n",
+    stdout: `${JSON.stringify(summary, null, 2)}\n`,
     [`/output/${date}-${RUN_LABEL}.json`]: JSON.stringify(summary, null, 2),
     [`/output/${date}-${RUN_LABEL}.csv`]: csvRows,
   };

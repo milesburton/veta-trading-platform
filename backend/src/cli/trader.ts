@@ -1,13 +1,9 @@
-import {
-  Input,
-  Select,
-} from "https://deno.land/x/cliffy@v0.25.4/prompt/mod.ts";
+import { Input, Select } from "https://deno.land/x/cliffy@v0.25.4/prompt/mod.ts";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import type { Trade } from "@veta/types/trade";
 
 const DEFAULT_OMS_URL = Deno.env.get("OMS_URL") || "http://localhost:5002";
-const DEFAULT_TWAP_URL = Deno.env.get("TWAP_ALGO_URL") ||
-  "http://localhost:5004";
+const DEFAULT_TWAP_URL = Deno.env.get("TWAP_ALGO_URL") || "http://localhost:5004";
 const DEFAULT_POV_URL = Deno.env.get("POV_ALGO_URL") || "http://localhost:5005";
 
 async function placeTrade() {
@@ -32,18 +28,14 @@ async function placeTrade() {
     ],
   });
 
-  const quantity = Number(
-    await Input.prompt({ message: "Enter quantity", default: "10" }),
-  );
-  if (isNaN(quantity) || quantity <= 0) {
+  const quantity = Number(await Input.prompt({ message: "Enter quantity", default: "10" }));
+  if (Number.isNaN(quantity) || quantity <= 0) {
     console.log("❌ Invalid quantity. Please enter a positive number.");
     return;
   }
 
-  const limitPrice = Number(
-    await Input.prompt({ message: "Enter limit price", default: "150" }),
-  );
-  if (isNaN(limitPrice) || limitPrice <= 0) {
+  const limitPrice = Number(await Input.prompt({ message: "Enter limit price", default: "150" }));
+  if (Number.isNaN(limitPrice) || limitPrice <= 0) {
     console.log("❌ Invalid limit price. Please enter a valid number.");
     return;
   }
@@ -52,9 +44,9 @@ async function placeTrade() {
     await Input.prompt({
       message: "Enter expiry time in seconds",
       default: "300",
-    }),
+    })
   );
-  if (isNaN(expiresAt) || expiresAt <= 0) {
+  if (Number.isNaN(expiresAt) || expiresAt <= 0) {
     console.log("❌ Invalid expiry time. Please enter a positive number.");
     return;
   }
@@ -81,9 +73,7 @@ async function placeTrade() {
     });
 
     if (!response.ok) {
-      console.log(
-        `❌ OMS/Algo responded with an error: ${response.status} ${response.statusText}`,
-      );
+      console.log(`❌ OMS/Algo responded with an error: ${response.status} ${response.statusText}`);
       return;
     }
 

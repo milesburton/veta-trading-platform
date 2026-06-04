@@ -1,14 +1,8 @@
-import {
-  assert,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
+import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import { z } from "@veta/zod";
 
 import { parseBody, parseQuery } from "../lib/http.ts";
-import {
-  OrderSideSchema,
-  StrategySchema,
-} from "../schemas/primitives.ts";
+import { OrderSideSchema, StrategySchema } from "../schemas/primitives.ts";
 
 function bodyRequest(data: unknown): Request {
   return new Request("http://localhost/x", {
@@ -36,7 +30,7 @@ const ExampleSchema = z.object({
 Deno.test("[parseBody] happy path returns parsed data", async () => {
   const result = await parseBody(
     bodyRequest({ userId: "u1", side: "BUY", quantity: 10 }),
-    ExampleSchema,
+    ExampleSchema
   );
   assert(result.ok);
   if (!result.ok) return;
@@ -57,7 +51,7 @@ Deno.test("[parseBody] invalid JSON returns 400 with 'invalid json'", async () =
 Deno.test("[parseBody] schema failure returns 400 with validation_failed + issues", async () => {
   const result = await parseBody(
     bodyRequest({ userId: "u1", side: "WAT", quantity: -5 }),
-    ExampleSchema,
+    ExampleSchema
   );
   assert(!result.ok);
   if (result.ok) return;
@@ -69,10 +63,7 @@ Deno.test("[parseBody] schema failure returns 400 with validation_failed + issue
 });
 
 Deno.test("[parseBody] missing required field produces issue with path", async () => {
-  const result = await parseBody(
-    bodyRequest({ side: "BUY", quantity: 10 }),
-    ExampleSchema,
-  );
+  const result = await parseBody(bodyRequest({ side: "BUY", quantity: 10 }), ExampleSchema);
   assert(!result.ok);
   if (result.ok) return;
   const body = await result.res.json();
@@ -83,7 +74,7 @@ Deno.test("[parseBody] missing required field produces issue with path", async (
 Deno.test("[parseBody] optional field omitted is allowed", async () => {
   const result = await parseBody(
     bodyRequest({ userId: "u1", side: "SELL", quantity: 1 }),
-    ExampleSchema,
+    ExampleSchema
   );
   assert(result.ok);
   if (!result.ok) return;

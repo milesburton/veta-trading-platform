@@ -1,6 +1,6 @@
 import type { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
-import type { FeatureVector } from "@veta/types/intelligence";
 import { logger } from "@veta/logger";
+import type { FeatureVector } from "@veta/types/intelligence";
 
 const MAX_PER_SYMBOL = 500;
 const FEATURE_COLS = 9;
@@ -21,7 +21,7 @@ export function buildBatchInsert(fvs: FeatureVector[]): {
       fv.sectorRelativeStrength,
       fv.eventScore,
       fv.newsVelocity,
-      fv.sentimentDelta,
+      fv.sentimentDelta
     );
     return `($${b + 1},$${b + 2},$${b + 3},$${b + 4},$${b + 5},$${b + 6},$${b + 7},$${b + 8},$${b + 9})`;
   });
@@ -47,17 +47,7 @@ function rowToFv(row: unknown[]): FeatureVector {
     eventScore,
     newsVelocity,
     sentimentDelta,
-  ] = row as [
-    string,
-    bigint | number,
-    number,
-    number,
-    number,
-    number,
-    number,
-    number,
-    number,
-  ];
+  ] = row as [string, bigint | number, number, number, number, number, number, number, number];
   return {
     symbol,
     ts: Number(ts),
@@ -90,7 +80,7 @@ export function createFeatureStore(pool: Pool): FeatureStore {
             fv.eventScore,
             fv.newsVelocity,
             fv.sentimentDelta,
-          ],
+          ]
         );
       } finally {
         client.release();
@@ -106,7 +96,7 @@ export function createFeatureStore(pool: Pool): FeatureStore {
           `INSERT INTO intelligence.feature_vectors
             (symbol, ts, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta)
            VALUES ${placeholders}`,
-          values,
+          values
         );
       } finally {
         client.release();
@@ -119,7 +109,7 @@ export function createFeatureStore(pool: Pool): FeatureStore {
         const { rows } = await client.queryArray(
           `SELECT symbol, ts, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta
            FROM intelligence.feature_vectors WHERE symbol = $1 ORDER BY ts DESC LIMIT 1`,
-          [symbol],
+          [symbol]
         );
         return rows.length === 0 ? null : rowToFv(rows[0]);
       } finally {
@@ -133,7 +123,7 @@ export function createFeatureStore(pool: Pool): FeatureStore {
         const { rows } = await client.queryArray(
           `SELECT symbol, ts, momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta
            FROM intelligence.feature_vectors WHERE symbol = $1 ORDER BY ts DESC LIMIT $2`,
-          [symbol, limit],
+          [symbol, limit]
         );
         return rows.map(rowToFv);
       } finally {
@@ -153,7 +143,7 @@ export function createFeatureStore(pool: Pool): FeatureStore {
                  FROM intelligence.feature_vectors
                ) ranked WHERE rn <= $1
              )`,
-            [MAX_PER_SYMBOL],
+            [MAX_PER_SYMBOL]
           );
         } catch (err) {
           logger.warn("cleanup error", { err: err as Error });

@@ -1,12 +1,11 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { intelligencePool } from "@veta/db";
+import { corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
-import type {
-  FeatureVector,
-  MarketAdapterEvent,
-  NewsEvent,
-} from "@veta/types/intelligence";
-import { createFeatureStore } from "./feature-store.ts";
+import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "@veta/types/intelligence";
+import { waitForUrl } from "@veta/wait-for";
 import {
   computeEventScore,
   computeMomentum,
@@ -16,10 +15,7 @@ import {
   computeSectorRelativeStrength,
   computeSentimentDelta,
 } from "./feature-computers.ts";
-import { intelligencePool } from "@veta/db";
-import { json, corsOptions } from "@veta/http";
-import { logger } from "@veta/logger";
-import { waitForUrl } from "@veta/wait-for";
+import { createFeatureStore } from "./feature-store.ts";
 
 const PORT = Number(Deno.env.get("FEATURE_ENGINE_PORT")) || 5_017;
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
@@ -49,7 +45,7 @@ function pushHistory(
   map: Map<string, number[]>,
   symbol: string,
   value: number,
-  maxLen: number,
+  maxLen: number
 ): void {
   const arr = map.get(symbol) ?? [];
   arr.push(value);
@@ -72,41 +68,47 @@ function trimOldEvents(): void {
 
 async function refreshRealisedVol(symbol: string): Promise<void> {
   try {
-    const url = `${JOURNAL_URL}/candles?instrument=${
-      encodeURIComponent(symbol)
-    }&interval=1m&limit=120`;
+    const url = `${JOURNAL_URL}/candles?instrument=${encodeURIComponent(
+      symbol
+    )}&interval=1m&limit=120`;
     const res = await fetch(url, { signal: AbortSignal.timeout(3_000) });
     if (!res.ok) return;
-    const candles = await res.json() as { close: number }[];
+    const candles = (await res.json()) as { close: number }[];
     const closes = candles.map((c) => c.close).filter((v) => v > 0);
     const vol = computeRealisedVol(closes);
     if (vol > 0) cachedRealisedVol.set(symbol, vol);
-  } catch { /* use last cached value */ }
+  } catch {
+    /* use last cached value */
+  }
 }
 
 let volRefreshIndex = 0;
 const volRefreshSymbols: string[] = [];
 const volRefreshKnown = new Set<string>();
 
-setInterval(async () => {
-  if (volRefreshSymbols.length === 0) return;
-  const symbol = volRefreshSymbols[volRefreshIndex % volRefreshSymbols.length];
-  volRefreshIndex++;
-  await refreshRealisedVol(symbol);
-}, 60_000 / Math.max(1, volRefreshSymbols.length || 80));
+setInterval(
+  async () => {
+    if (volRefreshSymbols.length === 0) return;
+    const symbol = volRefreshSymbols[volRefreshIndex % volRefreshSymbols.length];
+    volRefreshIndex++;
+    await refreshRealisedVol(symbol);
+  },
+  60_000 / Math.max(1, volRefreshSymbols.length || 80)
+);
 
 async function loadSectorMap(): Promise<void> {
   try {
-    const res = await fetch(
-      `http://${MARKET_SIM_HOST}:${MARKET_SIM_PORT}/assets`,
-      { signal: AbortSignal.timeout(3_000) },
-    );
+    const res = await fetch(`http://${MARKET_SIM_HOST}:${MARKET_SIM_PORT}/assets`, {
+      signal: AbortSignal.timeout(3_000),
+    });
     if (!res.ok) return;
-    const assets = await res.json() as Array<{ symbol: string; sector?: string }>;
+    const assets = (await res.json()) as Array<{ symbol: string; sector?: string }>;
     for (const a of assets) {
       if (a.symbol && a.sector) symbolSectors.set(a.symbol, a.sector);
     }
-  } catch { /* ignore — retried by interval */ }
+  } catch {
+    /* ignore — retried by interval */
+  }
 }
 
 {
@@ -140,10 +142,7 @@ function computeFeatureVector(symbol: string): FeatureVector | null {
     momentum: computeMomentum(prices),
     relativeVolume: volumes ? computeRelativeVolume(volumes) : 1,
     realisedVol: cachedRealisedVol.get(symbol) ?? 0,
-    sectorRelativeStrength: computeSectorRelativeStrength(
-      prices,
-      sectorHistories,
-    ),
+    sectorRelativeStrength: computeSectorRelativeStrength(prices, sectorHistories),
     eventScore: computeEventScore(symbol, upcomingEvents),
     newsVelocity: computeNewsVelocity(symbol, recentNews),
     sentimentDelta: computeSentimentDelta(symbol, recentNews),
@@ -186,9 +185,7 @@ async function flushFeatures(): Promise<void> {
   }
 
   if (producer) {
-    await Promise.all(
-      batch.map((fv) => producer.send("market.features", fv).catch(() => {})),
-    );
+    await Promise.all(batch.map((fv) => producer.send("market.features", fv).catch(() => {})));
   }
 
   flushInFlight = false;
@@ -198,9 +195,7 @@ setInterval(() => {
   void flushFeatures();
 }, 250);
 
-const tickConsumer = await createConsumer("feature-engine-ticks", [
-  "market.ticks",
-]).catch((err) => {
+const tickConsumer = await createConsumer("feature-engine-ticks", ["market.ticks"]).catch((err) => {
   logger.warn("Cannot subscribe to market.ticks", { err });
   return null;
 });
@@ -228,12 +223,12 @@ if (tickConsumer) {
   });
 }
 
-const newsConsumer = await createConsumer("feature-engine-news", [
-  "news.events.normalised",
-]).catch((err) => {
-  logger.warn("Cannot subscribe to news.events.normalised", { err });
-  return null;
-});
+const newsConsumer = await createConsumer("feature-engine-news", ["news.events.normalised"]).catch(
+  (err) => {
+    logger.warn("Cannot subscribe to news.events.normalised", { err });
+    return null;
+  }
+);
 
 if (newsConsumer) {
   newsConsumer.onMessage((_topic, raw) => {
@@ -299,7 +294,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const fvMatch = path.match(/^\/features\/([^/]+)$/);
   if (fvMatch && req.method === "GET") {
     const symbol = decodeURIComponent(fvMatch[1]);
-    const fv = latestFeatures.get(symbol) ?? await store.getLatest(symbol);
+    const fv = latestFeatures.get(symbol) ?? (await store.getLatest(symbol));
     if (!fv) return json({ error: "No feature data for symbol" }, 404);
     return json(fv);
   }

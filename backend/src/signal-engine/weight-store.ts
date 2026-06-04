@@ -5,12 +5,12 @@ export type WeightMap = Record<FeatureName, number>;
 
 export const DEFAULT_WEIGHTS: WeightMap = {
   momentum: 0.25,
-  relativeVolume: 0.10,
+  relativeVolume: 0.1,
   realisedVol: -0.15,
-  sectorRelativeStrength: 0.20,
-  eventScore: 0.10,
-  newsVelocity: 0.10,
-  sentimentDelta: 0.10,
+  sectorRelativeStrength: 0.2,
+  eventScore: 0.1,
+  newsVelocity: 0.1,
+  sentimentDelta: 0.1,
 };
 
 export interface WeightStore {
@@ -23,7 +23,7 @@ export async function createWeightStore(pool: Pool): Promise<WeightStore> {
   const client = await pool.connect();
   try {
     const { rows } = await client.queryArray(
-      "SELECT id FROM intelligence.signal_weights WHERE id = 1",
+      "SELECT id FROM intelligence.signal_weights WHERE id = 1"
     );
     if (rows.length === 0) {
       await client.queryArray(
@@ -39,7 +39,7 @@ export async function createWeightStore(pool: Pool): Promise<WeightStore> {
           DEFAULT_WEIGHTS.newsVelocity,
           DEFAULT_WEIGHTS.sentimentDelta,
           Date.now(),
-        ],
+        ]
       );
     }
   } finally {
@@ -56,7 +56,7 @@ export async function createWeightStore(pool: Pool): Promise<WeightStore> {
         const { rows } = await c.queryArray<
           [number, number, number, number, number, number, number]
         >(
-          "SELECT momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta FROM intelligence.signal_weights WHERE id = 1",
+          "SELECT momentum, relative_volume, realised_vol, sector_rs, event_score, news_velocity, sentiment_delta FROM intelligence.signal_weights WHERE id = 1"
         );
         if (rows.length === 0) return { ...DEFAULT_WEIGHTS };
         const [
@@ -67,15 +67,7 @@ export async function createWeightStore(pool: Pool): Promise<WeightStore> {
           eventScore,
           newsVelocity,
           sentimentDelta,
-        ] = rows[0].map(Number) as [
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-        ];
+        ] = rows[0].map(Number) as [number, number, number, number, number, number, number];
         cached = {
           momentum,
           relativeVolume,
@@ -116,7 +108,7 @@ export async function createWeightStore(pool: Pool): Promise<WeightStore> {
             weights.newsVelocity,
             weights.sentimentDelta,
             Date.now(),
-          ],
+          ]
         );
         cached = null;
       } finally {

@@ -48,7 +48,7 @@ Deno.test("[registry] gateway HOST env block in compose.yml matches generated ou
       `Gateway HOST env block in compose.yml has drifted from shared/serviceRegistry.ts.\n\n` +
         `If you added or renamed a service, regenerate the block:\n\n` +
         `  deno run --allow-read --allow-write scripts/generate-compose-host-env.ts\n\n` +
-        `Got:\n${actual}\n\nExpected:\n${expected}`,
+        `Got:\n${actual}\n\nExpected:\n${expected}`
     );
   }
 });
@@ -60,9 +60,7 @@ Deno.test("[registry] SVC_PROXY in gateway.ts covers every registry composeName"
   if (proxyStart === -1) throw new Error("SVC_PROXY not found in gateway.ts");
   const proxyEnd = text.indexOf("};", proxyStart);
   const block = text.slice(proxyStart, proxyEnd);
-  const proxiedNames = new Set(
-    [...block.matchAll(/"([a-z][a-z0-9-]+)":\s+/g)].map((m) => m[1]),
-  );
+  const proxiedNames = new Set([...block.matchAll(/"([a-z][a-z0-9-]+)":\s+/g)].map((m) => m[1]));
   const missing: string[] = [];
   for (const svc of SERVICE_REGISTRY) {
     if (svc.excludeFromGatewayHostEnv) continue;
@@ -72,7 +70,7 @@ Deno.test("[registry] SVC_PROXY in gateway.ts covers every registry composeName"
     throw new Error(
       `SVC_PROXY in gateway.ts is missing entries for: ${missing.join(", ")}.\n` +
         `Every service in shared/serviceRegistry.ts (except those with excludeFromGatewayHostEnv:true) ` +
-        `must have a SVC_PROXY entry so /api/<service>/* routes to it.`,
+        `must have a SVC_PROXY entry so /api/<service>/* routes to it.`
     );
   }
 });
@@ -85,7 +83,8 @@ Deno.test("[registry] every service has a unique id, envPrefix, composeName, por
   for (const svc of SERVICE_REGISTRY) {
     if (ids.has(svc.id)) throw new Error(`Duplicate id: ${svc.id}`);
     if (envPrefixes.has(svc.envPrefix)) throw new Error(`Duplicate envPrefix: ${svc.envPrefix}`);
-    if (composeNames.has(svc.composeName)) throw new Error(`Duplicate composeName: ${svc.composeName}`);
+    if (composeNames.has(svc.composeName))
+      throw new Error(`Duplicate composeName: ${svc.composeName}`);
     if (ports.has(svc.defaultPort)) throw new Error(`Duplicate port: ${svc.defaultPort}`);
     ids.add(svc.id);
     envPrefixes.add(svc.envPrefix);

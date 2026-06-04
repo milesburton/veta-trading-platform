@@ -18,8 +18,13 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { intelligencePool } from "@veta/db";
+import { corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 import { blackScholes } from "./black-scholes.ts";
 import { priceBond } from "./bond-pricing.ts";
+import type { BondPosition } from "./duration-ladder.ts";
+import { computeDurationLadder } from "./duration-ladder.ts";
 import { monteCarlo } from "./monte-carlo.ts";
 import { priceFan } from "./price-fan.ts";
 import {
@@ -28,6 +33,8 @@ import {
   scoreOption,
   scoreOptionWithSignal,
 } from "./recommendation-engine.ts";
+import type { SpreadAnalysisRequest } from "./spread-analysis.ts";
+import { computeSpreadAnalysis } from "./spread-analysis.ts";
 import type {
   BondPriceRequest,
   BondPriceResponse,
@@ -45,21 +52,10 @@ import type {
   YieldCurveRequest,
   YieldCurveResponse,
 } from "./types.ts";
-import {
-  estimateVol,
-  estimateVolProfile,
-  fetchSpotPrice,
-} from "./volatility-estimator.ts";
+import { buildVolSurface } from "./vol-surface.ts";
+import { estimateVol, estimateVolProfile, fetchSpotPrice } from "./volatility-estimator.ts";
 import { buildYieldCurveResponse, fetchFredParams } from "./yield-curve.ts";
 import { createYieldCurveStore } from "./yield-curve-store.ts";
-import { intelligencePool } from "@veta/db";
-import { json, corsOptions } from "@veta/http";
-import { computeSpreadAnalysis } from "./spread-analysis.ts";
-import type { SpreadAnalysisRequest } from "./spread-analysis.ts";
-import { computeDurationLadder } from "./duration-ladder.ts";
-import type { BondPosition } from "./duration-ladder.ts";
-import { buildVolSurface } from "./vol-surface.ts";
-import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("ANALYTICS_PORT")) || 5_014;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -82,20 +78,24 @@ async function resolveSpot(symbol: string): Promise<number | null> {
   const spot = await fetchSpotPrice(JOURNAL_URL, symbol);
   if (spot !== null) return spot;
 
-  if (assetPriceCache.has(symbol)) return assetPriceCache.get(symbol)!;
+  const cachedSpot = assetPriceCache.get(symbol);
+  if (cachedSpot !== undefined) return cachedSpot;
   try {
     const res = await fetch(`${MARKET_SIM_URL}/assets`, {
       signal: AbortSignal.timeout(5_000),
     });
     if (res.ok) {
-      const assets = await res.json() as {
+      const assets = (await res.json()) as {
         symbol: string;
         initialPrice: number;
       }[];
       for (const a of assets) assetPriceCache.set(a.symbol, a.initialPrice);
-      if (assetPriceCache.has(symbol)) return assetPriceCache.get(symbol)!;
+      const cachedAfterFetch = assetPriceCache.get(symbol);
+      if (cachedAfterFetch !== undefined) return cachedAfterFetch;
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   return null;
 }
@@ -115,17 +115,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/quote" && req.method === "POST") {
     let body: OptionQuoteRequest;
     try {
-      body = await req.json() as OptionQuoteRequest;
+      body = (await req.json()) as OptionQuoteRequest;
     } catch {
       return err("Invalid JSON body");
     }
 
-    const { symbol, optionType, strike, expirySecs, riskFreeRate = 0.05 } =
-      body;
+    const { symbol, optionType, strike, expirySecs, riskFreeRate = 0.05 } = body;
     if (!symbol || !optionType || !strike || !expirySecs) {
-      return err(
-        "Missing required fields: symbol, optionType, strike, expirySecs",
-      );
+      return err("Missing required fields: symbol, optionType, strike, expirySecs");
     }
 
     const spot = await resolveSpot(symbol);
@@ -135,14 +132,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     const sigma = await estimateVol(JOURNAL_URL, symbol);
     const T = expirySecs / (365 * 86400);
-    const { price, greeks } = blackScholes(
-      optionType,
-      spot,
-      strike,
-      T,
-      riskFreeRate,
-      sigma,
-    );
+    const { price, greeks } = blackScholes(optionType, spot, strike, T, riskFreeRate, sigma);
 
     const response: OptionQuoteResponse = {
       symbol,
@@ -161,7 +151,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/scenario" && req.method === "POST") {
     let body: ScenarioRequest;
     try {
-      body = await req.json() as ScenarioRequest;
+      body = (await req.json()) as ScenarioRequest;
     } catch {
       return err("Invalid JSON body");
     }
@@ -179,7 +169,11 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     } = body;
 
     if (
-      !symbol || !optionType || !strike || !expirySecs || !spotShocks?.length ||
+      !symbol ||
+      !optionType ||
+      !strike ||
+      !expirySecs ||
+      !spotShocks?.length ||
       !volShocks?.length
     ) {
       return err("Missing required fields");
@@ -201,7 +195,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       strike,
       baseT,
       riskFreeRate,
-      sigma,
+      sigma
     );
 
     const cells: ScenarioCell[][] = spotShocks.map((spotPct) => {
@@ -214,13 +208,13 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           strike,
           adjustedT,
           riskFreeRate,
-          shockedSigma,
+          shockedSigma
         );
         const pnl = optionPrice - baselinePrice;
         const pnlPct = baselinePrice > 0 ? pnl / baselinePrice : 0;
-        const seedKey = `${symbol}-${optionType}-${strike}-${expirySecs}-${
-          spotPct.toFixed(3)
-        }-${volPct.toFixed(3)}`;
+        const seedKey = `${symbol}-${optionType}-${strike}-${expirySecs}-${spotPct.toFixed(
+          3
+        )}-${volPct.toFixed(3)}`;
         const mc = monteCarlo(
           optionType,
           shockedSpot,
@@ -229,7 +223,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
           riskFreeRate,
           shockedSigma,
           paths,
-          seedKey,
+          seedKey
         );
         return { spotPct, volPct, optionPrice, pnl, pnlPct, ...mc };
       });
@@ -254,7 +248,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/recommend" && req.method === "POST") {
     let body: RecommendationRequest;
     try {
-      body = await req.json() as RecommendationRequest;
+      body = (await req.json()) as RecommendationRequest;
     } catch {
       return err("Invalid JSON body");
     }
@@ -283,15 +277,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         const T = expirySecs / (365 * 86400);
         for (const optionType of ["call", "put"] as const) {
           const rec = signal
-            ? scoreOptionWithSignal(
-              optionType,
-              spot,
-              K,
-              T,
-              riskFreeRate,
-              sigma,
-              signal,
-            )
+            ? scoreOptionWithSignal(optionType, spot, K, T, riskFreeRate, sigma, signal)
             : scoreOption(optionType, spot, K, T, riskFreeRate, sigma);
           recommendations.push(rec);
         }
@@ -343,29 +329,19 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const sigma = await estimateVol(JOURNAL_URL, symbol);
     const T = expirySecs / (365 * 86400);
 
-    const strikePoints: GreeksSurfacePoint[] = Array.from(
-      { length: 25 },
-      (_, i) => {
-        const K = spot * (0.70 + i * (0.60 / 24));
-        const { price: callPrice, greeks } = blackScholes(
-          "call",
-          spot,
-          K,
-          T,
-          riskFreeRate,
-          sigma,
-        );
-        return {
-          strike: K,
-          moneyness: K / spot,
-          callDelta: greeks.delta,
-          gamma: greeks.gamma,
-          theta: greeks.theta,
-          vega: greeks.vega,
-          callPrice,
-        };
-      },
-    );
+    const strikePoints: GreeksSurfacePoint[] = Array.from({ length: 25 }, (_, i) => {
+      const K = spot * (0.7 + i * (0.6 / 24));
+      const { price: callPrice, greeks } = blackScholes("call", spot, K, T, riskFreeRate, sigma);
+      return {
+        strike: K,
+        moneyness: K / spot,
+        callDelta: greeks.delta,
+        gamma: greeks.gamma,
+        theta: greeks.theta,
+        vega: greeks.vega,
+        callPrice,
+      };
+    });
 
     const response: GreeksSurfaceResponse = {
       symbol,
@@ -381,16 +357,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/bond-price" && req.method === "POST") {
     let body: BondPriceRequest;
     try {
-      body = await req.json() as BondPriceRequest;
+      body = (await req.json()) as BondPriceRequest;
     } catch {
       return err("Invalid JSON body");
     }
 
     const { couponRate, totalPeriods, yieldAnnual } = body;
     if (couponRate == null || totalPeriods == null || yieldAnnual == null) {
-      return err(
-        "Missing required fields: couponRate, totalPeriods, yieldAnnual",
-      );
+      return err("Missing required fields: couponRate, totalPeriods, yieldAnnual");
     }
 
     const response: BondPriceResponse = priceBond(body);
@@ -400,8 +374,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/yield-curve" && req.method === "POST") {
     let body: YieldCurveRequest = {};
     try {
-      body = await req.json() as YieldCurveRequest;
-    } catch { /* empty body is fine */ }
+      body = (await req.json()) as YieldCurveRequest;
+    } catch {
+      /* empty body is fine */
+    }
 
     // Use real FRED Treasury rates when available; caller params override
     const fredParams = await fetchFredParams(yieldCurveStore);
@@ -416,18 +392,9 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const symbol = decodeURIComponent(path.slice("/price-fan/".length));
     if (!symbol) return err("Missing symbol");
 
-    const steps = Math.max(
-      1,
-      Math.min(200, Number(url.searchParams.get("steps")) || 24),
-    );
-    const stepSecs = Math.max(
-      60,
-      Number(url.searchParams.get("stepSecs")) || 3600,
-    );
-    const paths = Math.max(
-      100,
-      Math.min(2000, Number(url.searchParams.get("paths")) || 500),
-    );
+    const steps = Math.max(1, Math.min(200, Number(url.searchParams.get("steps")) || 24));
+    const stepSecs = Math.max(60, Number(url.searchParams.get("stepSecs")) || 3600);
+    const paths = Math.max(100, Math.min(2000, Number(url.searchParams.get("paths")) || 500));
     const riskFreeRate = Number(url.searchParams.get("riskFreeRate")) || 0.05;
 
     const spot = await resolveSpot(symbol);
@@ -438,15 +405,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const sigma = await estimateVol(JOURNAL_URL, symbol);
     const seedKey = `fan-${symbol}-${steps}-${stepSecs}`;
 
-    const fanSteps = priceFan(
-      spot,
-      sigma,
-      riskFreeRate,
-      steps,
-      stepSecs,
-      paths,
-      seedKey,
-    );
+    const fanSteps = priceFan(spot, sigma, riskFreeRate, steps, stepSecs, paths, seedKey);
 
     const response: PriceFanResponse = {
       symbol,
@@ -462,15 +421,13 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/spread-analysis" && req.method === "POST") {
     let body: SpreadAnalysisRequest;
     try {
-      body = await req.json() as SpreadAnalysisRequest;
+      body = (await req.json()) as SpreadAnalysisRequest;
     } catch {
       return err("Invalid JSON body");
     }
     const { couponRate, totalPeriods, yieldAnnual } = body;
     if (couponRate == null || totalPeriods == null || yieldAnnual == null) {
-      return err(
-        "Missing required fields: couponRate, totalPeriods, yieldAnnual",
-      );
+      return err("Missing required fields: couponRate, totalPeriods, yieldAnnual");
     }
     return json(computeSpreadAnalysis(body));
   }
@@ -478,7 +435,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/duration-ladder" && req.method === "POST") {
     let body: { positions: BondPosition[] };
     try {
-      body = await req.json() as { positions: BondPosition[] };
+      body = (await req.json()) as { positions: BondPosition[] };
     } catch {
       return err("Invalid JSON body");
     }

@@ -1,13 +1,4 @@
-import {
-  app,
-  BrowserWindow,
-  dialog,
-  ipcMain,
-  Menu,
-  nativeImage,
-  shell,
-  Tray,
-} from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, shell, Tray } from "electron";
 import { writeFile } from "fs/promises";
 import * as path from "path";
 
@@ -58,18 +49,11 @@ function createWindow(): void {
     e.preventDefault();
   });
 
-  mainWindow.on(
-    "maximize",
-    () => mainWindow?.webContents.send("window:maximizeChange", true),
-  );
-  mainWindow.on(
-    "unmaximize",
-    () => mainWindow?.webContents.send("window:maximizeChange", false),
-  );
+  mainWindow.on("maximize", () => mainWindow?.webContents.send("window:maximizeChange", true));
+  mainWindow.on("unmaximize", () => mainWindow?.webContents.send("window:maximizeChange", false));
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    const allowed = url.startsWith("http://localhost") ||
-      url.startsWith("file://");
+    const allowed = url.startsWith("http://localhost") || url.startsWith("file://");
     if (allowed) {
       return {
         action: "allow" as const,
@@ -100,15 +84,11 @@ function createWindow(): void {
 }
 
 function createTray(): void {
-  const iconName = process.platform === "win32"
-    ? "tray-icon.ico"
-    : "tray-icon.png";
+  const iconName = process.platform === "win32" ? "tray-icon.ico" : "tray-icon.png";
   const iconPath = path.join(__dirname, "assets", iconName);
   const icon = nativeImage.createFromPath(iconPath);
   tray = new Tray(
-    icon.isEmpty()
-      ? nativeImage.createEmpty()
-      : icon.resize({ width: 16, height: 16 }),
+    icon.isEmpty() ? nativeImage.createEmpty() : icon.resize({ width: 16, height: 16 })
   );
 
   const contextMenu = Menu.buildFromTemplate([
@@ -145,9 +125,7 @@ function handleDeepLink(url: string): void {
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient("veta", process.execPath, [
-      path.resolve(process.argv[1]),
-    ]);
+    app.setAsDefaultProtocolClient("veta", process.execPath, [path.resolve(process.argv[1])]);
   }
 } else {
   app.setAsDefaultProtocolClient("veta");
@@ -212,13 +190,11 @@ ipcMain.on("shell:openExternal", (_, url: string) => {
 
 ipcMain.handle(
   "dialog:showSave",
-  async (
-    _,
-    options: { defaultPath?: string; filters?: Electron.FileFilter[] },
-  ) => {
-    const result = await dialog.showSaveDialog(mainWindow!, options);
+  async (_, options: { defaultPath?: string; filters?: Electron.FileFilter[] }) => {
+    if (!mainWindow) throw new Error("main window not ready");
+    const result = await dialog.showSaveDialog(mainWindow, options);
     return result.canceled ? null : result.filePath;
-  },
+  }
 );
 
 ipcMain.handle("fs:writeFile", async (_, filePath: string, content: string) => {
@@ -233,31 +209,35 @@ function buildMenu(): void {
 
   const template: Electron.MenuItemConstructorOptions[] = [
     ...(isMac
-      ? [{
-        label: app.name,
-        submenu: [
-          { role: "about" as const },
-          { type: "separator" as const },
-          { role: "services" as const },
-          { type: "separator" as const },
-          { role: "hide" as const },
-          { role: "hideOthers" as const },
-          { role: "unhide" as const },
-          { type: "separator" as const },
-          { role: "quit" as const },
-        ],
-      }]
+      ? [
+          {
+            label: app.name,
+            submenu: [
+              { role: "about" as const },
+              { type: "separator" as const },
+              { role: "services" as const },
+              { type: "separator" as const },
+              { role: "hide" as const },
+              { role: "hideOthers" as const },
+              { role: "unhide" as const },
+              { type: "separator" as const },
+              { role: "quit" as const },
+            ],
+          },
+        ]
       : []),
     {
       label: "File",
       submenu: [
-        isMac ? { role: "close" as const } : {
-          label: "Quit VETA",
-          click: () => {
-            tray?.destroy();
-            app.quit();
-          },
-        },
+        isMac
+          ? { role: "close" as const }
+          : {
+              label: "Quit VETA",
+              click: () => {
+                tray?.destroy();
+                app.quit();
+              },
+            },
       ],
     },
     {

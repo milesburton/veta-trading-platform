@@ -1,17 +1,16 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { intelligencePool } from "@veta/db";
+import { corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 import { createProducer } from "@veta/messaging";
 import type { MarketAdapterEvent } from "@veta/types/intelligence";
 import { seedEarningsEvents } from "./earnings-adapter.ts";
 import { seedEconomicEvents } from "./economic-adapter.ts";
 import { createMarketEventStore } from "./market-event-store.ts";
-import { intelligencePool } from "@veta/db";
-import { json, corsOptions } from "@veta/http";
-import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("MARKET_DATA_ADAPTERS_PORT")) || 5_016;
-const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") ||
-  "http://localhost:5000";
+const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") || "http://localhost:5000";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 const eventStore = createMarketEventStore(intelligencePool);
@@ -29,10 +28,7 @@ const producer = await createProducer("market-data-adapters").catch((err) => {
   return null;
 });
 
-export async function publishEvent(
-  ev: MarketAdapterEvent,
-  source = "synthetic",
-): Promise<void> {
+export async function publishEvent(ev: MarketAdapterEvent, source = "synthetic"): Promise<void> {
   storeEvent(ev);
   await eventStore.upsertEvent(ev, source).catch((err) => {
     logger.warn("DB upsert error", { err });
@@ -49,23 +45,12 @@ async function loadSymbols(): Promise<void> {
       signal: AbortSignal.timeout(5_000),
     });
     if (!res.ok) return;
-    const assets = await res.json() as { symbol: string }[];
+    const assets = (await res.json()) as { symbol: string }[];
     knownSymbols = assets.map((a) => a.symbol);
     logger.info(`Loaded ${knownSymbols.length} symbols`);
   } catch {
     logger.warn("Could not load symbols from market-sim, using fallback list");
-    knownSymbols = [
-      "AAPL",
-      "MSFT",
-      "GOOGL",
-      "AMZN",
-      "NVDA",
-      "META",
-      "TSLA",
-      "BRK",
-      "JPM",
-      "UNH",
-    ];
+    knownSymbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK", "JPM", "UNH"];
   }
 }
 
@@ -85,7 +70,9 @@ async function seedEvents(): Promise<void> {
     ? "finnhub"
     : "synthetic";
 
-  logger.info(`Seeding ${earningsEvents.length} earnings (${earningsSource}) + ${economicEvents.length} economic (${economicSource}) events`);
+  logger.info(
+    `Seeding ${earningsEvents.length} earnings (${earningsSource}) + ${economicEvents.length} economic (${economicSource}) events`
+  );
 
   for (const ev of earningsEvents) await publishEvent(ev, earningsSource);
   for (const ev of economicEvents) await publishEvent(ev, economicSource);
@@ -94,9 +81,12 @@ async function seedEvents(): Promise<void> {
 seedEvents().catch((err) => {
   logger.warn("Initial event seed failed", { err });
 });
-setInterval(async () => {
-  await seedEvents();
-}, 7 * 24 * 60 * 60 * 1000);
+setInterval(
+  async () => {
+    await seedEvents();
+  },
+  7 * 24 * 60 * 60 * 1000
+);
 
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
@@ -123,16 +113,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const toTs = now + 90 * 24 * 60 * 60 * 1000;
 
     // Serve from DB (survives restarts); fall back to in-memory on DB error
-    const dbEvents = await eventStore.getEvents(fromTs, toTs, ticker).catch(
-      () => null,
-    );
+    const dbEvents = await eventStore.getEvents(fromTs, toTs, ticker).catch(() => null);
     if (dbEvents !== null) {
       return json(dbEvents.slice(0, limit));
     }
 
-    let filtered = events.filter((e) =>
-      e.scheduledAt >= fromTs && e.scheduledAt <= toTs
-    );
+    let filtered = events.filter((e) => e.scheduledAt >= fromTs && e.scheduledAt <= toTs);
     if (ticker) {
       filtered = filtered.filter((e) => e.ticker === ticker || !e.ticker);
     }

@@ -43,9 +43,7 @@ function serializeCtx(ctx: Ctx | undefined): Ctx {
   return out;
 }
 
-export interface LogSink {
-  (level: LogLevel, msg: string, line: string, ctx?: Ctx): void;
-}
+export type LogSink = (level: LogLevel, msg: string, line: string, ctx?: Ctx) => void;
 
 const sinks: LogSink[] = [];
 
@@ -68,7 +66,7 @@ function emit(level: LogLevel, msg: string, ctx?: Ctx): void {
       msg,
       ...serializeCtx(ctx),
     };
-    line = JSON.stringify(record) + "\n";
+    line = `${JSON.stringify(record)}\n`;
   } catch (err) {
     const fallback = {
       ts: new Date().toISOString(),
@@ -77,7 +75,7 @@ function emit(level: LogLevel, msg: string, ctx?: Ctx): void {
       msg,
       _serializeError: err instanceof Error ? err.message : String(err),
     };
-    line = JSON.stringify(fallback) + "\n";
+    line = `${JSON.stringify(fallback)}\n`;
   }
   try {
     Deno.stdout.writeSync(encoder.encode(line));

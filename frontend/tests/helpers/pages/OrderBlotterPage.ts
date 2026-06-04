@@ -1,12 +1,7 @@
 import type { Locator } from "@playwright/test";
 import { expect } from "@playwright/test";
 
-export type OrderStatus =
-  | "queued"
-  | "executing"
-  | "filled"
-  | "expired"
-  | "rejected";
+export type OrderStatus = "queued" | "executing" | "filled" | "expired" | "rejected";
 
 export class OrderBlotterPage {
   constructor(private readonly root: Locator) {}
@@ -26,9 +21,9 @@ export class OrderBlotterPage {
   }
 
   async waitForStatus(status: OrderStatus, timeoutMs = 8_000) {
-    await expect(
-      this.root.locator(`span:has-text("${status}")`),
-    ).toBeVisible({ timeout: timeoutMs });
+    await expect(this.root.locator(`span:has-text("${status}")`)).toBeVisible({
+      timeout: timeoutMs,
+    });
   }
 
   async latestOrderStatus(): Promise<string> {
@@ -64,8 +59,8 @@ export class OrderBlotterPage {
   }
 
   async expectAssetVisible(asset: string) {
-    await expect(
-      this.table.locator("tbody td").filter({ hasText: asset }).first(),
-    ).toBeVisible({ timeout: 6_000 });
+    await expect(this.table.locator("tbody td").filter({ hasText: asset }).first()).toBeVisible({
+      timeout: 6_000,
+    });
   }
 }

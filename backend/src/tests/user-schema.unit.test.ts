@@ -80,26 +80,26 @@ Deno.test("[user-schema] TokenRequestSchema requires grant_type=authorization_co
       grant_type: "authorization_code",
       code: "xyz",
       code_verifier: "verifier",
-    }).success,
+    }).success
   );
   assert(
     !TokenRequestSchema.safeParse({
       grant_type: "password",
       code: "xyz",
       code_verifier: "verifier",
-    }).success,
+    }).success
   );
   assert(
     !TokenRequestSchema.safeParse({
       grant_type: "authorization_code",
       code_verifier: "verifier",
-    }).success,
+    }).success
   );
   assert(
     !TokenRequestSchema.safeParse({
       grant_type: "authorization_code",
       code: "xyz",
-    }).success,
+    }).success
   );
 });
 
@@ -110,7 +110,7 @@ Deno.test("[user-schema] RegisterRequestSchema requires name, password >=8, user
       name: "Alice",
       password: "longenough",
       archetype: "equity-high-touch",
-    }).success,
+    }).success
   );
   assert(
     RegisterRequestSchema.safeParse({
@@ -118,17 +118,28 @@ Deno.test("[user-schema] RegisterRequestSchema requires name, password >=8, user
       name: "Alice",
       password: "longenough",
       archetype: "fi-voice",
-    }).success,
+    }).success
   );
   assert(
-    !RegisterRequestSchema.safeParse({ name: "Alice", password: "longenough", archetype: "equity-high-touch" }).success,
+    !RegisterRequestSchema.safeParse({
+      name: "Alice",
+      password: "longenough",
+      archetype: "equity-high-touch",
+    }).success
   );
   assert(
-    !RegisterRequestSchema.safeParse({ username: "alice", password: "longenough", archetype: "equity-high-touch" })
-      .success,
+    !RegisterRequestSchema.safeParse({
+      username: "alice",
+      password: "longenough",
+      archetype: "equity-high-touch",
+    }).success
   );
   assert(
-    !RegisterRequestSchema.safeParse({ username: "alice", name: "Alice", archetype: "equity-high-touch" }).success,
+    !RegisterRequestSchema.safeParse({
+      username: "alice",
+      name: "Alice",
+      archetype: "equity-high-touch",
+    }).success
   );
   assert(
     !RegisterRequestSchema.safeParse({
@@ -136,11 +147,12 @@ Deno.test("[user-schema] RegisterRequestSchema requires name, password >=8, user
       name: "Alice",
       password: "short",
       archetype: "equity-high-touch",
-    }).success,
+    }).success
   );
   // archetype is required and must be a known id.
   assert(
-    !RegisterRequestSchema.safeParse({ username: "alice", name: "Alice", password: "longenough" }).success,
+    !RegisterRequestSchema.safeParse({ username: "alice", name: "Alice", password: "longenough" })
+      .success
   );
   assert(
     !RegisterRequestSchema.safeParse({
@@ -148,7 +160,7 @@ Deno.test("[user-schema] RegisterRequestSchema requires name, password >=8, user
       name: "Alice",
       password: "longenough",
       archetype: "not-a-real-archetype",
-    }).success,
+    }).success
   );
 });
 
@@ -161,7 +173,7 @@ Deno.test("[user-schema] LimitsUpdateSchema accepts all fields optional", () => 
       allowed_strategies: ["LIMIT", "TWAP"],
       allowed_desks: ["equity"],
       dark_pool_access: true,
-    }).success,
+    }).success
   );
 });
 
@@ -190,7 +202,7 @@ Deno.test("[user-schema] AlertCreateSchema requires severity, source, message", 
       severity: "warning",
       source: "service",
       message: "slow",
-    }).success,
+    }).success
   );
   assert(!AlertCreateSchema.safeParse({ severity: "warning", source: "service" }).success);
   assert(!AlertCreateSchema.safeParse({ severity: "warning", message: "x" }).success);

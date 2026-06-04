@@ -51,9 +51,8 @@ function reconstructOrders(events: JournalEvent[]): OrderRecord[] {
         side: (raw.side ?? "BUY") as string,
         quantity: Number(raw.quantity ?? raw.requestedQty ?? 0),
         limitPrice: Number(raw.limitPrice ?? 0),
-        expiresAt: raw.expiresAt !== undefined
-          ? ts + Number(raw.expiresAt) * 1_000
-          : ts + 86_400_000,
+        expiresAt:
+          raw.expiresAt !== undefined ? ts + Number(raw.expiresAt) * 1_000 : ts + 86_400_000,
         strategy: (raw.strategy ?? raw.algo ?? "LIMIT") as string,
         status: "queued",
         filled: 0,
@@ -61,13 +60,13 @@ function reconstructOrders(events: JournalEvent[]): OrderRecord[] {
         children: [],
       });
     } else if (orderMap.has(orderId)) {
-      const order = orderMap.get(orderId)!;
+      const order = orderMap.get(orderId);
+      if (!order) continue;
       if (eventType === "orders.filled") {
         const childFilled = Number(raw.filledQty ?? 0);
         order.filled = Number(order.filled ?? 0) + childFilled;
-        order.status = order.quantity > 0 && order.filled >= order.quantity
-          ? "filled"
-          : "executing";
+        order.status =
+          order.quantity > 0 && order.filled >= order.quantity ? "filled" : "executing";
       } else if (eventType === "orders.expired") {
         order.status = "expired";
       } else if (eventType === "orders.rejected") {
@@ -102,10 +101,12 @@ const BASE_ORDER = {
 };
 
 Deno.test("[journal] reconstructs queued order from orders.submitted", () => {
-  const orders = reconstructOrders([{
-    ...BASE_ORDER,
-    eventType: "orders.submitted",
-  }]);
+  const orders = reconstructOrders([
+    {
+      ...BASE_ORDER,
+      eventType: "orders.submitted",
+    },
+  ]);
   assertEquals(orders.length, 1);
   assertEquals(orders[0].status, "queued");
   assertEquals(orders[0].asset, "AAPL");
@@ -235,8 +236,9 @@ Deno.test("[journal] handles multiple independent orders", () => {
     },
   ]);
   assertEquals(orders.length, 2);
-  const a = orders.find((o) => o.id === "ord-A")!;
-  const b = orders.find((o) => o.id === "ord-B")!;
+  const a = orders.find((o) => o.id === "ord-A");
+  const b = orders.find((o) => o.id === "ord-B");
+  if (!a || !b) throw new Error("expected both orders to be present");
   assertEquals(a.status, "filled");
   assertEquals(b.status, "queued");
 });

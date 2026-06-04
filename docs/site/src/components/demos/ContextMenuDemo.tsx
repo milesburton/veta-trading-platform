@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { ContextMenu, type ContextMenuEntry } from "@veta/frontend/components/ContextMenu";
+import { useState } from "react";
 
 export function ContextMenuDemo() {
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -63,9 +63,7 @@ export function ContextMenuDemo() {
       <div style={{ marginTop: "0.75rem", fontSize: "0.75rem", color: "#94a3b8" }}>
         Last action: <code>{lastAction ?? "(none)"}</code>
       </div>
-      {menu && (
-        <ContextMenu items={items} x={menu.x} y={menu.y} onClose={() => setMenu(null)} />
-      )}
+      {menu && <ContextMenu items={items} x={menu.x} y={menu.y} onClose={() => setMenu(null)} />}
     </div>
   );
 }

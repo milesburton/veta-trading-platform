@@ -5,7 +5,9 @@ async function switchLayout(app: AppPage, label: string) {
   await app.page.getByTitle("Switch layout template").click();
   await app.page
     .locator("button")
-    .filter({ has: app.page.locator("span.font-medium", { hasText: new RegExp(`^[🔒\\s]*${label}$`) }) })
+    .filter({
+      has: app.page.locator("span.font-medium", { hasText: new RegExp(`^[🔒\\s]*${label}$`) }),
+    })
     .first()
     .click();
   await app.page.waitForTimeout(400);
@@ -124,7 +126,6 @@ test.describe("Pipeline Monitor layout", () => {
   });
 });
 
-
 test.describe("Layout template picker", () => {
   test("Observability and Pipeline Monitor appear in the layout picker for traders", async ({
     page,
@@ -135,10 +136,18 @@ test.describe("Layout template picker", () => {
     await page.getByTitle("Switch layout template").click();
 
     await expect(
-      page.locator("button").filter({ has: page.locator("span.font-medium", { hasText: /^[🔒\s]*Observability$/ }) }).first()
+      page
+        .locator("button")
+        .filter({ has: page.locator("span.font-medium", { hasText: /^[🔒\s]*Observability$/u }) })
+        .first()
     ).toBeVisible({ timeout: 5_000 });
     await expect(
-      page.locator("button").filter({ has: page.locator("span.font-medium", { hasText: /^[🔒\s]*Pipeline Monitor$/ }) }).first()
+      page
+        .locator("button")
+        .filter({
+          has: page.locator("span.font-medium", { hasText: /^[🔒\s]*Pipeline Monitor$/u }),
+        })
+        .first()
     ).toBeVisible({ timeout: 5_000 });
 
     await page.keyboard.press("Escape");
@@ -150,13 +159,13 @@ test.describe("Layout template picker", () => {
 
     await page.getByTitle("Switch layout template").click();
 
-    await expect(
-      page.getByText(/System health command centre/i, { exact: false })
-    ).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/System health command centre/i, { exact: false })).toBeVisible({
+      timeout: 5_000,
+    });
 
-    await expect(
-      page.getByText(/Real-time algo pipeline/i, { exact: false })
-    ).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/Real-time algo pipeline/i, { exact: false })).toBeVisible({
+      timeout: 5_000,
+    });
 
     await page.keyboard.press("Escape");
   });

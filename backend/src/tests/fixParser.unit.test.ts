@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@0.217";
-import { decode, encode, validateChecksum, utcTimestamp } from "../fix/fix-parser.ts";
+import { decode, encode, utcTimestamp, validateChecksum } from "../fix/fix-parser.ts";
 
 Deno.test("[fix-parser] encode/decode round trip", () => {
   const raw = encode([
@@ -20,8 +20,5 @@ Deno.test("[fix-parser] encode/decode round trip", () => {
 });
 
 Deno.test("[fix-parser] utcTimestamp uses FIX format", () => {
-  assertEquals(
-    utcTimestamp(new Date("2023-01-01T00:00:00.123Z")),
-    "20230101-00:00:00.123",
-  );
+  assertEquals(utcTimestamp(new Date("2023-01-01T00:00:00.123Z")), "20230101-00:00:00.123");
 });

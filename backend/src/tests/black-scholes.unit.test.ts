@@ -1,8 +1,4 @@
-import {
-  assert,
-  assertAlmostEquals,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
+import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 import { blackScholes, normCdf, normPdf } from "../analytics/black-scholes.ts";
 import type { OptionType } from "../analytics/types.ts";
 
@@ -18,7 +14,7 @@ function priceOption(
   strike = STRIKE,
   time = TIME,
   rate = RATE,
-  vol = VOL,
+  vol = VOL
 ) {
   return blackScholes(optionType, spot, strike, time, rate, vol);
 }
@@ -48,7 +44,7 @@ function assertDeltaPredicate(
   label: string,
   optionType: OptionType,
   spot: number,
-  predicate: (delta: number) => boolean,
+  predicate: (delta: number) => boolean
 ) {
   assert(predicate(priceOption(optionType, spot).greeks.delta), label);
 }

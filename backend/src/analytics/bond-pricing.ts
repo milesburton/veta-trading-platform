@@ -18,13 +18,7 @@ import type { BondPriceRequest, BondPriceResponse } from "./types.ts";
  * @param req.yieldAnnual     Current annual yield (continuous compounding), e.g. 0.045
  */
 export function priceBond(req: BondPriceRequest): BondPriceResponse {
-  const {
-    face = 1000,
-    couponRate,
-    periodsPerYear = 2,
-    totalPeriods,
-    yieldAnnual,
-  } = req;
+  const { face = 1000, couponRate, periodsPerYear = 2, totalPeriods, yieldAnnual } = req;
 
   const couponPerPeriod = (couponRate * face) / periodsPerYear;
   const y = yieldAnnual;

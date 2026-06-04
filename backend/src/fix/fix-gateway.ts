@@ -30,10 +30,14 @@ async function bridgeConnection(ws: WebSocket): Promise<void> {
     closed = true;
     try {
       ws.close();
-    } catch { /* already closed */ }
+    } catch {
+      /* already closed */
+    }
     try {
       tcpConn?.close();
-    } catch { /* already closed */ }
+    } catch {
+      /* already closed */
+    }
   }
 
   // Connect to FIX Exchange TCP
@@ -43,7 +47,10 @@ async function bridgeConnection(ws: WebSocket): Promise<void> {
       port: FIX_EXCHANGE_PORT,
     });
   } catch (err) {
-    logger.error(`[FIX Gateway] Cannot connect to exchange at ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}`, { detail: err });
+    logger.error(
+      `[FIX Gateway] Cannot connect to exchange at ${FIX_EXCHANGE_HOST}:${FIX_EXCHANGE_PORT}`,
+      { detail: err }
+    );
     ws.close(1011, "Exchange unavailable");
     return;
   }
@@ -54,9 +61,10 @@ async function bridgeConnection(ws: WebSocket): Promise<void> {
   ws.onmessage = async (event) => {
     if (closed || !tcpConn) return;
     try {
-      const data = typeof event.data === "string"
-        ? new TextEncoder().encode(event.data)
-        : new Uint8Array(event.data as ArrayBuffer);
+      const data =
+        typeof event.data === "string"
+          ? new TextEncoder().encode(event.data)
+          : new Uint8Array(event.data as ArrayBuffer);
       await tcpConn.write(data);
     } catch (err) {
       logger.error("[FIX Gateway] WS→TCP write error", { detail: err });
@@ -109,7 +117,7 @@ Deno.serve({ port: FIX_GATEWAY_PORT }, (req) => {
         version: VERSION,
         status: "ok",
       }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
     );
   }
 

@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-  assertNotEquals,
-} from "jsr:@std/assert@0.217";
+import { assertEquals, assertNotEquals } from "jsr:@std/assert@0.217";
 import {
   advanceRegime,
   generatePrice,
@@ -81,7 +78,7 @@ Deno.test("generatePrice per-tick move is much smaller than daily volatility", (
   assertEquals(
     maxMovePct < 0.005,
     true,
-    `max move ${(maxMovePct * 100).toFixed(4)}% exceeded 0.5%`,
+    `max move ${(maxMovePct * 100).toFixed(4)}% exceeded 0.5%`
   );
 });
 
@@ -89,33 +86,21 @@ Deno.test("prewarmPrices moves prices away from their initial values", () => {
   const before: Record<string, number> = { ...marketData };
   prewarmPrices(1_000);
   const movedCount = Object.keys(marketData).filter(
-    (sym) => Math.abs(marketData[sym] - before[sym]) / before[sym] > 0,
+    (sym) => Math.abs(marketData[sym] - before[sym]) / before[sym] > 0
   ).length;
   assertEquals(movedCount > 0, true);
 });
 
 Deno.test("prewarmPrices produces meaningful intraday spread after a full warm-up", () => {
   prewarmPrices(28_080);
-  const sample = [
-    "AAPL",
-    "MSFT",
-    "NVDA",
-    "TSLA",
-    "AMZN",
-    "META",
-    "GOOGL",
-    "AMD",
-    "JPM",
-    "NFLX",
-  ];
+  const sample = ["AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "META", "GOOGL", "AMD", "JPM", "NFLX"];
   for (const sym of sample) {
-    assertEquals(
-      marketData[sym] > 0,
-      true,
-      `${sym} should have positive price after warm-up`,
-    );
+    assertEquals(marketData[sym] > 0, true, `${sym} should have positive price after warm-up`);
   }
-  assertEquals(sample.every((sym) => marketData[sym] > 0), true);
+  assertEquals(
+    sample.every((sym) => marketData[sym] > 0),
+    true
+  );
 });
 
 Deno.test("snapshotOpenPrices captures current marketData into openPrices", () => {
@@ -134,9 +119,7 @@ Deno.test("openPrices remain stable after further price moves", () => {
   for (const sym of Object.keys(snapshot)) {
     assertEquals(openPrices[sym], snapshot[sym]);
   }
-  const changed =
-    Object.keys(snapshot).filter((sym) => marketData[sym] !== snapshot[sym])
-      .length;
+  const changed = Object.keys(snapshot).filter((sym) => marketData[sym] !== snapshot[sym]).length;
   assertNotEquals(changed, 0);
 });
 
@@ -144,21 +127,21 @@ Deno.test("resetPriceEngine with prewarmTicks=0 restores anchor prices without p
   seedRng(99);
   seedPrice("AAPL", 100);
   for (let i = 0; i < 50; i++) generatePrice("AAPL");
-  const beforeReset = marketData["AAPL"];
+  const beforeReset = marketData.AAPL;
 
   resetPriceEngine({ prewarmTicks: 0 });
 
-  assertNotEquals(marketData["AAPL"], beforeReset);
+  assertNotEquals(marketData.AAPL, beforeReset);
 });
 
 Deno.test("resetPriceEngine default prewarm moves prices further from anchor than prewarmTicks=0", () => {
   seedRng(42);
   resetPriceEngine({ prewarmTicks: 0 });
-  const anchorPrice = marketData["AAPL"];
+  const anchorPrice = marketData.AAPL;
 
   seedRng(42);
   resetPriceEngine();
-  const defaultPrewarmPrice = marketData["AAPL"];
+  const defaultPrewarmPrice = marketData.AAPL;
 
   assertNotEquals(defaultPrewarmPrice, anchorPrice);
   if (!Number.isFinite(defaultPrewarmPrice) || defaultPrewarmPrice <= 0) {
@@ -171,6 +154,6 @@ Deno.test("generatePrice price floor holds against extreme downward shocks", () 
   seedPrice("AAPL", 100);
   seedRng(7);
   for (let i = 0; i < 5000; i++) generatePrice("AAPL");
-  const p = marketData["AAPL"];
+  const p = marketData.AAPL;
   if (p <= 0) throw new Error(`floor breached: got ${p}`);
 });

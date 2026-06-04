@@ -1,24 +1,24 @@
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
+import type { AssetDef, AuthUser } from "../GatewayMock.ts";
 import {
-  GatewayMock,
-  DEFAULT_ADMIN,
-  DEFAULT_TRADER,
   ALGO_TRADER,
   ALGO_TRADER_LIMITS,
+  ANALYST_LIMITS,
+  DEFAULT_ADMIN,
+  DEFAULT_TRADER,
   EXTERNAL_CLIENT_LIMITS,
   EXTERNAL_CLIENT_USER,
   FI_TRADER,
   FI_TRADER_LIMITS,
+  GatewayMock,
   RESEARCH_ANALYST,
-  ANALYST_LIMITS,
   SALES_LIMITS,
   SALES_USER,
 } from "../GatewayMock.ts";
-import type { AuthUser, AssetDef } from "../GatewayMock.ts";
 import { MarketLadderPage } from "./MarketLadderPage.ts";
-import { OrderTicketPage } from "./OrderTicketPage.ts";
 import { OrderBlotterPage } from "./OrderBlotterPage.ts";
+import { OrderTicketPage } from "./OrderTicketPage.ts";
 
 export class AppPage {
   readonly page: Page;
@@ -28,16 +28,11 @@ export class AppPage {
     this.page = page;
   }
 
-  async goto(
-    opts: { user?: AuthUser; assets?: AssetDef[]; url?: string } = {},
-  ): Promise<this> {
+  async goto(opts: { user?: AuthUser; assets?: AssetDef[]; url?: string } = {}): Promise<this> {
     this.gateway = await GatewayMock.attach(this.page, opts);
     await this.page.addInitScript(() => {
       for (const key of Object.keys(localStorage)) {
-        if (
-          key.startsWith("dashboard-layout") ||
-          key.startsWith("veta-layout")
-        ) {
+        if (key.startsWith("dashboard-layout") || key.startsWith("veta-layout")) {
           localStorage.removeItem(key);
         }
       }
@@ -161,21 +156,17 @@ export class AppPage {
         return rows.some((row) => /\d+\.\d+/.test((row.textContent ?? "").trim()));
       },
       undefined,
-      { timeout: opts.timeoutMs ?? 5_000 },
+      { timeout: opts.timeoutMs ?? 5_000 }
     );
   }
 
   async waitForLoginPage() {
-    await expect(
-      this.page.getByRole("heading", { name: /^sign in$/i }),
-    ).toBeVisible({
+    await expect(this.page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({
       timeout: 8_000,
     });
   }
 
-  async panelByTitle(
-    tabTitle: string | RegExp,
-  ): Promise<ReturnType<Page["locator"]>> {
+  async panelByTitle(tabTitle: string | RegExp): Promise<ReturnType<Page["locator"]>> {
     const btn = this.page
       .locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: tabTitle })
       .first();
@@ -199,9 +190,7 @@ export class AppPage {
       const btnPath = await btn.getAttribute("data-layout-path");
       if (btnPath) {
         const contentPath = btnPath.replace(/tb(\d+)$/, "t$1");
-        return this.page.locator(
-          `.flexlayout__tab[data-layout-path="${contentPath}"]`,
-        );
+        return this.page.locator(`.flexlayout__tab[data-layout-path="${contentPath}"]`);
       }
     }
 
@@ -223,9 +212,7 @@ export class AppPage {
         const btnPath = await activatedBtn.getAttribute("data-layout-path");
         if (btnPath) {
           const contentPath = btnPath.replace(/tb(\d+)$/, "t$1");
-          return this.page.locator(
-            `.flexlayout__tab[data-layout-path="${contentPath}"]`,
-          );
+          return this.page.locator(`.flexlayout__tab[data-layout-path="${contentPath}"]`);
         }
       }
       await this.page.keyboard.press("Escape");
@@ -235,12 +222,9 @@ export class AppPage {
     await clickTab();
     await this.page.waitForTimeout(100);
     const btnPath = await btn.getAttribute("data-layout-path");
-    if (!btnPath)
-      throw new Error(`No tab button found with title matching ${tabTitle}`);
+    if (!btnPath) throw new Error(`No tab button found with title matching ${tabTitle}`);
     const contentPath = btnPath.replace(/tb(\d+)$/, "t$1");
-    return this.page.locator(
-      `.flexlayout__tab[data-layout-path="${contentPath}"]`,
-    );
+    return this.page.locator(`.flexlayout__tab[data-layout-path="${contentPath}"]`);
   }
 
   async getMarketLadder(): Promise<MarketLadderPage> {

@@ -15,7 +15,10 @@ traderTest("services dropdown layout does not overflow", async ({ page, app }) =
   await servicesBtn.click();
 
   // Wait for the dropdown panel to appear with the Service Health header
-  const dropdownPanel = page.locator(".z-20").filter({ hasText: /Service Health/ }).first();
+  const dropdownPanel = page
+    .locator(".z-20")
+    .filter({ hasText: /Service Health/ })
+    .first();
   await expect(dropdownPanel).toBeVisible();
 
   // Verify table headers are present using more specific selectors
@@ -51,11 +54,11 @@ traderTest("services dropdown layout does not overflow", async ({ page, app }) =
   const infoCellContainer = firstRow.locator("td").nth(3); // Info column
 
   // Version cell should have max-w-0 to enable text truncation
-  let versionClasses = await versionCell.getAttribute("class");
+  const versionClasses = await versionCell.getAttribute("class");
   expect(versionClasses).toContain("max-w-0");
 
   // Info cell should have max-w-0 to enable text truncation
-  let infoClasses = await infoCellContainer.getAttribute("class");
+  const infoClasses = await infoCellContainer.getAttribute("class");
   expect(infoClasses).toContain("max-w-0");
 
   // Verify truncate is applied on child span in version column (prevents overflow)

@@ -35,7 +35,7 @@ function maybeLogFailure(token: string, message: string): void {
 }
 
 export function makeValidateToken(
-  userServiceUrl: string,
+  userServiceUrl: string
 ): (token: string) => Promise<AuthResult | null> {
   return async function validateToken(token: string): Promise<AuthResult | null> {
     const now = Date.now();
@@ -61,13 +61,14 @@ export function makeValidateToken(
         });
         maybeLogFailure(
           token,
-          `validateToken: user-service returned ${res.status} for token ${
-            token.slice(0, 8)
-          }...: ${body}`,
+          `validateToken: user-service returned ${res.status} for token ${token.slice(
+            0,
+            8
+          )}...: ${body}`
         );
         return null;
       }
-      const result = await res.json() as AuthResult;
+      const result = (await res.json()) as AuthResult;
       authCache.set(token, {
         kind: "ok",
         result,
@@ -77,9 +78,7 @@ export function makeValidateToken(
     } catch (err) {
       maybeLogFailure(
         token,
-        `validateToken: fetch error for token ${token.slice(0, 8)}...: ${
-          (err as Error).message
-        }`,
+        `validateToken: fetch error for token ${token.slice(0, 8)}...: ${(err as Error).message}`
       );
       return null;
     }

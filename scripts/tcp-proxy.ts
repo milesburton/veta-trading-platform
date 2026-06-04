@@ -35,9 +35,13 @@ async function handleConn(inbound: Deno.TcpConn) {
   } finally {
     try {
       inbound.close();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     try {
       outbound?.close();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 }

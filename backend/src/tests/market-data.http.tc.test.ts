@@ -21,7 +21,7 @@ Deno.test({
       await t.step("GET /health returns ok with override count", async () => {
         const res = await fetch(`${M}/health`, { signal: T() });
         assertEquals(res.status, 200);
-        const body = await res.json() as {
+        const body = (await res.json()) as {
           status: string;
           overrides: number;
           alphaVantageConfigured: boolean;
@@ -34,7 +34,7 @@ Deno.test({
       await t.step("GET /sources returns non-empty array with id, label, enabled", async () => {
         const res = await fetch(`${M}/sources`, { signal: T() });
         assertEquals(res.status, 200);
-        const body = await res.json() as { id: string; label: string; enabled: boolean }[];
+        const body = (await res.json()) as { id: string; label: string; enabled: boolean }[];
         assert(Array.isArray(body) && body.length > 0);
         const synthetic = body.find((s) => s.id === "synthetic");
         assertExists(synthetic, "synthetic source must be present");
@@ -43,7 +43,7 @@ Deno.test({
       await t.step("GET /overrides returns overrides object", async () => {
         const res = await fetch(`${M}/overrides`, { signal: T() });
         assertEquals(res.status, 200);
-        const body = await res.json() as { overrides: Record<string, string> };
+        const body = (await res.json()) as { overrides: Record<string, string> };
         assertExists(body.overrides);
       });
 
@@ -59,7 +59,7 @@ Deno.test({
 
         const getRes = await fetch(`${M}/overrides`, { signal: T() });
         assertEquals(getRes.status, 200);
-        const body = await getRes.json() as { overrides: Record<string, string> };
+        const body = (await getRes.json()) as { overrides: Record<string, string> };
         assert(typeof body.overrides === "object");
       });
 
@@ -108,7 +108,7 @@ Deno.test({
       await t.step("GET /cache returns object", async () => {
         const res = await fetch(`${M}/cache`, { signal: T() });
         assertEquals(res.status, 200);
-        const body = await res.json() as unknown;
+        const body = (await res.json()) as unknown;
         assert(typeof body === "object" && body !== null);
       });
     } finally {

@@ -1,5 +1,5 @@
-import type { AssetDef } from "./sp500Assets.ts";
 import { BOND_UNIVERSE, type BondDef } from "./bondUniverse.ts";
+import type { AssetDef } from "./sp500Assets.ts";
 
 function bondPriceFromYield(bond: BondDef, yld: number): number {
   const c = (bond.couponRate * bond.faceValue) / bond.periodsPerYear;
@@ -8,8 +8,8 @@ function bondPriceFromYield(bond: BondDef, yld: number): number {
 
   if (r <= 0) return bond.faceValue + c * n;
 
-  const pv_coupons = c * (1 - Math.pow(1 + r, -n)) / r;
-  const pv_face = bond.faceValue * Math.pow(1 + r, -n);
+  const pv_coupons = (c * (1 - (1 + r) ** -n)) / r;
+  const pv_face = bond.faceValue * (1 + r) ** -n;
   return parseFloat((pv_coupons + pv_face).toFixed(4));
 }
 
@@ -18,7 +18,7 @@ function yieldVolatility(bond: BondDef): number {
   if (bond.issuer === "UST") {
     if (years <= 1) return 0.005;
     if (years <= 3) return 0.008;
-    if (years <= 7) return 0.010;
+    if (years <= 7) return 0.01;
     if (years <= 15) return 0.012;
     return 0.014;
   }

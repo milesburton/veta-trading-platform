@@ -31,7 +31,7 @@ vi.mock("../../store/servicesApi.ts", () => ({
   ],
   useGetServiceHealthQuery: (svc: { name: string; url: string }) => {
     const row = byService[svc.name];
-    if (!row || !row.ok) return { data: undefined, isError: true };
+    if (!row?.ok) return { data: undefined, isError: true };
     return {
       data: {
         name: svc.name,

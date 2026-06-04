@@ -30,8 +30,7 @@ export function normPdf(x: number): number {
 }
 
 function d1(S: number, K: number, r: number, sigma: number, T: number): number {
-  return (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) /
-    (sigma * Math.sqrt(T));
+  return (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
 }
 
 function d2(S: number, K: number, r: number, sigma: number, T: number): number {
@@ -59,13 +58,11 @@ export function blackScholes(
   K: number,
   T: number,
   r: number,
-  sigma: number,
+  sigma: number
 ): BSResult {
   // Edge cases
   if (T <= 0 || sigma <= 0 || S <= 0 || K <= 0) {
-    const intrinsic = optionType === "call"
-      ? Math.max(0, S - K)
-      : Math.max(0, K - S);
+    const intrinsic = optionType === "call" ? Math.max(0, S - K) : Math.max(0, K - S);
     return {
       price: intrinsic,
       greeks: {
@@ -93,20 +90,22 @@ export function blackScholes(
   if (optionType === "call") {
     price = S * Nd1 - K * discount * Nd2;
     delta = Nd1;
-    rho = K * T * discount * Nd2 / 100;
+    rho = (K * T * discount * Nd2) / 100;
   } else {
     price = K * discount * (1 - Nd2) - S * (1 - Nd1);
     delta = Nd1 - 1;
-    rho = -K * T * discount * (1 - Nd2) / 100;
+    rho = (-K * T * discount * (1 - Nd2)) / 100;
   }
 
   // Shared Greeks
   const gamma = nd1 / (S * sigma * sqrtT);
   // Theta: per-day (divide annualised by 365)
-  const theta = (-(S * nd1 * sigma) / (2 * sqrtT) -
-    r * K * discount * (optionType === "call" ? Nd2 : (1 - Nd2))) / 365;
+  const theta =
+    (-(S * nd1 * sigma) / (2 * sqrtT) -
+      r * K * discount * (optionType === "call" ? Nd2 : 1 - Nd2)) /
+    365;
   // Vega: per 1pp move in vol (divide annualised by 100)
-  const vega = S * sqrtT * nd1 / 100;
+  const vega = (S * sqrtT * nd1) / 100;
 
   return { price, greeks: { delta, gamma, theta, vega, rho } };
 }

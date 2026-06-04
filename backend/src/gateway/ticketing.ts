@@ -70,7 +70,7 @@ function buildBody(alert: TicketAlertPayload, userId: string, runId: string | nu
 async function findOpenDuplicate(
   repo: string,
   token: string,
-  title: string,
+  title: string
 ): Promise<GithubIssueSearchHit | null> {
   const q = `repo:${repo} is:issue is:open in:title "${title.replace(/"/g, "")}"`;
   const url = `${GH_API}/search/issues?q=${encodeURIComponent(q)}&per_page=5`;
@@ -84,7 +84,7 @@ async function findOpenDuplicate(
       signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok) return null;
-    const body = await res.json() as { items?: GithubIssueSearchHit[] };
+    const body = (await res.json()) as { items?: GithubIssueSearchHit[] };
     const items = body.items ?? [];
     const now = Date.now();
     for (const item of items) {
@@ -101,23 +101,20 @@ async function commentOnIssue(
   repo: string,
   token: string,
   issueNumber: number,
-  body: string,
+  body: string
 ): Promise<boolean> {
   try {
-    const res = await fetch(
-      `${GH_API}/repos/${repo}/issues/${issueNumber}/comments`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github+json",
-          "Content-Type": "application/json",
-          "User-Agent": "veta-gateway-ticketing",
-        },
-        body: JSON.stringify({ body }),
-        signal: AbortSignal.timeout(8_000),
+    const res = await fetch(`${GH_API}/repos/${repo}/issues/${issueNumber}/comments`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "User-Agent": "veta-gateway-ticketing",
       },
-    );
+      body: JSON.stringify({ body }),
+      signal: AbortSignal.timeout(8_000),
+    });
     return res.ok;
   } catch {
     return false;
@@ -129,7 +126,7 @@ async function createIssue(
   token: string,
   title: string,
   body: string,
-  labels: string[],
+  labels: string[]
 ): Promise<{ ok: boolean; number: number | null; url: string | null }> {
   try {
     const res = await fetch(`${GH_API}/repos/${repo}/issues`, {
@@ -144,7 +141,7 @@ async function createIssue(
       signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok) return { ok: false, number: null, url: null };
-    const json = await res.json() as { number: number; html_url: string };
+    const json = (await res.json()) as { number: number; html_url: string };
     return { ok: true, number: json.number, url: json.html_url };
   } catch {
     return { ok: false, number: null, url: null };
@@ -154,7 +151,7 @@ async function createIssue(
 export async function createTicketForAlert(
   alert: TicketAlertPayload,
   userId: string,
-  runId: string | null = null,
+  runId: string | null = null
 ): Promise<CreateIssueResult> {
   if (alert.severity !== "CRITICAL") {
     return { created: false, issueNumber: null, url: null, reason: "non-critical" };

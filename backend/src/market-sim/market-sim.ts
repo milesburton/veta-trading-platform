@@ -1,5 +1,12 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { logger } from "@veta/logger";
+import type { OrderBookLevel, OrderBookSnapshot } from "@veta/market-client";
+import { createProducer } from "@veta/messaging";
+import { intradayVolumeFactor } from "@veta/time-scale";
+import { BOND_ASSET_MAP, BOND_ASSETS } from "./bondAssets.ts";
+import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodityAssets.ts";
+import { FX_ASSET_MAP, FX_ASSETS } from "./fxAssets.ts";
 import {
   advanceRegime,
   generatePrice,
@@ -13,16 +20,6 @@ import {
 import { nextRandom } from "./rng.ts";
 import { handleSeedRoute } from "./seedRoute.ts";
 import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
-import { FX_ASSET_MAP, FX_ASSETS } from "./fxAssets.ts";
-import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodityAssets.ts";
-import { BOND_ASSET_MAP, BOND_ASSETS } from "./bondAssets.ts";
-import { intradayVolumeFactor } from "@veta/time-scale";
-import { createProducer } from "@veta/messaging";
-import { logger } from "@veta/logger";
-import type {
-  OrderBookLevel,
-  OrderBookSnapshot,
-} from "@veta/market-client";
 import { buildTickDiff, createTickDiffState, isEmptyDiff } from "./tickDiff.ts";
 
 const PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -43,36 +40,38 @@ async function refreshOverrides(): Promise<void> {
       signal: AbortSignal.timeout(5_000),
     });
     if (!res.ok) return;
-    const data = await res.json() as { overrides: Record<string, string> };
+    const data = (await res.json()) as { overrides: Record<string, string> };
     overriddenSymbols = new Set(Object.keys(data.overrides));
-  } catch { /* market-data-service unavailable */ }
+  } catch {
+    /* market-data-service unavailable */
+  }
 }
 
 async function fetchRealPrice(symbol: string): Promise<void> {
   try {
-    const res = await fetch(
-      `${MARKET_DATA_URL}/quote/${encodeURIComponent(symbol)}`,
-      {
-        signal: AbortSignal.timeout(5_000),
-      },
-    );
+    const res = await fetch(`${MARKET_DATA_URL}/quote/${encodeURIComponent(symbol)}`, {
+      signal: AbortSignal.timeout(5_000),
+    });
     if (!res.ok) return;
-    const data = await res.json() as { price: number };
+    const data = (await res.json()) as { price: number };
     if (data.price > 0) {
       realPriceCache.set(symbol, data.price);
-      logger.info(`Seeding ${symbol} with real price: $${
-          data.price.toFixed(4)
-        }`);
+      logger.info(`Seeding ${symbol} with real price: $${data.price.toFixed(4)}`);
     }
-  } catch { /* keep cached/GBM price */ }
+  } catch {
+    /* keep cached/GBM price */
+  }
 }
 
 setInterval(() => refreshOverrides().catch(() => {}), 30_000);
-setInterval(() => {
-  for (const sym of overriddenSymbols) {
-    fetchRealPrice(sym).catch(() => {});
-  }
-}, 5 * 60 * 1_000);
+setInterval(
+  () => {
+    for (const sym of overriddenSymbols) {
+      fetchRealPrice(sym).catch(() => {});
+    }
+  },
+  5 * 60 * 1_000
+);
 refreshOverrides().catch(() => {});
 
 let producer: Awaited<ReturnType<typeof createProducer>> | null = null;
@@ -80,16 +79,9 @@ createProducer("market-sim")
   .then((p) => {
     producer = p;
   })
-  .catch((err) =>
-    logger.warn("Redpanda unavailable — market.ticks not published", { err })
-  );
+  .catch((err) => logger.warn("Redpanda unavailable — market.ticks not published", { err }));
 
-const ALL_ASSETS = [
-  ...SP500_ASSETS,
-  ...FX_ASSETS,
-  ...COMMODITY_ASSETS,
-  ...BOND_ASSETS,
-];
+const ALL_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS, ...BOND_ASSETS];
 const ALL_ASSET_MAP = new Map([
   ...ASSET_MAP,
   ...FX_ASSET_MAP,
@@ -103,18 +95,19 @@ async function seedFromJournal(): Promise<void> {
   await Promise.allSettled(
     symbols.map(async (symbol) => {
       try {
-        const res = await fetch(
-          `${JOURNAL_URL}/candles?instrument=${symbol}&interval=1m&limit=1`,
-          { signal: AbortSignal.timeout(5_000) },
-        );
+        const res = await fetch(`${JOURNAL_URL}/candles?instrument=${symbol}&interval=1m&limit=1`, {
+          signal: AbortSignal.timeout(5_000),
+        });
         if (!res.ok) return;
-        const rows = await res.json() as { close: number }[];
+        const rows = (await res.json()) as { close: number }[];
         if (rows.length > 0 && rows[rows.length - 1].close > 0) {
           seedPrice(symbol, rows[rows.length - 1].close);
           seeded++;
         }
-      } catch { /* journal unavailable */ }
-    }),
+      } catch {
+        /* journal unavailable */
+      }
+    })
   );
   if (seeded > 0) {
     logger.info(`Seeded ${seeded}/${symbols.length} assets from journal candle history`);
@@ -155,13 +148,13 @@ function computeTickVolumes(minute: number): Record<string, number> {
 }
 
 const SOR_VENUES = [
-  { mic: "XNAS", spreadMult: 1.00, depthMult: 1.00 },
+  { mic: "XNAS", spreadMult: 1.0, depthMult: 1.0 },
   { mic: "ARCX", spreadMult: 1.08, depthMult: 0.85 },
-  { mic: "BATS", spreadMult: 0.95, depthMult: 0.90 },
+  { mic: "BATS", spreadMult: 0.95, depthMult: 0.9 },
   { mic: "EDGX", spreadMult: 0.98, depthMult: 0.75 },
   { mic: "IEX", spreadMult: 1.02, depthMult: 0.95 },
   { mic: "MEMX", spreadMult: 0.97, depthMult: 0.65 },
-  { mic: "XNYS", spreadMult: 1.05, depthMult: 1.20 },
+  { mic: "XNYS", spreadMult: 1.05, depthMult: 1.2 },
 ] as const;
 type SorVenueMIC = (typeof SOR_VENUES)[number]["mic"];
 
@@ -171,12 +164,9 @@ function buildBookForVenue(
   dailyVolume: number,
   spreadMult: number,
   depthMult: number,
-  now: number,
+  now: number
 ): OrderBookSnapshot {
-  const spreadBps = Math.max(
-    3,
-    Math.min(25, dailyVol * 700 * (0.85 + nextRandom() * 0.3)),
-  );
+  const spreadBps = Math.max(3, Math.min(25, dailyVol * 700 * (0.85 + nextRandom() * 0.3)));
   const halfSpread = mid * (spreadBps / 10_000) * spreadMult;
   const avgLotSize = Math.max(100, Math.round(dailyVolume / 5_000));
   const LEVELS = 10;
@@ -187,17 +177,11 @@ function buildBookForVenue(
     const decay = Math.max(0.05, 1 - i * 0.09);
     bids.push({
       price: parseFloat((mid - priceStep).toFixed(4)),
-      size: Math.max(
-        100,
-        Math.round(avgLotSize * depthMult * decay * (0.5 + nextRandom())),
-      ),
+      size: Math.max(100, Math.round(avgLotSize * depthMult * decay * (0.5 + nextRandom()))),
     });
     asks.push({
       price: parseFloat((mid + priceStep).toFixed(4)),
-      size: Math.max(
-        100,
-        Math.round(avgLotSize * depthMult * decay * (0.5 + nextRandom())),
-      ),
+      size: Math.max(100, Math.round(avgLotSize * depthMult * decay * (0.5 + nextRandom()))),
     });
   }
   return { bids, asks, mid, ts: now };
@@ -205,7 +189,7 @@ function buildBookForVenue(
 
 function computeOrderBook(
   prices: Record<string, number>,
-  _volumes: Record<string, number>,
+  _volumes: Record<string, number>
 ): Record<string, OrderBookSnapshot> {
   const book: Record<string, OrderBookSnapshot> = {};
   const now = Date.now();
@@ -217,14 +201,14 @@ function computeOrderBook(
       asset?.dailyVolume ?? 1_000_000,
       1.0,
       1.0,
-      now,
+      now
     );
   }
   return book;
 }
 
 function computeVenueBooks(
-  prices: Record<string, number>,
+  prices: Record<string, number>
 ): Record<SorVenueMIC, Record<string, OrderBookSnapshot>> {
   const result = {} as Record<SorVenueMIC, Record<string, OrderBookSnapshot>>;
   const now = Date.now();
@@ -238,7 +222,7 @@ function computeVenueBooks(
         asset?.dailyVolume ?? 1_000_000,
         venue.spreadMult,
         venue.depthMult,
-        now,
+        now
       );
     }
     result[venue.mic] = book;
@@ -277,7 +261,9 @@ setInterval(() => {
     const real = realPriceCache.get(sym);
     if (real) seedPrice(sym, real);
   }
-  Object.keys(marketData).forEach((asset) => generatePrice(asset));
+  for (const asset of Object.keys(marketData)) {
+    generatePrice(asset);
+  }
   const volumes = computeTickVolumes(marketMinute);
   const orderBook = computeOrderBook(marketData, volumes);
   const venueBooks = computeVenueBooks(marketData);
@@ -311,7 +297,7 @@ setInterval(() => {
       sessionPhase: tick.sessionPhase,
     },
     tickDiffState,
-    Date.now(),
+    Date.now()
   );
   tickDiffState = nextState;
   if (!isEmptyDiff(diff)) {
@@ -325,10 +311,9 @@ Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
 
   if (url.pathname === "/health" && req.method === "GET") {
-    return new Response(
-      JSON.stringify({ service: "market-sim", version: VERSION, status: "ok" }),
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-    );
+    return new Response(JSON.stringify({ service: "market-sim", version: VERSION, status: "ok" }), {
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
   }
 
   if (url.pathname === "/assets" && req.method === "GET") {

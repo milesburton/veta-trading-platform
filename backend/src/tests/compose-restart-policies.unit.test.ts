@@ -45,11 +45,7 @@ const SCENARIOS: Scenario[] = [
 // Services that are legitimately one-shot — init containers, migrations,
 // model downloads, etc. These run to completion and exit zero; auto-restart
 // would loop them forever, so `restart: no` is correct.
-const ONE_SHOT_SERVICES = new Set([
-  "db-migrate",
-  "redpanda-init",
-  "ollama-model-pull",
-]);
+const ONE_SHOT_SERVICES = new Set(["db-migrate", "redpanda-init", "ollama-model-pull"]);
 
 interface ComposeServiceConfig {
   restart?: string;
@@ -61,7 +57,7 @@ interface ComposeConfig {
 async function dockerComposeConfig(
   files: string[],
   profiles: string[] = [],
-  env: Record<string, string> = {},
+  env: Record<string, string> = {}
 ): Promise<ComposeConfig | null> {
   const args = ["compose"];
   for (const f of files) args.push("-f", `${REPO_ROOT}${f}`);
@@ -92,11 +88,7 @@ Deno.test("every long-running service has an auto-restart policy", async () => {
   let dockerAvailable = true;
   const offenders: string[] = [];
   for (const scenario of SCENARIOS) {
-    const config = await dockerComposeConfig(
-      scenario.files,
-      scenario.profiles ?? [],
-      scenario.env,
-    );
+    const config = await dockerComposeConfig(scenario.files, scenario.profiles ?? [], scenario.env);
     if (config === null) {
       dockerAvailable = false;
       break;
@@ -114,6 +106,6 @@ Deno.test("every long-running service has an auto-restart policy", async () => {
   }
   assert(
     offenders.length === 0,
-    `services without an auto-restart policy (set restart: unless-stopped):\n  ${offenders.join("\n  ")}\n\nIf a service is genuinely one-shot, add its name to ONE_SHOT_SERVICES in this test.`,
+    `services without an auto-restart policy (set restart: unless-stopped):\n  ${offenders.join("\n  ")}\n\nIf a service is genuinely one-shot, add its name to ONE_SHOT_SERVICES in this test.`
   );
 });

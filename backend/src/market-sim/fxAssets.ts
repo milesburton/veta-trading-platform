@@ -2,7 +2,10 @@ import type { AssetDef } from "./sp500Assets.ts";
 
 /** Simulated ISIN: FX + padded symbol + check digit 0. */
 function fxIsin(symbol: string): string {
-  const padded = symbol.replace(/[^A-Z0-9]/g, "").padEnd(9, "0").slice(0, 9);
+  const padded = symbol
+    .replace(/[^A-Z0-9]/g, "")
+    .padEnd(9, "0")
+    .slice(0, 9);
   return `FX${padded}0`;
 }
 
@@ -14,10 +17,14 @@ function fxIsin(symbol: string): string {
 // exchange = "XCME" (CME FX futures venue; spot FX is OTC but we use a single MIC).
 
 const FX_NAMES: Record<string, string> = {
-  "EUR/USD": "Euro / US Dollar", "GBP/USD": "British Pound / US Dollar",
-  "USD/JPY": "US Dollar / Japanese Yen", "AUD/USD": "Australian Dollar / US Dollar",
-  "USD/CAD": "US Dollar / Canadian Dollar", "USD/CHF": "US Dollar / Swiss Franc",
-  "NZD/USD": "New Zealand Dollar / US Dollar", "EUR/GBP": "Euro / British Pound",
+  "EUR/USD": "Euro / US Dollar",
+  "GBP/USD": "British Pound / US Dollar",
+  "USD/JPY": "US Dollar / Japanese Yen",
+  "AUD/USD": "Australian Dollar / US Dollar",
+  "USD/CAD": "US Dollar / Canadian Dollar",
+  "USD/CHF": "US Dollar / Swiss Franc",
+  "NZD/USD": "New Zealand Dollar / US Dollar",
+  "EUR/GBP": "Euro / British Pound",
   "EUR/JPY": "Euro / Japanese Yen",
 };
 
@@ -36,7 +43,7 @@ const _RAW_FX: Omit<
 >[] = [
   {
     symbol: "EUR/USD",
-    initialPrice: 1.0850,
+    initialPrice: 1.085,
     volatility: 0.0045,
     sector: "FX",
     dailyVolume: 800_000_000,
@@ -46,7 +53,7 @@ const _RAW_FX: Omit<
   },
   {
     symbol: "GBP/USD",
-    initialPrice: 1.2680,
+    initialPrice: 1.268,
     volatility: 0.0055,
     sector: "FX",
     dailyVolume: 400_000_000,
@@ -56,8 +63,8 @@ const _RAW_FX: Omit<
   },
   {
     symbol: "USD/JPY",
-    initialPrice: 145.50,
-    volatility: 0.0040,
+    initialPrice: 145.5,
+    volatility: 0.004,
     sector: "FX",
     dailyVolume: 600_000_000,
     exchange: "XCME",
@@ -66,8 +73,8 @@ const _RAW_FX: Omit<
   },
   {
     symbol: "AUD/USD",
-    initialPrice: 0.6520,
-    volatility: 0.0060,
+    initialPrice: 0.652,
+    volatility: 0.006,
     sector: "FX",
     dailyVolume: 200_000_000,
     exchange: "XCME",
@@ -76,7 +83,7 @@ const _RAW_FX: Omit<
   },
   {
     symbol: "USD/CAD",
-    initialPrice: 1.3680,
+    initialPrice: 1.368,
     volatility: 0.0042,
     sector: "FX",
     dailyVolume: 150_000_000,
@@ -86,7 +93,7 @@ const _RAW_FX: Omit<
   },
   {
     symbol: "NZD/USD",
-    initialPrice: 0.6050,
+    initialPrice: 0.605,
     volatility: 0.0065,
     sector: "FX",
     dailyVolume: 80_000_000,
@@ -96,7 +103,7 @@ const _RAW_FX: Omit<
   },
   {
     symbol: "EUR/GBP",
-    initialPrice: 0.8560,
+    initialPrice: 0.856,
     volatility: 0.0038,
     sector: "FX",
     dailyVolume: 100_000_000,
@@ -106,7 +113,7 @@ const _RAW_FX: Omit<
   },
   {
     symbol: "USD/CHF",
-    initialPrice: 0.8850,
+    initialPrice: 0.885,
     volatility: 0.0042,
     sector: "FX",
     dailyVolume: 120_000_000,
@@ -130,6 +137,4 @@ export const FX_ASSETS: AssetDef[] = _RAW_FX.map((raw) => ({
   name: FX_NAMES[raw.symbol] ?? raw.symbol,
 }));
 
-export const FX_ASSET_MAP = new Map<string, AssetDef>(
-  FX_ASSETS.map((a) => [a.symbol, a]),
-);
+export const FX_ASSET_MAP = new Map<string, AssetDef>(FX_ASSETS.map((a) => [a.symbol, a]));

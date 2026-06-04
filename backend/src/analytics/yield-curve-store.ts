@@ -4,39 +4,27 @@ import type { NelsonSiegelParams } from "./types.ts";
 export interface YieldCurveStore {
   insertSnapshot(params: NelsonSiegelParams, source: string): Promise<void>;
   getClosestSnapshot(
-    atMs: number,
-  ): Promise<
-    { params: NelsonSiegelParams; source: string; fetchedAt: number } | null
-  >;
+    atMs: number
+  ): Promise<{ params: NelsonSiegelParams; source: string; fetchedAt: number } | null>;
 }
 
 export function createYieldCurveStore(pool: Pool): YieldCurveStore {
   return {
-    async insertSnapshot(
-      params: NelsonSiegelParams,
-      source: string,
-    ): Promise<void> {
+    async insertSnapshot(params: NelsonSiegelParams, source: string): Promise<void> {
       const client = await pool.connect();
       try {
         await client.queryArray("BEGIN");
         await client.queryArray(
           `INSERT INTO intelligence.yield_curve_snapshots (beta0, beta1, beta2, lambda, source, fetched_at)
            VALUES ($1,$2,$3,$4,$5,$6)`,
-          [
-            params.beta0,
-            params.beta1,
-            params.beta2,
-            params.lambda,
-            source,
-            Date.now(),
-          ],
+          [params.beta0, params.beta1, params.beta2, params.lambda, source, Date.now()]
         );
         // Keep only 365 snapshots (one per day for a year)
         await client.queryArray(
           `DELETE FROM intelligence.yield_curve_snapshots
            WHERE id NOT IN (
              SELECT id FROM intelligence.yield_curve_snapshots ORDER BY fetched_at DESC LIMIT 365
-           )`,
+           )`
         );
         await client.queryArray("COMMIT");
       } catch (err) {
@@ -48,10 +36,8 @@ export function createYieldCurveStore(pool: Pool): YieldCurveStore {
     },
 
     async getClosestSnapshot(
-      atMs: number,
-    ): Promise<
-      { params: NelsonSiegelParams; source: string; fetchedAt: number } | null
-    > {
+      atMs: number
+    ): Promise<{ params: NelsonSiegelParams; source: string; fetchedAt: number } | null> {
       const client = await pool.connect();
       try {
         // Find the snapshot closest to (but not after) the requested timestamp,
@@ -68,7 +54,7 @@ export function createYieldCurveStore(pool: Pool): YieldCurveStore {
             FROM intelligence.yield_curve_snapshots
             ORDER BY fetched_at ASC LIMIT 1)
            LIMIT 1`,
-          [atMs],
+          [atMs]
         );
         if (rows.length === 0) return null;
         const [beta0, beta1, beta2, lambda, source, fetchedAt] = rows[0];

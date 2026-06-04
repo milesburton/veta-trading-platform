@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
-import { handleParseTicket } from "../llm-advisory/parse-ticket-handler.ts";
 import type { ILlmProvider, LlmProviderResponse } from "@veta/types/llm-advisory";
+import { handleParseTicket } from "../llm-advisory/parse-ticket-handler.ts";
 
 interface FakeProviderOpts {
   available?: boolean;
@@ -145,7 +145,7 @@ Deno.test("handleParseTicket — returns 422 when symbol not in allowed list", a
             rawResponse: "",
           }),
       }),
-    },
+    }
   );
   assertEquals(res.status, 422);
   const body = await res.json();
@@ -166,30 +166,27 @@ Deno.test("handleParseTicket — passes through symbol when in allowed list", as
             rawResponse: "",
           }),
       }),
-    },
+    }
   );
   assertEquals(res.status, 200);
 });
 
 Deno.test("handleParseTicket — sanitises control chars from input before prompt", async () => {
   let receivedPrompt = "";
-  const res = await handleParseTicket(
-    jsonRequest({ input: "buy 500 aapl\n\rmalicious" }),
-    {
-      provider: makeProvider({
-        generate: (prompt) => {
-          receivedPrompt = prompt;
-          return Promise.resolve({
-            text: '{"side":"BUY","symbol":"AAPL"}',
-            promptTokens: 0,
-            completionTokens: 0,
-            latencyMs: 1,
-            rawResponse: "",
-          });
-        },
-      }),
-    },
-  );
+  const res = await handleParseTicket(jsonRequest({ input: "buy 500 aapl\n\rmalicious" }), {
+    provider: makeProvider({
+      generate: (prompt) => {
+        receivedPrompt = prompt;
+        return Promise.resolve({
+          text: '{"side":"BUY","symbol":"AAPL"}',
+          promptTokens: 0,
+          completionTokens: 0,
+          latencyMs: 1,
+          rawResponse: "",
+        });
+      },
+    }),
+  });
   assertEquals(res.status, 200);
   assert(!receivedPrompt.includes("\n\r"), "control chars must be stripped from prompt");
 });

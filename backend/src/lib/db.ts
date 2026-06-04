@@ -3,9 +3,7 @@ import { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 function resolveUrl(serviceKey: string): string {
   const url = Deno.env.get(`${serviceKey}_DATABASE_URL`) ?? Deno.env.get("DATABASE_URL");
   if (!url) {
-    throw new Error(
-      `DATABASE_URL is required (set ${serviceKey}_DATABASE_URL or DATABASE_URL)`,
-    );
+    throw new Error(`DATABASE_URL is required (set ${serviceKey}_DATABASE_URL or DATABASE_URL)`);
   }
   return url;
 }

@@ -12,13 +12,13 @@
  */
 
 import * as http from "http";
-import { WebSocketServer, type WebSocket } from "ws";
+import { type WebSocket, WebSocketServer } from "ws";
+import type { AssetDef, AuthUser, TradingLimits } from "../../tests/helpers/authFixtures.ts";
 import {
   DEFAULT_ASSETS,
   DEFAULT_LIMITS,
   DEFAULT_TRADER,
 } from "../../tests/helpers/authFixtures.ts";
-import type { AssetDef, AuthUser, TradingLimits } from "../../tests/helpers/authFixtures.ts";
 
 // ── ElectronMockServer ────────────────────────────────────────────────────────
 
@@ -65,10 +65,12 @@ export class ElectronMockServer {
           ws.on("close", () => mock._clients.delete(ws));
           ws.on("message", (raw) => mock._handleWsMessage(ws, raw.toString()));
           // Send authIdentity immediately on connect
-          ws.send(JSON.stringify({
-            event: "authIdentity",
-            data: { user, limits },
-          }));
+          ws.send(
+            JSON.stringify({
+              event: "authIdentity",
+              data: { user, limits },
+            })
+          );
         });
       } else {
         socket.destroy();
@@ -108,10 +110,19 @@ export class ElectronMockServer {
         ready: true,
         startedAt: this._startedAt,
         services: {
-          bus: true, marketSim: true, userService: true, journal: true,
-          ems: true, oms: true, analytics: true, marketData: true,
-          featureEngine: true, signalEngine: true, recommendationEngine: true,
-          scenarioEngine: true, llmAdvisory: true,
+          bus: true,
+          marketSim: true,
+          userService: true,
+          journal: true,
+          ems: true,
+          oms: true,
+          analytics: true,
+          marketData: true,
+          featureEngine: true,
+          signalEngine: true,
+          recommendationEngine: true,
+          scenarioEngine: true,
+          llmAdvisory: true,
         },
       });
       return;
@@ -143,12 +154,18 @@ export class ElectronMockServer {
 
     // /api/user-service/sessions/me (GET) and DELETE are valid
     // POST /sessions is deprecated and returns 410 in backend
-    if (url.includes("/sessions/me") || (url.includes("/sessions") && route.request().method() === "DELETE")) {
+    if (
+      url.includes("/sessions/me") ||
+      (url.includes("/sessions") && route.request().method() === "DELETE")
+    ) {
       json(this._user);
       return;
     }
     if (url.includes("/sessions") && route.request().method() === "POST") {
-      json({ error: "legacy /sessions login is disabled; use OAuth2 /oauth/authorize + /oauth/token" }, 410);
+      json(
+        { error: "legacy /sessions login is disabled; use OAuth2 /oauth/authorize + /oauth/token" },
+        410
+      );
       return;
     }
 

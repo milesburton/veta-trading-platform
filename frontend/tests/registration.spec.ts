@@ -26,7 +26,11 @@ function routeBoot(page: import("@playwright/test").Page) {
       route.fulfill({ status: 200, contentType: "application/json", body: "null" })
     ),
     page.route("**/health", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "ok", version: "mock" }) })
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ status: "ok", version: "mock" }),
+      })
     ),
     page.route("/api/gateway/ready", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: READY_BODY })
@@ -42,7 +46,9 @@ test.describe("Registration", () => {
     await routeBoot(page);
 
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({
+      timeout: 10_000,
+    });
 
     const select = page.getByTestId("register-archetype");
     await expect(select).toBeVisible();
@@ -61,7 +67,11 @@ test.describe("Registration", () => {
       route.fulfill({ status: 200, contentType: "application/json", body: "null" })
     );
     await page.route("**/health", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "ok", version: "mock" }) })
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ status: "ok", version: "mock" }),
+      })
     );
     await page.route("/api/gateway/ready", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: READY_BODY })
@@ -72,14 +82,24 @@ test.describe("Registration", () => {
       await route.fulfill({
         status: 201,
         contentType: "application/json",
-        body: JSON.stringify({ userId: "newtrader", name: "New Trader", role: "trader", archetype: payload?.archetype }),
+        body: JSON.stringify({
+          userId: "newtrader",
+          name: "New Trader",
+          role: "trader",
+          archetype: payload?.archetype,
+        }),
       });
     });
     await page.route("**/oauth/authorize", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ code: "test-code", redirect_uri: "postmessage", expires_in: 60, scope: "trading" }),
+        body: JSON.stringify({
+          code: "test-code",
+          redirect_uri: "postmessage",
+          expires_in: 60,
+          scope: "trading",
+        }),
       })
     );
     await page.route("**/oauth/token", (route) => {
@@ -102,14 +122,21 @@ test.describe("Registration", () => {
         return route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ id: "newtrader", name: "New Trader", role: "trader", avatar_emoji: "NT" }),
+          body: JSON.stringify({
+            id: "newtrader",
+            name: "New Trader",
+            role: "trader",
+            avatar_emoji: "NT",
+          }),
         });
       }
       return route.fulfill({ status: 401, body: "" });
     });
 
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({
+      timeout: 10_000,
+    });
 
     await page.getByTestId("register-username").fill("newtrader");
     await page.getByTestId("register-display-name").fill("New Trader");
@@ -117,7 +144,9 @@ test.describe("Registration", () => {
     await page.getByTestId("register-archetype").selectOption("derivatives-high-touch");
     await page.getByTestId("register-submit").click();
 
-    await expect(page.getByRole("heading", { name: /^sign in$/i })).not.toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /^sign in$/i })).not.toBeVisible({
+      timeout: 10_000,
+    });
     expect(registeredArchetype).toBe("derivatives-high-touch");
   });
 });

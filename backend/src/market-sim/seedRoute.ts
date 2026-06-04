@@ -1,6 +1,6 @@
 import { CORS_HEADERS } from "@veta/http";
-import { currentSeed, seedRng } from "./rng.ts";
 import { resetPriceEngine } from "./priceEngine.ts";
+import { currentSeed, seedRng } from "./rng.ts";
 
 const json = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), {
@@ -14,7 +14,7 @@ export interface SeedRouteOptions {
 
 export async function handleSeedRoute(
   req: Request,
-  opts: SeedRouteOptions = {},
+  opts: SeedRouteOptions = {}
 ): Promise<Response> {
   if (req.method === "GET") {
     return json(200, { seed: currentSeed() });

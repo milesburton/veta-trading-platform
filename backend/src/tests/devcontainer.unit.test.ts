@@ -18,13 +18,15 @@ async function loadDevcontainer(): Promise<DevcontainerConfig> {
 
 Deno.test("[devcontainer] devcontainer.json parses as valid JSONC", async () => {
   const cfg = await loadDevcontainer();
-  assert(cfg.workspaceFolder, "workspaceFolder must be set");
+  if (!cfg.workspaceFolder) {
+    throw new Error("workspaceFolder must be set");
+  }
 });
 
 Deno.test("[devcontainer] post-start.sh has no hardcoded workspace path that diverges from workspaceFolder", async () => {
   const cfg = await loadDevcontainer();
   const script = await Deno.readTextFile(POST_START_SH);
-  const workspace = cfg.workspaceFolder!;
+  const workspace = cfg.workspaceFolder;
 
   const match = script.match(/^workspace_dir=["']?([^"'$\n]+)["']?/m);
   if (match) {
@@ -33,16 +35,17 @@ Deno.test("[devcontainer] post-start.sh has no hardcoded workspace path that div
       literalPath,
       workspace,
       `post-start.sh hardcodes workspace_dir="${literalPath}" but devcontainer.json sets workspaceFolder="${workspace}". ` +
-        `If you must hardcode, use the same path; better, read CONTAINER_WORKSPACE_FOLDER from the environment.`,
+        `If you must hardcode, use the same path; better, read CONTAINER_WORKSPACE_FOLDER from the environment.`
     );
   }
 
   const badPaths = ["/workspaces/project", "/workspace", "/code"];
   for (const bad of badPaths) {
     assert(
-      !script.includes(`workspace_dir="${bad}"`) && !script.includes(`cd "${bad}"`) &&
+      !script.includes(`workspace_dir="${bad}"`) &&
+        !script.includes(`cd "${bad}"`) &&
         !script.includes(`cd ${bad}`),
-      `post-start.sh references "${bad}" which is a template path that does not exist in this repo`,
+      `post-start.sh references "${bad}" which is a template path that does not exist in this repo`
     );
   }
 });
@@ -53,7 +56,7 @@ Deno.test("[devcontainer] post-start.sh is syntactically valid bash", async () =
   assertEquals(
     code,
     0,
-    `bash -n reported syntax errors in post-start.sh:\n${new TextDecoder().decode(stderr)}`,
+    `bash -n reported syntax errors in post-start.sh:\n${new TextDecoder().decode(stderr)}`
   );
 });
 
@@ -62,9 +65,8 @@ Deno.test("[devcontainer] postStartCommand passes CONTAINER_WORKSPACE_FOLDER so 
   const cmd = cfg.postStartCommand ?? "";
   assertStringIncludes(
     cmd,
-    "CONTAINER_WORKSPACE_FOLDER=${containerWorkspaceFolder}",
-    "postStartCommand should pass CONTAINER_WORKSPACE_FOLDER=${containerWorkspaceFolder} into the script — " +
-      "this is how post-start.sh learns the real workspace path without hardcoding it.",
+    `CONTAINER_WORKSPACE_FOLDER=\${containerWorkspaceFolder}`,
+    `postStartCommand should pass CONTAINER_WORKSPACE_FOLDER=\${containerWorkspaceFolder} into the script — this is how post-start.sh learns the real workspace path without hardcoding it.`
   );
 });
 
@@ -74,7 +76,7 @@ Deno.test("[devcontainer] postCreateCommand does not use husky's deprecated 'ins
   assert(
     !/husky\s+install\b/.test(cmd),
     `postCreateCommand uses 'husky install ...' — this is deprecated in husky v9 and removed in v10. ` +
-      `Use plain './frontend/node_modules/.bin/husky' (auto-detects .husky/).`,
+      `Use plain './frontend/node_modules/.bin/husky' (auto-detects .husky/).`
   );
 });
 
@@ -82,7 +84,11 @@ Deno.test("[devcontainer] postCreateCommand and postStartCommand reference paths
   const cfg = await loadDevcontainer();
   const checks = [
     { hook: "postCreateCommand", cmd: cfg.postCreateCommand ?? "", paths: ["frontend", ".husky"] },
-    { hook: "postStartCommand", cmd: cfg.postStartCommand ?? "", paths: [".devcontainer/post-start.sh"] },
+    {
+      hook: "postStartCommand",
+      cmd: cfg.postStartCommand ?? "",
+      paths: [".devcontainer/post-start.sh"],
+    },
   ];
   for (const { hook, cmd, paths } of checks) {
     for (const p of paths) {

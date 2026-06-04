@@ -1,13 +1,7 @@
 import { type GatewayContext, isResponse } from "../context.ts";
 
 const LLM_ADVISORY_PATH = "/api/gateway/llm-advisory";
-const ALLOWED_ROLES = new Set([
-  "trader",
-  "desk-head",
-  "risk-manager",
-  "compliance",
-  "admin",
-]);
+const ALLOWED_ROLES = new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]);
 
 const jsonResponse = (body: unknown, status: number): Response =>
   new Response(JSON.stringify(body), {
@@ -18,7 +12,7 @@ const jsonResponse = (body: unknown, status: number): Response =>
 const forwardHeaders = (req: Request): Record<string, string> => {
   const headers: Record<string, string> = {};
   const cookie = req.headers.get("cookie");
-  if (cookie) headers["cookie"] = cookie;
+  if (cookie) headers.cookie = cookie;
   const contentType = req.headers.get("content-type");
   if (contentType) headers["content-type"] = contentType;
   return headers;
@@ -43,10 +37,7 @@ const relayResponse = (res: Response, body: ArrayBuffer): Response => {
   return new Response(body, { status: res.status, headers });
 };
 
-const proxyToLlmAdvisory = async (
-  targetUrl: string,
-  req: Request,
-): Promise<Response> => {
+const proxyToLlmAdvisory = async (targetUrl: string, req: Request): Promise<Response> => {
   try {
     const res = await fetch(targetUrl, await buildFetchInit(req));
     return relayResponse(res, await res.arrayBuffer());
@@ -58,7 +49,7 @@ const proxyToLlmAdvisory = async (
 export async function handleLlmAdvisoryRoute(
   req: Request,
   path: string,
-  ctx: GatewayContext,
+  ctx: GatewayContext
 ): Promise<Response | null> {
   if (path !== LLM_ADVISORY_PATH) return null;
 

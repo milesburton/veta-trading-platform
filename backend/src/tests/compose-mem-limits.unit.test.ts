@@ -39,7 +39,11 @@ const SCENARIOS: Scenario[] = [
     files: ["compose.yml", "compose.loadtest.yml"],
     env: PLACEHOLDERS,
   },
-  { name: "observability stack", files: ["observability/docker-compose.lgtm.yml"], env: PLACEHOLDERS },
+  {
+    name: "observability stack",
+    files: ["observability/docker-compose.lgtm.yml"],
+    env: PLACEHOLDERS,
+  },
 ];
 
 interface ComposeServiceConfig {
@@ -53,7 +57,7 @@ interface ComposeConfig {
 async function dockerComposeConfig(
   files: string[],
   profiles: string[] = [],
-  env: Record<string, string> = {},
+  env: Record<string, string> = {}
 ): Promise<ComposeConfig | null> {
   const args = ["compose"];
   for (const f of files) args.push("-f", `${REPO_ROOT}${f}`);
@@ -95,11 +99,7 @@ Deno.test("every service in every compose scenario declares a memory limit", asy
   let dockerAvailable = true;
   const offenders: string[] = [];
   for (const scenario of SCENARIOS) {
-    const config = await dockerComposeConfig(
-      scenario.files,
-      scenario.profiles ?? [],
-      scenario.env,
-    );
+    const config = await dockerComposeConfig(scenario.files, scenario.profiles ?? [], scenario.env);
     if (config === null) {
       dockerAvailable = false;
       break;
@@ -114,6 +114,6 @@ Deno.test("every service in every compose scenario declares a memory limit", asy
   }
   assert(
     offenders.length === 0,
-    `services without mem_limit (set one to prevent host OOM):\n  ${offenders.join("\n  ")}`,
+    `services without mem_limit (set one to prevent host OOM):\n  ${offenders.join("\n  ")}`
   );
 });

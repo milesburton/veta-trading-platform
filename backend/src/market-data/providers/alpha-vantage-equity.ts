@@ -2,8 +2,8 @@
  * Alpha Vantage equity provider — GLOBAL_QUOTE for non-FX symbols.
  */
 
-import type { CachedQuote, ProviderDef } from "./types.ts";
 import { logger } from "@veta/logger";
+import type { CachedQuote, ProviderDef } from "./types.ts";
 
 const ALPHA_VANTAGE_KEY = Deno.env.get("ALPHA_VANTAGE_KEY") ?? "";
 const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
@@ -13,12 +13,12 @@ async function fetchGlobalQuote(symbol: string): Promise<CachedQuote | null> {
   if (!ALPHA_VANTAGE_KEY) return null;
   try {
     logger.debug("polling GLOBAL_QUOTE", { ...PROV, symbol });
-    const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${
-      encodeURIComponent(symbol)
-    }&apikey=${ALPHA_VANTAGE_KEY}`;
+    const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(
+      symbol
+    )}&apikey=${ALPHA_VANTAGE_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json() as Record<string, Record<string, string>>;
+    const data = (await res.json()) as Record<string, Record<string, string>>;
     const q = data["Global Quote"];
     if (!q || !q["05. price"]) {
       logger.warn("no quote data (rate limit or invalid symbol?)", {
@@ -45,22 +45,17 @@ async function fetchGlobalQuote(symbol: string): Promise<CachedQuote | null> {
   }
 }
 
-async function seedIntradayHistory(
-  symbol: string,
-  journalUrl: string,
-): Promise<void> {
+async function seedIntradayHistory(symbol: string, journalUrl: string): Promise<void> {
   if (!ALPHA_VANTAGE_KEY) return;
   try {
     logger.info("fetching intraday history", { ...PROV, symbol });
-    const url = `${ALPHA_VANTAGE_BASE}?function=TIME_SERIES_INTRADAY&symbol=${
-      encodeURIComponent(symbol)
-    }&interval=1min&outputsize=compact&apikey=${ALPHA_VANTAGE_KEY}`;
+    const url = `${ALPHA_VANTAGE_BASE}?function=TIME_SERIES_INTRADAY&symbol=${encodeURIComponent(
+      symbol
+    )}&interval=1min&outputsize=compact&apikey=${ALPHA_VANTAGE_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json() as Record<string, unknown>;
-    const series = data["Time Series (1min)"] as
-      | Record<string, Record<string, string>>
-      | undefined;
+    const data = (await res.json()) as Record<string, unknown>;
+    const series = data["Time Series (1min)"] as Record<string, Record<string, string>> | undefined;
     if (!series) {
       logger.warn("no intraday data", { ...PROV, symbol });
       return;
@@ -116,10 +111,7 @@ export const alphaVantageEquityProvider: ProviderDef = {
   supportsSymbol(symbol: string): boolean {
     return !symbol.includes("/");
   },
-  async fetchQuote(
-    symbol: string,
-    _journalUrl: string,
-  ): Promise<CachedQuote | null> {
+  async fetchQuote(symbol: string, _journalUrl: string): Promise<CachedQuote | null> {
     return await fetchGlobalQuote(symbol);
   },
   async seedHistory(symbol: string, journalUrl: string): Promise<void> {

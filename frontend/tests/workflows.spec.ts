@@ -14,7 +14,12 @@ traderTest.describe("Equity high-touch workflow", () => {
       await ladder.selectSymbol("AAPL");
 
       const ticket = await app.getOrderTicket();
-      await ticket.fillOrder({ strategy: "LIMIT", side: "BUY", quantity: 500, limitPrice: AAPL_PRICE });
+      await ticket.fillOrder({
+        strategy: "LIMIT",
+        side: "BUY",
+        quantity: 500,
+        limitPrice: AAPL_PRICE,
+      });
 
       const outbound = gateway.nextOutbound("submitOrder");
       await ticket.submit();
@@ -27,10 +32,20 @@ traderTest.describe("Equity high-touch workflow", () => {
       await blotter.expectHasOrders();
       await blotter.expectAssetVisible("AAPL");
 
-      gateway.sendOrderLifecycle(id, { asset: "AAPL", quantity: 500, limitPrice: AAPL_PRICE, stages: ["submitted", "routed"] });
+      gateway.sendOrderLifecycle(id, {
+        asset: "AAPL",
+        quantity: 500,
+        limitPrice: AAPL_PRICE,
+        stages: ["submitted", "routed"],
+      });
       await blotter.waitForStatus("executing");
 
-      gateway.sendOrderLifecycle(id, { asset: "AAPL", quantity: 500, limitPrice: AAPL_PRICE, stages: ["filled"] });
+      gateway.sendOrderLifecycle(id, {
+        asset: "AAPL",
+        quantity: 500,
+        limitPrice: AAPL_PRICE,
+        stages: ["filled"],
+      });
       await blotter.waitForStatus("filled");
     }
   );
@@ -44,7 +59,9 @@ traderTest.describe("Equity high-touch workflow", () => {
     const id = msg.payload.clientOrderId as string;
 
     gateway.sendOrderLifecycle(id, {
-      asset: "AAPL", quantity: 200, limitPrice: AAPL_PRICE,
+      asset: "AAPL",
+      quantity: 200,
+      limitPrice: AAPL_PRICE,
       stages: ["submitted", "routed", "filled"],
     });
     await blotter.waitForStatus("filled");
@@ -53,7 +70,12 @@ traderTest.describe("Equity high-touch workflow", () => {
 
 algoTest.describe("Algo strategy workflow", () => {
   algoTest("place TWAP → full lifecycle", async ({ ticket, blotter, gateway }) => {
-    await ticket.fillOrder({ strategy: "TWAP", side: "BUY", quantity: 5000, limitPrice: AAPL_PRICE });
+    await ticket.fillOrder({
+      strategy: "TWAP",
+      side: "BUY",
+      quantity: 5000,
+      limitPrice: AAPL_PRICE,
+    });
 
     const outbound = gateway.nextOutbound("submitOrder");
     await ticket.submit();
@@ -63,15 +85,30 @@ algoTest.describe("Algo strategy workflow", () => {
     expect(msg.payload.strategy).toBe("TWAP");
     await blotter.expectHasOrders();
 
-    gateway.sendOrderLifecycle(id, { asset: "AAPL", quantity: 5000, limitPrice: AAPL_PRICE, stages: ["submitted", "routed"] });
+    gateway.sendOrderLifecycle(id, {
+      asset: "AAPL",
+      quantity: 5000,
+      limitPrice: AAPL_PRICE,
+      stages: ["submitted", "routed"],
+    });
     await blotter.waitForStatus("executing");
 
-    gateway.sendOrderLifecycle(id, { asset: "AAPL", quantity: 5000, limitPrice: AAPL_PRICE, stages: ["filled"] });
+    gateway.sendOrderLifecycle(id, {
+      asset: "AAPL",
+      quantity: 5000,
+      limitPrice: AAPL_PRICE,
+      stages: ["filled"],
+    });
     await blotter.waitForStatus("filled");
   });
 
   algoTest("place ICEBERG → verify strategy", async ({ ticket, gateway }) => {
-    await ticket.fillOrder({ strategy: "ICEBERG", side: "BUY", quantity: 5000, limitPrice: AAPL_PRICE });
+    await ticket.fillOrder({
+      strategy: "ICEBERG",
+      side: "BUY",
+      quantity: 5000,
+      limitPrice: AAPL_PRICE,
+    });
 
     const outbound = gateway.nextOutbound("submitOrder");
     await ticket.submit();
@@ -100,7 +137,12 @@ traderTest.describe("Risk limit enforcement", () => {
     const msg = await outbound;
     const id = msg.payload.clientOrderId as string;
 
-    gateway.sendOrderLifecycle(id, { asset: "AAPL", quantity: 100, limitPrice: AAPL_PRICE, stages: ["rejected"] });
+    gateway.sendOrderLifecycle(id, {
+      asset: "AAPL",
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+      stages: ["rejected"],
+    });
     await blotter.waitForStatus("rejected");
   });
 });
@@ -136,7 +178,9 @@ traderTest.describe("Order expiry", () => {
     const id = msg.payload.clientOrderId as string;
 
     gateway.sendOrderLifecycle(id, {
-      asset: "AAPL", quantity: 100, limitPrice: AAPL_PRICE,
+      asset: "AAPL",
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
       stages: ["submitted", "routed", "expired"],
     });
     await blotter.waitForStatus("expired");

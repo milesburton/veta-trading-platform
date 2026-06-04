@@ -1,12 +1,12 @@
 import { scenariosPool } from "@veta/db";
 import type {
+  RunStatus,
   Scenario,
   ScenarioActual,
   ScenarioDiff,
   ScenarioExpected,
   ScenarioRun,
   ScenarioSpec,
-  RunStatus,
 } from "./types.ts";
 
 interface ScenarioRow {
@@ -91,7 +91,7 @@ export async function createScenario(input: CreateScenarioInput): Promise<Scenar
         input.description ?? null,
         JSON.stringify(input.spec),
         input.expected ? JSON.stringify(input.expected) : null,
-      ],
+      ]
     );
     return rowToScenario(res.rows[0]);
   } finally {
@@ -107,7 +107,7 @@ export async function listScenarios(userId: string): Promise<Scenario[]> {
          FROM scenarios.scenarios
         WHERE user_id = $1
         ORDER BY updated_at DESC`,
-      [userId],
+      [userId]
     );
     return res.rows.map(rowToScenario);
   } finally {
@@ -122,7 +122,7 @@ export async function getScenario(userId: string, id: string): Promise<Scenario 
       `SELECT id, user_id, name, description, spec, expected, created_at, updated_at
          FROM scenarios.scenarios
         WHERE user_id = $1 AND id = $2`,
-      [userId, id],
+      [userId, id]
     );
     return res.rows.length === 0 ? null : rowToScenario(res.rows[0]);
   } finally {
@@ -133,7 +133,7 @@ export async function getScenario(userId: string, id: string): Promise<Scenario 
 export async function updateScenario(
   userId: string,
   id: string,
-  input: UpdateScenarioInput,
+  input: UpdateScenarioInput
 ): Promise<Scenario | null> {
   const sets: string[] = ["updated_at = now()"];
   const params: unknown[] = [userId, id];
@@ -163,7 +163,7 @@ export async function updateScenario(
           SET ${sets.join(", ")}
         WHERE user_id = $1 AND id = $2
         RETURNING id, user_id, name, description, spec, expected, created_at, updated_at`,
-      params,
+      params
     );
     return res.rows.length === 0 ? null : rowToScenario(res.rows[0]);
   } finally {
@@ -176,7 +176,7 @@ export async function deleteScenario(userId: string, id: string): Promise<boolea
   try {
     const res = await client.queryArray(
       `DELETE FROM scenarios.scenarios WHERE user_id = $1 AND id = $2`,
-      [userId, id],
+      [userId, id]
     );
     return (res.rowCount ?? 0) > 0;
   } finally {
@@ -192,7 +192,7 @@ export async function createRun(scenarioId: string, userId: string): Promise<Sce
       `INSERT INTO scenarios.runs (id, scenario_id, user_id, status)
        VALUES ($1, $2, $3, 'pending')
        RETURNING id, scenario_id, user_id, triggered_at, completed_at, parent_order_id, actual, diff, status, error`,
-      [id, scenarioId, userId],
+      [id, scenarioId, userId]
     );
     return rowToRun(res.rows[0]);
   } finally {
@@ -210,7 +210,7 @@ export interface CompleteRunInput {
 
 export async function completeRun(
   runId: string,
-  input: CompleteRunInput,
+  input: CompleteRunInput
 ): Promise<ScenarioRun | null> {
   const client = await scenariosPool.connect();
   try {
@@ -231,7 +231,7 @@ export async function completeRun(
         input.diff ? JSON.stringify(input.diff) : null,
         input.status,
         input.error ?? null,
-      ],
+      ]
     );
     return res.rows.length === 0 ? null : rowToRun(res.rows[0]);
   } finally {
@@ -242,7 +242,7 @@ export async function completeRun(
 export async function listRuns(
   userId: string,
   scenarioId: string,
-  limit = 20,
+  limit = 20
 ): Promise<ScenarioRun[]> {
   const client = await scenariosPool.connect();
   try {
@@ -252,7 +252,7 @@ export async function listRuns(
         WHERE user_id = $1 AND scenario_id = $2
         ORDER BY triggered_at DESC
         LIMIT $3`,
-      [userId, scenarioId, Math.min(Math.max(limit, 1), 100)],
+      [userId, scenarioId, Math.min(Math.max(limit, 1), 100)]
     );
     return res.rows.map(rowToRun);
   } finally {

@@ -6,11 +6,11 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { CORS_HEADERS, corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 import { createMarketSimClient } from "@veta/market-client";
 import { createConsumer, createProducer } from "@veta/messaging";
 import { settlementDate } from "@veta/settlement";
-import { CORS_HEADERS, corsOptions, json } from "@veta/http";
-import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("DARK_POOL_PORT")) || 5_027;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -19,8 +19,7 @@ const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const MATCH_CYCLE_MS = Number(Deno.env.get("MATCH_CYCLE_MS")) || 500;
 const EXPIRY_SWEEP_MS = Number(Deno.env.get("EXPIRY_SWEEP_MS")) || 2_000;
 const ORDER_TIMEOUT_MS = Number(Deno.env.get("ORDER_TIMEOUT_MS")) || 30_000;
-const DARK_POOL_MIN_BLOCK = Number(Deno.env.get("DARK_POOL_MIN_BLOCK")) ||
-  10_000;
+const DARK_POOL_MIN_BLOCK = Number(Deno.env.get("DARK_POOL_MIN_BLOCK")) || 10_000;
 const RESIDUAL_ACTION = Deno.env.get("RESIDUAL_ACTION") || "reroute";
 
 interface RoutedOrder {
@@ -105,11 +104,10 @@ const producer = await createProducer("dark-pool").catch((err) => {
   return null;
 });
 
-const consumer = await createConsumer("dark-pool-routed", ["orders.routed"])
-  .catch((err) => {
-    logger.warn("Cannot subscribe to orders.routed", { err });
-    return null;
-  });
+const consumer = await createConsumer("dark-pool-routed", ["orders.routed"]).catch((err) => {
+  logger.warn("Cannot subscribe to orders.routed", { err });
+  return null;
+});
 
 consumer?.onMessage((_topic, raw) => {
   const order = raw as RoutedOrder;
@@ -123,7 +121,9 @@ consumer?.onMessage((_topic, raw) => {
   }
 
   if (order.quantity < DARK_POOL_MIN_BLOCK) {
-    logger.warn(`Rejected order ${order.orderId}: qty ${order.quantity} below min block ${DARK_POOL_MIN_BLOCK}`);
+    logger.warn(
+      `Rejected order ${order.orderId}: qty ${order.quantity} below min block ${DARK_POOL_MIN_BLOCK}`
+    );
     return;
   }
 
@@ -151,14 +151,12 @@ consumer?.onMessage((_topic, raw) => {
     pool.sells.push(darkOrder);
   }
 
-  logger.info(`Admitted ${order.side} ${order.quantity} ${order.asset} @ limit=${order.limitPrice} orderId=${order.orderId}`);
+  logger.info(
+    `Admitted ${order.side} ${order.quantity} ${order.asset} @ limit=${order.limitPrice} orderId=${order.orderId}`
+  );
 });
 
-function matchSymbol(
-  pool: SymbolPool,
-  asset: string,
-  midPrice: number,
-): DarkFill[] {
+function matchSymbol(pool: SymbolPool, asset: string, midPrice: number): DarkFill[] {
   // FIFO order — price not used for priority (dark pool matching semantics)
   pool.buys.sort((a, b) => a.admittedAt - b.admittedAt);
   pool.sells.sort((a, b) => a.admittedAt - b.admittedAt);
@@ -220,10 +218,10 @@ function matchSymbol(
       ts: now,
     });
 
-    logger.info(`Match ${
-        fills[fills.length - 1].execId
-      }: ${matchedQty} ${asset} @ ${midPrice} ` +
-        `buy=${buy.orderId} sell=${sell.orderId}`);
+    logger.info(
+      `Match ${fills[fills.length - 1].execId}: ${matchedQty} ${asset} @ ${midPrice} ` +
+        `buy=${buy.orderId} sell=${sell.orderId}`
+    );
 
     if (buy.remainingQty <= 0) bi++;
     if (sell.remainingQty <= 0) si++;
@@ -238,7 +236,7 @@ function matchSymbol(
 function buildOrdersFilled(
   fill: DarkFill,
   side: "BUY" | "SELL",
-  order: DarkOrder,
+  order: DarkOrder
 ): Record<string, unknown> {
   const isFullFill = order.remainingQty === 0;
   return {
@@ -274,7 +272,7 @@ function buildOrdersFilled(
 function buildFixExecution(
   fill: DarkFill,
   side: "BUY" | "SELL",
-  order: DarkOrder,
+  order: DarkOrder
 ): Record<string, unknown> {
   const isFullFill = order.remainingQty === 0;
   return {
@@ -318,29 +316,32 @@ async function runMatchCycle(): Promise<void> {
     const fills = matchSymbol(pool, asset, midPrice);
 
     for (const fill of fills) {
-      const buyOrder = buyMap.get(fill.buyOrderId)!;
-      const sellOrder = sellMap.get(fill.sellOrderId)!;
+      const buyOrder = buyMap.get(fill.buyOrderId);
+      const sellOrder = sellMap.get(fill.sellOrderId);
+      if (!buyOrder || !sellOrder) {
+        logger.warn("Fill references missing order(s)", {
+          buyOrderId: fill.buyOrderId,
+          sellOrderId: fill.sellOrderId,
+        });
+        continue;
+      }
 
       totalMatchedToday++;
       totalMatchedAllTime++;
 
       await producer?.send("dark.execution", fill).catch(() => {});
-      await producer?.send(
-        "orders.filled",
-        buildOrdersFilled(fill, "BUY", buyOrder),
-      ).catch(() => {});
-      await producer?.send(
-        "orders.filled",
-        buildOrdersFilled(fill, "SELL", sellOrder),
-      ).catch(() => {});
-      await producer?.send(
-        "fix.execution",
-        buildFixExecution(fill, "BUY", buyOrder),
-      ).catch(() => {});
-      await producer?.send(
-        "fix.execution",
-        buildFixExecution(fill, "SELL", sellOrder),
-      ).catch(() => {});
+      await producer
+        ?.send("orders.filled", buildOrdersFilled(fill, "BUY", buyOrder))
+        .catch(() => {});
+      await producer
+        ?.send("orders.filled", buildOrdersFilled(fill, "SELL", sellOrder))
+        .catch(() => {});
+      await producer
+        ?.send("fix.execution", buildFixExecution(fill, "BUY", buyOrder))
+        .catch(() => {});
+      await producer
+        ?.send("fix.execution", buildFixExecution(fill, "SELL", sellOrder))
+        .catch(() => {});
     }
 
     if (pool.buys.length === 0 && pool.sells.length === 0) {
@@ -368,7 +369,9 @@ async function sweepExpiredOrders(): Promise<void> {
     for (const order of [...expiredBuys, ...expiredSells]) {
       if (order.remainingQty <= 0) continue; // fully filled — already handled
 
-      logger.info(`Order ${order.orderId} (${order.side} ${order.remainingQty} ${asset}) timed out — action=${RESIDUAL_ACTION}`);
+      logger.info(
+        `Order ${order.orderId} (${order.side} ${order.remainingQty} ${asset}) timed out — action=${RESIDUAL_ACTION}`
+      );
 
       if (RESIDUAL_ACTION === "reroute") {
         const reroutedOrder = {
@@ -389,16 +392,18 @@ async function sweepExpiredOrders(): Promise<void> {
         };
         await producer?.send("orders.routed", reroutedOrder).catch(() => {});
       } else {
-        await producer?.send("orders.expired", {
-          orderId: order.orderId,
-          clientOrderId: order.clientOrderId,
-          userId: order.userId,
-          asset,
-          side: order.side,
-          remainingQty: order.remainingQty,
-          reason: "dark_pool_timeout",
-          ts: now,
-        }).catch(() => {});
+        await producer
+          ?.send("orders.expired", {
+            orderId: order.orderId,
+            clientOrderId: order.clientOrderId,
+            userId: order.userId,
+            asset,
+            side: order.side,
+            remainingQty: order.remainingQty,
+            reason: "dark_pool_timeout",
+            ts: now,
+          })
+          .catch(() => {});
       }
     }
 
@@ -416,7 +421,9 @@ setInterval(() => {
 }, EXPIRY_SWEEP_MS);
 
 logger.info(`Listening for orders.routed (DARK1) on message bus`);
-logger.info(`Match cycle=${MATCH_CYCLE_MS}ms timeout=${ORDER_TIMEOUT_MS}ms residual=${RESIDUAL_ACTION}`);
+logger.info(
+  `Match cycle=${MATCH_CYCLE_MS}ms timeout=${ORDER_TIMEOUT_MS}ms residual=${RESIDUAL_ACTION}`
+);
 
 Deno.serve({ port: PORT }, (req) => {
   const url = new URL(req.url);
@@ -428,10 +435,8 @@ Deno.serve({ port: PORT }, (req) => {
   }
 
   if (url.pathname === "/pool/stats" && req.method === "GET") {
-    const depth: Record<
-      string,
-      { buys: number; sells: number; buyQty: number; sellQty: number }
-    > = {};
+    const depth: Record<string, { buys: number; sells: number; buyQty: number; sellQty: number }> =
+      {};
     for (const [asset, pool] of orderBook) {
       depth[asset] = {
         buys: pool.buys.length,

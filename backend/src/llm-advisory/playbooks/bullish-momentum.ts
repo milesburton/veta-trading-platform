@@ -29,6 +29,8 @@ Stay under 150 words.`,
     const first = closes[0];
     if (!Number.isFinite(last) || !Number.isFinite(first) || first === 0) return [];
     const pctMove = ((last - first) / first) * 100;
-    return [`Recent close trajectory: ${pctMove >= 0 ? "+" : ""}${pctMove.toFixed(2)}% over ${closes.length} bars`];
+    return [
+      `Recent close trajectory: ${pctMove >= 0 ? "+" : ""}${pctMove.toFixed(2)}% over ${closes.length} bars`,
+    ];
   },
 };

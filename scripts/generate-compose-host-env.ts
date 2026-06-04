@@ -19,7 +19,7 @@ if (gatewayStart === -1) {
 
 let nextServiceStart = lines.length;
 for (let i = gatewayStart + 1; i < lines.length; i++) {
-  if (/^  [a-z][a-z0-9-]+:$/.test(lines[i])) {
+  if (/^ {2}[a-z][a-z0-9-]+:$/.test(lines[i])) {
     nextServiceStart = i;
     break;
   }
@@ -28,8 +28,8 @@ for (let i = gatewayStart + 1; i < lines.length; i++) {
 let blockStart = -1;
 let blockEnd = -1;
 for (let i = gatewayStart + 1; i < nextServiceStart; i++) {
-  const isHostLine = /^      [A-Z_]+_HOST: /.test(lines[i]);
-  const isPortLine = /^      [A-Z_]+_PORT: /.test(lines[i]);
+  const isHostLine = /^ {6}[A-Z_]+_HOST: /.test(lines[i]);
+  const isPortLine = /^ {6}[A-Z_]+_PORT: /.test(lines[i]);
   if (blockStart === -1) {
     if (isHostLine) {
       blockStart = i;
@@ -58,5 +58,5 @@ Deno.writeTextFileSync(composePath, `${before}\n${newBlock}\n${after}`);
 console.log(
   `Regenerated gateway HOST env block in compose.yml ` +
     `(${SERVICE_REGISTRY.filter((s) => !s.excludeFromGatewayHostEnv).length} services, ` +
-    `lines ${blockStart + 1}-${blockEnd + 1}).`,
+    `lines ${blockStart + 1}-${blockEnd + 1}).`
 );

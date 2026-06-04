@@ -1,8 +1,5 @@
+import { ParseTicketRequestSchema, QuickTradeIntentSchema } from "./parse-ticket-schema.ts";
 import type { ILlmProvider } from "./providers/interface.ts";
-import {
-  ParseTicketRequestSchema,
-  QuickTradeIntentSchema,
-} from "./parse-ticket-schema.ts";
 
 const PARSE_TICKET_SYSTEM_PROMPT = `You convert short trading instructions into JSON. Respond with a single JSON object and nothing else — no prose, no markdown fences.
 
@@ -42,7 +39,10 @@ function buildUserPrompt(input: string, symbols: readonly string[] | undefined):
 }
 
 function stripFences(s: string): string {
-  return s.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  return s
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim();
 }
 
 function extractFirstJsonObject(raw: string): string | null {
@@ -66,10 +66,7 @@ export interface ParseTicketDeps {
   abortMs?: number;
 }
 
-export async function handleParseTicket(
-  req: Request,
-  deps: ParseTicketDeps,
-): Promise<Response> {
+export async function handleParseTicket(req: Request, deps: ParseTicketDeps): Promise<Response> {
   let bodyJson: unknown;
   try {
     bodyJson = await req.json();
@@ -89,14 +86,15 @@ export async function handleParseTicket(
 
   const userPrompt = buildUserPrompt(parsed.data.input, parsed.data.symbols);
 
-  let response;
+  let responseText: string;
   try {
-    response = await deps.provider.generate(userPrompt, PARSE_TICKET_SYSTEM_PROMPT);
+    const response = await deps.provider.generate(userPrompt, PARSE_TICKET_SYSTEM_PROMPT);
+    responseText = response.text;
   } catch {
     return jsonResponse({ error: "llm_generate_failed" }, 503);
   }
 
-  const candidate = extractFirstJsonObject(response.text);
+  const candidate = extractFirstJsonObject(responseText);
   if (!candidate) {
     return jsonResponse({ error: "unparseable" }, 422);
   }

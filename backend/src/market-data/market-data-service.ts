@@ -23,15 +23,14 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { json, corsOptions } from "@veta/http";
-
+import { corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 import { alphaVantageEquityProvider } from "./providers/alpha-vantage-equity.ts";
 import { alphaVantageFxProvider } from "./providers/alpha-vantage-fx.ts";
-import { tiingoProvider } from "./providers/tiingo.ts";
-import { openPolygonStream, polygonProvider } from "./providers/polygon.ts";
 import { fetchYieldCurve, fredProvider } from "./providers/fred.ts";
+import { openPolygonStream, polygonProvider } from "./providers/polygon.ts";
+import { tiingoProvider } from "./providers/tiingo.ts";
 import type { CachedQuote, ProviderDef } from "./providers/types.ts";
-import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("MARKET_DATA_PORT")) || 5_015;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -72,7 +71,7 @@ const PROVIDERS: ProviderDef[] = [
 
 /** Providers eligible for per-symbol overrides (excludes fred and polygon) */
 const POLL_PROVIDERS: ProviderDef[] = PROVIDERS.filter(
-  (p) => p.id !== "fred" && p.id !== "polygon",
+  (p) => p.id !== "fred" && p.id !== "polygon"
 );
 
 let pausedSources: Set<string> = new Set();
@@ -186,7 +185,7 @@ function restartPolygonStream(): void {
     (quote: CachedQuote) => {
       quoteCache.set(quote.symbol, quote);
     },
-    POLYGON_KEY,
+    POLYGON_KEY
   );
 }
 
@@ -246,20 +245,18 @@ if (ALPHA_VANTAGE_KEY) {
   const toSeed = symbolsForProvider("alpha-vantage");
   for (let i = 0; i < toSeed.length; i++) {
     setTimeout(
-      () =>
-        alphaVantageEquityProvider.seedHistory?.(toSeed[i], JOURNAL_URL).catch(
-          () => {},
-        ),
-      i * 2_000,
+      () => alphaVantageEquityProvider.seedHistory?.(toSeed[i], JOURNAL_URL).catch(() => {}),
+      i * 2_000
     );
     setTimeout(
       () =>
-        alphaVantageEquityProvider.fetchQuote(toSeed[i], JOURNAL_URL).then(
-          (q) => {
+        alphaVantageEquityProvider
+          .fetchQuote(toSeed[i], JOURNAL_URL)
+          .then((q) => {
             if (q) quoteCache.set(toSeed[i], q);
-          },
-        ).catch(() => {}),
-      i * 1_500,
+          })
+          .catch(() => {}),
+      i * 1_500
     );
   }
 }
@@ -304,16 +301,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     // Find provider (include synthetic as non-togglable)
     const provider = PROVIDERS.find((p) => p.id === sourceId);
     if (!provider) {
-      return json(
-        { error: `Source "${sourceId}" does not support toggling` },
-        400,
-      );
+      return json({ error: `Source "${sourceId}" does not support toggling` }, 400);
     }
     if (!provider.togglable) {
-      return json(
-        { error: `Source "${sourceId}" does not support toggling` },
-        400,
-      );
+      return json({ error: `Source "${sourceId}" does not support toggling` }, 400);
     }
 
     if (pausedSources.has(sourceId)) {
@@ -349,7 +340,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/overrides" && req.method === "PUT") {
     let body: { overrides: Record<string, string> };
     try {
-      body = await req.json() as { overrides: Record<string, string> };
+      body = (await req.json()) as { overrides: Record<string, string> };
     } catch {
       return json({ error: "Invalid JSON body" }, 400);
     }
@@ -358,10 +349,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
 
     // Validate source IDs — build valid set from all known providers + synthetic
-    const validSources = new Set<string>([
-      "synthetic",
-      ...PROVIDERS.map((p) => p.id),
-    ]);
+    const validSources = new Set<string>(["synthetic", ...PROVIDERS.map((p) => p.id)]);
     for (const [sym, src] of Object.entries(body.overrides)) {
       if (!validSources.has(src)) {
         return json({ error: `Unknown source: ${src} for symbol ${sym}` }, 400);
@@ -379,10 +367,13 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     // Immediately fetch quotes for newly configured symbols (non-polygon providers)
     for (const [sym, src] of newOverrides.entries()) {
       const provider = POLL_PROVIDERS.find((p) => p.id === src);
-      if (provider && provider.apiKeyConfigured && !quoteCache.has(sym)) {
-        provider.fetchQuote(sym, JOURNAL_URL).then((q) => {
-          if (q) quoteCache.set(sym, q);
-        }).catch(() => {});
+      if (provider?.apiKeyConfigured && !quoteCache.has(sym)) {
+        provider
+          .fetchQuote(sym, JOURNAL_URL)
+          .then((q) => {
+            if (q) quoteCache.set(sym, q);
+          })
+          .catch(() => {});
         if (provider.seedHistory) {
           provider.seedHistory(sym, JOURNAL_URL).catch(() => {});
         }
@@ -402,9 +393,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const symbol = decodeURIComponent(quoteMatch[1]).toUpperCase();
     const src = overrides.get(symbol);
     if (!src || src === "synthetic") {
-      return json({
-        error: `Symbol ${symbol} is not configured for a real data source`,
-      }, 404);
+      return json(
+        {
+          error: `Symbol ${symbol} is not configured for a real data source`,
+        },
+        404
+      );
     }
 
     const cached = quoteCache.get(symbol);
@@ -412,13 +406,19 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       // Trigger async fetch from the correct provider
       const provider = PROVIDERS.find((p) => p.id === src);
       if (provider) {
-        provider.fetchQuote(symbol, JOURNAL_URL).then((q) => {
-          if (q) quoteCache.set(symbol, q);
-        }).catch(() => {});
+        provider
+          .fetchQuote(symbol, JOURNAL_URL)
+          .then((q) => {
+            if (q) quoteCache.set(symbol, q);
+          })
+          .catch(() => {});
       }
-      return json({
-        error: `No quote available for ${symbol} yet — fetch triggered`,
-      }, 404);
+      return json(
+        {
+          error: `No quote available for ${symbol} yet — fetch triggered`,
+        },
+        404
+      );
     }
     return json(cached);
   }

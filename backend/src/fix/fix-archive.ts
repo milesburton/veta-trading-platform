@@ -1,9 +1,9 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { fixArchivePool } from "@veta/db";
-import { createConsumer } from "@veta/messaging";
-import { json, corsOptions } from "@veta/http";
+import { corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
+import { createConsumer } from "@veta/messaging";
 
 const PORT = Number(Deno.env.get("FIX_ARCHIVE_PORT")) || 5_012;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -75,7 +75,7 @@ async function flushWriteQueue() {
            last_qty   = EXCLUDED.last_qty,
            last_px    = EXCLUDED.last_px,
            ts         = EXCLUDED.ts`,
-        row,
+        row
       );
     }
     await client.queryArray("COMMIT");
@@ -91,31 +91,33 @@ setInterval(() => {
   flushWriteQueue().catch(() => {});
 }, 50);
 
-createConsumer("fix-archive", ["fix.execution"]).then((consumer) => {
-  consumer.onMessage((_topic, raw) => {
-    const r = raw as ExecReport;
-    writeQueue.push([
-      r.execId,
-      r.clOrdId,
-      r.origClOrdId ?? null,
-      r.symbol,
-      r.side,
-      r.execType,
-      r.ordStatus,
-      r.leavesQty,
-      r.cumQty,
-      r.avgPx,
-      r.lastQty,
-      r.lastPx,
-      r.venue ?? null,
-      r.counterparty ?? null,
-      r.commission ?? null,
-      r.settlDate ?? null,
-      r.transactTime,
-      new Date(r.ts),
-    ]);
-  });
-}).catch((err) => logger.warn("Cannot subscribe", { err: err as Error }));
+createConsumer("fix-archive", ["fix.execution"])
+  .then((consumer) => {
+    consumer.onMessage((_topic, raw) => {
+      const r = raw as ExecReport;
+      writeQueue.push([
+        r.execId,
+        r.clOrdId,
+        r.origClOrdId ?? null,
+        r.symbol,
+        r.side,
+        r.execType,
+        r.ordStatus,
+        r.leavesQty,
+        r.cumQty,
+        r.avgPx,
+        r.lastQty,
+        r.lastPx,
+        r.venue ?? null,
+        r.counterparty ?? null,
+        r.commission ?? null,
+        r.settlDate ?? null,
+        r.transactTime,
+        new Date(r.ts),
+      ]);
+    });
+  })
+  .catch((err) => logger.warn("Cannot subscribe", { err: err as Error }));
 
 type SqlRow = (string | number | Date | null | unknown)[];
 function rowToExec(r: SqlRow) {
@@ -173,14 +175,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     try {
       const client = await Promise.race([
         fixArchivePool.connect(),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("db timeout")), 2_000)
-        ),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("db timeout")), 2_000)),
       ]);
       try {
-        const { rows } = await client.queryArray(
-          "SELECT COUNT(*) FROM fix_archive.executions",
-        );
+        const { rows } = await client.queryArray("SELECT COUNT(*) FROM fix_archive.executions");
         return json({
           service: "fix-archive",
           version: VERSION,
@@ -201,8 +199,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
   }
 
-  const COLS =
-    `exec_id, cl_ord_id, orig_cl_ord_id, symbol, side, exec_type, ord_status,
+  const COLS = `exec_id, cl_ord_id, orig_cl_ord_id, symbol, side, exec_type, ord_status,
     leaves_qty, cum_qty, avg_px, last_qty, last_px, venue, counterparty,
     commission, settl_date, transact_time, ts`;
 
@@ -216,13 +213,13 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     try {
       const { rows } = symbol
         ? await client.queryArray(
-          `SELECT ${COLS} FROM fix_archive.executions WHERE symbol=$1 AND ts>=$2 AND ts<$3 ORDER BY ts DESC LIMIT $4`,
-          [symbol, from, to, limit],
-        )
+            `SELECT ${COLS} FROM fix_archive.executions WHERE symbol=$1 AND ts>=$2 AND ts<$3 ORDER BY ts DESC LIMIT $4`,
+            [symbol, from, to, limit]
+          )
         : await client.queryArray(
-          `SELECT ${COLS} FROM fix_archive.executions WHERE ts>=$1 AND ts<$2 ORDER BY ts DESC LIMIT $3`,
-          [from, to, limit],
-        );
+            `SELECT ${COLS} FROM fix_archive.executions WHERE ts>=$1 AND ts<$2 ORDER BY ts DESC LIMIT $3`,
+            [from, to, limit]
+          );
       return json(rows.map(rowToExec));
     } finally {
       client.release();
@@ -235,7 +232,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     try {
       const { rows } = await client.queryArray(
         `SELECT ${COLS} FROM fix_archive.executions WHERE exec_id=$1`,
-        [match[1]],
+        [match[1]]
       );
       if (rows.length === 0) return json({ error: "Not found" }, 404);
       return json(rowToExec(rows[0]));

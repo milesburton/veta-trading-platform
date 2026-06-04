@@ -9,9 +9,7 @@ Deno.test({
   async fn(t) {
     const rp = await startEphemeralRedpanda();
     Deno.env.set("REDPANDA_BROKERS", rp.brokers);
-    const messaging = await import(
-      `../lib/messaging.ts?broker=${encodeURIComponent(rp.brokers)}`
-    );
+    const messaging = await import(`../lib/messaging.ts?broker=${encodeURIComponent(rp.brokers)}`);
 
     const topic = `test-roundtrip-${crypto.randomUUID().slice(0, 8)}`;
 
@@ -27,7 +25,9 @@ Deno.test({
       });
 
       await t.step("send before connect is silently dropped (fire-and-forget)", async () => {
-        const producer = await messaging.createProducer(`prod-fast-${crypto.randomUUID().slice(0, 6)}`);
+        const producer = await messaging.createProducer(
+          `prod-fast-${crypto.randomUUID().slice(0, 6)}`
+        );
         await producer.send(topic, { early: true });
         await producer.disconnect();
       });
@@ -88,13 +88,19 @@ Deno.test({
         while (Date.now() < deadline && messagesReceived < 1) {
           await new Promise((r) => setTimeout(r, 100));
         }
-        assertEquals(messagesReceived, 1, "valid message should be received; invalid one skipped silently");
+        assertEquals(
+          messagesReceived,
+          1,
+          "valid message should be received; invalid one skipped silently"
+        );
 
         await consumer.disconnect();
       });
 
       await t.step("disconnected producer's send is a no-op", async () => {
-        const producer = await messaging.createProducer(`prod-disc-${crypto.randomUUID().slice(0, 6)}`);
+        const producer = await messaging.createProducer(
+          `prod-disc-${crypto.randomUUID().slice(0, 6)}`
+        );
         await producer.disconnect();
         await producer.send(topic, { afterDisconnect: true });
       });

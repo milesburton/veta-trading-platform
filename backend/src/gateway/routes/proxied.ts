@@ -11,7 +11,7 @@ interface ForwardOptions {
 async function forwardWithCookie(
   url: string,
   req: Request,
-  opts: ForwardOptions = {},
+  opts: ForwardOptions = {}
 ): Promise<Response> {
   const headers: Record<string, string> = {
     cookie: req.headers.get("cookie") ?? "",
@@ -40,7 +40,7 @@ async function forwardWithCookie(
 export async function handleProxiedRoutes(
   req: Request,
   path: string,
-  ctx: GatewayContext,
+  ctx: GatewayContext
 ): Promise<Response | null> {
   const url = new URL(req.url);
 
@@ -101,10 +101,7 @@ export async function handleProxiedRoutes(
   if (ccpSettlementDateMatch && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
-    return proxyGet(
-      `${ctx.urls.ccpService}/ccp/settlements/${ccpSettlementDateMatch[1]}`,
-      req,
-    );
+    return proxyGet(`${ctx.urls.ccpService}/ccp/settlements/${ccpSettlementDateMatch[1]}`, req);
   }
   const ccpMarginMatch = path.match(/^\/ccp\/margin\/([^/]+)$/);
   if (ccpMarginMatch && req.method === "GET") {
@@ -184,15 +181,13 @@ export async function handleProxiedRoutes(
     if (isResponse(auth)) return auth;
     return proxyGet(`${ctx.urls.rfqService}/rfq/sellside/${matchSsRfq[1]}`, req);
   }
-  const matchSsRoute = path.match(
-    /^\/rfq\/sellside\/([^/]+)\/(route|markup|confirm|reject)$/,
-  );
+  const matchSsRoute = path.match(/^\/rfq\/sellside\/([^/]+)\/(route|markup|confirm|reject)$/);
   if (matchSsRoute && req.method === "PUT") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
     return proxyPut(
       `${ctx.urls.rfqService}/rfq/sellside/${matchSsRoute[1]}/${matchSsRoute[2]}`,
-      req,
+      req
     );
   }
 
@@ -224,14 +219,14 @@ export async function handleProxiedRoutes(
     return proxyGet(`${ctx.urls.productService}/products/${matchProductId[1]}`, req);
   }
   const matchProductAction = path.match(
-    /^\/products\/([^/]+)\/(legs|structure|issue|sell|unwind)$/,
+    /^\/products\/([^/]+)\/(legs|structure|issue|sell|unwind)$/
   );
   if (matchProductAction && req.method === "PUT") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
     return proxyPut(
       `${ctx.urls.productService}/products/${matchProductAction[1]}/${matchProductAction[2]}`,
-      req,
+      req
     );
   }
 
@@ -267,20 +262,17 @@ export async function handleProxiedRoutes(
   if (path === "/preferences" && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
-    return forwardWithCookie(
-      `${ctx.urls.userService}/users/${auth.user.id}/preferences`,
-      req,
-    );
+    return forwardWithCookie(`${ctx.urls.userService}/users/${auth.user.id}/preferences`, req);
   }
   if (path === "/preferences" && req.method === "PUT") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
     const body = await req.arrayBuffer();
-    return forwardWithCookie(
-      `${ctx.urls.userService}/users/${auth.user.id}/preferences`,
-      req,
-      { method: "PUT", body, contentType: "application/json" },
-    );
+    return forwardWithCookie(`${ctx.urls.userService}/users/${auth.user.id}/preferences`, req, {
+      method: "PUT",
+      body,
+      contentType: "application/json",
+    });
   }
 
   // ── Shared workspaces ────────────────────────────────────────
@@ -303,19 +295,14 @@ export async function handleProxiedRoutes(
   if (sharedWsMatch && req.method === "DELETE") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
-    return forwardWithCookie(
-      `${ctx.urls.userService}/shared-workspaces/${sharedWsMatch[1]}`,
-      req,
-      { method: "DELETE" },
-    );
+    return forwardWithCookie(`${ctx.urls.userService}/shared-workspaces/${sharedWsMatch[1]}`, req, {
+      method: "DELETE",
+    });
   }
   if (sharedWsMatch && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
-    return forwardWithCookie(
-      `${ctx.urls.userService}/shared-workspaces/${sharedWsMatch[1]}`,
-      req,
-    );
+    return forwardWithCookie(`${ctx.urls.userService}/shared-workspaces/${sharedWsMatch[1]}`, req);
   }
 
   // ── Market-data sources/overrides ────────────────────────────

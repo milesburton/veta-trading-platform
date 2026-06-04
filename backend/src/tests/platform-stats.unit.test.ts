@@ -17,7 +17,12 @@ Deno.test("PlatformStats counts alerts by severity", () => {
 Deno.test("PlatformStats prunes events older than 24h", () => {
   const s = new PlatformStats();
   const now = Date.now();
-  s.recordAlert({ severity: "CRITICAL", source: "x", message: "old", ts: now - 25 * 60 * 60 * 1000 });
+  s.recordAlert({
+    severity: "CRITICAL",
+    source: "x",
+    message: "old",
+    ts: now - 25 * 60 * 60 * 1000,
+  });
   s.recordAlert({ severity: "CRITICAL", source: "x", message: "fresh", ts: now });
   const snap = s.snapshot();
   assertEquals(snap.alertsBySeverity.CRITICAL, 1);
@@ -79,7 +84,12 @@ Deno.test("PlatformStats snapshot(now) re-prunes using the supplied now", () => 
   const s = new PlatformStats();
   const now = Date.now();
   s.recordAlert({ severity: "CRITICAL", source: "x", message: "earlier", ts: now });
-  s.recordAlert({ severity: "CRITICAL", source: "x", message: "later", ts: now + 6 * 60 * 60 * 1000 });
+  s.recordAlert({
+    severity: "CRITICAL",
+    source: "x",
+    message: "later",
+    ts: now + 6 * 60 * 60 * 1000,
+  });
   const futureNow = now + 25 * 60 * 60 * 1000;
   const snap = s.snapshot(futureNow);
   assertEquals(snap.alertsBySeverity.CRITICAL, 1);

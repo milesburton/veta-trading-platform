@@ -52,7 +52,7 @@ export async function computeLatencyMetrics(windowMs: number): Promise<LatencyMe
         WHERE order_id IS NOT NULL
           AND ts >= $1
           AND event_type IN ('orders.submitted','orders.routed','orders.child','orders.filled')`,
-      [since],
+      [since]
     );
 
     interface OrderTimings {
@@ -69,11 +69,12 @@ export async function computeLatencyMetrics(windowMs: number): Promise<LatencyMe
       const orderId = orderIdRaw as string;
       const childId = childIdRaw as string | null;
       const tsMs = tsRaw instanceof Date ? tsRaw.getTime() : Number(tsRaw);
-      const arrivedMs = arrivedRaw instanceof Date
-        ? arrivedRaw.getTime()
-        : arrivedRaw == null
-        ? null
-        : Number(arrivedRaw);
+      const arrivedMs =
+        arrivedRaw instanceof Date
+          ? arrivedRaw.getTime()
+          : arrivedRaw == null
+            ? null
+            : Number(arrivedRaw);
 
       let entry = byOrder.get(orderId);
       if (!entry) {

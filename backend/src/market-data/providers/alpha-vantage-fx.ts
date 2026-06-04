@@ -2,8 +2,8 @@
  * Alpha Vantage FX provider — CURRENCY_EXCHANGE_RATE for symbols containing "/".
  */
 
-import type { CachedQuote, ProviderDef } from "./types.ts";
 import { logger } from "@veta/logger";
+import type { CachedQuote, ProviderDef } from "./types.ts";
 
 const ALPHA_VANTAGE_KEY = Deno.env.get("ALPHA_VANTAGE_KEY") ?? "";
 const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
@@ -22,15 +22,12 @@ async function fetchFxRate(symbol: string): Promise<CachedQuote | null> {
   const [fromCurrency, toCurrency] = parts;
   try {
     logger.debug("polling CURRENCY_EXCHANGE_RATE", { ...PROV, symbol });
-    const url =
-      `${ALPHA_VANTAGE_BASE}?function=CURRENCY_EXCHANGE_RATE&from_currency=${
-        encodeURIComponent(fromCurrency)
-      }&to_currency=${
-        encodeURIComponent(toCurrency)
-      }&apikey=${ALPHA_VANTAGE_KEY}`;
+    const url = `${ALPHA_VANTAGE_BASE}?function=CURRENCY_EXCHANGE_RATE&from_currency=${encodeURIComponent(
+      fromCurrency
+    )}&to_currency=${encodeURIComponent(toCurrency)}&apikey=${ALPHA_VANTAGE_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json() as Record<string, Record<string, string>>;
+    const data = (await res.json()) as Record<string, Record<string, string>>;
     const rate = data["Realtime Currency Exchange Rate"];
     if (!rate || !rate["5. Exchange Rate"]) {
       logger.warn("no rate data (rate limit or invalid pair?)", {
@@ -40,8 +37,7 @@ async function fetchFxRate(symbol: string): Promise<CachedQuote | null> {
       return null;
     }
     const price = parseFloat(rate["5. Exchange Rate"]);
-    const latestTradingDay = rate["6. Last Refreshed"] ??
-      new Date().toISOString().slice(0, 10);
+    const latestTradingDay = rate["6. Last Refreshed"] ?? new Date().toISOString().slice(0, 10);
     if (price <= 0) return null;
     return {
       symbol,
@@ -68,10 +64,7 @@ export const alphaVantageFxProvider: ProviderDef = {
   supportsSymbol(symbol: string): boolean {
     return symbol.includes("/");
   },
-  async fetchQuote(
-    symbol: string,
-    _journalUrl: string,
-  ): Promise<CachedQuote | null> {
+  async fetchQuote(symbol: string, _journalUrl: string): Promise<CachedQuote | null> {
     return await fetchFxRate(symbol);
   },
 };

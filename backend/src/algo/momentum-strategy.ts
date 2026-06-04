@@ -23,11 +23,11 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { logger } from "@veta/logger";
 import { createMarketSimClient } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
 import { FillEventSchema, RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
-import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("MOMENTUM_ALGO_PORT")) || 5_025;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -79,128 +79,123 @@ interface ActiveMomentum {
 /** Active momentum orders, keyed by orderId. */
 const activeOrders = new Map<string, ActiveMomentum>();
 
-await createTypedConsumer("momentum-algo-routed", [{
-  topic: "orders.routed",
-  schema: RoutedOrderSchema,
-  handler: (order) => {
-    if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
-    if (order.limitPrice === undefined) {
-      logger.warn(`Rejecting ${order.orderId}: missing limitPrice`);
-      return;
-    }
+await createTypedConsumer("momentum-algo-routed", [
+  {
+    topic: "orders.routed",
+    schema: RoutedOrderSchema,
+    handler: (order) => {
+      if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
+      if (order.limitPrice === undefined) {
+        logger.warn(`Rejecting ${order.orderId}: missing limitPrice`);
+        return;
+      }
 
-    const params = order.algoParams ?? {};
-    const entryThresholdBps = Math.max(
-      0.1,
-      Number(params.entryThresholdBps ?? 10),
-    );
-    const maxTranches = Math.max(1, Number(params.maxTranches ?? 5));
-    const shortEmaPeriod = Math.max(
-      2,
-      Number(params.shortEmaPeriod ?? 3),
-    );
-    const longEmaPeriod = Math.max(
-      shortEmaPeriod + 1,
-      Number(params.longEmaPeriod ?? 8),
-    );
-    const cooldownTicks = Math.max(
-      1,
-      Number(params.cooldownTicks ?? 3),
-    );
+      const params = order.algoParams ?? {};
+      const entryThresholdBps = Math.max(0.1, Number(params.entryThresholdBps ?? 10));
+      const maxTranches = Math.max(1, Number(params.maxTranches ?? 5));
+      const shortEmaPeriod = Math.max(2, Number(params.shortEmaPeriod ?? 3));
+      const longEmaPeriod = Math.max(shortEmaPeriod + 1, Number(params.longEmaPeriod ?? 8));
+      const cooldownTicks = Math.max(1, Number(params.cooldownTicks ?? 3));
 
-    const entryPrice = marketClient.getLatest()?.prices[order.asset] ??
-      order.limitPrice;
+      const entryPrice = marketClient.getLatest()?.prices[order.asset] ?? order.limitPrice;
 
-    const mom: ActiveMomentum = {
-      orderId: order.orderId,
-      clientOrderId: order.clientOrderId,
-      asset: order.asset,
-      side: order.side,
-      limitPrice: order.limitPrice,
-      expiresAt: Date.now() + (Number(order.expiresAt ?? 300)) * 1_000,
-      entryPrice,
-      entryThresholdBps,
-      maxTranches,
-      shortEmaPeriod,
-      longEmaPeriod,
-      cooldownTicks,
-      shortEma: entryPrice,
-      longEma: entryPrice,
-      ticksSeen: 0,
-      cooldownRemaining: 0,
-      tranchesRouted: 0,
-      trancheSize: Math.max(1, Math.ceil(order.quantity / maxTranches)),
-      totalQty: order.quantity,
-      remainingQty: order.quantity,
-      filledQty: 0,
-      costBasis: 0,
-    };
+      const mom: ActiveMomentum = {
+        orderId: order.orderId,
+        clientOrderId: order.clientOrderId,
+        asset: order.asset,
+        side: order.side,
+        limitPrice: order.limitPrice,
+        expiresAt: Date.now() + Number(order.expiresAt ?? 300) * 1_000,
+        entryPrice,
+        entryThresholdBps,
+        maxTranches,
+        shortEmaPeriod,
+        longEmaPeriod,
+        cooldownTicks,
+        shortEma: entryPrice,
+        longEma: entryPrice,
+        ticksSeen: 0,
+        cooldownRemaining: 0,
+        tranchesRouted: 0,
+        trancheSize: Math.max(1, Math.ceil(order.quantity / maxTranches)),
+        totalQty: order.quantity,
+        remainingQty: order.quantity,
+        filledQty: 0,
+        costBasis: 0,
+      };
 
-    activeOrders.set(order.orderId, mom);
+      activeOrders.set(order.orderId, mom);
 
-    logger.info(`Queued ${order.orderId}: ${order.quantity} ${order.asset} entry=${
-        entryPrice.toFixed(4)
-      } threshold=${entryThresholdBps}bps maxTranches=${maxTranches}`);
+      logger.info(
+        `Queued ${order.orderId}: ${order.quantity} ${order.asset} entry=${entryPrice.toFixed(
+          4
+        )} threshold=${entryThresholdBps}bps maxTranches=${maxTranches}`
+      );
 
-    producer?.send("algo.heartbeat", {
-      algo: ALGO,
-      orderId: order.orderId,
-      event: "start",
-      asset: order.asset,
-      quantity: order.quantity,
-      entryPrice,
-      entryThresholdBps,
-      maxTranches,
-      shortEmaPeriod,
-      longEmaPeriod,
-      cooldownTicks,
-      ts: Date.now(),
-    }).catch(() => {});
+      producer
+        ?.send("algo.heartbeat", {
+          algo: ALGO,
+          orderId: order.orderId,
+          event: "start",
+          asset: order.asset,
+          quantity: order.quantity,
+          entryPrice,
+          entryThresholdBps,
+          maxTranches,
+          shortEmaPeriod,
+          longEmaPeriod,
+          cooldownTicks,
+          ts: Date.now(),
+        })
+        .catch(() => {});
+    },
   },
-}]).catch((err) => {
+]).catch((err) => {
   logger.warn("Cannot subscribe to orders.routed", { err });
   return null;
 });
 
-await createTypedConsumer("momentum-algo-fills", [{
-  topic: "orders.filled",
-  schema: FillEventSchema,
-  handler: (fill) => {
-    if ((fill.algo ?? "").toUpperCase() !== ALGO) return;
+await createTypedConsumer("momentum-algo-fills", [
+  {
+    topic: "orders.filled",
+    schema: FillEventSchema,
+    handler: (fill) => {
+      if ((fill.algo ?? "").toUpperCase() !== ALGO) return;
 
-    const order = fill.parentOrderId
-      ? activeOrders.get(fill.parentOrderId)
-      : undefined;
-    if (!order) return;
+      const order = fill.parentOrderId ? activeOrders.get(fill.parentOrderId) : undefined;
+      if (!order) return;
 
-    const qty = fill.filledQty ?? 0;
-    const price = fill.avgFillPrice ?? 0;
-    order.filledQty += qty;
-    order.costBasis += qty * price;
-    order.remainingQty = Math.max(0, order.remainingQty - qty);
+      const qty = fill.filledQty ?? 0;
+      const price = fill.avgFillPrice ?? 0;
+      order.filledQty += qty;
+      order.costBasis += qty * price;
+      order.remainingQty = Math.max(0, order.remainingQty - qty);
 
-    logger.info(`Fill ${order.orderId}: +${qty} @ ${
-        price.toFixed(2)
-      } | remaining=${order.remainingQty}`);
+      logger.info(
+        `Fill ${order.orderId}: +${qty} @ ${price.toFixed(2)} | remaining=${order.remainingQty}`
+      );
 
-    if (order.remainingQty <= 0) {
-      const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
-      logger.info(`Complete ${order.orderId}: filled=${order.filledQty} avg=${
-          avgFill.toFixed(4)
-        }`);
-      activeOrders.delete(order.orderId);
-      producer?.send("algo.heartbeat", {
-        algo: ALGO,
-        orderId: order.orderId,
-        event: "complete",
-        asset: order.asset,
-        filled: order.filledQty,
-        avgFillPrice: avgFill.toFixed(4),
-        ts: Date.now(),
-      }).catch(() => {});
-    }
+      if (order.remainingQty <= 0) {
+        const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
+        logger.info(
+          `Complete ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`
+        );
+        activeOrders.delete(order.orderId);
+        producer
+          ?.send("algo.heartbeat", {
+            algo: ALGO,
+            orderId: order.orderId,
+            event: "complete",
+            asset: order.asset,
+            filled: order.filledQty,
+            avgFillPrice: avgFill.toFixed(4),
+            ts: Date.now(),
+          })
+          .catch(() => {});
+      }
+    },
   },
-}]).catch((err) => {
+]).catch((err) => {
   logger.warn("Cannot subscribe to orders.filled", { err });
   return null;
 });
@@ -213,21 +208,19 @@ marketClient.onTick(async (tick) => {
     if (!marketPrice) continue;
 
     if (now >= order.expiresAt) {
-      const avgFill = order.filledQty > 0
-        ? order.costBasis / order.filledQty
-        : 0;
-      logger.info(`Expired ${order.orderId}: filled=${order.filledQty} avg=${
-          avgFill.toFixed(4)
-        }`);
+      const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
+      logger.info(`Expired ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`);
       activeOrders.delete(order.orderId);
-      await producer?.send("orders.expired", {
-        orderId: order.orderId,
-        clientOrderId: order.clientOrderId,
-        algo: ALGO,
-        filledQty: order.filledQty,
-        avgFillPrice: order.filledQty > 0 ? avgFill : 0,
-        ts: now,
-      }).catch(() => {});
+      await producer
+        ?.send("orders.expired", {
+          orderId: order.orderId,
+          clientOrderId: order.clientOrderId,
+          algo: ALGO,
+          filledQty: order.filledQty,
+          avgFillPrice: order.filledQty > 0 ? avgFill : 0,
+          ts: now,
+        })
+        .catch(() => {});
       continue;
     }
 
@@ -247,22 +240,24 @@ marketClient.onTick(async (tick) => {
       (order.side === "BUY" && signal > order.entryThresholdBps) ||
       (order.side === "SELL" && signal < -order.entryThresholdBps);
 
-    await producer?.send("algo.heartbeat", {
-      algo: ALGO,
-      orderId: order.orderId,
-      asset: order.asset,
-      event: "signal",
-      marketPrice,
-      shortEma: order.shortEma.toFixed(4),
-      longEma: order.longEma.toFixed(4),
-      signalBps: signal.toFixed(2),
-      warmedUp,
-      signalFavourable,
-      cooldownRemaining: order.cooldownRemaining,
-      tranchesRouted: order.tranchesRouted,
-      remainingQty: order.remainingQty,
-      ts: now,
-    }).catch(() => {});
+    await producer
+      ?.send("algo.heartbeat", {
+        algo: ALGO,
+        orderId: order.orderId,
+        asset: order.asset,
+        event: "signal",
+        marketPrice,
+        shortEma: order.shortEma.toFixed(4),
+        longEma: order.longEma.toFixed(4),
+        signalBps: signal.toFixed(2),
+        warmedUp,
+        signalFavourable,
+        cooldownRemaining: order.cooldownRemaining,
+        tranchesRouted: order.tranchesRouted,
+        remainingQty: order.remainingQty,
+        ts: now,
+      })
+      .catch(() => {});
 
     if (
       !warmedUp ||
@@ -281,39 +276,45 @@ marketClient.onTick(async (tick) => {
     order.cooldownRemaining = order.cooldownTicks;
     const childId = `${order.orderId}-mom-${Date.now()}`;
 
-    logger.info(`Tranche ${order.tranchesRouted} for ${order.orderId}: ${qty} ${order.asset} @ mkt ${
-        marketPrice.toFixed(4)
-      } signal=${signal.toFixed(2)}bps`);
+    logger.info(
+      `Tranche ${order.tranchesRouted} for ${order.orderId}: ${qty} ${order.asset} @ mkt ${marketPrice.toFixed(
+        4
+      )} signal=${signal.toFixed(2)}bps`
+    );
 
-    await producer?.send("orders.child", {
-      childId,
-      parentOrderId: order.orderId,
-      clientOrderId: order.clientOrderId,
-      algo: ALGO,
-      asset: order.asset,
-      side: order.side,
-      quantity: qty,
-      limitPrice: order.limitPrice,
-      marketPrice,
-      entryPrice: order.entryPrice,
-      signalBps: signal.toFixed(2),
-      trancheIndex: order.tranchesRouted,
-      ts: now,
-    }).catch(() => {});
+    await producer
+      ?.send("orders.child", {
+        childId,
+        parentOrderId: order.orderId,
+        clientOrderId: order.clientOrderId,
+        algo: ALGO,
+        asset: order.asset,
+        side: order.side,
+        quantity: qty,
+        limitPrice: order.limitPrice,
+        marketPrice,
+        entryPrice: order.entryPrice,
+        signalBps: signal.toFixed(2),
+        trancheIndex: order.tranchesRouted,
+        ts: now,
+      })
+      .catch(() => {});
 
-    await producer?.send("algo.heartbeat", {
-      algo: ALGO,
-      orderId: order.orderId,
-      asset: order.asset,
-      event: "route",
-      trancheIndex: order.tranchesRouted,
-      qty,
-      marketPrice,
-      signalBps: signal.toFixed(2),
-      remainingQty: order.remainingQty,
-      filledQty: order.filledQty,
-      ts: now,
-    }).catch(() => {});
+    await producer
+      ?.send("algo.heartbeat", {
+        algo: ALGO,
+        orderId: order.orderId,
+        asset: order.asset,
+        event: "route",
+        trancheIndex: order.tranchesRouted,
+        qty,
+        marketPrice,
+        signalBps: signal.toFixed(2),
+        remainingQty: order.remainingQty,
+        filledQty: order.filledQty,
+        ts: now,
+      })
+      .catch(() => {});
   }
 });
 

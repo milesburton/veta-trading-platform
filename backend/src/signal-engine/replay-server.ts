@@ -1,6 +1,5 @@
+import { intelligencePool } from "@veta/db";
 import type { FeatureVector, Signal } from "@veta/types/intelligence";
-import { scoreFeatureVector } from "./scorer.ts";
-import type { WeightStore } from "./weight-store.ts";
 import {
   computeEventScore,
   computeMomentum,
@@ -8,7 +7,8 @@ import {
   computeRelativeVolume,
 } from "../feature-engine/feature-computers.ts";
 import { createMarketEventStore } from "../market-data-adapters/market-event-store.ts";
-import { intelligencePool } from "@veta/db";
+import { scoreFeatureVector } from "./scorer.ts";
+import type { WeightStore } from "./weight-store.ts";
 
 const JOURNAL_URL = Deno.env.get("JOURNAL_URL") || "http://localhost:5009";
 
@@ -37,26 +37,24 @@ export async function runReplay(
   symbol: string,
   from: number,
   to: number,
-  weightStore: WeightStore,
+  weightStore: WeightStore
 ): Promise<ReplayFrame[]> {
   const warmupFrom = from - 25 * 60 * 1000;
-  const url = `${JOURNAL_URL}/candles?instrument=${
-    encodeURIComponent(symbol)
-  }&interval=1m&from=${warmupFrom}&to=${to}&limit=2000`;
+  const url = `${JOURNAL_URL}/candles?instrument=${encodeURIComponent(
+    symbol
+  )}&interval=1m&from=${warmupFrom}&to=${to}&limit=2000`;
 
   let candles: JournalCandle[] = [];
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`Journal returned ${res.status}`);
-    candles = await res.json() as JournalCandle[];
+    candles = (await res.json()) as JournalCandle[];
   } catch (err) {
     throw new Error(`Failed to fetch candles: ${(err as Error).message}`);
   }
 
   if (candles.length < 2) {
-    throw new Error(
-      `Insufficient candle data for ${symbol} in requested range`,
-    );
+    throw new Error(`Insufficient candle data for ${symbol} in requested range`);
   }
 
   candles.sort((a, b) => a.time - b.time);
@@ -88,9 +86,7 @@ export async function runReplay(
       ts: c.time,
       momentum: computeMomentum(priceWindow),
       relativeVolume: computeRelativeVolume(volWindow),
-      realisedVol: priceWindow.length >= 20
-        ? computeRealisedVol(priceWindow)
-        : 0,
+      realisedVol: priceWindow.length >= 20 ? computeRealisedVol(priceWindow) : 0,
       sectorRelativeStrength: 0,
       eventScore: computeEventScore(symbol, historicalEvents),
       newsVelocity: 0,

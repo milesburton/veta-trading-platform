@@ -20,9 +20,7 @@ test.describe("Session Replay panel", () => {
     app.gateway.sendAuthIdentity({ user: DEFAULT_ADMIN });
 
     const panel = await app.panelByTitle(/Session Replay/i);
-    await expect(
-      panel.getByText(/No recorded sessions/i)
-    ).toBeVisible({ timeout: 8_000 });
+    await expect(panel.getByText(/No recorded sessions/i)).toBeVisible({ timeout: 8_000 });
   });
 
   test("admin user sees the recording toggle switch", async ({ page }) => {
@@ -32,7 +30,9 @@ test.describe("Session Replay panel", () => {
     app.gateway.sendAuthIdentity({ user: DEFAULT_ADMIN });
 
     const panel = await app.panelByTitle(/Session Replay/i);
-    const toggle = panel.locator("button").filter({ has: page.locator("span.rounded-full.bg-white") });
+    const toggle = panel
+      .locator("button")
+      .filter({ has: page.locator("span.rounded-full.bg-white") });
     await expect(toggle.first()).toBeVisible({ timeout: 8_000 });
   });
 
@@ -72,7 +72,7 @@ test.describe("Session Replay panel", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(mockSessions),
-      }),
+      })
     );
 
     await page.goto("/?ws=ws-administration");

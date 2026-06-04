@@ -23,29 +23,17 @@ const BASE_SIGNAL: SignalInput = {
   ],
 };
 
-function scoreCall(
-  spot = SPOT,
-  strike = STRIKE,
-  time = TIME,
-  rate = RATE,
-  vol = VOL,
-) {
+function scoreCall(spot = SPOT, strike = STRIKE, time = TIME, rate = RATE, vol = VOL) {
   return scoreOption("call", spot, strike, time, rate, vol);
 }
 
-function scorePut(
-  spot = SPOT,
-  strike = STRIKE,
-  time = TIME,
-  rate = RATE,
-  vol = VOL,
-) {
+function scorePut(spot = SPOT, strike = STRIKE, time = TIME, rate = RATE, vol = VOL) {
   return scoreOption("put", spot, strike, time, rate, vol);
 }
 
 function assertBaseRecommendation(
   result: ReturnType<typeof scoreCall>,
-  scoringMode: "rule-based" | "signal-driven",
+  scoringMode: "rule-based" | "signal-driven"
 ) {
   assert(result.optionType === "call" || result.optionType === "put");
   assertEquals(result.strike, STRIKE);
@@ -79,15 +67,7 @@ Deno.test("[recommendation-engine] scoreOption returns score in valid range", ()
 });
 
 Deno.test("[recommendation-engine] scoreOptionWithSignal returns valid recommendation", () => {
-  const result = scoreOptionWithSignal(
-    "call",
-    SPOT,
-    STRIKE,
-    TIME,
-    RATE,
-    VOL,
-    BASE_SIGNAL,
-  );
+  const result = scoreOptionWithSignal("call", SPOT, STRIKE, TIME, RATE, VOL, BASE_SIGNAL);
 
   assertBaseRecommendation(result, "signal-driven");
   assertEquals(result.signalScore, BASE_SIGNAL.score);

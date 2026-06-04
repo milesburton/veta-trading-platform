@@ -1,8 +1,8 @@
 import type { Signal, TradeRecommendation } from "@veta/types/intelligence";
 import type { LlmPolicy } from "@veta/types/llm-advisory";
 import { AdvisoryTriggerReason } from "@veta/types/llm-advisory";
-import { canAutoTrigger, meetsConvictionThreshold } from "./policy.ts";
 import { computeContextHash } from "./dedupe.ts";
+import { canAutoTrigger, meetsConvictionThreshold } from "./policy.ts";
 
 export interface TriggerCandidate {
   symbol: string;
@@ -14,7 +14,7 @@ export interface TriggerCandidate {
 
 export async function evaluateSignalTrigger(
   policy: LlmPolicy,
-  signal: Signal,
+  signal: Signal
 ): Promise<TriggerCandidate | null> {
   if (!canAutoTrigger(policy)) return null;
   if (!meetsConvictionThreshold(policy, signal)) return null;
@@ -35,15 +35,14 @@ export async function evaluateSignalTrigger(
 export async function evaluateRecommendationTrigger(
   policy: LlmPolicy,
   newRec: TradeRecommendation,
-  prevRec: TradeRecommendation | undefined,
+  prevRec: TradeRecommendation | undefined
 ): Promise<TriggerCandidate | null> {
   if (!canAutoTrigger(policy)) return null;
-  const actionChanged = prevRec !== undefined &&
-    prevRec.action !== newRec.action;
-  const qtyChangedMaterially = prevRec !== undefined &&
+  const actionChanged = prevRec !== undefined && prevRec.action !== newRec.action;
+  const qtyChangedMaterially =
+    prevRec !== undefined &&
     prevRec.suggestedQty > 0 &&
-    Math.abs(newRec.suggestedQty - prevRec.suggestedQty) /
-          prevRec.suggestedQty > 0.2;
+    Math.abs(newRec.suggestedQty - prevRec.suggestedQty) / prevRec.suggestedQty > 0.2;
   if (!actionChanged && !qtyChangedMaterially) return null;
   const hash = await computeContextHash([
     newRec.symbol,
@@ -62,7 +61,7 @@ export async function evaluateRecommendationTrigger(
 export async function evaluateUiRequestTrigger(
   policy: LlmPolicy,
   symbol: string,
-  requestedBy: string,
+  requestedBy: string
 ): Promise<TriggerCandidate | null> {
   if (!policy.enabled) return null;
   const hash = await computeContextHash([
@@ -82,7 +81,7 @@ export async function evaluateUiRequestTrigger(
 export async function evaluateScenarioTrigger(
   policy: LlmPolicy,
   symbol: string,
-  shockFactors: string[],
+  shockFactors: string[]
 ): Promise<TriggerCandidate | null> {
   if (!policy.enabled) return null;
   const hash = await computeContextHash([
@@ -103,13 +102,10 @@ export async function evaluateScenarioTrigger(
 export async function evaluateStalenessRefreshTrigger(
   policy: LlmPolicy,
   symbol: string,
-  latestNoteCreatedAt: number | null,
+  latestNoteCreatedAt: number | null
 ): Promise<TriggerCandidate | null> {
   if (!canAutoTrigger(policy)) return null;
-  if (
-    latestNoteCreatedAt !== null &&
-    Date.now() - latestNoteCreatedAt < policy.maxNoteAgeMs
-  ) {
+  if (latestNoteCreatedAt !== null && Date.now() - latestNoteCreatedAt < policy.maxNoteAgeMs) {
     return null;
   }
   const hash = await computeContextHash([

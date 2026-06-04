@@ -78,12 +78,7 @@ export interface ScenarioResponse {
   computedAt: number;
 }
 
-export type SignalStrength =
-  | "STRONG_BUY"
-  | "BUY"
-  | "NEUTRAL"
-  | "SELL"
-  | "STRONG_SELL";
+export type SignalStrength = "STRONG_BUY" | "BUY" | "NEUTRAL" | "SELL" | "STRONG_SELL";
 
 /** @deprecated Use string[] in Recommendation.reasons — kept only for type compat. */
 export type SignalReason =

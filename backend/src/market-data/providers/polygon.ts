@@ -3,24 +3,22 @@
  * Key: POLYGON_KEY (https://polygon.io — free tier: 15-min delayed)
  */
 
-import type { CachedQuote, ProviderDef } from "./types.ts";
 import { logger } from "@veta/logger";
+import type { CachedQuote, ProviderDef } from "./types.ts";
 
 const POLYGON_KEY = Deno.env.get("POLYGON_KEY") ?? "";
 const PROV = { provider: "polygon" };
 
-async function fetchPolygonLastTrade(
-  symbol: string,
-): Promise<CachedQuote | null> {
+async function fetchPolygonLastTrade(symbol: string): Promise<CachedQuote | null> {
   if (!POLYGON_KEY) return null;
   try {
     logger.debug("fetching last trade", { ...PROV, symbol });
-    const url = `https://api.polygon.io/v2/last/trade/${
-      encodeURIComponent(symbol)
-    }?apiKey=${POLYGON_KEY}`;
+    const url = `https://api.polygon.io/v2/last/trade/${encodeURIComponent(
+      symbol
+    )}?apiKey=${POLYGON_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json() as { results?: { p?: number; t?: number } };
+    const data = (await res.json()) as { results?: { p?: number; t?: number } };
     const results = data.results;
     if (!results || results.p == null) {
       logger.warn("no last trade data", { ...PROV, symbol });
@@ -61,10 +59,7 @@ export const polygonProvider: ProviderDef = {
   supportsSymbol(symbol: string): boolean {
     return !symbol.includes("/");
   },
-  async fetchQuote(
-    symbol: string,
-    _journalUrl: string,
-  ): Promise<CachedQuote | null> {
+  async fetchQuote(symbol: string, _journalUrl: string): Promise<CachedQuote | null> {
     return await fetchPolygonLastTrade(symbol);
   },
 };
@@ -87,7 +82,7 @@ interface PolygonMsg {
 export function openPolygonStream(
   symbols: string[],
   onQuote: OnQuote,
-  apiKey: string = POLYGON_KEY,
+  apiKey: string = POLYGON_KEY
 ): () => void {
   if (!apiKey || symbols.length === 0) {
     return () => {};
@@ -103,7 +98,7 @@ export function openPolygonStream(
 
     ws.onopen = () => {
       logger.info("WS connected, authenticating", PROV);
-      ws!.send(JSON.stringify({ action: "auth", params: apiKey }));
+      ws?.send(JSON.stringify({ action: "auth", params: apiKey }));
     };
 
     ws.onmessage = (event: MessageEvent) => {
@@ -122,12 +117,12 @@ export function openPolygonStream(
           // Subscribe to trades for each symbol
           const subs = symbols.map((s) => `T.${s}`).join(",");
           logger.info("auth OK, subscribing", { ...PROV, subs });
-          ws!.send(JSON.stringify({ action: "subscribe", params: subs }));
+          ws?.send(JSON.stringify({ action: "subscribe", params: subs }));
           continue;
         }
         if (msg.ev === "auth_failed") {
           logger.warn("WS auth failed, closing stream", PROV);
-          ws!.close();
+          ws?.close();
           return;
         }
         // Trade event

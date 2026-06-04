@@ -6,8 +6,8 @@
  * It exposes fetchYieldCurve() for use by the GET /fred/yield-curve endpoint.
  */
 
-import type { CachedQuote, ProviderDef } from "./types.ts";
 import { logger } from "@veta/logger";
+import type { CachedQuote, ProviderDef } from "./types.ts";
 
 const FRED_KEY = Deno.env.get("FRED_KEY") ?? "";
 const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
@@ -26,7 +26,7 @@ export const YIELD_CURVE_SERIES = [
   "DGS30",
 ] as const;
 
-export type YieldCurveSeriesId = typeof YIELD_CURVE_SERIES[number];
+export type YieldCurveSeriesId = (typeof YIELD_CURVE_SERIES)[number];
 
 export interface YieldCurvePoint {
   seriesId: string;
@@ -40,15 +40,12 @@ const YIELD_CURVE_TTL_MS = 60 * 60 * 1_000;
 let yieldCurveCache: Map<string, YieldCurvePoint> | null = null;
 let yieldCurveFetchedAt = 0;
 
-async function fetchOneSeries(
-  seriesId: string,
-): Promise<YieldCurvePoint | null> {
+async function fetchOneSeries(seriesId: string): Promise<YieldCurvePoint | null> {
   try {
-    const url =
-      `${FRED_BASE}?series_id=${seriesId}&api_key=${FRED_KEY}&file_type=json&sort_order=desc&limit=5`;
+    const url = `${FRED_BASE}?series_id=${seriesId}&api_key=${FRED_KEY}&file_type=json&sort_order=desc&limit=5`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json() as {
+    const data = (await res.json()) as {
       observations?: { date: string; value: string }[];
     };
     const observations = data.observations ?? [];
@@ -56,7 +53,7 @@ async function fetchOneSeries(
     for (const obs of observations) {
       if (obs.value !== ".") {
         const value = parseFloat(obs.value);
-        if (!isNaN(value)) {
+        if (!Number.isNaN(value)) {
           return { seriesId, value, date: obs.date };
         }
       }
@@ -119,10 +116,7 @@ export const fredProvider: ProviderDef = {
   supportsSymbol(_symbol: string): boolean {
     return false;
   },
-  fetchQuote(
-    _symbol: string,
-    _journalUrl: string,
-  ): Promise<CachedQuote | null> {
+  fetchQuote(_symbol: string, _journalUrl: string): Promise<CachedQuote | null> {
     return Promise.resolve(null);
   },
 };

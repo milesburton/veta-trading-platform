@@ -704,7 +704,7 @@ export function DashboardLayout() {
       if (tabSetNode.getType() !== "tabset") return;
       const ts = tabSetNode as TabSetNode;
       const selectedNode = ts.getSelectedNode();
-      if (!selectedNode || selectedNode.getType() !== "tab") return;
+      if (selectedNode?.getType() !== "tab") return;
       const tab = selectedNode as TabNode;
       const cfg = tab.getConfig() as TabChannelConfig | undefined;
       const panelType = cfg?.panelType ?? (tab.getComponent() as PanelId);

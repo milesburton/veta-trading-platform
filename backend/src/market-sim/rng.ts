@@ -22,8 +22,12 @@ export function currentSeed(): number | null {
   return prngSeed;
 }
 
-const envSeed = Deno.env.get("MARKET_SIM_SEED");
-if (envSeed && envSeed.length > 0) {
-  const parsed = Number(envSeed);
-  if (Number.isFinite(parsed)) seedRng(parsed | 0);
+export function __applyEnvSeedForTests(): void {
+  const envSeed = Deno.env.get("MARKET_SIM_SEED");
+  if (envSeed && envSeed.length > 0) {
+    const parsed = Number(envSeed);
+    if (Number.isFinite(parsed)) seedRng(parsed | 0);
+  }
 }
+
+__applyEnvSeedForTests();

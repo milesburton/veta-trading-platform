@@ -28,12 +28,12 @@ async function getConfig(): Promise<Response> {
 }
 
 async function updateConfig(req: Request): Promise<Response> {
-  const body = await req.json() as { enabled: boolean; userId?: string };
+  const body = (await req.json()) as { enabled: boolean; userId?: string };
   const client = await replayPool.connect();
   try {
     await client.queryArray(
       "UPDATE replay.config SET recording_enabled = $1, updated_by = $2, updated_at = now() WHERE id = 1",
-      [body.enabled, body.userId ?? null],
+      [body.enabled, body.userId ?? null]
     );
     return json({ recordingEnabled: body.enabled });
   } finally {
@@ -42,7 +42,7 @@ async function updateConfig(req: Request): Promise<Response> {
 }
 
 async function createSession(req: Request): Promise<Response> {
-  const body = await req.json() as {
+  const body = (await req.json()) as {
     id: string;
     userId: string;
     userName?: string;
@@ -55,7 +55,13 @@ async function createSession(req: Request): Promise<Response> {
       `INSERT INTO replay.sessions (id, user_id, user_name, user_role, started_at, metadata)
        VALUES ($1, $2, $3, $4, now(), $5)
        ON CONFLICT (id) DO NOTHING`,
-      [body.id, body.userId, body.userName ?? null, body.userRole ?? null, JSON.stringify(body.metadata ?? {})],
+      [
+        body.id,
+        body.userId,
+        body.userName ?? null,
+        body.userRole ?? null,
+        JSON.stringify(body.metadata ?? {}),
+      ]
     );
     return json({ id: body.id }, 201);
   } finally {
@@ -70,7 +76,7 @@ async function endSession(sessionId: string): Promise<Response> {
       `UPDATE replay.sessions
        SET ended_at = now(), duration_ms = EXTRACT(EPOCH FROM (now() - started_at)) * 1000
        WHERE id = $1`,
-      [sessionId],
+      [sessionId]
     );
     return json({ ok: true });
   } finally {
@@ -79,14 +85,14 @@ async function endSession(sessionId: string): Promise<Response> {
 }
 
 async function uploadChunk(sessionId: string, req: Request): Promise<Response> {
-  const body = await req.json() as { seq: number; events: unknown[] };
+  const body = (await req.json()) as { seq: number; events: unknown[] };
   const client = await replayPool.connect();
   try {
     await client.queryArray(
       `INSERT INTO replay.chunks (session_id, seq, events)
        VALUES ($1, $2, $3)
        ON CONFLICT (session_id, seq) DO UPDATE SET events = $3`,
-      [sessionId, body.seq, JSON.stringify(body.events)],
+      [sessionId, body.seq, JSON.stringify(body.events)]
     );
     return json({ ok: true }, 201);
   } finally {
@@ -110,10 +116,10 @@ async function listSessions(url: URL): Promise<Response> {
       metadata: Record<string, unknown>;
     }>(
       "SELECT id, user_id, user_name, user_role, started_at, ended_at, duration_ms, metadata FROM replay.sessions ORDER BY started_at DESC LIMIT $1 OFFSET $2",
-      [limit, offset],
+      [limit, offset]
     );
     const countResult = await client.queryObject<{ count: string }>(
-      "SELECT COUNT(*) as count FROM replay.sessions",
+      "SELECT COUNT(*) as count FROM replay.sessions"
     );
     return json({
       sessions: rows.map((r) => ({
@@ -138,7 +144,7 @@ async function getSessionEvents(sessionId: string): Promise<Response> {
   try {
     const { rows } = await client.queryObject<{ events: unknown[] }>(
       "SELECT events FROM replay.chunks WHERE session_id = $1 ORDER BY seq",
-      [sessionId],
+      [sessionId]
     );
     const allEvents = rows.flatMap((r) => r.events);
     return json({ events: allEvents });

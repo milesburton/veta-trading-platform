@@ -30,7 +30,7 @@ async function maybePruneCandles(now: number): Promise<void> {
              FROM journal.candles WHERE interval = $1
            ) ranked WHERE rn > $2
          )`,
-        [key, MAX_CANDLES],
+        [key, MAX_CANDLES]
       );
     }
   } finally {
@@ -38,9 +38,10 @@ async function maybePruneCandles(now: number): Promise<void> {
   }
 }
 
-export async function ingestTick(
-  msg: { prices?: Record<string, number>; volumes?: Record<string, number> },
-): Promise<void> {
+export async function ingestTick(msg: {
+  prices?: Record<string, number>;
+  volumes?: Record<string, number>;
+}): Promise<void> {
   if (!msg.prices) return;
   const ts = Date.now();
   const volumes = msg.volumes ?? {};
@@ -67,7 +68,7 @@ export async function ingestTick(
            low    = LEAST(journal.candles.low,    EXCLUDED.low),
            close  = EXCLUDED.close,
            volume = journal.candles.volume + EXCLUDED.volume`,
-        [instruments, key, bucket, prices, vols],
+        [instruments, key, bucket, prices, vols]
       );
     }
     await client.queryArray("COMMIT");

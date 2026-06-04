@@ -76,7 +76,7 @@ vi.mock("../../store/servicesApi.ts", () => ({
   }) => {
     const item = state.byService[name as keyof typeof state.byService];
     if (!item || item.kind === "error") {
-      if (!stableQueryResults[name] || stableQueryResults[name].signature !== "error") {
+      if (stableQueryResults[name]?.signature !== "error") {
         stableQueryResults[name] = {
           signature: "error",
           data: undefined,

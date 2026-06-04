@@ -8,24 +8,22 @@
  * behaviour are correct.
  */
 
-import {
-  assert,
-  assertEquals,
-  assertExists,
-} from "jsr:@std/assert@0.217";
+import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
 import { loginAs } from "./test-helpers.ts";
 
-const GATEWAY_URL   = "http://localhost:5011";
-const MARKET_URL    = "http://localhost:5000";
-const JOURNAL_URL   = "http://localhost:5009";
-const OMS_URL       = "http://localhost:5002";
-const LIMIT_URL     = "http://localhost:5003";
-const TWAP_URL      = "http://localhost:5004";
-const POV_URL       = "http://localhost:5005";
-const VWAP_URL      = "http://localhost:5006";
-const ARCHIVE_URL   = "http://localhost:5012";
+const GATEWAY_URL = "http://localhost:5011";
+const MARKET_URL = "http://localhost:5000";
+const JOURNAL_URL = "http://localhost:5009";
+const OMS_URL = "http://localhost:5002";
+const LIMIT_URL = "http://localhost:5003";
+const TWAP_URL = "http://localhost:5004";
+const POV_URL = "http://localhost:5005";
+const VWAP_URL = "http://localhost:5006";
+const ARCHIVE_URL = "http://localhost:5012";
 
-function t(ms = 5_000) { return AbortSignal.timeout(ms); }
+function t(ms = 5_000) {
+  return AbortSignal.timeout(ms);
+}
 
 // ── OPTIONS preflight (CORS) ──────────────────────────────────────────────────
 
@@ -48,13 +46,15 @@ Deno.test("[cors] gateway OPTIONS returns 204", async () => {
 Deno.test("[market-sim] /assets returns asset list with AAPL", async () => {
   const res = await fetch(`${MARKET_URL}/assets`, { signal: t() });
   assertEquals(res.status, 200);
-  const assets = await res.json() as { symbol: string }[];
+  const assets = (await res.json()) as { symbol: string }[];
   assert(Array.isArray(assets) && assets.length > 0);
   assertExists(assets.find((a) => a.symbol === "AAPL"));
 });
 
 Deno.test("[journal] /candles returns array", async () => {
-  const res = await fetch(`${JOURNAL_URL}/candles?instrument=AAPL&interval=1m&limit=5`, { signal: t() });
+  const res = await fetch(`${JOURNAL_URL}/candles?instrument=AAPL&interval=1m&limit=5`, {
+    signal: t(),
+  });
   assertEquals(res.status, 200);
   assert(Array.isArray(await res.json()));
 });
@@ -70,7 +70,11 @@ Deno.test("[journal] /orders returns array", async () => {
 Deno.test("[market] /assets returns enriched fields", async () => {
   const res = await fetch(`${MARKET_URL}/assets`, { signal: t() });
   assertEquals(res.status, 200);
-  const assets = await res.json() as { symbol: string; initialPrice: number; dailyVolume: number }[];
+  const assets = (await res.json()) as {
+    symbol: string;
+    initialPrice: number;
+    dailyVolume: number;
+  }[];
   assert(assets.length > 0);
   const aapl = assets.find((a) => a.symbol === "AAPL");
   assertExists(aapl);
@@ -83,7 +87,7 @@ Deno.test("[market] /assets returns enriched fields", async () => {
 Deno.test("[limit-algo] health includes pending count", async () => {
   const res = await fetch(`${LIMIT_URL}/health`, { signal: t() });
   assertEquals(res.status, 200);
-  const body = await res.json() as { status: string; activeOrders: number };
+  const body = (await res.json()) as { status: string; activeOrders: number };
   assertEquals(body.status, "ok");
   assertEquals(typeof body.activeOrders, "number");
 });
@@ -91,7 +95,7 @@ Deno.test("[limit-algo] health includes pending count", async () => {
 Deno.test("[pov-algo] health includes activeOrders count", async () => {
   const res = await fetch(`${POV_URL}/health`, { signal: t() });
   assertEquals(res.status, 200);
-  const body = await res.json() as { status: string; activeOrders: number };
+  const body = (await res.json()) as { status: string; activeOrders: number };
   assertEquals(body.status, "ok");
   assertEquals(typeof body.activeOrders, "number");
 });
@@ -99,7 +103,7 @@ Deno.test("[pov-algo] health includes activeOrders count", async () => {
 Deno.test("[vwap-algo] health includes activeOrders count", async () => {
   const res = await fetch(`${VWAP_URL}/health`, { signal: t() });
   assertEquals(res.status, 200);
-  const body = await res.json() as { status: string; activeOrders: number };
+  const body = (await res.json()) as { status: string; activeOrders: number };
   assertEquals(body.status, "ok");
   assertEquals(typeof body.activeOrders, "number");
 });
@@ -107,7 +111,7 @@ Deno.test("[vwap-algo] health includes activeOrders count", async () => {
 Deno.test("[twap-algo] health is ok", async () => {
   const res = await fetch(`${TWAP_URL}/health`, { signal: t() });
   assertEquals(res.status, 200);
-  assertEquals((await res.json() as { status: string }).status, "ok");
+  assertEquals(((await res.json()) as { status: string }).status, "ok");
 });
 
 // ── FIX Archive ───────────────────────────────────────────────────────────────
@@ -132,24 +136,31 @@ Deno.test("[gateway] WS connects and responds to submitOrder within 5s", async (
   // In CI without a live user-service session, the gateway returns an
   // error event rather than orderAck — both confirm the WS message pipeline works.
   const ws = new WebSocket(`ws://localhost:5011/ws`);
-  const closed = new Promise<void>((r) => { ws.onclose = () => r(); });
+  const closed = new Promise<void>((r) => {
+    ws.onclose = () => r();
+  });
 
   const result = await new Promise<string>((resolve, reject) => {
-    const timer = setTimeout(() => { ws.close(); reject(new Error("timeout")); }, 5_000);
+    const timer = setTimeout(() => {
+      ws.close();
+      reject(new Error("timeout"));
+    }, 5_000);
     ws.onopen = () => {
-      ws.send(JSON.stringify({
-        type: "submitOrder",
-        payload: {
-          clientOrderId: `int-${Date.now()}`,
-          asset: "MSFT",
-          side: "BUY",
-          quantity: 25,
-          limitPrice: 420.0,
-          expiresAt: 30,
-          strategy: "LIMIT",
-          algoParams: { strategy: "LIMIT" },
-        },
-      }));
+      ws.send(
+        JSON.stringify({
+          type: "submitOrder",
+          payload: {
+            clientOrderId: `int-${Date.now()}`,
+            asset: "MSFT",
+            side: "BUY",
+            quantity: 25,
+            limitPrice: 420.0,
+            expiresAt: 30,
+            strategy: "LIMIT",
+            algoParams: { strategy: "LIMIT" },
+          },
+        })
+      );
     };
     ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data as string) as { event: string };
@@ -160,14 +171,17 @@ Deno.test("[gateway] WS connects and responds to submitOrder within 5s", async (
         resolve(msg.event);
       }
     };
-    ws.onerror = () => { clearTimeout(timer); reject(new Error("WS error")); };
+    ws.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error("WS error"));
+    };
   });
 
   await closed;
   // orderAck (auth), orderRejected (no session in CI), error (bus issue). All confirm pipeline responds.
   assert(
     result === "orderAck" || result === "orderRejected" || result === "error",
-    `unexpected event: ${result}`,
+    `unexpected event: ${result}`
   );
 });
 
@@ -176,7 +190,7 @@ Deno.test("[gateway] WS connects and responds to submitOrder within 5s", async (
 Deno.test("[oms] health is ok", async () => {
   const res = await fetch(`${OMS_URL}/health`, { signal: t() });
   assertEquals(res.status, 200);
-  assertEquals((await res.json() as { status: string }).status, "ok");
+  assertEquals(((await res.json()) as { status: string }).status, "ok");
 });
 
 Deno.test("[oms] POST / returns 404 (order submission moved to bus)", async () => {
@@ -239,7 +253,7 @@ Deno.test("[grid/query] POST /grid/query direct to journal returns correct shape
     signal: t(8_000),
   });
   assertEquals(res.status, 200);
-  const body = await res.json() as { rows: unknown[]; total: number; evalMs: number };
+  const body = (await res.json()) as { rows: unknown[]; total: number; evalMs: number };
   assert(Array.isArray(body.rows), "rows should be an array");
   assertEquals(typeof body.total, "number");
   assertEquals(typeof body.evalMs, "number");
@@ -257,7 +271,7 @@ Deno.test("[shared-workspaces] GET /shared-workspaces without auth returns 401",
 
 Deno.test("[shared-workspaces] full lifecycle: POST → GET → DELETE", async () => {
   const aliceCookie = `veta_user=${await loginAs("alice")}`;
-  const bobCookie   = `veta_user=${await loginAs("bob")}`;
+  const bobCookie = `veta_user=${await loginAs("bob")}`;
 
   // Alice publishes a workspace
   const model = { global: {}, layout: { type: "row", children: [] } };
@@ -268,7 +282,7 @@ Deno.test("[shared-workspaces] full lifecycle: POST → GET → DELETE", async (
     signal: t(),
   });
   assertEquals(postRes.status, 200);
-  const { id } = await postRes.json() as { id: string };
+  const { id } = (await postRes.json()) as { id: string };
   assertExists(id);
 
   // GET lists it (Bob can see it)
@@ -277,7 +291,7 @@ Deno.test("[shared-workspaces] full lifecycle: POST → GET → DELETE", async (
     signal: t(),
   });
   assertEquals(listRes.status, 200);
-  const list = await listRes.json() as { id: string; name: string; ownerName: string }[];
+  const list = (await listRes.json()) as { id: string; name: string; ownerName: string }[];
   const found = list.find((e) => e.id === id);
   assertExists(found, "Published workspace should appear in list");
   assertEquals(found.name, "Test Workspace");
@@ -306,7 +320,7 @@ Deno.test("[shared-workspaces] full lifecycle: POST → GET → DELETE", async (
     headers: { cookie: aliceCookie },
     signal: t(),
   });
-  const afterList = await afterRes.json() as { id: string }[];
+  const afterList = (await afterRes.json()) as { id: string }[];
   assert(!afterList.find((e) => e.id === id), "Deleted workspace should not appear in list");
 });
 
@@ -320,14 +334,14 @@ Deno.test("[shared-workspaces] GET /:id returns model JSON", async () => {
     body: JSON.stringify({ name: "Detail Test", model }),
     signal: t(),
   });
-  const { id } = await postRes.json() as { id: string };
+  const { id } = (await postRes.json()) as { id: string };
 
   const detailRes = await fetch(`${GATEWAY_URL}/shared-workspaces/${id}`, {
     headers: { cookie: aliceCookie },
     signal: t(),
   });
   assertEquals(detailRes.status, 200);
-  const detail = await detailRes.json() as { id: string; model: unknown; name: string };
+  const detail = (await detailRes.json()) as { id: string; model: unknown; name: string };
   assertEquals(detail.id, id);
   assertEquals(detail.name, "Detail Test");
   assertExists(detail.model);

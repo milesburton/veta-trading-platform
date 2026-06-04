@@ -7,8 +7,7 @@ const SUPERVISORD_CONF = `${REPO_ROOT}supervisord.conf`;
 const ALGO_DIR = `${REPO_ROOT}backend/src/algo`;
 const BACKEND_TESTS_DIR = `${REPO_ROOT}backend/src/tests`;
 const SCREENSHOTS_CANONICAL_DIR = `${REPO_ROOT}docs/screenshots`;
-const PANEL_SCREENSHOTS_CANONICAL_DIR =
-  `${REPO_ROOT}docs/panel-walkthrough/screenshots`;
+const PANEL_SCREENSHOTS_CANONICAL_DIR = `${REPO_ROOT}docs/panel-walkthrough/screenshots`;
 
 const GRAFANA_SCREENSHOT_PREFIX = "/veta-trading-platform/screenshots/grafana/";
 const KNOWN_PENDING_SCREENSHOTS = new Set([
@@ -19,12 +18,10 @@ const KNOWN_PENDING_SCREENSHOTS = new Set([
 
 async function readAllDocsMarkdown(): Promise<Map<string, string>> {
   const out = new Map<string, string>();
-  for await (
-    const entry of walk(DOCS_ROOT, {
-      includeDirs: false,
-      exts: [".md", ".mdx"],
-    })
-  ) {
+  for await (const entry of walk(DOCS_ROOT, {
+    includeDirs: false,
+    exts: [".md", ".mdx"],
+  })) {
     out.set(entry.path, await Deno.readTextFile(entry.path));
   }
   return out;
@@ -42,12 +39,10 @@ async function listAlgoStrategyFiles(): Promise<Set<string>> {
 
 async function listBackendTestFiles(): Promise<Set<string>> {
   const out = new Set<string>();
-  for await (
-    const entry of walk(BACKEND_TESTS_DIR, {
-      includeDirs: false,
-      exts: [".ts"],
-    })
-  ) {
+  for await (const entry of walk(BACKEND_TESTS_DIR, {
+    includeDirs: false,
+    exts: [".ts"],
+  })) {
     out.add(entry.path.replace(REPO_ROOT, ""));
   }
   return out;
@@ -82,7 +77,7 @@ Deno.test("[docs-drift] every backend test file referenced in docs exists on dis
     missing,
     [],
     `Found references to backend test files in docs that do not exist on disk:\n` +
-      missing.map((m) => `  ${m.docPath} -> ${m.ref}`).join("\n"),
+      missing.map((m) => `  ${m.docPath} -> ${m.ref}`).join("\n")
   );
 });
 
@@ -103,7 +98,8 @@ Deno.test("[docs-drift] every screenshot referenced in docs resolves to a file",
     for (const match of content.matchAll(pattern)) {
       const ref = match[0];
       if (ref.startsWith(GRAFANA_SCREENSHOT_PREFIX)) continue;
-      const filename = ref.split("/").pop()!;
+      const filename = ref.split("/").pop();
+      if (!filename) continue;
       if (KNOWN_PENDING_SCREENSHOTS.has(filename)) continue;
       const onDisk = resolveScreenshotRef(ref);
       try {
@@ -121,7 +117,7 @@ Deno.test("[docs-drift] every screenshot referenced in docs resolves to a file",
       `Top-level screenshots come from docs/screenshots/ and panel/* from ` +
       `docs/panel-walkthrough/screenshots/; both are committed to git and ` +
       `copied into docs/site/public/screenshots/ at Pages build time.\n` +
-      missing.map((m) => `  ${m.docPath} -> ${m.ref}`).join("\n"),
+      missing.map((m) => `  ${m.docPath} -> ${m.ref}`).join("\n")
   );
 });
 
@@ -137,60 +133,54 @@ Deno.test("[docs-drift] every algo strategy named in docs prose exists in backen
   }
 
   const docNameToFile: Record<string, string> = {
-    "limit": "limit",
-    "twap": "twap",
-    "vwap": "vwap",
-    "pov": "pov",
-    "iceberg": "iceberg",
-    "sniper": "sniper",
+    limit: "limit",
+    twap: "twap",
+    vwap: "vwap",
+    pov: "pov",
+    iceberg: "iceberg",
+    sniper: "sniper",
     "arrival-price": "arrival-price",
-    "is": "is",
-    "momentum": "momentum",
+    is: "is",
+    momentum: "momentum",
   };
 
   for (const name of namedInTable) {
     const fileStem = docNameToFile[name];
     assert(
       fileStem !== undefined && existing.has(fileStem),
-      `Docs mention algo '${name}' but no backend/src/algo/${name}-strategy.ts found. Existing: ${[...existing].sort().join(", ")}`,
+      `Docs mention algo '${name}' but no backend/src/algo/${name}-strategy.ts found. Existing: ${[...existing].sort().join(", ")}`
     );
   }
   assertEquals(
     namedInTable.size > 0,
     true,
-    "Expected to find at least one algo named in the user-guide/algo-trading.md table",
+    "Expected to find at least one algo named in the user-guide/algo-trading.md table"
   );
 });
 
 Deno.test("[docs-drift] every service named in supervisord.conf comment of platform/services.md exists in supervisord", async () => {
-  const services = parseSupervisordPrograms(
-    await Deno.readTextFile(SUPERVISORD_CONF),
-  );
+  const services = parseSupervisordPrograms(await Deno.readTextFile(SUPERVISORD_CONF));
   const servicesMd = await Deno.readTextFile(`${DOCS_ROOT}/platform/services.md`);
 
-  const backtickedServices = [
-    ...servicesMd.matchAll(/`([a-z][a-z0-9-]+)`/g),
-  ].map((m) => m[1]);
+  const backtickedServices = [...servicesMd.matchAll(/`([a-z][a-z0-9-]+)`/g)].map((m) => m[1]);
 
   const referenced = backtickedServices.filter((name) => services.has(name));
   assert(
     referenced.length > 0,
-    "Expected platform/services.md to mention at least one service from supervisord.conf",
+    "Expected platform/services.md to mention at least one service from supervisord.conf"
   );
 
-  const explicitlyClaimedAsService = backtickedServices.filter((name) =>
-    /^[a-z]+(-[a-z0-9]+)*$/.test(name) && name.includes("-")
+  const explicitlyClaimedAsService = backtickedServices.filter(
+    (name) => /^[a-z]+(-[a-z0-9]+)*$/.test(name) && name.includes("-")
   );
   const missing = explicitlyClaimedAsService.filter(
-    (name) =>
-      !services.has(name) &&
-      !["docker-compose", "deno-task", "deno-test"].includes(name),
+    (name) => !services.has(name) && !["docker-compose", "deno-task", "deno-test"].includes(name)
   );
 
   assertEquals(
     missing.filter((name) => /algo|svc|gateway|engine|sim/.test(name)),
     [],
-    `Names appearing in platform/services.md that look like services but are not in supervisord.conf: ${missing.join(", ")}`,
+    `Names appearing in platform/services.md that look like services but are not in supervisord.conf: ${missing.join(", ")}`
   );
 });
 
@@ -204,30 +194,26 @@ Deno.test("[docs-drift] test-inventory.json exists and matches the deno.json tes
     inventory = JSON.parse(raw);
   } catch {
     throw new Error(
-      `${inventoryPath} is missing. Run 'cd docs/site && npm run generate' to produce it.`,
+      `${inventoryPath} is missing. Run 'cd docs/site && npm run generate' to produce it.`
     );
   }
 
-  const denoJson = JSON.parse(
-    await Deno.readTextFile(`${REPO_ROOT}deno.json`),
-  );
+  const denoJson = JSON.parse(await Deno.readTextFile(`${REPO_ROOT}deno.json`));
   const testTaskCmd = denoJson.tasks?.test ?? "";
   const filesFromTask = new Set(
-    (testTaskCmd as string).match(/backend\/src\/tests\/[^\s&]+\.ts/g) ?? [],
+    (testTaskCmd as string).match(/backend\/src\/tests\/[^\s&]+\.ts/g) ?? []
   );
 
   assertEquals(
     inventory.backend.unit.files,
     filesFromTask.size,
-    `Inventory says ${inventory.backend.unit.files} backend unit files but the deno.json 'test' task lists ${filesFromTask.size}. Regenerate via 'cd docs/site && npm run generate'.`,
+    `Inventory says ${inventory.backend.unit.files} backend unit files but the deno.json 'test' task lists ${filesFromTask.size}. Regenerate via 'cd docs/site && npm run generate'.`
   );
 });
 
 Deno.test("[docs-drift] every <Term name='...'> in docs references a real glossary id", async () => {
   const docs = await readAllDocsMarkdown();
-  const glossarySource = await Deno.readTextFile(
-    `${REPO_ROOT}docs/site/src/data/glossary.ts`,
-  );
+  const glossarySource = await Deno.readTextFile(`${REPO_ROOT}docs/site/src/data/glossary.ts`);
   const knownIds = new Set<string>();
   for (const match of glossarySource.matchAll(/^\s*id:\s*"([a-z0-9-]+)"/gm)) {
     knownIds.add(match[1]);
@@ -235,7 +221,7 @@ Deno.test("[docs-drift] every <Term name='...'> in docs references a real glossa
   if (knownIds.size === 0) {
     throw new Error(
       "Could not parse any term ids from docs/site/src/data/glossary.ts. " +
-        "If the file format has changed, update this test.",
+        "If the file format has changed, update this test."
     );
   }
 
@@ -255,7 +241,7 @@ Deno.test("[docs-drift] every <Term name='...'> in docs references a real glossa
     missing,
     [],
     `<Term name="..."> references glossary ids that do not exist in docs/site/src/data/glossary.ts:\n` +
-      missing.map((m) => `  ${m.docPath} -> name="${m.ref}"`).join("\n"),
+      missing.map((m) => `  ${m.docPath} -> name="${m.ref}"`).join("\n")
   );
 });
 
@@ -311,12 +297,8 @@ async function extractAnchors(filePath: string): Promise<Set<string>> {
 }
 
 Deno.test("[docs-drift] rbac-roles.json matches AUTH_ROLES in frontend/src/auth/rbac.ts", async () => {
-  const rbacSrc = await Deno.readTextFile(
-    `${REPO_ROOT}frontend/src/auth/rbac.ts`,
-  );
-  const arrMatch = rbacSrc.match(
-    /export const AUTH_ROLES\s*=\s*\[([\s\S]*?)\]/,
-  );
+  const rbacSrc = await Deno.readTextFile(`${REPO_ROOT}frontend/src/auth/rbac.ts`);
+  const arrMatch = rbacSrc.match(/export const AUTH_ROLES\s*=\s*\[([\s\S]*?)\]/);
   assert(arrMatch, "Could not find AUTH_ROLES in frontend/src/auth/rbac.ts");
   const sourceRoles = arrMatch[1]
     .split(",")
@@ -326,30 +308,23 @@ Deno.test("[docs-drift] rbac-roles.json matches AUTH_ROLES in frontend/src/auth/
   let generated: { roles: { id: string; canTrade: boolean }[] };
   try {
     generated = JSON.parse(
-      await Deno.readTextFile(
-        `${REPO_ROOT}docs/site/src/data/rbac-roles.json`,
-      ),
+      await Deno.readTextFile(`${REPO_ROOT}docs/site/src/data/rbac-roles.json`)
     );
   } catch {
     throw new Error(
-      "docs/site/src/data/rbac-roles.json is missing. Run 'cd docs/site && npm run generate' to produce it.",
+      "docs/site/src/data/rbac-roles.json is missing. Run 'cd docs/site && npm run generate' to produce it."
     );
   }
 
   assertEquals(
     generated.roles.map((r) => r.id),
     sourceRoles,
-    "rbac-roles.json is stale; regenerate via 'cd docs/site && npm run generate'.",
+    "rbac-roles.json is stale; regenerate via 'cd docs/site && npm run generate'."
   );
 
-  const tableSrc = await Deno.readTextFile(
-    `${REPO_ROOT}docs/site/src/components/RbacTable.astro`,
-  );
+  const tableSrc = await Deno.readTextFile(`${REPO_ROOT}docs/site/src/components/RbacTable.astro`);
   const notesMatch = tableSrc.match(/ACCESS_NOTES[^=]*=\s*\{([\s\S]*?)\};/);
-  assert(
-    notesMatch,
-    "Could not find ACCESS_NOTES in docs/site/src/components/RbacTable.astro",
-  );
+  assert(notesMatch, "Could not find ACCESS_NOTES in docs/site/src/components/RbacTable.astro");
   const notesKeys = new Set<string>();
   for (const m of notesMatch[1].matchAll(/^\s*["']?([\w-]+)["']?\s*:/gm)) {
     notesKeys.add(m[1]);
@@ -359,7 +334,7 @@ Deno.test("[docs-drift] rbac-roles.json matches AUTH_ROLES in frontend/src/auth/
     missing,
     [],
     `RbacTable.astro ACCESS_NOTES is missing entries for roles: ${missing.join(", ")}. ` +
-      `Add admin/access policy notes for each role declared in rbac.ts.`,
+      `Add admin/access policy notes for each role declared in rbac.ts.`
   );
 });
 
@@ -438,8 +413,6 @@ Deno.test("[docs-drift] every cross-page heading anchor link resolves to a real 
     broken,
     [],
     `Cross-page heading anchor links in docs do not resolve:\n` +
-      broken
-        .map((b) => `  ${b.docPath} -> ${b.link}\n      (${b.reason})`)
-        .join("\n"),
+      broken.map((b) => `  ${b.docPath} -> ${b.link}\n      (${b.reason})`).join("\n")
   );
 });

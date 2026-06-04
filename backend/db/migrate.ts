@@ -8,9 +8,7 @@ if (!databaseUrl) {
 
 try {
   const { applied, skipped } = await runMigrations(databaseUrl);
-  console.log(
-    `Migrations complete: ${applied.length} applied, ${skipped.length} skipped.`,
-  );
+  console.log(`Migrations complete: ${applied.length} applied, ${skipped.length} skipped.`);
 } catch (err) {
   console.error("Migration failed:", err);
   Deno.exit(1);

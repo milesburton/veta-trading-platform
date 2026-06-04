@@ -1,8 +1,4 @@
-import {
-  assert,
-  assertAlmostEquals,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
+import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 import { priceFan } from "../analytics/price-fan.ts";
 
 const SPOT = 100;
@@ -11,12 +7,7 @@ const RATE = 0.05;
 const STEP_SECS = 86400;
 const PATHS = 1000;
 
-function runPriceFan(
-  steps: number,
-  seedKey: string,
-  vol = VOL,
-  stepSecs = STEP_SECS,
-) {
+function runPriceFan(steps: number, seedKey: string, vol = VOL, stepSecs = STEP_SECS) {
   return priceFan(SPOT, vol, RATE, steps, stepSecs, PATHS, seedKey);
 }
 
@@ -45,16 +36,14 @@ function assertFlatQuantiles(step: ReturnType<typeof runPriceFan>[number]) {
   assertAlmostEquals(step.p75, step.p95);
 }
 
-for (
-  const { label, steps, seedKey } of [
-    {
-      label: "returns correct number of steps",
-      steps: 10,
-      seedKey: "test-steps",
-    },
-    { label: "edge case - zero steps", steps: 0, seedKey: "zero-steps" },
-  ] as const
-) {
+for (const { label, steps, seedKey } of [
+  {
+    label: "returns correct number of steps",
+    steps: 10,
+    seedKey: "test-steps",
+  },
+  { label: "edge case - zero steps", steps: 0, seedKey: "zero-steps" },
+] as const) {
   Deno.test(`[price-fan] ${label}`, () => {
     assertEquals(runPriceFan(steps, seedKey).length, steps);
   });

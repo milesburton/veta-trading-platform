@@ -6,11 +6,7 @@
  * observability events confirm the decision log is populated.
  */
 
-import {
-  assert,
-  assertEquals,
-  assertExists,
-} from "jsr:@std/assert@0.217";
+import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
 import {
   GATEWAY_URL,
   JOURNAL_URL,
@@ -30,10 +26,7 @@ interface OrderRow {
 }
 
 /** Poll the journal grid until the order appears, up to maxWaitMs. */
-async function pollForOrder(
-  clientOrderId: string,
-  maxWaitMs = 15_000,
-): Promise<OrderRow | null> {
+async function pollForOrder(clientOrderId: string, maxWaitMs = 15_000): Promise<OrderRow | null> {
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
     const res = await fetch(`${JOURNAL_URL}/grid/query`, {
@@ -45,13 +38,15 @@ async function pollForOrder(
           kind: "group",
           id: "g1",
           join: "AND",
-          rules: [{
-            kind: "rule",
-            id: "r1",
-            field: "id",
-            op: "=",
-            value: clientOrderId,
-          }],
+          rules: [
+            {
+              kind: "rule",
+              id: "r1",
+              field: "id",
+              op: "=",
+              value: clientOrderId,
+            },
+          ],
         },
         sortField: null,
         sortDir: null,
@@ -61,7 +56,7 @@ async function pollForOrder(
       signal: t(20_000),
     });
     if (res.ok) {
-      const data = await res.json() as { rows: OrderRow[] };
+      const data = (await res.json()) as { rows: OrderRow[] };
       if (data.rows.length > 0) return data.rows[0];
     } else {
       await res.body?.cancel();
@@ -75,7 +70,7 @@ async function pollForOrder(
 async function pollForChildren(
   clientOrderId: string,
   minChildren: number,
-  maxWaitMs = 20_000,
+  maxWaitMs = 20_000
 ): Promise<OrderRow | null> {
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
@@ -106,19 +101,13 @@ Deno.test("[algo] LIMIT: order routes, gets a child slice, appears in journal", 
   });
 
   const order = await pollForChildren(id, 1, 20_000);
-  assertExists(
-    order,
-    `LIMIT order ${id} did not produce a child slice within 20s`,
-  );
+  assertExists(order, `LIMIT order ${id} did not produce a child slice within 20s`);
   assertEquals(order.strategy, "LIMIT");
   assert(
     ["working", "filled", "pending"].includes(order.status),
-    `Expected working/filled/pending, got: ${order.status}`,
+    `Expected working/filled/pending, got: ${order.status}`
   );
-  assert(
-    order.children.length >= 1,
-    `Expected ≥1 child slice, got ${order.children.length}`,
-  );
+  assert(order.children.length >= 1, `Expected ≥1 child slice, got ${order.children.length}`);
 });
 
 // ── TWAP ──────────────────────────────────────────────────────────────────────
@@ -142,15 +131,9 @@ Deno.test("[algo] TWAP: order routes, produces multiple child slices over time",
   });
 
   const order = await pollForChildren(id, 1, 25_000);
-  assertExists(
-    order,
-    `TWAP order ${id} did not produce child slices within 25s`,
-  );
+  assertExists(order, `TWAP order ${id} did not produce child slices within 25s`);
   assertEquals(order.strategy, "TWAP");
-  assert(
-    order.children.length >= 1,
-    `Expected ≥1 TWAP slice, got ${order.children.length}`,
-  );
+  assert(order.children.length >= 1, `Expected ≥1 TWAP slice, got ${order.children.length}`);
 });
 
 // ── POV ───────────────────────────────────────────────────────────────────────
@@ -174,15 +157,9 @@ Deno.test("[algo] POV: order routes and dispatches child slices proportional to 
   });
 
   const order = await pollForChildren(id, 1, 25_000);
-  assertExists(
-    order,
-    `POV order ${id} did not produce child slices within 25s`,
-  );
+  assertExists(order, `POV order ${id} did not produce child slices within 25s`);
   assertEquals(order.strategy, "POV");
-  assert(
-    order.children.length >= 1,
-    `Expected ≥1 POV slice, got ${order.children.length}`,
-  );
+  assert(order.children.length >= 1, `Expected ≥1 POV slice, got ${order.children.length}`);
 });
 
 // ── VWAP ──────────────────────────────────────────────────────────────────────
@@ -206,15 +183,9 @@ Deno.test("[algo] VWAP: order routes and dispatches volume-weighted child slices
   });
 
   const order = await pollForChildren(id, 1, 25_000);
-  assertExists(
-    order,
-    `VWAP order ${id} did not produce child slices within 25s`,
-  );
+  assertExists(order, `VWAP order ${id} did not produce child slices within 25s`);
   assertEquals(order.strategy, "VWAP");
-  assert(
-    order.children.length >= 1,
-    `Expected ≥1 VWAP slice, got ${order.children.length}`,
-  );
+  assert(order.children.length >= 1, `Expected ≥1 VWAP slice, got ${order.children.length}`);
 });
 
 // ── ICEBERG ───────────────────────────────────────────────────────────────────
@@ -232,25 +203,19 @@ Deno.test("[algo] ICEBERG: order routes, initial visible slice appears as child"
     asset: "AAPL",
     side: "BUY",
     quantity: 500,
-    limitPrice: Number(price) * 1.20,
+    limitPrice: Number(price) * 1.2,
     strategy: "ICEBERG",
     expiresAt: 300,
     algoParams: { strategy: "ICEBERG", visibleQty: 50 },
   });
 
   const order = await pollForChildren(id, 1, 60_000);
-  assertExists(
-    order,
-    `ICEBERG order ${id} did not produce child slices within 60s`,
-  );
+  assertExists(order, `ICEBERG order ${id} did not produce child slices within 60s`);
   assertEquals(order.strategy, "ICEBERG");
-  assert(
-    order.children.length >= 1,
-    `Expected ≥1 ICEBERG slice, got ${order.children.length}`,
-  );
+  assert(order.children.length >= 1, `Expected ≥1 ICEBERG slice, got ${order.children.length}`);
   assert(
     order.children[0].quantity <= 50,
-    `ICEBERG visible qty should be ≤50, got ${order.children[0].quantity}`,
+    `ICEBERG visible qty should be ≤50, got ${order.children[0].quantity}`
   );
 });
 
@@ -275,15 +240,9 @@ Deno.test("[algo] SNIPER: order routes and executes aggressively (single or few 
   });
 
   const order = await pollForChildren(id, 1, 30_000);
-  assertExists(
-    order,
-    `SNIPER order ${id} did not produce child slices within 30s`,
-  );
+  assertExists(order, `SNIPER order ${id} did not produce child slices within 30s`);
   assertEquals(order.strategy, "SNIPER");
-  assert(
-    order.children.length >= 1,
-    `Expected ≥1 SNIPER slice, got ${order.children.length}`,
-  );
+  assert(order.children.length >= 1, `Expected ≥1 SNIPER slice, got ${order.children.length}`);
 });
 
 // ── ARRIVAL_PRICE ─────────────────────────────────────────────────────────────
@@ -301,21 +260,18 @@ Deno.test("[algo] ARRIVAL_PRICE: order routes and executes relative to arrival p
     asset: "AAPL",
     side: "BUY",
     quantity: 75,
-    limitPrice: Number(price) * 1.20,
+    limitPrice: Number(price) * 1.2,
     strategy: "ARRIVAL_PRICE",
     expiresAt: 300,
     algoParams: { strategy: "ARRIVAL_PRICE", maxSlippageBps: 500 },
   });
 
   const order = await pollForChildren(id, 1, 60_000);
-  assertExists(
-    order,
-    `ARRIVAL_PRICE order ${id} did not produce child slices within 60s`,
-  );
+  assertExists(order, `ARRIVAL_PRICE order ${id} did not produce child slices within 60s`);
   assertEquals(order.strategy, "ARRIVAL_PRICE");
   assert(
     order.children.length >= 1,
-    `Expected ≥1 ARRIVAL_PRICE slice, got ${order.children.length}`,
+    `Expected ≥1 ARRIVAL_PRICE slice, got ${order.children.length}`
   );
 });
 
@@ -339,16 +295,10 @@ Deno.test("[algo] SELL LIMIT: routes and produces child slice", async () => {
   });
 
   const order = await pollForChildren(id, 1, 20_000);
-  assertExists(
-    order,
-    `SELL LIMIT order ${id} did not produce a child slice within 20s`,
-  );
+  assertExists(order, `SELL LIMIT order ${id} did not produce a child slice within 20s`);
   assertEquals(order.side, "SELL");
   assertEquals(order.strategy, "LIMIT");
-  assert(
-    order.children.length >= 1,
-    `Expected ≥1 child slice, got ${order.children.length}`,
-  );
+  assert(order.children.length >= 1, `Expected ≥1 child slice, got ${order.children.length}`);
 });
 
 Deno.test("[algo] SELL TWAP: routes and produces multiple child slices", async () => {
@@ -370,16 +320,10 @@ Deno.test("[algo] SELL TWAP: routes and produces multiple child slices", async (
   });
 
   const order = await pollForChildren(id, 1, 25_000);
-  assertExists(
-    order,
-    `SELL TWAP order ${id} did not produce child slices within 25s`,
-  );
+  assertExists(order, `SELL TWAP order ${id} did not produce child slices within 25s`);
   assertEquals(order.side, "SELL");
   assertEquals(order.strategy, "TWAP");
-  assert(
-    order.children.length >= 1,
-    `Expected ≥1 TWAP slice, got ${order.children.length}`,
-  );
+  assert(order.children.length >= 1, `Expected ≥1 TWAP slice, got ${order.children.length}`);
 });
 
 // ── Performance assertions ─────────────────────────────────────────────────────
@@ -388,7 +332,7 @@ Deno.test("[algo] SELL TWAP: routes and produces multiple child slices", async (
 /** Poll until the order status is 'filled' or 'expired', up to maxWaitMs. */
 async function pollUntilSettled(
   clientOrderId: string,
-  maxWaitMs = 60_000,
+  maxWaitMs = 60_000
 ): Promise<OrderRow | null> {
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
@@ -422,16 +366,13 @@ Deno.test("[perf] LIMIT fill rate: order fills completely within 60s", async () 
   const order = await pollUntilSettled(id, 60_000);
   assertExists(order, `LIMIT order ${id} not found after 60s`);
 
-  const filledQty = order.children.reduce(
-    (sum, c) => sum + (c.quantity ?? 0),
-    0,
-  );
+  const filledQty = order.children.reduce((sum, c) => sum + (c.quantity ?? 0), 0);
   const fillRate = filledQty / qty;
   assert(
     fillRate >= 0.8,
-    `LIMIT fill rate ${
-      (fillRate * 100).toFixed(1)
-    }% is below 80% threshold (filled ${filledQty}/${qty})`,
+    `LIMIT fill rate ${(fillRate * 100).toFixed(
+      1
+    )}% is below 80% threshold (filled ${filledQty}/${qty})`
   );
 });
 
@@ -455,19 +396,16 @@ Deno.test("[perf] TWAP slice count: 3 slices produce ≥2 children within 15s", 
   });
 
   const order = await pollForChildren(id, 2, 20_000);
-  assertExists(
-    order,
-    `TWAP order ${id} did not produce ≥2 children within 20s`,
-  );
+  assertExists(order, `TWAP order ${id} did not produce ≥2 children within 20s`);
   assert(
     order.children.length >= 2,
-    `Expected ≥2 TWAP slices for slices=${slices}, got ${order.children.length}`,
+    `Expected ≥2 TWAP slices for slices=${slices}, got ${order.children.length}`
   );
   assert(
     order.children.length <= slices + 1,
     `Expected ≤${
       slices + 1
-    } TWAP slices, got ${order.children.length} (algo may be slicing too aggressively)`,
+    } TWAP slices, got ${order.children.length} (algo may be slicing too aggressively)`
   );
 });
 
@@ -485,21 +423,18 @@ Deno.test("[perf] ICEBERG visible qty: each child slice ≤ visibleQty", async (
     asset: "AAPL",
     side: "BUY",
     quantity: 150,
-    limitPrice: Number(price) * 1.20,
+    limitPrice: Number(price) * 1.2,
     strategy: "ICEBERG",
     expiresAt: 300,
     algoParams: { strategy: "ICEBERG", visibleQty },
   });
 
   const order = await pollForChildren(id, 1, 60_000);
-  assertExists(
-    order,
-    `ICEBERG order ${id} did not produce children within 60s`,
-  );
+  assertExists(order, `ICEBERG order ${id} did not produce children within 60s`);
   for (const child of order.children) {
     assert(
       child.quantity <= visibleQty,
-      `ICEBERG child qty ${child.quantity} exceeds visibleQty=${visibleQty}`,
+      `ICEBERG child qty ${child.quantity} exceeds visibleQty=${visibleQty}`
     );
   }
 });
@@ -526,7 +461,7 @@ Deno.test("[perf] SNIPER executes in ≤3 slices (aggressive, single-shot strate
   assertExists(order, `SNIPER order ${id} did not produce children within 30s`);
   assert(
     order.children.length <= 3,
-    `SNIPER produced ${order.children.length} slices — expected ≤3 (aggressive algo should not over-slice)`,
+    `SNIPER produced ${order.children.length} slices — expected ≤3 (aggressive algo should not over-slice)`
   );
 });
 
@@ -551,10 +486,7 @@ Deno.test("[algo] IS order routes at least one child slice within 60s", async ()
   });
 
   const order = await pollForChildren(id, 1, 60_000);
-  assertExists(
-    order,
-    `IS order ${id} did not produce any child slices within 60s`,
-  );
+  assertExists(order, `IS order ${id} did not produce any child slices within 60s`);
   assert(order.children.length >= 1, `IS order produced no children`);
 });
 
@@ -583,7 +515,7 @@ Deno.test("[algo] MOMENTUM order routes at least one tranche within 120s", async
       asset: "AAPL",
       side: "BUY",
       quantity: 50,
-      limitPrice: Number(price) * 1.10,
+      limitPrice: Number(price) * 1.1,
       strategy: "MOMENTUM",
       expiresAt: 300,
       algoParams,
@@ -592,7 +524,7 @@ Deno.test("[algo] MOMENTUM order routes at least one tranche within 120s", async
       asset: "AAPL",
       side: "SELL",
       quantity: 50,
-      limitPrice: Number(price) * 0.90,
+      limitPrice: Number(price) * 0.9,
       strategy: "MOMENTUM",
       expiresAt: 300,
       algoParams,
@@ -601,12 +533,12 @@ Deno.test("[algo] MOMENTUM order routes at least one tranche within 120s", async
   assertEquals(
     buyResult.event,
     "orderAck",
-    `MOMENTUM BUY order not accepted: ${JSON.stringify(buyResult)}`,
+    `MOMENTUM BUY order not accepted: ${JSON.stringify(buyResult)}`
   );
   assertEquals(
     sellResult.event,
     "orderAck",
-    `MOMENTUM SELL order not accepted: ${JSON.stringify(sellResult)}`,
+    `MOMENTUM SELL order not accepted: ${JSON.stringify(sellResult)}`
   );
   const buyId = buyResult.clientOrderId;
   const sellId = sellResult.clientOrderId;
@@ -628,8 +560,5 @@ Deno.test("[algo] MOMENTUM order routes at least one tranche within 120s", async
     }
     await new Promise((r) => setTimeout(r, 2_000));
   }
-  assert(
-    fired !== null,
-    "MOMENTUM: neither BUY nor SELL produced a tranche within 120s",
-  );
+  assert(fired !== null, "MOMENTUM: neither BUY nor SELL produced a tranche within 120s");
 });

@@ -1,12 +1,7 @@
-import type { MarketAdapterEvent } from "@veta/types/intelligence";
 import { logger } from "@veta/logger";
+import type { MarketAdapterEvent } from "@veta/types/intelligence";
 
-const IMPACT_ROTATION: Array<"high" | "medium" | "low"> = [
-  "high",
-  "medium",
-  "medium",
-  "low",
-];
+const IMPACT_ROTATION: Array<"high" | "medium" | "low"> = ["high", "medium", "medium", "low"];
 
 interface FinnhubEarning {
   symbol: string;
@@ -17,10 +12,7 @@ interface FinnhubEarning {
   year: number | null;
 }
 
-function deriveImpact(
-  actual: number | null,
-  estimate: number | null,
-): "high" | "medium" | "low" {
+function deriveImpact(actual: number | null, estimate: number | null): "high" | "medium" | "low" {
   if (actual == null || estimate == null || estimate === 0) return "medium";
   const beatPct = Math.abs((actual - estimate) / Math.abs(estimate));
   if (beatPct >= 0.15) return "high";
@@ -30,24 +22,21 @@ function deriveImpact(
 
 async function fetchFinnhubEarnings(
   apiKey: string,
-  symbols: string[],
+  symbols: string[]
 ): Promise<Map<string, FinnhubEarning[]>> {
   const now = new Date();
-  const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
-    .slice(0, 10);
-  const to = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString()
-    .slice(0, 10);
+  const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const to = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const symbolParam = symbols.slice(0, 50).join(",");
 
   try {
-    const url =
-      `https://finnhub.io/api/v1/calendar/earnings?from=${from}&to=${to}&symbol=${symbolParam}&token=${apiKey}`;
+    const url = `https://finnhub.io/api/v1/calendar/earnings?from=${from}&to=${to}&symbol=${symbolParam}&token=${apiKey}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) {
       logger.warn(`Finnhub returned ${res.status}`);
       return new Map();
     }
-    const data = await res.json() as { earningsCalendar?: FinnhubEarning[] };
+    const data = (await res.json()) as { earningsCalendar?: FinnhubEarning[] };
     const list = data.earningsCalendar ?? [];
     const bySymbol = new Map<string, FinnhubEarning[]>();
     for (const item of list) {
@@ -98,9 +87,7 @@ function syntheticEarningsEvents(symbols: string[]): MarketAdapterEvent[] {
   return events;
 }
 
-export async function seedEarningsEvents(
-  symbols: string[],
-): Promise<MarketAdapterEvent[]> {
+export async function seedEarningsEvents(symbols: string[]): Promise<MarketAdapterEvent[]> {
   const apiKey = Deno.env.get("FINNHUB_KEY");
 
   if (apiKey) {
@@ -112,9 +99,7 @@ export async function seedEarningsEvents(
         for (const e of earnings) {
           const scheduledAt = new Date(e.date).getTime();
           const impact = deriveImpact(e.epsActual, e.epsEstimate);
-          const quarter = e.quarter != null && e.year != null
-            ? `Q${e.quarter} ${e.year}`
-            : "";
+          const quarter = e.quarter != null && e.year != null ? `Q${e.quarter} ${e.year}` : "";
           const headline = `${symbol}${quarter ? ` ${quarter}` : ""} Earnings`;
           events.push({
             id: `finnhub-earnings-${symbol}-${e.date}`,

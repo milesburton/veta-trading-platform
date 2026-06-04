@@ -1,9 +1,5 @@
 import { z } from "@veta/zod";
-import {
-  OrderSideSchema,
-  SymbolSchema,
-  UserIdSchema,
-} from "./primitives.ts";
+import { OrderSideSchema, SymbolSchema, UserIdSchema } from "./primitives.ts";
 
 export const RiskConfigSchema = z.object({
   fatFingerPct: z.number(),

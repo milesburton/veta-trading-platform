@@ -17,8 +17,12 @@ Deno.test("buildDailySummary header: ✅ when worst window is 100%", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(32, 32);
   const msg = buildDailySummary(ctx(stats));
-  if (!msg.startsWith("✅")) throw new Error(`expected ✅ start, got: ${msg.slice(0, 20)}`);
-  if (!msg.includes("`abc1234`")) throw new Error("expected short SHA in header");
+  if (!msg.startsWith("✅")) {
+    throw new Error(`expected ✅ start, got: ${msg.slice(0, 20)}`);
+  }
+  if (!msg.includes("`abc1234`")) {
+    throw new Error("expected short SHA in header");
+  }
   if (!msg.includes("(prod)")) throw new Error("expected env in header");
 });
 
@@ -26,35 +30,45 @@ Deno.test("buildDailySummary header: ⚠️ when worst window below 100% but at-
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(31, 32);
   const msg = buildDailySummary(ctx(stats));
-  if (!msg.startsWith("⚠️")) throw new Error(`expected ⚠️ start, got: ${msg.slice(0, 20)}`);
+  if (!msg.startsWith("⚠️")) {
+    throw new Error(`expected ⚠️ start, got: ${msg.slice(0, 20)}`);
+  }
 });
 
 Deno.test("buildDailySummary header: ⚠️ when worst window is exactly 99.9% (not ✅)", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(999, 1000);
   const msg = buildDailySummary(ctx(stats));
-  if (!msg.startsWith("⚠️")) throw new Error(`expected ⚠️ at 99.9%, got: ${msg.slice(0, 20)}`);
+  if (!msg.startsWith("⚠️")) {
+    throw new Error(`expected ⚠️ at 99.9%, got: ${msg.slice(0, 20)}`);
+  }
 });
 
 Deno.test("buildDailySummary header: ⚠️ at exactly 95% (boundary)", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(95, 100);
   const msg = buildDailySummary(ctx(stats));
-  if (!msg.startsWith("⚠️")) throw new Error(`expected ⚠️ at 95%, got: ${msg.slice(0, 20)}`);
+  if (!msg.startsWith("⚠️")) {
+    throw new Error(`expected ⚠️ at 95%, got: ${msg.slice(0, 20)}`);
+  }
 });
 
 Deno.test("buildDailySummary header: 🚨 just below 95%", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(94, 100);
   const msg = buildDailySummary(ctx(stats));
-  if (!msg.startsWith("🚨")) throw new Error(`expected 🚨 below 95%, got: ${msg.slice(0, 20)}`);
+  if (!msg.startsWith("🚨")) {
+    throw new Error(`expected 🚨 below 95%, got: ${msg.slice(0, 20)}`);
+  }
 });
 
 Deno.test("buildDailySummary header: 🚨 when worst window below 95%", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(20, 32);
   const msg = buildDailySummary(ctx(stats));
-  if (!msg.startsWith("🚨")) throw new Error(`expected 🚨 start, got: ${msg.slice(0, 20)}`);
+  if (!msg.startsWith("🚨")) {
+    throw new Error(`expected 🚨 start, got: ${msg.slice(0, 20)}`);
+  }
 });
 
 Deno.test("buildDailySummary lists no alerts when none recorded", () => {
@@ -69,32 +83,67 @@ Deno.test("buildDailySummary lists no alerts when none recorded", () => {
 Deno.test("buildDailySummary breaks down alerts by severity", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(32, 32);
-  stats.recordAlert({ severity: "CRITICAL", source: "risk", message: "limit breach", ts: Date.now() });
-  stats.recordAlert({ severity: "WARNING", source: "ws", message: "ws hiccup", ts: Date.now() });
-  stats.recordAlert({ severity: "WARNING", source: "ws", message: "ws hiccup 2", ts: Date.now() });
+  stats.recordAlert({
+    severity: "CRITICAL",
+    source: "risk",
+    message: "limit breach",
+    ts: Date.now(),
+  });
+  stats.recordAlert({
+    severity: "WARNING",
+    source: "ws",
+    message: "ws hiccup",
+    ts: Date.now(),
+  });
+  stats.recordAlert({
+    severity: "WARNING",
+    source: "ws",
+    message: "ws hiccup 2",
+    ts: Date.now(),
+  });
   const msg = buildDailySummary(ctx(stats));
   if (!msg.includes("3 total")) throw new Error("expected total count");
   if (!msg.includes("critical: 1")) throw new Error("expected critical count");
   if (!msg.includes("warning: 2")) throw new Error("expected warning count");
-  if (!msg.includes("Last critical")) throw new Error("expected last-critical line");
+  if (!msg.includes("Last critical")) {
+    throw new Error("expected last-critical line");
+  }
 });
 
 Deno.test("buildDailySummary surfaces unknown-severity alerts in the breakdown", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(32, 32);
-  stats.recordAlert({ severity: "UNKNOWN", source: "x", message: "weird", ts: Date.now() });
-  stats.recordAlert({ severity: "DEBUG", source: "x", message: "trace", ts: Date.now() });
+  stats.recordAlert({
+    severity: "UNKNOWN",
+    source: "x",
+    message: "weird",
+    ts: Date.now(),
+  });
+  stats.recordAlert({
+    severity: "DEBUG",
+    source: "x",
+    message: "trace",
+    ts: Date.now(),
+  });
   const msg = buildDailySummary(ctx(stats));
-  if (!msg.includes("2 total")) throw new Error("expected total to include all severities");
-  if (!msg.includes("unknown: 1")) throw new Error("expected unknown shown in breakdown");
-  if (!msg.includes("debug: 1")) throw new Error("expected debug shown in breakdown");
+  if (!msg.includes("2 total")) {
+    throw new Error("expected total to include all severities");
+  }
+  if (!msg.includes("unknown: 1")) {
+    throw new Error("expected unknown shown in breakdown");
+  }
+  if (!msg.includes("debug: 1")) {
+    throw new Error("expected debug shown in breakdown");
+  }
 });
 
 Deno.test("buildDailySummary lists down services in 'now' line", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(31, 32);
   const msg = buildDailySummary(ctx(stats, { gateway: true, oms: false, ems: true }));
-  if (!msg.includes("🔴 oms")) throw new Error("expected down-services line including oms");
+  if (!msg.includes("🔴 oms")) {
+    throw new Error("expected down-services line including oms");
+  }
 });
 
 Deno.test("buildDailySummary lists bug counts with unique reporter count", () => {
@@ -119,7 +168,10 @@ Deno.test("startDailySummary schedules next fire at 09:00 UTC", () => {
     getStats: () => new PlatformStats().snapshot(),
     getServices: () => null,
     hourUtc: 9,
-    sender: () => Promise.resolve((calls++, true)),
+    sender: () => {
+      calls++;
+      return Promise.resolve(true);
+    },
     now: () => baseNow,
   });
   const nextFire = h.nextFireAt();
@@ -158,7 +210,9 @@ Deno.test("buildDailySummary uptime formats <1h as Nm only", () => {
     getServices: () => null,
   };
   const msg = buildDailySummary(c, baseNow);
-  if (!msg.includes("gateway uptime 45m")) throw new Error(`got: ${msg.split('\n')[0]}`);
+  if (!msg.includes("gateway uptime 45m")) {
+    throw new Error(`got: ${msg.split("\n")[0]}`);
+  }
 });
 
 Deno.test("buildDailySummary uptime formats >=1d as Nd Nh Nm", () => {
@@ -172,7 +226,9 @@ Deno.test("buildDailySummary uptime formats >=1d as Nd Nh Nm", () => {
     getServices: () => null,
   };
   const msg = buildDailySummary(c, baseNow);
-  if (!msg.includes("gateway uptime 2d 3h 7m")) throw new Error(`got: ${msg.split('\n')[0]}`);
+  if (!msg.includes("gateway uptime 2d 3h 7m")) {
+    throw new Error(`got: ${msg.split("\n")[0]}`);
+  }
 });
 
 Deno.test("buildDailySummary 'no samples in window yet' path when no service snapshots", () => {
@@ -189,7 +245,9 @@ Deno.test("buildDailySummary includes Deployed SHA when setDeploySha was called"
   stats.recordServiceSnapshot(10, 10);
   const msg = buildDailySummary(ctx(stats));
   if (!msg.includes("**Deployed SHA:** `deadbee`")) {
-    throw new Error(`expected Deployed SHA line, got tail:\n${msg.split('\n').slice(-3).join('\n')}`);
+    throw new Error(
+      `expected Deployed SHA line, got tail:\n${msg.split("\n").slice(-3).join("\n")}`
+    );
   }
 });
 
@@ -238,4 +296,84 @@ Deno.test("startDailySummary constructs successfully with no sender (uses defaul
   const next = h.nextFireAt();
   h.stop();
   assertEquals(next, Date.UTC(2026, 4, 20, 9, 0, 0));
+});
+
+Deno.test("buildDailySummary header: ℹ️ when no worst service ratio exists yet", () => {
+  const stats = new PlatformStats();
+  const msg = buildDailySummary(ctx(stats, { gateway: true, oms: true }));
+  if (!msg.startsWith("ℹ️")) {
+    throw new Error(`expected ℹ️ start, got: ${msg.slice(0, 20)}`);
+  }
+  if (!msg.includes("Now: all 2 services up")) {
+    throw new Error("expected all-services-up line");
+  }
+});
+
+Deno.test("buildDailySummary bug line uses singular 'user' for one reporter", () => {
+  const stats = new PlatformStats();
+  stats.recordServiceSnapshot(32, 32);
+  stats.recordBug({ title: "x", userId: "alice", ts: Date.now() });
+  const msg = buildDailySummary(ctx(stats));
+  if (!msg.includes("1 from 1 user")) {
+    throw new Error("expected singular user wording");
+  }
+});
+
+Deno.test({
+  name: "startDailySummary fires scheduled callback, reschedules, and swallows sender rejection",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const originalSetTimeout = globalThis.setTimeout;
+    const originalClearTimeout = globalThis.clearTimeout;
+    const scheduled: Array<{ fn: () => void; delay: number }> = [];
+    const cleared: unknown[] = [];
+    const nowValues = [
+      Date.UTC(2026, 4, 20, 8, 59, 59),
+      Date.UTC(2026, 4, 20, 9, 0, 1),
+      Date.UTC(2026, 4, 20, 9, 0, 1),
+    ];
+    let nowIndex = 0;
+    const sent: string[] = [];
+    try {
+      globalThis.setTimeout = ((fn: () => void, delay?: number) => {
+        scheduled.push({ fn, delay: delay ?? 0 });
+        return scheduled.length as ReturnType<typeof setTimeout>;
+      }) as typeof setTimeout;
+      globalThis.clearTimeout = ((id: unknown) => {
+        cleared.push(id);
+      }) as typeof clearTimeout;
+
+      const handle = startDailySummary({
+        version: "abcdef123456",
+        environment: "test",
+        startedAt: nowValues[0] - 60_000,
+        getStats: () =>
+          new PlatformStats().snapshot(nowValues[Math.min(nowIndex, nowValues.length - 1)]),
+        getServices: () => null,
+        hourUtc: undefined,
+        now: () => nowValues[Math.min(nowIndex++, nowValues.length - 1)],
+        sender: (msg) => {
+          sent.push(msg);
+          throw new Error("send failed");
+        },
+      });
+
+      assertEquals(scheduled.length, 1);
+      assertEquals(scheduled[0].delay, 1000);
+
+      scheduled[0].fn();
+      await Promise.resolve();
+
+      assertEquals(sent.length, 1);
+      assertEquals(handle.nextFireAt(), Date.UTC(2026, 4, 21, 9, 0, 0));
+      assertEquals(scheduled.length, 2);
+
+      handle.stop();
+      assertEquals(cleared.length, 1);
+    } finally {
+      globalThis.setTimeout = originalSetTimeout;
+      globalThis.clearTimeout = originalClearTimeout;
+    }
+  },
 });

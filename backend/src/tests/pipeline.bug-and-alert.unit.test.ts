@@ -19,10 +19,10 @@
 // Written after the 2026-05-20 postmortem to keep the bug/alert
 // pipeline shape pinned by an automated test rather than a runbook.
 
-import { assertEquals, assert } from "jsr:@std/assert@0.217";
+import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import type { GatewayContext } from "../gateway/context.ts";
 import { handleAlertsRoute } from "../gateway/routes/alerts.ts";
 import { handleBugReportRoute } from "../gateway/routes/bug-report.ts";
-import type { GatewayContext } from "../gateway/context.ts";
 
 interface CapturedCall {
   url: string;
@@ -67,8 +67,8 @@ function installFetchCapture(): FetchCapture {
       return Promise.resolve(
         new Response(
           JSON.stringify({ number: 1234, html_url: "https://github.com/foo/bar/issues/1234" }),
-          { status: 201 },
-        ),
+          { status: 201 }
+        )
       );
     }
     if (hostname === USER_SERVICE_STUB_HOSTNAME) {
@@ -78,7 +78,7 @@ function installFetchCapture(): FetchCapture {
     // than being absorbed by a permissive default-branch response.
     throw new Error(
       `installFetchCapture: unexpected fetch to ${method} ${hostname}${pathname}; ` +
-        `add an explicit handler if this is a new wired-up dependency`,
+        `add an explicit handler if this is a new wired-up dependency`
     );
   }) as typeof fetch;
 
@@ -88,13 +88,11 @@ function installFetchCapture(): FetchCapture {
     githubIssueCreates: () =>
       calls.filter(
         (c) =>
-          c.hostname === "api.github.com" &&
-          c.pathname.endsWith("/issues") &&
-          c.method === "POST",
+          c.hostname === "api.github.com" && c.pathname.endsWith("/issues") && c.method === "POST"
       ),
     githubIssueSearches: () =>
       calls.filter(
-        (c) => c.hostname === "api.github.com" && c.pathname.startsWith("/search/issues"),
+        (c) => c.hostname === "api.github.com" && c.pathname.startsWith("/search/issues")
       ),
     userServiceCalls: () => calls.filter((c) => c.hostname === USER_SERVICE_STUB_HOSTNAME),
     restore: () => {
@@ -149,14 +147,13 @@ Deno.test("pipeline: POST /bug-report reaches Discord but not GitHub", async () 
             method: "POST",
             body: JSON.stringify({
               title: "Test bug from E2E suite",
-              description:
-                "This is a synthetic bug report. It should fan out to Discord only.",
+              description: "This is a synthetic bug report. It should fan out to Discord only.",
               category: "ui",
               url: "/dashboard",
             }),
           }),
           "/bug-report",
-          makeContext(),
+          makeContext()
         );
 
         assertEquals(res?.status, 200, "bug-report should return 200 when webhook is set");
@@ -164,19 +161,21 @@ Deno.test("pipeline: POST /bug-report reaches Discord but not GitHub", async () 
         assertEquals(
           f.githubIssueCreates().length,
           0,
-          "bug report must NOT create a GitHub issue; that flow is CRITICAL-alert-only",
+          "bug report must NOT create a GitHub issue; that flow is CRITICAL-alert-only"
         );
 
-        const discordBody = JSON.parse(f.discordCalls()[0].body!);
+        const discordCall = f.discordCalls()[0];
+        if (!discordCall) throw new Error("expected a Discord call");
+        const discordBody = JSON.parse(discordCall.body);
         assertEquals(discordBody.username, "VETA Bug Reports");
         assert(
           discordBody.content.includes("Test bug from E2E suite"),
-          "Discord payload should contain the bug title",
+          "Discord payload should contain the bug title"
         );
       } finally {
         f.restore();
       }
-    },
+    }
   );
 });
 
@@ -205,7 +204,7 @@ Deno.test("pipeline: POST /alerts with severity=CRITICAL fans out to Discord AND
             body: alertBody,
           }),
           "/alerts",
-          makeContext(),
+          makeContext()
         );
 
         // alerts.ts fans out to Discord + GitHub via fire-and-forget
@@ -218,37 +217,39 @@ Deno.test("pipeline: POST /alerts with severity=CRITICAL fans out to Discord AND
         assertEquals(
           f.githubIssueCreates().length,
           1,
-          "CRITICAL alert should create exactly one GitHub issue",
+          "CRITICAL alert should create exactly one GitHub issue"
         );
         assertEquals(
           f.githubIssueSearches().length,
           1,
-          "CRITICAL alert should search for an existing issue first (dedup)",
+          "CRITICAL alert should search for an existing issue first (dedup)"
         );
 
-        const issueBody = JSON.parse(f.githubIssueCreates()[0].body!);
+        const issueCall = f.githubIssueCreates()[0];
+        if (!issueCall) throw new Error("expected a GitHub issue create call");
+        const issueBody = JSON.parse(issueCall.body);
         assert(
           issueBody.title.startsWith("[CRITICAL]"),
-          "GitHub issue title should start with [CRITICAL]",
+          "GitHub issue title should start with [CRITICAL]"
         );
         assert(
           issueBody.labels.includes("severity:critical"),
-          "GitHub issue should carry severity:critical label",
+          "GitHub issue should carry severity:critical label"
         );
         assert(
           issueBody.labels.includes("prod-issue"),
-          "GitHub issue should carry prod-issue label",
+          "GitHub issue should carry prod-issue label"
         );
 
         assertEquals(
           f.userServiceCalls().length,
           1,
-          "alert should also forward to the user-service for in-app persistence",
+          "alert should also forward to the user-service for in-app persistence"
         );
       } finally {
         f.restore();
       }
-    },
+    }
   );
 });
 
@@ -276,7 +277,7 @@ Deno.test("pipeline: POST /alerts with severity=WARNING reaches Discord but NOT 
             body: alertBody,
           }),
           "/alerts",
-          makeContext(),
+          makeContext()
         );
         await new Promise((r) => setTimeout(r, 50));
 
@@ -284,12 +285,12 @@ Deno.test("pipeline: POST /alerts with severity=WARNING reaches Discord but NOT 
         assertEquals(
           f.githubIssueCreates().length,
           0,
-          "WARNING alert must NOT create a GitHub issue; only CRITICAL escalates",
+          "WARNING alert must NOT create a GitHub issue; only CRITICAL escalates"
         );
       } finally {
         f.restore();
       }
-    },
+    }
   );
 });
 
@@ -314,7 +315,7 @@ Deno.test("pipeline: bug-report responds 202 when Discord webhook is not configu
             }),
           }),
           "/bug-report",
-          makeContext(),
+          makeContext()
         );
         assertEquals(res?.status, 202);
         assertEquals(f.discordCalls().length, 0);
@@ -322,6 +323,6 @@ Deno.test("pipeline: bug-report responds 202 when Discord webhook is not configu
       } finally {
         f.restore();
       }
-    },
+    }
   );
 });

@@ -1,12 +1,12 @@
 // fallow-ignore-file unused-file
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import type { Signal } from "@veta/types/intelligence";
 import {
   listPlaybooks,
   type PlaybookContext,
   playbookById,
   selectPlaybook,
 } from "../llm-advisory/playbooks/index.ts";
-import type { Signal } from "@veta/types/intelligence";
 
 function signal(direction: Signal["direction"], confidence = 0.8): Signal {
   return {
@@ -71,9 +71,7 @@ Deno.test("[playbooks] selectPlaybook picks neutral on neutral signal", () => {
 });
 
 Deno.test("[playbooks] selectPlaybook picks neutral on low-confidence long signal", () => {
-  const pb = selectPlaybook(
-    ctx({ signal: signal("long", 0.2), recentCloses: [100, 101] }),
-  );
+  const pb = selectPlaybook(ctx({ signal: signal("long", 0.2), recentCloses: [100, 101] }));
   assertEquals(pb?.id, "neutral-context");
 });
 
@@ -81,7 +79,7 @@ Deno.test("[playbooks] every playbook's systemPrompt ends with the disclaimer", 
   for (const pb of listPlaybooks()) {
     assert(
       pb.systemPrompt.includes("educational purposes only"),
-      `${pb.id}: missing educational-purposes disclaimer`,
+      `${pb.id}: missing educational-purposes disclaimer`
     );
   }
 });

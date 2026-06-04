@@ -1,33 +1,24 @@
-import {
-  assert,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
+import { assert, assertEquals } from "jsr:@std/assert@0.217";
+
+import type { CheckRequest, RiskConfig } from "@veta/schemas/risk";
 
 import {
-  type CheckRequest,
-  type RiskConfig,
-} from "@veta/schemas/risk";
-
-import {
-  type Position as _Position,
-  type WorkingOrder as _WorkingOrder,
-  type RecentOrder as _RecentOrder,
-  type RiskState,
-  checkFatFingerPrice,
-  checkDuplicateOrder,
-  checkMaxOpenOrders,
-  checkSelfCross,
-  checkOrderSizeVsAdv,
-  checkRateLimit,
-  checkPositionNotional,
-  checkDailyPnlStop,
   checkConcentration,
+  checkDailyPnlStop,
+  checkDuplicateOrder,
+  checkFatFingerPrice,
+  checkMaxOpenOrders,
   checkMaxPositionSize,
+  checkOrderSizeVsAdv,
+  checkPositionNotional,
+  checkRateLimit,
+  checkSelfCross,
+  orderNotional,
+  type RiskState,
   runChecks,
   userGrossNotional,
-  userTotalPnl,
   userSymbolNotional,
-  orderNotional,
+  userTotalPnl,
 } from "./checks.ts";
 
 function createTestState(config?: Partial<RiskConfig>): RiskState {
@@ -45,9 +36,9 @@ function createTestState(config?: Partial<RiskConfig>): RiskState {
     breakersEnabled: true,
     selfCrossEnabled: true,
   };
-  
+
   const mergedConfig = { ...defaultConfig, ...config };
-  
+
   return {
     config: mergedConfig,
     prices: {},
@@ -60,9 +51,7 @@ function createTestState(config?: Partial<RiskConfig>): RiskState {
   };
 }
 
-function createTestRequest(
-  overrides: Partial<CheckRequest> = {},
-): CheckRequest {
+function createTestRequest(overrides: Partial<CheckRequest> = {}): CheckRequest {
   return {
     userId: "test-user",
     symbol: "AAPL",
@@ -75,7 +64,7 @@ function createTestRequest(
 
 Deno.test("[risk-engine] checkFatFingerPrice: order near mid passes", () => {
   const state = createTestState();
-  state.prices["AAPL"] = 192.0;
+  state.prices.AAPL = 192.0;
   const req = createTestRequest({ limitPrice: 192.0 });
   const result = checkFatFingerPrice(state, req);
   assertEquals(result, null);
@@ -83,7 +72,7 @@ Deno.test("[risk-engine] checkFatFingerPrice: order near mid passes", () => {
 
 Deno.test("[risk-engine] checkFatFingerPrice: order far from mid is rejected", () => {
   const state = createTestState({ fatFingerPct: 2.0 });
-  state.prices["AAPL"] = 192.0;
+  state.prices.AAPL = 192.0;
   const req = createTestRequest({ limitPrice: 300.0 });
   const result = checkFatFingerPrice(state, req);
   assert(result !== null);
@@ -94,11 +83,11 @@ Deno.test("[risk-engine] checkFatFingerPrice: order far from mid is rejected", (
 Deno.test("[risk-engine] checkDuplicateOrder: identical order within window is rejected", () => {
   const state = createTestState();
   const req = createTestRequest();
-  
+
   // First order should pass
   const firstResult = checkDuplicateOrder(state, req);
   assertEquals(firstResult, null);
-  
+
   // Second identical order should be rejected
   const secondResult = checkDuplicateOrder(state, req);
   assert(secondResult !== null);
@@ -109,7 +98,7 @@ Deno.test("[risk-engine] checkDuplicateOrder: different symbol is not a duplicat
   const state = createTestState();
   const req1 = createTestRequest({ symbol: "AAPL" });
   const req2 = createTestRequest({ symbol: "MSFT" });
-  
+
   checkDuplicateOrder(state, req1);
   const result = checkDuplicateOrder(state, req2);
   assertEquals(result, null);
@@ -155,7 +144,7 @@ Deno.test("[risk-engine] checkSelfCross: rejects when opposite working order exi
 
 Deno.test("[risk-engine] checkOrderSizeVsAdv: small order passes", () => {
   const state = createTestState();
-  state.volumes["AAPL"] = 100000;
+  state.volumes.AAPL = 100000;
   const req = createTestRequest({ quantity: 10 });
   const result = checkOrderSizeVsAdv(state, req);
   assertEquals(result, null);
@@ -163,7 +152,7 @@ Deno.test("[risk-engine] checkOrderSizeVsAdv: small order passes", () => {
 
 Deno.test("[risk-engine] checkOrderSizeVsAdv: oversized order is rejected", () => {
   const state = createTestState({ maxAdvPct: 0.001 });
-  state.volumes["AAPL"] = 100000;
+  state.volumes.AAPL = 100000;
   const req = createTestRequest({ quantity: 50000 });
   const result = checkOrderSizeVsAdv(state, req);
   assert(result !== null);
@@ -180,10 +169,10 @@ Deno.test("[risk-engine] checkRateLimit: allows within limit", () => {
 Deno.test("[risk-engine] checkRateLimit: rejects when exceeding limit", () => {
   const state = createTestState({ maxOrdersPerSecond: 1 });
   const req = createTestRequest();
-  
+
   // First order should pass
   checkRateLimit(state, req);
-  
+
   // Second order should be rejected
   const result = checkRateLimit(state, req);
   assert(result !== null);
@@ -370,8 +359,8 @@ Deno.test("[risk-engine] orderNotional: calculates correctly", () => {
 
 Deno.test("[risk-engine] runChecks: all checks pass", () => {
   const state = createTestState({ maxConcentrationPct: 100 });
-  state.prices["AAPL"] = 192.0;
-  state.volumes["AAPL"] = 100000;
+  state.prices.AAPL = 192.0;
+  state.volumes.AAPL = 100000;
   // Set up user positions to avoid concentration limit issues
   const userPositions = new Map();
   userPositions.set("AAPL", {
@@ -391,8 +380,8 @@ Deno.test("[risk-engine] runChecks: all checks pass", () => {
 
 Deno.test("[risk-engine] runChecks: some checks fail", () => {
   const state = createTestState({ maxAdvPct: 0.001, maxGrossNotional: 1000 });
-  state.prices["AAPL"] = 192.0;
-  state.volumes["AAPL"] = 100000;
+  state.prices.AAPL = 192.0;
+  state.volumes.AAPL = 100000;
   const req = createTestRequest({ quantity: 50000, limitPrice: 192.0 });
   const result = runChecks(state, req);
   assertEquals(result.allowed, false);

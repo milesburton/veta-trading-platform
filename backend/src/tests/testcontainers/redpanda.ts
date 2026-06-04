@@ -16,17 +16,12 @@ function pickFreePort(): number {
   return addr.port;
 }
 
-export async function startEphemeralRedpanda(
-  opts: RedpandaOptions = {},
-): Promise<ManagedRedpanda> {
+export async function startEphemeralRedpanda(opts: RedpandaOptions = {}): Promise<ManagedRedpanda> {
   const hostPort = pickFreePort();
   const host = Deno.env.get("TESTCONTAINERS_HOST_OVERRIDE") ?? "127.0.0.1";
 
   const container = await new GenericContainer(IMAGE)
-    .withExposedPorts(
-      { container: INTERNAL_KAFKA_PORT, host: hostPort },
-      INTERNAL_ADMIN_PORT,
-    )
+    .withExposedPorts({ container: INTERNAL_KAFKA_PORT, host: hostPort }, INTERNAL_ADMIN_PORT)
     .withCommand([
       "redpanda",
       "start",
