@@ -921,7 +921,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: github-actions[bot]
-          body-includes: '<!-- pr-screenshots-bot -->'
+          body-includes: "<!-- pr-screenshots-bot -->"
 
       - name: Upsert PR comment
         uses: peter-evans/create-or-update-comment@v4
@@ -1019,7 +1019,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: github-actions[bot]
-          body-includes: '<!-- pr-visual-anomalies-bot -->'
+          body-includes: "<!-- pr-visual-anomalies-bot -->"
 
       - name: Upsert PR comment
         uses: peter-evans/create-or-update-comment@v4
