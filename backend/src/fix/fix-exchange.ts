@@ -4,23 +4,16 @@ import "@veta/bootstrap";
 // and returns ExecutionReports using simulated fills from the market-sim.
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import {
-  ExecType,
-  MsgType,
-  OrdStatus,
-  OrdType,
-  Side,
-  Tag,
-} from "./fix-dictionary.ts";
+import { logger } from "@veta/logger";
+import { createMarketSimClient } from "@veta/market-client";
+import { ExecType, MsgType, OrdStatus, OrdType, Side, Tag } from "./fix-dictionary.ts";
 import { utcTimestamp } from "./fix-parser.ts";
 import { FixSession } from "./fix-session.ts";
-import { createMarketSimClient } from "@veta/market-client";
-import { logger } from "@veta/logger";
 
 const FIX_EXCHANGE_PORT = Number(Deno.env.get("FIX_EXCHANGE_PORT")) || 9_880;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
-const PARTICIPATION_CAP = Number(Deno.env.get("EMS_PARTICIPATION_CAP")) || 0.20;
+const PARTICIPATION_CAP = Number(Deno.env.get("EMS_PARTICIPATION_CAP")) || 0.2;
 const IMPACT_PER_1000 = Number(Deno.env.get("EMS_IMPACT_PER_1000_BPS")) || 1.0;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
@@ -38,15 +31,13 @@ function computeFill(
   requestedQty: number,
   side: "BUY" | "SELL",
   midPrice: number,
-  tickVolume: number,
+  tickVolume: number
 ): FillResult {
   const maxFill = Math.floor(tickVolume * PARTICIPATION_CAP);
   const filledQty = Math.min(requestedQty, maxFill);
   const remainingQty = requestedQty - filledQty;
   const impactBps = (filledQty / 1_000) * IMPACT_PER_1000;
-  const impactFactor = side === "BUY"
-    ? 1 + impactBps / 10_000
-    : 1 - impactBps / 10_000;
+  const impactFactor = side === "BUY" ? 1 + impactBps / 10_000 : 1 - impactBps / 10_000;
   const avgFillPrice = parseFloat((midPrice * impactFactor).toFixed(4));
   return { filledQty, remainingQty, avgFillPrice, marketImpactBps: impactBps };
 }
@@ -81,9 +72,7 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
     },
   });
 
-  async function handleApplicationMessage(
-    tags: Map<number, string>,
-  ): Promise<void> {
+  async function handleApplicationMessage(tags: Map<number, string>): Promise<void> {
     const msgType = tags.get(Tag.MsgType);
     if (msgType !== MsgType.NewOrderSingle) return;
 
@@ -97,7 +86,9 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
     const side: "BUY" | "SELL" = sideRaw === Side.Sell ? "SELL" : "BUY";
     const orderId = `EX-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
-    logger.info(`[FIX Exchange] NOS: clOrdId=${clOrdId} symbol=${symbol} side=${side} qty=${orderQty} price=${price}`);
+    logger.info(
+      `[FIX Exchange] NOS: clOrdId=${clOrdId} symbol=${symbol} side=${side} qty=${orderQty} price=${price}`
+    );
 
     // ExecReport: New (acknowledge receipt)
     const ackExecId = `${execIdCounter++}`;
@@ -164,16 +155,14 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
         [Tag.TransactTime, utcTimestamp()],
       ]);
 
-      logger.info(`[FIX Exchange] Fill: clOrdId=${clOrdId} ${fill.filledQty}/${orderQty} @ ${fill.avgFillPrice}` +
-          ` leaves=${remainingQty} impact=${
-            fill.marketImpactBps.toFixed(2)
-          }bps`);
+      logger.info(
+        `[FIX Exchange] Fill: clOrdId=${clOrdId} ${fill.filledQty}/${orderQty} @ ${fill.avgFillPrice}` +
+          ` leaves=${remainingQty} impact=${fill.marketImpactBps.toFixed(2)}bps`
+      );
 
       if (!isFinal) {
         // Small gap between partial fills
-        await new Promise((r) =>
-          setTimeout(r, 50 + Math.floor(Math.random() * 100))
-        );
+        await new Promise((r) => setTimeout(r, 50 + Math.floor(Math.random() * 100)));
       }
     }
   }
@@ -189,8 +178,9 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
 
       // A FIX message ends with 10=<checksum><SOH>
       // Split on the checksum trailer pattern so we handle multiple messages per read
-      let msgEnd: number;
-      while ((msgEnd = buffer.indexOf(`${SOH}10=`)) !== -1) {
+      while (true) {
+        const msgEnd = buffer.indexOf(`${SOH}10=`);
+        if (msgEnd === -1) break;
         // Find the SOH after the checksum value (3 digits + SOH)
         const trailerEnd = msgEnd + 7; // \x0110=XXX\x01 = 7 chars
         if (trailerEnd > buffer.length) break; // incomplete
@@ -208,7 +198,9 @@ async function handleConnection(conn: Deno.TcpConn): Promise<void> {
     session.disconnect();
     try {
       conn.close();
-    } catch { /* already closed */ }
+    } catch {
+      /* already closed */
+    }
     logger.info(`[FIX Exchange] Connection closed (${remote})`);
   }
 }
@@ -226,7 +218,7 @@ Deno.serve({ port: HEALTH_PORT }, (req) => {
         version: VERSION,
         status: "ok",
       }),
-      { headers: { "Content-Type": "application/json" } },
+      { headers: { "Content-Type": "application/json" } }
     );
   }
   return new Response("Not found", { status: 404 });

@@ -1,8 +1,4 @@
-import {
-  assert,
-  assertAlmostEquals,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
+import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 import {
   computeFees,
   computeFill,
@@ -20,10 +16,7 @@ import {
 
 Deno.test("[ems/fill] filled qty capped at participation cap × tick volume", () => {
   const { filledQty } = computeFill(10_000, 1_000, "XNAS");
-  assertEquals(
-    filledQty,
-    Math.floor(1_000 * PARTICIPATION_CAP * VENUE_DEPTH_MULT["XNAS"]),
-  );
+  assertEquals(filledQty, Math.floor(1_000 * PARTICIPATION_CAP * VENUE_DEPTH_MULT.XNAS));
 });
 
 Deno.test("[ems/fill] filled qty never exceeds requested qty", () => {
@@ -41,10 +34,7 @@ Deno.test("[ems/fill] MEMX (depth=0.65) fills less than XNYS (depth=1.20) at sam
   const vol = 1_000;
   const { filledQty: memx } = computeFill(10_000, vol, "MEMX");
   const { filledQty: xnys } = computeFill(10_000, vol, "XNYS");
-  assert(
-    xnys > memx,
-    `XNYS (depth 1.20) should fill more than MEMX (depth 0.65)`,
-  );
+  assert(xnys > memx, `XNYS (depth 1.20) should fill more than MEMX (depth 0.65)`);
 });
 
 Deno.test("[ems/fill] zero tick volume → zero fill", () => {
@@ -79,8 +69,8 @@ Deno.test("[ems/impact] impact is proportional to qty (2× qty ≈ 2× impact bp
   const mid = 100;
   const p1 = computeImpact(500, "XNAS", "BUY", mid);
   const p2 = computeImpact(1_000, "XNAS", "BUY", mid);
-  const bps1 = (p1 - mid) / mid * 10_000;
-  const bps2 = (p2 - mid) / mid * 10_000;
+  const bps1 = ((p1 - mid) / mid) * 10_000;
+  const bps2 = ((p2 - mid) / mid) * 10_000;
   assertAlmostEquals(bps2 / bps1, 2, 0.01);
 });
 
@@ -113,10 +103,7 @@ Deno.test("[ems/fees] FINRA TAF capped at $5.95 for very large fills", () => {
 
 Deno.test("[ems/fees] MAKER liquidity flag earns rebate (negative commission)", () => {
   const fees = computeFees(100, 150, "BUY", "MAKER");
-  assert(
-    fees.commissionUSD < 0,
-    `MAKER should earn rebate, got ${fees.commissionUSD}`,
-  );
+  assert(fees.commissionUSD < 0, `MAKER should earn rebate, got ${fees.commissionUSD}`);
 });
 
 Deno.test("[ems/fees] TAKER commission is positive", () => {
@@ -129,7 +116,7 @@ Deno.test("[ems/fees] totalFeeUSD equals sum of components", () => {
   assertAlmostEquals(
     fees.totalFeeUSD,
     fees.commissionUSD + fees.secFeeUSD + fees.finraTafUSD,
-    1e-4,
+    1e-4
   );
 });
 
@@ -146,17 +133,15 @@ Deno.test("[ems/venue] all valid MICs can be selected", () => {
 });
 
 Deno.test("[ems/venue] XNAS selected more often than MEMX (30 vs 4 weight)", () => {
-  let xnas = 0, memx = 0;
+  let xnas = 0,
+    memx = 0;
   const N = 10_000;
   for (let i = 0; i < N; i++) {
     const v = pickWeightedVenue(Math.random());
     if (v === "XNAS") xnas++;
     if (v === "MEMX") memx++;
   }
-  assert(
-    xnas > memx * 3,
-    `XNAS (${xnas}) should be selected far more than MEMX (${memx})`,
-  );
+  assert(xnas > memx * 3, `XNAS (${xnas}) should be selected far more than MEMX (${memx})`);
 });
 
 Deno.test("[ems/venue] deterministic at boundary: rand=0 selects first venue after weight depletion", () => {

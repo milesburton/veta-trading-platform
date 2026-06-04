@@ -58,8 +58,8 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
       type: panelType,
       layout: storageKey,
     });
-    const url = `${window.location.origin}${window.location.pathname}?${params}`;
-    const w = window.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
+    const url = `${globalThis.location.origin}${globalThis.location.pathname}?${params}`;
+    const w = globalThis.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
     if (w) {
       // Remove the tab from the host layout immediately so the space is reclaimed.
       removeTabById(instanceId);
@@ -83,7 +83,7 @@ export function PanelMenu({ panelId }: { panelId?: string }) {
     return {
       position: "fixed",
       top: r.bottom + 4,
-      right: window.innerWidth - r.right,
+      right: globalThis.innerWidth - r.right,
       zIndex: 9999,
     };
   };

@@ -24,8 +24,7 @@
       },
       "style": {
         "useConst": "error",
-        "useTemplate": "warn",
-        "useNodejsImportProtocol": "off"
+        "useTemplate": "warn"
       }
     }
   },
@@ -43,6 +42,6 @@
     }
   },
   "files": {
-    "includes": ["src/**/*.ts", "src/**/*.tsx"]
+    "includes": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
   }
 }

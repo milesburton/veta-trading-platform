@@ -7,7 +7,10 @@ Deno.test("k6 user-agent is classified as loadgen", () => {
 });
 
 Deno.test("non-k6 user-agents are unclassified", () => {
-  assertEquals(classifyRequestSource("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"), undefined);
+  assertEquals(
+    classifyRequestSource("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"),
+    undefined
+  );
   assertEquals(classifyRequestSource("curl/8.4.0"), undefined);
   assertEquals(classifyRequestSource("Wget/1.21"), undefined);
   // Spoofing prevention: only the prefix `k6/` counts, not "Mozilla/k6/...".

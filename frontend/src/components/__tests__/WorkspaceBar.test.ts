@@ -47,7 +47,7 @@ afterEach(() => {
   publishSharedWorkspaceMock.mockReset();
   vi.restoreAllMocks();
   vi.useRealTimers();
-  window.history.replaceState(null, "", "/");
+  globalThis.history.replaceState(null, "", "/");
 });
 
 function renderSidebar(overrides?: {
@@ -359,19 +359,19 @@ describe("defaultWorkspaceForStyle", () => {
 
 describe("useWorkspaces", () => {
   test("uses valid workspace id from URL query on first render", () => {
-    window.history.replaceState(null, "", "/?ws=ws-options");
+    globalThis.history.replaceState(null, "", "/?ws=ws-options");
     const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
     expect(result.current.activeId).toBe("ws-options");
   });
 
   test("falls back to trading style default when URL workspace is invalid", () => {
-    window.history.replaceState(null, "", "/?ws=missing");
+    globalThis.history.replaceState(null, "", "/?ws=missing");
     const { result } = renderHook(() => useWorkspaces("u-1", "low_touch"));
     expect(result.current.activeId).toBe("ws-algo");
   });
 
   test("handleSelect updates active workspace and pushes URL state", () => {
-    window.history.replaceState(null, "", "/");
+    globalThis.history.replaceState(null, "", "/");
     const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
 
     act(() => {
@@ -379,8 +379,8 @@ describe("useWorkspaces", () => {
     });
 
     expect(result.current.activeId).toBe("ws-analysis");
-    expect(new URLSearchParams(window.location.search).get("ws")).toBe("ws-analysis");
-    expect((window.history.state as { workspaceId?: string } | null)?.workspaceId).toBe(
+    expect(new URLSearchParams(globalThis.location.search).get("ws")).toBe("ws-analysis");
+    expect((globalThis.history.state as { workspaceId?: string } | null)?.workspaceId).toBe(
       "ws-analysis"
     );
   });
@@ -405,7 +405,7 @@ describe("useWorkspaces", () => {
     const { result } = renderHook(() => useWorkspaces("u-1", "high_touch"));
 
     act(() => {
-      window.dispatchEvent(
+      globalThis.dispatchEvent(
         new PopStateEvent("popstate", {
           state: { workspaceId: "ws-research" },
         })
@@ -414,7 +414,9 @@ describe("useWorkspaces", () => {
     expect(result.current.activeId).toBe("ws-research");
 
     act(() => {
-      window.dispatchEvent(new PopStateEvent("popstate", { state: { workspaceId: "ws-missing" } }));
+      globalThis.dispatchEvent(
+        new PopStateEvent("popstate", { state: { workspaceId: "ws-missing" } })
+      );
     });
     expect(result.current.activeId).toBe("ws-research");
   });

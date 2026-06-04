@@ -1,6 +1,7 @@
 import { readFile, glob } from "node:fs/promises";
 import { resolve } from "node:path";
 import { JSDOM } from "jsdom";
+import process from "node:process";
 
 const dom = new JSDOM("<!DOCTYPE html><html><body></body></html>");
 globalThis.document = dom.window.document;

@@ -7,7 +7,7 @@ import {
 import { allBlocksCleared, blockAdded } from "@veta/frontend/store/killSwitchSlice.ts";
 import { orderPatched } from "@veta/frontend/store/ordersSlice.ts";
 
-const _origin = typeof window !== "undefined" ? window.location.origin : "";
+const _origin = typeof window !== "undefined" ? globalThis.location.origin : "";
 const ALERTS_URL = `${_origin}/api/gateway/alerts`;
 
 function postAlert(alert: {
@@ -42,7 +42,7 @@ function dismissAllAlerts() {
 
 export const alertsMiddleware: Middleware = (storeAPI) => {
   if (typeof window !== "undefined") {
-    window.addEventListener("workspace-save-error", () => {
+    globalThis.addEventListener("workspace-save-error", () => {
       storeAPI.dispatch(
         alertAdded({
           severity: "INFO",

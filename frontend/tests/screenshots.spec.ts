@@ -19,15 +19,12 @@ test.afterEach(async ({ page }, testInfo) => {
   if (markers.length > 0) {
     throw new Error(
       `Screenshot captured a visibly errored UI (${markers.join(", ")}). ` +
-        `Refusing to publish ${testInfo.title}.`,
+        `Refusing to publish ${testInfo.title}.`
     );
   }
 });
 
-const OUT_DIR = path.resolve(
-  fileURLToPath(import.meta.url),
-  "../../../docs/screenshots",
-);
+const OUT_DIR = path.resolve(fileURLToPath(import.meta.url), "../../../docs/screenshots");
 
 test.setTimeout(60_000);
 
@@ -190,34 +187,34 @@ const PRICES: Record<string, number> = {
   NVDA: 889.12,
   GOOGL: 176.89,
   AMZN: 228.45,
-  META: 518.90,
+  META: 518.9,
   JPM: 201.23,
   BAC: 39.45,
-  GS: 458.70,
+  GS: 458.7,
   JNJ: 159.82,
-  UNH: 532.10,
+  UNH: 532.1,
   XOM: 114.56,
-  CVX: 161.30,
+  CVX: 161.3,
   TSLA: 178.45,
   V: 289.67,
 };
 
 const SESSION_OPEN: Record<string, number> = {
-  AAPL: 189.50,
-  MSFT: 421.00,
-  NVDA: 876.40,
+  AAPL: 189.5,
+  MSFT: 421.0,
+  NVDA: 876.4,
   GOOGL: 175.25,
-  AMZN: 224.80,
-  META: 512.30,
-  JPM: 198.40,
-  BAC: 40.10,
-  GS: 452.10,
-  JNJ: 162.30,
-  UNH: 528.70,
-  XOM: 112.40,
-  CVX: 158.90,
-  TSLA: 182.10,
-  V: 287.50,
+  AMZN: 224.8,
+  META: 512.3,
+  JPM: 198.4,
+  BAC: 40.1,
+  GS: 452.1,
+  JNJ: 162.3,
+  UNH: 528.7,
+  XOM: 112.4,
+  CVX: 158.9,
+  TSLA: 182.1,
+  V: 287.5,
 };
 
 const VOLUMES: Record<string, number> = {
@@ -486,8 +483,7 @@ test("screenshot: algo trading workspace", async ({ page }) => {
     symbol: "AAPL",
     action: "BUY",
     confidence: 0.78,
-    reason:
-      "Strong momentum signal with bullish RSI divergence, Vision Pro catalyst",
+    reason: "Strong momentum signal with bullish RSI divergence, Vision Pro catalyst",
     targetPrice: 198.0,
     generatedAt: Date.now(),
   });
@@ -518,41 +514,33 @@ test("screenshot: fixed income workspace", async ({ page }) => {
   await app.waitForOverlayGone();
   await page.waitForTimeout(300);
 
-  await page.route(
-    "/api/gateway/analytics/bond-price",
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(MOCK_BOND_PRICE_RESPONSE),
-      }),
+  await page.route("/api/gateway/analytics/bond-price", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_BOND_PRICE_RESPONSE),
+    })
   );
-  await page.route(
-    "/api/gateway/analytics/spread-analysis",
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(MOCK_SPREAD_ANALYSIS_RESPONSE),
-      }),
+  await page.route("/api/gateway/analytics/spread-analysis", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_SPREAD_ANALYSIS_RESPONSE),
+    })
   );
-  await page.route(
-    "/api/gateway/analytics/duration-ladder",
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(MOCK_DURATION_LADDER_RESPONSE),
-      }),
+  await page.route("/api/gateway/analytics/duration-ladder", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_DURATION_LADDER_RESPONSE),
+    })
   );
-  await page.route(
-    "/api/gateway/analytics/vol-surface/**",
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(MOCK_VOL_SURFACE_RESPONSE),
-      }),
+  await page.route("/api/gateway/analytics/vol-surface/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_VOL_SURFACE_RESPONSE),
+    })
   );
 
   const spreadPanel = await app.panelByTitle(/Spread Analysis/i);
@@ -587,14 +575,12 @@ test("screenshot: option pricing (Black-Scholes)", async ({ page }) => {
   await app.waitForLivePrices().catch(() => {});
   await page.waitForTimeout(400);
 
-  await page.route(
-    "/api/gateway/analytics/quote",
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(MOCK_QUOTE),
-      }),
+  await page.route("/api/gateway/analytics/quote", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_QUOTE),
+    })
   );
   await page.waitForTimeout(400);
 
@@ -752,7 +738,7 @@ test("screenshot: session replay panel", async ({ page }) => {
       status: 200,
       contentType: "application/json",
       body: JSON.stringify(mockSessions),
-    }),
+    })
   );
 
   await page.unroute("/api/replay/config");
@@ -765,7 +751,7 @@ test("screenshot: session replay panel", async ({ page }) => {
         updatedBy: "admin-1",
         updatedAt: new Date().toISOString(),
       }),
-    }),
+    })
   );
 
   await page.route("/api/user-service/users", (route) =>
@@ -773,14 +759,14 @@ test("screenshot: session replay panel", async ({ page }) => {
       status: 200,
       contentType: "application/json",
       body: JSON.stringify([]),
-    }),
+    })
   );
   await page.route("/api/journal/journal**", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ entries: [] }),
-    }),
+    })
   );
 
   await page.addInitScript(() => {
@@ -817,7 +803,7 @@ test("screenshot: order blotter with formatting", async ({ page }) => {
     side: "BUY",
     quantity: 500,
     strategy: "LIMIT",
-    limitPrice: 518.90,
+    limitPrice: 518.9,
     status: "filled",
   });
   app.gateway.injectOrder({
@@ -825,7 +811,7 @@ test("screenshot: order blotter with formatting", async ({ page }) => {
     side: "SELL",
     quantity: 200,
     strategy: "TWAP",
-    limitPrice: 458.70,
+    limitPrice: 458.7,
     status: "executing",
   });
   app.gateway.injectOrder({

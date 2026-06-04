@@ -1,9 +1,5 @@
-import {
-  assert,
-  assertAlmostEquals,
-  assertEquals,
-  assertGreater,
-} from "jsr:@std/assert@0.217";
+import { assert, assertAlmostEquals, assertEquals, assertGreater } from "jsr:@std/assert@0.217";
+import type { Position, RiskState } from "../risk-engine/checks.ts";
 import {
   checkConcentration,
   checkDailyPnlStop,
@@ -22,7 +18,6 @@ import {
   userSymbolNotional,
   userTotalPnl,
 } from "../risk-engine/checks.ts";
-import type { Position, RiskState } from "../risk-engine/checks.ts";
 import type { CheckRequest, RiskConfig } from "../schemas/risk.ts";
 
 const DEFAULT_CONFIG: RiskConfig = {
@@ -67,11 +62,7 @@ function makeRequest(overrides: Partial<CheckRequest> = {}): CheckRequest {
   };
 }
 
-function setPosition(
-  state: RiskState,
-  userId: string,
-  position: Position,
-): void {
+function setPosition(state: RiskState, userId: string, position: Position): void {
   let userPositions = state.positions.get(userId);
   if (!userPositions) {
     userPositions = new Map();
@@ -83,7 +74,7 @@ function setPosition(
 function assertHitCode(
   hit: { code: string; message: string } | null,
   code: string,
-  expectedMessagePart?: string,
+  expectedMessagePart?: string
 ) {
   assert(hit, `expected ${code} hit`);
   assertEquals(hit.code, code);
@@ -93,14 +84,8 @@ function assertHitCode(
 }
 
 Deno.test("[risk-checks] orderNotional multiplies quantity by limit price", () => {
-  assertEquals(
-    orderNotional(makeRequest({ quantity: 100, limitPrice: 150 })),
-    15_000,
-  );
-  assertEquals(
-    orderNotional(makeRequest({ quantity: 1, limitPrice: 1.5 })),
-    1.5,
-  );
+  assertEquals(orderNotional(makeRequest({ quantity: 100, limitPrice: 150 })), 15_000);
+  assertEquals(orderNotional(makeRequest({ quantity: 1, limitPrice: 1.5 })), 1.5);
 });
 
 Deno.test("[risk-checks] userGrossNotional with no positions returns 0", () => {
@@ -265,10 +250,7 @@ Deno.test("[risk-checks] fat-finger scenarios", () => {
 
   for (const testCase of cases) {
     const state = makeState({ prices: testCase.prices });
-    const hit = checkFatFingerPrice(
-      state,
-      makeRequest({ limitPrice: testCase.limitPrice }),
-    );
+    const hit = checkFatFingerPrice(state, makeRequest({ limitPrice: testCase.limitPrice }));
     if (testCase.code === null) {
       assertEquals(hit, null, testCase.label);
       continue;
@@ -282,7 +264,7 @@ Deno.test("[risk-checks] duplicate: identical order within window is rejected an
   assertEquals(checkDuplicateOrder(state, makeRequest()), null);
   const hit = checkDuplicateOrder(state, makeRequest());
   assert(hit);
-  assertEquals(hit!.code, "DUPLICATE_ORDER");
+  assertEquals(hit?.code, "DUPLICATE_ORDER");
 });
 
 Deno.test("[risk-checks] duplicate: order is allowed once window has elapsed", () => {
@@ -298,18 +280,9 @@ Deno.test("[risk-checks] duplicate: different side, symbol, qty, or price are no
   const state = makeState();
   checkDuplicateOrder(state, makeRequest());
   assertEquals(checkDuplicateOrder(state, makeRequest({ side: "SELL" })), null);
-  assertEquals(
-    checkDuplicateOrder(state, makeRequest({ symbol: "MSFT" })),
-    null,
-  );
-  assertEquals(
-    checkDuplicateOrder(state, makeRequest({ quantity: 200 })),
-    null,
-  );
-  assertEquals(
-    checkDuplicateOrder(state, makeRequest({ limitPrice: 151 })),
-    null,
-  );
+  assertEquals(checkDuplicateOrder(state, makeRequest({ symbol: "MSFT" })), null);
+  assertEquals(checkDuplicateOrder(state, makeRequest({ quantity: 200 })), null);
+  assertEquals(checkDuplicateOrder(state, makeRequest({ limitPrice: 151 })), null);
 });
 
 Deno.test("[risk-checks] max open orders threshold behavior", () => {
@@ -332,30 +305,24 @@ Deno.test("[risk-checks] max open orders threshold behavior", () => {
 
 Deno.test("[risk-checks] self-cross: BUY when SELL is working is rejected", () => {
   const state = makeState({
-    workingOrders: [
-      { userId: "alice", symbol: "AAPL", side: "SELL", orderId: "wO-1" },
-    ],
+    workingOrders: [{ userId: "alice", symbol: "AAPL", side: "SELL", orderId: "wO-1" }],
   });
   const hit = checkSelfCross(state, makeRequest({ side: "BUY" }));
   assert(hit);
-  assertEquals(hit!.code, "SELF_CROSS");
-  assert(hit!.message.includes("wO-1"));
+  assertEquals(hit?.code, "SELF_CROSS");
+  assert(hit?.message.includes("wO-1"));
 });
 
 Deno.test("[risk-checks] self-cross: BUY when SELL is working for different user passes", () => {
   const state = makeState({
-    workingOrders: [
-      { userId: "bob", symbol: "AAPL", side: "SELL", orderId: "wO-1" },
-    ],
+    workingOrders: [{ userId: "bob", symbol: "AAPL", side: "SELL", orderId: "wO-1" }],
   });
   assertEquals(checkSelfCross(state, makeRequest({ side: "BUY" })), null);
 });
 
 Deno.test("[risk-checks] self-cross: BUY when SELL is working for different symbol passes", () => {
   const state = makeState({
-    workingOrders: [
-      { userId: "alice", symbol: "MSFT", side: "SELL", orderId: "wO-1" },
-    ],
+    workingOrders: [{ userId: "alice", symbol: "MSFT", side: "SELL", orderId: "wO-1" }],
   });
   assertEquals(checkSelfCross(state, makeRequest({ side: "BUY" })), null);
 });
@@ -371,10 +338,7 @@ Deno.test("[risk-checks] ADV scenarios", () => {
   for (const testCase of cases) {
     const state = makeState({ volumes: testCase.volumes });
     state.config.maxAdvPct = 5;
-    const hit = checkOrderSizeVsAdv(
-      state,
-      makeRequest({ quantity: testCase.quantity }),
-    );
+    const hit = checkOrderSizeVsAdv(state, makeRequest({ quantity: testCase.quantity }));
     if (testCase.code === null) {
       assertEquals(hit, null);
       continue;
@@ -392,7 +356,7 @@ Deno.test("[risk-checks] rate-limit: bucket starts full and allows up to N order
   assertEquals(checkRateLimit(state, makeRequest()), null);
   const hit = checkRateLimit(state, makeRequest());
   assert(hit);
-  assertEquals(hit!.code, "RATE_LIMIT");
+  assertEquals(hit?.code, "RATE_LIMIT");
 });
 
 Deno.test("[risk-checks] rate-limit: tokens refill at config rate", () => {
@@ -400,10 +364,7 @@ Deno.test("[risk-checks] rate-limit: tokens refill at config rate", () => {
   const state = makeState({ now: () => t });
   state.config.maxOrdersPerSecond = 1;
   assertEquals(checkRateLimit(state, makeRequest()), null);
-  assert(
-    checkRateLimit(state, makeRequest()),
-    "expected rejection while bucket empty",
-  );
+  assert(checkRateLimit(state, makeRequest()), "expected rejection while bucket empty");
   t += 1_100;
   assertEquals(checkRateLimit(state, makeRequest()), null);
 });
@@ -435,7 +396,7 @@ Deno.test("[risk-checks] position notional threshold behavior", () => {
       makeRequest({
         quantity: testCase.quantity,
         limitPrice: testCase.limitPrice,
-      }),
+      })
     );
     if (testCase.code === null) {
       assertEquals(hit, null);
@@ -480,7 +441,7 @@ Deno.test("[risk-checks] daily P&L stop: P&L at threshold rejected and breaker c
   state.config.maxDailyLoss = -10_000;
   const hit = checkDailyPnlStop(state, makeRequest());
   assert(hit);
-  assertEquals(hit!.code, "DAILY_LOSS_STOP");
+  assertEquals(hit?.code, "DAILY_LOSS_STOP");
   assertEquals(firedFor, "alice");
   assertEquals(firedAt, -10_000);
 });
@@ -496,12 +457,9 @@ Deno.test("[risk-checks] concentration: single symbol exceeds pct rejected", () 
     fillCount: 1,
   });
   state.config.maxConcentrationPct = 50;
-  const hit = checkConcentration(
-    state,
-    makeRequest({ quantity: 100, limitPrice: 100 }),
-  );
+  const hit = checkConcentration(state, makeRequest({ quantity: 100, limitPrice: 100 }));
   assert(hit);
-  assertEquals(hit!.code, "CONCENTRATION_LIMIT");
+  assertEquals(hit?.code, "CONCENTRATION_LIMIT");
 });
 
 Deno.test("[risk-checks] concentration: diverse book passes", () => {
@@ -532,32 +490,28 @@ Deno.test("[risk-checks] concentration: diverse book passes", () => {
   });
   state.config.maxConcentrationPct = 50;
   assertEquals(
-    checkConcentration(
-      state,
-      makeRequest({ symbol: "AAPL", quantity: 10, limitPrice: 100 }),
-    ),
-    null,
+    checkConcentration(state, makeRequest({ symbol: "AAPL", quantity: 10, limitPrice: 100 })),
+    null
   );
 });
 
 Deno.test("[risk-checks] concentration: empty book skips (postGross<=0)", () => {
   const state = makeState();
   state.config.maxConcentrationPct = 1;
-  assertEquals(
-    checkConcentration(state, makeRequest({ quantity: 0, limitPrice: 0 })),
-    null,
-  );
+  assertEquals(checkConcentration(state, makeRequest({ quantity: 0, limitPrice: 0 })), null);
 });
 
 Deno.test("[risk-checks] runChecks aggregates all reasons across failing checks", () => {
   const state = makeState({
     prices: { AAPL: 100 },
-    workingOrders: [{
-      userId: "alice",
-      symbol: "AAPL",
-      side: "SELL",
-      orderId: "wO-1",
-    }],
+    workingOrders: [
+      {
+        userId: "alice",
+        symbol: "AAPL",
+        side: "SELL",
+        orderId: "wO-1",
+      },
+    ],
   });
   state.activeOrderCounts.set("alice", 50);
   const result = runChecks(state, makeRequest({ limitPrice: 200 }));
@@ -606,8 +560,5 @@ Deno.test("[risk-checks] math sanity: gross + total pnl interact predictably wit
   });
   assertEquals(userGrossNotional(state, "alice"), 100 * 200);
   assertAlmostEquals(userTotalPnl(state, "alice"), 100 * (200 - 150));
-  assertGreater(
-    userGrossNotional(state, "alice"),
-    userTotalPnl(state, "alice"),
-  );
+  assertGreater(userGrossNotional(state, "alice"), userTotalPnl(state, "alice"));
 });

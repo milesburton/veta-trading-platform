@@ -1,3 +1,5 @@
+// fallow-ignore-file complexity
+
 /**
  * Messaging abstraction over kafkajs, pointed at Redpanda.
  *
@@ -14,21 +16,32 @@
  *   REDPANDA_BROKERS  comma-separated broker list  (default: localhost:9092)
  */
 
-import {
-  type Consumer,
-  Kafka,
-  type KafkaMessage,
-  type Producer,
-} from "npm:kafkajs@2.2.4";
-import type { z } from "@veta/zod";
+import { type Consumer, Kafka, type KafkaMessage, type Producer } from "npm:kafkajs@2.2.4";
 import { logger } from "@veta/logger";
+import type { z } from "@veta/zod";
 import { injectTraceContext, withExtractedContext } from "./telemetry.ts";
 
 const LIB = { component: "messaging" };
 
-const BROKERS = (Deno.env.get("REDPANDA_BROKERS") ?? "localhost:9092").split(
-  ",",
-).map((b) => b.trim());
+const BROKERS = (Deno.env.get("REDPANDA_BROKERS") ?? "localhost:9092")
+  .split(",")
+  .map((b) => b.trim());
+
+// fallow-ignore-next-line unused-type
+export interface KafkaFactoryLike {
+  producer(): Producer;
+  consumer(config: { groupId: string }): Consumer;
+}
+
+type KafkaFactory = (clientId: string) => KafkaFactoryLike;
+type SleepFn = (ms: number) => Promise<void>;
+type ScheduleFn = (fn: () => void, ms: number) => void;
+
+let kafkaFactory: KafkaFactory = makeKafka;
+let sleepFn: SleepFn = (ms) => new Promise((r) => setTimeout(r, ms));
+let scheduleFn: ScheduleFn = (fn, ms) => {
+  setTimeout(fn, ms);
+};
 
 function makeKafka(clientId: string): Kafka {
   return new Kafka({
@@ -56,9 +69,7 @@ export interface MsgProducer {
  * ready are silently dropped (fire-and-forget services) or should be retried
  * by the caller. Once connected, the producer is reused for all sends.
  */
-export function createProducer(
-  clientId = "veta-producer",
-): Promise<MsgProducer> {
+export function createProducer(clientId = "veta-producer"): Promise<MsgProducer> {
   let activeProducer: Producer | null = null;
   let stopped = false;
   let reconnecting = false;
@@ -69,7 +80,7 @@ export function createProducer(
     let delay = 2_000;
     while (!stopped) {
       try {
-        const kafka = makeKafka(clientId);
+        const kafka = kafkaFactory(clientId);
         const p: Producer = kafka.producer();
         await p.connect();
         activeProducer = p;
@@ -83,7 +94,7 @@ export function createProducer(
           retryInSecs: delay / 1000,
           err: err as Error,
         });
-        await new Promise((r) => setTimeout(r, delay));
+        await sleepFn(delay);
         delay = Math.min(delay * 2, MAX_DELAY_MS);
       }
     }
@@ -138,7 +149,7 @@ export function createConsumer(
   groupId: string,
   topics: string[],
   clientId = `veta-${groupId}`,
-  options: { handlerTimeoutMs?: number } = {},
+  options: { handlerTimeoutMs?: number } = {}
 ): Promise<MsgConsumer> {
   const handlerTimeoutMs = options.handlerTimeoutMs ?? 5_000;
   const handlers: MessageHandler[] = [];
@@ -153,7 +164,7 @@ export function createConsumer(
     const gen = ++generation;
     while (!stopped && gen === generation) {
       try {
-        const kafka = makeKafka(clientId);
+        const kafka = kafkaFactory(clientId);
         const consumer: Consumer = kafka.consumer({ groupId });
         await consumer.connect();
         for (const topic of topics) {
@@ -169,10 +180,14 @@ export function createConsumer(
             err: crashErr,
           });
           activeConsumer = null;
-          try { await consumer.disconnect(); } catch { /* best effort */ }
+          try {
+            await consumer.disconnect();
+          } catch {
+            /* best effort */
+          }
           if (!reconnecting) {
             reconnecting = true;
-            setTimeout(() => {
+            scheduleFn(() => {
               reconnecting = false;
               connectLoop();
             }, 3_000);
@@ -180,9 +195,7 @@ export function createConsumer(
         });
 
         await consumer.run({
-          eachMessage: async (
-            { topic, message }: { topic: string; message: KafkaMessage },
-          ) => {
+          eachMessage: async ({ topic, message }: { topic: string; message: KafkaMessage }) => {
             if (!message.value) return;
             let parsed: unknown;
             try {
@@ -197,7 +210,10 @@ export function createConsumer(
                   await Promise.race([
                     handler(topic, parsed),
                     new Promise((_, reject) =>
-                      setTimeout(() => reject(new Error(`handler timeout (${handlerTimeoutMs}ms)`)), handlerTimeoutMs)
+                      setTimeout(
+                        () => reject(new Error(`handler timeout (${handlerTimeoutMs}ms)`)),
+                        handlerTimeoutMs
+                      )
                     ),
                   ]);
                 } catch (err) {
@@ -224,7 +240,7 @@ export function createConsumer(
           retryInSecs: delay / 1000,
           err: err as Error,
         });
-        await new Promise((r) => setTimeout(r, delay));
+        await sleepFn(delay);
         delay = Math.min(delay * 2, MAX_DELAY_MS);
       }
     }
@@ -247,11 +263,10 @@ export function createConsumer(
 export interface TopicBinding<T> {
   topic: string;
   schema: z.ZodType<T>;
-  handler: (value: T) => Promise<void> | void;
+  handler(value: T): Promise<void> | void;
 }
 
-// deno-lint-ignore no-explicit-any
-type AnyTopicBinding = TopicBinding<any>;
+type AnyTopicBinding = TopicBinding<unknown>;
 
 export interface TypedConsumerOptions {
   handlerTimeoutMs?: number;
@@ -261,7 +276,7 @@ export interface TypedConsumerOptions {
 export function createTypedConsumer(
   groupId: string,
   bindings: AnyTopicBinding[],
-  options: TypedConsumerOptions = {},
+  options: TypedConsumerOptions = {}
 ): Promise<MsgConsumer> {
   const byTopic = new Map<string, AnyTopicBinding>();
   for (const b of bindings) {
@@ -271,14 +286,16 @@ export function createTypedConsumer(
     byTopic.set(b.topic, b);
   }
 
-  const onInvalid = options.onInvalid ?? ((topic, _raw, err) => {
-    logger.warn("typed consumer dropped invalid message", {
-      ...LIB,
-      groupId,
-      topic,
-      err,
+  const onInvalid =
+    options.onInvalid ??
+    ((topic, _raw, err) => {
+      logger.warn("typed consumer dropped invalid message", {
+        ...LIB,
+        groupId,
+        topic,
+        err,
+      });
     });
-  });
 
   return createConsumer(groupId, [...byTopic.keys()], `veta-${groupId}`, {
     handlerTimeoutMs: options.handlerTimeoutMs,
@@ -302,4 +319,21 @@ export function createTypedConsumer(
     });
     return consumer;
   });
+}
+
+// fallow-ignore-next-line unused-export
+export function __setMessagingTestHooks(
+  hooks: {
+    kafkaFactory?: KafkaFactory;
+    sleepFn?: SleepFn;
+    scheduleFn?: ScheduleFn;
+  } | null
+): void {
+  kafkaFactory = hooks?.kafkaFactory ?? makeKafka;
+  sleepFn = hooks?.sleepFn ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
+  scheduleFn =
+    hooks?.scheduleFn ??
+    ((fn, ms) => {
+      setTimeout(fn, ms);
+    });
 }

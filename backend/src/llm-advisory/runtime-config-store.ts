@@ -10,7 +10,7 @@ export interface RuntimeConfigStore {
   getConfig(): Promise<LlmRuntimeConfig>;
   updateConfig(
     patch: Partial<Omit<LlmRuntimeConfig, "updatedAt">>,
-    updatedBy: string,
+    updatedBy: string
   ): Promise<LlmRuntimeConfig>;
 }
 
@@ -23,7 +23,7 @@ export interface RuntimeConfigStoreOptions {
 
 export async function createRuntimeConfigStore(
   pool: Pool,
-  options: RuntimeConfigStoreOptions = {},
+  options: RuntimeConfigStoreOptions = {}
 ): Promise<RuntimeConfigStore> {
   const cacheTtlMs = options.cacheTtlMs ?? 30_000;
   const now = options.now ?? Date.now;
@@ -34,7 +34,7 @@ export async function createRuntimeConfigStore(
       `INSERT INTO llm_advisory.runtime_config (id, enabled, worker_enabled, trigger_mode, updated_at, updated_by)
        VALUES (1, FALSE, FALSE, 'manual', $1, 'system')
        ON CONFLICT (id) DO NOTHING`,
-      [Date.now()],
+      [Date.now()]
     );
   } finally {
     client.release();
@@ -52,10 +52,8 @@ export async function createRuntimeConfigStore(
   async function fetchFresh(): Promise<LlmRuntimeConfig> {
     const c = await pool.connect();
     try {
-      const { rows } = await c.queryArray<
-        [boolean, boolean, string, bigint | number, string]
-      >(
-        "SELECT enabled, worker_enabled, trigger_mode, updated_at, updated_by FROM llm_advisory.runtime_config WHERE id = 1",
+      const { rows } = await c.queryArray<[boolean, boolean, string, bigint | number, string]>(
+        "SELECT enabled, worker_enabled, trigger_mode, updated_at, updated_by FROM llm_advisory.runtime_config WHERE id = 1"
       );
       if (rows.length === 0) {
         return {
@@ -66,8 +64,7 @@ export async function createRuntimeConfigStore(
           updatedBy: "system",
         };
       }
-      const [enabled, workerEnabled, triggerMode, updatedAt, updatedBy] =
-        rows[0];
+      const [enabled, workerEnabled, triggerMode, updatedAt, updatedBy] = rows[0];
       return {
         enabled: Boolean(enabled),
         workerEnabled: Boolean(workerEnabled),
@@ -96,7 +93,7 @@ export async function createRuntimeConfigStore(
 
     async updateConfig(
       patch: Partial<Omit<LlmRuntimeConfig, "updatedAt">>,
-      updatedBy: string,
+      updatedBy: string
     ): Promise<LlmRuntimeConfig> {
       const current = await fetchFresh();
       const next: LlmRuntimeConfig = {
@@ -112,20 +109,12 @@ export async function createRuntimeConfigStore(
           `UPDATE llm_advisory.runtime_config
            SET enabled=$1, worker_enabled=$2, trigger_mode=$3, updated_at=$4, updated_by=$5
            WHERE id=1`,
-          [
-            next.enabled,
-            next.workerEnabled,
-            next.triggerMode,
-            next.updatedAt,
-            next.updatedBy,
-          ],
+          [next.enabled, next.workerEnabled, next.triggerMode, next.updatedAt, next.updatedBy]
         );
       } finally {
         c.release();
       }
-      cached = cacheTtlMs > 0
-        ? { value: next, expiresAt: now() + cacheTtlMs }
-        : null;
+      cached = cacheTtlMs > 0 ? { value: next, expiresAt: now() + cacheTtlMs } : null;
       return next;
     },
   };
@@ -133,7 +122,7 @@ export async function createRuntimeConfigStore(
 
 export function resolveEffectivePolicy(
   basePolicy: LlmPolicy,
-  runtimeConfig: LlmRuntimeConfig,
+  runtimeConfig: LlmRuntimeConfig
 ): LlmPolicy {
   return {
     ...basePolicy,
@@ -147,7 +136,7 @@ export function deriveSubsystemState(
   effectivePolicy: LlmPolicy,
   pendingJobs: number,
   lastErrorMs: number | null,
-  lastActivityMs: number | null,
+  lastActivityMs: number | null
 ): LlmSubsystemState {
   if (!effectivePolicy.enabled) return "disabled";
   if (lastErrorMs !== null && Date.now() - lastErrorMs < 30_000) return "error";

@@ -31,10 +31,7 @@ Deno.test("verifyPassword rejects a malformed stored hash", async () => {
 });
 
 Deno.test("verifyPassword rejects an unknown version", async () => {
-  assertEquals(
-    await verifyPassword("anything", "bcrypt$10$xyz$abc"),
-    false,
-  );
+  assertEquals(await verifyPassword("anything", "bcrypt$10$xyz$abc"), false);
 });
 
 Deno.test("hashPassword produces different hashes for the same password (random salt)", async () => {
@@ -46,6 +43,7 @@ Deno.test("hashPassword produces different hashes for the same password (random 
 Deno.test("verifyPassword rejects when iterations are absurdly low", async () => {
   // hand-craft a low-iteration record; constant-time math runs but we
   // refuse on policy grounds (matches the >= 10_000 floor).
-  const fake = "pbkdf2-sha256-v1$1000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+  const fake =
+    "pbkdf2-sha256-v1$1000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
   assertEquals(await verifyPassword("anything", fake), false);
 });

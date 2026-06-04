@@ -1,6 +1,7 @@
 import { readFile, glob } from "node:fs/promises";
 import { resolve, posix } from "node:path";
 import { existsSync } from "node:fs";
+import process from "node:process";
 
 const DIST = resolve(import.meta.dirname, "../dist");
 const BASE = "/veta-trading-platform";

@@ -3,7 +3,6 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { corsOptions, json, parseBody } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer, type MsgProducer } from "@veta/messaging";
-import { createConfigStore } from "./configStore.ts";
 import {
   CheckRequestSchema,
   type RiskConfig,
@@ -19,6 +18,7 @@ import {
   userTotalPnl,
   type WorkingOrder,
 } from "./checks.ts";
+import { createConfigStore } from "./configStore.ts";
 
 const PORT = Number(Deno.env.get("RISK_ENGINE_PORT")) || 5_032;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -87,10 +87,9 @@ const riskState: RiskState = {
 
 async function fetchPrices(): Promise<void> {
   try {
-    const res = await fetch(
-      `http://${MARKET_SIM_HOST}:${MARKET_SIM_PORT}/assets`,
-      { signal: AbortSignal.timeout(3_000) },
-    );
+    const res = await fetch(`http://${MARKET_SIM_HOST}:${MARKET_SIM_PORT}/assets`, {
+      signal: AbortSignal.timeout(3_000),
+    });
     if (res.ok) {
       const assets = (await res.json()) as Array<{
         symbol: string;
@@ -153,9 +152,7 @@ function trackOrderCounts() {
           const count = activeOrderCounts.get(userId) ?? 0;
           if (count > 0) activeOrderCounts.set(userId, count - 1);
 
-          const idx = workingOrders.findIndex(
-            (o) => o.userId === userId && o.orderId === orderId,
-          );
+          const idx = workingOrders.findIndex((o) => o.userId === userId && o.orderId === orderId);
           if (idx >= 0) workingOrders.splice(idx, 1);
         }
 
@@ -174,7 +171,7 @@ function trackOrderCounts() {
             symbol,
             msg.side as "BUY" | "SELL",
             msg.filledQty,
-            msg.avgFillPrice,
+            msg.avgFillPrice
           );
         }
       });
@@ -187,7 +184,7 @@ function updatePosition(
   symbol: string,
   side: "BUY" | "SELL",
   qty: number,
-  price: number,
+  price: number
 ): void {
   let userPositions = positions.get(userId);
   if (!userPositions) {
@@ -205,8 +202,7 @@ function updatePosition(
   const prevNetQty = pos.netQty;
 
   const isReducing =
-    prevNetQty !== 0 &&
-    ((prevNetQty > 0 && signedQty < 0) || (prevNetQty < 0 && signedQty > 0));
+    prevNetQty !== 0 && ((prevNetQty > 0 && signedQty < 0) || (prevNetQty < 0 && signedQty > 0));
 
   if (isReducing) {
     const closedQty = Math.min(Math.abs(signedQty), Math.abs(prevNetQty));
@@ -270,9 +266,11 @@ function fireMarketMoveBreaker(symbol: string, observedPct: number): void {
   };
   breakerProducer?.send("orders.kill", killPayload).catch(() => {});
   breakerProducer?.send("risk.breaker", breakerPayload).catch(() => {});
-  logger.info(`Market-move breaker fired for ${symbol}: ${
-      observedPct.toFixed(1)
-    }% > ${config.haltMovePercent}%`);
+  logger.info(
+    `Market-move breaker fired for ${symbol}: ${observedPct.toFixed(
+      1
+    )}% > ${config.haltMovePercent}%`
+  );
 }
 
 function fireUserPnlBreaker(userId: string, observedPnl: number): void {
@@ -303,9 +301,11 @@ function fireUserPnlBreaker(userId: string, observedPnl: number): void {
   };
   breakerProducer?.send("orders.kill", killPayload).catch(() => {});
   breakerProducer?.send("risk.breaker", breakerPayload).catch(() => {});
-  logger.info(`User P&L breaker fired for ${userId}: $${
-      observedPnl.toFixed(2)
-    } <= $${config.maxDailyLoss.toFixed(2)}`);
+  logger.info(
+    `User P&L breaker fired for ${userId}: $${observedPnl.toFixed(
+      2
+    )} <= $${config.maxDailyLoss.toFixed(2)}`
+  );
 }
 
 function evaluateMarketMoveBreaker(): void {
@@ -513,15 +513,19 @@ Deno.serve({ port: PORT }, async (req) => {
     const next: RiskConfig = { ...config };
     if (body.fatFingerPct !== undefined) next.fatFingerPct = Math.max(0.1, body.fatFingerPct);
     if (body.maxOpenOrders !== undefined) next.maxOpenOrders = Math.max(1, body.maxOpenOrders);
-    if (body.duplicateWindowMs !== undefined) next.duplicateWindowMs = Math.max(50, body.duplicateWindowMs);
-    if (body.maxOrdersPerSecond !== undefined) next.maxOrdersPerSecond = Math.max(1, body.maxOrdersPerSecond);
+    if (body.duplicateWindowMs !== undefined)
+      next.duplicateWindowMs = Math.max(50, body.duplicateWindowMs);
+    if (body.maxOrdersPerSecond !== undefined)
+      next.maxOrdersPerSecond = Math.max(1, body.maxOrdersPerSecond);
     if (body.maxAdvPct !== undefined) next.maxAdvPct = Math.max(0.1, body.maxAdvPct);
-    if (body.maxGrossNotional !== undefined) next.maxGrossNotional = Math.max(0, body.maxGrossNotional);
+    if (body.maxGrossNotional !== undefined)
+      next.maxGrossNotional = Math.max(0, body.maxGrossNotional);
     if (body.maxDailyLoss !== undefined) next.maxDailyLoss = body.maxDailyLoss;
     if (body.maxConcentrationPct !== undefined) {
       next.maxConcentrationPct = Math.min(100, Math.max(1, body.maxConcentrationPct));
     }
-    if (body.haltMovePercent !== undefined) next.haltMovePercent = Math.max(0.1, body.haltMovePercent);
+    if (body.haltMovePercent !== undefined)
+      next.haltMovePercent = Math.max(0.1, body.haltMovePercent);
     if (body.breakerCooldownMs !== undefined) {
       next.breakerCooldownMs = Math.max(1_000, body.breakerCooldownMs);
     }

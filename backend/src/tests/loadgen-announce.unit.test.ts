@@ -1,14 +1,19 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import type { GatewayContext } from "../gateway/context.ts";
 import { buildLoadgenMessage } from "../gateway/discord-notifier.ts";
 import {
   handleLoadgenAnnounceRoute,
   parseAnnouncement,
 } from "../gateway/routes/loadgen-announce.ts";
-import type { GatewayContext } from "../gateway/context.ts";
 
 const stubContext = {} as GatewayContext;
 
-function jsonReq(method: string, path: string, body: unknown, headers: Record<string, string> = {}) {
+function jsonReq(
+  method: string,
+  path: string,
+  body: unknown,
+  headers: Record<string, string> = {}
+) {
   return new Request(`http://localhost${path}`, {
     method,
     headers: { "Content-Type": "application/json", ...headers },
@@ -73,7 +78,7 @@ Deno.test("route returns null when LOADGEN_ANNOUNCE_TOKEN is unset", async () =>
     const r = await handleLoadgenAnnounceRoute(
       jsonReq("POST", "/loadgen-announce", { event: "start", runner: "soak" }),
       "/loadgen-announce",
-      stubContext,
+      stubContext
     );
     assertEquals(r, null);
   } finally {
@@ -85,11 +90,16 @@ Deno.test("route returns 403 when the token header is wrong", async () => {
   Deno.env.set("LOADGEN_ANNOUNCE_TOKEN", "real-token");
   try {
     const r = await handleLoadgenAnnounceRoute(
-      jsonReq("POST", "/loadgen-announce", { event: "start", runner: "soak" }, {
-        "X-Loadgen-Token": "wrong",
-      }),
+      jsonReq(
+        "POST",
+        "/loadgen-announce",
+        { event: "start", runner: "soak" },
+        {
+          "X-Loadgen-Token": "wrong",
+        }
+      ),
       "/loadgen-announce",
-      stubContext,
+      stubContext
     );
     assertEquals(r?.status, 403);
   } finally {
@@ -101,11 +111,16 @@ Deno.test("route returns 400 on malformed body", async () => {
   Deno.env.set("LOADGEN_ANNOUNCE_TOKEN", "real-token");
   try {
     const r = await handleLoadgenAnnounceRoute(
-      jsonReq("POST", "/loadgen-announce", { event: "pause", runner: "soak" }, {
-        "X-Loadgen-Token": "real-token",
-      }),
+      jsonReq(
+        "POST",
+        "/loadgen-announce",
+        { event: "pause", runner: "soak" },
+        {
+          "X-Loadgen-Token": "real-token",
+        }
+      ),
       "/loadgen-announce",
-      stubContext,
+      stubContext
     );
     assertEquals(r?.status, 400);
   } finally {
@@ -119,14 +134,19 @@ Deno.test("route returns 202 when token correct but no Discord webhook", async (
   Deno.env.delete("DISCORD_WEBHOOK_URL");
   try {
     const r = await handleLoadgenAnnounceRoute(
-      jsonReq("POST", "/loadgen-announce", { event: "start", runner: "soak" }, {
-        "X-Loadgen-Token": "real-token",
-      }),
+      jsonReq(
+        "POST",
+        "/loadgen-announce",
+        { event: "start", runner: "soak" },
+        {
+          "X-Loadgen-Token": "real-token",
+        }
+      ),
       "/loadgen-announce",
-      stubContext,
+      stubContext
     );
     assertEquals(r?.status, 202);
-    const body = await r!.json();
+    const body = await r?.json();
     assertEquals(body.ok, false);
   } finally {
     Deno.env.delete("LOADGEN_ANNOUNCE_TOKEN");
@@ -140,7 +160,7 @@ Deno.test("route returns null for wrong path", async () => {
     const r = await handleLoadgenAnnounceRoute(
       jsonReq("POST", "/other", { event: "start", runner: "soak" }),
       "/other",
-      stubContext,
+      stubContext
     );
     assertEquals(r, null);
   } finally {
@@ -154,7 +174,7 @@ Deno.test("route returns null for GET method", async () => {
     const r = await handleLoadgenAnnounceRoute(
       jsonReq("GET", "/loadgen-announce", undefined),
       "/loadgen-announce",
-      stubContext,
+      stubContext
     );
     assertEquals(r, null);
   } finally {

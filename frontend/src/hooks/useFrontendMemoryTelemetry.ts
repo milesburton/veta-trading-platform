@@ -70,8 +70,8 @@ export function useFrontendMemoryTelemetry(): MemorySnapshot | null {
     }
 
     sample();
-    const handle = window.setInterval(sample, POLL_INTERVAL_MS);
-    return () => window.clearInterval(handle);
+    const handle = globalThis.setInterval(sample, POLL_INTERVAL_MS);
+    return () => globalThis.clearInterval(handle);
   }, [snapshot]);
 
   return snapshot.value;

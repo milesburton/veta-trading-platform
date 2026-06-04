@@ -35,7 +35,7 @@ Deno.test({
     const stack = await startStack({ services: [...SERVICES], startupTimeoutMs: 60_000 });
     const GW = url(stack, "gateway");
     const MS = url(stack, "market-sim");
-    const J  = url(stack, "journal");
+    const J = url(stack, "journal");
     const OMS = url(stack, "oms");
     const LIMIT = url(stack, "limit-strategy");
     const POV = url(stack, "pov-strategy");
@@ -58,13 +58,15 @@ Deno.test({
       await t.step("[market-sim] /assets returns asset list with AAPL", async () => {
         const res = await fetch(`${MS}/assets`, { signal: T() });
         assertEquals(res.status, 200);
-        const assets = await res.json() as { symbol: string }[];
+        const assets = (await res.json()) as { symbol: string }[];
         assert(Array.isArray(assets) && assets.length > 0);
         assertExists(assets.find((a) => a.symbol === "AAPL"));
       });
 
       await t.step("[journal] /candles returns array", async () => {
-        const res = await fetch(`${J}/candles?instrument=AAPL&interval=1m&limit=5`, { signal: T() });
+        const res = await fetch(`${J}/candles?instrument=AAPL&interval=1m&limit=5`, {
+          signal: T(),
+        });
         assertEquals(res.status, 200);
         assert(Array.isArray(await res.json()));
       });
@@ -78,17 +80,21 @@ Deno.test({
       await t.step("[market] /assets returns enriched fields", async () => {
         const res = await fetch(`${MS}/assets`, { signal: T() });
         assertEquals(res.status, 200);
-        const assets = await res.json() as { symbol: string; initialPrice: number; dailyVolume: number }[];
+        const assets = (await res.json()) as {
+          symbol: string;
+          initialPrice: number;
+          dailyVolume: number;
+        }[];
         const aapl = assets.find((a) => a.symbol === "AAPL");
         assertExists(aapl);
-        assert(aapl!.dailyVolume > 0);
-        assert(aapl!.initialPrice > 0);
+        assert(aapl?.dailyVolume > 0);
+        assert(aapl?.initialPrice > 0);
       });
 
       await t.step("[limit-algo] health includes pending count", async () => {
         const res = await fetch(`${LIMIT}/health`, { signal: T() });
         assertEquals(res.status, 200);
-        const body = await res.json() as { status: string; activeOrders: number };
+        const body = (await res.json()) as { status: string; activeOrders: number };
         assertEquals(body.status, "ok");
         assertEquals(typeof body.activeOrders, "number");
       });
@@ -96,7 +102,7 @@ Deno.test({
       await t.step("[pov-algo] health includes activeOrders count", async () => {
         const res = await fetch(`${POV}/health`, { signal: T() });
         assertEquals(res.status, 200);
-        const body = await res.json() as { status: string; activeOrders: number };
+        const body = (await res.json()) as { status: string; activeOrders: number };
         assertEquals(body.status, "ok");
         assertEquals(typeof body.activeOrders, "number");
       });
@@ -104,7 +110,7 @@ Deno.test({
       await t.step("[vwap-algo] health includes activeOrders count", async () => {
         const res = await fetch(`${VWAP}/health`, { signal: T() });
         assertEquals(res.status, 200);
-        const body = await res.json() as { status: string; activeOrders: number };
+        const body = (await res.json()) as { status: string; activeOrders: number };
         assertEquals(body.status, "ok");
         assertEquals(typeof body.activeOrders, "number");
       });
@@ -112,7 +118,7 @@ Deno.test({
       await t.step("[twap-algo] health is ok", async () => {
         const res = await fetch(`${TWAP}/health`, { signal: T() });
         assertEquals(res.status, 200);
-        assertEquals((await res.json() as { status: string }).status, "ok");
+        assertEquals(((await res.json()) as { status: string }).status, "ok");
       });
 
       await t.step("[fix-archive] /executions?symbol=AAPL returns filtered array", async () => {
@@ -128,36 +134,50 @@ Deno.test({
       });
 
       await t.step("[gateway] WS connects and responds to submitOrder within 5s", async () => {
-        const wsUrl = GW.replace(/^http/, "ws") + "/ws";
+        const wsUrl = `${GW.replace(/^http/, "ws")}/ws`;
         const ws = new WebSocket(wsUrl);
-        const closed = new Promise<void>((r) => { ws.onclose = () => r(); });
+        const closed = new Promise<void>((r) => {
+          ws.onclose = () => r();
+        });
 
         const result = await new Promise<string>((resolve, reject) => {
-          const timer = setTimeout(() => { ws.close(); reject(new Error("timeout")); }, 5_000);
+          const timer = setTimeout(() => {
+            ws.close();
+            reject(new Error("timeout"));
+          }, 5_000);
           ws.onopen = () => {
-            ws.send(JSON.stringify({
-              type: "submitOrder",
-              payload: {
-                clientOrderId: `int-${Date.now()}`,
-                asset: "MSFT",
-                side: "BUY",
-                quantity: 25,
-                limitPrice: 420.0,
-                expiresAt: 30,
-                strategy: "LIMIT",
-                algoParams: { strategy: "LIMIT" },
-              },
-            }));
+            ws.send(
+              JSON.stringify({
+                type: "submitOrder",
+                payload: {
+                  clientOrderId: `int-${Date.now()}`,
+                  asset: "MSFT",
+                  side: "BUY",
+                  quantity: 25,
+                  limitPrice: 420.0,
+                  expiresAt: 30,
+                  strategy: "LIMIT",
+                  algoParams: { strategy: "LIMIT" },
+                },
+              })
+            );
           };
           ws.onmessage = (ev) => {
             const msg = JSON.parse(ev.data as string) as { event: string };
-            if (msg.event === "orderAck" || msg.event === "orderRejected" || msg.event === "error") {
+            if (
+              msg.event === "orderAck" ||
+              msg.event === "orderRejected" ||
+              msg.event === "error"
+            ) {
               clearTimeout(timer);
               ws.close();
               resolve(msg.event);
             }
           };
-          ws.onerror = () => { clearTimeout(timer); reject(new Error("WS error")); };
+          ws.onerror = () => {
+            clearTimeout(timer);
+            reject(new Error("WS error"));
+          };
         });
         await closed;
         assert(["orderAck", "orderRejected", "error"].includes(result), `unexpected: ${result}`);
@@ -166,7 +186,7 @@ Deno.test({
       await t.step("[oms] health is ok", async () => {
         const res = await fetch(`${OMS}/health`, { signal: T() });
         assertEquals(res.status, 200);
-        assertEquals((await res.json() as { status: string }).status, "ok");
+        assertEquals(((await res.json()) as { status: string }).status, "ok");
       });
 
       await t.step("[oms] POST / returns 404 (order submission moved to bus)", async () => {
@@ -187,7 +207,10 @@ Deno.test({
           body: JSON.stringify({
             gridId: "orderBlotter",
             filterExpr: EMPTY_FILTER,
-            sortField: null, sortDir: null, offset: 0, limit: 50,
+            sortField: null,
+            sortDir: null,
+            offset: 0,
+            limit: 50,
           }),
           signal: T(),
         });
@@ -206,23 +229,29 @@ Deno.test({
         await res.body?.cancel();
       });
 
-      await t.step("[grid/query] POST /grid/query direct to journal returns correct shape", async () => {
-        const res = await fetch(`${J}/grid/query`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            gridId: "orderBlotter",
-            filterExpr: EMPTY_FILTER,
-            sortField: null, sortDir: null, offset: 0, limit: 50,
-          }),
-          signal: T(8_000),
-        });
-        assertEquals(res.status, 200);
-        const body = await res.json() as { rows: unknown[]; total: number; evalMs: number };
-        assert(Array.isArray(body.rows));
-        assertEquals(typeof body.total, "number");
-        assertEquals(typeof body.evalMs, "number");
-      });
+      await t.step(
+        "[grid/query] POST /grid/query direct to journal returns correct shape",
+        async () => {
+          const res = await fetch(`${J}/grid/query`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              gridId: "orderBlotter",
+              filterExpr: EMPTY_FILTER,
+              sortField: null,
+              sortDir: null,
+              offset: 0,
+              limit: 50,
+            }),
+            signal: T(8_000),
+          });
+          assertEquals(res.status, 200);
+          const body = (await res.json()) as { rows: unknown[]; total: number; evalMs: number };
+          assert(Array.isArray(body.rows));
+          assertEquals(typeof body.total, "number");
+          assertEquals(typeof body.evalMs, "number");
+        }
+      );
 
       await t.step("[shared-workspaces] GET without auth returns 401", async () => {
         const res = await fetch(`${GW}/shared-workspaces`, { signal: T() });
@@ -242,7 +271,7 @@ Deno.test({
           signal: T(),
         });
         assertEquals(postRes.status, 200);
-        const { id } = await postRes.json() as { id: string };
+        const { id } = (await postRes.json()) as { id: string };
         assertExists(id);
 
         const listRes = await fetch(`${GW}/shared-workspaces`, {
@@ -250,25 +279,31 @@ Deno.test({
           signal: T(),
         });
         assertEquals(listRes.status, 200);
-        const list = await listRes.json() as { id: string; name: string; ownerName: string }[];
+        const list = (await listRes.json()) as { id: string; name: string; ownerName: string }[];
         const found = list.find((e) => e.id === id);
         assertExists(found);
-        assertEquals(found!.name, "Test Workspace");
+        assertEquals(found?.name, "Test Workspace");
 
         const bobDelete = await fetch(`${GW}/shared-workspaces/${id}`, {
-          method: "DELETE", headers: { cookie: bobCookie }, signal: T(),
+          method: "DELETE",
+          headers: { cookie: bobCookie },
+          signal: T(),
         });
         assertEquals(bobDelete.status, 403);
         await bobDelete.body?.cancel();
 
         const aliceDelete = await fetch(`${GW}/shared-workspaces/${id}`, {
-          method: "DELETE", headers: { cookie: aliceCookie }, signal: T(),
+          method: "DELETE",
+          headers: { cookie: aliceCookie },
+          signal: T(),
         });
         assertEquals(aliceDelete.status, 200);
         await aliceDelete.body?.cancel();
       });
     } catch (err) {
-      await Deno.stderr.write(new TextEncoder().encode("\n--- service logs ---\n" + stack.dumpLogs()));
+      await Deno.stderr.write(
+        new TextEncoder().encode(`\n--- service logs ---\n${stack.dumpLogs()}`)
+      );
       throw err;
     } finally {
       await stack.teardown();

@@ -1,4 +1,3 @@
-import { z } from "@veta/zod";
 import type {
   AssetClass,
   Desk,
@@ -7,6 +6,7 @@ import type {
   OrderStatus,
   Strategy,
 } from "@veta/primitives";
+import { z } from "@veta/zod";
 
 export type {
   AssetClass,

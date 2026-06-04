@@ -71,11 +71,7 @@ export function userTotalPnl(state: RiskState, userId: string): number {
   return total;
 }
 
-export function userSymbolNotional(
-  state: RiskState,
-  userId: string,
-  symbol: string,
-): number {
+export function userSymbolNotional(state: RiskState, userId: string, symbol: string): number {
   const userPositions = state.positions.get(userId);
   if (!userPositions) return 0;
   const p = userPositions.get(symbol);
@@ -160,7 +156,7 @@ export function checkSelfCross(state: RiskState, req: CheckRequest): CheckHit {
   if (state.config.selfCrossEnabled === false) return null;
   const oppositeSide = req.side === "BUY" ? "SELL" : "BUY";
   const conflict = state.workingOrders.find(
-    (o) => o.userId === req.userId && o.symbol === req.symbol && o.side === oppositeSide,
+    (o) => o.userId === req.userId && o.symbol === req.symbol && o.side === oppositeSide
   );
   if (conflict) {
     return {
@@ -194,7 +190,7 @@ export function checkRateLimit(state: RiskState, req: CheckRequest): CheckHit {
   const elapsed = (t - bucket.lastRefill) / 1_000;
   bucket.tokens = Math.min(
     state.config.maxOrdersPerSecond,
-    bucket.tokens + elapsed * state.config.maxOrdersPerSecond,
+    bucket.tokens + elapsed * state.config.maxOrdersPerSecond
   );
   bucket.lastRefill = t;
   if (bucket.tokens < 1) {

@@ -43,7 +43,11 @@ export async function renderGrafanaPanel(opts: RenderOptions): Promise<Uint8Arra
     if (lenHeader) {
       const advertised = Number(lenHeader);
       if (Number.isFinite(advertised) && advertised > MAX_PNG_BYTES) {
-        try { await res.body?.cancel(); } catch { /* already drained */ }
+        try {
+          await res.body?.cancel();
+        } catch {
+          /* already drained */
+        }
         return null;
       }
     }
@@ -58,7 +62,11 @@ export async function renderGrafanaPanel(opts: RenderOptions): Promise<Uint8Arra
       if (!value) continue;
       total += value.byteLength;
       if (total > MAX_PNG_BYTES) {
-        try { await reader.cancel(); } catch { /* already drained */ }
+        try {
+          await reader.cancel();
+        } catch {
+          /* already drained */
+        }
         return null;
       }
       chunks.push(value);
@@ -84,12 +92,12 @@ interface PanelRef {
 const SOURCE_TO_PANEL: Record<string, PanelRef> = {
   "kill-switch": { panelUid: "trading", panelId: 1 },
   "service-down": { panelUid: "trading", panelId: 1 },
-  "oms": { panelUid: "trading", panelId: 1 },
-  "ems": { panelUid: "trading", panelId: 1 },
+  oms: { panelUid: "trading", panelId: 1 },
+  ems: { panelUid: "trading", panelId: 1 },
   "risk-engine": { panelUid: "trading", panelId: 1 },
-  "journal": { panelUid: "trading", panelId: 1 },
+  journal: { panelUid: "trading", panelId: 1 },
   "market-sim": { panelUid: "trading", panelId: 1 },
-  "algo": { panelUid: "trading", panelId: 5 },
+  algo: { panelUid: "trading", panelId: 5 },
   "twap-algo": { panelUid: "trading", panelId: 5 },
   "vwap-algo": { panelUid: "trading", panelId: 5 },
   "pov-algo": { panelUid: "trading", panelId: 5 },

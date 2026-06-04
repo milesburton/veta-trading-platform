@@ -5,7 +5,6 @@ import { usersPool } from "@veta/db";
 import { parseBody } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createProducer } from "@veta/messaging";
-import { hashPassword, verifyPassword } from "./credentials.ts";
 import {
   AlertCreateSchema,
   AuthorizeRequestSchema,
@@ -21,20 +20,38 @@ import {
   STARTER_MAX_DAILY_NOTIONAL,
   STARTER_MAX_ORDER_QTY,
 } from "@veta/trader-archetypes";
+import { hashPassword, verifyPassword } from "./credentials.ts";
 
-const AUTH_ROLES = ["trader", "admin", "compliance", "sales", "external-client", "viewer", "desk-head", "risk-manager", "oncall", "guest"] as const;
-type AuthRole = typeof AUTH_ROLES[number];
+const AUTH_ROLES = [
+  "trader",
+  "admin",
+  "compliance",
+  "sales",
+  "external-client",
+  "viewer",
+  "desk-head",
+  "risk-manager",
+  "oncall",
+  "guest",
+] as const;
+type AuthRole = (typeof AUTH_ROLES)[number];
 
-function parseOAuthClients(config: string): Map<string, {
-  clientId: string;
-  redirectUris: string[];
-  scopes: string[];
-}> {
-  const result = new Map<string, {
+function parseOAuthClients(config: string): Map<
+  string,
+  {
     clientId: string;
     redirectUris: string[];
     scopes: string[];
-  }>();
+  }
+> {
+  const result = new Map<
+    string,
+    {
+      clientId: string;
+      redirectUris: string[];
+      scopes: string[];
+    }
+  >();
 
   for (const rawEntry of config.split(";")) {
     const entry = rawEntry.trim();
@@ -68,8 +85,14 @@ function parseOAuthClients(config: string): Map<string, {
     if (!clientId) continue;
     result.set(clientId, {
       clientId,
-      redirectUris: redirectPart.split(",").map((value) => value.trim()).filter(Boolean),
-      scopes: scopePart.split(",").map((value) => value.trim()).filter(Boolean),
+      redirectUris: redirectPart
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
+      scopes: scopePart
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
     });
   }
 
@@ -91,13 +114,19 @@ function parseUserSecrets(config: string): Map<string, string> {
   return result;
 }
 
-const OAUTH_CLIENTS = new Map<string, {
-  clientId: string;
-  redirectUris: string[];
-  scopes: string[];
-}>(parseOAuthClients(
-  Deno.env.get("OAUTH2_CLIENTS") ?? "veta-web:postmessage|openid,profile;veta-automation:postmessage|openid,profile",
-));
+const OAUTH_CLIENTS = new Map<
+  string,
+  {
+    clientId: string;
+    redirectUris: string[];
+    scopes: string[];
+  }
+>(
+  parseOAuthClients(
+    Deno.env.get("OAUTH2_CLIENTS") ??
+      "veta-web:postmessage|openid,profile;veta-automation:postmessage|openid,profile"
+  )
+);
 
 const OAUTH_USER_SECRETS = parseUserSecrets(Deno.env.get("OAUTH2_USER_SECRETS") ?? "");
 const DEFAULT_DEV_PASSCODE = "veta-dev-passcode";
@@ -110,20 +139,23 @@ if (
   logger.error(
     "FATAL: OAUTH2_SHARED_SECRET unset or equals the dev default. " +
       "Set OAUTH2_SHARED_SECRET to a strong random value, or set " +
-      "VETA_ALLOW_DEFAULT_PASSCODE=true to acknowledge a dev environment.",
+      "VETA_ALLOW_DEFAULT_PASSCODE=true to acknowledge a dev environment."
   );
   Deno.exit(1);
 }
 
-const oauthCodes = new Map<string, {
-  clientId: string;
-  userId: string;
-  redirectUri: string;
-  scope: string;
-  codeChallenge: string;
-  codeChallengeMethod: "S256";
-  expiresAt: number;
-}>();
+const oauthCodes = new Map<
+  string,
+  {
+    clientId: string;
+    userId: string;
+    redirectUri: string;
+    scope: string;
+    codeChallenge: string;
+    codeChallengeMethod: "S256";
+    expiresAt: number;
+  }
+>();
 
 setInterval(() => {
   const now = Date.now();
@@ -136,11 +168,10 @@ const PORT = Number(Deno.env.get("USER_SERVICE_PORT")) || 5_008;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 
 const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get("CORS_ALLOWED_ORIGINS") ??
-    "http://localhost:5173,http://localhost:3000")
+  (Deno.env.get("CORS_ALLOWED_ORIGINS") ?? "http://localhost:5173,http://localhost:3000")
     .split(",")
     .map((s) => s.trim())
-    .filter((s) => s.length > 0),
+    .filter((s) => s.length > 0)
 );
 
 const CORS_HEADERS = {
@@ -172,7 +203,10 @@ function randomToken(): string {
 }
 
 function normalizeUserId(input: string): string {
-  return input.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "");
 }
 
 function jsonError(error: string, status = 400, extra?: Record<string, string>): Response {
@@ -195,17 +229,20 @@ function getOAuthClient(clientId: string | undefined, redirectUri: string | unde
   return client;
 }
 
-async function createSessionForUser(client: Awaited<ReturnType<typeof usersPool.connect>>, userId: string) {
+async function createSessionForUser(
+  client: Awaited<ReturnType<typeof usersPool.connect>>,
+  userId: string
+) {
   const { rows } = await client.queryArray(
     "SELECT id, name, role, avatar_emoji, firm FROM users.users WHERE id = $1",
-    [userId],
+    [userId]
   );
   if (rows.length === 0) return null;
   const [id, name, role, avatar_emoji, firm] = rows[0];
   const token = randomToken();
   await client.queryArray(
     "INSERT INTO users.sessions (token, user_id, created_at, expires_at) VALUES ($1, $2, now(), now() + interval '8 hours')",
-    [token, id],
+    [token, id]
   );
   producer?.send("user.session", { event: "login", userId: id, ts: Date.now() }).catch(() => {});
   return {
@@ -231,7 +268,7 @@ async function derivePkceChallenge(verifier: string): Promise<string> {
 
 async function verifyOAuthCredentials(
   userId: string,
-  providedPassword: string | undefined,
+  providedPassword: string | undefined
 ): Promise<boolean> {
   const candidate = (providedPassword ?? "").trim();
   if (!candidate) return false;
@@ -240,7 +277,7 @@ async function verifyOAuthCredentials(
   try {
     const { rows } = await client.queryArray<[string | null]>(
       "SELECT password_hash FROM users.users WHERE id = $1",
-      [userId],
+      [userId]
     );
     const stored = rows[0]?.[0];
     if (stored) {
@@ -265,7 +302,10 @@ function json(data: unknown, status = 200, extra?: Record<string, string>): Resp
 }
 
 function splitCsv(s: string): string[] {
-  return s.split(",").map((x) => x.trim()).filter((x) => x.length > 0);
+  return s
+    .split(",")
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
 }
 
 async function getUserFromToken(token: string | null) {
@@ -276,12 +316,20 @@ async function getUserFromToken(token: string | null) {
       `SELECT u.id, u.name, u.role, u.avatar_emoji, u.firm
        FROM users.sessions s JOIN users.users u ON u.id = s.user_id
        WHERE s.token = $1 AND s.expires_at > now()`,
-      [token],
+      [token]
     );
     if (rows.length === 0) return null;
     const [id, name, role, avatar_emoji, firm] = rows[0];
-    return { id, name, role, avatar_emoji, firm: firm ?? null } as { id: string; name: string; role: string; avatar_emoji: string; firm: string | null };
-  } finally { client.release(); }
+    return { id, name, role, avatar_emoji, firm: firm ?? null } as {
+      id: string;
+      name: string;
+      role: string;
+      avatar_emoji: string;
+      firm: string | null;
+    };
+  } finally {
+    client.release();
+  }
 }
 
 async function handle(req: Request): Promise<Response> {
@@ -303,10 +351,20 @@ async function handle(req: Request): Promise<Response> {
     const client = await usersPool.connect();
     try {
       const { rows } = await client.queryArray(
-        "SELECT id, name, role, avatar_emoji, firm FROM users.users ORDER BY role DESC, name",
+        "SELECT id, name, role, avatar_emoji, firm FROM users.users ORDER BY role DESC, name"
       );
-      return json(rows.map(([id, name, role, avatar_emoji, firm]) => ({ id, name, role, avatar_emoji, firm: firm ?? null })));
-    } finally { client.release(); }
+      return json(
+        rows.map(([id, name, role, avatar_emoji, firm]) => ({
+          id,
+          name,
+          role,
+          avatar_emoji,
+          firm: firm ?? null,
+        }))
+      );
+    } finally {
+      client.release();
+    }
   }
 
   if (req.method === "GET" && path === "/personas") {
@@ -334,7 +392,7 @@ async function handle(req: Request): Promise<Response> {
            END,
            l.primary_desk NULLS LAST,
            l.trading_style NULLS LAST,
-           u.name`,
+           u.name`
       );
       return json({
         personas: rows.map((r) => {
@@ -354,13 +412,15 @@ async function handle(req: Request): Promise<Response> {
           };
         }),
       });
-    } finally { client.release(); }
+    } finally {
+      client.release();
+    }
   }
 
   if (req.method === "POST" && path === "/sessions") {
     return jsonError(
       "legacy /sessions login is disabled; use OAuth2 /oauth/authorize + /oauth/token",
-      410,
+      410
     );
   }
 
@@ -370,13 +430,18 @@ async function handle(req: Request): Promise<Response> {
       const client = await usersPool.connect();
       try {
         const { rows } = await client.queryArray(
-          "SELECT user_id FROM users.sessions WHERE token = $1", [token],
+          "SELECT user_id FROM users.sessions WHERE token = $1",
+          [token]
         );
         if (rows.length > 0) {
-          producer?.send("user.session", { event: "logout", userId: rows[0][0], ts: Date.now() }).catch(() => {});
+          producer
+            ?.send("user.session", { event: "logout", userId: rows[0][0], ts: Date.now() })
+            .catch(() => {});
         }
         await client.queryArray("DELETE FROM users.sessions WHERE token = $1", [token]);
-      } finally { client.release(); }
+      } finally {
+        client.release();
+      }
     }
     return json({ success: true }, 200, {
       "Set-Cookie": `veta_user=; ${COOKIE_BASE}; Max-Age=0`,
@@ -399,21 +464,32 @@ async function handle(req: Request): Promise<Response> {
     try {
       const { rows } = await client.queryArray(
         "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk FROM users.trading_limits WHERE user_id = $1",
-        [user.id],
+        [user.id]
       );
-      const limits = rows.length > 0
-        ? {
-            max_order_qty: rows[0][0] as number,
-            max_daily_notional: rows[0][1] as number,
-            allowed_strategies: splitCsv(rows[0][2] as string),
-            allowed_desks: splitCsv(rows[0][3] as string),
-            dark_pool_access: rows[0][4] as boolean,
-            trading_style: rows[0][5] as string,
-            primary_desk: rows[0][6] as string,
-          }
-        : { max_order_qty: 10000, max_daily_notional: 1_000_000, allowed_strategies: ["LIMIT","TWAP","POV","VWAP"], allowed_desks: ["equity-cash"], dark_pool_access: false, trading_style: "high_touch", primary_desk: "equity-cash" };
+      const limits =
+        rows.length > 0
+          ? {
+              max_order_qty: rows[0][0] as number,
+              max_daily_notional: rows[0][1] as number,
+              allowed_strategies: splitCsv(rows[0][2] as string),
+              allowed_desks: splitCsv(rows[0][3] as string),
+              dark_pool_access: rows[0][4] as boolean,
+              trading_style: rows[0][5] as string,
+              primary_desk: rows[0][6] as string,
+            }
+          : {
+              max_order_qty: 10000,
+              max_daily_notional: 1_000_000,
+              allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+              allowed_desks: ["equity-cash"],
+              dark_pool_access: false,
+              trading_style: "high_touch",
+              primary_desk: "equity-cash",
+            };
       return json({ user, limits });
-    } finally { client.release(); }
+    } finally {
+      client.release();
+    }
   }
 
   const limitsMatch = path.match(/^\/users\/([^/]+)\/limits$/);
@@ -422,9 +498,8 @@ async function handle(req: Request): Promise<Response> {
     if (req.method === "GET") {
       const caller = await getUserFromToken(getCookieToken(req));
       if (!caller) return json({ error: "unauthenticated" }, 401);
-      const canReadAny = caller.role === "admin" ||
-        caller.role === "compliance" ||
-        caller.role === "risk-manager";
+      const canReadAny =
+        caller.role === "admin" || caller.role === "compliance" || caller.role === "risk-manager";
       if (!canReadAny && caller.id !== userId) {
         return json({ error: "forbidden" }, 403);
       }
@@ -432,10 +507,18 @@ async function handle(req: Request): Promise<Response> {
       try {
         const { rows } = await client.queryArray(
           "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk FROM users.trading_limits WHERE user_id = $1",
-          [userId],
+          [userId]
         );
         if (rows.length === 0) return json({ error: "user not found" }, 404);
-        const [max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk] = rows[0];
+        const [
+          max_order_qty,
+          max_daily_notional,
+          allowed_strategies,
+          allowed_desks,
+          dark_pool_access,
+          trading_style,
+          primary_desk,
+        ] = rows[0];
         return json({
           userId,
           max_order_qty,
@@ -446,7 +529,9 @@ async function handle(req: Request): Promise<Response> {
           trading_style: trading_style as string,
           primary_desk: primary_desk as string,
         });
-      } finally { client.release(); }
+      } finally {
+        client.release();
+      }
     }
     if (req.method === "PUT") {
       const caller = await getUserFromToken(getCookieToken(req));
@@ -460,7 +545,7 @@ async function handle(req: Request): Promise<Response> {
       try {
         const { rows } = await client.queryArray(
           "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access FROM users.trading_limits WHERE user_id = $1",
-          [userId],
+          [userId]
         );
         if (rows.length === 0) return json({ error: "user not found" }, 404);
         const [cur_qty, cur_notional, cur_strategies, cur_desks, cur_dark_pool] = rows[0];
@@ -473,10 +558,12 @@ async function handle(req: Request): Promise<Response> {
             body.allowed_desks ? body.allowed_desks.join(",") : cur_desks,
             body.dark_pool_access ?? cur_dark_pool,
             userId,
-          ],
+          ]
         );
         return json({ success: true });
-      } finally { client.release(); }
+      } finally {
+        client.release();
+      }
     }
   }
 
@@ -487,11 +574,14 @@ async function handle(req: Request): Promise<Response> {
       const client = await usersPool.connect();
       try {
         const { rows } = await client.queryArray(
-          "SELECT data FROM users.user_preferences WHERE user_id = $1", [userId],
+          "SELECT data FROM users.user_preferences WHERE user_id = $1",
+          [userId]
         );
         if (rows.length === 0) return json({ error: "user not found" }, 404);
         return json(rows[0][0] ?? {});
-      } finally { client.release(); }
+      } finally {
+        client.release();
+      }
     }
     if (req.method === "PUT") {
       const caller = await getUserFromToken(getCookieToken(req));
@@ -503,10 +593,12 @@ async function handle(req: Request): Promise<Response> {
       try {
         await client.queryArray(
           "INSERT INTO users.user_preferences (user_id, data) VALUES ($1,$2) ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data",
-          [userId, parsed.data],
+          [userId, parsed.data]
         );
         return json({ success: true });
-      } finally { client.release(); }
+      } finally {
+        client.release();
+      }
     }
   }
 
@@ -519,13 +611,22 @@ async function handle(req: Request): Promise<Response> {
         `SELECT sw.id, sw.owner_id, u.name, u.avatar_emoji, sw.name, sw.description, sw.created_at
          FROM users.shared_workspaces sw JOIN users.users u ON u.id = sw.owner_id
          WHERE sw.owner_id != $1 ORDER BY sw.created_at DESC`,
-        [caller.id],
+        [caller.id]
       );
-      return json(rows.map(([id, ownerId, ownerName, ownerEmoji, name, description, createdAt]) => ({
-        id, ownerId, ownerName, ownerEmoji, name, description,
-        createdAt: createdAt instanceof Date ? createdAt.toISOString() : createdAt,
-      })));
-    } finally { client.release(); }
+      return json(
+        rows.map(([id, ownerId, ownerName, ownerEmoji, name, description, createdAt]) => ({
+          id,
+          ownerId,
+          ownerName,
+          ownerEmoji,
+          name,
+          description,
+          createdAt: createdAt instanceof Date ? createdAt.toISOString() : createdAt,
+        }))
+      );
+    } finally {
+      client.release();
+    }
   }
 
   if (req.method === "POST" && path === "/shared-workspaces") {
@@ -539,10 +640,12 @@ async function handle(req: Request): Promise<Response> {
     try {
       await client.queryArray(
         "INSERT INTO users.shared_workspaces (id, owner_id, name, description, model_json) VALUES ($1,$2,$3,$4,$5)",
-        [id, caller.id, body.name, body.description ?? "", body.model],
+        [id, caller.id, body.name, body.description ?? "", body.model]
       );
       return json({ id });
-    } finally { client.release(); }
+    } finally {
+      client.release();
+    }
   }
 
   const sharedMatch = path.match(/^\/shared-workspaces\/([^/]+)$/);
@@ -557,15 +660,23 @@ async function handle(req: Request): Promise<Response> {
         const { rows } = await client.queryArray(
           `SELECT sw.id, sw.owner_id, u.name, u.avatar_emoji, sw.name, sw.description, sw.model_json, sw.created_at
            FROM users.shared_workspaces sw JOIN users.users u ON u.id = sw.owner_id WHERE sw.id = $1`,
-          [sharedId],
+          [sharedId]
         );
         if (rows.length === 0) return json({ error: "not found" }, 404);
         const [id, ownerId, ownerName, ownerEmoji, name, description, model, createdAt] = rows[0];
         return json({
-          id, ownerId, ownerName, ownerEmoji, name, description, model,
+          id,
+          ownerId,
+          ownerName,
+          ownerEmoji,
+          name,
+          description,
+          model,
           createdAt: createdAt instanceof Date ? createdAt.toISOString() : createdAt,
         });
-      } finally { client.release(); }
+      } finally {
+        client.release();
+      }
     }
 
     if (req.method === "DELETE") {
@@ -574,13 +685,17 @@ async function handle(req: Request): Promise<Response> {
       const client = await usersPool.connect();
       try {
         const { rows } = await client.queryArray(
-          "SELECT owner_id FROM users.shared_workspaces WHERE id = $1", [sharedId],
+          "SELECT owner_id FROM users.shared_workspaces WHERE id = $1",
+          [sharedId]
         );
         if (rows.length === 0) return json({ error: "not found" }, 404);
-        if (rows[0][0] !== caller.id && caller.role !== "admin") return json({ error: "forbidden" }, 403);
+        if (rows[0][0] !== caller.id && caller.role !== "admin")
+          return json({ error: "forbidden" }, 403);
         await client.queryArray("DELETE FROM users.shared_workspaces WHERE id = $1", [sharedId]);
         return json({ success: true });
-      } finally { client.release(); }
+      } finally {
+        client.release();
+      }
     }
   }
 
@@ -595,15 +710,24 @@ async function handle(req: Request): Promise<Response> {
       try {
         const { rows } = await client.queryArray(
           "SELECT id, severity, source, message, detail, ts, dismissed, dismissed_at FROM users.user_alerts WHERE user_id=$1 ORDER BY ts DESC LIMIT 200",
-          [userId],
+          [userId]
         );
-        return json(rows.map(([id, severity, source, message, detail, ts, dismissed, dismissedAt]) => ({
-          id, severity, source, message, detail: detail ?? undefined,
-          ts: ts instanceof Date ? ts.getTime() : ts,
-          dismissed: dismissed === true,
-          dismissedAt: dismissedAt instanceof Date ? dismissedAt.getTime() : (dismissedAt ?? undefined),
-        })));
-      } finally { client.release(); }
+        return json(
+          rows.map(([id, severity, source, message, detail, ts, dismissed, dismissedAt]) => ({
+            id,
+            severity,
+            source,
+            message,
+            detail: detail ?? undefined,
+            ts: ts instanceof Date ? ts.getTime() : ts,
+            dismissed: dismissed === true,
+            dismissedAt:
+              dismissedAt instanceof Date ? dismissedAt.getTime() : (dismissedAt ?? undefined),
+          }))
+        );
+      } finally {
+        client.release();
+      }
     }
     if (req.method === "POST") {
       const caller = await getUserFromToken(getCookieToken(req));
@@ -617,10 +741,20 @@ async function handle(req: Request): Promise<Response> {
       try {
         await client.queryArray(
           "INSERT INTO users.user_alerts (id, user_id, severity, source, message, detail, ts) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO NOTHING",
-          [id, userId, body.severity, body.source, body.message, body.detail ?? null, new Date(body.ts ?? Date.now())],
+          [
+            id,
+            userId,
+            body.severity,
+            body.source,
+            body.message,
+            body.detail ?? null,
+            new Date(body.ts ?? Date.now()),
+          ]
         );
         return json({ id });
-      } finally { client.release(); }
+      } finally {
+        client.release();
+      }
     }
   }
 
@@ -634,10 +768,12 @@ async function handle(req: Request): Promise<Response> {
     try {
       await client.queryArray(
         "UPDATE users.user_alerts SET dismissed=true, dismissed_at=now() WHERE user_id=$1 AND dismissed=false",
-        [userId],
+        [userId]
       );
       return json({ success: true });
-    } finally { client.release(); }
+    } finally {
+      client.release();
+    }
   }
 
   const alertDismissMatch = path.match(/^\/users\/([^/]+)\/alerts\/([^/]+)\/dismiss$/);
@@ -651,10 +787,12 @@ async function handle(req: Request): Promise<Response> {
     try {
       await client.queryArray(
         "UPDATE users.user_alerts SET dismissed=true, dismissed_at=now() WHERE id=$1 AND user_id=$2",
-        [alertId, userId],
+        [alertId, userId]
       );
       return json({ success: true });
-    } finally { client.release(); }
+    } finally {
+      client.release();
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -697,16 +835,15 @@ async function handle(req: Request): Promise<Response> {
 
     const requestedUserId = normalizeUserId(body.username ?? body.userId ?? "");
     if (!requestedUserId) return jsonError("username required", 400);
-    if (!await verifyOAuthCredentials(requestedUserId, body.password)) {
+    if (!(await verifyOAuthCredentials(requestedUserId, body.password))) {
       return jsonError("invalid_credentials", 401);
     }
 
     const client = await usersPool.connect();
     try {
-      const { rows } = await client.queryArray(
-        "SELECT id FROM users.users WHERE id = $1",
-        [requestedUserId],
-      );
+      const { rows } = await client.queryArray("SELECT id FROM users.users WHERE id = $1", [
+        requestedUserId,
+      ]);
       if (rows.length === 0) return jsonError("user not found", 404);
 
       const code = crypto.randomUUID();
@@ -722,7 +859,9 @@ async function handle(req: Request): Promise<Response> {
       });
 
       return json({ code, redirect_uri: redirectUri, expires_in: 60, scope, token_type: "none" });
-    } finally { client.release(); }
+    } finally {
+      client.release();
+    }
   }
 
   // Guest mode: any client can POST /oauth/guest (no auth, no PKCE) and
@@ -733,12 +872,12 @@ async function handle(req: Request): Promise<Response> {
     if (Deno.env.get("PUBLIC_GUEST_TRADING") !== "true") {
       return jsonError("guest mode disabled", 403);
     }
-    const guestId = "guest-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+    const guestId = `guest-${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
     const client = await usersPool.connect();
     try {
       await client.queryArray(
         "INSERT INTO users.users (id, name, role, avatar_emoji) VALUES ($1, $1, 'guest', '👤')",
-        [guestId],
+        [guestId]
       );
       const session = await createSessionForUser(client, guestId);
       if (!session) return jsonError("guest provisioning failed", 500);
@@ -751,9 +890,11 @@ async function handle(req: Request): Promise<Response> {
           user: session.user,
         },
         200,
-        { "Set-Cookie": `veta_user=${session.token}; ${COOKIE_BASE}; Max-Age=28800` },
+        { "Set-Cookie": `veta_user=${session.token}; ${COOKIE_BASE}; Max-Age=28800` }
       );
-    } finally { client.release(); }
+    } finally {
+      client.release();
+    }
   }
 
   if (req.method === "POST" && (path === "/oauth/token" || path === "/auth/token")) {
@@ -768,7 +909,11 @@ async function handle(req: Request): Promise<Response> {
     }
 
     const oauthClient = getOAuthClient(body.client_id, body.redirect_uri ?? entry.redirectUri);
-    if (!oauthClient || oauthClient.clientId !== entry.clientId || (body.redirect_uri ?? entry.redirectUri) !== entry.redirectUri) {
+    if (
+      !oauthClient ||
+      oauthClient.clientId !== entry.clientId ||
+      (body.redirect_uri ?? entry.redirectUri) !== entry.redirectUri
+    ) {
       return jsonError("invalid_client", 401);
     }
 
@@ -790,9 +935,11 @@ async function handle(req: Request): Promise<Response> {
           user: session.user,
         },
         200,
-        { "Set-Cookie": `veta_user=${session.token}; ${COOKIE_BASE}; Max-Age=28800` },
+        { "Set-Cookie": `veta_user=${session.token}; ${COOKIE_BASE}; Max-Age=28800` }
       );
-    } finally { client.release(); }
+    } finally {
+      client.release();
+    }
   }
 
   if (req.method === "POST" && (path === "/oauth/register" || path === "/auth/register")) {
@@ -820,13 +967,13 @@ async function handle(req: Request): Promise<Response> {
     try {
       const { rows: existing } = await client.queryArray(
         "SELECT id FROM users.users WHERE id = $1",
-        [userId],
+        [userId]
       );
       if (existing.length > 0) return jsonError("username already exists", 409);
 
       await client.queryArray(
         "INSERT INTO users.users (id, name, role, avatar_emoji, password_hash, description) VALUES ($1, $2, 'trader', '🧑‍💻', $3, $4)",
-        [userId, body.name.trim(), passwordHash, archetype.label],
+        [userId, body.name.trim(), passwordHash, archetype.label]
       );
       await client.queryArray(
         `INSERT INTO users.trading_limits
@@ -841,9 +988,16 @@ async function handle(req: Request): Promise<Response> {
           archetype.darkPoolAccess,
           archetype.tradingStyle,
           archetype.primaryDesk,
-        ],
+        ]
       );
-      producer?.send("user.session", { event: "register", userId, archetype: archetype.id, ts: Date.now() }).catch(() => {});
+      producer
+        ?.send("user.session", {
+          event: "register",
+          userId,
+          archetype: archetype.id,
+          ts: Date.now(),
+        })
+        .catch(() => {});
       return json({ userId, name: body.name.trim(), role: "trader", archetype: archetype.id }, 201);
     } finally {
       client.release();

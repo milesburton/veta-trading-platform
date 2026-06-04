@@ -7,7 +7,7 @@ import { createTicketForAlert } from "../ticketing.ts";
 export async function handleAlertsRoute(
   req: Request,
   path: string,
-  ctx: GatewayContext,
+  ctx: GatewayContext
 ): Promise<Response | null> {
   if (path === "/alerts" && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
@@ -30,11 +30,9 @@ export async function handleAlertsRoute(
   if (path === "/alerts/dismiss-all" && req.method === "PUT") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
-    return forward(
-      `${ctx.urls.userService}/users/${auth.user.id}/alerts/dismiss-all`,
-      req,
-      { method: "PUT" },
-    );
+    return forward(`${ctx.urls.userService}/users/${auth.user.id}/alerts/dismiss-all`, req, {
+      method: "PUT",
+    });
   }
 
   const dismissMatch = path.match(/^\/alerts\/([^/]+)\/dismiss$/);
@@ -44,7 +42,7 @@ export async function handleAlertsRoute(
     return forward(
       `${ctx.urls.userService}/users/${auth.user.id}/alerts/${dismissMatch[1]}/dismiss`,
       req,
-      { method: "PUT" },
+      { method: "PUT" }
     );
   }
 
@@ -87,10 +85,7 @@ async function notifyDiscordFromBody(body: ArrayBuffer, userId: string): Promise
     message: alert.message ?? "",
     ts: Date.now(),
   });
-  await Promise.allSettled([
-    notifyDiscord(alert, userId),
-    createTicketForAlert(alert, userId),
-  ]);
+  await Promise.allSettled([notifyDiscord(alert, userId), createTicketForAlert(alert, userId)]);
 }
 
 interface ForwardOptions {
@@ -99,11 +94,7 @@ interface ForwardOptions {
   contentType?: string;
 }
 
-async function forward(
-  url: string,
-  req: Request,
-  opts: ForwardOptions = {},
-): Promise<Response> {
+async function forward(url: string, req: Request, opts: ForwardOptions = {}): Promise<Response> {
   const headers: Record<string, string> = {
     cookie: req.headers.get("cookie") ?? "",
   };

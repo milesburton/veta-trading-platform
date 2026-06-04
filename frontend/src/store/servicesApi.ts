@@ -27,7 +27,7 @@ interface SystemMetrics {
   memory: MemoryMetrics | null;
 }
 
-const _origin = typeof window !== "undefined" ? window.location.origin : "";
+const _origin = typeof window !== "undefined" ? globalThis.location.origin : "";
 
 const _api = `${_origin}/api/gateway/api`;
 

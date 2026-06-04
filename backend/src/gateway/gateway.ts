@@ -1,42 +1,38 @@
 import "@veta/bootstrap";
 // fallow-ignore-file unused-file
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { serveDir } from "jsr:@std/http@1.0.25/file-server";
 import { getCookieToken } from "@veta/auth";
 import { logger, registerLogSink } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
-import { clientIp, rateLimitResponse, RateLimiter } from "@veta/rate-limit";
-import { serveDir } from "jsr:@std/http@1.0.25/file-server";
-import {
-  handleHealth,
-  handleSystemStatus,
-  makeMarketSimWsProxy,
-} from "./system-status.ts";
-import { proxyGet, proxyPost, proxyPut } from "./proxy.ts";
-import { LoadAgent } from "./loadAgent.ts";
-import { createRefPriceCache } from "./refPrices.ts";
-import { classifyRequestSource } from "./requestSource.ts";
+import { clientIp, RateLimiter, rateLimitResponse } from "@veta/rate-limit";
+import { decideAccessLog, type ThrottleEntry } from "./accessLogThrottle.ts";
+import { makeValidateToken } from "./auth.ts";
+import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
 import {
   type AuthenticatedUser,
   type GatewayContext,
   isResponse,
   type UserLimits,
 } from "./context.ts";
+import { startDailySummary } from "./daily-summary.ts";
+import { sendDailySummary } from "./discord-notifier.ts";
+import { LoadAgent } from "./loadAgent.ts";
+import { platformStats } from "./platform-stats.ts";
+import { proxyGet, proxyPost, proxyPut } from "./proxy.ts";
+import { createRefPriceCache } from "./refPrices.ts";
+import { classifyRequestSource } from "./requestSource.ts";
 import { handleAdminRoute } from "./routes/admin.ts";
 import { handleAlertsRoute } from "./routes/alerts.ts";
 import { handleAnalyticsRoute } from "./routes/analytics.ts";
-import { handleLogsRoute, recordLogLine } from "./routes/logs.ts";
 import { handleBugReportRoute } from "./routes/bug-report.ts";
 import { handleLoadgenAnnounceRoute } from "./routes/loadgen-announce.ts";
-import { sendDailySummary } from "./discord-notifier.ts";
-import { startDailySummary } from "./daily-summary.ts";
-import { platformStats } from "./platform-stats.ts";
-import { handleTelemetryRoute } from "./routes/telemetry.ts";
-import { handleScenariosRoute } from "./routes/scenarios.ts";
+import { handleLogsRoute, recordLogLine } from "./routes/logs.ts";
 import { handleProxiedRoutes } from "./routes/proxied.ts";
+import { handleScenariosRoute } from "./routes/scenarios.ts";
+import { handleTelemetryRoute } from "./routes/telemetry.ts";
 import { handleWebSocketRoute } from "./routes/websocket.ts";
-import { broadcastAll, broadcastToRoles, broadcastToUser } from "./connections.ts";
-import { makeValidateToken } from "./auth.ts";
-import { decideAccessLog, type ThrottleEntry } from "./accessLogThrottle.ts";
+import { handleHealth, handleSystemStatus, makeMarketSimWsProxy } from "./system-status.ts";
 
 const PORT = Number(Deno.env.get("GATEWAY_PORT")) || 5_011;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -80,11 +76,10 @@ const REPLAY_URL = `http://${Deno.env.get("REPLAY_HOST") ?? "localhost"}:${Deno.
 const RISK_ENGINE_URL = `http://${Deno.env.get("RISK_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("RISK_ENGINE_PORT") ?? "5032"}`;
 
 const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get("CORS_ALLOWED_ORIGINS") ??
-    "http://localhost:5173,http://localhost:3000")
+  (Deno.env.get("CORS_ALLOWED_ORIGINS") ?? "http://localhost:5173,http://localhost:3000")
     .split(",")
     .map((s) => s.trim())
-    .filter((s) => s.length > 0),
+    .filter((s) => s.length > 0)
 );
 
 function corsHeaders(req: Request): Record<string, string> {
@@ -93,7 +88,7 @@ function corsHeaders(req: Request): Record<string, string> {
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
-    "Vary": "Origin",
+    Vary: "Origin",
   };
   if (allow) {
     headers["Access-Control-Allow-Origin"] = allow;
@@ -119,17 +114,14 @@ const userLimiter = new RateLimiter({
 // flooding the OMS/journal pipeline. Defaults: 10 burst, 1/sec sustained
 // → ~3,600 orders/hour worst case per IP. Authenticated traders are
 // unaffected.
-const PUBLIC_GUEST_TRADING = (Deno.env.get("PUBLIC_GUEST_TRADING") ?? "false").toLowerCase() === "true";
+const PUBLIC_GUEST_TRADING =
+  (Deno.env.get("PUBLIC_GUEST_TRADING") ?? "false").toLowerCase() === "true";
 const guestSubmitLimiter = new RateLimiter({
   capacity: Number(Deno.env.get("GUEST_SUBMIT_CAPACITY")) || 10,
   refillPerSecond: Number(Deno.env.get("GUEST_SUBMIT_REFILL")) || 1,
 });
 
-const RATE_LIMIT_BYPASS_PATHS = new Set([
-  "/health",
-  "/ready",
-  "/metrics",
-]);
+const RATE_LIMIT_BYPASS_PATHS = new Set(["/health", "/ready", "/metrics"]);
 
 function isWebSocketUpgrade(req: Request): boolean {
   return req.headers.get("upgrade")?.toLowerCase() === "websocket";
@@ -163,12 +155,19 @@ function originIsAllowed(req: Request): boolean {
   }
 }
 
-async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; limits: UserLimits } | Response> {
+async function requireAuth(
+  req: Request
+): Promise<{ user: AuthenticatedUser; limits: UserLimits } | Response> {
   const url = new URL(req.url);
   const source = classifyRequestSource(req.headers.get("user-agent"));
   const token = getCookieToken(req);
   if (!token) {
-    publishAccessEvent({ action: "auth_failure", path: url.pathname, reason: "no session cookie", source });
+    publishAccessEvent({
+      action: "auth_failure",
+      path: url.pathname,
+      reason: "no session cookie",
+      source,
+    });
     return new Response(JSON.stringify({ error: "unauthenticated" }), {
       status: 401,
       headers: { "Content-Type": "application/json", ...corsHeaders(req) },
@@ -190,7 +189,12 @@ async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; lim
   }
   const auth = await validateToken(token);
   if (!auth) {
-    publishAccessEvent({ action: "auth_failure", path: url.pathname, reason: "invalid or expired token", source });
+    publishAccessEvent({
+      action: "auth_failure",
+      path: url.pathname,
+      reason: "invalid or expired token",
+      source,
+    });
     return new Response(JSON.stringify({ error: "unauthenticated" }), {
       status: 401,
       headers: { "Content-Type": "application/json", ...corsHeaders(req) },
@@ -200,10 +204,15 @@ async function requireAuth(req: Request): Promise<{ user: AuthenticatedUser; lim
     const userResult = userLimiter.consume(`user:${auth.user.id}`);
     if (!userResult.allowed) return rateLimitResponse(userResult.retryAfterMs);
   }
-  publishAccessEvent({ action: "http_request", userId: auth.user.id, userRole: auth.user.role, path: url.pathname, source });
+  publishAccessEvent({
+    action: "http_request",
+    userId: auth.user.id,
+    userRole: auth.user.role,
+    path: url.pathname,
+    source,
+  });
   return auth;
 }
-
 
 // A misconfigured client can produce thousands of identical auth_failure
 // events per second; without a cap the stdout log fills disk in hours. We
@@ -237,15 +246,16 @@ function publishAccessEvent(event: {
     accessWarnState,
     `${event.action}:${event.reason ?? ""}`,
     enriched.ts,
-    ACCESS_WARN_THROTTLE_MS,
+    ACCESS_WARN_THROTTLE_MS
   );
   if (!decision.shouldEmit) return;
   logger.warn(
     "access_event",
-    decision.suppressedSince > 0 ? { ...enriched, suppressedSince: decision.suppressedSince } : enriched,
+    decision.suppressedSince > 0
+      ? { ...enriched, suppressedSince: decision.suppressedSince }
+      : enriched
   );
 }
-
 
 const producer = await createProducer("gateway");
 
@@ -279,9 +289,13 @@ function startConsumers(): void {
         if (msg.event === "marketData" || msg.event === "marketUpdate") {
           broadcastAll({ event: "marketUpdate", data: msg.data });
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
-    ws.onclose = () => { setTimeout(connectWsFallback, 5_000); };
+    ws.onclose = () => {
+      setTimeout(connectWsFallback, 5_000);
+    };
     ws.onerror = () => ws.close();
   };
   connectWsFallback();
@@ -315,114 +329,167 @@ function startConsumers(): void {
 
   const pendingSignals = new Map<string, unknown>();
   let signalFlushTimer: number | null = null;
-  createConsumer("gateway-signals", ["market.signals"]).then((c) => {
-    c.onMessage((_topic, value) => {
-      const sig = value as { symbol: string };
-      pendingSignals.set(sig.symbol, value);
-      if (!signalFlushTimer) {
-        signalFlushTimer = setTimeout(() => {
-          for (const [, data] of pendingSignals) {
-            broadcastAll({ event: "signalUpdate", data });
-          }
-          pendingSignals.clear();
-          signalFlushTimer = null;
-        }, 500) as unknown as number;
-      }
-    });
-  }).catch(() => {});
+  createConsumer("gateway-signals", ["market.signals"])
+    .then((c) => {
+      c.onMessage((_topic, value) => {
+        const sig = value as { symbol: string };
+        pendingSignals.set(sig.symbol, value);
+        if (!signalFlushTimer) {
+          signalFlushTimer = setTimeout(() => {
+            for (const [, data] of pendingSignals) {
+              broadcastAll({ event: "signalUpdate", data });
+            }
+            pendingSignals.clear();
+            signalFlushTimer = null;
+          }, 500) as unknown as number;
+        }
+      });
+    })
+    .catch(() => {});
 
   const pendingFeatures = new Map<string, unknown>();
   let featureFlushTimer: number | null = null;
-  createConsumer("gateway-features", ["market.features"]).then((c) => {
-    c.onMessage((_topic, value) => {
-      const fv = value as { symbol: string };
-      pendingFeatures.set(fv.symbol, value);
-      if (!featureFlushTimer) {
-        featureFlushTimer = setTimeout(() => {
-          for (const [, data] of pendingFeatures) {
-            broadcastAll({ event: "featureUpdate", data });
-          }
-          pendingFeatures.clear();
-          featureFlushTimer = null;
-        }, 500) as unknown as number;
-      }
-    });
-  }).catch(() => {});
+  createConsumer("gateway-features", ["market.features"])
+    .then((c) => {
+      c.onMessage((_topic, value) => {
+        const fv = value as { symbol: string };
+        pendingFeatures.set(fv.symbol, value);
+        if (!featureFlushTimer) {
+          featureFlushTimer = setTimeout(() => {
+            for (const [, data] of pendingFeatures) {
+              broadcastAll({ event: "featureUpdate", data });
+            }
+            pendingFeatures.clear();
+            featureFlushTimer = null;
+          }, 500) as unknown as number;
+        }
+      });
+    })
+    .catch(() => {});
 
-  createConsumer("gateway-recommendations", ["market.recommendations"]).then((c) => {
-    c.onMessage((_topic, value) => {
-      broadcastAll({ event: "recommendationUpdate", data: value });
-    });
-  }).catch(() => {});
+  createConsumer("gateway-recommendations", ["market.recommendations"])
+    .then((c) => {
+      c.onMessage((_topic, value) => {
+        broadcastAll({ event: "recommendationUpdate", data: value });
+      });
+    })
+    .catch(() => {});
 
-  createConsumer("gateway-advisory", ["llm.advisory.ready"]).then((c) => {
-    c.onMessage((_topic, value) => {
-      broadcastAll({ event: "advisoryUpdate", data: value });
-    });
-  }).catch(() => {});
+  createConsumer("gateway-advisory", ["llm.advisory.ready"])
+    .then((c) => {
+      c.onMessage((_topic, value) => {
+        broadcastAll({ event: "advisoryUpdate", data: value });
+      });
+    })
+    .catch(() => {});
 
-  createConsumer("gateway-llm-state", ["llm.state.update"]).then((c) => {
-    c.onMessage((_topic, value) => {
-      broadcastAll({ event: "llmStateUpdate", data: value });
-    });
-  }).catch(() => {});
+  createConsumer("gateway-llm-state", ["llm.state.update"])
+    .then((c) => {
+      c.onMessage((_topic, value) => {
+        broadcastAll({ event: "llmStateUpdate", data: value });
+      });
+    })
+    .catch(() => {});
 
-  createConsumer("gateway-rfq", ["rfq.quote.update", "rfq.executed", "rfq.sellside.update"]).then((c) => {
-    c.onMessage((topic, value) => {
-      const v = value as { userId?: string };
-      if (v.userId) {
-        broadcastToUser(v.userId, { event: "rfqUpdate", topic, data: value });
-      }
-      const sv = value as { clientUserId?: string; salesUserId?: string };
-      if (sv.clientUserId) broadcastToUser(sv.clientUserId, { event: "rfqSellSideUpdate", data: value });
-      if (sv.salesUserId) broadcastToUser(sv.salesUserId, { event: "rfqSellSideUpdate", data: value });
-    });
-  }).catch(() => {});
+  createConsumer("gateway-rfq", ["rfq.quote.update", "rfq.executed", "rfq.sellside.update"])
+    .then((c) => {
+      c.onMessage((topic, value) => {
+        const v = value as { userId?: string };
+        if (v.userId) {
+          broadcastToUser(v.userId, { event: "rfqUpdate", topic, data: value });
+        }
+        const sv = value as { clientUserId?: string; salesUserId?: string };
+        if (sv.clientUserId)
+          broadcastToUser(sv.clientUserId, { event: "rfqSellSideUpdate", data: value });
+        if (sv.salesUserId)
+          broadcastToUser(sv.salesUserId, { event: "rfqSellSideUpdate", data: value });
+      });
+    })
+    .catch(() => {});
 
-  createConsumer("gateway-dark", ["dark.execution"]).then((c) => {
-    c.onMessage((_topic, value) => {
-      const v = value as { buyUserId?: string; sellUserId?: string };
-      if (v.buyUserId) broadcastToUser(v.buyUserId, { event: "orderEvent", topic: "dark.execution", data: value });
-      if (v.sellUserId && v.sellUserId !== v.buyUserId) {
-        broadcastToUser(v.sellUserId, { event: "orderEvent", topic: "dark.execution", data: value });
-      }
-    });
-  }).catch(() => {});
+  createConsumer("gateway-dark", ["dark.execution"])
+    .then((c) => {
+      c.onMessage((_topic, value) => {
+        const v = value as { buyUserId?: string; sellUserId?: string };
+        if (v.buyUserId)
+          broadcastToUser(v.buyUserId, {
+            event: "orderEvent",
+            topic: "dark.execution",
+            data: value,
+          });
+        if (v.sellUserId && v.sellUserId !== v.buyUserId) {
+          broadcastToUser(v.sellUserId, {
+            event: "orderEvent",
+            topic: "dark.execution",
+            data: value,
+          });
+        }
+      });
+    })
+    .catch(() => {});
 
-  createConsumer("gateway-risk-breaker", ["risk.breaker"]).then((c) => {
-    c.onMessage((_topic, value) => {
-      broadcastAll({ event: "riskBreaker", data: value });
-    });
-  }).catch(() => {});
+  createConsumer("gateway-risk-breaker", ["risk.breaker"])
+    .then((c) => {
+      c.onMessage((_topic, value) => {
+        broadcastAll({ event: "riskBreaker", data: value });
+      });
+    })
+    .catch(() => {});
 
   createConsumer("gateway-ccp", [
-    "ccp.novation", "ccp.margin", "ccp.settlement.queued", "ccp.settlement.complete",
-  ]).then((c) => {
-    c.onMessage((topic, value) => {
-      const v = value as { userId?: string };
-      if (v.userId) {
-        broadcastToUser(v.userId, { event: "ccpEvent", topic, data: value });
-      } else {
-        broadcastToRoles(["compliance", "admin"], { event: "ccpEvent", topic, data: value });
-      }
-    });
-  }).catch(() => {});
+    "ccp.novation",
+    "ccp.margin",
+    "ccp.settlement.queued",
+    "ccp.settlement.complete",
+  ])
+    .then((c) => {
+      c.onMessage((topic, value) => {
+        const v = value as { userId?: string };
+        if (v.userId) {
+          broadcastToUser(v.userId, { event: "ccpEvent", topic, data: value });
+        } else {
+          broadcastToRoles(["compliance", "admin"], { event: "ccpEvent", topic, data: value });
+        }
+      });
+    })
+    .catch(() => {});
 }
 
 await startConsumers();
-
 
 // Fires 29 concurrent fetches — do it on a background interval, not per-request.
 const HEALTH_REFRESH_MS = 5_000;
 
 type ServiceHealth = {
-  marketSim: boolean; ems: boolean; oms: boolean; journal: boolean; userService: boolean;
-  fixArchive: boolean; fixGateway: boolean; observability: boolean;
-  limitAlgo: boolean; twapAlgo: boolean; povAlgo: boolean; vwapAlgo: boolean;
-  icebergAlgo: boolean; sniperAlgo: boolean; arrivalPriceAlgo: boolean; momentumAlgo: boolean; isAlgo: boolean;
-  darkPool: boolean; ccpService: boolean; rfqService: boolean; productService: boolean;
-  analytics: boolean; marketData: boolean; featureEngine: boolean; signalEngine: boolean;
-  recommendationEngine: boolean; scenarioEngine: boolean; newsAggregator: boolean; llmAdvisory: boolean;
+  marketSim: boolean;
+  ems: boolean;
+  oms: boolean;
+  journal: boolean;
+  userService: boolean;
+  fixArchive: boolean;
+  fixGateway: boolean;
+  observability: boolean;
+  limitAlgo: boolean;
+  twapAlgo: boolean;
+  povAlgo: boolean;
+  vwapAlgo: boolean;
+  icebergAlgo: boolean;
+  sniperAlgo: boolean;
+  arrivalPriceAlgo: boolean;
+  momentumAlgo: boolean;
+  isAlgo: boolean;
+  darkPool: boolean;
+  ccpService: boolean;
+  rfqService: boolean;
+  productService: boolean;
+  analytics: boolean;
+  marketData: boolean;
+  featureEngine: boolean;
+  signalEngine: boolean;
+  recommendationEngine: boolean;
+  scenarioEngine: boolean;
+  newsAggregator: boolean;
+  llmAdvisory: boolean;
   replay: boolean;
   riskEngine: boolean;
   bus: boolean;
@@ -447,39 +514,120 @@ async function refreshDataDepth(): Promise<void> {
     const res = await fetch(`${JOURNAL_URL}/data-depth`, { signal: AbortSignal.timeout(5_000) });
     if (res.ok) {
       const data = await res.json();
-      cachedDataDepth = { totalSymbols: data.totalSymbols, avgDays: data.avgDays, minDays: data.minDays, queriedAt: data.queriedAt };
+      cachedDataDepth = {
+        totalSymbols: data.totalSymbols,
+        avgDays: data.avgDays,
+        minDays: data.minDays,
+        queriedAt: data.queriedAt,
+      };
     }
-  } catch { /* non-critical */ }
+  } catch {
+    /* non-critical */
+  }
 }
 
 async function refreshHealth(): Promise<void> {
   const chk = (url: string) =>
-    fetch(`${url}/health`, { signal: AbortSignal.timeout(8_000) }).then((r) => r.ok).catch(() => false);
+    fetch(`${url}/health`, { signal: AbortSignal.timeout(8_000) })
+      .then((r) => r.ok)
+      .catch(() => false);
   const [
-    marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
-    limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
-    darkPool, ccpService, rfqService, productService,
-    analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
+    marketSim,
+    ems,
+    oms,
+    journal,
+    userService,
+    fixArchive,
+    fixGateway,
+    observability,
+    limitAlgo,
+    twapAlgo,
+    povAlgo,
+    vwapAlgo,
+    icebergAlgo,
+    sniperAlgo,
+    arrivalPriceAlgo,
+    momentumAlgo,
+    isAlgo,
+    darkPool,
+    ccpService,
+    rfqService,
+    productService,
+    analytics,
+    marketData,
+    featureEngine,
+    signalEngine,
+    recommendationEngine,
+    scenarioEngine,
+    newsAggregator,
+    llmAdvisory,
     replay,
     riskEngine,
     bus,
   ] = await Promise.all([
-    chk(MARKET_SIM_URL), chk(EMS_URL), chk(OMS_URL), chk(JOURNAL_URL), chk(USER_SERVICE_URL),
-    chk(FIX_ARCHIVE_URL), chk(FIX_GATEWAY_URL), chk(KAFKA_RELAY_URL),
-    chk(LIMIT_ALGO_URL), chk(TWAP_ALGO_URL), chk(POV_ALGO_URL), chk(VWAP_ALGO_URL),
-    chk(ICEBERG_ALGO_URL), chk(SNIPER_ALGO_URL), chk(ARRIVAL_PRICE_ALGO_URL), chk(MOMENTUM_ALGO_URL), chk(IS_ALGO_URL),
-    chk(DARK_POOL_URL), chk(CCP_SERVICE_URL), chk(RFQ_SERVICE_URL), chk(PRODUCT_SERVICE_URL),
-    chk(ANALYTICS_URL), chk(MARKET_DATA_URL), chk(FEATURE_ENGINE_URL), chk(SIGNAL_ENGINE_URL),
-    chk(RECOMMENDATION_ENGINE_URL), chk(SCENARIO_ENGINE_URL), chk(NEWS_AGGREGATOR_URL), chk(LLM_ADVISORY_URL),
+    chk(MARKET_SIM_URL),
+    chk(EMS_URL),
+    chk(OMS_URL),
+    chk(JOURNAL_URL),
+    chk(USER_SERVICE_URL),
+    chk(FIX_ARCHIVE_URL),
+    chk(FIX_GATEWAY_URL),
+    chk(KAFKA_RELAY_URL),
+    chk(LIMIT_ALGO_URL),
+    chk(TWAP_ALGO_URL),
+    chk(POV_ALGO_URL),
+    chk(VWAP_ALGO_URL),
+    chk(ICEBERG_ALGO_URL),
+    chk(SNIPER_ALGO_URL),
+    chk(ARRIVAL_PRICE_ALGO_URL),
+    chk(MOMENTUM_ALGO_URL),
+    chk(IS_ALGO_URL),
+    chk(DARK_POOL_URL),
+    chk(CCP_SERVICE_URL),
+    chk(RFQ_SERVICE_URL),
+    chk(PRODUCT_SERVICE_URL),
+    chk(ANALYTICS_URL),
+    chk(MARKET_DATA_URL),
+    chk(FEATURE_ENGINE_URL),
+    chk(SIGNAL_ENGINE_URL),
+    chk(RECOMMENDATION_ENGINE_URL),
+    chk(SCENARIO_ENGINE_URL),
+    chk(NEWS_AGGREGATOR_URL),
+    chk(LLM_ADVISORY_URL),
     chk(REPLAY_URL),
     chk(RISK_ENGINE_URL),
     chk(KAFKA_RELAY_URL),
   ]);
   cachedHealth = {
-    marketSim, ems, oms, journal, userService, fixArchive, fixGateway, observability,
-    limitAlgo, twapAlgo, povAlgo, vwapAlgo, icebergAlgo, sniperAlgo, arrivalPriceAlgo, momentumAlgo, isAlgo,
-    darkPool, ccpService, rfqService, productService,
-    analytics, marketData, featureEngine, signalEngine, recommendationEngine, scenarioEngine, newsAggregator, llmAdvisory,
+    marketSim,
+    ems,
+    oms,
+    journal,
+    userService,
+    fixArchive,
+    fixGateway,
+    observability,
+    limitAlgo,
+    twapAlgo,
+    povAlgo,
+    vwapAlgo,
+    icebergAlgo,
+    sniperAlgo,
+    arrivalPriceAlgo,
+    momentumAlgo,
+    isAlgo,
+    darkPool,
+    ccpService,
+    rfqService,
+    productService,
+    analytics,
+    marketData,
+    featureEngine,
+    signalEngine,
+    recommendationEngine,
+    scenarioEngine,
+    newsAggregator,
+    llmAdvisory,
     replay,
     riskEngine,
     bus,
@@ -598,7 +746,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders(req) },
-      },
+      }
     );
   }
 
@@ -610,20 +758,17 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const isAuthed = tokenCookie ? (await validateToken(tokenCookie)) !== null : false;
 
     if (!h) {
-      return new Response(
-        JSON.stringify({ ready: false, startedAt: STARTED_AT }),
-        { status: 503, headers: { "Content-Type": "application/json", ...corsHeaders(req) } },
-      );
+      return new Response(JSON.stringify({ ready: false, startedAt: STARTED_AT }), {
+        status: 503,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+      });
     }
     const ready = h.marketSim && h.ems && h.oms && h.journal && h.userService;
     if (!isAuthed) {
-      return new Response(
-        JSON.stringify({ ready, startedAt: STARTED_AT }),
-        {
-          status: ready ? 200 : 503,
-          headers: { "Content-Type": "application/json", ...corsHeaders(req) },
-        },
-      );
+      return new Response(JSON.stringify({ ready, startedAt: STARTED_AT }), {
+        status: ready ? 200 : 503,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+      });
     }
     return new Response(
       JSON.stringify({
@@ -631,16 +776,36 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         startedAt: STARTED_AT,
         producerReady: producer.isReady(),
         services: {
-          marketSim: h.marketSim, ems: h.ems, oms: h.oms, journal: h.journal,
-          userService: h.userService, bus: h.bus, fixArchive: h.fixArchive,
-          fixGateway: h.fixGateway, observability: h.observability,
-          limitAlgo: h.limitAlgo, twapAlgo: h.twapAlgo, povAlgo: h.povAlgo,
-          vwapAlgo: h.vwapAlgo, icebergAlgo: h.icebergAlgo, sniperAlgo: h.sniperAlgo,
-          arrivalPriceAlgo: h.arrivalPriceAlgo, momentumAlgo: h.momentumAlgo, isAlgo: h.isAlgo,
-          darkPool: h.darkPool, ccpService: h.ccpService, rfqService: h.rfqService, productService: h.productService,
-          analytics: h.analytics, marketData: h.marketData, featureEngine: h.featureEngine,
-          signalEngine: h.signalEngine, recommendationEngine: h.recommendationEngine,
-          scenarioEngine: h.scenarioEngine, newsAggregator: h.newsAggregator, llmAdvisory: h.llmAdvisory,
+          marketSim: h.marketSim,
+          ems: h.ems,
+          oms: h.oms,
+          journal: h.journal,
+          userService: h.userService,
+          bus: h.bus,
+          fixArchive: h.fixArchive,
+          fixGateway: h.fixGateway,
+          observability: h.observability,
+          limitAlgo: h.limitAlgo,
+          twapAlgo: h.twapAlgo,
+          povAlgo: h.povAlgo,
+          vwapAlgo: h.vwapAlgo,
+          icebergAlgo: h.icebergAlgo,
+          sniperAlgo: h.sniperAlgo,
+          arrivalPriceAlgo: h.arrivalPriceAlgo,
+          momentumAlgo: h.momentumAlgo,
+          isAlgo: h.isAlgo,
+          darkPool: h.darkPool,
+          ccpService: h.ccpService,
+          rfqService: h.rfqService,
+          productService: h.productService,
+          analytics: h.analytics,
+          marketData: h.marketData,
+          featureEngine: h.featureEngine,
+          signalEngine: h.signalEngine,
+          recommendationEngine: h.recommendationEngine,
+          scenarioEngine: h.scenarioEngine,
+          newsAggregator: h.newsAggregator,
+          llmAdvisory: h.llmAdvisory,
         },
         dataDepth: cachedDataDepth,
         upgradeInProgress,
@@ -649,7 +814,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       {
         status: ready ? 200 : 503,
         headers: { "Content-Type": "application/json", ...corsHeaders(req) },
-      },
+      }
     );
   }
 
@@ -670,7 +835,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
     let body: { inProgress: boolean; message?: string };
     try {
-      body = await req.json() as { inProgress: boolean; message?: string };
+      body = (await req.json()) as { inProgress: boolean; message?: string };
     } catch {
       return new Response(JSON.stringify({ error: "invalid json" }), {
         status: 400,
@@ -691,24 +856,27 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
     const MAX_MESSAGE_LEN = 280;
     if (body.message && body.message.length > MAX_MESSAGE_LEN) {
-      return new Response(
-        JSON.stringify({ error: `message exceeds ${MAX_MESSAGE_LEN} chars` }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders(req) } },
-      );
+      return new Response(JSON.stringify({ error: `message exceeds ${MAX_MESSAGE_LEN} chars` }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+      });
     }
     upgradeInProgress = body.inProgress;
     upgradeMessage = body.message ?? null;
-    broadcastAll({ event: "upgradeStatus", data: { inProgress: upgradeInProgress, message: upgradeMessage } });
-    return new Response(JSON.stringify({ inProgress: upgradeInProgress, message: upgradeMessage }), {
-      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+    broadcastAll({
+      event: "upgradeStatus",
+      data: { inProgress: upgradeInProgress, message: upgradeMessage },
     });
+    return new Response(
+      JSON.stringify({ inProgress: upgradeInProgress, message: upgradeMessage }),
+      {
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+      }
+    );
   }
 
   if (path === "/ws/market-sim") {
-    return makeMarketSimWsProxy(
-      req,
-      Number(Deno.env.get("MARKET_SIM_PORT") ?? "5000"),
-    );
+    return makeMarketSimWsProxy(req, Number(Deno.env.get("MARKET_SIM_PORT") ?? "5000"));
   }
 
   const wsResponse = await handleWebSocketRoute(req, path, gatewayContext, { validateToken });
@@ -747,10 +915,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     try {
       const fwdHeaders: Record<string, string> = {};
       const cookie = req.headers.get("cookie");
-      if (cookie) fwdHeaders["cookie"] = cookie;
+      if (cookie) fwdHeaders.cookie = cookie;
       const ct = req.headers.get("content-type");
       if (ct) fwdHeaders["content-type"] = ct;
-      const fetchInit: RequestInit = { method: req.method, headers: fwdHeaders, signal: AbortSignal.timeout(15_000) };
+      const fetchInit: RequestInit = {
+        method: req.method,
+        headers: fwdHeaders,
+        signal: AbortSignal.timeout(15_000),
+      };
       if (req.method !== "GET" && req.method !== "HEAD") fetchInit.body = await req.text();
       const res = await fetch(targetUrl, fetchInit);
       const resBody = await res.arrayBuffer();
@@ -763,47 +935,48 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       return new Response(resBody, { status: res.status, headers: resHeaders });
     } catch (err) {
       return new Response(JSON.stringify({ error: (err as Error).message }), {
-        status: 502, headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+        status: 502,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
       });
     }
   }
 
   const SVC_PROXY: Record<string, string> = {
-    "market-sim":           MARKET_SIM_URL,
-    "ems":                  EMS_URL,
-    "oms":                  OMS_URL,
-    "limit-algo":           LIMIT_ALGO_URL,
-    "twap-algo":            TWAP_ALGO_URL,
-    "pov-algo":             POV_ALGO_URL,
-    "vwap-algo":            VWAP_ALGO_URL,
-    "observability":        KAFKA_RELAY_URL,
-    "journal":              JOURNAL_URL,
-    "fix-archive":          FIX_ARCHIVE_URL,
-    "fix-gateway":          FIX_GATEWAY_URL,
-    "kafka-relay":          KAFKA_RELAY_URL,
-    "user-service":         USER_SERVICE_URL,
-    "news-aggregator":      NEWS_AGGREGATOR_URL,
-    "analytics":            ANALYTICS_URL,
-    "market-data":          MARKET_DATA_URL,
+    "market-sim": MARKET_SIM_URL,
+    "ems": EMS_URL,
+    "oms": OMS_URL,
+    "limit-algo": LIMIT_ALGO_URL,
+    "twap-algo": TWAP_ALGO_URL,
+    "pov-algo": POV_ALGO_URL,
+    "vwap-algo": VWAP_ALGO_URL,
+    observability: KAFKA_RELAY_URL,
+    "journal": JOURNAL_URL,
+    "fix-archive": FIX_ARCHIVE_URL,
+    "fix-gateway": FIX_GATEWAY_URL,
+    "kafka-relay": KAFKA_RELAY_URL,
+    "user-service": USER_SERVICE_URL,
+    "news-aggregator": NEWS_AGGREGATOR_URL,
+    "analytics": ANALYTICS_URL,
+    "market-data": MARKET_DATA_URL,
     "market-data-adapters": `http://${Deno.env.get("MARKET_DATA_ADAPTERS_HOST") ?? "localhost"}:${Deno.env.get("MARKET_DATA_ADAPTERS_PORT") ?? "5016"}`,
-    "feature-engine":       FEATURE_ENGINE_URL,
-    "signal-engine":        SIGNAL_ENGINE_URL,
+    "feature-engine": FEATURE_ENGINE_URL,
+    "signal-engine": SIGNAL_ENGINE_URL,
     "recommendation-engine": RECOMMENDATION_ENGINE_URL,
-    "scenario-engine":      SCENARIO_ENGINE_URL,
-    "iceberg-algo":         ICEBERG_ALGO_URL,
-    "sniper-algo":          SNIPER_ALGO_URL,
-    "arrival-price-algo":   ARRIVAL_PRICE_ALGO_URL,
-    "llm-advisory":         LLM_ADVISORY_URL,
-    "llm-worker":           LLM_WORKER_URL,
-    "momentum-algo":        MOMENTUM_ALGO_URL,
-    "is-algo":              IS_ALGO_URL,
-    "dark-pool":            DARK_POOL_URL,
-    "ccp-service":          CCP_SERVICE_URL,
-    "rfq-service":          RFQ_SERVICE_URL,
-    "product-service":      PRODUCT_SERVICE_URL,
-    "replay":               REPLAY_URL,
-    "replay-service":       REPLAY_URL,
-    "risk-engine":          RISK_ENGINE_URL,
+    "scenario-engine": SCENARIO_ENGINE_URL,
+    "iceberg-algo": ICEBERG_ALGO_URL,
+    "sniper-algo": SNIPER_ALGO_URL,
+    "arrival-price-algo": ARRIVAL_PRICE_ALGO_URL,
+    "llm-advisory": LLM_ADVISORY_URL,
+    "llm-worker": LLM_WORKER_URL,
+    "momentum-algo": MOMENTUM_ALGO_URL,
+    "is-algo": IS_ALGO_URL,
+    "dark-pool": DARK_POOL_URL,
+    "ccp-service": CCP_SERVICE_URL,
+    "rfq-service": RFQ_SERVICE_URL,
+    "product-service": PRODUCT_SERVICE_URL,
+    replay: REPLAY_URL,
+    "replay-service": REPLAY_URL,
+    "risk-engine": RISK_ENGINE_URL,
   };
 
   // The gateway is the single enforcement point: internal services trust
@@ -811,63 +984,110 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   // in this map requires `admin`.
   const SVC_MIN_ROLES: Record<string, Set<string>> = {
     "user-service": new Set([
-      "viewer", "trader", "desk-head", "risk-manager", "compliance",
-      "sales", "oncall", "admin", "external-client",
+      "viewer",
+      "trader",
+      "desk-head",
+      "risk-manager",
+      "compliance",
+      "sales",
+      "oncall",
+      "admin",
+      "external-client",
     ]),
     "market-sim": new Set([
-      "viewer", "trader", "desk-head", "risk-manager", "compliance",
-      "sales", "oncall", "admin", "external-client",
+      "viewer",
+      "trader",
+      "desk-head",
+      "risk-manager",
+      "compliance",
+      "sales",
+      "oncall",
+      "admin",
+      "external-client",
     ]),
     "market-data": new Set([
-      "viewer", "trader", "desk-head", "risk-manager", "compliance",
-      "sales", "oncall", "admin", "external-client",
+      "viewer",
+      "trader",
+      "desk-head",
+      "risk-manager",
+      "compliance",
+      "sales",
+      "oncall",
+      "admin",
+      "external-client",
     ]),
     "market-data-adapters": new Set([
-      "viewer", "trader", "desk-head", "risk-manager", "compliance",
-      "sales", "oncall", "admin", "external-client",
+      "viewer",
+      "trader",
+      "desk-head",
+      "risk-manager",
+      "compliance",
+      "sales",
+      "oncall",
+      "admin",
+      "external-client",
     ]),
     "news-aggregator": new Set([
-      "viewer", "trader", "desk-head", "risk-manager", "compliance",
-      "sales", "oncall", "admin", "external-client",
+      "viewer",
+      "trader",
+      "desk-head",
+      "risk-manager",
+      "compliance",
+      "sales",
+      "oncall",
+      "admin",
+      "external-client",
     ]),
-    "analytics": new Set([
-      "viewer", "trader", "desk-head", "risk-manager", "compliance",
-      "sales", "oncall", "admin", "external-client",
+    analytics: new Set([
+      "viewer",
+      "trader",
+      "desk-head",
+      "risk-manager",
+      "compliance",
+      "sales",
+      "oncall",
+      "admin",
+      "external-client",
     ]),
-    "ems": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
-    "oms": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
-    "journal": new Set([
-      "trader", "desk-head", "risk-manager", "compliance", "oncall", "admin",
+    ems: new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+    oms: new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+    journal: new Set(["trader", "desk-head", "risk-manager", "compliance", "oncall", "admin"]),
+    "limit-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "twap-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "pov-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "vwap-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "iceberg-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "sniper-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "arrival-price-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "momentum-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "is-algo": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "feature-engine": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "signal-engine": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "recommendation-engine": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "scenario-engine": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+    "llm-advisory": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+    "llm-worker": new Set(["trader", "desk-head", "risk-manager", "admin"]),
+    "dark-pool": new Set(["desk-head", "risk-manager", "compliance", "admin"]),
+    "ccp-service": new Set(["desk-head", "risk-manager", "compliance", "admin"]),
+    "rfq-service": new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
+    "product-service": new Set([
+      "viewer",
+      "trader",
+      "desk-head",
+      "risk-manager",
+      "compliance",
+      "sales",
+      "oncall",
+      "admin",
+      "external-client",
     ]),
-    "limit-algo":           new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "twap-algo":            new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "pov-algo":             new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "vwap-algo":            new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "iceberg-algo":         new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "sniper-algo":          new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "arrival-price-algo":   new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "momentum-algo":        new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "is-algo":              new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "feature-engine":       new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "signal-engine":        new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "recommendation-engine":new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "scenario-engine":      new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
-    "llm-advisory":         new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
-    "llm-worker":           new Set(["trader", "desk-head", "risk-manager", "admin"]),
-    "dark-pool":            new Set(["desk-head", "risk-manager", "compliance", "admin"]),
-    "ccp-service":          new Set(["desk-head", "risk-manager", "compliance", "admin"]),
-    "rfq-service":          new Set(["trader", "desk-head", "risk-manager", "compliance", "admin"]),
-    "product-service":      new Set([
-      "viewer", "trader", "desk-head", "risk-manager", "compliance",
-      "sales", "oncall", "admin", "external-client",
-    ]),
-    "fix-archive":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    "fix-gateway":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    "kafka-relay":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    "observability":        new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    "replay":               new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    "replay-service":       new Set(["risk-manager", "compliance", "oncall", "admin"]),
-    "risk-engine":          new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    "fix-archive": new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    "fix-gateway": new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    "kafka-relay": new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    observability: new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    replay: new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    "replay-service": new Set(["risk-manager", "compliance", "oncall", "admin"]),
+    "risk-engine": new Set(["risk-manager", "compliance", "oncall", "admin"]),
   };
 
   const svcMatch = path.match(/^\/api\/([^/]+)(\/.*)?$/);
@@ -880,12 +1100,13 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       // probes (the sign-in page renders a degraded-platform indicator
       // before any session cookie exists). /metrics is deliberately
       // excluded so Prometheus scrape never leaks via the public gateway.
-      const PROXY_PUBLIC = (
-        svcName === "user-service" &&
-        (svcPath.startsWith("/oauth/") || svcPath.startsWith("/auth/") || svcPath === "/personas")
-      ) || svcPath === "/health" || (
-        svcName === "kafka-relay" && svcPath === "/events/batch" && req.method === "POST"
-      );
+      const PROXY_PUBLIC =
+        (svcName === "user-service" &&
+          (svcPath.startsWith("/oauth/") ||
+            svcPath.startsWith("/auth/") ||
+            svcPath === "/personas")) ||
+        svcPath === "/health" ||
+        (svcName === "kafka-relay" && svcPath === "/events/batch" && req.method === "POST");
       if (!PROXY_PUBLIC) {
         const auth = await requireAuth(req);
         if (isResponse(auth)) return auth;
@@ -898,10 +1119,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             path: url.pathname,
             reason: `role ${auth.user.role} not permitted for /api/${svcName}`,
           });
-          return new Response(
-            JSON.stringify({ error: "forbidden" }),
-            { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders(req) } },
-          );
+          return new Response(JSON.stringify({ error: "forbidden" }), {
+            status: 403,
+            headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+          });
         }
       }
       const targetUrl = `${target}${svcPath}${url.search}`;
@@ -916,7 +1137,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const res = await serveDir(req, { fsRoot: frontendDist, quiet: true });
     if (res.status !== 404) return res;
     if (!path.startsWith("/assets/")) {
-      return serveDir(new Request(new URL("/index.html", req.url)), { fsRoot: frontendDist, quiet: true });
+      return serveDir(new Request(new URL("/index.html", req.url)), {
+        fsRoot: frontendDist,
+        quiet: true,
+      });
     }
     return res;
   }

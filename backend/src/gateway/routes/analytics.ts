@@ -15,7 +15,7 @@ function requireAdmin(auth: AuthResult): Response | null {
 export async function handleAnalyticsRoute(
   req: Request,
   path: string,
-  ctx: GatewayContext,
+  ctx: GatewayContext
 ): Promise<Response | null> {
   const url = new URL(req.url);
   const ANALYTICS_URL = ctx.urls.analytics;
@@ -47,7 +47,7 @@ export async function handleAnalyticsRoute(
     if (isResponse(auth)) return auth;
     return proxyGet(
       `${ANALYTICS_URL}/vol-profile/${encodeURIComponent(volProfileMatch[1])}${url.search}`,
-      req,
+      req
     );
   }
   const greeksSurfaceMatch = path.match(/^\/analytics\/greeks-surface\/(.+)$/);
@@ -56,7 +56,7 @@ export async function handleAnalyticsRoute(
     if (isResponse(auth)) return auth;
     return proxyGet(
       `${ANALYTICS_URL}/greeks-surface/${encodeURIComponent(greeksSurfaceMatch[1])}${url.search}`,
-      req,
+      req
     );
   }
   if (path === "/analytics/bond-price" && req.method === "POST") {
@@ -75,7 +75,7 @@ export async function handleAnalyticsRoute(
     if (isResponse(auth)) return auth;
     return proxyGet(
       `${ANALYTICS_URL}/price-fan/${encodeURIComponent(priceFanMatch[1])}${url.search}`,
-      req,
+      req
     );
   }
   if (path === "/analytics/spread-analysis" && req.method === "POST") {
@@ -94,7 +94,7 @@ export async function handleAnalyticsRoute(
     if (isResponse(auth)) return auth;
     return proxyGet(
       `${ANALYTICS_URL}/vol-surface/${encodeURIComponent(volSurfaceMatch[1])}${url.search}`,
-      req,
+      req
     );
   }
 
@@ -151,11 +151,14 @@ export async function handleAnalyticsRoute(
     if (isResponse(auth)) return auth;
     const body = await req.text();
     const parsed = JSON.parse(body) as { symbol?: string };
-    return proxyPost(`${LLM_ADVISORY_URL}/advisory/request`, new Request(req.url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...parsed, requestedBy: auth.user.id }),
-    }));
+    return proxyPost(
+      `${LLM_ADVISORY_URL}/advisory/request`,
+      new Request(req.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...parsed, requestedBy: auth.user.id }),
+      })
+    );
   }
   if (path === "/advisory/jobs" && req.method === "GET") {
     const auth = await ctx.requireAuth(req);
@@ -176,22 +179,28 @@ export async function handleAnalyticsRoute(
     if (adminRej) return adminRej;
     const body = await req.text();
     const parsed = JSON.parse(body) as Record<string, unknown>;
-    return proxyPut(`${LLM_ADVISORY_URL}/admin/state`, new Request(req.url, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...parsed, updatedBy: auth.user.id }),
-    }));
+    return proxyPut(
+      `${LLM_ADVISORY_URL}/admin/state`,
+      new Request(req.url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...parsed, updatedBy: auth.user.id }),
+      })
+    );
   }
   if (path === "/advisory/admin/watchlist-brief" && req.method === "POST") {
     const auth = await ctx.requireAuth(req);
     if (isResponse(auth)) return auth;
     const body = await req.text();
     const parsed = JSON.parse(body) as Record<string, unknown>;
-    return proxyPost(`${LLM_ADVISORY_URL}/admin/watchlist-brief`, new Request(req.url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...parsed, requestedBy: auth.user.id }),
-    }));
+    return proxyPost(
+      `${LLM_ADVISORY_URL}/admin/watchlist-brief`,
+      new Request(req.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...parsed, requestedBy: auth.user.id }),
+      })
+    );
   }
   if (path === "/advisory/admin/trigger-worker" && req.method === "POST") {
     const auth = await ctx.requireAuth(req);

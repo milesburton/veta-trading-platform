@@ -1,40 +1,15 @@
-import {
-  assert,
-  assertAlmostEquals,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
-
-// Test all analytics modules
-import {
-  generateStrikes,
-  scoreOption,
-} from "../analytics/recommendation-engine.ts";
-
-import { rateAt } from "../analytics/spread-analysis.ts";
-
-import { computeYieldCurve } from "../analytics/yield-curve.ts";
-
+import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 import { blackScholes, normCdf, normPdf } from "../analytics/black-scholes.ts";
-
 import { priceBond } from "../analytics/bond-pricing.ts";
-
-import {
-  boxMuller,
-  hashSeed,
-  makeLcg,
-  monteCarlo,
-} from "../analytics/monte-carlo.ts";
+import { boxMuller, hashSeed, makeLcg, monteCarlo } from "../analytics/monte-carlo.ts";
+// Test all analytics modules
+import { generateStrikes, scoreOption } from "../analytics/recommendation-engine.ts";
+import { rateAt } from "../analytics/spread-analysis.ts";
+import { computeYieldCurve } from "../analytics/yield-curve.ts";
 
 // Test recommendation-engine.ts
 Deno.test("[analytics] recommendation-engine - scoreOption returns valid recommendation", () => {
-  const result = scoreOption(
-    "call",
-    100,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = scoreOption("call", 100, 100, 1, 0.05, 0.2);
 
   assert(result.optionType === "call" || result.optionType === "put");
   assert(typeof result.strike === "number");
@@ -48,14 +23,7 @@ Deno.test("[analytics] recommendation-engine - scoreOption returns valid recomme
 });
 
 Deno.test("[analytics] recommendation-engine - scoreOption with call option", () => {
-  const result = scoreOption(
-    "call",
-    100,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = scoreOption("call", 100, 100, 1, 0.05, 0.2);
 
   assert(result.optionType === "call");
   assert(typeof result.price === "number");
@@ -68,14 +36,7 @@ Deno.test("[analytics] recommendation-engine - scoreOption with call option", ()
 });
 
 Deno.test("[analytics] recommendation-engine - scoreOption with put option", () => {
-  const result = scoreOption(
-    "put",
-    100,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = scoreOption("put", 100, 100, 1, 0.05, 0.2);
 
   assert(result.optionType === "put");
   assert(typeof result.price === "number");
@@ -122,14 +83,7 @@ Deno.test("[analytics] black-scholes - normPdf returns valid values", () => {
 });
 
 Deno.test("[analytics] black-scholes - call option pricing", () => {
-  const result = blackScholes(
-    "call",
-    100,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("call", 100, 100, 1, 0.05, 0.2);
 
   // Should return valid price and greeks
   assert(typeof result.price === "number");
@@ -141,14 +95,7 @@ Deno.test("[analytics] black-scholes - call option pricing", () => {
 });
 
 Deno.test("[analytics] black-scholes - put option pricing", () => {
-  const result = blackScholes(
-    "put",
-    100,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("put", 100, 100, 1, 0.05, 0.2);
 
   // Should return valid price and greeks
   assert(typeof result.price === "number");
@@ -160,14 +107,7 @@ Deno.test("[analytics] black-scholes - put option pricing", () => {
 });
 
 Deno.test("[analytics] black-scholes - edge case - zero time to expiry", () => {
-  const result = blackScholes(
-    "call",
-    100,
-    100,
-    0,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("call", 100, 100, 0, 0.05, 0.2);
 
   // Should return intrinsic value
   assert(typeof result.price === "number");
@@ -175,14 +115,7 @@ Deno.test("[analytics] black-scholes - edge case - zero time to expiry", () => {
 });
 
 Deno.test("[analytics] black-scholes - edge case - zero volatility", () => {
-  const result = blackScholes(
-    "call",
-    100,
-    100,
-    1,
-    0.05,
-    0,
-  );
+  const result = blackScholes("call", 100, 100, 1, 0.05, 0);
 
   // Should return intrinsic value
   assert(typeof result.price === "number");
@@ -190,14 +123,7 @@ Deno.test("[analytics] black-scholes - edge case - zero volatility", () => {
 });
 
 Deno.test("[analytics] black-scholes - edge case - zero spot price", () => {
-  const result = blackScholes(
-    "call",
-    0,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("call", 0, 100, 1, 0.05, 0.2);
 
   // Should return intrinsic value
   assert(typeof result.price === "number");
@@ -205,14 +131,7 @@ Deno.test("[analytics] black-scholes - edge case - zero spot price", () => {
 });
 
 Deno.test("[analytics] black-scholes - deep ITM call", () => {
-  const result = blackScholes(
-    "call",
-    120,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("call", 120, 100, 1, 0.05, 0.2);
 
   // Deep ITM call should have delta close to 1
   assert(typeof result.greeks.delta === "number");
@@ -220,14 +139,7 @@ Deno.test("[analytics] black-scholes - deep ITM call", () => {
 });
 
 Deno.test("[analytics] black-scholes - deep OTM call", () => {
-  const result = blackScholes(
-    "call",
-    80,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("call", 80, 100, 1, 0.05, 0.2);
 
   // Deep OTM call should have delta close to 0
   assert(typeof result.greeks.delta === "number");
@@ -235,14 +147,7 @@ Deno.test("[analytics] black-scholes - deep OTM call", () => {
 });
 
 Deno.test("[analytics] black-scholes - deep ITM put", () => {
-  const result = blackScholes(
-    "put",
-    80,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("put", 80, 100, 1, 0.05, 0.2);
 
   // Deep ITM put should have delta close to -1
   assert(typeof result.greeks.delta === "number");
@@ -250,14 +155,7 @@ Deno.test("[analytics] black-scholes - deep ITM put", () => {
 });
 
 Deno.test("[analytics] black-scholes - deep OTM put", () => {
-  const result = blackScholes(
-    "put",
-    120,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("put", 120, 100, 1, 0.05, 0.2);
 
   // Deep OTM put should have delta close to 0
   assert(typeof result.greeks.delta === "number");
@@ -265,14 +163,7 @@ Deno.test("[analytics] black-scholes - deep OTM put", () => {
 });
 
 Deno.test("[analytics] black-scholes - gamma is positive", () => {
-  const result = blackScholes(
-    "call",
-    100,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("call", 100, 100, 1, 0.05, 0.2);
 
   // Gamma should be positive
   assert(typeof result.greeks.gamma === "number");
@@ -280,14 +171,7 @@ Deno.test("[analytics] black-scholes - gamma is positive", () => {
 });
 
 Deno.test("[analytics] black-scholes - vega is positive", () => {
-  const result = blackScholes(
-    "call",
-    100,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("call", 100, 100, 1, 0.05, 0.2);
 
   // Vega should be positive
   assert(typeof result.greeks.vega === "number");
@@ -295,14 +179,7 @@ Deno.test("[analytics] black-scholes - vega is positive", () => {
 });
 
 Deno.test("[analytics] black-scholes - theta is negative", () => {
-  const result = blackScholes(
-    "call",
-    100,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("call", 100, 100, 1, 0.05, 0.2);
 
   // Theta should be negative (time decay)
   assert(typeof result.greeks.theta === "number");
@@ -310,14 +187,7 @@ Deno.test("[analytics] black-scholes - theta is negative", () => {
 });
 
 Deno.test("[analytics] black-scholes - rho is positive for call", () => {
-  const result = blackScholes(
-    "call",
-    100,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("call", 100, 100, 1, 0.05, 0.2);
 
   // Rho should be positive for call
   assert(typeof result.greeks.rho === "number");
@@ -325,14 +195,7 @@ Deno.test("[analytics] black-scholes - rho is positive for call", () => {
 });
 
 Deno.test("[analytics] black-scholes - rho is negative for put", () => {
-  const result = blackScholes(
-    "put",
-    100,
-    100,
-    1,
-    0.05,
-    0.2,
-  );
+  const result = blackScholes("put", 100, 100, 1, 0.05, 0.2);
 
   // Rho should be negative for put
   assert(typeof result.greeks.rho === "number");
@@ -368,16 +231,7 @@ Deno.test("[analytics] monte-carlo - boxMuller returns valid normal values", () 
 });
 
 Deno.test("[analytics] monte-carlo - monteCarlo returns valid result", () => {
-  const result = monteCarlo(
-    "call",
-    100,
-    100,
-    1,
-    0.05,
-    0.2,
-    1000,
-    "test",
-  );
+  const result = monteCarlo("call", 100, 100, 1, 0.05, 0.2, 1000, "test");
 
   assert(typeof result === "object");
   assert(typeof result.mean === "number");

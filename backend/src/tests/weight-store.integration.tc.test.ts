@@ -38,9 +38,9 @@ Deno.test({
             const updated: WeightMap = {
               momentum: 0.5,
               relativeVolume: 0.05,
-              realisedVol: -0.30,
-              sectorRelativeStrength: 0.10,
-              eventScore: 0.20,
+              realisedVol: -0.3,
+              sectorRelativeStrength: 0.1,
+              eventScore: 0.2,
               newsVelocity: 0.15,
               sentimentDelta: 0.05,
             };
@@ -48,7 +48,7 @@ Deno.test({
             const after = await store.getWeights();
             assertEquals(after, updated);
             assertNotEquals(after, DEFAULT_WEIGHTS);
-          },
+          }
         );
 
         await t.step(
@@ -58,7 +58,7 @@ Deno.test({
             const w = await fresh.getWeights();
             assertEquals(typeof w.momentum, "number");
             assertEquals(w.momentum, 0.5);
-          },
+          }
         );
       } finally {
         await pool.end();

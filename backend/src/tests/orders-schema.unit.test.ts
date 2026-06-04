@@ -73,7 +73,7 @@ Deno.test("[orders-schema] OrderNewSchema rejects zero/negative quantity", () =>
       asset: "AAPL",
       side: "BUY",
       quantity: 0,
-    }).success,
+    }).success
   );
   assert(
     !OrderNewSchema.safeParse({
@@ -81,7 +81,7 @@ Deno.test("[orders-schema] OrderNewSchema rejects zero/negative quantity", () =>
       asset: "AAPL",
       side: "BUY",
       quantity: -5,
-    }).success,
+    }).success
   );
 });
 
@@ -244,14 +244,14 @@ Deno.test("[orders-schema] OrderRejectedSchema requires reason + userId", () => 
       userId: "user-1",
       reason: "limit_exceeded",
       ts: Date.now(),
-    }).success,
+    }).success
   );
   assert(
     !OrderRejectedSchema.safeParse({
       clientOrderId: "client-1",
       userId: "user-1",
       ts: Date.now(),
-    }).success,
+    }).success
   );
 });
 
@@ -302,7 +302,7 @@ Deno.test("[orders-schema] OrderResumeCommandSchema accepts optional resumeAt", 
       issuedBy: "admin",
       issuedByRole: "admin",
       ts: Date.now(),
-    }).success,
+    }).success
   );
   assert(
     OrderResumeCommandSchema.safeParse({
@@ -312,7 +312,7 @@ Deno.test("[orders-schema] OrderResumeCommandSchema accepts optional resumeAt", 
       issuedBy: "admin",
       issuedByRole: "admin",
       ts: Date.now(),
-    }).success,
+    }).success
   );
 });
 

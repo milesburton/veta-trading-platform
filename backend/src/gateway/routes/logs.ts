@@ -34,7 +34,11 @@ function makeRingBuffer(): RingBuffer {
 
 const ringBuffer = makeRingBuffer();
 
-export function recordLogLine(line: Omit<LogLine, "ts" | "raw">, raw: string, ts = Date.now()): void {
+export function recordLogLine(
+  line: Omit<LogLine, "ts" | "raw">,
+  raw: string,
+  ts = Date.now()
+): void {
   ringBuffer.push({ ...line, ts, raw });
 }
 
@@ -52,7 +56,7 @@ async function queryLoki(
   level: string | null,
   search: string | null,
   sinceMs: number,
-  limit: number,
+  limit: number
 ): Promise<LogLine[]> {
   if (!LOKI_URL) return [];
   const filters: string[] = [];
@@ -82,7 +86,9 @@ async function queryLoki(
     });
     if (!res.ok) return [];
     const body = (await res.json()) as {
-      data?: { result?: Array<{ stream?: Record<string, string>; values?: Array<[string, string]> }> };
+      data?: {
+        result?: Array<{ stream?: Record<string, string>; values?: Array<[string, string]> }>;
+      };
     };
     const out: LogLine[] = [];
     for (const stream of body.data?.result ?? []) {
@@ -117,7 +123,7 @@ function filterRingBuffer(
   level: string | null,
   search: string | null,
   sinceMs: number,
-  limit: number,
+  limit: number
 ): LogLine[] {
   const cutoff = Date.now() - sinceMs;
   const re = search ? new RegExp(search, "i") : null;
@@ -136,7 +142,7 @@ function filterRingBuffer(
 export async function handleLogsRoute(
   req: Request,
   path: string,
-  context: GatewayContext,
+  context: GatewayContext
 ): Promise<Response | null> {
   if (path !== "/logs/query") return null;
 
@@ -177,6 +183,6 @@ export async function handleLogsRoute(
       lokiConfigured: Boolean(LOKI_URL),
       ringSize: RING_CAPACITY,
     }),
-    { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+    { headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
   );
 }

@@ -8,11 +8,7 @@
  *   deno test --allow-all backend/src/tests/load.test.ts
  */
 
-import {
-  assert,
-  assertEquals,
-  assertExists,
-} from "jsr:@std/assert@0.217";
+import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
 import {
   ARCHIVE_URL,
   GATEWAY_URL,
@@ -23,18 +19,16 @@ import {
 } from "./test-helpers.ts";
 
 const SLA_INGESTION_ORDER_COUNT = 100;
-const SLA_INGESTION_THRESHOLD = 0.90;
-const SLA_INGESTION_MIN = Math.ceil(
-  SLA_INGESTION_ORDER_COUNT * SLA_INGESTION_THRESHOLD,
-);
+const SLA_INGESTION_THRESHOLD = 0.9;
+const SLA_INGESTION_MIN = Math.ceil(SLA_INGESTION_ORDER_COUNT * SLA_INGESTION_THRESHOLD);
 const SLA_INGESTION_WINDOW_MS = 30_000;
 
 const SLA_FILL_ORDER_COUNT = 50;
-const SLA_FILL_RATE = 0.80;
+const SLA_FILL_RATE = 0.8;
 const SLA_FILL_MIN = Math.ceil(SLA_FILL_ORDER_COUNT * SLA_FILL_RATE);
 const SLA_FILL_WINDOW_MS = 60_000;
 
-const SLA_OBS_COVERAGE = 0.50;
+const SLA_OBS_COVERAGE = 0.5;
 const SLA_HEALTH_SETTLE_MS = 5_000;
 const SLA_PIPELINE_LATENCY_MS = 30_000;
 
@@ -51,7 +45,7 @@ interface LoadTestResult {
 
 async function triggerLoadTest(
   adminToken: string,
-  opts: { orderCount?: number; symbols?: string[]; strategy?: string },
+  opts: { orderCount?: number; symbols?: string[]; strategy?: string }
 ): Promise<LoadTestResult> {
   const res = await fetch(`${GATEWAY_URL}/load-test`, {
     method: "POST",
@@ -64,6 +58,54 @@ async function triggerLoadTest(
   });
   assertEquals(res.status, 202, `load-test endpoint returned ${res.status}`);
   return res.json() as Promise<LoadTestResult>;
+}
+
+async function queryOrderBlotterTotal(jobId: string, status?: string): Promise<number | null> {
+  const rules: Array<Record<string, string>> = [
+    {
+      kind: "rule",
+      id: "r1",
+      field: "id",
+      op: "contains",
+      value: jobId,
+    },
+  ];
+  if (status) {
+    rules.push({
+      kind: "rule",
+      id: "r2",
+      field: "status",
+      op: "=",
+      value: status,
+    });
+  }
+
+  const res = await fetch(`${JOURNAL_URL}/grid/query`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      gridId: "orderBlotter",
+      filterExpr: {
+        kind: "group",
+        id: "root",
+        join: "AND",
+        rules,
+      },
+      sortField: null,
+      sortDir: null,
+      offset: 0,
+      limit: 200,
+    }),
+    signal: t(20_000),
+  });
+
+  if (!res.ok) {
+    await res.body?.cancel();
+    return null;
+  }
+
+  const data = (await res.json()) as { total: number };
+  return data.total;
 }
 
 // ── Access control ────────────────────────────────────────────────────────────
@@ -104,11 +146,7 @@ Deno.test("[load] admin can submit 50 orders and receives jobId", async () => {
   });
 
   assertExists(result.jobId, "jobId must be present");
-  assertEquals(
-    result.submitted,
-    50,
-    `Expected 50 submitted, got ${result.submitted}`,
-  );
+  assertEquals(result.submitted, 50, `Expected 50 submitted, got ${result.submitted}`);
   assert(result.symbols.length > 0, "symbols array must be non-empty");
   assertEquals(result.strategy, "LIMIT");
 });
@@ -123,7 +161,7 @@ Deno.test("[load] orderCount is capped at 500", async () => {
   assertEquals(
     result.submitted,
     500,
-    `Expected submitted to be capped at 500, got ${result.submitted}`,
+    `Expected submitted to be capped at 500, got ${result.submitted}`
   );
 });
 
@@ -141,43 +179,19 @@ Deno.test("[load] 100-order burst: all orders appear in journal within 30s", asy
   let seenCount = 0;
 
   while (Date.now() < deadline) {
-    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        gridId: "orderBlotter",
-        filterExpr: {
-          kind: "group",
-          id: "root",
-          join: "AND",
-          rules: [{
-            kind: "rule",
-            id: "r1",
-            field: "id",
-            op: "contains",
-            value: jobId,
-          }],
-        },
-        sortField: null,
-        sortDir: null,
-        offset: 0,
-        limit: 200,
-      }),
-      signal: t(20_000),
-    });
-    if (res.ok) {
-      const data = await res.json() as { rows: unknown[]; total: number };
-      seenCount = data.total;
-      if (seenCount >= SLA_INGESTION_ORDER_COUNT) break;
-    } else {
-      await res.body?.cancel();
+    const total = await queryOrderBlotterTotal(jobId);
+    if (typeof total === "number") {
+      seenCount = total;
+      if (seenCount >= SLA_INGESTION_ORDER_COUNT) {
+        break;
+      }
     }
     await new Promise((r) => setTimeout(r, 2_000));
   }
 
   assert(
     seenCount >= SLA_INGESTION_MIN,
-    `Expected ≥${SLA_INGESTION_MIN}/${SLA_INGESTION_ORDER_COUNT} orders in journal within ${SLA_INGESTION_WINDOW_MS}ms, got ${seenCount}`,
+    `Expected ≥${SLA_INGESTION_MIN}/${SLA_INGESTION_ORDER_COUNT} orders in journal within ${SLA_INGESTION_WINDOW_MS}ms, got ${seenCount}`
   );
 });
 
@@ -199,13 +213,11 @@ Deno.test("[load] 100-order burst: observability receives orders.submitted event
       signal: t(10_000),
     });
     if (res.ok) {
-      const events = await res.json() as Array<
-        { payload: Record<string, unknown> }
-      >;
+      const events = (await res.json()) as Array<{ payload: Record<string, unknown> }>;
       matchCount = events.filter(
         (e) =>
           typeof e.payload?.clientOrderId === "string" &&
-          (e.payload.clientOrderId as string).startsWith(jobId),
+          (e.payload.clientOrderId as string).startsWith(jobId)
       ).length;
       if (matchCount >= obsMin) break;
     } else {
@@ -216,7 +228,7 @@ Deno.test("[load] 100-order burst: observability receives orders.submitted event
 
   assert(
     matchCount >= obsMin,
-    `Expected ≥${obsMin} orders.submitted events for job ${jobId}, got ${matchCount}`,
+    `Expected ≥${obsMin} orders.submitted events for job ${jobId}, got ${matchCount}`
   );
 });
 
@@ -234,45 +246,12 @@ Deno.test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
   let filledCount = 0;
 
   while (Date.now() < deadline) {
-    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        gridId: "orderBlotter",
-        filterExpr: {
-          kind: "group",
-          id: "root",
-          join: "AND",
-          rules: [
-            {
-              kind: "rule",
-              id: "r1",
-              field: "id",
-              op: "contains",
-              value: jobId,
-            },
-            {
-              kind: "rule",
-              id: "r2",
-              field: "status",
-              op: "=",
-              value: "filled",
-            },
-          ],
-        },
-        sortField: null,
-        sortDir: null,
-        offset: 0,
-        limit: 200,
-      }),
-      signal: t(20_000),
-    });
-    if (res.ok) {
-      const data = await res.json() as { total: number };
-      filledCount = data.total;
-      if (filledCount >= SLA_FILL_MIN) break;
-    } else {
-      await res.body?.cancel();
+    const total = await queryOrderBlotterTotal(jobId, "filled");
+    if (typeof total === "number") {
+      filledCount = total;
+      if (filledCount >= SLA_FILL_MIN) {
+        break;
+      }
     }
     await new Promise((r) => setTimeout(r, 3_000));
   }
@@ -280,9 +259,9 @@ Deno.test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
   const fillRate = filledCount / SLA_FILL_ORDER_COUNT;
   assert(
     fillRate >= SLA_FILL_RATE,
-    `Fill rate ${(fillRate * 100).toFixed(1)}% below ${
-      (SLA_FILL_RATE * 100).toFixed(0)
-    }% SLA (${filledCount}/${SLA_FILL_ORDER_COUNT} filled within ${SLA_FILL_WINDOW_MS}ms)`,
+    `Fill rate ${(fillRate * 100).toFixed(1)}% below ${(SLA_FILL_RATE * 100).toFixed(
+      0
+    )}% SLA (${filledCount}/${SLA_FILL_ORDER_COUNT} filled within ${SLA_FILL_WINDOW_MS}ms)`
   );
 });
 
@@ -290,7 +269,7 @@ Deno.test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
 
 Deno.test("[load] FIX archive grows after load injection", async () => {
   const beforeRes = await fetch(`${ARCHIVE_URL}/health`, { signal: t() });
-  const before = (await beforeRes.json() as { executions: number }).executions;
+  const before = ((await beforeRes.json()) as { executions: number }).executions;
 
   const token = await loginAsAdmin();
   await triggerLoadTest(token, { orderCount: 20, strategy: "LIMIT" });
@@ -299,7 +278,7 @@ Deno.test("[load] FIX archive grows after load injection", async () => {
   let after = before;
   while (Date.now() < deadline) {
     const res = await fetch(`${ARCHIVE_URL}/health`, { signal: t() });
-    const body = await res.json() as { executions: number };
+    const body = (await res.json()) as { executions: number };
     after = body.executions;
     if (after > before) break;
     await new Promise((r) => setTimeout(r, 2_000));
@@ -307,7 +286,7 @@ Deno.test("[load] FIX archive grows after load injection", async () => {
 
   assert(
     after > before,
-    `FIX archive execution count did not increase: before=${before}, after=${after}`,
+    `FIX archive execution count did not increase: before=${before}, after=${after}`
   );
 });
 
@@ -326,36 +305,12 @@ Deno.test("[load] pipeline latency: 90% of orders visible in journal within SLA 
   let seenCount = 0;
 
   while (Date.now() < deadline) {
-    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        gridId: "orderBlotter",
-        filterExpr: {
-          kind: "group",
-          id: "root",
-          join: "AND",
-          rules: [{
-            kind: "rule",
-            id: "r1",
-            field: "id",
-            op: "contains",
-            value: jobId,
-          }],
-        },
-        sortField: null,
-        sortDir: null,
-        offset: 0,
-        limit: 200,
-      }),
-      signal: t(20_000),
-    });
-    if (res.ok) {
-      const data = await res.json() as { total: number };
-      seenCount = data.total;
-      if (seenCount >= SLA_INGESTION_MIN) break;
-    } else {
-      await res.body?.cancel();
+    const total = await queryOrderBlotterTotal(jobId);
+    if (typeof total === "number") {
+      seenCount = total;
+      if (seenCount >= SLA_INGESTION_MIN) {
+        break;
+      }
     }
     await new Promise((r) => setTimeout(r, 2_000));
   }
@@ -363,11 +318,11 @@ Deno.test("[load] pipeline latency: 90% of orders visible in journal within SLA 
   const elapsed = Date.now() - t0;
   assert(
     seenCount >= SLA_INGESTION_MIN,
-    `Only ${seenCount}/${SLA_INGESTION_ORDER_COUNT} orders visible after ${elapsed}ms`,
+    `Only ${seenCount}/${SLA_INGESTION_ORDER_COUNT} orders visible after ${elapsed}ms`
   );
   assert(
     elapsed <= SLA_PIPELINE_LATENCY_MS,
-    `Pipeline latency ${elapsed}ms exceeds SLA of ${SLA_PIPELINE_LATENCY_MS}ms`,
+    `Pipeline latency ${elapsed}ms exceeds SLA of ${SLA_PIPELINE_LATENCY_MS}ms`
   );
 });
 
@@ -387,12 +342,11 @@ Deno.test("[load] LIMIT pipeline percentiles within budget after 100-order burst
 
   await new Promise((r) => setTimeout(r, SETTLE_MS));
 
-  const res = await fetch(
-    `${JOURNAL_URL}/metrics/latency?windowMs=${SETTLE_MS + 30_000}`,
-    { signal: t(10_000) },
-  );
+  const res = await fetch(`${JOURNAL_URL}/metrics/latency?windowMs=${SETTLE_MS + 30_000}`, {
+    signal: t(10_000),
+  });
   assertEquals(res.status, 200);
-  const m = await res.json() as {
+  const m = (await res.json()) as {
     sampleSize: number;
     stages: Record<string, { count: number; p50: number; p95: number; p99: number; max: number }>;
   };
@@ -400,25 +354,25 @@ Deno.test("[load] LIMIT pipeline percentiles within budget after 100-order burst
   const minSamples = Math.ceil(ORDER_COUNT * MIN_SAMPLE_FRACTION);
   assert(
     m.sampleSize >= minSamples,
-    `sampleSize ${m.sampleSize} below minimum ${minSamples} (${ORDER_COUNT} submitted)`,
+    `sampleSize ${m.sampleSize} below minimum ${minSamples} (${ORDER_COUNT} submitted)`
   );
 
   const filled = m.stages.submittedToFilled;
   assert(
     filled.count >= minSamples,
-    `submittedToFilled.count ${filled.count} below minimum ${minSamples}`,
+    `submittedToFilled.count ${filled.count} below minimum ${minSamples}`
   );
   assert(
     filled.p99 <= SUBMITTED_TO_FILLED_P99_BUDGET_MS,
     `submittedToFilled.p99 = ${filled.p99}ms exceeds budget ${SUBMITTED_TO_FILLED_P99_BUDGET_MS}ms ` +
-      `(p50=${filled.p50}ms p95=${filled.p95}ms max=${filled.max}ms)`,
+      `(p50=${filled.p50}ms p95=${filled.p95}ms max=${filled.max}ms)`
   );
 
   const arrived = m.stages.submittedToArrived;
   assert(
     arrived.p99 <= SUBMITTED_TO_ARRIVED_P99_BUDGET_MS,
     `submittedToArrived.p99 = ${arrived.p99}ms exceeds budget ${SUBMITTED_TO_ARRIVED_P99_BUDGET_MS}ms ` +
-      `(journal ingestion lag — bus or DB write batcher saturated?)`,
+      `(journal ingestion lag — bus or DB write batcher saturated?)`
   );
 });
 
@@ -440,16 +394,8 @@ Deno.test("[load] all services remain healthy after 100-order burst", async () =
 
   for (const svc of services) {
     const res = await fetch(`${svc.url}/health`, { signal: t() });
-    assertEquals(
-      res.status,
-      200,
-      `${svc.name} /health returned ${res.status} after load`,
-    );
-    const body = await res.json() as { status: string };
-    assertEquals(
-      body.status,
-      "ok",
-      `${svc.name} reported non-ok status after load`,
-    );
+    assertEquals(res.status, 200, `${svc.name} /health returned ${res.status} after load`);
+    const body = (await res.json()) as { status: string };
+    assertEquals(body.status, "ok", `${svc.name} reported non-ok status after load`);
   }
 });

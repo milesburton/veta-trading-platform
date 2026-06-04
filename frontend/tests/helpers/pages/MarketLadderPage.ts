@@ -29,7 +29,7 @@ export class MarketLadderPage {
   async getPriceColour(symbol: string): Promise<"up" | "down" | "neutral"> {
     const row = this.rowForSymbol(symbol);
     const priceSpan = row.locator(".tabular-nums").nth(2);
-    const cls = await priceSpan.getAttribute("class") ?? "";
+    const cls = (await priceSpan.getAttribute("class")) ?? "";
     if (cls.includes("emerald")) return "up";
     if (cls.includes("red")) return "down";
     return "neutral";

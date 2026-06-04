@@ -13,7 +13,7 @@ export function makeLcg(seed: number): () => number {
   let s = seed >>> 0;
   return () => {
     s = Math.imul(s, 1664525) + 1013904223;
-    return ((s >>> 0) / 0xffffffff);
+    return (s >>> 0) / 0xffffffff;
   };
 }
 
@@ -70,12 +70,10 @@ export function monteCarlo(
   r: number,
   sigma: number,
   paths = 5000,
-  seedKey = "",
+  seedKey = ""
 ): MonteCarloResult {
   if (T <= 0 || sigma <= 0) {
-    const intrinsic = optionType === "call"
-      ? Math.max(0, S - K)
-      : Math.max(0, K - S);
+    const intrinsic = optionType === "call" ? Math.max(0, S - K) : Math.max(0, K - S);
     return {
       p5: intrinsic,
       p25: intrinsic,
@@ -101,12 +99,9 @@ export function monteCarlo(
 
     const ST = S * Math.exp(drift + diffusion * z);
     const STa = S * Math.exp(drift + diffusion * zAnt);
-    prices[i] =
-      (optionType === "call" ? Math.max(0, ST - K) : Math.max(0, K - ST)) *
-      discount;
+    prices[i] = (optionType === "call" ? Math.max(0, ST - K) : Math.max(0, K - ST)) * discount;
     prices[i + 1] =
-      (optionType === "call" ? Math.max(0, STa - K) : Math.max(0, K - STa)) *
-      discount;
+      (optionType === "call" ? Math.max(0, STa - K) : Math.max(0, K - STa)) * discount;
   }
 
   prices.sort();

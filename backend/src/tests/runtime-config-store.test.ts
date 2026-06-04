@@ -52,11 +52,13 @@ function makeFakePool(): FakePool {
 Deno.test("[runtime-config-store] caches getConfig within TTL", async () => {
   const pool = makeFakePool();
   const nowMs = 1_000_000;
-  // deno-lint-ignore no-explicit-any
-  const store = await createRuntimeConfigStore(pool as any, {
-    cacheTtlMs: 1_000,
-    now: () => nowMs,
-  });
+  const store = await createRuntimeConfigStore(
+    pool as unknown as Parameters<typeof createRuntimeConfigStore>[0],
+    {
+      cacheTtlMs: 1_000,
+      now: () => nowMs,
+    }
+  );
 
   const baseSelects = pool.__selectCount();
   await store.getConfig();
@@ -68,11 +70,13 @@ Deno.test("[runtime-config-store] caches getConfig within TTL", async () => {
 Deno.test("[runtime-config-store] refreshes after TTL expires", async () => {
   const pool = makeFakePool();
   let nowMs = 1_000_000;
-  // deno-lint-ignore no-explicit-any
-  const store = await createRuntimeConfigStore(pool as any, {
-    cacheTtlMs: 1_000,
-    now: () => nowMs,
-  });
+  const store = await createRuntimeConfigStore(
+    pool as unknown as Parameters<typeof createRuntimeConfigStore>[0],
+    {
+      cacheTtlMs: 1_000,
+      now: () => nowMs,
+    }
+  );
   const baseSelects = pool.__selectCount();
 
   await store.getConfig();
@@ -87,11 +91,13 @@ Deno.test("[runtime-config-store] refreshes after TTL expires", async () => {
 Deno.test("[runtime-config-store] updateConfig invalidates the cache with the new value", async () => {
   const pool = makeFakePool();
   const nowMs = 1_000_000;
-  // deno-lint-ignore no-explicit-any
-  const store = await createRuntimeConfigStore(pool as any, {
-    cacheTtlMs: 60_000,
-    now: () => nowMs,
-  });
+  const store = await createRuntimeConfigStore(
+    pool as unknown as Parameters<typeof createRuntimeConfigStore>[0],
+    {
+      cacheTtlMs: 60_000,
+      now: () => nowMs,
+    }
+  );
   await store.getConfig();
   const baseSelects = pool.__selectCount();
 
@@ -111,8 +117,10 @@ Deno.test("[runtime-config-store] updateConfig invalidates the cache with the ne
 
 Deno.test("[runtime-config-store] cacheTtlMs=0 disables the cache", async () => {
   const pool = makeFakePool();
-  // deno-lint-ignore no-explicit-any
-  const store = await createRuntimeConfigStore(pool as any, { cacheTtlMs: 0 });
+  const store = await createRuntimeConfigStore(
+    pool as unknown as Parameters<typeof createRuntimeConfigStore>[0],
+    { cacheTtlMs: 0 }
+  );
   const baseSelects = pool.__selectCount();
   await store.getConfig();
   await store.getConfig();
@@ -124,8 +132,10 @@ Deno.test("[runtime-config-store] missing row falls back to a fresh default conf
   const pool = makeFakePool();
   pool.__setRow(null);
   const t0 = 5_000_000;
-  // deno-lint-ignore no-explicit-any
-  const store = await createRuntimeConfigStore(pool as any, { now: () => t0, cacheTtlMs: 0 });
+  const store = await createRuntimeConfigStore(
+    pool as unknown as Parameters<typeof createRuntimeConfigStore>[0],
+    { now: () => t0, cacheTtlMs: 0 }
+  );
   const cfg = await store.getConfig();
   assertEquals(cfg.enabled, false);
   assertEquals(cfg.workerEnabled, false);
@@ -204,10 +214,7 @@ Deno.test("[runtime-config-store] deriveSubsystemState: active when pendingJobs 
 });
 
 Deno.test("[runtime-config-store] deriveSubsystemState: cooldown when last activity inside minRefresh window", () => {
-  assertEquals(
-    deriveSubsystemState(policyFor(true, 5), 0, null, Date.now() - 60_000),
-    "cooldown",
-  );
+  assertEquals(deriveSubsystemState(policyFor(true, 5), 0, null, Date.now() - 60_000), "cooldown");
 });
 
 Deno.test("[runtime-config-store] deriveSubsystemState: armed when none of the conditions apply", () => {
@@ -215,15 +222,9 @@ Deno.test("[runtime-config-store] deriveSubsystemState: armed when none of the c
 });
 
 Deno.test("[runtime-config-store] deriveSubsystemState: armed when last error is old (>30s)", () => {
-  assertEquals(
-    deriveSubsystemState(policyFor(true), 0, Date.now() - 120_000, null),
-    "armed",
-  );
+  assertEquals(deriveSubsystemState(policyFor(true), 0, Date.now() - 120_000, null), "armed");
 });
 
 Deno.test("[runtime-config-store] deriveSubsystemState: armed when last activity is older than minRefresh", () => {
-  assertEquals(
-    deriveSubsystemState(policyFor(true, 1), 0, null, Date.now() - 5 * 60_000),
-    "armed",
-  );
+  assertEquals(deriveSubsystemState(policyFor(true, 1), 0, null, Date.now() - 5 * 60_000), "armed");
 });

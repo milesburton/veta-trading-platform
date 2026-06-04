@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 test.describe("deploy-gate smoke", () => {
   test("frontend serves the login page", async ({ page }) => {
@@ -51,7 +51,9 @@ test.describe("deploy-gate smoke", () => {
     await expect(page.getByTestId("login-page")).not.toBeVisible();
   });
 
-  test("websocket gateway accepts a connection and emits at least one marketUpdate", async ({ page }) => {
+  test("websocket gateway accepts a connection and emits at least one marketUpdate", async ({
+    page,
+  }) => {
     await page.goto("/");
     await expect(page.getByTestId("login-page")).toBeVisible({ timeout: 15_000 });
 
@@ -66,7 +68,7 @@ test.describe("deploy-gate smoke", () => {
     const sawMarketUpdate = await new Promise<boolean>((resolve) => {
       const timeout = setTimeout(() => resolve(false), 20_000);
       ws.on("framereceived", ({ payload }) => {
-        const text = typeof payload === "string" ? payload : payload?.toString("utf8") ?? "";
+        const text = typeof payload === "string" ? payload : (payload?.toString("utf8") ?? "");
         if (text.includes('"marketUpdate"') || text.includes('"event":"marketUpdate"')) {
           clearTimeout(timeout);
           resolve(true);
@@ -74,6 +76,8 @@ test.describe("deploy-gate smoke", () => {
       });
     });
 
-    expect(sawMarketUpdate, "expected at least one marketUpdate frame on the WS within 20s").toBe(true);
+    expect(sawMarketUpdate, "expected at least one marketUpdate frame on the WS within 20s").toBe(
+      true
+    );
   });
 });

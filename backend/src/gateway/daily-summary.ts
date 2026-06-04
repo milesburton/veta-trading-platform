@@ -40,13 +40,14 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
   const services = ctx.getServices();
   const uptime = formatUptime(nowMs - ctx.startedAt);
 
-  const overallEmoji = stats.worstServiceUpRatio === null
-    ? "ℹ️"
-    : stats.worstServiceUpRatio >= 1
-    ? "✅"
-    : stats.worstServiceUpRatio >= 0.95
-    ? "⚠️"
-    : "🚨";
+  const overallEmoji =
+    stats.worstServiceUpRatio === null
+      ? "ℹ️"
+      : stats.worstServiceUpRatio >= 1
+        ? "✅"
+        : stats.worstServiceUpRatio >= 0.95
+          ? "⚠️"
+          : "🚨";
 
   const lines: string[] = [
     `${overallEmoji} **VETA daily summary** · \`${shortSha(ctx.version)}\` (${ctx.environment}) · gateway uptime ${uptime}`,
@@ -55,7 +56,7 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
 
   if (stats.serviceUpRatio !== null) {
     lines.push(
-      `**Services (last 24h):** mean ${formatPct(stats.serviceUpRatio)} up · worst window ${formatPct(stats.worstServiceUpRatio ?? 0)}`,
+      `**Services (last 24h):** mean ${formatPct(stats.serviceUpRatio)} up · worst window ${formatPct(stats.worstServiceUpRatio ?? 0)}`
     );
   } else {
     lines.push("**Services:** no samples in window yet");
@@ -66,7 +67,9 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
     if (downNow.length === 0) {
       lines.push(`Now: all ${entries.length} services up ✅`);
     } else {
-      lines.push(`Now: ${entries.length - downNow.length}/${entries.length} up · 🔴 ${downNow.join(", ")}`);
+      lines.push(
+        `Now: ${entries.length - downNow.length}/${entries.length} up · 🔴 ${downNow.join(", ")}`
+      );
     }
   }
   lines.push("");
@@ -91,7 +94,7 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
     if (stats.lastCritical) {
       const ago = Math.round((nowMs - stats.lastCritical.ts) / 60000);
       lines.push(
-        `Last critical: ${ago}m ago — \`${stats.lastCritical.source}\` ${stats.lastCritical.message.slice(0, 100)}`,
+        `Last critical: ${ago}m ago — \`${stats.lastCritical.source}\` ${stats.lastCritical.message.slice(0, 100)}`
       );
     }
   }
@@ -101,7 +104,7 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
     lines.push("**Bug reports (last 24h):** none");
   } else {
     lines.push(
-      `**Bug reports (last 24h):** ${stats.bugReports} from ${stats.uniqueBugReporters} user${stats.uniqueBugReporters === 1 ? "" : "s"}`,
+      `**Bug reports (last 24h):** ${stats.bugReports} from ${stats.uniqueBugReporters} user${stats.uniqueBugReporters === 1 ? "" : "s"}`
     );
   }
   lines.push("");
@@ -115,7 +118,9 @@ export function buildDailySummary(ctx: DailySummaryContext, nowMs: number = Date
 
 function nextFireTime(now: number, hourUtc: number): number {
   const d = new Date(now);
-  const candidate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hourUtc, 0, 0, 0));
+  const candidate = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hourUtc, 0, 0, 0)
+  );
   if (candidate.getTime() < now) {
     candidate.setUTCDate(candidate.getUTCDate() + 1);
   }
@@ -130,7 +135,10 @@ function validHourUtc(value: number | undefined): number {
   return value;
 }
 
-export function startDailySummary(opts: DailySummaryOptions): { stop: () => void; nextFireAt: () => number } {
+export function startDailySummary(opts: DailySummaryOptions): {
+  stop: () => void;
+  nextFireAt: () => number;
+} {
   const hourUtc = validHourUtc(opts.hourUtc);
   const sender = opts.sender ?? (() => Promise.resolve(false));
   const now = opts.now ?? (() => Date.now());
@@ -139,7 +147,11 @@ export function startDailySummary(opts: DailySummaryOptions): { stop: () => void
 
   const fire = () => {
     const msg = buildDailySummary(opts, now());
-    sender(msg).catch(() => {});
+    try {
+      Promise.resolve(sender(msg)).catch(() => {});
+    } catch {
+      // Ignore sender failures so scheduling continues.
+    }
     nextFire = nextFireTime(now(), hourUtc);
     schedule();
   };

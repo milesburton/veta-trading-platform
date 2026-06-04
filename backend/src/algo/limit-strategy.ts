@@ -9,11 +9,12 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { logger } from "@veta/logger";
 import { createMarketSimClient } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
+import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
-import { logger } from "@veta/logger";
 
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
@@ -43,31 +44,35 @@ interface PendingLimit {
 
 const pendingOrders: PendingLimit[] = [];
 
-await createTypedConsumer("limit-algo-routed", [{
-  topic: "orders.routed",
-  schema: RoutedOrderSchema,
-  handler: (order) => {
-    if ((order.strategy ?? "LIMIT").toUpperCase() !== "LIMIT") return;
-    if (order.limitPrice === undefined) {
-      logger.warn(`LIMIT order ${order.orderId} missing limitPrice`);
-      return;
-    }
-    const pending: PendingLimit = {
-      orderId: order.orderId,
-      clientOrderId: order.clientOrderId,
-      asset: order.asset,
-      side: order.side,
-      quantity: order.quantity,
-      limitPrice: order.limitPrice,
-      expiresAt: Date.now() + (Number(order.expiresAt ?? 300)) * 1_000,
-      remainingQty: order.quantity,
-      filledQty: 0,
-      avgFillPrice: 0,
-    };
-    logger.info(`Queued ${pending.side} ${pending.quantity} ${pending.asset} @ ${pending.limitPrice} (${pending.orderId})`);
-    pendingOrders.push(pending);
+await createTypedConsumer("limit-algo-routed", [
+  {
+    topic: "orders.routed",
+    schema: RoutedOrderSchema,
+    handler: (order: RoutedOrder) => {
+      if ((order.strategy ?? "LIMIT").toUpperCase() !== "LIMIT") return;
+      if (order.limitPrice === undefined) {
+        logger.warn(`LIMIT order ${order.orderId} missing limitPrice`);
+        return;
+      }
+      const pending: PendingLimit = {
+        orderId: order.orderId,
+        clientOrderId: order.clientOrderId,
+        asset: order.asset,
+        side: order.side,
+        quantity: order.quantity,
+        limitPrice: order.limitPrice,
+        expiresAt: Date.now() + Number(order.expiresAt ?? 300) * 1_000,
+        remainingQty: order.quantity,
+        filledQty: 0,
+        avgFillPrice: 0,
+      };
+      logger.info(
+        `Queued ${pending.side} ${pending.quantity} ${pending.asset} @ ${pending.limitPrice} (${pending.orderId})`
+      );
+      pendingOrders.push(pending);
+    },
   },
-}]).catch((err) => {
+]).catch((err) => {
   logger.warn("Cannot subscribe to orders.routed", { err });
   return null;
 });
@@ -82,17 +87,19 @@ marketClient.onTick(async (tick) => {
 
     // Expiry
     if (now >= order.expiresAt) {
-      await producer?.send("orders.expired", {
-        orderId: order.orderId,
-        clientOrderId: order.clientOrderId,
-        algo: "LIMIT",
-        asset: order.asset,
-        side: order.side,
-        quantity: order.quantity,
-        filledQty: order.filledQty,
-        avgFillPrice: order.avgFillPrice,
-        ts: now,
-      }).catch(() => {});
+      await producer
+        ?.send("orders.expired", {
+          orderId: order.orderId,
+          clientOrderId: order.clientOrderId,
+          algo: "LIMIT",
+          asset: order.asset,
+          side: order.side,
+          quantity: order.quantity,
+          filledQty: order.filledQty,
+          avgFillPrice: order.avgFillPrice,
+          ts: now,
+        })
+        .catch(() => {});
       logger.info(`Expired ${order.orderId} filled=${order.filledQty}/${order.quantity}`);
       pendingOrders.splice(i, 1);
       continue;
@@ -104,19 +111,23 @@ marketClient.onTick(async (tick) => {
 
     if (triggered && order.remainingQty > 0) {
       const childId = `${order.orderId}-lim-${now}`;
-      logger.info(`Triggered ${order.orderId}: ${order.side} ${order.remainingQty} ${order.asset} @ mkt ${marketPrice}`);
-      await producer?.send("orders.child", {
-        childId,
-        parentOrderId: order.orderId,
-        clientOrderId: order.clientOrderId,
-        algo: "LIMIT",
-        asset: order.asset,
-        side: order.side,
-        quantity: order.remainingQty,
-        limitPrice: order.limitPrice,
-        marketPrice,
-        ts: now,
-      }).catch(() => {});
+      logger.info(
+        `Triggered ${order.orderId}: ${order.side} ${order.remainingQty} ${order.asset} @ mkt ${marketPrice}`
+      );
+      await producer
+        ?.send("orders.child", {
+          childId,
+          parentOrderId: order.orderId,
+          clientOrderId: order.clientOrderId,
+          algo: "LIMIT",
+          asset: order.asset,
+          side: order.side,
+          quantity: order.remainingQty,
+          limitPrice: order.limitPrice,
+          marketPrice,
+          ts: now,
+        })
+        .catch(() => {});
 
       // Mark as fully sent (EMS will fill and publish orders.filled)
       order.remainingQty = 0;
@@ -124,11 +135,13 @@ marketClient.onTick(async (tick) => {
     }
   }
 
-  await producer?.send("algo.heartbeat", {
-    algo: "LIMIT",
-    ts: now,
-    pendingOrders: pendingOrders.length,
-  }).catch(() => {});
+  await producer
+    ?.send("algo.heartbeat", {
+      algo: "LIMIT",
+      ts: now,
+      pendingOrders: pendingOrders.length,
+    })
+    .catch(() => {});
 });
 
 setInterval(async () => {
@@ -138,14 +151,16 @@ setInterval(async () => {
     if (now >= order.expiresAt) {
       logger.info(`Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
       pendingOrders.splice(i, 1);
-      await producer?.send("orders.expired", {
-        orderId: order.orderId,
-        clientOrderId: order.clientOrderId,
-        algo: "LIMIT",
-        filledQty: order.filledQty,
-        avgFillPrice: order.avgFillPrice,
-        ts: now,
-      }).catch(() => {});
+      await producer
+        ?.send("orders.expired", {
+          orderId: order.orderId,
+          clientOrderId: order.clientOrderId,
+          algo: "LIMIT",
+          filledQty: order.filledQty,
+          avgFillPrice: order.avgFillPrice,
+          ts: now,
+        })
+        .catch(() => {});
     }
   }
 }, 5_000);

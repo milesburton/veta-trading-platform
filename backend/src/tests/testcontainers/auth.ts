@@ -36,7 +36,7 @@ export async function login(stack: TestStack, user: string): Promise<string> {
     signal: AbortSignal.timeout(10_000),
   });
   assertEquals(auth.status, 200, `OAuth authorize for ${user} failed`);
-  const { code } = await auth.json() as { code: string };
+  const { code } = (await auth.json()) as { code: string };
 
   const tokRes = await fetch(`${us}/oauth/token`, {
     method: "POST",
@@ -71,19 +71,24 @@ export async function submitOrderViaWs(
     algoParams?: Record<string, unknown>;
     expiresAt?: number;
   },
-  timeoutMs = 20_000,
+  timeoutMs = 20_000
 ): Promise<WsOrderResponse & { clientOrderId: string }> {
   const gateway = stack.urls.gateway;
   if (!gateway) throw new Error("gateway URL not in stack");
-  const wsUrl = gateway.replace(/^http/, "ws") + "/ws";
+  const wsUrl = `${gateway.replace(/^http/, "ws")}/ws`;
   const clientOrderId = `tc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const ws = new WebSocket(wsUrl);
-  const closed = new Promise<void>((r) => { ws.onclose = () => r(); });
+  const closed = new Promise<void>((r) => {
+    ws.onclose = () => r();
+  });
 
   let response: WsOrderResponse | null = null;
   try {
     response = await new Promise<WsOrderResponse>((resolve, reject) => {
-      const timer = setTimeout(() => { ws.close(); reject(new Error("WS timeout")); }, timeoutMs);
+      const timer = setTimeout(() => {
+        ws.close();
+        reject(new Error("WS timeout"));
+      }, timeoutMs);
 
       ws.onopen = () => {
         ws.send(JSON.stringify({ type: "authenticate", payload: { token } }));
@@ -92,20 +97,22 @@ export async function submitOrderViaWs(
       ws.onmessage = (ev) => {
         const msg = JSON.parse(ev.data as string) as WsOrderResponse;
         if (msg.event === "authIdentity") {
-          ws.send(JSON.stringify({
-            type: "submitOrder",
-            payload: {
-              clientOrderId,
-              asset: order.asset,
-              side: order.side,
-              quantity: order.quantity,
-              limitPrice: order.limitPrice,
-              expiresAt: order.expiresAt ?? 60,
-              strategy: order.strategy ?? "LIMIT",
-              instrumentType: order.instrumentType,
-              algoParams: order.algoParams ?? { strategy: order.strategy ?? "LIMIT" },
-            },
-          }));
+          ws.send(
+            JSON.stringify({
+              type: "submitOrder",
+              payload: {
+                clientOrderId,
+                asset: order.asset,
+                side: order.side,
+                quantity: order.quantity,
+                limitPrice: order.limitPrice,
+                expiresAt: order.expiresAt ?? 60,
+                strategy: order.strategy ?? "LIMIT",
+                instrumentType: order.instrumentType,
+                algoParams: order.algoParams ?? { strategy: order.strategy ?? "LIMIT" },
+              },
+            })
+          );
         }
         if (msg.event === "orderAck" || msg.event === "orderRejected" || msg.event === "error") {
           clearTimeout(timer);
@@ -115,13 +122,22 @@ export async function submitOrderViaWs(
         if (msg.event === "authError") {
           clearTimeout(timer);
           ws.close();
-          reject(new Error(`authError:${JSON.stringify((msg as unknown as Record<string, unknown>).data ?? msg)}`));
+          reject(
+            new Error(
+              `authError:${JSON.stringify((msg as unknown as Record<string, unknown>).data ?? msg)}`
+            )
+          );
         }
       };
-      ws.onerror = () => { clearTimeout(timer); ws.close(); reject(new Error("WS error")); };
+      ws.onerror = () => {
+        clearTimeout(timer);
+        ws.close();
+        reject(new Error("WS error"));
+      };
     });
   } finally {
     await closed;
   }
-  return { ...response!, clientOrderId };
+  if (!response) throw new Error("expected websocket response");
+  return { ...response, clientOrderId };
 }

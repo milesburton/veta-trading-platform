@@ -1,6 +1,6 @@
 import { test as base, expect } from "@playwright/test";
-import { DEFAULT_ADMIN, DEFAULT_ASSETS, DEFAULT_LIMITS } from "./helpers/GatewayMock.ts";
 import { adminTest, traderTest } from "./helpers/fixtures.ts";
+import { DEFAULT_ADMIN, DEFAULT_ASSETS, DEFAULT_LIMITS } from "./helpers/GatewayMock.ts";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 
 traderTest.setTimeout(60_000);
@@ -24,11 +24,18 @@ traderTest.describe("Default trading workspace", () => {
 traderTest.describe("Trading workspace panels (injected orders)", () => {
   traderTest("Child Orders panel shows children for selected order", async ({ app, gateway }) => {
     const id = gateway.injectOrder({
-      asset: "AAPL", side: "BUY", quantity: 100,
-      limitPrice: 185.5, strategy: "TWAP", status: "executing",
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 100,
+      limitPrice: 185.5,
+      strategy: "TWAP",
+      status: "executing",
     });
     gateway.sendOrderLifecycle(id, {
-      asset: "AAPL", quantity: 50, limitPrice: 185.5, stages: ["submitted", "routed", "filled"],
+      asset: "AAPL",
+      quantity: 50,
+      limitPrice: 185.5,
+      stages: ["submitted", "routed", "filled"],
     });
 
     const blotter = await app.getOrderBlotter();
@@ -49,7 +56,11 @@ base.describe("Options workspace", () => {
     await page.waitForTimeout(400);
 
     await expect(
-      page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Option Pricing/i }).first()
+      page
+        .locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", {
+          hasText: /Option Pricing/i,
+        })
+        .first()
     ).toBeVisible({ timeout: 8_000 });
   });
 });
@@ -64,7 +75,11 @@ base.describe("Research workspace", () => {
     await page.waitForTimeout(400);
 
     await expect(
-      page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Research Radar|Signal Radar/i }).first()
+      page
+        .locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", {
+          hasText: /Research Radar|Signal Radar/i,
+        })
+        .first()
     ).toBeVisible({ timeout: 8_000 });
   });
 });
@@ -79,7 +94,11 @@ base.describe("Market feeds workspace", () => {
     await page.waitForTimeout(600);
 
     await expect(
-      page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Market Heatmap/i }).first()
+      page
+        .locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", {
+          hasText: /Market Heatmap/i,
+        })
+        .first()
     ).toBeVisible({ timeout: 8_000 });
   });
 });
@@ -93,7 +112,11 @@ base.describe("Admin system-status workspace", () => {
     await page.waitForTimeout(400);
 
     await expect(
-      page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Estate|Command Centre/i }).first()
+      page
+        .locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", {
+          hasText: /Estate|Command Centre/i,
+        })
+        .first()
     ).toBeVisible({ timeout: 8_000 });
   });
 });
@@ -101,7 +124,11 @@ base.describe("Admin system-status workspace", () => {
 adminTest.describe("Admin default workspace", () => {
   adminTest("Mission Control tab visible", async ({ app }) => {
     await expect(
-      app.page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Mission Control/i }).first()
+      app.page
+        .locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", {
+          hasText: /Mission Control/i,
+        })
+        .first()
     ).toBeVisible({ timeout: 8_000 });
   });
 });
@@ -114,7 +141,11 @@ base.describe("FI workspace", () => {
     await page.waitForTimeout(400);
 
     await expect(
-      page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Spread Analysis/i }).first()
+      page
+        .locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", {
+          hasText: /Spread Analysis/i,
+        })
+        .first()
     ).toBeVisible({ timeout: 8_000 });
   });
 
@@ -125,7 +156,11 @@ base.describe("FI workspace", () => {
     await page.waitForTimeout(400);
 
     await expect(
-      page.locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", { hasText: /Duration Ladder/i }).first()
+      page
+        .locator(".flexlayout__tab_button, .flexlayout__tab_button_stretch", {
+          hasText: /Duration Ladder/i,
+        })
+        .first()
     ).toBeVisible({ timeout: 8_000 });
   });
 });

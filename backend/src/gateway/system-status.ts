@@ -56,15 +56,14 @@ export async function handleSystemStatus(): Promise<Response> {
         external_mb: Math.round(mem.external / 1_048_576),
       },
     }),
-    { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+    { headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
   );
 }
 
 export function handleHealth(version: string): Response {
-  return new Response(
-    JSON.stringify({ service: "gateway", version, status: "ok" }),
-    { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
-  );
+  return new Response(JSON.stringify({ service: "gateway", version, status: "ok" }), {
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+  });
 }
 
 export function makeMarketSimWsProxy(req: Request, marketSimPort: number): Response {
@@ -76,24 +75,44 @@ export function makeMarketSimWsProxy(req: Request, marketSimPort: number): Respo
   upstream.onmessage = (ev) => {
     try {
       if (client.readyState === WebSocket.OPEN) client.send(ev.data);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
   upstream.onclose = () => {
-    try { client.close(); } catch { /* ignore */ }
+    try {
+      client.close();
+    } catch {
+      /* ignore */
+    }
   };
   upstream.onerror = () => {
-    try { client.close(); } catch { /* ignore */ }
+    try {
+      client.close();
+    } catch {
+      /* ignore */
+    }
   };
   client.onmessage = (ev) => {
     try {
       if (upstream.readyState === WebSocket.OPEN) upstream.send(ev.data);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
   client.onclose = () => {
-    try { upstream.close(); } catch { /* ignore */ }
+    try {
+      upstream.close();
+    } catch {
+      /* ignore */
+    }
   };
   client.onerror = () => {
-    try { upstream.close(); } catch { /* ignore */ }
+    try {
+      upstream.close();
+    } catch {
+      /* ignore */
+    }
   };
   return response;
 }

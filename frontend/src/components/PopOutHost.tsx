@@ -213,16 +213,16 @@ export function PopOutHost({
       timer = setTimeout(() => {
         dispatch(
           saveOrderTicketWindowSize({
-            w: window.outerWidth,
-            h: window.outerHeight,
+            w: globalThis.outerWidth,
+            h: globalThis.outerHeight,
           }) as unknown as UnknownAction
         );
       }, 300);
     }
-    window.addEventListener("resize", onResize);
+    globalThis.addEventListener("resize", onResize);
     return () => {
       clearTimeout(timer);
-      window.removeEventListener("resize", onResize);
+      globalThis.removeEventListener("resize", onResize);
     };
   }, [panelType, dispatch]);
 

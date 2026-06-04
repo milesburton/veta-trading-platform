@@ -141,6 +141,33 @@ gh api repos/:owner/:repo/branches/main/protection --jq '.required_status_checks
 
 To update which checks are required, the same endpoint accepts a `PUT` with the new context list. There's a CODEOWNERS-style review gate too — `required_pull_request_reviews` requires one approval before merging, which `trusted-automerge` provides automatically.
 
+## Run the CI checks locally
+
+GitHub Actions is the source of truth for merge gates, but the same checks can be run from the workstation before pushing. The workflow is split across backend and frontend roots, so the local commands mirror that split:
+
+```bash
+# Backend checks
+deno task lint
+deno task check
+deno task test
+
+# Frontend checks
+cd frontend
+npm run lint
+npm run typecheck
+npm run test:coverage
+npm run test:ui
+
+# Cross-repo checks
+cd ..
+npm run fallow:audit
+npm run fallow:health
+npm run fallow:dead-code
+npm run quality:git
+```
+
+If you want a closer approximation of the GitHub Actions runner itself, use a local workflow runner such as `act` and point it at `.github/workflows/ci.yml`. The repo does not require `act` for day-to-day development, so the script-based checks above are the supported baseline.
+
 ## Troubleshooting CI failures
 
 ### First check: is GitHub itself broken?

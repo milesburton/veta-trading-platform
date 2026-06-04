@@ -34,7 +34,7 @@ export function QuickTradeBar() {
   const knownSymbols = useMemo(() => new Set(assets.map((a) => a.symbol)), [assets]);
   const symbolList = useMemo(() => assets.map((a) => a.symbol), [assets]);
 
-  if (!user || user.role !== "trader") return null;
+  if (user?.role !== "trader") return null;
 
   const regexIntent = parseQuickTrade(input.value, { knownSymbols });
   const canAskAi = !regexIntent && input.value.trim().length >= 8 && !parseTicketState.isLoading;

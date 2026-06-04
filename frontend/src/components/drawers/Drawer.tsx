@@ -19,8 +19,8 @@ export function Drawer({ id, title, headerActions, children }: Props) {
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") closeAll();
     }
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    globalThis.addEventListener("keydown", handleKey);
+    return () => globalThis.removeEventListener("keydown", handleKey);
   }, [position, closeAll]);
 
   if (position === -1) return null;

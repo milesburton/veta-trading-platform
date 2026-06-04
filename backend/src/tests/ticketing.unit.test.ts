@@ -1,9 +1,6 @@
 // fallow-ignore-file unused-file
 import { assertEquals } from "jsr:@std/assert@0.217";
-import {
-  _internalForTests,
-  createTicketForAlert,
-} from "../gateway/ticketing.ts";
+import { _internalForTests, createTicketForAlert } from "../gateway/ticketing.ts";
 
 const REAL_TOKEN = Deno.env.get("GITHUB_TICKETING_TOKEN");
 const REAL_REPO = Deno.env.get("GITHUB_TICKETING_REPO");
@@ -18,10 +15,7 @@ const CRITICAL_ALERT = {
   message: "m",
 } as const;
 
-function withEnv<T>(
-  values: Record<string, string | undefined>,
-  fn: () => Promise<T>,
-): Promise<T> {
+function withEnv<T>(values: Record<string, string | undefined>, fn: () => Promise<T>): Promise<T> {
   const prev: Record<string, string | undefined> = {};
   for (const [k, v] of Object.entries(values)) {
     prev[k] = Deno.env.get(k);
@@ -36,9 +30,7 @@ function withEnv<T>(
   });
 }
 
-function captureFetch(
-  handler: (url: string, init?: RequestInit) => Response | Promise<Response>,
-) {
+function captureFetch(handler: (url: string, init?: RequestInit) => Response | Promise<Response>) {
   const calls: { url: string; method: string; body: string | null }[] = [];
   globalThis.fetch = ((url: string, init?: RequestInit) => {
     calls.push({
@@ -60,34 +52,32 @@ function withValidGithubEnv<T>(fn: () => Promise<T>): Promise<T> {
   return withEnv(VALID_GITHUB_ENV, fn);
 }
 
-for (
-  const testCase of [
-    {
-      label: "createTicketForAlert skips non-CRITICAL severities",
-      env: VALID_GITHUB_ENV,
-      alert: { severity: "WARNING", message: "x" },
-      expectedReason: "non-critical",
+for (const testCase of [
+  {
+    label: "createTicketForAlert skips non-CRITICAL severities",
+    env: VALID_GITHUB_ENV,
+    alert: { severity: "WARNING", message: "x" },
+    expectedReason: "non-critical",
+  },
+  {
+    label: "createTicketForAlert no-ops when token is missing",
+    env: {
+      GITHUB_TICKETING_TOKEN: undefined,
+      GITHUB_TICKETING_REPO: "foo/bar",
     },
-    {
-      label: "createTicketForAlert no-ops when token is missing",
-      env: {
-        GITHUB_TICKETING_TOKEN: undefined,
-        GITHUB_TICKETING_REPO: "foo/bar",
-      },
-      alert: { severity: "CRITICAL", message: "x" },
-      expectedReason: "no-token",
+    alert: { severity: "CRITICAL", message: "x" },
+    expectedReason: "no-token",
+  },
+  {
+    label: "createTicketForAlert no-ops when repo is missing or invalid",
+    env: {
+      GITHUB_TICKETING_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      GITHUB_TICKETING_REPO: "",
     },
-    {
-      label: "createTicketForAlert no-ops when repo is missing or invalid",
-      env: {
-        GITHUB_TICKETING_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa",
-        GITHUB_TICKETING_REPO: "",
-      },
-      alert: { severity: "CRITICAL", message: "x" },
-      expectedReason: "no-repo",
-    },
-  ] as const
-) {
+    alert: { severity: "CRITICAL", message: "x" },
+    expectedReason: "no-repo",
+  },
+] as const) {
   Deno.test(testCase.label, async () => {
     await withEnv(testCase.env, async () => {
       const f = captureFetch(() => new Response(null, { status: 201 }));
@@ -114,7 +104,7 @@ Deno.test("createTicketForAlert creates an issue on first CRITICAL", async () =>
           number: 99,
           html_url: "https://github.com/foo/bar/issues/99",
         }),
-        { status: 201 },
+        { status: 201 }
       );
     });
     try {
@@ -126,14 +116,16 @@ Deno.test("createTicketForAlert creates an issue on first CRITICAL", async () =>
           detail: "all-traders block",
           ts: 1_700_000_000_000,
         },
-        "u-99",
+        "u-99"
       );
       assertEquals(r.created, true);
       assertEquals(r.issueNumber, 99);
       assertEquals(r.url, "https://github.com/foo/bar/issues/99");
       const create = f.calls.find((c) => c.method === "POST");
       assertEquals(create !== undefined, true);
-      const body = JSON.parse(create!.body!);
+      if (!create) throw new Error("expected POST call");
+      if (!create.body) throw new Error("expected POST call body");
+      const body = JSON.parse(create.body);
       assertEquals(body.title.startsWith("[CRITICAL]"), true);
       assertEquals(body.title.includes("kill-switch"), true);
       assertEquals(body.labels.includes("prod-issue"), true);
@@ -162,7 +154,7 @@ Deno.test("createTicketForAlert dedupes onto a recent open issue", async () => {
               },
             ],
           }),
-          { status: 200 },
+          { status: 200 }
         );
       }
       return new Response(null, { status: 201 });
@@ -170,14 +162,12 @@ Deno.test("createTicketForAlert dedupes onto a recent open issue", async () => {
     try {
       const r = await createTicketForAlert(
         { severity: "CRITICAL", source: "kill-switch", message: "fired" },
-        "u-99",
+        "u-99"
       );
       assertEquals(r.created, false);
       assertEquals(r.issueNumber, 42);
       assertEquals(r.reason, "deduped-onto-existing");
-      const commentCall = f.calls.find((c) =>
-        c.url.includes("/issues/42/comments")
-      );
+      const commentCall = f.calls.find((c) => c.url.includes("/issues/42/comments"));
       assertEquals(commentCall !== undefined, true);
     } finally {
       f.restore();
@@ -204,22 +194,20 @@ Deno.test("buildTitle and buildBody sanitise newlines in messages", () => {
   assertEquals(title.includes("\r"), false);
 });
 
-for (
-  const testCase of [
-    {
-      label: "readTokenEnv rejects REPLACE_ME placeholder tokens",
-      key: "GITHUB_TICKETING_TOKEN",
-      value: "ghp_REPLACE_ME_with_real_token_here",
-      read: () => _internalForTests.readTokenEnv(),
-    },
-    {
-      label: "readRepoEnv rejects invalid repo formats",
-      key: "GITHUB_TICKETING_REPO",
-      value: "no-slash-here",
-      read: () => _internalForTests.readRepoEnv(),
-    },
-  ] as const
-) {
+for (const testCase of [
+  {
+    label: "readTokenEnv rejects REPLACE_ME placeholder tokens",
+    key: "GITHUB_TICKETING_TOKEN",
+    value: "ghp_REPLACE_ME_with_real_token_here",
+    read: () => _internalForTests.readTokenEnv(),
+  },
+  {
+    label: "readRepoEnv rejects invalid repo formats",
+    key: "GITHUB_TICKETING_REPO",
+    value: "no-slash-here",
+    read: () => _internalForTests.readRepoEnv(),
+  },
+] as const) {
   Deno.test(testCase.label, () => {
     const prev = Deno.env.get(testCase.key);
     Deno.env.set(testCase.key, testCase.value);
@@ -236,7 +224,7 @@ Deno.test("buildBody includes Correlation line when runId is provided", () => {
   const body = _internalForTests.buildBody(
     { severity: "CRITICAL", source: "src", message: "m" },
     "u-1",
-    "run-abc",
+    "run-abc"
   );
   assertEquals(body.includes("_Correlation: run-abc_"), true);
 });
@@ -250,7 +238,7 @@ Deno.test("buildBody includes Detail block when detail is provided", () => {
       detail: "stack trace here",
     },
     "u-1",
-    null,
+    null
   );
   assertEquals(body.includes("**Detail:**"), true);
   assertEquals(body.includes("stack trace here"), true);
@@ -273,7 +261,7 @@ Deno.test("createTicketForAlert ignores deduplicate hits older than the 1h windo
               },
             ],
           }),
-          { status: 200 },
+          { status: 200 }
         );
       }
       return new Response(
@@ -281,13 +269,13 @@ Deno.test("createTicketForAlert ignores deduplicate hits older than the 1h windo
           number: 100,
           html_url: "https://github.com/foo/bar/issues/100",
         }),
-        { status: 201 },
+        { status: 201 }
       );
     });
     try {
       const r = await createTicketForAlert(
         { severity: "CRITICAL", source: "src", message: "m" },
-        "u-1",
+        "u-1"
       );
       assertEquals(r.created, true);
       assertEquals(r.issueNumber, 100);
@@ -297,42 +285,38 @@ Deno.test("createTicketForAlert ignores deduplicate hits older than the 1h windo
   });
 });
 
-for (
-  const testCase of [
-    {
-      label:
-        "createTicketForAlert returns github-api-failed when issue creation 5xx",
-      handler: (url: string) => {
-        if (url.includes("/search/issues")) {
-          return new Response(JSON.stringify({ items: [] }), { status: 200 });
-        }
-        return new Response("upstream blew up", { status: 502 });
-      },
-      expectedCreated: false,
-      expectedReason: "github-api-failed",
-      expectedIssueNumber: null,
+for (const testCase of [
+  {
+    label: "createTicketForAlert returns github-api-failed when issue creation 5xx",
+    handler: (url: string) => {
+      if (url.includes("/search/issues")) {
+        return new Response(JSON.stringify({ items: [] }), { status: 200 });
+      }
+      return new Response("upstream blew up", { status: 502 });
     },
-    {
-      label:
-        "createTicketForAlert handles findOpenDuplicate non-OK by creating",
-      handler: (url: string) => {
-        if (url.includes("/search/issues")) {
-          return new Response("auth bad", { status: 401 });
-        }
-        return new Response(
-          JSON.stringify({
-            number: 11,
-            html_url: "https://github.com/foo/bar/issues/11",
-          }),
-          { status: 201 },
-        );
-      },
-      expectedCreated: true,
-      expectedReason: null,
-      expectedIssueNumber: 11,
+    expectedCreated: false,
+    expectedReason: "github-api-failed",
+    expectedIssueNumber: null,
+  },
+  {
+    label: "createTicketForAlert handles findOpenDuplicate non-OK by creating",
+    handler: (url: string) => {
+      if (url.includes("/search/issues")) {
+        return new Response("auth bad", { status: 401 });
+      }
+      return new Response(
+        JSON.stringify({
+          number: 11,
+          html_url: "https://github.com/foo/bar/issues/11",
+        }),
+        { status: 201 }
+      );
     },
-  ] as const
-) {
+    expectedCreated: true,
+    expectedReason: null,
+    expectedIssueNumber: 11,
+  },
+] as const) {
   Deno.test(testCase.label, async () => {
     await withValidGithubEnv(async () => {
       const f = captureFetch((url) => {
@@ -364,14 +348,14 @@ Deno.test("createTicketForAlert handles findOpenDuplicate fetch throw by creatin
             number: 22,
             html_url: "https://github.com/foo/bar/issues/22",
           }),
-          { status: 201 },
-        ),
+          { status: 201 }
+        )
       );
     }) as typeof fetch;
     try {
       const r = await createTicketForAlert(
         { severity: "CRITICAL", source: "src", message: "m" },
-        "u-1",
+        "u-1"
       );
       assertEquals(r.created, true);
       assertEquals(r.issueNumber, 22);
@@ -387,16 +371,14 @@ Deno.test("createTicketForAlert handles createIssue fetch throw", async () => {
     globalThis.fetch = ((_url: string) => {
       call++;
       if (call === 1) {
-        return Promise.resolve(
-          new Response(JSON.stringify({ items: [] }), { status: 200 }),
-        );
+        return Promise.resolve(new Response(JSON.stringify({ items: [] }), { status: 200 }));
       }
       return Promise.reject(new Error("connect ETIMEDOUT"));
     }) as typeof fetch;
     try {
       const r = await createTicketForAlert(
         { severity: "CRITICAL", source: "src", message: "m" },
-        "u-1",
+        "u-1"
       );
       assertEquals(r.created, false);
       assertEquals(r.reason, "github-api-failed");
@@ -426,8 +408,8 @@ Deno.test("createTicketForAlert handles commentOnIssue throw silently while dedu
                 },
               ],
             }),
-            { status: 200 },
-          ),
+            { status: 200 }
+          )
         );
       }
       return Promise.reject(new Error("comment write fail"));
@@ -435,7 +417,7 @@ Deno.test("createTicketForAlert handles commentOnIssue throw silently while dedu
     try {
       const r = await createTicketForAlert(
         { severity: "CRITICAL", source: "src", message: "m" },
-        "u-1",
+        "u-1"
       );
       assertEquals(r.created, false);
       assertEquals(r.issueNumber, 33);

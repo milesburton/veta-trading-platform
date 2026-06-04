@@ -4,7 +4,7 @@ import { Drawer } from "./Drawer.tsx";
 
 export const LOGS_DRAWER_ID = "logs";
 
-const ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
+const ORIGIN = typeof window !== "undefined" ? globalThis.location.origin : "";
 const ENDPOINT = `${ORIGIN}/api/gateway/logs/query`;
 
 const SERVICES = [

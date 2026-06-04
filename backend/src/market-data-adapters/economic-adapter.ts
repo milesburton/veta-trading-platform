@@ -1,5 +1,5 @@
-import type { MarketAdapterEvent } from "@veta/types/intelligence";
 import { logger } from "@veta/logger";
+import type { MarketAdapterEvent } from "@veta/types/intelligence";
 
 interface MacroTemplate {
   headline: string;
@@ -64,36 +64,28 @@ function mapFinnhubImpact(raw: string | null): "high" | "medium" | "low" {
   return "low";
 }
 
-async function fetchFinnhubEconomic(
-  apiKey: string,
-): Promise<MarketAdapterEvent[]> {
+async function fetchFinnhubEconomic(apiKey: string): Promise<MarketAdapterEvent[]> {
   const now = new Date();
   const from = now.toISOString().slice(0, 10);
-  const to = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString()
-    .slice(0, 10);
+  const to = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   try {
-    const url =
-      `https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${apiKey}`;
+    const url = `https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${apiKey}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) {
       logger.warn(`Finnhub returned ${res.status}`);
       return [];
     }
-    const data = await res.json() as {
+    const data = (await res.json()) as {
       economicCalendar?: FinnhubEconomicEvent[];
     };
     const list = data.economicCalendar ?? [];
     const ts = Date.now();
 
     return list
-      .filter((item) =>
-        item.event && item.time && !isNaN(new Date(item.time).getTime())
-      )
+      .filter((item) => item.event && item.time && !Number.isNaN(new Date(item.time).getTime()))
       .map((item) => ({
-        id: `finnhub-economic-${
-          item.event.replace(/\s+/g, "-").toLowerCase()
-        }-${item.time}`,
+        id: `finnhub-economic-${item.event.replace(/\s+/g, "-").toLowerCase()}-${item.time}`,
         type: "economic" as const,
         headline: `${item.event}${item.country ? ` (${item.country})` : ""}`,
         scheduledAt: new Date(item.time).getTime(),
@@ -122,9 +114,7 @@ export async function seedEconomicEvents(): Promise<MarketAdapterEvent[]> {
   const weekMs = 7 * 24 * 60 * 60 * 1000;
 
   return MACRO_CALENDAR.map((tmpl) => ({
-    id: `synthetic-economic-${
-      tmpl.headline.replace(/\s+/g, "-").toLowerCase()
-    }`,
+    id: `synthetic-economic-${tmpl.headline.replace(/\s+/g, "-").toLowerCase()}`,
     type: "economic" as const,
     headline: tmpl.headline,
     scheduledAt: now + tmpl.weekOffset * weekMs,

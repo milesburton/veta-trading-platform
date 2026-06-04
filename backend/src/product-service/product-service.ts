@@ -9,9 +9,9 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createProducer } from "@veta/messaging";
-import { json, corsOptions } from "@veta/http";
+import { corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
+import { createProducer } from "@veta/messaging";
 
 const PORT = Number(Deno.env.get("PRODUCT_SERVICE_PORT")) || 5_030;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -57,12 +57,10 @@ function nextLegId(): string {
   return `LEG${String(legSeq++).padStart(4, "0")}`;
 }
 
-const producer = await createProducer("product-service").catch(
-  (err: unknown) => {
-    logger.warn("Kafka producer unavailable", { err: err as Error });
-    return null;
-  },
-);
+const producer = await createProducer("product-service").catch((err: unknown) => {
+  logger.warn("Kafka producer unavailable", { err: err as Error });
+  return null;
+});
 
 function jsonErr(msg: string, status: number): Response {
   return json({ error: msg }, status);
@@ -124,7 +122,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       }>;
     };
     try {
-      body = await req.json() as typeof body;
+      body = (await req.json()) as typeof body;
     } catch {
       return jsonErr("Invalid JSON body", 400);
     }
@@ -173,9 +171,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     let products = Array.from(productStore.values());
 
     if (userRoleParam === "external-client" && userIdParam) {
-      products = products.filter((p) =>
-        p.state === "issued" || p.state === "sold"
-      );
+      products = products.filter((p) => p.state === "issued" || p.state === "sold");
     }
 
     if (stateFilter) {
@@ -201,7 +197,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     if (product.state !== "draft") {
       return jsonErr(
         `Cannot update legs: product is in '${product.state}' state (must be 'draft')`,
-        400,
+        400
       );
     }
 
@@ -219,7 +215,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       }>;
     };
     try {
-      body = await req.json() as typeof body;
+      body = (await req.json()) as typeof body;
     } catch {
       return jsonErr("Invalid JSON body", 400);
     }
@@ -248,7 +244,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     if (product.state !== "draft") {
       return jsonErr(
         `Cannot structure: product is in '${product.state}' state (must be 'draft')`,
-        400,
+        400
       );
     }
     if (product.legs.length === 0) {
@@ -257,10 +253,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
     const weightSum = product.legs.reduce((s, l) => s + l.weight, 0);
     if (Math.abs(weightSum - 1.0) > 0.001) {
-      return jsonErr(
-        `Weights must sum to 1.0 (currently ${weightSum.toFixed(4)})`,
-        400,
-      );
+      return jsonErr(`Weights must sum to 1.0 (currently ${weightSum.toFixed(4)})`, 400);
     }
 
     product.state = "structured";
@@ -278,7 +271,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     if (product.state !== "structured") {
       return jsonErr(
         `Cannot issue: product is in '${product.state}' state (must be 'structured')`,
-        400,
+        400
       );
     }
 
@@ -296,15 +289,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const product = productStore.get(matchSell[1]);
     if (!product) return jsonErr("Product not found", 404);
     if (product.state !== "issued") {
-      return jsonErr(
-        `Cannot sell: product is in '${product.state}' state (must be 'issued')`,
-        400,
-      );
+      return jsonErr(`Cannot sell: product is in '${product.state}' state (must be 'issued')`, 400);
     }
 
     let body: { soldTo?: string; rfqId?: string };
     try {
-      body = await req.json() as typeof body;
+      body = (await req.json()) as typeof body;
     } catch {
       body = {};
     }
@@ -324,10 +314,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const product = productStore.get(matchUnwind[1]);
     if (!product) return jsonErr("Product not found", 404);
     if (product.state !== "sold") {
-      return jsonErr(
-        `Cannot unwind: product is in '${product.state}' state (must be 'sold')`,
-        400,
-      );
+      return jsonErr(`Cannot unwind: product is in '${product.state}' state (must be 'sold')`, 400);
     }
 
     product.state = "unwound";

@@ -1,16 +1,14 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 import { createProducer } from "@veta/messaging";
 import type { NewsEvent } from "@veta/types/intelligence";
-import { json, corsOptions } from "@veta/http";
-import { logger } from "@veta/logger";
 import { waitForUrl } from "@veta/wait-for";
 
 const PORT = Number(Deno.env.get("NEWS_AGGREGATOR_PORT")) || 5_013;
-const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") ||
-  "http://localhost:5000";
-const POLL_INTERVAL_MS = Number(Deno.env.get("NEWS_POLL_INTERVAL_MS")) ||
-  120_000;
+const MARKET_SIM_URL = Deno.env.get("MARKET_SIM_URL") || "http://localhost:5000";
+const POLL_INTERVAL_MS = Number(Deno.env.get("NEWS_POLL_INTERVAL_MS")) || 120_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const MAX_ITEMS_PER_SYMBOL = 100;
 const SOURCES_FILE = Deno.env.get("NEWS_SOURCES_FILE") ?? "./news_sources.json";
@@ -29,8 +27,7 @@ const DEFAULT_SOURCES: NewsSource[] = [
   {
     id: "yahoo-finance",
     label: "Yahoo Finance",
-    rssTemplate:
-      "https://feeds.finance.yahoo.com/rss/2.0/headline?s={symbol}&region=US&lang=en-US",
+    rssTemplate: "https://feeds.finance.yahoo.com/rss/2.0/headline?s={symbol}&region=US&lang=en-US",
     enabled: true,
     symbolSpecific: true,
   },
@@ -68,7 +65,10 @@ function saveSources(): void {
 }
 
 function slugify(label: string): string {
-  return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 const SOURCES: NewsSource[] = loadSources();
@@ -479,11 +479,11 @@ const IGNORE_TICKERS = new Set([
   "PST",
 ]);
 
-function scoreSentiment(
-  text: string,
-): { sentiment: "positive" | "negative" | "neutral"; score: number } {
-  const words =
-    text.toLowerCase().match(/\b[a-z][a-z-]*[a-z]\b|\b[a-z]{2,}\b/g) ?? [];
+function scoreSentiment(text: string): {
+  sentiment: "positive" | "negative" | "neutral";
+  score: number;
+} {
+  const words = text.toLowerCase().match(/\b[a-z][a-z-]*[a-z]\b|\b[a-z]{2,}\b/g) ?? [];
   let score = 0;
   for (const w of words) {
     if (LM_POSITIVE.has(w)) score++;
@@ -495,10 +495,7 @@ function scoreSentiment(
 
 function extractTickers(text: string): string[] {
   const matches = text.match(/\b[A-Z]{2,5}\b/g) ?? [];
-  return [...new Set(matches.filter((m) => !IGNORE_TICKERS.has(m)))].slice(
-    0,
-    5,
-  );
+  return [...new Set(matches.filter((m) => !IGNORE_TICKERS.has(m)))].slice(0, 5);
 }
 
 const newsBySymbol = new Map<string, NewsItem[]>();
@@ -531,10 +528,10 @@ async function fetchRss(url: string): Promise<RssItem[]> {
       `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`,
       {
         signal: AbortSignal.timeout(10_000),
-      },
+      }
     );
     if (!res.ok) return [];
-    const data = await res.json() as { status: string; items?: RssItem[] };
+    const data = (await res.json()) as { status: string; items?: RssItem[] };
     if (data.status !== "ok" || !Array.isArray(data.items)) return [];
     return data.items;
   } catch {
@@ -550,22 +547,24 @@ const producer = await createProducer("news-aggregator").catch((err) => {
 async function publishItem(item: NewsItem): Promise<void> {
   if (!producer) return;
   await producer.send("news.feed", item).catch(() => {});
-  await producer.send("news.signal", {
-    symbol: item.symbol,
-    sentiment: item.sentiment,
-    score: item.sentimentScore,
-    headline: item.headline,
-    source: item.source,
-    ts: item.publishedAt,
-  }).catch(() => {});
+  await producer
+    .send("news.signal", {
+      symbol: item.symbol,
+      sentiment: item.sentiment,
+      score: item.sentimentScore,
+      headline: item.headline,
+      source: item.source,
+      ts: item.publishedAt,
+    })
+    .catch(() => {});
   const normScore = Math.max(-1, Math.min(1, item.sentimentScore / 3));
   const newsEvent: NewsEvent = {
     id: item.id,
     source: item.source,
     headline: item.headline,
-    tickers: [item.symbol, ...item.relatedSymbols].filter((v, i, a) =>
-      a.indexOf(v) === i
-    ).slice(0, 5),
+    tickers: [item.symbol, ...item.relatedSymbols]
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .slice(0, 5),
     sentiment: item.sentiment,
     sentimentScore: normScore,
     relevanceScore: item.relatedSymbols.length > 0 ? 0.8 : 0.5,
@@ -575,10 +574,7 @@ async function publishItem(item: NewsItem): Promise<void> {
   await producer.send("news.events.normalised", newsEvent).catch(() => {});
 }
 
-async function pollSourceForSymbol(
-  source: NewsSource,
-  symbol: string,
-): Promise<void> {
+async function pollSourceForSymbol(source: NewsSource, symbol: string): Promise<void> {
   const url = source.symbolSpecific
     ? source.rssTemplate.replace("{symbol}", encodeURIComponent(symbol))
     : source.rssTemplate;
@@ -591,7 +587,7 @@ async function pollSourceForSymbol(
     if (!headline) continue;
 
     if (!source.symbolSpecific) {
-      const tickers = extractTickers(headline + " " + (raw.description ?? ""));
+      const tickers = extractTickers(`${headline} ${raw.description ?? ""}`);
       if (!tickers.includes(symbol)) continue;
     }
 
@@ -599,9 +595,9 @@ async function pollSourceForSymbol(
     const itemKey = `${source.id}:${id}`;
     if (seenIds.has(itemKey)) continue;
     if (seenIds.size >= SEEN_IDS_MAX) {
-      [...seenIds].slice(0, Math.floor(SEEN_IDS_MAX / 4)).forEach((k) =>
-        seenIds.delete(k)
-      );
+      for (const k of [...seenIds].slice(0, Math.floor(SEEN_IDS_MAX / 4))) {
+        seenIds.delete(k);
+      }
     }
     seenIds.add(itemKey);
 
@@ -660,7 +656,7 @@ async function loadSymbols(): Promise<void> {
       signal: AbortSignal.timeout(5_000),
     });
     if (!res.ok) return;
-    const assets = await res.json() as { symbol: string }[];
+    const assets = (await res.json()) as { symbol: string }[];
     knownSymbols = assets.map((a) => a.symbol);
     logger.info(`Loaded ${knownSymbols.length} symbols`);
   } catch {
@@ -704,27 +700,24 @@ Deno.serve({ port: PORT }, async (req) => {
 
   if (req.method === "GET" && path === "/news") {
     const symbol = url.searchParams.get("symbol");
-    const limit = Math.min(
-      Number(url.searchParams.get("limit") ?? 20),
-      MAX_ITEMS_PER_SYMBOL,
-    );
+    const limit = Math.min(Number(url.searchParams.get("limit") ?? 20), MAX_ITEMS_PER_SYMBOL);
     if (!symbol) return json({ error: "symbol is required" }, 400);
     const items = (newsBySymbol.get(symbol) ?? []).slice(0, limit);
     return json(items);
   }
 
   if (req.method === "GET" && path === "/sources") {
-    return json(SOURCES.map(({ id, label, enabled, symbolSpecific }) => ({
-      id,
-      label,
-      enabled,
-      symbolSpecific,
-    })));
+    return json(
+      SOURCES.map(({ id, label, enabled, symbolSpecific }) => ({
+        id,
+        label,
+        enabled,
+        symbolSpecific,
+      }))
+    );
   }
 
-  const sourceMatch = path.match(
-    /^\/sources\/([^/]+)\/(enable|disable|toggle)$/,
-  );
+  const sourceMatch = path.match(/^\/sources\/([^/]+)\/(enable|disable|toggle)$/);
   if (req.method === "POST" && sourceMatch) {
     const [, id, action] = sourceMatch;
     const source = SOURCES.find((s) => s.id === id);
@@ -746,7 +739,7 @@ Deno.serve({ port: PORT }, async (req) => {
   if (req.method === "POST" && path === "/sources") {
     let body: Partial<NewsSource>;
     try {
-      body = await req.json() as Partial<NewsSource>;
+      body = (await req.json()) as Partial<NewsSource>;
     } catch {
       return json({ error: "invalid JSON" }, 400);
     }
@@ -779,7 +772,7 @@ Deno.serve({ port: PORT }, async (req) => {
     if (!source) return json({ error: "source not found" }, 404);
     let body: Partial<NewsSource>;
     try {
-      body = await req.json() as Partial<NewsSource>;
+      body = (await req.json()) as Partial<NewsSource>;
     } catch {
       return json({ error: "invalid JSON" }, 400);
     }

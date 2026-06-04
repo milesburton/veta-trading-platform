@@ -1,12 +1,9 @@
 import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 
-import {
-  computeDurationLadder,
-  type BondPosition,
-} from "../analytics/duration-ladder.ts";
+import { type BondPosition, computeDurationLadder } from "../analytics/duration-ladder.ts";
 import { rateAt } from "../analytics/spread-analysis.ts";
-import { _internalForTests } from "../analytics/yield-curve.ts";
 import type { YieldCurvePoint } from "../analytics/types.ts";
+import { _internalForTests } from "../analytics/yield-curve.ts";
 import { getBond, getBonds } from "../market-sim/bondUniverse.ts";
 
 Deno.test("[duration-ladder] cash flow at the 3m boundary attributes entirely to the 3m bucket", () => {
@@ -39,7 +36,11 @@ Deno.test("[duration-ladder] 50y bond places its largest bucket weight in 30y (c
   };
   const res = computeDurationLadder([bond]);
   const sorted = [...res.buckets].sort((a, b) => Math.abs(b.netDv01) - Math.abs(a.netDv01));
-  assertEquals(sorted[0].tenorLabel, "30y", `largest bucket should be 30y, got ${sorted[0].tenorLabel}`);
+  assertEquals(
+    sorted[0].tenorLabel,
+    "30y",
+    `largest bucket should be 30y, got ${sorted[0].tenorLabel}`
+  );
 });
 
 Deno.test("[spread-analysis rateAt] clamps below the lowest tenor to the lowest spot", () => {
@@ -98,4 +99,3 @@ Deno.test("[bondUniverse] getBonds returns the full universe when no filter is g
   assertEquals(all.length, explicit.length);
   assertEquals(all.length, noField.length);
 });
-

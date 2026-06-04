@@ -1,22 +1,10 @@
-import {
-  assert,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
+import { assert, assertEquals } from "jsr:@std/assert@0.217";
 
-import {
-  decode,
-  encode,
-  SOH,
-  utcTimestamp,
-  validateChecksum,
-} from "../fix/fix-parser.ts";
+import { decode, encode, SOH, utcTimestamp, validateChecksum } from "../fix/fix-parser.ts";
 
 Deno.test("[fix-parser] encode starts with 8=FIX.4.4", () => {
   const msg = encode([[35, "A"]]);
-  assert(
-    msg.startsWith(`8=FIX.4.4${SOH}`),
-    `message should start with BeginString: ${msg}`,
-  );
+  assert(msg.startsWith(`8=FIX.4.4${SOH}`), `message should start with BeginString: ${msg}`);
 });
 
 Deno.test("[fix-parser] encode includes BodyLength tag 9", () => {
@@ -25,11 +13,12 @@ Deno.test("[fix-parser] encode includes BodyLength tag 9", () => {
 });
 
 Deno.test("[fix-parser] encode ends with CheckSum tag 10 followed by SOH", () => {
-  const msg = encode([[35, "D"], [11, "order-001"], [55, "AAPL"]]);
-  assert(
-    msg.match(new RegExp(`10=\\d{3}${SOH}$`)),
-    "message should end with checksum",
-  );
+  const msg = encode([
+    [35, "D"],
+    [11, "order-001"],
+    [55, "AAPL"],
+  ]);
+  assert(msg.match(new RegExp(`10=\\d{3}${SOH}$`)), "message should end with checksum");
 });
 
 Deno.test("[fix-parser] encode checksum is 3-digit zero-padded", () => {
@@ -37,7 +26,7 @@ Deno.test("[fix-parser] encode checksum is 3-digit zero-padded", () => {
   const checksumPattern = new RegExp(`10=(\\d{3})${SOH}$`);
   const match = msg.match(checksumPattern);
   assert(match !== null, "no checksum found");
-  assertEquals(match![1].length, 3);
+  assertEquals(match?.[1].length, 3);
 });
 
 Deno.test("[fix-parser] encode includes body tags in output", () => {
@@ -52,11 +41,15 @@ Deno.test("[fix-parser] encode includes body tags in output", () => {
 });
 
 Deno.test("[fix-parser] encode computes correct checksum", () => {
-  const msg = encode([[35, "A"], [98, 0], [108, 30]]);
+  const msg = encode([
+    [35, "A"],
+    [98, 0],
+    [108, 30],
+  ]);
   const checksumPattern = new RegExp(`10=(\\d{3})${SOH}$`);
   const match = msg.match(checksumPattern);
   assert(match !== null);
-  const claimed = Number(match![1]);
+  const claimed = Number(match?.[1]);
 
   const bodyEnd = msg.lastIndexOf(`${SOH}10=`);
   let sum = 0;
@@ -78,10 +71,9 @@ Deno.test("[fix-parser] encode BodyLength matches byte count of body", () => {
   const bodyLenPattern = new RegExp(`9=(\\d+)${SOH}`);
   const bodyLenMatch = msg.match(bodyLenPattern);
   assert(bodyLenMatch !== null, "no BodyLength found");
-  const claimed = Number(bodyLenMatch![1]);
+  const claimed = Number(bodyLenMatch?.[1]);
 
-  const bodyStart = msg.indexOf(`9=${claimed}${SOH}`) +
-    `9=${claimed}${SOH}`.length;
+  const bodyStart = msg.indexOf(`9=${claimed}${SOH}`) + `9=${claimed}${SOH}`.length;
   const bodyEnd = msg.lastIndexOf(`${SOH}10=`) + 1;
   const body = msg.slice(bodyStart, bodyEnd);
   const actual = new TextEncoder().encode(body).length;
@@ -89,7 +81,11 @@ Deno.test("[fix-parser] encode BodyLength matches byte count of body", () => {
 });
 
 Deno.test("[fix-parser] decode round-trips a Logon message", () => {
-  const msg = encode([[35, "A"], [98, 0], [108, 30]]);
+  const msg = encode([
+    [35, "A"],
+    [98, 0],
+    [108, 30],
+  ]);
   const tags = decode(msg);
   assertEquals(tags.get(8), "FIX.4.4");
   assertEquals(tags.get(35), "A");
@@ -98,10 +94,13 @@ Deno.test("[fix-parser] decode round-trips a Logon message", () => {
 });
 
 Deno.test("[fix-parser] decode extracts string and numeric values", () => {
-  const msg = encode([[35, "D"], [11, "clordid-999"], [55, "MSFT"], [38, 500], [
-    44,
-    123.45,
-  ]]);
+  const msg = encode([
+    [35, "D"],
+    [11, "clordid-999"],
+    [55, "MSFT"],
+    [38, 500],
+    [44, 123.45],
+  ]);
   const tags = decode(msg);
   assertEquals(tags.get(11), "clordid-999");
   assertEquals(tags.get(55), "MSFT");
@@ -122,7 +121,11 @@ Deno.test("[fix-parser] decode skips malformed fields without crashing", () => {
 });
 
 Deno.test("[fix-parser] validateChecksum returns true for a valid encoded message", () => {
-  const msg = encode([[35, "A"], [98, 0], [108, 30]]);
+  const msg = encode([
+    [35, "A"],
+    [98, 0],
+    [108, 30],
+  ]);
   assert(validateChecksum(msg), "expected valid checksum");
 });
 
@@ -165,8 +168,5 @@ Deno.test("[fix-parser] utcTimestamp has correct total length", () => {
 Deno.test("[fix-parser] utcTimestamp uses current time when called without argument", () => {
   const before = new Date().getUTCFullYear().toString();
   const ts = utcTimestamp();
-  assert(
-    ts.startsWith(before),
-    `timestamp should start with current year, got: ${ts}`,
-  );
+  assert(ts.startsWith(before), `timestamp should start with current year, got: ${ts}`);
 });

@@ -1,6 +1,6 @@
 import { test as base, expect } from "@playwright/test";
-import { DEFAULT_LIMITS, GatewayMock } from "./helpers/GatewayMock.ts";
 import { traderTest } from "./helpers/fixtures.ts";
+import { DEFAULT_LIMITS, type GatewayMock } from "./helpers/GatewayMock.ts";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 import type { OrderTicketPage } from "./helpers/pages/OrderTicketPage.ts";
 
@@ -85,15 +85,18 @@ optionsTest.describe("Option order ticket", () => {
     await ticket.expectOptionSubmitEnabled();
   });
 
-  optionsTest("submission sends WS message with instrumentType=option", async ({ ticket, gateway }) => {
-    await ticket.enterStrikeAndWaitForQuote(190);
-    const outbound = gateway.nextOutbound("submitOrder");
-    await ticket.submitOption();
-    const msg = await outbound;
-    expect(msg.payload.instrumentType).toBe("option");
-    expect((msg.payload.optionSpec as Record<string, unknown>).optionType).toBe("call");
-    expect((msg.payload.optionSpec as Record<string, unknown>).strike).toBe(190);
-  });
+  optionsTest(
+    "submission sends WS message with instrumentType=option",
+    async ({ ticket, gateway }) => {
+      await ticket.enterStrikeAndWaitForQuote(190);
+      const outbound = gateway.nextOutbound("submitOrder");
+      await ticket.submitOption();
+      const msg = await outbound;
+      expect(msg.payload.instrumentType).toBe("option");
+      expect((msg.payload.optionSpec as Record<string, unknown>).optionType).toBe("call");
+      expect((msg.payload.optionSpec as Record<string, unknown>).strike).toBe(190);
+    }
+  );
 
   optionsTest("shows rejection feedback after submission", async ({ ticket }) => {
     await ticket.enterStrikeAndWaitForQuote(190);
@@ -169,10 +172,20 @@ traderTest.describe("Order submission", () => {
     const blotter = await app.getOrderBlotter();
     await blotter.waitForStatus("queued");
 
-    gateway.sendOrderLifecycle(id, { asset: "AAPL", quantity: 100, limitPrice: AAPL_PRICE, stages: ["submitted", "routed"] });
+    gateway.sendOrderLifecycle(id, {
+      asset: "AAPL",
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+      stages: ["submitted", "routed"],
+    });
     await blotter.waitForStatus("executing");
 
-    gateway.sendOrderLifecycle(id, { asset: "AAPL", quantity: 100, limitPrice: AAPL_PRICE, stages: ["filled"] });
+    gateway.sendOrderLifecycle(id, {
+      asset: "AAPL",
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+      stages: ["filled"],
+    });
     await blotter.waitForStatus("filled");
   });
 
@@ -249,17 +262,20 @@ base.describe("Risk limit warnings", () => {
     await ticket.expectSubmitDisabled();
   });
 
-  base("notional exceeding max_daily_notional shows warning and disables submit", async ({ page }) => {
-    const app = new AppPage(page);
-    await app.goto({ user: { id: "t1", name: "Trader", role: "trader", avatar_emoji: "T" } });
-    await app.waitForDashboard();
-    app.gateway.sendAuthIdentity({ limits: { ...DEFAULT_LIMITS, max_daily_notional: 1_000 } });
-    app.gateway.sendMarketUpdate({ AAPL: AAPL_PRICE });
-    await page.waitForTimeout(400);
+  base(
+    "notional exceeding max_daily_notional shows warning and disables submit",
+    async ({ page }) => {
+      const app = new AppPage(page);
+      await app.goto({ user: { id: "t1", name: "Trader", role: "trader", avatar_emoji: "T" } });
+      await app.waitForDashboard();
+      app.gateway.sendAuthIdentity({ limits: { ...DEFAULT_LIMITS, max_daily_notional: 1_000 } });
+      app.gateway.sendMarketUpdate({ AAPL: AAPL_PRICE });
+      await page.waitForTimeout(400);
 
-    const ticket = await app.getOrderTicket();
-    await ticket.fillOrder({ quantity: 100, limitPrice: AAPL_PRICE });
-    await ticket.expectLimitWarning(/exceeds your daily limit/i);
-    await ticket.expectSubmitDisabled();
-  });
+      const ticket = await app.getOrderTicket();
+      await ticket.fillOrder({ quantity: 100, limitPrice: AAPL_PRICE });
+      await ticket.expectLimitWarning(/exceeds your daily limit/i);
+      await ticket.expectSubmitDisabled();
+    }
+  );
 });

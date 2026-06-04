@@ -1,13 +1,13 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { intelligencePool } from "@veta/db";
+import { corsOptions, json } from "@veta/http";
+import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { FeatureVector, Signal } from "@veta/types/intelligence";
-import { createWeightStore } from "./weight-store.ts";
-import { scoreFeatureVector } from "./scorer.ts";
 import { runReplay } from "./replay-server.ts";
-import { intelligencePool } from "@veta/db";
-import { json, corsOptions } from "@veta/http";
-import { logger } from "@veta/logger";
+import { scoreFeatureVector } from "./scorer.ts";
+import { createWeightStore } from "./weight-store.ts";
 
 const PORT = Number(Deno.env.get("SIGNAL_ENGINE_PORT")) || 5_018;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -20,11 +20,10 @@ const producer = await createProducer("signal-engine").catch((err) => {
   return null;
 });
 
-const consumer = await createConsumer("signal-engine", ["market.features"])
-  .catch((err) => {
-    logger.warn("Cannot subscribe to market.features", { err });
-    return null;
-  });
+const consumer = await createConsumer("signal-engine", ["market.features"]).catch((err) => {
+  logger.warn("Cannot subscribe to market.features", { err });
+  return null;
+});
 
 if (consumer) {
   consumer.onMessage(async (_topic, raw) => {
@@ -65,11 +64,11 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   if (path === "/weights" && req.method === "PUT") {
     try {
-      const body = await req.json() as Record<string, number>;
+      const body = (await req.json()) as Record<string, number>;
       const current = await weightStore.getWeights();
       const updated = { ...current };
       for (const [k, v] of Object.entries(body)) {
-        if (k in current && typeof v === "number" && isFinite(v)) {
+        if (k in current && typeof v === "number" && Number.isFinite(v)) {
           (updated as Record<string, number>)[k] = v;
         }
       }
@@ -96,7 +95,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   if (path === "/replay" && req.method === "POST") {
     let body: { symbol: string; from: number; to: number };
     try {
-      body = await req.json() as typeof body;
+      body = (await req.json()) as typeof body;
     } catch {
       return json({ error: "Invalid JSON body" }, 400);
     }

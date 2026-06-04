@@ -8,9 +8,9 @@
  * hash changes, enabling zero-downtime frontend deployments.
  */
 
-import { serveDir } from "jsr:@std/http/file-server";
 import { crypto } from "jsr:@std/crypto";
 import { encodeHex } from "jsr:@std/encoding/hex";
+import { serveDir } from "jsr:@std/http/file-server";
 
 const PORT = Number(Deno.env.get("FRONTEND_PORT") ?? 8080);
 const DIST = new URL("./frontend/dist", import.meta.url).pathname;

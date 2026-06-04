@@ -1,6 +1,6 @@
+import { TRADER_ARCHETYPE_IDS } from "@veta/trader-archetypes";
 import { z } from "@veta/zod";
 import { UserIdSchema } from "./primitives.ts";
-import { TRADER_ARCHETYPE_IDS } from "@veta/trader-archetypes";
 
 export const SessionValidateSchema = z.object({
   token: z.string().optional(),
@@ -19,14 +19,16 @@ export type LimitsUpdate = z.infer<typeof LimitsUpdateSchema>;
 export const PreferencesUpdateSchema = z.record(z.string(), z.unknown());
 export type PreferencesUpdate = z.infer<typeof PreferencesUpdateSchema>;
 
-export const SharedWorkspaceCreateSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  model: z.unknown(),
-}).refine((v) => v.model !== undefined && v.model !== null, {
-  message: "model required",
-  path: ["model"],
-});
+export const SharedWorkspaceCreateSchema = z
+  .object({
+    name: z.string().min(1),
+    description: z.string().optional(),
+    model: z.unknown(),
+  })
+  .refine((v) => v.model !== undefined && v.model !== null, {
+    message: "model required",
+    path: ["model"],
+  });
 export type SharedWorkspaceCreate = z.infer<typeof SharedWorkspaceCreateSchema>;
 
 export const AlertCreateSchema = z.object({
@@ -61,14 +63,16 @@ export const TokenRequestSchema = z.object({
 });
 export type TokenRequest = z.infer<typeof TokenRequestSchema>;
 
-export const RegisterRequestSchema = z.object({
-  username: z.string().optional(),
-  userId: UserIdSchema.optional(),
-  name: z.string().min(1),
-  password: z.string().min(8).max(200),
-  archetype: z.enum(TRADER_ARCHETYPE_IDS as [string, ...string[]]),
-}).refine((v) => Boolean(v.username || v.userId), {
-  message: "username or userId required",
-  path: ["username"],
-});
+export const RegisterRequestSchema = z
+  .object({
+    username: z.string().optional(),
+    userId: UserIdSchema.optional(),
+    name: z.string().min(1),
+    password: z.string().min(8).max(200),
+    archetype: z.enum(TRADER_ARCHETYPE_IDS as [string, ...string[]]),
+  })
+  .refine((v) => Boolean(v.username || v.userId), {
+    message: "username or userId required",
+    path: ["username"],
+  });
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;

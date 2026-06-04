@@ -9,6 +9,7 @@
  */
 
 import { spawn } from "child_process";
+import process from "node:process";
 
 const VITE_PORT = 5173;
 const VITE_URL = `http://localhost:${VITE_PORT}`;

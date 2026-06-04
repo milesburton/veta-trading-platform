@@ -15,7 +15,7 @@ export interface OrderParams {
 export class OrderTicketPage {
   constructor(
     private readonly root: Locator,
-    private readonly page?: Page,
+    private readonly page?: Page
   ) {}
 
   get container(): Locator {
@@ -53,10 +53,7 @@ export class OrderTicketPage {
     }
   }
 
-  async fillOrder(
-    { asset, side = "BUY", quantity, limitPrice, strategy = "LIMIT" }:
-      OrderParams,
-  ) {
+  async fillOrder({ asset, side = "BUY", quantity, limitPrice, strategy = "LIMIT" }: OrderParams) {
     await this.ensureOpen();
     await this.strategySelect.selectOption(strategy);
 
@@ -72,9 +69,7 @@ export class OrderTicketPage {
     }
 
     if (asset !== undefined) {
-      const assetInput = this.root.locator(
-        "input[placeholder], input[type='text']",
-      ).first();
+      const assetInput = this.root.locator("input[placeholder], input[type='text']").first();
       await assetInput.fill(asset);
       const option = this.root.getByRole("option", { name: asset }).first();
       const hasOption = await option.isVisible().catch(() => false);
@@ -155,15 +150,15 @@ export class OrderTicketPage {
   }
 
   async expectOptionRejectionFeedback(timeoutMs = 5_000) {
-    await expect(
-      this.root.getByText(/Options not supported in this simulation/i),
-    ).toBeVisible({ timeout: timeoutMs });
+    await expect(this.root.getByText(/Options not supported in this simulation/i)).toBeVisible({
+      timeout: timeoutMs,
+    });
   }
 
   async expectOptionSubmitEnabled(timeoutMs = 3_000) {
-    await expect(
-      this.root.getByRole("button", { name: /^Submit (BUY|SELL)/i }),
-    ).toBeEnabled({ timeout: timeoutMs });
+    await expect(this.root.getByRole("button", { name: /^Submit (BUY|SELL)/i })).toBeEnabled({
+      timeout: timeoutMs,
+    });
   }
 
   async expectStrategyOptionDisabled(namePattern: string | RegExp) {
@@ -173,11 +168,10 @@ export class OrderTicketPage {
   }
 
   async expectCallPressed(pressed: boolean) {
-    await expect(this.root.getByRole("button", { name: "CALL" }))
-      .toHaveAttribute(
-        "aria-pressed",
-        String(pressed),
-      );
+    await expect(this.root.getByRole("button", { name: "CALL" })).toHaveAttribute(
+      "aria-pressed",
+      String(pressed)
+    );
   }
 
   async switchToBond() {

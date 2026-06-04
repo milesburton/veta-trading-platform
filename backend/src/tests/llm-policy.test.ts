@@ -1,8 +1,4 @@
-import {
-  assert,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
-import type { LlmPolicy, LlmTriggerMode } from "../types/llm-advisory.ts";
+import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import {
   canAutoTrigger,
   canTriggerFromUi,
@@ -12,6 +8,7 @@ import {
   loadPolicy,
   meetsConvictionThreshold,
 } from "../llm-advisory/policy.ts";
+import type { LlmPolicy, LlmTriggerMode } from "../types/llm-advisory.ts";
 
 function policy(overrides: Partial<LlmPolicy> = {}): LlmPolicy {
   return {
@@ -67,7 +64,8 @@ Deno.test("[llm-policy] loadPolicy: all defaults are safe when no env vars set",
     assertEquals(policy.autoTriggerEnabled, true);
   } finally {
     for (const v of varsToDelete) {
-      if (saved[v] !== undefined) Deno.env.set(v, saved[v]!);
+      const value = saved[v];
+      if (value !== undefined) Deno.env.set(v, value);
     }
   }
 });

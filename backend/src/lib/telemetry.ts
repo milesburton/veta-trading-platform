@@ -1,6 +1,10 @@
 import { logger } from "@veta/logger";
 
-const OTEL_ENABLED = (Deno.env.get("OTEL_DENO") ?? "").toLowerCase() === "true";
+function isOtelEnabled(): boolean {
+  return (Deno.env.get("OTEL_DENO") ?? "").toLowerCase() === "true";
+}
+
+const OTEL_ENABLED_AT_IMPORT = isOtelEnabled();
 
 export function deriveServiceName(): string {
   const explicit = Deno.env.get("OTEL_SERVICE_NAME");
@@ -10,11 +14,11 @@ export function deriveServiceName(): string {
   return stripped || "veta-service";
 }
 
-if (OTEL_ENABLED && !Deno.env.get("OTEL_SERVICE_NAME")) {
+if (OTEL_ENABLED_AT_IMPORT && !Deno.env.get("OTEL_SERVICE_NAME")) {
   Deno.env.set("OTEL_SERVICE_NAME", deriveServiceName());
 }
 
-if (OTEL_ENABLED) {
+if (OTEL_ENABLED_AT_IMPORT) {
   logger.info("OTel enabled", {
     component: "telemetry",
     service: Deno.env.get("OTEL_SERVICE_NAME"),
@@ -57,7 +61,7 @@ interface MeterLike {
   createGauge(name: string, options?: { description?: string; unit?: string }): GaugeLike;
   createObservableGauge(
     name: string,
-    options?: { description?: string; unit?: string },
+    options?: { description?: string; unit?: string }
   ): ObservableLike;
 }
 
@@ -65,11 +69,42 @@ let tracerCache: TracerLike | null = null;
 let meterCache: MeterLike | null = null;
 const gaugeCache = new Map<string, GaugeLike>();
 
+interface OTelApiLike {
+  trace: { getTracer(name: string): unknown };
+  metrics: { getMeter(name: string): unknown };
+  propagation: {
+    inject(
+      context: unknown,
+      carrier: Carrier,
+      setter: { set(c: Carrier, k: string, v: unknown): void }
+    ): void;
+    extract(
+      context: unknown,
+      carrier: Record<string, unknown>,
+      getter: {
+        get(c: Record<string, unknown>, k: string): string | undefined;
+        keys(c: Record<string, unknown>): string[];
+      }
+    ): unknown;
+  };
+  context: {
+    active(): unknown;
+    with<T>(context: unknown, fn: () => Promise<T>): Promise<T>;
+  };
+}
+
+let otelApiLoader: (() => Promise<OTelApiLike>) | null = null;
+
+async function loadOtelApi(): Promise<OTelApiLike> {
+  if (otelApiLoader) return await otelApiLoader();
+  return (await import("@opentelemetry/api")) as unknown as OTelApiLike;
+}
+
 async function getTracer(): Promise<TracerLike | null> {
-  if (!OTEL_ENABLED) return null;
+  if (!isOtelEnabled()) return null;
   if (tracerCache) return tracerCache;
   try {
-    const api = await import("@opentelemetry/api");
+    const api = await loadOtelApi();
     tracerCache = api.trace.getTracer("veta") as unknown as TracerLike;
     return tracerCache;
   } catch {
@@ -78,10 +113,10 @@ async function getTracer(): Promise<TracerLike | null> {
 }
 
 async function getMeter(): Promise<MeterLike | null> {
-  if (!OTEL_ENABLED) return null;
+  if (!isOtelEnabled()) return null;
   if (meterCache) return meterCache;
   try {
-    const api = await import("@opentelemetry/api");
+    const api = await loadOtelApi();
     meterCache = api.metrics.getMeter("veta") as unknown as MeterLike;
     return meterCache;
   } catch {
@@ -96,7 +131,7 @@ interface ProcessMetricsHandle {
 let processMetricsHandle: ProcessMetricsHandle | null = null;
 
 export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null> {
-  if (!OTEL_ENABLED) return null;
+  if (!isOtelEnabled()) return null;
   if (processMetricsHandle) return processMetricsHandle;
   const meter = await getMeter();
   if (!meter) return null;
@@ -117,7 +152,7 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
     {
       description: "V8 heap total allocated by the Deno runtime",
       unit: "By",
-    },
+    }
   );
   const externalGauge = meter.createObservableGauge("process_runtime_deno_memory_external_bytes", {
     description: "Memory used by C++ objects bound to JavaScript",
@@ -173,8 +208,9 @@ export async function setupProcessMetrics(): Promise<ProcessMetricsHandle | null
 
 function readCpuTimeSeconds(): number | null {
   try {
-    const usage = (Deno as unknown as { cpuUsage?: () => { user: number; system: number } })
-      .cpuUsage?.();
+    const usage = (
+      Deno as unknown as { cpuUsage?: () => { user: number; system: number } }
+    ).cpuUsage?.();
     if (usage) return (usage.user + usage.system) / 1_000_000;
   } catch {
     /* ignore */
@@ -189,9 +225,9 @@ export async function recordGauge(
     description?: string;
     unit?: string;
     attributes?: Record<string, string | number | boolean>;
-  },
+  }
 ): Promise<void> {
-  if (!OTEL_ENABLED) return;
+  if (!isOtelEnabled()) return;
   const meter = await getMeter();
   if (!meter) return;
   let gauge = gaugeCache.get(name);
@@ -214,9 +250,9 @@ const NOOP_SPAN: SpanLike = {
 export async function withSpan<T>(
   name: string,
   fn: (span: SpanLike) => Promise<T> | T,
-  attributes?: Record<string, string | number | boolean>,
+  attributes?: Record<string, string | number | boolean>
 ): Promise<T> {
-  if (!OTEL_ENABLED) return await fn(NOOP_SPAN);
+  if (!isOtelEnabled()) return await fn(NOOP_SPAN);
 
   const tracer = await getTracer();
   if (!tracer) return await fn(NOOP_SPAN);
@@ -239,9 +275,9 @@ export async function withSpan<T>(
 type Carrier = Record<string, string | Uint8Array>;
 
 export async function injectTraceContext(carrier: Carrier): Promise<void> {
-  if (!OTEL_ENABLED) return;
+  if (!isOtelEnabled()) return;
   try {
-    const api = await import("@opentelemetry/api");
+    const api = await loadOtelApi();
     api.propagation.inject(api.context.active(), carrier, {
       set: (c: Carrier, k: string, v: unknown) => {
         c[k] = String(v);
@@ -254,11 +290,11 @@ export async function injectTraceContext(carrier: Carrier): Promise<void> {
 
 export async function withExtractedContext<T>(
   carrier: Record<string, unknown>,
-  fn: () => Promise<T>,
+  fn: () => Promise<T>
 ): Promise<T> {
-  if (!OTEL_ENABLED) return await fn();
+  if (!isOtelEnabled()) return await fn();
   try {
-    const api = await import("@opentelemetry/api");
+    const api = await loadOtelApi();
     const ctx = api.propagation.extract(api.context.active(), carrier, {
       get: (c: Record<string, unknown>, k: string) => {
         const v = c[k];
@@ -273,4 +309,22 @@ export async function withExtractedContext<T>(
   } catch {
     return await fn();
   }
+}
+
+// fallow-ignore-next-line unused-export
+export function __setOtelApiLoaderForTests(loader: (() => Promise<OTelApiLike>) | null): void {
+  otelApiLoader = loader;
+  tracerCache = null;
+  meterCache = null;
+  gaugeCache.clear();
+  processMetricsHandle = null;
+}
+
+// fallow-ignore-next-line unused-export
+export function __resetTelemetryForTests(): void {
+  otelApiLoader = null;
+  tracerCache = null;
+  meterCache = null;
+  gaugeCache.clear();
+  processMetricsHandle = null;
 }

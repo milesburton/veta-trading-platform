@@ -8,36 +8,30 @@ async function mockAuth(page: Page) {
     avatar_emoji: "👩‍💼",
   };
 
-  await page.route(
-    "/api/user-service/sessions/me",
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(user),
-      }),
+  await page.route("/api/user-service/sessions/me", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(user),
+    })
   );
 
-  await page.route(
-    "/api/user-service/sessions",
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(user),
-      }),
+  await page.route("/api/user-service/sessions", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(user),
+    })
   );
 }
 
 async function stubBackend(page: Page) {
-  await page.route(
-    "/api/**",
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: "null",
-      }),
+  await page.route("/api/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: "null",
+    })
   );
 
   await page.route("/api/gateway/ready", (route) =>
@@ -45,7 +39,8 @@ async function stubBackend(page: Page) {
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ ready: true, services: {} }),
-    }));
+    })
+  );
 
   await page.routeWebSocket("/ws/gateway", (ws) => {
     ws.onMessage(() => {});
@@ -71,7 +66,7 @@ async function dragTab(
   page: Page,
   tabLocator: ReturnType<Page["locator"]>,
   dx: number,
-  dy: number,
+  dy: number
 ) {
   const box = await tabLocator.boundingBox();
   expect(box).not.toBeNull();
@@ -83,11 +78,7 @@ async function dragTab(
   await page.mouse.down();
   const steps = 12;
   for (let i = 1; i <= steps; i++) {
-    await page.mouse.move(
-      startX + (dx * i) / steps,
-      startY + (dy * i) / steps,
-      { steps: 1 },
-    );
+    await page.mouse.move(startX + (dx * i) / steps, startY + (dy * i) / steps, { steps: 1 });
   }
   await page.mouse.up();
   await page.waitForTimeout(200);
@@ -119,13 +110,9 @@ test.describe("Dashboard panel layout (flexlayout)", () => {
       for (let j = i + 1; j < boxes.length; j++) {
         const a = boxes[i];
         const b = boxes[j];
-        const overlapX = a.x + a.w - tolerance > b.x &&
-          b.x + b.w - tolerance > a.x;
-        const overlapY = a.y + a.h - tolerance > b.y &&
-          b.y + b.h - tolerance > a.y;
-        expect(overlapX && overlapY, `Panel ${i} and panel ${j} overlap`).toBe(
-          false,
-        );
+        const overlapX = a.x + a.w - tolerance > b.x && b.x + b.w - tolerance > a.x;
+        const overlapY = a.y + a.h - tolerance > b.y && b.y + b.h - tolerance > a.y;
+        expect(overlapX && overlapY, `Panel ${i} and panel ${j} overlap`).toBe(false);
       }
     }
   });
@@ -148,10 +135,12 @@ test.describe("Dashboard panel layout (flexlayout)", () => {
       const after = await pane.boundingBox();
       if (!after) continue;
 
-      expect(Math.abs(after.x - before.x), `panel ${i} x changed after click`)
-        .toBeLessThanOrEqual(3);
-      expect(Math.abs(after.y - before.y), `panel ${i} y changed after click`)
-        .toBeLessThanOrEqual(3);
+      expect(Math.abs(after.x - before.x), `panel ${i} x changed after click`).toBeLessThanOrEqual(
+        3
+      );
+      expect(Math.abs(after.y - before.y), `panel ${i} y changed after click`).toBeLessThanOrEqual(
+        3
+      );
     }
   });
 
@@ -207,13 +196,13 @@ test.describe("Dashboard panel layout (flexlayout)", () => {
 
     await page.mouse.move(
       splitterBox.x + splitterBox.width / 2,
-      splitterBox.y + splitterBox.height / 2,
+      splitterBox.y + splitterBox.height / 2
     );
     await page.mouse.down();
     await page.mouse.move(
       splitterBox.x + splitterBox.width / 2 + 60,
       splitterBox.y + splitterBox.height / 2,
-      { steps: 8 },
+      { steps: 8 }
     );
     await page.mouse.up();
     await page.waitForTimeout(200);

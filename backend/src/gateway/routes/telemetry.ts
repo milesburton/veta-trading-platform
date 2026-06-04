@@ -31,10 +31,9 @@ function jsonResponse(body: unknown, status: number): Response {
 
 const REQUIRED_FIELDS = ["jsHeapSizeUsed", "totalJSHeapSize", "jsHeapSizeLimit"] as const;
 
-function isValidSamplePayload(body: unknown): body is Pick<
-  FrontendMemorySample,
-  (typeof REQUIRED_FIELDS)[number]
-> {
+function isValidSamplePayload(
+  body: unknown
+): body is Pick<FrontendMemorySample, (typeof REQUIRED_FIELDS)[number]> {
   const s = body as Record<string, unknown> | null;
   return Boolean(s) && REQUIRED_FIELDS.every((f) => typeof s?.[f] === "number");
 }
@@ -84,7 +83,7 @@ function handleGet(role: string): Response {
 
 type HandlerForMethod = (
   req: Request,
-  user: { id: string; role: string },
+  user: { id: string; role: string }
 ) => Promise<Response> | Response;
 
 const METHOD_HANDLERS: Record<string, HandlerForMethod | undefined> = {
@@ -96,7 +95,7 @@ const METHOD_HANDLERS: Record<string, HandlerForMethod | undefined> = {
 export async function handleTelemetryRoute(
   req: Request,
   path: string,
-  context: GatewayContext,
+  context: GatewayContext
 ): Promise<Response | null> {
   if (path !== "/telemetry/frontend") return null;
   const authResult = await context.requireAuth(req);

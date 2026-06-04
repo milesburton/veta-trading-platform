@@ -27,7 +27,7 @@ function flush() {
 }
 
 if (typeof window !== "undefined") {
-  window.addEventListener("beforeunload", flush);
+  globalThis.addEventListener("beforeunload", flush);
 }
 
 export const errorTransportMiddleware: Middleware = () => (next) => (action) => {

@@ -1,5 +1,5 @@
-import type { MsgProducer } from "@veta/messaging";
 import { logger } from "@veta/logger";
+import type { MsgProducer } from "@veta/messaging";
 
 export interface LoadAgentConfig {
   ratePerSecond: number;
@@ -25,7 +25,13 @@ export interface LoadAgentStatus {
 export interface LoadAgentDeps {
   producer: MsgProducer;
   refPriceFor: (symbol: string) => number;
-  publishAccessEvent: (e: { action: string; userId: string; userRole: string; path: string; reason?: string }) => void;
+  publishAccessEvent: (e: {
+    action: string;
+    userId: string;
+    userRole: string;
+    path: string;
+    reason?: string;
+  }) => void;
 }
 
 const DEFAULT_AUTO_STOP_MS = 60 * 60 * 1000;
@@ -46,8 +52,16 @@ export const DEFAULT_STRATEGY_MIX: ReadonlyArray<{ strategy: string; weight: num
 ];
 
 export const DEFAULT_EQUITY_SYMBOLS = [
-  "AAPL", "MSFT", "GOOGL", "AMZN", "META",
-  "NVDA", "TSLA", "JPM", "V", "WMT",
+  "AAPL",
+  "MSFT",
+  "GOOGL",
+  "AMZN",
+  "META",
+  "NVDA",
+  "TSLA",
+  "JPM",
+  "V",
+  "WMT",
 ] as const;
 
 const DEFAULT_USER_IDS = ["alice", "amelia", "bob", "dave"] as const;
@@ -72,7 +86,10 @@ export class LoadAgent {
     this.#deps = deps;
   }
 
-  start(partial: Partial<LoadAgentConfig>, actor: { userId: string; role: string }): LoadAgentStatus {
+  start(
+    partial: Partial<LoadAgentConfig>,
+    actor: { userId: string; role: string }
+  ): LoadAgentStatus {
     if (this.#status.running) {
       throw new Error("load-agent: already running; stop before starting again");
     }
@@ -94,7 +111,7 @@ export class LoadAgent {
     this.#intervalId = setInterval(() => this.#tick(), TICK_INTERVAL_MS);
     this.#autoStopId = setTimeout(
       () => this.stop(actor, "auto-stop deadline reached"),
-      config.autoStopAfterMs,
+      config.autoStopAfterMs
     );
 
     this.#deps.publishAccessEvent({
@@ -148,7 +165,7 @@ export class LoadAgent {
     const autoStopAfterMs = clamp(
       partial.autoStopAfterMs ?? DEFAULT_AUTO_STOP_MS,
       60_000,
-      MAX_AUTO_STOP_MS,
+      MAX_AUTO_STOP_MS
     );
     const sizeMin = Math.max(1, partial.sizeMin ?? 100);
     const sizeMax = Math.max(sizeMin, partial.sizeMax ?? 5_000);
@@ -177,10 +194,12 @@ export class LoadAgent {
     }
 
     await Promise.all(
-      Array.from({ length: total }, () => this.#emitOrder(cfg).catch((err) => {
-        this.#status.ordersFailed += 1;
-        this.#status.lastError = err instanceof Error ? err.message : String(err);
-      })),
+      Array.from({ length: total }, () =>
+        this.#emitOrder(cfg).catch((err) => {
+          this.#status.ordersFailed += 1;
+          this.#status.lastError = err instanceof Error ? err.message : String(err);
+        })
+      )
     );
     this.#status.lastTickAt = Date.now();
   }
@@ -191,9 +210,8 @@ export class LoadAgent {
     const userId = cfg.userIds[this.#orderCounter % cfg.userIds.length];
     const side = this.#orderCounter % 2 === 0 ? "BUY" : "SELL";
     const refPrice = this.#deps.refPriceFor(symbol);
-    const limitPrice = side === "BUY"
-      ? Number((refPrice * 1.02).toFixed(2))
-      : Number((refPrice * 0.98).toFixed(2));
+    const limitPrice =
+      side === "BUY" ? Number((refPrice * 1.02).toFixed(2)) : Number((refPrice * 0.98).toFixed(2));
     const quantity = randomInt(cfg.sizeMin, cfg.sizeMax);
     const clientOrderId = `loadgen-${this.#status.startedAt}-${this.#orderCounter}`;
     this.#orderCounter += 1;
@@ -232,7 +250,7 @@ function pickWeighted(items: ReadonlyArray<{ strategy: string; weight: number }>
       const next = state.acc + item.weight;
       return next >= roll ? { acc: next, pick: item.strategy } : { acc: next, pick: null };
     },
-    { acc: 0, pick: null },
+    { acc: 0, pick: null }
   );
   return result.pick ?? items[0].strategy;
 }

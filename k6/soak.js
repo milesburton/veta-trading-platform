@@ -1,5 +1,5 @@
-import http from "k6/http";
 import { check } from "k6";
+import http from "k6/http";
 import { Rate, Trend } from "k6/metrics";
 
 const BASE_URL = __ENV.BASE_URL || "http://gateway:5011";
@@ -36,17 +36,13 @@ export function setup() {
 export default function (data) {
   const strategy = STRATEGIES[Math.floor(Math.random() * STRATEGIES.length)];
   const t0 = Date.now();
-  const res = http.post(
-    `${BASE_URL}/load-test`,
-    JSON.stringify({ orderCount: 1, strategy }),
-    {
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: `veta_user=${data.token}`,
-      },
-      tags: { endpoint: "load-test", strategy },
+  const res = http.post(`${BASE_URL}/load-test`, JSON.stringify({ orderCount: 1, strategy }), {
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: `veta_user=${data.token}`,
     },
-  );
+    tags: { endpoint: "load-test", strategy },
+  });
   submitDuration.add(Date.now() - t0);
   submitOk.add(check(res, { "submit accepted (202)": (r) => r.status === 202 }));
 }
@@ -90,7 +86,7 @@ export function handleSummary(data) {
   };
 
   return {
-    stdout: JSON.stringify(summary, null, 2) + "\n",
+    stdout: `${JSON.stringify(summary, null, 2)}\n`,
     [`/output/${date}-${RUN_LABEL}.json`]: JSON.stringify(summary, null, 2),
   };
 }

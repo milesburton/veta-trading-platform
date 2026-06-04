@@ -6,7 +6,13 @@ algoTest.setTimeout(60_000);
 const AAPL_PRICE = PRICES.AAPL;
 
 const ALL_STRATEGIES = [
-  "LIMIT", "TWAP", "POV", "VWAP", "ICEBERG", "SNIPER", "ARRIVAL_PRICE",
+  "LIMIT",
+  "TWAP",
+  "POV",
+  "VWAP",
+  "ICEBERG",
+  "SNIPER",
+  "ARRIVAL_PRICE",
 ] as const;
 
 algoTest.describe("Algo order appears in blotter", () => {
@@ -14,8 +20,12 @@ algoTest.describe("Algo order appears in blotter", () => {
     algoTest(`${strategy}: injected order appears`, async ({ app, gateway }) => {
       const blotter = await app.getOrderBlotter();
       gateway.injectOrder({
-        asset: "AAPL", side: "BUY", quantity: 50,
-        limitPrice: AAPL_PRICE, strategy, status: "queued",
+        asset: "AAPL",
+        side: "BUY",
+        quantity: 50,
+        limitPrice: AAPL_PRICE,
+        strategy,
+        status: "queued",
       });
       await expect(blotter.orderRows()).toHaveCount(1, { timeout: 8_000 });
       await blotter.waitForStatus("queued");
@@ -27,35 +37,63 @@ algoTest.describe("LIMIT order lifecycle", () => {
   algoTest("BUY: queued → executing → filled", async ({ app, gateway }) => {
     const blotter = await app.getOrderBlotter();
     const id = gateway.injectOrder({
-      asset: "AAPL", side: "BUY", quantity: 50,
-      limitPrice: AAPL_PRICE, strategy: "LIMIT", status: "queued",
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 50,
+      limitPrice: AAPL_PRICE,
+      strategy: "LIMIT",
+      status: "queued",
     });
     await blotter.waitForStatus("queued");
 
-    gateway.sendOrderLifecycle(id, { asset: "AAPL", quantity: 50, limitPrice: AAPL_PRICE, stages: ["submitted", "routed"] });
+    gateway.sendOrderLifecycle(id, {
+      asset: "AAPL",
+      quantity: 50,
+      limitPrice: AAPL_PRICE,
+      stages: ["submitted", "routed"],
+    });
     await blotter.waitForStatus("executing");
 
-    gateway.sendOrderLifecycle(id, { asset: "AAPL", quantity: 50, limitPrice: AAPL_PRICE, stages: ["filled"] });
+    gateway.sendOrderLifecycle(id, {
+      asset: "AAPL",
+      quantity: 50,
+      limitPrice: AAPL_PRICE,
+      stages: ["filled"],
+    });
     await blotter.waitForStatus("filled");
   });
 
   algoTest("SELL: queued → filled", async ({ app, gateway }) => {
     const blotter = await app.getOrderBlotter();
     const id = gateway.injectOrder({
-      asset: "AAPL", side: "SELL", quantity: 30,
-      limitPrice: AAPL_PRICE, strategy: "LIMIT", status: "queued",
+      asset: "AAPL",
+      side: "SELL",
+      quantity: 30,
+      limitPrice: AAPL_PRICE,
+      strategy: "LIMIT",
+      status: "queued",
     });
     await blotter.waitForStatus("queued");
 
-    gateway.sendOrderLifecycle(id, { asset: "AAPL", side: "SELL", quantity: 30, limitPrice: AAPL_PRICE, stages: ["submitted", "routed", "filled"] });
+    gateway.sendOrderLifecycle(id, {
+      asset: "AAPL",
+      side: "SELL",
+      quantity: 30,
+      limitPrice: AAPL_PRICE,
+      stages: ["submitted", "routed", "filled"],
+    });
     await blotter.waitForStatus("filled");
   });
 
   algoTest("gateway rejection → rejected", async ({ app, gateway }) => {
     const blotter = await app.getOrderBlotter();
     const id = gateway.injectOrder({
-      asset: "AAPL", side: "BUY", quantity: 50,
-      limitPrice: AAPL_PRICE, strategy: "LIMIT", status: "queued",
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 50,
+      limitPrice: AAPL_PRICE,
+      strategy: "LIMIT",
+      status: "queued",
     });
     gateway.sendOrderRejected(id, "Position limit breached");
     await blotter.waitForStatus("rejected");
@@ -64,8 +102,12 @@ algoTest.describe("LIMIT order lifecycle", () => {
   algoTest("bus-level rejection → rejected", async ({ app, gateway }) => {
     const blotter = await app.getOrderBlotter();
     const id = gateway.injectOrder({
-      asset: "AAPL", side: "BUY", quantity: 50,
-      limitPrice: AAPL_PRICE, strategy: "LIMIT", status: "queued",
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 50,
+      limitPrice: AAPL_PRICE,
+      strategy: "LIMIT",
+      status: "queued",
     });
     gateway.sendOrderLifecycle(id, { stages: ["rejected"] });
     await blotter.waitForStatus("rejected");
@@ -74,8 +116,12 @@ algoTest.describe("LIMIT order lifecycle", () => {
   algoTest("expired → expired badge", async ({ app, gateway }) => {
     const blotter = await app.getOrderBlotter();
     const id = gateway.injectOrder({
-      asset: "AAPL", side: "BUY", quantity: 50,
-      limitPrice: AAPL_PRICE, strategy: "LIMIT", status: "queued",
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 50,
+      limitPrice: AAPL_PRICE,
+      strategy: "LIMIT",
+      status: "queued",
     });
     gateway.sendOrderLifecycle(id, { stages: ["submitted", "expired"] });
     await blotter.waitForStatus("expired");
@@ -86,15 +132,29 @@ function strategyLifecycleTests(strategy: string) {
   algoTest(`${strategy} BUY: queued → executing → filled`, async ({ app, gateway }) => {
     const blotter = await app.getOrderBlotter();
     const id = gateway.injectOrder({
-      asset: "AAPL", side: "BUY", quantity: 100,
-      limitPrice: AAPL_PRICE, strategy, status: "queued",
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+      strategy,
+      status: "queued",
     });
     await blotter.waitForStatus("queued");
 
-    gateway.sendOrderLifecycle(id, { asset: "AAPL", quantity: 100, limitPrice: AAPL_PRICE, stages: ["submitted", "routed"] });
+    gateway.sendOrderLifecycle(id, {
+      asset: "AAPL",
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+      stages: ["submitted", "routed"],
+    });
     await blotter.waitForStatus("executing");
 
-    gateway.sendOrderLifecycle(id, { asset: "AAPL", quantity: 100, limitPrice: AAPL_PRICE, stages: ["filled"] });
+    gateway.sendOrderLifecycle(id, {
+      asset: "AAPL",
+      quantity: 100,
+      limitPrice: AAPL_PRICE,
+      stages: ["filled"],
+    });
     await blotter.waitForStatus("filled");
   });
 }
@@ -110,8 +170,12 @@ algoTest.describe("Direct status injection", () => {
   algoTest("injected rejected order shows rejected badge", async ({ app, gateway }) => {
     const blotter = await app.getOrderBlotter();
     gateway.injectOrder({
-      asset: "AAPL", side: "BUY", quantity: 50,
-      limitPrice: AAPL_PRICE, strategy: "LIMIT", status: "rejected",
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 50,
+      limitPrice: AAPL_PRICE,
+      strategy: "LIMIT",
+      status: "rejected",
     });
     await blotter.waitForStatus("rejected");
   });
@@ -119,8 +183,12 @@ algoTest.describe("Direct status injection", () => {
   algoTest("injected expired order shows expired badge", async ({ app, gateway }) => {
     const blotter = await app.getOrderBlotter();
     gateway.injectOrder({
-      asset: "AAPL", side: "BUY", quantity: 50,
-      limitPrice: AAPL_PRICE, strategy: "LIMIT", status: "expired",
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 50,
+      limitPrice: AAPL_PRICE,
+      strategy: "LIMIT",
+      status: "expired",
     });
     await blotter.waitForStatus("expired");
   });
@@ -128,8 +196,12 @@ algoTest.describe("Direct status injection", () => {
   algoTest("injected filled order shows filled badge", async ({ app, gateway }) => {
     const blotter = await app.getOrderBlotter();
     gateway.injectOrder({
-      asset: "AAPL", side: "BUY", quantity: 50,
-      limitPrice: AAPL_PRICE, strategy: "LIMIT", status: "filled",
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 50,
+      limitPrice: AAPL_PRICE,
+      strategy: "LIMIT",
+      status: "filled",
     });
     await blotter.waitForStatus("filled");
   });
@@ -138,9 +210,30 @@ algoTest.describe("Direct status injection", () => {
 algoTest.describe("Multi-strategy blotter", () => {
   algoTest("shows orders from multiple strategies concurrently", async ({ app, gateway }) => {
     const blotter = await app.getOrderBlotter();
-    gateway.injectOrder({ asset: "AAPL", side: "BUY", quantity: 50, limitPrice: AAPL_PRICE, strategy: "LIMIT", status: "queued" });
-    gateway.injectOrder({ asset: "MSFT", side: "SELL", quantity: 100, limitPrice: 421, strategy: "TWAP", status: "executing" });
-    gateway.injectOrder({ asset: "GOOGL", side: "BUY", quantity: 200, limitPrice: 175, strategy: "VWAP", status: "filled" });
+    gateway.injectOrder({
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 50,
+      limitPrice: AAPL_PRICE,
+      strategy: "LIMIT",
+      status: "queued",
+    });
+    gateway.injectOrder({
+      asset: "MSFT",
+      side: "SELL",
+      quantity: 100,
+      limitPrice: 421,
+      strategy: "TWAP",
+      status: "executing",
+    });
+    gateway.injectOrder({
+      asset: "GOOGL",
+      side: "BUY",
+      quantity: 200,
+      limitPrice: 175,
+      strategy: "VWAP",
+      status: "filled",
+    });
 
     await expect(blotter.orderRows()).toHaveCount(3, { timeout: 8_000 });
   });

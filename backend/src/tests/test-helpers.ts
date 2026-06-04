@@ -1,7 +1,5 @@
-import {
-  assert,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
+import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import type { GatewayContext } from "../gateway/context.ts";
 
 const BASE = Deno.env.get("VETA_BASE_URL") ?? "http://localhost";
 
@@ -10,20 +8,81 @@ function svcUrl(localPort: number, prodPath: string): string {
   return `${BASE}${prodPath}`;
 }
 
-export const GATEWAY_URL    = svcUrl(5011, "/api/gateway");
-export const JOURNAL_URL    = svcUrl(5009, "/api/journal");
-export const OBS_URL        = svcUrl(5007, "/api/observability");
-export const USER_SVC_URL   = svcUrl(5008, "/api/user-service");
-export const ARCHIVE_URL    = svcUrl(5012, "/api/fix-archive");
-const OAUTH_CLIENT_ID       = "veta-automation";
-const OAUTH_REDIRECT_URI    = "postmessage";
-const OAUTH_PASSWORD        = Deno.env.get("OAUTH2_SHARED_SECRET") ?? "veta-dev-passcode";
+export const GATEWAY_URL = svcUrl(5011, "/api/gateway");
+export const JOURNAL_URL = svcUrl(5009, "/api/journal");
+export const OBS_URL = svcUrl(5007, "/api/observability");
+export const USER_SVC_URL = svcUrl(5008, "/api/user-service");
+export const ARCHIVE_URL = svcUrl(5012, "/api/fix-archive");
+const OAUTH_CLIENT_ID = "veta-automation";
+const OAUTH_REDIRECT_URI = "postmessage";
+const OAUTH_PASSWORD = Deno.env.get("OAUTH2_SHARED_SECRET") ?? "veta-dev-passcode";
 
-export const GATEWAY_WS_URL = BASE === "http://localhost"
-  ? "ws://localhost:5011/ws"
-  : BASE.replace(/^http/, "ws") + "/ws/gateway";
+export const GATEWAY_WS_URL =
+  BASE === "http://localhost"
+    ? "ws://localhost:5011/ws"
+    : `${BASE.replace(/^http/, "ws")}/ws/gateway`;
 
-export function timeout(ms = 10_000) { return AbortSignal.timeout(ms); }
+export function timeout(ms = 10_000) {
+  return AbortSignal.timeout(ms);
+}
+
+// fallow-ignore-next-line unused-export
+export function makeAsyncConnect<TClient>(factory: () => TClient): () => Promise<TClient> {
+  return async () => factory();
+}
+
+// fallow-ignore-next-line unused-export, complexity
+export function makeGatewayAuthContext(options: {
+  role?: string;
+  name?: string;
+  includeLimits?: boolean;
+  includeUserServiceUrl?: boolean;
+} = {}): GatewayContext {
+  const role = options.role ?? "trader";
+  const name = options.name ?? "Test User";
+
+  const authUser = {
+    id: "u-1",
+    name,
+    role,
+    avatar_emoji: "🧪",
+  };
+
+  const payload: Record<string, unknown> = { user: authUser };
+  if (options.includeLimits) {
+    payload.limits = {
+      max_order_qty: 100,
+      max_daily_notional: 1_000_000,
+      allowed_strategies: [],
+    };
+  }
+
+  const ctx: Record<string, unknown> = {
+    requireAuth: (_req: Request) => Promise.resolve(payload),
+  };
+
+  if (options.includeUserServiceUrl) {
+    ctx.urls = { userService: "http://user-service.example" };
+  }
+
+  return ctx as unknown as GatewayContext;
+}
+
+// fallow-ignore-next-line unused-export
+export function makeGatewayUnauthContext(options: {
+  includeUserServiceUrl?: boolean;
+} = {}): GatewayContext {
+  const ctx: Record<string, unknown> = {
+    requireAuth: (_req: Request) =>
+      Promise.resolve(new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })),
+  };
+
+  if (options.includeUserServiceUrl) {
+    ctx.urls = { userService: "http://user-service.example" };
+  }
+
+  return ctx as unknown as GatewayContext;
+}
 
 async function createPkcePair(): Promise<{ verifier: string; challenge: string }> {
   const verifier = `veta-test-${crypto.randomUUID()}`;
@@ -54,7 +113,7 @@ export async function loginAs(userId: string): Promise<string> {
     signal: timeout(),
   });
   assertEquals(authorizeRes.status, 200, `OAuth authorize as ${userId} failed`);
-  const { code } = await authorizeRes.json() as { code: string };
+  const { code } = (await authorizeRes.json()) as { code: string };
 
   const tokenRes = await fetch(`${USER_SVC_URL}/oauth/token`, {
     method: "POST",
@@ -90,7 +149,9 @@ export async function loginAsVerified(userId: string, maxAttempts = 3): Promise<
     let token: string;
     try {
       token = await loginAs(userId);
-    } catch { continue; /* transient network error — retry */ }
+    } catch {
+      continue; /* transient network error — retry */
+    }
     lastToken = token;
     // Quick probe: can gateway validate this token via HTTP?
     // Uses /me (no downstream proxy) to warm the authCache reliably.
@@ -101,7 +162,9 @@ export async function loginAsVerified(userId: string, maxAttempts = 3): Promise<
       });
       await res.body?.cancel();
       if (res.ok) return token;
-    } catch { /* retry */ }
+    } catch {
+      /* retry */
+    }
   }
   return lastToken; // best effort after all attempts
 }
@@ -128,16 +191,21 @@ export async function submitOrderViaWs(
     algoParams?: Record<string, unknown>;
     expiresAt?: number;
   },
-  timeoutMs = 20_000,
+  timeoutMs = 20_000
 ): Promise<WsOrderResponse & { clientOrderId: string }> {
   const clientOrderId = `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const ws = new WebSocket(GATEWAY_WS_URL);
-  const closed = new Promise<void>((r) => { ws.onclose = () => r(); });
+  const closed = new Promise<void>((r) => {
+    ws.onclose = () => r();
+  });
 
   let response: WsOrderResponse | null = null;
   try {
     response = await new Promise<WsOrderResponse>((resolve, reject) => {
-      const timer = setTimeout(() => { ws.close(); reject(new Error("WS timeout")); }, timeoutMs);
+      const timer = setTimeout(() => {
+        ws.close();
+        reject(new Error("WS timeout"));
+      }, timeoutMs);
 
       ws.onopen = () => {
         ws.send(JSON.stringify({ type: "authenticate", payload: { token } }));
@@ -146,20 +214,22 @@ export async function submitOrderViaWs(
       ws.onmessage = (ev) => {
         const msg = JSON.parse(ev.data as string) as WsOrderResponse;
         if (msg.event === "authIdentity") {
-          ws.send(JSON.stringify({
-            type: "submitOrder",
-            payload: {
-              clientOrderId,
-              asset: order.asset,
-              side: order.side,
-              quantity: order.quantity,
-              limitPrice: order.limitPrice,
-              expiresAt: order.expiresAt ?? 60,
-              strategy: order.strategy ?? "LIMIT",
-              instrumentType: order.instrumentType,
-              algoParams: order.algoParams ?? { strategy: order.strategy ?? "LIMIT" },
-            },
-          }));
+          ws.send(
+            JSON.stringify({
+              type: "submitOrder",
+              payload: {
+                clientOrderId,
+                asset: order.asset,
+                side: order.side,
+                quantity: order.quantity,
+                limitPrice: order.limitPrice,
+                expiresAt: order.expiresAt ?? 60,
+                strategy: order.strategy ?? "LIMIT",
+                instrumentType: order.instrumentType,
+                algoParams: order.algoParams ?? { strategy: order.strategy ?? "LIMIT" },
+              },
+            })
+          );
         }
         if (msg.event === "orderAck" || msg.event === "orderRejected" || msg.event === "error") {
           clearTimeout(timer);
@@ -169,15 +239,24 @@ export async function submitOrderViaWs(
         if (msg.event === "authError") {
           clearTimeout(timer);
           ws.close();
-          reject(new Error(`authError:${JSON.stringify((msg as unknown as Record<string, unknown>).data ?? msg)}`));
+          reject(
+            new Error(
+              `authError:${JSON.stringify((msg as unknown as Record<string, unknown>).data ?? msg)}`
+            )
+          );
         }
       };
-      ws.onerror = () => { clearTimeout(timer); ws.close(); reject(new Error("WS error")); };
+      ws.onerror = () => {
+        clearTimeout(timer);
+        ws.close();
+        reject(new Error("WS error"));
+      };
     });
   } finally {
     await closed;
   }
-  return { ...response!, clientOrderId };
+  if (!response) throw new Error("expected websocket response");
+  return { ...response, clientOrderId };
 }
 
 /**
@@ -196,7 +275,7 @@ export async function submitOrderWithRetry(
     algoParams?: Record<string, unknown>;
     expiresAt?: number;
   },
-  maxRetries = 5,
+  maxRetries = 5
 ): Promise<WsOrderResponse & { clientOrderId: string }> {
   let lastErr: Error | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {

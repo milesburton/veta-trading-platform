@@ -28,10 +28,7 @@ import {
 import { AppPage } from "./helpers/pages/AppPage.ts";
 import { findErrorMarkers } from "./helpers/screenshotGuard.ts";
 
-const REPORT_DIR = path.resolve(
-  fileURLToPath(import.meta.url),
-  "../../../docs/panel-walkthrough",
-);
+const REPORT_DIR = path.resolve(fileURLToPath(import.meta.url), "../../../docs/panel-walkthrough");
 
 // Mirror PANEL_IDS from frontend/src/components/dashboard/panelRegistry.ts.
 // Kept inline (rather than importing) so the spec doesn't need to wire up
@@ -125,16 +122,13 @@ test.afterAll(() => {
     skipped: merged.filter((v) => !v.rendered && v.notes).length,
     panels: merged,
   };
-  fs.writeFileSync(
-    path.join(REPORT_DIR, "report.json"),
-    `${JSON.stringify(summary, null, 2)}\n`,
-  );
+  fs.writeFileSync(path.join(REPORT_DIR, "report.json"), `${JSON.stringify(summary, null, 2)}\n`);
   // biome-ignore lint/suspicious/noConsole: informational test summary
   console.log(
     `[panel-walkthrough] ${summary.rendered}/${summary.totalPanels} rendered, ` +
       `${summary.withConsoleErrors} with console errors, ` +
       `${summary.withPageErrors} with page errors, ` +
-      `${summary.skipped} skipped. Report: ${REPORT_DIR}/report.json`,
+      `${summary.skipped} skipped. Report: ${REPORT_DIR}/report.json`
   );
 });
 
@@ -156,7 +150,7 @@ async function walkPanels(
   // walkthrough doesn't need this. Trader/sales/external-client panels
   // are gated on trading_style or role, so the identity (with limits)
   // must be re-sent before the picker is opened.
-  reapplyAuth?: () => void,
+  reapplyAuth?: () => void
 ): Promise<void> {
   for (const panelId of panelIds) {
     consoleErrors.length = 0;
@@ -508,14 +502,8 @@ test.describe("panel walkthrough", () => {
     await page.waitForTimeout(500);
 
     const before = verdicts.length;
-    await walkPanels(
-      app,
-      page,
-      "trader",
-      TRADER_ONLY_PANELS,
-      consoleErrors,
-      pageErrors,
-      () => app.gateway.sendAuthIdentity({}),
+    await walkPanels(app, page, "trader", TRADER_ONLY_PANELS, consoleErrors, pageErrors, () =>
+      app.gateway.sendAuthIdentity({})
     );
     expect(verdicts.length).toBe(before + TRADER_ONLY_PANELS.length);
   });
@@ -536,14 +524,8 @@ test.describe("panel walkthrough", () => {
     await page.waitForTimeout(500);
 
     const before = verdicts.length;
-    await walkPanels(
-      app,
-      page,
-      "sales",
-      SALES_ONLY_PANELS,
-      consoleErrors,
-      pageErrors,
-      () => app.gateway.sendAuthIdentity({ user: SALES_USER, limits: SALES_LIMITS }),
+    await walkPanels(app, page, "sales", SALES_ONLY_PANELS, consoleErrors, pageErrors, () =>
+      app.gateway.sendAuthIdentity({ user: SALES_USER, limits: SALES_LIMITS })
     );
     expect(verdicts.length).toBe(before + SALES_ONLY_PANELS.length);
   });
@@ -575,7 +557,7 @@ test.describe("panel walkthrough", () => {
         app.gateway.sendAuthIdentity({
           user: EXTERNAL_CLIENT_USER,
           limits: EXTERNAL_CLIENT_LIMITS,
-        }),
+        })
     );
     expect(verdicts.length).toBe(before + EXTERNAL_CLIENT_ONLY_PANELS.length);
   });
@@ -601,7 +583,7 @@ test.describe("panel walkthrough", () => {
       const lines = broken.map((v) => `  ${v.panelId}: ${(v.errorMarkers ?? []).join(", ")}`);
       throw new Error(
         `${broken.length} panel(s) captured in an errored state. ` +
-          `Refusing to publish screenshots.\n${lines.join("\n")}`,
+          `Refusing to publish screenshots.\n${lines.join("\n")}`
       );
     }
   });

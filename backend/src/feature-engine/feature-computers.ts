@@ -28,26 +28,22 @@ export function computeRealisedVol(closes: number[]): number {
   }
   if (logReturns.length < 2) return 0;
   const mean = logReturns.reduce((a, b) => a + b, 0) / logReturns.length;
-  const variance = logReturns.reduce((a, b) => a + (b - mean) ** 2, 0) /
-    (logReturns.length - 1);
+  const variance = logReturns.reduce((a, b) => a + (b - mean) ** 2, 0) / (logReturns.length - 1);
   return Math.sqrt(variance) * Math.sqrt(252 * 390);
 }
 
 export function computeSectorRelativeStrength(
   symbolPriceHistory: number[],
-  sectorPriceHistories: number[][],
+  sectorPriceHistories: number[][]
 ): number {
   if (symbolPriceHistory.length < 20) return 0;
 
   const symbolReturn = computeMomentum(symbolPriceHistory);
-  const sectorReturns = sectorPriceHistories
-    .filter((h) => h.length >= 20)
-    .map(computeMomentum);
+  const sectorReturns = sectorPriceHistories.filter((h) => h.length >= 20).map(computeMomentum);
 
   if (sectorReturns.length === 0) return symbolReturn;
 
-  const sectorAvg = sectorReturns.reduce((a, b) => a + b, 0) /
-    sectorReturns.length;
+  const sectorAvg = sectorReturns.reduce((a, b) => a + b, 0) / sectorReturns.length;
   return symbolReturn - sectorAvg;
 }
 
@@ -60,7 +56,7 @@ const EVENT_IMPACT_WEIGHTS: Record<MarketAdapterEvent["impact"], number> = {
 export function computeEventScore(
   symbol: string,
   upcomingEvents: MarketAdapterEvent[],
-  windowMs = 7 * 24 * 60 * 60 * 1000,
+  windowMs = 7 * 24 * 60 * 60 * 1000
 ): number {
   const now = Date.now();
   const cutoff = now + windowMs;
@@ -82,23 +78,20 @@ export function computeEventScore(
 export function computeNewsVelocity(
   symbol: string,
   recentNews: NewsEvent[],
-  windowMs = 60_000,
+  windowMs = 60_000
 ): number {
   const cutoff = Date.now() - windowMs;
-  return recentNews.filter((n) => n.ts >= cutoff && n.tickers.includes(symbol))
-    .length;
+  return recentNews.filter((n) => n.ts >= cutoff && n.tickers.includes(symbol)).length;
 }
 
 export function computeSentimentDelta(
   symbol: string,
   recentNews: NewsEvent[],
-  windowMs = 60_000,
+  windowMs = 60_000
 ): number {
   const now = Date.now();
   const cutoff = now - windowMs;
-  const relevant = recentNews.filter((n) =>
-    n.ts >= cutoff && n.tickers.includes(symbol)
-  );
+  const relevant = recentNews.filter((n) => n.ts >= cutoff && n.tickers.includes(symbol));
 
   if (relevant.length < 2) return 0;
 
@@ -108,10 +101,8 @@ export function computeSentimentDelta(
 
   if (newer.length === 0 || older.length === 0) return 0;
 
-  const newerAvg = newer.reduce((a, n) => a + n.sentimentScore, 0) /
-    newer.length;
-  const olderAvg = older.reduce((a, n) => a + n.sentimentScore, 0) /
-    older.length;
+  const newerAvg = newer.reduce((a, n) => a + n.sentimentScore, 0) / newer.length;
+  const olderAvg = older.reduce((a, n) => a + n.sentimentScore, 0) / older.length;
 
   return newerAvg - olderAvg;
 }

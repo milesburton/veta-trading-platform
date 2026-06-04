@@ -71,7 +71,7 @@ describe("ConnectionLostBanner", () => {
 
   it("triggers window.location.reload when Reload page clicked", () => {
     const reloadMock = vi.fn();
-    const original = window.location;
+    const original = globalThis.location;
     Object.defineProperty(window, "location", {
       configurable: true,
       value: { ...original, reload: reloadMock },

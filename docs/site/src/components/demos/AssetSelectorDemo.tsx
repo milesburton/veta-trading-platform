@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { AssetSelector } from "@veta/frontend/components/AssetSelector";
+import { useState } from "react";
 
 const assets = [
   { symbol: "AAPL", initialPrice: 195, volatility: 0.02, sector: "Tech" },

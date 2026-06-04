@@ -1,19 +1,10 @@
-import {
-  assert,
-  assertEquals,
-  assertMatch,
-  assertStringIncludes,
-} from "jsr:@std/assert@0.217";
+import { assert, assertEquals, assertMatch, assertStringIncludes } from "jsr:@std/assert@0.217";
 import {
   buildPrompt,
   computeSystemPromptHash,
   SYSTEM_PROMPT,
 } from "../llm-advisory/prompt-builder.ts";
-import type {
-  FeatureVector,
-  Signal,
-  TradeRecommendation,
-} from "../types/intelligence.ts";
+import type { FeatureVector, Signal, TradeRecommendation } from "../types/intelligence.ts";
 
 const baseSignal: Signal = {
   symbol: "AAPL",

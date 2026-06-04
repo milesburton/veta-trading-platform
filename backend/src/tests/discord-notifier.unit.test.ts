@@ -38,8 +38,7 @@ function captureFetch(): CapturedFetch {
   }) as typeof fetch;
   return {
     calls,
-    discordCalls: () =>
-      calls.filter((c) => c.url.includes("discord.com/api/webhooks/")),
+    discordCalls: () => calls.filter((c) => c.url.includes("discord.com/api/webhooks/")),
     restore: () => {
       globalThis.fetch = realFetch;
     },
@@ -59,43 +58,41 @@ Deno.test("notifyDiscord skips when webhook URL is not configured", async () => 
   }
 });
 
-for (
-  const testCase of [
-    {
-      label: "notifyDiscord skips when severity is INFO",
-      webhook: DISCORD_WEBHOOK,
-      alert: { severity: "INFO", message: "noise" },
-      expectedCalls: 0,
+for (const testCase of [
+  {
+    label: "notifyDiscord skips when severity is INFO",
+    webhook: DISCORD_WEBHOOK,
+    alert: { severity: "INFO", message: "noise" },
+    expectedCalls: 0,
+  },
+  {
+    label: "notifyDiscord posts on CRITICAL alerts",
+    webhook: DISCORD_WEBHOOK,
+    alert: {
+      severity: "CRITICAL",
+      source: "kill-switch",
+      message: "kill switch fired",
     },
-    {
-      label: "notifyDiscord posts on CRITICAL alerts",
-      webhook: DISCORD_WEBHOOK,
-      alert: {
-        severity: "CRITICAL",
-        source: "kill-switch",
-        message: "kill switch fired",
-      },
-      expectedCalls: 1,
-      expectedUsername: "VETA Alerts",
+    expectedCalls: 1,
+    expectedUsername: "VETA Alerts",
+  },
+  {
+    label: "notifyDiscord posts on WARNING alerts",
+    webhook: DISCORD_WEBHOOK,
+    alert: {
+      severity: "WARNING",
+      source: "order",
+      message: "order rejected",
     },
-    {
-      label: "notifyDiscord posts on WARNING alerts",
-      webhook: DISCORD_WEBHOOK,
-      alert: {
-        severity: "WARNING",
-        source: "order",
-        message: "order rejected",
-      },
-      expectedCalls: 1,
-    },
-    {
-      label: "notifyDiscord rejects sentinel placeholder URL",
-      webhook: "https://discord.com/api/webhooks/0/REPLACE_ME",
-      alert: { severity: "CRITICAL", message: "test" },
-      expectedCalls: 0,
-    },
-  ] as const
-) {
+    expectedCalls: 1,
+  },
+  {
+    label: "notifyDiscord rejects sentinel placeholder URL",
+    webhook: "https://discord.com/api/webhooks/0/REPLACE_ME",
+    alert: { severity: "CRITICAL", message: "test" },
+    expectedCalls: 0,
+  },
+] as const) {
   Deno.test(testCase.label, async () => {
     await withWebhook(testCase.webhook, async () => {
       const f = captureFetch();
@@ -129,26 +126,24 @@ Deno.test("sendDailySummary no-ops without webhook env", async () => {
   }
 });
 
-for (
-  const testCase of [
-    {
-      label: "sendDailySummary posts as VETA Daily",
-      content: "hello daily",
-      assertBody: (body: { username: string; content: string }) => {
-        assertEquals(body.username, "VETA Daily");
-        assertEquals(body.content, "hello daily");
-      },
+for (const testCase of [
+  {
+    label: "sendDailySummary posts as VETA Daily",
+    content: "hello daily",
+    assertBody: (body: { username: string; content: string }) => {
+      assertEquals(body.username, "VETA Daily");
+      assertEquals(body.content, "hello daily");
     },
-    {
-      label: "sendDailySummary truncates messages over 1900 chars",
-      content: "a".repeat(5000),
-      assertBody: (body: { username: string; content: string }) => {
-        assertEquals(body.content.length <= 1900, true);
-        assertEquals(body.content.endsWith("…"), true);
-      },
+  },
+  {
+    label: "sendDailySummary truncates messages over 1900 chars",
+    content: "a".repeat(5000),
+    assertBody: (body: { username: string; content: string }) => {
+      assertEquals(body.content.length <= 1900, true);
+      assertEquals(body.content.endsWith("…"), true);
     },
-  ] as const
-) {
+  },
+] as const) {
   Deno.test(testCase.label, async () => {
     await withWebhook(DISCORD_WEBHOOK, async () => {
       const f = captureFetch();
@@ -175,15 +170,14 @@ function captureFetchWithRender(pngBytes: Uint8Array): CapturedFetch {
         new Response(pngBytes as BodyInit, {
           status: 200,
           headers: { "Content-Type": "image/png" },
-        }),
+        })
       );
     }
     return Promise.resolve(new Response(null, { status: 204 }));
   }) as typeof fetch;
   return {
     calls,
-    discordCalls: () =>
-      calls.filter((c) => c.url.includes("discord.com/api/webhooks/")),
+    discordCalls: () => calls.filter((c) => c.url.includes("discord.com/api/webhooks/")),
     restore: () => {
       globalThis.fetch = realFetch;
     },
@@ -194,41 +188,14 @@ Deno.test("notifyDiscord attaches a Grafana panel screenshot when render succeed
   await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
     // 1x1 valid PNG so the renderer mock returns a real image payload.
     const png = new Uint8Array([
-      0x89,
-      0x50,
-      0x4e,
-      0x47,
-      0x0d,
-      0x0a,
-      0x1a,
-      0x0a,
-      0x00,
-      0x00,
-      0x00,
-      0x0d,
-      0x49,
-      0x48,
-      0x44,
-      0x52,
-      0x00,
-      0x00,
-      0x00,
-      0x01,
-      0x00,
-      0x00,
-      0x00,
-      0x01,
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44,
+      0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
     ]);
     const f = captureFetchWithRender(png);
     try {
-      await notifyDiscord(
-        { severity: "CRITICAL", source: "kill-switch", message: "fired" },
-        "u-1",
-      );
+      await notifyDiscord({ severity: "CRITICAL", source: "kill-switch", message: "fired" }, "u-1");
 
-      const renderCalls = f.calls.filter((c) =>
-        c.url.includes("/render/d-solo/")
-      );
+      const renderCalls = f.calls.filter((c) => c.url.includes("/render/d-solo/"));
       assertEquals(renderCalls.length, 1, "renderer should be called once");
 
       const discord = f.discordCalls();
@@ -236,12 +203,11 @@ Deno.test("notifyDiscord attaches a Grafana panel screenshot when render succeed
       // multipart form body, not JSON. The captured body should be a
       // FormData stringification — look for the payload_json field name.
       const body = discord[0].body;
-      const isMultipart = typeof body === "object" ||
-        body.includes("payload_json");
+      const isMultipart = typeof body === "object" || body.includes("payload_json");
       assertEquals(
         isMultipart,
         true,
-        "Discord POST body should be multipart/form-data when a screenshot is attached",
+        "Discord POST body should be multipart/form-data when a screenshot is attached"
       );
     } finally {
       f.restore();
@@ -256,10 +222,7 @@ Deno.test("notifyDiscord falls back to text-only when render returns non-image",
       // captureFetch returns 204 with no content-type for every URL,
       // including /render/d-solo. renderer helper rejects non-image
       // responses and returns null, so notifyDiscord takes the JSON path.
-      await notifyDiscord(
-        { severity: "CRITICAL", source: "kill-switch", message: "fired" },
-        "u-1",
-      );
+      await notifyDiscord({ severity: "CRITICAL", source: "kill-switch", message: "fired" }, "u-1");
       const discord = f.discordCalls();
       assertEquals(discord.length, 1);
       // JSON body, not multipart
@@ -275,39 +238,14 @@ Deno.test("notifyDiscord falls back to text-only when render returns non-image",
 Deno.test("notifyDiscord sanitises attachment filename derived from alert.source", async () => {
   await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
     const png = new Uint8Array([
-      0x89,
-      0x50,
-      0x4e,
-      0x47,
-      0x0d,
-      0x0a,
-      0x1a,
-      0x0a,
-      0x00,
-      0x00,
-      0x00,
-      0x0d,
-      0x49,
-      0x48,
-      0x44,
-      0x52,
-      0x00,
-      0x00,
-      0x00,
-      0x01,
-      0x00,
-      0x00,
-      0x00,
-      0x01,
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44,
+      0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
     ]);
     // Intercept the FormData object before stringification so we can
     // inspect the actual filename Discord would see.
     const seenFilenames: string[] = [];
     const baseFetch: typeof fetch = ((url: string, init?: RequestInit) => {
-      if (
-        String(url).includes("discord.com/api/webhooks/") &&
-        init?.body instanceof FormData
-      ) {
+      if (String(url).includes("discord.com/api/webhooks/") && init?.body instanceof FormData) {
         const fileEntry = (init.body as FormData).get("files[0]");
         if (fileEntry instanceof File) {
           seenFilenames.push(fileEntry.name);
@@ -318,7 +256,7 @@ Deno.test("notifyDiscord sanitises attachment filename derived from alert.source
           new Response(png as BodyInit, {
             status: 200,
             headers: { "Content-Type": "image/png" },
-          }),
+          })
         );
       }
       return Promise.resolve(new Response(null, { status: 204 }));
@@ -332,13 +270,9 @@ Deno.test("notifyDiscord sanitises attachment filename derived from alert.source
           source: '../etc/passwd"\r\n; rm -rf /',
           message: "fired",
         },
-        "u-1",
+        "u-1"
       );
-      assertEquals(
-        seenFilenames.length,
-        1,
-        "expected one multipart attachment",
-      );
+      assertEquals(seenFilenames.length, 1, "expected one multipart attachment");
       const name = seenFilenames[0];
       // No path separators or quotes
       assertEquals(name.includes("/"), false);
@@ -347,11 +281,7 @@ Deno.test("notifyDiscord sanitises attachment filename derived from alert.source
       assertEquals(name.includes("\r"), false);
       assertEquals(name.includes("\n"), false);
       // Length capped
-      assertEquals(
-        name.length <= 100,
-        true,
-        `filename too long: ${name.length}`,
-      );
+      assertEquals(name.length <= 100, true, `filename too long: ${name.length}`);
       // Still starts with the alert-... prefix and ends with .png
       assertEquals(name.startsWith("alert-"), true);
       assertEquals(name.endsWith(".png"), true);
@@ -369,7 +299,7 @@ Deno.test("notifyDiscord skips renderer entirely when DISCORD_ATTACH_GRAFANA_PAN
       try {
         await notifyDiscord(
           { severity: "CRITICAL", source: "kill-switch", message: "fired" },
-          "u-1",
+          "u-1"
         );
         const renderCalls = f.calls.filter((c) => c.url.includes("/render/"));
         assertEquals(renderCalls.length, 0);
@@ -385,14 +315,16 @@ Deno.test("notifyDiscord skips renderer entirely when DISCORD_ATTACH_GRAFANA_PAN
 
 Deno.test("notifyDiscord swallows fetch errors and continues", async () => {
   await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
-    globalThis.fetch = (() =>
-      Promise.reject(new Error("net down"))) as typeof fetch;
+    globalThis.fetch = (() => Promise.reject(new Error("net down"))) as typeof fetch;
     try {
-      await notifyDiscord({
-        severity: "CRITICAL",
-        source: "kill-switch",
-        message: "x",
-      }, "u-1");
+      await notifyDiscord(
+        {
+          severity: "CRITICAL",
+          source: "kill-switch",
+          message: "x",
+        },
+        "u-1"
+      );
     } finally {
       globalThis.fetch = realFetch;
     }
@@ -419,11 +351,7 @@ Deno.test("notifyDiscordBug returns false when report is invalid", async () => {
   await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
     const f = captureFetch();
     try {
-      const ok = await notifyDiscordBug(
-        { title: "x", description: "y" },
-        "u-1",
-        "Alice",
-      );
+      const ok = await notifyDiscordBug({ title: "x", description: "y" }, "u-1", "Alice");
       assertEquals(ok, false);
       assertEquals(f.calls.length, 0);
     } finally {
@@ -441,7 +369,7 @@ Deno.test("notifyDiscordBug returns false when no webhook is configured", async 
     const ok = await notifyDiscordBug(
       { title: "valid title", description: "valid description here" },
       "u-1",
-      "Alice",
+      "Alice"
     );
     assertEquals(ok, false);
   } finally {
@@ -457,14 +385,13 @@ Deno.test("notifyDiscordBug posts as 'VETA Bug Reports' with all optional fields
       const ok = await notifyDiscordBug(
         {
           title: "Chart freezes on tab switch",
-          description:
-            "Steps to reproduce: 1. Open dashboard 2. Switch tab. Result: spinner.",
+          description: "Steps to reproduce: 1. Open dashboard 2. Switch tab. Result: spinner.",
           category: "ui",
           url: "https://veta/dashboard",
           userAgent: "Mozilla/5.0 Firefox",
         },
         "u-42",
-        "Alice",
+        "Alice"
       );
       assertEquals(ok, true);
       const calls = f.discordCalls();
@@ -484,17 +411,14 @@ Deno.test("notifyDiscordBug posts as 'VETA Bug Reports' with all optional fields
 
 Deno.test("notifyDiscordBug prefers DISCORD_BUG_WEBHOOK_URL when set", async () => {
   const prevBug = Deno.env.get("DISCORD_BUG_WEBHOOK_URL");
-  Deno.env.set(
-    "DISCORD_BUG_WEBHOOK_URL",
-    "https://discord.com/api/webhooks/999/bug",
-  );
+  Deno.env.set("DISCORD_BUG_WEBHOOK_URL", "https://discord.com/api/webhooks/999/bug");
   await withWebhook("https://discord.com/api/webhooks/123/alerts", async () => {
     const f = captureFetch();
     try {
       await notifyDiscordBug(
         { title: "valid title", description: "valid description here" },
         "u-1",
-        "Alice",
+        "Alice"
       );
       const calls = f.discordCalls();
       assertEquals(calls.length, 1);
@@ -507,26 +431,24 @@ Deno.test("notifyDiscordBug prefers DISCORD_BUG_WEBHOOK_URL when set", async () 
   else Deno.env.set("DISCORD_BUG_WEBHOOK_URL", prevBug);
 });
 
-for (
-  const testCase of [
-    {
-      label: "buildLoadgenMessage formats start with a runner and note",
-      payload: {
-        event: "start",
-        runner: "k6-burst-2026-05-23",
-        note: "30m",
-      } as const,
-      startsWith: "🧪 **Loadgen `k6-burst-2026-05-23` started** — 30m",
-      includes: "disregard",
-    },
-    {
-      label: "buildLoadgenMessage formats stop without a note",
-      payload: { event: "stop", runner: "k6" } as const,
-      startsWith: "✅ **Loadgen `k6` stopped**",
-      includes: "real signal",
-    },
-  ] as const
-) {
+for (const testCase of [
+  {
+    label: "buildLoadgenMessage formats start with a runner and note",
+    payload: {
+      event: "start",
+      runner: "k6-burst-2026-05-23",
+      note: "30m",
+    } as const,
+    startsWith: "🧪 **Loadgen `k6-burst-2026-05-23` started** — 30m",
+    includes: "disregard",
+  },
+  {
+    label: "buildLoadgenMessage formats stop without a note",
+    payload: { event: "stop", runner: "k6" } as const,
+    startsWith: "✅ **Loadgen `k6` stopped**",
+    includes: "real signal",
+  },
+] as const) {
   Deno.test(testCase.label, () => {
     const msg = buildLoadgenMessage(testCase.payload);
     assert(msg.startsWith(testCase.startsWith));

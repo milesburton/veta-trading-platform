@@ -10,9 +10,8 @@
  */
 
 import { priceBond } from "./bond-pricing.ts";
-import type { NelsonSiegelParams } from "./types.ts";
+import type { NelsonSiegelParams, YieldCurvePoint } from "./types.ts";
 import { computeYieldCurve } from "./yield-curve.ts";
-import type { YieldCurvePoint } from "./types.ts";
 
 export interface SpreadAnalysisRequest {
   couponRate: number; // annual coupon rate, e.g. 0.05
@@ -65,7 +64,7 @@ export function rateAt(curve: YieldCurvePoint[], t: number): number {
 function computeZSpread(
   cashFlows: { t: number; cf: number }[],
   bondPrice: number,
-  curve: YieldCurvePoint[],
+  curve: YieldCurvePoint[]
 ): number {
   function pvAtSpread(z: number): number {
     let pv = 0;
@@ -77,10 +76,10 @@ function computeZSpread(
   }
 
   let lo = -0.02;
-  let hi = 0.20;
+  let hi = 0.2;
 
   // Expand hi if needed (very high yield / distressed scenario)
-  if (pvAtSpread(hi) > bondPrice) hi = 0.50;
+  if (pvAtSpread(hi) > bondPrice) hi = 0.5;
 
   for (let iter = 0; iter < 50; iter++) {
     const mid = (lo + hi) / 2;
@@ -93,17 +92,8 @@ function computeZSpread(
   return (lo + hi) / 2;
 }
 
-export function computeSpreadAnalysis(
-  req: SpreadAnalysisRequest,
-): SpreadAnalysisResponse {
-  const {
-    couponRate,
-    totalPeriods,
-    periodsPerYear = 2,
-    yieldAnnual,
-    face = 1000,
-    nsParams,
-  } = req;
+export function computeSpreadAnalysis(req: SpreadAnalysisRequest): SpreadAnalysisResponse {
+  const { couponRate, totalPeriods, periodsPerYear = 2, yieldAnnual, face = 1000, nsParams } = req;
 
   const tenorYears = totalPeriods / periodsPerYear;
 
@@ -127,16 +117,17 @@ export function computeSpreadAnalysis(
 
   // Build raw cash flow schedule (without PV — we'll discount differently for Z-spread)
   const couponPerPeriod = (couponRate * face) / periodsPerYear;
-  const cashFlows: { t: number; cf: number }[] = Array.from({
-    length: totalPeriods,
-  }, (_, i) => {
-    const period = i + 1;
-    const t = period / periodsPerYear;
-    const cf = period === totalPeriods
-      ? couponPerPeriod + face
-      : couponPerPeriod;
-    return { t, cf };
-  });
+  const cashFlows: { t: number; cf: number }[] = Array.from(
+    {
+      length: totalPeriods,
+    },
+    (_, i) => {
+      const period = i + 1;
+      const t = period / periodsPerYear;
+      const cf = period === totalPeriods ? couponPerPeriod + face : couponPerPeriod;
+      return { t, cf };
+    }
+  );
 
   // Z-spread via bisection
   const zSpreadDecimal = computeZSpread(cashFlows, bondResult.price, curve);

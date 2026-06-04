@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
 
-import { logger, type LogLevel, registerLogSink } from "../lib/logger.ts";
+import { type LogLevel, logger, registerLogSink } from "../lib/logger.ts";
 
 function captureStdout<T>(fn: () => T): { result: T; lines: string[] } {
   const originalWriteSync = Deno.stdout.writeSync;
@@ -12,7 +12,13 @@ function captureStdout<T>(fn: () => T): { result: T; lines: string[] } {
   };
   try {
     const result = fn();
-    return { result, lines: captured.join("").split("\n").filter((l) => l.length > 0) };
+    return {
+      result,
+      lines: captured
+        .join("")
+        .split("\n")
+        .filter((l) => l.length > 0),
+    };
   } finally {
     Deno.stdout.writeSync = originalWriteSync;
   }
@@ -41,9 +47,7 @@ Deno.test("[logger] record has ts, level, service, msg", () => {
 });
 
 Deno.test("[logger] ctx fields spread at top level, not nested", () => {
-  const { lines } = captureStdout(() =>
-    logger.info("x", { userId: "u1", orderId: 42 }),
-  );
+  const { lines } = captureStdout(() => logger.info("x", { userId: "u1", orderId: 42 }));
   const parsed = parseLine(lines[0]);
   assertEquals(parsed.userId, "u1");
   assertEquals(parsed.orderId, 42);
@@ -103,7 +107,7 @@ Deno.test("[logger] multiple ctx values coexist", () => {
       qty: 100,
       side: "BUY",
       err: new Error("warn"),
-    }),
+    })
   );
   const parsed = parseLine(lines[0]);
   assertEquals(parsed.symbol, "AAPL");
@@ -114,11 +118,15 @@ Deno.test("[logger] multiple ctx values coexist", () => {
 
 Deno.test("[logger] LOG_LEVEL=debug enables debug output (subprocess)", async () => {
   const cmd = new Deno.Command(Deno.execPath(), {
-    args: ["eval", "--quiet", `
+    args: [
+      "eval",
+      "--quiet",
+      `
       import { logger } from "${new URL("../lib/logger.ts", import.meta.url).href}";
       logger.debug("d-msg");
       logger.info("i-msg");
-    `],
+    `,
+    ],
     env: { LOG_LEVEL: "debug", OTEL_SERVICE_NAME: "subtest" },
     stdout: "piped",
     stderr: "piped",
@@ -132,12 +140,16 @@ Deno.test("[logger] LOG_LEVEL=debug enables debug output (subprocess)", async ()
 
 Deno.test("[logger] LOG_LEVEL=warn suppresses info (subprocess)", async () => {
   const cmd = new Deno.Command(Deno.execPath(), {
-    args: ["eval", "--quiet", `
+    args: [
+      "eval",
+      "--quiet",
+      `
       import { logger } from "${new URL("../lib/logger.ts", import.meta.url).href}";
       logger.info("i");
       logger.warn("w");
       logger.error("e");
-    `],
+    `,
+    ],
     env: { LOG_LEVEL: "warn", OTEL_SERVICE_NAME: "subtest" },
     stdout: "piped",
     stderr: "piped",
@@ -152,10 +164,14 @@ Deno.test("[logger] LOG_LEVEL=warn suppresses info (subprocess)", async () => {
 
 Deno.test("[logger] OTEL_SERVICE_NAME populates service field (subprocess)", async () => {
   const cmd = new Deno.Command(Deno.execPath(), {
-    args: ["eval", "--quiet", `
+    args: [
+      "eval",
+      "--quiet",
+      `
       import { logger } from "${new URL("../lib/logger.ts", import.meta.url).href}";
       logger.info("hi");
-    `],
+    `,
+    ],
     env: { OTEL_SERVICE_NAME: "test-service-42" },
     stdout: "piped",
     stderr: "piped",
@@ -168,10 +184,14 @@ Deno.test("[logger] OTEL_SERVICE_NAME populates service field (subprocess)", asy
 
 Deno.test("[logger] missing OTEL_SERVICE_NAME falls back to 'unknown' (subprocess)", async () => {
   const cmd = new Deno.Command(Deno.execPath(), {
-    args: ["eval", "--quiet", `
+    args: [
+      "eval",
+      "--quiet",
+      `
       import { logger } from "${new URL("../lib/logger.ts", import.meta.url).href}";
       logger.info("hi");
-    `],
+    `,
+    ],
     env: {},
     clearEnv: true,
     stdout: "piped",
@@ -185,11 +205,15 @@ Deno.test("[logger] missing OTEL_SERVICE_NAME falls back to 'unknown' (subproces
 
 Deno.test("[logger] invalid LOG_LEVEL falls back to info (subprocess)", async () => {
   const cmd = new Deno.Command(Deno.execPath(), {
-    args: ["eval", "--quiet", `
+    args: [
+      "eval",
+      "--quiet",
+      `
       import { logger } from "${new URL("../lib/logger.ts", import.meta.url).href}";
       logger.debug("d");
       logger.info("i");
-    `],
+    `,
+    ],
     env: { LOG_LEVEL: "nonsense", OTEL_SERVICE_NAME: "subtest" },
     stdout: "piped",
     stderr: "piped",
@@ -202,7 +226,8 @@ Deno.test("[logger] invalid LOG_LEVEL falls back to info (subprocess)", async ()
 });
 
 Deno.test("[logger] registerLogSink forwards every emit until unsubscribed", () => {
-  const events: { level: LogLevel; msg: string; line: string; ctx?: Record<string, unknown> }[] = [];
+  const events: { level: LogLevel; msg: string; line: string; ctx?: Record<string, unknown> }[] =
+    [];
   const unsubscribe = registerLogSink((level, msg, line, ctx) => {
     events.push({ level, msg, line, ctx });
   });

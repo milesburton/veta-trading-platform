@@ -9,22 +9,13 @@
  * All 13 ExprOp operators are supported, matching the frontend exactly.
  */
 
-import type {
-  ExprGroup,
-  ExprNode,
-  ExprOp,
-  ExprRule,
-} from "../types/gridQuery.ts";
+import type { ExprGroup, ExprNode, ExprOp, ExprRule } from "../types/gridQuery.ts";
 
 function getField(row: Record<string, unknown>, field: string): unknown {
   return row[field];
 }
 
-export function evalOp(
-  rowVal: unknown,
-  op: ExprOp,
-  filterVal: ExprRule["value"],
-): boolean {
+export function evalOp(rowVal: unknown, op: ExprOp, filterVal: ExprRule["value"]): boolean {
   if (op === "is_null") {
     return rowVal === null || rowVal === undefined || rowVal === "";
   }
@@ -40,27 +31,19 @@ export function evalOp(
 
   if (op === "in") {
     const arr = filterVal as string[];
-    return arr.map((v) => v.toLowerCase()).includes(
-      String(rowVal).toLowerCase(),
-    );
+    return arr.map((v) => v.toLowerCase()).includes(String(rowVal).toLowerCase());
   }
 
   if (op === "contains") {
-    return String(rowVal).toLowerCase().includes(
-      String(filterVal).toLowerCase(),
-    );
+    return String(rowVal).toLowerCase().includes(String(filterVal).toLowerCase());
   }
 
   if (op === "starts_with") {
-    return String(rowVal).toLowerCase().startsWith(
-      String(filterVal).toLowerCase(),
-    );
+    return String(rowVal).toLowerCase().startsWith(String(filterVal).toLowerCase());
   }
 
   if (op === "ends_with") {
-    return String(rowVal).toLowerCase().endsWith(
-      String(filterVal).toLowerCase(),
-    );
+    return String(rowVal).toLowerCase().endsWith(String(filterVal).toLowerCase());
   }
 
   const rv = Number(rowVal);
@@ -103,10 +86,7 @@ function evalExprNode(row: Record<string, unknown>, node: ExprNode): boolean {
  * AND: all nodes must match. OR: at least one must match.
  * An empty group always passes (no filter active).
  */
-export function evalExprGroup(
-  row: Record<string, unknown>,
-  group: ExprGroup,
-): boolean {
+export function evalExprGroup(row: Record<string, unknown>, group: ExprGroup): boolean {
   if (group.rules.length === 0) return true;
   if (group.join === "AND") {
     return group.rules.every((n) => evalExprNode(row, n));
@@ -119,7 +99,7 @@ export function evalExprGroup(
  */
 export function applyExprGroup(
   rows: Record<string, unknown>[],
-  group: ExprGroup,
+  group: ExprGroup
 ): Record<string, unknown>[] {
   if (group.rules.length === 0) return rows;
   return rows.filter((row) => evalExprGroup(row, group));
@@ -132,7 +112,7 @@ export function applyExprGroup(
 export function applySort(
   rows: Record<string, unknown>[],
   field: string | null,
-  dir: "asc" | "desc" | null,
+  dir: "asc" | "desc" | null
 ): Record<string, unknown>[] {
   if (!field || !dir) return rows;
   return [...rows].sort((a, b) => {

@@ -37,14 +37,14 @@ export async function saveWorkspacePrefs(prefs: WorkspacePrefs): Promise<void> {
       }),
     });
     if (!res.ok) {
-      window.dispatchEvent(
+      globalThis.dispatchEvent(
         new CustomEvent("workspace-save-error", {
           detail: { status: res.status },
         })
       );
     }
   } catch {
-    window.dispatchEvent(
+    globalThis.dispatchEvent(
       new CustomEvent("workspace-save-error", {
         detail: { status: 0 },
       })

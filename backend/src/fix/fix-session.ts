@@ -1,15 +1,11 @@
 // FIXT 1.1 / FIX 4.4 session state machine
 // Manages logon, heartbeat, sequence numbers, resend requests, and gap-fill.
 
+import { logger } from "@veta/logger";
 import { EncryptMethod, MsgType, Tag } from "./fix-dictionary.ts";
 import { decode, encode, utcTimestamp } from "./fix-parser.ts";
-import { logger } from "@veta/logger";
 
-export type SessionState =
-  | "DISCONNECTED"
-  | "LOGON_SENT"
-  | "ACTIVE"
-  | "LOGOUT_SENT";
+export type SessionState = "DISCONNECTED" | "LOGON_SENT" | "ACTIVE" | "LOGOUT_SENT";
 
 export interface SessionConfig {
   senderCompID: string;
@@ -119,9 +115,7 @@ export class FixSession {
   }
 
   private onLogon(tags: Map<number, string>): void {
-    const heartBtInt = Number(
-      tags.get(Tag.HeartBtInt) ?? this.config.heartBtInt,
-    );
+    const heartBtInt = Number(tags.get(Tag.HeartBtInt) ?? this.config.heartBtInt);
     if (this.state === "LOGON_SENT") {
       // Acceptor responded — session active
       this.setState("ACTIVE");

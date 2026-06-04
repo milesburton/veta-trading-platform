@@ -149,9 +149,44 @@ export const EXTERNAL_CLIENT_LIMITS: TradingLimits = {
 };
 
 export const DEFAULT_ASSETS: AssetDef[] = [
-  { symbol: "AAPL", name: "Apple Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 3000, beta: 1.2 },
-  { symbol: "MSFT", name: "Microsoft Corp.", sector: "Technology", exchange: "NASDAQ", marketCapB: 2800, beta: 0.9 },
-  { symbol: "GOOGL", name: "Alphabet Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 1800, beta: 1.1 },
-  { symbol: "NVDA", name: "NVIDIA Corp.", sector: "Technology", exchange: "NASDAQ", marketCapB: 2200, beta: 1.8 },
-  { symbol: "AMZN", name: "Amazon.com Inc.", sector: "Technology", exchange: "NASDAQ", marketCapB: 1900, beta: 1.3 },
+  {
+    symbol: "AAPL",
+    name: "Apple Inc.",
+    sector: "Technology",
+    exchange: "NASDAQ",
+    marketCapB: 3000,
+    beta: 1.2,
+  },
+  {
+    symbol: "MSFT",
+    name: "Microsoft Corp.",
+    sector: "Technology",
+    exchange: "NASDAQ",
+    marketCapB: 2800,
+    beta: 0.9,
+  },
+  {
+    symbol: "GOOGL",
+    name: "Alphabet Inc.",
+    sector: "Technology",
+    exchange: "NASDAQ",
+    marketCapB: 1800,
+    beta: 1.1,
+  },
+  {
+    symbol: "NVDA",
+    name: "NVIDIA Corp.",
+    sector: "Technology",
+    exchange: "NASDAQ",
+    marketCapB: 2200,
+    beta: 1.8,
+  },
+  {
+    symbol: "AMZN",
+    name: "Amazon.com Inc.",
+    sector: "Technology",
+    exchange: "NASDAQ",
+    marketCapB: 1900,
+    beta: 1.3,
+  },
 ];

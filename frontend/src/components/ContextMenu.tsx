@@ -34,8 +34,8 @@ export function ContextMenu({ items, x, y, onClose }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Clamp position so menu doesn't overflow viewport
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
+  const vw = globalThis.innerWidth;
+  const vh = globalThis.innerHeight;
   const menuW = 200;
   const menuH = items.length * 30 + 16; // rough estimate
   const left = Math.min(x, vw - menuW - 8);

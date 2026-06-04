@@ -35,10 +35,10 @@ export function BugReportModal({ open, onClose }: Props) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
-    window.addEventListener("keydown", onKey);
+    globalThis.addEventListener("keydown", onKey);
     return () => {
       clearTimeout(focusTimer);
-      window.removeEventListener("keydown", onKey);
+      globalThis.removeEventListener("keydown", onKey);
     };
   }, [open, onClose, submitted, undelivered, localError]);
 
@@ -61,7 +61,7 @@ export function BugReportModal({ open, onClose }: Props) {
       title: t,
       description: d,
       category: category.value,
-      url: typeof window !== "undefined" ? window.location.pathname : "",
+      url: typeof window !== "undefined" ? globalThis.location.pathname : "",
     });
     if ("error" in result) {
       const e = result.error as { status?: number; data?: { error?: string } };

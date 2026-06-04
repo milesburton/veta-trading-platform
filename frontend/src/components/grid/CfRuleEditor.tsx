@@ -239,7 +239,7 @@ export function CfRuleEditor({ gridId, fields, onClose }: Props) {
 
   function saveRule() {
     const r = editingRule.value;
-    if (!r || !r.id || !r.scope || !r.expr) return;
+    if (!r?.id || !r.scope || !r.expr) return;
     const complete = r as ConditionalFormatRule;
     const existing = cfRules.find((x) => x.id === r.id);
     const updated = existing

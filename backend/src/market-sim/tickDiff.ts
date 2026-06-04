@@ -49,7 +49,7 @@ export function createTickDiffState(): TickDiffState {
 function changedNumericSymbols(
   current: Record<string, number>,
   previous: Record<string, number>,
-  threshold: number,
+  threshold: number
 ): string[] {
   const changed: string[] = [];
   for (const [sym, value] of Object.entries(current)) {
@@ -63,7 +63,7 @@ function changedNumericSymbols(
 
 function changedPriceSymbols(
   current: Record<string, number>,
-  previous: Record<string, number>,
+  previous: Record<string, number>
 ): string[] {
   const changed: string[] = [];
   for (const [sym, price] of Object.entries(current)) {
@@ -77,7 +77,7 @@ function changedPriceSymbols(
 
 function bookWorthyMovedSymbols(
   current: Record<string, number>,
-  lastBook: Record<string, number>,
+  lastBook: Record<string, number>
 ): string[] {
   const changed: string[] = [];
   for (const [sym, price] of Object.entries(current)) {
@@ -86,16 +86,13 @@ function bookWorthyMovedSymbols(
       changed.push(sym);
       continue;
     }
-    const bps = Math.abs(price - prev) / prev * 10_000;
+    const bps = (Math.abs(price - prev) / prev) * 10_000;
     if (bps >= BOOK_MATERIAL_BPS) changed.push(sym);
   }
   return changed;
 }
 
-function pick<T>(
-  source: Record<string, T>,
-  keys: readonly string[],
-): Record<string, T> {
+function pick<T>(source: Record<string, T>, keys: readonly string[]): Record<string, T> {
   const result: Record<string, T> = {};
   for (const key of keys) {
     const value = source[key];
@@ -107,9 +104,10 @@ function pick<T>(
 export function buildTickDiff(
   payload: TickPayload,
   state: TickDiffState,
-  now: number,
+  now: number
 ): { diff: TickDiff; nextState: TickDiffState } {
-  const dueFull = state.lastFullSnapshotAt === null ||
+  const dueFull =
+    state.lastFullSnapshotAt === null ||
     now - state.lastFullSnapshotAt >= FULL_SNAPSHOT_INTERVAL_MS;
 
   if (dueFull) {
@@ -139,16 +137,10 @@ export function buildTickDiff(
   const volumeChangedSymbols = changedNumericSymbols(
     payload.volumes,
     state.lastVolumes,
-    VOLUME_EPSILON,
+    VOLUME_EPSILON
   );
-  const bookSymbols = bookWorthyMovedSymbols(
-    payload.prices,
-    state.lastBookPrices,
-  );
-  const openChangedSymbols = changedPriceSymbols(
-    payload.openPrices,
-    state.lastOpenPrices,
-  );
+  const bookSymbols = bookWorthyMovedSymbols(payload.prices, state.lastBookPrices);
+  const openChangedSymbols = changedPriceSymbols(payload.openPrices, state.lastOpenPrices);
   const minuteChanged = payload.marketMinute !== state.lastMarketMinute;
   const phaseChanged = payload.sessionPhase !== state.lastSessionPhase;
 
@@ -168,18 +160,18 @@ export function buildTickDiff(
   if (minuteChanged) diff.marketMinute = payload.marketMinute;
   if (phaseChanged) diff.sessionPhase = payload.sessionPhase;
 
-  const nextLastPrices = movedSymbols.length > 0
-    ? { ...state.lastPrices, ...diff.prices }
-    : state.lastPrices;
-  const nextLastVolumes = volumeChangedSymbols.length > 0
-    ? { ...state.lastVolumes, ...diff.volumes }
-    : state.lastVolumes;
-  const nextLastBookPrices = bookSymbols.length > 0
-    ? { ...state.lastBookPrices, ...pick(payload.prices, bookSymbols) }
-    : state.lastBookPrices;
-  const nextLastOpenPrices = openChangedSymbols.length > 0
-    ? { ...state.lastOpenPrices, ...diff.openPrices }
-    : state.lastOpenPrices;
+  const nextLastPrices =
+    movedSymbols.length > 0 ? { ...state.lastPrices, ...diff.prices } : state.lastPrices;
+  const nextLastVolumes =
+    volumeChangedSymbols.length > 0 ? { ...state.lastVolumes, ...diff.volumes } : state.lastVolumes;
+  const nextLastBookPrices =
+    bookSymbols.length > 0
+      ? { ...state.lastBookPrices, ...pick(payload.prices, bookSymbols) }
+      : state.lastBookPrices;
+  const nextLastOpenPrices =
+    openChangedSymbols.length > 0
+      ? { ...state.lastOpenPrices, ...diff.openPrices }
+      : state.lastOpenPrices;
 
   return {
     diff,
@@ -197,10 +189,12 @@ export function buildTickDiff(
 
 export function isEmptyDiff(diff: TickDiff): boolean {
   if (diff.full) return false;
-  return diff.prices === undefined &&
+  return (
+    diff.prices === undefined &&
     diff.openPrices === undefined &&
     diff.volumes === undefined &&
     diff.orderBook === undefined &&
     diff.marketMinute === undefined &&
-    diff.sessionPhase === undefined;
+    diff.sessionPhase === undefined
+  );
 }

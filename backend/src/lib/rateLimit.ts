@@ -54,10 +54,12 @@ export class RateLimiter {
     if (now - this.#lastSweepMs < 60_000) return;
     this.#lastSweepMs = now;
     const fullAfterMs = (this.#config.capacity / this.#config.refillPerSecond) * 1000;
-    const stale = [...this.#buckets].filter(([, bucket]) =>
-      now - bucket.lastRefillMs > fullAfterMs * 4
+    const stale = [...this.#buckets].filter(
+      ([, bucket]) => now - bucket.lastRefillMs > fullAfterMs * 4
     );
-    stale.forEach(([key]) => this.#buckets.delete(key));
+    for (const [key] of stale) {
+      this.#buckets.delete(key);
+    }
   }
 }
 
@@ -71,14 +73,11 @@ export function clientIp(req: Request): string {
 
 export function rateLimitResponse(retryAfterMs: number): Response {
   const retryAfterSec = Math.max(1, Math.ceil(retryAfterMs / 1000));
-  return new Response(
-    JSON.stringify({ error: "rate_limited", retryAfterSeconds: retryAfterSec }),
-    {
-      status: 429,
-      headers: {
-        "Content-Type": "application/json",
-        "Retry-After": String(retryAfterSec),
-      },
+  return new Response(JSON.stringify({ error: "rate_limited", retryAfterSeconds: retryAfterSec }), {
+    status: 429,
+    headers: {
+      "Content-Type": "application/json",
+      "Retry-After": String(retryAfterSec),
     },
-  );
+  });
 }

@@ -10,10 +10,7 @@ const SETTLEMENT_DAYS: Record<Desk, number> = {
   commodities: 2,
 };
 
-export function settlementDate(
-  desk: Desk = "equity",
-  fromMs = Date.now(),
-): string {
+export function settlementDate(desk: Desk = "equity", fromMs = Date.now()): string {
   const days = SETTLEMENT_DAYS[desk];
   if (days === 0) return new Date(fromMs).toISOString().slice(0, 10);
 

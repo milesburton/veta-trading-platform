@@ -34,7 +34,7 @@ export function ConnectionLostBanner() {
       <button
         type="button"
         data-testid="connection-lost-reload"
-        onClick={() => window.location.reload()}
+        onClick={() => globalThis.location.reload()}
         className="shrink-0 px-3 py-0.5 rounded border border-amber-700 hover:bg-amber-900/40 text-amber-200 text-[11px] font-semibold uppercase tracking-wide transition-colors"
       >
         Reload page

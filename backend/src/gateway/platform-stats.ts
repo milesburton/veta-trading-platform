@@ -80,12 +80,12 @@ export class PlatformStats {
     if (this.snapshots.length > 0) {
       const totalRatio = this.snapshots.reduce(
         (sum, s) => sum + (s.total > 0 ? s.up / s.total : 1),
-        0,
+        0
       );
       serviceUpRatio = totalRatio / this.snapshots.length;
       worstServiceUpRatio = this.snapshots.reduce(
         (min, s) => Math.min(min, s.total > 0 ? s.up / s.total : 1),
-        1,
+        1
       );
     }
     return {

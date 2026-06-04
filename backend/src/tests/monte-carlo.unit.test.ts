@@ -1,14 +1,5 @@
-import {
-  assert,
-  assertAlmostEquals,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
-import {
-  boxMuller,
-  hashSeed,
-  makeLcg,
-  monteCarlo,
-} from "../analytics/monte-carlo.ts";
+import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
+import { boxMuller, hashSeed, makeLcg, monteCarlo } from "../analytics/monte-carlo.ts";
 import type { OptionType } from "../analytics/types.ts";
 
 const SPOT = 100;
@@ -27,7 +18,7 @@ function runMonteCarlo(
   rate = RATE,
   vol = VOL,
   paths = PATHS,
-  seedKey = SEED_KEY,
+  seedKey = SEED_KEY
 ) {
   return monteCarlo(optionType, spot, strike, time, rate, vol, paths, seedKey);
 }

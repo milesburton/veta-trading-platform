@@ -42,20 +42,19 @@ function nowMs(): number {
 }
 
 function emit(record: Record<string, unknown>): void {
-  console.log(JSON.stringify({
-    service: "synthetic-probe",
-    ts: new Date().toISOString(),
-    ...record,
-  }));
+  console.log(
+    JSON.stringify({
+      service: "synthetic-probe",
+      ts: new Date().toISOString(),
+      ...record,
+    })
+  );
 }
 
 async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   let timer: number | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error(`${label} timed out after ${ms}ms`)),
-      ms,
-    );
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
   });
   try {
     return await Promise.race([p, timeout]);
@@ -68,17 +67,37 @@ async function step1Root(): Promise<StepResult> {
   const t0 = nowMs();
   const name = "root";
   try {
-    const res = await withTimeout(fetch(BASE_URL + "/"), TIMEOUT_MS, name);
+    const res = await withTimeout(fetch(`${BASE_URL}/`), TIMEOUT_MS, name);
     const body = await res.text();
     if (res.status !== 200) {
-      return { step: 1, name, outcome: "fail", durationMs: nowMs() - t0, status: res.status, error: `expected 200, got ${res.status}` };
+      return {
+        step: 1,
+        name,
+        outcome: "fail",
+        durationMs: nowMs() - t0,
+        status: res.status,
+        error: `expected 200, got ${res.status}`,
+      };
     }
     if (!body.includes("__version") && !body.includes("VETA")) {
-      return { step: 1, name, outcome: "fail", durationMs: nowMs() - t0, status: 200, error: "body did not include expected markers" };
+      return {
+        step: 1,
+        name,
+        outcome: "fail",
+        durationMs: nowMs() - t0,
+        status: 200,
+        error: "body did not include expected markers",
+      };
     }
     return { step: 1, name, outcome: "ok", durationMs: nowMs() - t0, status: 200 };
   } catch (err) {
-    return { step: 1, name, outcome: "fail", durationMs: nowMs() - t0, error: err instanceof Error ? err.message : String(err) };
+    return {
+      step: 1,
+      name,
+      outcome: "fail",
+      durationMs: nowMs() - t0,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
@@ -87,21 +106,35 @@ async function step2GuestLogin(): Promise<{ result: StepResult; cookie: string |
   const name = "guest_login";
   try {
     const res = await withTimeout(
-      fetch(BASE_URL + "/api/gateway/api/user-service/oauth/guest", { method: "POST" }),
+      fetch(`${BASE_URL}/api/gateway/api/user-service/oauth/guest`, { method: "POST" }),
       TIMEOUT_MS,
-      name,
+      name
     );
     // Drain the body so the connection can be released.
     await res.text();
     if (res.status === 403) {
       return {
-        result: { step: 2, name, outcome: "fail", durationMs: nowMs() - t0, status: 403, error: "guest mode disabled (PUBLIC_GUEST_TRADING=false?)" },
+        result: {
+          step: 2,
+          name,
+          outcome: "fail",
+          durationMs: nowMs() - t0,
+          status: 403,
+          error: "guest mode disabled (PUBLIC_GUEST_TRADING=false?)",
+        },
         cookie: null,
       };
     }
     if (res.status !== 200) {
       return {
-        result: { step: 2, name, outcome: "fail", durationMs: nowMs() - t0, status: res.status, error: `expected 200, got ${res.status}` },
+        result: {
+          step: 2,
+          name,
+          outcome: "fail",
+          durationMs: nowMs() - t0,
+          status: res.status,
+          error: `expected 200, got ${res.status}`,
+        },
         cookie: null,
       };
     }
@@ -109,7 +142,14 @@ async function step2GuestLogin(): Promise<{ result: StepResult; cookie: string |
     const match = setCookie.match(/veta_user=([^;]+)/);
     if (!match) {
       return {
-        result: { step: 2, name, outcome: "fail", durationMs: nowMs() - t0, status: 200, error: "no veta_user cookie in response" },
+        result: {
+          step: 2,
+          name,
+          outcome: "fail",
+          durationMs: nowMs() - t0,
+          status: 200,
+          error: "no veta_user cookie in response",
+        },
         cookie: null,
       };
     }
@@ -119,7 +159,13 @@ async function step2GuestLogin(): Promise<{ result: StepResult; cookie: string |
     };
   } catch (err) {
     return {
-      result: { step: 2, name, outcome: "fail", durationMs: nowMs() - t0, error: err instanceof Error ? err.message : String(err) },
+      result: {
+        step: 2,
+        name,
+        outcome: "fail",
+        durationMs: nowMs() - t0,
+        error: err instanceof Error ? err.message : String(err),
+      },
       cookie: null,
     };
   }
@@ -131,25 +177,52 @@ async function step3GatewayReady(cookie: string | null): Promise<StepResult> {
   try {
     const headers: HeadersInit = cookie ? { Cookie: cookie } : {};
     const res = await withTimeout(
-      fetch(BASE_URL + "/api/gateway/ready", { headers }),
+      fetch(`${BASE_URL}/api/gateway/ready`, { headers }),
       TIMEOUT_MS,
-      name,
+      name
     );
     const body = await res.text();
     if (res.status !== 200) {
-      return { step: 3, name, outcome: "fail", durationMs: nowMs() - t0, status: res.status, error: `expected 200, got ${res.status}` };
+      return {
+        step: 3,
+        name,
+        outcome: "fail",
+        durationMs: nowMs() - t0,
+        status: res.status,
+        error: `expected 200, got ${res.status}`,
+      };
     }
     try {
       const parsed = JSON.parse(body) as { ready?: boolean };
       if (parsed.ready !== true) {
-        return { step: 3, name, outcome: "fail", durationMs: nowMs() - t0, status: 200, error: `ready=${parsed.ready}` };
+        return {
+          step: 3,
+          name,
+          outcome: "fail",
+          durationMs: nowMs() - t0,
+          status: 200,
+          error: `ready=${parsed.ready}`,
+        };
       }
     } catch {
-      return { step: 3, name, outcome: "fail", durationMs: nowMs() - t0, status: 200, error: "non-JSON body" };
+      return {
+        step: 3,
+        name,
+        outcome: "fail",
+        durationMs: nowMs() - t0,
+        status: 200,
+        error: "non-JSON body",
+      };
     }
     return { step: 3, name, outcome: "ok", durationMs: nowMs() - t0, status: 200 };
   } catch (err) {
-    return { step: 3, name, outcome: "fail", durationMs: nowMs() - t0, error: err instanceof Error ? err.message : String(err) };
+    return {
+      step: 3,
+      name,
+      outcome: "fail",
+      durationMs: nowMs() - t0,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
@@ -159,37 +232,70 @@ async function step4Personas(cookie: string | null): Promise<StepResult> {
   try {
     const headers: HeadersInit = cookie ? { Cookie: cookie } : {};
     const res = await withTimeout(
-      fetch(BASE_URL + "/api/gateway/api/user-service/personas", { headers }),
+      fetch(`${BASE_URL}/api/gateway/api/user-service/personas`, { headers }),
       TIMEOUT_MS,
-      name,
+      name
     );
     const body = await res.text();
     if (res.status !== 200) {
-      return { step: 4, name, outcome: "fail", durationMs: nowMs() - t0, status: res.status, error: `expected 200, got ${res.status}` };
+      return {
+        step: 4,
+        name,
+        outcome: "fail",
+        durationMs: nowMs() - t0,
+        status: res.status,
+        error: `expected 200, got ${res.status}`,
+      };
     }
     try {
       const parsed = JSON.parse(body) as { personas?: unknown[] };
       if (!Array.isArray(parsed.personas) || parsed.personas.length === 0) {
-        return { step: 4, name, outcome: "fail", durationMs: nowMs() - t0, status: 200, error: "personas list empty or missing" };
+        return {
+          step: 4,
+          name,
+          outcome: "fail",
+          durationMs: nowMs() - t0,
+          status: 200,
+          error: "personas list empty or missing",
+        };
       }
     } catch {
-      return { step: 4, name, outcome: "fail", durationMs: nowMs() - t0, status: 200, error: "non-JSON body" };
+      return {
+        step: 4,
+        name,
+        outcome: "fail",
+        durationMs: nowMs() - t0,
+        status: 200,
+        error: "non-JSON body",
+      };
     }
     return { step: 4, name, outcome: "ok", durationMs: nowMs() - t0, status: 200 };
   } catch (err) {
-    return { step: 4, name, outcome: "fail", durationMs: nowMs() - t0, error: err instanceof Error ? err.message : String(err) };
+    return {
+      step: 4,
+      name,
+      outcome: "fail",
+      durationMs: nowMs() - t0,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
 async function step5MarketFeed(): Promise<StepResult> {
   const t0 = nowMs();
   const name = "market_feed";
-  const wsUrl = BASE_URL.replace(/^http/, "ws") + "/ws";
+  const wsUrl = `${BASE_URL.replace(/^http/, "ws")}/ws`;
   let ws: WebSocket;
   try {
     ws = new WebSocket(wsUrl);
   } catch (err) {
-    return { step: 5, name, outcome: "fail", durationMs: nowMs() - t0, error: err instanceof Error ? err.message : String(err) };
+    return {
+      step: 5,
+      name,
+      outcome: "fail",
+      durationMs: nowMs() - t0,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
   try {
     await new Promise<void>((resolve, reject) => {
@@ -214,7 +320,13 @@ async function step5MarketFeed(): Promise<StepResult> {
     });
     return { step: 5, name, outcome: "ok", durationMs: nowMs() - t0 };
   } catch (err) {
-    return { step: 5, name, outcome: "fail", durationMs: nowMs() - t0, error: err instanceof Error ? err.message : String(err) };
+    return {
+      step: 5,
+      name,
+      outcome: "fail",
+      durationMs: nowMs() - t0,
+      error: err instanceof Error ? err.message : String(err),
+    };
   } finally {
     try {
       ws.close();
@@ -275,10 +387,4 @@ if (import.meta.main) {
   await main();
 }
 
-export {
-  step1Root,
-  step2GuestLogin,
-  step3GatewayReady,
-  step4Personas,
-  step5MarketFeed,
-};
+export { step1Root, step2GuestLogin, step3GatewayReady, step4Personas, step5MarketFeed };

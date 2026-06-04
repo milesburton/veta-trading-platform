@@ -16,17 +16,18 @@
  */
 
 import { type ElectronApplication, type Page, test } from "@playwright/test";
-import { _electron as electron } from "playwright";
-import * as path from "path";
 import * as fs from "fs";
+import * as path from "path";
+import { _electron as electron } from "playwright";
 import { fileURLToPath } from "url";
 import { ElectronMockServer } from "./helpers/ElectronMockServer.ts";
+import process from "node:process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MAIN_PATH = path.join(__dirname, "../dist-electron/main.js");
 const PACKAGED_ELECTRON_PATH = path.join(
   __dirname,
-  "../dist-app/linux-unpacked/veta-trading-platform",
+  "../dist-app/linux-unpacked/veta-trading-platform"
 );
 const OUT_DIR = path.resolve(__dirname, "../../docs/screenshots");
 
@@ -41,9 +42,7 @@ function packagedElectronExecutablePath() {
   if (process.env.ELECTRON_EXECUTABLE_PATH) {
     return process.env.ELECTRON_EXECUTABLE_PATH;
   }
-  return fs.existsSync(PACKAGED_ELECTRON_PATH)
-    ? PACKAGED_ELECTRON_PATH
-    : undefined;
+  return fs.existsSync(PACKAGED_ELECTRON_PATH) ? PACKAGED_ELECTRON_PATH : undefined;
 }
 
 const VOLUMES = {
@@ -129,13 +128,8 @@ test("electron screenshot: linked pop-out window", async () => {
       type: "order-blotter",
       layout: "veta-layout-v5",
     });
-    const url =
-      `${window.location.origin}${window.location.pathname}?${params}`;
-    window.open(
-      url,
-      "panel-order-blotter",
-      "width=700,height=600,resizable=yes",
-    );
+    const url = `${globalThis.location.origin}${globalThis.location.pathname}?${params}`;
+    globalThis.open(url, "panel-order-blotter", "width=700,height=600,resizable=yes");
   });
 
   const popOutPage = await popOutPromise;
@@ -147,7 +141,7 @@ test("electron screenshot: linked pop-out window", async () => {
   // Push a fresh tick so both windows show updated prices
   mockServer.sendMarketUpdate(
     { AAPL: 191.2, MSFT: 423.5, GOOGL: 174.8, NVDA: 882.1, AMZN: 226.3 },
-    VOLUMES,
+    VOLUMES
   );
   await mainPage.waitForTimeout(600);
 

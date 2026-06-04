@@ -19,11 +19,7 @@ const T = (ms = 10_000) => AbortSignal.timeout(ms);
 
 const PASSWORD = "register-test-passcode";
 
-async function registerUser(
-  us: string,
-  username: string,
-  archetype: string,
-): Promise<Response> {
+async function registerUser(us: string, username: string, archetype: string): Promise<Response> {
   return await fetch(`${us}/oauth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -50,7 +46,7 @@ async function loginWithPassword(us: string, username: string): Promise<string> 
     signal: T(),
   });
   assertEquals(auth.status, 200, `authorize for ${username} failed`);
-  const { code } = await auth.json() as { code: string };
+  const { code } = (await auth.json()) as { code: string };
   const tok = await fetch(`${us}/oauth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -95,7 +91,7 @@ Deno.test({
         const username = "tc-fi-voice";
         const reg = await registerUser(us, username, "fi-voice");
         assertEquals(reg.status, 201, "registration should succeed");
-        const regBody = await reg.json() as { archetype?: string };
+        const regBody = (await reg.json()) as { archetype?: string };
         assertEquals(regBody.archetype, "fi-voice");
 
         const token = await loginWithPassword(us, username);
@@ -104,7 +100,7 @@ Deno.test({
           signal: T(),
         });
         assertEquals(limitsRes.status, 200, "should read own limits");
-        const limits = await limitsRes.json() as {
+        const limits = (await limitsRes.json()) as {
           trading_style: string;
           primary_desk: string;
           allowed_strategies: string[];
@@ -117,7 +113,7 @@ Deno.test({
         assertEquals(limits.dark_pool_access, archetype.darkPoolAccess);
         assertEquals(
           limits.allowed_strategies.sort(),
-          archetype.allowedStrategies.split(",").sort(),
+          archetype.allowedStrategies.split(",").sort()
         );
       });
 
@@ -136,7 +132,7 @@ Deno.test({
           signal: T(),
         });
         assertEquals(limitsRes.status, 200);
-        const limits = await limitsRes.json() as {
+        const limits = (await limitsRes.json()) as {
           trading_style: string;
           dark_pool_access: boolean;
         };

@@ -16,8 +16,8 @@ export function openOrderTicketWindow(
   if (prefill) {
     params.set("prefill", encodeURIComponent(JSON.stringify(prefill)));
   }
-  window.open(
-    `${window.location.origin}${window.location.pathname}?${params}`,
+  globalThis.open(
+    `${globalThis.location.origin}${globalThis.location.pathname}?${params}`,
     "order-ticket",
     `width=${size.w},height=${size.h},resizable=yes`
   );

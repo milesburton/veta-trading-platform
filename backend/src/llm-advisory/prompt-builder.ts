@@ -1,11 +1,6 @@
-import type {
-  FeatureVector,
-  Signal,
-  TradeRecommendation,
-} from "@veta/types/intelligence";
+import type { FeatureVector, Signal, TradeRecommendation } from "@veta/types/intelligence";
 
-export const SYSTEM_PROMPT =
-  `You are an educational market analysis assistant embedded in a trading simulator.
+export const SYSTEM_PROMPT = `You are an educational market analysis assistant embedded in a trading simulator.
 Your role is to provide concise, objective commentary on market signals and feature data.
 You MUST always include the disclaimer: "This is for educational purposes only. Not financial advice."
 Focus on explaining what the data shows, not on recommending specific trades.
@@ -15,9 +10,9 @@ export async function computeSystemPromptHash(): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(SYSTEM_PROMPT);
   const hash = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hash)).map((b) =>
-    b.toString(16).padStart(2, "0")
-  ).join("");
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function fmt(n: number | null | undefined, places: number): string {
@@ -30,7 +25,7 @@ export function buildPrompt(
   signal: Signal,
   fv: FeatureVector | null,
   rec: TradeRecommendation | null,
-  recentCloses: number[],
+  recentCloses: number[]
 ): string {
   const topFactors = [...(signal.factors ?? [])]
     .filter((f) => typeof f.contribution === "number" && Number.isFinite(f.contribution))
@@ -39,9 +34,10 @@ export function buildPrompt(
     .map((f) => `${f.name}(${f.contribution >= 0 ? "+" : ""}${fmt(f.contribution, 3)})`)
     .join(", ");
 
-  const confidencePct = typeof signal.confidence === "number" && Number.isFinite(signal.confidence)
-    ? `${(signal.confidence * 100).toFixed(0)}%`
-    : "—";
+  const confidencePct =
+    typeof signal.confidence === "number" && Number.isFinite(signal.confidence)
+      ? `${(signal.confidence * 100).toFixed(0)}%`
+      : "—";
 
   const lines: string[] = [
     `Symbol: ${symbol}`,
@@ -54,7 +50,7 @@ export function buildPrompt(
       `Features: momentum=${fmt(fv.momentum, 4)}, relVol=${fmt(fv.relativeVolume, 2)}, ` +
         `realisedVol=${fmt(fv.realisedVol, 4)}, sectorRS=${fmt(fv.sectorRelativeStrength, 4)}, ` +
         `eventScore=${fmt(fv.eventScore, 2)}, newsVel=${fmt(fv.newsVelocity, 1)}, ` +
-        `sentDelta=${fmt(fv.sentimentDelta, 3)}`,
+        `sentDelta=${fmt(fv.sentimentDelta, 3)}`
     );
   }
 
@@ -65,19 +61,20 @@ export function buildPrompt(
         : "—";
     lines.push(
       `Recommendation: ${rec.action} | qty ${rec.suggestedQty ?? "—"} | confidence ${recConfidencePct}`,
-      `Rationale: ${rec.rationale ?? "—"}`,
+      `Rationale: ${rec.rationale ?? "—"}`
     );
   }
 
   if (recentCloses.length > 0) {
     lines.push(
-      `Recent closes: ${recentCloses.slice(-5).map((v) => fmt(v, 2)).join(", ")}`,
+      `Recent closes: ${recentCloses
+        .slice(-5)
+        .map((v) => fmt(v, 2))
+        .join(", ")}`
     );
   }
 
-  lines.push(
-    "\nProvide a brief educational commentary on what these signals suggest.",
-  );
+  lines.push("\nProvide a brief educational commentary on what these signals suggest.");
 
   return lines.join("\n");
 }

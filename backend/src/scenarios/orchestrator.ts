@@ -1,5 +1,5 @@
-import type { MsgProducer } from "@veta/messaging";
 import { logger } from "@veta/logger";
+import type { MsgProducer } from "@veta/messaging";
 import { diffOutcome } from "./diff.ts";
 import { computeActual } from "./outcome.ts";
 import { completeRun, createRun } from "./store.ts";
@@ -51,13 +51,13 @@ async function reseed(deps: OrchestratorDeps, seed: number): Promise<void> {
 async function pollOrder(
   deps: OrchestratorDeps,
   clientOrderId: string,
-  userId: string,
+  userId: string
 ): Promise<JournalOrder | null> {
   const fetchImpl = deps.fetchImpl ?? fetch;
   const url = `${deps.journalUrl}/orders?userId=${encodeURIComponent(userId)}`;
   const res = await fetchImpl(url, { signal: AbortSignal.timeout(3_000) });
   if (!res.ok) return null;
-  const body = await res.json() as JournalOrder[] | { orders?: JournalOrder[] };
+  const body = (await res.json()) as JournalOrder[] | { orders?: JournalOrder[] };
   const orders = Array.isArray(body) ? body : (body.orders ?? []);
   return orders.find((o) => o.clientOrderId === clientOrderId || o.id === clientOrderId) ?? null;
 }
@@ -68,7 +68,7 @@ function isTerminal(status: string): boolean {
 
 export async function runScenario(
   scenario: Scenario,
-  deps: OrchestratorDeps,
+  deps: OrchestratorDeps
 ): Promise<ScenarioRun> {
   const run = await createRun(scenario.id, scenario.userId);
   const triggeredAt = Date.now();
@@ -78,13 +78,15 @@ export async function runScenario(
     await reseed(deps, scenario.spec.seed);
   } catch (err) {
     logger.warn("scenario reseed failed", { ...LOG, runId: run.id, err: err as Error });
-    return (await completeRun(run.id, {
-      parentOrderId: null,
-      actual: null,
-      diff: null,
-      status: "failed",
-      error: `reseed failed: ${(err as Error).message}`,
-    })) ?? run;
+    return (
+      (await completeRun(run.id, {
+        parentOrderId: null,
+        actual: null,
+        diff: null,
+        status: "failed",
+        error: `reseed failed: ${(err as Error).message}`,
+      })) ?? run
+    );
   }
 
   try {
@@ -103,13 +105,15 @@ export async function runScenario(
       _scenarioRunId: run.id,
     });
   } catch (err) {
-    return (await completeRun(run.id, {
-      parentOrderId: null,
-      actual: null,
-      diff: null,
-      status: "failed",
-      error: `submit failed: ${(err as Error).message}`,
-    })) ?? run;
+    return (
+      (await completeRun(run.id, {
+        parentOrderId: null,
+        actual: null,
+        diff: null,
+        status: "failed",
+        error: `submit failed: ${(err as Error).message}`,
+      })) ?? run
+    );
   }
 
   const deadline = Date.now() + FILL_TIMEOUT_MS;
@@ -121,31 +125,32 @@ export async function runScenario(
   }
 
   if (!order) {
-    return (await completeRun(run.id, {
-      parentOrderId: null,
-      actual: null,
-      diff: null,
-      status: "failed",
-      error: "Order never reached the journal within timeout",
-    })) ?? run;
+    return (
+      (await completeRun(run.id, {
+        parentOrderId: null,
+        actual: null,
+        diff: null,
+        status: "failed",
+        error: "Order never reached the journal within timeout",
+      })) ?? run
+    );
   }
 
   const completedAt = Date.now();
   const actual = computeActual(order, triggeredAt, completedAt);
   const diff = diffOutcome(scenario.expected, actual);
   const expectedSpecified =
-    scenario.expected !== null && Object.keys(scenario.expected ?? {}).some((k) => k !== "tolerance");
-  const status = !expectedSpecified
-    ? "completed"
-    : diff.matched
-      ? "completed"
-      : "mismatched";
+    scenario.expected !== null &&
+    Object.keys(scenario.expected ?? {}).some((k) => k !== "tolerance");
+  const status = !expectedSpecified ? "completed" : diff.matched ? "completed" : "mismatched";
 
-  return (await completeRun(run.id, {
-    parentOrderId: order.id,
-    actual,
-    diff,
-    status,
-    error: null,
-  })) ?? run;
+  return (
+    (await completeRun(run.id, {
+      parentOrderId: order.id,
+      actual,
+      diff,
+      status,
+      error: null,
+    })) ?? run
+  );
 }

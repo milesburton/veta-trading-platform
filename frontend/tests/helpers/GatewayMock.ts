@@ -1,4 +1,5 @@
 import type { Page, WebSocketRoute } from "@playwright/test";
+import type { AssetDef, AuthUser, TradingLimits } from "./authFixtures.ts";
 import {
   ALGO_TRADER,
   ALGO_TRADER_LIMITS,
@@ -15,7 +16,6 @@ import {
   SALES_LIMITS,
   SALES_USER,
 } from "./authFixtures.ts";
-import type { AssetDef, AuthUser, TradingLimits } from "./authFixtures.ts";
 export {
   ALGO_TRADER,
   ALGO_TRADER_LIMITS,
@@ -36,7 +36,10 @@ export type { AssetDef, AuthUser, TradingLimits };
 
 type GatewayInbound =
   | { event: "authIdentity"; data: { user: AuthUser; limits: TradingLimits } }
-  | { event: "marketUpdate"; data: { prices: Record<string, number>; volumes: Record<string, number> } }
+  | {
+      event: "marketUpdate";
+      data: { prices: Record<string, number>; volumes: Record<string, number> };
+    }
   | { event: "orderEvent"; topic: string; data: Record<string, unknown> }
   | { event: "orderRejected"; data: { clientOrderId: string; reason: string } }
   | { event: "newsUpdate"; data: Record<string, unknown> }
@@ -97,10 +100,10 @@ export const MOCK_DURATION_LADDER_RESPONSE = {
 
 export const MOCK_VOL_SURFACE_RESPONSE = {
   symbol: "AAPL",
-  spotPrice: 189.30,
+  spotPrice: 189.3,
   atTheMoneyVol: 0.25,
   expiries: [7 * 86400, 14 * 86400, 30 * 86400, 60 * 86400, 90 * 86400],
-  moneynesses: [0.70, 0.80, 0.90, 0.95, 1.0, 1.05, 1.10, 1.20, 1.30],
+  moneynesses: [0.7, 0.8, 0.9, 0.95, 1.0, 1.05, 1.1, 1.2, 1.3],
   surface: (() => {
     const expiries = [
       { secs: 7 * 86400, label: "7d" },
@@ -109,10 +112,10 @@ export const MOCK_VOL_SURFACE_RESPONSE = {
       { secs: 60 * 86400, label: "60d" },
       { secs: 90 * 86400, label: "90d" },
     ];
-    const moneynesses = [0.70, 0.80, 0.90, 0.95, 1.0, 1.05, 1.10, 1.20, 1.30];
-    const spot = 189.30;
+    const moneynesses = [0.7, 0.8, 0.9, 0.95, 1.0, 1.05, 1.1, 1.2, 1.3];
+    const spot = 189.3;
     const atm = 0.25;
-    const skew = -0.10;
+    const skew = -0.1;
     const curvature = 0.05;
     return expiries.flatMap(({ secs, label }) =>
       moneynesses.map((m) => {
@@ -387,8 +390,7 @@ export class GatewayMock {
           } else {
             mock._outboundQueue.push(msg);
           }
-        } catch {
-        }
+        } catch {}
       });
     });
 
@@ -418,7 +420,11 @@ export class GatewayMock {
     this._send({ event: "marketUpdate", data: { prices, volumes: vols } });
   }
 
-  sendMarketUpdateWithOpen(openPrices: Record<string, number>, prices: Record<string, number>, volumes?: Record<string, number>) {
+  sendMarketUpdateWithOpen(
+    openPrices: Record<string, number>,
+    prices: Record<string, number>,
+    volumes?: Record<string, number>
+  ) {
     const vols = volumes ?? Object.fromEntries(Object.keys(prices).map((s) => [s, 1000]));
     this._send({ event: "marketUpdate", data: { prices, openPrices, volumes: vols } });
   }
@@ -449,7 +455,15 @@ export class GatewayMock {
       switch (stage) {
         case "submitted":
           this._patchOrder(clientOrderId, { status: "queued" });
-          this.sendOrderEvent("orders.submitted", { orderId, clientOrderId, asset, side, quantity, limitPrice, status: "queued" });
+          this.sendOrderEvent("orders.submitted", {
+            orderId,
+            clientOrderId,
+            asset,
+            side,
+            quantity,
+            limitPrice,
+            status: "queued",
+          });
           break;
         case "routed":
           this._patchOrder(clientOrderId, { status: "executing" });
@@ -515,16 +529,36 @@ export class GatewayMock {
       children: [],
     };
     this._orders.set(clientOrderId, order);
-    this.sendOrderEvent("orders.submitted", { orderId, clientOrderId, asset: opts.asset, side: opts.side, quantity: opts.quantity, limitPrice: opts.limitPrice, status: "queued" });
+    this.sendOrderEvent("orders.submitted", {
+      orderId,
+      clientOrderId,
+      asset: opts.asset,
+      side: opts.side,
+      quantity: opts.quantity,
+      limitPrice: opts.limitPrice,
+      status: "queued",
+    });
     if (opts.status === "executing" || opts.status === "filled") {
-      this.sendOrderEvent("orders.routed", { orderId, clientOrderId, strategy: opts.strategy ?? "LIMIT" });
+      this.sendOrderEvent("orders.routed", {
+        orderId,
+        clientOrderId,
+        strategy: opts.strategy ?? "LIMIT",
+      });
     }
     if (opts.status === "filled") {
       this.sendOrderEvent("orders.filled", {
-        parentOrderId: orderId, clientOrderId, childId: `child-${clientOrderId}`,
-        asset: opts.asset, side: opts.side, filledQty: opts.quantity, remainingQty: 0,
-        avgFillPrice: opts.limitPrice, venue: "XNAS", liquidityFlag: "MAKER",
-        commissionUSD: opts.quantity * 0.003, ts: Date.now(),
+        parentOrderId: orderId,
+        clientOrderId,
+        childId: `child-${clientOrderId}`,
+        asset: opts.asset,
+        side: opts.side,
+        filledQty: opts.quantity,
+        remainingQty: 0,
+        avgFillPrice: opts.limitPrice,
+        venue: "XNAS",
+        liquidityFlag: "MAKER",
+        commissionUSD: opts.quantity * 0.003,
+        ts: Date.now(),
       });
     }
     if (opts.status === "expired") {
@@ -581,7 +615,9 @@ export class GatewayMock {
       const timer = setTimeout(() => {
         const ri = this._outboundResolvers.findIndex((r) => r.resolve === resolve);
         if (ri !== -1) this._outboundResolvers.splice(ri, 1);
-        reject(new Error(`Timed out waiting for outbound message type="${type}" after ${timeoutMs}ms`));
+        reject(
+          new Error(`Timed out waiting for outbound message type="${type}" after ${timeoutMs}ms`)
+        );
       }, timeoutMs);
 
       this._outboundResolvers.push({

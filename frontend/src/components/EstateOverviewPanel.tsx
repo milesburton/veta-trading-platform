@@ -374,10 +374,14 @@ function TimelineZone() {
         {events.length === 0 ? (
           <div className="px-2 py-3 text-[10px] text-divider">No events yet…</div>
         ) : (
-          events.slice(0, 200).map((ev, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: events have no stable id; key includes ts+type for stability
-            <EventRow key={`${ev.ts ?? 0}-${ev.type}-${i}`} ev={ev} />
-          ))
+          events
+            .slice(0, 200)
+            .map((ev) => (
+              <EventRow
+                key={`${ev.ts ?? 0}-${ev.type}-${String(ev.payload?.symbol ?? "")}-${String(ev.payload?.status ?? "")}`}
+                ev={ev}
+              />
+            ))
         )}
       </div>
     </div>

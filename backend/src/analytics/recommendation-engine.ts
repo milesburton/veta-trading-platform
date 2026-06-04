@@ -8,12 +8,7 @@
  */
 
 import { blackScholes } from "./black-scholes.ts";
-import type {
-  OptionType,
-  Recommendation,
-  SignalInput,
-  SignalStrength,
-} from "./types.ts";
+import type { OptionType, Recommendation, SignalInput, SignalStrength } from "./types.ts";
 
 function scoreToStrength(score: number): SignalStrength {
   if (score >= 60) return "STRONG_BUY";
@@ -37,7 +32,7 @@ function evaluateRules(
   price: number,
   delta: number,
   theta: number,
-  vega: number,
+  vega: number
 ): RuleResult[] {
   const results: RuleResult[] = [];
   const moneyness = S / K;
@@ -48,10 +43,10 @@ function evaluateRules(
 
   if (absDelta > 0.85) results.push({ reason: "DEEP_ITM", delta: -15 });
 
-  if (absDelta < 0.10) results.push({ reason: "DEEP_OTM", delta: -25 });
+  if (absDelta < 0.1) results.push({ reason: "DEEP_OTM", delta: -25 });
 
   const isNearATM = Math.abs(moneyness - 1) < 0.05;
-  if (isNearATM && sigma > 0.30) {
+  if (isNearATM && sigma > 0.3) {
     results.push({ reason: "ATM_HIGH_VOL", delta: 15 });
   }
 
@@ -74,7 +69,7 @@ function evaluateRules(
     results.push({ reason: "NEGATIVE_DELTA_TREND", delta: 20 });
   }
 
-  if (sigma > 0.40) {
+  if (sigma > 0.4) {
     results.push({ reason: "VOL_PREMIUM_ELEVATED", delta: -15 });
   }
 
@@ -89,10 +84,7 @@ function evaluateRules(
     results.push({ reason: "WIDE_BID_ASK_PROXY", delta: -10 });
   }
 
-  if (
-    absDelta >= 0.25 && absDelta <= 0.55 && timeValue > price * 0.3 &&
-    daysToExpiry >= 14
-  ) {
+  if (absDelta >= 0.25 && absDelta <= 0.55 && timeValue > price * 0.3 && daysToExpiry >= 14) {
     results.push({ reason: "FAVOURABLE_RISK_REWARD", delta: 25 });
   }
 
@@ -108,7 +100,7 @@ export function scoreOption(
   K: number,
   T: number,
   r: number,
-  sigma: number,
+  sigma: number
 ): Recommendation {
   const { price, greeks } = blackScholes(optionType, S, K, T, r, sigma);
   const rules = evaluateRules(
@@ -120,7 +112,7 @@ export function scoreOption(
     price,
     greeks.delta,
     greeks.theta,
-    greeks.vega,
+    greeks.vega
   );
 
   const rawScore = rules.reduce((acc, rule) => acc + rule.delta, 0);
@@ -152,7 +144,7 @@ export function scoreOptionWithSignal(
   T: number,
   r: number,
   sigma: number,
-  signal: SignalInput,
+  signal: SignalInput
 ): Recommendation {
   const { price, greeks } = blackScholes(optionType, S, K, T, r, sigma);
   const rules = evaluateRules(
@@ -164,7 +156,7 @@ export function scoreOptionWithSignal(
     price,
     greeks.delta,
     greeks.theta,
-    greeks.vega,
+    greeks.vega
   );
 
   const ruleScore = rules.reduce((acc, rule) => acc + rule.delta, 0);
@@ -173,13 +165,15 @@ export function scoreOptionWithSignal(
   let signalBias = 0;
   const { score: sigScore, direction, confidence } = signal;
   if (direction === "long") {
-    signalBias = optionType === "call"
-      ? sigScore * confidence * 60 // long signal strongly favours calls
-      : -sigScore * confidence * 40; // long signal mildly contra puts
+    signalBias =
+      optionType === "call"
+        ? sigScore * confidence * 60 // long signal strongly favours calls
+        : -sigScore * confidence * 40; // long signal mildly contra puts
   } else if (direction === "short") {
-    signalBias = optionType === "put"
-      ? (-sigScore) * confidence * 60 // short signal strongly favours puts
-      : sigScore * confidence * 40; // short signal mildly contra calls
+    signalBias =
+      optionType === "put"
+        ? -sigScore * confidence * 60 // short signal strongly favours puts
+        : sigScore * confidence * 40; // short signal mildly contra calls
   }
   // neutral direction: signalBias = 0
 
@@ -195,8 +189,8 @@ export function scoreOptionWithSignal(
   // Reasons: rule codes + top-3 signal factors as strings
   const reasons = [
     ...rules.map((r) => r.reason),
-    ...topFactors.map((f) =>
-      `${f.name}:${f.contribution >= 0 ? "+" : ""}${f.contribution.toFixed(3)}`
+    ...topFactors.map(
+      (f) => `${f.name}:${f.contribution >= 0 ? "+" : ""}${f.contribution.toFixed(3)}`
     ),
   ];
 

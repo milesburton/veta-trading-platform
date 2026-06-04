@@ -5,10 +5,10 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { createMarketSimClient } from "@veta/market-client";
-import { createConsumer, createProducer } from "@veta/messaging";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
+import { createMarketSimClient } from "@veta/market-client";
+import { createConsumer, createProducer } from "@veta/messaging";
 
 const PORT = Number(Deno.env.get("CCP_SERVICE_PORT")) || 5_028;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -16,14 +16,13 @@ const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 
 /** How often to run the settlement sweep (ms). */
-const SETTLEMENT_SWEEP_MS = Number(Deno.env.get("CCP_SETTLEMENT_SWEEP_MS")) ||
-  30_000;
+const SETTLEMENT_SWEEP_MS = Number(Deno.env.get("CCP_SETTLEMENT_SWEEP_MS")) || 30_000;
 
 /** How often to mark-to-market margin positions (ms). */
 const MARGIN_MTM_MS = Number(Deno.env.get("CCP_MARGIN_MTM_MS")) || 10_000;
 
 const INITIAL_MARGIN_RATE: Record<string, number> = {
-  equity: 0.10, // 10% of notional
+  equity: 0.1, // 10% of notional
   fi: 0.02, //  2% of notional (bonds are lower risk)
   derivatives: 0.15, // 15% of notional (options carry more risk)
   otc: 0.05, //  5% default for OTC
@@ -31,7 +30,7 @@ const INITIAL_MARGIN_RATE: Record<string, number> = {
 const _MAINTENANCE_MARGIN_RATE: Record<string, number> = {
   equity: 0.07,
   fi: 0.015,
-  derivatives: 0.10,
+  derivatives: 0.1,
   otc: 0.035,
 };
 
@@ -149,18 +148,15 @@ const producer = await createProducer("ccp-service").catch((err) => {
   return null;
 });
 
-const fillsConsumer = await createConsumer("ccp-fills", ["orders.filled"])
-  .catch((err) => {
-    logger.warn("Cannot subscribe to orders.filled", { err });
-    return null;
-  });
+const fillsConsumer = await createConsumer("ccp-fills", ["orders.filled"]).catch((err) => {
+  logger.warn("Cannot subscribe to orders.filled", { err });
+  return null;
+});
 
-const rfqConsumer = await createConsumer("ccp-rfq", ["rfq.executed"]).catch(
-  (err) => {
-    logger.warn("Cannot subscribe to rfq.executed", { err });
-    return null;
-  },
-);
+const rfqConsumer = await createConsumer("ccp-rfq", ["rfq.executed"]).catch((err) => {
+  logger.warn("Cannot subscribe to rfq.executed", { err });
+  return null;
+});
 
 function getOrCreateMarginAccount(userId: string): MarginAccount {
   let acct = marginAccounts.get(userId);
@@ -184,7 +180,7 @@ function updatePosition(
   asset: string,
   side: "BUY" | "SELL",
   qty: number,
-  price: number,
+  price: number
 ): void {
   const sign = side === "BUY" ? 1 : -1;
   const currentQty = acct.positions[asset] ?? 0;
@@ -213,10 +209,10 @@ async function postInitialMargin(
   side: "BUY" | "SELL",
   qty: number,
   price: number,
-  execId: string,
+  execId: string
 ): Promise<void> {
   const acct = getOrCreateMarginAccount(userId);
-  const rate = INITIAL_MARGIN_RATE[desk] ?? 0.10;
+  const rate = INITIAL_MARGIN_RATE[desk] ?? 0.1;
   const marginRequired = parseFloat((notional * rate).toFixed(2));
 
   acct.initialMarginPosted += marginRequired;
@@ -225,17 +221,19 @@ async function postInitialMargin(
 
   updatePosition(acct, asset, side, qty, price);
 
-  await producer?.send("ccp.margin", {
-    type: "initial",
-    userId,
-    asset,
-    desk,
-    marginRequired,
-    totalMarginPosted: acct.initialMarginPosted,
-    notional,
-    execId,
-    ts: Date.now(),
-  }).catch(() => {});
+  await producer
+    ?.send("ccp.margin", {
+      type: "initial",
+      userId,
+      asset,
+      desk,
+      marginRequired,
+      totalMarginPosted: acct.initialMarginPosted,
+      notional,
+      execId,
+      ts: Date.now(),
+    })
+    .catch(() => {});
 
   totalMarginCalls++;
 }
@@ -251,7 +249,7 @@ async function novate(
   desk: string,
   marketType: string,
   originalCounterparty: string,
-  settlDate: string,
+  settlDate: string
 ): Promise<void> {
   const tradeId = nextTradeId();
   const legId = nextLegId();
@@ -295,60 +293,54 @@ async function novate(
 
   totalNovated++;
 
-  logger.info(`Novated ${tradeId}: ${side} ${quantity} ${asset} @ ${price} ` +
-      `desk=${desk} user=${userId} settle=${settlDate}`);
-
-  await producer?.send("ccp.novation", {
-    tradeId,
-    legId,
-    execId,
-    userId,
-    asset,
-    side,
-    quantity,
-    price,
-    notional,
-    desk,
-    marketType,
-    originalCounterparty,
-    ccpCounterparty: "VETA-CCP",
-    settlementDate: settlDate,
-    ts: now,
-  }).catch(() => {});
-
-  await producer?.send("ccp.settlement.queued", {
-    obligationId,
-    legId,
-    tradeId,
-    userId,
-    asset,
-    side,
-    quantity,
-    price,
-    notional,
-    desk,
-    settlementDate: settlDate,
-    ts: now,
-  }).catch(() => {});
-
-  await postInitialMargin(
-    userId,
-    desk,
-    notional,
-    asset,
-    side,
-    quantity,
-    price,
-    execId,
+  logger.info(
+    `Novated ${tradeId}: ${side} ${quantity} ${asset} @ ${price} ` +
+      `desk=${desk} user=${userId} settle=${settlDate}`
   );
+
+  await producer
+    ?.send("ccp.novation", {
+      tradeId,
+      legId,
+      execId,
+      userId,
+      asset,
+      side,
+      quantity,
+      price,
+      notional,
+      desk,
+      marketType,
+      originalCounterparty,
+      ccpCounterparty: "VETA-CCP",
+      settlementDate: settlDate,
+      ts: now,
+    })
+    .catch(() => {});
+
+  await producer
+    ?.send("ccp.settlement.queued", {
+      obligationId,
+      legId,
+      tradeId,
+      userId,
+      asset,
+      side,
+      quantity,
+      price,
+      notional,
+      desk,
+      settlementDate: settlDate,
+      ts: now,
+    })
+    .catch(() => {});
+
+  await postInitialMargin(userId, desk, notional, asset, side, quantity, price, execId);
 }
 
 fillsConsumer?.onMessage((_topic, raw) => {
   const fill = raw as Fill;
-  if (
-    !fill.execId || !fill.userId || !fill.asset || !fill.filledQty ||
-    !fill.avgFillPrice
-  ) return;
+  if (!fill.execId || !fill.userId || !fill.asset || !fill.filledQty || !fill.avgFillPrice) return;
   if (fill.filledQty <= 0) return;
 
   const desk = fill.desk ?? "equity";
@@ -357,8 +349,8 @@ fillsConsumer?.onMessage((_topic, raw) => {
   const counterparty = fill.counterparty ?? "UNKNOWN";
 
   // Settlement date from the fill payload; fall back to T+2 for equity
-  const settlDate = fill.settlementDate ??
-    new Date(Date.now() + 2 * 86400_000).toISOString().slice(0, 10);
+  const settlDate =
+    fill.settlementDate ?? new Date(Date.now() + 2 * 86400_000).toISOString().slice(0, 10);
 
   novate(
     fill.execId,
@@ -371,20 +363,17 @@ fillsConsumer?.onMessage((_topic, raw) => {
     desk,
     marketType,
     counterparty,
-    settlDate,
-  )
-    .catch((err) => logger.error("async error", { err }));
+    settlDate
+  ).catch((err) => logger.error("async error", { err }));
 });
 
 rfqConsumer?.onMessage((_topic, raw) => {
   const exec = raw as RfqExecution;
-  if (
-    !exec.execId || !exec.userId || !exec.asset || !exec.quantity || !exec.price
-  ) return;
+  if (!exec.execId || !exec.userId || !exec.asset || !exec.quantity || !exec.price) return;
 
   const desk = exec.desk ?? "fi";
-  const settlDate = exec.settlementDate ??
-    new Date(Date.now() + 86400_000).toISOString().slice(0, 10);
+  const settlDate =
+    exec.settlementDate ?? new Date(Date.now() + 86400_000).toISOString().slice(0, 10);
 
   novate(
     exec.execId,
@@ -397,9 +386,8 @@ rfqConsumer?.onMessage((_topic, raw) => {
     desk,
     "otc",
     exec.dealerId,
-    settlDate,
-  )
-    .catch((err) => logger.error("async error", { err }));
+    settlDate
+  ).catch((err) => logger.error("async error", { err }));
 });
 
 async function runSettlementSweep(): Promise<void> {
@@ -419,12 +407,9 @@ async function runSettlementSweep(): Promise<void> {
     // Release initial margin for this position
     const acct = marginAccounts.get(obligation.userId);
     if (acct) {
-      const rate = INITIAL_MARGIN_RATE[obligation.desk] ?? 0.10;
+      const rate = INITIAL_MARGIN_RATE[obligation.desk] ?? 0.1;
       const release = parseFloat((obligation.notional * rate).toFixed(2));
-      acct.initialMarginPosted = Math.max(
-        0,
-        acct.initialMarginPosted - release,
-      );
+      acct.initialMarginPosted = Math.max(0, acct.initialMarginPosted - release);
       acct.netMarginRequired = Math.max(0, acct.netMarginRequired - release);
       // Remove settled position from the account
       const sign = obligation.side === "BUY" ? 1 : -1;
@@ -441,22 +426,26 @@ async function runSettlementSweep(): Promise<void> {
 
     totalSettled++;
 
-    logger.info(`Settled ${obligation.obligationId}: ${obligation.side} ${obligation.quantity} ${obligation.asset}`);
+    logger.info(
+      `Settled ${obligation.obligationId}: ${obligation.side} ${obligation.quantity} ${obligation.asset}`
+    );
 
-    await producer?.send("ccp.settlement.complete", {
-      obligationId: id,
-      legId: obligation.legId,
-      userId: obligation.userId,
-      asset: obligation.asset,
-      side: obligation.side,
-      quantity: obligation.quantity,
-      price: obligation.price,
-      notional: obligation.notional,
-      desk: obligation.desk,
-      settlementDate: obligation.settlementDate,
-      settledAt: obligation.settledAt,
-      ts: Date.now(),
-    }).catch(() => {});
+    await producer
+      ?.send("ccp.settlement.complete", {
+        obligationId: id,
+        legId: obligation.legId,
+        userId: obligation.userId,
+        asset: obligation.asset,
+        side: obligation.side,
+        quantity: obligation.quantity,
+        price: obligation.price,
+        notional: obligation.notional,
+        desk: obligation.desk,
+        settlementDate: obligation.settlementDate,
+        settledAt: obligation.settledAt,
+        ts: Date.now(),
+      })
+      .catch(() => {});
 
     // Clean up settled obligations older than 24h
     settlementQueue.delete(id);
@@ -480,26 +469,26 @@ async function runMarginMtM(): Promise<void> {
     acct.unrealisedPnl = parseFloat(unrealisedPnl.toFixed(2));
 
     // Check if margin has fallen below maintenance threshold
-    const maintenanceRequired = acct.netMarginRequired *
-      (Object.keys(acct.positions).length > 0 ? 0.7 : 1); // maintenance is 70% of initial
+    const maintenanceRequired =
+      acct.netMarginRequired * (Object.keys(acct.positions).length > 0 ? 0.7 : 1); // maintenance is 70% of initial
 
     const effectiveMargin = acct.initialMarginPosted + acct.unrealisedPnl;
 
     if (acct.initialMarginPosted > 0 && effectiveMargin < maintenanceRequired) {
-      const variationCall = parseFloat(
-        (acct.netMarginRequired - effectiveMargin).toFixed(2),
-      );
+      const variationCall = parseFloat((acct.netMarginRequired - effectiveMargin).toFixed(2));
       if (variationCall > 0) {
         totalMarginCalls++;
-        await producer?.send("ccp.margin", {
-          type: "variation",
-          userId,
-          variationCall,
-          effectiveMargin,
-          maintenanceRequired,
-          unrealisedPnl: acct.unrealisedPnl,
-          ts: now,
-        }).catch(() => {});
+        await producer
+          ?.send("ccp.margin", {
+            type: "variation",
+            userId,
+            variationCall,
+            effectiveMargin,
+            maintenanceRequired,
+            unrealisedPnl: acct.unrealisedPnl,
+            ts: now,
+          })
+          .catch(() => {});
       }
     }
 
@@ -533,16 +522,11 @@ Deno.serve({ port: PORT }, (req) => {
 
   // GET /ccp/stats
   if (path === "/ccp/stats" && req.method === "GET") {
-    const pendingObligations = [...settlementQueue.values()].filter((o) =>
-      !o.settled
-    );
-    const pendingByDate = pendingObligations.reduce<Record<string, number>>(
-      (acc, o) => {
-        acc[o.settlementDate] = (acc[o.settlementDate] ?? 0) + 1;
-        return acc;
-      },
-      {},
-    );
+    const pendingObligations = [...settlementQueue.values()].filter((o) => !o.settled);
+    const pendingByDate = pendingObligations.reduce<Record<string, number>>((acc, o) => {
+      acc[o.settlementDate] = (acc[o.settlementDate] ?? 0) + 1;
+      return acc;
+    }, {});
     return json({
       service: "ccp-service",
       version: VERSION,
@@ -578,20 +562,16 @@ Deno.serve({ port: PORT }, (req) => {
     const userId = url.searchParams.get("userId");
     let obligations = [...settlementQueue.values()].filter((o) => !o.settled);
     if (userId) obligations = obligations.filter((o) => o.userId === userId);
-    obligations.sort((a, b) =>
-      a.settlementDate.localeCompare(b.settlementDate)
-    );
+    obligations.sort((a, b) => a.settlementDate.localeCompare(b.settlementDate));
     return json({ obligations, total: obligations.length });
   }
 
   // GET /ccp/settlements/:date — obligations for a specific date
-  const settlDateMatch = path.match(
-    /^\/ccp\/settlements\/(\d{4}-\d{2}-\d{2})$/,
-  );
+  const settlDateMatch = path.match(/^\/ccp\/settlements\/(\d{4}-\d{2}-\d{2})$/);
   if (settlDateMatch && req.method === "GET") {
     const userId = url.searchParams.get("userId");
     let obligations = [...settlementQueue.values()].filter(
-      (o) => o.settlementDate === settlDateMatch[1],
+      (o) => o.settlementDate === settlDateMatch[1]
     );
     if (userId) obligations = obligations.filter((o) => o.userId === userId);
     return json({

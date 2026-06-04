@@ -16,7 +16,7 @@ Deno.test({
       const client = await pool.connect();
       try {
         const res = await client.queryObject<{ count: bigint }>(
-          "SELECT count(*)::bigint AS count FROM public.schema_migrations",
+          "SELECT count(*)::bigint AS count FROM public.schema_migrations"
         );
         assert(Number(res.rows[0].count) >= 1, "expected at least one migration row");
 
@@ -24,7 +24,7 @@ Deno.test({
           `SELECT table_schema, table_name
              FROM information_schema.tables
             WHERE table_schema IN ('users','journal','scenarios','risk')
-            ORDER BY table_schema, table_name`,
+            ORDER BY table_schema, table_name`
         );
         const found = new Set(tables.rows.map(([s, t]) => `${s}.${t}`));
         assert(found.has("users.users"), "users.users not migrated");

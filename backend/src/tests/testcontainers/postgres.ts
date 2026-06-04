@@ -11,9 +11,7 @@ export interface PostgresOptions {
   startupTimeoutMs?: number;
 }
 
-export async function startEphemeralPostgres(
-  opts: PostgresOptions = {},
-): Promise<ManagedPostgres> {
+export async function startEphemeralPostgres(opts: PostgresOptions = {}): Promise<ManagedPostgres> {
   const database = opts.database ?? "veta_test";
   const user = opts.user ?? "veta";
   const password = opts.password ?? "veta";
@@ -25,9 +23,7 @@ export async function startEphemeralPostgres(
       POSTGRES_USER: user,
       POSTGRES_PASSWORD: password,
     })
-    .withWaitStrategy(
-      Wait.forLogMessage(/database system is ready to accept connections/, 2),
-    )
+    .withWaitStrategy(Wait.forLogMessage(/database system is ready to accept connections/, 2))
     .withStartupTimeout(opts.startupTimeoutMs ?? 60_000)
     .start();
 

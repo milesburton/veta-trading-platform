@@ -216,11 +216,11 @@ function savePinned(pinned: boolean) {
 const WORKSPACE_PARAM = "ws";
 
 function getWorkspaceFromUrl(): string | null {
-  return new URLSearchParams(window.location.search).get(WORKSPACE_PARAM);
+  return new URLSearchParams(globalThis.location.search).get(WORKSPACE_PARAM);
 }
 
 function pushWorkspaceHistory(workspaceId: string, workspaceName: string) {
-  const url = new URL(window.location.href);
+  const url = new URL(globalThis.location.href);
   url.searchParams.set(WORKSPACE_PARAM, workspaceId);
   history.pushState({ workspaceId }, workspaceName, url.toString());
 }
@@ -352,7 +352,7 @@ export function WorkspaceSidebar({
     const id = await publishSharedWorkspace(ws.name, description, model.toJson() as IJsonModel);
     if (!id) return;
     sharedIds.value = new Set([...sharedIds.value, ws.id]);
-    const url = `${window.location.origin}${window.location.pathname}?shared=${id}`;
+    const url = `${globalThis.location.origin}${globalThis.location.pathname}?shared=${id}`;
     try {
       await navigator.clipboard.writeText(url);
       shareToast.value = "Link copied!";
@@ -600,8 +600,8 @@ export function useWorkspaces(_userId: string, tradingStyle?: string) {
         });
       }
     }
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+    globalThis.addEventListener("popstate", onPopState);
+    return () => globalThis.removeEventListener("popstate", onPopState);
   }, []);
 
   const handleSelect = useCallback((id: string) => {

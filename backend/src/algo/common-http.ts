@@ -1,13 +1,13 @@
-import { createTypedConsumer } from "@veta/messaging";
-import { NewsSignalSchema } from "@veta/schemas/news";
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
+import { createTypedConsumer } from "@veta/messaging";
+import { NewsSignalSchema, type NewsSignal } from "@veta/schemas/news";
 
 export function serveAlgoHealth(
   port: number,
   service: string,
   version: string,
-  getActiveOrders: () => number,
+  getActiveOrders: () => number
 ): void {
   Deno.serve({ port }, (req) => {
     if (req.method === "OPTIONS") return corsOptions();
@@ -33,25 +33,25 @@ export function startExpirySweep<T extends ExpirableOrder>(
   activeOrders: Map<string, T>,
   producer: { send: (topic: string, msg: unknown) => Promise<void> } | null,
   algo: string,
-  label: string,
+  label: string
 ): void {
   setInterval(async () => {
     const now = Date.now();
     for (const order of [...activeOrders.values()]) {
       if (now >= order.expiresAt) {
-        const avgFill = order.filledQty > 0
-          ? order.costBasis / order.filledQty
-          : 0;
+        const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
         logger.info(`[${label}] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
         activeOrders.delete(order.orderId);
-        await producer?.send("orders.expired", {
-          orderId: order.orderId,
-          clientOrderId: order.clientOrderId,
-          algo,
-          filledQty: order.filledQty,
-          avgFillPrice: order.filledQty > 0 ? avgFill : 0,
-          ts: now,
-        }).catch(() => {});
+        await producer
+          ?.send("orders.expired", {
+            orderId: order.orderId,
+            clientOrderId: order.clientOrderId,
+            algo,
+            filledQty: order.filledQty,
+            avgFillPrice: order.filledQty > 0 ? avgFill : 0,
+            ts: now,
+          })
+          .catch(() => {});
       }
     }
   }, 5_000);
@@ -61,39 +61,38 @@ export function startExpirySweepIndexed<T extends Omit<ExpirableOrder, never>>(
   activeOrders: Map<number, T>,
   producer: { send: (topic: string, msg: unknown) => Promise<void> } | null,
   algo: string,
-  label: string,
+  label: string
 ): void {
   setInterval(async () => {
     const now = Date.now();
     for (const [id, order] of [...activeOrders.entries()]) {
       if (now >= order.expiresAt) {
-        const avgFill = order.filledQty > 0
-          ? order.costBasis / order.filledQty
-          : 0;
+        const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
         logger.info(`[${label}] Expiry sweep: ${order.orderId} filled=${order.filledQty}`);
         activeOrders.delete(id);
-        await producer?.send("orders.expired", {
-          orderId: order.orderId,
-          clientOrderId: order.clientOrderId,
-          algo,
-          filledQty: order.filledQty,
-          avgFillPrice: order.filledQty > 0 ? avgFill : 0,
-          ts: now,
-        }).catch(() => {});
+        await producer
+          ?.send("orders.expired", {
+            orderId: order.orderId,
+            clientOrderId: order.clientOrderId,
+            algo,
+            filledQty: order.filledQty,
+            avgFillPrice: order.filledQty > 0 ? avgFill : 0,
+            ts: now,
+          })
+          .catch(() => {});
       }
     }
   }, 5_000);
 }
 
-export function subscribeNewsSignals(
-  groupId: string,
-  label: string,
-): void {
-  createTypedConsumer(groupId, [{
-    topic: "news.signal",
-    schema: NewsSignalSchema,
-    handler: (sig) => {
-      logger.info(`[${label}] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`);
+export function subscribeNewsSignals(groupId: string, label: string): void {
+  createTypedConsumer(groupId, [
+    {
+      topic: "news.signal",
+      schema: NewsSignalSchema,
+      handler: (sig: NewsSignal) => {
+        logger.info(`[${label}] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`);
+      },
     },
-  }]).catch(() => {});
+  ]).catch(() => {});
 }

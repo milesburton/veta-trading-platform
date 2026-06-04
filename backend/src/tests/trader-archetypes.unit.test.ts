@@ -46,11 +46,11 @@ Deno.test("[trader-archetypes] every archetype uses a DB-valid trading_style and
   for (const a of TRADER_ARCHETYPES) {
     assert(
       VALID_TRADING_STYLES.has(a.tradingStyle),
-      `${a.id} has invalid trading_style ${a.tradingStyle}`,
+      `${a.id} has invalid trading_style ${a.tradingStyle}`
     );
     assert(
       VALID_PRIMARY_DESKS.has(a.primaryDesk),
-      `${a.id} has invalid primary_desk ${a.primaryDesk}`,
+      `${a.id} has invalid primary_desk ${a.primaryDesk}`
     );
   }
 });
@@ -59,7 +59,7 @@ Deno.test("[trader-archetypes] no archetype is self-registerable as oversight", 
   for (const a of TRADER_ARCHETYPES) {
     assert(
       a.tradingStyle !== "oversight",
-      `${a.id} is oversight; oversight roles must not be self-registerable`,
+      `${a.id} is oversight; oversight roles must not be self-registerable`
     );
   }
 });

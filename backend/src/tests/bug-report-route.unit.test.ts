@@ -1,28 +1,19 @@
 // fallow-ignore-file unused-file
 import { assertEquals } from "jsr:@std/assert@0.217";
-import { handleBugReportRoute } from "../gateway/routes/bug-report.ts";
 import type { GatewayContext } from "../gateway/context.ts";
+import { handleBugReportRoute } from "../gateway/routes/bug-report.ts";
+import { makeGatewayAuthContext, makeGatewayUnauthContext } from "./test-helpers.ts";
 
 const realFetch = globalThis.fetch;
 const realWebhookAlerts = Deno.env.get("DISCORD_WEBHOOK_URL");
 const realWebhookBug = Deno.env.get("DISCORD_BUG_WEBHOOK_URL");
 
 function makeContext(role = "trader"): GatewayContext {
-  return {
-    requireAuth: (_req: Request) =>
-      Promise.resolve({
-        user: { id: "u-1", name: "Test User", role, avatar_emoji: "🧪" },
-      }),
-  } as unknown as GatewayContext;
+  return makeGatewayAuthContext({ role, name: "Test User" });
 }
 
 function unauthContext(): GatewayContext {
-  return {
-    requireAuth: (_req: Request) =>
-      Promise.resolve(
-        new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 }),
-      ),
-  } as unknown as GatewayContext;
+  return makeGatewayUnauthContext();
 }
 
 function restoreEnv() {
@@ -50,7 +41,7 @@ Deno.test("ignores paths other than /bug-report", async () => {
   const res = await handleBugReportRoute(
     new Request("http://localhost/other", { method: "POST" }),
     "/other",
-    makeContext(),
+    makeContext()
   );
   assertEquals(res, null);
 });
@@ -59,7 +50,7 @@ Deno.test("ignores non-POST methods on /bug-report", async () => {
   const res = await handleBugReportRoute(
     new Request("http://localhost/bug-report", { method: "GET" }),
     "/bug-report",
-    makeContext(),
+    makeContext()
   );
   assertEquals(res, null);
 });
@@ -68,7 +59,7 @@ Deno.test("requires authentication", async () => {
   const res = await handleBugReportRoute(
     new Request("http://localhost/bug-report", { method: "POST", body: "{}" }),
     "/bug-report",
-    unauthContext(),
+    unauthContext()
   );
   assertEquals(res?.status, 401);
 });
@@ -77,7 +68,7 @@ Deno.test("rejects invalid JSON", async () => {
   const res = await handleBugReportRoute(
     new Request("http://localhost/bug-report", { method: "POST", body: "not-json" }),
     "/bug-report",
-    makeContext(),
+    makeContext()
   );
   assertEquals(res?.status, 400);
 });
@@ -89,7 +80,7 @@ Deno.test("rejects missing title", async () => {
       body: JSON.stringify({ description: "Long enough description here" }),
     }),
     "/bug-report",
-    makeContext(),
+    makeContext()
   );
   assertEquals(res?.status, 400);
 });
@@ -101,7 +92,7 @@ Deno.test("rejects too-short description", async () => {
       body: JSON.stringify({ title: "Login broken", description: "short" }),
     }),
     "/bug-report",
-    makeContext(),
+    makeContext()
   );
   assertEquals(res?.status, 400);
 });
@@ -118,7 +109,7 @@ Deno.test("returns 202 when webhook is not configured (report received but not d
       }),
     }),
     "/bug-report",
-    makeContext(),
+    makeContext()
   );
   assertEquals(res?.status, 202);
   restoreEnv();
@@ -140,7 +131,7 @@ Deno.test("posts to dedicated bug webhook when set, marks ok", async () => {
         }),
       }),
       "/bug-report",
-      makeContext(),
+      makeContext()
     );
     assertEquals(res?.status, 200);
     assertEquals(f.calls.length, 1);
@@ -167,7 +158,7 @@ Deno.test("falls back to alerts webhook when bug webhook unset", async () => {
         }),
       }),
       "/bug-report",
-      makeContext(),
+      makeContext()
     );
     assertEquals(res?.status, 200);
     assertEquals(f.calls.length, 1);
@@ -192,7 +183,7 @@ Deno.test("rejects category values not in the allowlist", async () => {
         }),
       }),
       "/bug-report",
-      makeContext(),
+      makeContext()
     );
     // Posts succeed but category is dropped silently
     assertEquals(res?.status, 200);

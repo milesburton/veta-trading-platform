@@ -1,16 +1,8 @@
-import {
-  assert,
-  assertEquals,
-  assertExists,
-} from "jsr:@std/assert@0.217";
-import {
-  computeContextHash,
-  shouldEnqueueJob,
-} from "../llm-advisory/dedupe.ts";
-import { AdvisoryTriggerReason } from "../types/llm-advisory.ts";
-import type { LlmJob, LlmJobStatus } from "../types/llm-advisory.ts";
+import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
+import { computeContextHash, shouldEnqueueJob } from "../llm-advisory/dedupe.ts";
 import type { JobStore } from "../llm-advisory/job-store.ts";
-import type { LlmPolicy } from "../types/llm-advisory.ts";
+import type { LlmJob, LlmJobStatus, LlmPolicy } from "../types/llm-advisory.ts";
+import { AdvisoryTriggerReason } from "../types/llm-advisory.ts";
 
 const ENABLED_POLICY: LlmPolicy = {
   enabled: true,
@@ -85,15 +77,13 @@ function makeStore(): JobStore & { _jobs: Map<string, LlmJob> } {
         [...jobs.values()]
           .filter((j) => j.symbol === symbol)
           .sort((a, b) => b.createdAt - a.createdAt)
-          .slice(0, limit),
+          .slice(0, limit)
       );
     },
 
     getPendingJobCount(): Promise<number> {
       return Promise.resolve(
-        [...jobs.values()].filter((j) =>
-          j.status === "queued" || j.status === "running"
-        ).length,
+        [...jobs.values()].filter((j) => j.status === "queued" || j.status === "running").length
       );
     },
 
@@ -101,10 +91,8 @@ function makeStore(): JobStore & { _jobs: Map<string, LlmJob> } {
       const cutoff = Date.now() - windowMs;
       return Promise.resolve(
         [...jobs.values()].some(
-          (j) =>
-            j.contextHash === contextHash && j.createdAt > cutoff &&
-            j.status !== "cancelled",
-        ),
+          (j) => j.contextHash === contextHash && j.createdAt > cutoff && j.status !== "cancelled"
+        )
       );
     },
 
@@ -162,15 +150,13 @@ function makeStore(): JobStore & { _jobs: Map<string, LlmJob> } {
 }
 
 function makeJobInput(
-  overrides: Partial<
-    {
-      symbol: string;
-      contextHash: string;
-      priority: number;
-      status: LlmJobStatus;
-      createdAt: number;
-    }
-  > = {},
+  overrides: Partial<{
+    symbol: string;
+    contextHash: string;
+    priority: number;
+    status: LlmJobStatus;
+    createdAt: number;
+  }> = {}
 ) {
   return {
     symbol: overrides.symbol ?? "AAPL",
@@ -216,9 +202,7 @@ Deno.test("[llm-dedupe] shouldEnqueueJob: allows enqueue when no recent job exis
 Deno.test("[llm-dedupe] shouldEnqueueJob: prevents enqueue within dedupeWindowMs", async () => {
   const store = makeStore();
   const hash = await computeContextHash(["AAPL", "long"]);
-  await store.insertJob(
-    makeJobInput({ contextHash: hash, createdAt: Date.now() }),
-  );
+  await store.insertJob(makeJobInput({ contextHash: hash, createdAt: Date.now() }));
   const result = await shouldEnqueueJob(store, hash, ENABLED_POLICY);
   assert(!result, "Should block duplicate within window");
 });
@@ -226,9 +210,7 @@ Deno.test("[llm-dedupe] shouldEnqueueJob: prevents enqueue within dedupeWindowMs
 Deno.test("[llm-dedupe] shouldEnqueueJob: allows enqueue after dedupeWindowMs expires", async () => {
   const store = makeStore();
   const hash = await computeContextHash(["AAPL", "long"]);
-  await store.insertJob(
-    makeJobInput({ contextHash: hash, createdAt: Date.now() - 90_000 }),
-  );
+  await store.insertJob(makeJobInput({ contextHash: hash, createdAt: Date.now() - 90_000 }));
   const result = await shouldEnqueueJob(store, hash, ENABLED_POLICY);
   assert(result, "Should allow enqueue after window expires");
 });
@@ -282,17 +264,9 @@ Deno.test("[llm-dedupe] JobStore.sweepStuckJobs: resets running jobs older than 
 Deno.test("[llm-dedupe] JobStore.hasRecentJob: correctly gates on time window", async () => {
   const store = makeStore();
   const hash = "aabbccdd11223344";
-  await store.insertJob(
-    makeJobInput({ contextHash: hash, createdAt: Date.now() - 30_000 }),
-  );
-  assert(
-    await store.hasRecentJob(hash, 60_000),
-    "Should find job within 60s window",
-  );
-  assert(
-    !(await store.hasRecentJob(hash, 20_000)),
-    "Should not find job outside 20s window",
-  );
+  await store.insertJob(makeJobInput({ contextHash: hash, createdAt: Date.now() - 30_000 }));
+  assert(await store.hasRecentJob(hash, 60_000), "Should find job within 60s window");
+  assert(!(await store.hasRecentJob(hash, 20_000)), "Should not find job outside 20s window");
 });
 
 Deno.test("[llm-dedupe] JobStore.getPendingJobCount: counts queued and running jobs", async () => {

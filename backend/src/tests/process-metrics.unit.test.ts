@@ -28,8 +28,8 @@ Deno.test("Deno.memoryUsage() exposes the four fields the gauges read", () => {
 Deno.test("Deno.cpuUsage() exposes user + system in microseconds", () => {
   const u = (Deno as unknown as { cpuUsage?: () => { user: number; system: number } }).cpuUsage?.();
   assert(u !== undefined, "Deno.cpuUsage should exist in 2.x");
-  assert(typeof u!.user === "number" && u!.user >= 0);
-  assert(typeof u!.system === "number" && u!.system >= 0);
+  assert(typeof u?.user === "number" && u?.user >= 0);
+  assert(typeof u?.system === "number" && u?.system >= 0);
 });
 
 Deno.test("memoryUsage snapshot stays sane between two consecutive reads", () => {

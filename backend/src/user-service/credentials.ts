@@ -29,12 +29,12 @@ async function pbkdf2(password: string, salt: Uint8Array, iterations: number): P
     toArrayBuffer(passwordBytes),
     { name: "PBKDF2" },
     false,
-    ["deriveBits"],
+    ["deriveBits"]
   );
   const buf = await crypto.subtle.deriveBits(
     { name: "PBKDF2", hash: "SHA-256", salt: toArrayBuffer(salt), iterations },
     key,
-    HASH_BYTES * 8,
+    HASH_BYTES * 8
   );
   return new Uint8Array(buf);
 }

@@ -52,36 +52,27 @@ export function computeVol(closes: number[], timestamps: number[]): VolResult {
   const ewmaSeries: VolProfileSample[] = [];
   for (let i = 0; i < n; i++) {
     ewmaVar = LAMBDA * ewmaVar + (1 - LAMBDA) * logReturns[i] * logReturns[i];
-    const annualisedVol = Math.min(
-      5.0,
-      Math.max(0.01, Math.sqrt(ewmaVar) * ANNUAL_FACTOR),
-    );
+    const annualisedVol = Math.min(5.0, Math.max(0.01, Math.sqrt(ewmaVar) * ANNUAL_FACTOR));
     ewmaSeries.push({ ts: timestamps[i + 1], vol: annualisedVol });
   }
   const ewmaVol = ewmaSeries[ewmaSeries.length - 1].vol;
 
   const mean = logReturns.reduce((a, b) => a + b, 0) / n;
-  const variance = logReturns.reduce((a, b) => a + (b - mean) ** 2, 0) /
-    (n - 1);
-  const rollingVol = Math.min(
-    5.0,
-    Math.max(0.01, Math.sqrt(variance) * ANNUAL_FACTOR),
-  );
+  const variance = logReturns.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1);
+  const rollingVol = Math.min(5.0, Math.max(0.01, Math.sqrt(variance) * ANNUAL_FACTOR));
 
   return { ewmaVol, rollingVol, ewmaSeries };
 }
 
 async function fetchCandles(
   journalUrl: string,
-  symbol: string,
+  symbol: string
 ): Promise<{ close: number; ts?: number }[] | null> {
   try {
-    const url = `${journalUrl}/candles?symbol=${
-      encodeURIComponent(symbol)
-    }&interval=1m&limit=120`;
+    const url = `${journalUrl}/candles?symbol=${encodeURIComponent(symbol)}&interval=1m&limit=120`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5_000) });
     if (!res.ok) return null;
-    return await res.json() as { close: number; ts?: number }[];
+    return (await res.json()) as { close: number; ts?: number }[];
   } catch {
     return null;
   }
@@ -98,7 +89,7 @@ async function fetchCandles(
 export async function estimateVol(
   journalUrl: string,
   symbol: string,
-  fallback = 0.25,
+  fallback = 0.25
 ): Promise<number> {
   const now = Date.now();
   const cached = volCache.get(symbol);
@@ -118,7 +109,7 @@ export async function estimateVol(
 
   // Use candle index as synthetic timestamp if ts field absent
   const baseTs = Date.now() - candles.length * 60_000;
-  const timestamps = candles.map((c, i) => c.ts ?? (baseTs + i * 60_000));
+  const timestamps = candles.map((c, i) => c.ts ?? baseTs + i * 60_000);
 
   const result = computeVol(closes, timestamps);
   volCache.set(symbol, { ...result, expiresAt: now + 60_000 });
@@ -134,10 +125,8 @@ export async function estimateVol(
  */
 export async function estimateVolProfile(
   journalUrl: string,
-  symbol: string,
-): Promise<
-  { ewmaVol: number; rollingVol: number; ewmaSeries: VolProfileSample[] } | null
-> {
+  symbol: string
+): Promise<{ ewmaVol: number; rollingVol: number; ewmaSeries: VolProfileSample[] } | null> {
   const now = Date.now();
   const cached = volCache.get(symbol);
   if (cached && cached.expiresAt > now) {
@@ -155,7 +144,7 @@ export async function estimateVolProfile(
   if (closes.length < 2) return null;
 
   const baseTs = Date.now() - candles.length * 60_000;
-  const timestamps = candles.map((c, i) => c.ts ?? (baseTs + i * 60_000));
+  const timestamps = candles.map((c, i) => c.ts ?? baseTs + i * 60_000);
 
   const result = computeVol(closes, timestamps);
   volCache.set(symbol, { ...result, expiresAt: now + 60_000 });
@@ -168,17 +157,12 @@ export async function estimateVolProfile(
  * @param journalUrl - base URL of the journal service
  * @param symbol     - asset symbol
  */
-export async function fetchSpotPrice(
-  journalUrl: string,
-  symbol: string,
-): Promise<number | null> {
+export async function fetchSpotPrice(journalUrl: string, symbol: string): Promise<number | null> {
   try {
-    const url = `${journalUrl}/candles?symbol=${
-      encodeURIComponent(symbol)
-    }&interval=1m&limit=1`;
+    const url = `${journalUrl}/candles?symbol=${encodeURIComponent(symbol)}&interval=1m&limit=1`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5_000) });
     if (!res.ok) return null;
-    const candles = await res.json() as { close: number }[];
+    const candles = (await res.json()) as { close: number }[];
     if (candles.length === 0 || candles[0].close <= 0) return null;
     return candles[0].close;
   } catch {

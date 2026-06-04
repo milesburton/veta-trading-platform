@@ -8,7 +8,12 @@ export const ScenarioSpecSchema = z.object({
   limitPrice: z.number().positive(),
   strategy: z.string().min(1).max(32),
   algoParams: z.record(z.unknown()).optional(),
-  durationMs: z.number().int().positive().max(15 * 60_000).optional(),
+  durationMs: z
+    .number()
+    .int()
+    .positive()
+    .max(15 * 60_000)
+    .optional(),
 });
 
 export const ScenarioExpectedSchema = z.object({
@@ -16,11 +21,13 @@ export const ScenarioExpectedSchema = z.object({
   totalFilled: z.number().int().nonnegative().optional(),
   avgFillPriceBps: z.number().optional(),
   slippageBps: z.number().optional(),
-  tolerance: z.object({
-    fillCount: z.number().int().nonnegative().optional(),
-    totalFilled: z.number().int().nonnegative().optional(),
-    bps: z.number().nonnegative().optional(),
-  }).optional(),
+  tolerance: z
+    .object({
+      fillCount: z.number().int().nonnegative().optional(),
+      totalFilled: z.number().int().nonnegative().optional(),
+      bps: z.number().nonnegative().optional(),
+    })
+    .optional(),
 });
 
 export const ScenarioCreateSchema = z.object({

@@ -16,7 +16,10 @@ export interface RefPriceCache {
   refresh(): Promise<void>;
 }
 
-export function createRefPriceCache(marketSimUrl: string, refreshMs: number = 1_000): RefPriceCache {
+export function createRefPriceCache(
+  marketSimUrl: string,
+  refreshMs: number = 1_000
+): RefPriceCache {
   const cache: Record<string, number> = {};
   let lastRefreshAt = 0;
 
@@ -24,10 +27,12 @@ export function createRefPriceCache(marketSimUrl: string, refreshMs: number = 1_
     try {
       const res = await fetch(`${marketSimUrl}/prices`, { signal: AbortSignal.timeout(2_000) });
       if (!res.ok) return;
-      const prices = await res.json() as Record<string, number>;
+      const prices = (await res.json()) as Record<string, number>;
       Object.assign(cache, prices);
       lastRefreshAt = Date.now();
-    } catch { /* keep last known */ }
+    } catch {
+      /* keep last known */
+    }
   };
 
   const refPriceFor = (symbol: string): number => {

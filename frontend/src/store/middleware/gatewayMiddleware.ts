@@ -67,7 +67,7 @@ import { loadUiPrefs, setSelectedAsset, setUpgradeStatus } from "@veta/frontend/
 import type { AssetDef, OhlcCandle, OrderBookSnapshot, OrderSide } from "@veta/frontend/types.ts";
 import { z } from "zod";
 
-const _origin = typeof window !== "undefined" ? window.location.origin : "";
+const _origin = typeof window !== "undefined" ? globalThis.location.origin : "";
 const _wsOrigin = _origin.replace(/^http/, "ws");
 
 const GATEWAY_WS_URL = import.meta.env.VITE_GATEWAY_WS_URL ?? `${_wsOrigin}/ws/gateway`;
@@ -694,7 +694,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     if (visibilityListenerInstalled) return;
     if (typeof window === "undefined") return;
     visibilityListenerInstalled = true;
-    window.addEventListener("online", () => nudgeReconnectIfStuck("browser online event"));
+    globalThis.addEventListener("online", () => nudgeReconnectIfStuck("browser online event"));
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
         nudgeReconnectIfStuck("tab became visible");
@@ -710,7 +710,7 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       lastUserNudgeAt = now;
       nudgeReconnectIfStuck("user activity", true);
     };
-    window.addEventListener("focus", onUserActivity);
+    globalThis.addEventListener("focus", onUserActivity);
     document.addEventListener("click", onUserActivity);
   }
 

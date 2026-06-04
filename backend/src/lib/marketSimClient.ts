@@ -56,10 +56,7 @@ function parseTick(data: unknown): MarketTick {
   };
 }
 
-export function createMarketSimClient(
-  host: string,
-  port: number,
-): MarketSimClient {
+export function createMarketSimClient(host: string, port: number): MarketSimClient {
   let ws: WebSocket | null = null;
   let latest: MarketTick = { prices: {}, volumes: {}, marketMinute: 0 };
   const callbacks: TickCallback[] = [];

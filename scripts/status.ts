@@ -72,12 +72,7 @@ const GROUPS: Array<{ label: string; idle: boolean; programs: string[] }> = [
   {
     label: "Aux / Observability",
     idle: true,
-    programs: [
-      "kafka-relay",
-      "news-aggregator",
-      "llm-advisory-orchestrator",
-      "llm-worker",
-    ],
+    programs: ["kafka-relay", "news-aggregator", "llm-advisory-orchestrator", "llm-worker"],
   },
 ];
 
@@ -126,9 +121,7 @@ async function fetchStatus(): Promise<Map<string, SvcInfo>> {
       if (!line.trim()) continue;
       // Format: "program-name     STATE     pid 12345, uptime 0:01:23"
       // or:     "group:program    STATE     ..."
-      const m = line.match(
-        /^([^\s]+)\s+(\w+)\s+(?:pid\s+(\d+),\s+uptime\s+([\d:]+))?/,
-      );
+      const m = line.match(/^([^\s]+)\s+(\w+)\s+(?:pid\s+(\d+),\s+uptime\s+([\d:]+))?/);
       if (!m) continue;
       let name = m[1];
       const colonIdx = name.indexOf(":");
@@ -200,7 +193,7 @@ function stateText(state: string): string {
 
 function groupSummary(
   programs: string[],
-  status: Map<string, SvcInfo>,
+  status: Map<string, SvcInfo>
 ): { running: number; total: number } {
   let running = 0;
   for (const p of programs) {
@@ -209,20 +202,15 @@ function groupSummary(
   return { running, total: programs.length };
 }
 
-function renderGroupHeader(
-  label: string,
-  idle: boolean,
-  running: number,
-  total: number,
-): string {
+function renderGroupHeader(label: string, idle: boolean, running: number, total: number): string {
   const all = running === total;
   const none = running === 0;
   const frac = `${running}/${total}`;
   const indicator = all
     ? col(frac, A.green, A.bold)
     : none
-    ? col(frac, A.dim)
-    : col(frac, A.yellow, A.bold);
+      ? col(frac, A.dim)
+      : col(frac, A.yellow, A.bold);
   const tag = idle ? col(" [idle-safe]", A.dim) : col(" [always-on]", A.cyan);
   return (
     col("  ┌─ ", A.dim) +
@@ -246,11 +234,12 @@ function renderRow(name: string, info: SvcInfo | undefined): string {
       col("  (not in supervisord output)", A.dim)
     );
   }
-  const uptime = info.state === "RUNNING"
-    ? col(`  up ${info.uptime}`, A.dim)
-    : info.state === "STOPPED"
-    ? col("  stopped", A.dim)
-    : col(`  pid ${info.pid}`, A.dim);
+  const uptime =
+    info.state === "RUNNING"
+      ? col(`  up ${info.uptime}`, A.dim)
+      : info.state === "STOPPED"
+        ? col("  stopped", A.dim)
+        : col(`  pid ${info.pid}`, A.dim);
   return (
     "  │  " +
     stateIndicator(info.state) +
@@ -261,10 +250,15 @@ function renderRow(name: string, info: SvcInfo | undefined): string {
   );
 }
 
-function countTotals(
-  status: Map<string, SvcInfo>,
-): { running: number; total: number; stopped: number; error: number } {
-  let running = 0, stopped = 0, error = 0;
+function countTotals(status: Map<string, SvcInfo>): {
+  running: number;
+  total: number;
+  stopped: number;
+  error: number;
+} {
+  let running = 0,
+    stopped = 0,
+    error = 0;
   const total = [...GROUPS.flatMap((g) => g.programs)].length;
   for (const g of GROUPS) {
     for (const p of g.programs) {
@@ -286,34 +280,19 @@ function render(status: Map<string, SvcInfo>, tick: number): string {
   const now = new Date().toLocaleTimeString("en-GB");
 
   lines.push("");
-  lines.push(
-    col(
-      "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      A.cyan,
-    ),
-  );
+  lines.push(col("  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", A.cyan));
   lines.push(
     col("  VETA Service Status", A.bold, A.cyan) +
       col("                              ", A.reset) +
       spin +
-      col(`  ${now}`, A.dim),
+      col(`  ${now}`, A.dim)
   );
-  lines.push(
-    col(
-      "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      A.cyan,
-    ),
-  );
+  lines.push(col("  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", A.cyan));
 
   const runStr = col(`${running} running`, A.green, A.bold);
   const stpStr = col(`${stopped} stopped`, A.dim);
-  const errStr = error > 0
-    ? col(`  ${error} error`, A.red, A.bold)
-    : col("  0 errors", A.dim);
-  lines.push(
-    `  ${runStr}  ${stpStr}${errStr}` +
-      col(`  of ${total} total`, A.dim),
-  );
+  const errStr = error > 0 ? col(`  ${error} error`, A.red, A.bold) : col("  0 errors", A.dim);
+  lines.push(`  ${runStr}  ${stpStr}${errStr}${col(`  of ${total} total`, A.dim)}`);
   lines.push("");
 
   for (const group of GROUPS) {
@@ -322,21 +301,18 @@ function render(status: Map<string, SvcInfo>, tick: number): string {
     for (const p of group.programs) {
       lines.push(renderRow(p, status.get(p)));
     }
-    lines.push(col("  └" + "─".repeat(58), A.dim));
+    lines.push(col(`  └${"─".repeat(58)}`, A.dim));
     lines.push("");
   }
 
   lines.push(
-    col(
-      "  Commands: ",
-      A.dim,
-    ) +
+    col("  Commands: ", A.dim) +
       col("svc-ui", A.cyan) +
       col("  start-trading  ", A.dim) +
       col("stop-idle", A.cyan) +
       col("  svc-restart <name>  ", A.dim) +
       col("q", A.cyan) +
-      col(" quit", A.dim),
+      col(" quit", A.dim)
   );
   lines.push("");
 
@@ -356,7 +332,7 @@ async function main() {
       for (const p of group.programs) {
         lines.push(renderRow(p, status.get(p)));
       }
-      lines.push(col("  └" + "─".repeat(58), A.dim));
+      lines.push(col(`  └${"─".repeat(58)}`, A.dim));
     }
     console.log(lines.join("\n"));
     return;
@@ -367,7 +343,7 @@ async function main() {
   await Deno.stdout.write(new TextEncoder().encode(A.hide));
 
   const restore = () => {
-    Deno.stdout.writeSync(new TextEncoder().encode(A.show + A.reset + "\n"));
+    Deno.stdout.writeSync(new TextEncoder().encode(`${A.show + A.reset}\n`));
   };
 
   Deno.addSignalListener("SIGINT", () => {
@@ -408,11 +384,9 @@ async function main() {
 
   while (running) {
     tick++;
-    const refreshDelay = new Promise<"timeout">((r) =>
-      setTimeout(() => r("timeout"), REFRESH_MS)
-    );
+    const refreshDelay = new Promise<"timeout">((r) => setTimeout(() => r("timeout"), REFRESH_MS));
     const keyPress = readKey().then((keepGoing) =>
-      keepGoing ? "key" as const : "quit" as const
+      keepGoing ? ("key" as const) : ("quit" as const)
     );
 
     const result = await Promise.race([refreshDelay, keyPress]);
@@ -423,9 +397,7 @@ async function main() {
     }
 
     status = await fetchStatus();
-    await Deno.stdout.write(
-      new TextEncoder().encode(render(status, tick)),
-    );
+    await Deno.stdout.write(new TextEncoder().encode(render(status, tick)));
   }
 
   restore();

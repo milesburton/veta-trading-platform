@@ -1,0 +1,42 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "src/gateway/gateway.ts",
+    "src/cli/trader.ts",
+    "src/product-service/product-service.ts",
+    "src/oms/oms-server.ts",
+    "src/ems/ems-server.ts",
+    "src/journal/journal-server.ts",
+    "src/analytics/analytics-server.ts",
+    "src/fix/fix-gateway.ts",
+    "src/market-data/market-data-service.ts",
+    "src/llm-advisory/orchestrator.ts",
+    "src/risk-engine/risk-engine.ts",
+    "src/scenario-engine/scenario-server.ts",
+    "src/replay/replay-service.ts",
+    "src/rfq/rfq-service.ts",
+    "src/news/news-aggregator.ts"
+  ],
+  "ignoreDependencies": [
+    "@veta/auth",
+    "@veta/http",
+    "@veta/logger",
+    "@veta/messaging",
+    "@veta/rate-limit",
+    "jsr:@std",
+    "testcontainers"
+  ],
+  "dynamicallyLoaded": [
+    "db/migrate.ts",
+    "db/runMigrations.ts",
+    "scripts/generate-api-docs.ts"
+  ],
+  "duplicates": {
+    "minOccurrences": 3
+  },
+  "rules": {
+    "unused-dependencies": "warn",
+    "unlisted-dependencies": "warn",
+    "unused-files": "warn"
+  }
+}

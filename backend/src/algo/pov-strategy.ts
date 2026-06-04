@@ -8,16 +8,17 @@ import "@veta/bootstrap";
  */
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { logger } from "@veta/logger";
 import { createMarketSimClient, type MarketTick } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
+import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
-import { logger } from "@veta/logger";
 
 const PORT = Number(Deno.env.get("POV_ALGO_PORT")) || 5_005;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
-const POV_RATE = Number(Deno.env.get("POV_PERCENTAGE")) / 100 || 0.10;
+const POV_RATE = Number(Deno.env.get("POV_PERCENTAGE")) / 100 || 0.1;
 const MIN_SLICE = Number(Deno.env.get("POV_MIN_SLICE")) || 10;
 const MAX_SLICE = Number(Deno.env.get("POV_MAX_SLICE")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -57,45 +58,51 @@ async function processTickForOrder(state: PovOrder, tick: MarketTick): Promise<v
   const sliceQty = Math.max(MIN_SLICE, Math.min(MAX_SLICE, Math.min(rawSlice, remaining)));
   const childId = `${state.orderId}-pov-${Date.now()}`;
 
-  await producer?.send("orders.child", {
-    childId,
-    parentOrderId: state.orderId,
-    clientOrderId: state.clientOrderId,
-    algo: "POV",
-    asset: state.asset,
-    side: state.side,
-    quantity: sliceQty,
-    limitPrice: state.limitPrice,
-    marketPrice: tick.prices[state.asset] ?? 0,
-    tickVolume,
-    algoParams: { povRate: POV_RATE, minSlice: MIN_SLICE, maxSlice: MAX_SLICE },
-    ts: Date.now(),
-  }).catch(() => {});
+  await producer
+    ?.send("orders.child", {
+      childId,
+      parentOrderId: state.orderId,
+      clientOrderId: state.clientOrderId,
+      algo: "POV",
+      asset: state.asset,
+      side: state.side,
+      quantity: sliceQty,
+      limitPrice: state.limitPrice,
+      marketPrice: tick.prices[state.asset] ?? 0,
+      tickVolume,
+      algoParams: { povRate: POV_RATE, minSlice: MIN_SLICE, maxSlice: MAX_SLICE },
+      ts: Date.now(),
+    })
+    .catch(() => {});
 }
 
-await createTypedConsumer("pov-algo-routed", [{
-  topic: "orders.routed",
-  schema: RoutedOrderSchema,
-  handler: (order) => {
-    if ((order.strategy ?? "").toUpperCase() !== "POV") return;
+await createTypedConsumer("pov-algo-routed", [
+  {
+    topic: "orders.routed",
+    schema: RoutedOrderSchema,
+    handler: (order: RoutedOrder) => {
+      if ((order.strategy ?? "").toUpperCase() !== "POV") return;
 
-    const id = nextId++;
-    const state: PovOrder = {
-      id,
-      orderId: order.orderId,
-      clientOrderId: order.clientOrderId,
-      asset: order.asset,
-      side: order.side,
-      quantity: order.quantity,
-      limitPrice: order.limitPrice,
-      expiresAt: Date.now() + (Number(order.expiresAt ?? 300)) * 1_000,
-      filledQty: 0,
-      costBasis: 0,
-    };
-    activeOrders.set(id, state);
-    logger.info(`Queued [${id}] ${state.side} ${state.quantity} ${state.asset} (${state.orderId})`);
+      const id = nextId++;
+      const state: PovOrder = {
+        id,
+        orderId: order.orderId,
+        clientOrderId: order.clientOrderId,
+        asset: order.asset,
+        side: order.side,
+        quantity: order.quantity,
+        limitPrice: order.limitPrice,
+        expiresAt: Date.now() + Number(order.expiresAt ?? 300) * 1_000,
+        filledQty: 0,
+        costBasis: 0,
+      };
+      activeOrders.set(id, state);
+      logger.info(
+        `Queued [${id}] ${state.side} ${state.quantity} ${state.asset} (${state.orderId})`
+      );
+    },
   },
-}]).catch((err) => {
+]).catch((err) => {
   logger.warn("Cannot subscribe to orders.routed", { err });
   return null;
 });
@@ -106,17 +113,19 @@ marketClient.onTick(async (tick) => {
   for (const [id, state] of activeOrders) {
     if (now >= state.expiresAt || state.filledQty >= state.quantity) {
       if (now >= state.expiresAt && state.filledQty < state.quantity) {
-        await producer?.send("orders.expired", {
-          orderId: state.orderId,
-          clientOrderId: state.clientOrderId,
-          algo: "POV",
-          asset: state.asset,
-          side: state.side,
-          quantity: state.quantity,
-          filledQty: state.filledQty,
-          avgFillPrice: state.filledQty > 0 ? state.costBasis / state.filledQty : 0,
-          ts: now,
-        }).catch(() => {});
+        await producer
+          ?.send("orders.expired", {
+            orderId: state.orderId,
+            clientOrderId: state.clientOrderId,
+            algo: "POV",
+            asset: state.asset,
+            side: state.side,
+            quantity: state.quantity,
+            filledQty: state.filledQty,
+            avgFillPrice: state.filledQty > 0 ? state.costBasis / state.filledQty : 0,
+            ts: now,
+          })
+          .catch(() => {});
       }
       activeOrders.delete(id);
       continue;
@@ -124,11 +133,13 @@ marketClient.onTick(async (tick) => {
     await processTickForOrder(state, tick);
   }
 
-  await producer?.send("algo.heartbeat", {
-    algo: "POV",
-    ts: now,
-    activeOrders: activeOrders.size,
-  }).catch(() => {});
+  await producer
+    ?.send("algo.heartbeat", {
+      algo: "POV",
+      ts: now,
+      activeOrders: activeOrders.size,
+    })
+    .catch(() => {});
 });
 
 startExpirySweepIndexed(activeOrders, producer, "POV", "pov-algo");

@@ -1,8 +1,4 @@
-import {
-  assert,
-  assertEquals,
-  assertExists,
-} from "jsr:@std/assert@0.217";
+import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
 
 const BASE = Deno.env.get("VETA_BASE_URL") ?? "http://localhost";
 function svcUrl(localPort: number, prodPath: string): string {
@@ -18,7 +14,7 @@ function t(ms = 8_000) {
 Deno.test("[market-data/http] GET /health returns ok with override count", async () => {
   const res = await fetch(`${MDS_URL}/health`, { signal: t() });
   assertEquals(res.status, 200);
-  const body = await res.json() as {
+  const body = (await res.json()) as {
     status: string;
     overrides: number;
     alphaVantageConfigured: boolean;
@@ -31,7 +27,7 @@ Deno.test("[market-data/http] GET /health returns ok with override count", async
 Deno.test("[market-data/http] GET /sources returns non-empty array with id, label, enabled", async () => {
   const res = await fetch(`${MDS_URL}/sources`, { signal: t() });
   assertEquals(res.status, 200);
-  const body = await res.json() as {
+  const body = (await res.json()) as {
     id: string;
     label: string;
     enabled: boolean;
@@ -46,7 +42,7 @@ Deno.test("[market-data/http] GET /sources returns non-empty array with id, labe
 Deno.test("[market-data/http] GET /overrides returns overrides object", async () => {
   const res = await fetch(`${MDS_URL}/overrides`, { signal: t() });
   assertEquals(res.status, 200);
-  const body = await res.json() as { overrides: Record<string, string> };
+  const body = (await res.json()) as { overrides: Record<string, string> };
   assertExists(body.overrides);
   assert(typeof body.overrides === "object");
 });
@@ -63,7 +59,7 @@ Deno.test("[market-data/http] PUT /overrides sets and retrieves an override", as
 
   const getRes = await fetch(`${MDS_URL}/overrides`, { signal: t() });
   assertEquals(getRes.status, 200);
-  const body = await getRes.json() as { overrides: Record<string, string> };
+  const body = (await getRes.json()) as { overrides: Record<string, string> };
   assert(typeof body.overrides === "object");
 });
 
@@ -75,10 +71,10 @@ Deno.test("[market-data/http] PUT /overrides with unknown source returns 400", a
     signal: t(),
   });
   assertEquals(res.status, 400);
-  const body = await res.json() as { error: string };
+  const body = (await res.json()) as { error: string };
   assert(
     body.error.toLowerCase().includes("unknown source") ||
-      body.error.toLowerCase().includes("bloomberg"),
+      body.error.toLowerCase().includes("bloomberg")
   );
 });
 
@@ -117,7 +113,7 @@ Deno.test("[market-data/http] PUT /overrides synthetic override is idempotent", 
   await res1.body?.cancel();
 
   const res2 = await fetch(`${MDS_URL}/overrides`, { signal: t() });
-  const body = await res2.json() as { overrides: Record<string, string> };
+  const body = (await res2.json()) as { overrides: Record<string, string> };
   assert(typeof body.overrides === "object");
 });
 
@@ -131,7 +127,7 @@ Deno.test("[market-data/http] POST /sources/alpha-vantage/toggle returns updated
     signal: t(),
   });
   assertEquals(toggleRes.status, 200);
-  const toggled = await toggleRes.json() as { id: string; active: boolean }[];
+  const toggled = (await toggleRes.json()) as { id: string; active: boolean }[];
   const after = toggled.find((s) => s.id === "alpha-vantage")?.active;
 
   if (before !== undefined && after !== undefined) {
@@ -157,6 +153,6 @@ Deno.test("[market-data/http] POST /sources/unknown-source/toggle returns 400", 
 Deno.test("[market-data/http] GET /cache returns object (debug endpoint)", async () => {
   const res = await fetch(`${MDS_URL}/cache`, { signal: t() });
   assertEquals(res.status, 200);
-  const body = await res.json() as unknown;
+  const body = (await res.json()) as unknown;
   assert(typeof body === "object" && body !== null);
 });

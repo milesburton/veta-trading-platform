@@ -1,7 +1,4 @@
-import {
-  assertAlmostEquals,
-  assertEquals,
-} from "jsr:@std/assert@0.217";
+import { assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 import {
   computeEventScore,
   computeMomentum,
@@ -12,11 +9,7 @@ import {
   computeSentimentDelta,
 } from "../feature-engine/feature-computers.ts";
 import { buildBatchInsert } from "../feature-engine/feature-store.ts";
-import type {
-  FeatureVector,
-  MarketAdapterEvent,
-  NewsEvent,
-} from "../types/intelligence.ts";
+import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "../types/intelligence.ts";
 
 Deno.test("computeMomentum: insufficient history → 0", () => {
   assertEquals(computeMomentum([]), 0);
@@ -63,26 +56,7 @@ Deno.test("computeRealisedVol: flat price → 0; varying prices → positive ann
   assertAlmostEquals(computeRealisedVol(Array(20).fill(100)), 0, 1e-6, "flat");
 
   const prices = [
-    100,
-    101,
-    99,
-    102,
-    98,
-    103,
-    97,
-    104,
-    96,
-    105,
-    100,
-    101,
-    99,
-    102,
-    98,
-    103,
-    97,
-    104,
-    96,
-    105,
+    100, 101, 99, 102, 98, 103, 97, 104, 96, 105, 100, 101, 99, 102, 98, 103, 97, 104, 96, 105,
   ];
   const vol = computeRealisedVol(prices);
   assertEquals(vol > 0, true, "positive");
@@ -91,10 +65,7 @@ Deno.test("computeRealisedVol: flat price → 0; varying prices → positive ann
 
 Deno.test("computeSectorRelativeStrength: insufficient symbol history → 0", () => {
   assertEquals(computeSectorRelativeStrength([100, 101], []), 0);
-  assertEquals(
-    computeSectorRelativeStrength(Array(5).fill(100), [Array(20).fill(100)]),
-    0,
-  );
+  assertEquals(computeSectorRelativeStrength(Array(5).fill(100), [Array(20).fill(100)]), 0);
 });
 
 Deno.test("computeSectorRelativeStrength: outperform, underperform, match sector", () => {
@@ -107,19 +78,19 @@ Deno.test("computeSectorRelativeStrength: outperform, underperform, match sector
     computeSectorRelativeStrength(symbolUp10, [sectorUp5]),
     0.05,
     0.001,
-    "+5% vs sector",
+    "+5% vs sector"
   );
   assertAlmostEquals(
     computeSectorRelativeStrength(sectorUp5, [symbolUp10]),
     -0.05,
     0.001,
-    "-5% vs sector",
+    "-5% vs sector"
   );
   assertAlmostEquals(
     computeSectorRelativeStrength(symbolUp10, [symbolUp10]),
     0,
     1e-6,
-    "matches sector",
+    "matches sector"
   );
 });
 
@@ -146,33 +117,29 @@ Deno.test("computeEventScore: ticker event counts in full; macro event counts at
     computeEventScore("AAPL", [makeEvent({ ticker: "AAPL", impact: "high" })]),
     1.0,
     1e-6,
-    "high ticker event",
+    "high ticker event"
   );
   assertAlmostEquals(
-    computeEventScore("AAPL", [
-      makeEvent({ ticker: "AAPL", impact: "medium" }),
-    ]),
+    computeEventScore("AAPL", [makeEvent({ ticker: "AAPL", impact: "medium" })]),
     0.5,
     1e-6,
-    "medium ticker event",
+    "medium ticker event"
   );
   assertAlmostEquals(
     computeEventScore("AAPL", [makeEvent({ impact: "high" })]), // no ticker = macro
     0.5,
     1e-6,
-    "macro event at 50%",
+    "macro event at 50%"
   );
   assertEquals(
-    computeEventScore("AAPL", [
-      makeEvent({ ticker: "AAPL", scheduledAt: now - 1000 }),
-    ]),
+    computeEventScore("AAPL", [makeEvent({ ticker: "AAPL", scheduledAt: now - 1000 })]),
     0,
-    "past event ignored",
+    "past event ignored"
   );
   assertEquals(
     computeEventScore("AAPL", [makeEvent({ ticker: "MSFT" })]),
     0,
-    "different ticker not counted",
+    "different ticker not counted"
   );
 });
 
@@ -224,7 +191,7 @@ Deno.test("computeSentimentDelta: no news or single item → 0", () => {
     computeSentimentDelta("AAPL", [
       makeNews({ ts: Date.now() - 10_000, publishedAt: Date.now() - 10_000 }),
     ]),
-    0,
+    0
   );
 });
 
@@ -242,11 +209,7 @@ Deno.test("computeSentimentDelta: improving sentiment → positive; worsening �
     ts: now - 5_000,
     publishedAt: now - 5_000,
   });
-  assertEquals(
-    computeSentimentDelta("AAPL", [negOld, posFresh]) > 0,
-    true,
-    "improving",
-  );
+  assertEquals(computeSentimentDelta("AAPL", [negOld, posFresh]) > 0, true, "improving");
 
   const posOld = makeNews({
     id: "o2",
@@ -260,11 +223,7 @@ Deno.test("computeSentimentDelta: improving sentiment → positive; worsening �
     ts: now - 5_000,
     publishedAt: now - 5_000,
   });
-  assertEquals(
-    computeSentimentDelta("AAPL", [posOld, negFresh]) < 0,
-    true,
-    "worsening",
-  );
+  assertEquals(computeSentimentDelta("AAPL", [posOld, negFresh]) < 0, true, "worsening");
 });
 
 function makeFv(symbol: string, ts: number): FeatureVector {
@@ -303,14 +262,12 @@ Deno.test("buildBatchInsert: multi-row offsets each tuple by 9 with contiguous p
   ]);
   assertEquals(
     placeholders,
-    "($1,$2,$3,$4,$5,$6,$7,$8,$9),($10,$11,$12,$13,$14,$15,$16,$17,$18),($19,$20,$21,$22,$23,$24,$25,$26,$27)",
+    "($1,$2,$3,$4,$5,$6,$7,$8,$9),($10,$11,$12,$13,$14,$15,$16,$17,$18),($19,$20,$21,$22,$23,$24,$25,$26,$27)"
   );
   assertEquals(values.length, 27);
   assertEquals(values[0], "AAPL");
   assertEquals(values[9], "MSFT");
   assertEquals(values[18], "NVDA");
-  const maxParam = Math.max(
-    ...placeholders.matchAll(/\$(\d+)/g).map((m) => Number(m[1])),
-  );
+  const maxParam = Math.max(...placeholders.matchAll(/\$(\d+)/g).map((m) => Number(m[1])));
   assertEquals(maxParam, values.length);
 });

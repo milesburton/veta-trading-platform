@@ -2,7 +2,6 @@ import { getCookieToken } from "@veta/auth";
 import { logger } from "@veta/logger";
 import { clientIp, RateLimiter } from "@veta/rate-limit";
 import { AbuseTracker } from "../abuseTracker.ts";
-import { classifyRequestSource } from "../requestSource.ts";
 import {
   addAnonymousSocket,
   addUserSocket,
@@ -11,6 +10,7 @@ import {
   totalConnections,
 } from "../connections.ts";
 import type { AuthResult, GatewayContext } from "../context.ts";
+import { classifyRequestSource } from "../requestSource.ts";
 
 const WS_FRAME_CAPACITY = Number(Deno.env.get("WS_FRAME_CAPACITY")) || 100;
 const WS_FRAME_REFILL_PER_SECOND = Number(Deno.env.get("WS_FRAME_REFILL_PER_SECOND")) || 10;
@@ -29,7 +29,7 @@ export async function handleWebSocketRoute(
   req: Request,
   path: string,
   ctx: GatewayContext,
-  deps: WebSocketRouteDeps,
+  deps: WebSocketRouteDeps
 ): Promise<Response | null> {
   if (path !== "/ws" && path !== "/ws/gateway") return null;
   if (req.headers.get("upgrade") !== "websocket") {
@@ -73,7 +73,7 @@ export async function handleWebSocketRoute(
       {
         status: 429,
         headers: { "Content-Type": "application/json", "Retry-After": String(retryAfterSec) },
-      },
+      }
     );
   }
 
@@ -90,13 +90,15 @@ export async function handleWebSocketRoute(
     if (socketUserId) addUserSocket(socketUserId, socket);
     else addAnonymousSocket(socket);
     logger.info(
-      `Client connected user=${socketUserId ?? "anonymous"} (total=${totalConnections()})`,
+      `Client connected user=${socketUserId ?? "anonymous"} (total=${totalConnections()})`
     );
     if (auth) {
-      socket.send(JSON.stringify({
-        event: "authIdentity",
-        data: { user: auth.user, limits: auth.limits },
-      }));
+      socket.send(
+        JSON.stringify({
+          event: "authIdentity",
+          data: { user: auth.user, limits: auth.limits },
+        })
+      );
       ctx.publishAccessEvent({
         action: "ws_connect",
         userId: auth.user.id,
@@ -119,10 +121,12 @@ export async function handleWebSocketRoute(
         reason: `retryAfterMs=${limit.retryAfterMs}`,
         source,
       });
-      socket.send(JSON.stringify({
-        event: "rateLimited",
-        data: { retryAfterMs: limit.retryAfterMs },
-      }));
+      socket.send(
+        JSON.stringify({
+          event: "rateLimited",
+          data: { retryAfterMs: limit.retryAfterMs },
+        })
+      );
       const decision = abuseTracker.recordRateLimited(socket, socketUserId);
       if (decision.kind !== "ok") {
         ctx.publishAccessEvent({
@@ -131,10 +135,12 @@ export async function handleWebSocketRoute(
           reason: decision.reason,
         });
         try {
-          socket.send(JSON.stringify({
-            event: "disconnectedAbuse",
-            data: { reason: decision.reason },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "disconnectedAbuse",
+              data: { reason: decision.reason },
+            })
+          );
         } catch {
           // socket may already be tearing down — ignore
         }
@@ -156,20 +162,24 @@ export async function handleWebSocketRoute(
           auth = result;
           socketUserId = result.user.id;
           addUserSocket(socketUserId, socket);
-          socket.send(JSON.stringify({
-            event: "authIdentity",
-            data: { user: result.user, limits: result.limits },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "authIdentity",
+              data: { user: result.user, limits: result.limits },
+            })
+          );
           ctx.publishAccessEvent({
             action: "ws_connect",
             userId: result.user.id,
             userRole: result.user.role,
           });
         } else {
-          socket.send(JSON.stringify({
-            event: "authError",
-            data: { reason: "Invalid or expired token" },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "authError",
+              data: { reason: "Invalid or expired token" },
+            })
+          );
         }
         return;
       }
@@ -181,13 +191,15 @@ export async function handleWebSocketRoute(
             action: "order_rejected",
             reason: "unauthenticated — session expired",
           });
-          socket.send(JSON.stringify({
-            event: "orderRejected",
-            data: {
-              reason: "Unauthenticated — please log in again",
-              clientOrderId: msg.payload.clientOrderId ?? null,
-            },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "orderRejected",
+              data: {
+                reason: "Unauthenticated — please log in again",
+                clientOrderId: msg.payload.clientOrderId ?? null,
+              },
+            })
+          );
           return;
         }
         const role = currentAuth.user.role;
@@ -200,13 +212,15 @@ export async function handleWebSocketRoute(
             userId: currentAuth.user.id,
             userRole: role,
           });
-          socket.send(JSON.stringify({
-            event: "orderRejected",
-            data: {
-              reason: `${role} accounts are not permitted to submit orders`,
-              clientOrderId: msg.payload.clientOrderId ?? null,
-            },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "orderRejected",
+              data: {
+                reason: `${role} accounts are not permitted to submit orders`,
+                clientOrderId: msg.payload.clientOrderId ?? null,
+              },
+            })
+          );
           return;
         }
         if (isGuest) {
@@ -218,22 +232,26 @@ export async function handleWebSocketRoute(
               userId: currentAuth.user.id,
               userRole: role,
             });
-            socket.send(JSON.stringify({
-              event: "orderRejected",
-              data: {
-                reason: `Rate limit — try again in ${Math.ceil(guestResult.retryAfterMs / 1000)}s`,
-                retryAfterMs: guestResult.retryAfterMs,
-                clientOrderId: msg.payload.clientOrderId ?? null,
-              },
-            }));
+            socket.send(
+              JSON.stringify({
+                event: "orderRejected",
+                data: {
+                  reason: `Rate limit — try again in ${Math.ceil(guestResult.retryAfterMs / 1000)}s`,
+                  retryAfterMs: guestResult.retryAfterMs,
+                  clientOrderId: msg.payload.clientOrderId ?? null,
+                },
+              })
+            );
             return;
           }
         }
         if (!ctx.producer.isReady()) {
-          socket.send(JSON.stringify({
-            event: "error",
-            message: "Bus unavailable — order not submitted",
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "error",
+              message: "Bus unavailable — order not submitted",
+            })
+          );
           return;
         }
         const orderWithUser = {
@@ -246,9 +264,7 @@ export async function handleWebSocketRoute(
           action: "order_submitted",
           userId: currentAuth.user.id,
           userRole: currentAuth.user.role,
-          orderId: (msg.payload.clientOrderId ?? msg.payload.orderId) as
-            | string
-            | undefined,
+          orderId: (msg.payload.clientOrderId ?? msg.payload.orderId) as string | undefined,
         });
         socket.send(JSON.stringify({ event: "orderAck", data: orderWithUser }));
       }
@@ -261,10 +277,12 @@ export async function handleWebSocketRoute(
             reason: "killOrders — unauthenticated",
             source,
           });
-          socket.send(JSON.stringify({
-            event: "error",
-            data: { message: "Unauthenticated — please log in again" },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "error",
+              data: { message: "Unauthenticated — please log in again" },
+            })
+          );
           return;
         }
         if (currentAuth.user.role !== "admin" && currentAuth.user.role !== "trader") {
@@ -274,17 +292,21 @@ export async function handleWebSocketRoute(
             userId: currentAuth.user.id,
             source,
           });
-          socket.send(JSON.stringify({
-            event: "error",
-            data: { message: "Kill switch requires admin or trader role" },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "error",
+              data: { message: "Kill switch requires admin or trader role" },
+            })
+          );
           return;
         }
         if (!ctx.producer.isReady()) {
-          socket.send(JSON.stringify({
-            event: "error",
-            data: { message: "Bus unavailable" },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "error",
+              data: { message: "Bus unavailable" },
+            })
+          );
           return;
         }
         const killCommand = {
@@ -312,10 +334,12 @@ export async function handleWebSocketRoute(
             reason: "resumeOrders — unauthenticated",
             source,
           });
-          socket.send(JSON.stringify({
-            event: "error",
-            data: { message: "Unauthenticated — please log in again" },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "error",
+              data: { message: "Unauthenticated — please log in again" },
+            })
+          );
           return;
         }
         if (currentAuth.user.role !== "admin") {
@@ -325,17 +349,21 @@ export async function handleWebSocketRoute(
             userId: currentAuth.user.id,
             source,
           });
-          socket.send(JSON.stringify({
-            event: "error",
-            data: { message: "Resume requires admin role" },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "error",
+              data: { message: "Resume requires admin role" },
+            })
+          );
           return;
         }
         if (!ctx.producer.isReady()) {
-          socket.send(JSON.stringify({
-            event: "error",
-            data: { message: "Bus unavailable" },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "error",
+              data: { message: "Bus unavailable" },
+            })
+          );
           return;
         }
         const resumeCommand = {
@@ -355,33 +383,35 @@ export async function handleWebSocketRoute(
         socket.send(JSON.stringify({ event: "resumeAck", data: resumeCommand }));
       }
 
-      if (
-        msg.type === "cancelOrders" ||
-        msg.type === "holdOrders" ||
-        msg.type === "unholdOrders"
-      ) {
+      if (msg.type === "cancelOrders" || msg.type === "holdOrders" || msg.type === "unholdOrders") {
         const currentAuth = auth ?? (token ? await deps.validateToken(token) : null);
         if (!currentAuth) {
-          socket.send(JSON.stringify({
-            event: "error",
-            data: { message: "Unauthenticated" },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "error",
+              data: { message: "Unauthenticated" },
+            })
+          );
           return;
         }
         if (!TRADER_ROLES_FOR_MGMT.includes(currentAuth.user.role)) {
-          socket.send(JSON.stringify({
-            event: "error",
-            data: {
-              message: `${currentAuth.user.role} cannot manage orders`,
-            },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "error",
+              data: {
+                message: `${currentAuth.user.role} cannot manage orders`,
+              },
+            })
+          );
           return;
         }
         if (!ctx.producer.isReady()) {
-          socket.send(JSON.stringify({
-            event: "error",
-            data: { message: "Bus unavailable" },
-          }));
+          socket.send(
+            JSON.stringify({
+              event: "error",
+              data: { message: "Bus unavailable" },
+            })
+          );
           return;
         }
         const topicMap: Record<string, string> = {
@@ -399,15 +429,18 @@ export async function handleWebSocketRoute(
           };
           await ctx.producer.send(topicMap[msg.type], command);
         }
-        const ackEvent = msg.type === "cancelOrders"
-          ? "cancelAck"
-          : msg.type === "holdOrders"
-          ? "holdAck"
-          : "unholdAck";
-        socket.send(JSON.stringify({
-          event: ackEvent,
-          data: { orderIds, issuedBy: currentAuth.user.id },
-        }));
+        const ackEvent =
+          msg.type === "cancelOrders"
+            ? "cancelAck"
+            : msg.type === "holdOrders"
+              ? "holdAck"
+              : "unholdAck";
+        socket.send(
+          JSON.stringify({
+            event: ackEvent,
+            data: { orderIds, issuedBy: currentAuth.user.id },
+          })
+        );
         broadcastAll({
           event: "orderEvent",
           topic: topicMap[msg.type],
@@ -415,10 +448,12 @@ export async function handleWebSocketRoute(
         });
       }
     } catch (err) {
-      socket.send(JSON.stringify({
-        event: "error",
-        message: (err as Error).message,
-      }));
+      socket.send(
+        JSON.stringify({
+          event: "error",
+          message: (err as Error).message,
+        })
+      );
     }
   };
 
@@ -426,7 +461,7 @@ export async function handleWebSocketRoute(
     removeSocket(socketUserId, socket);
     abuseTracker.forgetSocket(socket);
     logger.info(
-      `Client disconnected user=${socketUserId ?? "anonymous"} (total=${totalConnections()})`,
+      `Client disconnected user=${socketUserId ?? "anonymous"} (total=${totalConnections()})`
     );
   };
 

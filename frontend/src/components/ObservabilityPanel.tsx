@@ -344,7 +344,7 @@ export function ObservabilityPanel() {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
+    globalThis.open(url, "_blank");
   }
 
   return (

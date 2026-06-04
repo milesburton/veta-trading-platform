@@ -80,7 +80,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "OMS",
     acronymOf: "Order Management System",
     category: "orders",
-    short: "Validates orders against per-user limits, derives the desk, and routes to an algo or directly to the EMS.",
+    short:
+      "Validates orders against per-user limits, derives the desk, and routes to an algo or directly to the EMS.",
     long: "The OMS is the gateway between user intent and execution. It runs the role check, the kill-switch check, instrument-derived desk validation, strategy access, quantity-versus-limit, notional-versus-daily-limit, and finally calls the risk engine. If everything passes it publishes orders.submitted and orders.routed; the matching algo (or EMS for direct lit orders) picks up the routed message.",
     seeAlso: ["ems", "risk-engine", "kill-switch"],
     source: "backend/src/oms/oms-server.ts",
@@ -90,7 +91,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "EMS",
     acronymOf: "Execution Management System",
     category: "orders",
-    short: "Fills child orders against the simulated market, picks venue and counterparty, computes fees, publishes orders.filled and fix.execution.",
+    short:
+      "Fills child orders against the simulated market, picks venue and counterparty, computes fees, publishes orders.filled and fix.execution.",
     long: "The EMS is where execution actually happens. It consumes orders.child from algos (or orders.routed for direct lit orders), routes to a simulated venue (XNAS, XNYS, ARCX, dark pool), assigns a counterparty MPID, sets the liquidity flag (MAKER/TAKER/CROSS), computes the fill price plus market impact, and applies SEC §31, FINRA TAF and commission. The fill is published to orders.filled and a FIX 4.4 execution report goes to fix.execution.",
     seeAlso: ["oms", "fix-exchange", "venue", "liquidity-flag"],
     source: "backend/src/ems/ems-server.ts",
@@ -99,7 +101,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "gateway",
     term: "Gateway",
     category: "infrastructure",
-    short: "Single entry point for the browser. Validates the session cookie, proxies HTTP to backend services, fans out bus events over WebSocket.",
+    short:
+      "Single entry point for the browser. Validates the session cookie, proxies HTTP to backend services, fans out bus events over WebSocket.",
     long: "The Gateway is a BFF (Backend-For-Frontend). The browser only ever talks to the gateway — it does not reach OMS, EMS, journal or any other service directly. On every HTTP request the gateway validates the veta_user cookie via the user-service (cached 10s). On WebSocket, it subscribes to every bus topic the UI cares about and forwards events to connected clients.",
     seeAlso: ["bff", "user-service"],
     source: "backend/src/gateway/gateway.ts",
@@ -109,14 +112,16 @@ export const TERMS: GlossaryTerm[] = [
     term: "BFF",
     acronymOf: "Backend For Frontend",
     category: "infrastructure",
-    short: "An API tier shaped specifically for the UI it serves rather than for general-purpose API consumers.",
+    short:
+      "An API tier shaped specifically for the UI it serves rather than for general-purpose API consumers.",
     seeAlso: ["gateway"],
   },
   {
     id: "risk-engine",
     term: "Risk Engine",
     category: "risk",
-    short: "Synchronous pre-trade check that runs before the OMS routes any order. Six rules: fat-finger, duplicate, max open, self-cross, ADV, rate-limit.",
+    short:
+      "Synchronous pre-trade check that runs before the OMS routes any order. Six rules: fat-finger, duplicate, max open, self-cross, ADV, rate-limit.",
     long: "The OMS calls POST /check on the risk-engine for every order. Six checks run in sequence: fat-finger price collar (default 5% from mid), duplicate-order detection (500ms window), max open orders per user (default 50), self-cross prevention, order size versus ADV (default 10% of average daily volume), and rate-limit (default 10 orders/sec). If any check fails the order is rejected with a specific reason code. If the risk-engine is unreachable inside 3s, the order is also rejected — real firms halt trading rather than bypass pre-trade risk.",
     seeAlso: ["oms", "fat-finger", "adv", "self-cross"],
     source: "backend/src/risk-engine/risk-engine.ts",
@@ -125,14 +130,16 @@ export const TERMS: GlossaryTerm[] = [
     id: "fat-finger",
     term: "Fat-finger price collar",
     category: "risk",
-    short: "Reject orders whose limit price is more than N% away from the current mid — defends against typo prices.",
+    short:
+      "Reject orders whose limit price is more than N% away from the current mid — defends against typo prices.",
     seeAlso: ["risk-engine"],
   },
   {
     id: "self-cross",
     term: "Self-cross",
     category: "risk",
-    short: "A trader's own buy crossing their own sell. Generally prohibited — the risk engine rejects orders that would cross an existing opposite-side resting order from the same user.",
+    short:
+      "A trader's own buy crossing their own sell. Generally prohibited — the risk engine rejects orders that would cross an existing opposite-side resting order from the same user.",
     seeAlso: ["risk-engine"],
   },
   {
@@ -140,21 +147,24 @@ export const TERMS: GlossaryTerm[] = [
     term: "ADV",
     acronymOf: "Average Daily Volume",
     category: "risk",
-    short: "Rolling average traded volume per symbol, used as the denominator for the 'order size vs ADV' risk check.",
+    short:
+      "Rolling average traded volume per symbol, used as the denominator for the 'order size vs ADV' risk check.",
     seeAlso: ["risk-engine"],
   },
   {
     id: "limit-order",
     term: "Limit order",
     category: "orders",
-    short: "An order to buy or sell at no worse than a specified price. Crosses the book only if a counterparty is willing to meet that price.",
+    short:
+      "An order to buy or sell at no worse than a specified price. Crosses the book only if a counterparty is willing to meet that price.",
     seeAlso: ["market-order", "ioc", "fok"],
   },
   {
     id: "market-order",
     term: "Market order",
     category: "orders",
-    short: "An order to buy or sell at the best currently-available price. Crosses immediately, with no price guarantee.",
+    short:
+      "An order to buy or sell at the best currently-available price. Crosses immediately, with no price guarantee.",
     seeAlso: ["limit-order"],
   },
   {
@@ -162,7 +172,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "IOC",
     acronymOf: "Immediate Or Cancel",
     category: "orders",
-    short: "Order time-in-force where any unfilled portion is cancelled immediately rather than resting on the book.",
+    short:
+      "Order time-in-force where any unfilled portion is cancelled immediately rather than resting on the book.",
     seeAlso: ["fok", "tif"],
   },
   {
@@ -170,7 +181,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "FOK",
     acronymOf: "Fill Or Kill",
     category: "orders",
-    short: "Order time-in-force that requires the entire quantity to fill immediately or cancel; partial fills are not allowed.",
+    short:
+      "Order time-in-force that requires the entire quantity to fill immediately or cancel; partial fills are not allowed.",
     seeAlso: ["ioc", "tif"],
   },
   {
@@ -178,7 +190,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "TIF",
     acronymOf: "Time In Force",
     category: "orders",
-    short: "How long an order remains active. Common values: DAY, GTC (good till cancelled), IOC, FOK.",
+    short:
+      "How long an order remains active. Common values: DAY, GTC (good till cancelled), IOC, FOK.",
     seeAlso: ["ioc", "fok"],
   },
   {
@@ -186,7 +199,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "TWAP",
     acronymOf: "Time-Weighted Average Price",
     category: "execution",
-    short: "Algo that splits a parent order into equal slices spread evenly over a duration. Targets the time-weighted average price.",
+    short:
+      "Algo that splits a parent order into equal slices spread evenly over a duration. Targets the time-weighted average price.",
     seeAlso: ["vwap", "pov", "is", "child-order"],
     source: "backend/src/algo/twap-strategy.ts",
   },
@@ -195,7 +209,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "VWAP",
     acronymOf: "Volume-Weighted Average Price",
     category: "execution",
-    short: "Algo that weights child slices by the historical volume profile so each slice trades against its proportional share of the day's liquidity.",
+    short:
+      "Algo that weights child slices by the historical volume profile so each slice trades against its proportional share of the day's liquidity.",
     seeAlso: ["twap", "pov"],
     source: "backend/src/algo/vwap-strategy.ts",
   },
@@ -212,7 +227,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "iceberg",
     term: "Iceberg",
     category: "execution",
-    short: "Algo that shows only a small visible quantity at a time and refills it on each fill until the total quantity is exhausted.",
+    short:
+      "Algo that shows only a small visible quantity at a time and refills it on each fill until the total quantity is exhausted.",
     seeAlso: ["sniper", "is"],
     source: "backend/src/algo/iceberg-strategy.ts",
   },
@@ -220,7 +236,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "sniper",
     term: "Sniper",
     category: "execution",
-    short: "Aggressive algo designed for low-latency crossing. Fires up to maxSlices quickly at price × aggressionPct.",
+    short:
+      "Aggressive algo designed for low-latency crossing. Fires up to maxSlices quickly at price × aggressionPct.",
     seeAlso: ["iceberg", "arrival-price"],
     source: "backend/src/algo/sniper-strategy.ts",
   },
@@ -228,7 +245,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "arrival-price",
     term: "Arrival Price",
     category: "execution",
-    short: "Algo that targets the price observed at order arrival, adjusting urgency to minimise slippage versus that decision price.",
+    short:
+      "Algo that targets the price observed at order arrival, adjusting urgency to minimise slippage versus that decision price.",
     seeAlso: ["is", "slippage"],
     source: "backend/src/algo/arrival-price-strategy.ts",
   },
@@ -237,14 +255,16 @@ export const TERMS: GlossaryTerm[] = [
     term: "IS",
     acronymOf: "Implementation Shortfall",
     category: "execution",
-    short: "Algo that uses geometric decay to front-load volume early and minimise opportunity cost. Higher riskAversion → faster decay.",
+    short:
+      "Algo that uses geometric decay to front-load volume early and minimise opportunity cost. Higher riskAversion → faster decay.",
     seeAlso: ["arrival-price", "twap", "slippage"],
   },
   {
     id: "child-order",
     term: "Child order",
     category: "execution",
-    short: "A slice produced by an algo from a parent order. Algos publish child orders on orders.child; the EMS fills them.",
+    short:
+      "A slice produced by an algo from a parent order. Algos publish child orders on orders.child; the EMS fills them.",
     seeAlso: ["parent-order", "ems"],
   },
   {
@@ -258,28 +278,32 @@ export const TERMS: GlossaryTerm[] = [
     id: "slippage",
     term: "Slippage",
     category: "execution",
-    short: "Difference between the price expected at order arrival and the volume-weighted execution price actually achieved.",
+    short:
+      "Difference between the price expected at order arrival and the volume-weighted execution price actually achieved.",
     seeAlso: ["arrival-price", "is"],
   },
   {
     id: "venue",
     term: "Venue",
     category: "execution",
-    short: "Where an order trades. The platform simulates XNAS (Nasdaq), XNYS (NYSE), ARCX (Arca), DARK1 (dark pool), and OTC for derivatives.",
+    short:
+      "Where an order trades. The platform simulates XNAS (Nasdaq), XNYS (NYSE), ARCX (Arca), DARK1 (dark pool), and OTC for derivatives.",
     seeAlso: ["dark-pool", "liquidity-flag"],
   },
   {
     id: "liquidity-flag",
     term: "Liquidity flag",
     category: "execution",
-    short: "MAKER means you posted resting liquidity; TAKER means you crossed it; CROSS means a self-trade. Drives venue rebates and fees.",
+    short:
+      "MAKER means you posted resting liquidity; TAKER means you crossed it; CROSS means a self-trade. Drives venue rebates and fees.",
     seeAlso: ["venue"],
   },
   {
     id: "dark-pool",
     term: "Dark pool",
     category: "execution",
-    short: "Off-exchange matching venue where pre-trade quotes are not displayed. Used for large blocks to avoid moving the visible market.",
+    short:
+      "Off-exchange matching venue where pre-trade quotes are not displayed. Used for large blocks to avoid moving the visible market.",
     long: "The platform's dark pool requires the order to have qty ≥ 10,000 and the user to have dark_pool_access=true. The OMS sets destinationVenue=DARK1 on the routed order and the EMS routes to the dark-pool matching engine.",
     seeAlso: ["venue"],
     source: "backend/src/dark-pool/dark-pool-server.ts",
@@ -289,7 +313,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "RFQ",
     acronymOf: "Request For Quote",
     category: "fixed-income",
-    short: "Workflow where a buy-side trader asks one or more dealers for a quote on a specific bond, then chooses to execute or pass.",
+    short:
+      "Workflow where a buy-side trader asks one or more dealers for a quote on a specific bond, then chooses to execute or pass.",
     long: "Fixed-income markets are largely RFQ-driven rather than continuous-quote. The user fills the order ticket with instrumentType=bond plus a bondSpec (ISIN, coupon, periods, yield). The OMS derives desk=FI and publishes to orders.fi.rfq instead of orders.routed. The RFQ service handles the negotiation lifecycle. The user executes via POST /rfq/{rfqId}/execute through the gateway.",
     seeAlso: ["bond", "ccp", "yield-curve"],
     source: "backend/src/rfq/rfq-service.ts",
@@ -299,7 +324,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "CCP",
     acronymOf: "Central Counterparty",
     category: "fixed-income",
-    short: "Clearing-house that interposes itself between buyer and seller, guaranteeing settlement and managing counterparty risk via margin calls.",
+    short:
+      "Clearing-house that interposes itself between buyer and seller, guaranteeing settlement and managing counterparty risk via margin calls.",
     seeAlso: ["rfq", "settlement"],
     source: "backend/src/ccp/ccp-service.ts",
   },
@@ -307,7 +333,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "settlement",
     term: "Settlement",
     category: "fixed-income",
-    short: "Final exchange of cash for securities after a trade. The CCP service tracks T+1 settlement queues and per-user margin.",
+    short:
+      "Final exchange of cash for securities after a trade. The CCP service tracks T+1 settlement queues and per-user margin.",
     seeAlso: ["ccp"],
   },
   {
@@ -315,34 +342,39 @@ export const TERMS: GlossaryTerm[] = [
     term: "ISIN",
     acronymOf: "International Securities Identification Number",
     category: "fixed-income",
-    short: "Twelve-character globally-unique identifier for a tradeable security. Used as the bond identifier in RFQ flow.",
+    short:
+      "Twelve-character globally-unique identifier for a tradeable security. Used as the bond identifier in RFQ flow.",
   },
   {
     id: "yield-curve",
     term: "Yield curve",
     category: "fixed-income",
-    short: "Plot of bond yield against tenor. The platform fits a Nelson-Siegel curve and exposes both spot and forward rates.",
+    short:
+      "Plot of bond yield against tenor. The platform fits a Nelson-Siegel curve and exposes both spot and forward rates.",
     seeAlso: ["nelson-siegel", "duration", "spread"],
   },
   {
     id: "nelson-siegel",
     term: "Nelson-Siegel",
     category: "fixed-income",
-    short: "Parametric model that describes a yield curve with four parameters (β₀, β₁, β₂, τ). Used to fit a smooth curve through observed yields.",
+    short:
+      "Parametric model that describes a yield curve with four parameters (β₀, β₁, β₂, τ). Used to fit a smooth curve through observed yields.",
     seeAlso: ["yield-curve"],
   },
   {
     id: "duration",
     term: "Duration",
     category: "fixed-income",
-    short: "First-order sensitivity of a bond's price to a parallel shift in yields. Higher duration ⇒ more interest-rate risk.",
+    short:
+      "First-order sensitivity of a bond's price to a parallel shift in yields. Higher duration ⇒ more interest-rate risk.",
     seeAlso: ["dv01", "convexity"],
   },
   {
     id: "convexity",
     term: "Convexity",
     category: "fixed-income",
-    short: "Second-order correction to the price-yield relationship that duration alone misses. Positive convexity is good for the holder.",
+    short:
+      "Second-order correction to the price-yield relationship that duration alone misses. Positive convexity is good for the holder.",
     seeAlso: ["duration"],
   },
   {
@@ -350,77 +382,88 @@ export const TERMS: GlossaryTerm[] = [
     term: "DV01",
     acronymOf: "Dollar Value of a 01",
     category: "fixed-income",
-    short: "Cash P&L impact of a one-basis-point parallel shift in yields. Standard unit of interest-rate risk on the duration ladder.",
+    short:
+      "Cash P&L impact of a one-basis-point parallel shift in yields. Standard unit of interest-rate risk on the duration ladder.",
     seeAlso: ["duration"],
   },
   {
     id: "spread",
     term: "Spread",
     category: "fixed-income",
-    short: "Excess yield over a benchmark. The platform computes G-spread (vs Treasury yield), Z-spread (constant spread over the curve), and OAS (option-adjusted spread).",
+    short:
+      "Excess yield over a benchmark. The platform computes G-spread (vs Treasury yield), Z-spread (constant spread over the curve), and OAS (option-adjusted spread).",
     seeAlso: ["yield-curve"],
   },
   {
     id: "bond",
     term: "Bond",
     category: "fixed-income",
-    short: "Debt security paying a coupon (often semi-annual) and returning principal at maturity. Priced via discounted-cash-flow against the yield curve.",
+    short:
+      "Debt security paying a coupon (often semi-annual) and returning principal at maturity. Priced via discounted-cash-flow against the yield curve.",
     seeAlso: ["yield-curve", "duration", "rfq"],
   },
   {
     id: "delta",
     term: "Delta",
     category: "options",
-    short: "First-order sensitivity of an option price to spot. ATM call delta ≈ 0.5; deep ITM ≈ 1; deep OTM ≈ 0.",
+    short:
+      "First-order sensitivity of an option price to spot. ATM call delta ≈ 0.5; deep ITM ≈ 1; deep OTM ≈ 0.",
     seeAlso: ["gamma", "vega", "greeks"],
   },
   {
     id: "gamma",
     term: "Gamma",
     category: "options",
-    short: "Rate of change of delta with respect to spot. Highest at-the-money near expiry — that's where gamma scalping pays.",
+    short:
+      "Rate of change of delta with respect to spot. Highest at-the-money near expiry — that's where gamma scalping pays.",
     seeAlso: ["delta", "greeks"],
   },
   {
     id: "vega",
     term: "Vega",
     category: "options",
-    short: "Sensitivity of option price to a 1-volatility-point change. Long vega ⇒ profits when implied vol rises.",
+    short:
+      "Sensitivity of option price to a 1-volatility-point change. Long vega ⇒ profits when implied vol rises.",
     seeAlso: ["theta", "greeks", "vol-surface"],
   },
   {
     id: "theta",
     term: "Theta",
     category: "options",
-    short: "Time decay: how much option value erodes per day with all else held constant. Long options bleed theta; short options collect it.",
+    short:
+      "Time decay: how much option value erodes per day with all else held constant. Long options bleed theta; short options collect it.",
     seeAlso: ["vega", "greeks"],
   },
   {
     id: "greeks",
     term: "Greeks",
     category: "options",
-    short: "Partial derivatives of option price with respect to its inputs. Delta, gamma, theta, vega, rho. The platform's Greeks Surface panel shows them across strikes.",
+    short:
+      "Partial derivatives of option price with respect to its inputs. Delta, gamma, theta, vega, rho. The platform's Greeks Surface panel shows them across strikes.",
     seeAlso: ["delta", "gamma", "vega", "theta"],
   },
   {
     id: "vol-surface",
     term: "Volatility surface",
     category: "options",
-    short: "Implied vol as a function of strike and expiry. The platform fits a SABR-inspired smile per expiry.",
+    short:
+      "Implied vol as a function of strike and expiry. The platform fits a SABR-inspired smile per expiry.",
     seeAlso: ["vega", "greeks"],
   },
   {
     id: "black-scholes",
     term: "Black-Scholes",
     category: "options",
-    short: "Closed-form option-pricing model. Inputs: spot, strike, time to expiry, vol, risk-free rate. Outputs: theoretical price + Greeks.",
+    short:
+      "Closed-form option-pricing model. Inputs: spot, strike, time to expiry, vol, risk-free rate. Outputs: theoretical price + Greeks.",
     seeAlso: ["greeks", "monte-carlo"],
   },
   {
     id: "monte-carlo",
     term: "Monte Carlo",
     category: "options",
-    short: "Path-simulation pricing. The platform uses it for the Scenario Matrix — multiple spot × vol shocks combined.",
+    short:
+      "Path-simulation pricing. The platform uses it for the Scenario Matrix — multiple spot × vol shocks combined.",
     seeAlso: ["black-scholes"],
   },
   {
@@ -428,14 +471,16 @@ export const TERMS: GlossaryTerm[] = [
     term: "GBM",
     acronymOf: "Geometric Brownian Motion",
     category: "market-data",
-    short: "Stochastic process used by the market simulator to generate realistic-looking price paths. dS/S = μ dt + σ dW.",
+    short:
+      "Stochastic process used by the market simulator to generate realistic-looking price paths. dS/S = μ dt + σ dW.",
     seeAlso: ["market-sim", "price-fan"],
   },
   {
     id: "market-sim",
     term: "Market Simulator",
     category: "market-data",
-    short: "Generates ~80 S&P 500 instruments at 4 ticks/sec via GBM. Per-symbol vol and beta come from sp500Assets.ts.",
+    short:
+      "Generates ~80 S&P 500 instruments at 4 ticks/sec via GBM. Per-symbol vol and beta come from sp500Assets.ts.",
     seeAlso: ["gbm", "tick"],
     source: "backend/src/market-sim/market-sim.ts",
   },
@@ -443,28 +488,32 @@ export const TERMS: GlossaryTerm[] = [
     id: "tick",
     term: "Tick",
     category: "market-data",
-    short: "A single price-update event published to the market.ticks topic. The platform emits one tick batch every 250ms covering all symbols.",
+    short:
+      "A single price-update event published to the market.ticks topic. The platform emits one tick batch every 250ms covering all symbols.",
     seeAlso: ["candle", "market-sim"],
   },
   {
     id: "candle",
     term: "Candle / OHLCV",
     category: "market-data",
-    short: "Aggregated tick data for a time bucket. Stores Open, High, Low, Close, Volume. The journal aggregates 1-minute and 5-minute candles, capped at 120 per symbol.",
+    short:
+      "Aggregated tick data for a time bucket. Stores Open, High, Low, Close, Volume. The journal aggregates 1-minute and 5-minute candles, capped at 120 per symbol.",
     seeAlso: ["tick"],
   },
   {
     id: "price-fan",
     term: "Price Fan",
     category: "market-data",
-    short: "Forward-projection panel: simulates many GBM paths from spot and shows the p5/p25/p50/p75/p95 bands. Useful for risk/scenario discussion.",
+    short:
+      "Forward-projection panel: simulates many GBM paths from spot and shows the p5/p25/p50/p75/p95 bands. Useful for risk/scenario discussion.",
     seeAlso: ["gbm", "monte-carlo"],
   },
   {
     id: "feature-engine",
     term: "Feature Engine",
     category: "intelligence",
-    short: "Computes 7 features per symbol per tick: momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta.",
+    short:
+      "Computes 7 features per symbol per tick: momentum, relativeVolume, realisedVol, sectorRelativeStrength, eventScore, newsVelocity, sentimentDelta.",
     seeAlso: ["signal-engine", "feature-vector"],
     source: "backend/src/feature-engine/feature-engine.ts",
   },
@@ -472,14 +521,16 @@ export const TERMS: GlossaryTerm[] = [
     id: "feature-vector",
     term: "Feature vector",
     category: "intelligence",
-    short: "The 7-dimensional snapshot the feature engine produces per symbol. Inputs to the signal engine.",
+    short:
+      "The 7-dimensional snapshot the feature engine produces per symbol. Inputs to the signal engine.",
     seeAlso: ["feature-engine", "signal-engine"],
   },
   {
     id: "signal-engine",
     term: "Signal Engine",
     category: "intelligence",
-    short: "Applies admin-configurable weighted scoring to a feature vector to produce a directional signal in [-1, 1].",
+    short:
+      "Applies admin-configurable weighted scoring to a feature vector to produce a directional signal in [-1, 1].",
     seeAlso: ["feature-engine", "recommendation-engine"],
     source: "backend/src/signal-engine/signal-engine.ts",
   },
@@ -487,7 +538,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "recommendation-engine",
     term: "Recommendation Engine",
     category: "intelligence",
-    short: "Filters signals at confidence > 0.6 and emits TradeRecommendation events for the UI. Advisory only — never auto-submits.",
+    short:
+      "Filters signals at confidence > 0.6 and emits TradeRecommendation events for the UI. Advisory only — never auto-submits.",
     seeAlso: ["signal-engine"],
     source: "backend/src/recommendation-engine/recommendation-server.ts",
   },
@@ -495,28 +547,32 @@ export const TERMS: GlossaryTerm[] = [
     id: "scenario-engine",
     term: "Scenario Engine",
     category: "intelligence",
-    short: "REST endpoint that re-scores a feature vector under shocks (e.g. realisedVol -30%) and returns baseline + shocked + delta.",
+    short:
+      "REST endpoint that re-scores a feature vector under shocks (e.g. realisedVol -30%) and returns baseline + shocked + delta.",
     source: "backend/src/scenario-engine/scenario-server.ts",
   },
   {
     id: "redpanda",
     term: "Redpanda",
     category: "infrastructure",
-    short: "Kafka-compatible streaming broker used as VETA's message bus. Lighter than Kafka, drop-in replacement at the protocol level.",
+    short:
+      "Kafka-compatible streaming broker used as VETA's message bus. Lighter than Kafka, drop-in replacement at the protocol level.",
     seeAlso: ["bus-topic", "kafka-relay"],
   },
   {
     id: "bus-topic",
     term: "Bus topic",
     category: "infrastructure",
-    short: "A named partitioned event stream on Redpanda. The platform uses ~25 topics covering orders, market data, news, intelligence and FIX.",
+    short:
+      "A named partitioned event stream on Redpanda. The platform uses ~25 topics covering orders, market data, news, intelligence and FIX.",
     seeAlso: ["redpanda", "kafka-relay"],
   },
   {
     id: "kafka-relay",
     term: "Kafka Relay",
     category: "infrastructure",
-    short: "Subscribes to every Redpanda topic and forwards each event as a JSON line to stdout, where Grafana Alloy tails them into Loki.",
+    short:
+      "Subscribes to every Redpanda topic and forwards each event as a JSON line to stdout, where Grafana Alloy tails them into Loki.",
     seeAlso: ["redpanda", "loki"],
     source: "backend/src/kafka-relay/kafka-relay.ts",
   },
@@ -525,14 +581,16 @@ export const TERMS: GlossaryTerm[] = [
     term: "FIX",
     acronymOf: "Financial Information eXchange",
     category: "infrastructure",
-    short: "Industry-standard text protocol for trading and order-status messages. The platform speaks FIX 4.4 against an in-process matching engine.",
+    short:
+      "Industry-standard text protocol for trading and order-status messages. The platform speaks FIX 4.4 against an in-process matching engine.",
     seeAlso: ["fix-exchange"],
   },
   {
     id: "fix-exchange",
     term: "FIX Exchange",
     category: "infrastructure",
-    short: "TCP FIX 4.4 endpoint that runs an in-process matching engine. The EMS connects to it as a client to execute orders.",
+    short:
+      "TCP FIX 4.4 endpoint that runs an in-process matching engine. The EMS connects to it as a client to execute orders.",
     seeAlso: ["fix", "ems"],
     source: "backend/src/fix/fix-exchange.ts",
   },
@@ -540,7 +598,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "user-service",
     term: "User Service",
     category: "infrastructure",
-    short: "Manages users, sessions (Postgres-backed), and per-user trading limits. OAuth2 + PKCE. Internal only — never reached from the browser directly.",
+    short:
+      "Manages users, sessions (Postgres-backed), and per-user trading limits. OAuth2 + PKCE. Internal only — never reached from the browser directly.",
     seeAlso: ["gateway", "rbac"],
     source: "backend/src/user-service/user-service.ts",
   },
@@ -548,42 +607,48 @@ export const TERMS: GlossaryTerm[] = [
     id: "kill-switch",
     term: "Kill switch",
     category: "risk",
-    short: "Emergency mechanism to cancel and block live orders by scope: all, by user, by algo, by symbol, or by venue. Every action is logged.",
+    short:
+      "Emergency mechanism to cancel and block live orders by scope: all, by user, by algo, by symbol, or by venue. Every action is logged.",
     seeAlso: ["oms"],
   },
   {
     id: "trading-style",
     term: "Trading style",
     category: "rbac",
-    short: "Single primary specialisation that determines which panels a trader can open. Eight values: high_touch, low_touch, fi_voice, fx_electronic, commodities_voice, derivatives_high_touch, derivatives_low_touch, oversight.",
+    short:
+      "Single primary specialisation that determines which panels a trader can open. Eight values: high_touch, low_touch, fi_voice, fx_electronic, commodities_voice, derivatives_high_touch, derivatives_low_touch, oversight.",
     seeAlso: ["high-touch", "low-touch", "desk-head"],
   },
   {
     id: "high-touch",
     term: "High-touch",
     category: "rbac",
-    short: "Manual, voice/keyboard-driven trading where a salesperson or trader works each order. Visible Order Ticket and Basket Order panels.",
+    short:
+      "Manual, voice/keyboard-driven trading where a salesperson or trader works each order. Visible Order Ticket and Basket Order panels.",
     seeAlso: ["low-touch", "trading-style"],
   },
   {
     id: "low-touch",
     term: "Low-touch",
     category: "rbac",
-    short: "Algo-driven trading where a trader monitors strategies running on the OMS rather than placing orders by hand.",
+    short:
+      "Algo-driven trading where a trader monitors strategies running on the OMS rather than placing orders by hand.",
     seeAlso: ["high-touch", "trading-style"],
   },
   {
     id: "desk-head",
     term: "Desk-head",
     category: "rbac",
-    short: "Read-only oversight role with cross-desk visibility. Sees every desk's positions, blotter and P&L but cannot submit orders.",
+    short:
+      "Read-only oversight role with cross-desk visibility. Sees every desk's positions, blotter and P&L but cannot submit orders.",
     seeAlso: ["risk-manager", "trading-style"],
   },
   {
     id: "risk-manager",
     term: "Risk-manager",
     category: "rbac",
-    short: "Second-line market-risk role. Sees firm-wide positions and risk panels (Greeks, vol surface, yield curve, DV01) but cannot trade.",
+    short:
+      "Second-line market-risk role. Sees firm-wide positions and risk panels (Greeks, vol surface, yield curve, DV01) but cannot trade.",
     seeAlso: ["desk-head"],
   },
   {
@@ -591,56 +656,64 @@ export const TERMS: GlossaryTerm[] = [
     term: "RBAC",
     acronymOf: "Role-Based Access Control",
     category: "rbac",
-    short: "Roles (trader, desk-head, risk-manager, admin, compliance, sales, external-client, viewer) gate which API endpoints and UI panels are accessible.",
+    short:
+      "Roles (trader, desk-head, risk-manager, admin, compliance, sales, external-client, viewer) gate which API endpoints and UI panels are accessible.",
     seeAlso: ["trading-style"],
   },
   {
     id: "otel",
     term: "OpenTelemetry",
     category: "telemetry",
-    short: "Vendor-neutral standard for metrics, traces and logs. Deno 2.x ships built-in auto-instrumentation enabled with OTEL_DENO=true.",
+    short:
+      "Vendor-neutral standard for metrics, traces and logs. Deno 2.x ships built-in auto-instrumentation enabled with OTEL_DENO=true.",
     seeAlso: ["traceparent", "lgtm"],
   },
   {
     id: "traceparent",
     term: "traceparent",
     category: "telemetry",
-    short: "W3C-standard HTTP header (and Kafka header) that carries the active trace ID and parent span ID, letting receivers stitch a distributed trace.",
+    short:
+      "W3C-standard HTTP header (and Kafka header) that carries the active trace ID and parent span ID, letting receivers stitch a distributed trace.",
     seeAlso: ["otel"],
   },
   {
     id: "lgtm",
     term: "LGTM stack",
     category: "telemetry",
-    short: "Loki + Grafana + Tempo + Mimir/Prometheus. Grafana's bundle for logs, dashboards, traces and metrics. Run on the homelab for the demo — a real-bank production should use a managed vendor.",
+    short:
+      "Loki + Grafana + Tempo + Mimir/Prometheus. Grafana's bundle for logs, dashboards, traces and metrics. Run on the homelab for the demo — a real-bank production should use a managed vendor.",
     seeAlso: ["otel"],
   },
   {
     id: "loki",
     term: "Loki",
     category: "telemetry",
-    short: "Log-aggregation database from Grafana. Indexes labels rather than full-text — fast and cheap, designed to be paired with Grafana.",
+    short:
+      "Log-aggregation database from Grafana. Indexes labels rather than full-text — fast and cheap, designed to be paired with Grafana.",
     seeAlso: ["lgtm"],
   },
   {
     id: "tempo",
     term: "Tempo",
     category: "telemetry",
-    short: "Distributed-tracing backend from Grafana. Stores traces by ID; a separate metrics-generator processor produces span-metrics and a service graph.",
+    short:
+      "Distributed-tracing backend from Grafana. Stores traces by ID; a separate metrics-generator processor produces span-metrics and a service graph.",
     seeAlso: ["lgtm", "otel"],
   },
   {
     id: "alloy",
     term: "Grafana Alloy",
     category: "telemetry",
-    short: "Telemetry collector. Receives OTLP from services, scrapes targets, ships to Loki/Prometheus/Tempo.",
+    short:
+      "Telemetry collector. Receives OTLP from services, scrapes targets, ships to Loki/Prometheus/Tempo.",
     seeAlso: ["lgtm"],
   },
   {
     id: "scenario",
     term: "Scenario",
     category: "execution",
-    short: "Saved description of a single trade — symbol, side, qty, price, strategy plus a numeric seed — that can be replayed deterministically.",
+    short:
+      "Saved description of a single trade — symbol, side, qty, price, strategy plus a numeric seed — that can be replayed deterministically.",
     long: "A scenario binds a market-sim seed to an order spec so re-running the saved row reproduces the same fills. Used to detect algo regressions across releases and as the data shape that would back RTS 6 conformance testing if the platform were ever production-bound.",
     seeAlso: ["determinism", "rts-6"],
     source: "backend/src/scenarios/types.ts",
@@ -649,14 +722,16 @@ export const TERMS: GlossaryTerm[] = [
     id: "determinism",
     term: "Deterministic replay",
     category: "execution",
-    short: "Property of a system where the same inputs produce the same outputs every time. The market simulator's seeded PRNG (mulberry32) plus immutable risk-config versioning gives VETA full deterministic replay.",
+    short:
+      "Property of a system where the same inputs produce the same outputs every time. The market simulator's seeded PRNG (mulberry32) plus immutable risk-config versioning gives VETA full deterministic replay.",
     seeAlso: ["scenario", "risk-config-version"],
   },
   {
     id: "risk-config-version",
     term: "Risk config version",
     category: "risk",
-    short: "Each change to risk-engine thresholds appends a row to risk.config_versions. Every /check response carries riskConfigVersion: <id> so a past decision can be reconstructed against the exact thresholds that were live when it ran.",
+    short:
+      "Each change to risk-engine thresholds appends a row to risk.config_versions. Every /check response carries riskConfigVersion: <id> so a past decision can be reconstructed against the exact thresholds that were live when it ran.",
     seeAlso: ["risk-engine", "scenario"],
     source: "backend/src/risk-engine/configStore.ts",
   },
@@ -665,7 +740,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "RTS 6",
     acronymOf: "Regulatory Technical Standards 6 (MiFID II)",
     category: "execution",
-    short: "EU/UK regulation governing organisational requirements for investment firms doing algorithmic trading. Mandates pre-trade risk controls, kill-switch, conformance testing, message-rate limits, and annual self-assessment.",
+    short:
+      "EU/UK regulation governing organisational requirements for investment firms doing algorithmic trading. Mandates pre-trade risk controls, kill-switch, conformance testing, message-rate limits, and annual self-assessment.",
     long: "VETA is a simulator and isn't subject to RTS 6, but the data shapes used for risk-config versioning, scenarios and audit-trail retention are deliberately what RTS 6 would expect. That keeps the codebase from having to be torn up if the platform ever moved towards a real authorisation.",
     seeAlso: ["risk-engine", "kill-switch", "scenario"],
   },
@@ -676,21 +752,24 @@ export const TERMS: GlossaryTerm[] = [
     term: "GHCR",
     acronymOf: "GitHub Container Registry",
     category: "infrastructure",
-    short: "GitHub's OCI image registry. The CI matrix builds one image per service and pushes to ghcr.io/milesburton/veta-trading-platform/<service>:latest on every merge to main.",
+    short:
+      "GitHub's OCI image registry. The CI matrix builds one image per service and pushes to ghcr.io/milesburton/veta-trading-platform/<service>:latest on every merge to main.",
     seeAlso: ["compose-profile"],
   },
   {
     id: "compose-profile",
     term: "Compose profile",
     category: "infrastructure",
-    short: "Docker Compose feature that gates services behind named profiles. VETA uses `trading` for the always-on stack and `loadgen` for the on-demand load generator. Services with no profile are always started.",
+    short:
+      "Docker Compose feature that gates services behind named profiles. VETA uses `trading` for the always-on stack and `loadgen` for the on-demand load generator. Services with no profile are always started.",
     seeAlso: ["loadgen-profile"],
   },
   {
     id: "loadgen-profile",
     term: "loadgen (Compose profile)",
     category: "infrastructure",
-    short: "The continuous load generator's profile. Activated by scripts/load.sh on; deactivated by scripts/load.sh off. Defines loadgen-token, loadgen-soak, loadgen-matrix.",
+    short:
+      "The continuous load generator's profile. Activated by scripts/load.sh on; deactivated by scripts/load.sh off. Defines loadgen-token, loadgen-soak, loadgen-matrix.",
     seeAlso: ["compose-profile", "k6", "vu", "soak", "matrix-loop"],
     source: "compose.loadgen.yml",
   },
@@ -699,7 +778,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "SOPS",
     acronymOf: "Secrets OPerationS",
     category: "infrastructure",
-    short: "Mozilla CLI that encrypts the values (not the keys) in YAML/JSON/env files. The encrypted file is committed to git; decrypted at deploy time via an age key on the host. No daemon, no DB.",
+    short:
+      "Mozilla CLI that encrypts the values (not the keys) in YAML/JSON/env files. The encrypted file is committed to git; decrypted at deploy time via an age key on the host. No daemon, no DB.",
     long: "Planned for VETA's secrets consolidation (replaces the static .env.loadgen, hardcoded OAUTH2_SHARED_SECRET, etc). Compared to a managed secrets system (Vault, Infisical) it adds zero operational burden — the encrypted file is the source of truth, the age private key is the trust root. Trade-offs: no UI, no read-audit, no automatic rotation.",
     seeAlso: ["age", "secret-rotation"],
   },
@@ -707,7 +787,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "age",
     term: "age",
     category: "infrastructure",
-    short: "Modern file-encryption tool (X25519 + ChaCha20-Poly1305). VETA's planned recipient format for SOPS — public key in .sops.yaml, private key (mode 600) on the host that needs to decrypt.",
+    short:
+      "Modern file-encryption tool (X25519 + ChaCha20-Poly1305). VETA's planned recipient format for SOPS — public key in .sops.yaml, private key (mode 600) on the host that needs to decrypt.",
     long: "Pronounced 'ah-gay'. Designed as a simpler PGP replacement. A keypair is two short text strings; a single SOPS-encrypted file can be encrypted to multiple age public keys (laptop + homelab + CI), each holding their own private key. Adding/removing recipients is `sops updatekeys`.",
     seeAlso: ["sops"],
   },
@@ -715,7 +796,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "secret-rotation",
     term: "Secret rotation",
     category: "infrastructure",
-    short: "Replacing a credential with a fresh value before its lifetime expires (or after suspected exposure). VETA does this manually today; SOPS will make it `sops <file>` + redeploy.",
+    short:
+      "Replacing a credential with a fresh value before its lifetime expires (or after suspected exposure). VETA does this manually today; SOPS will make it `sops <file>` + redeploy.",
     seeAlso: ["sops"],
   },
   {
@@ -723,7 +805,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "OAuth PKCE",
     acronymOf: "OAuth 2.0 with Proof Key for Code Exchange (RFC 7636)",
     category: "infrastructure",
-    short: "OAuth flow where the client generates a high-entropy verifier, hashes it as a challenge, sends the challenge with the auth request, and reveals the verifier on token exchange. Defends against intercepted authorisation codes.",
+    short:
+      "OAuth flow where the client generates a high-entropy verifier, hashes it as a challenge, sends the challenge with the auth request, and reveals the verifier on token exchange. Defends against intercepted authorisation codes.",
     long: "VETA's user-service implements PKCE for both the web UI and the load generator's token sidecar. The web UI uses it because there's no client secret in a browser app; the sidecar uses it because the same flow is the easiest path to a session-cookie token.",
     seeAlso: ["user-service", "loadgen-profile"],
     source: "backend/src/user-service/user-service.ts",
@@ -734,7 +817,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "k6",
     term: "k6",
     category: "telemetry",
-    short: "Grafana's open-source load-testing tool. JavaScript-defined scenarios with virtual users; emits metrics over Prometheus remote-write.",
+    short:
+      "Grafana's open-source load-testing tool. JavaScript-defined scenarios with virtual users; emits metrics over Prometheus remote-write.",
     long: "VETA's k6 scripts live in /k6 and define five scenarios used as one-shots in CI baselines and as continuous load via scripts/load.sh. The continuous loader runs k6 inside the loadgen-soak and loadgen-matrix containers with K6_NO_THRESHOLDS=true so threshold breaches don't terminate the loop.",
     seeAlso: ["vu", "loadgen-profile", "soak", "matrix-loop"],
     source: "k6/",
@@ -744,14 +828,16 @@ export const TERMS: GlossaryTerm[] = [
     term: "VU",
     acronymOf: "Virtual user (k6)",
     category: "telemetry",
-    short: "k6's concurrency unit — a simulated user running one iteration of the script at a time. Soak holds VUs constant; ramp/burst scenarios scale up and down across stages.",
+    short:
+      "k6's concurrency unit — a simulated user running one iteration of the script at a time. Soak holds VUs constant; ramp/burst scenarios scale up and down across stages.",
     seeAlso: ["k6", "soak", "burst-open"],
   },
   {
     id: "soak",
     term: "Soak (test)",
     category: "telemetry",
-    short: "Sustained constant-VU load over a long window. VETA's soak.js holds 50 VUs by default in the continuous loader; meant to surface slow leaks (memory, descriptors, queue depth) that don't appear under brief peaks.",
+    short:
+      "Sustained constant-VU load over a long window. VETA's soak.js holds 50 VUs by default in the continuous loader; meant to surface slow leaks (memory, descriptors, queue depth) that don't appear under brief peaks.",
     seeAlso: ["k6", "vu", "matrix-loop"],
     source: "k6/soak.js",
   },
@@ -759,7 +845,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "matrix-loop",
     term: "Matrix loop",
     category: "telemetry",
-    short: "VETA's continuous-load runner that cycles baseline-limit → mixed-strategy → burst-open → risk-stress forever, sleeping LOADGEN_MATRIX_SLEEP between scenarios. Complements the steady-state soak.",
+    short:
+      "VETA's continuous-load runner that cycles baseline-limit → mixed-strategy → burst-open → risk-stress forever, sleeping LOADGEN_MATRIX_SLEEP between scenarios. Complements the steady-state soak.",
     seeAlso: ["k6", "soak", "burst-open", "risk-stress"],
     source: "scripts/loadgen/matrix-loop.sh",
   },
@@ -767,7 +854,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "burst-open",
     term: "Burst-open",
     category: "telemetry",
-    short: "k6 scenario simulating market-open conditions: 0 → 200 VUs over 30s, hold 5min, ramp down. Used to expose queue-depth and connection-pool ceilings.",
+    short:
+      "k6 scenario simulating market-open conditions: 0 → 200 VUs over 30s, hold 5min, ramp down. Used to expose queue-depth and connection-pool ceilings.",
     seeAlso: ["k6", "vu", "matrix-loop"],
     source: "k6/burst-open.js",
   },
@@ -775,7 +863,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "risk-stress",
     term: "Risk-stress",
     category: "telemetry",
-    short: "k6 scenario hammering the risk engine specifically — 100 VUs constant for 2min, mostly orders that approach per-user limits to maximise risk-check work.",
+    short:
+      "k6 scenario hammering the risk engine specifically — 100 VUs constant for 2min, mostly orders that approach per-user limits to maximise risk-check work.",
     seeAlso: ["k6", "vu", "matrix-loop", "risk-engine"],
     source: "k6/risk-stress.js",
   },
@@ -784,7 +873,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "SLI",
     acronymOf: "Service Level Indicator",
     category: "telemetry",
-    short: "A specific user-facing metric (e.g. 'percentage of /orders requests returning 2xx within 500ms'). The number you measure to evaluate an SLO.",
+    short:
+      "A specific user-facing metric (e.g. 'percentage of /orders requests returning 2xx within 500ms'). The number you measure to evaluate an SLO.",
     seeAlso: ["slo", "sla", "error-budget"],
   },
   {
@@ -792,7 +882,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "SLO",
     acronymOf: "Service Level Objective",
     category: "telemetry",
-    short: "The target you commit to for an SLI over a time window. VETA's headline SLO is 99.9% availability over 30 days; full table in the SRE terminology reference.",
+    short:
+      "The target you commit to for an SLI over a time window. VETA's headline SLO is 99.9% availability over 30 days; full table in the SRE terminology reference.",
     seeAlso: ["sli", "sla", "error-budget", "mttr"],
   },
   {
@@ -800,14 +891,16 @@ export const TERMS: GlossaryTerm[] = [
     term: "SLA",
     acronymOf: "Service Level Agreement",
     category: "telemetry",
-    short: "The contractual promise (usually involving money) if an SLO is missed. Always looser than the SLO so there's a buffer between 'we noticed' and 'we owe a refund'.",
+    short:
+      "The contractual promise (usually involving money) if an SLO is missed. Always looser than the SLO so there's a buffer between 'we noticed' and 'we owe a refund'.",
     seeAlso: ["sli", "slo", "error-budget"],
   },
   {
     id: "error-budget",
     term: "Error budget",
     category: "telemetry",
-    short: "The downtime an SLO mathematically permits. At 99.9% over 30 days = 43 minutes. When exhausted, feature work pauses and reliability work takes priority.",
+    short:
+      "The downtime an SLO mathematically permits. At 99.9% over 30 days = 43 minutes. When exhausted, feature work pauses and reliability work takes priority.",
     seeAlso: ["slo", "sli", "mttr"],
   },
   {
@@ -815,7 +908,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "MTTR",
     acronymOf: "Mean Time To Recovery",
     category: "telemetry",
-    short: "Elapsed time from a page-able alert firing to the system being verifiably healthy again. VETA targets MTTR < 30 minutes on SEV1.",
+    short:
+      "Elapsed time from a page-able alert firing to the system being verifiably healthy again. VETA targets MTTR < 30 minutes on SEV1.",
     seeAlso: ["mttd", "mtbf", "slo"],
   },
   {
@@ -823,7 +917,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "MTTD",
     acronymOf: "Mean Time To Detect",
     category: "telemetry",
-    short: "Elapsed time from an incident starting to a useful alert firing. Bounded by monitoring quality — synthetic probes drive MTTD toward the probe cadence; without them MTTD is 'until a user complains'.",
+    short:
+      "Elapsed time from an incident starting to a useful alert firing. Bounded by monitoring quality — synthetic probes drive MTTD toward the probe cadence; without them MTTD is 'until a user complains'.",
     seeAlso: ["mttr", "synthetic-monitor"],
   },
   {
@@ -831,7 +926,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "MTBF",
     acronymOf: "Mean Time Between Failures",
     category: "telemetry",
-    short: "Average duration between incidents. Tracked but not targeted — it rewards hiding problems and punishes better detection. The team metric is 'did we hit our SLO'.",
+    short:
+      "Average duration between incidents. Tracked but not targeted — it rewards hiding problems and punishes better detection. The team metric is 'did we hit our SLO'.",
     seeAlso: ["mttr", "slo"],
   },
   {
@@ -839,7 +935,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "RPO",
     acronymOf: "Recovery Point Objective",
     category: "telemetry",
-    short: "Maximum data loss tolerated, measured in time. VETA targets RPO < 5 minutes, achieved via Postgres streaming replication.",
+    short:
+      "Maximum data loss tolerated, measured in time. VETA targets RPO < 5 minutes, achieved via Postgres streaming replication.",
     seeAlso: ["rto"],
   },
   {
@@ -847,7 +944,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "RTO",
     acronymOf: "Recovery Time Objective",
     category: "telemetry",
-    short: "Maximum time to recover from disaster. VETA targets RTO < 30 minutes — automated Postgres failover plus a tested disaster runbook.",
+    short:
+      "Maximum time to recover from disaster. VETA targets RTO < 30 minutes — automated Postgres failover plus a tested disaster runbook.",
     seeAlso: ["rpo", "mttr"],
   },
   {
@@ -855,21 +953,24 @@ export const TERMS: GlossaryTerm[] = [
     term: "DORA",
     acronymOf: "DevOps Research and Assessment",
     category: "telemetry",
-    short: "Annual research correlating four metrics (deploy frequency, lead time, change failure rate, recovery time) with team performance. Used as the industry yardstick for software-delivery health.",
+    short:
+      "Annual research correlating four metrics (deploy frequency, lead time, change failure rate, recovery time) with team performance. Used as the industry yardstick for software-delivery health.",
     seeAlso: ["mttr", "slo"],
   },
   {
     id: "synthetic-monitor",
     term: "Synthetic monitor",
     category: "telemetry",
-    short: "Automated probe that performs a complete user journey on a schedule (sign in, open WS, submit a test order, cancel it). Source of truth for 'is the platform up'. Runs outside the cluster to see what real users see.",
+    short:
+      "Automated probe that performs a complete user journey on a schedule (sign in, open WS, submit a test order, cancel it). Source of truth for 'is the platform up'. Runs outside the cluster to see what real users see.",
     seeAlso: ["mttd", "slo"],
   },
   {
     id: "discord-webhook",
     term: "Discord webhook",
     category: "telemetry",
-    short: "URL credential that lets a service POST messages into a Discord channel. VETA uses one webhook to route CRITICAL and WARNING alerts from both the gateway (user-level events) and Grafana (platform alerts) into a single on-call channel. Injected via DISCORD_WEBHOOK_URL; never committed.",
+    short:
+      "URL credential that lets a service POST messages into a Discord channel. VETA uses one webhook to route CRITICAL and WARNING alerts from both the gateway (user-level events) and Grafana (platform alerts) into a single on-call channel. Injected via DISCORD_WEBHOOK_URL; never committed.",
     seeAlso: ["alert-routing"],
     source: "backend/src/gateway/discord-notifier.ts",
   },
@@ -877,7 +978,8 @@ export const TERMS: GlossaryTerm[] = [
     id: "alert-routing",
     term: "Alert routing",
     category: "telemetry",
-    short: "The end-to-end path an alert travels from origin (Prometheus rule or Redux action) through the gateway or Grafana AlertManager to the Discord channel. See platform/observability/alerts for the full flow and operator runbook.",
+    short:
+      "The end-to-end path an alert travels from origin (Prometheus rule or Redux action) through the gateway or Grafana AlertManager to the Discord channel. See platform/observability/alerts for the full flow and operator runbook.",
     seeAlso: ["discord-webhook"],
   },
   {
@@ -885,7 +987,8 @@ export const TERMS: GlossaryTerm[] = [
     term: "Smart Order Router",
     acronymOf: "SOR",
     category: "execution",
-    short: "The logic that picks which venue a child order goes to. VETA has two SOR modes: an EMS-level weighted-random pick across 7 simulated US venues (default for every algo except SNIPER), and SNIPER's best-effective-price selection across the top N venues simultaneously. Spread and depth multipliers per venue drive realistic fill behaviour.",
+    short:
+      "The logic that picks which venue a child order goes to. VETA has two SOR modes: an EMS-level weighted-random pick across 7 simulated US venues (default for every algo except SNIPER), and SNIPER's best-effective-price selection across the top N venues simultaneously. Spread and depth multipliers per venue drive realistic fill behaviour.",
     seeAlso: ["sniper"],
     source: "backend/src/ems/fill-math.ts",
   },
