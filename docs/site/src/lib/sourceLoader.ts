@@ -6,7 +6,7 @@ const REPO_ROOT = resolve(process.cwd(), "../..");
 const REPO_URL = "https://github.com/milesburton/veta-trading-platform";
 const GIT_REF = process.env.DOCS_GIT_REF ?? "main";
 
-const REGION_RE = (id: string) => new RegExp(`^\\s*(?://|#)\\s*#region\\s+${escape(id)}\\s*$`);
+const REGION_RE = (id: string) => new RegExp(`^\\s*(?://|#)\\s*#region\\s+${escapeRegex(id)}\\s*$`);
 const REGION_END_RE = /^\s*(?:\/\/|#)\s*#endregion\b/;
 
 function escapeRegex(s: string): string {
