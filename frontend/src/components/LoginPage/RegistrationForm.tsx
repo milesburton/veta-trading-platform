@@ -1,5 +1,6 @@
 import { useSignal } from "@preact/signals-react";
 import { TRADER_ARCHETYPES } from "@shared/traderArchetypes";
+import { sha256Async } from "@veta/frontend/lib/sha256.ts";
 import { setUser } from "@veta/frontend/store/authSlice.ts";
 import { useAppDispatch } from "@veta/frontend/store/hooks.ts";
 import {
@@ -22,9 +23,8 @@ function base64UrlEncode(bytes: Uint8Array): string {
 async function createPkcePair(): Promise<{ verifier: string; challenge: string }> {
   const verifierBytes = crypto.getRandomValues(new Uint8Array(32));
   const verifier = base64UrlEncode(verifierBytes);
-  const enc = new TextEncoder().encode(verifier);
-  const buf = await crypto.subtle.digest("SHA-256", enc);
-  return { verifier, challenge: base64UrlEncode(new Uint8Array(buf)) };
+  const digest = await sha256Async(new TextEncoder().encode(verifier));
+  return { verifier, challenge: base64UrlEncode(digest) };
 }
 
 function describeError(err: unknown): string {
