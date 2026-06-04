@@ -4,7 +4,7 @@ import type { KillBlock } from "@veta/frontend/store/killSwitchSlice.ts";
 import { blockAdded, blockRemoved } from "@veta/frontend/store/killSwitchSlice.ts";
 import type { KillScope } from "@veta/frontend/store/ordersSlice.ts";
 import { killOrdersThunk, resumeOrdersThunk } from "@veta/frontend/store/ordersSlice.ts";
-import { selectSymbols } from "@veta/frontend/store/selectors.ts";
+import { selectSeenUsers, selectSymbols } from "@veta/frontend/store/selectors.ts";
 import { v4 as uuidv4 } from "uuid";
 import { buildKillPayloads, buildResumePayload } from "./KillSwitchButton/payloads";
 
@@ -114,9 +114,7 @@ export function KillSwitchButton() {
   const user = useAppSelector((s) => s.auth.user);
   const isAdmin = user?.role === "admin";
   const symbols = useAppSelector(selectSymbols);
-  const seenUsers = useAppSelector(
-    (s) => [...new Set(s.orders.orders.map((o) => o.userId).filter(Boolean))] as string[]
-  );
+  const seenUsers = useAppSelector(selectSeenUsers);
   const blocks = useAppSelector((s) => s.killSwitch.blocks);
 
   const open = useSignal(false);

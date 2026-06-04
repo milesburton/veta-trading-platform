@@ -5,12 +5,13 @@ description: Metrics, logs, and traces via the self-hosted LGTM stack on the hom
 
 import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
-VETA emits metrics, logs, and traces to a separate **LGTM** stack: Loki, Grafana, Tempo, and Mimir/Prometheus, with Grafana Alloy collecting events. The trading stack runs fine without it; bring it up when investigating performance, debugging event flow, or generating data for the [Performance reference page](../../reference/performance/).
+VETA emits metrics, logs, and traces to a separate **LGTM** stack: Loki, Grafana, Tempo, and Mimir/Prometheus, with Grafana Alloy collecting events. The trading stack runs fine without it; bring it up when investigating performance, debugging event flow, or generating data for the [Performance page](../../analytics/performance/).
 
 <Aside type="caution" title="Not for a real-bank production">
 The self-hosted LGTM stack and the OTel auto-instrumentation overlay described in this section are intended for the homelab demo. A real production deployment should send OTLP to a managed observability vendor (Grafana Cloud, Honeycomb, Datadog, New Relic) rather than running its own collector + storage on the same host as the trading platform. Co-locating the observability backend with the workload it observes creates a noisy-neighbour failure mode where a metric spike crashes both the platform and the dashboard you would have used to diagnose it.
 
 The instrumentation itself (`OTEL_DENO=true`, the trace-propagating Kafka helpers, the `withSpan()` calls) works against any OTLP receiver. Only the receiver and storage choice changes.
+
 </Aside>
 
 ## Sub-pages
@@ -57,13 +58,13 @@ The instrumentation itself (`OTEL_DENO=true`, the trace-propagating Kafka helper
 
 Logs from the platform appear in three places, depending on what's running. Use this decision tree:
 
-| You want to | Use this | What it shows |
-|---|---|---|
-| Search recent logs from inside the app, no extra setup | **Logs drawer** in the app's status bar (`Logs` button, top-right) | Last ~2,000 lines from the gateway's in-memory ring buffer; falls back to Loki if `LOKI_URL` is set |
-| Full historical search across every service | **Grafana > Explore > Loki datasource** at `http://localhost:3000` (dev container; `https://veta.mnetcs.com/grafana/` in production) | Everything Alloy has shipped to Loki; backed by the LGTM stack |
-| Tail a single service's stdout while debugging | **`supervisorctl tail -f <service>`** on the host running the platform | Live stdout/stderr from supervisord; same lines that Alloy is collecting |
-| Track an order through the whole pipeline | **Grafana > Tempo > search by trace ID** | Distributed trace spanning gateway, OMS, algos, EMS, and journal, with linked log lines |
-| Per-service container logs (Docker / k8s) | **`docker logs <container>`** | Raw stdout from a single service container |
+| You want to                                            | Use this                                                                                                                             | What it shows                                                                                       |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Search recent logs from inside the app, no extra setup | **Logs drawer** in the app's status bar (`Logs` button, top-right)                                                                   | Last ~2,000 lines from the gateway's in-memory ring buffer; falls back to Loki if `LOKI_URL` is set |
+| Full historical search across every service            | **Grafana > Explore > Loki datasource** at `http://localhost:3000` (dev container; `https://veta.mnetcs.com/grafana/` in production) | Everything Alloy has shipped to Loki; backed by the LGTM stack                                      |
+| Tail a single service's stdout while debugging         | **`supervisorctl tail -f <service>`** on the host running the platform                                                               | Live stdout/stderr from supervisord; same lines that Alloy is collecting                            |
+| Track an order through the whole pipeline              | **Grafana > Tempo > search by trace ID**                                                                                             | Distributed trace spanning gateway, OMS, algos, EMS, and journal, with linked log lines             |
+| Per-service container logs (Docker / k8s)              | **`docker logs <container>`**                                                                                                        | Raw stdout from a single service container                                                          |
 
 The in-app Logs drawer always works with zero infrastructure, even on a fresh dev container. Each row is filterable by service, log level (error / warn / info / debug), time window (5m to 6h), and free-text search.
 
@@ -75,9 +76,9 @@ For the in-app drawer's API endpoint, role-gating, and ring-buffer fallback deta
 
 ## Where to run what
 
-| Environment | Trading stack | LGTM stack | k6 |
-|-------------|---------------|-----------|----|
-| `local` (devcontainer) | yes | optional | optional |
-| `homelab` (public demo at veta.mnetcs.com) | yes | yes | manual |
+| Environment                                | Trading stack | LGTM stack | k6       |
+| ------------------------------------------ | ------------- | ---------- | -------- |
+| `local` (devcontainer)                     | yes           | optional   | optional |
+| `homelab` (public demo at veta.mnetcs.com) | yes           | yes        | manual   |
 
 LGTM and k6 are optional locally. They add real overhead and the platform runs fine without them.

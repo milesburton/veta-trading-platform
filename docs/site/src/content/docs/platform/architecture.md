@@ -197,18 +197,18 @@ graph LR
 
 ### Colour key
 
-| Colour | Group | Services |
-|--------|-------|----------|
-| 🟣 Purple | Client | React Frontend |
-| 🟡 Amber | Gateway | API Gateway (BFF) |
-| 🟢 Green | Trading | OMS, EMS |
-| 🔴 Red | Risk | Risk Engine |
-| 🔵 Blue | Algos | 9 algo strategies |
-| 🟣 Violet | Market Data | Market Sim, Market Data, Adapters |
-| 🟠 Orange | Analytics | Analytics, Feature/Signal/Recommendation/Scenario engines |
-| 🟢 Teal | Storage | Journal, FIX Archive, User Service, Session Replay |
-| 🩷 Pink | Microstructure | FIX Exchange, Dark Pool, CCP, RFQ, Product Service |
-| ⚪ Grey | Support | News, LLM Advisory, LLM Worker, Kafka Relay |
+| Colour    | Group          | Services                                                  |
+| --------- | -------------- | --------------------------------------------------------- |
+| 🟣 Purple | Client         | React Frontend                                            |
+| 🟡 Amber  | Gateway        | API Gateway (BFF)                                         |
+| 🟢 Green  | Trading        | OMS, EMS                                                  |
+| 🔴 Red    | Risk           | Risk Engine                                               |
+| 🔵 Blue   | Algos          | 9 algo strategies                                         |
+| 🟣 Violet | Market Data    | Market Sim, Market Data, Adapters                         |
+| 🟠 Orange | Analytics      | Analytics, Feature/Signal/Recommendation/Scenario engines |
+| 🟢 Teal   | Storage        | Journal, FIX Archive, User Service, Session Replay        |
+| 🩷 Pink   | Microstructure | FIX Exchange, Dark Pool, CCP, RFQ, Product Service        |
+| ⚪ Grey   | Support        | News, LLM Advisory, LLM Worker, Kafka Relay               |
 
 ## Order flow
 
@@ -248,13 +248,13 @@ sequenceDiagram
 
 ## Bus topics
 
-| Category | Topics |
-|----------|--------|
-| Trading | `orders.new`, `orders.submitted`, `orders.routed`, `orders.child`, `orders.filled`, `orders.expired`, `orders.rejected`, `orders.cancelled` |
-| Algo | `algo.heartbeat` |
-| FIX | `fix.execution` |
-| News | `news.feed`, `news.signal` |
-| Intelligence | `market.features`, `market.signals`, `market.recommendations` |
+| Category     | Topics                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trading      | `orders.new`, `orders.submitted`, `orders.routed`, `orders.child`, `orders.filled`, `orders.expired`, `orders.rejected`, `orders.cancelled` |
+| Algo         | `algo.heartbeat`                                                                                                                            |
+| FIX          | `fix.execution`                                                                                                                             |
+| News         | `news.feed`, `news.signal`                                                                                                                  |
+| Intelligence | `market.features`, `market.signals`, `market.recommendations`                                                                               |
 
 ## Authentication
 
@@ -262,4 +262,4 @@ Sessions are stored as `veta_user` HTTP-only cookies set by the User Service via
 
 Roles: `trader`, `desk-head`, `risk-manager`, `admin`, `compliance`, `sales`, `external-client`, `viewer`. Only `trader` can submit orders.
 
-See [RBAC & Permissions](/veta-trading-platform/reference/rbac/) and [Trading Styles](/veta-trading-platform/reference/trading-styles/) for details.
+See [RBAC & Permissions](/veta-trading-platform/reference/rbac/) and [Trading Styles](/veta-trading-platform/ux/trading-styles/) for details.

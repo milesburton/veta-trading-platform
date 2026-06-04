@@ -12,7 +12,7 @@ description: Always-on synthetic trade flow on the homelab. Two k6 runners (soak
 - **`loadgen-token`**: alpine sidecar doing OAuth PKCE every 50 min and
   writing the access token to a shared volume
 
-This is the *continuous* load generator. For the on-demand harness (single
+This is the _continuous_ load generator. For the on-demand harness (single
 runs against local dev) see [k6 load testing](../k6-load-testing/).
 
 ## What it's for
@@ -48,13 +48,13 @@ note below.
 
 Optional tuning vars in the same file:
 
-| Env | Default | Effect |
-|---|---|---|
-| `LOADGEN_OAUTH_USERNAME` | `admin` | Which user the load runs as |
-| `LOADGEN_SOAK_VUS` | `50` | Steady VUs on soak |
-| `LOADGEN_SOAK_DURATION` | `50m` | Soak iteration length before token refresh |
-| `LOADGEN_MATRIX_SLEEP` | `30` | Pause (seconds) between matrix iterations |
-| `LOADGEN_MATRIX_SCENARIOS` | `baseline-limit.js mixed-strategy.js burst-open.js risk-stress.js` | Scripts the matrix cycles through |
+| Env                        | Default                                                            | Effect                                     |
+| -------------------------- | ------------------------------------------------------------------ | ------------------------------------------ |
+| `LOADGEN_OAUTH_USERNAME`   | `admin`                                                            | Which user the load runs as                |
+| `LOADGEN_SOAK_VUS`         | `50`                                                               | Steady VUs on soak                         |
+| `LOADGEN_SOAK_DURATION`    | `50m`                                                              | Soak iteration length before token refresh |
+| `LOADGEN_MATRIX_SLEEP`     | `30`                                                               | Pause (seconds) between matrix iterations  |
+| `LOADGEN_MATRIX_SCENARIOS` | `baseline-limit.js mixed-strategy.js burst-open.js risk-stress.js` | Scripts the matrix cycles through          |
 
 ## Daily use
 
@@ -105,4 +105,4 @@ correct per-user password automatically.
 
 - [k6 load testing](../k6-load-testing/): on-demand harness for single runs
 - [Synthetic probe](../synthetic-probe/): liveness check, not throughput
-- [Performance](/veta-trading-platform/reference/performance/): Grafana percentile baselines that loadgen feeds
+- [Performance](/veta-trading-platform/analytics/performance/): Grafana percentile baselines that loadgen feeds

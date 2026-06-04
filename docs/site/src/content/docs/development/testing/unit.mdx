@@ -5,7 +5,17 @@ description: Pure-logic tests for backend (Deno) and frontend (Vitest). Location
 
 import testInventory from "@docs/data/test-inventory.json";
 
-Unit tests exercise pure functions and isolated components with no HTTP, no Postgres, and no Redpanda. They cover the platform's logic primitives: schema validation, algo slicing math, FIX parsing, Redux reducers, and analytics formulas. Failures here surface as wrong outputs given correct inputs; higher suites cannot localise such failures because they observe symptoms (a 200 response with a wrong field) rather than causes.
+Unit tests exercise pure functions and isolated components with no HTTP, no
+Postgres, and no Redpanda. They cover the platform's logic primitives: schema
+validation, algo slicing math, FIX parsing, Redux reducers, layout models,
+ticket-resolution rules, hooks, and analytics formulas. Failures here surface
+as wrong outputs given correct inputs; higher suites cannot localise such
+failures because they observe symptoms (a 200 response with a wrong field)
+rather than causes.
+
+That matches the current coding approach: backend unit tests stay on pure Deno
+logic, while frontend unit tests cover Redux slices, React components, panel
+registry, layout models, ticket resolution rules, and hooks.
 
 Both backend and frontend unit suites run on every commit via the pre-commit hook.
 
@@ -25,17 +35,20 @@ Test names are prefixed with the feature in brackets, then a sentence describing
 import { assertEquals } from "jsr:@std/assert@0.217";
 import { ZodOrderNew } from "../schemas/orders.ts";
 
-Deno.test("[orders-schema] OrderNewSchema accepts minimal GUI submission", () => {
-  const result = ZodOrderNew.safeParse({
-    clientOrderId: "client-1",
-    userId: "user-1",
-    asset: "AAPL",
-    side: "BUY",
-    quantity: 100,
-    limitPrice: 192.0,
-  });
-  assertEquals(result.success, true);
-});
+Deno.test(
+  "[orders-schema] OrderNewSchema accepts minimal GUI submission",
+  () => {
+    const result = ZodOrderNew.safeParse({
+      clientOrderId: "client-1",
+      userId: "user-1",
+      asset: "AAPL",
+      side: "BUY",
+      quantity: 100,
+      limitPrice: 192.0,
+    });
+    assertEquals(result.success, true);
+  },
+);
 ```
 
 The bracket prefix is grep-friendly: `deno test backend/ --filter "[orders-schema]"` runs only that module's cases.

@@ -10,13 +10,13 @@ import scaling from "@docs/data/loadtest/2026-05-03-scaling.json";
 
 Latest run: **{scaling.runDate}** &nbsp;·&nbsp; Runner: <code>{scaling.runner}</code>
 
-| Headline metric | Value |
-|---|---|
-| Maximum sustained order count tested | 500 concurrent |
-| Sample success rate at peak | **100%** (500/500 orders flowed end-to-end) |
+| Headline metric                        | Value                                                      |
+| -------------------------------------- | ---------------------------------------------------------- |
+| Maximum sustained order count tested   | 500 concurrent                                             |
+| Sample success rate at peak            | **100%** (500/500 orders flowed end-to-end)                |
 | End-to-end p99 (submit → fill) at peak | **{scaling.scenarios[2].stages.submittedToFilled.p99} ms** |
-| Latency growth across 5× scaling | **None** (p99 held flat) |
-| Journal ingestion p99 (Kafka → DB) | {scaling.scenarios[2].stages.submittedToArrived.p99} ms |
+| Latency growth across 5× scaling       | **None** (p99 held flat)                                   |
+| Journal ingestion p99 (Kafka → DB)     | {scaling.scenarios[2].stages.submittedToArrived.p99} ms    |
 
 The pipeline handles a 5× increase in concurrent order volume with **no measurable change in per-order latency**. Throughput is bounded by the simulator's market-data tick interval (250 ms), not by algo processing or queue contention.
 
@@ -63,7 +63,14 @@ The runner used for this dataset is a Deno harness that drives `gateway POST /lo
 
 <table>
   <thead>
-    <tr><th>Scenario</th><th>Stage</th><th>p50</th><th>p95</th><th>p99</th><th>Max</th></tr>
+    <tr>
+      <th>Scenario</th>
+      <th>Stage</th>
+      <th>p50</th>
+      <th>p95</th>
+      <th>p99</th>
+      <th>Max</th>
+    </tr>
   </thead>
   <tbody>
     {scaling.scenarios.flatMap((s) =>
@@ -72,13 +79,15 @@ The runner used for this dataset is a Deno harness that drives `gateway POST /lo
         .map(([name, v]) => (
           <tr>
             <td>{s.label}</td>
-            <td><code>{name}</code></td>
+            <td>
+              <code>{name}</code>
+            </td>
             <td>{v.p50}</td>
             <td>{v.p95}</td>
             <td>{v.p99}</td>
             <td>{v.max}</td>
           </tr>
-        ))
+        )),
     )}
   </tbody>
 </table>
@@ -87,11 +96,11 @@ All values in milliseconds. The full machine-readable dataset, including the zer
 
 ## Findings
 
-1. **Pipeline latency is invariant under scaling.** Going from 100 to 500 concurrent orders moved end-to-end p99 from 291 ms to 283 ms, a 3% *decrease* (within noise). If the algo's per-tick iteration over the active-order set were the bottleneck, p99 would have grown roughly linearly with order count. It did not.
+1. **Pipeline latency is invariant under scaling.** Going from 100 to 500 concurrent orders moved end-to-end p99 from 291 ms to 283 ms, a 3% _decrease_ (within noise). If the algo's per-tick iteration over the active-order set were the bottleneck, p99 would have grown roughly linearly with order count. It did not.
 
 2. **The bottleneck is market-data cadence, not algo overhead.** The `routedToChild` stage (algo wake to child order published) sits at p99 ~263 ms across all scales, almost exactly the simulator's 250 ms tick interval. Orders arriving mid-tick wait for the next tick to be evaluated. The 250 ms ceiling is fundamental at this configuration; no algo-level optimisation can move it.
 
-3. **An earlier architectural hypothesis was tested and falsified.** Discussion in prior sessions proposed a price-level index ("predicate-index") to replace the algos' per-tick `for` loop, on the assumption that iteration cost would dominate at high order counts. The 100 → 500 scaling test disproves that assumption at the scales we care about. We have explicitly *not* shipped this optimisation.
+3. **An earlier architectural hypothesis was tested and falsified.** Discussion in prior sessions proposed a price-level index ("predicate-index") to replace the algos' per-tick `for` loop, on the assumption that iteration cost would dominate at high order counts. The 100 → 500 scaling test disproves that assumption at the scales we care about. We have explicitly _not_ shipped this optimisation.
 
 4. **Storage layer is well-sized.** Journal ingestion (Kafka consume → Postgres write) holds p99 ≤ 22 ms even at the 500-order peak. The batched-write pattern (50 ms flush, 20 rows/transaction) leaves substantial headroom.
 
@@ -104,7 +113,7 @@ The dataset above is intentionally narrow. Several axes remain untested:
 - **WebSocket order submission.** Real GUI traffic submits via the gateway WebSocket, not HTTP. Per-iteration overhead and authentication path costs may differ. A k6 v2 scenario will exercise this.
 - **OAuth login under load.** The current run pre-shares a token. Per-VU OAuth login is a meaningful real-world cost we have not measured.
 - **Market-data cadence sensitivity.** Halving the tick interval to 125 ms should approximately halve `routedToChild` p99. We have not validated this; a single-knob test is straightforward and would inform future configuration.
-- **Concurrency above 500.** The flat-latency observation is empirically true to 500 orders. The break point, where iteration *does* start to matter, is somewhere above 500 and below the theoretical 50,000+ where microbenchmarks suggest it would. We have not bracketed this.
+- **Concurrency above 500.** The flat-latency observation is empirically true to 500 orders. The break point, where iteration _does_ start to matter, is somewhere above 500 and below the theoretical 50,000+ where microbenchmarks suggest it would. We have not bracketed this.
 - **Real risk-engine enabled.** Concentration-limit rule rejects fresh users' first orders. Until a position-seeding pass is added, all load runs disable the risk engine. This is a documentation gap, not a system limitation.
 - **Multi-strategy mix.** Only LIMIT was tested. TWAP, VWAP, POV and the others have different per-tick processing characteristics; their behaviour at scale is presumed similar but unmeasured.
 
