@@ -1,6 +1,7 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import type { GatewayContext } from "../gateway/context.ts";
 import { handleAlertsRoute } from "../gateway/routes/alerts.ts";
+import { makeGatewayAuthContext, makeGatewayUnauthContext } from "./test-helpers.ts";
 
 const realFetch = globalThis.fetch;
 
@@ -36,28 +37,16 @@ function captureFetch(handler: (url: string, init?: RequestInit) => Response | P
 }
 
 function makeContext(role = "trader"): GatewayContext {
-  return {
-    requireAuth: (_req: Request) =>
-      Promise.resolve({
-        user: { id: "u-1", name: "Test User", role, avatar_emoji: "🧪" },
-        limits: {
-          max_order_qty: 100,
-          max_daily_notional: 1_000_000,
-          allowed_strategies: [],
-        },
-      }),
-    urls: {
-      userService: "http://user-service.example",
-    },
-  } as unknown as GatewayContext;
+  return makeGatewayAuthContext({
+    role,
+    name: "Test User",
+    includeLimits: true,
+    includeUserServiceUrl: true,
+  });
 }
 
 function unauthContext(): GatewayContext {
-  return {
-    requireAuth: (_req: Request) =>
-      Promise.resolve(new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })),
-    urls: { userService: "http://user-service.example" },
-  } as unknown as GatewayContext;
+  return makeGatewayUnauthContext({ includeUserServiceUrl: true });
 }
 
 Deno.test("[alerts-route] returns null for paths it does not handle", async () => {

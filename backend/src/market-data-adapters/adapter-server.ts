@@ -1,7 +1,7 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { intelligencePool } from "@veta/db";
-import { corsOptions, json } from "@veta/http";
+import { json, serveJsonService } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createProducer } from "@veta/messaging";
 import type { MarketAdapterEvent } from "@veta/types/intelligence";
@@ -88,24 +88,14 @@ setInterval(
   7 * 24 * 60 * 60 * 1000
 );
 
-Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
-  const url = new URL(req.url);
-  const path = url.pathname;
-
-  if (req.method === "OPTIONS") {
-    return corsOptions();
-  }
-
-  if (path === "/health" && req.method === "GET") {
-    return json({
-      service: "market-data-adapters",
-      version: VERSION,
-      status: "ok",
-      eventCount: events.length,
-    });
-  }
-
-  if (path === "/events" && req.method === "GET") {
+serveJsonService({
+  port: PORT,
+  service: "market-data-adapters",
+  version: VERSION,
+  health: () => ({ eventCount: events.length }),
+  // fallow-ignore-next-line complexity
+  handler: async (req, url, path) => {
+    if (path === "/events" && req.method === "GET") {
     const ticker = url.searchParams.get("ticker") ?? undefined;
     const limit = Math.min(Number(url.searchParams.get("limit") ?? 50), 500);
     const now = Date.now();
@@ -123,10 +113,11 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       filtered = filtered.filter((e) => e.ticker === ticker || !e.ticker);
     }
     filtered.sort((a, b) => a.scheduledAt - b.scheduledAt);
-    return json(filtered.slice(0, limit));
-  }
+      return json(filtered.slice(0, limit));
+    }
 
-  return json({ error: "Not Found" }, 404);
+    return json({ error: "Not Found" }, 404);
+  },
 });
 
 logger.info(`Running on port ${PORT}`);

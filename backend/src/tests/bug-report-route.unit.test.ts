@@ -2,25 +2,18 @@
 import { assertEquals } from "jsr:@std/assert@0.217";
 import type { GatewayContext } from "../gateway/context.ts";
 import { handleBugReportRoute } from "../gateway/routes/bug-report.ts";
+import { makeGatewayAuthContext, makeGatewayUnauthContext } from "./test-helpers.ts";
 
 const realFetch = globalThis.fetch;
 const realWebhookAlerts = Deno.env.get("DISCORD_WEBHOOK_URL");
 const realWebhookBug = Deno.env.get("DISCORD_BUG_WEBHOOK_URL");
 
 function makeContext(role = "trader"): GatewayContext {
-  return {
-    requireAuth: (_req: Request) =>
-      Promise.resolve({
-        user: { id: "u-1", name: "Test User", role, avatar_emoji: "🧪" },
-      }),
-  } as unknown as GatewayContext;
+  return makeGatewayAuthContext({ role, name: "Test User" });
 }
 
 function unauthContext(): GatewayContext {
-  return {
-    requireAuth: (_req: Request) =>
-      Promise.resolve(new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })),
-  } as unknown as GatewayContext;
+  return makeGatewayUnauthContext();
 }
 
 function restoreEnv() {

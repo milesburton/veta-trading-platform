@@ -1,4 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
+import type { GatewayContext } from "../gateway/context.ts";
 
 const BASE = Deno.env.get("VETA_BASE_URL") ?? "http://localhost";
 
@@ -23,6 +24,59 @@ export const GATEWAY_WS_URL =
 
 export function timeout(ms = 10_000) {
   return AbortSignal.timeout(ms);
+}
+
+// fallow-ignore-next-line unused-export, complexity
+export function makeGatewayAuthContext(options: {
+  role?: string;
+  name?: string;
+  includeLimits?: boolean;
+  includeUserServiceUrl?: boolean;
+} = {}): GatewayContext {
+  const role = options.role ?? "trader";
+  const name = options.name ?? "Test User";
+
+  const authUser = {
+    id: "u-1",
+    name,
+    role,
+    avatar_emoji: "🧪",
+  };
+
+  const payload: Record<string, unknown> = { user: authUser };
+  if (options.includeLimits) {
+    payload.limits = {
+      max_order_qty: 100,
+      max_daily_notional: 1_000_000,
+      allowed_strategies: [],
+    };
+  }
+
+  const ctx: Record<string, unknown> = {
+    requireAuth: (_req: Request) => Promise.resolve(payload),
+  };
+
+  if (options.includeUserServiceUrl) {
+    ctx.urls = { userService: "http://user-service.example" };
+  }
+
+  return ctx as unknown as GatewayContext;
+}
+
+// fallow-ignore-next-line unused-export
+export function makeGatewayUnauthContext(options: {
+  includeUserServiceUrl?: boolean;
+} = {}): GatewayContext {
+  const ctx: Record<string, unknown> = {
+    requireAuth: (_req: Request) =>
+      Promise.resolve(new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })),
+  };
+
+  if (options.includeUserServiceUrl) {
+    ctx.urls = { userService: "http://user-service.example" };
+  }
+
+  return ctx as unknown as GatewayContext;
 }
 
 async function createPkcePair(): Promise<{ verifier: string; challenge: string }> {

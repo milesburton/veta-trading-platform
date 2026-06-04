@@ -1,3 +1,5 @@
+// fallow-ignore-file complexity
+
 import { assert, assertAlmostEquals, assertEquals, assertGreater } from "jsr:@std/assert@0.217";
 import type { NelsonSiegelParams, YieldCurvePoint } from "../analytics/types.ts";
 import {

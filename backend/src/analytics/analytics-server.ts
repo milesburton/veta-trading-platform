@@ -19,7 +19,7 @@ import "@veta/bootstrap";
 
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { intelligencePool } from "@veta/db";
-import { corsOptions, json } from "@veta/http";
+import { json, serveJsonService } from "@veta/http";
 import { logger } from "@veta/logger";
 import { blackScholes } from "./black-scholes.ts";
 import { priceBond } from "./bond-pricing.ts";
@@ -100,19 +100,14 @@ async function resolveSpot(symbol: string): Promise<number | null> {
   return null;
 }
 
-Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
-  const url = new URL(req.url);
-  const path = url.pathname;
-
-  if (req.method === "OPTIONS") {
-    return corsOptions();
-  }
-
-  if (path === "/health" && req.method === "GET") {
-    return json({ service: "analytics", version: VERSION, status: "ok" });
-  }
-
-  if (path === "/quote" && req.method === "POST") {
+serveJsonService({
+  port: PORT,
+  service: "analytics",
+  version: VERSION,
+  health: () => ({}),
+  // fallow-ignore-next-line complexity
+  handler: async (req, url, path) => {
+    if (path === "/quote" && req.method === "POST") {
     let body: OptionQuoteRequest;
     try {
       body = (await req.json()) as OptionQuoteRequest;
@@ -458,7 +453,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     return json(buildVolSurface(symbol, spot, sigma));
   }
 
-  return json({ error: "Not Found" }, 404);
+    return json({ error: "Not Found" }, 404);
+  },
 });
 
 logger.info(`Analytics service running on port ${PORT}`);

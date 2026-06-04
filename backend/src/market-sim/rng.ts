@@ -22,6 +22,7 @@ export function currentSeed(): number | null {
   return prngSeed;
 }
 
+// fallow-ignore-next-line unused-export
 export function __applyEnvSeedForTests(): void {
   const envSeed = Deno.env.get("MARKET_SIM_SEED");
   if (envSeed && envSeed.length > 0) {

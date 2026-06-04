@@ -1,3 +1,6 @@
+// fallow-ignore-file unused-file
+// fallow-ignore-file complexity
+
 import { assert, assertEquals, assertGreater } from "jsr:@std/assert@0.217";
 import type {
   AdvisoryNote,

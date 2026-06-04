@@ -60,3 +60,32 @@ export function parseQuery<S extends ZodTypeAny>(url: URL, schema: S): ParseResu
   }
   return { ok: true, data: result.data };
 }
+
+// fallow-ignore-next-line unused-export
+export function serveJsonService(options: {
+  port: number;
+  service: string;
+  version: string;
+  health: () => Record<string, unknown>;
+  handler: (req: Request, url: URL, path: string) => Response | Promise<Response>;
+}): void {
+  Deno.serve({ port: options.port }, async (req: Request): Promise<Response> => {
+    if (req.method === "OPTIONS") {
+      return corsOptions();
+    }
+
+    const url = new URL(req.url);
+    const path = url.pathname;
+
+    if (path === "/health" && req.method === "GET") {
+      return json({
+        service: options.service,
+        version: options.version,
+        status: "ok",
+        ...options.health(),
+      });
+    }
+
+    return options.handler(req, url, path);
+  });
+}

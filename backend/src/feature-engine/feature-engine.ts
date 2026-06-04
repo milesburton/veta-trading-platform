@@ -1,7 +1,7 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { intelligencePool } from "@veta/db";
-import { corsOptions, json } from "@veta/http";
+import { json, serveJsonService } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { FeatureVector, MarketAdapterEvent, NewsEvent } from "@veta/types/intelligence";
@@ -263,43 +263,36 @@ if (adapterConsumer) {
   });
 }
 
-Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
-  const url = new URL(req.url);
-  const path = url.pathname;
+serveJsonService({
+  port: PORT,
+  service: "feature-engine",
+  version: VERSION,
+  health: () => ({
+    trackedSymbols: priceHistory.size,
+    cachedVolSymbols: cachedRealisedVol.size,
+    recentNewsCount: recentNews.length,
+    upcomingEventCount: upcomingEvents.length,
+  }),
+  // fallow-ignore-next-line complexity
+  handler: async (req, url, path) => {
+    const histMatch = path.match(/^\/features\/([^/]+)\/history$/);
+    if (histMatch && req.method === "GET") {
+      const symbol = decodeURIComponent(histMatch[1]);
+      const limit = Math.min(Number(url.searchParams.get("limit") ?? 100), 500);
+      const history = await store.getHistory(symbol, limit);
+      return json(history);
+    }
 
-  if (req.method === "OPTIONS") {
-    return corsOptions();
-  }
+    const fvMatch = path.match(/^\/features\/([^/]+)$/);
+    if (fvMatch && req.method === "GET") {
+      const symbol = decodeURIComponent(fvMatch[1]);
+      const fv = latestFeatures.get(symbol) ?? (await store.getLatest(symbol));
+      if (!fv) return json({ error: "No feature data for symbol" }, 404);
+      return json(fv);
+    }
 
-  if (path === "/health" && req.method === "GET") {
-    return json({
-      service: "feature-engine",
-      version: VERSION,
-      status: "ok",
-      trackedSymbols: priceHistory.size,
-      cachedVolSymbols: cachedRealisedVol.size,
-      recentNewsCount: recentNews.length,
-      upcomingEventCount: upcomingEvents.length,
-    });
-  }
-
-  const histMatch = path.match(/^\/features\/([^/]+)\/history$/);
-  if (histMatch && req.method === "GET") {
-    const symbol = decodeURIComponent(histMatch[1]);
-    const limit = Math.min(Number(url.searchParams.get("limit") ?? 100), 500);
-    const history = await store.getHistory(symbol, limit);
-    return json(history);
-  }
-
-  const fvMatch = path.match(/^\/features\/([^/]+)$/);
-  if (fvMatch && req.method === "GET") {
-    const symbol = decodeURIComponent(fvMatch[1]);
-    const fv = latestFeatures.get(symbol) ?? (await store.getLatest(symbol));
-    if (!fv) return json({ error: "No feature data for symbol" }, 404);
-    return json(fv);
-  }
-
-  return json({ error: "Not Found" }, 404);
+    return json({ error: "Not Found" }, 404);
+  },
 });
 
 logger.info(`Running on port ${PORT}`);

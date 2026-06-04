@@ -1,3 +1,5 @@
+// fallow-ignore-file complexity
+
 /**
  * Messaging abstraction over kafkajs, pointed at Redpanda.
  *
@@ -25,6 +27,7 @@ const BROKERS = (Deno.env.get("REDPANDA_BROKERS") ?? "localhost:9092")
   .split(",")
   .map((b) => b.trim());
 
+// fallow-ignore-next-line unused-type
 export interface KafkaFactoryLike {
   producer(): Producer;
   consumer(config: { groupId: string }): Consumer;
@@ -318,6 +321,7 @@ export function createTypedConsumer(
   });
 }
 
+// fallow-ignore-next-line unused-export
 export function __setMessagingTestHooks(
   hooks: {
     kafkaFactory?: KafkaFactory;

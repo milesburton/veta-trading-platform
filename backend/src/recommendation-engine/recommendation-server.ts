@@ -1,6 +1,6 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { corsOptions, json } from "@veta/http";
+import { json, serveJsonService } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createConsumer, createProducer } from "@veta/messaging";
 import type { Signal, TradeRecommendation } from "@veta/types/intelligence";
@@ -78,31 +78,22 @@ if (consumer) {
   });
 }
 
-Deno.serve({ port: PORT }, (req: Request): Response => {
-  const url = new URL(req.url);
-  const path = url.pathname;
-
-  if (req.method === "OPTIONS") {
-    return corsOptions();
-  }
-
-  if (path === "/health" && req.method === "GET") {
-    return json({
-      service: "recommendation-engine",
-      version: VERSION,
-      status: "ok",
-      count: recommendations.length,
-    });
-  }
-
-  if (path === "/recommendations" && req.method === "GET") {
+serveJsonService({
+  port: PORT,
+  service: "recommendation-engine",
+  version: VERSION,
+  health: () => ({ count: recommendations.length }),
+  // fallow-ignore-next-line complexity
+  handler: (req, url, path) => {
+    if (path === "/recommendations" && req.method === "GET") {
     const symbol = url.searchParams.get("symbol");
     const limit = Math.min(Number(url.searchParams.get("limit") ?? 20), 200);
     const filtered = symbol ? recommendations.filter((r) => r.symbol === symbol) : recommendations;
     return json(filtered.slice(0, limit));
-  }
+    }
 
-  return json({ error: "Not Found" }, 404);
+    return json({ error: "Not Found" }, 404);
+  },
 });
 
 logger.info(`Running on port ${PORT}`);

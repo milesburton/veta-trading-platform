@@ -1,3 +1,6 @@
+// fallow-ignore-file unused-file
+// fallow-ignore-file complexity
+
 import { assertEquals } from "jsr:@std/assert@0.217";
 import type { FeatureVector } from "@veta/types/intelligence";
 import { buildBatchInsert, createFeatureStore } from "../feature-engine/feature-store.ts";

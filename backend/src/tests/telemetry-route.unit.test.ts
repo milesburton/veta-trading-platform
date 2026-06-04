@@ -2,21 +2,14 @@
 import { assertEquals } from "jsr:@std/assert@0.217";
 import type { GatewayContext } from "../gateway/context.ts";
 import { handleTelemetryRoute } from "../gateway/routes/telemetry.ts";
+import { makeGatewayAuthContext, makeGatewayUnauthContext } from "./test-helpers.ts";
 
 function makeContext(role: string): GatewayContext {
-  return {
-    requireAuth: (_req: Request) =>
-      Promise.resolve({
-        user: { id: "u-1", name: "Test", role, avatar_emoji: "🧪" },
-      }),
-  } as unknown as GatewayContext;
+  return makeGatewayAuthContext({ role, name: "Test" });
 }
 
 function unauthContext(): GatewayContext {
-  return {
-    requireAuth: (_req: Request) =>
-      Promise.resolve(new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })),
-  } as unknown as GatewayContext;
+  return makeGatewayUnauthContext();
 }
 
 Deno.test("ignores non-telemetry paths", async () => {

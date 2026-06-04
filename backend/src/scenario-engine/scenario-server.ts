@@ -1,6 +1,6 @@
 import "@veta/bootstrap";
 import "https://deno.land/std@0.210.0/dotenv/load.ts";
-import { corsOptions, json } from "@veta/http";
+import { json, serveJsonService } from "@veta/http";
 import { logger } from "@veta/logger";
 import type { FeatureVector, ScenarioShock, Signal } from "@veta/types/intelligence";
 import { scoreFeatureVector } from "../signal-engine/scorer.ts";
@@ -24,19 +24,14 @@ interface ScenarioResult {
   shocksApplied: ScenarioShock[];
 }
 
-Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
-  const url = new URL(req.url);
-  const path = url.pathname;
-
-  if (req.method === "OPTIONS") {
-    return corsOptions();
-  }
-
-  if (path === "/health" && req.method === "GET") {
-    return json({ service: "scenario-engine", version: VERSION, status: "ok" });
-  }
-
-  if (path === "/scenario" && req.method === "POST") {
+serveJsonService({
+  port: PORT,
+  service: "scenario-engine",
+  version: VERSION,
+  health: () => ({}),
+  // fallow-ignore-next-line complexity
+  handler: async (req, url, path) => {
+    if (path === "/scenario" && req.method === "POST") {
     let body: ScenarioRequest;
     try {
       body = (await req.json()) as ScenarioRequest;
@@ -95,9 +90,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     };
 
     return json(result);
-  }
+    }
 
-  return json({ error: "Not Found" }, 404);
+    return json({ error: "Not Found" }, 404);
+  },
 });
 
 logger.info(`Running on port ${PORT}`);

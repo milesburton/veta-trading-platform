@@ -1,3 +1,5 @@
+// fallow-ignore-file complexity
+
 import { assert, assertEquals, assertExists } from "jsr:@std/assert@0.217";
 import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";

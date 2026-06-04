@@ -1,3 +1,6 @@
+// fallow-ignore-file unused-file
+// fallow-ignore-file complexity
+
 import { assertEquals, assertStrictEquals } from "jsr:@std/assert@0.217";
 import {
   createWeightStore,

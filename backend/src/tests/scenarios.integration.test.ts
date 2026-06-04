@@ -1,3 +1,5 @@
+// fallow-ignore-file complexity
+
 import { assert, assertEquals } from "jsr:@std/assert@0.217";
 import { loginAsVerified } from "./test-helpers.ts";
 
