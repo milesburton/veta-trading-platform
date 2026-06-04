@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.46.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.0...veta-trading-platform-v1.46.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **gateway:** replace insecure load-test randomness ([#399](https://github.com/milesburton/veta-trading-platform/issues/399)) ([1100c3c](https://github.com/milesburton/veta-trading-platform/commit/1100c3cd6faf5f82f0e16dfdec68d0d49ef37721))
+
 ## [1.46.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.45.0...veta-trading-platform-v1.46.0) (2026-06-03)
 
 
