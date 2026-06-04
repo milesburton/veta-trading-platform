@@ -13,6 +13,13 @@ function ctx(stats: PlatformStats, services: Record<string, boolean> | null = { 
   };
 }
 
+function expectHeaderPrefix(stats: PlatformStats, expected: string, detail: string): void {
+  const msg = buildDailySummary(ctx(stats));
+  if (!msg.startsWith(expected)) {
+    throw new Error(`${detail}, got: ${msg.slice(0, 20)}`);
+  }
+}
+
 Deno.test("buildDailySummary header: ✅ when worst window is 100%", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(32, 32);
@@ -29,28 +36,19 @@ Deno.test("buildDailySummary header: ✅ when worst window is 100%", () => {
 Deno.test("buildDailySummary header: ⚠️ when worst window below 100% but at-or-above 95%", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(31, 32);
-  const msg = buildDailySummary(ctx(stats));
-  if (!msg.startsWith("⚠️")) {
-    throw new Error(`expected ⚠️ start, got: ${msg.slice(0, 20)}`);
-  }
+  expectHeaderPrefix(stats, "⚠️", "expected ⚠️ start");
 });
 
 Deno.test("buildDailySummary header: ⚠️ when worst window is exactly 99.9% (not ✅)", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(999, 1000);
-  const msg = buildDailySummary(ctx(stats));
-  if (!msg.startsWith("⚠️")) {
-    throw new Error(`expected ⚠️ at 99.9%, got: ${msg.slice(0, 20)}`);
-  }
+  expectHeaderPrefix(stats, "⚠️", "expected ⚠️ at 99.9%");
 });
 
 Deno.test("buildDailySummary header: ⚠️ at exactly 95% (boundary)", () => {
   const stats = new PlatformStats();
   stats.recordServiceSnapshot(95, 100);
-  const msg = buildDailySummary(ctx(stats));
-  if (!msg.startsWith("⚠️")) {
-    throw new Error(`expected ⚠️ at 95%, got: ${msg.slice(0, 20)}`);
-  }
+  expectHeaderPrefix(stats, "⚠️", "expected ⚠️ at 95%");
 });
 
 Deno.test("buildDailySummary header: 🚨 just below 95%", () => {

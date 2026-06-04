@@ -26,6 +26,11 @@ export function timeout(ms = 10_000) {
   return AbortSignal.timeout(ms);
 }
 
+// fallow-ignore-next-line unused-export
+export function makeAsyncConnect<TClient>(factory: () => TClient): () => Promise<TClient> {
+  return async () => factory();
+}
+
 // fallow-ignore-next-line unused-export, complexity
 export function makeGatewayAuthContext(options: {
   role?: string;

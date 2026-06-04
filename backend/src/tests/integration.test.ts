@@ -25,6 +25,14 @@ function t(ms = 5_000) {
   return AbortSignal.timeout(ms);
 }
 
+async function assertAlgoHealth(url: string): Promise<void> {
+  const res = await fetch(url, { signal: t() });
+  assertEquals(res.status, 200);
+  const body = (await res.json()) as { status: string; activeOrders: number };
+  assertEquals(body.status, "ok");
+  assertEquals(typeof body.activeOrders, "number");
+}
+
 // ── OPTIONS preflight (CORS) ──────────────────────────────────────────────────
 
 Deno.test("[cors] OMS OPTIONS returns 204", async () => {
@@ -85,27 +93,15 @@ Deno.test("[market] /assets returns enriched fields", async () => {
 // ── Algo health: pending/active counts ───────────────────────────────────────
 
 Deno.test("[limit-algo] health includes pending count", async () => {
-  const res = await fetch(`${LIMIT_URL}/health`, { signal: t() });
-  assertEquals(res.status, 200);
-  const body = (await res.json()) as { status: string; activeOrders: number };
-  assertEquals(body.status, "ok");
-  assertEquals(typeof body.activeOrders, "number");
+  await assertAlgoHealth(`${LIMIT_URL}/health`);
 });
 
 Deno.test("[pov-algo] health includes activeOrders count", async () => {
-  const res = await fetch(`${POV_URL}/health`, { signal: t() });
-  assertEquals(res.status, 200);
-  const body = (await res.json()) as { status: string; activeOrders: number };
-  assertEquals(body.status, "ok");
-  assertEquals(typeof body.activeOrders, "number");
+  await assertAlgoHealth(`${POV_URL}/health`);
 });
 
 Deno.test("[vwap-algo] health includes activeOrders count", async () => {
-  const res = await fetch(`${VWAP_URL}/health`, { signal: t() });
-  assertEquals(res.status, 200);
-  const body = (await res.json()) as { status: string; activeOrders: number };
-  assertEquals(body.status, "ok");
-  assertEquals(typeof body.activeOrders, "number");
+  await assertAlgoHealth(`${VWAP_URL}/health`);
 });
 
 Deno.test("[twap-algo] health is ok", async () => {

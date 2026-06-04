@@ -11,6 +11,7 @@ import type {
   LlmWorkerSession,
 } from "@veta/types/llm-advisory";
 import { createJobStore } from "../llm-advisory/job-store.ts";
+import { makeAsyncConnect } from "./test-helpers.ts";
 
 type JobState = LlmJob;
 type NoteState = AdvisoryNote;
@@ -98,11 +99,9 @@ function makeFakePool(): FakePool {
   };
 
   return {
-    async connect(): Promise<FakeClient> {
-      await Promise.resolve();
+    connect: makeAsyncConnect((): FakeClient => {
       return {
         async queryArray<T>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {
-          await Promise.resolve();
           const trimmed = sql.trim();
           if (trimmed === "BEGIN" || trimmed === "COMMIT" || trimmed === "ROLLBACK") {
             return { rows: [] as T[] };
@@ -398,7 +397,7 @@ function makeFakePool(): FakePool {
         },
         release() {},
       };
-    },
+    }),
     __state() {
       return state;
     },

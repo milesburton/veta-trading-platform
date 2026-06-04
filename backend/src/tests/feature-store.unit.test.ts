@@ -4,6 +4,7 @@
 import { assertEquals } from "jsr:@std/assert@0.217";
 import type { FeatureVector } from "@veta/types/intelligence";
 import { buildBatchInsert, createFeatureStore } from "../feature-engine/feature-store.ts";
+import { makeAsyncConnect } from "./test-helpers.ts";
 
 interface StoredFeatureVector extends FeatureVector {
   id: number;
@@ -44,11 +45,9 @@ function makeFakePool(seed: FeatureVector[] = []): FakePool {
   }));
 
   return {
-    async connect(): Promise<FakeClient> {
-      await Promise.resolve();
+    connect: makeAsyncConnect((): FakeClient => {
       return {
         async queryArray<T>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {
-          await Promise.resolve();
           if (sql.includes("INSERT INTO intelligence.feature_vectors")) {
             if (params.length === 9) {
               rows.push({
@@ -155,7 +154,7 @@ function makeFakePool(seed: FeatureVector[] = []): FakePool {
           releases++;
         },
       };
-    },
+    }),
     __setCleanupFailure(shouldFail: boolean) {
       cleanupFails = shouldFail;
     },

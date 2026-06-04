@@ -7,6 +7,7 @@ import {
   DEFAULT_WEIGHTS,
   type WeightMap,
 } from "../signal-engine/weight-store.ts";
+import { makeAsyncConnect } from "./test-helpers.ts";
 
 interface FakeClient {
   queryArray<T>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>;
@@ -25,11 +26,9 @@ function makeFakePool(seedRow: WeightMap | null): FakePool {
   let releaseCount = 0;
 
   return {
-    async connect(): Promise<FakeClient> {
-      await Promise.resolve();
+    connect: makeAsyncConnect((): FakeClient => {
       return {
         async queryArray<T>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {
-          await Promise.resolve();
           queries.push({ sql, params });
 
           if (sql.includes("SELECT id FROM intelligence.signal_weights")) {
@@ -92,7 +91,7 @@ function makeFakePool(seedRow: WeightMap | null): FakePool {
           releaseCount++;
         },
       };
-    },
+    }),
     __getQueries() {
       return queries;
     },

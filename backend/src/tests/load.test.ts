@@ -60,6 +60,54 @@ async function triggerLoadTest(
   return res.json() as Promise<LoadTestResult>;
 }
 
+async function queryOrderBlotterTotal(jobId: string, status?: string): Promise<number | null> {
+  const rules: Array<Record<string, string>> = [
+    {
+      kind: "rule",
+      id: "r1",
+      field: "id",
+      op: "contains",
+      value: jobId,
+    },
+  ];
+  if (status) {
+    rules.push({
+      kind: "rule",
+      id: "r2",
+      field: "status",
+      op: "=",
+      value: status,
+    });
+  }
+
+  const res = await fetch(`${JOURNAL_URL}/grid/query`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      gridId: "orderBlotter",
+      filterExpr: {
+        kind: "group",
+        id: "root",
+        join: "AND",
+        rules,
+      },
+      sortField: null,
+      sortDir: null,
+      offset: 0,
+      limit: 200,
+    }),
+    signal: t(20_000),
+  });
+
+  if (!res.ok) {
+    await res.body?.cancel();
+    return null;
+  }
+
+  const data = (await res.json()) as { total: number };
+  return data.total;
+}
+
 // ── Access control ────────────────────────────────────────────────────────────
 
 Deno.test("[load] /load-test requires authentication", async () => {
@@ -131,38 +179,12 @@ Deno.test("[load] 100-order burst: all orders appear in journal within 30s", asy
   let seenCount = 0;
 
   while (Date.now() < deadline) {
-    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        gridId: "orderBlotter",
-        filterExpr: {
-          kind: "group",
-          id: "root",
-          join: "AND",
-          rules: [
-            {
-              kind: "rule",
-              id: "r1",
-              field: "id",
-              op: "contains",
-              value: jobId,
-            },
-          ],
-        },
-        sortField: null,
-        sortDir: null,
-        offset: 0,
-        limit: 200,
-      }),
-      signal: t(20_000),
-    });
-    if (res.ok) {
-      const data = (await res.json()) as { rows: unknown[]; total: number };
-      seenCount = data.total;
-      if (seenCount >= SLA_INGESTION_ORDER_COUNT) break;
-    } else {
-      await res.body?.cancel();
+    const total = await queryOrderBlotterTotal(jobId);
+    if (typeof total === "number") {
+      seenCount = total;
+      if (seenCount >= SLA_INGESTION_ORDER_COUNT) {
+        break;
+      }
     }
     await new Promise((r) => setTimeout(r, 2_000));
   }
@@ -224,45 +246,12 @@ Deno.test("[load] 50 LIMIT orders: ≥80% fill rate within 60s", async () => {
   let filledCount = 0;
 
   while (Date.now() < deadline) {
-    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        gridId: "orderBlotter",
-        filterExpr: {
-          kind: "group",
-          id: "root",
-          join: "AND",
-          rules: [
-            {
-              kind: "rule",
-              id: "r1",
-              field: "id",
-              op: "contains",
-              value: jobId,
-            },
-            {
-              kind: "rule",
-              id: "r2",
-              field: "status",
-              op: "=",
-              value: "filled",
-            },
-          ],
-        },
-        sortField: null,
-        sortDir: null,
-        offset: 0,
-        limit: 200,
-      }),
-      signal: t(20_000),
-    });
-    if (res.ok) {
-      const data = (await res.json()) as { total: number };
-      filledCount = data.total;
-      if (filledCount >= SLA_FILL_MIN) break;
-    } else {
-      await res.body?.cancel();
+    const total = await queryOrderBlotterTotal(jobId, "filled");
+    if (typeof total === "number") {
+      filledCount = total;
+      if (filledCount >= SLA_FILL_MIN) {
+        break;
+      }
     }
     await new Promise((r) => setTimeout(r, 3_000));
   }
@@ -316,38 +305,12 @@ Deno.test("[load] pipeline latency: 90% of orders visible in journal within SLA 
   let seenCount = 0;
 
   while (Date.now() < deadline) {
-    const res = await fetch(`${JOURNAL_URL}/grid/query`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        gridId: "orderBlotter",
-        filterExpr: {
-          kind: "group",
-          id: "root",
-          join: "AND",
-          rules: [
-            {
-              kind: "rule",
-              id: "r1",
-              field: "id",
-              op: "contains",
-              value: jobId,
-            },
-          ],
-        },
-        sortField: null,
-        sortDir: null,
-        offset: 0,
-        limit: 200,
-      }),
-      signal: t(20_000),
-    });
-    if (res.ok) {
-      const data = (await res.json()) as { total: number };
-      seenCount = data.total;
-      if (seenCount >= SLA_INGESTION_MIN) break;
-    } else {
-      await res.body?.cancel();
+    const total = await queryOrderBlotterTotal(jobId);
+    if (typeof total === "number") {
+      seenCount = total;
+      if (seenCount >= SLA_INGESTION_MIN) {
+        break;
+      }
     }
     await new Promise((r) => setTimeout(r, 2_000));
   }
