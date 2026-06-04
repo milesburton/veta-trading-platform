@@ -141,7 +141,7 @@ describe("BugReportModal", () => {
 
   it("submits only the pathname, never query strings", async () => {
     mockSubmit.mockResolvedValueOnce({ data: { ok: true } });
-    const original = window.location.pathname;
+    const original = globalThis.location.pathname;
     Object.defineProperty(window, "location", {
       value: { pathname: "/dashboard", search: "?token=should-not-leak" },
       writable: true,

@@ -10,6 +10,7 @@ import { writeFileSync } from "fs";
 import { deflateSync } from "zlib";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { Buffer } from "node:buffer";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ASSETS_DIR = join(__dirname, "../electron/assets");

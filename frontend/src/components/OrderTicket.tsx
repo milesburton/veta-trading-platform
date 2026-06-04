@@ -99,7 +99,7 @@ export function OrderTicket() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot mount-time prefill from URL
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const raw = new URLSearchParams(window.location.search).get("prefill");
+    const raw = new URLSearchParams(globalThis.location.search).get("prefill");
     if (!raw) return;
     try {
       const intent = QuickTradeIntentSchema.parse(JSON.parse(decodeURIComponent(raw)));

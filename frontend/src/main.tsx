@@ -19,7 +19,7 @@ const ENV_TITLE_TAG: Record<string, string> = {
 const envTag = ENV_TITLE_TAG[DEPLOYMENT] ?? `[${DEPLOYMENT.toUpperCase()}]`;
 document.title = `${envTag} VETA Trading Platform`;
 
-window.onerror = (_msg, source, _line, _col, error) => {
+globalThis.onerror = (_msg, source, _line, _col, error) => {
   store.dispatch(
     reportError({
       message: error?.message ?? String(_msg),
@@ -29,7 +29,7 @@ window.onerror = (_msg, source, _line, _col, error) => {
   );
 };
 
-window.onunhandledrejection = (event) => {
+globalThis.onunhandledrejection = (event) => {
   const err = event.reason instanceof Error ? event.reason : null;
   store.dispatch(
     reportError({
@@ -43,7 +43,7 @@ window.onunhandledrejection = (event) => {
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element not found");
 
-const searchParams = new URLSearchParams(window.location.search);
+const searchParams = new URLSearchParams(globalThis.location.search);
 const instanceId = searchParams.get("panel");
 const panelType = searchParams.get("type") ?? instanceId ?? "";
 const layoutKey = searchParams.get("layout") ?? "dashboard-layout";

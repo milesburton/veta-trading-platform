@@ -436,7 +436,7 @@ Deno.test("[job-store] CRUD helpers work against a fake pool", async () => {
   assertEquals(jobs[0].createdAt >= jobs[1].createdAt, true);
 
   assertEquals(await store.getPendingJobCount(), 2);
-  assertEquals(await store.hasRecentJob(afterStatus?.contextHash, 10_000_000_000), true);
+  assertEquals(await store.hasRecentJob(afterStatus!.contextHash, 10_000_000_000), true);
   assertEquals(await store.hasRecentJob("missing", 10_000), false);
 
   const cancelled = await store.cancelJobsForSymbol("MSFT");

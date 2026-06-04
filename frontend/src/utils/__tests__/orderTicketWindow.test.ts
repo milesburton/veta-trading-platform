@@ -2,17 +2,17 @@ import { openOrderTicketWindow } from "@veta/frontend/utils/orderTicketWindow.ts
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("openOrderTicketWindow", () => {
+  let openSpy: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
-    vi.stubGlobal("window", {
-      ...window,
-      location: { origin: "http://localhost:5173", pathname: "/" },
-      open: vi.fn(),
-    });
+    openSpy = vi.fn();
+    vi.stubGlobal("open", openSpy);
+    vi.stubGlobal("location", { origin: "http://localhost:5173", pathname: "/" });
   });
 
   it("opens with default dimensions when no size passed", () => {
     openOrderTicketWindow();
-    expect(window.open).toHaveBeenCalledWith(
+    expect(openSpy).toHaveBeenCalledWith(
       expect.stringContaining("panel=order-ticket"),
       "order-ticket",
       "width=480,height=780,resizable=yes"
@@ -21,7 +21,7 @@ describe("openOrderTicketWindow", () => {
 
   it("opens with provided dimensions", () => {
     openOrderTicketWindow({ w: 600, h: 900 });
-    expect(window.open).toHaveBeenCalledWith(
+    expect(openSpy).toHaveBeenCalledWith(
       expect.stringContaining("panel=order-ticket"),
       "order-ticket",
       "width=600,height=900,resizable=yes"
@@ -30,7 +30,7 @@ describe("openOrderTicketWindow", () => {
 
   it("URL contains correct query params", () => {
     openOrderTicketWindow();
-    const url = (window.open as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = openSpy.mock.calls[0][0] as string;
     const params = new URLSearchParams(url.split("?")[1]);
     expect(params.get("panel")).toBe("order-ticket");
     expect(params.get("type")).toBe("order-ticket");
@@ -44,7 +44,7 @@ describe("openOrderTicketWindow", () => {
       quantity: 500,
       limitPrice: 200,
     });
-    const url = (window.open as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = openSpy.mock.calls[0][0] as string;
     const params = new URLSearchParams(url.split("?")[1]);
     const prefill = params.get("prefill");
     expect(prefill).toBeTruthy();

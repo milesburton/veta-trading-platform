@@ -119,7 +119,7 @@ await createTypedConsumer("twap-algo-routed", [
   {
     topic: "orders.routed",
     schema: RoutedOrderSchema,
-    handler: (order) => {
+    handler: (order: RoutedOrder) => {
       if ((order.strategy ?? "").toUpperCase() !== "TWAP") return;
       executeTWAP(order);
     },

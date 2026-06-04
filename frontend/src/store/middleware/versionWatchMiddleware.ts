@@ -29,7 +29,7 @@ export const versionWatchMiddleware: Middleware = (storeAPI) => {
   function autoReloadIfSafe() {
     if (typeof window === "undefined") return;
     if (!isAnonymous()) return;
-    window.location.reload();
+    globalThis.location.reload();
   }
 
   async function checkFrontendVersion() {

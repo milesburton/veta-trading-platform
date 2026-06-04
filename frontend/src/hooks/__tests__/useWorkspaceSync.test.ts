@@ -66,7 +66,7 @@ describe("useWorkspaceSync helpers", () => {
 
   it("dispatches workspace-save-error events for failed saves", async () => {
     const listener = vi.fn();
-    window.addEventListener("workspace-save-error", listener as EventListener);
+    globalThis.addEventListener("workspace-save-error", listener as EventListener);
 
     fetchMock.mockResolvedValueOnce({ ok: false, status: 503 });
     await saveWorkspacePrefs({ workspaces: [], layouts: {} });

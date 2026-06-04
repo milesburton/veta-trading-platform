@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import process from "node:process";
 
 const REPO_ROOT = resolve(process.cwd(), "../..");
 const REPO_URL = "https://github.com/milesburton/veta-trading-platform";

@@ -17,7 +17,9 @@ const ORDERS_SUBMITTED_PRODUCERS = new Set<string>(["oms/oms-server.ts"]);
 async function findProducers(topic: string): Promise<Set<string>> {
   const found = new Set<string>();
   const escaped = topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(String.raw`producer[?]?\.send\s*\(\s*["']${escaped}["']`);
+  const pattern = new RegExp(
+    String.raw`producer\s*[?]?\.send\s*\(\s*["']${escaped}["']`
+  );
 
   for await (const entry of walk(SRC_ROOT, {
     exts: [".ts"],

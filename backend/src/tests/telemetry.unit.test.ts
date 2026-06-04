@@ -262,7 +262,7 @@ Deno.test("[telemetry] enabled recordGauge caches gauges and preserves attribute
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
-      __setOtelApiLoaderForTests(() => fake.api);
+      __setOtelApiLoaderForTests(() => Promise.resolve(fake.api));
 
       await recordGauge("latency_ms", 7, {
         description: "Latency",
@@ -297,7 +297,7 @@ Deno.test("[telemetry] setupProcessMetrics registers callbacks, reuses the handl
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
-      __setOtelApiLoaderForTests(() => fake.api);
+      __setOtelApiLoaderForTests(() => Promise.resolve(fake.api));
 
       const handle = await setupProcessMetrics();
       const reusedHandle = await setupProcessMetrics();
@@ -341,7 +341,7 @@ Deno.test("[telemetry] withSpan sets attributes, returns values, and records Err
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
-      __setOtelApiLoaderForTests(() => fake.api);
+      __setOtelApiLoaderForTests(() => Promise.resolve(fake.api));
 
       const result = await withSpan("priced-span", () => "ok", { symbol: "AAPL", qty: 10 });
 
@@ -387,7 +387,7 @@ Deno.test("[telemetry] injectTraceContext stringifies setter values when OTEL is
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
-      __setOtelApiLoaderForTests(() => fake.api);
+      __setOtelApiLoaderForTests(() => Promise.resolve(fake.api));
 
       const carrier: Record<string, string | Uint8Array> = {};
       await injectTraceContext(carrier);
@@ -411,7 +411,7 @@ Deno.test("[telemetry] withExtractedContext coerces carrier values and runs insi
       OTEL_SERVICE_NAME: "telemetry-test",
     },
     async () => {
-      __setOtelApiLoaderForTests(() => fake.api);
+      __setOtelApiLoaderForTests(() => Promise.resolve(fake.api));
 
       const result = await withExtractedContext(
         {
@@ -420,7 +420,7 @@ Deno.test("[telemetry] withExtractedContext coerces carrier values and runs insi
           retryCount: 3,
           missing: undefined,
         },
-        () => "value"
+        async () => "value"
       );
 
       assertEquals(result, "value");
@@ -457,7 +457,10 @@ Deno.test("[telemetry] OTEL loader failures gracefully fall back to no-op behavi
       });
 
       const spanResult = await withSpan("fallback-span", () => "ok");
-      const extracted = await withExtractedContext({ traceparent: "00-abc-123-01" }, () => "value");
+      const extracted = await withExtractedContext(
+        { traceparent: "00-abc-123-01" },
+        async () => "value"
+      );
       const carrier: Record<string, string | Uint8Array> = {};
 
       await recordGauge("will_not_record", 1);

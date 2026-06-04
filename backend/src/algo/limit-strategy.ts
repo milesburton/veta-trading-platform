@@ -12,6 +12,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { logger } from "@veta/logger";
 import { createMarketSimClient } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
+import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, subscribeNewsSignals } from "./common-http.ts";
 
@@ -47,7 +48,7 @@ await createTypedConsumer("limit-algo-routed", [
   {
     topic: "orders.routed",
     schema: RoutedOrderSchema,
-    handler: (order) => {
+    handler: (order: RoutedOrder) => {
       if ((order.strategy ?? "LIMIT").toUpperCase() !== "LIMIT") return;
       if (order.limitPrice === undefined) {
         logger.warn(`LIMIT order ${order.orderId} missing limitPrice`);

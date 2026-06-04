@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import process from "node:process";
 
 const baseURL = process.env.GATE_BASE_URL ?? "http://localhost";
 

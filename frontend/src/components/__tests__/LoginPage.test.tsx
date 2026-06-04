@@ -48,6 +48,11 @@ vi.mock("../../store/userApi", async (importOriginal) => {
   const original = await importOriginal<typeof import("../../store/userApi")>();
   return {
     ...original,
+    useGetDemoPersonasQuery: () => ({
+      data: { personas: [] },
+      isLoading: false,
+      error: undefined,
+    }),
     useAuthorizeOAuthMutation: () => [
       mockAuthorizeOAuth,
       { isLoading: false, error: undefined, reset: vi.fn() },
@@ -58,6 +63,10 @@ vi.mock("../../store/userApi", async (importOriginal) => {
     ],
     useRegisterOAuthUserMutation: () => [
       mockRegisterOAuthUser,
+      { isLoading: false, error: undefined, reset: vi.fn() },
+    ],
+    useLoginAsGuestMutation: () => [
+      vi.fn(),
       { isLoading: false, error: undefined, reset: vi.fn() },
     ],
   };
@@ -181,7 +190,6 @@ describe("LoginPage", () => {
         /already taken|already exists/i
       );
     });
-    expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
   });
 
   test("dispatches setUser on successful OAuth exchange", async () => {

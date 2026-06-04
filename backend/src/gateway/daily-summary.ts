@@ -147,7 +147,11 @@ export function startDailySummary(opts: DailySummaryOptions): {
 
   const fire = () => {
     const msg = buildDailySummary(opts, now());
-    sender(msg).catch(() => {});
+    try {
+      Promise.resolve(sender(msg)).catch(() => {});
+    } catch {
+      // Ignore sender failures so scheduling continues.
+    }
     nextFire = nextFireTime(now(), hourUtc);
     schedule();
   };

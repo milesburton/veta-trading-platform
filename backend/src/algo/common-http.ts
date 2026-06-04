@@ -1,7 +1,7 @@
 import { CORS_HEADERS, corsOptions, json } from "@veta/http";
 import { logger } from "@veta/logger";
 import { createTypedConsumer } from "@veta/messaging";
-import { NewsSignalSchema } from "@veta/schemas/news";
+import { NewsSignalSchema, type NewsSignal } from "@veta/schemas/news";
 
 export function serveAlgoHealth(
   port: number,
@@ -90,7 +90,7 @@ export function subscribeNewsSignals(groupId: string, label: string): void {
     {
       topic: "news.signal",
       schema: NewsSignalSchema,
-      handler: (sig) => {
+      handler: (sig: NewsSignal) => {
         logger.info(`[${label}] News signal: ${sig.symbol} ${sig.sentiment} (score=${sig.score})`);
       },
     },

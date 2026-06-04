@@ -46,10 +46,7 @@ function makeFakePool(seed: FeatureVector[] = []): FakePool {
       return {
         async queryArray<T>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {
           await Promise.resolve();
-          if (
-            sql.includes("INSERT INTO intelligence.feature_vectors") &&
-            !sql.includes(`VALUES ${placeholders}`)
-          ) {
+          if (sql.includes("INSERT INTO intelligence.feature_vectors")) {
             if (params.length === 9) {
               rows.push({
                 id: nextId++,

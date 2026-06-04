@@ -480,7 +480,7 @@ export function AppHeader() {
       } catch {}
       dispatch(clearUser());
       if (typeof window !== "undefined") {
-        window.location.assign("/");
+        globalThis.location.assign("/");
       }
     }
   }
@@ -509,7 +509,7 @@ export function AppHeader() {
           </span>
           <button
             type="button"
-            onClick={() => window.location.reload()}
+            onClick={() => globalThis.location.reload()}
             data-testid="reload-btn"
             className="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-medium transition-colors"
           >

@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+import process from "node:process";
 
 // Electron E2E tests launch the packaged app directly via the _electron fixture.
 // Run with: npm run test:electron

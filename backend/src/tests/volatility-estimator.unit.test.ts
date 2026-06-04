@@ -67,10 +67,12 @@ Deno.test("[volatility-estimator] computeVol preserves timestamps and final samp
   const closes = [100, 101, 99, 102, 98, 103, 97];
   const ts = timestamps(closes.length);
   const result = computeVol(closes, ts);
+  const lastSample = result.ewmaSeries.at(-1);
+  assert(lastSample, "expected EWMA series to include a final sample");
 
   assertEquals(result.ewmaSeries[0].ts, ts[1]);
-  assertEquals(result.ewmaSeries.at(-1)?.ts, ts.at(-1));
-  assertAlmostEquals(result.ewmaVol, result.ewmaSeries.at(-1)?.vol, 1e-12);
+  assertEquals(lastSample.ts, ts.at(-1));
+  assertAlmostEquals(result.ewmaVol, lastSample.vol, 1e-12);
 });
 
 Deno.test("[volatility-estimator] computeVol responds to noisier price paths", () => {

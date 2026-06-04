@@ -20,6 +20,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { _electron as electron } from "playwright";
 import { fileURLToPath } from "url";
+import process from "node:process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

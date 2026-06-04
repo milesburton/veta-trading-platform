@@ -2,12 +2,12 @@
   "backend": {
     "unit": {
       "files": 65,
-      "cases": 752,
+      "cases": 759,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
         "marketSim.test.ts": 13,
-        "rng.test.ts": 8,
+        "rng.test.ts": 9,
         "scenarios.diff.test.ts": 5,
         "scenarios.outcome.test.ts": 7,
         "oms.test.ts": 16,
@@ -52,7 +52,7 @@
         "pipeline.bug-and-alert.unit.test.ts": 4,
         "grafana-renderer.unit.test.ts": 13,
         "platform-stats.unit.test.ts": 11,
-        "daily-summary.unit.test.ts": 20,
+        "daily-summary.unit.test.ts": 23,
         "tickDiff.unit.test.ts": 13,
         "compose-mem-limits.unit.test.ts": 1,
         "process-metrics.unit.test.ts": 4,
@@ -62,7 +62,7 @@
         "request-source.unit.test.ts": 4,
         "yield-curve.unit.test.ts": 10,
         "accessLogThrottle.test.ts": 5,
-        "messaging.test.ts": 4,
+        "messaging.test.ts": 7,
         "parse-ticket-handler.unit.test.ts": 11,
         "runtime-config-store.test.ts": 13,
         "price-fan.unit.test.ts": 7,

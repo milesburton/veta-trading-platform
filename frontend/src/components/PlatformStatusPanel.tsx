@@ -75,8 +75,8 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    globalThis.addEventListener("keydown", onKey);
+    return () => globalThis.removeEventListener("keydown", onKey);
   }, [onClose]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -86,7 +86,7 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
       title: title.trim(),
       description: description.trim(),
       category,
-      url: typeof window !== "undefined" ? window.location.href : undefined,
+      url: typeof window !== "undefined" ? globalThis.location.href : undefined,
     };
     try {
       await submitBug(payload).unwrap();

@@ -11,6 +11,7 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { logger } from "@veta/logger";
 import { createMarketSimClient, type MarketTick } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
+import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
 
@@ -79,7 +80,7 @@ await createTypedConsumer("pov-algo-routed", [
   {
     topic: "orders.routed",
     schema: RoutedOrderSchema,
-    handler: (order) => {
+    handler: (order: RoutedOrder) => {
       if ((order.strategy ?? "").toUpperCase() !== "POV") return;
 
       const id = nextId++;

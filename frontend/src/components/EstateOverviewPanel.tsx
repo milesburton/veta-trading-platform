@@ -376,7 +376,12 @@ function TimelineZone() {
         ) : (
           events
             .slice(0, 200)
-            .map((ev, i) => <EventRow key={`${ev.ts ?? 0}-${ev.type}-${i}`} ev={ev} />)
+            .map((ev) => (
+              <EventRow
+                key={`${ev.ts ?? 0}-${ev.type}-${String(ev.payload?.symbol ?? "")}-${String(ev.payload?.status ?? "")}`}
+                ev={ev}
+              />
+            ))
         )}
       </div>
     </div>

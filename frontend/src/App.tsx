@@ -70,7 +70,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolea
           <p className="text-lg font-semibold">Something went wrong.</p>
           <button
             type="button"
-            onClick={() => window.location.reload()}
+            onClick={() => globalThis.location.reload()}
             className="px-4 py-1.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-sm"
           >
             Reload
@@ -218,7 +218,7 @@ function TradingApp() {
         }
       }
 
-      const urlWsId = new URLSearchParams(window.location.search).get("ws");
+      const urlWsId = new URLSearchParams(globalThis.location.search).get("ws");
       const preferred =
         urlWsId && finalWorkspaces.find((w) => w.id === urlWsId)
           ? urlWsId
@@ -253,7 +253,7 @@ function TradingApp() {
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;
-    const sharedId = new URLSearchParams(window.location.search).get("shared");
+    const sharedId = new URLSearchParams(globalThis.location.search).get("shared");
     if (!sharedId) return;
     fetchSharedWorkspace(sharedId).then((entry) => {
       if (entry) cloneBanner.value = entry;
@@ -297,8 +297,8 @@ function TradingApp() {
       }
       saveWorkspacePrefs({ workspaces: ws, layouts: layoutsJson });
     }
-    window.addEventListener("beforeunload", flushOnUnload);
-    return () => window.removeEventListener("beforeunload", flushOnUnload);
+    globalThis.addEventListener("beforeunload", flushOnUnload);
+    return () => globalThis.removeEventListener("beforeunload", flushOnUnload);
   }, []);
 
   const handleWorkspacesChange = useCallback(
@@ -346,7 +346,7 @@ function TradingApp() {
     handleSelect(newId);
     savePrefs(newWorkspaces, newLayouts);
     cloneBanner.value = null;
-    const url = new URL(window.location.href);
+    const url = new URL(globalThis.location.href);
     url.searchParams.delete("shared");
     history.replaceState(null, "", url.toString());
   }

@@ -512,8 +512,8 @@ export function DashboardLayout() {
         type: panelType,
         layout: "dashboard-layout",
       });
-      const url = `${window.location.origin}${window.location.pathname}?${params}`;
-      const w = window.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
+      const url = `${globalThis.location.origin}${globalThis.location.pathname}?${params}`;
+      const w = globalThis.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
       if (w) {
         // Remove the tab so the host layout closes the gap left by the drag.
         model.doAction(Actions.deleteTab(instanceId));
@@ -716,8 +716,12 @@ export function DashboardLayout() {
           type: panelType,
           layout: storageKey,
         });
-        const url = `${window.location.origin}${window.location.pathname}?${params}`;
-        const w = window.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
+        const url = `${globalThis.location.origin}${globalThis.location.pathname}?${params}`;
+        const w = globalThis.open(
+          url,
+          `panel-${instanceId}`,
+          "width=1200,height=700,resizable=yes"
+        );
         if (w) {
           // Remove the tab from the host layout so it leaves no gap.
           // The panel lives entirely in the new window; the user re-adds it

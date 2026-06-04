@@ -1,6 +1,6 @@
 import { useSignal } from "@preact/signals-react";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 
 type ProductState = "draft" | "structured" | "issued" | "sold" | "unwound";
 
@@ -258,9 +258,8 @@ export function ProductBookPanel() {
                 const isExpanded = expandedId.value === product.productId;
                 const fb = feedback.value?.productId === product.productId ? feedback.value : null;
                 return (
-                  <>
+                  <Fragment key={product.productId}>
                     <tr
-                      key={product.productId}
                       className="border-t border-divider/40 hover:bg-panel/20 cursor-pointer"
                       onClick={() => toggleExpand(product.productId)}
                     >
@@ -437,7 +436,7 @@ export function ProductBookPanel() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>

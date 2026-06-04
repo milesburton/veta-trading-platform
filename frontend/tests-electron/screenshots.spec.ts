@@ -21,6 +21,7 @@ import * as path from "path";
 import { _electron as electron } from "playwright";
 import { fileURLToPath } from "url";
 import { ElectronMockServer } from "./helpers/ElectronMockServer.ts";
+import process from "node:process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MAIN_PATH = path.join(__dirname, "../dist-electron/main.js");
@@ -127,8 +128,8 @@ test("electron screenshot: linked pop-out window", async () => {
       type: "order-blotter",
       layout: "veta-layout-v5",
     });
-    const url = `${window.location.origin}${window.location.pathname}?${params}`;
-    window.open(url, "panel-order-blotter", "width=700,height=600,resizable=yes");
+    const url = `${globalThis.location.origin}${globalThis.location.pathname}?${params}`;
+    globalThis.open(url, "panel-order-blotter", "width=700,height=600,resizable=yes");
   });
 
   const popOutPage = await popOutPromise;

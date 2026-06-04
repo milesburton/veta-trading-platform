@@ -28,8 +28,8 @@ export function usePopOut(overrideId?: string): {
       type: panelType,
       layout: storageKey,
     });
-    const url = `${window.location.origin}${window.location.pathname}?${params}`;
-    const w = window.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
+    const url = `${globalThis.location.origin}${globalThis.location.pathname}?${params}`;
+    const w = globalThis.open(url, `panel-${instanceId}`, "width=1200,height=700,resizable=yes");
     if (w) {
       dispatch(panelPopped({ panelId: instanceId }));
       const interval = setInterval(() => {

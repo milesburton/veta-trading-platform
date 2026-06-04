@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, shell, Tray } from "electron";
 import { writeFile } from "fs/promises";
 import * as path from "path";
+import process from "node:process";
 
 const isDev = !app.isPackaged;
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];

@@ -46,8 +46,8 @@ export function useSessionRecording() {
       userRole: user.role,
       metadata: {
         userAgent: navigator.userAgent,
-        viewport: { w: window.innerWidth, h: window.innerHeight },
-        url: window.location.href,
+        viewport: { w: globalThis.innerWidth, h: globalThis.innerHeight },
+        url: globalThis.location.href,
       },
     }).catch(() => {});
 

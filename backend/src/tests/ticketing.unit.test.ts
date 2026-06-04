@@ -124,6 +124,7 @@ Deno.test("createTicketForAlert creates an issue on first CRITICAL", async () =>
       const create = f.calls.find((c) => c.method === "POST");
       assertEquals(create !== undefined, true);
       if (!create) throw new Error("expected POST call");
+      if (!create.body) throw new Error("expected POST call body");
       const body = JSON.parse(create.body);
       assertEquals(body.title.startsWith("[CRITICAL]"), true);
       assertEquals(body.title.includes("kill-switch"), true);

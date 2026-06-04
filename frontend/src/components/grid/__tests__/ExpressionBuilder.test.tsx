@@ -73,7 +73,7 @@ describe("ExpressionBuilder", () => {
     const onClose = vi.fn();
     render(
       <ExpressionBuilder
-        gridId={"executions"}
+        gridId="executions"
         fields={[...fields]}
         initialField="status"
         onClose={onClose}
@@ -100,7 +100,7 @@ describe("ExpressionBuilder", () => {
     const onClose = vi.fn();
     render(
       <ExpressionBuilder
-        gridId={"executions"}
+        gridId="executions"
         fields={[...fields]}
         initial={{
           kind: "group",

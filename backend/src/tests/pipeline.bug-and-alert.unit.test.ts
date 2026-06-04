@@ -166,7 +166,7 @@ Deno.test("pipeline: POST /bug-report reaches Discord but not GitHub", async () 
 
         const discordCall = f.discordCalls()[0];
         if (!discordCall) throw new Error("expected a Discord call");
-        const discordBody = JSON.parse(discordCall.body);
+        const discordBody = JSON.parse(discordCall.body!);
         assertEquals(discordBody.username, "VETA Bug Reports");
         assert(
           discordBody.content.includes("Test bug from E2E suite"),
@@ -227,6 +227,7 @@ Deno.test("pipeline: POST /alerts with severity=CRITICAL fans out to Discord AND
 
         const issueCall = f.githubIssueCreates()[0];
         if (!issueCall) throw new Error("expected a GitHub issue create call");
+        if (!issueCall.body) throw new Error("expected a GitHub issue create payload");
         const issueBody = JSON.parse(issueCall.body);
         assert(
           issueBody.title.startsWith("[CRITICAL]"),

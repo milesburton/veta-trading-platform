@@ -1,4 +1,4 @@
-import { assert, assertAlmostEquals, assertEquals, assertExists } from "jsr:@std/assert@0.217";
+import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
 import { type BondPosition, computeDurationLadder } from "../analytics/duration-ladder.ts";
 
 const TEN_YEAR_BOND: BondPosition = {
@@ -60,8 +60,7 @@ Deno.test("[duration-ladder] returns correct bucket labels", () => {
 Deno.test("[duration-ladder] 10y bond has most DV01 in 10y bucket", () => {
   const result = computeDurationLadder([TEN_YEAR_BOND]);
   const buckets = result.buckets;
-  const tenYearBucket = buckets.find((b) => b.tenorLabel === "10y");
-  assertExists(tenYearBucket);
+  const tenYearBucket = buckets.find((b) => b.tenorLabel === "10y")!;
   const otherBuckets = buckets.filter((b) => b.tenorLabel !== "10y");
   const maxOther = Math.max(...otherBuckets.map((b) => b.netDv01));
 
