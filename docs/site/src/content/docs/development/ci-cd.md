@@ -76,9 +76,10 @@ GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (37 Docker 
 - Runs 5 integration test suites + smoke tests
 - Generates `docs/badges/integration-tests.json`
 
-### playwright-ui (~5 minutes)
+### playwright-ui (sharded, target under 5 minutes wall-clock)
 
-- Installs Chromium
+- Runs the full Playwright E2E suite in 2 parallel shards
+- Installs Chromium once per shard
 - Runs 89+ E2E tests headless against Vite dev server
 - GatewayMock provides deterministic backend responses
 - Generates `docs/badges/e2e-tests.json`
