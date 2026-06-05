@@ -37,4 +37,4 @@ When `OTEL_DENO` is unset, `withSpan()` is a no-op zero-cost call. It is safe to
 
 ## Pipeline-stage latency
 
-The <Svc name="journal" /> service exposes `GET /metrics/latency` returning per-stage `p50` / `p95` / `p99` for the order pipeline (`gateway`, `bus`, `oms`, `routedToChild`, `emsAck`, `filled`). Recent baselines and how they were measured live on the [Performance page](../../../reference/performance/).
+The <Svc name="journal" /> service exposes `GET /metrics/latency` returning per-stage `p50` / `p95` / `p99` for the order pipeline (`gateway`, `bus`, `oms`, `routedToChild`, `emsAck`, `filled`). Recent baselines and how they were measured live on the [Performance page](../../../analytics/performance/).

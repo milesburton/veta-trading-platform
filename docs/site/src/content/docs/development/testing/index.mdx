@@ -6,21 +6,21 @@ description: Test suite taxonomy. What each suite catches, where it runs, and ho
 import { CardGrid, LinkCard } from "@astrojs/starlight/components";
 import testInventory from "@docs/data/test-inventory.json";
 
-VETA has eight test suites. Each addresses a distinct failure class: unit suites cover logic primitives, integration covers service boundaries, E2E covers UI composition, smoke covers deployment plumbing, and the synthetic probe covers public reachability. The taxonomy below is organised by failure class rather than by tooling.
+VETA has nine test suites. Each addresses a distinct failure class: unit suites cover logic primitives, integration covers service boundaries, E2E covers UI composition, smoke covers deployment plumbing, the synthetic probe covers public reachability, and performance covers throughput regressions. The taxonomy below is organised by failure class rather than by tooling.
 
 ## At a glance
 
-| Suite | What it catches | Where it runs | Speed |
-|-------|-----------------|---------------|-------|
-| [Backend unit](./unit/) | Pure-logic bugs in algos, OMS, FIX, schemas | Pre-commit, CI | &lt;30s |
-| [Frontend unit](./unit/#frontend) | Component + Redux + hook regressions | Pre-commit, CI | ~20s |
-| [Integration (Testcontainers)](../testcontainers/) | Service-boundary contract breaks | CI | ~5min |
-| [Playwright E2E](./playwright/) | UI flows that span the whole stack | CI | ~3min |
-| [Electron E2E](./electron/) | Desktop-app-specific behaviour (IPC, contextBridge) | CI | ~1min |
-| [Smoke](./smoke/) | Service reachability through production-equivalent ingress | CI testcontainers gate | ~90s |
-| [Visual anomalies](./visual-anomalies/) | DOM overflows + a11y violations (non-gating) | CI (informational) | ~1min |
-| [Synthetic probe](../../platform/supporting/synthetic-probe/) | Live deployment is reachable from the internet | Every 60s from OVH edge | continuous |
-| [k6 load testing](../../platform/supporting/k6-load-testing/) | Throughput regressions, latency p99 drift | On demand | varies |
+| Suite                                                         | What it catches                                            | Where it runs           | Speed      |
+| ------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------- | ---------- |
+| [Backend unit](./unit/)                                       | Pure-logic bugs in algos, OMS, FIX, schemas                | Pre-commit, CI          | &lt;30s    |
+| [Frontend unit](./unit/#frontend)                             | Component + Redux + hook regressions                       | Pre-commit, CI          | ~20s       |
+| [Integration (Testcontainers)](../testcontainers/)            | Service-boundary contract breaks                           | CI                      | ~5min      |
+| [Playwright E2E](./playwright/)                               | UI flows that span the whole stack                         | CI                      | ~3min      |
+| [Electron E2E](./electron/)                                   | Desktop-app-specific behaviour (IPC, contextBridge)        | CI                      | ~1min      |
+| [Smoke](./smoke/)                                             | Service reachability through production-equivalent ingress | CI testcontainers gate  | ~90s       |
+| [Visual anomalies](./visual-anomalies/)                       | DOM overflows + a11y violations (non-gating)               | CI (informational)      | ~1min      |
+| [Synthetic probe](../../platform/supporting/synthetic-probe/) | Live deployment is reachable from the internet             | Every 60s from OVH edge | continuous |
+| [Performance](../../analytics/performance/)                   | Throughput regressions, latency p99 drift                  | On demand               | varies     |
 
 The pre-commit hook ([.husky/pre-commit](https://github.com/milesburton/veta-trading-platform/blob/main/.husky/pre-commit)) runs lint + type-check + unit tests + integration in seven steps. Integration auto-skips when services aren't running locally so the hook stays fast for tight edit loops. Smoke runs in CI under the testcontainers gate rather than at pre-commit.
 

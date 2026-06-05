@@ -10,7 +10,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   // Retry once on CI to tolerate flaky timing; never locally.
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 4 : undefined,
+  workers: process.env.CI ? 2 : undefined,
 
   webServer: {
     command: `npx vite --port ${PORT} --mode playwright`,

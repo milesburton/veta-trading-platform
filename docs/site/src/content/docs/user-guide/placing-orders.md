@@ -15,21 +15,21 @@ Orders are placed through the **Order Ticket** panel. The ticket adapts based on
 4. Select a **Strategy** (LIMIT, TWAP, VWAP, POV, ICEBERG, SNIPER, ARRIVAL_PRICE).
 5. Click **Place Order**.
 
-Available strategies depend on your [trading style](/veta-trading-platform/reference/trading-styles/). High-touch traders have access to LIMIT and basic algo strategies. Low-touch and algo traders have the full range, including ICEBERG, SNIPER, and ARRIVAL_PRICE.
+Available strategies depend on your [trading style](/veta-trading-platform/ux/trading-styles/). High-touch traders have access to LIMIT and basic algo strategies. Low-touch and algo traders have the full range, including ICEBERG, SNIPER, and ARRIVAL_PRICE.
 
 ## Strategy parameters
 
 Each algo strategy exposes additional parameters:
 
-| Strategy      | Parameters                            |
-| ------------- | ------------------------------------- |
-| LIMIT         | Limit price only                      |
-| TWAP          | Number of slices, participation cap   |
+| Strategy      | Parameters                             |
+| ------------- | -------------------------------------- |
+| LIMIT         | Limit price only                       |
+| TWAP          | Number of slices, participation cap    |
 | POV           | Participation rate, min/max slice size |
-| VWAP          | Historical volume curve window        |
-| ICEBERG       | Visible quantity per slice            |
-| SNIPER        | Aggression threshold                  |
-| ARRIVAL_PRICE | Slippage tolerance (bps)              |
+| VWAP          | Historical volume curve window         |
+| ICEBERG       | Visible quantity per slice             |
+| SNIPER        | Aggression threshold                   |
+| ARRIVAL_PRICE | Slippage tolerance (bps)               |
 
 ## Risk limit warnings
 
