@@ -633,9 +633,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard:
-          - 1/2
-          - 2/2
+        include:
+          - shard: 1/2
+            artifact_suffix: 1-2
+          - shard: 2/2
+            artifact_suffix: 2-2
     permissions:
       contents: read
     steps:
@@ -688,7 +690,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v6
         with:
-          name: e2e-count-${{ replace(matrix.shard, '/', '-') }}
+          name: e2e-count-${{ matrix.artifact_suffix }}
           path: /tmp/e2e-count/passed.txt
           retention-days: 14
 
@@ -696,7 +698,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-report-${{ replace(matrix.shard, '/', '-') }}
+          name: playwright-report-${{ matrix.artifact_suffix }}
           path: |
             frontend/playwright-report/
             frontend/test-results/
