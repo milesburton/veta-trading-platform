@@ -116,22 +116,14 @@ export class AppPage {
 
   async waitForAppReady() {
     await this.page.waitForLoadState("domcontentloaded");
-    // workspace-toolbar (not app-header) marks "dashboard is mounted":
-    // app-header is shared with the login page after the chrome refactor,
-    // so it appears before sign-in completes and is unsafe as a readiness gate.
-    await this.page.waitForSelector('[data-testid="workspace-toolbar"]', {
+    // Wait for the dashboard chrome instead of a more fragile intermediate.
+    // The workspace toolbar is the strongest signal that the app shell is mounted.
+    await this.page.getByTestId("workspace-toolbar").waitFor({
+      state: "visible",
       timeout: 20_000,
     });
     await this.waitForOverlayGone().catch(() => {
       // Some test views do not show the startup overlay; continue when toolbar is present.
-    });
-    await expect(this.page.getByTestId("workspace-toolbar")).toBeVisible({
-      timeout: 10_000,
-    });
-    // Give Vite optimize/reload a brief window to settle on first cold run.
-    await this.page.waitForTimeout(250);
-    await expect(this.page.getByTestId("workspace-toolbar")).toBeVisible({
-      timeout: 10_000,
     });
   }
 

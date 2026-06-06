@@ -92,10 +92,8 @@ traderTest.describe("Research Radar Panel", () => {
     await expect(aaplCircle).toBeVisible({ timeout: 5_000 });
     await expect(msftCircle).toBeVisible({ timeout: 5_000 });
 
-    const aaplFill = await aaplCircle.getAttribute("fill");
-    const msftFill = await msftCircle.getAttribute("fill");
-    expect(aaplFill).toMatch(/#34d399|#10b981|emerald|green/i);
-    expect(msftFill).toMatch(/#f87171|#ef4444|red/i);
+    await expect(aaplCircle).toHaveAttribute("fill", /rgb\(52, 211, 153\)|#34d399|#10b981/i);
+    await expect(msftCircle).toHaveAttribute("fill", /rgb\(248, 113, 113\)|#f87171|#ef4444/i);
   });
 
   traderTest(
@@ -135,7 +133,7 @@ traderTest.describe("Research Radar Panel", () => {
       const radar = page.locator(".flexlayout__tab", { hasText: /signal radar/i }).first();
       await expect(radar.locator("circle[data-symbol='AAPL']")).toHaveAttribute(
         "fill",
-        /#f87171|#ef4444/,
+        /rgb\(248, 113, 113\)|#f87171|#ef4444/,
         { timeout: 5_000 }
       );
     }

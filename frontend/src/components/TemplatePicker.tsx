@@ -56,6 +56,7 @@ export function TemplatePicker() {
             <button
               key={tpl.id}
               type="button"
+              data-testid={`layout-template-${tpl.id}`}
               onClick={() => {
                 resetLayout(tpl.model);
                 open.value = false;
