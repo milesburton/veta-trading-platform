@@ -198,7 +198,10 @@ export function LoginPage() {
         code_challenge_method: "S256",
       });
 
-      if (!("data" in authorizeResult) || !authorizeResult.data) return;
+      if (!("data" in authorizeResult) || !authorizeResult.data) {
+        localError.value = formatApiError(authorizeResult.error);
+        return;
+      }
 
       const tokenResult = await exchangeOAuthCode({
         client_id: OAUTH_CLIENT_ID,
@@ -213,6 +216,8 @@ export function LoginPage() {
       } else if ("data" in tokenResult) {
         localError.value =
           "Sign in succeeded but no user profile was returned. Contact an administrator.";
+      } else {
+        localError.value = formatApiError(tokenResult.error);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

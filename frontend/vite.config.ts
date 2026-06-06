@@ -83,7 +83,7 @@ export default defineConfig(async ({ mode }) => {
             host: true,
             open: false,
             proxy:
-              mode === "test"
+              mode === "test" || mode === "playwright"
                 ? {}
                 : {
                     // Single gateway WebSocket — replaces direct market-sim + FIX WebSocket connections

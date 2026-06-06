@@ -250,7 +250,9 @@ describe("LoginPage", () => {
       target: { value: "wrong" },
     });
     fireEvent.click(screen.getByTestId("oauth-submit"));
-    await waitFor(() => expect(mockAuthorizeOAuth).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByTestId("login-error")).toHaveTextContent(/invalid username or passcode/i)
+    );
   });
 
   test("surfaces a visible error when PKCE generation throws", async () => {
