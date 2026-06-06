@@ -10,7 +10,7 @@ async function switchLayout(app: AppPage, label: string) {
     })
     .first()
     .click();
-  await app.page.waitForTimeout(400);
+  await app.page.waitForTimeout(1200);
 }
 
 test.describe("Observability layout", () => {
@@ -20,13 +20,8 @@ test.describe("Observability layout", () => {
 
     await switchLayout(app, "Observability");
 
-    await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Service Health/i }).first()
-    ).toBeVisible({ timeout: 8_000 });
-
-    await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Throughput/i }).first()
-    ).toBeVisible({ timeout: 5_000 });
+    await expect(await app.panelByTitle(/Service Health/i)).toBeVisible({ timeout: 8_000 });
+    await expect(await app.panelByTitle(/Throughput/i)).toBeVisible({ timeout: 5_000 });
   });
 
   test("Observability layout includes Estate Overview and Observability tabs", async ({ page }) => {
@@ -35,13 +30,8 @@ test.describe("Observability layout", () => {
 
     await switchLayout(app, "Observability");
 
-    await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Estate Overview/i }).first()
-    ).toBeVisible({ timeout: 8_000 });
-
-    await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Observability/i }).first()
-    ).toBeVisible({ timeout: 5_000 });
+    await expect(await app.panelByTitle(/Estate Overview/i)).toBeVisible({ timeout: 8_000 });
+    await expect(await app.panelByTitle(/Observability/i)).toBeVisible({ timeout: 5_000 });
   });
 
   test("Observability layout does not show order-ticket or market-ladder", async ({ page }) => {
@@ -64,13 +54,8 @@ test.describe("Observability layout", () => {
 
     await switchLayout(app, "Observability");
 
-    await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Algo Leaderboard/i }).first()
-    ).toBeVisible({ timeout: 8_000 });
-
-    await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /algo audit trail/i }).first()
-    ).toBeVisible({ timeout: 5_000 });
+    await expect(await app.panelByTitle(/Algo Leaderboard/i)).toBeVisible({ timeout: 8_000 });
+    await expect(await app.panelByTitle(/Decision Log/i)).toBeVisible({ timeout: 5_000 });
   });
 });
 
@@ -83,13 +68,8 @@ test.describe("Pipeline Monitor layout", () => {
 
     await switchLayout(app, "Pipeline Monitor");
 
-    await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /strategy status/i }).first()
-    ).toBeVisible({ timeout: 8_000 });
-
-    await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Orders.*active/i }).first()
-    ).toBeVisible({ timeout: 5_000 });
+    await expect(await app.panelByTitle(/Algo Monitor/i)).toBeVisible({ timeout: 8_000 });
+    await expect(await app.panelByTitle(/Orders.*active/i)).toBeVisible({ timeout: 5_000 });
   });
 
   test("Pipeline Monitor shows Child Orders, Executions, and Decision Log", async ({ page }) => {
@@ -98,17 +78,9 @@ test.describe("Pipeline Monitor layout", () => {
 
     await switchLayout(app, "Pipeline Monitor");
 
-    await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /Child Orders/i }).first()
-    ).toBeVisible({ timeout: 8_000 });
-
-    await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /trade fills/i }).first()
-    ).toBeVisible({ timeout: 5_000 });
-
-    await expect(
-      page.locator(".flexlayout__tab_button", { hasText: /algo audit trail/i }).first()
-    ).toBeVisible({ timeout: 5_000 });
+    await expect(await app.panelByTitle(/Child Orders/i)).toBeVisible({ timeout: 8_000 });
+    await expect(await app.panelByTitle(/Executions/i)).toBeVisible({ timeout: 5_000 });
+    await expect(await app.panelByTitle(/Decision Log/i)).toBeVisible({ timeout: 5_000 });
   });
 
   test("Pipeline Monitor does not show order-ticket or market-ladder", async ({ page }) => {

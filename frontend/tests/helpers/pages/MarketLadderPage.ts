@@ -9,7 +9,7 @@ export class MarketLadderPage {
   }
 
   rowForSymbol(symbol: string) {
-    return this.root.getByRole("listitem").filter({ hasText: symbol }).first();
+    return this.root.getByTestId(`asset-row-${symbol}`);
   }
 
   async waitForSymbol(symbol: string) {

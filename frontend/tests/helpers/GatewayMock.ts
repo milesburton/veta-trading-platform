@@ -237,7 +237,7 @@ export class GatewayMock {
       });
     });
 
-    await page.route("/api/replay/sessions", (route) =>
+    await page.route("/api/gateway/api/replay/sessions**", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
