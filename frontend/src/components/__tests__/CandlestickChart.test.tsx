@@ -15,11 +15,12 @@ function renderWithStore(ui: React.ReactElement) {
 vi.mock("lightweight-charts", () => {
   const seriesStub = { setData: vi.fn(), applyOptions: vi.fn() };
   const priceScaleStub = { applyOptions: vi.fn() };
+  const timeScaleStub = { fitContent: vi.fn(), applyOptions: vi.fn() };
   const chartStub = {
     addSeries: vi.fn(() => seriesStub),
     priceScale: vi.fn(() => priceScaleStub),
     applyOptions: vi.fn(),
-    timeScale: vi.fn(() => ({ fitContent: vi.fn() })),
+    timeScale: vi.fn(() => timeScaleStub),
     remove: vi.fn(),
   };
   return {
