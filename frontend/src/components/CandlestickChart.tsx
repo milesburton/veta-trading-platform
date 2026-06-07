@@ -107,6 +107,17 @@ function setFixedBarSpacing(chart: IChartApi) {
   });
 }
 
+function resizeChartToContainer(chart: IChartApi, width: number, height: number) {
+  chart.resize(width, height);
+  setFixedBarSpacing(chart);
+}
+
+function fitContentAndLockSpacing(chart: IChartApi | null) {
+  if (!chart) return;
+  chart.timeScale().fitContent();
+  setFixedBarSpacing(chart);
+}
+
 export function CandlestickChart({ symbol, candles }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -164,8 +175,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
       const lastSize = lastSizeRef.current;
       if (lastSize.width !== nextWidth || lastSize.height !== nextHeight) {
         lastSizeRef.current = { width: nextWidth, height: nextHeight };
-        chart.resize(nextWidth, nextHeight);
-        setFixedBarSpacing(chart);
+        resizeChartToContainer(chart, nextWidth, nextHeight);
       }
 
       if (!chartSizedRef.current) {
@@ -188,8 +198,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
         const nextWidth = Math.max(1, Math.floor(width));
         const nextHeight = Math.max(1, Math.floor(height));
         lastSizeRef.current = { width: nextWidth, height: nextHeight };
-        chart.resize(nextWidth, nextHeight);
-        setFixedBarSpacing(chart);
+        resizeChartToContainer(chart, nextWidth, nextHeight);
       }
     });
 
@@ -241,11 +250,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
         loadedBarCountRef.current = raw.length;
         fitOnNextTickRef.current = true;
         requestAnimationFrame(() =>
-          requestAnimationFrame(() => {
-            const chartInstance = chartRef.current;
-            chartInstance?.timeScale().fitContent();
-            if (chartInstance) setFixedBarSpacing(chartInstance);
-          })
+          requestAnimationFrame(() => fitContentAndLockSpacing(chartRef.current))
         );
       } else {
         cs?.update(toBarData(last));
@@ -254,11 +259,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
         loadedBarCountRef.current = raw.length;
         if (fitOnNextTickRef.current) {
           fitOnNextTickRef.current = false;
-          requestAnimationFrame(() => {
-            const chartInstance = chartRef.current;
-            chartInstance?.timeScale().fitContent();
-            if (chartInstance) setFixedBarSpacing(chartInstance);
-          });
+          requestAnimationFrame(() => fitContentAndLockSpacing(chartRef.current));
         }
       }
     }
