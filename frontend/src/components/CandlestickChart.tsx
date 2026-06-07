@@ -78,13 +78,14 @@ export function CandlestickChart({ symbol, candles }: Props) {
   const chartSizedRef = useRef(false);
   // Pending candles to load once the chart has been sized
   const pendingLoadRef = useRef<(() => void) | null>(null);
+  const lastSizeRef = useRef({ width: 0, height: 0 });
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     const chart = createChart(containerRef.current, {
       ...getChartTheme(),
-      autoSize: true,
+      autoSize: false,
     });
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
@@ -110,8 +111,17 @@ export function CandlestickChart({ symbol, candles }: Props) {
     volumeSeriesRef.current = volumeSeries;
 
     const ro = new ResizeObserver((entries) => {
-      const width = entries[0]?.contentRect.width ?? 0;
-      if (width <= 0) return;
+      const { width = 0, height = 0 } = entries[0]?.contentRect ?? {};
+      if (width <= 0 || height <= 0) return;
+
+      const nextWidth = Math.max(1, Math.floor(width));
+      const nextHeight = Math.max(1, Math.floor(height));
+      const lastSize = lastSizeRef.current;
+      if (lastSize.width !== nextWidth || lastSize.height !== nextHeight) {
+        lastSizeRef.current = { width: nextWidth, height: nextHeight };
+        chart.resize(nextWidth, nextHeight);
+      }
+
       if (!chartSizedRef.current) {
         chartSizedRef.current = true;
         if (pendingLoadRef.current) {
@@ -123,6 +133,18 @@ export function CandlestickChart({ symbol, candles }: Props) {
       }
     });
     ro.observe(containerRef.current);
+
+    requestAnimationFrame(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      const { width, height } = el.getBoundingClientRect();
+      if (width > 0 && height > 0) {
+        const nextWidth = Math.max(1, Math.floor(width));
+        const nextHeight = Math.max(1, Math.floor(height));
+        lastSizeRef.current = { width: nextWidth, height: nextHeight };
+        chart.resize(nextWidth, nextHeight);
+      }
+    });
 
     return () => {
       ro.disconnect();
@@ -244,7 +266,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
       )}
       <div
         ref={containerRef}
-        className="flex-1 min-h-0 overflow-hidden"
+        className="flex-1 min-h-0 min-w-0 overflow-hidden"
         data-testid="chart-container"
       />
     </div>
