@@ -10,7 +10,7 @@ import {
   createChart,
   HistogramSeries,
 } from "lightweight-charts";
-import { useEffect, useRef } from "react";
+import { type MutableRefObject, useEffect, useRef } from "react";
 
 type MinuteInterval = `${number}m`;
 
@@ -118,23 +118,21 @@ function fitContentAndLockSpacing(chart: IChartApi | null) {
   setFixedBarSpacing(chart);
 }
 
-export function CandlestickChart({ symbol, candles }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
-  const theme = useAppSelector((s) => s.theme.theme);
-  const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
-  const interval = useSignal<MinuteInterval>("1m");
-  const loadedKeyRef = useRef<string>("");
-  const lastBarTimeRef = useRef<number>(0);
-  const loadedBarCountRef = useRef<number>(0);
-  const fitOnNextTickRef = useRef(false);
-  // Set to true once the container has non-zero width (chart is ready to receive data)
-  const chartSizedRef = useRef(false);
-  // Pending candles to load once the chart has been sized
-  const pendingLoadRef = useRef<(() => void) | null>(null);
-  const lastSizeRef = useRef({ width: 0, height: 0 });
+function getIntervalCandles(candles: Props["candles"], interval: MinuteInterval) {
+  if (interval === "1m" || interval === "5m") return candles[interval];
+  return aggregateCandles(candles["1m"], Number.parseInt(interval, 10));
+}
 
+function useCandlestickChartCanvas(
+  containerRef: MutableRefObject<HTMLDivElement | null>,
+  chartRef: MutableRefObject<IChartApi | null>,
+  candleSeriesRef: MutableRefObject<ISeriesApi<"Candlestick"> | null>,
+  volumeSeriesRef: MutableRefObject<ISeriesApi<"Histogram"> | null>,
+  chartSizedRef: MutableRefObject<boolean>,
+  pendingLoadRef: MutableRefObject<(() => void) | null>,
+  loadedBarCountRef: MutableRefObject<number>,
+  lastSizeRef: MutableRefObject<{ width: number; height: number }>
+) {
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -143,7 +141,8 @@ export function CandlestickChart({ symbol, candles }: Props) {
       autoSize: false,
     });
 
-    const candleSeries = chart.addSeries(CandlestickSeries, {
+    chartRef.current = chart;
+    candleSeriesRef.current = chart.addSeries(CandlestickSeries, {
       upColor: COLOR.UP,
       downColor: COLOR.DOWN,
       borderUpColor: COLOR.UP,
@@ -151,8 +150,7 @@ export function CandlestickChart({ symbol, candles }: Props) {
       wickUpColor: COLOR.UP,
       wickDownColor: COLOR.DOWN,
     });
-
-    const volumeSeries = chart.addSeries(HistogramSeries, {
+    volumeSeriesRef.current = chart.addSeries(HistogramSeries, {
       color: COLOR.UP,
       priceFormat: { type: "volume" },
       priceScaleId: "volume",
@@ -161,10 +159,6 @@ export function CandlestickChart({ symbol, candles }: Props) {
       scaleMargins: { top: 0.8, bottom: 0 },
     });
     setFixedBarSpacing(chart);
-
-    chartRef.current = chart;
-    candleSeriesRef.current = candleSeries;
-    volumeSeriesRef.current = volumeSeries;
 
     const ro = new ResizeObserver((entries) => {
       const { width = 0, height = 0 } = entries[0]?.contentRect ?? {};
@@ -206,45 +200,57 @@ export function CandlestickChart({ symbol, candles }: Props) {
       ro.disconnect();
       chart.remove();
     };
-  }, []);
+  }, [
+    chartRef,
+    candleSeriesRef,
+    chartSizedRef,
+    containerRef,
+    lastSizeRef,
+    loadedBarCountRef,
+    pendingLoadRef,
+    volumeSeriesRef,
+  ]);
+}
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: theme is a trigger; getChartTheme reads CSS vars from the DOM
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => {
-      chartRef.current?.applyOptions(getChartTheme());
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [theme]);
-
+function useCandlestickData(
+  candles: Props["candles"],
+  interval: MinuteInterval,
+  symbol: string,
+  chartRef: MutableRefObject<IChartApi | null>,
+  candleSeriesRef: MutableRefObject<ISeriesApi<"Candlestick"> | null>,
+  volumeSeriesRef: MutableRefObject<ISeriesApi<"Histogram"> | null>,
+  chartSizedRef: MutableRefObject<boolean>,
+  pendingLoadRef: MutableRefObject<(() => void) | null>,
+  loadedKeyRef: MutableRefObject<string>,
+  lastBarTimeRef: MutableRefObject<number>,
+  loadedBarCountRef: MutableRefObject<number>,
+  fitOnNextTickRef: MutableRefObject<boolean>
+) {
   useEffect(() => {
     const cs = candleSeriesRef.current;
     const vs = volumeSeriesRef.current;
     if (!cs || !vs) return;
 
-    const intervalMinutes = Number.parseInt(interval.value, 10);
-    const raw =
-      interval.value === "1m"
-        ? candles["1m"]
-        : interval.value === "5m"
-          ? candles["5m"]
-          : aggregateCandles(candles["1m"], intervalMinutes);
+    const raw = getIntervalCandles(candles, interval);
     if (raw.length === 0) return;
 
-    const newKey = `${symbol}:${interval.value}`;
+    const newKey = `${symbol}:${interval}`;
     const isNewSeries = loadedKeyRef.current !== newKey;
     const last = raw[raw.length - 1];
     const lastTime = last.time;
-    // Full replace when: new series, time went backwards, or bar count jumped
-    // (the last case catches a seed arriving after a few live-tick bars were loaded)
     const isFullReplace =
       isNewSeries ||
       lastTime < lastBarTimeRef.current ||
       raw.length > loadedBarCountRef.current + 1;
 
     function doLoad() {
+      const cs = candleSeriesRef.current;
+      const vs = volumeSeriesRef.current;
+      if (!cs || !vs) return;
+
       if (isFullReplace) {
-        cs?.setData(raw.map(toBarData));
-        vs?.setData(raw.map(toVolData));
+        cs.setData(raw.map(toBarData));
+        vs.setData(raw.map(toVolData));
         loadedKeyRef.current = newKey;
         lastBarTimeRef.current = lastTime;
         loadedBarCountRef.current = raw.length;
@@ -253,8 +259,8 @@ export function CandlestickChart({ symbol, candles }: Props) {
           requestAnimationFrame(() => fitContentAndLockSpacing(chartRef.current))
         );
       } else {
-        cs?.update(toBarData(last));
-        vs?.update(toVolData(last));
+        cs.update(toBarData(last));
+        vs.update(toVolData(last));
         lastBarTimeRef.current = lastTime;
         loadedBarCountRef.current = raw.length;
         if (fitOnNextTickRef.current) {
@@ -269,15 +275,73 @@ export function CandlestickChart({ symbol, candles }: Props) {
     } else {
       doLoad();
     }
-  }, [candles, interval.value, symbol]);
+  }, [
+    candleSeriesRef,
+    candles,
+    chartRef,
+    chartSizedRef,
+    fitOnNextTickRef,
+    interval,
+    lastBarTimeRef,
+    loadedBarCountRef,
+    loadedKeyRef,
+    pendingLoadRef,
+    symbol,
+    volumeSeriesRef,
+  ]);
+}
 
-  const intervalMinutes = Number.parseInt(interval.value, 10);
-  const raw =
-    interval.value === "1m"
-      ? candles["1m"]
-      : interval.value === "5m"
-        ? candles["5m"]
-        : aggregateCandles(candles["1m"], intervalMinutes);
+export function CandlestickChart({ symbol, candles }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const theme = useAppSelector((s) => s.theme.theme);
+  const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
+  const interval = useSignal<MinuteInterval>("1m");
+  const loadedKeyRef = useRef<string>("");
+  const lastBarTimeRef = useRef<number>(0);
+  const loadedBarCountRef = useRef<number>(0);
+  const fitOnNextTickRef = useRef(false);
+  // Set to true once the container has non-zero width (chart is ready to receive data)
+  const chartSizedRef = useRef(false);
+  // Pending candles to load once the chart has been sized
+  const pendingLoadRef = useRef<(() => void) | null>(null);
+  const lastSizeRef = useRef({ width: 0, height: 0 });
+  useCandlestickChartCanvas(
+    containerRef,
+    chartRef,
+    candleSeriesRef,
+    volumeSeriesRef,
+    chartSizedRef,
+    pendingLoadRef,
+    loadedBarCountRef,
+    lastSizeRef
+  );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: theme is a trigger; getChartTheme reads CSS vars from the DOM
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      chartRef.current?.applyOptions(getChartTheme());
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [theme]);
+
+  useCandlestickData(
+    candles,
+    interval.value,
+    symbol,
+    chartRef,
+    candleSeriesRef,
+    volumeSeriesRef,
+    chartSizedRef,
+    pendingLoadRef,
+    loadedKeyRef,
+    lastBarTimeRef,
+    loadedBarCountRef,
+    fitOnNextTickRef
+  );
+
+  const raw = getIntervalCandles(candles, interval.value);
 
   return (
     <div className="relative flex flex-col h-full bg-page" data-testid="candlestick-chart-panel">
