@@ -12,7 +12,12 @@ import {
 } from "lightweight-charts";
 import { useEffect, useRef } from "react";
 
-type Interval = "1m" | "5m";
+type MinuteInterval = `${number}m`;
+
+const INTERVAL_OPTIONS: MinuteInterval[] = Array.from(
+  { length: 15 },
+  (_, i) => `${i + 1}m` as MinuteInterval
+);
 
 interface Props {
   symbol: string;
@@ -63,13 +68,42 @@ function toVolData(c: OhlcCandle) {
   };
 }
 
+function aggregateCandles(candles: OhlcCandle[], intervalMinutes: number): OhlcCandle[] {
+  if (intervalMinutes <= 1) return candles;
+
+  const intervalMs = intervalMinutes * 60_000;
+  const result: OhlcCandle[] = [];
+
+  for (const candle of candles) {
+    const bucket = Math.floor(candle.time / intervalMs) * intervalMs;
+    const last = result[result.length - 1];
+    if (last && last.time === bucket) {
+      last.high = Math.max(last.high, candle.high);
+      last.low = Math.min(last.low, candle.low);
+      last.close = candle.close;
+      last.volume = (last.volume ?? 0) + (candle.volume ?? 0);
+    } else {
+      result.push({
+        time: bucket,
+        open: candle.open,
+        high: candle.high,
+        low: candle.low,
+        close: candle.close,
+        volume: candle.volume ?? 0,
+      });
+    }
+  }
+
+  return result;
+}
+
 export function CandlestickChart({ symbol, candles }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const theme = useAppSelector((s) => s.theme.theme);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
-  const interval = useSignal<Interval>("1m");
+  const interval = useSignal<MinuteInterval>("1m");
   const loadedKeyRef = useRef<string>("");
   const lastBarTimeRef = useRef<number>(0);
   const loadedBarCountRef = useRef<number>(0);
@@ -165,7 +199,13 @@ export function CandlestickChart({ symbol, candles }: Props) {
     const vs = volumeSeriesRef.current;
     if (!cs || !vs) return;
 
-    const raw = candles[interval.value];
+    const intervalMinutes = Number.parseInt(interval.value, 10);
+    const raw =
+      interval.value === "1m"
+        ? candles["1m"]
+        : interval.value === "5m"
+          ? candles["5m"]
+          : aggregateCandles(candles["1m"], intervalMinutes);
     if (raw.length === 0) return;
 
     const newKey = `${symbol}:${interval.value}`;
@@ -209,13 +249,19 @@ export function CandlestickChart({ symbol, candles }: Props) {
     }
   }, [candles, interval.value, symbol]);
 
-  const raw = candles[interval.value];
+  const intervalMinutes = Number.parseInt(interval.value, 10);
+  const raw =
+    interval.value === "1m"
+      ? candles["1m"]
+      : interval.value === "5m"
+        ? candles["5m"]
+        : aggregateCandles(candles["1m"], intervalMinutes);
 
   return (
     <div className="relative flex flex-col h-full bg-page" data-testid="candlestick-chart-panel">
       <div className="flex items-center gap-2 px-2 py-1.5 border-b border-panel shrink-0">
         <div className="flex rounded overflow-hidden border border-divider">
-          {(["1m", "5m"] as Interval[]).map((iv) => (
+          {INTERVAL_OPTIONS.map((iv) => (
             <button
               key={iv}
               type="button"
