@@ -10,9 +10,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   // Retry once on CI to tolerate flaky timing; never locally.
   retries: process.env.CI ? 1 : 0,
-  // Keep local concurrency modest so the Vite-driven browser suite doesn't
-  // overwhelm the dev server and start flaking with connection refusals.
-  workers: process.env.CI ? 2 : 1,
+  workers: process.env.CI ? 2 : undefined,
 
   webServer: {
     command: `npx vite --port ${PORT} --mode playwright`,
