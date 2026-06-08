@@ -125,7 +125,10 @@ export function AlgoLeaderboardPanel() {
   const metrics = useMemo(() => computeMetrics(allOrders, 300_000), [allOrders, tick.value]);
 
   return (
-    <div className="flex flex-col h-full bg-page text-default text-xs">
+    <div
+      className="flex flex-col h-full bg-page text-default text-xs"
+      data-testid="algo-leaderboard-panel"
+    >
       <div className="px-4 py-2.5 border-b border-panel shrink-0">
         <div className="flex items-baseline gap-2">
           <span className="text-[11px] font-semibold text-secondary uppercase tracking-wide">

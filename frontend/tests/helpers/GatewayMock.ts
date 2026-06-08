@@ -1,138 +1,41 @@
-import type { Page, WebSocketRoute } from "@playwright/test";
-import type { AssetDef, AuthUser, TradingLimits } from "./authFixtures.ts";
+import type { Page } from "@playwright/test";
+import type { AuthUser, TradingLimits, AssetDef } from "./authFixtures.ts";
 import {
-  ALGO_TRADER,
-  ALGO_TRADER_LIMITS,
-  ANALYST_LIMITS,
-  DEFAULT_ADMIN,
-  DEFAULT_ASSETS,
-  DEFAULT_LIMITS,
   DEFAULT_TRADER,
-  EXTERNAL_CLIENT_LIMITS,
-  EXTERNAL_CLIENT_USER,
-  FI_TRADER,
-  FI_TRADER_LIMITS,
-  RESEARCH_ANALYST,
-  SALES_LIMITS,
-  SALES_USER,
-} from "./authFixtures.ts";
+  DEFAULT_LIMITS,
+  DEFAULT_ASSETS,
+  DEFAULT_READY_BODY,
+  MOCK_BOND_PRICE_RESPONSE,
+  MOCK_SPREAD_ANALYSIS_RESPONSE,
+  MOCK_DURATION_LADDER_RESPONSE,
+  MOCK_VOL_SURFACE_RESPONSE,
+} from "./constants.ts";
+
+// ── Re-exports for backward compatibility ──
+
 export {
-  ALGO_TRADER,
-  ALGO_TRADER_LIMITS,
-  ANALYST_LIMITS,
-  DEFAULT_ADMIN,
-  DEFAULT_ASSETS,
-  DEFAULT_LIMITS,
   DEFAULT_TRADER,
-  EXTERNAL_CLIENT_LIMITS,
-  EXTERNAL_CLIENT_USER,
+  DEFAULT_LIMITS,
+  DEFAULT_ASSETS,
+  DEFAULT_READY_BODY,
+  MOCK_BOND_PRICE_RESPONSE,
+  MOCK_SPREAD_ANALYSIS_RESPONSE,
+  MOCK_DURATION_LADDER_RESPONSE,
+  MOCK_VOL_SURFACE_RESPONSE,
+  ALGO_TRADER,
   FI_TRADER,
-  FI_TRADER_LIMITS,
   RESEARCH_ANALYST,
-  SALES_LIMITS,
+  DEFAULT_ADMIN,
   SALES_USER,
-};
-export type { AssetDef, AuthUser, TradingLimits };
+  EXTERNAL_CLIENT_USER,
+  ALGO_TRADER_LIMITS,
+  FI_TRADER_LIMITS,
+  ANALYST_LIMITS,
+  SALES_LIMITS,
+  EXTERNAL_CLIENT_LIMITS,
+} from "./constants.ts";
 
-type GatewayInbound =
-  | { event: "authIdentity"; data: { user: AuthUser; limits: TradingLimits } }
-  | {
-      event: "marketUpdate";
-      data: { prices: Record<string, number>; volumes: Record<string, number> };
-    }
-  | { event: "orderEvent"; topic: string; data: Record<string, unknown> }
-  | { event: "orderRejected"; data: { clientOrderId: string; reason: string } }
-  | { event: "newsUpdate"; data: Record<string, unknown> }
-  | { event: "signalUpdate"; data: Record<string, unknown> }
-  | { event: "featureUpdate"; data: Record<string, unknown> }
-  | { event: "recommendationUpdate"; data: Record<string, unknown> }
-  | { event: "advisoryUpdate"; data: Record<string, unknown> };
-
-interface GatewayOutbound {
-  type: string;
-  payload: Record<string, unknown>;
-}
-
-export const MOCK_BOND_PRICE_RESPONSE = {
-  price: 987.43,
-  yieldAnnual: 0.0488,
-  modifiedDuration: 8.72,
-  convexity: 92.4,
-  dv01: 0.8618,
-  cashFlows: [],
-  computedAt: Date.now(),
-};
-
-export const MOCK_SPREAD_ANALYSIS_RESPONSE = {
-  bondYield: 0.0488,
-  tenorYears: 10,
-  govSpotRate: 0.0445,
-  gSpread: 43.0,
-  zSpread: 44.2,
-  oas: 44.2,
-  computedAt: Date.now(),
-};
-
-export const MOCK_DURATION_LADDER_RESPONSE = {
-  positions: [
-    {
-      bondIndex: 0,
-      totalDv01: 0.8618,
-      modifiedDuration: 8.72,
-      contributions: [
-        { bondIndex: 0, tenorLabel: "2y", dv01Contribution: 0.12 },
-        { bondIndex: 0, tenorLabel: "5y", dv01Contribution: 0.31 },
-        { bondIndex: 0, tenorLabel: "10y", dv01Contribution: 0.43 },
-      ],
-    },
-  ],
-  buckets: [
-    { tenorLabel: "3m", tenorYears: 0.25, netDv01: 0 },
-    { tenorLabel: "1y", tenorYears: 1, netDv01: 0 },
-    { tenorLabel: "2y", tenorYears: 2, netDv01: 0.12 },
-    { tenorLabel: "5y", tenorYears: 5, netDv01: 0.31 },
-    { tenorLabel: "10y", tenorYears: 10, netDv01: 0.43 },
-    { tenorLabel: "30y", tenorYears: 30, netDv01: 0 },
-  ],
-  totalPortfolioDv01: 0.8618,
-  computedAt: Date.now(),
-};
-
-export const MOCK_VOL_SURFACE_RESPONSE = {
-  symbol: "AAPL",
-  spotPrice: 189.3,
-  atTheMoneyVol: 0.25,
-  expiries: [7 * 86400, 14 * 86400, 30 * 86400, 60 * 86400, 90 * 86400],
-  moneynesses: [0.7, 0.8, 0.9, 0.95, 1.0, 1.05, 1.1, 1.2, 1.3],
-  surface: (() => {
-    const expiries = [
-      { secs: 7 * 86400, label: "7d" },
-      { secs: 14 * 86400, label: "14d" },
-      { secs: 30 * 86400, label: "30d" },
-      { secs: 60 * 86400, label: "60d" },
-      { secs: 90 * 86400, label: "90d" },
-    ];
-    const moneynesses = [0.7, 0.8, 0.9, 0.95, 1.0, 1.05, 1.1, 1.2, 1.3];
-    const spot = 189.3;
-    const atm = 0.25;
-    const skew = -0.1;
-    const curvature = 0.05;
-    return expiries.flatMap(({ secs, label }) =>
-      moneynesses.map((m) => {
-        const lnM = Math.log(m);
-        const iv = Math.max(0.01, atm * (1 + skew * lnM + curvature * lnM * lnM));
-        return {
-          expirySecs: secs,
-          expiryLabel: label,
-          moneyness: m,
-          strike: Math.round(spot * m * 100) / 100,
-          impliedVol: iv,
-        };
-      })
-    );
-  })(),
-  computedAt: Date.now(),
-};
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface MockOrder {
   id: string;
@@ -150,25 +53,50 @@ interface MockOrder {
   children: unknown[];
 }
 
+interface OutboundResolver {
+  type: string;
+  resolve: (msg: GatewayOutbound) => void;
+}
+
+export interface GatewayOutbound {
+  type: string;
+  payload: Record<string, unknown>;
+}
+
+export interface GatewayInbound {
+  event: string;
+  data: Record<string, unknown>;
+}
+
+// ── GatewayMock ──────────────────────────────────────────────────────────────
+
 export class GatewayMock {
-  private _wsRoute: WebSocketRoute | null = null;
-  private _outboundQueue: GatewayOutbound[] = [];
-  private _outboundResolvers: Array<{ type: string; resolve: (msg: GatewayOutbound) => void }> = [];
-  private _refuseNextConnections = false;
-  private _connectionCount = 0;
-
+  private _wsRoute: WebSocket | null = null;
   private _orders = new Map<string, MockOrder>();
-
-  private constructor(private readonly page: Page) {}
+  private _outboundQueue: GatewayOutbound[] = [];
+  private _outboundResolvers: OutboundResolver[] = [];
+  private _connectionCount = 0;
+  private _refuseNextConnections = false;
 
   get connectionCount(): number {
     return this._connectionCount;
   }
 
+  get orders(): ReadonlyArray<MockOrder> {
+    return Array.from(this._orders.values());
+  }
+
+  get wsRoute(): WebSocket | null {
+    return this._wsRoute;
+  }
+
+  constructor(private page: Page) {
+    this._wsRoute = null;
+  }
+
   async dropConnection(opts: { code?: number; reason?: string } = {}): Promise<void> {
     if (!this._wsRoute) return;
     await this._wsRoute.close({ code: opts.code ?? 1006, reason: opts.reason ?? "" });
-    this._wsRoute = null;
   }
 
   refuseNextConnections(yes = true): void {
@@ -199,28 +127,7 @@ export class GatewayMock {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({
-          ready: true,
-          startedAt: Date.now() - 300_000,
-          upgradeInProgress: false,
-          upgradeMessage: null,
-          dataDepth: { totalSymbols: 5, avgDays: 3.2, minDays: 1.5, queriedAt: Date.now() },
-          services: {
-            bus: true,
-            marketSim: true,
-            userService: true,
-            journal: true,
-            ems: true,
-            oms: true,
-            analytics: true,
-            marketData: true,
-            featureEngine: true,
-            signalEngine: true,
-            recommendationEngine: true,
-            scenarioEngine: true,
-            llmAdvisory: true,
-          },
-        }),
+        body: JSON.stringify(DEFAULT_READY_BODY),
       })
     );
 
@@ -330,7 +237,7 @@ export class GatewayMock {
       });
     });
 
-    await page.route("/api/replay/sessions", (route) =>
+    await page.route("/api/gateway/api/replay/sessions**", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

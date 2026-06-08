@@ -21,9 +21,16 @@ export class OrderBlotterPage {
   }
 
   async waitForStatus(status: OrderStatus, timeoutMs = 8_000) {
-    await expect(this.root.locator(`span:has-text("${status}")`)).toBeVisible({
+    await expect(this.table.locator('[data-testid="order-status-badge"]')).toContainText(status, {
       timeout: timeoutMs,
     });
+  }
+
+  async waitForStatusForOrder(idPrefix: string, status: OrderStatus, timeoutMs = 8_000) {
+    await expect(async () => {
+      const current = await this.statusOf(idPrefix);
+      expect(current).toBe(status);
+    }).toPass({ timeout: timeoutMs });
   }
 
   async latestOrderStatus(): Promise<string> {

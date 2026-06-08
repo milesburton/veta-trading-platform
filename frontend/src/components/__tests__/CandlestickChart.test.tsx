@@ -15,11 +15,12 @@ function renderWithStore(ui: React.ReactElement) {
 vi.mock("lightweight-charts", () => {
   const seriesStub = { setData: vi.fn(), applyOptions: vi.fn() };
   const priceScaleStub = { applyOptions: vi.fn() };
+  const timeScaleStub = { fitContent: vi.fn(), applyOptions: vi.fn() };
   const chartStub = {
     addSeries: vi.fn(() => seriesStub),
     priceScale: vi.fn(() => priceScaleStub),
     applyOptions: vi.fn(),
-    timeScale: vi.fn(() => ({ fitContent: vi.fn() })),
+    timeScale: vi.fn(() => timeScaleStub),
     remove: vi.fn(),
   };
   return {
@@ -47,10 +48,11 @@ const emptyCandles = { "1m": [], "5m": [] };
 const filledCandles = { "1m": twoCandles, "5m": twoCandles };
 
 describe("CandlestickChart – rendering", () => {
-  it("renders interval buttons 1m and 5m", () => {
+  it("renders minute interval buttons", () => {
     renderWithStore(<CandlestickChart symbol="MSFT" candles={filledCandles} />);
     expect(screen.getByRole("button", { name: "1m" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "5m" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "15m" })).toBeInTheDocument();
   });
 
   it("shows candle count when data is present", () => {
@@ -72,6 +74,12 @@ describe("CandlestickChart – empty state", () => {
     fireEvent.click(screen.getByRole("button", { name: "5m" }));
     expect(screen.getByText(/Collecting 5m candles/i)).toBeInTheDocument();
   });
+
+  it("shows collecting 2m when interval is 2m and there are no aggregated candles", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={emptyCandles} />);
+    fireEvent.click(screen.getByRole("button", { name: "2m" }));
+    expect(screen.getByText(/Collecting 2m candles/i)).toBeInTheDocument();
+  });
 });
 
 describe("CandlestickChart – interval switching", () => {
@@ -87,6 +95,13 @@ describe("CandlestickChart – interval switching", () => {
     const btn5m = screen.getByRole("button", { name: "5m" });
     fireEvent.click(btn5m);
     expect(btn5m.className).toContain("bg-emerald-700");
+  });
+
+  it("switches to 15m interval when 15m button is clicked", () => {
+    renderWithStore(<CandlestickChart symbol="AAPL" candles={filledCandles} />);
+    const btn15m = screen.getByRole("button", { name: "15m" });
+    fireEvent.click(btn15m);
+    expect(btn15m.className).toContain("bg-emerald-700");
   });
 
   it("shows collecting message after switching if 5m has no candles", () => {

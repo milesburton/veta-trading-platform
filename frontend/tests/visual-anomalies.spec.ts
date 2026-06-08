@@ -5,6 +5,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 import { type AnomalyReport, findOverflows } from "./helpers/visualAnomalies.ts";
+import { DEFAULT_READY_BODY } from "./helpers/constants.ts";
 
 const REPORT_DIR = path.resolve(fileURLToPath(import.meta.url), "../../../docs/visual-anomalies");
 
@@ -60,30 +61,14 @@ async function captureAnomalies(
 
 test.describe("visual anomalies (informational, non-gating)", () => {
   test("login page", async ({ page }) => {
-    const READY_BODY = JSON.stringify({
-      ready: true,
-      startedAt: Date.now() - 300_000,
-      upgradeInProgress: false,
-      upgradeMessage: null,
-      dataDepth: { totalSymbols: 5, avgDays: 3, minDays: 1, queriedAt: Date.now() },
-      services: {
-        bus: true,
-        marketSim: true,
-        userService: true,
-        journal: true,
-        ems: true,
-        oms: true,
-      },
-    });
-    await Promise.all([
-      page.route("/api/**", (r) =>
-        r.fulfill({ status: 200, contentType: "application/json", body: "null" })
-      ),
-      page.route("/api/gateway/ready", (r) =>
-        r.fulfill({ status: 200, contentType: "application/json", body: READY_BODY })
-      ),
-      page.route("**/api/user-service/sessions/me", (r) => r.fulfill({ status: 401, body: "" })),
-    ]);
+    const readyBody = JSON.stringify(DEFAULT_READY_BODY);
+    await page.route("/api/**", (r) =>
+      r.fulfill({ status: 200, contentType: "application/json", body: "null" })
+    );
+    await page.route("/api/gateway/ready", (r) =>
+      r.fulfill({ status: 200, contentType: "application/json", body: readyBody })
+    );
+    await page.route("**/api/user-service/sessions/me", (r) => r.fulfill({ status: 401, body: "" }));
     await page.goto("/");
     await page.waitForSelector('[data-testid="login-page"]', { timeout: 10_000 });
     const r = await captureAnomalies(page, "login");

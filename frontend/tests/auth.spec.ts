@@ -1,36 +1,31 @@
 import { test as base, expect } from "@playwright/test";
 import { adminTest, traderTest } from "./helpers/fixtures.ts";
-import { DEFAULT_ADMIN, DEFAULT_LIMITS, DEFAULT_TRADER } from "./helpers/GatewayMock.ts";
+import { DEFAULT_ADMIN, DEFAULT_LIMITS, DEFAULT_TRADER, DEFAULT_READY_BODY } from "./helpers/constants.ts";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 
-const READY_BODY = JSON.stringify({
-  ready: true,
-  startedAt: Date.now() - 300_000,
-  upgradeInProgress: false,
-  upgradeMessage: null,
-  dataDepth: { totalSymbols: 5, avgDays: 3, minDays: 1, queriedAt: Date.now() },
-  services: { bus: true, marketSim: true, userService: true, journal: true, ems: true, oms: true },
-});
-
 function setupUnauthPage(page: import("@playwright/test").Page) {
-  return Promise.all([
-    page.route("/api/**", (route) =>
+  return (async () => {
+    await page.route("/api/**", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: "null" })
-    ),
-    page.route("**/health", (route) =>
+    );
+    await page.route("**/health", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({ status: "ok", version: "mock" }),
       })
-    ),
-    page.route("/api/gateway/ready", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: READY_BODY })
-    ),
-    page.route("/api/user-service/sessions/me", (route) =>
+    );
+    await page.route("/api/gateway/ready", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(DEFAULT_READY_BODY),
+      })
+    );
+    await page.route("**/api/user-service/sessions/me", (route) =>
       route.fulfill({ status: 401, body: "" })
-    ),
-  ]);
+    );
+  })();
 }
 
 base.describe("Unauthenticated", () => {
@@ -48,9 +43,9 @@ base.describe("Unauthenticated", () => {
       route.fulfill({ status: 200, contentType: "application/json", body: "null" })
     );
     await page.route("/api/gateway/ready", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: READY_BODY })
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DEFAULT_READY_BODY) })
     );
-    await page.route("/api/user-service/sessions/me", (route) => route.abort("failed"));
+    await page.route("**/api/user-service/sessions/me", (route) => route.abort("failed"));
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /^sign in$/i })).toBeVisible({
       timeout: 10_000,
@@ -80,10 +75,10 @@ base.describe("Unauthenticated", () => {
       })
     );
     await page.route("/api/gateway/ready", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: READY_BODY })
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DEFAULT_READY_BODY) })
     );
     let sessionExists = false;
-    await page.route("/api/user-service/sessions/me", (route) => {
+    await page.route("**/api/user-service/sessions/me", (route) => {
       if (sessionExists) {
         return route.fulfill({
           status: 200,
@@ -98,7 +93,7 @@ base.describe("Unauthenticated", () => {
       }
       return route.fulfill({ status: 401, body: "" });
     });
-    await page.route("/api/user-service/oauth/authorize", (route) =>
+    await page.route("**/api/user-service/oauth/authorize", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -110,7 +105,7 @@ base.describe("Unauthenticated", () => {
         }),
       })
     );
-    await page.route("/api/user-service/oauth/token", (route) => {
+    await page.route("**/api/user-service/oauth/token", (route) => {
       sessionExists = true;
       return route.fulfill({
         status: 200,
@@ -192,9 +187,8 @@ adminTest.describe("Admin session", () => {
   });
 
   adminTest("Mission Control layout visible", async ({ app }) => {
-    await expect(
-      app.page.locator(".flexlayout__tab_button", { hasText: /Mission Control/i }).first()
-    ).toBeVisible({ timeout: 8_000 });
+    const missionControl = await app.panelByTitle(/Mission Control/i);
+    await expect(missionControl).toBeVisible({ timeout: 8_000 });
   });
 
   adminTest("admin name appears in header", async ({ app }) => {

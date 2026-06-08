@@ -1,44 +1,33 @@
 import { expect, test } from "@playwright/test";
-
-// A representative subset of the self-registerable archetype ids, kept inline
-// because Playwright's spec runtime does not resolve the @shared alias. The
-// full list is exhaustively checked by the trader-archetypes unit test and the
-// RegistrationForm component test; here we only need a couple of real ids to
-// drive the picker.
-const SAMPLE_ARCHETYPE_IDS = ["equity-high-touch", "fi-voice", "derivatives-high-touch"];
-
-const READY_BODY = JSON.stringify({
-  ready: true,
-  startedAt: Date.now() - 300_000,
-  upgradeInProgress: false,
-  upgradeMessage: null,
-  dataDepth: { totalSymbols: 5, avgDays: 3, minDays: 1, queriedAt: Date.now() },
-  services: { bus: true, marketSim: true, userService: true, journal: true, ems: true, oms: true },
-});
+import { SAMPLE_ARCHETYPE_IDS_LIST, DEFAULT_READY_BODY } from "./helpers/constants.ts";
 
 // The login page boots once /api/gateway/ready reports ready and the session
 // check returns 401. Routes mirror auth.spec.ts: the broad catch-all is
 // registered first, then the specific routes (Playwright gives precedence to
 // the most recently registered matching route).
 function routeBoot(page: import("@playwright/test").Page) {
-  return Promise.all([
-    page.route("/api/**", (route) =>
+  return (async () => {
+    await page.route("/api/**", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: "null" })
-    ),
-    page.route("**/health", (route) =>
+    );
+    await page.route("**/health", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({ status: "ok", version: "mock" }),
       })
-    ),
-    page.route("/api/gateway/ready", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: READY_BODY })
-    ),
-    page.route("/api/user-service/sessions/me", (route) =>
+    );
+    await page.route("/api/gateway/ready", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(DEFAULT_READY_BODY),
+      })
+    );
+    await page.route("**/api/user-service/sessions/me", (route) =>
       route.fulfill({ status: 401, body: "" })
-    ),
-  ]);
+    );
+  })();
 }
 
 test.describe("Registration", () => {
@@ -54,7 +43,7 @@ test.describe("Registration", () => {
     await expect(select).toBeVisible();
     const optionCount = await select.locator("option").count();
     expect(optionCount).toBeGreaterThan(1);
-    for (const id of SAMPLE_ARCHETYPE_IDS) {
+    for (const id of SAMPLE_ARCHETYPE_IDS_LIST) {
       await expect(select.locator(`option[value="${id}"]`)).toHaveCount(1);
     }
   });
@@ -74,7 +63,7 @@ test.describe("Registration", () => {
       })
     );
     await page.route("/api/gateway/ready", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: READY_BODY })
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DEFAULT_READY_BODY) })
     );
     await page.route("**/oauth/register", async (route) => {
       const payload = route.request().postDataJSON() as { archetype?: string };
@@ -117,7 +106,7 @@ test.describe("Registration", () => {
         }),
       });
     });
-    await page.route("/api/user-service/sessions/me", (route) => {
+    await page.route("**/api/user-service/sessions/me", (route) => {
       if (sessionExists) {
         return route.fulfill({
           status: 200,

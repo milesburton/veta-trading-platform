@@ -1,17 +1,15 @@
 import { test as base, expect } from "@playwright/test";
-import { DEFAULT_ASSETS, DEFAULT_LIMITS, type GatewayMock } from "./GatewayMock.ts";
+import {
+  DEFAULT_ASSETS,
+  DEFAULT_LIMITS,
+  DEFAULT_READY_BODY,
+  PRICES,
+} from "./constants.ts";
+import type { GatewayMock } from "./GatewayMock.ts";
 import { AppPage } from "./pages/AppPage.ts";
 import type { MarketLadderPage } from "./pages/MarketLadderPage.ts";
 import type { OrderBlotterPage } from "./pages/OrderBlotterPage.ts";
 import type { OrderTicketPage } from "./pages/OrderTicketPage.ts";
-
-const PRICES: Record<string, number> = {
-  AAPL: 185.5,
-  MSFT: 390.0,
-  GOOGL: 176.5,
-  NVDA: 889.0,
-  AMZN: 228.0,
-};
 
 interface TradingFixtures {
   app: AppPage;
@@ -133,4 +131,4 @@ export const ladderTest = base.extend<LadderFixtures>({
   },
 });
 
-export { expect, PRICES };
+export { expect, PRICES, DEFAULT_READY_BODY };
