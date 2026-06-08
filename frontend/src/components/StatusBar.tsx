@@ -26,7 +26,7 @@ import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { openOrderTicketWindow } from "@veta/frontend/utils/orderTicketWindow.ts";
 import type { IJsonModel, TabNode } from "flexlayout-react";
 import { Actions, Model } from "flexlayout-react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { ALERTS_DRAWER_ID, AlertDrawer } from "./AlertDrawer.tsx";
 import { BugReportModal } from "./BugReportModal.tsx";
 import { BuildInfo } from "./BuildInfo.tsx";
@@ -471,6 +471,10 @@ export function AppHeader() {
     return () => clearInterval(id);
   }, [time]);
 
+  const closeBugReport = useCallback(() => {
+    bugReportOpen.value = false;
+  }, [bugReportOpen]);
+
   async function handleLogout() {
     try {
       await logout();
@@ -629,7 +633,7 @@ export function AppHeader() {
             rel="noopener noreferrer"
             title="Open documentation site"
             data-testid="docs-link"
-            className="text-label hover:text-secondary transition-colors"
+            className="flex items-center gap-1 rounded border border-emerald-700/60 bg-emerald-900/20 px-2 py-0.5 text-[11px] font-medium text-emerald-300 hover:border-emerald-500 hover:bg-emerald-900/40 hover:text-emerald-200 transition-colors"
           >
             <svg
               aria-hidden="true"
@@ -645,7 +649,7 @@ export function AppHeader() {
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
-            <span className="sr-only">Open documentation</span>
+            <span>Docs</span>
           </a>
           <a
             href="https://github.com/milesburton/veta-trading-platform"
@@ -716,12 +720,7 @@ export function AppHeader() {
       </div>
       <DataDepthDrawer />
       <LogsDrawer />
-      <BugReportModal
-        open={bugReportOpen.value}
-        onClose={() => {
-          bugReportOpen.value = false;
-        }}
-      />
+      <BugReportModal open={bugReportOpen.value} onClose={closeBugReport} />
     </div>
   );
 }

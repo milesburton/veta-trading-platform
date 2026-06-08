@@ -24,6 +24,8 @@ export function BugReportModal({ open, onClose }: Props) {
   const undelivered = useSignal(false);
   const localError = useSignal<string | null>(null);
   const titleRef = useRef<HTMLInputElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const [submitBugReport, { isLoading }] = useSubmitBugReportMutation();
 
   useEffect(() => {
@@ -33,14 +35,14 @@ export function BugReportModal({ open, onClose }: Props) {
     localError.value = null;
     const focusTimer = setTimeout(() => titleRef.current?.focus(), 30);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     globalThis.addEventListener("keydown", onKey);
     return () => {
       clearTimeout(focusTimer);
       globalThis.removeEventListener("keydown", onKey);
     };
-  }, [open, onClose, submitted, undelivered, localError]);
+  }, [open]);
 
   if (!open) return null;
 
