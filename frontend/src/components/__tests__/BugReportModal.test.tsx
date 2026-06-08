@@ -127,6 +127,34 @@ describe("BugReportModal", () => {
     });
   });
 
+  it("surfaces the backend error message when one is provided", async () => {
+    mockSubmit.mockResolvedValueOnce({
+      error: { status: 400, data: { error: "Title too spicy" } },
+    });
+    renderModal();
+    fireEvent.change(screen.getByTestId("bug-report-title"), { target: { value: "Real title" } });
+    fireEvent.change(screen.getByTestId("bug-report-description"), {
+      target: { value: "Long-enough description of what happened." },
+    });
+    fireEvent.click(screen.getByTestId("bug-report-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("bug-report-error")).toHaveTextContent(/Title too spicy/);
+    });
+  });
+
+  it("falls back to a generic message when the error has no detail", async () => {
+    mockSubmit.mockResolvedValueOnce({ error: { status: 500 } });
+    renderModal();
+    fireEvent.change(screen.getByTestId("bug-report-title"), { target: { value: "Real title" } });
+    fireEvent.change(screen.getByTestId("bug-report-description"), {
+      target: { value: "Long-enough description of what happened." },
+    });
+    fireEvent.click(screen.getByTestId("bug-report-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("bug-report-error")).toHaveTextContent(/try again/i);
+    });
+  });
+
   it("closes via the X button", () => {
     const { onClose } = renderModal();
     fireEvent.click(screen.getByTestId("bug-report-close"));

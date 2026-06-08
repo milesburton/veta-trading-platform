@@ -563,4 +563,45 @@ describe("StatusBar – authenticated user", () => {
     expect(screen.getByTestId("logout-btn")).toBeInTheDocument();
     expect(screen.queryByTestId("new-order-btn")).not.toBeInTheDocument();
   });
+
+  it("opens and closes the bug report modal from the header", () => {
+    const store = makeStore(true);
+    store.dispatch({
+      type: "auth/setUser",
+      payload: { id: "alice", name: "Alice", role: "trader", avatar_emoji: "👩" },
+    });
+    render(
+      <Provider store={store}>
+        <DashboardContext.Provider
+          value={{
+            layout: DEFAULT_LAYOUT,
+            setLayout: vi.fn(),
+            activePanelIds: new Set(),
+            addPanel: vi.fn(),
+            removePanel: vi.fn(),
+            removeTabById: vi.fn(),
+            resetLayout: vi.fn(),
+            storageKey: "dashboard-layout",
+            model: Model.fromJson({
+              global: {},
+              layout: { type: "row", children: [] },
+            }),
+            setModel: vi.fn(),
+          }}
+        >
+          <StatusBar />
+        </DashboardContext.Provider>
+      </Provider>
+    );
+    expect(screen.queryByTestId("bug-report-modal")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("bug-report-trigger"));
+    expect(screen.getByTestId("bug-report-modal")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("bug-report-close"));
+    expect(screen.queryByTestId("bug-report-modal")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("bug-report-trigger"));
+    expect(screen.getByTestId("bug-report-modal")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByTestId("bug-report-modal")).not.toBeInTheDocument();
+  });
 });
