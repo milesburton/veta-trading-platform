@@ -41,11 +41,23 @@ function busUnavailable(producerReady: boolean): Response | null {
 }
 
 function secureRandomFloat(): number {
-  return crypto.getRandomValues(new Uint32Array(1))[0] / 0x1_0000_0000;
+  const buf = new Uint32Array(2);
+  crypto.getRandomValues(buf);
+  const high = buf[0] >>> 5;
+  const low = buf[1] >>> 6;
+  return (high * 0x4000000 + low) / 0x20000000000000;
 }
 
 function secureRandomInt(maxExclusive: number): number {
-  return Math.floor(secureRandomFloat() * maxExclusive);
+  if (maxExclusive <= 0) return 0;
+  const limit = Math.floor(0x1_0000_0000 / maxExclusive) * maxExclusive;
+  const buf = new Uint32Array(1);
+  let value: number;
+  do {
+    crypto.getRandomValues(buf);
+    value = buf[0];
+  } while (value >= limit);
+  return value % maxExclusive;
 }
 
 function makeWave(
