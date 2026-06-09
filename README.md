@@ -48,7 +48,3 @@ Full documentation is at **[milesburton.github.io/veta-trading-platform](https:/
 ## Discord log and feedback
 
 [Join the Discord](https://discord.gg/tSGgsKnz) for release notes, the platform alerts feed, and bug submission.
-
-## Licence
-
-[MIT](LICENSE).
