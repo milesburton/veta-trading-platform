@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.46.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.1...veta-trading-platform-v1.46.2) (2026-06-09)
+
+
+### Bug Fixes
+
+* **frontend:** silence StatusBar svg prop warnings ([#403](https://github.com/milesburton/veta-trading-platform/issues/403)) ([801f61b](https://github.com/milesburton/veta-trading-platform/commit/801f61bc07b23d7eb67baa94655473ea9e98d13a))
+* **frontend:** stop bug report modal thrashing and promote docs link ([#407](https://github.com/milesburton/veta-trading-platform/issues/407)) ([0c5997b](https://github.com/milesburton/veta-trading-platform/commit/0c5997b72889bb6477e13e7525a1eee51eb1a30a))
+* **gateway:** remove bias from admin load-test randomness ([#409](https://github.com/milesburton/veta-trading-platform/issues/409)) ([c403074](https://github.com/milesburton/veta-trading-platform/commit/c403074598e28f7296fa5c10439c76275a86e4be))
+* **static-pass:** normalize workflow YAML and restore registration PKCE flow ([#401](https://github.com/milesburton/veta-trading-platform/issues/401)) ([9e100ef](https://github.com/milesburton/veta-trading-platform/commit/9e100ef8322487ef1a8e35f78ab00259009111b9))
+
 ## [1.46.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.0...veta-trading-platform-v1.46.1) (2026-06-04)
 
 
