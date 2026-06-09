@@ -17,7 +17,7 @@
 //   2. POST /api/gateway/api/user-service/oauth/guest → 200, sets veta_user
 //   3. GET  /api/gateway/ready  (with cookie) → 200, ready:true
 //   4. GET  /api/gateway/api/user-service/personas → 200, non-empty list
-//   5. WS   /ws → a marketUpdate frame arrives within the timeout
+//   5. WS   /ws/gateway → a marketUpdate frame arrives within the timeout
 //
 // Steps 4 and 5 were added after the 2026-05-28 outage, which surfaced
 // as "Failed to load personas" (a user-service/DB stall returning 502)
@@ -284,7 +284,7 @@ async function step4Personas(cookie: string | null): Promise<StepResult> {
 async function step5MarketFeed(): Promise<StepResult> {
   const t0 = nowMs();
   const name = "market_feed";
-  const wsUrl = `${BASE_URL.replace(/^http/, "ws")}/ws`;
+  const wsUrl = `${BASE_URL.replace(/^http/, "ws")}/ws/gateway`;
   let ws: WebSocket;
   try {
     ws = new WebSocket(wsUrl);
