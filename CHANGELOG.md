@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.46.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.2...veta-trading-platform-v1.46.3) (2026-06-14)
+
+
+### Bug Fixes
+
+* **deploy:** require explicit opt-in to enable the loadgen profile ([#410](https://github.com/milesburton/veta-trading-platform/issues/410)) ([237f486](https://github.com/milesburton/veta-trading-platform/commit/237f486eb9d0157740e7cbdb04d90990036061e1))
+* **probe:** connect market_feed step to /ws/gateway not /ws ([#411](https://github.com/milesburton/veta-trading-platform/issues/411)) ([e392d5c](https://github.com/milesburton/veta-trading-platform/commit/e392d5c69c9da5184a3aa3b6fd5f7b72c17dc944))
+
 ## [1.46.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.1...veta-trading-platform-v1.46.2) (2026-06-09)
 
 
