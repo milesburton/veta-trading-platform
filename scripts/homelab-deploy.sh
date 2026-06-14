@@ -100,20 +100,27 @@ fi
 # - compose.yml: base service definitions
 # - compose.prod.yml: homelab-specific overrides (image tags, Traefik labels)
 # - compose.observability.yml: OTEL env vars for trace/metric/log emission
-# - compose.loadgen.yml: ONLY included when .env.loadgen exists (otherwise
-#   compose interpolation fails on ${LOADGEN_OAUTH_PASSWORD:?...}).
-#   Also disables gateway rate limiting so the load gen isn't 429'd.
+# - compose.loadgen.yml: included ONLY when loadgen is explicitly opted in.
+#   The loadgen profile also disables gateway rate limiting, so an
+#   accidentally-present .env.loadgen could let the generators storm the
+#   gateway unbounded. Requiring an explicit LOADGEN_ENABLED=true flag (in
+#   addition to the credentials file) makes that opt-in deliberate: an
+#   orphaned credentials file alone no longer re-enables a load storm on
+#   the next deploy. Compose interpolation needs the credentials file
+#   present (${LOADGEN_OAUTH_PASSWORD:?...}), so both conditions must hold.
 COMPOSE_FILES=(-f compose.yml -f compose.prod.yml -f compose.observability.yml)
 PROFILES=(--profile trading)
 LOADGEN_ENV_FILE="$STACK_DIR/.env.loadgen"
-if [[ -f "$LOADGEN_ENV_FILE" ]]; then
-    log "Loadgen credentials present — including compose.loadgen.yml"
+if [[ "${LOADGEN_ENABLED:-false}" == "true" && -f "$LOADGEN_ENV_FILE" ]]; then
+    log "Loadgen explicitly enabled — including compose.loadgen.yml"
     COMPOSE_FILES+=(-f compose.loadgen.yml)
     PROFILES+=(--profile loadgen)
     set -a
     # shellcheck disable=SC1090
     . "$LOADGEN_ENV_FILE"
     set +a
+elif [[ -f "$LOADGEN_ENV_FILE" ]]; then
+    log "Loadgen credentials present but LOADGEN_ENABLED is not 'true' — skipping loadgen profile"
 fi
 
 log "Pulling latest images..."
