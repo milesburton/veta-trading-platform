@@ -1,6 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { DashboardContext, DEFAULT_LAYOUT } from "@veta/frontend/components/DashboardLayout";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  DashboardContext,
+  type DashboardContextValue,
+  DEFAULT_LAYOUT,
+} from "@veta/frontend/components/DashboardLayout";
 import { StatusBar } from "@veta/frontend/components/StatusBar";
 import { alertsSlice } from "@veta/frontend/store/alertsSlice";
 import { authSlice } from "@veta/frontend/store/authSlice";
@@ -12,7 +16,7 @@ import { servicesApi } from "@veta/frontend/store/servicesApi";
 import { themeSlice } from "@veta/frontend/store/themeSlice";
 import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
-import { Model } from "flexlayout-react";
+import { type IJsonModel, Model } from "flexlayout-react";
 import { Provider } from "react-redux";
 import { vi } from "vitest";
 
@@ -489,6 +493,131 @@ describe("StatusBar – data freshness", () => {
       </Provider>
     );
     expect(screen.getByTestId("feed-status")).toBeInTheDocument();
+  });
+});
+
+function renderWithDashboard(
+  store: ReturnType<typeof makeStore>,
+  overrides: {
+    activePanelIds?: DashboardContextValue["activePanelIds"];
+    model?: Model;
+    setModel?: () => void;
+  } = {}
+) {
+  render(
+    <Provider store={store}>
+      <DashboardContext.Provider
+        value={{
+          layout: DEFAULT_LAYOUT,
+          setLayout: vi.fn(),
+          activePanelIds: overrides.activePanelIds ?? new Set(),
+          addPanel: vi.fn(),
+          removePanel: vi.fn(),
+          removeTabById: vi.fn(),
+          resetLayout: vi.fn(),
+          storageKey: "dashboard-layout",
+          model:
+            overrides.model ??
+            Model.fromJson({
+              global: {},
+              layout: { type: "row", children: [] },
+            }),
+          setModel: overrides.setModel ?? vi.fn(),
+        }}
+      >
+        <StatusBar />
+      </DashboardContext.Provider>
+    </Provider>
+  );
+}
+
+const ALERTS_TAB_MODEL: IJsonModel = {
+  global: {},
+  layout: {
+    type: "row",
+    children: [
+      {
+        type: "tabset",
+        children: [
+          {
+            type: "tab",
+            name: "Alerts",
+            component: "panel",
+            config: { panelType: "alerts" },
+          },
+        ],
+      },
+    ],
+  },
+};
+
+describe("StatusBar – feed freshness transitions", () => {
+  it("shows the 'stale' indicator once the market feed passes the dead threshold", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+      const store = makeStore(true);
+      store.dispatch({ type: "feed/feedReceived", payload: "market" });
+      renderWithDashboard(store);
+      expect(screen.getByTestId("feed-status")).toHaveTextContent(/live/i);
+
+      // Advance well past FEED_DEAD_MS (15s); the 1s interval ticks the signal
+      // so DataFreshness recomputes the market age as dead.
+      act(() => {
+        vi.advanceTimersByTime(20_000);
+      });
+      expect(screen.getByTestId("feed-status")).toHaveTextContent(/stale/i);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shows the 'slow' indicator between the stale and dead thresholds", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+      const store = makeStore(true);
+      store.dispatch({ type: "feed/feedReceived", payload: "market" });
+      renderWithDashboard(store);
+
+      // Between FEED_STALE_MS (5s) and FEED_DEAD_MS (15s).
+      act(() => {
+        vi.advanceTimersByTime(8_000);
+      });
+      expect(screen.getByTestId("feed-status")).toHaveTextContent(/slow/i);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("StatusBar – pinned alerts panel", () => {
+  it("focuses the Alerts tab instead of opening the drawer when pinned", () => {
+    const store = makeStore(true);
+    authenticateStore(store);
+    const setModel = vi.fn();
+    renderWithDashboard(store, {
+      activePanelIds: new Set(["alerts"]),
+      model: Model.fromJson(ALERTS_TAB_MODEL),
+      setModel,
+    });
+
+    const btn = screen.getByTestId("alert-bell-btn");
+    expect(btn).toHaveAttribute("title", "Jump to Alerts panel");
+
+    fireEvent.click(btn);
+
+    // Pinned path selects the alerts tab via the dashboard model rather than
+    // opening the floating drawer.
+    expect(setModel).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/Alert Centre/i)).not.toBeInTheDocument();
+  });
+
+  it("uses the Alert Centre tooltip when the panel is not pinned", () => {
+    const store = makeStore(true);
+    authenticateStore(store);
+    renderWithDashboard(store);
+    expect(screen.getByTestId("alert-bell-btn")).toHaveAttribute("title", "Alert Centre");
   });
 });
 
