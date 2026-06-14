@@ -114,7 +114,7 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@types/ws": "^8.18.1",
-    "@vitejs/plugin-react": "^6.0.2",
+    "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.4.19",
     "electron": "^42.3.0",
@@ -128,7 +128,7 @@
     "postcss": "^8.5.13",
     "tailwindcss": "^3.4.6",
     "typescript": "^5.5.3",
-    "vite": "^8.0.16",
+    "vite": "^7.3.2",
     "vite-plugin-electron": "^0.28.8",
     "vite-plugin-electron-renderer": "^0.14.6",
     "vitest": "^4.0.18",
@@ -140,6 +140,7 @@
     ]
   },
   "overrides": {
-    "tmp": "^0.2.6"
+    "tmp": "^0.2.6",
+    "esbuild": "^0.28.1"
   }
 }
