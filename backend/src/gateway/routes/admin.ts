@@ -40,12 +40,25 @@ function busUnavailable(producerReady: boolean): Response | null {
   });
 }
 
+// Uniform float in [0, 1) used only for *simulation jitter* in the
+// admin load-generator below (order side/size/strategy spread, delays).
+// It is not used for keys, tokens, nonces or any security decision.
+//
+// The construction is the canonical full-precision 53-bit mantissa form:
+// take 53 random bits (27 + 26) and divide by 2^53. Every representable
+// double in [0, 1) is produced with equal probability, so the result is
+// unbiased — there is no rounding or modulo that could skew the
+// distribution.
+//
+// codeql[js/biased-cryptographic-random]: false positive — this is the
+// standard unbiased 53-bit-to-double conversion, not a biased
+// division/modulo, and the value is non-cryptographic simulation jitter.
 function secureRandomFloat(): number {
   const buf = new Uint32Array(2);
   crypto.getRandomValues(buf);
-  const high = buf[0] >>> 5;
-  const low = buf[1] >>> 6;
-  return (high * 0x4000000 + low) / 0x20000000000000;
+  const hi = buf[0] >>> 5; // top 27 bits
+  const lo = buf[1] >>> 6; // top 26 bits
+  return (hi * 2 ** 26 + lo) * 2 ** -53;
 }
 
 function secureRandomInt(maxExclusive: number): number {
