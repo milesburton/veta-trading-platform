@@ -1,9 +1,12 @@
 name: Post-deploy probe
 
-# Runs after every push to main, waiting long enough for the homelab's
-# 5-minute auto-pull timer to pick up the new commit and roll out the
-# new images, then runs the synthetic probe against the public URL.
-# Detects "your latest deploy broke prod" within ~10 minutes of merge.
+# Runs after every push to main. Polls the gateway's /health endpoint
+# until its reported commit SHA matches the merged commit (the homelab's
+# 5-minute auto-pull timer picks up the new commit and rolls out the new
+# images), then runs the synthetic probe against the public URL. Waiting
+# for the SHA to go live, rather than sleeping a fixed interval, avoids
+# probing a half-deployed stack when a rollout runs slow.
+# Detects "your latest deploy broke prod" shortly after it is live.
 #
 # This is the same Deno probe that runs every 60s on the OVH edge box.
 # CI is a third, independent vantage point — if the OVH probe sees a
@@ -18,9 +21,9 @@ on:
   workflow_dispatch:
     inputs:
       wait_minutes:
-        description: "Minutes to wait for auto-pull before probing"
+        description: "Max minutes to wait for the new commit to go live before probing anyway"
         type: number
-        default: 6
+        default: 12
       base_url:
         description: "Probe target URL"
         type: string
@@ -39,7 +42,7 @@ jobs:
   probe:
     name: Probe ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v5
         with:
@@ -51,12 +54,29 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Wait for auto-pull cycle to complete
+      - name: Wait for the new commit to be live
         env:
-          WAIT_MIN: ${{ inputs.wait_minutes || 6 }}
+          BASE_URL: ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
+          # Hard cap on how long we will wait for auto-pull (5-min timer +
+          # image pull + recreate). Beyond this we probe anyway so a stuck
+          # deploy still surfaces as a probe failure rather than a hang.
+          MAX_WAIT_MIN: ${{ inputs.wait_minutes || 12 }}
         run: |
-          echo "Waiting ${WAIT_MIN} minutes for homelab auto-pull to deploy ${GITHUB_SHA:0:7}..."
-          sleep "$(( WAIT_MIN * 60 ))"
+          echo "Waiting for ${GITHUB_SHA:0:7} to be live at ${BASE_URL} (up to ${MAX_WAIT_MIN}m)..."
+          deadline=$(( $(date +%s) + MAX_WAIT_MIN * 60 ))
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            # /health reports the gateway's running commit SHA. When it
+            # matches the merged SHA the new build is serving and ready.
+            live=$(curl -fsS --max-time 10 "${BASE_URL}/health" 2>/dev/null \
+              | grep -oE '"version":"[0-9a-f]{40}"' | cut -d'"' -f4 || true)
+            if [ "$live" = "$GITHUB_SHA" ]; then
+              echo "✅ ${GITHUB_SHA:0:7} is live (gateway /health matches)."
+              exit 0
+            fi
+            echo "  not yet: gateway reports '${live:-unreachable}', waiting 20s..."
+            sleep 20
+          done
+          echo "::warning::${GITHUB_SHA:0:7} not confirmed live within ${MAX_WAIT_MIN}m; probing anyway."
 
       - name: Run synthetic probe
         env:
