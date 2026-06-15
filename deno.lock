@@ -28,6 +28,7 @@
     "jsr:@std/path@^1.0.2": "1.1.4",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/streams@^1.0.17": "1.0.17",
+    "jsr:@std/yaml@*": "0.217.0",
     "jsr:@std/yaml@0.217": "0.217.0",
     "npm:@biomejs/biome@*": "2.4.4",
     "npm:@opentelemetry/api@^1.9.0": "1.9.1",
