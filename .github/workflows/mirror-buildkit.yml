@@ -1,0 +1,49 @@
+name: Mirror BuildKit image to GHCR
+
+# Pulls the upstream moby/buildkit image (the one docker buildx boots) and
+# republishes it to this repo's GHCR namespace. CI then boots buildx from
+# GHCR (already authenticated via GITHUB_TOKEN) instead of Docker Hub, which
+# rate-limits / times out the anonymous pull under the parallel build matrix.
+#
+# This is a single, retryable pull (not 15 parallel ones), so it tolerates the
+# Docker Hub limit far better than the build jobs did.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly refresh so the mirror tracks upstream buildx-stable-1 moves.
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  SRC_IMAGE: moby/buildkit:buildx-stable-1
+  DST_IMAGE: ghcr.io/${{ github.repository }}/buildkit:buildx-stable-1
+
+jobs:
+  mirror:
+    name: Mirror moby/buildkit -> GHCR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Pull upstream BuildKit (with retry)
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if docker pull "$SRC_IMAGE"; then
+              exit 0
+            fi
+            echo "pull attempt $attempt failed (likely Docker Hub rate limit); retrying in $((attempt * 15))s"
+            sleep $((attempt * 15))
+          done
+          echo "failed to pull $SRC_IMAGE after 5 attempts" >&2
+          exit 1
+
+      - name: Retag and push to GHCR
+        run: |
+          docker tag "$SRC_IMAGE" "$DST_IMAGE"
+          docker push "$DST_IMAGE"
+          echo "Mirrored $SRC_IMAGE -> $DST_IMAGE"
