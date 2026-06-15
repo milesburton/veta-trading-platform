@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.46.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.4...veta-trading-platform-v1.46.5) (2026-06-15)
+
+
+### Bug Fixes
+
+* **security:** patch docs/site transitive advisories (vite, dompurify, js-yaml, babel) ([#427](https://github.com/milesburton/veta-trading-platform/issues/427)) ([d3ec280](https://github.com/milesburton/veta-trading-platform/commit/d3ec2800d8b454e2aef14edc72615b254d39c3f6))
+
 ## [1.46.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.3...veta-trading-platform-v1.46.4) (2026-06-14)
 
 
