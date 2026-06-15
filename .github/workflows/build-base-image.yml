@@ -26,13 +26,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log in to Docker Hub (with retry)
+        # Authenticated Docker Hub pulls have a far higher rate limit than the
+        # anonymous one that was timing out / throttling the moby/buildkit pull
+        # during buildx boot. Skipped automatically if the secret is absent.
+        if: ${{ env.DOCKERHUB_USERNAME != '' }}
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          for attempt in 1 2 3; do
+            if echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin; then
+              exit 0
+            fi
+            echo "docker hub login attempt $attempt failed; retrying in 5s"
+            sleep 5
+          done
+          echo "docker hub login failed after 3 attempts" >&2
+          exit 1
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
-        with:
-          # Pin the BuildKit image to the AWS ECR Public mirror. Docker Hub
-          # (registry-1.docker.io) rate-limits the moby/buildkit pull on CI
-          # runners, which intermittently fails buildx boot.
-          driver-opts: image=public.ecr.aws/vend/moby/buildkit:buildx-stable-1
 
       - name: Build and push base image
         uses: docker/build-push-action@v7
