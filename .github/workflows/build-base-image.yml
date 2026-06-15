@@ -28,6 +28,11 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+        with:
+          # Pin the BuildKit image to the AWS ECR Public mirror. Docker Hub
+          # (registry-1.docker.io) rate-limits the moby/buildkit pull on CI
+          # runners, which intermittently fails buildx boot.
+          driver-opts: image=public.ecr.aws/vend/moby/buildkit:buildx-stable-1
 
       - name: Build and push base image
         uses: docker/build-push-action@v7
