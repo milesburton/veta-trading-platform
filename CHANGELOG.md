@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.46.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.3...veta-trading-platform-v1.46.4) (2026-06-14)
+
+
+### Bug Fixes
+
+* **security:** patch esbuild advisory in docs/site + CodeQL crypto-bias finding ([#417](https://github.com/milesburton/veta-trading-platform/issues/417)) ([17a2c40](https://github.com/milesburton/veta-trading-platform/commit/17a2c4087b8e5900fa2113802e9b63d60ea725d2))
+
 ## [1.46.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.2...veta-trading-platform-v1.46.3) (2026-06-14)
 
 
