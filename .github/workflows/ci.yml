@@ -100,11 +100,13 @@ jobs:
     outputs:
       backend-coverage: ${{ steps.backend_coverage.outputs.value }}
     steps:
-      # PR runs use the default token (no push needed); push runs use the bot
-      # token so badge commits fire downstream workflows. See ci-cd docs.
+      # Push runs use the bot token so badge commits fire downstream workflows.
+      # Everything else (PRs, incl. Dependabot where custom secrets are empty)
+      # uses the always-present default token so checkout never gets an empty
+      # token. See ci-cd docs.
       - uses: actions/checkout@v5
         with:
-          token: ${{ github.event_name == 'pull_request' && secrets.GITHUB_TOKEN || secrets.BOT_PAT }}
+          token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
       - uses: denoland/setup-deno@v2
         with:
@@ -179,7 +181,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          token: ${{ github.event_name == 'pull_request' && secrets.GITHUB_TOKEN || secrets.BOT_PAT }}
+          token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
       - name: Setup Node
         uses: actions/setup-node@v5
@@ -481,7 +483,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          token: ${{ github.event_name == 'pull_request' && secrets.GITHUB_TOKEN || secrets.BOT_PAT }}
+          token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
       - name: Download unit coverage
         uses: actions/download-artifact@v6
@@ -570,7 +572,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          token: ${{ github.event_name == 'pull_request' && secrets.GITHUB_TOKEN || secrets.BOT_PAT }}
+          token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
       - uses: denoland/setup-deno@v2
         with:
@@ -643,7 +645,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          token: ${{ github.event_name == 'pull_request' && secrets.GITHUB_TOKEN || secrets.BOT_PAT }}
+          token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
       - name: Setup Node
         uses: actions/setup-node@v5
@@ -752,7 +754,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          token: ${{ github.event_name == 'pull_request' && secrets.GITHUB_TOKEN || secrets.BOT_PAT }}
+          token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
       - name: Setup Node
         uses: actions/setup-node@v5
@@ -810,7 +812,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          token: ${{ github.event_name == 'pull_request' && secrets.GITHUB_TOKEN || secrets.BOT_PAT }}
+          token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
       - name: Setup Node
         uses: actions/setup-node@v5
@@ -1082,7 +1084,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          token: ${{ github.event_name == 'pull_request' && secrets.GITHUB_TOKEN || secrets.BOT_PAT }}
+          token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
 
       - name: Setup Node
         uses: actions/setup-node@v5
