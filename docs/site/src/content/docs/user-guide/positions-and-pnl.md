@@ -64,6 +64,7 @@ unrealisedPnL = (avgFillPrice - currentPrice) * quantity * multiplier
 ```
 
 The **multiplier** varies by asset class:
+
 - Equities: 1
 - Fixed Income: 1,000 (per bond notional)
 - FX: contract size based on currency pair
