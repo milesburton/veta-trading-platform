@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.46.7](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.6...veta-trading-platform-v1.46.7) (2026-06-16)
+
+
+### Bug Fixes
+
+* **messaging:** clear handler-timeout timer so it never leaks ([#435](https://github.com/milesburton/veta-trading-platform/issues/435)) ([4a02385](https://github.com/milesburton/veta-trading-platform/commit/4a02385482b31d211d2d6f5fae8e8dacf3b4ac18))
+
 ## [1.46.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.5...veta-trading-platform-v1.46.6) (2026-06-16)
 
 
