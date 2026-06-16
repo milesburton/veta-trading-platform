@@ -592,7 +592,9 @@ jobs:
         run: deno install
 
       - name: Testcontainers integration suite (with coverage)
-        run: deno task test:testcontainers:coverage 2>&1 | tee /tmp/tc-test-output.txt
+        run: |
+          set -o pipefail
+          deno task test:testcontainers:coverage 2>&1 | tee /tmp/tc-test-output.txt
         env:
           DATABASE_URL: postgres://veta:veta@localhost:5432/veta
 

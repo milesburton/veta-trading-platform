@@ -29,7 +29,7 @@ function authedFetch(
   stack: TestStack,
   token: string,
   path: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<Response> {
   return fetch(`${gateway(stack)}${path}`, {
     ...init,
@@ -46,7 +46,7 @@ async function createScenario(
   stack: TestStack,
   token: string,
   name: string,
-  seed: number
+  seed: number,
 ): Promise<string> {
   const res = await authedFetch(stack, token, "/scenarios", {
     method: "POST",
@@ -62,14 +62,28 @@ async function createScenario(
       },
     }),
   });
-  assertEquals(res.status, 201, `expected 201 from POST /scenarios but got ${res.status}`);
+  assertEquals(
+    res.status,
+    201,
+    `expected 201 from POST /scenarios but got ${res.status}`,
+  );
   const body = (await res.json()) as { scenario: { id: string } };
   return body.scenario.id;
 }
 
-async function runOnce(stack: TestStack, token: string, scenarioId: string): Promise<ScenarioRun> {
-  const res = await authedFetch(stack, token, `/scenarios/${scenarioId}/run`, { method: "POST" });
-  assertEquals(res.status, 200, `expected 200 from /scenarios/{id}/run but got ${res.status}`);
+async function runOnce(
+  stack: TestStack,
+  token: string,
+  scenarioId: string,
+): Promise<ScenarioRun> {
+  const res = await authedFetch(stack, token, `/scenarios/${scenarioId}/run`, {
+    method: "POST",
+  });
+  assertEquals(
+    res.status,
+    200,
+    `expected 200 from /scenarios/{id}/run but got ${res.status}`,
+  );
   const body = (await res.json()) as { run: ScenarioRun };
   return body.run;
 }
@@ -86,7 +100,8 @@ const SCENARIO_SERVICES = [
 ] as const;
 
 Deno.test({
-  name: "scenarios (testcontainers): same seed produces fills within 5bps across three runs",
+  name:
+    "scenarios (testcontainers): same seed produces fills within 5bps across three runs",
   ignore: !SHOULD_RUN,
   async fn() {
     const verbose = Deno.env.get("STACK_VERBOSE") === "1";
@@ -97,7 +112,12 @@ Deno.test({
     });
     try {
       const token = await login(stack, "alice");
-      const scenarioId = await createScenario(stack, token, `tc-det-${Date.now()}`, 12345);
+      const scenarioId = await createScenario(
+        stack,
+        token,
+        `tc-det-${Date.now()}`,
+        12345,
+      );
 
       const a = await runOnce(stack, token, scenarioId);
       const b = await runOnce(stack, token, scenarioId);
@@ -107,7 +127,7 @@ Deno.test({
         assertEquals(
           r.status === "completed" || r.status === "mismatched",
           true,
-          `run ${r.id} status=${r.status} error=${r.error}`
+          `run ${r.id} status=${r.status} error=${r.error}`,
         );
         assert(r.actual, `run ${r.id} has no actual outcome`);
       }
@@ -115,13 +135,25 @@ Deno.test({
       assertEquals(b.actual?.fillCount, c.actual?.fillCount);
       assertEquals(a.actual?.totalFilled, b.actual?.totalFilled);
       assertEquals(b.actual?.totalFilled, c.actual?.totalFilled);
-      const ab = Math.abs(a.actual?.avgFillPriceBps - b.actual?.avgFillPriceBps);
-      const bc = Math.abs(b.actual?.avgFillPriceBps - c.actual?.avgFillPriceBps);
-      assert(ab <= 5, `avgFillPriceBps drift A↔B = ${ab.toFixed(2)}bps (expected ≤5bps)`);
-      assert(bc <= 5, `avgFillPriceBps drift B↔C = ${bc.toFixed(2)}bps (expected ≤5bps)`);
+      const aBps = a.actual?.avgFillPriceBps;
+      const bBps = b.actual?.avgFillPriceBps;
+      const cBps = c.actual?.avgFillPriceBps;
+      assert(aBps !== undefined, "run A has no avgFillPriceBps");
+      assert(bBps !== undefined, "run B has no avgFillPriceBps");
+      assert(cBps !== undefined, "run C has no avgFillPriceBps");
+      const ab = Math.abs(aBps - bBps);
+      const bc = Math.abs(bBps - cBps);
+      assert(
+        ab <= 5,
+        `avgFillPriceBps drift A↔B = ${ab.toFixed(2)}bps (expected ≤5bps)`,
+      );
+      assert(
+        bc <= 5,
+        `avgFillPriceBps drift B↔C = ${bc.toFixed(2)}bps (expected ≤5bps)`,
+      );
     } catch (err) {
       await Deno.stderr.write(
-        new TextEncoder().encode(`\n--- service logs ---\n${stack.dumpLogs()}`)
+        new TextEncoder().encode(`\n--- service logs ---\n${stack.dumpLogs()}`),
       );
       throw err;
     } finally {
@@ -150,18 +182,17 @@ Deno.test({
       const b = await runOnce(stack, token, idB);
 
       assert(a.actual && b.actual, "both runs need actual outcomes");
-      const same =
-        a.actual.fillCount === b.actual.fillCount &&
+      const same = a.actual.fillCount === b.actual.fillCount &&
         a.actual.totalFilled === b.actual.totalFilled &&
         a.actual.avgFillPriceBps === b.actual.avgFillPriceBps;
       assertEquals(
         same,
         false,
-        "different seeds produced bit-identical outcomes — RNG isn't seeded"
+        "different seeds produced bit-identical outcomes — RNG isn't seeded",
       );
     } catch (err) {
       await Deno.stderr.write(
-        new TextEncoder().encode(`\n--- service logs ---\n${stack.dumpLogs()}`)
+        new TextEncoder().encode(`\n--- service logs ---\n${stack.dumpLogs()}`),
       );
       throw err;
     } finally {
