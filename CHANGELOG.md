@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.46.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.5...veta-trading-platform-v1.46.6) (2026-06-16)
+
+
+### Bug Fixes
+
+* **ci:** stop integration tests silently passing when they fail ([#431](https://github.com/milesburton/veta-trading-platform/issues/431)) ([155607b](https://github.com/milesburton/veta-trading-platform/commit/155607b353410006f0e718ab7d0ee9abbfa0d0cf))
+
 ## [1.46.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.4...veta-trading-platform-v1.46.5) (2026-06-15)
 
 
