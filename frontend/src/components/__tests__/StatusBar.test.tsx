@@ -20,19 +20,39 @@ import { type IJsonModel, Model } from "flexlayout-react";
 import { Provider } from "react-redux";
 import { vi } from "vitest";
 
+const serviceHealthHolder = vi.hoisted(() => ({
+  resolve: (_svc: { name: string }) =>
+    ({ data: undefined, isError: false, isLoading: true }) as {
+      data: unknown;
+      isError: boolean;
+      isLoading: boolean;
+    },
+}));
+
+const dataDepthHolder = vi.hoisted(() => ({
+  resolve: () =>
+    ({ data: undefined, isLoading: true }) as {
+      data: unknown;
+      isLoading: boolean;
+    },
+}));
+
+const logoutMock = vi.hoisted(() => vi.fn(() => Promise.resolve({ data: undefined })));
+
+vi.mock("../../store/userApi", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../store/userApi")>();
+  return {
+    ...original,
+    useLogoutMutation: () => [logoutMock, { isLoading: false }],
+  };
+});
+
 vi.mock("../../store/servicesApi", async (importOriginal) => {
   const original = await importOriginal<typeof import("../../store/servicesApi")>();
   return {
     ...original,
-    useGetServiceHealthQuery: () => ({
-      data: undefined,
-      isError: false,
-      isLoading: true,
-    }),
-    useGetDataDepthQuery: () => ({
-      data: undefined,
-      isLoading: true,
-    }),
+    useGetServiceHealthQuery: (svc: { name: string }) => serviceHealthHolder.resolve(svc),
+    useGetDataDepthQuery: () => dataDepthHolder.resolve(),
   };
 });
 
@@ -732,5 +752,252 @@ describe("StatusBar – authenticated user", () => {
     expect(screen.getByTestId("bug-report-modal")).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByTestId("bug-report-modal")).not.toBeInTheDocument();
+  });
+});
+
+import { DrawersProvider } from "@veta/frontend/components/drawers/DrawersContext";
+import type { ServiceHealth } from "@veta/frontend/types";
+import { afterEach, beforeEach } from "vitest";
+
+const DEFAULT_SERVICE_RESULT = {
+  data: undefined,
+  isError: false,
+  isLoading: true,
+};
+
+afterEach(() => {
+  serviceHealthHolder.resolve = () => DEFAULT_SERVICE_RESULT;
+});
+
+function setServiceHealth(state: ServiceHealth["state"]) {
+  serviceHealthHolder.resolve = (svc) => ({
+    data: {
+      name: svc.name,
+      url: `https://example.test/${svc.name}/health`,
+      state,
+      lastChecked: Date.now(),
+      version: "1.2.3",
+      meta: {},
+    } satisfies ServiceHealth,
+    isError: false,
+    isLoading: false,
+  });
+}
+
+function renderWithDrawers(store: ReturnType<typeof makeStore>) {
+  return render(
+    <Provider store={store}>
+      <DrawersProvider>
+        <DashboardContext.Provider
+          value={{
+            layout: DEFAULT_LAYOUT,
+            setLayout: vi.fn(),
+            activePanelIds: new Set(),
+            addPanel: vi.fn(),
+            removePanel: vi.fn(),
+            removeTabById: vi.fn(),
+            resetLayout: vi.fn(),
+            storageKey: "dashboard-layout",
+            model: Model.fromJson({
+              global: {},
+              layout: { type: "row", children: [] },
+            }),
+            setModel: vi.fn(),
+          }}
+        >
+          <StatusBar />
+        </DashboardContext.Provider>
+      </DrawersProvider>
+    </Provider>
+  );
+}
+
+function drawerTree(store: ReturnType<typeof makeStore>) {
+  return (
+    <Provider store={store}>
+      <DrawersProvider>
+        <DashboardContext.Provider
+          value={{
+            layout: DEFAULT_LAYOUT,
+            setLayout: vi.fn(),
+            activePanelIds: new Set(),
+            addPanel: vi.fn(),
+            removePanel: vi.fn(),
+            removeTabById: vi.fn(),
+            resetLayout: vi.fn(),
+            storageKey: "dashboard-layout",
+            model: Model.fromJson({
+              global: {},
+              layout: { type: "row", children: [] },
+            }),
+            setModel: vi.fn(),
+          }}
+        >
+          <StatusBar />
+        </DashboardContext.Provider>
+      </DrawersProvider>
+    </Provider>
+  );
+}
+
+describe("StatusBar – service health data", () => {
+  it("renders the resolved service data when the query returns ok", () => {
+    setServiceHealth("ok");
+    const store = makeStore(true);
+    authenticateStore(store);
+    renderWithStore(store);
+    expect(screen.getByTestId("service-health-cluster")).toBeInTheDocument();
+  });
+
+  it("raises a critical alert when a service transitions to error", () => {
+    setServiceHealth("ok");
+    const store = makeStore(true);
+    authenticateStore(store);
+    const { rerender } = renderWithDrawers(store);
+
+    setServiceHealth("error");
+    act(() => {
+      rerender(drawerTree(store));
+    });
+
+    const critical = store
+      .getState()
+      .alerts.alerts.some(
+        (a) => a.severity === "CRITICAL" && a.message.startsWith("Service offline:")
+      );
+    expect(critical).toBe(true);
+  });
+
+  it("raises an info alert when a service recovers from error", () => {
+    setServiceHealth("error");
+    const store = makeStore(true);
+    authenticateStore(store);
+    const { rerender } = renderWithDrawers(store);
+
+    setServiceHealth("ok");
+    act(() => {
+      rerender(drawerTree(store));
+    });
+
+    const recovered = store
+      .getState()
+      .alerts.alerts.some(
+        (a) => a.severity === "INFO" && a.message.startsWith("Service recovered:")
+      );
+    expect(recovered).toBe(true);
+  });
+});
+
+describe("StatusBar – alert drawer rendering", () => {
+  it("renders the alert drawer when the bell is clicked and the panel is not pinned", () => {
+    const store = makeStore(true);
+    authenticateStore(store);
+    renderWithDrawers(store);
+    fireEvent.click(screen.getByTestId("alert-bell-btn"));
+    expect(screen.getByText("Alert Centre")).toBeInTheDocument();
+  });
+});
+
+describe("StatusBar – logs button", () => {
+  it("toggles the logs drawer when the logs button is clicked", () => {
+    const store = makeStore(true);
+    authenticateStore(store);
+    renderWithDrawers(store);
+    const logsBtn = screen.getByTestId("logs-btn");
+    expect(logsBtn).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(logsBtn);
+    expect(screen.getByTestId("logs-btn")).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("StatusBar – memory indicator", () => {
+  const originalMemory = Object.getOwnPropertyDescriptor(performance, "memory");
+
+  beforeEach(() => {
+    Object.defineProperty(performance, "memory", {
+      configurable: true,
+      value: {
+        usedJSHeapSize: 800 * 1024 * 1024,
+        totalJSHeapSize: 900 * 1024 * 1024,
+        jsHeapSizeLimit: 1000 * 1024 * 1024,
+      },
+    });
+  });
+
+  afterEach(() => {
+    if (originalMemory) {
+      Object.defineProperty(performance, "memory", originalMemory);
+    } else {
+      Reflect.deleteProperty(performance as unknown as Record<string, unknown>, "memory");
+    }
+  });
+
+  it("renders the heap usage when performance.memory is available", () => {
+    const store = makeStore(true);
+    authenticateStore(store);
+    renderWithStore(store);
+    const indicator = screen.getByTestId("memory-indicator");
+    expect(indicator).toHaveTextContent(/Heap/);
+    expect(indicator).toHaveTextContent(/800 MB/);
+  });
+});
+
+describe("StatusBar – logout", () => {
+  it("clears the user and navigates home on logout", async () => {
+    const assign = vi.fn();
+    const original = globalThis.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...original, assign },
+    });
+    try {
+      const store = makeStore(true);
+      authenticateStore(store);
+      renderWithStore(store);
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("logout-btn"));
+      });
+      expect(store.getState().auth.user).toBeNull();
+      expect(assign).toHaveBeenCalledWith("/");
+    } finally {
+      Object.defineProperty(window, "location", { configurable: true, value: original });
+    }
+  });
+});
+
+describe("StatusBar – update banner reload", () => {
+  it("calls location.reload when Reload now is clicked", () => {
+    const reload = vi.fn();
+    const original = globalThis.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...original, reload },
+    });
+    try {
+      const store = makeStore(true);
+      store.dispatch({ type: "ui/setUpdateAvailable", payload: true });
+      renderWithStore(store);
+      fireEvent.click(screen.getByTestId("reload-btn"));
+      expect(reload).toHaveBeenCalledTimes(1);
+    } finally {
+      Object.defineProperty(window, "location", { configurable: true, value: original });
+    }
+  });
+});
+
+describe("StatusBar – new order button", () => {
+  it("opens the order ticket window for traders", () => {
+    const open = vi.fn();
+    const originalOpen = globalThis.open;
+    globalThis.open = open as unknown as typeof globalThis.open;
+    try {
+      const store = makeStore(true);
+      authenticateStore(store);
+      renderWithStore(store);
+      fireEvent.click(screen.getByTestId("new-order-btn"));
+      expect(open).toHaveBeenCalledTimes(1);
+    } finally {
+      globalThis.open = originalOpen;
+    }
   });
 });

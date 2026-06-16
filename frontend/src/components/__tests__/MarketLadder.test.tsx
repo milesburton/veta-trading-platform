@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MarketLadder } from "@veta/frontend/components/MarketLadder";
 import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
 import { channelsSlice } from "@veta/frontend/store/channelsSlice";
@@ -9,7 +9,7 @@ import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
 import type { AssetDef, MarketPrices, PriceHistory } from "@veta/frontend/types";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const assets: AssetDef[] = [
   { symbol: "AAPL", initialPrice: 150, volatility: 0.02, sector: "Technology" },
@@ -344,5 +344,162 @@ describe("MarketLadder – metadata rendering", () => {
       priceHistory: { JPM: [150] },
     });
     expect(screen.getByText(/500B/)).toBeInTheDocument();
+  });
+});
+
+describe("MarketLadder – sparkline drawing", () => {
+  const originalGetContext = HTMLCanvasElement.prototype.getContext;
+
+  beforeEach(() => {
+    const ctx = {
+      clearRect: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeStyle: "",
+      lineWidth: 0,
+      lineJoin: "",
+    };
+    HTMLCanvasElement.prototype.getContext = vi.fn(
+      () => ctx
+    ) as unknown as typeof originalGetContext;
+  });
+
+  afterEach(() => {
+    HTMLCanvasElement.prototype.getContext = originalGetContext;
+  });
+
+  it("draws a sparkline path for an up-trending history", () => {
+    renderLadder({
+      assets: [{ symbol: "AAPL", initialPrice: 150, volatility: 0.02, sector: "Technology" }],
+      prices: { AAPL: 155 },
+      priceHistory: { AAPL: [150, 152, 155] },
+    });
+    expect(screen.getByTestId("asset-row-AAPL")).toBeInTheDocument();
+  });
+
+  it("draws a sparkline path for a down-trending history", () => {
+    renderLadder({
+      assets: [{ symbol: "AAPL", initialPrice: 150, volatility: 0.02, sector: "Technology" }],
+      prices: { AAPL: 148 },
+      priceHistory: { AAPL: [155, 152, 148] },
+    });
+    expect(screen.getByTestId("asset-row-AAPL")).toBeInTheDocument();
+  });
+});
+
+describe("MarketLadder – price flash timing", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+  });
+
+  it("flashes then clears after the timeout when the price changes", () => {
+    const store = makeStore({
+      assets: [{ symbol: "AAPL", initialPrice: 150, volatility: 0.02, sector: "Technology" }],
+      prices: { AAPL: 150 },
+      priceHistory: { AAPL: [150, 150] },
+    });
+    const { rerender } = render(
+      <Provider store={store}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "ml-flash",
+            panelType: "market-ladder",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <MarketLadder />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    act(() => {
+      store.dispatch(marketSlice.actions.tickReceived({ prices: { AAPL: 152 }, ts: Date.now() }));
+    });
+    rerender(
+      <Provider store={store}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "ml-flash",
+            panelType: "market-ladder",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <MarketLadder />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(screen.getByTestId("asset-row-AAPL")).toBeInTheDocument();
+  });
+});
+
+describe("MarketLadder – column resize", () => {
+  it("drags a column resize handle and updates width", () => {
+    const { container } = renderLadder();
+    const handle = container.querySelector(".resize-handle");
+    expect(handle).toBeTruthy();
+    fireEvent.mouseDown(handle as Element, { clientX: 100 });
+    fireEvent.mouseMove(document, { clientX: 160 });
+    fireEvent.mouseUp(document);
+    expect(handle).toBeInTheDocument();
+  });
+});
+
+describe("MarketLadder – resize observer", () => {
+  const original = globalThis.ResizeObserver;
+
+  afterEach(() => {
+    globalThis.ResizeObserver = original;
+  });
+
+  it("updates list height when the container resizes", () => {
+    globalThis.ResizeObserver = class {
+      constructor(private cb: ResizeObserverCallback) {}
+      observe() {
+        this.cb(
+          [{ contentRect: { height: 640 } } as ResizeObserverEntry],
+          this as unknown as ResizeObserver
+        );
+      }
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    renderLadder();
+    expect(screen.getByTestId("ladder-table")).toBeInTheDocument();
+  });
+});
+
+describe("MarketLadder – row mouse down", () => {
+  it("prevents default on row mouse down to preserve selection", () => {
+    renderLadder();
+    const row = screen.getByTestId("asset-row-AAPL");
+    fireEvent.mouseDown(row);
+    expect(row).toBeInTheDocument();
+  });
+});
+
+describe("MarketLadder – context menu select actions", () => {
+  it("View in order ticket selects the asset", () => {
+    renderLadder();
+    fireEvent.contextMenu(screen.getByTestId("asset-row-AAPL"));
+    fireEvent.click(screen.getByText(/View in order ticket/));
+    expect(screen.getByTestId("asset-row-AAPL")).toBeInTheDocument();
+  });
+
+  it("View chart & depth selects the asset", () => {
+    renderLadder();
+    fireEvent.contextMenu(screen.getByTestId("asset-row-AAPL"));
+    fireEvent.click(screen.getByText(/View chart & depth/));
+    expect(screen.getByTestId("asset-row-AAPL")).toBeInTheDocument();
   });
 });

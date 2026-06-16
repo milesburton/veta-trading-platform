@@ -7,12 +7,13 @@ import { userApi } from "@veta/frontend/store/userApi";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-// LoginPage now embeds the shared <AppHeader />. The chrome itself is tested
-// in StatusBar.test.tsx; here we mock it so these tests stay focused on the
-// auth form behaviour.
+const { useAllServiceHealth } = vi.hoisted(() => ({
+  useAllServiceHealth: vi.fn(() => [] as import("../../types").ServiceHealth[]),
+}));
+
 vi.mock("../StatusBar", () => ({
   AppHeader: () => <div data-testid="app-header-mock" />,
-  useAllServiceHealth: () => [],
+  useAllServiceHealth,
 }));
 
 vi.mock("../../store/servicesApi", async (importOriginal) => {
@@ -43,13 +44,18 @@ const mockRegisterOAuthUser =
       error?: { status: number; data?: { error?: string } };
     }>
   >();
+const mockLoginAsGuest =
+  vi.fn<() => Promise<{ data?: { user: AuthUser }; error?: { status: number } }>>();
+const mockDemoPersonas = vi.fn<() => import("@veta/frontend/store/userApi").DemoPersona[]>(
+  () => []
+);
 
 vi.mock("../../store/userApi", async (importOriginal) => {
   const original = await importOriginal<typeof import("../../store/userApi")>();
   return {
     ...original,
     useGetDemoPersonasQuery: () => ({
-      data: { personas: [] },
+      data: { personas: mockDemoPersonas() },
       isLoading: false,
       error: undefined,
     }),
@@ -66,7 +72,7 @@ vi.mock("../../store/userApi", async (importOriginal) => {
       { isLoading: false, error: undefined, reset: vi.fn() },
     ],
     useLoginAsGuestMutation: () => [
-      vi.fn(),
+      mockLoginAsGuest,
       { isLoading: false, error: undefined, reset: vi.fn() },
     ],
   };
@@ -109,6 +115,17 @@ describe("LoginPage", () => {
     mockRegisterOAuthUser.mockResolvedValue({
       data: { userId: "newbie", name: "New User", role: "trader" },
     });
+    mockLoginAsGuest.mockResolvedValue({
+      data: {
+        user: {
+          id: "guest-1",
+          name: "Guest",
+          role: "viewer",
+          avatar_emoji: "G",
+        },
+      },
+    });
+    mockDemoPersonas.mockReturnValue([]);
   });
 
   test("embeds the shared app header and renders the credential form", () => {
@@ -327,20 +344,91 @@ describe("LoginPage", () => {
     );
     expect(mockAuthorizeOAuth).not.toHaveBeenCalled();
   });
+
+  test("shows error when token exchange succeeds but returns no user profile", async () => {
+    mockExchangeOAuthCode.mockResolvedValue({ data: {} } as never);
+    renderLogin();
+    fireEvent.change(screen.getByTestId("oauth-username"), {
+      target: { value: "alice" },
+    });
+    fireEvent.change(screen.getByTestId("oauth-password"), {
+      target: { value: "veta-dev-passcode" },
+    });
+    fireEvent.click(screen.getByTestId("oauth-submit"));
+    await waitFor(() =>
+      expect(screen.getByTestId("login-error")).toHaveTextContent(/no user profile was returned/i)
+    );
+  });
+
+  test("shows error when token exchange returns an error", async () => {
+    mockExchangeOAuthCode.mockResolvedValue({ error: { status: 403 } } as never);
+    renderLogin();
+    fireEvent.change(screen.getByTestId("oauth-username"), {
+      target: { value: "alice" },
+    });
+    fireEvent.change(screen.getByTestId("oauth-password"), {
+      target: { value: "veta-dev-passcode" },
+    });
+    fireEvent.click(screen.getByTestId("oauth-submit"));
+    await waitFor(() =>
+      expect(screen.getByTestId("login-error")).toHaveTextContent(/not permitted to sign in/i)
+    );
+  });
+
+  test("guest login dispatches setUser on success", async () => {
+    const { store } = renderLogin();
+    fireEvent.click(screen.getByTestId("guest-login-button"));
+    await waitFor(() => expect(mockLoginAsGuest).toHaveBeenCalled());
+    await waitFor(() => expect(store.getState().auth.user?.id).toBe("guest-1"));
+  });
+
+  test("guest login shows error when guest access is disabled (403)", async () => {
+    mockLoginAsGuest.mockResolvedValue({ error: { status: 403 } });
+    renderLogin();
+    fireEvent.click(screen.getByTestId("guest-login-button"));
+    await waitFor(() =>
+      expect(screen.getByTestId("login-error")).toHaveTextContent(/Guest access is not enabled/i)
+    );
+  });
+
+  test("guest login surfaces a visible error when the request throws", async () => {
+    mockLoginAsGuest.mockRejectedValueOnce(new Error("network down"));
+    renderLogin();
+    fireEvent.click(screen.getByTestId("guest-login-button"));
+    await waitFor(() =>
+      expect(screen.getByTestId("login-error")).toHaveTextContent(
+        /Guest sign in failed: network down/
+      )
+    );
+  });
+
+  test("selecting a demo persona signs in with the persona credentials", async () => {
+    mockDemoPersonas.mockReturnValue([
+      {
+        id: "alice",
+        name: "Alice Chen",
+        role: "trader",
+        avatar_emoji: "AC",
+        description: "Equity cash trader",
+        trading_style: "high_touch",
+        primary_desk: "equity-cash",
+        allowed_strategies: [],
+        max_order_qty: 1000,
+        dark_pool_access: false,
+        passcode: "veta-dev-passcode",
+      },
+    ]);
+    const { store } = renderLogin();
+    fireEvent.click(screen.getByTestId("persona-alice"));
+    await waitFor(() => expect(mockAuthorizeOAuth).toHaveBeenCalled());
+    await waitFor(() => expect(store.getState().auth.user?.id).toBe("alice"));
+  });
 });
 
 describe("LoginPage – DegradedServicesOverlay", () => {
-  const { useAllServiceHealth } = vi.hoisted(() => ({
-    useAllServiceHealth: vi.fn(() => [] as import("../../types").ServiceHealth[]),
-  }));
-
   beforeEach(() => {
     vi.clearAllMocks();
-    // Override the StatusBar mock to control useAllServiceHealth per-test
-    vi.mock("../StatusBar", () => ({
-      AppHeader: () => <div data-testid="app-header-mock" />,
-      useAllServiceHealth,
-    }));
+    useAllServiceHealth.mockReturnValue([]);
   });
 
   function makeServicesHealthy(): import("../../types").ServiceHealth[] {
@@ -458,6 +546,34 @@ describe("LoginPage – DegradedServicesOverlay", () => {
     expect(screen.getByTestId("degraded-services-overlay")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("degraded-dismiss"));
     expect(screen.queryByTestId("degraded-services-overlay")).not.toBeInTheDocument();
+  });
+
+  test("View details click invokes the services dropdown button", () => {
+    useAllServiceHealth.mockReturnValue(makeDegradedServices(2));
+    const dropdownBtn = document.createElement("button");
+    dropdownBtn.setAttribute("data-testid", "services-status-btn");
+    const onClick = vi.fn();
+    dropdownBtn.addEventListener("click", onClick);
+    document.body.appendChild(dropdownBtn);
+    renderLogin();
+    fireEvent.click(screen.getByTestId("degraded-view-details"));
+    expect(onClick).toHaveBeenCalled();
+    document.body.removeChild(dropdownBtn);
+  });
+
+  test("updates the overlay when service health changes after mount", async () => {
+    useAllServiceHealth.mockReturnValue(makeServicesHealthy());
+    const { rerender, store } = renderLogin();
+    expect(screen.queryByTestId("degraded-services-overlay")).not.toBeInTheDocument();
+    useAllServiceHealth.mockReturnValue(makeDegradedServices(2));
+    rerender(
+      <Provider store={store}>
+        <LoginPage />
+      </Provider>
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("degraded-services-overlay")).toBeInTheDocument()
+    );
   });
 
   test("does not show overlay for optional services in error state", () => {

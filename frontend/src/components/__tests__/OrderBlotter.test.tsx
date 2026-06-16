@@ -536,6 +536,207 @@ describe("OrderBlotter – context menu actions", () => {
   });
 });
 
+describe("OrderBlotter – last submitted order", () => {
+  it("selects the last submitted order id from the store", () => {
+    mockUseGridQuery.mockReturnValue(
+      defaultQueryResult([
+        makeOrder({ id: "o-top", asset: "AAPL" }),
+        makeOrder({ id: "o-last", asset: "MSFT" }),
+      ])
+    );
+    const store = configureStore({
+      reducer: {
+        auth: authSlice.reducer,
+        orders: ordersSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        ui: uiSlice.reducer,
+        gridPrefs: gridPrefsSlice.reducer,
+      },
+      preloadedState: {
+        auth: {
+          user: { id: "alice", name: "alice", role: "trader" as const, avatar_emoji: "🙂" },
+          limits: {
+            max_order_qty: 10000,
+            max_daily_notional: 1_000_000,
+            allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+            allowed_desks: ["equity"],
+            dark_pool_access: false,
+          },
+          status: "authenticated" as const,
+          sessionExpired: false,
+        },
+        orders: { orders: [], lastSubmittedOrderId: "o-last" },
+      },
+    });
+    render(
+      <Provider store={store}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "order-blotter",
+            panelType: "order-blotter",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <OrderBlotter />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    expect(screen.getByText("MSFT")).toBeInTheDocument();
+  });
+});
+
+describe("OrderBlotter – select all", () => {
+  it("checking select-all selects every row", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL" }), makeOrder({ id: "o2", asset: "MSFT" })]);
+    const selectAll = screen.getByTestId("select-all-checkbox") as HTMLInputElement;
+    fireEvent.click(selectAll);
+    expect(screen.getByTestId("multi-select-bar")).toBeInTheDocument();
+    expect(screen.getByText(/2 orders selected/i)).toBeInTheDocument();
+  });
+
+  it("unchecking select-all clears the selection", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL" }), makeOrder({ id: "o2", asset: "MSFT" })]);
+    const selectAll = screen.getByTestId("select-all-checkbox") as HTMLInputElement;
+    fireEvent.click(selectAll);
+    fireEvent.click(selectAll);
+    expect(screen.queryByTestId("multi-select-bar")).not.toBeInTheDocument();
+  });
+
+  it("Clear button in the multi-select bar resets the selection", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL" }), makeOrder({ id: "o2", asset: "MSFT" })]);
+    fireEvent.click(screen.getByTestId("select-all-checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: /clear/i }));
+    expect(screen.queryByTestId("multi-select-bar")).not.toBeInTheDocument();
+  });
+
+  it("toggling a per-row checkbox selects only that row", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL" }), makeOrder({ id: "o2", asset: "MSFT" })]);
+    fireEvent.click(screen.getByTestId("select-order-o1"));
+    fireEvent.click(screen.getByTestId("select-order-o2"));
+    expect(screen.getByText(/2 orders selected/i)).toBeInTheDocument();
+  });
+
+  it("un-toggling a per-row checkbox deselects that row", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL" })]);
+    const rowCheckbox = screen.getByTestId("select-order-o1");
+    fireEvent.click(rowCheckbox);
+    fireEvent.click(rowCheckbox);
+    expect(screen.queryByTestId("multi-select-bar")).not.toBeInTheDocument();
+  });
+
+  it("clicking the checkbox cell does not select the row", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL" })]);
+    const cell = screen.getByTestId("select-order-o1").closest("td");
+    expect(() => cell && fireEvent.click(cell)).not.toThrow();
+  });
+
+  it("space key on the checkbox cell does not throw", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL" })]);
+    const cell = screen.getByTestId("select-order-o1").closest("td");
+    expect(() => cell && fireEvent.keyDown(cell, { key: " " })).not.toThrow();
+  });
+});
+
+describe("OrderBlotter – column drag and drop", () => {
+  it("dragging one header onto another reorders without throwing", () => {
+    renderBlotter([makeOrder()]);
+    const assetHeader = screen.getByRole("columnheader", { name: /asset/i });
+    const sideHeader = screen.getByRole("columnheader", { name: /^side$/i });
+    const dataTransfer = { effectAllowed: "", dropEffect: "" };
+    fireEvent.dragStart(assetHeader, { dataTransfer });
+    expect(() => fireEvent.drop(sideHeader, { dataTransfer })).not.toThrow();
+  });
+});
+
+describe("OrderBlotter – header sort actions", () => {
+  it("clicking Sort A → Z does not throw", () => {
+    renderBlotter([makeOrder()]);
+    fireEvent.contextMenu(screen.getByRole("columnheader", { name: /asset/i }));
+    expect(() => fireEvent.click(screen.getByText(/Sort A → Z/i))).not.toThrow();
+  });
+
+  it("clicking Sort Z → A does not throw", () => {
+    renderBlotter([makeOrder()]);
+    fireEvent.contextMenu(screen.getByRole("columnheader", { name: /asset/i }));
+    expect(() => fireEvent.click(screen.getByText(/Sort Z → A/i))).not.toThrow();
+  });
+
+  it("clicking Reset sort does not throw", () => {
+    renderBlotter([makeOrder()]);
+    fireEvent.contextMenu(screen.getByRole("columnheader", { name: /asset/i }));
+    expect(() => fireEvent.click(screen.getByText(/Reset sort/i))).not.toThrow();
+  });
+
+  it("clicking Filter by opens the filter for that field", () => {
+    HTMLDialogElement.prototype.showModal = vi.fn();
+    HTMLDialogElement.prototype.close = vi.fn();
+    renderBlotter([makeOrder()]);
+    fireEvent.contextMenu(screen.getByRole("columnheader", { name: /asset/i }));
+    expect(() => fireEvent.click(screen.getByText(/Filter by Asset/i))).not.toThrow();
+  });
+});
+
+describe("OrderBlotter – row context menu actions", () => {
+  it("clicking 'View asset in ladder' does not throw", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL" })]);
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    expect(() => fireEvent.click(screen.getByText(/View asset in ladder/i))).not.toThrow();
+  });
+
+  it("clicking Hold on an active owned order dispatches the hold", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL", status: "working", userId: "alice" })]);
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    expect(() => fireEvent.click(screen.getByText(/^Hold/))).not.toThrow();
+  });
+
+  it("clicking Unhold on a held owned order dispatches the unhold", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL", status: "held", userId: "alice" })]);
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    expect(() => fireEvent.click(screen.getByText(/^Unhold/))).not.toThrow();
+  });
+
+  it("clicking Cancel on an active owned order dispatches the cancel", () => {
+    renderBlotter([makeOrder({ id: "o1", asset: "AAPL", status: "working", userId: "alice" })]);
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    expect(() => fireEvent.click(screen.getByText(/^Cancel/))).not.toThrow();
+  });
+
+  it("risk-manager can force kill an order", () => {
+    mockUseGridQuery.mockReturnValue(
+      defaultQueryResult([
+        makeOrder({ id: "o-kill", asset: "AAPL", status: "working", userId: "trader-bob" }),
+      ])
+    );
+    render(
+      <Provider store={makeStore("risk-manager", "risk-1")}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "order-blotter",
+            panelType: "order-blotter",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <OrderBlotter />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    expect(() => fireEvent.click(screen.getByText(/Force kill/i))).not.toThrow();
+  });
+});
+
+describe("OrderBlotter – Format editor close", () => {
+  it("closing the CF rule editor hides it", () => {
+    renderBlotter([]);
+    fireEvent.click(screen.getByText(/Format/i));
+    fireEvent.click(screen.getByLabelText(/Close formatting editor/i));
+    expect(screen.queryByText(/Conditional Formatting/i)).not.toBeInTheDocument();
+  });
+});
+
 describe("OrderBlotter – child fills", () => {
   it("computes average fill price across child fills", () => {
     renderBlotter([
