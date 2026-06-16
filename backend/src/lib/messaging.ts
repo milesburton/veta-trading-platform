@@ -16,7 +16,12 @@
  *   REDPANDA_BROKERS  comma-separated broker list  (default: localhost:9092)
  */
 
-import { type Consumer, Kafka, type KafkaMessage, type Producer } from "npm:kafkajs@2.2.4";
+import {
+  type Consumer,
+  Kafka,
+  type KafkaMessage,
+  type Producer,
+} from "npm:kafkajs@2.2.4";
 import { logger } from "@veta/logger";
 import type { z } from "@veta/zod";
 import { injectTraceContext, withExtractedContext } from "./telemetry.ts";
@@ -69,7 +74,9 @@ export interface MsgProducer {
  * ready are silently dropped (fire-and-forget services) or should be retried
  * by the caller. Once connected, the producer is reused for all sends.
  */
-export function createProducer(clientId = "veta-producer"): Promise<MsgProducer> {
+export function createProducer(
+  clientId = "veta-producer",
+): Promise<MsgProducer> {
   let activeProducer: Producer | null = null;
   let stopped = false;
   let reconnecting = false;
@@ -149,7 +156,7 @@ export function createConsumer(
   groupId: string,
   topics: string[],
   clientId = `veta-${groupId}`,
-  options: { handlerTimeoutMs?: number } = {}
+  options: { handlerTimeoutMs?: number } = {},
 ): Promise<MsgConsumer> {
   const handlerTimeoutMs = options.handlerTimeoutMs ?? 5_000;
   const handlers: MessageHandler[] = [];
@@ -195,7 +202,9 @@ export function createConsumer(
         });
 
         await consumer.run({
-          eachMessage: async ({ topic, message }: { topic: string; message: KafkaMessage }) => {
+          eachMessage: async (
+            { topic, message }: { topic: string; message: KafkaMessage },
+          ) => {
             if (!message.value) return;
             let parsed: unknown;
             try {
@@ -206,15 +215,21 @@ export function createConsumer(
             const carrier: Record<string, unknown> = message.headers ?? {};
             await withExtractedContext(carrier, async () => {
               for (const handler of handlers) {
+                let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
                 try {
                   await Promise.race([
                     handler(topic, parsed),
-                    new Promise((_, reject) =>
-                      setTimeout(
-                        () => reject(new Error(`handler timeout (${handlerTimeoutMs}ms)`)),
-                        handlerTimeoutMs
-                      )
-                    ),
+                    new Promise((_, reject) => {
+                      timeoutHandle = setTimeout(
+                        () =>
+                          reject(
+                            new Error(
+                              `handler timeout (${handlerTimeoutMs}ms)`,
+                            ),
+                          ),
+                        handlerTimeoutMs,
+                      );
+                    }),
                   ]);
                 } catch (err) {
                   logger.warn("consumer handler slow/failed", {
@@ -223,6 +238,8 @@ export function createConsumer(
                     topic,
                     err: err as Error,
                   });
+                } finally {
+                  if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
                 }
               }
             });
@@ -276,18 +293,19 @@ export interface TypedConsumerOptions {
 export function createTypedConsumer(
   groupId: string,
   bindings: AnyTopicBinding[],
-  options: TypedConsumerOptions = {}
+  options: TypedConsumerOptions = {},
 ): Promise<MsgConsumer> {
   const byTopic = new Map<string, AnyTopicBinding>();
   for (const b of bindings) {
     if (byTopic.has(b.topic)) {
-      throw new Error(`createTypedConsumer: duplicate binding for topic '${b.topic}'`);
+      throw new Error(
+        `createTypedConsumer: duplicate binding for topic '${b.topic}'`,
+      );
     }
     byTopic.set(b.topic, b);
   }
 
-  const onInvalid =
-    options.onInvalid ??
+  const onInvalid = options.onInvalid ??
     ((topic, _raw, err) => {
       logger.warn("typed consumer dropped invalid message", {
         ...LIB,
@@ -327,12 +345,11 @@ export function __setMessagingTestHooks(
     kafkaFactory?: KafkaFactory;
     sleepFn?: SleepFn;
     scheduleFn?: ScheduleFn;
-  } | null
+  } | null,
 ): void {
   kafkaFactory = hooks?.kafkaFactory ?? makeKafka;
   sleepFn = hooks?.sleepFn ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
-  scheduleFn =
-    hooks?.scheduleFn ??
+  scheduleFn = hooks?.scheduleFn ??
     ((fn, ms) => {
       setTimeout(fn, ms);
     });
