@@ -1,5 +1,7 @@
 import type { eventWithTime } from "@rrweb/types";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import * as htmlToImage from "html-to-image";
+import { Replayer } from "rrweb";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("rrweb", () => ({
   Replayer: vi.fn(),
@@ -8,7 +10,7 @@ vi.mock("html-to-image", () => ({
   toCanvas: vi.fn(),
 }));
 
-const { pickMimeType, timeRangeOfSession, viewportFromEvents } = await import(
+const { pickMimeType, renderReplayToWebM, timeRangeOfSession, viewportFromEvents } = await import(
   "../replayVideoExport.ts"
 );
 
@@ -103,5 +105,148 @@ describe("pickMimeType", () => {
       isTypeSupported: vi.fn(() => false),
     };
     expect(pickMimeType()).toEqual({ mimeType: "video/webm", ext: "webm" });
+  });
+});
+
+describe("renderReplayToWebM", () => {
+  const ReplayerMock = vi.mocked(Replayer);
+  const toCanvasMock = vi.mocked(htmlToImage.toCanvas);
+
+  const win = globalThis as typeof globalThis & {
+    MediaRecorder: typeof MediaRecorder;
+    requestAnimationFrame: typeof requestAnimationFrame;
+  };
+  const originalMediaRecorder = win.MediaRecorder;
+  const originalRaf = win.requestAnimationFrame;
+
+  let recorderInstances: Array<{
+    onstop: (() => void) | null;
+    onerror: ((e: unknown) => void) | null;
+    ondataavailable: ((e: { data: { size: number } }) => void) | null;
+    start: ReturnType<typeof vi.fn>;
+    stop: ReturnType<typeof vi.fn>;
+  }>;
+  let trackStop: ReturnType<typeof vi.fn>;
+
+  function metaEvents(): eventWithTime[] {
+    return [ev(1000, 4, { width: 320, height: 240 }), ev(1005, 3, { source: 2 })];
+  }
+
+  beforeEach(() => {
+    recorderInstances = [];
+    trackStop = vi.fn();
+
+    win.MediaRecorder = vi.fn(function (this: Record<string, unknown>) {
+      const inst = {
+        onstop: null as (() => void) | null,
+        onerror: null as ((e: unknown) => void) | null,
+        ondataavailable: null as ((e: { data: { size: number } }) => void) | null,
+        start: vi.fn(),
+        stop: vi.fn(),
+      };
+      recorderInstances.push(inst);
+      this.start = (...args: unknown[]) => {
+        inst.start(...args);
+        inst.ondataavailable?.({ data: { size: 8 } } as { data: { size: number } });
+      };
+      this.stop = (...args: unknown[]) => {
+        inst.stop(...args);
+        inst.onstop?.();
+      };
+      Object.defineProperty(this, "ondataavailable", {
+        set: (fn) => {
+          inst.ondataavailable = fn;
+        },
+      });
+      Object.defineProperty(this, "onstop", {
+        set: (fn) => {
+          inst.onstop = fn;
+        },
+      });
+      Object.defineProperty(this, "onerror", {
+        set: (fn) => {
+          inst.onerror = fn;
+        },
+      });
+    }) as unknown as typeof MediaRecorder;
+    (win.MediaRecorder as { isTypeSupported: (m: string) => boolean }).isTypeSupported = () => true;
+
+    win.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      cb(0);
+      return 1;
+    }) as typeof requestAnimationFrame;
+
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      fillStyle: "",
+      fillRect: vi.fn(),
+      clearRect: vi.fn(),
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+
+    (
+      HTMLCanvasElement.prototype as unknown as {
+        captureStream: () => { getTracks: () => Array<{ stop: () => void }> };
+      }
+    ).captureStream = vi.fn(() => ({
+      getTracks: () => [{ stop: trackStop as unknown as () => void }],
+    }));
+
+    ReplayerMock.mockImplementation(function (this: Record<string, unknown>) {
+      this.pause = vi.fn();
+      this.destroy = vi.fn();
+      this.iframe = undefined;
+    } as unknown as typeof Replayer);
+    toCanvasMock.mockResolvedValue(document.createElement("canvas"));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    win.MediaRecorder = originalMediaRecorder;
+    win.requestAnimationFrame = originalRaf;
+  });
+
+  it("throws when fewer than two events are supplied", async () => {
+    await expect(renderReplayToWebM({ events: [ev(1)] })).rejects.toThrow("too few events");
+  });
+
+  it("throws and cleans up the host when no 2D context is available", async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+    const before = document.body.childElementCount;
+
+    await expect(renderReplayToWebM({ events: metaEvents() })).rejects.toThrow(
+      "2D canvas context unavailable"
+    );
+
+    expect(document.body.childElementCount).toBe(before);
+  });
+
+  it("aborts before rendering frames when the signal is already aborted", async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      renderReplayToWebM({ events: metaEvents(), signal: controller.signal })
+    ).rejects.toThrow("Aborted");
+
+    expect(recorderInstances[0]?.stop).toHaveBeenCalled();
+    expect(trackStop).toHaveBeenCalled();
+  });
+
+  it("renders a session to a webm blob and reports progress through to done", async () => {
+    const phases: string[] = [];
+    const result = await renderReplayToWebM({
+      events: metaEvents(),
+      onProgress: (p) => phases.push(p.phase),
+    });
+
+    expect(result.width).toBe(320);
+    expect(result.height).toBe(240);
+    expect(result.durationMs).toBe(5);
+    expect(result.blob).toBeInstanceOf(Blob);
+    expect(result.blob.size).toBeGreaterThan(0);
+    expect(phases).toContain("preparing");
+    expect(phases).toContain("encoding");
+    expect(phases[phases.length - 1]).toBe("done");
+    expect(trackStop).toHaveBeenCalled();
   });
 });
