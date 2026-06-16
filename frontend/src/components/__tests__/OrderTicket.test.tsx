@@ -1220,3 +1220,394 @@ describe("OrderTicket – instrument tabs (bond / fx)", () => {
     expect(screen.getByText(/Bond orders always use LIMIT/i)).toBeInTheDocument();
   });
 });
+
+describe("OrderTicket – URL prefill", () => {
+  it("prefills the ticket from a ?prefill query parameter", () => {
+    const intent = {
+      side: "SELL",
+      symbol: "MSFT",
+      quantity: 250,
+      limitPrice: 310.5,
+      strategy: "TWAP",
+      tif: "GTC",
+      twapDurationMinutes: 30,
+      povRatePercent: 15,
+      icebergVisibleQty: 50,
+    };
+    const search = `?prefill=${encodeURIComponent(JSON.stringify(intent))}`;
+    window.history.replaceState({}, "", `/${search}`);
+
+    const testStore = renderTicket();
+
+    expect(testStore.getState().ui.activeSide).toBe("SELL");
+    expect(testStore.getState().ui.activeStrategy).toBe("TWAP");
+    const qty = screen.getByLabelText(/Quantity/i) as HTMLInputElement;
+    expect(qty.value).toBe("250");
+
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("ignores an unparseable ?prefill query parameter", () => {
+    window.history.replaceState({}, "", "/?prefill=%7Bnot-json");
+    renderTicket();
+    expect(screen.getByTestId("order-ticket-panel")).toBeInTheDocument();
+    window.history.replaceState({}, "", "/");
+  });
+});
+
+describe("OrderTicket – role locked", () => {
+  function renderWithRole(role: string) {
+    const testStore = configureStore({
+      reducer: {
+        auth: authSlice.reducer,
+        market: marketSlice.reducer,
+        orders: ordersSlice.reducer,
+        ui: uiSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        killSwitch: killSwitchSlice.reducer,
+      },
+      preloadedState: {
+        auth: {
+          user: {
+            id: "u",
+            name: "User",
+            role: role as "trader",
+            avatar_emoji: "🙂",
+          },
+          limits: {
+            max_order_qty: 10_000,
+            max_daily_notional: 1_000_000,
+            allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+            allowed_desks: ["equity", "fi", "derivatives"],
+            dark_pool_access: false,
+          },
+          status: "authenticated" as const,
+          sessionExpired: false,
+        },
+        market: {
+          assets,
+          prices,
+          priceHistory: {},
+          sessionOpen: {},
+          candleHistory: {},
+          candlesReady: {},
+          connected: true,
+          connectionFailures: 0,
+          orderBook: {},
+          sessionPhase: "CONTINUOUS" as const,
+        },
+      },
+    });
+    render(
+      <Provider store={testStore}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "x",
+            panelType: "order-ticket",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <TradingProvider>
+            <OrderTicket />
+          </TradingProvider>
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    return testStore;
+  }
+
+  it("shows the admin lock screen for admin accounts", () => {
+    renderWithRole("admin");
+    expect(screen.getByText("Admin account")).toBeInTheDocument();
+    expect(screen.queryByTestId("order-ticket-panel")).not.toBeInTheDocument();
+  });
+
+  it("shows the compliance lock screen for compliance accounts", () => {
+    renderWithRole("compliance");
+    expect(screen.getByText("Compliance account")).toBeInTheDocument();
+  });
+});
+
+describe("OrderTicket – keyboard shortcuts", () => {
+  it("ctrl+enter submits the order", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    const testStore = renderTicket();
+    fireEvent.keyDown(document, { key: "Enter", code: "Enter", keyCode: 13, ctrlKey: true });
+    await waitFor(() => {
+      expect(testStore.getState().orders.orders.length).toBeGreaterThan(0);
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it("escape resets the quantity to the default", () => {
+    renderTicket();
+    const qty = screen.getByLabelText(/Quantity/i) as HTMLInputElement;
+    fireEvent.change(qty, { target: { value: "777" } });
+    expect(qty.value).toBe("777");
+    fireEvent.keyDown(document, { key: "Escape", code: "Escape", keyCode: 27 });
+    expect(qty.value).toBe("100");
+  });
+});
+
+describe("OrderTicket – asset selector onChange", () => {
+  it("typing in the asset selector updates the search value", () => {
+    renderTicket();
+    const input = screen.getByDisplayValue("AAPL") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "MS" } });
+    expect(input.value).toBe("MS");
+  });
+});
+
+describe("OrderTicket – selectAsset instrument switching", () => {
+  function renderMultiClass() {
+    const multiAssets: AssetDef[] = [
+      ...assets,
+      {
+        symbol: "EUR/USD",
+        initialPrice: 1.1,
+        volatility: 0.005,
+        sector: "FX",
+        assetClass: "fx",
+      },
+      {
+        symbol: "CL",
+        initialPrice: 80,
+        volatility: 0.02,
+        sector: "Commodity",
+        assetClass: "commodity",
+      },
+    ];
+    const testStore = configureStore({
+      reducer: {
+        auth: authSlice.reducer,
+        market: marketSlice.reducer,
+        orders: ordersSlice.reducer,
+        ui: uiSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        killSwitch: killSwitchSlice.reducer,
+      },
+      preloadedState: {
+        auth: {
+          user: { id: "alice", name: "Alice", role: "trader" as const, avatar_emoji: "🙂" },
+          limits: {
+            max_order_qty: 10_000,
+            max_daily_notional: 1_000_000,
+            allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+            allowed_desks: ["equity", "fx", "commodities", "fi", "derivatives"],
+            dark_pool_access: false,
+          },
+          status: "authenticated" as const,
+          sessionExpired: false,
+        },
+        market: {
+          assets: multiAssets,
+          prices: { ...prices, "EUR/USD": 1.12, CL: 80 },
+          priceHistory: {},
+          sessionOpen: {},
+          candleHistory: {},
+          candlesReady: {},
+          connected: true,
+          connectionFailures: 0,
+          orderBook: {},
+          sessionPhase: "CONTINUOUS" as const,
+        },
+      },
+    });
+    render(
+      <Provider store={testStore}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "x",
+            panelType: "order-ticket",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <TradingProvider>
+            <OrderTicket />
+          </TradingProvider>
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    return testStore;
+  }
+
+  it("selecting an FX asset then an equity asset switches instrument type back to equity", () => {
+    renderMultiClass();
+    const input = screen.getByDisplayValue("AAPL") as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: "EUR/USD" } });
+    fireEvent.mouseDown(screen.getByTestId("asset-option-EUR/USD"));
+    expect(screen.getByRole("button", { name: /^FX$/ })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.change(input, { target: { value: "AAPL" } });
+    fireEvent.mouseDown(screen.getByTestId("asset-option-AAPL"));
+    expect(screen.getByRole("button", { name: "Equity" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("selecting a commodity asset switches instrument type to commodity", () => {
+    renderMultiClass();
+    const input = screen.getByDisplayValue("AAPL") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "CL" } });
+    fireEvent.mouseDown(screen.getByTestId("asset-option-CL"));
+    expect(screen.getByRole("button", { name: /Futures/ })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("OrderTicket – bond field interactions", () => {
+  it("changing the bond instrument resets the yield input", () => {
+    renderTicket();
+    fireEvent.click(screen.getByRole("button", { name: "Bond" }));
+    const yieldInput = screen.getByLabelText(/Yield/i) as HTMLInputElement;
+    fireEvent.change(yieldInput, { target: { value: "4.5" } });
+    expect(yieldInput.value).toBe("4.5");
+
+    const bondSelect = screen.getByTitle(/Select bond instrument/i) as HTMLSelectElement;
+    const otherSymbol = Array.from(bondSelect.options).find(
+      (o) => o.value && o.value !== bondSelect.value
+    )?.value;
+    fireEvent.change(bondSelect, { target: { value: otherSymbol } });
+    expect((screen.getByLabelText(/Yield/i) as HTMLInputElement).value).toBe("");
+  });
+});
+
+describe("OrderTicket – option field interactions", () => {
+  function openOptions() {
+    renderTicket();
+    fireEvent.click(screen.getByRole("button", { name: "Options" }));
+  }
+
+  it("clicking CALL re-selects the call option type", () => {
+    openOptions();
+    fireEvent.click(screen.getByRole("button", { name: "PUT" }));
+    fireEvent.click(screen.getByRole("button", { name: "CALL" }));
+    expect(screen.getByRole("button", { name: "CALL" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("changing the option expiry updates the selected value", () => {
+    openOptions();
+    const expiry = screen.getByLabelText(/Option expiry/i) as HTMLSelectElement;
+    const target = expiry.options[expiry.options.length - 1].value;
+    fireEvent.change(expiry, { target: { value: target } });
+    expect(expiry.value).toBe(target);
+  });
+});
+
+describe("OrderTicket – strategy param setters", () => {
+  function renderAdminWithStrategy(strategy: string) {
+    const testStore = configureStore({
+      reducer: {
+        auth: authSlice.reducer,
+        market: marketSlice.reducer,
+        orders: ordersSlice.reducer,
+        ui: uiSlice.reducer,
+        windows: windowSlice.reducer,
+        channels: channelsSlice.reducer,
+        killSwitch: killSwitchSlice.reducer,
+      },
+      preloadedState: {
+        auth: {
+          user: { id: "trader", name: "Trader", role: "trader" as const, avatar_emoji: "👩" },
+          limits: {
+            max_order_qty: 10_000_000,
+            max_daily_notional: 100_000_000,
+            allowed_strategies: [
+              "LIMIT",
+              "TWAP",
+              "POV",
+              "VWAP",
+              "ICEBERG",
+              "SNIPER",
+              "ARRIVAL_PRICE",
+              "IS",
+              "MOMENTUM",
+            ],
+            allowed_desks: ["equity", "fi", "derivatives"],
+            dark_pool_access: true,
+          },
+          status: "authenticated" as const,
+          sessionExpired: false,
+        },
+        market: {
+          assets,
+          prices,
+          priceHistory: {},
+          sessionOpen: {},
+          candleHistory: {},
+          candlesReady: {},
+          connected: true,
+          connectionFailures: 0,
+          orderBook: {},
+          sessionPhase: "CONTINUOUS" as const,
+        },
+      },
+    });
+    render(
+      <Provider store={testStore}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "x",
+            panelType: "order-ticket",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <TradingProvider>
+            <OrderTicket />
+          </TradingProvider>
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    fireEvent.change(screen.getByLabelText(/Strategy/i), { target: { value: strategy } });
+    return testStore;
+  }
+
+  const cases: Array<[string, string[]]> = [
+    ["TWAP", ["param-slices", "param-participation-cap"]],
+    ["POV", ["param-participation-rate", "param-min-slice", "param-max-slice"]],
+    ["VWAP", ["param-max-deviation", "param-start-offset", "param-end-offset"]],
+    ["ICEBERG", ["param-visible-qty"]],
+    ["SNIPER", ["param-aggression", "param-max-venues"]],
+    ["ARRIVAL_PRICE", ["param-urgency", "param-max-slippage-bps"]],
+    [
+      "IS",
+      [
+        "param-is-urgency",
+        "param-is-max-slippage-bps",
+        "param-is-min-slices",
+        "param-is-max-slices",
+      ],
+    ],
+    [
+      "MOMENTUM",
+      [
+        "param-momentum-threshold",
+        "param-momentum-max-tranches",
+        "param-momentum-short-ema",
+        "param-momentum-long-ema",
+        "param-momentum-cooldown",
+      ],
+    ],
+  ];
+
+  for (const [strategy, testIds] of cases) {
+    it(`drives every ${strategy} param setter`, () => {
+      renderAdminWithStrategy(strategy);
+      for (const testId of testIds) {
+        const input = screen.getByTestId(testId) as HTMLInputElement;
+        fireEvent.change(input, { target: { value: "7" } });
+        expect(input.value).toBe("7");
+      }
+    });
+  }
+
+  it("updates the order duration input", () => {
+    renderAdminWithStrategy("LIMIT");
+    const duration = screen.getByLabelText(/Order duration/i) as HTMLInputElement;
+    fireEvent.change(duration, { target: { value: "600" } });
+    expect(duration.value).toBe("600");
+  });
+});

@@ -4,8 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 class MockWebSocket {
   static instances: MockWebSocket[] = [];
+  static OPEN = 1;
 
   url: string;
+  readyState = MockWebSocket.OPEN;
   closeCalled = false;
   onopen: ((event: Event) => void) | null = null;
   onmessage: ((event: MessageEvent) => void) | null = null;
@@ -559,6 +561,100 @@ describe("gatewayMiddleware", () => {
       }).not.toThrow();
     });
 
+    it("onopen dispatches setUpgradeStatus from ready probe", async () => {
+      const { dispatched, invoke } = createHarness();
+      const ws = connectWs(invoke);
+
+      ws.onopen?.({} as Event);
+      await vi.advanceTimersByTimeAsync(0);
+      for (let i = 0; i < 20; i++) {
+        await Promise.resolve();
+      }
+
+      expect(dispatched.some((a) => a.type === "market/connectionRecovered")).toBe(true);
+      expect(dispatched.some((a) => a.type === "ui/setUpgradeStatus")).toBe(true);
+    });
+
+    it("ws.onerror reports an error and closes the socket", () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const { dispatched, invoke } = createHarness();
+      const ws = connectWs(invoke);
+
+      ws.onerror?.({} as Event);
+
+      expect(ws.closeCalled).toBe(true);
+      expect(
+        dispatched.some(
+          (a) =>
+            a.type === "observability/reportError" &&
+            (a.payload as { message?: string }).message === "WebSocket error event"
+        )
+      ).toBe(true);
+      warnSpy.mockRestore();
+    });
+
+    it("orderRejected with invalid frame reports a validation error and returns", () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const { dispatched, invoke } = createHarness();
+      const ws = connectWs(invoke);
+
+      ws.onmessage?.({
+        data: JSON.stringify({
+          event: "orderRejected",
+          data: { reason: 12345 },
+        }),
+      } as MessageEvent);
+
+      expect(
+        dispatched.some(
+          (a) =>
+            a.type === "observability/reportError" &&
+            (a.payload as { message?: string }).message === "orderRejected frame failed validation"
+        )
+      ).toBe(true);
+      expect(dispatched.some((a) => a.type === "orders/orderPatched")).toBe(false);
+      warnSpy.mockRestore();
+    });
+
+    it("error event with invalid frame reports a validation error", () => {
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const { dispatched, invoke } = createHarness();
+      const ws = connectWs(invoke);
+
+      ws.onmessage?.({
+        data: JSON.stringify({
+          event: "error",
+          data: { message: 999 },
+        }),
+      } as MessageEvent);
+
+      expect(
+        dispatched.some(
+          (a) =>
+            a.type === "observability/reportError" &&
+            (a.payload as { message?: string }).message === "Server error frame failed validation"
+        )
+      ).toBe(true);
+      errSpy.mockRestore();
+    });
+
+    it("gateway/reconnect schedules a reconnect when socket is not open", async () => {
+      const { dispatched, invoke } = createHarness();
+      const ws = connectWs(invoke);
+      ws.readyState = 3;
+      ws.onclose?.({} as CloseEvent);
+      dispatched.length = 0;
+
+      invoke({ type: "gateway/reconnect" });
+
+      expect(dispatched.some((a) => a.type === "market/connectionRecovered")).toBe(true);
+      await vi.advanceTimersByTimeAsync(0);
+      for (let i = 0; i < 20; i++) {
+        await Promise.resolve();
+      }
+      expect(MockWebSocket.instances.length).toBeGreaterThan(1);
+    });
+
     it("seeds assets and candles on startup and hydrates news for selected asset", async () => {
       const dispatched: Array<{ type?: string; payload?: unknown }> = [];
       const state = {
@@ -632,6 +728,80 @@ describe("gatewayMiddleware", () => {
       expect(dispatched.some((a) => a.type === "market/candlesSeeded")).toBe(true);
       expect(dispatched.some((a) => a.type === "news/newsBatchReceived")).toBe(true);
       expect(dispatched.some((a) => a.type === "breakers/breakerExpired")).toBe(true);
+    });
+
+    it("seeds remaining assets and falls back to empty candles when fetch throws", async () => {
+      const dispatched: Array<{ type?: string; payload?: unknown }> = [];
+
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: string | URL) => {
+          const url = String(input);
+          if (url.includes("/ready")) {
+            return { ok: false, json: async () => null };
+          }
+          if (url.endsWith("/assets")) {
+            return {
+              ok: true,
+              json: async () => [
+                { symbol: "AAPL", initialPrice: 100, volatility: 1, sector: "Tech" },
+                { symbol: "MSFT", initialPrice: 200, volatility: 1, sector: "Tech" },
+              ],
+            };
+          }
+          throw new Error("candles down");
+        })
+      );
+
+      const storeAPI = {
+        dispatch: (action: unknown) => {
+          const typed = action as { type?: string; payload?: unknown };
+          dispatched.push(typed);
+          return typed;
+        },
+        getState: () => ({
+          ui: { selectedAsset: null },
+          breakers: { active: [] },
+        }),
+      };
+
+      const invoke = gatewayMiddleware(storeAPI as never)(vi.fn((action) => action));
+      invoke(
+        setUser({
+          id: "u1",
+          name: "Trader",
+          role: "trader",
+          avatar_emoji: ":t:",
+        })
+      );
+
+      await vi.advanceTimersByTimeAsync(200);
+      for (let i = 0; i < 20; i++) {
+        await Promise.resolve();
+      }
+      await vi.advanceTimersByTimeAsync(200);
+      for (let i = 0; i < 20; i++) {
+        await Promise.resolve();
+      }
+
+      const seeded = dispatched.filter((a) => a.type === "market/candlesSeeded");
+      expect(seeded.length).toBeGreaterThan(0);
+      expect(
+        seeded.some(
+          (a) => (a.payload as { candles: { "1m": unknown[] } }).candles["1m"].length === 0
+        )
+      ).toBe(true);
+    });
+
+    it("nudges reconnect on user activity while disconnected", () => {
+      const { dispatched, invoke } = createHarness();
+      const ws = connectWs(invoke);
+      ws.onclose?.({} as CloseEvent);
+      dispatched.length = 0;
+
+      globalThis.dispatchEvent(new Event("focus"));
+
+      expect(dispatched.some((a) => a.type === "market/connectionRecovered")).toBe(true);
     });
   });
 });
