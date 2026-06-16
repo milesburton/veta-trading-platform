@@ -36,7 +36,8 @@ export type ServiceName =
   | "replay"
   | "rfq-service"
   | "dark-pool"
-  | "ccp-service";
+  | "ccp-service"
+  | "product-service";
 
 interface ServiceDescriptor {
   entrypoint: string;
@@ -210,6 +211,11 @@ const SERVICES: Record<ServiceName, ServiceDescriptor> = {
   "ccp-service": {
     entrypoint: "backend/src/ccp/ccp-service.ts",
     port: 5028,
+    health: "/health",
+  },
+  "product-service": {
+    entrypoint: "backend/src/product-service/product-service.ts",
+    port: 5030,
     health: "/health",
   },
 };

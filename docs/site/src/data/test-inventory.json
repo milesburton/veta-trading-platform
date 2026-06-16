@@ -90,8 +90,8 @@
       "perFile": {}
     },
     "testcontainers": {
-      "files": 15,
-      "cases": 183,
+      "files": 19,
+      "cases": 215,
       "perFile": {
         "testcontainers.smoke.test.ts": 2,
         "testcontainers.stack.test.ts": 1,
@@ -103,11 +103,15 @@
         "scenarios.integration.tc.test.ts": 2,
         "algo.integration.tc.test.ts": 15,
         "smoke.full.tc.test.ts": 65,
+        "risk-rejection.integration.tc.test.ts": 6,
         "job-store.integration.tc.test.ts": 15,
         "weight-store.integration.tc.test.ts": 5,
         "messaging.integration.tc.test.ts": 6,
         "typed-consumer.integration.tc.test.ts": 5,
-        "registration.integration.tc.test.ts": 5
+        "registration.integration.tc.test.ts": 5,
+        "venues.integration.tc.test.ts": 9,
+        "product-service.integration.tc.test.ts": 8,
+        "analytics-services.integration.tc.test.ts": 9
       }
     }
   },
