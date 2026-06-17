@@ -1,8 +1,13 @@
-# VETA Trading Platform - MCP Server
+---
+title: MCP Server
+description: Model Context Protocol server for AI integration with the VETA trading platform.
+sidebar:
+  order: 14
+---
 
-This is a simple Model Context Protocol (MCP) server for the VETA trading platform. It demonstrates how AI models can securely interact with trading data and services.
+## Overview
 
-## What is MCP?
+The **MCP Server** is a Model Context Protocol (MCP) server that enables AI models to securely interact with the VETA trading platform. It provides standardized access to market data, order management, analytics, and trading signals.
 
 **MCP (Model Context Protocol)** is an open standard that enables AI models to securely connect to external data sources and tools. It provides a standardized way for:
 
@@ -12,11 +17,39 @@ This is a simple Model Context Protocol (MCP) server for the VETA trading platfo
 
 ## Architecture
 
-```
-┌─────────────────┐         ┌──────────────────┐         ┌──────────────┐
-│   AI Model      │◄────────►│  MCP Server      │◄────────►│  VETA Data   │
-│  (Claude, GPT)  │  JSON-RPC│  (Deno/Node)     │  JSON-RPC│  Services    │
-└─────────────────┘         └──────────────────┘         └──────────────┘
+```mermaid
+graph LR
+  subgraph "AI Model"
+    A["Claude / GPT / etc."]
+  end
+
+  subgraph "MCP Server"
+    B["MCP Server<br/>(Deno/Node)"]
+    C["Tools"]
+    D["Resources"]
+    E["Prompts"]
+  end
+
+  subgraph "VETA Platform"
+    F["Market Data Service"]
+    G["OMS"]
+    H["EMS"]
+    I["Analytics"]
+    J["Signal Engine"]
+  end
+
+  A <-->|"JSON-RPC<br/>stdio / HTTP"| B
+  B --> C
+  B --> D
+  B --> E
+  C --> F
+  C --> G
+  C --> H
+  C --> I
+  C --> J
+  D --> F
+  D --> G
+  E --> J
 ```
 
 ## Getting Started
@@ -56,9 +89,11 @@ The MCP server exposes the following tools that AI models can invoke:
 Get current market data for a trading symbol.
 
 **Parameters:**
+
 - `symbol` (string): Trading symbol (e.g., "AAPL", "GOOGL")
 
 **Example:**
+
 ```json
 {
   "name": "get_market_data",
@@ -69,6 +104,7 @@ Get current market data for a trading symbol.
 ```
 
 **Response:**
+
 ```json
 {
   "symbol": "AAPL",
@@ -87,6 +123,7 @@ List all orders with their current status.
 **Parameters:** None
 
 **Response:**
+
 ```json
 [
   {
@@ -107,6 +144,7 @@ Get current trading signals from the intelligence pipeline.
 **Parameters:** None
 
 **Response:**
+
 ```json
 [
   {
@@ -123,6 +161,7 @@ Get current trading signals from the intelligence pipeline.
 Calculate option price using the Black-Scholes model.
 
 **Parameters:**
+
 - `underlyingPrice` (number): Current price of the underlying asset
 - `strikePrice` (number): Option strike price
 - `timeToExpiry` (number): Time to expiry in years
@@ -131,6 +170,7 @@ Calculate option price using the Black-Scholes model.
 - `optionType` (string): "call" or "put"
 
 **Response:**
+
 ```json
 {
   "optionType": "call",
@@ -152,6 +192,7 @@ Resources allow AI models to read data without invoking a tool.
 Market data for a specific symbol.
 
 **Example:**
+
 ```
 GET veta://market_data/AAPL
 ```
@@ -161,6 +202,7 @@ GET veta://market_data/AAPL
 Summary of the trading portfolio.
 
 **Example:**
+
 ```
 GET veta://portfolio_summary
 ```
@@ -174,9 +216,11 @@ Prompts are predefined conversation templates.
 Analyze market conditions for a given symbol.
 
 **Parameters:**
+
 - `symbol` (string): The trading symbol to analyze
 
 **Usage:**
+
 ```
 PROMPT market_analysis { symbol: "AAPL" }
 ```
