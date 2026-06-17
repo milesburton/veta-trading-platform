@@ -103,6 +103,7 @@ export default defineConfig({
             { label: "Central Counterparty (CCP)", slug: "platform/post-trade-ccp" },
             { label: "Risk controls", slug: "platform/risk" },
             { label: "Risk architecture", slug: "platform/risk-architecture" },
+            { label: "FIX protocol", slug: "platform/fix-protocol" },
             { label: "Scenarios", slug: "platform/scenarios" },
             { label: "LLM advisory", slug: "platform/llm-advisory" },
           ],
