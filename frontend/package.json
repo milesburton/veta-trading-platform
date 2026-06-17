@@ -7,6 +7,7 @@
     "dev": "vite --port 5173",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "new:panel": "deno run --allow-read --allow-write scripts/new-panel.ts",
     "lint": "deno run -A npm:@biomejs/biome check src/",
     "lint:fix": "deno run -A npm:@biomejs/biome check --write src/",
     "lint:full": "npm run lint && npm run test:coverage",
