@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.47.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.7...veta-trading-platform-v1.47.0) (2026-06-18)
+
+
+### Features
+
+* **dx:** panel scaffolding generator + Claude provider for llm-advisory ([#437](https://github.com/milesburton/veta-trading-platform/issues/437)) ([ddba5a2](https://github.com/milesburton/veta-trading-platform/commit/ddba5a24a1bc2bd4292c07b62aa91e165da39da9))
+* panel generator, Claude llm-advisory provider, FIX docs + MCP server ([#439](https://github.com/milesburton/veta-trading-platform/issues/439)) ([cab3ae5](https://github.com/milesburton/veta-trading-platform/commit/cab3ae5618259c599acace41c955984cfb6a6397))
+
 ## [1.46.7](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.6...veta-trading-platform-v1.46.7) (2026-06-16)
 
 
