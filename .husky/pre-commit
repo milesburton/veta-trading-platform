@@ -15,7 +15,7 @@ fi
 
 echo "Pre-commit checks... (commit: $COMMIT_SHA)"
 
-echo "  [0/10] Verifying clean working directory..."
+echo "  [0/12] Verifying clean working directory..."
 # Block unstaged changes to tracked files. Staged changes are expected —
 # those are what we're about to commit. Using `git diff-index HEAD` here
 # would also flag the staged files and make any normal commit fail.
@@ -26,27 +26,27 @@ if ! git diff --quiet; then
   exit 1
 fi
 
-echo "  [1/10] Backend lint..."
+echo "  [1/12] Backend lint..."
 cd "$REPO_ROOT"
 deno task lint
 
-echo "  [2/10] Backend type-check..."
+echo "  [2/12] Backend type-check..."
 deno task check
 
-echo "  [3/10] Backend unit tests..."
+echo "  [3/12] Backend unit tests..."
 deno task test
 
-echo "  [4/10] Frontend lint (all files)..."
+echo "  [4/12] Frontend lint (all files)..."
 cd "$REPO_ROOT/frontend"
 deno run -A npm:@biomejs/biome check src/
 
-echo "  [5/10] Frontend type-check (all files)..."
+echo "  [5/12] Frontend type-check (all files)..."
 ./node_modules/.bin/tsc --noEmit --skipLibCheck
 
-echo "  [6/10] Frontend unit tests..."
+echo "  [6/12] Frontend unit tests..."
 ./node_modules/.bin/vitest run
 
-echo "  [7/10] Integration tests (skipped if services offline)..."
+echo "  [7/12] Integration tests (skipped if services offline)..."
 cd "$REPO_ROOT"
 if curl -sf http://localhost:5000/health >/dev/null 2>&1 && curl -sf http://localhost:5032/health >/dev/null 2>&1; then
   deno task test:integration
@@ -54,7 +54,7 @@ else
   echo "       Services not fully running — skipping integration tests."
 fi
 
-echo "  [8/10] Prometheus alert rules..."
+echo "  [8/12] Prometheus alert rules..."
 cd "$REPO_ROOT"
 if git diff --cached --name-only | grep -qE '^observability/(prometheus-rules\.ya?ml|prometheus-rules\.test\.ya?ml)$'; then
   if command -v promtool >/dev/null 2>&1; then
@@ -68,7 +68,7 @@ else
   echo "       No staged changes to alert rules — skipping."
 fi
 
-echo "  [9/10] Docs drift check (regenerate derived files)..."
+echo "  [9/12] Docs drift check (regenerate derived files)..."
 # `npm run generate` rebuilds rbac-roles.json, panel-matrix.json,
 # services.md, algos.md, tech-stack.mdx, migrations.md, etc. from
 # the live source. If anything drifts, the gate blocks the commit
@@ -91,7 +91,57 @@ else
   echo "       docs/site/node_modules missing — skipping (run 'cd docs/site && npm ci')."
 fi
 
-echo "  [10/10] Fallow audit (staged vs HEAD; advisory)..."
+echo "  [10/12] Private IPs in public docs..."
+# The Astro/Starlight site under docs/site/src/ is published to GitHub Pages,
+# so it is internet-public. Reject RFC1918 (10/8, 172.16/12, 192.168/16)
+# addresses in source files, which would advertise internal infrastructure.
+# Loopback (127/8) is excluded — it is a generic "this machine" address and
+# leaks nothing. Mirrors the hard gate in the frontend CI workflow.
+cd "$REPO_ROOT"
+if grep -rnE '\b(10\.[0-9]+\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+)\b' \
+    docs/site/src/ \
+    --include='*.md' --include='*.mdx' --include='*.html' --include='*.tsx' --include='*.ts'; then
+  echo "❌ ERROR: Private IP address(es) leaked into public docs (docs/site/src/)."
+  echo "Remove them or describe the range abstractly (e.g. RFC 5737 doc ranges"
+  echo "203.0.113.0/24, 198.51.100.0/24)."
+  exit 1
+fi
+
+echo "  [11/12] Docs validation (markdown + mermaid + build + links)..."
+# Mirrors the "Docs build & lint" CI job step-for-step so broken docs can
+# never reach a push. The link checker (validate:links) scans the BUILT html
+# in dist/, so the order matters: markdownlint -> mermaid -> build -> links.
+# astro build alone does NOT catch broken internal links — validate:links does.
+# Only runs when the changeset touches docs, so non-docs commits stay fast.
+cd "$REPO_ROOT"
+if git diff --cached --name-only | grep -qE '^docs/'; then
+  if [ -d "$REPO_ROOT/docs/site/node_modules" ]; then
+    npx --yes markdownlint-cli2 "docs/**/*.md" "docs/**/*.mdx" \
+      "!docs/site/node_modules/**" "!docs/site/dist/**" || {
+      echo "❌ ERROR: Markdown lint failed. Reproduce: npx markdownlint-cli2 'docs/**/*.md' 'docs/**/*.mdx'"
+      exit 1
+    }
+    (
+      cd "$REPO_ROOT/docs/site" || exit 1
+      npm run validate:mermaid || { echo "❌ ERROR: Mermaid validation failed."; exit 1; }
+      mkdir -p public/screenshots/panels
+      cp -r "$REPO_ROOT/docs/screenshots/." public/screenshots/ 2>/dev/null || true
+      cp -r "$REPO_ROOT/docs/panel-walkthrough/screenshots/." public/screenshots/panels/ 2>/dev/null || true
+      npm run build >/dev/null 2>&1 || { echo "❌ ERROR: Astro build failed."; exit 1; }
+      npm run validate:links || { echo "❌ ERROR: Broken internal docs link(s). Reproduce: (cd docs/site && npm run build && npm run validate:links)"; exit 1; }
+    ) || exit 1
+    cd "$REPO_ROOT"
+  else
+    echo "❌ ERROR: docs/ changed but docs/site/node_modules is missing —"
+    echo "         cannot validate docs locally. Install with: cd docs/site && npm ci"
+    echo "         (refusing to skip: a missing-deps skip is how broken docs reach CI)"
+    exit 1
+  fi
+else
+  echo "       No staged changes under docs/ — skipping."
+fi
+
+echo "  [12/12] Fallow audit (staged vs HEAD; advisory)..."
 # `fallow audit` reports new findings introduced by the changeset.
 # Run as advisory rather than blocking: fallow's introduced/inherited
 # attribution flags line-shifted clones from sibling PRs as "new" even

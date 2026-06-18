@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  checks: read
 
 jobs:
   trusted-automerge:
@@ -15,7 +16,32 @@ jobs:
       github.event.pull_request.base.ref == 'main' &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
+      # Wait for all REQUIRED status checks to pass before approving. The
+      # approval is auto-dismissed by branch protection on every new push
+      # (dismiss_stale_reviews), so a fresh run gates the approval on a fresh
+      # green build. Without this, the bot approved on push — seconds after the
+      # commit, long before CI finished — so the approval did not mean "green".
+      - name: Wait for required checks to pass
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          # Required checks may not be registered the instant this job starts.
+          # Poll briefly for at least one required check to appear before
+          # watching, so we don't race ahead and see "no checks" as success.
+          for i in $(seq 1 30); do
+            if gh pr checks "$PR_URL" --required >/dev/null 2>&1; then
+              break
+            fi
+            echo "Required checks not registered yet (attempt $i)…"
+            sleep 10
+          done
+          # --watch blocks until every required check concludes; --fail-fast
+          # exits non-zero on the first failure, so approval is skipped on red.
+          gh pr checks "$PR_URL" --required --watch --fail-fast --interval 15
+
       - name: Auto approve trusted PR
         uses: hmarr/auto-approve-action@v4
         with:
