@@ -346,9 +346,12 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.market-sim.rule=PathPrefix(`/api/market-sim`) || PathPrefix(`/ws/market-sim`)"
       - "traefik.http.routers.market-sim.entrypoints=web,websecure"
-      - "traefik.http.routers.market-sim.middlewares=market-sim-strip"
+      - "traefik.http.routers.market-sim.middlewares=market-sim-strip,deploy-retry"
       - "traefik.http.middlewares.market-sim-strip.stripprefix.prefixes=/api/market-sim,/ws/market-sim"
       - "traefik.http.services.market-sim.loadbalancer.server.port=5000"
+      - "traefik.http.services.market-sim.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.market-sim.loadbalancer.healthcheck.interval=2s"
+      - "traefik.http.services.market-sim.loadbalancer.healthcheck.timeout=2s"
       - "traefik.http.routers.market-sim.priority=10"
 
   ems:
@@ -384,6 +387,9 @@ services:
       - "traefik.http.routers.ems.middlewares=ems-strip"
       - "traefik.http.middlewares.ems-strip.stripprefix.prefixes=/api/ems"
       - "traefik.http.services.ems.loadbalancer.server.port=5001"
+      - "traefik.http.services.ems.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.ems.loadbalancer.healthcheck.interval=2s"
+      - "traefik.http.services.ems.loadbalancer.healthcheck.timeout=2s"
       - "traefik.http.routers.ems.priority=10"
 
   oms:
@@ -433,6 +439,9 @@ services:
       - "traefik.http.routers.oms.middlewares=oms-strip"
       - "traefik.http.middlewares.oms-strip.stripprefix.prefixes=/api/oms"
       - "traefik.http.services.oms.loadbalancer.server.port=5002"
+      - "traefik.http.services.oms.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.oms.loadbalancer.healthcheck.interval=2s"
+      - "traefik.http.services.oms.loadbalancer.healthcheck.timeout=2s"
       - "traefik.http.routers.oms.priority=10"
 
   limit-algo:
@@ -1044,9 +1053,12 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.user-service.rule=PathPrefix(`/api/user-service`)"
       - "traefik.http.routers.user-service.entrypoints=web,websecure"
-      - "traefik.http.routers.user-service.middlewares=user-service-strip"
+      - "traefik.http.routers.user-service.middlewares=user-service-strip,deploy-retry"
       - "traefik.http.middlewares.user-service-strip.stripprefix.prefixes=/api/user-service"
       - "traefik.http.services.user-service.loadbalancer.server.port=5008"
+      - "traefik.http.services.user-service.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.user-service.loadbalancer.healthcheck.interval=2s"
+      - "traefik.http.services.user-service.loadbalancer.healthcheck.timeout=2s"
       - "traefik.http.routers.user-service.priority=10"
 
   journal:
@@ -1652,9 +1664,14 @@ services:
       start_period: 60s
     labels:
       - "traefik.enable=true"
+      - "traefik.http.middlewares.deploy-retry.retry.attempts=4"
+      - "traefik.http.middlewares.deploy-retry.retry.initialinterval=100ms"
+      - "traefik.http.services.gateway.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.gateway.loadbalancer.healthcheck.interval=2s"
+      - "traefik.http.services.gateway.loadbalancer.healthcheck.timeout=2s"
       - "traefik.http.routers.gateway.rule=PathPrefix(`/api/gateway`)"
       - "traefik.http.routers.gateway.entrypoints=web,websecure"
-      - "traefik.http.routers.gateway.middlewares=gateway-strip"
+      - "traefik.http.routers.gateway.middlewares=gateway-strip,deploy-retry"
       - "traefik.http.middlewares.gateway-strip.stripprefix.prefixes=/api/gateway"
       - "traefik.http.services.gateway.loadbalancer.server.port=5011"
       - "traefik.http.routers.gateway.priority=20"

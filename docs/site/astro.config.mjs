@@ -123,6 +123,13 @@ export default defineConfig({
               ],
             },
             {
+              label: "Decision records",
+              items: [
+                { label: "Overview", slug: "platform/decisions" },
+                { label: "0001 Zero-downtime deploys on plain compose", slug: "platform/decisions/0001-rolling-deploys-on-plain-compose" },
+              ],
+            },
+            {
               label: "Observability",
               items: [
                 { label: "Overview", slug: "platform/observability" },

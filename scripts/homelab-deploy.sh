@@ -142,11 +142,68 @@ if [[ -n "$ORPHANS" ]]; then
     echo "$ORPHANS" | xargs -r docker rm -f >/dev/null 2>&1 || true
 fi
 
+# Rolling fast-swap of the synchronous request path. Opt-in via
+# ROLLING_DEPLOY=true; default OFF so behaviour is unchanged until
+# explicitly enabled and watched on the host. Images are already pulled
+# above, so each recreate is a sub-second swap. We recreate the path in
+# dependency order, one service at a time, waiting for each to return
+# healthy before moving on. Traefik's per-service loadbalancer.healthcheck
+# stops routing to a container the moment it goes unhealthy, and the
+# deploy-retry middleware re-attempts requests that land mid-swap, so a
+# client sees added latency rather than a 502. Order submission is async
+# via the orders.new Kafka topic, so an order placed during the oms/ems
+# window queues and processes on recovery rather than being lost.
+#
+# postgres and redpanda are deliberately NOT in this list: they are
+# single stateful instances, a restart is a brief outage by nature, and
+# they only change on rare image bumps. The bulk `up -d` below handles
+# them (and every non-rolled service) in place.
+ROLLING_DEPLOY="${ROLLING_DEPLOY:-false}"
+ROLLING_SERVICES="${ROLLING_SERVICES:-user-service market-sim journal ems oms gateway}"
+ROLLING_WAIT="${ROLLING_WAIT:-60}"
+
+roll_one() {
+    local svc="$1"
+    log "  rolling $svc..."
+    if ! docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d \
+            --no-deps --force-recreate "$svc" >/dev/null 2>&1; then
+        log "    ⚠ recreate of $svc returned non-zero; bulk up -d will reconcile"
+        return 1
+    fi
+    local deadline=$(( $(date +%s) + ROLLING_WAIT ))
+    while [[ $(date +%s) -lt $deadline ]]; do
+        local pending=0 cid state
+        for cid in $(docker compose "${COMPOSE_FILES[@]}" ps -q "$svc" 2>/dev/null); do
+            state=$(docker inspect --format '{{.State.Health.Status}}' "$cid" 2>/dev/null || echo "no-healthcheck")
+            if [[ "$state" != "healthy" && "$state" != "no-healthcheck" ]]; then
+                pending=1
+            fi
+        done
+        if [[ $pending -eq 0 ]]; then
+            log "    ✅ $svc healthy"
+            return 0
+        fi
+        sleep 2
+    done
+    log "    ❌ $svc did not become healthy within ${ROLLING_WAIT}s"
+    return 1
+}
+
+if [[ "$ROLLING_DEPLOY" == "true" ]]; then
+    log "Rolling fast-swap of request path: $ROLLING_SERVICES"
+    for svc in $ROLLING_SERVICES; do
+        roll_one "$svc" || log "  continuing; bulk up -d will reconcile $svc"
+    done
+fi
+
 log "Restarting stack (gateway replicas=$GATEWAY_REPLICAS)..."
 # `up -d` exits non-zero if any service fails to start (e.g. unhealthy
 # dependency, or the Docker daemon race condition where remove/create
 # overlap on container names during a recreate). We retry once after a
 # short pause — most race-induced failures clear within seconds.
+# When ROLLING_DEPLOY ran above, the request-path services are already on
+# the new image, so this reconciles only the remaining services and is a
+# no-op for the rolled ones.
 if ! docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d \
         --scale "gateway=$GATEWAY_REPLICAS"; then
     log "⚠ up -d returned non-zero — pausing 10s and retrying once"

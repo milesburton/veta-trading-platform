@@ -1,0 +1,140 @@
+---
+title: "ADR 0001: Keep the platform accessible during deploys via fast in-place swap and connection-hold"
+description: Keep the platform accessible end to end during a deploy on a single host by health-gating Traefik routing, adding a retry middleware to hold in-flight requests across a sub-second container swap, and recreating the request-path services one at a time in dependency order. Concurrent A/B replicas were investigated and rejected as unsafe for this stack.
+---
+
+**Status:** Proposed
+
+**Date:** 2026-06-18
+
+## Context
+
+Every service runs as a single replica. A deploy recreates that replica in place, so each
+deploy takes the service down for the duration of the container swap. For the gateway this
+is roughly 10 to 15 seconds of HTTP 502 and a WebSocket reconnect storm on every merge to
+main. This gap is documented in
+[Operations strategy / Target architecture](../../operations-strategy/target-architecture/)
+as a known shortcoming.
+
+A previous proposal to close it migrated the host to single-node Docker Swarm for
+`update_config: order: start-first`. That was descoped (see
+[Migration path, Phase 2](../../operations-strategy/migration-path/)) for a hard reason: the
+shared `veta_trading-net` is a bridge network (scope `local`) shared with two off-repo
+compose projects, and a Swarm stack cannot attach to a bridge. Resolving that needs
+coordinated changes to projects outside this repo.
+
+The deploy mechanism today is `docker compose pull` followed by `docker compose up -d`,
+driven by a polling auto-pull on the host. Traefik already fronts every service and
+discovers them by label, and every service already defines a `healthcheck`. Two facts
+matter:
+
+- Traefik routes to a container as soon as it is running, not when it is healthy, because
+  the service labels define a `loadbalancer` but no `loadbalancer.healthcheck`.
+- Plain compose has no rolling-update primitive; `up -d` stops the old container before the
+  new one is ready.
+
+### Why concurrent A/B replicas do not work here
+
+The obvious answer is to run two replicas of each request-path service so one serves while
+the other is replaced. An investigation of the synchronous order path (gateway, oms, ems,
+journal, market-sim, user-service) found this is unsafe for this codebase without
+application changes:
+
+- **oms** holds authoritative order state in an in-process `activeOrders` map and mints
+  order IDs from a `seqNum` counter that starts at 1 in each replica. Two replicas would
+  drop kills that land on the wrong instance and collide on order IDs.
+- **market-sim** generates ticks on a `setInterval` and produces them to Kafka. A second
+  replica doubles every tick on `market.ticks`, the same duplicate-flood class that has
+  caused incidents before.
+- **user-service** keeps OAuth codes in an in-memory map; an issue-then-exchange split
+  across replicas fails sign-in.
+- **journal** has a prune-during-insert race between replicas.
+- The gateway reaches these services by **direct hostname:port**, not through Traefik, so a
+  second replica would not even be load-balanced.
+
+Only **ems** is a safe stream processor. So true A/B needs real application work
+(externalise oms state, single-producer market-sim, shared OAuth store, route service to
+service through Traefik) and is deferred to the multi-host phase.
+
+## Decision
+
+Keep the platform accessible end to end during a deploy on the existing single host and
+plain compose, without running concurrent replicas of the request path. We do not migrate
+to Swarm; this route sidesteps the network-scope constraint that blocked it. Three changes:
+
+1. **Health-gate Traefik routing.** Add `loadbalancer.healthcheck` labels (path `/health`,
+   interval and timeout) to each routed service so Traefik stops sending traffic to a
+   container the moment it goes unhealthy. Valuable on its own, even at one replica.
+
+2. **Hold in-flight requests across the swap.** Add a Traefik `retry` middleware
+   (`deploy-retry`, four attempts, 100ms initial interval) to the synchronous user-facing
+   routes (gateway, user-service, market-sim). A request that lands while a container is
+   mid-swap is re-attempted rather than returned as a 502, so the client sees added latency
+   rather than an error.
+
+3. **Fast in-place swap, one service at a time, in dependency order.** Images are pulled
+   before any container is touched, so each recreate is a sub-second swap. The deploy script
+   recreates the request-path services individually
+   (`user-service, market-sim, journal, ems, oms, gateway`), waiting for each to return
+   healthy before the next. This is gated behind `ROLLING_DEPLOY=true`, default off, so the
+   behaviour is unchanged until explicitly enabled and watched on the host.
+
+This works because the order path is mostly asynchronous: the gateway produces submissions
+to the `orders.new` Kafka topic and acknowledges the client immediately, so an order placed
+during the oms or ems swap queues and processes on recovery rather than being lost. The only
+strictly synchronous user-facing surfaces are the gateway HTTP and WebSocket front door
+(kept up, with the frontend's existing reconnect-with-backoff) and sign-in via user-service
+(covered by the retry middleware across its sub-second swap).
+
+### Explicitly out of scope
+
+- **Postgres and Redpanda are not swapped by the rolling path.** They are single stateful
+  instances; a restart is a brief outage by nature and true HA there means replication or
+  clustering, which is Phase 6 multi-host work. They recreate in place via the bulk `up -d`,
+  and only when their image digest changes.
+- **Concurrent A/B replicas of the request path.** Deferred to the multi-host phase for the
+  reasons above.
+
+## Consequences
+
+- Application deploys (the common case) become accessible end to end: HTTP requests are
+  retried across the swap, order submission queues in Kafka, and sign-in is held by the
+  retry middleware. The user sees latency, not failure. This is "no user-visible outage",
+  not literal zero-downtime; the distinction is honest and intentional.
+- Postgres and Redpanda version bumps (rare) still carry a brief outage, now the only
+  remaining deploy-induced downtime.
+- The deploy script gains a flag-gated rolling loop. With the flag off it is a no-op; the
+  existing orphan-cleanup and health-wait tail stay as the safety net, and the
+  critical-service health gate is unchanged.
+- No resource increase: the request path stays single-replica. This is the main advantage
+  over A/B, which would roughly double the stateless tier's footprint.
+- This is a stepping stone, not the Phase 6 multi-host HA target. It keeps deploys invisible
+  without buying host-failure survival. When multi-host lands, true A/B (or Swarm)
+  supersedes this ADR.
+- **Verification gap.** The Traefik retry and health-gating behaviour could not be tested in
+  the dev container (no buildx, bind mounts do not resolve, Traefik cannot reach the Docker
+  daemon from inside its container). The compose label syntax is validated via
+  `docker compose config`; the live behaviour must be confirmed on the host the first time
+  `ROLLING_DEPLOY=true` is enabled.
+
+## Alternatives considered
+
+- **Concurrent A/B replicas of the request path.** The intuitive route to true zero-downtime;
+  rejected as unsafe for this codebase without application changes (see above). Revisited in
+  the multi-host phase.
+- **Blue-green whole stack.** A second full copy cut over atomically. Strongest guarantee and
+  instant rollback, but roughly doubles resources during the deploy and still cannot
+  duplicate the shared Postgres and Redpanda without replication.
+- **Docker Swarm rolling update.** The native `order: start-first` with
+  `failure_action: rollback`. Rejected for the network-scope constraint above and because it
+  migrates off plain compose, which the entire deploy chain is built around.
+
+## Rollout
+
+De-risked in three steps, each shippable and observable on its own:
+
+1. Ship the Traefik `loadbalancer.healthcheck` and `deploy-retry` labels. Additive and safe;
+   improves resilience even with the rolling flag off.
+2. Enable `ROLLING_DEPLOY=true` on the host and watch one deploy: the post-deploy probe stays
+   green, the gateway WebSocket reconnects cleanly, and an order placed mid-deploy lands.
+3. Tune `ROLLING_SERVICES` and `ROLLING_WAIT` if needed, then leave the flag on.
