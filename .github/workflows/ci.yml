@@ -608,9 +608,32 @@ jobs:
         run: deno install
 
       - name: Testcontainers integration suite (with coverage)
+        # Retried because the suite stands up an ephemeral Redpanda/Postgres
+        # stack per run, and the broker occasionally misses its startup
+        # health-check window (kafkajs "Connection timeout to broker"),
+        # failing the suite before any test asserts. That is infra flake, not
+        # a code defect: a fresh re-run brings the broker up cleanly. Each
+        # attempt tears down and recreates the stack, so retries are
+        # independent. A genuine test failure fails all attempts and still
+        # fails the job. tee captures the LAST attempt's output for the badge.
         run: |
           set -o pipefail
-          deno task test:testcontainers:coverage 2>&1 | tee /tmp/tc-test-output.txt
+          attempts=3
+          for i in $(seq 1 "$attempts"); do
+            echo "::group::Testcontainers attempt $i/$attempts"
+            if deno task test:testcontainers:coverage 2>&1 | tee /tmp/tc-test-output.txt; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "Attempt $i/$attempts failed."
+            if [ "$i" -lt "$attempts" ]; then
+              echo "Retrying after 15s (likely broker-startup flake)..."
+              sleep 15
+            fi
+          done
+          echo "All $attempts attempts failed — this is a real failure, not a flake."
+          exit 1
         env:
           DATABASE_URL: postgres://veta:veta@localhost:5432/veta
 
