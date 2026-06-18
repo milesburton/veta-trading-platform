@@ -1,0 +1,98 @@
+---
+title: Smoke-check the running platform
+description: Manual post-change verification of the locally-running stack across five layers (fleet, HTTP, WebSocket, market-data feed, logs). A green CI suite does not prove the running platform works.
+---
+
+## When to use
+
+You have applied a change to the running stack and need to confirm the platform actually
+serves traffic. This is distinct from the [automated smoke suite](../../testing/smoke/),
+which runs in CI against an ephemeral testcontainers stack. This playbook is the manual
+walk you do against a stack you can reach, after a change or deploy.
+
+A green test suite proves the code compiles and units behave. It does not prove the running
+stack serves traffic, the feed is flowing, or the WebSocket fans out.
+
+## How it works
+
+Walk the five layers in order. Stop and diagnose at the first failing layer; a later layer
+rarely passes when an earlier one is broken. The stack is reached through Traefik on
+`http://localhost`; prefer the proxied `http://localhost/api/<service>/...` routes over
+direct service ports when checking from outside containers.
+
+### 1. Fleet is up
+
+```bash
+deno run --allow-run --allow-env scripts/status.ts --once
+```
+
+Every core service (gateway, market-sim, ems, oms, journal, user-service, frontend,
+redpanda, postgres) should report running. Idle-safe groups (algos, analytics,
+microstructure, aux) may legitimately be stopped; treat those as failures only if the
+change under test touches them.
+
+### 2. Gateway answers HTTP
+
+```bash
+curl -sf http://localhost/api/gateway/health
+```
+
+Healthy response: `{"service":"gateway","version":...,"status":"ok"}`. A non-2xx or a hang
+means Traefik routing or the gateway process is the problem, not anything downstream.
+
+Per-dependency readiness (needs an auth cookie):
+
+```bash
+curl -s http://localhost/api/gateway/ready
+```
+
+### 3. WebSocket connects on the correct path
+
+The frontend connects to `/ws/gateway`, not `/ws`. This path has regressed before. Confirm
+the client path still matches the server route:
+
+```bash
+grep -n "GATEWAY_WS_URL" frontend/src/store/middleware/gatewayMiddleware.ts
+```
+
+A bare HTTP GET to the route returns `426 Upgrade Required` when wired correctly; a `404`
+means the route is wrong:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost/ws/gateway
+```
+
+### 4. Market-data feed is flowing
+
+HTTP snapshot of current prices:
+
+```bash
+curl -s http://localhost/api/market-sim/prices | head -c 400
+```
+
+A populated price map means the simulator is producing. To confirm it reaches Kafka,
+consume a few ticks from inside the redpanda container:
+
+```bash
+docker compose exec -T redpanda rpk topic consume market.ticks -n 5
+```
+
+An empty or stalled `market.ticks` with a healthy market-sim points at the broker or the
+producer wiring, not the simulator.
+
+### 5. Logs are clean
+
+Identify unhealthy services first, then tail the ones the change touched, looking for crash
+loops, unhandled rejections, or repeated reconnects:
+
+```bash
+deno run --allow-run --allow-env scripts/status.ts --once
+docker compose logs --tail=50 <service>
+```
+
+## Reporting
+
+State, per layer, what was run and what was observed. If a layer failed, name it and quote
+the exact output rather than declaring the platform healthy on the strength of CI. If only
+some layers were checked (for example a frontend-only change that skipped Kafka), say which
+were skipped and why.

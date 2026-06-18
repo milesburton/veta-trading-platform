@@ -1,0 +1,91 @@
+---
+title: Triage a platform incident
+description: Map an observed symptom (GUI blank, feed disconnected, sign-in timeout, orders stuck) to the responsible subsystem, then check root dependencies and known resource-exhaustion modes before chasing individual services.
+---
+
+## When to use
+
+The platform appears broken: the GUI will not load, the feed shows disconnected, sign-in
+times out, or orders do not submit. The instinct is to restart the service that looks
+wrong. Resist it. Most outages on this stack trace back to a shared root dependency
+(Redpanda or Postgres) or a resource-exhaustion mode, not the service surfacing the symptom.
+
+## How it works
+
+Triage outside-in: classify the symptom, check the two root dependencies, then check the
+known exhaustion modes, and only then drill into the named service. Service names and ports
+are defined in [`shared/serviceRegistry.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/shared/serviceRegistry.ts);
+treat that file as the source of truth rather than memorising ports.
+
+### 1. Classify the symptom
+
+| Symptom | First subsystem to suspect |
+|---|---|
+| GUI blank / won't load | frontend, then gateway |
+| Feed shows disconnected | redpanda → market-sim → gateway WebSocket |
+| Sign-in times out | user-service → postgres |
+| Orders stuck / not submitting | oms → ems → journal → redpanda |
+| Market data / features / signals missing | market-data, feature-engine, signal-engine |
+| An algo isn't trading | that algo service → ems routing → redpanda |
+
+### 2. Check the two root dependencies first
+
+Most services depend on Redpanda and Postgres. Confirm both are healthy before anything
+else, because a broker or database problem presents as half a dozen unrelated service
+failures.
+
+```bash
+docker compose exec -T redpanda rpk cluster health
+docker compose exec -T postgres pg_isready
+```
+
+### 3. Check known resource-exhaustion modes
+
+These have each caused outages on this stack:
+
+- **Unbounded Kafka topics.** `market.ticks`, `market.features`, `market.signals` and
+  `algo.heartbeat` carry topic-level retention; order and intelligence topics rely on the
+  cluster default and have grown unbounded before, wedging the broker. Check sizes and
+  consumer lag:
+
+  ```bash
+  docker compose exec -T redpanda rpk topic list
+  docker compose exec -T redpanda rpk group list
+  docker compose exec -T redpanda rpk group describe <group>
+  ```
+
+- **Postgres connection saturation.** `max_connections` is capped (see `compose.yml`);
+  services hang on connection acquisition when the pool is exhausted.
+
+  ```bash
+  docker compose exec -T postgres psql -U postgres -c \
+    "select count(*) from pg_stat_activity;"
+  ```
+
+- **Service memory limits / OOM crash loops.** Memory-heavy services (redpanda,
+  feature-engine, postgres) have per-service limits in `compose.yml`. A service that keeps
+  restarting is usually OOMing, not crashing on logic.
+
+  ```bash
+  docker compose ps
+  docker stats --no-stream
+  ```
+
+### 4. Check service health, root-first
+
+Every backend service exposes `GET /health` on its port (see the registry). When sweeping,
+order the check by dependency depth: redpanda and postgres, then the core services that
+depend on them, then leaf services. The first unhealthy service in dependency order is
+usually the cause; the ones after it are symptoms.
+
+### 5. Confirm the feed path end to end
+
+When the symptom is "feed disconnected", the break can be at the producer, the broker, or
+the WebSocket fan-out. Walk it with the [smoke-check](../smoke-check/) feed and WebSocket
+layers rather than guessing.
+
+## Reporting
+
+Report the symptom, the layer where the break was found, and the evidence (the failing
+health check, the lagging consumer group, the OOMing container). Name the root cause, not
+just the service that surfaced it.

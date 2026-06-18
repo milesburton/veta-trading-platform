@@ -11,18 +11,45 @@ You are adding a new flexlayout panel to one or more workspaces.
 
 - The frontend dev server running so you can render the new panel quickly (`cd frontend && npm run dev`)
 
-## Steps
+## Scaffold first
 
-1. **Create the component** at `frontend/src/components/<PanelName>Panel.tsx`. Use `useAppSelector` for store reads, `useChannelIn` if it should listen to a workspace channel, `useChannelOut` if it should broadcast to one.
+Adding a panel touches several coupling points that must stay in sync: a component, a test,
+and four `Record<PanelId>` maps in `panelRegistry.ts` plus the `registerPanel` call in
+`panelComponents.ts` and the duplicate description map in `ComponentPicker.tsx`. Missing one
+fails the typecheck at best and silently drops the panel at worst. The generator patches
+all of them:
+
+```bash
+cd frontend && deno task new:panel <panel-id> "<Title>" --desc "<description>"
+```
+
+`<panel-id>` is kebab-case. The generator is idempotent, so re-running with the same id is a
+no-op and safe to retry. It creates the component and its test, and patches every
+`PanelId`-keyed map. It does not place the panel into a workspace layout
+(`layoutModels.ts`), because that is a design choice rather than boilerplate.
+
+After scaffolding:
+
+1. **Add to a workspace** in [`layoutModels.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/dashboard/layoutModels.ts). Either add a `tab` to an existing model or include it in a new layout.
+2. **Flesh out the component** at `frontend/src/components/<PanelName>Panel.tsx`. Use `useAppSelector` for store reads, `useChannelIn` if it should listen to a workspace channel, `useChannelOut` if it should broadcast to one. Adjust the channel cap, trading-style restriction, and permissions in `panelRegistry.ts` if the defaults (cap 1, all read roles) are wrong.
+3. **Flesh out the test** at `frontend/src/components/__tests__/<PanelName>Panel.test.tsx`. Beyond the generated header/placeholder assertions, cover: it renders with a populated store, it handles empty data gracefully, it dispatches the right actions on user interaction.
+
+## Doing it by hand
+
+If you need to understand what the generator does, or are working without it, the manual
+surface is:
+
+1. **Create the component** at `frontend/src/components/<PanelName>Panel.tsx`.
 2. **Register the panel id** in [`panelRegistry.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/dashboard/panelRegistry.ts):
    - Add the id to `PANEL_IDS`
    - Add the title to `PANEL_TITLES`
    - Add the description to `PANEL_DESCRIPTIONS`
    - Add the channel cap to `PANEL_CHANNEL_CAPS` (default 1)
+   - Add the permissions to `PANEL_PERMISSIONS`
    - Optionally restrict by trading style via `PANEL_TRADING_STYLES`
-3. **Wire the renderer** in [`panelComponents.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/dashboard/panelComponents.ts) by adding the panel id to the component map.
-4. **Add to a workspace** in [`layoutModels.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/dashboard/layoutModels.ts). Either add a `tab` to an existing model or include it in a new layout.
-5. **Add a vitest** at `frontend/src/components/__tests__/<PanelName>Panel.test.tsx`. Cover: it renders with a populated store, it handles empty data gracefully, it dispatches the right actions on user interaction.
+3. **Wire the renderer** in [`panelComponents.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/dashboard/panelComponents.ts) via `registerPanel`, and add the description to the duplicate map in `ComponentPicker.tsx`.
+4. **Add to a workspace** in [`layoutModels.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/components/dashboard/layoutModels.ts).
+5. **Add a vitest** at `frontend/src/components/__tests__/<PanelName>Panel.test.tsx`.
 
 ## Verification
 
