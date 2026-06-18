@@ -13,9 +13,19 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
+      # Use BOT_PAT (not the default GITHUB_TOKEN) so the release PR is authored
+      # by the PAT user rather than github-actions[bot]. GitHub does not raise
+      # workflow events (pull_request_target) for actions taken with
+      # GITHUB_TOKEN, which is why release PRs never triggered the
+      # PR Auto-Approve and Auto-Merge workflow and sat at REVIEW_REQUIRED
+      # forever. A PAT-authored PR triggers it, so release PRs now flow through
+      # the same auto-approve-on-green-checks + auto-merge path as every other
+      # trusted PR. BOT_PAT scope/rotation is documented in
+      # docs/development/ci-cd.md "Bot PAT for auto-merge".
       - uses: googleapis/release-please-action@v4
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         with:
+          token: ${{ secrets.BOT_PAT }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
