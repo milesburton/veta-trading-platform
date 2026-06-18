@@ -190,6 +190,8 @@ export default defineConfig({
                 { label: "Add a new algo", slug: "development/playbooks/add-algo-strategy" },
                 { label: "Add a dashboard panel", slug: "development/playbooks/add-dashboard-panel" },
                 { label: "Debug a Grafana panel", slug: "development/playbooks/debug-grafana-panel" },
+                { label: "Smoke-check the platform", slug: "development/playbooks/smoke-check" },
+                { label: "Triage an incident", slug: "development/playbooks/incident-triage" },
               ],
             },
           ],
