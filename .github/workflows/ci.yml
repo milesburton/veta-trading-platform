@@ -427,18 +427,28 @@ jobs:
     name: Docs build & lint
     runs-on: ubuntu-latest
     needs: changes
-    if: github.event_name == 'pull_request' && needs.changes.outputs.docs == 'true'
     permissions:
       contents: read
     steps:
+      # This job is a required status check, so it must always run and report a
+      # result. The docs-changed condition is applied per step (not at job
+      # level) so non-docs PRs report success rather than leaving the required
+      # check pending forever. Mirrors the always-run pattern of Integration.
+      - name: No docs changes — nothing to validate
+        if: needs.changes.outputs.docs != 'true'
+        run: echo "No staged changes under docs/ — skipping docs validation."
+
       - uses: actions/checkout@v5
+        if: needs.changes.outputs.docs == 'true'
 
       - name: Setup Node
+        if: needs.changes.outputs.docs == 'true'
         uses: actions/setup-node@v5
         with:
           node-version: "24"
 
       - name: Cache npm
+        if: needs.changes.outputs.docs == 'true'
         uses: actions/cache@v5
         with:
           path: |
@@ -449,27 +459,33 @@ jobs:
             npm-${{ runner.os }}-docs-
 
       - name: Install docs dependencies
+        if: needs.changes.outputs.docs == 'true'
         working-directory: docs/site
         run: npm ci
 
       - name: Markdown lint
+        if: needs.changes.outputs.docs == 'true'
         run: npx --yes markdownlint-cli2 "docs/**/*.md" "docs/**/*.mdx" "!docs/site/node_modules/**" "!docs/site/dist/**"
 
       - name: Validate mermaid blocks
+        if: needs.changes.outputs.docs == 'true'
         working-directory: docs/site
         run: npm run validate:mermaid
 
       - name: Copy screenshots into Astro public
+        if: needs.changes.outputs.docs == 'true'
         run: |
           mkdir -p docs/site/public/screenshots/panels
           cp -r docs/screenshots/. docs/site/public/screenshots/
           cp -r docs/panel-walkthrough/screenshots/. docs/site/public/screenshots/panels/
 
       - name: Build Astro site
+        if: needs.changes.outputs.docs == 'true'
         working-directory: docs/site
         run: npm run build
 
       - name: Validate internal links
+        if: needs.changes.outputs.docs == 'true'
         working-directory: docs/site
         run: npm run validate:links
 
