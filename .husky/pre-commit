@@ -107,20 +107,38 @@ if grep -rnE '\b(10\.[0-9]+\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]+\.
   exit 1
 fi
 
-echo "  [11/12] Docs build (link check + content validity)..."
-# `astro build` runs the Starlight link checker, which catches broken relative
-# links (e.g. ./services resolving under the wrong path segment) that no other
-# gate sees. Mirrors the hard gate in the Docs build & lint CI job.
-if [ -d "$REPO_ROOT/docs/site/node_modules" ]; then
-  (cd "$REPO_ROOT/docs/site" && npm run build >/dev/null 2>&1) || {
-    echo "❌ ERROR: Docs build failed (broken links or invalid content)."
-    echo "Reproduce locally: (cd docs/site && npm run build)"
+echo "  [11/12] Docs validation (markdown + mermaid + build + links)..."
+# Mirrors the "Docs build & lint" CI job step-for-step so broken docs can
+# never reach a push. The link checker (validate:links) scans the BUILT html
+# in dist/, so the order matters: markdownlint -> mermaid -> build -> links.
+# astro build alone does NOT catch broken internal links — validate:links does.
+# Only runs when the changeset touches docs, so non-docs commits stay fast.
+cd "$REPO_ROOT"
+if git diff --cached --name-only | grep -qE '^docs/'; then
+  if [ -d "$REPO_ROOT/docs/site/node_modules" ]; then
+    npx --yes markdownlint-cli2 "docs/**/*.md" "docs/**/*.mdx" \
+      "!docs/site/node_modules/**" "!docs/site/dist/**" || {
+      echo "❌ ERROR: Markdown lint failed. Reproduce: npx markdownlint-cli2 'docs/**/*.md' 'docs/**/*.mdx'"
+      exit 1
+    }
+    (
+      cd "$REPO_ROOT/docs/site" || exit 1
+      npm run validate:mermaid || { echo "❌ ERROR: Mermaid validation failed."; exit 1; }
+      mkdir -p public/screenshots/panels
+      cp -r "$REPO_ROOT/docs/screenshots/." public/screenshots/ 2>/dev/null || true
+      cp -r "$REPO_ROOT/docs/panel-walkthrough/screenshots/." public/screenshots/panels/ 2>/dev/null || true
+      npm run build >/dev/null 2>&1 || { echo "❌ ERROR: Astro build failed."; exit 1; }
+      npm run validate:links || { echo "❌ ERROR: Broken internal docs link(s). Reproduce: (cd docs/site && npm run build && npm run validate:links)"; exit 1; }
+    ) || exit 1
+    cd "$REPO_ROOT"
+  else
+    echo "❌ ERROR: docs/ changed but docs/site/node_modules is missing —"
+    echo "         cannot validate docs locally. Install with: cd docs/site && npm ci"
+    echo "         (refusing to skip: a missing-deps skip is how broken docs reach CI)"
     exit 1
-  }
-  cd "$REPO_ROOT"
+  fi
 else
-  echo "       ⚠️  docs/site/node_modules missing — SKIPPING docs build gate."
-  echo "       CI will run the hard gate. Install with: cd docs/site && npm ci"
+  echo "       No staged changes under docs/ — skipping."
 fi
 
 echo "  [12/12] Fallow audit (staged vs HEAD; advisory)..."
