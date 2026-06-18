@@ -1,0 +1,127 @@
+---
+title: "ADR 0002: Blue-green deploys with an idle-colour cutover"
+description: "Adopt a true blue-green deploy model as the target for keeping the platform accessible during deploys. Two complete colours of the stateless and request-path services, deploy to the idle colour, flip Traefik once it is ready, then retire the old colour. Records the application prerequisites that make the clean cutover safe."
+---
+
+**Status:** Proposed
+
+**Date:** 2026-06-18
+
+## Context
+
+[ADR 0001](../0001-rolling-deploys-on-plain-compose/) keeps deploys non-disruptive by
+health-gating Traefik, holding in-flight requests with a retry middleware, and swapping the
+request path fast and in place. That avoids user-visible outages but it is a mitigation, not
+a clean model: there is still a brief window where a service is down and the platform leans
+on retries and the async order queue to paper over it. There is no atomic cutover and no
+instant rollback.
+
+The cleaner target is blue-green: run two complete colours of the application, keep one
+live, deploy to the idle one, health-check it in isolation, flip Traefik to the new colour,
+then drain and retire the old one. Rollback is a flip back. The cost is roughly doubled
+resources for the duration of a deploy, which is acceptable on a host with headroom.
+
+The reason blue-green was not simply adopted in ADR 0001 is that a clean colour flip assumes
+each colour is self-contained, and several services on this stack are not. This ADR records
+the target and, more importantly, the application work that must land first.
+
+## Decision
+
+Adopt blue-green as the deploy target, structured around an idle-colour cutover, once the
+prerequisites below are met. The model:
+
+1. Two colours (`blue`, `green`) of the stateless and request-path services share the single
+   Postgres and Redpanda data tier.
+2. A deploy pulls images and brings up the idle colour only. The live colour keeps serving.
+3. The idle colour is verified in isolation via the gateway readiness signal.
+4. Traefik is flipped to route 100% to the newly-verified colour.
+5. The old colour is drained and stopped. Rollback before retirement is a flip back.
+
+### What is already in place
+
+- **Migrations are expand/contract-safe.** Every migration uses `CREATE TABLE IF NOT EXISTS`
+  and additive, idempotent patterns, recorded in `public.schema_migrations`; there are no
+  `DROP`/`DELETE` migrations. This means the live colour keeps working when the idle colour's
+  `db-migrate` runs against the shared database, which is the single hardest blue-green
+  prerequisite and it is already met by existing discipline. It must stay that way: a
+  destructive migration would break the live colour at the moment the idle colour migrates.
+- **A readiness aggregator exists.** The gateway exposes `GET /ready`, which returns 200 only
+  when its critical downstream services (market-sim, ems, oms, journal, user-service) report
+  healthy, and 503 otherwise. This is the natural gate for the colour flip: do not flip until
+  the idle colour's gateway reports ready.
+
+### Application prerequisites (must land before the flip is safe)
+
+A colour flip requires that the idle colour can be brought up and verified without a second
+*active* instance of a single-active service corrupting shared state. The following services
+hold authoritative in-process state or run scheduled producers, so two active instances are
+unsafe:
+
+- **oms** keeps order state in an in-memory map and mints order IDs from a per-process
+  counter. Needs externalised order state (shared store) and collision-free IDs (UUID or a
+  shared sequence) so the idle colour can take over cleanly.
+- **market-sim** produces `market.ticks` on a timer. Two active producers double every tick.
+  Needs single-active-producer semantics (a leader lock, or the idle colour not producing
+  until the flip).
+- **ccp-service** runs a periodic settlement sweep over shared fills with in-memory margin
+  and sequence state. Two active sweeps double-process.
+- **rfq-service** holds RFQ state in memory with a cleanup timer.
+- **user-service** keeps OAuth codes in an in-memory map; an issue-on-one-colour,
+  exchange-on-the-other split fails sign-in. Needs a shared code store, or the flip must be
+  atomic with no overlap window for the auth handshake.
+
+The common shape of the fix is: move authoritative state out of process (shared store), and
+make scheduled producers single-active (leader election or only-the-live-colour-produces).
+**ems** is already a safe stream processor and needs no change.
+
+### Routing mechanism (must be built)
+
+Traefik today has no weighted routing or blue/green service abstraction; services are
+discovered by label with a single load balancer each. The flip needs a mechanism, for
+example a file-provider dynamic config defining `blue` and `green` services with a weight
+that the deploy script rewrites at cutover, or per-colour routers toggled by label. This is
+infrastructure work, not an application change, and is the smaller half of the effort.
+
+## Consequences
+
+- Deploys gain atomic cutover and instant rollback. The platform is accessible end to end
+  with no reliance on request retries papering over a gap.
+- Resource use roughly doubles for the duration of a deploy (both colours up). Acceptable on
+  a host with headroom; the old colour is retired immediately after the flip.
+- The single Postgres and Redpanda remain shared across colours. Blue-green covers the
+  application tier; it does not give data-tier HA. A Postgres or Redpanda version bump is
+  still a brief outage and is out of scope here, as in ADR 0001.
+- Migration discipline becomes load-bearing: the expand/contract, no-destructive-change
+  convention must be enforced (ideally in CI), because a destructive migration breaks the
+  live colour at flip time.
+- The application prerequisites are real work across at least five services. This ADR is a
+  target and a roadmap, not an immediately shippable change.
+
+## Alternatives considered
+
+- **Connection-hold fast swap (ADR 0001).** The interim mitigation. Cheaper and shippable
+  now, but no atomic cutover or instant rollback. Stands as the stopgap if this ADR's
+  prerequisite work has not landed.
+- **Docker Swarm `order: start-first`.** Native rolling updates, rejected for the shared
+  bridge-network scope constraint recorded in the operations-strategy migration path and
+  because it migrates off plain compose.
+- **Full per-colour data tier (separate Postgres and Redpanda per colour).** Would make each
+  colour truly self-contained, but requires data replication and reconciliation across the
+  flip, far more complex than the shared-data-tier model and unnecessary for the goal of
+  zero-downtime *application* deploys.
+
+## Rollout
+
+Sequenced so each step is independently useful and the risky application work is gated:
+
+1. **Enforce migration safety.** Add a CI check that rejects destructive migrations
+   (`DROP`, `DELETE`, non-nullable column adds without defaults). Cheap, protects the
+   prerequisite that is already true.
+2. **Build the routing mechanism.** Two-colour Traefik services with a weight the deploy
+   script can flip. Provable in isolation with placeholder backends before any app change.
+3. **Land the single-active work, service by service.** Externalise oms state and IDs;
+   single-active market-sim; shared or atomic OAuth handling; ccp and rfq state. Each is
+   independently testable.
+4. **Wire the idle-colour deploy + flip into the deploy script**, gated behind a flag as in
+   ADR 0001, verified on the host before becoming the default.
+5. When stable, this supersedes ADR 0001's connection-hold path.

@@ -1,0 +1,27 @@
+---
+title: Architecture decision records
+description: Index of architecture decision records (ADRs). Each ADR captures one significant decision, its context, the options weighed, and the consequences.
+---
+
+An architecture decision record captures one significant decision: the context that
+forced it, the options weighed, what was chosen, and the consequences accepted. ADRs are
+append-only. A decision that is later reversed is not deleted; a new ADR supersedes it and
+links back, so the reasoning trail stays intact.
+
+This complements the running decision log in
+[Operations strategy / Scope and decisions](../operations-strategy/scope/), which records
+short dated entries. ADRs are for decisions that need the full context-options-consequences
+treatment.
+
+## Records
+
+| ADR | Title | Status |
+|---|---|---|
+| [0001](./0001-rolling-deploys-on-plain-compose/) | Keep the platform accessible during deploys via fast in-place swap and connection-hold | Proposed (interim) |
+| [0002](./0002-blue-green-deploys/) | Blue-green deploys with an idle-colour cutover | Proposed (target) |
+
+## Format
+
+Each ADR has: **Status** (Proposed / Accepted / Superseded), **Context**, **Decision**,
+**Consequences**, and where useful an **Alternatives considered** section. Keep them short
+and specific to this platform; an ADR is a decision, not a tutorial.
