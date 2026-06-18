@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.48.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.47.0...veta-trading-platform-v1.48.0) (2026-06-18)
+
+
+### Features
+
+* **db:** guard against destructive migrations (expand/contract) ([#443](https://github.com/milesburton/veta-trading-platform/issues/443)) ([4d25d32](https://github.com/milesburton/veta-trading-platform/commit/4d25d3237fdbdd82b7dd8dd73c5d35e2868cbab5))
+
 ## [1.47.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.46.7...veta-trading-platform-v1.47.0) (2026-06-18)
 
 
