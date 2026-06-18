@@ -97,12 +97,40 @@ async function waitForDashboard(page: Page) {
   await page.waitForSelector(".flexlayout__tab", { timeout: 20_000 });
 }
 
+// Wait until the app is actually healthy before capturing, so we never shoot
+// a "Connecting to market…" / "Service offline" frame. The chart overlay
+// clears once candle bars arrive; the offline banner clears once /health
+// polls succeed.
+async function waitForHealthy(page: Page) {
+  // Let the chart panel receive candle bars and the per-service /health polls
+  // resolve before we capture, so we never shoot a "Connecting to market…" or
+  // half-initialised frame.
+  await page
+    .waitForSelector("text=Connecting to market", { state: "detached", timeout: 15_000 })
+    .catch(() => {});
+  // Give the service-health poll round time to complete (33 services on an
+  // interval), so the status bar shows the fleet up rather than 1/33.
+  await page.waitForTimeout(4_000);
+  // Dismiss any startup alert toast (e.g. the optional, cross-origin Traefik
+  // dashboard which the mock does not serve) so the CRITICAL banner is not in
+  // the shot. Best-effort: the controls only exist if a toast is showing.
+  for (const label of ["Dismiss all", "Got it"]) {
+    await page
+      .getByText(label, { exact: false })
+      .first()
+      .click({ timeout: 2_000 })
+      .catch(() => {});
+  }
+  await page.waitForTimeout(500);
+}
+
 // ── 1. Main dashboard with live market data ───────────────────────────────────
 
 test("electron screenshot: main dashboard", async () => {
   await waitForDashboard(mainPage);
 
   mockServer.sendMarketUpdate(PRICES, VOLUMES);
+  await waitForHealthy(mainPage);
   await mainPage.waitForTimeout(800);
 
   await mainPage.screenshot({
@@ -116,16 +144,19 @@ test("electron screenshot: main dashboard", async () => {
 test("electron screenshot: linked pop-out window", async () => {
   await waitForDashboard(mainPage);
   mockServer.sendMarketUpdate(PRICES, VOLUMES);
+  await waitForHealthy(mainPage);
   await mainPage.waitForTimeout(400);
 
   // Open a pop-out panel via window.open — mirrors what usePopOut() does.
   // Must use the same file:// origin so setWindowOpenHandler allows it.
+  // Pop out the market-ladder (live quotes) rather than an empty order
+  // blotter, so the linked-pop-out screenshot shows meaningful content.
   const popOutPromise = electronApp.waitForEvent("window");
 
   await mainPage.evaluate(() => {
     const params = new URLSearchParams({
-      panel: "order-blotter",
-      type: "order-blotter",
+      panel: "market-ladder",
+      type: "market-ladder",
       layout: "veta-layout-v5",
     });
     const url = `${globalThis.location.origin}${globalThis.location.pathname}?${params}`;

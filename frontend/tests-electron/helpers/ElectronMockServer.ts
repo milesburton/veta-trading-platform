@@ -104,6 +104,21 @@ export class ElectronMockServer {
       res.end(JSON.stringify(data));
     };
 
+    // Per-service health polls (servicesApi.ts hits `${baseUrl}/health` for
+    // every service, plus the gateway's own /health). Without this they fall
+    // through to the catch-all null and the UI marks every service offline
+    // ("Services 0/33", "Service offline: User Service").
+    if (url.endsWith("/health") || url.includes("/health?")) {
+      json({ service: "mock", version: "test", status: "ok" });
+      return;
+    }
+
+    // Traefik health is polled via /api/overview, not /health.
+    if (url.includes("/api/overview")) {
+      json({ http: { routers: {}, services: {} }, features: {} });
+      return;
+    }
+
     // /api/gateway/ready
     if (url.includes("/ready")) {
       json({
@@ -134,9 +149,25 @@ export class ElectronMockServer {
       return;
     }
 
-    // /api/gateway/candles
+    // /api/gateway/candles — the chart panel shows a "Connecting to market…"
+    // overlay until it has >= 2 candle bars, so an empty array leaves the
+    // chart perpetually loading in the screenshot. Return a short synthetic
+    // OHLC series (flat OhlcCandle[], matching the real endpoint).
     if (url.includes("/candles")) {
-      json([]);
+      const interval = url.includes("interval=5m") ? "5m" : "1m";
+      const stepMs = interval === "5m" ? 300_000 : 60_000;
+      const base = 189.5;
+      const now = this._startedAt;
+      const bars = Array.from({ length: 60 }, (_, i) => {
+        const time = now - (60 - i) * stepMs;
+        const drift = Math.sin(i / 6) * 1.5;
+        const open = base + drift;
+        const close = base + Math.sin((i + 1) / 6) * 1.5;
+        const high = Math.max(open, close) + 0.4;
+        const low = Math.min(open, close) - 0.4;
+        return { time, open, high, low, close, volume: 100_000 + i * 1_000 };
+      });
+      json(bars);
       return;
     }
 
@@ -156,12 +187,12 @@ export class ElectronMockServer {
     // POST /sessions is deprecated and returns 410 in backend
     if (
       url.includes("/sessions/me") ||
-      (url.includes("/sessions") && route.request().method() === "DELETE")
+      (url.includes("/sessions") && req.method === "DELETE")
     ) {
       json(this._user);
       return;
     }
-    if (url.includes("/sessions") && route.request().method() === "POST") {
+    if (url.includes("/sessions") && req.method === "POST") {
       json(
         { error: "legacy /sessions login is disabled; use OAuth2 /oauth/authorize + /oauth/token" },
         410
