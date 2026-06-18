@@ -125,6 +125,14 @@ export default defineConfig({
               ],
             },
             {
+              label: "Decision records",
+              items: [
+                { label: "Overview", slug: "platform/decisions" },
+                { label: "0001 Zero-downtime deploys on plain compose", slug: "platform/decisions/0001-rolling-deploys-on-plain-compose" },
+                { label: "0002 Blue-green deploys", slug: "platform/decisions/0002-blue-green-deploys" },
+              ],
+            },
+            {
               label: "Observability",
               items: [
                 { label: "Overview", slug: "platform/observability" },
