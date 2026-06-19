@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { OrderTicket } from "@veta/frontend/components/OrderTicket";
 import { TradingProvider } from "@veta/frontend/context/TradingContext";
 import { ChannelContext } from "@veta/frontend/contexts/ChannelContext";
-import { authSlice } from "@veta/frontend/store/authSlice";
+import { authSlice, type TradingStyle } from "@veta/frontend/store/authSlice";
 import { channelsSlice } from "@veta/frontend/store/channelsSlice";
 import { killSwitchSlice } from "@veta/frontend/store/killSwitchSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
@@ -1256,7 +1256,7 @@ describe("OrderTicket – URL prefill", () => {
 });
 
 describe("OrderTicket – role locked", () => {
-  function renderWithRole(role: string) {
+  function renderWithRole(role: string, tradingStyle?: TradingStyle) {
     const testStore = configureStore({
       reducer: {
         auth: authSlice.reducer,
@@ -1281,6 +1281,7 @@ describe("OrderTicket – role locked", () => {
             allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
             allowed_desks: ["equity", "fi", "derivatives"],
             dark_pool_access: false,
+            ...(tradingStyle ? { trading_style: tradingStyle } : {}),
           },
           status: "authenticated" as const,
           sessionExpired: false,
@@ -1320,13 +1321,24 @@ describe("OrderTicket – role locked", () => {
 
   it("shows the admin lock screen for admin accounts", () => {
     renderWithRole("admin");
-    expect(screen.getByText("Admin account")).toBeInTheDocument();
+    expect(screen.getByText("Administrator account")).toBeInTheDocument();
     expect(screen.queryByTestId("order-ticket-panel")).not.toBeInTheDocument();
   });
 
   it("shows the compliance lock screen for compliance accounts", () => {
     renderWithRole("compliance");
     expect(screen.getByText("Compliance account")).toBeInTheDocument();
+  });
+
+  it("labels a low-touch trader's lock screen as a Trader account, not Admin", () => {
+    renderWithRole("trader", "low_touch");
+    // A low-touch trader is correctly blocked from the manual ticket, but the
+    // heading must reflect their actual role rather than mislabelling it
+    // "Admin account" (regression: the lock screen previously hardcoded
+    // "Admin account" for every non-compliance locked role).
+    expect(screen.getByText("Trader account")).toBeInTheDocument();
+    expect(screen.queryByText("Administrator account")).not.toBeInTheDocument();
+    expect(screen.getByText(/Low-touch traders do not submit orders/)).toBeInTheDocument();
   });
 });
 
