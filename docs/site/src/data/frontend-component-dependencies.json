@@ -1,0 +1,1242 @@
+{
+  "totalComponents": 206,
+  "totalEdges": 216,
+  "nodes": [
+    {
+      "name": "App",
+      "path": "App.tsx",
+      "importCount": 20,
+      "importedByCount": 1
+    },
+    {
+      "name": "rbac",
+      "path": "auth/rbac.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "AdminPanel",
+      "path": "components/AdminPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "AdvisoryPanel",
+      "path": "components/AdvisoryPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "AlertDrawer",
+      "path": "components/AlertDrawer.tsx",
+      "importCount": 2,
+      "importedByCount": 3
+    },
+    {
+      "name": "AlertToast",
+      "path": "components/AlertToast.tsx",
+      "importCount": 2,
+      "importedByCount": 1
+    },
+    {
+      "name": "AlertsPanel",
+      "path": "components/AlertsPanel.tsx",
+      "importCount": 1,
+      "importedByCount": 0
+    },
+    {
+      "name": "AlgoLeaderboardPanel",
+      "path": "components/AlgoLeaderboardPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "AlgoMonitor",
+      "path": "components/AlgoMonitor.tsx",
+      "importCount": 2,
+      "importedByCount": 1
+    },
+    {
+      "name": "AnalysisPanel",
+      "path": "components/AnalysisPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "AssetSelector",
+      "path": "components/AssetSelector.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "BasketOrderPanel",
+      "path": "components/BasketOrderPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "BugReportModal",
+      "path": "components/BugReportModal.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "BuildInfo",
+      "path": "components/BuildInfo.tsx",
+      "importCount": 0,
+      "importedByCount": 2
+    },
+    {
+      "name": "CandlestickChart",
+      "path": "components/CandlestickChart.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "ChildOrdersPanel",
+      "path": "components/ChildOrdersPanel.tsx",
+      "importCount": 2,
+      "importedByCount": 0
+    },
+    {
+      "name": "ClientRfqPanel",
+      "path": "components/ClientRfqPanel.tsx",
+      "importCount": 1,
+      "importedByCount": 0
+    },
+    {
+      "name": "ComponentPicker",
+      "path": "components/ComponentPicker.tsx",
+      "importCount": 3,
+      "importedByCount": 1
+    },
+    {
+      "name": "ConnectionLostBanner",
+      "path": "components/ConnectionLostBanner.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "ContextMenu",
+      "path": "components/ContextMenu.tsx",
+      "importCount": 0,
+      "importedByCount": 4
+    },
+    {
+      "name": "DashboardLayout",
+      "path": "components/DashboardLayout.tsx",
+      "importCount": 5,
+      "importedByCount": 6
+    },
+    {
+      "name": "DataDepthPanel",
+      "path": "components/DataDepthPanel.tsx",
+      "importCount": 1,
+      "importedByCount": 0
+    },
+    {
+      "name": "DecisionLog",
+      "path": "components/DecisionLog.tsx",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "DemoDayPanel",
+      "path": "components/DemoDayPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "DemoPersonas",
+      "path": "components/DemoPersonas.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "DevToolsPanel",
+      "path": "components/DevToolsPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "DurationLadderPanel",
+      "path": "components/DurationLadderPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "EnvironmentOverlay",
+      "path": "components/EnvironmentOverlay.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "EstateOverviewPanel",
+      "path": "components/EstateOverviewPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "ExecutionsPanel",
+      "path": "components/ExecutionsPanel.tsx",
+      "importCount": 4,
+      "importedByCount": 1
+    },
+    {
+      "name": "GreeksSurfacePanel",
+      "path": "components/GreeksSurfacePanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "InstrumentAnalysisPanel",
+      "path": "components/InstrumentAnalysisPanel.tsx",
+      "importCount": 1,
+      "importedByCount": 0
+    },
+    {
+      "name": "payloads",
+      "path": "components/KillSwitchButton/payloads.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "KillSwitchButton",
+      "path": "components/KillSwitchButton.tsx",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "LlmSubsystemPanel",
+      "path": "components/LlmSubsystemPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "LoadGenPanel",
+      "path": "components/LoadGenPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "LoadTestPanel",
+      "path": "components/LoadTestPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "RegistrationForm",
+      "path": "components/LoginPage/RegistrationForm.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "LoginPage",
+      "path": "components/LoginPage.tsx",
+      "importCount": 3,
+      "importedByCount": 1
+    },
+    {
+      "name": "MarketDataSourcesPanel",
+      "path": "components/MarketDataSourcesPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "MarketDepth",
+      "path": "components/MarketDepth.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "MarketFeedControlPanel",
+      "path": "components/MarketFeedControlPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "Tooltip",
+      "path": "components/MarketHeatmap/Tooltip.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "MarketHeatmap",
+      "path": "components/MarketHeatmap.tsx",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "MarketLadder",
+      "path": "components/MarketLadder.tsx",
+      "importCount": 3,
+      "importedByCount": 1
+    },
+    {
+      "name": "MarketMatch",
+      "path": "components/MarketMatch.tsx",
+      "importCount": 2,
+      "importedByCount": 1
+    },
+    {
+      "name": "MyPositionsPanel",
+      "path": "components/MyPositionsPanel.tsx",
+      "importCount": 1,
+      "importedByCount": 0
+    },
+    {
+      "name": "NewsSourcesPanel",
+      "path": "components/NewsSourcesPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "ObservabilityPanel",
+      "path": "components/ObservabilityPanel.tsx",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "OptionPricingPanel",
+      "path": "components/OptionPricingPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "OrderBlotter",
+      "path": "components/OrderBlotter.tsx",
+      "importCount": 6,
+      "importedByCount": 1
+    },
+    {
+      "name": "OrderProgressPanel",
+      "path": "components/OrderProgressPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "AssetInfoBar",
+      "path": "components/OrderTicket/AssetInfoBar.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "OptionPreview",
+      "path": "components/OrderTicket/OptionPreview.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "OrderPreview",
+      "path": "components/OrderTicket/OrderPreview.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "buildAlgoParams",
+      "path": "components/OrderTicket/buildAlgoParams.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "buildTrade",
+      "path": "components/OrderTicket/buildTrade.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "constants",
+      "path": "components/OrderTicket/constants.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "OrderTicket",
+      "path": "components/OrderTicket.tsx",
+      "importCount": 8,
+      "importedByCount": 1
+    },
+    {
+      "name": "PanelMenu",
+      "path": "components/PanelMenu.tsx",
+      "importCount": 1,
+      "importedByCount": 0
+    },
+    {
+      "name": "PlatformStatusPanel",
+      "path": "components/PlatformStatusPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "PopOutButton",
+      "path": "components/PopOutButton.tsx",
+      "importCount": 0,
+      "importedByCount": 8
+    },
+    {
+      "name": "PopOutHost",
+      "path": "components/PopOutHost.tsx",
+      "importCount": 17,
+      "importedByCount": 1
+    },
+    {
+      "name": "PopOutPlaceholder",
+      "path": "components/PopOutPlaceholder.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "PriceFanPanel",
+      "path": "components/PriceFanPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "ProductBookPanel",
+      "path": "components/ProductBookPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "api",
+      "path": "components/ProductBuilder/api.ts",
+      "importCount": 0,
+      "importedByCount": 2
+    },
+    {
+      "name": "legs",
+      "path": "components/ProductBuilder/legs.ts",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "ProductBuilderPanel",
+      "path": "components/ProductBuilderPanel.tsx",
+      "importCount": 2,
+      "importedByCount": 0
+    },
+    {
+      "name": "QuickTradeBar",
+      "path": "components/QuickTradeBar.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "ResearchRadarPanel",
+      "path": "components/ResearchRadarPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "RiskDashboardPanel",
+      "path": "components/RiskDashboardPanel.tsx",
+      "importCount": 1,
+      "importedByCount": 0
+    },
+    {
+      "name": "SalesWorkbenchPanel",
+      "path": "components/SalesWorkbenchPanel.tsx",
+      "importCount": 1,
+      "importedByCount": 0
+    },
+    {
+      "name": "ScenarioMatrixPanel",
+      "path": "components/ScenarioMatrixPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "ScenariosPanel",
+      "path": "components/ScenariosPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "ServiceHealthPanel",
+      "path": "components/ServiceHealthPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "ServiceRow",
+      "path": "components/ServiceRow.tsx",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "ServiceStatus",
+      "path": "components/ServiceStatus.tsx",
+      "importCount": 2,
+      "importedByCount": 1
+    },
+    {
+      "name": "SessionReplayPanel",
+      "path": "components/SessionReplayPanel.tsx",
+      "importCount": 2,
+      "importedByCount": 0
+    },
+    {
+      "name": "SharedWorkspaceBrowser",
+      "path": "components/SharedWorkspaceBrowser.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "SignalExplainabilityPanel",
+      "path": "components/SignalExplainabilityPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "SpreadAnalysisPanel",
+      "path": "components/SpreadAnalysisPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "serviceCatalog",
+      "path": "components/StartupOverlay/serviceCatalog.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "StartupOverlay",
+      "path": "components/StartupOverlay.tsx",
+      "importCount": 2,
+      "importedByCount": 1
+    },
+    {
+      "name": "StatusBar",
+      "path": "components/StatusBar.tsx",
+      "importCount": 12,
+      "importedByCount": 2
+    },
+    {
+      "name": "StatusDot",
+      "path": "components/StatusDot.tsx",
+      "importCount": 0,
+      "importedByCount": 2
+    },
+    {
+      "name": "StrategyParams",
+      "path": "components/StrategyParams.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "SymbolSearchBar",
+      "path": "components/SymbolSearchBar.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "TemplatePicker",
+      "path": "components/TemplatePicker.tsx",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "ThroughputGaugesPanel",
+      "path": "components/ThroughputGaugesPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "TradeRecommendationPanel",
+      "path": "components/TradeRecommendationPanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "VolSurfacePanel",
+      "path": "components/VolSurfacePanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "VolatilityProfilePanel",
+      "path": "components/VolatilityProfilePanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "WorkspaceListItem",
+      "path": "components/WorkspaceBar/WorkspaceListItem.tsx",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "WorkspaceBar",
+      "path": "components/WorkspaceBar.tsx",
+      "importCount": 3,
+      "importedByCount": 2
+    },
+    {
+      "name": "YieldCurvePanel",
+      "path": "components/YieldCurvePanel.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "DashboardContext",
+      "path": "components/dashboard/DashboardContext.tsx",
+      "importCount": 3,
+      "importedByCount": 4
+    },
+    {
+      "name": "DashboardLayout",
+      "path": "components/dashboard/DashboardLayout.tsx",
+      "importCount": 5,
+      "importedByCount": 1
+    },
+    {
+      "name": "layoutModels",
+      "path": "components/dashboard/layoutModels.ts",
+      "importCount": 1,
+      "importedByCount": 4
+    },
+    {
+      "name": "layoutUtils",
+      "path": "components/dashboard/layoutUtils.ts",
+      "importCount": 2,
+      "importedByCount": 3
+    },
+    {
+      "name": "panelComponents",
+      "path": "components/dashboard/panelComponents.ts",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "panelRegistry",
+      "path": "components/dashboard/panelRegistry.ts",
+      "importCount": 0,
+      "importedByCount": 12
+    },
+    {
+      "name": "DataDepthDrawer",
+      "path": "components/drawers/DataDepthDrawer.tsx",
+      "importCount": 2,
+      "importedByCount": 2
+    },
+    {
+      "name": "Drawer",
+      "path": "components/drawers/Drawer.tsx",
+      "importCount": 1,
+      "importedByCount": 3
+    },
+    {
+      "name": "DrawersContext",
+      "path": "components/drawers/DrawersContext.tsx",
+      "importCount": 0,
+      "importedByCount": 5
+    },
+    {
+      "name": "LogsDrawer",
+      "path": "components/drawers/LogsDrawer.tsx",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "CfRuleEditor",
+      "path": "components/grid/CfRuleEditor.tsx",
+      "importCount": 1,
+      "importedByCount": 2
+    },
+    {
+      "name": "ExpressionBuilder",
+      "path": "components/grid/ExpressionBuilder.tsx",
+      "importCount": 0,
+      "importedByCount": 2
+    },
+    {
+      "name": "FilterBar",
+      "path": "components/grid/FilterBar.tsx",
+      "importCount": 1,
+      "importedByCount": 2
+    },
+    {
+      "name": "ResizableHeader",
+      "path": "components/grid/ResizableHeader.tsx",
+      "importCount": 0,
+      "importedByCount": 5
+    },
+    {
+      "name": "SortableHeader",
+      "path": "components/grid/SortableHeader.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "panelDragState",
+      "path": "components/panelDragState.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "shared",
+      "path": "components/rfq/shared.ts",
+      "importCount": 0,
+      "importedByCount": 2
+    },
+    {
+      "name": "TradingContext",
+      "path": "context/TradingContext.tsx",
+      "importCount": 0,
+      "importedByCount": 2
+    },
+    {
+      "name": "ChannelContext",
+      "path": "contexts/ChannelContext.tsx",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "bondUniverse",
+      "path": "data/bondUniverse.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "market-session",
+      "path": "domain/market/market-session.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "trading-calendar",
+      "path": "domain/market/trading-calendar.ts",
+      "importCount": 1,
+      "importedByCount": 0
+    },
+    {
+      "name": "venue-capabilities",
+      "path": "domain/market/venue-capabilities.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "parse",
+      "path": "domain/quickTrade/parse.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "async-risk",
+      "path": "domain/ticket/async-risk.ts",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "field-definitions",
+      "path": "domain/ticket/field-definitions.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "field-registry",
+      "path": "domain/ticket/field-registry.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "resolve-ticket",
+      "path": "domain/ticket/resolve-ticket.ts",
+      "importCount": 14,
+      "importedByCount": 1
+    },
+    {
+      "name": "dark-pool",
+      "path": "domain/ticket/rules/dark-pool.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "desk-access",
+      "path": "domain/ticket/rules/desk-access.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "instrument-spec",
+      "path": "domain/ticket/rules/instrument-spec.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "kill-switch",
+      "path": "domain/ticket/rules/kill-switch.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "limit-checks",
+      "path": "domain/ticket/rules/limit-checks.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "price-collar",
+      "path": "domain/ticket/rules/price-collar.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "role-check",
+      "path": "domain/ticket/rules/role-check.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "session-rules",
+      "path": "domain/ticket/rules/session-rules.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "spread-check",
+      "path": "domain/ticket/rules/spread-check.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "static-validation",
+      "path": "domain/ticket/rules/static-validation.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "venue-rules",
+      "path": "domain/ticket/rules/venue-rules.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "ticket-types",
+      "path": "domain/ticket/ticket-types.ts",
+      "importCount": 0,
+      "importedByCount": 4
+    },
+    {
+      "name": "useAsyncRisk",
+      "path": "domain/ticket/useAsyncRisk.ts",
+      "importCount": 2,
+      "importedByCount": 0
+    },
+    {
+      "name": "useTicketResolution",
+      "path": "domain/ticket/useTicketResolution.ts",
+      "importCount": 2,
+      "importedByCount": 0
+    },
+    {
+      "name": "electron.d",
+      "path": "electron.d.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "fixCodec",
+      "path": "fix/fixCodec.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "fixSession",
+      "path": "fix/fixSession.ts",
+      "importCount": 1,
+      "importedByCount": 0
+    },
+    {
+      "name": "useChannelIn",
+      "path": "hooks/useChannelIn.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "useChannelOut",
+      "path": "hooks/useChannelOut.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "useColumnLayout",
+      "path": "hooks/useColumnLayout.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "useFrontendMemoryTelemetry",
+      "path": "hooks/useFrontendMemoryTelemetry.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "useGridQuery",
+      "path": "hooks/useGridQuery.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "usePopOut",
+      "path": "hooks/usePopOut.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "useSessionRecording",
+      "path": "hooks/useSessionRecording.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "useWorkspaceSync",
+      "path": "hooks/useWorkspaceSync.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "replayVideoExport",
+      "path": "lib/replayVideoExport.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "sessionRecorder",
+      "path": "lib/sessionRecorder.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "sha256",
+      "path": "lib/sha256.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "main",
+      "path": "main.tsx",
+      "importCount": 7,
+      "importedByCount": 0
+    },
+    {
+      "name": "setupTests",
+      "path": "setupTests.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "advisoryApi",
+      "path": "store/advisoryApi.ts",
+      "importCount": 2,
+      "importedByCount": 1
+    },
+    {
+      "name": "advisorySlice",
+      "path": "store/advisorySlice.ts",
+      "importCount": 1,
+      "importedByCount": 2
+    },
+    {
+      "name": "alertsSlice",
+      "path": "store/alertsSlice.ts",
+      "importCount": 1,
+      "importedByCount": 2
+    },
+    {
+      "name": "analyticsApi",
+      "path": "store/analyticsApi.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "authSlice",
+      "path": "store/authSlice.ts",
+      "importCount": 0,
+      "importedByCount": 3
+    },
+    {
+      "name": "breakersSlice",
+      "path": "store/breakersSlice.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "channel",
+      "path": "store/channel.ts",
+      "importCount": 0,
+      "importedByCount": 2
+    },
+    {
+      "name": "channelsSlice",
+      "path": "store/channelsSlice.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "feedSlice",
+      "path": "store/feedSlice.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "gatewayApi",
+      "path": "store/gatewayApi.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "gridApi",
+      "path": "store/gridApi.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "gridPrefsSlice",
+      "path": "store/gridPrefsSlice.ts",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "hooks",
+      "path": "store/hooks.ts",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "index",
+      "path": "store/index.ts",
+      "importCount": 35,
+      "importedByCount": 8
+    },
+    {
+      "name": "intelligenceSlice",
+      "path": "store/intelligenceSlice.ts",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "killSwitchSlice",
+      "path": "store/killSwitchSlice.ts",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "llmSubsystemSlice",
+      "path": "store/llmSubsystemSlice.ts",
+      "importCount": 0,
+      "importedByCount": 2
+    },
+    {
+      "name": "marketDataApi",
+      "path": "store/marketDataApi.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "marketSlice",
+      "path": "store/marketSlice.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "alertsMiddleware",
+      "path": "store/middleware/alertsMiddleware.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "errorTransportMiddleware",
+      "path": "store/middleware/errorTransportMiddleware.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "gatewayMiddleware",
+      "path": "store/middleware/gatewayMiddleware.ts",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "simulationMiddleware",
+      "path": "store/middleware/simulationMiddleware.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "versionWatchMiddleware",
+      "path": "store/middleware/versionWatchMiddleware.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "newsApi",
+      "path": "store/newsApi.ts",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "newsSlice",
+      "path": "store/newsSlice.ts",
+      "importCount": 2,
+      "importedByCount": 2
+    },
+    {
+      "name": "observabilitySlice",
+      "path": "store/observabilitySlice.ts",
+      "importCount": 0,
+      "importedByCount": 3
+    },
+    {
+      "name": "ordersSlice",
+      "path": "store/ordersSlice.ts",
+      "importCount": 0,
+      "importedByCount": 2
+    },
+    {
+      "name": "parseTicketApi",
+      "path": "store/parseTicketApi.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "replayApi",
+      "path": "store/replayApi.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "riskApi",
+      "path": "store/riskApi.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "safeKey",
+      "path": "store/safeKey.ts",
+      "importCount": 0,
+      "importedByCount": 4
+    },
+    {
+      "name": "scenariosApi",
+      "path": "store/scenariosApi.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "selectors",
+      "path": "store/selectors.ts",
+      "importCount": 1,
+      "importedByCount": 0
+    },
+    {
+      "name": "servicesApi",
+      "path": "store/servicesApi.ts",
+      "importCount": 0,
+      "importedByCount": 2
+    },
+    {
+      "name": "themeSlice",
+      "path": "store/themeSlice.ts",
+      "importCount": 0,
+      "importedByCount": 2
+    },
+    {
+      "name": "uiSlice",
+      "path": "store/uiSlice.ts",
+      "importCount": 1,
+      "importedByCount": 2
+    },
+    {
+      "name": "userApi",
+      "path": "store/userApi.ts",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "windowSlice",
+      "path": "store/windowSlice.ts",
+      "importCount": 1,
+      "importedByCount": 1
+    },
+    {
+      "name": "tokens",
+      "path": "tokens.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "analytics",
+      "path": "types/analytics.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "gridPrefs",
+      "path": "types/gridPrefs.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "gridQuery",
+      "path": "types/gridQuery.ts",
+      "importCount": 1,
+      "importedByCount": 0
+    },
+    {
+      "name": "marketData",
+      "path": "types/marketData.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "types",
+      "path": "types.ts",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
+      "name": "clock",
+      "path": "utils/clock.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "format",
+      "path": "utils/format.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "formatPrice",
+      "path": "utils/formatPrice.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "githubLinks",
+      "path": "utils/githubLinks.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "gridFilter",
+      "path": "utils/gridFilter.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "orderTicketWindow",
+      "path": "utils/orderTicketWindow.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    },
+    {
+      "name": "symbolSearch",
+      "path": "utils/symbolSearch.ts",
+      "importCount": 0,
+      "importedByCount": 0
+    }
+  ]
+}
