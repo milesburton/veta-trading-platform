@@ -4,7 +4,9 @@
     "jsr:@db/sqlite@0.12": "0.12.0",
     "jsr:@denosaurs/plug@1": "1.1.0",
     "jsr:@std/assert@0.217": "0.217.0",
+    "jsr:@std/async@0.217": "0.217.0",
     "jsr:@std/cli@^1.0.28": "1.0.28",
+    "jsr:@std/data-structures@0.217": "0.217.0",
     "jsr:@std/encoding@1": "1.0.10",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
     "jsr:@std/fmt@0.217": "0.217.0",
@@ -28,6 +30,7 @@
     "jsr:@std/path@^1.0.2": "1.1.4",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/streams@^1.0.17": "1.0.17",
+    "jsr:@std/testing@0.217": "0.217.0",
     "jsr:@std/yaml@*": "0.217.0",
     "jsr:@std/yaml@0.217": "0.217.0",
     "npm:@anthropic-ai/sdk@0.69.0": "0.69.0_zod@3.25.76",
@@ -61,8 +64,14 @@
         "jsr:@std/fmt@0.217"
       ]
     },
+    "@std/async@0.217.0": {
+      "integrity": "14dac94f59595e39e519de379c47170d8bbedea253824c4b167108aa943ddb69"
+    },
     "@std/cli@1.0.28": {
       "integrity": "74ef9b976db59ca6b23a5283469c9072be6276853807a83ec6c7ce412135c70a"
+    },
+    "@std/data-structures@0.217.0": {
+      "integrity": "fa4b16ea62f58784c4f8b32ccc2f544b76d85f8a96ce5e31129832b01048e80a"
     },
     "@std/encoding@1.0.10": {
       "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
@@ -144,6 +153,13 @@
     },
     "@std/streams@1.0.17": {
       "integrity": "7859f3d9deed83cf4b41f19223d4a67661b3d3819e9fc117698f493bf5992140"
+    },
+    "@std/testing@0.217.0": {
+      "integrity": "97508b254ca1888d512215288bfb3f192a4e6e84336ba56b189c7862258a058b",
+      "dependencies": [
+        "jsr:@std/async",
+        "jsr:@std/data-structures"
+      ]
     },
     "@std/yaml@0.217.0": {
       "integrity": "cfc7f6ae8463a4591bffc6e4d1fc4eba4387e920b9777672f0d0c0874e2d4651"
