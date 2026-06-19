@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.48.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.48.0...veta-trading-platform-v1.48.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* **docs:** capture Electron screenshots against a healthy mock stack ([#450](https://github.com/milesburton/veta-trading-platform/issues/450)) ([8ec466e](https://github.com/milesburton/veta-trading-platform/commit/8ec466e524eee56de6710544e8007f7d9c1a2816)), closes [#448](https://github.com/milesburton/veta-trading-platform/issues/448)
+
 ## [1.48.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.47.0...veta-trading-platform-v1.48.0) (2026-06-18)
 
 
