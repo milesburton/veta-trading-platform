@@ -4438,7 +4438,7 @@
         "npm:rrweb@^2.0.0-alpha.4",
         "npm:tailwindcss@^3.4.6",
         "npm:typescript@^5.5.3",
-        "npm:uuid@10",
+        "npm:uuid@14",
         "npm:vite-plugin-electron-renderer@~0.14.6",
         "npm:vite-plugin-electron@~0.28.8",
         "npm:vite@^7.3.2",

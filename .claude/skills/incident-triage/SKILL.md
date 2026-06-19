@@ -1,4 +1,4 @@
----
+If ---
 name: incident-triage
 description: Triage a VETA platform outage by mapping the observed symptom to the responsible subsystem, then checking root dependencies (Redpanda, Postgres) and known resource-exhaustion modes before drilling into individual services. Use when the platform appears broken — GUI blank, feed disconnected, sign-in timeout, orders stuck — and you need to find the cause rather than restart the service that looks wrong.
 ---
