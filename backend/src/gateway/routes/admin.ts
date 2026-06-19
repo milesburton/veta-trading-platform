@@ -40,6 +40,17 @@ function busUnavailable(producerReady: boolean): Response | null {
   });
 }
 
+// Synthetic orders emitted by admin/oncall tooling (load-test, demo-day) must
+// be attributed to a real trader persona, never to the invoking admin —
+// administrators must never appear as the originator of a trade in the
+// pipeline. The personas come from LOAD_TEST_USER_IDS (existing trader ids).
+export function testTraderIds(): string[] {
+  return (Deno.env.get("LOAD_TEST_USER_IDS") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 // Uniform float in [0, 1) used only for *simulation jitter* in the
 // admin load-generator below (order side/size/strategy spread, delays).
 // It is not used for keys, tokens, nonces or any security decision.
@@ -234,13 +245,28 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
   );
 }
 
-async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<Response> {
+export async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<Response> {
   const auth = await ctx.requireAuth(req);
   if (isResponse(auth)) return auth;
   const adminRej = requireAdminOrOncall(auth);
   if (adminRej) return adminRej;
   const busRej = busUnavailable(ctx.producer.isReady());
   if (busRej) return busRej;
+
+  // Demo-day orders are synthetic and must be attributed to a trader persona,
+  // never to the invoking admin/oncall account — admins must not appear as the
+  // originator of a trade.
+  const demoTraders = testTraderIds();
+  if (demoTraders.length === 0) {
+    return new Response(
+      JSON.stringify({
+        error:
+          "LOAD_TEST_USER_IDS env var must be set on the gateway with a " +
+          "comma-separated list of existing trader user IDs to attribute demo orders to.",
+      }),
+      { status: 500, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+    );
+  }
 
   let body: { scenario?: string };
   try {
@@ -421,8 +447,8 @@ async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<Respons
       expiresAt: spec.expiresAt,
       strategy: spec.strategy,
       algoParams: spec.algoParams,
-      userId: auth.user.id,
-      userRole: auth.user.role,
+      userId: demoTraders[secureRandomInt(demoTraders.length)],
+      userRole: "trader",
       _demoDayJobId: jobId,
     };
     if (spec.delayMs === 0) {

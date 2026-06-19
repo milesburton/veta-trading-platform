@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 65,
-      "cases": 759,
+      "files": 66,
+      "cases": 762,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -68,7 +68,8 @@
         "price-fan.unit.test.ts": 7,
         "alerts-route.unit.test.ts": 15,
         "timeScale.unit.test.ts": 8,
-        "small-gap-fills.unit.test.ts": 10
+        "small-gap-fills.unit.test.ts": 10,
+        "demo-day-attribution.unit.test.ts": 3
       }
     },
     "integration": {
