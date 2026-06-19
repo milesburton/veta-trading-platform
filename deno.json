@@ -48,5 +48,9 @@
   "compilerOptions": {
     "lib": ["deno.ns", "deno.window", "esnext"],
     "strict": true
+  },
+  "allowScripts": {
+    "allow": [],
+    "deny": ["npm:cpu-features@0.0.10", "npm:esbuild@0.27.3", "npm:protobufjs@7.5.6", "npm:ssh2@1.17.0"]
   }
 }
