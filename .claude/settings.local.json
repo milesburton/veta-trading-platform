@@ -5,7 +5,11 @@
       "WebFetch(domain:en.wikipedia.org)",
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:grafana.com)"
+      "WebFetch(domain:grafana.com)",
+      "Bash(cd /workspaces/virtual-equities-trading-application *)"
+    ],
+    "additionalDirectories": [
+      "/workspaces/virtual-equities-trading-application/.husky"
     ]
   }
 }

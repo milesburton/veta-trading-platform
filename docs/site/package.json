@@ -20,8 +20,7 @@
   "type": "commonjs",
   "dependencies": {
     "@astrojs/starlight": "^0.38.3",
-    "astro": "^6.1.5",
-    "sharp": "^0.34.5"
+    "astro": "^6.1.5"
   },
   "devDependencies": {
     "@astrojs/react": "^5.0.4",
