@@ -121,12 +121,13 @@
       "cases": 1981
     },
     "playwright": {
-      "files": 18,
+      "files": 19,
       "specs": [
         "algo-orders.spec.ts",
         "auth.spec.ts",
         "connection-recovery.spec.ts",
         "dashboard-drag.spec.ts",
+        "empty-workspace.spec.ts",
         "fixed-income.spec.ts",
         "intelligence.spec.ts",
         "market-data.spec.ts",

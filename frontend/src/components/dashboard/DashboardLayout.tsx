@@ -415,32 +415,34 @@ function EmptyWorkspace() {
   );
 
   return (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-page gap-6 px-8">
-      <div className="text-center">
-        <div className="text-2xl text-divider mb-2">Empty workspace</div>
-        <p className="text-sm text-muted">Choose a layout to get started.</p>
-      </div>
+    <div className="absolute inset-0 z-10 overflow-y-auto bg-page">
+      <div className="min-h-full flex flex-col items-center justify-center gap-6 px-8 py-10">
+        <div className="text-center">
+          <div className="text-2xl text-divider mb-2">Empty workspace</div>
+          <p className="text-sm text-muted">Choose a layout to get started.</p>
+        </div>
 
-      <div className="grid grid-cols-3 gap-3 w-full max-w-lg">
-        {templates.map((tpl) => (
-          <button
-            key={tpl.id}
-            type="button"
-            onClick={() => resetLayout(tpl.model)}
-            className="flex flex-col items-start gap-1 rounded-lg border border-divider px-4 py-3 text-left transition-colors hover:border-emerald-600 hover:bg-emerald-950/30 cursor-pointer"
-          >
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-default">
-              {tpl.locked && <span className="text-[10px] text-muted">🔒</span>}
-              {tpl.label}
-            </span>
-            <span className="text-[9px] text-muted leading-tight">{tpl.description}</span>
-          </button>
-        ))}
-      </div>
+        <div className="grid w-full max-w-5xl gap-3 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
+          {templates.map((tpl) => (
+            <button
+              key={tpl.id}
+              type="button"
+              onClick={() => resetLayout(tpl.model)}
+              className="flex flex-col items-start gap-1 rounded-lg border border-divider px-4 py-3 text-left transition-colors hover:border-emerald-600 hover:bg-emerald-950/30 cursor-pointer"
+            >
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-default">
+                {tpl.locked && <span className="text-[10px] text-muted">🔒</span>}
+                {tpl.label}
+              </span>
+              <span className="text-[9px] text-muted leading-tight">{tpl.description}</span>
+            </button>
+          ))}
+        </div>
 
-      <p className="text-[10px] text-divider">
-        Or use <span className="text-muted">⊞ Layout</span> in the toolbar to switch at any time.
-      </p>
+        <p className="text-[10px] text-divider">
+          Or use <span className="text-muted">⊞ Layout</span> in the toolbar to switch at any time.
+        </p>
+      </div>
     </div>
   );
 }
