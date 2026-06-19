@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import { ROLE_LABELS } from "@veta/frontend/auth/rbac.ts";
 import { useTradingContext } from "@veta/frontend/context/TradingContext.tsx";
 import { BOND_UNIVERSE } from "@veta/frontend/data/bondUniverse.ts";
 import { resolveSession } from "@veta/frontend/domain/market/market-session.ts";
@@ -395,15 +396,15 @@ export function OrderTicket() {
   const symbol = selectedAsset?.symbol ?? "";
 
   if (resolution.roleLocked) {
-    const isCompliance = userRole === "compliance";
+    const roleLabel = userRole ? ROLE_LABELS[userRole] : null;
+    const heading = roleLabel ? `${roleLabel} account` : "Order entry unavailable";
+    const icon = userRole === "compliance" ? "🔍" : "⚙";
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
         <span className="text-2xl" aria-hidden="true">
-          {isCompliance ? "🔍" : "⚙"}
+          {icon}
         </span>
-        <p className="text-sm font-semibold text-default">
-          {isCompliance ? "Compliance account" : "Admin account"}
-        </p>
+        <p className="text-sm font-semibold text-default">{heading}</p>
         <p className="text-xs text-muted leading-relaxed">{resolution.roleLockedMessage}</p>
       </div>
     );
