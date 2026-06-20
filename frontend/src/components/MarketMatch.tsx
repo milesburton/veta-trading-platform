@@ -381,7 +381,7 @@ export function MarketMatch() {
           </div>
 
           {/* Fill tape */}
-          <div className="flex-1 overflow-auto" data-testid="fill-tape">
+          <div className="flex-1 min-h-0 overflow-auto" data-testid="fill-tape">
             <table className="w-full text-[10px]">
               <thead>
                 <tr className="text-subtle border-b border-panel sticky top-0 bg-page text-[9px] uppercase tracking-wider">

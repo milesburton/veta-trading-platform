@@ -42,6 +42,8 @@ describe("themeSlice", () => {
 
     expect(result.type).toBe("theme/load/fulfilled");
     expect(result.payload).toBe("light");
+    const [, getInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(getInit.credentials).toBe("include");
   });
 
   it("loadTheme returns null when preferences fetch fails", async () => {
@@ -73,6 +75,7 @@ describe("themeSlice", () => {
 
     const [, putInit] = fetchMock.mock.calls[1] as [string, RequestInit];
     expect(putInit.method).toBe("PUT");
+    expect(putInit.credentials).toBe("include");
     const body = JSON.parse(String(putInit.body));
     expect(body).toMatchObject({
       theme: "light",

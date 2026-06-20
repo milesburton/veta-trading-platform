@@ -442,7 +442,7 @@ export function WorkspaceSidebar({
         {/* ── Workspaces list ── */}
         <ul
           aria-label="Workspaces"
-          className="flex-1 overflow-y-auto overflow-x-hidden list-none m-0 p-0"
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden list-none m-0 p-0"
         >
           {workspaces.map((ws) => (
             <WorkspaceListItem

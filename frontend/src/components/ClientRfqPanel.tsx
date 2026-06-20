@@ -112,7 +112,7 @@ export function ClientRfqPanel() {
         {loading.value && <span className="text-[10px] text-muted">refreshing…</span>}
       </div>
 
-      <div className="flex flex-col gap-3 overflow-auto flex-1 p-3">
+      <div className="flex flex-col gap-3 min-h-0 overflow-auto flex-1 p-3">
         {/* Submit RFQ form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
           <div className="text-[10px] text-muted uppercase tracking-wider font-semibold">

@@ -445,7 +445,7 @@ export function AlgoMonitor() {
         <PopOutButton panelId="algo-monitor" />
       </div>
 
-      <div className="overflow-auto flex-1">
+      <div className="min-h-0 overflow-auto flex-1">
         {displayed.length === 0 ? (
           <div className="flex items-center justify-center h-24 text-subtle text-xs">
             {tab.value === "active"

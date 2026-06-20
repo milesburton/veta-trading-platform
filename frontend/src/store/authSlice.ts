@@ -39,12 +39,14 @@ export interface TradingLimits {
   primary_desk?: PrimaryDesk;
 }
 
-const DEFAULT_LIMITS: TradingLimits = {
+export const DEFAULT_LIMITS: TradingLimits = {
   max_order_qty: 10_000,
   max_daily_notional: 1_000_000,
   allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
   allowed_desks: ["equity"],
   dark_pool_access: false,
+  trading_style: "high_touch",
+  primary_desk: "equity-cash",
 };
 
 interface AuthState {

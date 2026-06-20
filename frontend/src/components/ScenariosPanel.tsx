@@ -310,7 +310,7 @@ export function ScenariosPanel() {
         />
       )}
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-auto">
         {isLoading && <div className="p-3 text-muted">Loading…</div>}
         {!isLoading && scenarios.length === 0 && (
           <div className="p-4 text-muted">

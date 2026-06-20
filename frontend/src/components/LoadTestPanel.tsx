@@ -88,7 +88,7 @@ export function LoadTestPanel() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-4">
         <div className="rounded border border-amber-700/50 bg-amber-950/30 px-3 py-2 text-[10px] text-amber-400 leading-relaxed">
           <span className="font-semibold">Warning:</span> This will submit real orders to the
           trading pipeline. Use in simulation only.

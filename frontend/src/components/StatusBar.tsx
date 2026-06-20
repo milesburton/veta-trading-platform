@@ -37,6 +37,7 @@ import { DATA_DEPTH_DRAWER_ID, DataDepthDrawer } from "./drawers/DataDepthDrawer
 import { useDrawers } from "./drawers/DrawersContext.tsx";
 import { LOGS_DRAWER_ID, LogsDrawer } from "./drawers/LogsDrawer.tsx";
 import { KillSwitchButton } from "./KillSwitchButton.tsx";
+import { OverflowBar } from "./OverflowBar.tsx";
 import { ServiceStatus } from "./ServiceStatus.tsx";
 import { TemplatePicker } from "./TemplatePicker.tsx";
 
@@ -529,12 +530,17 @@ export function AppHeader() {
           </button>
         </div>
       )}
-      <div className="flex items-center justify-between px-4 h-10 bg-surface border-b border-panel text-xs text-label">
-        <div className="flex items-center gap-5">
-          <span className="text-emerald-400 font-bold tracking-widest uppercase text-[11px]">
-            VETA Trading Platform
-          </span>
-          <EnvironmentBadge />
+      <div className="flex items-center gap-3 px-4 h-10 bg-surface border-b border-panel text-xs text-label">
+        <span className="text-emerald-400 font-bold tracking-widest uppercase text-[11px] shrink-0">
+          VETA
+        </span>
+
+        <OverflowBar
+          className="gap-4 flex-1 min-w-0"
+          menuLabel="More controls"
+          testId="header-controls"
+          menuClassName="gap-2 min-w-[200px]"
+        >
           {user?.role === "trader" && (
             <button
               type="button"
@@ -545,9 +551,6 @@ export function AppHeader() {
               + New Order
             </button>
           )}
-        </div>
-
-        <div className="flex items-center gap-4">
           <DataFreshness />
           <DataDepthIndicator />
           <MemoryIndicator />
@@ -672,15 +675,19 @@ export function AppHeader() {
               <AlertCentreButton services={services} />
             </>
           )}
-          <div data-testid="kill-switch-wrapper">
-            <KillSwitchButton />
-          </div>
+          <EnvironmentBadge />
           <BuildInfo
             buildDate={import.meta.env.VITE_BUILD_DATE}
             commitSha={import.meta.env.VITE_COMMIT_SHA}
             version={import.meta.env.VITE_APP_VERSION}
             className="px-2 py-0.5 rounded border border-panel bg-page/60 text-[10px] text-label tabular-nums"
           />
+        </OverflowBar>
+
+        <div className="flex items-center gap-4 shrink-0">
+          <div data-testid="kill-switch-wrapper">
+            <KillSwitchButton />
+          </div>
           <span className="tabular-nums text-muted">{time.value}</span>
           {user && (
             <div className="flex items-center gap-2 pl-3 border-l border-panel">

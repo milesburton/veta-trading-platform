@@ -1,6 +1,6 @@
 {
-  "totalComponents": 206,
-  "totalEdges": 216,
+  "totalComponents": 207,
+  "totalEdges": 217,
   "nodes": [
     {
       "name": "App",
@@ -357,6 +357,12 @@
       "importedByCount": 1
     },
     {
+      "name": "OverflowBar",
+      "path": "components/OverflowBar.tsx",
+      "importCount": 0,
+      "importedByCount": 1
+    },
+    {
       "name": "PanelMenu",
       "path": "components/PanelMenu.tsx",
       "importCount": 1,
@@ -509,7 +515,7 @@
     {
       "name": "StatusBar",
       "path": "components/StatusBar.tsx",
-      "importCount": 12,
+      "importCount": 13,
       "importedByCount": 2
     },
     {

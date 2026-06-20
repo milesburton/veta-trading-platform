@@ -123,7 +123,7 @@ function renderBar(connected: boolean) {
 
 test("shows brand name and time", () => {
   renderBar(true);
-  expect(screen.getByText(/VETA Trading Platform/)).toBeInTheDocument();
+  expect(screen.getAllByText(/VETA/)[0]).toBeInTheDocument();
   expect(screen.getByText(/\d{1,2}:\d{2}:\d{2}/)).toBeInTheDocument();
 });
 
@@ -456,7 +456,7 @@ describe("StatusBar – alert button interactions", () => {
     if (link) {
       fireEvent.click(link);
     }
-    expect(screen.getByText(/VETA Trading Platform/)).toBeInTheDocument();
+    expect(screen.getAllByText(/VETA/)[0]).toBeInTheDocument();
   });
 });
 

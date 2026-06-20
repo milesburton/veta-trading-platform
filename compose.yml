@@ -1034,6 +1034,8 @@ services:
       # services agree on whether /oauth/guest exists.
       PUBLIC_GUEST_TRADING: ${PUBLIC_GUEST_TRADING:-false}
       OAUTH_ALLOW_PUBLIC_REGISTER: ${OAUTH_ALLOW_PUBLIC_REGISTER:-true}
+      VETA_ALLOW_DEFAULT_PASSCODE: ${VETA_ALLOW_DEFAULT_PASSCODE:-false}
+      OAUTH2_SHARED_SECRET: ${OAUTH2_SHARED_SECRET:-veta-dev-passcode}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5008/health || exit 1"]
       interval: 10s

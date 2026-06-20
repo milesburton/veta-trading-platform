@@ -12,7 +12,7 @@ let cachedOtherPrefs: Record<string, unknown> = {};
 
 export async function loadWorkspacePrefs(): Promise<WorkspacePrefs | null> {
   try {
-    const res = await fetch(`${GATEWAY_URL}/preferences`);
+    const res = await fetch(`${GATEWAY_URL}/preferences`, { credentials: "include" });
     if (!res.ok) return null;
     const blob = await res.json();
     const { workspaces, layouts, ...rest } = blob ?? {};
@@ -28,6 +28,7 @@ export async function saveWorkspacePrefs(prefs: WorkspacePrefs): Promise<void> {
   try {
     const res = await fetch(`${GATEWAY_URL}/preferences`, {
       method: "PUT",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       keepalive: true,
       body: JSON.stringify({
@@ -67,7 +68,7 @@ export interface SharedWorkspaceDetail extends SharedWorkspaceEntry {
 }
 
 export async function listSharedWorkspaces(): Promise<SharedWorkspaceEntry[]> {
-  const res = await fetch(`${GATEWAY_URL}/shared-workspaces`);
+  const res = await fetch(`${GATEWAY_URL}/shared-workspaces`, { credentials: "include" });
   if (!res.ok) return [];
   return res.json();
 }
@@ -81,7 +82,9 @@ const SHARED_WORKSPACE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 export async function fetchSharedWorkspace(id: string): Promise<SharedWorkspaceDetail | null> {
   if (!SHARED_WORKSPACE_ID_RE.test(id)) return null;
   try {
-    const res = await fetch(`${GATEWAY_URL}/shared-workspaces/${encodeURIComponent(id)}`);
+    const res = await fetch(`${GATEWAY_URL}/shared-workspaces/${encodeURIComponent(id)}`, {
+      credentials: "include",
+    });
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -97,6 +100,7 @@ export async function publishSharedWorkspace(
   try {
     const res = await fetch(`${GATEWAY_URL}/shared-workspaces`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, description, model }),
     });
@@ -112,6 +116,7 @@ export async function deleteSharedWorkspace(id: string): Promise<boolean> {
   try {
     const res = await fetch(`${GATEWAY_URL}/shared-workspaces/${id}`, {
       method: "DELETE",
+      credentials: "include",
     });
     return res.ok;
   } catch {

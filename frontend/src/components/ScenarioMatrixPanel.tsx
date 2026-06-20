@@ -331,7 +331,7 @@ export function ScenarioMatrixPanel() {
           </div>
 
           {/* Heatmap grid */}
-          <div className="flex-1 overflow-auto p-3">
+          <div className="flex-1 min-h-0 overflow-auto p-3">
             <div className="text-[9px] text-subtle mb-2">
               Spot ${result.value.spotPrice.toFixed(2)} · Vol{" "}
               {(result.value.impliedVol * 100).toFixed(1)}% · Base $

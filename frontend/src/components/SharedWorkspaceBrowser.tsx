@@ -98,7 +98,7 @@ export function SharedWorkspaceBrowser({ onClose, onClone }: Props) {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {loading.value ? (
             <div className="flex items-center justify-center py-12 text-subtle text-sm">
               Loading...

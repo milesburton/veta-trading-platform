@@ -332,6 +332,38 @@ async function getUserFromToken(token: string | null) {
   }
 }
 
+const DEFAULT_TRADING_LIMITS = {
+  max_order_qty: 10000,
+  max_daily_notional: 1_000_000,
+  allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+  allowed_desks: ["equity-cash"],
+  dark_pool_access: false,
+  trading_style: "high_touch",
+  primary_desk: "equity-cash",
+};
+
+async function loadLimits(userId: string) {
+  const client = await usersPool.connect();
+  try {
+    const { rows } = await client.queryArray(
+      "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk FROM users.trading_limits WHERE user_id = $1",
+      [userId]
+    );
+    if (rows.length === 0) return DEFAULT_TRADING_LIMITS;
+    return {
+      max_order_qty: rows[0][0] as number,
+      max_daily_notional: rows[0][1] as number,
+      allowed_strategies: splitCsv(rows[0][2] as string),
+      allowed_desks: splitCsv(rows[0][3] as string),
+      dark_pool_access: rows[0][4] as boolean,
+      trading_style: rows[0][5] as string,
+      primary_desk: rows[0][6] as string,
+    };
+  } finally {
+    client.release();
+  }
+}
+
 async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
 
@@ -451,7 +483,8 @@ async function handle(req: Request): Promise<Response> {
   if (req.method === "GET" && path === "/sessions/me") {
     const user = await getUserFromToken(getCookieToken(req));
     if (!user) return json({ error: "unauthenticated" }, 401);
-    return json(user);
+    const limits = await loadLimits(user.id);
+    return json({ ...user, limits });
   }
 
   if (req.method === "POST" && path === "/sessions/validate") {
@@ -459,37 +492,8 @@ async function handle(req: Request): Promise<Response> {
     if (!parsed.ok) return parsed.res;
     const user = await getUserFromToken(parsed.data.token ?? null);
     if (!user) return json({ error: "unauthenticated" }, 401);
-
-    const client = await usersPool.connect();
-    try {
-      const { rows } = await client.queryArray(
-        "SELECT max_order_qty, max_daily_notional, allowed_strategies, allowed_desks, dark_pool_access, trading_style, primary_desk FROM users.trading_limits WHERE user_id = $1",
-        [user.id]
-      );
-      const limits =
-        rows.length > 0
-          ? {
-              max_order_qty: rows[0][0] as number,
-              max_daily_notional: rows[0][1] as number,
-              allowed_strategies: splitCsv(rows[0][2] as string),
-              allowed_desks: splitCsv(rows[0][3] as string),
-              dark_pool_access: rows[0][4] as boolean,
-              trading_style: rows[0][5] as string,
-              primary_desk: rows[0][6] as string,
-            }
-          : {
-              max_order_qty: 10000,
-              max_daily_notional: 1_000_000,
-              allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
-              allowed_desks: ["equity-cash"],
-              dark_pool_access: false,
-              trading_style: "high_touch",
-              primary_desk: "equity-cash",
-            };
-      return json({ user, limits });
-    } finally {
-      client.release();
-    }
+    const limits = await loadLimits(user.id);
+    return json({ user, limits });
   }
 
   const limitsMatch = path.match(/^\/users\/([^/]+)\/limits$/);

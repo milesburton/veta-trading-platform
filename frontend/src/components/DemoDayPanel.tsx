@@ -134,7 +134,7 @@ export function DemoDayPanel() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-4">
         <p className="text-[10px] text-muted leading-relaxed">
           Choose a scenario below and click{" "}
           <span className="text-default font-medium">Launch Demo</span> to inject a realistic wave

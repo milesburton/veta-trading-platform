@@ -244,7 +244,7 @@ export function DecisionLog() {
       </div>
 
       {/* Event stream */}
-      <div className="flex-1 overflow-auto font-mono">
+      <div className="flex-1 min-h-0 overflow-auto font-mono">
         {filtered.length === 0 ? (
           <div className="flex items-center justify-center h-24 text-subtle text-xs">
             {filterOrderId

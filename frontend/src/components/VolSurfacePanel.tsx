@@ -149,7 +149,7 @@ export function VolSurfacePanel() {
       {!data && !isError && !isFetching && <p className="py-4 text-center text-muted">Loading…</p>}
 
       {data && moneynesses.length > 0 && (
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-auto">
           <div className="min-w-[340px]">
             <div className="mb-1 grid grid-cols-[56px_repeat(5,1fr)] gap-0.5">
               <div />

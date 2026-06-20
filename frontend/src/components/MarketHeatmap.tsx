@@ -547,7 +547,10 @@ export function MarketHeatmap() {
         </div>
       </div>
 
-      <div ref={wrapRef} className="flex-1 overflow-y-auto overflow-x-hidden relative bg-[#0d1117]">
+      <div
+        ref={wrapRef}
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative bg-[#0d1117]"
+      >
         <svg
           width="100%"
           height={ch}
