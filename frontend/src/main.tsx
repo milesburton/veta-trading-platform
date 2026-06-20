@@ -6,8 +6,8 @@ import "rrweb-player/dist/style.css";
 import App from "./App.tsx";
 import { PopOutHost } from "./components/PopOutHost.tsx";
 import { TradingProvider } from "./context/TradingContext.tsx";
-import { listenForStateRequests } from "./store/channel.ts";
-import { store } from "./store/index.ts";
+import { listenForStateRequests, requestStateFromMainWindow } from "./store/channel.ts";
+import { hydrateFromSnapshot, type RootState, store } from "./store/index.ts";
 import { reportError } from "./store/observabilitySlice.ts";
 import { DEPLOYMENT } from "./store/servicesApi.ts";
 
@@ -49,22 +49,25 @@ const panelType = searchParams.get("type") ?? instanceId ?? "";
 const layoutKey = searchParams.get("layout") ?? "dashboard-layout";
 
 if (instanceId) {
-  // Pop-out window mode: render just the requested panel.
-  // TradingProvider must wrap PopOutHost because OrderTicket (and
-  // potentially other panels) call useTradingContext at render time —
-  // without it the hook throws and React unmounts the whole window,
-  // leaving a blank screen.
-  createRoot(root).render(
-    <StrictMode>
-      <Provider store={store}>
-        <TradingProvider>
-          <PopOutHost instanceId={instanceId} panelType={panelType} layoutKey={layoutKey} />
-        </TradingProvider>
-      </Provider>
-    </StrictMode>
-  );
+  const renderPopOut = () =>
+    createRoot(root).render(
+      <StrictMode>
+        <Provider store={store}>
+          <TradingProvider>
+            <PopOutHost instanceId={instanceId} panelType={panelType} layoutKey={layoutKey} />
+          </TradingProvider>
+        </Provider>
+      </StrictMode>
+    );
+
+  requestStateFromMainWindow()
+    .then((snapshot) => {
+      if (snapshot && typeof snapshot === "object") {
+        store.dispatch(hydrateFromSnapshot(snapshot as Partial<RootState>));
+      }
+    })
+    .finally(renderPopOut);
 } else {
-  // Main window: start BroadcastChannel state listener for pop-outs
   listenForStateRequests(() => store.getState());
 
   createRoot(root).render(

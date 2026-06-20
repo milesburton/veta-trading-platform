@@ -1,4 +1,4 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers, configureStore, createAction, type Reducer } from "@reduxjs/toolkit";
 import { advisoryApi } from "./advisoryApi.ts";
 import { advisorySlice } from "./advisorySlice.ts";
 import { alertsSlice } from "./alertsSlice.ts";
@@ -35,38 +35,51 @@ import { uiSlice } from "./uiSlice.ts";
 import { userApi } from "./userApi.ts";
 import { windowSlice } from "./windowSlice.ts";
 
+const combinedReducer = combineReducers({
+  auth: authSlice.reducer,
+  feed: feedSlice.reducer,
+  market: marketSlice.reducer,
+  orders: ordersSlice.reducer,
+  news: newsSlice.reducer,
+  observability: observabilitySlice.reducer,
+  ui: uiSlice.reducer,
+  windows: windowSlice.reducer,
+  channels: channelsSlice.reducer,
+  gridPrefs: gridPrefsSlice.reducer,
+  theme: themeSlice.reducer,
+  killSwitch: killSwitchSlice.reducer,
+  breakers: breakersSlice.reducer,
+  alerts: alertsSlice.reducer,
+  intelligence: intelligenceSlice.reducer,
+  advisory: advisorySlice.reducer,
+  llmSubsystem: llmSubsystemSlice.reducer,
+  [servicesApi.reducerPath]: servicesApi.reducer,
+  [analyticsApi.reducerPath]: analyticsApi.reducer,
+  [marketDataApi.reducerPath]: marketDataApi.reducer,
+  [advisoryApi.reducerPath]: advisoryApi.reducer,
+  [gatewayApi.reducerPath]: gatewayApi.reducer,
+  [gridApi.reducerPath]: gridApi.reducer,
+  [newsApi.reducerPath]: newsApi.reducer,
+  [parseTicketApi.reducerPath]: parseTicketApi.reducer,
+  [replayApi.reducerPath]: replayApi.reducer,
+  [riskApi.reducerPath]: riskApi.reducer,
+  [scenariosApi.reducerPath]: scenariosApi.reducer,
+  [userApi.reducerPath]: userApi.reducer,
+});
+
+type CombinedState = ReturnType<typeof combinedReducer>;
+
+export const hydrateFromSnapshot = createAction<Partial<CombinedState>>("store/HYDRATE");
+
+const rootReducer: Reducer<CombinedState> = (state, action) => {
+  if (hydrateFromSnapshot.match(action) && state) {
+    return { ...state, ...action.payload };
+  }
+  return combinedReducer(state, action);
+};
+
 export const store = configureStore({
-  reducer: {
-    auth: authSlice.reducer,
-    feed: feedSlice.reducer,
-    market: marketSlice.reducer,
-    orders: ordersSlice.reducer,
-    news: newsSlice.reducer,
-    observability: observabilitySlice.reducer,
-    ui: uiSlice.reducer,
-    windows: windowSlice.reducer,
-    channels: channelsSlice.reducer,
-    gridPrefs: gridPrefsSlice.reducer,
-    theme: themeSlice.reducer,
-    killSwitch: killSwitchSlice.reducer,
-    breakers: breakersSlice.reducer,
-    alerts: alertsSlice.reducer,
-    intelligence: intelligenceSlice.reducer,
-    advisory: advisorySlice.reducer,
-    llmSubsystem: llmSubsystemSlice.reducer,
-    [servicesApi.reducerPath]: servicesApi.reducer,
-    [analyticsApi.reducerPath]: analyticsApi.reducer,
-    [marketDataApi.reducerPath]: marketDataApi.reducer,
-    [advisoryApi.reducerPath]: advisoryApi.reducer,
-    [gatewayApi.reducerPath]: gatewayApi.reducer,
-    [gridApi.reducerPath]: gridApi.reducer,
-    [newsApi.reducerPath]: newsApi.reducer,
-    [parseTicketApi.reducerPath]: parseTicketApi.reducer,
-    [replayApi.reducerPath]: replayApi.reducer,
-    [riskApi.reducerPath]: riskApi.reducer,
-    [scenariosApi.reducerPath]: scenariosApi.reducer,
-    [userApi.reducerPath]: userApi.reducer,
-  },
+  reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat(servicesApi.middleware)
