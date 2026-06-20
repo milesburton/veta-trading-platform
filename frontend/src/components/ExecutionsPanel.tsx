@@ -110,10 +110,12 @@ function TradeRow({
   order,
   cols,
   getWidth,
+  getStickyProps,
 }: {
   order: OrderRecord;
   cols: ColDef[];
   getWidth: (key: string) => number;
+  getStickyProps: (key: string) => { style: React.CSSProperties; isLastFrozen: boolean } | null;
 }) {
   const expanded = useSignal(false);
   const cfRules = useAppSelector((s) => s.gridPrefs.executions.cfRules);
@@ -171,13 +173,18 @@ function TradeRow({
         {cols.map((col) => {
           const cellCls = cellClasses[col.key] ?? "";
           const w = getWidth(col.key);
+          const sp = getStickyProps(col.key);
+          const stickyStyle = sp ? { width: w, ...sp.style } : { width: w };
+          const stickyClass = sp
+            ? `bg-page${sp.isLastFrozen ? " border-r-2 border-r-divider" : ""}`
+            : "";
           switch (col.key) {
             case "submittedAt":
               return (
                 <td
                   key={col.key}
-                  style={{ width: w }}
-                  className={`px-3 py-1.5 text-muted tabular-nums whitespace-nowrap text-[10px] ${cellCls}`}
+                  style={stickyStyle}
+                  className={`px-3 py-1.5 text-muted tabular-nums whitespace-nowrap text-[10px] ${cellCls} ${stickyClass}`}
                 >
                   {formatTime(order.submittedAt)}
                 </td>
@@ -186,8 +193,8 @@ function TradeRow({
               return (
                 <td
                   key={col.key}
-                  style={{ width: w }}
-                  className={`px-3 py-1.5 font-semibold text-secondary ${cellCls}`}
+                  style={stickyStyle}
+                  className={`px-3 py-1.5 font-semibold text-secondary ${cellCls} ${stickyClass}`}
                 >
                   {order.asset}
                 </td>
@@ -196,10 +203,10 @@ function TradeRow({
               return (
                 <td
                   key={col.key}
-                  style={{ width: w }}
+                  style={stickyStyle}
                   className={`px-3 py-1.5 font-semibold ${
                     order.side === "BUY" ? "text-emerald-400" : "text-red-400"
-                  } ${cellCls}`}
+                  } ${cellCls} ${stickyClass}`}
                 >
                   {order.side}
                 </td>
@@ -208,8 +215,8 @@ function TradeRow({
               return (
                 <td
                   key={col.key}
-                  style={{ width: w }}
-                  className={`px-3 py-1.5 text-label ${cellCls}`}
+                  style={stickyStyle}
+                  className={`px-3 py-1.5 text-label ${cellCls} ${stickyClass}`}
                 >
                   {order.strategy}
                 </td>
@@ -218,8 +225,8 @@ function TradeRow({
               return (
                 <td
                   key={col.key}
-                  style={{ width: w }}
-                  className={`px-3 py-1.5 font-semibold ${statusColor} ${cellCls}`}
+                  style={stickyStyle}
+                  className={`px-3 py-1.5 font-semibold ${statusColor} ${cellCls} ${stickyClass}`}
                   title={ORDER_STATUS_DESCRIPTIONS[order.status]}
                 >
                   {order.status}
@@ -229,8 +236,8 @@ function TradeRow({
               return (
                 <td
                   key={col.key}
-                  style={{ width: w }}
-                  className="px-3 py-1.5 text-right tabular-nums text-default"
+                  style={stickyStyle}
+                  className={`px-3 py-1.5 text-right tabular-nums text-default ${stickyClass}`}
                 >
                   {fillPct.toFixed(0)}%
                 </td>
@@ -239,8 +246,8 @@ function TradeRow({
               return (
                 <td
                   key={col.key}
-                  style={{ width: w }}
-                  className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${impactColor}`}
+                  style={stickyStyle}
+                  className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${impactColor} ${stickyClass}`}
                 >
                   {totalFilledQty > 0 ? formatBps(impactBps) : "—"}
                 </td>
@@ -249,8 +256,8 @@ function TradeRow({
               return (
                 <td
                   key={col.key}
-                  style={{ width: w }}
-                  className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${commColor}`}
+                  style={stickyStyle}
+                  className={`px-3 py-1.5 text-right tabular-nums text-[10px] ${commColor} ${stickyClass}`}
                 >
                   {totalFilledQty > 0 ? `$${totalComm.toFixed(2)}` : "—"}
                 </td>
@@ -259,8 +266,8 @@ function TradeRow({
               return (
                 <td
                   key={col.key}
-                  style={{ width: w }}
-                  className="px-3 py-1.5 text-right tabular-nums text-muted text-[10px]"
+                  style={stickyStyle}
+                  className={`px-3 py-1.5 text-right tabular-nums text-muted text-[10px] ${stickyClass}`}
                 >
                   {filledChildren.length}
                 </td>
@@ -269,14 +276,20 @@ function TradeRow({
               return (
                 <td
                   key={col.key}
-                  style={{ width: w }}
-                  className="px-3 py-1.5 text-muted text-[10px]"
+                  style={stickyStyle}
+                  className={`px-3 py-1.5 text-muted text-[10px] ${stickyClass}`}
                 >
                   {expanded.value ? "▾" : "▸"}
                 </td>
               );
             default:
-              return <td key={col.key} style={{ width: w }} className="px-3 py-1.5 text-muted" />;
+              return (
+                <td
+                  key={col.key}
+                  style={stickyStyle}
+                  className={`px-3 py-1.5 text-muted ${stickyClass}`}
+                />
+              );
           }
         })}
       </tr>
@@ -408,7 +421,8 @@ export function ExecutionsPanel() {
   const { containerRef, limit } = useContainerLimit();
   const { rows: serverRows, total, isLoading } = useGridQuery<OrderRecord>("executions", 0, limit);
 
-  const { orderedCols, getWidth, onResize, onReorder } = useColumnLayout("executions", EXEC_COLS);
+  const { orderedCols, getWidth, getStickyProps, onResize, onReorder, onToggleFreeze } =
+    useColumnLayout("executions", EXEC_COLS);
 
   const EXEC_FIELDS = EXEC_COLS.filter(
     (c) =>
@@ -485,36 +499,49 @@ export function ExecutionsPanel() {
                   : "No executions yet"}
           </div>
         ) : (
-          <table className="w-full text-xs" data-testid="executions-table">
+          <table className="w-full min-w-max text-xs" data-testid="executions-table">
             <thead>
               <tr className="text-muted border-b border-panel sticky top-0 bg-page">
-                {orderedCols.map((col) => (
-                  <ResizableHeader
-                    key={col.key}
-                    colKey={col.key}
-                    width={getWidth(col.key)}
-                    minWidth={col.minWidth}
-                    gridId="executions"
-                    sortable={SORTABLE_COLS.has(col.key)}
-                    onResize={onResize}
-                    onColumnDragStart={(k) => {
-                      dragKey.value = k;
-                    }}
-                    onColumnDrop={(target) => {
-                      if (dragKey.value) onReorder(dragKey.value, target);
-                      dragKey.value = null;
-                    }}
-                    align={col.align}
-                    className={`px-3 py-2 ${col.align === "right" ? "text-right" : "text-left"}`}
-                  >
-                    {col.label}
-                  </ResizableHeader>
-                ))}
+                {orderedCols.map((col) => {
+                  const sp = getStickyProps(col.key);
+                  return (
+                    <ResizableHeader
+                      key={col.key}
+                      colKey={col.key}
+                      width={getWidth(col.key)}
+                      minWidth={col.minWidth}
+                      gridId="executions"
+                      sortable={SORTABLE_COLS.has(col.key)}
+                      frozen={sp !== null}
+                      isLastFrozen={sp?.isLastFrozen}
+                      style={sp?.style}
+                      onResize={onResize}
+                      onColumnDragStart={(k) => {
+                        dragKey.value = k;
+                      }}
+                      onColumnDrop={(target) => {
+                        if (dragKey.value) onReorder(dragKey.value, target);
+                        dragKey.value = null;
+                      }}
+                      onToggleFreeze={onToggleFreeze}
+                      align={col.align}
+                      className={`px-3 py-2 bg-page ${col.align === "right" ? "text-right" : "text-left"}`}
+                    >
+                      {col.label}
+                    </ResizableHeader>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
               {tradeOrders.map((order) => (
-                <TradeRow key={order.id} order={order} cols={orderedCols} getWidth={getWidth} />
+                <TradeRow
+                  key={order.id}
+                  order={order}
+                  cols={orderedCols}
+                  getWidth={getWidth}
+                  getStickyProps={getStickyProps}
+                />
               ))}
             </tbody>
           </table>

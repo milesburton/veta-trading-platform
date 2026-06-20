@@ -24,9 +24,12 @@ vi.mock("../../hooks/useColumnLayout.ts", () => ({
       { key: "time", label: "Time" },
       { key: "status", label: "Status" },
     ],
+    frozenColumns: [],
     getWidth: () => 90,
+    getStickyProps: () => null,
     onResize: () => {},
     onReorder: () => {},
+    onToggleFreeze: () => {},
   }),
 }));
 

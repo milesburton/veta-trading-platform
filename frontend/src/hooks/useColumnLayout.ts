@@ -3,6 +3,7 @@ import {
   saveGridPrefs,
   setColumnOrder,
   setColumnWidth,
+  toggleFrozenColumn,
 } from "@veta/frontend/store/gridPrefsSlice.ts";
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
@@ -13,12 +14,15 @@ export function useColumnLayout(
   cols: ColDef[]
 ): {
   orderedCols: ColDef[];
+  frozenColumns: string[];
   getWidth: (key: string) => number;
+  getStickyProps: (key: string) => { style: React.CSSProperties; isLastFrozen: boolean } | null;
   onResize: (key: string, width: number) => void;
   onReorder: (fromKey: string, toKey: string) => void;
+  onToggleFreeze: (key: string) => void;
 } {
   const dispatch = useAppDispatch();
-  const { columnWidths, columnOrder } = useAppSelector((s) => s.gridPrefs[gridId]);
+  const { columnWidths, columnOrder, frozenColumns } = useAppSelector((s) => s.gridPrefs[gridId]);
 
   const orderedCols = useMemo(() => {
     if (!columnOrder || columnOrder.length === 0) return cols;
@@ -57,5 +61,46 @@ export function useColumnLayout(
     dispatch(saveGridPrefs());
   }
 
-  return { orderedCols, getWidth, onResize, onReorder };
+  function onToggleFreeze(key: string) {
+    dispatch(toggleFrozenColumn({ gridId, key }));
+    dispatch(saveGridPrefs());
+  }
+
+  const frozenSet = useMemo(() => new Set(frozenColumns ?? []), [frozenColumns]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: columnWidths drives getWidth; listing it covers the dependency
+  const stickyOffsets = useMemo(() => {
+    const offsets: Record<string, number> = {};
+    let left = 0;
+    for (const col of orderedCols) {
+      if (frozenSet.has(col.key)) {
+        offsets[col.key] = left;
+        left += getWidth(col.key);
+      }
+    }
+    return offsets;
+  }, [orderedCols, frozenSet, columnWidths]);
+
+  function getStickyProps(
+    key: string
+  ): { style: React.CSSProperties; isLastFrozen: boolean } | null {
+    if (!frozenSet.has(key)) return null;
+    const left = stickyOffsets[key] ?? 0;
+    const orderedFrozen = orderedCols.filter((c) => frozenSet.has(c.key));
+    const isLastFrozen = orderedFrozen[orderedFrozen.length - 1]?.key === key;
+    return {
+      style: { position: "sticky", left, zIndex: 20 },
+      isLastFrozen,
+    };
+  }
+
+  return {
+    orderedCols,
+    frozenColumns: frozenColumns ?? [],
+    getWidth,
+    getStickyProps,
+    onResize,
+    onReorder,
+    onToggleFreeze,
+  };
 }
