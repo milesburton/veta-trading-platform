@@ -1,16 +1,8 @@
-/**
- * Integration test: verifying the Redux store is assembled correctly.
- *
- * Importing store/index instantiates the real store with all reducers,
- * middleware, and RTK Query APIs registered. These tests ensure the
- * full store graph compiles and the initial state shape is correct.
- */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// versionWatchMiddleware starts polling on init — stub fetch to avoid noise
 vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
 
-import { store } from "@veta/frontend/store/index";
+import { hydrateFromSnapshot, store } from "@veta/frontend/store/index";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -51,5 +43,41 @@ describe("store – initial state shape", () => {
 
   it("dispatching an unknown action does not throw", () => {
     expect(() => store.dispatch({ type: "unknown/action" })).not.toThrow();
+  });
+});
+
+describe("store – hydrateFromSnapshot", () => {
+  it("merges a snapshot's auth slice so a pop-out sees the signed-in trader", () => {
+    expect(store.getState().auth.user).toBeNull();
+
+    store.dispatch(
+      hydrateFromSnapshot({
+        auth: {
+          user: { id: "rajesh", name: "Rajesh Patel", role: "trader", avatar_emoji: "🧑" },
+          limits: {
+            max_order_qty: 10_000,
+            max_daily_notional: 1_000_000,
+            allowed_strategies: ["LIMIT"],
+            allowed_desks: ["equity"],
+            dark_pool_access: false,
+            trading_style: "high_touch",
+          },
+          status: "authenticated",
+          sessionExpired: false,
+        },
+      })
+    );
+
+    const auth = store.getState().auth;
+    expect(auth.user?.role).toBe("trader");
+    expect(auth.user?.name).toBe("Rajesh Patel");
+    expect(auth.status).toBe("authenticated");
+  });
+
+  it("leaves slices absent from the snapshot untouched", () => {
+    const marketBefore = store.getState().market;
+    store.dispatch(hydrateFromSnapshot({ ui: { ...store.getState().ui, selectedAsset: "AAPL" } }));
+    expect(store.getState().ui.selectedAsset).toBe("AAPL");
+    expect(store.getState().market).toBe(marketBefore);
   });
 });

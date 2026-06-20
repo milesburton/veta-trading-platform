@@ -119,7 +119,7 @@
   "frontend": {
     "unit": {
       "files": 173,
-      "cases": 1982
+      "cases": 1984
     },
     "playwright": {
       "files": 19,
