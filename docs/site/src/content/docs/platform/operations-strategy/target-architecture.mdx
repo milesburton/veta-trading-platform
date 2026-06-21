@@ -8,7 +8,7 @@ description: Two environments, single-instance trade-offs, deploy mechanism, syn
 Two environments, no overlap of running services:
 
 | Env | Host | Purpose | Promotion |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **dev** | engineer workstation, devcontainer | day-to-day coding, fast iteration. Not 24/7. | n/a |
 | **prod** | homelab Proxmox LXC, ports `5xxx` (dev container internal), public via OVH SSH tunnel at `veta.mnetcs.com` | every merge to `main` deploys here automatically via the systemd auto-pull + plain-compose pipeline | continuous |
 

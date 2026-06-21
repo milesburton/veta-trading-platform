@@ -17,7 +17,7 @@ Tests drive a real Chromium instance against the real frontend. The gateway is m
 ## What's covered
 
 | Spec | What it exercises |
-|------|-------------------|
+| --- | --- |
 | `auth.spec.ts` | Login, session refresh, logout, OAuth callback |
 | `orders.spec.ts` | Order ticket to blotter to fills, rejection paths |
 | `algo-orders.spec.ts` | TWAP, VWAP, POV, Iceberg, Sniper submission and child orders |
@@ -58,7 +58,7 @@ Tests run independently. Each spawns its own `GatewayMock`, so message-shape cha
 ### Local vs CI
 
 | Aspect | Local | CI |
-|---|---|---|
+| --- | --- | --- |
 | Vite dev server | spawned by Playwright | spawned by Playwright |
 | Workers | default (CPU-detected) | 4 |
 | Retries | 0 | 1 |

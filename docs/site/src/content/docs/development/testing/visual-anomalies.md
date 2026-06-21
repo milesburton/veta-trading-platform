@@ -40,7 +40,7 @@ The `region` rule is disabled because Starlight pages have their own landmark st
 Ten scenarios, all read-only navigations:
 
 | Scenario | What gets captured |
-|----------|-------------------|
+| --- | --- |
 | Login page | Pre-auth chrome, OAuth form |
 | Trader dashboard | Default cash-equity workspace |
 | Admin dashboard | Mission Control and admin panels |

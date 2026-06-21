@@ -30,7 +30,7 @@ For each fill the CCP performs the following work:
 2. **Initial margin.** Margin is posted to both buyer and seller accounts at an asset-class-specific rate:
 
    | Asset class | Initial margin |
-   |-------------|---------------:|
+| --- | ---: |
    | Equity      | 10% notional |
    | Fixed income| 2% notional |
    | Derivatives | 15% notional |
@@ -50,7 +50,7 @@ Every `CCP_SETTLEMENT_SWEEP_MS` (30 s by default) a sweep walks the queue, picks
 ## HTTP surface
 
 | Path | Purpose |
-|------|---------|
+| --- | --- |
 | `GET /health` | liveness |
 | `GET /ccp/margin/:userId` | account margin summary |
 | `GET /ccp/settlements` | pending settlement queue |

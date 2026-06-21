@@ -58,7 +58,7 @@ End-to-end runtime is around 80 seconds across the full suite. Each individual f
 All seven suites run as part of `deno task test:testcontainers`:
 
 | File | Boots | What it covers |
-|------|-------|----------------|
+| --- | --- | --- |
 | `testcontainers.smoke.test.ts` | postgres + redpanda | Helpers themselves: connection works, migrations apply, broker accepts |
 | `testcontainers.stack.test.ts` | postgres + redpanda + 2 services | Helper API: `startStack()` brings up multiple services and tears them down |
 | `journal.http.tc.test.ts` | journal | Journal HTTP contracts (8 steps) |

@@ -58,7 +58,7 @@ See the [ticketing runbook](../ticketing/) for env wiring, token scopes, and end
 The webhook URL is injected at runtime via the `DISCORD_WEBHOOK_URL` environment variable. It is never committed to the repository.
 
 | Service | Env var | Compose default |
-|---|---|---|
+| --- | --- | --- |
 | `gateway` | `DISCORD_WEBHOOK_URL` | empty string (notifier no-ops) |
 | `grafana` | `DISCORD_WEBHOOK_URL` | `https://discord.com/api/webhooks/0/REPLACE_ME` (rejected by notifier) |
 
@@ -133,7 +133,7 @@ Last critical: 47m ago — `kill-switch` admin halt for AAPL
 Header emoji follows the **worst** service-availability window seen in the day:
 
 | Emoji | Worst-window service ratio |
-|---|---|
+| --- | --- |
 | ✅ | 100% (no service ever dropped) |
 | ⚠️ | 95% ≤ ratio < 100% |
 | 🚨 | below 95% |
@@ -149,7 +149,7 @@ Replaces the per-minute heartbeat that landed in #319 — 1440 messages/day buri
 Three GitHub workflow events fire into the same channel:
 
 | Event | Trigger | Message format |
-|---|---|---|
+| --- | --- | --- |
 | **CI failure on main** | `workflow_run.conclusion == 'failure'` | 🚨 `<workflow>` failed on main · `<sha>` by `<actor>` |
 | **Docs deploy success** | `Deploy GitHub Pages` completed on main | 📘 Docs deployed · `<sha>` |
 | **PR merged to main** | `pull_request_target.merged == true` | ✅ Merged **#N** — `<title>` (by `<author>`) |
@@ -165,7 +165,7 @@ The gateway emits `frontend_memory_heap_used_max_bytes` as an OTEL gauge — the
 Two alert rules consume it:
 
 | Rule | Threshold | Duration | Severity |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `FrontendHeapHigh` | > 2 GiB | 10m | warning |
 | `FrontendHeapCritical` | > 4 GiB | 2m | critical |
 

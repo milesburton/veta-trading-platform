@@ -84,7 +84,7 @@ restrict,port-forwarding,permitlisten="18443" ssh-ed25519 AAAAC3N...
 ```
 
 | Option | Effect |
-|---|---|
+| --- | --- |
 | `restrict` | Denies pty / X11 / agent-forwarding / user-rc / `exec` by default. Equivalent to `no-agent-forwarding,no-port-forwarding,no-pty,no-user-rc,no-X11-forwarding,no-exec` |
 | `port-forwarding` | Re-enables the *one* forwarding capability we need |
 | `permitlisten="18443"` | Allows the reverse-forward to bind only port 18443. Any other `-R` request is rejected. |
@@ -116,7 +116,7 @@ ss -tlnp | grep :443
 ## Failure modes
 
 | Symptom | Likely cause |
-|---|---|
+| --- | --- |
 | Edge Traefik returns 502 | Tunnel down. Check `journalctl -u veta-tunnel` |
 | Tunnel runs but public URL returns 503 from homelab Traefik | Homelab Traefik dead, a separate problem |
 | Tunnel restarts every few seconds | OVH SSH daemon rejecting the key. Check `journalctl -u veta-tunnel` for the error |

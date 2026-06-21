@@ -10,7 +10,7 @@ VETA enforces real-time risk controls at every stage of the order lifecycle.
 Every order passes through the risk engine before reaching the market. Six checks run in parallel:
 
 | Check                  | Description                                                                            |
-| ---------------------- | -------------------------------------------------------------------------------------- |
+| --- | --- |
 | Fat-finger collar      | Rejects orders where the limit price deviates more than 5% from the current market price |
 | Duplicate detection    | Blocks identical orders submitted within 500 ms                                        |
 | Self-cross prevention  | Prevents a trader from holding both a buy and a sell order on the same instrument      |

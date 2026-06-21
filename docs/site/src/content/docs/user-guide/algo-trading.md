@@ -10,7 +10,7 @@ VETA supports 9 algo strategies, each running as an independent microservice. Th
 ## Available strategies
 
 | Strategy      | Approach                                                              | Best for                              |
-| ------------- | --------------------------------------------------------------------- | ------------------------------------- |
+| --- | --- | --- |
 | LIMIT         | Passive limit order with configurable aggression                      | Small orders, price-sensitive fills   |
 | TWAP          | Time-Weighted Average Price, uniform slices over time                 | Spreading execution evenly            |
 | VWAP          | Volume-Weighted Average Price, historically-shaped slices             | Matching the day's volume curve       |

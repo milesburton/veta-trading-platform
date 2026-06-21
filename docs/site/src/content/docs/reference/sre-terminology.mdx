@@ -56,7 +56,7 @@ Mechanically:
 So:
 
 | SLO | Monthly budget | Yearly budget |
-|---|---|---|
+| --- | --- | --- |
 | 99% | 7h 18m | ~3.65 days |
 | 99.5% | 3h 39m | ~1.83 days |
 | 99.9% | 43m 12s | ~8h 45m |
@@ -137,7 +137,7 @@ VETA's target is **RTO < 30 minutes**, achieved by pg-auto-failover (or Patroni)
 [DORA](https://dora.dev/) (DevOps Research and Assessment) published research correlating four metrics with software-team performance. The four together describe **velocity** (deploy frequency, lead time) and **stability** (change failure rate, MTTR). Real platforms track all four.
 
 | Metric | Definition | Elite | High | Medium | Low |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | **Deployment frequency** | How often code reaches prod | Multiple per day | Daily-weekly | Weekly-monthly | Monthly+ |
 | **Lead time for changes** | Commit to prod | < 1 hour | 1 day to 1 week | 1 week to 1 month | > 1 month |
 | **Change failure rate** | % of deploys causing incidents | 0-15% | 16-30% | 16-30% | 16-30% |
@@ -154,7 +154,7 @@ VETA today is **Elite** on velocity (multiple PRs per day, < 1h lead time) and *
 How urgently we treat an incident. Used to decide alerting cadence, on-call wake-up rules, and postmortem requirements.
 
 | Level | Definition | Example | Response |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **SEV1** | Full outage. Users cannot do core work. | Site returns 404, can't sign in, can't submit orders. | Immediate page; root-cause postmortem mandatory. |
 | **SEV2** | Major degradation. Core work possible but degraded. | Live feed stuck on a stale value; order ack p99 > 5s. | Same-day investigation; postmortem if user-visible > 5 min. |
 | **SEV3** | Minor degradation or contained bug. | Single panel rendering issue; non-critical service slow. | Tracked but no page; fix on next regular cycle. |
@@ -165,7 +165,7 @@ Severity is **about user impact**, not internal complexity. A 1-line bug that br
 ## Other terms you'll see in the strategy doc
 
 | Term | Meaning |
-|---|---|
+| --- | --- |
 | **Blast radius** | How much is affected by a single failure. Smaller = safer. Rolling deploys have smaller blast radius than batch deploys. |
 | **Blue-green deploy** | Run two complete environments in parallel; switch traffic atomically. Old environment stays warm for fast rollback. |
 | **Canary** | Roll a change out to 1% of traffic first; observe; expand if healthy. Smaller blast radius than blue-green for some classes of bug. |

@@ -11,7 +11,7 @@ import scaling from "@docs/data/loadtest/2026-05-03-scaling.json";
 Latest run: **{scaling.runDate}** &nbsp;·&nbsp; Runner: <code>{scaling.runner}</code>
 
 | Headline metric                        | Value                                                      |
-| -------------------------------------- | ---------------------------------------------------------- |
+| --- | --- |
 | Maximum sustained order count tested   | 500 concurrent                                             |
 | Sample success rate at peak            | **100%** (500/500 orders flowed end-to-end)                |
 | End-to-end p99 (submit → fill) at peak | **{scaling.scenarios[2].stages.submittedToFilled.p99} ms** |

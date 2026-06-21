@@ -16,7 +16,7 @@ Every trader has access to the **My Positions** panel, which shows their own ope
 The panel displays the following columns:
 
 | Column | Description |
-| ------ | ------ |
+| --- | --- |
 | Symbol | Trading symbol (e.g. AAPL, US10Y) |
 | Side | BUY or SELL |
 | Quantity | Open quantity remaining |
@@ -40,7 +40,7 @@ The panel displays the following columns:
 ### Colour coding
 
 | Condition | Colour |
-| ------ | ------ |
+| --- | --- |
 | Positive unrealised P&L | Green |
 | Negative unrealised P&L | Red |
 | Zero or no unrealised P&L | Grey |
@@ -89,7 +89,7 @@ Desk-heads, risk-managers, and admins can view the **Risk Dashboard** panel for 
 The Risk Dashboard aggregates positions across all traders:
 
 | Metric | Description |
-| ------ | ------ |
+| --- | --- |
 | Gross Exposure | Total long + short notional (absolute) |
 | Net Exposure | Long notional minus short notional |
 | Unrealised P&L | Firm-wide unrealised profit/loss |
@@ -150,7 +150,7 @@ A JSON export includes nested structure with position details, fill history, and
 Each trader has position limits enforced by the risk engine:
 
 | Limit | Description | Default |
-| ------ | ------ | ------ |
+| --- | --- | --- |
 | Max position size | Largest single position allowed (shares or notional) | 50,000 shares |
 | Max net exposure | Maximum net long or short exposure | $5,000,000 |
 | Max gross exposure | Maximum total long + short exposure | $10,000,000 |
@@ -172,7 +172,7 @@ If the journal is unavailable, positions are served from the last known state wi
 ## Related panels
 
 | Panel | Description |
-| ------ | ------ |
+| --- | --- |
 | [My Positions](/veta-trading-platform/reference/panels/) | Individual trader positions and P&L |
 | [Risk Dashboard](/veta-trading-platform/reference/panels/) | Firm-wide position and P&L overview |
 | [Order Blotter](/veta-trading-platform/user-guide/managing-orders/) | Active orders linked to positions |

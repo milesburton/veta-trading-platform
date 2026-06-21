@@ -49,7 +49,7 @@ The news panel shows live headlines with sentiment scoring:
 The header bar shows live system status:
 
 | Indicator                        | Meaning                                                       |
-| -------------------------------- | ------------------------------------------------------------- |
+| --- | --- |
 | Feed status (green dot + "live") | All data feeds are current                                    |
 | Feed status (amber + "slow")     | Some feeds are delayed                                        |
 | Feed status (red + "stale")      | Data feeds are offline                                        |

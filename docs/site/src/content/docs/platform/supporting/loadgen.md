@@ -49,7 +49,7 @@ note below.
 Optional tuning vars in the same file:
 
 | Env                        | Default                                                            | Effect                                     |
-| -------------------------- | ------------------------------------------------------------------ | ------------------------------------------ |
+| --- | --- | --- |
 | `LOADGEN_OAUTH_USERNAME`   | `admin`                                                            | Which user the load runs as                |
 | `LOADGEN_SOAK_VUS`         | `50`                                                               | Steady VUs on soak                         |
 | `LOADGEN_SOAK_DURATION`    | `50m`                                                              | Soak iteration length before token refresh |

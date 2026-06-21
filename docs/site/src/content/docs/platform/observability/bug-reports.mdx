@@ -42,7 +42,7 @@ The modal explicitly tells the user not to include passwords or sensitive data. 
 Routes through a dedicated webhook so bug reports don't drown the alerts channel. Falls back to the alerts webhook when the dedicated one is unset, so a single-channel deployment still works.
 
 | Env var | Channel | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `DISCORD_BUG_WEBHOOK_URL` | bug-reports | Preferred. Set in `/opt/stacks/veta/.env` on the homelab. |
 | `DISCORD_WEBHOOK_URL` | alerts | Used as fallback if the bug webhook is unset. |
 

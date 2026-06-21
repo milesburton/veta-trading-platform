@@ -12,7 +12,7 @@ The **Order Blotter** shows all your orders with real-time status updates. It su
 Every order progresses through a status lifecycle:
 
 | Status    | Colour | Description                                       |
-| --------- | ------ | ------------------------------------------------- |
+| --- | --- | --- |
 | Pending   | Amber  | Submitted, awaiting OMS validation                |
 | Working   | Blue   | Actively being executed by an algo strategy       |
 | Filled    | Green  | Fully filled. All shares executed.                |
@@ -35,7 +35,7 @@ When multiple orders are selected, a blue bar appears showing the count with a *
 Right-click any order (or a multi-selection) to open the context menu:
 
 | Action               | Available to                                  | Description                            |
-| -------------------- | --------------------------------------------- | -------------------------------------- |
+| --- | --- | --- |
 | Select and broadcast | Everyone                                      | Focus this order across linked panels  |
 | View asset in ladder | Everyone                                      | Navigate the market ladder to this asset |
 | Copy order ID        | Everyone                                      | Copy the order ID to clipboard         |

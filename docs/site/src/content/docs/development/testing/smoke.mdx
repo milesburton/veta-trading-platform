@@ -18,7 +18,7 @@ Smoke does not assert correctness of business logic; that is the job of [unit](.
 The full backend smoke (`smoke.full.tc.test.ts`) groups its 62 checks into three top-level `Deno.test` blocks so each block can boot the minimum service set it needs:
 
 | Block | Services booted | Checks |
-|-------|-----------------|--------|
+| --- | --- | --- |
 | Service health and version | All 29 services | 3 |
 | Core trading flows | Market-sim, EMS, OMS, user-service, journal, gateway, fix-archive, observability, risk-engine, all 9 algo strategies | 41 |
 | Peripheral services | Market-sim, journal, user-service, gateway, plus news, analytics, recommendation, feature, signal, scenario, llm-advisory, replay, rfq, dark-pool, ccp, market-data | 18 |

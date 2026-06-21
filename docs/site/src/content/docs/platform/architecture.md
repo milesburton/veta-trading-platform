@@ -198,7 +198,7 @@ graph LR
 ### Colour key
 
 | Colour    | Group          | Services                                                  |
-| --------- | -------------- | --------------------------------------------------------- |
+| --- | --- | --- |
 | 🟣 Purple | Client         | React Frontend                                            |
 | 🟡 Amber  | Gateway        | API Gateway (BFF)                                         |
 | 🟢 Green  | Trading        | OMS, EMS                                                  |
@@ -249,7 +249,7 @@ sequenceDiagram
 ## Bus topics
 
 | Category     | Topics                                                                                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| --- | --- |
 | Trading      | `orders.new`, `orders.submitted`, `orders.routed`, `orders.child`, `orders.filled`, `orders.expired`, `orders.rejected`, `orders.cancelled` |
 | Algo         | `algo.heartbeat`                                                                                                                            |
 | FIX          | `fix.execution`                                                                                                                             |

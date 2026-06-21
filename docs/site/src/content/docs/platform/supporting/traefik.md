@@ -22,7 +22,7 @@ Traefik does **not** match on `Host` headers, so any hostname or IP that resolve
 ## TLS
 
 | Environment | TLS terminator |
-|-------------|----------------|
+| --- | --- |
 | `local` (devcontainer) | none (plain HTTP) |
 | `homelab prod` (`veta.mnetcs.com`) | OVH edge terminates TLS, then tunnels HTTP into homelab Traefik |
 

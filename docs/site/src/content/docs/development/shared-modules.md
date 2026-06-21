@@ -10,7 +10,7 @@ All shared backend modules use Deno import map aliases defined in `deno.json`. U
 ## Import map
 
 | Alias | Module | Exports |
-|-------|--------|---------|
+| --- | --- | --- |
 | `@veta/http` | `lib/http.ts` | `CORS_HEADERS`, `json()`, `jsonError()`, `corsOptions()` |
 | `@veta/auth` | `lib/auth.ts` | `getCookieToken()` |
 | `@veta/db` | `lib/db.ts` | `journalPool`, `usersPool`, `replayPool`, etc. |
@@ -36,7 +36,7 @@ import type { RoutedOrder } from "@veta/types/orders";
 ## Frontend shared utilities
 
 | File | Exports |
-|------|---------|
+| --- | --- |
 | `utils/format.ts` | `formatTime()`, `formatBps()`, `formatCurrency()`, `pnlColor()` |
 | `utils/gridFilter.ts` | Grid filtering logic |
 | `auth/rbac.ts` | `AUTH_ROLES`, `AuthRole`, `canSubmitOrders()`, `ROLE_LABELS` |
