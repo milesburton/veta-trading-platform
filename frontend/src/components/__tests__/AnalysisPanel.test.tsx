@@ -39,6 +39,10 @@ function makeStore(selectedAsset: string | null = null) {
         upgradeStatus: { inProgress: false, message: null },
         optionPrefill: null,
         orderTicketWindowSize: { w: 480, h: 780 },
+        algoMonitorTab: "active" as const,
+        showHeartbeats: false,
+        observabilityTab: "summary" as const,
+        showOverridesOnly: false,
       },
       news: {
         bySymbol: {},

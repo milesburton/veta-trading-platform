@@ -1,5 +1,7 @@
 import { useSignal } from "@preact/signals-react";
-import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { UnknownAction } from "@reduxjs/toolkit";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { saveUiPrefs, setObservabilityTab } from "@veta/frontend/store/uiSlice.ts";
 import { COLOR } from "@veta/frontend/tokens.ts";
 import type { ObsEvent, OrderRecord } from "@veta/frontend/types.ts";
 import { formatBps, formatTime } from "@veta/frontend/utils/format.ts";
@@ -323,7 +325,13 @@ function TradeRow({ order }: { order: OrderRecord }) {
 export function ObservabilityPanel() {
   const events = useAppSelector((s) => s.observability.events);
   const orders = useAppSelector((s) => s.orders.orders);
-  const tab = useSignal<ObsTab>("summary");
+  const tab = useAppSelector((s) => s.ui.observabilityTab);
+  const dispatch = useAppDispatch();
+
+  function setTab(value: ObsTab) {
+    dispatch(setObservabilityTab(value));
+    dispatch(saveUiPrefs() as unknown as UnknownAction);
+  }
 
   const chartData = useMemo(() => bucketEvents(events, 5_000), [events]);
   const stats = useMemo(() => buildSummaryStats(orders), [orders]);
@@ -355,15 +363,13 @@ export function ObservabilityPanel() {
             <button
               type="button"
               onClick={() => {
-                tab.value = "summary";
+                setTab("summary");
               }}
               title="Summary — overview of fill statistics, notional, commission, and liquidity mix"
-              aria-pressed={tab.value === "summary"}
+              aria-pressed={tab === "summary"}
               data-testid="summary-tab"
               className={`px-2.5 py-1 transition-colors ${
-                tab.value === "summary"
-                  ? "bg-sky-900/60 text-sky-300"
-                  : "text-muted hover:text-default"
+                tab === "summary" ? "bg-sky-900/60 text-sky-300" : "text-muted hover:text-default"
               }`}
             >
               Summary
@@ -371,15 +377,13 @@ export function ObservabilityPanel() {
             <button
               type="button"
               onClick={() => {
-                tab.value = "trades";
+                setTab("trades");
               }}
               title="Trades — individual trade records with fill progression charts"
-              aria-pressed={tab.value === "trades"}
+              aria-pressed={tab === "trades"}
               data-testid="trades-tab"
               className={`px-2.5 py-1 transition-colors ${
-                tab.value === "trades"
-                  ? "bg-sky-900/60 text-sky-300"
-                  : "text-muted hover:text-default"
+                tab === "trades" ? "bg-sky-900/60 text-sky-300" : "text-muted hover:text-default"
               }`}
             >
               Trades
@@ -392,15 +396,13 @@ export function ObservabilityPanel() {
             <button
               type="button"
               onClick={() => {
-                tab.value = "events";
+                setTab("events");
               }}
               title="Events — raw observability event stream from the algo engine"
-              aria-pressed={tab.value === "events"}
+              aria-pressed={tab === "events"}
               data-testid="events-tab"
               className={`px-2.5 py-1 transition-colors ${
-                tab.value === "events"
-                  ? "bg-sky-900/60 text-sky-300"
-                  : "text-muted hover:text-default"
+                tab === "events" ? "bg-sky-900/60 text-sky-300" : "text-muted hover:text-default"
               }`}
             >
               Events
@@ -408,7 +410,7 @@ export function ObservabilityPanel() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {tab.value === "events" && (
+          {tab === "events" && (
             <button
               type="button"
               onClick={replay}
@@ -424,7 +426,7 @@ export function ObservabilityPanel() {
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto">
-        {tab.value === "summary" && (
+        {tab === "summary" && (
           <div className="p-3 flex flex-col gap-3">
             <div className="grid grid-cols-3 gap-2">
               <StatBox label="Total Orders" value={String(stats.totalOrders)} />
@@ -530,7 +532,7 @@ export function ObservabilityPanel() {
           </div>
         )}
 
-        {tab.value === "trades" &&
+        {tab === "trades" &&
           (tradeOrders.length === 0 ? (
             <div className="flex items-center justify-center h-24 text-subtle">No trades yet</div>
           ) : (
@@ -584,7 +586,7 @@ export function ObservabilityPanel() {
             </table>
           ))}
 
-        {tab.value === "events" && (
+        {tab === "events" && (
           <div className="p-3 flex flex-col gap-2">
             {latest.length === 0 ? (
               <div className="text-subtle">No events yet</div>

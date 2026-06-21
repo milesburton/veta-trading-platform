@@ -599,6 +599,8 @@ async function handle(req: Request): Promise<Response> {
           "INSERT INTO users.user_preferences (user_id, data) VALUES ($1,$2) ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data",
           [userId, parsed.data]
         );
+        logger.info("preferences.updated", { userId, ts: Date.now() });
+        producer?.send("user.preferences", { event: "updated", userId, ts: Date.now() }).catch(() => {});
         return json({ success: true });
       } finally {
         client.release();

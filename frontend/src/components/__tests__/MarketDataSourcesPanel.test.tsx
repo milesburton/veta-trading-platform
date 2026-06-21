@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MarketDataSourcesPanel } from "@veta/frontend/components/MarketDataSourcesPanel";
 import { authSlice } from "@veta/frontend/store/authSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
+import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -23,6 +24,7 @@ function makeStore(role: "admin" | "trader" = "admin") {
     reducer: {
       auth: authSlice.reducer,
       market: marketSlice.reducer,
+      ui: uiSlice.reducer,
     },
     preloadedState: {
       auth: {
