@@ -1,0 +1,202 @@
+---
+/**
+ * DatabaseSchema — renders a database schema with a Mermaid ER diagram
+ * and per-table column detail cards.
+ *
+ * @prop {Object[]} tables — Table definitions.
+ * @prop {string} tables[].name — Full table name (e.g. `scenarios.scenarios`).
+ * @prop {string} tables[].label — Human-readable label.
+ * @prop {string} tables[].description — Short description.
+ * @prop {Object[]} tables[].columns — Column definitions.
+ * @prop {string} tables[].columns[].name — Column name.
+ * @prop {string} tables[].columns[].type — Data type.
+ * @prop {'PK'|'FK'|'UK'|'NOT NULL'|'JSONB'|string} tables[].columns[].flags — Comma-separated flags.
+ * @prop {string} tables[].columns[].description — Column description.
+ * @prop {string} tables[].columns[].default — Default value (optional).
+ * @prop {string} tables[].columns[].nullable — 'YES' | 'NO'.
+ * @prop {string} [title] — Optional section title (defaults to "Schema").
+ * @prop {string} [mermaidTitle] — Optional Mermaid diagram title (defaults to the first table name).
+ */
+
+const { title = "Schema", mermaidTitle } = Astro.props;
+
+const tables: Array<{
+  name: string;
+  label: string;
+  description: string;
+  columns: Array<{
+    name: string;
+    type: string;
+    flags: string;
+    description: string;
+    default?: string;
+    nullable: string;
+  }>;
+}> = Astro.props.tables;
+
+const diagramTitle = mermaidTitle ?? (tables[0]?.name ?? "schema");
+
+// Build Mermaid ERD source from props.
+const mermaidLines: string[] = [`erDiagram`];
+tables.forEach((t) => {
+  const cols = t.columns
+    .map((c) => `${c.name} ${c.type}`)
+    .join("\n      ");
+  mermaidLines.push(`  ${t.name} {`);
+  mermaidLines.push(cols);
+  mermaidLines.push("  }");
+});
+// Add a generic FK relationship line for each table that likely references another.
+tables.forEach((t, i) => {
+  const fkCol = t.columns.find((c) => c.flags.includes("FK"));
+  if (fkCol && i > 0) {
+    mermaidLines.push(`  ${tables[i - 1].name} ||--o{ ${t.name} : "${fkCol.name}"}`);
+  }
+});
+const mermaidSource = mermaidLines.join("\n");
+---
+
+<h2 id="{title.toLowerCase().replace(/\s+/g, '-')}" class="sl-text-2xl sl-font-semibold sl-mt-8 sl-mb-4">{title}</h2>
+
+<p class="sl-text-base sl-text-[var(--sl-color-gray-2)] sl-mb-6">{Astro.props.description}</p>
+
+<!-- Mermaid ER diagram -->
+<pre class="mermaid" data-language="mermaid">{mermaidSource}</pre>
+
+<!-- Per-table column detail cards -->
+<div class="schema-cards">
+  {tables.map((t) => (
+    <div class="schema-card">
+      <div class="schema-card-header">
+        <code class="schema-card-name">{t.name}</code>
+        <span class="schema-card-label">{t.label}</span>
+      </div>
+      <p class="schema-card-desc">{t.description}</p>
+      <table class="schema-table">
+        <thead>
+          <tr>
+            <th class="schema-th">Column</th>
+            <th class="schema-th">Type</th>
+            <th class="schema-th">Flags</th>
+            <th class="schema-th">Nullable</th>
+            <th class="schema-th">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {t.columns.map((c) => (
+            <tr>
+              <td><code class="schema-tc">{c.name}</code></td>
+              <td><code class="schema-tc">{c.type}</code></td>
+              <td>
+                {c.flags.split(",").map((f) => f.trim()).filter(Boolean).map((f) => (
+                  <span
+                    class:list={[
+                      "schema-tag",
+                      `schema-tag-${f.toLowerCase().replace(/\s+/g, "-")}`,
+                    ]}
+                  >{f}</span>
+                ))}
+              </td>
+              <td>{c.nullable}</td>
+              <td class="schema-tc">{c.description}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ))}
+</div>
+
+<style>
+  .schema-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin: 1.5rem 0;
+  }
+  .schema-card {
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 8px;
+    padding: 1.25rem;
+    background: var(--sl-color-bg-sidebar);
+    transition: border-color 0.15s;
+  }
+  .schema-card:hover {
+    border-color: var(--sl-color-gray-4);
+  }
+  .schema-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+  }
+  .schema-card-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+  .schema-card-label {
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-3);
+    background: var(--sl-color-gray-6);
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+  }
+  .schema-card-desc {
+    font-size: 0.85rem;
+    color: var(--sl-color-gray-2);
+    margin: 0 0 1rem;
+  }
+  .schema-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+    margin: 0;
+  }
+  .schema-table th,
+  .schema-table td {
+    padding: 0.45rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--sl-color-gray-6);
+  }
+  .schema-th {
+    font-weight: 600;
+    color: var(--sl-color-gray-2);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .schema-tc {
+    color: var(--sl-color-gray-1);
+  }
+  .schema-tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    margin-right: 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .schema-tag-pk {
+    background: rgb(251 191 36 / 0.15);
+    color: #fbbf24;
+  }
+  .schema-tag-fk {
+    background: rgb(96 165 250 / 0.15);
+    color: #60a5fa;
+  }
+  .schema-tag-uk {
+    background: rgb(52 211 153 / 0.15);
+    color: #34d399;
+  }
+  .schema-tag-not-null {
+    background: rgb(248 113 113 / 0.12);
+    color: #f87171;
+  }
+  .schema-tag-jsonb {
+    background: rgb(167 139 250 / 0.15);
+    color: #a78bfa;
+  }
+</style>

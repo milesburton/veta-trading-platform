@@ -86,6 +86,7 @@
   },
   "initializeCommand": "mkdir -p $HOME/.ssh $HOME/.config/gh $HOME/.claude && touch $HOME/.gitconfig",
   "remoteUser": "deno",
+  "userEnvProbe": "none",
   "mounts": [
     "source=${localEnv:HOME}/.ssh,target=/home/deno/.ssh,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.config/gh,target=/home/deno/.config/gh,type=bind,consistency=cached",
