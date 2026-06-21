@@ -1,6 +1,431 @@
 {
-  "totalPanels": 0,
-  "rendered": 0,
-  "skipped": 0,
-  "panels": []
+  "totalPanels": 53,
+  "rendered": 51,
+  "skipped": 2,
+  "panels": [
+    {
+      "panelId": "market-ladder",
+      "title": "Market Ladder (live quotes)",
+      "description": "Live bid/ask ladder for any asset",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/market-ladder.png"
+    },
+    {
+      "panelId": "order-ticket",
+      "title": "Order Ticket (place trades)",
+      "description": "Submit buy/sell orders",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/order-ticket.png"
+    },
+    {
+      "panelId": "order-blotter",
+      "title": "Orders (active & filled)",
+      "description": "Live view of all open orders",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/order-blotter.png"
+    },
+    {
+      "panelId": "child-orders",
+      "title": "Child Orders (executions)",
+      "description": "Execution slices for the selected parent order",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/child-orders.png"
+    },
+    {
+      "panelId": "algo-monitor",
+      "title": "Algo Monitor (strategy status)",
+      "description": "Monitor running algo strategies",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/algo-monitor.png"
+    },
+    {
+      "panelId": "observability",
+      "title": "Observability (system health)",
+      "description": "System events and service health",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/observability.png"
+    },
+    {
+      "panelId": "candle-chart",
+      "title": "Price Chart (OHLC history)",
+      "description": "OHLCV candlestick price chart",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/candle-chart.png"
+    },
+    {
+      "panelId": "market-depth",
+      "title": "Market Depth (bid/ask book)",
+      "description": "Order book depth visualisation",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/market-depth.png"
+    },
+    {
+      "panelId": "executions",
+      "title": "Executions (trade fills)",
+      "description": "Filled order history and analytics",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/executions.png"
+    },
+    {
+      "panelId": "decision-log",
+      "title": "Decision Log (algo audit trail)",
+      "description": "Real-time algo reasoning — every slice, fill, and decision",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/decision-log.png"
+    },
+    {
+      "panelId": "market-match",
+      "title": "Market Match (trade tape)",
+      "description": "Live fill tape: venue, counterparty, liquidity, and impact",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/market-match.png"
+    },
+    {
+      "panelId": "admin",
+      "title": "Mission Control (system config)",
+      "description": "Mission Control — system config and user management",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/admin.png"
+    },
+    {
+      "panelId": "news",
+      "title": "News & Signals (market analysis)",
+      "description": "Live market news with sentiment scoring",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/news.png"
+    },
+    {
+      "panelId": "news-sources",
+      "title": "News Sources (mission control)",
+      "description": "Enable or disable news feed sources",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/news-sources.png"
+    },
+    {
+      "panelId": "order-progress",
+      "title": "Order Progress (fill tracker)",
+      "description": "Fill progress pies and avg fill rate by strategy",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/order-progress.png"
+    },
+    {
+      "panelId": "market-heatmap",
+      "title": "Market Heatmap (sector view)",
+      "description": "Sector treemap heatmap — assets sized by market cap, coloured by % change",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/market-heatmap.png"
+    },
+    {
+      "panelId": "alerts",
+      "title": "Alerts (system notifications)",
+      "description": "System alert log — kill switch events, service outages, order rejections and heartbeat loss",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/alerts.png"
+    },
+    {
+      "panelId": "option-pricing",
+      "title": "Option Pricing (Black-Scholes)",
+      "description": "Black-Scholes European option pricing — theoretical price and full Greeks",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/option-pricing.png"
+    },
+    {
+      "panelId": "scenario-matrix",
+      "title": "Scenario Matrix (spot/vol shocks)",
+      "description": "Spot/vol shock scenario matrix with Monte Carlo distribution",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/scenario-matrix.png"
+    },
+    {
+      "panelId": "trade-recommendation",
+      "title": "Trade Recommendations (signal-driven)",
+      "description": "Rule-based option trade recommendations — scored signals with reason codes",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/trade-recommendation.png"
+    },
+    {
+      "panelId": "market-data-sources",
+      "title": "Market Data Sources (provider config)",
+      "description": "Configure per-symbol market data sources — synthetic or Alpha Vantage",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/market-data-sources.png"
+    },
+    {
+      "panelId": "market-feed-control",
+      "title": "Market Feed Control (feed health)",
+      "description": "Global feed pause/resume, market hours, and per-symbol source overview",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/market-feed-control.png"
+    },
+    {
+      "panelId": "research-radar",
+      "title": "Signal Radar (market intelligence)",
+      "description": "Signal Radar — all symbols scored by the intelligence pipeline",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/research-radar.png"
+    },
+    {
+      "panelId": "instrument-analysis",
+      "title": "Instrument Analysis (feature deep-dive)",
+      "description": "Per-symbol deep-dive — features, signal gauge, and backtest replay",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/instrument-analysis.png"
+    },
+    {
+      "panelId": "signal-explainability",
+      "title": "Signal Explainability (factor breakdown)",
+      "description": "Factor waterfall — how each feature drives the signal score",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/signal-explainability.png"
+    },
+    {
+      "panelId": "service-health",
+      "title": "Service Health (system status)",
+      "description": "Live health grid for all backend services — status, version, and latency",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/service-health.png"
+    },
+    {
+      "panelId": "throughput-gauges",
+      "title": "Throughput (pipeline metrics)",
+      "description": "Pipeline throughput metrics — orders/min, fills/min, and fill rate",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/throughput-gauges.png"
+    },
+    {
+      "panelId": "algo-leaderboard",
+      "title": "Algo Leaderboard (strategy performance)",
+      "description": "Strategy performance leaderboard — fill rate and slippage per algo",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/algo-leaderboard.png"
+    },
+    {
+      "panelId": "load-test",
+      "title": "Load Test (bulk order injection)",
+      "description": "Admin-only bulk order injector — stress-test the pipeline",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/load-test.png"
+    },
+    {
+      "panelId": "load-gen",
+      "title": "Load Generator (sustained synthetic load)",
+      "description": "Admin/oncall sustained load generator — toggle on/off, configurable rate, auto-stop safety cap",
+      "rendered": false,
+      "notes": "not yet captured by walkthrough",
+      "screenshot": null
+    },
+    {
+      "panelId": "llm-subsystem",
+      "title": "LLM Advisory Subsystem (operator controls)",
+      "description": "LLM Advisory Subsystem operator controls — arm/disarm the advisory engine",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/llm-subsystem.png"
+    },
+    {
+      "panelId": "greeks-surface",
+      "title": "Greeks Surface (strike profile)",
+      "description": "Delta, gamma, theta, and vega across the strike surface for any expiry",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/greeks-surface.png"
+    },
+    {
+      "panelId": "vol-profile",
+      "title": "Volatility Profile (EWMA trend)",
+      "description": "EWMA volatility trend with rolling baseline — auto-refreshes every 60s",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/vol-profile.png"
+    },
+    {
+      "panelId": "estate-overview",
+      "title": "Estate Overview (command centre)",
+      "description": "Unified estate command centre — service health, throughput, event timeline, and alert feed",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/estate-overview.png"
+    },
+    {
+      "panelId": "yield-curve",
+      "title": "Yield Curve (Nelson-Siegel)",
+      "description": "Nelson-Siegel spot yield curve with forward rates and bond pricing",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/yield-curve.png"
+    },
+    {
+      "panelId": "price-fan",
+      "title": "Price Fan (GBM projection)",
+      "description": "GBM Monte Carlo forward price projection fan chart",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/price-fan.png"
+    },
+    {
+      "panelId": "demo-day",
+      "title": "Demo Day (simulate trading session)",
+      "description": "One-click trading day simulator — inject realistic mixed-strategy orders",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/demo-day.png"
+    },
+    {
+      "panelId": "spread-analysis",
+      "title": "Spread Analysis (G/Z/OAS)",
+      "description": "G-spread, Z-spread and OAS for corporate bonds vs the government curve",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/spread-analysis.png"
+    },
+    {
+      "panelId": "duration-ladder",
+      "title": "Duration Ladder (DV01 by tenor)",
+      "description": "Portfolio DV01 key-rate attribution by tenor bucket — stacked bar chart",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/duration-ladder.png"
+    },
+    {
+      "panelId": "vol-surface",
+      "title": "Vol Surface (implied vol smile)",
+      "description": "Implied vol heatmap (5 expiries × 9 strikes) — click to prefill Option Pricing",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/vol-surface.png"
+    },
+    {
+      "panelId": "basket-order",
+      "title": "Basket Order (multi-leg)",
+      "description": "Multi-leg basket order builder — set target notional, assign weights, and submit all legs at once",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/basket-order.png"
+    },
+    {
+      "panelId": "client-rfq",
+      "title": "Client RFQ (request for quote)",
+      "description": "Submit RFQs and track quotes from the sales desk",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/client-rfq.png"
+    },
+    {
+      "panelId": "sales-workbench",
+      "title": "Sales Workbench (RFQ routing)",
+      "description": "Review client RFQs, route to pricing, apply markup, confirm to client",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/sales-workbench.png"
+    },
+    {
+      "panelId": "product-builder",
+      "title": "Product Builder (structured products)",
+      "description": "Build multi-leg structured products with equity, bond, and option legs",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/product-builder.png"
+    },
+    {
+      "panelId": "product-book",
+      "title": "Product Book (issued products)",
+      "description": "Browse issued products and initiate client sales via RFQ",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/product-book.png"
+    },
+    {
+      "panelId": "session-replay",
+      "title": "Session Replay",
+      "description": "Record and replay user sessions for training and audit",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/session-replay.png"
+    },
+    {
+      "panelId": "risk-dashboard",
+      "title": "Risk Dashboard (firm-wide P&L)",
+      "description": "Firm-wide position and P&L monitor — every trader's book in one view",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/risk-dashboard.png"
+    },
+    {
+      "panelId": "my-positions",
+      "title": "My Positions (live book)",
+      "description": "Your open positions with live mark-to-market P&L",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/my-positions.png"
+    },
+    {
+      "panelId": "symbol-search",
+      "title": "Symbol Search (find instruments)",
+      "description": "Search by symbol, RIC, BBG ticker, ISIN, or paste a Bloomberg trade",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/symbol-search.png"
+    },
+    {
+      "panelId": "dev-tools",
+      "title": "Dev Tools (admin debugging)",
+      "description": "UAT debugging — fire test alerts, inject trades, manage mute rules",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/dev-tools.png"
+    },
+    {
+      "panelId": "data-depth",
+      "title": "Market Data Depth (per-symbol history)",
+      "description": "Per-symbol data depth — sortable list with candle counts and span days",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/data-depth.png"
+    },
+    {
+      "panelId": "scenarios",
+      "title": "Scenarios (deterministic replay)",
+      "description": "Save and replay a deterministic trading scenario — same seed, same fills",
+      "rendered": true,
+      "notes": null,
+      "screenshot": "screenshots/panels/scenarios.png"
+    },
+    {
+      "panelId": "platform-status",
+      "title": "Platform Status (CI/CD, alerts, bugs)",
+      "description": "Last 24h: services, alerts, bugs. Report a bug from here.",
+      "rendered": false,
+      "notes": "not yet captured by walkthrough",
+      "screenshot": null
+    }
+  ]
 }
