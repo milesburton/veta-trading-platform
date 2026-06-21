@@ -65,11 +65,51 @@ function parsePanelDescriptions(text) {
   return descriptions;
 }
 
+function parsePanelIds(text) {
+  const m = text.match(/export const PANEL_IDS\s*=\s*\[([\s\S]*?)\]\s*as const/);
+  if (!m) throw new Error("PANEL_IDS not found in panelRegistry.ts");
+  const ids = [];
+  const re = /"([a-z0-9-]+)"/g;
+  let match = re.exec(m[1]);
+  while (match !== null) {
+    ids.push(match[1]);
+    match = re.exec(m[1]);
+  }
+  return ids;
+}
+
 const registrySrc = fs.readFileSync(registryPath, "utf8");
 const componentPickerSrc = fs.readFileSync(componentPickerPath, "utf8");
+
+// Synthesise a report from existing screenshots when report.json is absent
+// (e.g. fresh clone before the Playwright walkthrough has run).
+function buildReportFromScreenshots(panelIds) {
+  const existingScreenshots = fs.existsSync(screenshotsSrcDir)
+    ? new Set(fs.readdirSync(screenshotsSrcDir).map((f) => path.basename(f, ".png")))
+    : new Set();
+  const panels = panelIds.map((panelId) => {
+    const rendered = existingScreenshots.has(panelId);
+    return {
+      panelId,
+      rendered,
+      consoleErrors: [],
+      pageErrors: [],
+      screenshot: rendered ? `screenshots/${panelId}.png` : null,
+      notes: rendered ? null : "not yet captured by walkthrough",
+    };
+  });
+  return {
+    totalPanels: panels.length,
+    rendered: panels.filter((p) => p.rendered).length,
+    skipped: panels.filter((p) => !p.rendered).length,
+    panels,
+  };
+}
+
+const panelIds = parsePanelIds(registrySrc);
 const report = fs.existsSync(reportPath)
   ? JSON.parse(fs.readFileSync(reportPath, "utf8"))
-  : { totalPanels: 0, rendered: 0, skipped: 0, panels: [] };
+  : buildReportFromScreenshots(panelIds);
 
 const titles = parsePanelTitles(registrySrc);
 const descriptions = parsePanelDescriptions(componentPickerSrc);
