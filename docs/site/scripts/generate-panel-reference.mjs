@@ -67,7 +67,9 @@ function parsePanelDescriptions(text) {
 
 const registrySrc = fs.readFileSync(registryPath, "utf8");
 const componentPickerSrc = fs.readFileSync(componentPickerPath, "utf8");
-const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+const report = fs.existsSync(reportPath)
+  ? JSON.parse(fs.readFileSync(reportPath, "utf8"))
+  : { totalPanels: 0, rendered: 0, skipped: 0, panels: [] };
 
 const titles = parsePanelTitles(registrySrc);
 const descriptions = parsePanelDescriptions(componentPickerSrc);

@@ -20,8 +20,8 @@ interface UpgradeStatus {
   message: string | null;
 }
 
-export type AlgoMonitorTab = "active" | "needs-action" | "history";
-export type ObservabilityTab = "summary" | "trades" | "events";
+type AlgoMonitorTab = "active" | "needs-action" | "history";
+type ObservabilityTab = "summary" | "trades" | "events";
 
 interface UiState {
   activeStrategy: Strategy;
