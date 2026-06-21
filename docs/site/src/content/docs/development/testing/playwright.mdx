@@ -7,7 +7,7 @@ import testInventory from "@docs/data/test-inventory.json";
 
 Playwright covers the composition layer: UI components rendered inside the real layout engine (flexlayout-react), Redux state hydrated from WebSocket messages, and routing under a real browser history stack. Failures here are typically integration bugs: a correctly-tested component placed in a context where its props arrive in the wrong order, or a panel hidden by a parent container at certain viewport widths. Unit tests cannot reach these because they exercise components in isolation.
 
-Tests drive a real Chromium instance against the real frontend. The gateway is mocked with `GatewayMock` in most specs to keep results deterministic. See [Testcontainers](../../testcontainers/) for the suite that exercises the live stack.
+Tests drive a real Chromium instance against the real frontend. The gateway is mocked with `GatewayMock` in most specs to keep results deterministic. See [Testcontainers](../testcontainers/) for the suite that exercises the live stack.
 
 **Location:** `frontend/tests/`
 **Config:** [`frontend/playwright.config.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/playwright.config.ts)

@@ -181,7 +181,7 @@ export default defineConfig({
                 { label: "Electron E2E", slug: "development/testing/electron" },
                 { label: "Smoke tests", slug: "development/testing/smoke" },
                 { label: "Visual anomalies", slug: "development/testing/visual-anomalies" },
-                { label: "Testcontainers", slug: "development/testcontainers" },
+                { label: "Testcontainers", slug: "development/testing/testcontainers" },
                 { label: "k6 load testing", slug: "development/testing/k6-load-testing" },
                 { label: "Continuous load generator", slug: "development/testing/loadgen" },
               ],
@@ -209,7 +209,6 @@ export default defineConfig({
           label: "Reference",
           items: [
             { label: "Glossary", slug: "reference/glossary" },
-            { label: "SRE terminology", slug: "reference/sre-terminology" },
             { label: "API gateway", slug: "reference/api-gateway" },
             { label: "RBAC & permissions", slug: "reference/rbac" },
             { label: "Panel reference", slug: "reference/panels" },

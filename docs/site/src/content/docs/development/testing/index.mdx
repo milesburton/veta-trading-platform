@@ -14,7 +14,7 @@ VETA has nine test suites. Each addresses a distinct failure class: unit suites 
 | --- | --- | --- | --- |
 | [Backend unit](./unit/)                                       | Pure-logic bugs in algos, OMS, FIX, schemas                | Pre-commit, CI          | &lt;30s    |
 | [Frontend unit](./unit/#frontend)                             | Component + Redux + hook regressions                       | Pre-commit, CI          | ~20s       |
-| [Integration (Testcontainers)](../testcontainers/)            | Service-boundary contract breaks                           | CI                      | ~5min      |
+| [Integration (Testcontainers)](./testcontainers/)            | Service-boundary contract breaks                           | CI                      | ~5min      |
 | [Playwright E2E](./playwright/)                               | UI flows that span the whole stack                         | CI                      | ~3min      |
 | [Electron E2E](./electron/)                                   | Desktop-app-specific behaviour (IPC, contextBridge)        | CI                      | ~1min      |
 | [Smoke](./smoke/)                                             | Service reachability through production-equivalent ingress | CI testcontainers gate  | ~90s       |

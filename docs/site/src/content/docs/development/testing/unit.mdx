@@ -55,7 +55,7 @@ The bracket prefix is grep-friendly: `deno test backend/ --filter "[orders-schem
 
 ### What lives in unit tests
 
-If a test needs a running service (Postgres, Redpanda, an HTTP server), it belongs in the [integration suite](../../testcontainers/) under the `.tc.test.ts` pattern. Unit tests are for pure logic: schemas, algo slicing, FIX parsing, analytics math, grid filtering.
+If a test needs a running service (Postgres, Redpanda, an HTTP server), it belongs in the [integration suite](../testcontainers/) under the `.tc.test.ts` pattern. Unit tests are for pure logic: schemas, algo slicing, FIX parsing, analytics math, grid filtering.
 
 Areas with the densest coverage:
 
