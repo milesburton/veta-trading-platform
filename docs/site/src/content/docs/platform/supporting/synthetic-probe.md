@@ -14,7 +14,7 @@ the probe exercises the full user journey end-to-end.
 ```mermaid
 graph LR
     INET["Internet"]:::client
-    OVH["OVH edge box<br/>ovh.agileview.co.uk"]:::edge
+    OVH["OVH edge box<br/><edge-server>"]:::edge
     PROBE["veta-synthetic-probe.timer<br/><i>every 60s</i><br/>/opt/veta-probe/probe.ts"]:::edge
     TRAEFIK["Traefik :443<br/><i>real-user ingress</i>"]:::gateway
     TUNNEL["Reverse SSH tunnel"]:::edge
@@ -124,7 +124,7 @@ show up everywhere.
 ## Daily use
 
 ```bash
-ssh ubuntu@ovh.agileview.co.uk
+ssh <user>@<edge-server>
 
 # When does it next run?
 systemctl list-timers veta-synthetic-probe.timer

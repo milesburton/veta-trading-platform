@@ -1,6 +1,6 @@
 ---
 title: NVIDIA Spark (homelab LLM host)
-description: The Spark workstation at spark.lan hosts Ollama with a handful of local models. LLM-advisory and any other inference-heavy workload should target it rather than going to external APIs.
+description: The Spark workstation at <gpu-host> hosts Ollama with a handful of local models. LLM-advisory and any other inference-heavy workload should target it rather than going to external APIs.
 ---
 
 import { Aside } from "@astrojs/starlight/components";
@@ -9,9 +9,9 @@ The homelab has a dedicated NVIDIA Spark workstation that hosts a local Ollama i
 
 ## Network position
 
-- **Host**: `spark.lan` (separate machine from the homelab proper at `homelab.lan`)
-- **Ollama API**: `http://spark.lan:11434` (raw API, no auth on the LAN)
-- **Open WebUI**: `http://spark.lan:3000` (interactive UI, auth required)
+- **Host**: `<gpu-host>` (separate machine from the homelab proper at `<homelab-host>`)
+- **Ollama API**: `http://<gpu-host>:11434` (raw API, no auth on the LAN)
+- **Open WebUI**: `http://<gpu-host>:3000` (interactive UI, auth required)
 
 The Spark is on the same LAN as the homelab so latency is single-digit milliseconds. Traffic does not traverse the OVH edge.
 
@@ -33,7 +33,7 @@ The advisory service reads its base URL and model from environment variables, bo
 In `/opt/stacks/veta/.env`:
 
 ```bash
-LLM_OLLAMA_BASE_URL=http://spark.lan:11434
+LLM_OLLAMA_BASE_URL=http://<gpu-host>:11434
 LLM_MODEL_ID=qwen3-coder:30b
 ```
 
@@ -51,7 +51,7 @@ The dev-container compose file keeps `http://ollama:11434` as the default so a d
 Direct probe of the Ollama API:
 
 ```bash
-curl -sS http://spark.lan:11434/api/tags | jq '.models[].name'
+curl -sS http://<gpu-host>:11434/api/tags | jq '.models[].name'
 ```
 
 End-to-end check of LLM-advisory:

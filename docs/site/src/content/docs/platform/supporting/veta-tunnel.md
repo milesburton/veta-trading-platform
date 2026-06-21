@@ -5,7 +5,7 @@ description: autossh-managed reverse SSH tunnel that exposes the homelab publicl
 
 The homelab sits on a private LAN with **no inbound
 port forwards**. Public traffic reaches it through a reverse SSH tunnel
-that the homelab dials *out* to the OVH edge box (`ovh.agileview.co.uk`).
+that the homelab dials *out* to the OVH edge box (`<edge-server>`).
 The OVH side terminates Let's Encrypt TLS and forwards into the tunnel.
 
 For the full chain see [Edge architecture](/veta-trading-platform/platform/edge-architecture/).
@@ -20,7 +20,7 @@ autossh -M 0 -N \
   -o IdentitiesOnly=yes \
   -i /etc/veta-tunnel/id_ed25519 \
   -R 18443:localhost:443 \
-  veta-tunnel@ovh.agileview.co.uk
+  veta-tunnel@<edge-server>
 ```
 
 The `-R 18443:localhost:443` instructs the OVH SSH daemon to listen on
@@ -107,7 +107,7 @@ journalctl -u veta-tunnel.service -n 50 --no-pager
 sudo systemctl restart veta-tunnel.service
 
 # Quick health check: port 18443 should be listening on the OVH side
-ssh ubuntu@ovh.agileview.co.uk 'ss -tlnp | grep :18443'
+ssh <user>@<edge-server> 'ss -tlnp | grep :18443'
 
 # From inside the homelab, make sure the local :443 is up too
 ss -tlnp | grep :443

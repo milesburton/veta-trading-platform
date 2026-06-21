@@ -21,6 +21,8 @@ VETA has nine test suites. Each addresses a distinct failure class: unit suites 
 | [Visual anomalies](./visual-anomalies/)                       | DOM overflows + a11y violations (non-gating)               | CI (informational)      | ~1min      |
 | [Synthetic probe](../../platform/supporting/synthetic-probe/) | Live deployment is reachable from the internet             | Every 60s from OVH edge | continuous |
 | [Performance](../../analytics/performance/)                   | Throughput regressions, latency p99 drift                  | On demand               | varies     |
+| [k6 load testing](./k6-load-testing/)                        | Sustained throughput under realistic order flow scenarios  | On demand               | varies     |
+| [Continuous load generator](./loadgen/)                       | Always-on synthetic trade flow on the homelab              | Homelab only            | continuous |
 
 The pre-commit hook ([.husky/pre-commit](https://github.com/milesburton/veta-trading-platform/blob/main/.husky/pre-commit)) runs lint + type-check + unit tests + integration in seven steps. Integration auto-skips when services aren't running locally so the hook stays fast for tight edit loops. Smoke runs in CI under the testcontainers gate rather than at pre-commit.
 

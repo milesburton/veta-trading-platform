@@ -188,7 +188,7 @@ function generateMarkdown(graph) {
 function generateTable(graph) {
   const lines = [];
   lines.push("| Component | Path | Imports | Imported By |");
-  lines.push("|--|--|--|--|");
+  lines.push("| --- | --- | --- | --- |");
 
   const sorted = [...graph.nodes].sort((a, b) => a.path.localeCompare(b.path));
   for (const node of sorted) {
@@ -267,7 +267,7 @@ ${generateTable(graph)}
 ## Legend
 
 | Color | Category |
-|--|--|
+| --- | --- |
 | <span style="display:inline-block;width:12px;height:12px;background:#e1f5fe;border:1px solid #0288d1;border-radius:2px"></span> | React Components |
 | <span style="display:inline-block;width:12px;height:12px;background:#fff3e0;border:1px solid #f57c00;border-radius:2px"></span> | Zustand Stores |
 | <span style="display:inline-block;width:12px;height:12px;background:#f3e5f5;border:1px solid #7b1fa2;border-radius:2px"></span> | Custom Hooks |

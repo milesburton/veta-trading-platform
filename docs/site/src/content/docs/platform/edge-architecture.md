@@ -18,7 +18,7 @@ liveness probe that watches this chain see
 ```mermaid
 graph TD
     USER["Internet user"]:::client
-    OVH["ovh.agileview.co.uk (OVH edge box)<br/><i>Traefik v3.3 host-mode<br/>Let's Encrypt TLS for veta.mnetcs.com<br/>backend: https://localhost:18443</i>"]:::edge
+    OVH["<edge-server> (OVH edge box)<br/><i>Traefik v3.3 host-mode<br/>Let's Encrypt TLS for veta.mnetcs.com<br/>backend: https://localhost:18443</i>"]:::edge
     LOCAL["localhost:18443<br/><i>sshd reverse-forward listener</i>"]:::edge
     TUNNEL["autossh on the homelab dialled OUT<br/><i>ssh -R 18443:localhost:443 veta-tunnel@ovh</i>"]:::edge
     HL["Homelab Traefik :443<br/><i>private LAN address<br/>reads Docker labels<br/>matches by PathPrefix</i>"]:::gateway
@@ -38,7 +38,7 @@ graph TD
 
 ## OVH edge box
 
-A single OVH dedicated server (`ovh.agileview.co.uk`). The same machine that serves the `mnetcs.com` /
+A single OVH dedicated server (`<edge-server>`). The same machine that serves the `mnetcs.com` /
 `agileview.co.uk` sites. VETA is one of several tenants. The synthetic
 probe also runs here (see [Synthetic probe](../supporting/synthetic-probe)).
 
@@ -88,7 +88,7 @@ autossh -M 0 -N \
   -o IdentitiesOnly=yes \
   -i /etc/veta-tunnel/id_ed25519 \
   -R 18443:localhost:443 \
-  veta-tunnel@ovh.agileview.co.uk
+  veta-tunnel@<edge-server>
 ```
 
 The `-R 18443:localhost:443` reverse-forward tells the OVH SSH daemon

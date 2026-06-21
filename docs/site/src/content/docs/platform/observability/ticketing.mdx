@@ -112,7 +112,7 @@ Trigger an end-to-end test by raising a CRITICAL alert through the platform: as 
 Confirm token scoping is working:
 
 ```bash
-ssh miles@homelab.lan 'docker exec veta-gateway-1 sh -c \
+ssh <user>@<homelab-host>.lan 'docker exec veta-gateway-1 sh -c \
   "curl -sf -H \"Authorization: Bearer \$GITHUB_TICKETING_TOKEN\" \
        https://api.github.com/repos/\$GITHUB_TICKETING_REPO | head"'
 ```

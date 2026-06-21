@@ -151,7 +151,7 @@ sometimes time out under load. Each follow-up PR named in the
 
 | Capability                          | State       | Where                                                                                                                                                                                     |
 | --- | --- | --- |
-| Repeatable load-test harness        | Implemented | k6 scenarios in [`k6/`](https://github.com/milesburton/veta-trading-platform/tree/main/k6); see [k6 load testing](../supporting/k6-load-testing/).                                        |
+| Repeatable load-test harness        | Implemented | k6 scenarios in [`k6/`](https://github.com/milesburton/veta-trading-platform/tree/main/k6); see [k6 load testing](../../development/testing/k6-load-testing/).                                        |
 | Mixed-strategy load (all 9 algos)   | Implemented | [`k6/mixed-strategy.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/mixed-strategy.js): weighted realistic distribution.                                           |
 | Open-bell burst pattern             | Implemented | [`k6/burst-open.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/burst-open.js): 0 to 200 VUs in 30s, hold 5min.                                                    |
 | Sustained soak for memory leaks     | Implemented | [`k6/soak.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/soak.js): 25 VUs for 30min, configurable.                                                                |
