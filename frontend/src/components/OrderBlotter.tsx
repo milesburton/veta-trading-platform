@@ -161,10 +161,8 @@ export function OrderBlotter() {
   const { outgoing } = useChannelContext();
   const channelColour = outgoing !== null ? (CHANNEL_COLOURS[outgoing]?.hex ?? null) : null;
 
-  const { orderedCols, getWidth, onResize, onReorder } = useColumnLayout(
-    "orderBlotter",
-    BLOTTER_COLS
-  );
+  const { orderedCols, getWidth, getStickyProps, onResize, onReorder, onToggleFreeze } =
+    useColumnLayout("orderBlotter", BLOTTER_COLS);
 
   const BLOTTER_FIELDS = BLOTTER_COLS.map(({ key, label, type, options }) => ({
     key,
@@ -470,7 +468,7 @@ export function OrderBlotter() {
             No orders match the active filters
           </div>
         ) : (
-          <table className="w-full text-xs" data-testid="orders-table">
+          <table className="w-full min-w-max text-xs" data-testid="orders-table">
             <thead>
               <tr className="text-muted border-b border-panel sticky top-0 bg-page">
                 <th className="w-8 px-1 py-2 text-center" title="Select rows">
@@ -485,30 +483,37 @@ export function OrderBlotter() {
                     title="Select all"
                   />
                 </th>
-                {orderedCols.map((col) => (
-                  <ResizableHeader
-                    key={col.key}
-                    colKey={col.key}
-                    width={getWidth(col.key)}
-                    minWidth={col.minWidth}
-                    gridId="orderBlotter"
-                    sortable={SORTABLE_COLS.has(col.key)}
-                    onResize={onResize}
-                    onColumnDragStart={(k) => {
-                      dragKey.value = k;
-                    }}
-                    onColumnDrop={(target) => {
-                      if (dragKey.value) onReorder(dragKey.value, target);
-                      dragKey.value = null;
-                    }}
-                    onContextMenu={(e) => openHeaderCtxMenu(e, col.key, col.label)}
-                    align={col.align}
-                    title={BLOTTER_HEADER_TOOLTIPS[col.key] ?? col.label}
-                    className={`px-3 py-2 ${col.align === "right" ? "text-right" : "text-left"}`}
-                  >
-                    {col.label}
-                  </ResizableHeader>
-                ))}
+                {orderedCols.map((col) => {
+                  const sp = getStickyProps(col.key);
+                  return (
+                    <ResizableHeader
+                      key={col.key}
+                      colKey={col.key}
+                      width={getWidth(col.key)}
+                      minWidth={col.minWidth}
+                      gridId="orderBlotter"
+                      sortable={SORTABLE_COLS.has(col.key)}
+                      frozen={sp !== null}
+                      isLastFrozen={sp?.isLastFrozen}
+                      style={sp?.style}
+                      onResize={onResize}
+                      onColumnDragStart={(k) => {
+                        dragKey.value = k;
+                      }}
+                      onColumnDrop={(target) => {
+                        if (dragKey.value) onReorder(dragKey.value, target);
+                        dragKey.value = null;
+                      }}
+                      onContextMenu={(e) => openHeaderCtxMenu(e, col.key, col.label)}
+                      onToggleFreeze={onToggleFreeze}
+                      align={col.align}
+                      title={BLOTTER_HEADER_TOOLTIPS[col.key] ?? col.label}
+                      className={`px-3 py-2 bg-page ${col.align === "right" ? "text-right" : "text-left"}`}
+                    >
+                      {col.label}
+                    </ResizableHeader>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -565,12 +570,18 @@ export function OrderBlotter() {
                       </td>
                       {orderedCols.map((col) => {
                         const cellCls = cellClasses[col.key] ?? "";
+                        const sp = getStickyProps(col.key);
+                        const stickyStyle = sp?.style;
+                        const stickyClass = sp
+                          ? `bg-page${sp.isLastFrozen ? " border-r-2 border-r-divider" : ""}`
+                          : "";
                         switch (col.key) {
                           case "submittedAt":
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 text-muted tabular-nums whitespace-nowrap ${cellCls}`}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 text-muted tabular-nums whitespace-nowrap ${cellCls} ${stickyClass}`}
                               >
                                 {formatTime(order.submittedAt)}
                               </td>
@@ -579,7 +590,8 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 text-muted font-mono ${cellCls}`}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 text-muted font-mono ${cellCls} ${stickyClass}`}
                               >
                                 <span className="flex items-center gap-1.5">
                                   {order.id.slice(0, 8)}
@@ -595,7 +607,8 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 font-semibold text-secondary ${cellCls}`}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 font-semibold text-secondary ${cellCls} ${stickyClass}`}
                               >
                                 {order.asset}
                               </td>
@@ -604,9 +617,10 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
+                                style={stickyStyle}
                                 className={`px-3 py-1.5 font-semibold ${
                                   order.side === "BUY" ? "text-emerald-400" : "text-red-400"
-                                } ${cellCls}`}
+                                } ${cellCls} ${stickyClass}`}
                               >
                                 {order.side}
                               </td>
@@ -615,7 +629,8 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 text-right tabular-nums text-secondary ${cellCls}`}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 text-right tabular-nums text-secondary ${cellCls} ${stickyClass}`}
                               >
                                 {order.quantity.toLocaleString()}
                               </td>
@@ -624,7 +639,8 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 text-right tabular-nums text-default ${cellCls}`}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 text-right tabular-nums text-default ${cellCls} ${stickyClass}`}
                               >
                                 {order.children.length > 0
                                   ? avgFillPrice(order.children)
@@ -633,13 +649,21 @@ export function OrderBlotter() {
                             );
                           case "strategy":
                             return (
-                              <td key={col.key} className={`px-3 py-1.5 text-label ${cellCls}`}>
+                              <td
+                                key={col.key}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 text-label ${cellCls} ${stickyClass}`}
+                              >
                                 {order.strategy}
                               </td>
                             );
                           case "status":
                             return (
-                              <td key={col.key} className={`px-3 py-1.5 ${cellCls}`}>
+                              <td
+                                key={col.key}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 ${cellCls} ${stickyClass}`}
+                              >
                                 <span
                                   data-testid="order-status-badge"
                                   className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
@@ -655,7 +679,8 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 text-muted font-mono text-[10px] ${cellCls}`}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 text-muted font-mono text-[10px] ${cellCls} ${stickyClass}`}
                                 title={order.userId}
                               >
                                 {order.userId ?? "—"}
@@ -663,13 +688,21 @@ export function OrderBlotter() {
                             );
                           case "counterparty":
                             return (
-                              <td key={col.key} className="px-3 py-1.5 text-muted">
+                              <td
+                                key={col.key}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 text-muted ${stickyClass}`}
+                              >
                                 —
                               </td>
                             );
                           case "liquidityFlag":
                             return (
-                              <td key={col.key} className="px-3 py-1.5 text-muted">
+                              <td
+                                key={col.key}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 text-muted ${stickyClass}`}
+                              >
                                 —
                               </td>
                             );
@@ -677,7 +710,8 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className={`px-3 py-1.5 text-right tabular-nums text-muted ${cellCls}`}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 text-right tabular-nums text-muted ${cellCls} ${stickyClass}`}
                               >
                                 {totalCommission(order.children)}
                               </td>
@@ -686,13 +720,20 @@ export function OrderBlotter() {
                             return (
                               <td
                                 key={col.key}
-                                className="px-3 py-1.5 text-muted font-mono text-[9px]"
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 text-muted font-mono text-[9px] ${stickyClass}`}
                               >
                                 {order.settlementDate ?? "—"}
                               </td>
                             );
                           default:
-                            return <td key={col.key} className="px-3 py-1.5 text-muted" />;
+                            return (
+                              <td
+                                key={col.key}
+                                style={stickyStyle}
+                                className={`px-3 py-1.5 text-muted ${stickyClass}`}
+                              />
+                            );
                         }
                       })}
                     </tr>

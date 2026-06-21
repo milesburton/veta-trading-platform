@@ -84,6 +84,7 @@ export interface GridPrefs {
   cfRules: ConditionalFormatRule[];
   columnWidths: Record<string, number>;
   columnOrder: string[];
+  frozenColumns: string[];
 }
 
 export interface AllGridPrefs {
@@ -110,4 +111,5 @@ export const EMPTY_GRID_PREFS: GridPrefs = {
   cfRules: [],
   columnWidths: {},
   columnOrder: [],
+  frozenColumns: [],
 };

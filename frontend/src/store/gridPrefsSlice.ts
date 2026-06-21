@@ -84,6 +84,7 @@ function migratePrefs(raw: GridPrefs): GridPrefs {
     cfRules: migrateCfRules(raw.cfRules ?? []),
     columnWidths: raw.columnWidths ?? {},
     columnOrder: raw.columnOrder ?? [],
+    frozenColumns: raw.frozenColumns ?? [],
   };
 }
 
@@ -152,6 +153,12 @@ export const gridPrefsSlice = createSlice({
     setColumnOrder(state, action: PayloadAction<{ gridId: GridId; order: string[] }>) {
       state[action.payload.gridId].columnOrder = action.payload.order;
     },
+    toggleFrozenColumn(state, action: PayloadAction<{ gridId: GridId; key: string }>) {
+      const { gridId, key } = action.payload;
+      const frozen = state[gridId].frozenColumns ?? [];
+      const idx = frozen.indexOf(key);
+      state[gridId].frozenColumns = idx === -1 ? [...frozen, key] : frozen.filter((k) => k !== key);
+    },
     resetGrid(state, action: PayloadAction<{ gridId: GridId }>) {
       state[action.payload.gridId] = {
         ...EMPTY_GRID_PREFS,
@@ -209,6 +216,7 @@ export const {
   setCfRules,
   setColumnWidth,
   setColumnOrder,
+  toggleFrozenColumn,
   resetGrid,
   setAllPrefs,
 } = gridPrefsSlice.actions;

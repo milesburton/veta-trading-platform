@@ -204,6 +204,7 @@ describe("gridPrefsSlice – setAllPrefs", () => {
         cfRules: [],
         columnWidths: {},
         columnOrder: [],
+        frozenColumns: [],
       },
       executions: {
         sortField: null,
@@ -213,6 +214,7 @@ describe("gridPrefsSlice – setAllPrefs", () => {
         cfRules: [],
         columnWidths: {},
         columnOrder: [],
+        frozenColumns: [],
       },
     };
     const state = reducer(initial, setAllPrefs(prefs));
