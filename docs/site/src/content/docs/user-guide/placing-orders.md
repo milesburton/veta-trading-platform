@@ -22,7 +22,7 @@ Available strategies depend on your [trading style](/veta-trading-platform/ux/tr
 Each algo strategy exposes additional parameters:
 
 | Strategy      | Parameters                             |
-| ------------- | -------------------------------------- |
+| --- | --- |
 | LIMIT         | Limit price only                       |
 | TWAP          | Number of slices, participation cap    |
 | POV           | Participation rate, min/max slice size |

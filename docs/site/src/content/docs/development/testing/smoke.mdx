@@ -7,7 +7,7 @@ import testInventory from "@docs/data/test-inventory.json";
 
 Smoke tests cover the service-reachability and end-to-end-pipeline layer: every service responds to `/health`, the gateway can accept and route orders, OAuth flows succeed, and core data paths return expected shapes. The platform has two distinct smoke surfaces: backend smoke (run in CI against a testcontainers stack) and frontend deploy-gate smoke (run in CI against a deployed Vite build).
 
-Smoke does not assert correctness of business logic; that is the job of [unit](../unit/) and [integration](../../testcontainers/) tests. It asserts only that requests reach handlers and return well-formed responses.
+Smoke does not assert correctness of business logic; that is the job of [unit](../unit/) and [integration](../testcontainers/) tests. It asserts only that requests reach handlers and return well-formed responses.
 
 ## Backend smoke
 
@@ -18,7 +18,7 @@ Smoke does not assert correctness of business logic; that is the job of [unit](.
 The full backend smoke (`smoke.full.tc.test.ts`) groups its 62 checks into three top-level `Deno.test` blocks so each block can boot the minimum service set it needs:
 
 | Block | Services booted | Checks |
-|-------|-----------------|--------|
+| --- | --- | --- |
 | Service health and version | All 29 services | 3 |
 | Core trading flows | Market-sim, EMS, OMS, user-service, journal, gateway, fix-archive, observability, risk-engine, all 9 algo strategies | 41 |
 | Peripheral services | Market-sim, journal, user-service, gateway, plus news, analytics, recommendation, feature, signal, scenario, llm-advisory, replay, rfq, dark-pool, ccp, market-data | 18 |
@@ -54,7 +54,7 @@ This is the gate that decides whether a deploy is good. If the backend smoke pas
 
 ## What smoke is not
 
-Smoke does not verify trading logic, P&L math, FIX message shapes, or any business behaviour. Those are covered by [unit](../unit/) and [integration](../../testcontainers/) tests. Smoke is the layer that verifies delivery: that the unit-tested code is reachable from a fresh stack boot, with services correctly wired to Postgres and Redpanda, and that the gateway can authenticate users and route orders.
+Smoke does not verify trading logic, P&L math, FIX message shapes, or any business behaviour. Those are covered by [unit](../unit/) and [integration](../testcontainers/) tests. Smoke is the layer that verifies delivery: that the unit-tested code is reachable from a fresh stack boot, with services correctly wired to Postgres and Redpanda, and that the gateway can authenticate users and route orders.
 
 A smoke failure means a routing, wiring, or auth path is broken. A unit or integration failure means the code logic is broken. The runbooks for these two are different.
 

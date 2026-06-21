@@ -12,7 +12,7 @@ The platform is deployed to a homelab host (Proxmox LXC, 32 cores, 64 GB RAM, 2 
 ## Public URLs
 
 | Surface | URL |
-|---------|-----|
+| --- | --- |
 | Application | [`https://veta.mnetcs.com/`](https://veta.mnetcs.com/) |
 | Grafana dashboards | [`https://veta.mnetcs.com/grafana/`](https://veta.mnetcs.com/grafana/) |
 
@@ -37,7 +37,7 @@ cd frontend && npm run electron:dev
 ## Environment variables
 
 | Variable | Default | Purpose |
-|----------|---------|---------|
+| --- | --- | --- |
 | `DATABASE_URL` | (required) | PostgreSQL connection string |
 | `OAUTH2_SHARED_SECRET` | `veta-dev-passcode` | Demo login passcode |
 | `RISK_ENGINE_ENABLED` | `true` | Enable/disable pre-trade risk checks |

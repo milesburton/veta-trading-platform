@@ -19,7 +19,7 @@ or "Partially" row on the standards checklist.
 ## Adversaries
 
 | Adversary | Capability | What they want | Out of scope |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Casual external attacker | Mass scanners, public CVE exploits, no targeted research | Any easy win such as an exposed admin panel, default credentials, or leaked secrets | Targeted social engineering of the operator |
 | Skilled remote attacker | Custom exploits, RCE chains, lateral movement, willing to spend days | Persistence inside the trading network, data exfiltration, ransom | Nation-state-grade zero-days |
 | Compromised dependency author | Indirect access via a malicious npm/Deno package update | Supply-chain foothold inside any service that imports the package | A backdoored Postgres or Linux kernel |
@@ -34,7 +34,7 @@ they cannot trivially compromise GitHub itself or GHCR.
 ## Assets
 
 | Asset | Sensitivity | Where it lives | Who legitimately reads it |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Trading limits and risk configuration | High (bypass equals unbounded loss) | Postgres `risk_config_versions` | `risk-engine`, admin role |
 | Order history | High (regulatory artefact, must be tamper-evident) | Postgres `orders`, journal Kafka topic | `journal`, trader, admin |
 | User session tokens | High (direct authentication bypass) | Browser cookie, validated by `user-service` per request | `user-service` |

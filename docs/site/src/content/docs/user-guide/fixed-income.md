@@ -31,7 +31,7 @@ Compute credit spreads for corporate bonds against the government curve:
 ![Spread Analysis panel](/veta-trading-platform/screenshots/panels/spread-analysis.png)
 
 | Spread    | Description                                                                |
-| --------- | -------------------------------------------------------------------------- |
+| --- | --- |
 | G-Spread  | Simple yield spread against the interpolated government curve              |
 | Z-Spread  | Zero-volatility spread: constant spread over the spot curve that prices the bond |
 | OAS       | Option-Adjusted Spread: adjusts for any embedded optionality               |

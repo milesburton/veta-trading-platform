@@ -39,7 +39,7 @@ The gateway runs `notifyDiscord` and `createTicketForAlert` in parallel via `Pro
 Two env vars on the gateway:
 
 | Var | Purpose | Default |
-|---|---|---|
+| --- | --- | --- |
 | `GITHUB_TICKETING_TOKEN` | PAT or fine-grained token with `issues:write` on the target repo | empty (ticketing no-ops) |
 | `GITHUB_TICKETING_REPO` | `owner/name` of the repo to open issues in | `milesburton/veta-trading-platform` |
 
@@ -112,7 +112,7 @@ Trigger an end-to-end test by raising a CRITICAL alert through the platform: as 
 Confirm token scoping is working:
 
 ```bash
-ssh miles@homelab.lan 'docker exec veta-gateway-1 sh -c \
+ssh <user>@<homelab-host>.lan 'docker exec veta-gateway-1 sh -c \
   "curl -sf -H \"Authorization: Bearer \$GITHUB_TICKETING_TOKEN\" \
        https://api.github.com/repos/\$GITHUB_TICKETING_REPO | head"'
 ```

@@ -5,7 +5,7 @@ description: autossh-managed reverse SSH tunnel that exposes the homelab publicl
 
 The homelab sits on a private LAN with **no inbound
 port forwards**. Public traffic reaches it through a reverse SSH tunnel
-that the homelab dials *out* to the OVH edge box (`ovh.agileview.co.uk`).
+that the homelab dials *out* to the OVH edge box (`<edge-server>`).
 The OVH side terminates Let's Encrypt TLS and forwards into the tunnel.
 
 For the full chain see [Edge architecture](/veta-trading-platform/platform/edge-architecture/).
@@ -20,7 +20,7 @@ autossh -M 0 -N \
   -o IdentitiesOnly=yes \
   -i /etc/veta-tunnel/id_ed25519 \
   -R 18443:localhost:443 \
-  veta-tunnel@ovh.agileview.co.uk
+  veta-tunnel@<edge-server>
 ```
 
 The `-R 18443:localhost:443` instructs the OVH SSH daemon to listen on
@@ -84,7 +84,7 @@ restrict,port-forwarding,permitlisten="18443" ssh-ed25519 AAAAC3N...
 ```
 
 | Option | Effect |
-|---|---|
+| --- | --- |
 | `restrict` | Denies pty / X11 / agent-forwarding / user-rc / `exec` by default. Equivalent to `no-agent-forwarding,no-port-forwarding,no-pty,no-user-rc,no-X11-forwarding,no-exec` |
 | `port-forwarding` | Re-enables the *one* forwarding capability we need |
 | `permitlisten="18443"` | Allows the reverse-forward to bind only port 18443. Any other `-R` request is rejected. |
@@ -107,7 +107,7 @@ journalctl -u veta-tunnel.service -n 50 --no-pager
 sudo systemctl restart veta-tunnel.service
 
 # Quick health check: port 18443 should be listening on the OVH side
-ssh ubuntu@ovh.agileview.co.uk 'ss -tlnp | grep :18443'
+ssh <user>@<edge-server> 'ss -tlnp | grep :18443'
 
 # From inside the homelab, make sure the local :443 is up too
 ss -tlnp | grep :443
@@ -116,7 +116,7 @@ ss -tlnp | grep :443
 ## Failure modes
 
 | Symptom | Likely cause |
-|---|---|
+| --- | --- |
 | Edge Traefik returns 502 | Tunnel down. Check `journalctl -u veta-tunnel` |
 | Tunnel runs but public URL returns 503 from homelab Traefik | Homelab Traefik dead, a separate problem |
 | Tunnel restarts every few seconds | OVH SSH daemon rejecting the key. Check `journalctl -u veta-tunnel` for the error |

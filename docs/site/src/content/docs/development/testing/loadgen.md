@@ -26,14 +26,14 @@ Useful for:
 - Surfacing regressions: if a deploy slows order acks below baseline,
   the trend on the Grafana dashboard shifts visibly
 
-It is **not** a substitute for the [synthetic probe](../synthetic-probe/).
+It is **not** a substitute for the [synthetic probe](../../../platform/supporting/synthetic-probe/).
 Loadgen tests throughput, not liveness.
 
 ## One-time setup
 
 ```bash
 # On the homelab, drop the credentials file (mode 600)
-ssh miles@homelab
+ssh <user>@<homelab-host>
 ADMIN_PW=$(sudo grep ^OAUTH2_USER_SECRETS /opt/stacks/veta/.env \
   | head -1 | cut -d= -f2- | tr ';' '\n' | grep ^admin: | cut -d: -f2-)
 echo "LOADGEN_OAUTH_PASSWORD=$ADMIN_PW" | sudo tee /opt/stacks/veta/.env.loadgen
@@ -49,7 +49,7 @@ note below.
 Optional tuning vars in the same file:
 
 | Env                        | Default                                                            | Effect                                     |
-| -------------------------- | ------------------------------------------------------------------ | ------------------------------------------ |
+| --- | --- | --- |
 | `LOADGEN_OAUTH_USERNAME`   | `admin`                                                            | Which user the load runs as                |
 | `LOADGEN_SOAK_VUS`         | `50`                                                               | Steady VUs on soak                         |
 | `LOADGEN_SOAK_DURATION`    | `50m`                                                              | Soak iteration length before token refresh |
@@ -60,16 +60,16 @@ Optional tuning vars in the same file:
 
 ```bash
 # Switch on (requires .env.loadgen present)
-ssh miles@homelab '/opt/stacks/veta/scripts/load.sh on'
+ssh <user>@<homelab-host> '/opt/stacks/veta/scripts/load.sh on'
 
 # Check it's running
-ssh miles@homelab '/opt/stacks/veta/scripts/load.sh status'
+ssh <user>@<homelab-host> '/opt/stacks/veta/scripts/load.sh status'
 
 # Tail logs
-ssh miles@homelab '/opt/stacks/veta/scripts/load.sh logs'
+ssh <user>@<homelab-host> '/opt/stacks/veta/scripts/load.sh logs'
 
 # Switch off
-ssh miles@homelab '/opt/stacks/veta/scripts/load.sh off'
+ssh <user>@<homelab-host> '/opt/stacks/veta/scripts/load.sh off'
 ```
 
 ## Auto-start on every deploy
@@ -104,5 +104,5 @@ correct per-user password automatically.
 ## Related
 
 - [k6 load testing](../k6-load-testing/): on-demand harness for single runs
-- [Synthetic probe](../synthetic-probe/): liveness check, not throughput
+- [Synthetic probe](../../../platform/supporting/synthetic-probe/): liveness check, not throughput
 - [Performance](/veta-trading-platform/analytics/performance/): Grafana percentile baselines that loadgen feeds

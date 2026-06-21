@@ -8,7 +8,7 @@ import { Aside } from "@astrojs/starlight/components";
 A platform that wants to be taken seriously needs explicit targets, error budgets, and the discipline to stop shipping features when the budget is exhausted.
 
 <Aside type="note" title="Terms used here">
-This page uses standard Site Reliability Engineering vocabulary: **SLI** (the metric you measure), **SLO** (the target you commit to over a time window), **SLA** (the contractual promise if you miss the SLO), and **error budget** (the downtime the SLO mathematically allows). If any of these are new, see [SRE terminology](../../../reference/sre-terminology/) for one page that defines every term used here with VETA examples and the standard error-budget policy.
+This page uses standard Site Reliability Engineering vocabulary: **SLI** (the metric you measure), **SLO** (the target you commit to over a time window), **SLA** (the contractual promise if you miss the SLO), and **error budget** (the downtime the SLO mathematically allows). If any of these are new, see the [Glossary](../../../reference/glossary/) for definitions of every term with VETA examples.
 
 In short: an SLO is a promise about user experience, an error budget is how much you're allowed to break it, and the budget makes the risk-versus-velocity trade-off explicit instead of leaving it to a manager's gut.
 </Aside>
@@ -16,7 +16,7 @@ In short: an SLO is a promise about user experience, an error budget is how much
 ## Targets
 
 | SLI | Target | Window | Error budget |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **User-facing availability** (`/` returns 200 + WS handshake succeeds) | 99.9% | 30 days | 43 min/month downtime |
 | **Order-ack latency p99** (submit to orderAck on WS) | < 300 ms | 7 days | 1% of orders may exceed |
 | **WS-feed continuity** (no `marketUpdate` gaps > 2 s) | 99.5% | 24 hours | ~7 min of feed outage / day |
@@ -29,7 +29,7 @@ In short: an SLO is a promise about user experience, an error budget is how much
 ## DORA metrics
 
 | DORA metric | Target | Status |
-|---|---|---|
+| --- | --- | --- |
 | Deployment frequency | Multiple per day | yes |
 | Lead time for changes | < 1 hour PR to prod | yes |
 | Change failure rate | < 15% | no, currently ~40% |

@@ -14,7 +14,7 @@ the probe exercises the full user journey end-to-end.
 ```mermaid
 graph LR
     INET["Internet"]:::client
-    OVH["OVH edge box<br/>ovh.agileview.co.uk"]:::edge
+    OVH["OVH edge box<br/><edge-server>"]:::edge
     PROBE["veta-synthetic-probe.timer<br/><i>every 60s</i><br/>/opt/veta-probe/probe.ts"]:::edge
     TRAEFIK["Traefik :443<br/><i>real-user ingress</i>"]:::gateway
     TUNNEL["Reverse SSH tunnel"]:::edge
@@ -44,7 +44,7 @@ Three HTTP steps per cycle. Total wall-clock budget: ~10 s; current p50 is
 ~700 ms.
 
 | # | Step | Expected |
-|---|---|---|
+| --- | --- | --- |
 | 1 | `GET /` | HTTP 200, body contains `__version` or `VETA` markers |
 | 2 | `POST /api/gateway/api/user-service/oauth/guest` | HTTP 200, `Set-Cookie: veta_user=…` |
 | 3 | `GET /api/gateway/ready` (with cookie) | HTTP 200, `{"ready":true}` |
@@ -97,7 +97,7 @@ green run triggers `alert.sh recovery` which POSTs a recovery webhook and
 resets the counter.
 
 | Env var (in `/etc/veta-probe.env`) | Default | Effect |
-|---|---|---|
+| --- | --- | --- |
 | `ALERT_WEBHOOK_URL` | empty | If unset, alerts are logged to journald only |
 | `FAIL_THRESHOLD` | `3` | Consecutive failures before alerting (3 × 60 s ≈ 3 min) |
 | `PROBE_BASE_URL` | `https://veta.mnetcs.com` | Override for testing |
@@ -124,7 +124,7 @@ show up everywhere.
 ## Daily use
 
 ```bash
-ssh ubuntu@ovh.agileview.co.uk
+ssh <user>@<edge-server>
 
 # When does it next run?
 systemctl list-timers veta-synthetic-probe.timer

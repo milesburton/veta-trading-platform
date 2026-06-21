@@ -44,7 +44,7 @@ seconds of failure here means a deeper problem and any further test
 will be misleading.
 
 | Property   | Value                                           |
-| ---------- | ----------------------------------------------- |
+| --- | --- |
 | Strategies | LIMIT only                                      |
 | Pattern    | Ramp 1→5→10→25→50→0 over 2.5 min                |
 | Threshold  | submit_ok rate > 95%, http p99 < 500ms          |
@@ -58,7 +58,7 @@ buy-side trading distribution: 30% LIMIT, 20% TWAP, 15% VWAP, 12% POV,
 50 VUs and holds for 3 minutes.
 
 | Property      | Value                                                                |
-| ------------- | -------------------------------------------------------------------- |
+| --- | --- |
 | Strategies    | All nine, weighted                                                   |
 | Pattern       | Ramp 1→20→50, hold 3min, drop                                        |
 | Threshold     | submit_ok rate > 95%, http p99 < 800ms                               |
@@ -71,7 +71,7 @@ zero. Mimics the cohort of orders that hit a venue at 09:30 when the
 market opens. Five strategies in roughly equal proportions.
 
 | Property      | Value                                                                  |
-| ------------- | ---------------------------------------------------------------------- |
+| --- | --- |
 | Strategies    | LIMIT, TWAP, VWAP, POV, Iceberg (random)                               |
 | Pattern       | 0→200 VUs in 30s, hold 5min, ramp out                                  |
 | Threshold     | submit_ok rate > 90%, http p95 < 2s                                    |
@@ -84,7 +84,7 @@ Constant 25 VUs for 30 minutes (configurable via `SOAK_DURATION` and
 leaks: growing heap, unbounded caches, file-descriptor exhaustion.
 
 | Property      | Value                                                     |
-| ------------- | --------------------------------------------------------- |
+| --- | --- |
 | Strategies    | LIMIT, TWAP, VWAP, POV (random)                           |
 | Pattern       | Constant 25 VUs for 30 min (default)                      |
 | Threshold     | submit_ok rate > 99%, http p99 < 1s, http_req_failed < 1% |
@@ -99,7 +99,7 @@ just over, and way over. Exercises the OMS pre-trade limit check
 (`max_order_qty: 10_000`) and the pre-trade risk-engine call.
 
 | Property      | Value                                                                                                       |
-| ------------- | ----------------------------------------------------------------------------------------------------------- |
+| --- | --- |
 | Strategies    | LIMIT only                                                                                                  |
 | Quantity mix  | 50% well-under (100), 30% just-under (9_500), 10% at-limit (10_000), 8% over (10_001), 2% way-over (50_000) |
 | Pattern       | Ramp 1→10→30, hold 2min                                                                                     |

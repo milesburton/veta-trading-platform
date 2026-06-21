@@ -61,7 +61,7 @@ sudo systemctl enable --now veta-auto-pull.timer
 ## State files
 
 | Path | Written by | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `state/last-deployed-sha` | `auto-pull.sh` | Last main SHA we successfully ran `deploy.sh` for |
 | `state/auto-pull.lock` | `auto-pull.sh` | `flock` for single-instance guard |
 | `.good-sha` | `deploy.sh` | Last SHA the gateway *reported* as its baked-in version after a successful deploy |

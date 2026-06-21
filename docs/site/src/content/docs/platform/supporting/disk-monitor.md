@@ -63,7 +63,7 @@ Scraped by `lgtm-prometheus` and consumed by three alert rules:
 ## Configuration
 
 | Env var | Default | Description |
-|---|---|---|
+| --- | --- | --- |
 | `WARN_PCT` | `85` | Threshold above which `/health` returns 503 |
 | `PORT` | `8099` | HTTP port |
 

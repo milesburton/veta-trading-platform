@@ -49,7 +49,7 @@ The **Demo Day** panel provides one-click trading scenarios for demonstrations:
 ![Demo Day panel](/veta-trading-platform/screenshots/panels/demo-day.png)
 
 | Scenario      | Description                                            |
-| ------------- | ------------------------------------------------------ |
+| --- | --- |
 | Standard      | Mixed LIMIT and TWAP orders across multiple assets     |
 | Market Open   | High-volume burst simulating market open               |
 | Volatile      | Rapid price moves with algo reactions                  |

@@ -17,7 +17,7 @@ The **Symbol Search Bar** is the primary way to find and select instruments on t
 Type any of the following and the search bar will match instantly:
 
 | Format | Example | Description |
-|--------|---------|-------------|
+| --- | --- | --- |
 | Symbol | `AAPL` | Exchange ticker symbol |
 | Company name | `Apple` | Full or partial company name |
 | RIC | `AAPL.OQ` | Reuters Instrument Code |
@@ -53,7 +53,7 @@ When a trade is detected, a green preview bar appears showing the parsed fields.
 ## Supported fields in trade paste
 
 | Field | Detection | Example |
-|-------|-----------|---------|
+| --- | --- | --- |
 | Side | `BUY` or `SELL` keyword | `BUY` |
 | Quantity | Number followed by optional `shares`/`lots` | `5000`, `5,000 shares` |
 | Symbol | Any known symbol, BBG ticker, RIC, or ISIN | `AAPL US Equity` |

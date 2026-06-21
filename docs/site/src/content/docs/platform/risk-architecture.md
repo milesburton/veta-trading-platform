@@ -44,7 +44,7 @@ below fails if any new producer is added without being added to
 the allowlist.
 
 | Source | Producer | Trigger |
-|---|---|---|
+| --- | --- | --- |
 | User browser to Gateway WS | `backend/src/gateway/routes/websocket.ts` | Trader submits order via UI |
 | Admin / load-test | `backend/src/gateway/routes/admin.ts` | Admin endpoint for stress testing |
 | Admin scenario | `backend/src/gateway/routes/admin.ts` | Admin "demo day" canned sequence |

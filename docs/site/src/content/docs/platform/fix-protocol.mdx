@@ -72,7 +72,7 @@ to the supported message types are validated. Unsupported tags are silently
 stripped on outbound messages.
 
 | Tag | Name | Type | Required? | Notes |
-|-----|------|------|-----------|-------|
+| --- | --- | --- | --- | --- |
 | 8 | BeginString | String | Always | `"FIX.4.4"` |
 | 9 | BodyLength | int | Always | Length of message after this tag |
 | 35 | MsgType | String | Always | `A`, `D`, `F`, `8`, `W`, etc. |
@@ -92,7 +92,7 @@ stripped on outbound messages.
 ### Supported message types
 
 | MsgType | Name | Direction | Description |
-|---------|------|-----------|-------------|
+| --- | --- | --- | --- |
 | A | Logon | Both | Session establishment |
 | D | NewOrderSingle | Inbound | Client order submission |
 | 8 | ExecutionReport | Outbound | Order fill / reject / cancel |
@@ -178,7 +178,7 @@ heartbeat timeout to detect disconnections.
 The gateway routes messages to internal services based on `MsgType`:
 
 | MsgType | Internal service | Queue |
-|---------|-----------------|-------|
+| --- | --- | --- |
 | D (NewOrderSingle) | Order Management Service | `orders.inbound` |
 | W (CancelRequest) | Order Management Service | `orders.inbound` |
 | F (OrderCancelReplaceRequest) | Order Management Service | `orders.inbound` |
@@ -285,7 +285,7 @@ message SessionState {
 ### Archive retention policy
 
 | Data type | Hot retention | Cold retention |
-|-----------|--------------|----------------|
+| --- | --- | --- |
 | Order messages | 7 days | 7 years |
 | Session state | 30 days | 7 years |
 | Heartbeats | 1 day | 1 year |
@@ -319,7 +319,7 @@ When an internal service is unavailable:
 ### TCP-level errors
 
 | Error | Action |
-|-------|--------|
+| --- | --- |
 | TCP close from client | Send Logout, destroy session |
 | TCP close from gateway | No Logout sent; client detects via heartbeat timeout |
 | TCP connect failure | Retry with exponential backoff (1s → 30s max) |
@@ -349,7 +349,7 @@ The gateway accepts TLS connections on port `:9101` (in addition to plaintext
 Per-counterparty rate limits:
 
 | Metric | Limit |
-|--------|-------|
+| --- | --- |
 | Messages per second | 100 |
 | New orders per second | 20 |
 | Connections per counterparty | 1 |

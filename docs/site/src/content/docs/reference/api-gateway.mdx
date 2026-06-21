@@ -10,7 +10,7 @@ The <Svc name="gateway" /> (port 5011) is the sole entry point for all browser t
 ## Health & readiness
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| --- | --- | --- | --- |
 | GET | `/health` | No | Service health check |
 | GET | `/ready` | No | All-services readiness with per-service status |
 | GET | `/system` | No | Disk usage, memory stats |
@@ -18,7 +18,7 @@ The <Svc name="gateway" /> (port 5011) is the sole entry point for all browser t
 ## WebSocket
 
 | Path | Description |
-|------|-------------|
+| --- | --- |
 | `/ws` | Main gateway WebSocket: market updates, order events, auth identity |
 | `/ws/market-sim` | Raw market-sim WebSocket proxy |
 

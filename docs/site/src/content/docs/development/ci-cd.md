@@ -113,7 +113,7 @@ The homelab is the only deployment target. The application is served at [`https:
 Every CI run on `main` generates JSON badge files committed to `docs/badges/`:
 
 | Badge | Source | Format |
-|-------|--------|--------|
+| --- | --- | --- |
 | Backend tests | `deno task test:coverage` output | `"230 passed"` |
 | Frontend tests | `npm run test:coverage` output | `"797 passed"` |
 | Integration tests | `deno task test:testcontainers` output | `"87 passed"` |
@@ -187,7 +187,7 @@ curl -s https://www.githubstatus.com/api/v2/incidents/unresolved.json \
 Things GitHub's status page reports as "operational" can still be silently degraded. Two specific symptoms map to specific incidents:
 
 | Symptom | Likely incident |
-|---------|-----------------|
+| --- | --- |
 | `Error response from daemon: Get "https://ghcr.io/v2/": denied: denied` on `docker login` | App installation token auth |
 | `failed to fetch oauth token: denied: denied` inside `buildx` (pull or push) | App installation token auth |
 | `Bad credentials` from `peter-evans/find-comment`, `dorny/paths-filter`, or other API-calling actions | App installation token auth |

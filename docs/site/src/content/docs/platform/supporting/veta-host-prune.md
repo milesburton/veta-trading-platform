@@ -51,7 +51,7 @@ journalctl -u veta-host-prune.service -n 50 --no-pager
 ## Tunables (via systemd Environment= or script env)
 
 | Env | Default | Effect |
-|---|---|---|
+| --- | --- | --- |
 | `THRESHOLD_PCT` | `90` | Disk-used % above which aggressive prune triggers |
 | `PRUNE_AGE` | `24h` | Age filter for the always-on preventive prune |
 

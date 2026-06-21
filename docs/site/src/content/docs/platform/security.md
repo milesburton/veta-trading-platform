@@ -33,7 +33,7 @@ Every container drops all Linux capabilities (`cap_drop: [ALL]`) and
 selectively re-adds only what the workload genuinely requires:
 
 | Service | Capabilities added back | Why |
-|---------|------------------------|-----|
+| --- | --- | --- |
 | `traefik` | `NET_BIND_SERVICE` | bind 80/443 as non-root |
 | `postgres` | `CHOWN`, `DAC_OVERRIDE`, `FOWNER`, `SETGID`, `SETUID` | initdb permission setup |
 | All others | none | Deno runtimes, kafkajs clients, ollama, kafka-relay |
