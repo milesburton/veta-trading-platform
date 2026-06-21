@@ -1,15 +1,19 @@
 import { useSignal } from "@preact/signals-react";
-import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { UnknownAction } from "@reduxjs/toolkit";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import {
   useGetOverridesQuery,
   useGetSourcesQuery,
   useSetOverridesMutation,
 } from "@veta/frontend/store/marketDataApi.ts";
+import { saveUiPrefs, setShowOverridesOnly } from "@veta/frontend/store/uiSlice.ts";
 import { useEffect } from "react";
 
 export function MarketDataSourcesPanel() {
   const userRole = useAppSelector((s) => s.auth.user?.role);
   const isAdmin = userRole === "admin";
+  const showOverridesOnly = useAppSelector((s) => s.ui.showOverridesOnly);
+  const dispatch = useAppDispatch();
 
   const assets = useAppSelector((s) => s.market.assets);
   const symbols = assets.map((a) => a.symbol).sort();
@@ -25,7 +29,6 @@ export function MarketDataSourcesPanel() {
   const saveSuccess = useSignal(false);
 
   const search = useSignal("");
-  const showOverridesOnly = useSignal(false);
 
   useEffect(() => {
     if (overridesData) {
@@ -88,7 +91,7 @@ export function MarketDataSourcesPanel() {
     if (search.value && !sym.toLowerCase().includes(search.value.toLowerCase())) {
       return false;
     }
-    if (showOverridesOnly.value && getSymbolSource(sym) === "synthetic") return false;
+    if (showOverridesOnly && getSymbolSource(sym) === "synthetic") return false;
     return true;
   });
 
@@ -139,10 +142,11 @@ export function MarketDataSourcesPanel() {
         <button
           type="button"
           onClick={() => {
-            showOverridesOnly.value = !showOverridesOnly.value;
+            dispatch(setShowOverridesOnly(!showOverridesOnly));
+            dispatch(saveUiPrefs() as unknown as UnknownAction);
           }}
           className={`px-2 py-1 rounded text-[10px] transition-colors ${
-            showOverridesOnly.value
+            showOverridesOnly
               ? "bg-amber-800/50 text-amber-300 border border-amber-700"
               : "bg-panel text-muted border border-divider hover:text-default"
           }`}

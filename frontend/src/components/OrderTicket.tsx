@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals-react";
+import type { UnknownAction } from "@reduxjs/toolkit";
 import { ROLE_LABELS } from "@veta/frontend/auth/rbac.ts";
 import { useTradingContext } from "@veta/frontend/context/TradingContext.tsx";
 import { BOND_UNIVERSE } from "@veta/frontend/data/bondUniverse.ts";
@@ -11,7 +12,7 @@ import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
 import { useGetBondPriceMutation, useGetQuoteMutation } from "@veta/frontend/store/analyticsApi.ts";
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { submitOrderThunk } from "@veta/frontend/store/ordersSlice.ts";
-import { setActiveSide, setActiveStrategy } from "@veta/frontend/store/uiSlice.ts";
+import { saveUiPrefs, setActiveSide, setActiveStrategy } from "@veta/frontend/store/uiSlice.ts";
 import type { BondPriceResponse, OptionQuoteResponse } from "@veta/frontend/types/analytics.ts";
 import type { InstrumentType, Trade } from "@veta/frontend/types.ts";
 import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
@@ -525,7 +526,10 @@ export function OrderTicket() {
               aria-label="Execution strategy"
               title="Choose how the order is executed. LIMIT sends a single order. TWAP/POV/VWAP are algorithmic strategies that slice the order over time."
               value={activeStrategy}
-              onChange={(e) => dispatch(setActiveStrategy(e.target.value as typeof activeStrategy))}
+              onChange={(e) => {
+                dispatch(setActiveStrategy(e.target.value as typeof activeStrategy));
+                dispatch(saveUiPrefs() as unknown as UnknownAction);
+              }}
               className="w-full bg-panel border border-divider text-primary text-xs rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500"
             >
               <option value="LIMIT" disabled={!limits.allowed_strategies.includes("LIMIT")}>
@@ -900,7 +904,10 @@ export function OrderTicket() {
               data-testid="side-buy-tab"
               aria-pressed={activeSide === "BUY"}
               title="Buy — go long. Keyboard shortcut: B"
-              onClick={() => dispatch(setActiveSide("BUY"))}
+              onClick={() => {
+                dispatch(setActiveSide("BUY"));
+                dispatch(saveUiPrefs() as unknown as UnknownAction);
+              }}
               className={`flex-1 py-2 text-xs font-semibold rounded border transition-colors ${
                 activeSide === "BUY"
                   ? "bg-emerald-700 border-emerald-500 text-emerald-100"
@@ -914,7 +921,10 @@ export function OrderTicket() {
               data-testid="side-sell-tab"
               aria-pressed={activeSide === "SELL"}
               title="Sell — go short. Keyboard shortcut: S"
-              onClick={() => dispatch(setActiveSide("SELL"))}
+              onClick={() => {
+                dispatch(setActiveSide("SELL"));
+                dispatch(saveUiPrefs() as unknown as UnknownAction);
+              }}
               className={`flex-1 py-2 text-xs font-semibold rounded border transition-colors ${
                 activeSide === "SELL"
                   ? "bg-red-800 border-red-600 text-red-100"

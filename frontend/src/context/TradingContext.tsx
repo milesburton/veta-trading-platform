@@ -5,9 +5,11 @@
  * not serializable and must NOT go into Redux state.
  */
 
+import type { UnknownAction } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import {
   hideShortcuts,
+  saveUiPrefs,
   selectOrderTicketWindowSize,
   setActiveSide,
   setActiveStrategy,
@@ -49,17 +51,28 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
   const activeStrategy = useAppSelector((s) => s.ui.activeStrategy);
 
   useHotkeys("f,n", openTicket, { preventDefault: true });
-  useHotkeys("b", () => dispatch(setActiveSide("BUY")), {
-    preventDefault: true,
-  });
-  useHotkeys("s", () => dispatch(setActiveSide("SELL")), {
-    preventDefault: true,
-  });
+  useHotkeys(
+    "b",
+    () => {
+      dispatch(setActiveSide("BUY"));
+      dispatch(saveUiPrefs() as unknown as UnknownAction);
+    },
+    { preventDefault: true }
+  );
+  useHotkeys(
+    "s",
+    () => {
+      dispatch(setActiveSide("SELL"));
+      dispatch(saveUiPrefs() as unknown as UnknownAction);
+    },
+    { preventDefault: true }
+  );
   useHotkeys(
     "tab",
     () => {
       const idx = STRATEGIES.indexOf(activeStrategy);
       dispatch(setActiveStrategy(STRATEGIES[(idx + 1) % STRATEGIES.length]));
+      dispatch(saveUiPrefs() as unknown as UnknownAction);
     },
     { preventDefault: true }
   );

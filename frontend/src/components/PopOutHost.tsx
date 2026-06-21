@@ -3,7 +3,7 @@ import type { ChannelContextValue } from "@veta/frontend/contexts/ChannelContext
 import { ChannelContext, useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { DEPLOYMENT } from "@veta/frontend/store/servicesApi.ts";
-import { saveOrderTicketWindowSize } from "@veta/frontend/store/uiSlice.ts";
+import { saveUiPrefs, setOrderTicketWindowSize } from "@veta/frontend/store/uiSlice.ts";
 import type { IJsonModel } from "flexlayout-react";
 import { Model } from "flexlayout-react";
 import type React from "react";
@@ -211,12 +211,8 @@ export function PopOutHost({
     function onResize() {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        dispatch(
-          saveOrderTicketWindowSize({
-            w: globalThis.outerWidth,
-            h: globalThis.outerHeight,
-          }) as unknown as UnknownAction
-        );
+        dispatch(setOrderTicketWindowSize({ w: globalThis.outerWidth, h: globalThis.outerHeight }));
+        dispatch(saveUiPrefs() as unknown as UnknownAction);
       }, 300);
     }
     globalThis.addEventListener("resize", onResize);

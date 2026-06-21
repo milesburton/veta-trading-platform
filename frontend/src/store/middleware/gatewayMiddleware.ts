@@ -744,7 +744,9 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
       const data: AssetDef[] = await r.json();
       storeAPI.dispatch(marketSlice.actions.setAssets(data));
       if (data.length === 0) return;
-      storeAPI.dispatch(setSelectedAsset(data[0].symbol));
+      const alreadySelected = (storeAPI.getState() as { ui: { selectedAsset: string | null } }).ui
+        .selectedAsset;
+      if (!alreadySelected) storeAPI.dispatch(setSelectedAsset(data[0].symbol));
       await fetchCandlesForAsset(data[0].symbol);
       for (let i = 1; i < data.length; i++) {
         await new Promise((res) => setTimeout(res, 50));

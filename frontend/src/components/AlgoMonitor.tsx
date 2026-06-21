@@ -1,8 +1,10 @@
 import { useSignal } from "@preact/signals-react";
+import type { UnknownAction } from "@reduxjs/toolkit";
 import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
 import { useColumnLayout } from "@veta/frontend/hooks/useColumnLayout.ts";
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 import { submitOrderThunk } from "@veta/frontend/store/ordersSlice.ts";
+import { saveUiPrefs, setAlgoMonitorTab } from "@veta/frontend/store/uiSlice.ts";
 import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
 import type { ChildOrder, LiquidityFlag, OrderRecord } from "@veta/frontend/types.ts";
 import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
@@ -313,12 +315,18 @@ function TradeAtLastButton({
 export function AlgoMonitor() {
   const orders = useAppSelector((s) => s.orders.orders);
   const prices = useAppSelector((s) => s.market.prices);
+  const dispatch = useAppDispatch();
+  const tab = useAppSelector((s) => s.ui.algoMonitorTab);
   const channelIn = useChannelIn();
   const linkedOrderId = channelIn.selectedOrderId;
   const stratFilter = useSignal("ALL");
-  const tab = useSignal<ViewTab>("active");
   const expandedPerf = useSignal<Set<string>>(new Set());
   const dragKey = useSignal<string | null>(null);
+
+  function setTab(value: ViewTab) {
+    dispatch(setAlgoMonitorTab(value));
+    dispatch(saveUiPrefs() as unknown as UnknownAction);
+  }
   const { orderedCols, getWidth, onResize, onReorder } = useColumnLayout("algoMonitor", ALGO_COLS);
 
   function togglePerf(id: string) {
@@ -348,13 +356,9 @@ export function AlgoMonitor() {
   );
 
   const displayed =
-    tab.value === "active"
-      ? activeOrders
-      : tab.value === "needs-action"
-        ? needsActionOrders
-        : historyOrders;
+    tab === "active" ? activeOrders : tab === "needs-action" ? needsActionOrders : historyOrders;
 
-  const isNeedsAction = tab.value === "needs-action";
+  const isNeedsAction = tab === "needs-action";
   const colSpan = orderedCols.length + (isNeedsAction ? 1 : 0);
 
   return (
@@ -365,15 +369,11 @@ export function AlgoMonitor() {
             <button
               type="button"
               title="Orders currently pending or working"
-              aria-pressed={tab.value === "active"}
-              onClick={() => {
-                tab.value = "active";
-              }}
+              aria-pressed={tab === "active"}
+              onClick={() => setTab("active")}
               data-testid="active-tab"
               className={`px-2.5 py-1 transition-colors ${
-                tab.value === "active"
-                  ? "bg-sky-900/60 text-sky-300"
-                  : "text-muted hover:text-default"
+                tab === "active" ? "bg-sky-900/60 text-sky-300" : "text-muted hover:text-default"
               }`}
             >
               Active
@@ -386,13 +386,11 @@ export function AlgoMonitor() {
             <button
               type="button"
               title="Expired or stalled orders with unfilled quantity that may need manual intervention"
-              aria-pressed={tab.value === "needs-action"}
-              onClick={() => {
-                tab.value = "needs-action";
-              }}
+              aria-pressed={tab === "needs-action"}
+              onClick={() => setTab("needs-action")}
               data-testid="needs-action-tab"
               className={`px-2.5 py-1 transition-colors ${
-                tab.value === "needs-action"
+                tab === "needs-action"
                   ? "bg-amber-900/60 text-amber-300"
                   : "text-muted hover:text-default"
               }`}
@@ -407,15 +405,11 @@ export function AlgoMonitor() {
             <button
               type="button"
               title="Completed orders — filled or expired. Click a row to view execution performance."
-              aria-pressed={tab.value === "history"}
-              onClick={() => {
-                tab.value = "history";
-              }}
+              aria-pressed={tab === "history"}
+              onClick={() => setTab("history")}
               data-testid="history-tab"
               className={`px-2.5 py-1 transition-colors ${
-                tab.value === "history"
-                  ? "bg-divider/80 text-secondary"
-                  : "text-muted hover:text-default"
+                tab === "history" ? "bg-divider/80 text-secondary" : "text-muted hover:text-default"
               }`}
             >
               History
@@ -448,9 +442,9 @@ export function AlgoMonitor() {
       <div className="min-h-0 overflow-auto flex-1">
         {displayed.length === 0 ? (
           <div className="flex items-center justify-center h-24 text-subtle text-xs">
-            {tab.value === "active"
+            {tab === "active"
               ? "No active algo orders"
-              : tab.value === "needs-action"
+              : tab === "needs-action"
                 ? "No orders need attention"
                 : "No completed orders yet"}
           </div>

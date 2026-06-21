@@ -1,7 +1,9 @@
 import { useSignal } from "@preact/signals-react";
+import type { UnknownAction } from "@reduxjs/toolkit";
 import { useChannelContext } from "@veta/frontend/contexts/ChannelContext.tsx";
 import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
-import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
+import { saveUiPrefs, setShowHeartbeats } from "@veta/frontend/store/uiSlice.ts";
 import { formatTime } from "@veta/frontend/utils/format.ts";
 import { formatPrice } from "@veta/frontend/utils/formatPrice.ts";
 import { useMemo } from "react";
@@ -109,12 +111,13 @@ const ALGO_COLORS: Record<string, string> = {
 
 export function DecisionLog() {
   const events = useAppSelector((s) => s.observability.events);
+  const showHeartbeats = useAppSelector((s) => s.ui.showHeartbeats);
+  const dispatch = useAppDispatch();
   const { incoming } = useChannelContext();
   const channelIn = useChannelIn();
   const filterAsset = incoming !== null ? (channelIn.selectedAsset ?? null) : null;
   const filterOrderId = channelIn.selectedOrderId ?? null;
 
-  const showHeartbeats = useSignal(false);
   const algoFilter = useSignal("ALL");
   const ctxMenu = useSignal<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
 
@@ -160,7 +163,7 @@ export function DecisionLog() {
     return events
       .filter((e) => {
         const p = e.payload as AlgoEvent | undefined;
-        if (!showHeartbeats.value && e.type === "algo.heartbeat") return false;
+        if (!showHeartbeats && e.type === "algo.heartbeat") return false;
         if (algoFilter.value !== "ALL" && p?.algo !== algoFilter.value) {
           return false;
         }
@@ -178,7 +181,7 @@ export function DecisionLog() {
       })
       .slice(0, 500);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events, showHeartbeats.value, algoFilter.value, filterAsset, filterOrderId]);
+  }, [events, showHeartbeats, algoFilter.value, filterAsset, filterOrderId]);
 
   return (
     <div className="flex flex-col h-full" data-testid="decision-log-panel">
@@ -231,9 +234,10 @@ export function DecisionLog() {
           >
             <input
               type="checkbox"
-              checked={showHeartbeats.value}
+              checked={showHeartbeats}
               onChange={(e) => {
-                showHeartbeats.value = e.target.checked;
+                dispatch(setShowHeartbeats(e.target.checked));
+                dispatch(saveUiPrefs() as unknown as UnknownAction);
               }}
               className="accent-emerald-500 w-3 h-3"
             />
