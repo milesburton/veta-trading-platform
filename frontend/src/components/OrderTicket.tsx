@@ -425,7 +425,7 @@ export function OrderTicket() {
       <form
         ref={formRef}
         onSubmit={handleSubmit}
-        className="flex flex-col gap-2.5 p-3 overflow-auto flex-1"
+        className="flex flex-col gap-2.5 p-3 min-h-0 overflow-auto flex-1"
       >
         <div className="flex gap-1">
           {canTradeEquity && (

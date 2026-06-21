@@ -42,7 +42,10 @@ describe("useWorkspaceSync helpers", () => {
       layouts: { "ws-2": { layout: { type: "row", children: [] } } },
     });
 
+    const [, getInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(getInit.credentials).toBe("include");
     const [, options] = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(options.credentials).toBe("include");
     const body = JSON.parse(String(options.body));
     expect(body).toMatchObject({
       theme: "dark",

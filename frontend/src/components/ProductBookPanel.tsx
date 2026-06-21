@@ -213,7 +213,7 @@ export function ProductBookPanel() {
       )}
 
       {/* Products table */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-auto">
         {products.value.length === 0 && !loading.value && (
           <div className="flex items-center justify-center py-10 text-subtle text-xs">
             No products found

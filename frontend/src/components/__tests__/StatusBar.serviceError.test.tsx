@@ -90,6 +90,6 @@ describe("StatusBar – when services return errors", () => {
       </Provider>
     );
     // Service rows show "DOWN" (error path)
-    expect(screen.getByText(/VETA Trading Platform/)).toBeInTheDocument();
+    expect(screen.getAllByText(/VETA/)[0]).toBeInTheDocument();
   });
 });

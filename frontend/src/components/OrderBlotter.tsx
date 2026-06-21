@@ -458,7 +458,7 @@ export function OrderBlotter() {
         </div>
       )}
 
-      <div ref={containerRef} className="overflow-auto flex-1">
+      <div ref={containerRef} className="min-h-0 overflow-auto flex-1">
         {isLoading && displayOrders.length === 0 ? (
           <div className="flex items-center justify-center h-24 text-muted text-xs">Loading…</div>
         ) : total === 0 ? (

@@ -471,7 +471,7 @@ export function ExecutionsPanel() {
 
       <FilterBar gridId="executions" fields={EXEC_FIELDS} />
 
-      <div ref={containerRef} className="flex-1 overflow-auto">
+      <div ref={containerRef} className="flex-1 min-h-0 overflow-auto">
         {isLoading && tradeOrders.length === 0 ? (
           <div className="flex items-center justify-center h-24 text-muted">Loading…</div>
         ) : tradeOrders.length === 0 ? (

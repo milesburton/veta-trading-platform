@@ -91,8 +91,8 @@
       "perFile": {}
     },
     "testcontainers": {
-      "files": 19,
-      "cases": 215,
+      "files": 20,
+      "cases": 221,
       "perFile": {
         "testcontainers.smoke.test.ts": 2,
         "testcontainers.stack.test.ts": 1,
@@ -110,6 +110,7 @@
         "messaging.integration.tc.test.ts": 6,
         "typed-consumer.integration.tc.test.ts": 5,
         "registration.integration.tc.test.ts": 5,
+        "preferences.integration.tc.test.ts": 6,
         "venues.integration.tc.test.ts": 9,
         "product-service.integration.tc.test.ts": 8,
         "analytics-services.integration.tc.test.ts": 9
@@ -118,8 +119,8 @@
   },
   "frontend": {
     "unit": {
-      "files": 173,
-      "cases": 1984
+      "files": 174,
+      "cases": 1987
     },
     "playwright": {
       "files": 19,

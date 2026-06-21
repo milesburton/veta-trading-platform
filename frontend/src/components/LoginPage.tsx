@@ -269,7 +269,7 @@ export function LoginPage() {
     <div data-testid="login-page" className="min-h-screen flex flex-col bg-page">
       <AppHeader />
 
-      <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
+      <main className="flex-1 min-h-0 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
         <div className="mx-auto max-w-6xl grid gap-6 md:grid-cols-[400px_1fr] md:items-start">
           <div className="flex flex-col gap-5">
             {sessionWasLost && (

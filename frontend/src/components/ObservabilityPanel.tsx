@@ -423,7 +423,7 @@ export function ObservabilityPanel() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-auto">
         {tab.value === "summary" && (
           <div className="p-3 flex flex-col gap-3">
             <div className="grid grid-cols-3 gap-2">

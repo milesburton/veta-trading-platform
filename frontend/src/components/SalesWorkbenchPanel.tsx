@@ -120,7 +120,7 @@ export function SalesWorkbenchPanel() {
         </span>
       </div>
 
-      <div className="flex flex-col gap-3 overflow-auto flex-1 p-3">
+      <div className="flex flex-col gap-3 min-h-0 overflow-auto flex-1 p-3">
         {actionError.value && (
           <div className="text-xs px-2 py-1.5 rounded bg-red-900 text-red-400">
             {actionError.value}

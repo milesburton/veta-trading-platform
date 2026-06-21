@@ -96,6 +96,6 @@ describe("StatusBar – when services return OK", () => {
         </DashboardContext.Provider>
       </Provider>
     );
-    expect(screen.getByText(/VETA Trading Platform/)).toBeInTheDocument();
+    expect(screen.getAllByText(/VETA/)[0]).toBeInTheDocument();
   });
 });

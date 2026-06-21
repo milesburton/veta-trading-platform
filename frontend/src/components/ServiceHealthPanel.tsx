@@ -268,7 +268,7 @@ export function ServiceHealthPanel() {
 
       <HostResourcesSection />
 
-      <div className="overflow-auto flex-1">
+      <div className="min-h-0 overflow-auto flex-1">
         <table className="w-full border-collapse">
           <thead className="sticky top-0 z-10 bg-surface border-b border-panel">
             <tr>

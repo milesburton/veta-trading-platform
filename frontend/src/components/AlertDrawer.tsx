@@ -124,7 +124,7 @@ export function AlertList({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-subtle text-sm">
             <span className="text-2xl">✓</span>

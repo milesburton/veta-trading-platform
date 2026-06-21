@@ -68,7 +68,7 @@ export function MyPositionsPanel() {
       )}
 
       {positions.length > 0 && (
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-auto">
           <table className="w-full">
             <thead className="sticky top-0 bg-surface/95 backdrop-blur">
               <tr className="text-muted text-left text-[10px] uppercase tracking-wider">

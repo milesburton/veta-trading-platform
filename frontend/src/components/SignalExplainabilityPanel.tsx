@@ -69,7 +69,7 @@ export function SignalExplainabilityPanel() {
       </div>
 
       {/* Waterfall bars */}
-      <div className="flex-1 overflow-auto px-3 py-2">
+      <div className="flex-1 min-h-0 overflow-auto px-3 py-2">
         <div className="text-[10px] text-muted uppercase tracking-wider mb-3">
           Factor contributions
         </div>

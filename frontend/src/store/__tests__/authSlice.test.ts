@@ -2,6 +2,7 @@ import type { AuthUser, TradingLimits } from "@veta/frontend/store/authSlice";
 import {
   authSlice,
   clearUser,
+  DEFAULT_LIMITS,
   setLimits,
   setStatus,
   setUser,
@@ -10,14 +11,6 @@ import {
 import { describe, expect, it } from "vitest";
 
 const { reducer } = authSlice;
-
-const DEFAULT_LIMITS: TradingLimits = {
-  max_order_qty: 10_000,
-  max_daily_notional: 1_000_000,
-  allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
-  allowed_desks: ["equity"],
-  dark_pool_access: false,
-};
 
 const TRADER: AuthUser = {
   id: "user-1",

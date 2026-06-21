@@ -37,8 +37,8 @@ import {
   purgeServiceAlerts,
   selectCriticalAlerts,
 } from "./store/alertsSlice.ts";
-import type { AuthUser } from "./store/authSlice.ts";
-import { sessionExpired, setStatus, setUser } from "./store/authSlice.ts";
+import type { AuthUser, TradingLimits } from "./store/authSlice.ts";
+import { DEFAULT_LIMITS, sessionExpired, setStatus, setUserWithLimits } from "./store/authSlice.ts";
 import { useAppDispatch, useAppSelector } from "./store/hooks.ts";
 import { store } from "./store/index.ts";
 import { reportError } from "./store/observabilitySlice.ts";
@@ -92,11 +92,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     fetch(`${USER_SERVICE_URL}/sessions/me`, { credentials: "include" })
       .then(async (res) => {
         if (res.ok) {
-          const user: AuthUser = await res.json();
+          const body: AuthUser & { limits?: TradingLimits } = await res.json();
+          const { limits, ...user } = body;
           try {
             localStorage.setItem(LAST_KNOWN_USER_KEY, user.id);
           } catch {}
-          dispatch(setUser(user));
+          dispatch(setUserWithLimits({ user, limits: limits ?? DEFAULT_LIMITS }));
         } else if (res.status === 401) {
           let hadSession = false;
           try {

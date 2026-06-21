@@ -179,7 +179,7 @@ export function BasketOrderPanel() {
         </span>
       </div>
 
-      <div className="flex flex-col gap-2.5 p-3 overflow-auto flex-1">
+      <div className="flex flex-col gap-2.5 p-3 min-h-0 overflow-auto flex-1">
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label htmlFor="basket-notional" className="block text-xs text-muted mb-1">
