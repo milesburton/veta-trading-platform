@@ -4,6 +4,7 @@ import { useTradingContext } from "@veta/frontend/context/TradingContext.tsx";
 import { BOND_UNIVERSE } from "@veta/frontend/data/bondUniverse.ts";
 import { resolveSession } from "@veta/frontend/domain/market/market-session.ts";
 import { QuickTradeIntentSchema } from "@veta/frontend/domain/quickTrade/parse.ts";
+import { availableInstrumentTypes } from "@veta/frontend/domain/ticket/rules/desk-access";
 import type { TicketContext } from "@veta/frontend/domain/ticket/ticket-types.ts";
 import { useTicketResolution } from "@veta/frontend/domain/ticket/useTicketResolution.ts";
 import { useChannelIn } from "@veta/frontend/hooks/useChannelIn.ts";
@@ -96,6 +97,13 @@ export function OrderTicket() {
   useEffect(() => {
     registerTicketRef(assetInputRef.current);
   }, [registerTicketRef]);
+
+  useEffect(() => {
+    const available = availableInstrumentTypes(limits.allowed_desks ?? ["equity"]);
+    if (available.length > 0 && !available.includes(instrumentType.value)) {
+      instrumentType.value = available[0];
+    }
+  }, [limits.allowed_desks, instrumentType]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot mount-time prefill from URL
   useEffect(() => {

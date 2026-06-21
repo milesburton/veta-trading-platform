@@ -336,7 +336,7 @@ const DEFAULT_TRADING_LIMITS = {
   max_order_qty: 10000,
   max_daily_notional: 1_000_000,
   allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
-  allowed_desks: ["equity-cash"],
+  allowed_desks: ["equity"],
   dark_pool_access: false,
   trading_style: "high_touch",
   primary_desk: "equity-cash",
