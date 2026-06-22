@@ -7,11 +7,11 @@ import { Aside } from "@astrojs/starlight/components";
 
 ## When to use
 
-A provisioned Grafana panel on `https://veta.mnetcs.com/grafana/` shows "No data" or a partial render and you need to know why.
+A provisioned Grafana panel on `https://veta.example.com/grafana/` shows "No data" or a partial render and you need to know why.
 
 ## Inputs needed
 
-- SSH to the homelab (`ssh <user>@<homelab-host>`)
+- SSH to the server (`ssh <user>@<server-host>`)
 - Browser open to the Grafana URL with the panel in question
 
 <Aside type="tip" title="The label rule that fixes 80% of these">
@@ -22,17 +22,17 @@ Prometheus metrics use `{job=...}` or `{service=...}`. Loki logs use `{service_n
 
 1. **Open the panel in Grafana → Edit** and inspect the query. Note the metric/log name and every label selector.
 2. **Verify the source exists**:
-   - **Prometheus metric**: `curl -sf http://<homelab-host>:9090/api/v1/series?match[]=<metric_name>` — empty array means no series.
-   - **Loki stream**: `curl -G --data-urlencode 'query={<labels>}' http://<homelab-host>:3100/loki/api/v1/query | jq` — `result: []` means no log lines match those labels.
+   - **Prometheus metric**: `curl -sf http://<server-host>:9090/api/v1/series?match[]=<metric_name>` — empty array means no series.
+   - **Loki stream**: `curl -G --data-urlencode 'query={<labels>}' http://<server-host>:3100/loki/api/v1/query | jq` — `result: []` means no log lines match those labels.
 3. **Check the label conventions**:
    - Backend services emit metrics via OTel auto-instrumentation, which produces `job=<service-name>` and `service=<service-name>` labels via the OTel-collector `prometheus.remote_write` block. **Prometheus queries should use `job=` or `service=`.**
    - Logs flow Loki via Alloy which adds `service_name=<container-name>`. **Loki queries should use `service_name=`.**
    - Getting it wrong on either side is the #1 cause of empty panels.
 4. **Verify the scrape works**:
-   - `curl http://<homelab-host>:9090/api/v1/targets` — every target should show `health=up`.
+   - `curl http://<server-host>:9090/api/v1/targets` — every target should show `health=up`.
    - For Loki: `docker exec -it lgtm-alloy alloy-cli stats` or look at alloy's `/-/healthy` endpoint.
 5. **Check the time-range vs cardinality**: a panel using `[30s]` window on a sparse metric will hit zero windows on a quiet system. Widen to `[5m]` and see if data appears.
-6. **Service-down sanity check**: if multiple panels are empty, the underlying service may be down. `ssh <user>@<homelab-host> 'supervisorctl status'` — but on docker-compose deployments, `docker compose ps` is the equivalent.
+6. **Service-down sanity check**: if multiple panels are empty, the underlying service may be down. `ssh <user>@<server-host> 'supervisorctl status'` — but on docker-compose deployments, `docker compose ps` is the equivalent.
 
 ## Verification
 
@@ -44,7 +44,7 @@ After applying a fix:
 
 ## Common pitfalls
 
-- **Editing the live dashboard via the UI** — provisioned dashboards on the homelab are read-only at the file system level. Edits persist for the session but vanish on restart. Always edit the JSON in `observability/grafana/provisioning/dashboards/json/` and commit.
+- **Editing the live dashboard via the UI** — provisioned dashboards on the server are read-only at the file system level. Edits persist for the session but vanish on restart. Always edit the JSON in `observability/grafana/provisioning/dashboards/json/` and commit.
 - **Time-range too tight** — `[30s]` over a low-throughput service produces zero windows. `[5m]` is the usual minimum for `rate()` queries.
-- **Disk full or Loki retention** — if disk is full, Loki silently stops ingesting (no error in Grafana). `df -h` on the homelab.
+- **Disk full or Loki retention** — if disk is full, Loki silently stops ingesting (no error in Grafana). `df -h` on the server.
 - **Forgetting `category=security` routing** — Grafana AlertManager routes by label. An alert without the expected `category=security` label falls through to the default channel.

@@ -43,7 +43,7 @@ Routes through a dedicated webhook so bug reports don't drown the alerts channel
 
 | Env var | Channel | Notes |
 | --- | --- | --- |
-| `DISCORD_BUG_WEBHOOK_URL` | bug-reports | Preferred. Set in `/opt/stacks/veta/.env` on the homelab. |
+| `DISCORD_BUG_WEBHOOK_URL` | bug-reports | Preferred. Set in `/opt/stacks/veta/.env` on the the server. |
 | `DISCORD_WEBHOOK_URL` | alerts | Used as fallback if the bug webhook is unset. |
 
 Both are validated at runtime: must start with `https://discord.com/api/webhooks/` and must not contain the literal `REPLACE_ME`. Anything else, or absent, causes the route to return HTTP 202 with `ok: false` — the UI surfaces this as "received but the channel isn't configured here".
@@ -53,7 +53,7 @@ Both are validated at runtime: must start with `https://discord.com/api/webhooks
 Same procedure as the alerts webhook ([alert-routing](../alerts/)):
 
 1. Discord channel settings → Integrations → Webhooks → delete or rotate
-2. Update `DISCORD_BUG_WEBHOOK_URL` in the homelab `.env`
+2. Update `DISCORD_BUG_WEBHOOK_URL` in the the server `.env`
 3. Restart gateway: `docker compose up -d gateway`
 4. Smoke-test by submitting a bug from the platform
 

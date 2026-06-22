@@ -18,31 +18,31 @@ Five working days as originally drawn up. Each phase is a single PR, reviewed an
 
 ## Phase 2 (originally Swarm migration): descoped
 
-Previously planned: migrate the homelab from Watchtower + plain compose to single-node Docker Swarm with `docker stack deploy`, gaining `update_config: order: start-first` (zero-downtime rolling deploys) and `failure_action: rollback` (automatic image rollback on bad healthcheck).
+Previously planned: migrate the server from Watchtower + plain compose to single-node Docker Swarm with `docker stack deploy`, gaining `update_config: order: start-first` (zero-downtime rolling deploys) and `failure_action: rollback` (automatic image rollback on bad healthcheck).
 
 Why we descoped:
 
 1. **Watchtower was already gone.** The auto-pull half of PR #203 (the systemd timer + `homelab-auto-pull.sh`) replaced Watchtower's auto-update role on its own. The 2026-05-12 Watchtower-name-conflict outage class cannot recur because Watchtower itself is not running.
-2. **Network constraint.** Swarm overlays are scope=`swarm`; the existing `veta_trading-net` is a bridge (scope=`local`) shared with two off-repo compose projects (caddy + lgtm-grafana). A swarm stack cannot attach to a bridge regardless of `external: true`. Resolving this requires coordinated changes to the off-repo projects, meaningful work for benefits we do not yet need.
+2. **Network constraint.** Swarm overlays are scope=`swarm`; the existing `veta_trading-net` is a bridge (scope=`local`) shared with two off-repo compose projects. A swarm stack cannot attach to a bridge regardless of `external: true`. Resolving this requires coordinated changes to the off-repo projects, meaningful work for benefits we do not yet need.
 3. **No current pain point.** The public demo audience is small. Plain-compose deploys are ~10-15s of HTTP 502 / WS reconnect on gateway recreate; tolerable. Nobody is reporting deploy-induced outages.
 
 The artifacts (`compose.swarm.yml`, `scripts/swarm-deploy.sh`, `docs/incidents/runbooks/swarm-bootstrap.md`) and the swarm-aware branch in `homelab-auto-pull.sh` were removed to keep the repo's deploy story coherent. When zero-downtime deploys become load-bearing (likely tied to Phase 6, multi-host, anyway) Swarm comes back as a co-design with the network split.
 
 ## Phase 3 (originally UAT split): descoped
 
-Previously planned: a second compose project on the homelab (`veta-uat`) bound to ports `8xxx`, separate DB and topic prefix. We dropped this in favour of a two-tier model (dev + prod). Rationale: per-service healthchecks plus the auto-pull cadence give us enough deploy safety for a small public-demo audience, and the operational overhead of keeping a separate UAT env healthy was eating time that better served Phase 5 (discipline tooling). If a stakeholder audience grows, this phase comes back unchanged. `compose.yml` already supports per-project port and network isolation.
+Previously planned: a second compose project on the server (`veta-uat`) bound to ports `8xxx`, separate DB and topic prefix. We dropped this in favour of a two-tier model (dev + prod). Rationale: per-service healthchecks plus the auto-pull cadence give us enough deploy safety for a small public-demo audience, and the operational overhead of keeping a separate UAT env healthy was eating time that better served Phase 5 (discipline tooling). If a stakeholder audience grows, this phase comes back unchanged. `compose.yml` already supports per-project port and network isolation.
 
 ## Phase 4: Synthetic monitoring + alerting (shipped)
 
-**Shipped**: [PR #236](https://github.com/milesburton/veta-trading-platform/pull/236). Small Deno binary running on the OVH edge box (not a spare VPS, same hardware that terminates TLS, but a different failure domain from the homelab). 60-second cadence via systemd timer. Three HTTP checks (root / guest login / gateway ready). Output to journald; webhook alert after 3 consecutive failures.
+**Shipped**: [PR #236](https://github.com/milesburton/veta-trading-platform/pull/236). Small Deno binary running on the edge server (not a spare VPS, same hardware that terminates TLS, but a different failure domain from the server). 60-second cadence via systemd timer. Three HTTP checks (root / guest login / gateway ready). Output to journald; webhook alert after 3 consecutive failures.
 
 Plus a **post-deploy CI mirror** in `.github/workflows/post-deploy-probe.yml` that runs the same probe from a GitHub runner ~6 minutes after every merge to `main`, closing the "did my merge break prod" loop within ~10 minutes.
 
 **Acceptance criteria status**:
 
 - Done. Probe runs continuously since 2026-05-15. Steady ~700-850 ms per cycle. No false positives in initial soak.
-- In progress. Webhook alert delivery: tested locally with `ALERT_WEBHOOK_URL` unset (logs to journald only). Set the env on the OVH box once a destination is picked (Slack / Discord / email-gateway).
-- Pending. Grafana `Synthetic SLO` dashboard: not yet built. Requires shipping journald to Loki on OVH (alloy or vector). Follow-up.
+- In progress. Webhook alert delivery: tested locally with `ALERT_WEBHOOK_URL` unset (logs to journald only). Set the env on the edge server once a destination is picked (Slack / Discord / email-gateway).
+- Pending. Grafana `Synthetic SLO` dashboard: not yet built. Requires shipping journald to Loki on the edge server (alloy or vector). Follow-up.
 - Pending. Loki query `{service="synthetic", env="prod"}`: same; requires the Loki shipping piece.
 
 **v2 ideas** (deferred, none blocking):
@@ -71,14 +71,14 @@ Plus a **post-deploy CI mirror** in `.github/workflows/post-deploy-probe.yml` th
 
 **PR scope**: real distributed-systems work. Listed separately because it is higher-risk and benefits from a stable single-node operations posture first.
 
-- 3-node Swarm cluster: homelab Proxmox LXC + OVH dedicated + 1 VPS (managers; OVH and VPS run lightweight ingress + monitoring, homelab carries the bulk of services).
-- Postgres streaming replication (homelab primary, VPS standby), automatic failover via `pg-auto-failover` or Patroni.
+- 3-node Swarm cluster: server Proxmox LXC + edge server + 1 VPS (managers; edge server and VPS run lightweight ingress + monitoring, server carries the bulk of services).
+- Postgres streaming replication (server primary, VPS standby), automatic failover via `pg-auto-failover` or Patroni.
 - Redpanda 3-broker cluster (one per node), `replication.factor=3` on order topics.
-- Traefik on OVH edge points at a Swarm-managed upstream pool so node loss is transparent.
+- Traefik on edge server points at a Swarm-managed upstream pool so node loss is transparent.
 - Disaster recovery runbook: how to demote primary, promote standby, restore from backup.
 
 **Acceptance criteria**:
 
-- Killing the homelab host (`shutdown -h now` on the box that previously carried all of prod) results in continued service from the remaining Swarm nodes within 60 seconds, with the synthetic probe seeing no more than 1 failed probe.
+- Killing the server host (`shutdown -h now` on the box that previously carried all of prod) results in continued service from the remaining Swarm nodes within 60 seconds, with the synthetic probe seeing no more than 1 failed probe.
 - Postgres failover completes within 30 seconds of primary loss; RPO < 1 minute verified.
-- A full disaster scenario (all homelab data lost) recovers from off-site backups within 30 minutes, with at most 5 min of data loss.
+- A full disaster scenario (all server data lost) recovers from off-site backups within 30 minutes, with at most 5 min of data loss.

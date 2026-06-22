@@ -3,8 +3,8 @@
 - **Started**: 2026-05-12 06:42 UTC
 - **Resolved**: 2026-05-12 06:55 UTC
 - **MTTR**: ~13 minutes (from detection to recovery; actual outage began at 06:42 but went undetected until ~06:50)
-- **User-visible impact**: `https://veta.mnetcs.com/` returned 404. Sign-in unavailable. Order flow unavailable. Live feed disconnected for all tabs.
-- **Detection**: user-reported ("Looks like the homelab is entirely offline now")
+- **User-visible impact**: The deployment URL returned 404. Sign-in unavailable. Order flow unavailable. Live feed disconnected for all tabs.
+- **Detection**: user-reported ("Looks like the server is entirely offline now")
 - **Severity**: SEV1 — full platform outage
 
 ## What happened
@@ -15,7 +15,7 @@ Watchtower 1.7.0 began a deploy cycle at 06:42 UTC, sending SIGTERM to 30+ conta
 
 19 services (frontend, market-sim, user-service, journal, ems, oms, kafka-relay, news-aggregator, fix-archive, fix-exchange, feature-engine, signal-engine, recommendation-engine, llm-advisory, llm-worker, replay-service, risk-engine, product-service, ccp-service, dark-pool, market-data, market-data-adapters, rfq-service, db-migrate) failed to recreate and stayed offline.
 
-Recovery was a single `docker compose up -d --remove-orphans` on the homelab.
+Recovery was a single `docker compose up -d --remove-orphans` on the server.
 
 ## Root cause
 

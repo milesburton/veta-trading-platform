@@ -1,17 +1,17 @@
 name: Post-deploy probe
 
 # Runs after every push to main. Polls the gateway's /health endpoint
-# until its reported commit SHA matches the merged commit (the homelab's
+# until its reported commit SHA matches the merged commit (the server's
 # 5-minute auto-pull timer picks up the new commit and rolls out the new
 # images), then runs the synthetic probe against the public URL. Waiting
 # for the SHA to go live, rather than sleeping a fixed interval, avoids
 # probing a half-deployed stack when a rollout runs slow.
 # Detects "your latest deploy broke prod" shortly after it is live.
 #
-# This is the same Deno probe that runs every 60s on the OVH edge box.
-# CI is a third, independent vantage point — if the OVH probe sees a
+# This is the same Deno probe that runs every 60s on the edge server.
+# CI is a third, independent vantage point — if the edge probe sees a
 # different result from GitHub runners, the divergence itself is a
-# useful signal (e.g. an OVH-side network issue).
+# useful signal (e.g. an edge-side network issue).
 #
 # Triggered also on manual workflow_dispatch for ad-hoc checks.
 
@@ -27,7 +27,7 @@ on:
       base_url:
         description: "Probe target URL"
         type: string
-        default: "https://veta.mnetcs.com"
+        default: "https://veta.example.com"
 
 permissions:
   contents: read
@@ -40,7 +40,7 @@ concurrency:
 
 jobs:
   probe:
-    name: Probe ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
+    name: Probe ${{ inputs.base_url || 'https://veta.example.com' }}
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
@@ -56,7 +56,7 @@ jobs:
 
       - name: Wait for the new commit to be live
         env:
-          BASE_URL: ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
+          BASE_URL: ${{ inputs.base_url || 'https://veta.example.com' }}
           # Hard cap on how long we will wait for auto-pull (5-min timer +
           # image pull + recreate). Beyond this we probe anyway so a stuck
           # deploy still surfaces as a probe failure rather than a hang.
@@ -80,7 +80,7 @@ jobs:
 
       - name: Run synthetic probe
         env:
-          PROBE_BASE_URL: ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
+          PROBE_BASE_URL: ${{ inputs.base_url || 'https://veta.example.com' }}
           PROBE_TIMEOUT_MS: "15000"
         run: |
           # Retry up to 3 times — auto-pull cadence has jitter, and the

@@ -125,6 +125,6 @@ The load harness is in [`k6/`](https://github.com/milesburton/veta-trading-platf
 docker compose --profile loadtest run --rm k6
 ```
 
-Live percentiles stream to Prometheus and are visualised on the **k6 Prometheus** dashboard in the local Grafana instance (port 3000 in the dev container; in production the same dashboard is reachable at `https://veta.mnetcs.com/grafana/`) for the duration of the run. Summary JSON and CSV are written to `docs/site/src/data/loadtest/<date>.json` and `<date>.csv`.
+Live percentiles stream to Prometheus and are visualised on the **k6 Prometheus** dashboard in the local Grafana instance (port 3000 in the dev container; in production the same dashboard is reachable at `https://veta.example.com/grafana/`) for the duration of the run. Summary JSON and CSV are written to `docs/site/src/data/loadtest/<date>.json` and `<date>.csv`.
 
 See [`k6/README.md`](https://github.com/milesburton/veta-trading-platform/tree/main/k6) for environment setup, including how to obtain an admin OAuth token.

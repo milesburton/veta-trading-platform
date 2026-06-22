@@ -60,4 +60,4 @@ A smoke failure means a routing, wiring, or auth path is broken. A unit or integ
 
 ## History
 
-The legacy `smoke.test.ts` (now removed) ran against localhost or a remote `VETA_BASE_URL` and contained 62 checks. It was originally written as a manual post-deploy gate, but in practice ran nowhere: the pre-commit hook auto-skipped it when local services were offline, CI did not invoke it, and the homelab deploy script uses container healthchecks rather than this suite. The 62 checks were ported to `smoke.full.tc.test.ts` (which runs in CI via the testcontainers gate) and the legacy file was removed.
+The legacy `smoke.test.ts` (now removed) ran against localhost or a remote `VETA_BASE_URL` and contained 62 checks. It was originally written as a manual post-deploy gate, but in practice ran nowhere: the pre-commit hook auto-skipped it when local services were offline, CI did not invoke it, and the production deploy script uses container healthchecks rather than this suite. The 62 checks were ported to `smoke.full.tc.test.ts` (which runs in CI via the testcontainers gate) and the legacy file was removed.

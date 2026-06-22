@@ -25,7 +25,7 @@ or "Partially" row on the standards checklist.
 | Compromised dependency author | Indirect access via a malicious npm/Deno package update | Supply-chain foothold inside any service that imports the package | A backdoored Postgres or Linux kernel |
 | Insider with viewer credentials | Legitimate session cookie, viewer role only | Privilege escalation to trader or admin; reading data outside their role | Physical access to the host |
 | Insider with admin credentials | Full admin role; can configure risk, kill, run scenarios | Mistakes that cause loss; or deliberate manipulation of trading | Subverting database-level audit |
-| Network-adjacent attacker | LAN access on the homelab subnet | Sniffing inter-service traffic, hitting Postgres or Redpanda directly | Compromise of the upstream router or ISP |
+| Network-adjacent attacker | LAN access on the server subnet | Sniffing inter-service traffic, hitting Postgres or Redpanda directly | Compromise of the upstream router or ISP |
 
 For each adversary the assumption is that they are remote unless the
 row says otherwise; that they cannot break TLS at the edge; and that
@@ -56,13 +56,13 @@ production unclassified.
   network, currently trusted by network position.
 - **Kafka/Redpanda topic publish and subscribe.** Any container that
   reaches the broker can produce or consume.
-- **Postgres direct access.** On the homelab, the database port is
+- **Postgres direct access.** On the server, the database port is
   reachable from the LAN.
 - **CI/CD pipeline.** GitHub Actions runners, GHCR, the `BOT_PAT` token
   used to push artefacts.
 - **Container escape.** Any service compromise that turns into host
   control via a kernel or runtime bug.
-- **Docker image supply chain.** The homelab auto-pull will deploy
+- **Docker image supply chain.** The server auto-pull will deploy
   whatever GHCR serves under the configured tags.
 
 ## Attack chains and controls
@@ -109,7 +109,7 @@ hurdles in order.
 2. CI builds the image with the bad dep and pushes to GHCR.
    - **Control**: Dependabot watches for advisories; planned CodeQL
      and `gitleaks` will catch a class of compromises but not all.
-3. The homelab auto-pull deploys the image to prod.
+3. The server auto-pull deploys the image to prod.
    - **Control**: per-container CPU and memory limits cap how much
      the miner can consume; alerts on sustained CPU saturation are
      planned.
@@ -163,7 +163,7 @@ is "Deferred" or "Partially".
 - **Audit log is not hash-chained.** Anyone with Postgres write access
   can rewrite history. Tamper-evident storage is planned.
 - **Plain HTTP between services.** A network-adjacent attacker on the
-  docker bridge or the homelab LAN can sniff and inject.
+  docker bridge or the server LAN can sniff and inject.
 - **Secrets in env vars.** Host compromise yields every credential at
   once; a vault is planned.
 - **No rate limiting on public endpoints.** Anyone who finds the

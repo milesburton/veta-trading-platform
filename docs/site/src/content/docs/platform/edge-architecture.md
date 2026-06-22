@@ -1,12 +1,12 @@
 ---
 title: Edge architecture
-description: How public traffic reaches the homelab via the OVH edge box, reverse SSH tunnel, Traefik chain, and the synthetic probe that watches the path end-to-end.
+description: How public traffic reaches the server via the edge server, secure tunnel, Traefik chain, and the synthetic probe that watches the path end-to-end.
 ---
 
-The homelab sits on a private LAN with no inbound NAT. Public traffic
-reaches it via a **reverse SSH tunnel** that the homelab dials *out* to
-an OVH dedicated server. The OVH box terminates TLS, forwards into the
-tunnel, and the homelab's internal Traefik routes to services from there.
+The server sits on a private LAN with no inbound NAT. Public traffic
+reaches it via a **secure tunnel** that the server dials *out* to
+the edge server. The edge server terminates TLS, forwards into the
+tunnel, and the server's internal Traefik routes to services from there.
 
 This page documents the full chain end-to-end. For day-to-day operation
 of the trading services see [Architecture](../architecture). For the
@@ -18,14 +18,14 @@ liveness probe that watches this chain see
 ```mermaid
 graph TD
     USER["Internet user"]:::client
-    OVH["<edge-server> (OVH edge box)<br/><i>Traefik v3.3 host-mode<br/>Let's Encrypt TLS for veta.mnetcs.com<br/>backend: https://localhost:18443</i>"]:::edge
+    EDGE["<edge-server> (edge server)<br/><i>Traefik v3.3 host-mode<br/>Let's Encrypt TLS<br/>backend: https://localhost:18443</i>"]:::edge
     LOCAL["localhost:18443<br/><i>sshd reverse-forward listener</i>"]:::edge
-    TUNNEL["autossh on the homelab dialled OUT<br/><i>ssh -R 18443:localhost:443 veta-tunnel@ovh</i>"]:::edge
-    HL["Homelab Traefik :443<br/><i>private LAN address<br/>reads Docker labels<br/>matches by PathPrefix</i>"]:::gateway
+    TUNNEL["autossh on the server dialled OUT<br/><i>ssh -R 18443:localhost:443 veta-tunnel@edge</i>"]:::edge
+    HL["Server Traefik :443<br/><i>private LAN address<br/>reads Docker labels<br/>matches by PathPrefix</i>"]:::gateway
     SVC["frontend / gateway / journal / etc."]:::support
 
-    USER -->|"HTTPS :443"| OVH
-    OVH -->|"HTTPS, self-signed verify skipped"| LOCAL
+    USER -->|"HTTPS :443"| EDGE
+    EDGE -->|"HTTPS, self-signed verify skipped"| LOCAL
     LOCAL -->|"over the SSH tunnel"| TUNNEL
     TUNNEL --> HL
     HL --> SVC
@@ -36,10 +36,9 @@ graph TD
     classDef support fill:#94a3b8,stroke:#64748b,color:#000
 ```
 
-## OVH edge box
+## Edge server
 
-A single OVH dedicated server (`<edge-server>`). The same machine that serves the `mnetcs.com` /
-`agileview.co.uk` sites. VETA is one of several tenants. The synthetic
+A single dedicated edge server (`<edge-server>`). VETA is one of several tenants. The synthetic
 probe also runs here (see [Synthetic probe](../supporting/synthetic-probe)).
 
 Source: [`edge/`](https://github.com/milesburton/veta-trading-platform/tree/main/edge)
@@ -56,7 +55,7 @@ Static config in [`edge/traefik.yml`](https://github.com/milesburton/veta-tradin
 
 Dynamic config in [`edge/dynamic.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/edge/dynamic.yml):
 
-- Single router: ``Host(`veta.mnetcs.com`)`` to backend `https://localhost:18443`
+- Single router: ``Host(`https://veta.example.com`)`` to backend `https://localhost:18443`
 - Rate-limit middleware: 60 req/avg, 120 burst, sourced from client IP
   (`ipStrategy.depth: 0` trusts no proxies; correct when Cloudflare
   proxy is in DNS-only mode)
@@ -65,23 +64,23 @@ Dynamic config in [`edge/dynamic.yml`](https://github.com/milesburton/veta-tradi
 ### Why `insecureSkipVerify: true` is correct here
 
 The destination is `localhost:18443`, reached only via the SSH reverse
-tunnel from the homelab. The homelab Traefik presents a self-signed cert
+tunnel from the server. The server Traefik presents a self-signed cert
 on `:443`, and the SSH transport provides the real security. Cert
 verification at this hop would be meaningless (it'd require shipping the
-homelab's CA to OVH) and would not improve security.
+server's CA to the edge server) and would not improve security.
 
 Do not "fix" this without redesigning the tunnel.
 
-## The reverse SSH tunnel
+## The secure tunnel
 
-Maintained by `autossh` running on the homelab. The connection is
-*dialled out from the homelab*, so nothing inbound to the home router is
+Maintained by `autossh` running on the server. The connection is
+*dialled out from the server*, so nothing inbound to the home router is
 ever needed.
 
 ### How it works
 
 ```bash
-# Runs as veta-tunnel.service on the homelab:
+# Runs as veta-tunnel.service on the server:
 autossh -M 0 -N \
   -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
   -o ExitOnForwardFailure=yes \
@@ -91,14 +90,14 @@ autossh -M 0 -N \
   veta-tunnel@<edge-server>
 ```
 
-The `-R 18443:localhost:443` reverse-forward tells the OVH SSH daemon
+The `-R 18443:localhost:443` reverse-forward tells the edge SSH daemon
 to listen on `localhost:18443` and forward any connection to the
-homelab's `:443`. `autossh` restarts the underlying `ssh` if it
-exits (network blip, OVH reboot, etc.).
+server's `:443`. `autossh` restarts the underlying `ssh` if it
+exits (network blip, edge server reboot, etc.).
 
-### Restricted tunnel user on OVH
+### Restricted tunnel user on the edge server
 
-The homelab's public key on OVH lives under user `veta-tunnel` with a
+The server's public key on the edge server lives under user `veta-tunnel` with a
 single `authorized_keys` entry:
 
 ```
@@ -109,34 +108,33 @@ restrict,port-forwarding,permitlisten="18443" ssh-ed25519 AAAAC3N...
 - `port-forwarding` re-enables the one capability we need
 - `permitlisten="18443"` allows reverse-forwarding only to port 18443
 
-If the homelab is ever compromised, the worst an attacker can do via this
-key is hold port 18443 open on the OVH edge. No shell, no other
+If the server is ever compromised, the worst an attacker can do via this
+key is hold port 18443 open on the edge server. No shell, no other
 forwards. They'd see the inbound HTTPS connections proxied through the
 tunnel, but that's the public traffic anyway.
 
 For install instructions see
 [veta-tunnel.service](../supporting/veta-tunnel).
 
-## Homelab Traefik
+## Server Traefik
 
-Once the request crosses the tunnel and arrives at the homelab's :443
-port, the **homelab Traefik** routes it to one of ~30 backend services
+Once the request crosses the tunnel and arrives at the server's :443
+port, the **server Traefik** routes it to one of ~30 backend services
 based on PathPrefix labels on each Docker container.
 
-Notably the homelab Traefik does not match on Host headers. Anything
+Notably the server Traefik does not match on Host headers. Anything
 that reaches its :443 entrypoint is treated as VETA traffic. This is safe
-because nothing else can reach :443 on the homelab (private LAN, no
+because nothing else can reach :443 on the server (private LAN, no
 inbound NAT).
 
-The homelab Traefik shares its docker network with two off-repo compose
-projects (caddy serving the milesburton.com wiki, lgtm-grafana for the
-Grafana sub-path). See
+The server Traefik shares its docker network with two off-repo compose
+projects. See
 [Traefik](../supporting/traefik) for the routing detail.
 
 ## DNS
 
-Cloudflare manages the `mnetcs.com` zone but is in **DNS-only mode**
-(grey cloud) for `veta.mnetcs.com`. The rate-limit middleware on the
+The DNS zone is managed via Cloudflare in **DNS-only mode**
+(grey cloud) for the deployment URL. The rate-limit middleware on the
 edge Traefik trusts no proxies (`ipStrategy.depth: 0`), so enabling the
 orange cloud would collapse all visitors' apparent IPs to Cloudflare
 edge nodes and break per-IP rate limiting.
@@ -144,11 +142,11 @@ edge nodes and break per-IP rate limiting.
 ## Failure modes the synthetic probe catches
 
 - **Edge Traefik dead**: all HTTPS connections fail at TLS handshake
-- **SSH tunnel down**: edge Traefik returns 502 (no backend listening on
+- **Secure tunnel down**: edge Traefik returns 502 (no backend listening on
   `localhost:18443`)
-- **Homelab Traefik dead**: edge Traefik can connect through the tunnel
+- **Server Traefik dead**: edge Traefik can connect through the tunnel
   but the request hangs or returns connection-reset
-- **Homelab gateway / user-service dead**: tunnel works, Traefik routes,
+- **Server gateway / user-service dead**: tunnel works, Traefik routes,
   service returns 5xx or doesn't respond
 
 Each of these surfaces within 3 probe cycles (~3 min) as a webhook
@@ -167,7 +165,7 @@ plumbing.
 
 ## Threat-model implications
 
-The OVH edge is the only public-internet-facing component of VETA. Once
+The edge server is the only public-internet-facing component of VETA. Once
 something is reachable through it, it's reachable from the entire
 internet. No LAN-only assumption applies past this point.
 
@@ -175,8 +173,8 @@ Concrete implications:
 
 - The `veta-tunnel` user has `/bin/false` as shell and restricted
   `authorized_keys`; it cannot open a shell or forward arbitrary ports.
-- UFW on the OVH box is not yet configured; relies on the absence of
-  other listeners on `:80`/`:443` and OVH's default firewall posture.
+- UFW on the edge server is not yet configured; relies on the absence of
+  other listeners on `:80`/`:443` and the host's default firewall posture.
   Add UFW rules before going wider than friends-and-family.
 - A separate security audit (deferred) should walk the gateway's auth
   surface before broadcasting the URL publicly.
@@ -186,19 +184,19 @@ See [Security posture](../security/) and
 
 ## Install / rebuild
 
-If the OVH box is rebuilt from scratch, follow these in order:
+If the edge server is rebuilt from scratch, follow these in order:
 
-1. Clone repo to OVH, install Traefik via `edge/compose.yml`
+1. Clone repo to the edge server, install Traefik via `edge/compose.yml`
    (see [edge install](../supporting/traefik/)).
-2. Provision a dedicated `veta-tunnel` user on OVH with restricted
+2. Provision a dedicated `veta-tunnel` user on the edge server with restricted
    `authorized_keys` (see [veta-tunnel.service](../supporting/veta-tunnel)).
-3. Generate the tunnel keypair on the homelab and install
+3. Generate the tunnel keypair on the server and install
    `veta-tunnel.service` there (same page as step 2).
 
-After ~30 s the tunnel is up and `https://veta.mnetcs.com/` is live.
+After ~30 s the tunnel is up and the deployment URL is live.
 
-For the homelab side of deployment (auto-pull, prune, etc.) see:
+For the server side of deployment (auto-pull, prune, etc.) see:
 
-- [veta-auto-pull](../supporting/veta-auto-pull): main to homelab continuous deploy
+- [veta-auto-pull](../supporting/veta-auto-pull): main to server continuous deploy
 - [veta-host-prune](../supporting/veta-host-prune): weekly Docker prune
 - [Synthetic probe](../supporting/synthetic-probe): outside-in liveness check

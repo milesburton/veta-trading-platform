@@ -62,7 +62,7 @@ The webhook URL is injected at runtime via the `DISCORD_WEBHOOK_URL` environment
 | `gateway` | `DISCORD_WEBHOOK_URL` | empty string (notifier no-ops) |
 | `grafana` | `DISCORD_WEBHOOK_URL` | `https://discord.com/api/webhooks/0/REPLACE_ME` (rejected by notifier) |
 
-On the homelab, set the real URL in `/opt/stacks/veta/.env`:
+On the the server, set the real URL in `/opt/stacks/veta/.env`:
 
 ```bash
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/<id>/<token>
@@ -101,7 +101,7 @@ Discord webhook URLs are bearer credentials. Rotate immediately if the URL appea
 
 1. Discord channel settings → Integrations → Webhooks → click the existing webhook
 2. Either delete and recreate (creates a fresh URL) or copy the URL and regenerate the token from the same panel
-3. SSH to the homelab and update `/opt/stacks/veta/.env`
+3. SSH to the the server and update `/opt/stacks/veta/.env`
 4. `docker compose up -d gateway grafana` to apply
 5. Smoke-test with the curl one-liner above
 6. The old URL becomes inert immediately; no further cleanup needed

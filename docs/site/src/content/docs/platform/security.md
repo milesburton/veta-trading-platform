@@ -6,14 +6,14 @@ description: Container hardening, threat model, and the residual risks we have n
 This page describes the container-level defences applied to the trading
 stack, the residual risks we have not addressed, and the
 operational steps required when rolling out hardening changes to the
-homelab.
+server.
 
 ## Threat model
 
 The primary attacker we defend against is a remote actor with network
-access to the trading network (a LAN attacker on the homelab, or someone
-who has compromised a public-facing service reachable through the OVH
-edge at [`veta.mnetcs.com`](https://veta.mnetcs.com/)). The exploit chain
+access to the trading network (a LAN attacker on the server, or someone
+who has compromised a public-facing service reachable through the edge server
+at the deployment URL). The exploit chain
 of greatest concern:
 
 1. Find a remote-code-execution bug in any internet-reachable service
@@ -91,7 +91,7 @@ persists, and no on-disk artefacts survive a restart.
 The Deno-based trading services are *not* yet read-only. They could be:
 they don't write to local disk at runtime (logs go to stdout, state goes
 to Postgres or Kafka). The reason it isn't done in this pass is that
-the failure mode of getting it wrong on a live homelab (one service
+the failure mode of getting it wrong on a live server (one service
 crashes in a restart loop on next deploy) outweighs the marginal defence:
 the trading containers are stateless and an RCE attacker only owns them
 for the lifetime of that container instance.

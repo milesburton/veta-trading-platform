@@ -181,7 +181,7 @@ future revision will move the OAuth dance into k6's `setup()` so the
 sign-in path is also under load; until then, sign-in is exercised by
 Playwright E2E rather than k6.
 
-## Running locally vs against the homelab
+## Running locally vs against the production server
 
 Default `BASE_URL` points at `gateway:5011` inside the docker network,
 which works when the trading stack and k6 share a compose project. To

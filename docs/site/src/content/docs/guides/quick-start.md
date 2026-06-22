@@ -29,4 +29,4 @@ Once signed in, the default workspace looks like this:
 
 ## Where it runs
 
-The canonical deployment is a homelab Proxmox LXC, exposed to the public internet via a reverse SSH tunnel from an OVH dedicated server. The app lives at [`https://veta.mnetcs.com/`](https://veta.mnetcs.com/) and the dashboards at [`https://veta.mnetcs.com/grafana/`](https://veta.mnetcs.com/grafana/). To try it locally, follow the [overview](/veta-trading-platform/guides/overview/).
+The canonical deployment is a server exposed to the public internet via a secure tunnel. The app lives at [`https://veta.example.com/`](https://veta.example.com/) and the dashboards at [`https://veta.example.com/grafana/`](https://veta.example.com/grafana/). To try it locally, follow the [overview](/veta-trading-platform/guides/overview/).

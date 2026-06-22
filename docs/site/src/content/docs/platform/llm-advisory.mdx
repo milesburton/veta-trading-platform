@@ -62,7 +62,7 @@ The cap is a compile-time constant. Tune in [`backend/src/llm-advisory/orchestra
 | `LLM_ENABLED` | orchestrator + worker | `false` | Master kill switch |
 | `LLM_WORKER_ENABLED` | worker | `false` | Worker-only switch — orchestrator stays up to expose state |
 | `LLM_PROVIDER` | both | `ollama` | `ollama` or `mock` |
-| `LLM_OLLAMA_BASE_URL` | both | `http://ollama:11434` (local) / `http://<gpu-host>:11434` (homelab) | Ollama inference endpoint |
+| `LLM_OLLAMA_BASE_URL` | both | `http://ollama:11434` (local) / `http://<gpu-host>:11434` (the server) | Ollama inference endpoint |
 | `LLM_MODEL_ID` | both | `qwen2.5:3b` (local) / `qwen3-coder:30b` (Spark) | Model tag |
 | `LLM_TRIGGER_MODE` | orchestrator | `on-demand-ui` | `manual` / `on-demand-ui` / `event-driven` |
 

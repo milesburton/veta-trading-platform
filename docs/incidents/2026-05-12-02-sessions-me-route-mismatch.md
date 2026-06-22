@@ -24,7 +24,7 @@ Two layers:
 
 - [x] Fix route pattern in `GatewayMock` (PR #197). Owner: M, done.
 - [ ] Add CI deploy-gate that builds containers + runs Playwright against the running stack — Phase 1 of [operations strategy](../site/src/content/docs/platform/operations-strategy.mdx). This would have caught the regression on PR #192 before it merged. Owner: M, by: 2026-05-12 EOD.
-- [ ] Add a CI alert (email to `veta@mnetcs.com`) when main goes red and stays red for more than one merge. Owner: M, by: 2026-05-14.
+- [ ] Add a CI alert (email to `the ops email`) when main goes red and stays red for more than one merge. Owner: M, by: 2026-05-14.
 
 ## Related
 

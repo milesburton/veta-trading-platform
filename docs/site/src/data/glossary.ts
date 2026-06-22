@@ -681,7 +681,7 @@ export const TERMS: GlossaryTerm[] = [
     term: "LGTM stack",
     category: "telemetry",
     short:
-      "Loki + Grafana + Tempo + Mimir/Prometheus. Grafana's bundle for logs, dashboards, traces and metrics. Run on the homelab for the demo — a real-bank production should use a managed vendor.",
+      "Loki + Grafana + Tempo + Mimir/Prometheus. Grafana's bundle for logs, dashboards, traces and metrics. Run on the production server for the demo — a real-bank production should use a managed vendor.",
     seeAlso: ["otel"],
   },
   {
@@ -789,7 +789,7 @@ export const TERMS: GlossaryTerm[] = [
     category: "infrastructure",
     short:
       "Modern file-encryption tool (X25519 + ChaCha20-Poly1305). VETA's planned recipient format for SOPS — public key in .sops.yaml, private key (mode 600) on the host that needs to decrypt.",
-    long: "Pronounced 'ah-gay'. Designed as a simpler PGP replacement. A keypair is two short text strings; a single SOPS-encrypted file can be encrypted to multiple age public keys (laptop + homelab + CI), each holding their own private key. Adding/removing recipients is `sops updatekeys`.",
+    long: "Pronounced 'ah-gay'. Designed as a simpler PGP replacement. A keypair is two short text strings; a single SOPS-encrypted file can be encrypted to multiple age public keys (laptop + server + CI), each holding their own private key. Adding/removing recipients is `sops updatekeys`.",
     seeAlso: ["sops"],
   },
   {

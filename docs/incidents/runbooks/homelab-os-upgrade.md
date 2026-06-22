@@ -1,9 +1,9 @@
-# Runbook: upgrade homelab OS to Ubuntu 24.04 LTS
+# Runbook: upgrade server OS to Ubuntu 24.04 LTS
 
-The homelab is currently on **Ubuntu 23.04 Lunar Lobster**, which reached
+The server is currently on **Ubuntu 23.04 Lunar Lobster**, which reached
 end-of-standard-support in **January 2024**. No security updates have been
 applied for over a year. This is a known risk surfaced during the
-2026-05-15 homelab audit.
+2026-05-15 server audit.
 
 Target: **Ubuntu 24.04.4 LTS** (Noble Numbat). Direct upgrade is supported
 (`do-release-upgrade` confirmed the 24.04 path).
@@ -23,11 +23,11 @@ this cheap:
 
 ```bash
 # From the Proxmox host (not the LXC):
-# 1. Note the VM/CT ID of the homelab (e.g. 100). Stop briefly:
+# 1. Note the VM/CT ID of the server (e.g. 100). Stop briefly:
 pct stop 100  # ~30s outage if no live-clone, or skip + use snapshot mode
 
 # 2. Clone:
-pct clone 100 999 --full --hostname homelab-upgrade-test
+pct clone 100 999 --full --hostname server-upgrade-test
 
 # 3. Start the clone (it'll come up with the same IP if you don't change
 #    networking — most setups need to edit /etc/network/interfaces inside
@@ -46,7 +46,7 @@ exists in 24.04 repos, or Docker config breaks), fix the runbook below
 ## Pre-upgrade checklist (prod)
 
 ```bash
-ssh miles@192.168.1.245
+ssh miles@<server-host>
 
 # 1. Confirm disk has headroom — upgrade needs ~5 GB free
 df -h /
@@ -65,9 +65,10 @@ systemctl list-units --type=service --state=running > /tmp/pre-upgrade-services.
 sudo systemctl stop veta-auto-pull.timer
 sudo systemctl stop veta-host-prune.timer
 
-# 5. Pause the synthetic probe on OVH so the reboot doesn't trigger a
-#    false-positive page. (Skip if you WANT to verify the alert path.)
-ssh ubuntu@ovh.agileview.co.uk \
+# 5. Pause the synthetic probe on the edge server so the reboot doesn't
+#    trigger a false-positive page. (Skip if you WANT to verify the alert
+#    path.)
+ssh <user>@<edge-server> \
     'sudo systemctl stop veta-synthetic-probe.timer'
 
 # 6. Sanity check: confirm /etc/network/interfaces and netplan config
@@ -108,8 +109,8 @@ After reboot, SSH back in and verify:
 # 1. OS version
 cat /etc/os-release | head -3   # expect 24.04 Noble
 
-# 2. Reverse SSH tunnel back up — without this, the public URL stays
-#    down even if the homelab is healthy
+# 2. Secure tunnel back up — without this, the public URL stays
+#    down even if the server is healthy
 systemctl status veta-tunnel.service --no-pager
 # Expect: active (running). If not, restart:
 sudo systemctl restart veta-tunnel.service
@@ -122,20 +123,20 @@ diff /tmp/pre-upgrade-containers.txt /tmp/post-upgrade-containers.txt
 
 # 4. Critical services healthy
 docker exec veta-traefik-1 wget -qO- http://gateway:5011/ready  # internal
-curl -sf https://veta.mnetcs.com/                                # public — through tunnel
+curl -sf https://veta.example.com/                              # public — through tunnel
 
-# 5. Resume the synthetic probe on OVH (it was paused in pre-flight)
-ssh ubuntu@ovh.agileview.co.uk \
+# 5. Resume the synthetic probe on the edge server (it was paused in pre-flight)
+ssh <user>@<edge-server> \
     'sudo systemctl start veta-synthetic-probe.timer
      sudo journalctl -u veta-synthetic-probe.service -n 5 --no-pager'
 
-# 6. Re-enable homelab timers
+# 6. Re-enable server timers
 sudo systemctl start veta-auto-pull.timer
 sudo systemctl start veta-host-prune.timer
 sudo systemctl list-timers --no-pager | grep veta
 
 # 7. Watch for ~5 min — probe should fire 5x with all-green outcomes:
-ssh ubuntu@ovh.agileview.co.uk \
+ssh <user>@<edge-server> \
     'sudo journalctl -u veta-synthetic-probe.service -n 25 --no-pager \
      | grep probe_done'
 ```
@@ -148,8 +149,8 @@ mis-configured, etc.):
 1. From the Proxmox UI, restore the `pre-ubuntu-24-04` snapshot. ~2 minute
    restore + boot.
 2. Synthetic probe will go red while the VM is being rolled back; that's
-   expected. Manual `systemctl start veta-synthetic-probe.timer` if it
-   doesn't auto-resume.
+   expected. Manual `systemctl start veta-synthetic-probe.timer` on the edge server
+   if it doesn't auto-resume.
 
 Snapshot lives as long as Proxmox storage holds it. Delete once you're
 confident the upgrade is stable (e.g. one week green).

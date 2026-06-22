@@ -1,19 +1,19 @@
 ---
-title: NVIDIA Spark (homelab LLM host)
+title: NVIDIA Spark (LLM host)
 description: The Spark workstation at <gpu-host> hosts Ollama with a handful of local models. LLM-advisory and any other inference-heavy workload should target it rather than going to external APIs.
 ---
 
 import { Aside } from "@astrojs/starlight/components";
 
-The homelab has a dedicated NVIDIA Spark workstation that hosts a local Ollama instance. Inference workloads that previously required external API calls (OpenAI, Anthropic, Groq) now stay on the LAN.
+The production environment has a dedicated NVIDIA Spark workstation that hosts a local Ollama instance. Inference workloads that previously required external API calls (OpenAI, Anthropic, Groq) now stay on the LAN.
 
 ## Network position
 
-- **Host**: `<gpu-host>` (separate machine from the homelab proper at `<homelab-host>`)
+- **Host**: `<gpu-host>` (separate machine from the server proper at `<server-host>`)
 - **Ollama API**: `http://<gpu-host>:11434` (raw API, no auth on the LAN)
 - **Open WebUI**: `http://<gpu-host>:3000` (interactive UI, auth required)
 
-The Spark is on the same LAN as the homelab so latency is single-digit milliseconds. Traffic does not traverse the OVH edge.
+The Spark is on the same LAN as the server so latency is single-digit milliseconds. Traffic does not traverse the edge server.
 
 ## Models loaded
 
@@ -28,7 +28,7 @@ The Spark is on the same LAN as the homelab so latency is single-digit milliseco
 
 ## Pointing LLM-advisory at the Spark
 
-The advisory service reads its base URL and model from environment variables, both of which fall through to compose defaults. Override either on the homelab.
+The advisory service reads its base URL and model from environment variables, both of which fall through to compose defaults. Override either on the server.
 
 In `/opt/stacks/veta/.env`:
 
@@ -66,8 +66,8 @@ curl -sS -X POST http://veta.home/api/llm-advisory/advisories \
 ## When not to use it
 
 - Anything that needs sub-second latency at scale (the 70-120B models can take 2-5s per response under load)
-- Workloads that run inside `compose.yml`'s `trading-net` Docker network but cannot reach the homelab LAN (none currently)
-- Tasks where the response should be reproducible across deployments — the Spark model set is homelab-specific
+- Workloads that run inside `compose.yml`'s `trading-net` Docker network but cannot reach the server LAN (none currently)
+- Tasks where the response should be reproducible across deployments — the Spark model set is environment-specific
 
 <Aside type="note" title="No auth on the Ollama API">
 Port 11434 is open on the LAN with no authentication. Treat it as trusted-network access only. If the Spark ever needs to be reachable from the public edge, put it behind Traefik with a strong auth layer first.
