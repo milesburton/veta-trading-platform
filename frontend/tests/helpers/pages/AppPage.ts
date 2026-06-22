@@ -117,15 +117,11 @@ export class AppPage {
 
   async waitForAppReady() {
     await this.page.waitForLoadState("domcontentloaded");
-    // Wait for the dashboard chrome instead of a more fragile intermediate.
-    // The workspace toolbar is the strongest signal that the app shell is mounted.
     await this.page.getByTestId("workspace-toolbar").waitFor({
       state: "visible",
       timeout: 20_000,
     });
-    await this.waitForOverlayGone().catch(() => {
-      // Some test views do not show the startup overlay; continue when toolbar is present.
-    });
+    await this.waitForOverlayGone().catch(() => {});
   }
 
   async waitForOverlayGone() {
@@ -136,29 +132,23 @@ export class AppPage {
   }
 
   async waitForAuthIdentity(userName: string) {
-    // Wait for the user name to appear in the status bar — confirms Redux has
-    // received the authIdentity message and both user + limits are in the store.
     await this.page
       .getByTestId("user-menu-btn")
       .getByText(userName)
       .waitFor({ state: "visible", timeout: 8_000 });
-    // Wait for React to commit the re-render triggered by the new tradingStyle —
-    // panels gated on trading style (e.g. spread-analysis requires fi_voice) show
-    // a placeholder until DashboardLayout's renderTabSet callback re-executes.
     await this.page.waitForFunction(
-      () =>
-        !document.body.innerText.includes("You do not have permission to view this panel."),
+      () => {
+        const visibleTabs = Array.from(
+          document.querySelectorAll<HTMLElement>(".flexlayout__tab"),
+        ).filter((el) => el.style.display !== "none" && el.offsetParent !== null);
+        return !visibleTabs.some((el) =>
+          el.innerText.includes("You do not have permission to view this panel."),
+        );
+      },
       { timeout: 5_000 },
     );
   }
 
-  /**
-   * Wait until the market ladder has rendered live price content for at least
-   * one asset row. Useful before taking screenshots so the captured frame
-   * reflects a populated dashboard rather than empty placeholders. Returns
-   * after seeing any tabular numeric content inside an asset-row, which is
-   * what the market ladder renders once the first marketUpdate arrives.
-   */
   async waitForLivePrices(opts: { timeoutMs?: number } = {}) {
     await this.page.waitForFunction(
       () => {
@@ -183,9 +173,7 @@ export class AppPage {
     const visible = await btn.isVisible().catch(() => false);
 
     const clickTab = async () => {
-      await this.waitForOverlayGone().catch(() => {
-        // Overlay may already be gone or not present in some routes.
-      });
+      await this.waitForOverlayGone().catch(() => {});
       try {
         await btn.click({ timeout: 5_000 });
       } catch {

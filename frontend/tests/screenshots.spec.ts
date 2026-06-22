@@ -4,6 +4,8 @@ import { test } from "@playwright/test";
 import {
   type AssetDef,
   DEFAULT_ADMIN,
+  DERIVATIVES_TRADER,
+  DERIVATIVES_TRADER_LIMITS,
   GatewayMock,
   MOCK_BOND_PRICE_RESPONSE,
   MOCK_DURATION_LADDER_RESPONSE,
@@ -556,19 +558,8 @@ test("screenshot: option pricing (Black-Scholes)", async ({ page }) => {
   await app.goto({ assets: MARKET_ASSETS, url: "/?ws=ws-options" });
   await app.waitForDashboard();
   app.gateway.sendAuthIdentity({
-    user: {
-      id: "trader-1",
-      name: "Alice Chen",
-      role: "trader",
-      avatar_emoji: "AL",
-    },
-    limits: {
-      max_order_qty: 10_000,
-      max_daily_notional: 1_000_000,
-      allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
-      allowed_desks: ["equity", "derivatives"],
-      dark_pool_access: false,
-    },
+    user: DERIVATIVES_TRADER,
+    limits: DERIVATIVES_TRADER_LIMITS,
   });
   await app.waitForOverlayGone();
   seedMarket(app);
