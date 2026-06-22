@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-VETA eliminates environment drift by running the entire platform inside a Docker-based Dev Container — every developer gets an identical, pre-configured environment. Every change goes through automated testing at four levels before it can reach production.
+VETA runs the entire platform inside a Docker-based Dev Container so every developer starts with the same environment. Every change goes through automated testing at four levels before it can reach production.
 
 ## Dockerised development
 
