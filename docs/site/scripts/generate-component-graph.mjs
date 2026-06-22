@@ -146,22 +146,14 @@ function generateMarkdown(graph) {
     const id = node.path.replace(/[^a-zA-Z0-9]/g, "_");
     nodeIds.push({ id, path: node.path, name: node.name });
 
-    // Determine node style based on location
-    let style = "fill:#f9f9f9,stroke:#333,stroke-width:1px";
-    if (node.path.includes("/components/")) {
-      style = "fill:#e1f5fe,stroke:#0288d1,stroke-width:2px";
-    } else if (node.path.includes("/store/")) {
-      style = "fill:#fff3e0,stroke:#f57c00,stroke-width:2px";
-    } else if (node.path.includes("/hooks/")) {
-      style = "fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px";
-    } else if (node.path.includes("/lib/")) {
-      style = "fill:#e8f5e9,stroke:#388e3c,stroke-width:2px";
-    } else if (node.path.includes("/types/")) {
-      style = "fill:#fce4ec,stroke:#c2185b,stroke-width:2px";
-    }
+    let nodeClass = "default";
+    if (node.path.includes("/components/")) nodeClass = "component";
+    else if (node.path.includes("/store/")) nodeClass = "store";
+    else if (node.path.includes("/hooks/")) nodeClass = "hook";
+    else if (node.path.includes("/lib/")) nodeClass = "lib";
+    else if (node.path.includes("/types/")) nodeClass = "types";
 
-    const displayName = node.name;
-    lines.push(`  ${id}["${displayName}"]:::default`);
+    lines.push(`  ${id}["${node.name}"]:::${nodeClass}`);
   }
 
   // Add edge styles
