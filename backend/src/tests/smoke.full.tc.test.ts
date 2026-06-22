@@ -1967,6 +1967,22 @@ Deno.test({
           const eventsBody = (await eventsRes.json()) as { events: unknown[] };
           assert(eventsBody.events.length > 0);
 
+          // FK RESTRICT: session with chunks must reject direct deletion.
+          const deleteBlocked = await fetch(`${REPLAY}/sessions/${sessionId}`, {
+            method: "DELETE",
+            signal: T(5_000),
+          });
+          assertEquals(deleteBlocked.status, 409);
+          await deleteBlocked.body?.cancel();
+
+          // Delete chunks first, then the session metadata.
+          const deleteChunks = await fetch(
+            `${REPLAY}/sessions/${sessionId}/chunks`,
+            { method: "DELETE", signal: T(5_000) },
+          );
+          assertEquals(deleteChunks.status, 200);
+          await deleteChunks.body?.cancel();
+
           const deleteRes = await fetch(`${REPLAY}/sessions/${sessionId}`, {
             method: "DELETE",
             signal: T(5_000),

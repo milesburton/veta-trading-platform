@@ -153,6 +153,16 @@ async function getSessionEvents(sessionId: string): Promise<Response> {
   }
 }
 
+async function deleteSessionChunks(sessionId: string): Promise<Response> {
+  const client = await replayPool.connect();
+  try {
+    await client.queryArray("DELETE FROM replay.chunks WHERE session_id = $1", [sessionId]);
+    return json({ ok: true });
+  } finally {
+    client.release();
+  }
+}
+
 async function deleteSession(sessionId: string): Promise<Response> {
   const client = await replayPool.connect();
   try {
@@ -217,8 +227,9 @@ Deno.serve({ port: PORT }, async (req) => {
     }
 
     const chunksMatch = path.match(/^\/sessions\/([^/]+)\/chunks$/);
-    if (chunksMatch && req.method === "POST") {
-      return await uploadChunk(chunksMatch[1], req);
+    if (chunksMatch) {
+      if (req.method === "POST") return await uploadChunk(chunksMatch[1], req);
+      if (req.method === "DELETE") return await deleteSessionChunks(chunksMatch[1]);
     }
 
     const eventsMatch = path.match(/^\/sessions\/([^/]+)\/events$/);

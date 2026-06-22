@@ -113,6 +113,7 @@ All endpoints are proxied through the gateway at `/api/gateway/api/replay`.
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/sessions/{id}/chunks` | Upload event batch. Body: `{ seq, events }` — upserts by `(session_id, seq)` |
+| `DELETE` | `/sessions/{id}/chunks` | Delete all chunks for a session (compliance-authorised purge, required before deleting the session row) |
 | `GET` | `/sessions/{id}/events` | Returns `{ events }` — concatenates all chunks ordered by `seq` |
 
 ## Client-side video rendering
