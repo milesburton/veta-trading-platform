@@ -123,7 +123,7 @@ diff /tmp/pre-upgrade-containers.txt /tmp/post-upgrade-containers.txt
 
 # 4. Critical services healthy
 docker exec veta-traefik-1 wget -qO- http://gateway:5011/ready  # internal
-curl -sf https://veta.example.com/                              # public — through tunnel
+curl -sf https://veta.mnetcs.com/                              # public — through tunnel
 
 # 5. Resume the synthetic probe on the edge server (it was paused in pre-flight)
 ssh <user>@<edge-server> \

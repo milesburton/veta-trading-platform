@@ -27,7 +27,7 @@ on:
       base_url:
         description: "Probe target URL"
         type: string
-        default: "https://veta.example.com"
+        default: "https://veta.mnetcs.com"
 
 permissions:
   contents: read
@@ -40,7 +40,7 @@ concurrency:
 
 jobs:
   probe:
-    name: Probe ${{ inputs.base_url || 'https://veta.example.com' }}
+    name: Probe ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
@@ -56,7 +56,7 @@ jobs:
 
       - name: Wait for the new commit to be live
         env:
-          BASE_URL: ${{ inputs.base_url || 'https://veta.example.com' }}
+          BASE_URL: ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
           # Hard cap on how long we will wait for auto-pull (5-min timer +
           # image pull + recreate). Beyond this we probe anyway so a stuck
           # deploy still surfaces as a probe failure rather than a hang.
@@ -80,7 +80,7 @@ jobs:
 
       - name: Run synthetic probe
         env:
-          PROBE_BASE_URL: ${{ inputs.base_url || 'https://veta.example.com' }}
+          PROBE_BASE_URL: ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
           PROBE_TIMEOUT_MS: "15000"
         run: |
           # Retry up to 3 times — auto-pull cadence has jitter, and the

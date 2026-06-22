@@ -55,7 +55,7 @@ Static config in [`edge/traefik.yml`](https://github.com/milesburton/veta-tradin
 
 Dynamic config in [`edge/dynamic.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/edge/dynamic.yml):
 
-- Single router: ``Host(`https://veta.example.com`)`` to backend `https://localhost:18443`
+- Single router: ``Host(`veta.mnetcs.com`)`` to backend `https://localhost:18443`
 - Rate-limit middleware: 60 req/avg, 120 burst, sourced from client IP
   (`ipStrategy.depth: 0` trusts no proxies; correct when Cloudflare
   proxy is in DNS-only mode)

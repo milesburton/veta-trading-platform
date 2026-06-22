@@ -13,8 +13,8 @@ The platform is deployed to a server (Proxmox LXC, 32 cores, 64 GB RAM, 2 TB SSD
 
 | Surface | URL |
 | --- | --- |
-| Application | [`https://veta.example.com/`](https://veta.example.com/) |
-| Grafana dashboards | [`https://veta.example.com/grafana/`](https://veta.example.com/grafana/) |
+| Application | [`https://veta.mnetcs.com/`](https://veta.mnetcs.com/) |
+| Grafana dashboards | [`https://veta.mnetcs.com/grafana/`](https://veta.mnetcs.com/grafana/) |
 
 Both are served by Traefik on the server and exposed to the public internet through a secure tunnel from the edge server.
 

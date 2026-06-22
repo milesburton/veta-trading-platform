@@ -188,7 +188,7 @@ which works when the trading stack and k6 share a compose project. To
 hit a remote target:
 
 ```bash
-BASE_URL=https://veta.example.com \
+BASE_URL=https://veta.mnetcs.com \
 K6_TOKEN=<admin-access-token> \
 K6_SCRIPT=mixed-strategy.js \
 docker compose --profile loadtest run --rm k6

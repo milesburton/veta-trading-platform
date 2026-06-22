@@ -29,7 +29,7 @@ not just `/` and `/api/gateway/*`.
 - **Where:** `compose.yml:128-134`; `compose.prod.yml:586-596`
 - **What:** `redpanda-console` is labelled `traefik.enable=true` with `PathPrefix(\`/admin/redpanda\`)` and entrypoint `websecure` on the server Traefik. The edge `dynamic.yml` matches the deployment host only and forwards every path to the server Traefik, which then routes `/admin/redpanda` straight to the Redpanda Console UI. There is no `forwardAuth`,`basicAuth`, or IP allowlist middleware on this router.
 - **Why it matters publicly:** Redpanda Console exposes topic browse + message produce + cluster admin to anonymous visitors. Topics including `user.access` (which carries session-correlated `userId`/`userRole`/`path` events), `orders.new`, `orders.kill`, and `risk.breaker` are readable by anyone who navigates to the deployment URL at `/admin/redpanda`. An attacker with produce rights can inject fake `orders.new` messages bypassing the gateway entirely.
-- **Recommended fix:** Either remove the public router (set `traefik.enable=false` on `redpanda-console` in `compose.prod.yml:588`) and reach it only over the server LAN, or add a `basicAuth` middleware in front of the `redpanda-console` router with credentials provisioned from a sealed secret. Verify with `curl -i https://veta.example.com/admin/redpanda` returns 401, not 200.
+- **Recommended fix:** Either remove the public router (set `traefik.enable=false` on `redpanda-console` in `compose.prod.yml:588`) and reach it only over the server LAN, or add a `basicAuth` middleware in front of the `redpanda-console` router with credentials provisioned from a sealed secret. Verify with `curl -i https://veta.mnetcs.com/admin/redpanda` returns 401, not 200.
 
 ### F-3 — Gateway CORS allows any origin
 
@@ -69,7 +69,7 @@ not just `/` and `/api/gateway/*`.
 - **Where:** `frontend/index.html:1-23`; `frontend-server.ts:33-56`; `edge/dynamic.yml:39-47` (security-headers middleware sets HSTS/X-Frame but not CSP)
 - **What:** No `<meta http-equiv="Content-Security-Policy">` in `index.html`, no CSP response header from `frontend-server.ts`, and no `contentSecurityPolicy` field in the Traefik `security-headers` middleware. The threat-model doc (chain 5 step 4) explicitly notes CSP is deferred and the only XSS defence is React escaping plus the HttpOnly cookie.
 - **Why it matters publicly:** Public exposure raises the value of any XSS-via-market-data-string or supply-chain-injection bug. CSP is the single highest-value mitigation a static SPA gets for free and is required by most security-scanner baselines.
-- **Recommended fix:** Add a CSP response header in `edge/dynamic.yml` via `customResponseHeaders`, e.g. `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss://veta.example.com; frame-ancestors 'none'`. Validate that the bundle doesn't need `'unsafe-eval'` (Vite production bundles should not).
+- **Recommended fix:** Add a CSP response header in `edge/dynamic.yml` via `customResponseHeaders`, e.g. `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss://veta.mnetcs.com; frame-ancestors 'none'`. Validate that the bundle doesn't need `'unsafe-eval'` (Vite production bundles should not).
 
 ### F-8 — Server Traefik dashboard exposed with `insecure: true`
 
@@ -157,7 +157,7 @@ not just `/` and `/api/gateway/*`.
 - **Where:** `backend/src/user-service/user-service.ts:683-694`
 - **What:** `POST /oauth/token` returns `Set-Cookie: veta_user=...` with `Access-Control-Allow-Origin: *` in `CORS_HEADERS`. Browsers refuse to honour `Set-Cookie` when ACAO is `*` and credentials are involved, but the response is still readable by a foreign origin which means the bearer token (`access_token`) goes back in the JSON body too.
 - **Why it matters publicly:** A foreign origin that tricks a victim into POSTing to `/oauth/token` cannot do so under `SameSite=Lax` for the new cookie, but the access_token in the body is readable by JavaScript on a foreign origin (the response body is returned as the JSON the foreign script requested, gated only by the standard `cors` mode). Today this is mitigated by the fact that you need a valid `code` (PKCE) which requires a prior authorize step — but tightening CORS removes a class of subtle bugs.
-- **Recommended fix:** Restrict CORS to the public origin (see F-3). Verify with a manual test: from a third-party origin, attempt `fetch('https://veta.example.com/api/user-service/oauth/token', { method: 'POST', credentials: 'include', body: ... })` and confirm the response is blocked.
+- **Recommended fix:** Restrict CORS to the public origin (see F-3). Verify with a manual test: from a third-party origin, attempt `fetch('https://veta.mnetcs.com/api/user-service/oauth/token', { method: 'POST', credentials: 'include', body: ... })` and confirm the response is blocked.
 
 ## Things audited and found clean
 

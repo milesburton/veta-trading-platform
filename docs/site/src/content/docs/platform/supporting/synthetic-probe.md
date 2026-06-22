@@ -100,7 +100,7 @@ resets the counter.
 | --- | --- | --- |
 | `ALERT_WEBHOOK_URL` | empty | If unset, alerts are logged to journald only |
 | `FAIL_THRESHOLD` | `3` | Consecutive failures before alerting (3 × 60 s ≈ 3 min) |
-| `PROBE_BASE_URL` | `https://veta.example.com` | Override for testing |
+| `PROBE_BASE_URL` | `https://veta.mnetcs.com` | Override for testing |
 | `PROBE_TIMEOUT_MS` | `10000` | Per-step timeout |
 
 ## CI mirror
