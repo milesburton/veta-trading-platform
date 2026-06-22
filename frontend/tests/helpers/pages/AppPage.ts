@@ -73,6 +73,7 @@ export class AppPage {
       user: FI_TRADER,
       limits: FI_TRADER_LIMITS,
     });
+    await this.waitForAuthIdentity(FI_TRADER.name);
     return this;
   }
 
@@ -132,6 +133,13 @@ export class AppPage {
       state: "detached",
       timeout: 15_000,
     });
+  }
+
+  async waitForAuthIdentity(userName: string) {
+    await this.page
+      .getByTestId("user-menu-btn")
+      .getByText(userName)
+      .waitFor({ state: "visible", timeout: 8_000 });
   }
 
   /**

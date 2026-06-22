@@ -455,11 +455,19 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     storeAPI.dispatch(gridApi.util.invalidateTags(["Grid"]));
   }
 
-  function onAuthIdentity(data: unknown) {
+  async function onAuthIdentity(data: unknown) {
     const identityData = data as { user: AuthUser; limits: TradingLimits };
     storeAPI.dispatch(setUserWithLimits(identityData));
     storeAPI.dispatch(loadGridPrefs() as unknown as UnknownAction);
-    storeAPI.dispatch(loadUiPrefs() as unknown as UnknownAction);
+    // Await prefs before seeding assets so the restored selectedAsset is
+    // already in Redux when fetchAssetsAndSeedCandles checks alreadySelected.
+    await (storeAPI.dispatch as (a: unknown) => Promise<unknown>)(
+      loadUiPrefs() as unknown as UnknownAction
+    );
+    fetchAssetsAndSeedCandles().then(() => {
+      const state = storeAPI.getState() as { ui: { selectedAsset: string | null } };
+      if (state.ui.selectedAsset) hydrateNewsForSymbol(state.ui.selectedAsset);
+    });
   }
 
   function onKillAck(data: unknown) {
@@ -775,12 +783,6 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
     if (started) return;
     started = true;
     installRecoveryListeners();
-    fetchAssetsAndSeedCandles().then(() => {
-      const state = storeAPI.getState() as {
-        ui: { selectedAsset: string | null };
-      };
-      if (state.ui.selectedAsset) hydrateNewsForSymbol(state.ui.selectedAsset);
-    });
     connect();
     if (breakerJanitorTimer === null) {
       breakerJanitorTimer = setInterval(() => {

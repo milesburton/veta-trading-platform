@@ -36,13 +36,21 @@ const tables: Array<{
 
 const diagramTitle = mermaidTitle ?? (tables[0]?.name ?? "schema");
 
+// Mermaid ERD entity names must be simple identifiers — no dots, spaces, or
+// special chars. Strip schema prefixes (e.g. "replay.chunks" → "chunks") and
+// replace any remaining non-word characters with underscores.
+function mermaidId(name: string): string {
+  const bare = name.includes(".") ? name.split(".").pop()! : name;
+  return bare.replace(/\W/g, "_");
+}
+
 // Build Mermaid ERD source from props.
 const mermaidLines: string[] = [`erDiagram`];
 tables.forEach((t) => {
   const cols = t.columns
-    .map((c) => `${c.name} ${c.type}`)
+    .map((c) => `${c.name} ${c.type.replace(/\s+/g, "_")}`)
     .join("\n      ");
-  mermaidLines.push(`  ${t.name} {`);
+  mermaidLines.push(`  ${mermaidId(t.name)} {`);
   mermaidLines.push(cols);
   mermaidLines.push("  }");
 });
@@ -50,13 +58,13 @@ tables.forEach((t) => {
 tables.forEach((t, i) => {
   const fkCol = t.columns.find((c) => c.flags.includes("FK"));
   if (fkCol && i > 0) {
-    mermaidLines.push(`  ${tables[i - 1].name} ||--o{ ${t.name} : "${fkCol.name}"}`);
+    mermaidLines.push(`  ${mermaidId(tables[i - 1].name)} ||--o{ ${mermaidId(t.name)} : "${fkCol.name}"}`);
   }
 });
 const mermaidSource = mermaidLines.join("\n");
 ---
 
-<h2 id="{title.toLowerCase().replace(/\s+/g, '-')}" class="sl-text-2xl sl-font-semibold sl-mt-8 sl-mb-4">{title}</h2>
+<h2 id={title.toLowerCase().replace(/\s+/g, '-')} class="sl-text-2xl sl-font-semibold sl-mt-8 sl-mb-4">{title}</h2>
 
 <p class="sl-text-base sl-text-[var(--sl-color-gray-2)] sl-mb-6">{Astro.props.description}</p>
 

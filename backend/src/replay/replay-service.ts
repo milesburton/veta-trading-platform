@@ -156,8 +156,25 @@ async function getSessionEvents(sessionId: string): Promise<Response> {
 async function deleteSession(sessionId: string): Promise<Response> {
   const client = await replayPool.connect();
   try {
-    await client.queryArray("DELETE FROM replay.sessions WHERE id = $1", [sessionId]);
+    const result = await client.queryArray(
+      "DELETE FROM replay.sessions WHERE id = $1",
+      [sessionId],
+    );
+    if (result.rowCount === 0) {
+      return json({ error: "session not found" }, 404);
+    }
     return json({ ok: true });
+  } catch (err) {
+    // FK RESTRICT: chunks still reference this session — chunks are retained
+    // for compliance and block session-metadata deletion.
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("violates foreign key constraint")) {
+      return json(
+        { error: "session has retained chunks; delete chunks first or contact compliance" },
+        409,
+      );
+    }
+    throw err;
   } finally {
     client.release();
   }
