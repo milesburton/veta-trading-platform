@@ -22,6 +22,22 @@ import { startStack, type TestStack } from "./testcontainers/services.ts";
 const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
 const T = (ms = 8_000) => AbortSignal.timeout(ms);
 
+// Maximum wall-clock time for a single Deno.test block including container
+// startup. If a test hangs (e.g. waiting for a service that never responds),
+// this races it to a clean timeout failure rather than blocking the CI runner.
+const TEST_TIMEOUT_MS = 5 * 60 * 1_000;
+
+function withTimeout<T>(fn: () => Promise<T>): Promise<T> {
+  return Promise.race([
+    fn(),
+    new Promise<never>((_, reject) =>
+      AbortSignal.timeout(TEST_TIMEOUT_MS).addEventListener("abort", () =>
+        reject(new Error(`Test exceeded ${TEST_TIMEOUT_MS / 1_000}s hard timeout`))
+      )
+    ),
+  ]);
+}
+
 function url(stack: TestStack, name: keyof TestStack["urls"]): string {
   const u = stack.urls[name];
   if (!u) throw new Error(`${name} URL not in stack`);
@@ -34,7 +50,7 @@ function url(stack: TestStack, name: keyof TestStack["urls"]): string {
 Deno.test({
   name: "smoke.full (testcontainers): service health and version",
   ignore: !SHOULD_RUN,
-  async fn(t) {
+  fn: (t) => withTimeout(async () => {
     const stack = await startStack({
       services: [
         "market-sim",
@@ -143,7 +159,7 @@ Deno.test({
     } finally {
       await stack.teardown();
     }
-  },
+  }),
 });
 
 // Group 2: core trading flows. Boots the order pipeline plus every algo
@@ -151,7 +167,7 @@ Deno.test({
 Deno.test({
   name: "smoke.full (testcontainers): core trading flows",
   ignore: !SHOULD_RUN,
-  async fn(t) {
+  fn: (t) => withTimeout(async () => {
     const stack = await startStack({
       services: [
         "market-sim",
@@ -1605,7 +1621,7 @@ Deno.test({
     } finally {
       await stack.teardown();
     }
-  },
+  }),
 });
 
 // Group 3: peripheral services. Boots the intelligence and analytics
@@ -1614,7 +1630,7 @@ Deno.test({
 Deno.test({
   name: "smoke.full (testcontainers): peripheral services",
   ignore: !SHOULD_RUN,
-  async fn(t) {
+  fn: (t) => withTimeout(async () => {
     const stack = await startStack({
       services: [
         "market-sim",
@@ -1994,5 +2010,5 @@ Deno.test({
     } finally {
       await stack.teardown();
     }
-  },
+  }),
 });
