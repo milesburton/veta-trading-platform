@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-VETA follows a "works on my machine" approach: every developer environment is identical because the entire platform runs inside a Docker-based Dev Container. Every change goes through automated testing at four levels before it can reach production.
+VETA eliminates environment drift by running the entire platform inside a Docker-based Dev Container — every developer gets an identical, pre-configured environment. Every change goes through automated testing at four levels before it can reach production.
 
 ## Dockerised development
 
