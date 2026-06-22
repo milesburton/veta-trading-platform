@@ -136,10 +136,20 @@ export class AppPage {
   }
 
   async waitForAuthIdentity(userName: string) {
+    // Wait for the user name to appear in the status bar — confirms Redux has
+    // received the authIdentity message and both user + limits are in the store.
     await this.page
       .getByTestId("user-menu-btn")
       .getByText(userName)
       .waitFor({ state: "visible", timeout: 8_000 });
+    // Wait for React to commit the re-render triggered by the new tradingStyle —
+    // panels gated on trading style (e.g. spread-analysis requires fi_voice) show
+    // a placeholder until DashboardLayout's renderTabSet callback re-executes.
+    await this.page.waitForFunction(
+      () =>
+        !document.body.innerText.includes("You do not have permission to view this panel."),
+      { timeout: 5_000 },
+    );
   }
 
   /**
