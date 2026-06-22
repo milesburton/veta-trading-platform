@@ -142,12 +142,19 @@ export class AppPage {
       .getByTestId("user-menu-btn")
       .getByText(userName)
       .waitFor({ state: "visible", timeout: 8_000 });
-    // Wait for React to commit the re-render triggered by the new tradingStyle —
-    // panels gated on trading style (e.g. spread-analysis requires fi_voice) show
-    // a placeholder until DashboardLayout's renderTabSet callback re-executes.
+    // Wait for React to commit the re-render triggered by the new tradingStyle.
+    // Only inspect visible (display-block) tab panels — background tabs in
+    // multi-tab tabsets stay hidden and may permanently show the placeholder
+    // (e.g. greeks-surface requires derivatives style, not fi_voice).
     await this.page.waitForFunction(
-      () =>
-        !document.body.innerText.includes("You do not have permission to view this panel."),
+      () => {
+        const visibleTabs = Array.from(
+          document.querySelectorAll<HTMLElement>(".flexlayout__tab"),
+        ).filter((el) => el.style.display !== "none" && el.offsetParent !== null);
+        return !visibleTabs.some((el) =>
+          el.innerText.includes("You do not have permission to view this panel."),
+        );
+      },
       { timeout: 5_000 },
     );
   }

@@ -66,6 +66,13 @@ export const FI_TRADER: AuthUser = {
   avatar_emoji: "CD",
 };
 
+export const DERIVATIVES_TRADER: AuthUser = {
+  id: "trader-1",
+  name: "Alice Chen",
+  role: "trader",
+  avatar_emoji: "AL",
+};
+
 export const RESEARCH_ANALYST: AuthUser = {
   id: "trader-4",
   name: "David Kim",
@@ -122,6 +129,16 @@ export const FI_TRADER_LIMITS: TradingLimits = {
   dark_pool_access: false,
   trading_style: "fi_voice",
   primary_desk: "fi-govies",
+};
+
+export const DERIVATIVES_TRADER_LIMITS: TradingLimits = {
+  max_order_qty: 10_000,
+  max_daily_notional: 1_000_000,
+  allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
+  allowed_desks: ["equity", "derivatives"],
+  dark_pool_access: false,
+  trading_style: "derivatives_high_touch",
+  primary_desk: "equity-derivatives",
 };
 
 export const ANALYST_LIMITS: TradingLimits = {
