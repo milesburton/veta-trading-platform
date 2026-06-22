@@ -675,6 +675,9 @@ describe("gatewayMiddleware", () => {
               }),
             };
           }
+          if (url.includes("/preferences")) {
+            return { ok: true, json: async () => ({}) };
+          }
           if (url.endsWith("/assets")) {
             return {
               ok: true,
@@ -722,7 +725,27 @@ describe("gatewayMiddleware", () => {
         })
       );
 
+      // Connect the WS and send authIdentity — assets are seeded after prefs load.
+      const ws = MockWebSocket.instances[0];
+      ws.onopen?.({} as Event);
+      ws.onmessage?.({
+        data: JSON.stringify({
+          event: "authIdentity",
+          data: {
+            user: { id: "u1", name: "Trader", role: "trader", avatar_emoji: ":t:" },
+            limits: {
+              max_order_qty: 1000,
+              max_daily_notional: 1e6,
+              allowed_strategies: [],
+              allowed_desks: [],
+              dark_pool_access: false,
+            },
+          },
+        }),
+      } as MessageEvent);
+
       await vi.advanceTimersByTimeAsync(1_250);
+      for (let i = 0; i < 20; i++) await Promise.resolve();
 
       expect(dispatched.some((a) => a.type === "market/setAssets")).toBe(true);
       expect(dispatched.some((a) => a.type === "market/candlesSeeded")).toBe(true);
@@ -739,6 +762,9 @@ describe("gatewayMiddleware", () => {
           const url = String(input);
           if (url.includes("/ready")) {
             return { ok: false, json: async () => null };
+          }
+          if (url.includes("/preferences")) {
+            return { ok: true, json: async () => ({}) };
           }
           if (url.endsWith("/assets")) {
             return {
@@ -774,6 +800,25 @@ describe("gatewayMiddleware", () => {
           avatar_emoji: ":t:",
         })
       );
+
+      // Connect WS and send authIdentity to trigger the asset+candle seeding path.
+      const ws = MockWebSocket.instances[0];
+      ws.onopen?.({} as Event);
+      ws.onmessage?.({
+        data: JSON.stringify({
+          event: "authIdentity",
+          data: {
+            user: { id: "u1", name: "Trader", role: "trader", avatar_emoji: ":t:" },
+            limits: {
+              max_order_qty: 1000,
+              max_daily_notional: 1e6,
+              allowed_strategies: [],
+              allowed_desks: [],
+              dark_pool_access: false,
+            },
+          },
+        }),
+      } as MessageEvent);
 
       await vi.advanceTimersByTimeAsync(200);
       for (let i = 0; i < 20; i++) {

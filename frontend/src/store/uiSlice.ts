@@ -1,5 +1,6 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { STRATEGIES } from "@shared/primitives";
 import type { OrderSide, Strategy } from "@veta/frontend/types.ts";
 import type { RootState } from "./index.ts";
 
@@ -64,17 +65,7 @@ const initialState: UiState = {
   showOverridesOnly: false,
 };
 
-const VALID_STRATEGIES: Strategy[] = [
-  "LIMIT",
-  "TWAP",
-  "POV",
-  "VWAP",
-  "ICEBERG",
-  "SNIPER",
-  "ARRIVAL_PRICE",
-  "IS",
-  "MOMENTUM",
-];
+const VALID_STRATEGIES = STRATEGIES;
 const VALID_SIDES: OrderSide[] = ["BUY", "SELL"];
 const VALID_ALGO_TABS: AlgoMonitorTab[] = ["active", "needs-action", "history"];
 const VALID_OBS_TABS: ObservabilityTab[] = ["summary", "trades", "events"];
@@ -117,27 +108,47 @@ export const loadUiPrefs = createAsyncThunk("ui/loadPrefs", async () => {
   return parseUiPrefs(blob);
 });
 
+// Debounce rapid saves (hotkey cycling, resize events) into a single PUT.
+// The timer is reset on each dispatch; only the most-recent Redux state is written.
+let _saveTimer: ReturnType<typeof setTimeout> | null = null;
+let _saveResolve: (() => void) | null = null;
+
+function debouncedSave(fn: () => Promise<void>, delayMs = 400): Promise<void> {
+  if (_saveTimer !== null) clearTimeout(_saveTimer);
+  return new Promise<void>((resolve) => {
+    _saveResolve?.();
+    _saveResolve = resolve;
+    _saveTimer = setTimeout(() => {
+      _saveTimer = null;
+      _saveResolve = null;
+      fn().then(resolve).catch(resolve);
+    }, delayMs);
+  });
+}
+
 export const saveUiPrefs = createAsyncThunk("ui/savePrefs", async (_: undefined, { getState }) => {
   const state = getState() as RootState;
   const ui = state.ui;
-  const existing = await fetch(GATEWAY_PREFS_URL, { credentials: "include" })
-    .then((r) => (r.ok ? r.json() : {}))
-    .catch(() => ({}));
-  await fetch(GATEWAY_PREFS_URL, {
-    method: "PUT",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...existing,
-      orderTicketWindowSize: ui.orderTicketWindowSize,
-      activeStrategy: ui.activeStrategy,
-      activeSide: ui.activeSide,
-      selectedAsset: ui.selectedAsset,
-      algoMonitorTab: ui.algoMonitorTab,
-      showHeartbeats: ui.showHeartbeats,
-      observabilityTab: ui.observabilityTab,
-      showOverridesOnly: ui.showOverridesOnly,
-    }),
+  await debouncedSave(async () => {
+    const existing = await fetch(GATEWAY_PREFS_URL, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : {}))
+      .catch(() => ({}));
+    await fetch(GATEWAY_PREFS_URL, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...existing,
+        orderTicketWindowSize: ui.orderTicketWindowSize,
+        activeStrategy: ui.activeStrategy,
+        activeSide: ui.activeSide,
+        selectedAsset: ui.selectedAsset,
+        algoMonitorTab: ui.algoMonitorTab,
+        showHeartbeats: ui.showHeartbeats,
+        observabilityTab: ui.observabilityTab,
+        showOverridesOnly: ui.showOverridesOnly,
+      }),
+    });
   });
 });
 

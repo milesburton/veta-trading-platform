@@ -106,13 +106,14 @@ All endpoints are proxied through the gateway at `/api/gateway/api/replay`.
 | `GET` | `/sessions?limit=50&offset=0` | Paginated list of sessions (ordered by `started_at DESC`) |
 | `POST` | `/sessions` | Create a session. Body: `{ id, userId, userName?, userRole?, metadata? }` |
 | `PUT` | `/sessions/{id}/end` | Mark session as ended. Sets `ended_at` and `duration_ms` |
-| `DELETE` | `/sessions/{id}` | Delete session metadata (does **not** delete chunks) |
+| `DELETE` | `/sessions/{id}` | Delete session metadata. Returns `409` if chunks still exist (FK enforces compliance retention — delete chunks first). |
 
 ### Chunks & Events
 
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/sessions/{id}/chunks` | Upload event batch. Body: `{ seq, events }` — upserts by `(session_id, seq)` |
+| `DELETE` | `/sessions/{id}/chunks` | Delete all chunks for a session (compliance-authorised purge, required before deleting the session row) |
 | `GET` | `/sessions/{id}/events` | Returns `{ events }` — concatenates all chunks ordered by `seq` |
 
 ## Client-side video rendering
@@ -137,7 +138,7 @@ The exported WebM plays in every modern browser, Slack, and most video tools, so
 | Sensitive input data | `sessionRecorder` calls `rrweb.record({ maskAllInputs: true, maskTextClass: "veta-mask", maskTextSelector: "[data-mask]" })` — all `<input>` values are replaced with `*` |
 | Text masking | CSS class `veta-mask` and `data-mask` attributes on elements hide text content |
 | Recording toggle | Only users with `admin` or `compliance` roles can enable/disable recording via the toggle in the Session Replay panel |
-| Session deletion | Only `admin` and `compliance` users see the **Delete** button; it removes session metadata but not stored chunks (chunks are retained for compliance) |
+| Session deletion | Only `admin` and `compliance` users see the **Delete** button; it removes session metadata. The database FK (`ON DELETE RESTRICT`) blocks deletion while chunks exist, so event data is retained for compliance. A `409` is returned if chunks are still present. |
 | CORS | `replay-service` returns `corsOptions()` on `OPTIONS` preflight requests |
 
 ## Troubleshooting

@@ -1,15 +1,18 @@
 export type OrderSide = "BUY" | "SELL";
 
-export type Strategy =
-  | "LIMIT"
-  | "TWAP"
-  | "POV"
-  | "VWAP"
-  | "ICEBERG"
-  | "SNIPER"
-  | "ARRIVAL_PRICE"
-  | "IS"
-  | "MOMENTUM";
+export const STRATEGIES = [
+  "LIMIT",
+  "TWAP",
+  "POV",
+  "VWAP",
+  "ICEBERG",
+  "SNIPER",
+  "ARRIVAL_PRICE",
+  "IS",
+  "MOMENTUM",
+] as const;
+
+export type Strategy = (typeof STRATEGIES)[number];
 
 export type Desk = "equity" | "fi" | "derivatives" | "fx" | "commodities";
 

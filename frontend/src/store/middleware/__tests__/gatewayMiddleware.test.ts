@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { setUser } from "@veta/frontend/store/authSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
 import { gatewayMiddleware } from "@veta/frontend/store/middleware/gatewayMiddleware";
+import { newsApi } from "@veta/frontend/store/newsApi";
 import { setSelectedAsset } from "@veta/frontend/store/uiSlice";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -29,22 +30,25 @@ class FakeWebSocket {
 
 function makeStore() {
   // Use a small barebones reducer so we can observe dispatched actions.
-  // The middleware reads state via storeAPI.getState() so we keep the slices used.
+  // newsApi is included so hydrateNewsForSymbol's RTK Query thunk actually fires fetch.
   const dispatched: { type: string; payload?: unknown }[] = [];
   const store = configureStore({
     reducer: {
       market: (s = { connected: false, assets: [] }, _action) => s,
       ui: (s = { selectedAsset: null as string | null }, _action) => s,
       breakers: (s = { active: [] as Array<{ key: string; expiresAt: number }> }, _action) => s,
+      [newsApi.reducerPath]: newsApi.reducer,
     },
     middleware: (gdm) =>
-      gdm({ serializableCheck: false, immutableCheck: false }).concat([
-        () => (next: (action: unknown) => unknown) => (action: unknown) => {
-          dispatched.push(action as { type: string; payload?: unknown });
-          return next(action);
-        },
-        gatewayMiddleware,
-      ]),
+      gdm({ serializableCheck: false, immutableCheck: false })
+        .concat(newsApi.middleware)
+        .concat([
+          () => (next: (action: unknown) => unknown) => (action: unknown) => {
+            dispatched.push(action as { type: string; payload?: unknown });
+            return next(action);
+          },
+          gatewayMiddleware,
+        ]),
   });
   return { store, dispatched };
 }
@@ -484,11 +488,16 @@ describe("gatewayMiddleware – non-order events", () => {
 });
 
 describe("gatewayMiddleware – setSelectedAsset triggers news hydration", () => {
-  it("triggers fetch when symbol is non-null", () => {
-    const { store } = makeStore();
+  it("dispatches news API thunk when symbol is non-null", async () => {
+    const { store, dispatched } = makeStore();
     store.dispatch(setUser({ id: "a", name: "A", role: "trader", avatar_emoji: "🙂" }));
     store.dispatch(setSelectedAsset("AAPL"));
-    expect(globalThis.fetch).toHaveBeenCalled();
+    // hydrateNewsForSymbol dispatches an RTK Query thunk which resolves to pending/rejected
+    // plain actions (URL is relative and invalid in Node, so it rejects).
+    await new Promise((r) => setTimeout(r, 0));
+    expect(dispatched.some((a) => typeof a.type === "string" && a.type.includes("newsApi"))).toBe(
+      true
+    );
   });
 });
 
