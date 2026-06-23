@@ -172,10 +172,17 @@ export class AppPage {
     };
 
     const waitForPanelReady = async (panel: ReturnType<Page["locator"]>) => {
-      await panel.locator("text=You do not have permission to view this panel.").waitFor({
-        state: "hidden",
-        timeout: 8_000,
-      }).catch(() => {});
+      // Poll until the panel does NOT contain the permission placeholder.
+      // Uses evaluate on the element handle so we can inspect the specific
+      // node, not the full page. Times out gracefully if the panel is freely
+      // accessible (placeholder never appears).
+      const handle = await panel.elementHandle({ timeout: 5_000 }).catch(() => null);
+      if (!handle) return;
+      await this.page.waitForFunction(
+        (el) => !el.innerText.includes("You do not have permission to view this panel."),
+        handle,
+        { timeout: 8_000 },
+      ).catch(() => {});
     };
 
     if (visible) {
