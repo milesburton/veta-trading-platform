@@ -18,13 +18,13 @@ unreadable as the service count grew. **Click any diagram to expand.**
 ```mermaid
 graph LR
     USER["Internet user"]:::client
-    OVH["OVH edge box<br/><edge-server><br/><i>Traefik :443 + LE TLS</i>"]:::edge
-    TUNNEL["Reverse SSH tunnel<br/><i>autossh, dialled OUT from homelab</i>"]:::edge
-    HL["Homelab Traefik :443<br/>private LAN, no inbound NAT"]:::gateway
+    EDGE["Edge server<br/><edge-server><br/><i>Traefik :443 + LE TLS</i>"]:::edge
+    TUNNEL["Secure tunnel<br/><i>dialled OUT from server</i>"]:::edge
+    HL["Server Traefik :443<br/>private LAN, no inbound NAT"]:::gateway
     SVC["frontend / gateway / etc."]:::support
 
-    USER -->|"HTTPS veta.mnetcs.com"| OVH
-    OVH -->|"localhost:18443"| TUNNEL
+    USER -->|"HTTPS"| EDGE
+    EDGE -->|"localhost:18443"| TUNNEL
     TUNNEL -->|"private LAN :443"| HL
     HL -->|"PathPrefix routing"| SVC
 
@@ -34,13 +34,13 @@ graph LR
     classDef support fill:#94a3b8,stroke:#64748b,color:#000
 ```
 
-The homelab is on a private LAN with **no inbound NAT**. Public traffic
-reaches it through a reverse SSH tunnel dialled out from the homelab to
-an OVH dedicated server, which terminates TLS and forwards into the
+The server is on a private LAN with **no inbound NAT**. Public traffic
+reaches it through a secure tunnel dialled out from the server to
+the edge server, which terminates TLS and forwards into the
 tunnel.
 
 A separate [synthetic probe](/veta-trading-platform/platform/supporting/synthetic-probe/) runs on the
-OVH edge every 60s to catch outages anywhere along this chain. Full detail:
+edge server every 60s to catch outages anywhere along this chain. Full detail:
 [Edge architecture](/veta-trading-platform/platform/edge-architecture/).
 
 ### High-level: how a request flows

@@ -1,13 +1,13 @@
 ---
 title: Deployment
-description: How to deploy VETA to the homelab or locally.
+description: How to deploy VETA to the production server or locally.
 sidebar:
   order: 7
 ---
 
-## Homelab (canonical)
+## Production (canonical)
 
-The platform is deployed to a homelab host (Proxmox LXC, 32 cores, 64 GB RAM, 2 TB SSD, NAS-backed storage). Per-service Docker images are built by CI on every `main` push and pushed to GHCR; a systemd timer (`veta-auto-pull.timer`) on the homelab polls `origin/main` every five minutes and runs `scripts/homelab-deploy.sh` when the SHA changes, which rsyncs the latest compose files and runs `docker compose up -d`. See the [supporting services overview](/veta-trading-platform/platform/supporting-services/) for the homelab compose layout, and the [operations strategy](/veta-trading-platform/platform/operations-strategy/) for the full deploy state machine and rationale.
+The platform is deployed to a server (Proxmox LXC, 32 cores, 64 GB RAM, 2 TB SSD, NAS-backed storage). Per-service Docker images are built by CI on every `main` push and pushed to GHCR; a systemd timer (`veta-auto-pull.timer`) on the server polls `origin/main` every five minutes and runs `scripts/homelab-deploy.sh` when the SHA changes, which rsyncs the latest compose files and runs `docker compose up -d`. See the [supporting services overview](/veta-trading-platform/platform/supporting-services/) for the server compose layout, and the [operations strategy](/veta-trading-platform/platform/operations-strategy/) for the full deploy state machine and rationale.
 
 ## Public URLs
 
@@ -16,7 +16,7 @@ The platform is deployed to a homelab host (Proxmox LXC, 32 cores, 64 GB RAM, 2 
 | Application | [`https://veta.mnetcs.com/`](https://veta.mnetcs.com/) |
 | Grafana dashboards | [`https://veta.mnetcs.com/grafana/`](https://veta.mnetcs.com/grafana/) |
 
-Both are served by Traefik on the homelab and exposed to the public internet through a reverse SSH tunnel from an OVH dedicated server.
+Both are served by Traefik on the server and exposed to the public internet through a secure tunnel from the edge server.
 
 ## Local development
 

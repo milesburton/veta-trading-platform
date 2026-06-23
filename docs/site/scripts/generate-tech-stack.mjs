@@ -209,31 +209,26 @@ function renderImageTable(imageSet, sourcePaths) {
   ].join("\n");
 }
 
-function renderCoreTechnologies() {
-  const core = [
-    ["Deno", coreLinks.deno],
-    ["TypeScript", coreLinks.typescript],
-    ["Node.js", coreLinks.node],
-    ["Docker", coreLinks.docker],
-    ["PostgreSQL", coreLinks.postgresql],
-    ["Redpanda", coreLinks.redpanda],
-    ["Traefik", coreLinks.traefik],
-    ["Prometheus", coreLinks.prometheus],
-    ["Grafana", coreLinks.grafana],
-    ["Loki", coreLinks.loki],
-    ["Tempo", coreLinks.tempo],
-    ["Ollama", coreLinks.ollama],
-  ];
+function renderTable(title, rows) {
+  if (rows.length === 0) return "";
+  return [
+    `## ${title}`,
+    "",
+    "| Technology | Version |",
+    "|---|---|",
+    ...rows,
+    "",
+  ].join("\n");
+}
 
-  const rows = core.map(([name, link]) => `- [${name}](${link})`).join("\n");
-  return ["## Core platform technologies", "", rows, ""].join("\n");
+function pkgRow(name, version, map) {
+  const link = coreLinks[name] || coreLinks[name.replace(/^@[^/]+\//, "")] || npmLink(name);
+  return `| [${name}](${link}) | \`${version}\` |`;
 }
 
 function generate() {
   const denoJsonPath = path.resolve(repoRoot, "deno.json");
-  const rootPackagePath = path.resolve(repoRoot, "package.json");
   const frontendPackagePath = path.resolve(repoRoot, "frontend/package.json");
-  const docsPackagePath = path.resolve(docsSiteRoot, "package.json");
 
   const composePaths = [
     path.resolve(repoRoot, "compose.yml"),
@@ -241,18 +236,63 @@ function generate() {
     path.resolve(repoRoot, "observability/docker-compose.lgtm.yml"),
   ].filter((p) => fs.existsSync(p));
 
-  const denoPackages = parseDenoImports(denoJsonPath);
-  const rootPackages = parsePackageDeps(rootPackagePath);
   const frontendPackages = parsePackageDeps(frontendPackagePath);
-  const docsPackages = parsePackageDeps(docsPackagePath);
 
   const imageSet = new Set();
   for (const composePath of composePaths) {
-    const images = parseComposeImages(composePath);
-    for (const image of images) {
-      imageSet.add(image);
-    }
+    for (const image of parseComposeImages(composePath)) imageSet.add(image);
   }
+
+  // Frontend UI — packages users of the app interact with
+  const uiNames = ["react", "react-dom", "react-redux", "@reduxjs/toolkit",
+    "flexlayout-react", "lightweight-charts", "recharts", "tailwindcss",
+    "rrweb", "rrweb-player", "@preact/signals-react", "react-hotkeys-hook",
+    "react-window", "html-to-image", "zod", "uuid"];
+  const uiRows = uiNames
+    .filter((n) => frontendPackages.has(n))
+    .map((n) => pkgRow(n, frontendPackages.get(n)));
+
+  // Testing toolchain
+  const testNames = ["playwright", "@playwright/test", "vitest", "@vitest/coverage-v8",
+    "@biomejs/biome", "@testing-library/react", "msw"];
+  const testRows = testNames
+    .filter((n) => frontendPackages.has(n))
+    .map((n) => pkgRow(n, frontendPackages.get(n)));
+
+  // Build tools
+  const buildNames = ["vite", "@vitejs/plugin-react", "electron", "electron-builder",
+    "vite-plugin-electron", "typescript"];
+  const buildRows = buildNames
+    .filter((n) => frontendPackages.has(n))
+    .map((n) => pkgRow(n, frontendPackages.get(n)));
+
+  // Container image table (VETA services grouped, third-party listed)
+  const vetaImages = [...imageSet]
+    .filter((i) => i.startsWith("ghcr.io/milesburton"))
+    .sort();
+  const thirdPartyImages = [...imageSet]
+    .filter((i) => !i.startsWith("ghcr.io/milesburton"))
+    .sort();
+
+  const vetaRows = vetaImages.map((i) => `| [${i.split("/").pop().split(":")[0]}](${dockerLink(i)}) |`);
+  const tpRows = thirdPartyImages.map((i) => `| [${i}](${dockerLink(i)}) |`);
+
+  const imageSection = [
+    "## Service images",
+    "",
+    "VETA services are built and published to GHCR on every merge to `main`.",
+    "",
+    "| Service |",
+    "|---|",
+    ...vetaRows,
+    "",
+    "## Third-party images",
+    "",
+    "| Image |",
+    "|---|",
+    ...tpRows,
+    "",
+  ].join("\n");
 
   const content = [
     "---",
@@ -260,30 +300,38 @@ function generate() {
     "description: Auto-generated technology inventory derived at build time from repository manifests.",
     "---",
     "",
-    "This page is generated automatically during docs build and should not be edited manually.",
+    "This page is auto-generated at docs build time. Do not edit manually.",
     "",
-    renderCoreTechnologies(),
-    renderPackageTable(
-      "Backend and workspace packages",
-      relToRepo(rootPackagePath),
-      rootPackages,
-    ),
-    renderPackageTable(
-      "Frontend packages",
-      relToRepo(frontendPackagePath),
-      frontendPackages,
-    ),
-    renderPackageTable(
-      "Docs site packages",
-      relToRepo(docsPackagePath),
-      docsPackages,
-    ),
-    renderPackageTable(
-      "Deno npm imports",
-      relToRepo(denoJsonPath),
-      denoPackages,
-    ),
-    renderImageTable(imageSet, composePaths.map(relToRepo)),
+    "## Runtime",
+    "",
+    "| Layer | Technology |",
+    "|---|---|",
+    `| Backend | [Deno](${coreLinks.deno}) 2.x |`,
+    `| Frontend | [Node.js](${coreLinks.node}) 24 · [TypeScript](${coreLinks.typescript}) |`,
+    `| Containerisation | [Docker](${coreLinks.docker}) |`,
+    "",
+    "## Data & messaging",
+    "",
+    "| Component | Technology |",
+    "|---|---|",
+    `| Relational DB | [PostgreSQL](${coreLinks.postgresql}) 16 |`,
+    `| Message bus | [Redpanda](${coreLinks.redpanda}) (Kafka-compatible) |`,
+    "",
+    "## Observability",
+    "",
+    "| Component | Technology |",
+    "|---|---|",
+    `| Reverse proxy / TLS | [Traefik](${coreLinks.traefik}) v3 |`,
+    `| Metrics | [Prometheus](${coreLinks.prometheus}) |`,
+    `| Dashboards | [Grafana](${coreLinks.grafana}) |`,
+    `| Logs | [Loki](${coreLinks.loki}) |`,
+    `| Traces | [Tempo](${coreLinks.tempo}) |`,
+    `| LLM inference | [Ollama](${coreLinks.ollama}) |`,
+    "",
+    renderTable("Frontend UI", uiRows),
+    renderTable("Testing", testRows),
+    renderTable("Build tools", buildRows),
+    imageSection,
   ].join("\n");
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });

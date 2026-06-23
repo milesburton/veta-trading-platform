@@ -1,6 +1,6 @@
 ---
 title: LGTM stack
-description: The self-hosted observability stack on the homelab. Loki, Grafana, Tempo, Prometheus, and the Alloy collector.
+description: The self-hosted observability stack on the production. Loki, Grafana, Tempo, Prometheus, and the Alloy collector.
 ---
 
 import GrafanaScreenshots from "@docs/components/GrafanaScreenshots.astro";
@@ -42,6 +42,6 @@ The two OTel dashboards depend on the `compose.observability.yml` overlay being 
 
 ## Live snapshots
 
-The screenshots below are captured directly from the homelab Grafana via its [image-renderer](https://grafana.com/docs/grafana/latest/setup-grafana/image-rendering/) by [`docs/site/scripts/capture-grafana-screenshots.mjs`](https://github.com/milesburton/veta-trading-platform/blob/main/docs/site/scripts/capture-grafana-screenshots.mjs). To refresh, run `npm run capture:grafana` from `docs/site/` against a host with the LGTM stack up. Click any panel for the full-resolution version.
+The screenshots below are captured directly from the production Grafana via its [image-renderer](https://grafana.com/docs/grafana/latest/setup-grafana/image-rendering/) by [`docs/site/scripts/capture-grafana-screenshots.mjs`](https://github.com/milesburton/veta-trading-platform/blob/main/docs/site/scripts/capture-grafana-screenshots.mjs). To refresh, run `npm run capture:grafana` from `docs/site/` against a host with the LGTM stack up. Click any panel for the full-resolution version.
 
 <GrafanaScreenshots />

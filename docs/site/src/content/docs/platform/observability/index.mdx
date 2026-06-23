@@ -1,6 +1,6 @@
 ---
 title: Observability
-description: Metrics, logs, and traces via the self-hosted LGTM stack on the homelab.
+description: Metrics, logs, and traces via the self-hosted LGTM stack on the production.
 ---
 
 import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
@@ -8,7 +8,7 @@ import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
 VETA emits metrics, logs, and traces to a separate **LGTM** stack: Loki, Grafana, Tempo, and Mimir/Prometheus, with Grafana Alloy collecting events. The trading stack runs fine without it; bring it up when investigating performance, debugging event flow, or generating data for the [Performance page](../../analytics/performance/).
 
 <Aside type="caution" title="Not for a real-bank production">
-The self-hosted LGTM stack and the OTel auto-instrumentation overlay described in this section are intended for the homelab demo. A real production deployment should send OTLP to a managed observability vendor (Grafana Cloud, Honeycomb, Datadog, New Relic) rather than running its own collector + storage on the same host as the trading platform. Co-locating the observability backend with the workload it observes creates a noisy-neighbour failure mode where a metric spike crashes both the platform and the dashboard you would have used to diagnose it.
+The self-hosted LGTM stack and the OTel auto-instrumentation overlay described in this section are intended for the production demo. A real production deployment should send OTLP to a managed observability vendor (Grafana Cloud, Honeycomb, Datadog, New Relic) rather than running its own collector + storage on the same host as the trading platform. Co-locating the observability backend with the workload it observes creates a noisy-neighbour failure mode where a metric spike crashes both the platform and the dashboard you would have used to diagnose it.
 
 The instrumentation itself (`OTEL_DENO=true`, the trace-propagating Kafka helpers, the `withSpan()` calls) works against any OTLP receiver. Only the receiver and storage choice changes.
 
@@ -20,7 +20,7 @@ The instrumentation itself (`OTEL_DENO=true`, the trace-propagating Kafka helper
   <LinkCard
     title="LGTM stack"
     href="./lgtm/"
-    description="Compose layout, provisioned Grafana dashboards, live snapshots from the homelab."
+    description="Compose layout, provisioned Grafana dashboards, live snapshots from the production."
   />
   <LinkCard
     title="Log collection and search"
@@ -79,6 +79,6 @@ For the in-app drawer's API endpoint, role-gating, and ring-buffer fallback deta
 | Environment                                | Trading stack | LGTM stack | k6       |
 | --- | --- | --- | --- |
 | `local` (devcontainer)                     | yes           | optional   | optional |
-| `homelab` (public demo at veta.mnetcs.com) | yes           | yes        | manual   |
+| `production` | yes           | yes        | manual   |
 
 LGTM and k6 are optional locally. They add real overhead and the platform runs fine without them.

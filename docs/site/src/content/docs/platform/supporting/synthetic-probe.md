@@ -1,10 +1,10 @@
 ---
 title: Synthetic probe
-description: External 60s liveness check from the OVH edge box, with a CI mirror that runs after every merge to main.
+description: External 60s liveness check from the edge server, with a CI mirror that runs after every merge to main.
 ---
 
 The synthetic probe is a small Deno binary that simulates a user every
-60 seconds. It is the source of truth for "is `veta.mnetcs.com` actually up
+60 seconds. It is the source of truth for "is the deployment URL actually up
 right now". Distinct from per-container healthchecks (which only know about
 themselves) and Prometheus alert rules (which fire on metric thresholds),
 the probe exercises the full user journey end-to-end.
@@ -14,15 +14,15 @@ the probe exercises the full user journey end-to-end.
 ```mermaid
 graph LR
     INET["Internet"]:::client
-    OVH["OVH edge box<br/><edge-server>"]:::edge
+    EDGE["Edge server<br/><edge-server>"]:::edge
     PROBE["veta-synthetic-probe.timer<br/><i>every 60s</i><br/>/opt/veta-probe/probe.ts"]:::edge
     TRAEFIK["Traefik :443<br/><i>real-user ingress</i>"]:::gateway
-    TUNNEL["Reverse SSH tunnel"]:::edge
-    HL["Homelab Traefik :443<br/>frontend / gateway / etc."]:::support
+    TUNNEL["Secure tunnel"]:::edge
+    HL["Server Traefik :443<br/>frontend / gateway / etc."]:::support
 
-    INET -->|"HTTPS"| OVH
-    OVH --> PROBE
-    OVH --> TRAEFIK
+    INET -->|"HTTPS"| EDGE
+    EDGE --> PROBE
+    EDGE --> TRAEFIK
     PROBE -->|"GET /<br/>POST /oauth/guest<br/>GET /api/gateway/ready"| TRAEFIK
     TRAEFIK --> TUNNEL
     TUNNEL --> HL
@@ -34,8 +34,8 @@ graph LR
 ```
 
 The probe runs on the **same machine that handles real traffic**,
-so its `fetch()` call traverses the same Traefik, tunnel, and homelab path
-real users do. A probe on the homelab itself would always think the
+so its `fetch()` call traverses the same Traefik, tunnel, and server path
+real users do. A probe on the server itself would always think the
 platform was fine because it would skip the tunnel hop.
 
 ## What it checks (v1)
@@ -58,9 +58,9 @@ public path).
 ## What it catches
 
 - Edge Traefik dead or mis-configured
-- Reverse SSH tunnel down
-- Homelab Traefik dead
-- Homelab gateway or user-service dead
+- Secure tunnel down
+- Server Traefik dead
+- Server gateway or user-service dead
 - `PUBLIC_GUEST_TRADING` flag flipped off
 - TLS cert expired or mis-issued
 
@@ -108,17 +108,17 @@ resets the counter.
 `.github/workflows/post-deploy-probe.yml` runs the same probe binary from
 a GitHub Actions runner after every push to `main`. It:
 
-1. Waits ~6 minutes for the homelab auto-pull timer to pick up the commit
+1. Waits ~6 minutes for the server auto-pull timer to pick up the commit
    and roll out the new images.
-2. Runs `synthetic-probe/probe.ts` against `https://veta.mnetcs.com` with
+2. Runs `synthetic-probe/probe.ts` against the deployment URL with
    up to 3 retries (30 s apart) to absorb deploy jitter.
 3. Fails the workflow on persistent failure, so the standard GH email goes
    out.
 
-This is a **third independent vantage point** on top of (a) the OVH probe
-and (b) per-container healthchecks. If the OVH probe and the CI probe
-disagree, the divergence itself is signal. For example, an OVH-local network
-issue would show up on the OVH probe only, while a TLS or DNS issue would
+This is a **third independent vantage point** on top of (a) the edge server probe
+and (b) per-container healthchecks. If the edge probe and the CI probe
+disagree, the divergence itself is signal. For example, an edge-local network
+issue would show up on the edge probe only, while a TLS or DNS issue would
 show up everywhere.
 
 ## Daily use
@@ -149,17 +149,17 @@ sudo rm /var/lib/veta-probe/consecutive_failures
 
 ## Operating cost
 
-- ~3 HTTPS requests per minute against `veta.mnetcs.com`
+- ~3 HTTPS requests per minute against the deployment URL
 - ~1 KB JSON written to journald per cycle
 - One Deno cold start per cycle (no daemon)
-- Total: negligible on the OVH box (single-digit MB RSS during the probe
+- Total: negligible on the edge server (single-digit MB RSS during the probe
   run, idle the rest of the minute)
 
 ## Future work
 
-- **Loki shipping**: ship the journald lines from OVH to the homelab Loki
+- **Loki shipping**: ship the journald lines from the edge server to the server Loki
   so probe history is queryable in Grafana alongside service logs. Needs
-  an alloy / vector / promtail sidecar on the OVH box.
+  an alloy / vector / promtail sidecar on the edge server.
 - **SLO dashboard**: once Loki shipping is in place, build a Grafana
   panel for rolling 24 h / 7 d / 30 d availability.
 - **v2 checks**: WS frame count, order submit + cancel, market-data

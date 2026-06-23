@@ -17,7 +17,7 @@ The trading UI's header has a **Logs** button that opens a drawer for searching 
 
 The gateway resolves the query in this order:
 
-1. **Loki** if `LOKI_URL` is configured on the gateway (typical homelab setup). The full LogQL search runs against every service's structured log stream.
+1. **Loki** if `LOKI_URL` is configured on the gateway (typical production setup). The full LogQL search runs against every service's structured log stream.
 2. **In-process ring buffer** otherwise. The gateway records its own log lines into a 2,000-entry buffer via `registerLogSink()` so at least the gateway's view is searchable when no external log store is available. This is the local-dev mode.
 
 The route is gated to non-viewer roles. Logs may contain user identifiers and other sensitive context, so external-clients and viewers receive a 403 when they hit the endpoint directly.

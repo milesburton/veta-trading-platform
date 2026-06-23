@@ -1,9 +1,9 @@
 ---
 title: Continuous load generator
-description: Always-on synthetic trade flow on the homelab. Two k6 runners (soak + matrix) plus a token-refresh sidecar. Distinct from the on-demand k6 harness.
+description: Always-on synthetic trade flow on the production server. Two k6 runners (soak + matrix) plus a token-refresh sidecar. Distinct from the on-demand k6 harness.
 ---
 
-`load.sh on` brings up three containers on the homelab:
+`load.sh on` brings up three containers on the production server:
 
 - **`loadgen-soak`**: k6 with a steady ~50 VUs, restarts every 50 min to
   pick up rotated tokens
@@ -20,7 +20,7 @@ runs against local dev) see [k6 load testing](../k6-load-testing/).
 Demonstrates how the platform behaves under near-real-world trade flow.
 Useful for:
 
-- Live demos: visitors land on `veta.mnetcs.com` and see real orders moving
+- Live demos: visitors land on the deployment URL and see real orders moving
   through the pipeline, real fills, real candles updating
 - Performance baselines: k6 percentile metrics ship to Prometheus
 - Surfacing regressions: if a deploy slows order acks below baseline,
@@ -32,8 +32,8 @@ Loadgen tests throughput, not liveness.
 ## One-time setup
 
 ```bash
-# On the homelab, drop the credentials file (mode 600)
-ssh <user>@<homelab-host>
+# On the server, drop the credentials file (mode 600)
+ssh <user>@<server-host>
 ADMIN_PW=$(sudo grep ^OAUTH2_USER_SECRETS /opt/stacks/veta/.env \
   | head -1 | cut -d= -f2- | tr ';' '\n' | grep ^admin: | cut -d: -f2-)
 echo "LOADGEN_OAUTH_PASSWORD=$ADMIN_PW" | sudo tee /opt/stacks/veta/.env.loadgen
@@ -60,22 +60,22 @@ Optional tuning vars in the same file:
 
 ```bash
 # Switch on (requires .env.loadgen present)
-ssh <user>@<homelab-host> '/opt/stacks/veta/scripts/load.sh on'
+ssh <user>@<server-host> '/opt/stacks/veta/scripts/load.sh on'
 
 # Check it's running
-ssh <user>@<homelab-host> '/opt/stacks/veta/scripts/load.sh status'
+ssh <user>@<server-host> '/opt/stacks/veta/scripts/load.sh status'
 
 # Tail logs
-ssh <user>@<homelab-host> '/opt/stacks/veta/scripts/load.sh logs'
+ssh <user>@<server-host> '/opt/stacks/veta/scripts/load.sh logs'
 
 # Switch off
-ssh <user>@<homelab-host> '/opt/stacks/veta/scripts/load.sh off'
+ssh <user>@<server-host> '/opt/stacks/veta/scripts/load.sh off'
 ```
 
 ## Auto-start on every deploy
 
 `scripts/homelab-deploy.sh` includes `compose.loadgen.yml` whenever
-`.env.loadgen` exists on the homelab. Every auto-pull tick therefore brings
+`.env.loadgen` exists on the server. Every auto-pull tick therefore brings
 loadgen up automatically, so there is no "loadgen was off, then a deploy
 re-started it" surprise.
 
@@ -92,7 +92,7 @@ the gateway logged as `auth_failure` ~1,100 lines/sec, contributing to the
 2026-05-14 disk-fill incident.
 
 Fix landed in PR #234's gateway log-throttle plus a one-off `.env.loadgen`
-rotation on the homelab. The post-fix install command above extracts the
+rotation on the server. The post-fix install command above extracts the
 correct per-user password automatically.
 
 ## Source

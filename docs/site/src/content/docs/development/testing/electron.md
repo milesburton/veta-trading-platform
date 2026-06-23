@@ -61,7 +61,7 @@ Workers are set to 1 because only one packaged app instance can run at a time wi
 
 ## Mocking the backend
 
-`tests-electron/helpers/ElectronMockServer.ts` boots a small HTTP server inside the test that the Electron app talks to instead of the real backend. This keeps the suite independent of whether the homelab is up. The mock server is narrower than `GatewayMock` from the Playwright suite; Electron tests verify desktop-specific plumbing rather than UI flows.
+`tests-electron/helpers/ElectronMockServer.ts` boots a small HTTP server inside the test that the Electron app talks to instead of the real backend. This keeps the suite independent of whether the production server is up. The mock server is narrower than `GatewayMock` from the Playwright suite; Electron tests verify desktop-specific plumbing rather than UI flows.
 
 ## Config
 

@@ -1,10 +1,10 @@
 ---
 title: veta-auto-pull (continuous deploy)
-description: systemd timer that polls origin/main every 5 minutes and runs deploy.sh when a new commit lands. The homelab's continuous-deployment mechanism.
+description: systemd timer that polls origin/main every 5 minutes and runs deploy.sh when a new commit lands. The server's continuous-deployment mechanism.
 ---
 
 `veta-auto-pull` is the **continuous deployment** mechanism for the
-homelab. Every 5 minutes a systemd timer fires a script that:
+production server. Every 5 minutes a systemd timer fires a script that:
 
 1. Polls `origin/main` via `git ls-remote` (no full clone)
 2. Compares the remote SHA against `state/last-deployed-sha`
@@ -20,12 +20,12 @@ collision bug that left the platform half-deployed indefinitely).
 
 ## Why not GitHub Actions?
 
-`.github/workflows/ci.yml` originally had a `deploy-homelab` job that
-SSHed from a GH runner to the homelab's LAN address. GitHub runners are on public
-IPs; the homelab is on a private LAN. The `ssh-keyscan` step always
+`.github/workflows/ci.yml` originally had a `deploy` job that
+SSHed from a GH runner to the server's LAN address. GitHub runners are on public
+IPs; the server is on a private LAN. The `ssh-keyscan` step always
 failed.
 
-Inverting the direction so the homelab polls GitHub sidesteps the
+Inverting the direction so the server polls GitHub sidesteps the
 network problem entirely without a tunnel, a Tailscale, or a self-hosted
 runner.
 
@@ -36,7 +36,7 @@ The 5-minute cadence is the sweet spot:
 - Aligns with the 6-minute wait in the
   [post-deploy CI probe](../synthetic-probe/#ci-mirror)
 
-## Install (one-time, on the homelab)
+## Install (one-time, on the server)
 
 ```bash
 # 1. Copy the auto-pull script to the stack dir
@@ -117,7 +117,7 @@ This is **expected, not a drift bug**.
 ## Related
 
 - [Edge architecture](/veta-trading-platform/platform/edge-architecture/): how public traffic reaches what auto-pull deploys
-- [CI/CD pipeline](/veta-trading-platform/development/ci-cd/): what happens *before* the homelab pulls the image
-- [veta-tunnel](../veta-tunnel/): the reverse SSH tunnel that exposes the homelab publicly
+- [CI/CD pipeline](/veta-trading-platform/development/ci-cd/): what happens *before* the server pulls the image
+- [veta-tunnel](../veta-tunnel/): the secure tunnel that exposes the server publicly
 - [veta-host-prune](../veta-host-prune/): weekly cleanup of dangling images
 - [Synthetic probe](../synthetic-probe/): closes the loop with a post-deploy check

@@ -9,7 +9,7 @@ and has no Docker socket access. Disk pressure is **alerted** via
 Prometheus rules in [`observability/prometheus-rules.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/observability/prometheus-rules.yml),
 not via container-level state. Actual cleanup is handled out-of-band
 by [`veta-host-prune.timer`](https://github.com/milesburton/veta-trading-platform/blob/main/scripts/homelab-systemd/veta-host-prune.timer)
-on the homelab.
+on the server.
 
 ## Endpoints
 

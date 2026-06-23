@@ -1,17 +1,17 @@
 name: Post-deploy probe
 
 # Runs after every push to main. Polls the gateway's /health endpoint
-# until its reported commit SHA matches the merged commit (the homelab's
+# until its reported commit SHA matches the merged commit (the server's
 # 5-minute auto-pull timer picks up the new commit and rolls out the new
 # images), then runs the synthetic probe against the public URL. Waiting
 # for the SHA to go live, rather than sleeping a fixed interval, avoids
 # probing a half-deployed stack when a rollout runs slow.
 # Detects "your latest deploy broke prod" shortly after it is live.
 #
-# This is the same Deno probe that runs every 60s on the OVH edge box.
-# CI is a third, independent vantage point — if the OVH probe sees a
+# This is the same Deno probe that runs every 60s on the edge server.
+# CI is a third, independent vantage point — if the edge probe sees a
 # different result from GitHub runners, the divergence itself is a
-# useful signal (e.g. an OVH-side network issue).
+# useful signal (e.g. an edge-side network issue).
 #
 # Triggered also on manual workflow_dispatch for ad-hoc checks.
 

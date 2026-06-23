@@ -3,155 +3,126 @@ title: Tech Stack
 description: Auto-generated technology inventory derived at build time from repository manifests.
 ---
 
-This page is generated automatically during docs build and should not be edited manually.
+This page is auto-generated at docs build time. Do not edit manually.
 
-## Core platform technologies
+## Runtime
 
-- [Deno](https://deno.com/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Node.js](https://nodejs.org/)
-- [Docker](https://www.docker.com/)
-- [PostgreSQL](https://www.postgresql.org/)
-- [Redpanda](https://redpanda.com/)
-- [Traefik](https://traefik.io/)
-- [Prometheus](https://prometheus.io/)
-- [Grafana](https://grafana.com/)
-- [Loki](https://grafana.com/oss/loki/)
-- [Tempo](https://grafana.com/oss/tempo/)
-- [Ollama](https://ollama.com/)
-
-## Backend and workspace packages
-
-Source: `package.json`.
-
-| Technology | Version specifier |
+| Layer | Technology |
 |---|---|
-| [kafkajs](https://kafka.js.org/) | `2.2.4` |
+| Backend | [Deno](https://deno.com/) 2.x |
+| Frontend | [Node.js](https://nodejs.org/) 24 · [TypeScript](https://www.typescriptlang.org/) |
+| Containerisation | [Docker](https://www.docker.com/) |
 
-## Frontend packages
+## Data & messaging
 
-Source: `frontend/package.json`.
-
-| Technology | Version specifier |
+| Component | Technology |
 |---|---|
-| [@axe-core/playwright](https://playwright.dev/) | `^4.11.3` |
-| [@biomejs/biome](https://biomejs.dev/) | `^2.4.4` |
-| [@playwright/test](https://www.npmjs.com/package/%40playwright%2Ftest) | `^1.58.2` |
-| [@preact/signals-react](https://www.npmjs.com/package/%40preact%2Fsignals-react) | `^3.9.0` |
-| [@preact/signals-react-transform](https://www.npmjs.com/package/%40preact%2Fsignals-react-transform) | `^0.8.1` |
-| [@reduxjs/toolkit](https://redux-toolkit.js.org/) | `^2.11.2` |
-| [@rrweb/types](https://www.npmjs.com/package/%40rrweb%2Ftypes) | `^2.0.0-alpha.20` |
-| [@testing-library/jest-dom](https://www.npmjs.com/package/%40testing-library%2Fjest-dom) | `^6.0.0` |
-| [@testing-library/react](https://react.dev/) | `^14.0.0` |
-| [@types/react](https://react.dev/) | `^18.3.3` |
-| [@types/react-dom](https://react.dev/) | `^18.3.0` |
-| [@types/ws](https://www.npmjs.com/package/%40types%2Fws) | `^8.18.1` |
-| [@vitejs/plugin-react](https://www.npmjs.com/package/%40vitejs%2Fplugin-react) | `^4.3.1` |
-| [@vitest/coverage-v8](https://www.npmjs.com/package/%40vitest%2Fcoverage-v8) | `^4.0.18` |
-| [autoprefixer](https://github.com/postcss/autoprefixer) | `^10.4.19` |
-| [electron](https://www.electronjs.org/) | `^42.3.0` |
-| [electron-builder](https://www.npmjs.com/package/electron-builder) | `^26.8.1` |
-| [fallow](https://www.npmjs.com/package/fallow) | `^2.75.0` |
-| [flexlayout-react](https://github.com/caplin/FlexLayout) | `^0.8.18` |
-| [html-to-image](https://www.npmjs.com/package/html-to-image) | `^1.11.13` |
-| [husky](https://typicode.github.io/husky/) | `^9.1.7` |
-| [jsdom](https://www.npmjs.com/package/jsdom) | `^28.1.0` |
-| [lightweight-charts](https://tradingview.github.io/lightweight-charts/) | `^5.1.0` |
-| [lint-staged](https://github.com/lint-staged/lint-staged) | `^15.2.10` |
-| [msw](https://www.npmjs.com/package/msw) | `^2.12.14` |
-| [playwright](https://playwright.dev/) | `^1.58.2` |
-| [postcss](https://postcss.org/) | `^8.5.13` |
+| Relational DB | [PostgreSQL](https://www.postgresql.org/) 16 |
+| Message bus | [Redpanda](https://redpanda.com/) (Kafka-compatible) |
+
+## Observability
+
+| Component | Technology |
+|---|---|
+| Reverse proxy / TLS | [Traefik](https://traefik.io/) v3 |
+| Metrics | [Prometheus](https://prometheus.io/) |
+| Dashboards | [Grafana](https://grafana.com/) |
+| Logs | [Loki](https://grafana.com/oss/loki/) |
+| Traces | [Tempo](https://grafana.com/oss/tempo/) |
+| LLM inference | [Ollama](https://ollama.com/) |
+
+## Frontend UI
+
+| Technology | Version |
+|---|---|
 | [react](https://react.dev/) | `^18.3.1` |
 | [react-dom](https://react.dev/) | `^18.3.1` |
-| [react-hotkeys-hook](https://www.npmjs.com/package/react-hotkeys-hook) | `^5.2.4` |
 | [react-redux](https://react-redux.js.org/) | `^9.2.0` |
-| [react-window](https://www.npmjs.com/package/react-window) | `^2.2.7` |
+| [@reduxjs/toolkit](https://redux-toolkit.js.org/) | `^2.11.2` |
+| [flexlayout-react](https://github.com/caplin/FlexLayout) | `^0.8.18` |
+| [lightweight-charts](https://tradingview.github.io/lightweight-charts/) | `^5.1.0` |
 | [recharts](https://recharts.org/) | `^2.12.7` |
+| [tailwindcss](https://tailwindcss.com/) | `^3.4.6` |
 | [rrweb](https://www.rrweb.io/) | `^2.0.0-alpha.4` |
 | [rrweb-player](https://www.rrweb.io/) | `^1.0.0-alpha.4` |
-| [tailwindcss](https://tailwindcss.com/) | `^3.4.6` |
-| [typescript](https://www.typescriptlang.org/) | `^5.5.3` |
-| [uuid](https://www.npmjs.com/package/uuid) | `^14.0.0` |
-| [vite](https://vite.dev/) | `^7.3.2` |
-| [vite-plugin-electron](https://www.npmjs.com/package/vite-plugin-electron) | `^0.28.8` |
-| [vite-plugin-electron-renderer](https://www.npmjs.com/package/vite-plugin-electron-renderer) | `^0.14.6` |
-| [vitest](https://vitest.dev/) | `^4.0.18` |
-| [ws](https://www.npmjs.com/package/ws) | `^8.20.0` |
+| [@preact/signals-react](https://www.npmjs.com/package/%40preact%2Fsignals-react) | `^3.9.0` |
+| [react-hotkeys-hook](https://www.npmjs.com/package/react-hotkeys-hook) | `^5.2.4` |
+| [react-window](https://www.npmjs.com/package/react-window) | `^2.2.7` |
+| [html-to-image](https://www.npmjs.com/package/html-to-image) | `^1.11.13` |
 | [zod](https://zod.dev/) | `^4.4.3` |
+| [uuid](https://www.npmjs.com/package/uuid) | `^14.0.0` |
 
-## Docs site packages
+## Testing
 
-Source: `docs/site/package.json`.
-
-| Technology | Version specifier |
+| Technology | Version |
 |---|---|
-| [@astrojs/react](https://react.dev/) | `^5.0.4` |
-| [@astrojs/starlight](https://starlight.astro.build/) | `^0.38.3` |
-| [@preact/signals-react](https://www.npmjs.com/package/%40preact%2Fsignals-react) | `^3.10.0` |
-| [@types/react](https://react.dev/) | `^18.3.28` |
-| [@types/react-dom](https://react.dev/) | `^18.3.7` |
-| [astro](https://astro.build/) | `^6.1.5` |
-| [autoprefixer](https://github.com/postcss/autoprefixer) | `^10.5.0` |
-| [jsdom](https://www.npmjs.com/package/jsdom) | `^29.1.1` |
-| [mermaid](https://www.npmjs.com/package/mermaid) | `^11.15.0` |
-| [postcss](https://postcss.org/) | `^8.5.13` |
-| [react](https://react.dev/) | `^18.3.1` |
-| [react-dom](https://react.dev/) | `^18.3.1` |
-| [tailwindcss](https://tailwindcss.com/) | `^3.4.19` |
+| [playwright](https://playwright.dev/) | `^1.58.2` |
+| [@playwright/test](https://www.npmjs.com/package/%40playwright%2Ftest) | `^1.58.2` |
+| [vitest](https://vitest.dev/) | `^4.0.18` |
+| [@vitest/coverage-v8](https://www.npmjs.com/package/%40vitest%2Fcoverage-v8) | `^4.0.18` |
+| [@biomejs/biome](https://biomejs.dev/) | `^2.4.4` |
+| [@testing-library/react](https://react.dev/) | `^14.0.0` |
+| [msw](https://www.npmjs.com/package/msw) | `^2.12.14` |
 
-## Deno npm imports
+## Build tools
 
-Source: `deno.json`.
-
-| Technology | Version specifier |
+| Technology | Version |
 |---|---|
-| [@opentelemetry/api](https://www.npmjs.com/package/%40opentelemetry%2Fapi) | `^1.9.0` |
-| [testcontainers](https://www.npmjs.com/package/testcontainers) | `^10.13.2` |
-| [zod](https://zod.dev/) | `^3.23.8` |
+| [vite](https://vite.dev/) | `^7.3.2` |
+| [@vitejs/plugin-react](https://www.npmjs.com/package/%40vitejs%2Fplugin-react) | `^4.3.1` |
+| [electron](https://www.electronjs.org/) | `^42.3.0` |
+| [electron-builder](https://www.npmjs.com/package/electron-builder) | `^26.8.1` |
+| [vite-plugin-electron](https://www.npmjs.com/package/vite-plugin-electron) | `^0.28.8` |
+| [typescript](https://www.typescriptlang.org/) | `^5.5.3` |
 
-## Container images
+## Service images
 
-Sources: `compose.yml`, `compose.prod.yml`, `observability/docker-compose.lgtm.yml`.
+VETA services are built and published to GHCR on every merge to `main`.
+
+| Service |
+|---|
+| [analytics](https://github.com/milesburton/veta-trading-platform) |
+| [arrival-price-algo](https://github.com/milesburton/veta-trading-platform) |
+| [ccp-service](https://github.com/milesburton/veta-trading-platform) |
+| [dark-pool](https://github.com/milesburton/veta-trading-platform) |
+| [db-migrate](https://github.com/milesburton/veta-trading-platform) |
+| [ems](https://github.com/milesburton/veta-trading-platform) |
+| [feature-engine](https://github.com/milesburton/veta-trading-platform) |
+| [fix-archive](https://github.com/milesburton/veta-trading-platform) |
+| [fix-exchange](https://github.com/milesburton/veta-trading-platform) |
+| [fix-gateway](https://github.com/milesburton/veta-trading-platform) |
+| [frontend](https://github.com/milesburton/veta-trading-platform) |
+| [gateway](https://github.com/milesburton/veta-trading-platform) |
+| [iceberg-algo](https://github.com/milesburton/veta-trading-platform) |
+| [is-algo](https://github.com/milesburton/veta-trading-platform) |
+| [journal](https://github.com/milesburton/veta-trading-platform) |
+| [limit-algo](https://github.com/milesburton/veta-trading-platform) |
+| [llm-advisory](https://github.com/milesburton/veta-trading-platform) |
+| [llm-worker](https://github.com/milesburton/veta-trading-platform) |
+| [market-data-adapters](https://github.com/milesburton/veta-trading-platform) |
+| [market-data](https://github.com/milesburton/veta-trading-platform) |
+| [market-sim](https://github.com/milesburton/veta-trading-platform) |
+| [momentum-algo](https://github.com/milesburton/veta-trading-platform) |
+| [news-aggregator](https://github.com/milesburton/veta-trading-platform) |
+| [observability](https://github.com/milesburton/veta-trading-platform) |
+| [oms](https://github.com/milesburton/veta-trading-platform) |
+| [pov-algo](https://github.com/milesburton/veta-trading-platform) |
+| [product-service](https://github.com/milesburton/veta-trading-platform) |
+| [recommendation-engine](https://github.com/milesburton/veta-trading-platform) |
+| [replay-service](https://github.com/milesburton/veta-trading-platform) |
+| [rfq-service](https://github.com/milesburton/veta-trading-platform) |
+| [risk-engine](https://github.com/milesburton/veta-trading-platform) |
+| [scenario-engine](https://github.com/milesburton/veta-trading-platform) |
+| [signal-engine](https://github.com/milesburton/veta-trading-platform) |
+| [sniper-algo](https://github.com/milesburton/veta-trading-platform) |
+| [twap-algo](https://github.com/milesburton/veta-trading-platform) |
+| [user-service](https://github.com/milesburton/veta-trading-platform) |
+| [vwap-algo](https://github.com/milesburton/veta-trading-platform) |
+
+## Third-party images
 
 | Image |
 |---|
-| [ghcr.io/milesburton/veta-trading-platform/analytics:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/arrival-price-algo:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/ccp-service:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/dark-pool:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/db-migrate:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/ems:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/feature-engine:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/fix-archive:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/fix-exchange:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/fix-gateway:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/frontend:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/gateway:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/iceberg-algo:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/is-algo:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/journal:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/limit-algo:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/llm-advisory:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/llm-worker:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/market-data-adapters:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/market-data:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/market-sim:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/momentum-algo:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/news-aggregator:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/observability:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/oms:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/pov-algo:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/product-service:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/recommendation-engine:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/replay-service:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/rfq-service:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/risk-engine:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/scenario-engine:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/signal-engine:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/sniper-algo:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/twap-algo:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/user-service:latest](https://github.com/milesburton/veta-trading-platform) |
-| [ghcr.io/milesburton/veta-trading-platform/vwap-algo:latest](https://github.com/milesburton/veta-trading-platform) |
 | [grafana/alloy:v1.7.0](https://hub.docker.com/r/grafana/alloy) |
 | [grafana/grafana-image-renderer:3.12.5](https://hub.docker.com/r/grafana/grafana-image-renderer) |
 | [grafana/grafana:11.4.0](https://hub.docker.com/r/grafana/grafana) |

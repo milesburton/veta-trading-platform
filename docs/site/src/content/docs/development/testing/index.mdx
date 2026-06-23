@@ -19,10 +19,10 @@ VETA has nine test suites. Each addresses a distinct failure class: unit suites 
 | [Electron E2E](./electron/)                                   | Desktop-app-specific behaviour (IPC, contextBridge)        | CI                      | ~1min      |
 | [Smoke](./smoke/)                                             | Service reachability through production-equivalent ingress | CI testcontainers gate  | ~90s       |
 | [Visual anomalies](./visual-anomalies/)                       | DOM overflows + a11y violations (non-gating)               | CI (informational)      | ~1min      |
-| [Synthetic probe](../../platform/supporting/synthetic-probe/) | Live deployment is reachable from the internet             | Every 60s from OVH edge | continuous |
+| [Synthetic probe](../../platform/supporting/synthetic-probe/) | Live deployment is reachable from the internet             | Every 60s from edge server | continuous |
 | [Performance](../../analytics/performance/)                   | Throughput regressions, latency p99 drift                  | On demand               | varies     |
 | [k6 load testing](./k6-load-testing/)                        | Sustained throughput under realistic order flow scenarios  | On demand               | varies     |
-| [Continuous load generator](./loadgen/)                       | Always-on synthetic trade flow on the homelab              | Homelab only            | continuous |
+| [Continuous load generator](./loadgen/)                       | Always-on synthetic trade flow on the production server    | Production only         | continuous |
 
 The pre-commit hook ([.husky/pre-commit](https://github.com/milesburton/veta-trading-platform/blob/main/.husky/pre-commit)) runs lint + type-check + unit tests + integration in seven steps. Integration auto-skips when services aren't running locally so the hook stays fast for tight edit loops. Smoke runs in CI under the testcontainers gate rather than at pre-commit.
 
@@ -35,7 +35,7 @@ graph TD
     SMOKE["Smoke<br/>(.tc.test.ts)<br/>HTTP health and pipeline checks<br/>against an ephemeral stack"]:::mid
     PW["Playwright E2E<br/>real browser, real frontend,<br/>mocked or real backend"]:::mid
     EL["Electron E2E<br/>Playwright launched against<br/>the packaged Electron binary"]:::mid
-    PROBE["Synthetic probe<br/>internet → OVH edge → homelab Traefik<br/>the path real users take"]:::slow
+    PROBE["Synthetic probe<br/>internet → edge server → server Traefik<br/>the path real users take"]:::slow
 
     UNIT --> INT --> SMOKE --> PW --> EL --> PROBE
 
@@ -81,7 +81,7 @@ graph LR
     end
 
     subgraph PROD["Live production"]
-        R1["synthetic probe<br/>(every 60s from OVH edge)"]
+        R1["synthetic probe<br/>(every 60s from edge server)"]
     end
 
     LOCAL --> PR --> MAIN --> DEPLOY --> PROD

@@ -3,7 +3,7 @@ title: Traefik
 description: Ingress proxy that fronts every backend service.
 ---
 
-Traefik is the ingress proxy for every deployment. It listens on port 80 and exposes a dashboard on port 8888. Public traffic for [`veta.mnetcs.com`](https://veta.mnetcs.com/) and the Grafana subpath at `/grafana/` is delivered via a reverse SSH tunnel from an OVH dedicated server into this Traefik instance.
+Traefik is the ingress proxy for every deployment. It listens on port 80 and exposes a dashboard on port 8888. Public traffic for the deployment URL and the Grafana subpath at `/grafana/` is delivered via a secure tunnel from the edge server into this Traefik instance.
 
 ## Routing
 
@@ -24,8 +24,8 @@ Traefik does **not** match on `Host` headers, so any hostname or IP that resolve
 | Environment | TLS terminator |
 | --- | --- |
 | `local` (devcontainer) | none (plain HTTP) |
-| `homelab prod` (`veta.mnetcs.com`) | OVH edge terminates TLS, then tunnels HTTP into homelab Traefik |
+| `production` | Edge server terminates TLS, then tunnels HTTP into server Traefik |
 
 ## Dashboard
 
-The dashboard is exposed at `http://<host>:8888/dashboard/`. It is **not** behind auth: only LAN-reachable on the homelab, and not exposed publicly. The Service Health panel surfaces it on `local` deployments only; on homelab it is hidden because the dashboard port is not reachable from a remote browser even though the proxy itself is healthy.
+The dashboard is exposed at `http://<host>:8888/dashboard/`. It is **not** behind auth: only LAN-reachable on the server, and not exposed publicly. The Service Health panel surfaces it on `local` deployments only; on production it is hidden because the dashboard port is not reachable from a remote browser even though the proxy itself is healthy.

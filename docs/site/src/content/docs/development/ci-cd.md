@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-Every push to any branch triggers the CI workflow. Pushes to `main` additionally trigger GitHub Pages and are picked up by the homelab's systemd `veta-auto-pull` timer (every 5 minutes) via the `:latest` Docker images pushed to GHCR. The entire pipeline runs in parallel where possible.
+Every push to any branch triggers the CI workflow. Pushes to `main` additionally trigger GitHub Pages and are picked up by the server's systemd `veta-auto-pull` timer (every 5 minutes) via the `:latest` Docker images pushed to GHCR. The entire pipeline runs in parallel where possible.
 
 ## Pipeline diagram
 
@@ -92,12 +92,12 @@ GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (37 Docker 
 
 ## Deployment on change
 
-The homelab is the only deployment target. The application is served at [`https://veta.mnetcs.com/`](https://veta.mnetcs.com/) and Grafana at [`https://veta.mnetcs.com/grafana/`](https://veta.mnetcs.com/grafana/) via a reverse SSH tunnel from an OVH dedicated server.
+The production server is the only deployment target. The application is served at the deployment URL and Grafana via a secure tunnel from the edge server.
 
-### Homelab
+### Server
 
 - systemd `veta-auto-pull.timer` polls `origin/main` every 5 minutes
-- When a new SHA is detected, the homelab clones the repo, syncs `compose.yml` + overlays, runs `deploy.sh`
+- When a new SHA is detected, the server clones the repo, syncs `compose.yml` + overlays, runs `deploy.sh`
 - `deploy.sh` runs `docker compose up -d`; GHCR images are pulled by the daemon
 - Typical lag: around 5 minutes after Docker build completes
 

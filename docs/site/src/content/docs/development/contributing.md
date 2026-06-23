@@ -65,7 +65,7 @@ VETA is built by a small team of humans and AI assistants. Each contributor belo
 
 ### Miles Burton
 
-Founder, lead engineer, and product owner. Designed the platform's architecture, runs the homelab deployment, and reviews every change before merge. Contact: `mail@milesburton.com`.
+Founder, lead engineer, and product owner. Designed the platform's architecture, runs the production deployment, and reviews every change before merge. Contact: `mail@milesburton.com`.
 
 ### Claude (Anthropic)
 

@@ -10,9 +10,9 @@ Two environments, no overlap of running services:
 | Env | Host | Purpose | Promotion |
 | --- | --- | --- | --- |
 | **dev** | engineer workstation, devcontainer | day-to-day coding, fast iteration. Not 24/7. | n/a |
-| **prod** | homelab Proxmox LXC, ports `5xxx` (dev container internal), public via OVH SSH tunnel at `veta.mnetcs.com` | every merge to `main` deploys here automatically via the systemd auto-pull + plain-compose pipeline | continuous |
+| **prod** | server (Proxmox LXC), ports `5xxx` (dev container internal), public via secure tunnel at the deployment URL | every merge to `main` deploys here automatically via the systemd auto-pull + plain-compose pipeline | continuous |
 
-A previous version of this doc proposed a third **UAT** environment co-located on the homelab. We dropped it in favour of a simpler two-tier model: the homelab box has plenty of headroom (32 cores, 64 GB RAM, 2 TB SSD), the public demo audience is small, and per-service healthchecks plus the auto-pull cadence give us enough deploy safety. If a stakeholder audience grows beyond demo-friends, the UAT tier comes back as a port-isolated second compose project on the same box. The operational primitives for that (per-project network, per-project DB, per-project topic prefix) are already in `compose.yml`.
+A previous version of this doc proposed a third **UAT** environment co-located on the server. We dropped it in favour of a simpler two-tier model: the server box has plenty of headroom (32 cores, 64 GB RAM, 2 TB SSD), the public demo audience is small, and per-service healthchecks plus the auto-pull cadence give us enough deploy safety. If a stakeholder audience grows beyond demo-friends, the UAT tier comes back as a port-isolated second compose project on the same box. The operational primitives for that (per-project network, per-project DB, per-project topic prefix) are already in `compose.yml`.
 
 Dev runs on the workstation when actively coding; no public route, no automatic promotion path.
 
@@ -31,11 +31,11 @@ What it does **not** give us:
 
 - **Zero-downtime deploys**: gateway recreate today is ~10-15s of HTTP 502 and WS reconnect storm. Tolerable on a low-traffic demo; not tolerable for a real bank.
 - **Crash protection**: if the single replica panics, that service is briefly unavailable until docker restarts it (typically < 5s with `restart: unless-stopped`). For order-flow services this can drop in-flight WS messages.
-- **Host failure protection**: a homelab reboot or hardware fault takes the whole platform down. RTO roughly equals time-to-restart-the-host.
+- **Host failure protection**: a server reboot or hardware fault takes the whole platform down. RTO roughly equals time-to-restart-the-host.
 
 All three are addressed by the multi-host phase (see [migration path](../migration-path/)) when the audience justifies the spend.
 
-A previous version of this strategy proposed migrating to **Docker Swarm** to buy zero-downtime rolling deploys via `update_config: order: start-first`. We attempted the bootstrap and hit a fundamental constraint: the homelab's `veta_trading-net` is a bridge network shared with two off-repo compose projects (caddy serving the wiki, lgtm-grafana). Swarm overlays are scope=`swarm`; bridges are scope=`local`; a stack cannot attach to a network with mismatched scope. The migration would require coordinated changes to the off-repo projects, plus an outage window each retry, for a benefit (zero-downtime deploys) that the current low-traffic public demo does not yet need. We deferred it.
+A previous version of this strategy proposed migrating to **Docker Swarm** to buy zero-downtime rolling deploys via `update_config: order: start-first`. We attempted the bootstrap and hit a fundamental constraint: the server's `veta_trading-net` is a bridge network shared with two off-repo compose projects. Swarm overlays are scope=`swarm`; bridges are scope=`local`; a stack cannot attach to a network with mismatched scope. The migration would require coordinated changes to the off-repo projects, plus an outage window each retry, for a benefit (zero-downtime deploys) that the current low-traffic public demo does not yet need. We deferred it.
 
 ## Deploy mechanism: systemd auto-pull + plain compose
 
@@ -67,24 +67,24 @@ Every deploy to prod runs this sequence:
 
 ## Synthetic monitoring (shipped)
 
-Source of truth for "is the platform up". Runs outside the homelab so it sees what real users see. Detailed page: [synthetic probe](../../supporting/synthetic-probe/).
+Source of truth for "is the platform up". Runs outside the server so it sees what real users see. Detailed page: [synthetic probe](../../supporting/synthetic-probe/).
 
-- **Host**: the OVH edge box (same machine that terminates TLS, but a different failure domain from the homelab). Every probe crosses the reverse SSH tunnel back to the homelab, identical path to real users.
+- **Host**: the edge server (same machine that terminates TLS, but a different failure domain from the server). Every probe crosses the secure tunnel back to the server, identical path to real users.
 - **Cadence**: every 60 seconds via systemd timer.
 - **Probe steps** (v1, HTTP only):
-  1. GET `https://veta.mnetcs.com/`, expect 200, body contains `__version` / `VETA` markers.
+  1. GET the deployment URL (`/`), expect 200, body contains `__version` / `VETA` markers.
   2. POST `/api/gateway/api/user-service/oauth/guest`, expect 200 + `veta_user` session cookie. Uses the public-guest-trading endpoint from [PR #234](https://github.com/milesburton/veta-trading-platform/pull/234) so the probe does not need long-lived credentials.
   3. GET `/api/gateway/ready` with the cookie, expect `{"ready":true}`.
 - **Output**: one JSON line per step to journald (`journalctl -u veta-synthetic-probe.service`). No Loki shipping yet (follow-up).
-- **Alerting**: systemd `OnFailure=` invokes `alert.sh` which counts consecutive failures and POSTs a webhook on the 3rd (configurable) plus on recovery. Webhook URL in `/etc/veta-probe.env` on the OVH box.
-- **Post-deploy CI mirror**: `.github/workflows/post-deploy-probe.yml` runs the same probe script from a GitHub runner ~6 min after every push to `main`. Three retries with 30 s spacing; fails the run on persistent failure. A third independent vantage point: if the OVH probe and the CI probe disagree, the divergence itself is signal (e.g. OVH-local network issue).
+- **Alerting**: systemd `OnFailure=` invokes `alert.sh` which counts consecutive failures and POSTs a webhook on the 3rd (configurable) plus on recovery. Webhook URL in `/etc/veta-probe.env` on the edge server.
+- **Post-deploy CI mirror**: `.github/workflows/post-deploy-probe.yml` runs the same probe script from a GitHub runner ~6 min after every push to `main`. Three retries with 30 s spacing; fails the run on persistent failure. A third independent vantage point: if the edge server probe and the CI probe disagree, the divergence itself is signal (e.g. edge-local network issue).
 
 What v1 catches:
 
 - Edge Traefik dead or mis-configured
-- SSH tunnel down
-- Homelab Traefik dead
-- Homelab gateway or user-service dead
+- Secure tunnel down
+- Server Traefik dead
+- Server gateway or user-service dead
 - `PUBLIC_GUEST_TRADING` flag accidentally flipped off
 - TLS cert expired or mis-issued
 
@@ -112,9 +112,9 @@ This is slower (5-10 minutes) but it shifts left every kind of failure we hit on
 
 A single Proxmox LXC cannot survive single-host failure. The strategic target is:
 
-- **2-3 Swarm manager nodes**: homelab Proxmox + OVH dedicated + a VPS. Quorum survives one-host loss.
+- **2-3 Swarm manager nodes**: server Proxmox + edge server + a VPS. Quorum survives one-host loss.
 - **Postgres**: streaming replication, automatic failover (Patroni or pg-auto-failover). Async is OK for our RPO of 5 min.
 - **Redpanda**: 3-broker cluster with `replication.factor=3` on critical topics. Bus survives one-broker loss.
-- **Traefik**: keep on OVH edge with health-checked upstream pool (homelab + OVH-local replicas).
+- **Traefik**: keep on edge server with health-checked upstream pool (server + edge-local replicas).
 
 This is the hard part of the strategy: distributed-systems work, not ops-tools work. Multi-host comes after the single-node operations posture is solid.

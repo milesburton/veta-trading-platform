@@ -136,17 +136,6 @@ export class AppPage {
       .getByTestId("user-menu-btn")
       .getByText(userName)
       .waitFor({ state: "visible", timeout: 8_000 });
-    await this.page.waitForFunction(
-      () => {
-        const visibleTabs = Array.from(
-          document.querySelectorAll<HTMLElement>(".flexlayout__tab"),
-        ).filter((el) => el.style.display !== "none" && el.offsetParent !== null);
-        return !visibleTabs.some((el) =>
-          el.innerText.includes("You do not have permission to view this panel."),
-        );
-      },
-      { timeout: 5_000 },
-    );
   }
 
   async waitForLivePrices(opts: { timeoutMs?: number } = {}) {
@@ -182,13 +171,22 @@ export class AppPage {
       }
     };
 
+    const waitForPanelReady = async (panel: ReturnType<Page["locator"]>) => {
+      await panel.locator("text=You do not have permission to view this panel.").waitFor({
+        state: "hidden",
+        timeout: 8_000,
+      }).catch(() => {});
+    };
+
     if (visible) {
       await clickTab();
       await this.page.waitForTimeout(100);
       const btnPath = await btn.getAttribute("data-layout-path");
       if (btnPath) {
         const contentPath = btnPath.replace(/tb(\d+)$/, "t$1");
-        return this.page.locator(`.flexlayout__tab[data-layout-path="${contentPath}"]`);
+        const panel = this.page.locator(`.flexlayout__tab[data-layout-path="${contentPath}"]`);
+        await waitForPanelReady(panel);
+        return panel;
       }
     }
 
@@ -210,7 +208,9 @@ export class AppPage {
         const btnPath = await activatedBtn.getAttribute("data-layout-path");
         if (btnPath) {
           const contentPath = btnPath.replace(/tb(\d+)$/, "t$1");
-          return this.page.locator(`.flexlayout__tab[data-layout-path="${contentPath}"]`);
+          const panel = this.page.locator(`.flexlayout__tab[data-layout-path="${contentPath}"]`);
+          await waitForPanelReady(panel);
+          return panel;
         }
       }
       await this.page.keyboard.press("Escape");
@@ -222,7 +222,9 @@ export class AppPage {
     const btnPath = await btn.getAttribute("data-layout-path");
     if (!btnPath) throw new Error(`No tab button found with title matching ${tabTitle}`);
     const contentPath = btnPath.replace(/tb(\d+)$/, "t$1");
-    return this.page.locator(`.flexlayout__tab[data-layout-path="${contentPath}"]`);
+    const panel = this.page.locator(`.flexlayout__tab[data-layout-path="${contentPath}"]`);
+    await waitForPanelReady(panel);
+    return panel;
   }
 
   async getMarketLadder(): Promise<MarketLadderPage> {
