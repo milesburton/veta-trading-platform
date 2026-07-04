@@ -144,7 +144,7 @@ sometimes time out under load. Each follow-up PR named in the
 | Data classification documented                    | Deferred    | Need to identify which fields are PII / PII-equivalent / operational. |
 | Retention policy per data class                   | Deferred    | Journal events currently retained indefinitely.                       |
 | Log scrubbing (no PII / tokens leaking into logs) | Partially   | Logger has some redaction; no test proving completeness.              |
-| Encryption at rest                                | Partially   | Postgres on encrypted disk on the the server; not enforced for Fly.      |
+| Encryption at rest                                | Partially   | Postgres on encrypted disk on the server; not enforced for Fly.      |
 | Encryption in transit (public surfaces only)      | Implemented | TLS at the Cloudflare/Fly edge.                                       |
 
 ## Performance and capacity
@@ -158,7 +158,7 @@ sometimes time out under load. Each follow-up PR named in the
 | Risk-engine pressure test           | Implemented | [`k6/risk-stress.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/risk-stress.js): weighted under/at/over-limit mix.                                                |
 | Live load-test telemetry to Grafana | Implemented | k6 writes to Prometheus via remote-write; rendered on the **k6 Prometheus** dashboard.                                                                                                    |
 | Performance regression tracking     | Partially   | JSON summaries written per-run to [`docs/site/src/data/loadtest/`](https://github.com/milesburton/veta-trading-platform/tree/main/docs/site/src/data/loadtest); no automated CI gate yet. |
-| Load tests scheduled in CI          | Deferred    | Currently manual; nightly k6 run on the the server is a planned follow-up.                                                                                                                   |
+| Load tests scheduled in CI          | Deferred    | Currently manual; nightly k6 run on the server is a planned follow-up.                                                                                                                   |
 
 ## Recovery and operational drills
 

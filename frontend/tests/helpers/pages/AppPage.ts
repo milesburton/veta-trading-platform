@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { ElementHandle, Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import type { AssetDef, AuthUser } from "../GatewayMock.ts";
 import {
@@ -171,18 +171,32 @@ export class AppPage {
       }
     };
 
+    const PERMISSION_PLACEHOLDER = "You do not have permission to view this panel.";
+
+    const hasPlaceholder = (handle: ElementHandle<Element>) =>
+      handle.evaluate((el, text) => el.innerText.includes(text), PERMISSION_PLACEHOLDER);
+
     const waitForPanelReady = async (panel: ReturnType<Page["locator"]>) => {
-      // Poll until the panel does NOT contain the permission placeholder.
-      // Uses evaluate on the element handle so we can inspect the specific
-      // node, not the full page. Times out gracefully if the panel is freely
-      // accessible (placeholder never appears).
+      // Waits for the permission placeholder to be absent AND stay absent
+      // across a settle window, since a single point-in-time check can pass
+      // before a later auth re-render injects the placeholder.
       const handle = await panel.elementHandle({ timeout: 5_000 }).catch(() => null);
       if (!handle) return;
-      await this.page.waitForFunction(
-        (el) => !el.innerText.includes("You do not have permission to view this panel."),
-        handle,
-        { timeout: 8_000 },
-      ).catch(() => {});
+      const deadline = Date.now() + 8_000;
+      while (Date.now() < deadline) {
+        await this.page
+          .waitForFunction(
+            ([el, text]) => !(el as Element).innerText.includes(text as string),
+            [handle, PERMISSION_PLACEHOLDER] as const,
+            { timeout: Math.max(deadline - Date.now(), 0) }
+          )
+          .catch(() => {});
+        await this.page.waitForTimeout(300);
+        const stillReady = await hasPlaceholder(handle)
+          .then((present) => !present)
+          .catch(() => true);
+        if (stillReady) return;
+      }
     };
 
     if (visible) {

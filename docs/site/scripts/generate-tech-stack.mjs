@@ -221,13 +221,12 @@ function renderTable(title, rows) {
   ].join("\n");
 }
 
-function pkgRow(name, version, map) {
+function pkgRow(name, version) {
   const link = coreLinks[name] || coreLinks[name.replace(/^@[^/]+\//, "")] || npmLink(name);
   return `| [${name}](${link}) | \`${version}\` |`;
 }
 
 function generate() {
-  const denoJsonPath = path.resolve(repoRoot, "deno.json");
   const frontendPackagePath = path.resolve(repoRoot, "frontend/package.json");
 
   const composePaths = [
