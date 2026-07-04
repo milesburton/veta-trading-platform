@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.53.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.53.0...veta-trading-platform-v1.53.1) (2026-07-04)
+
+
+### Bug Fixes
+
+* **test:** robust panel-ready wait using elementHandle polling ([#472](https://github.com/milesburton/veta-trading-platform/issues/472)) ([9626050](https://github.com/milesburton/veta-trading-platform/commit/96260500d5281bd5abe301b803cdc05f1681ac9b))
+
 ## [1.53.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.52.0...veta-trading-platform-v1.53.0) (2026-06-23)
 
 
