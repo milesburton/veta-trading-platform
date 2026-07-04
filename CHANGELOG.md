@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.53.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.53.1...veta-trading-platform-v1.53.2) (2026-07-04)
+
+
+### Bug Fixes
+
+* **docs:** remove dead code flagged by CodeQL unused-local-variable ([#475](https://github.com/milesburton/veta-trading-platform/issues/475)) ([0680018](https://github.com/milesburton/veta-trading-platform/commit/06800189a5103030c867b9aed32c6774f4509f27))
+
 ## [1.53.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.53.0...veta-trading-platform-v1.53.1) (2026-07-04)
 
 
