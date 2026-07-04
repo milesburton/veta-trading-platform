@@ -43,7 +43,7 @@ Two env vars on the gateway:
 | `GITHUB_TICKETING_TOKEN` | PAT or fine-grained token with `issues:write` on the target repo | empty (ticketing no-ops) |
 | `GITHUB_TICKETING_REPO` | `owner/name` of the repo to open issues in | `milesburton/veta-trading-platform` |
 
-The token is a bearer credential. Inject via the the server's `.env`:
+The token is a bearer credential. Inject via the server's `.env`:
 
 ```bash
 # /opt/stacks/veta/.env
@@ -112,7 +112,7 @@ Trigger an end-to-end test by raising a CRITICAL alert through the platform: as 
 Confirm token scoping is working:
 
 ```bash
-ssh <user>@<the server-host>.lan 'docker exec veta-gateway-1 sh -c \
+ssh <user>@<server-host>.lan 'docker exec veta-gateway-1 sh -c \
   "curl -sf -H \"Authorization: Bearer \$GITHUB_TICKETING_TOKEN\" \
        https://api.github.com/repos/\$GITHUB_TICKETING_REPO | head"'
 ```
@@ -138,5 +138,5 @@ The labels are filterable in the GitHub Issues list, so the on-call view is `is:
 - **Comments instead of new issues forever.** Once an issue is open for >1h, dedupe stops matching and a fresh one opens. If on-call wants to keep dedupe alive, they can edit the issue title to refresh `created_at` — but it's usually better to close and let a fresh one open.
 
 <Aside type="tip" title="Rotating the token">
-Tokens have an expiry. Renew before they lapse: GitHub → Settings → Developer settings → Fine-grained tokens → regenerate → update `.env` on the the server → `docker compose up -d gateway`. The old token becomes inert immediately.
+Tokens have an expiry. Renew before they lapse: GitHub → Settings → Developer settings → Fine-grained tokens → regenerate → update `.env` on the server → `docker compose up -d gateway`. The old token becomes inert immediately.
 </Aside>
