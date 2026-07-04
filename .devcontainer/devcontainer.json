@@ -65,7 +65,7 @@
         "openai.chatgpt",
         "anthropic.claude-code",
         "saoudrizwan.claude-dev",
-        "rooveterinaryinc.roo-cline",
+        "ZooCodeOrganization.zoo-code",
         "denoland.vscode-deno",
         "foxundermoon.shell-format",
         "eamodio.gitlens",

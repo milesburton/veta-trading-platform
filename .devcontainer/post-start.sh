@@ -10,11 +10,10 @@ chmod 600 /home/deno/.ssh/* 2>/dev/null || true
 cd "$workspace_dir"
 
 if docker info >/dev/null 2>&1; then
-  echo "[devcontainer] Docker is available; starting compose services..."
-  docker compose up -d
+  echo "[devcontainer] Docker is available. Services are NOT started automatically."
+  echo "[devcontainer] Run 'start-trading' in a shell when you want the platform up."
 else
   echo "[devcontainer] WARNING: Docker socket is not accessible from inside the dev container."
-  echo "[devcontainer] Services were not started."
   echo "[devcontainer]"
   echo "[devcontainer] Fix on host:"
   echo "[devcontainer]   sudo usermod -aG docker \"$USER\""
