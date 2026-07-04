@@ -57,10 +57,6 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function relToRepo(absPath) {
-  return path.relative(repoRoot, absPath).replaceAll(path.sep, "/");
-}
-
 function npmLink(pkgName) {
   return `https://www.npmjs.com/package/${encodeURIComponent(pkgName)}`;
 }
@@ -98,25 +94,6 @@ function dockerLink(imageName) {
   return `https://hub.docker.com/r/${stripped}`;
 }
 
-function parseDenoImports(denoJsonPath) {
-  const deno = readJson(denoJsonPath);
-  const imports = deno.imports || {};
-  const packages = new Map();
-
-  for (const value of Object.values(imports)) {
-    if (typeof value !== "string" || !value.startsWith("npm:")) {
-      continue;
-    }
-    const spec = value.slice("npm:".length);
-    const atIndex = spec.lastIndexOf("@");
-    const name = atIndex > 0 ? spec.slice(0, atIndex) : spec;
-    const version = atIndex > 0 ? spec.slice(atIndex + 1) : "";
-    packages.set(name, version);
-  }
-
-  return packages;
-}
-
 function parsePackageDeps(packageJsonPath) {
   const json = readJson(packageJsonPath);
   const deps = new Map();
@@ -150,63 +127,6 @@ function parseComposeImages(composePath) {
   }
 
   return images;
-}
-
-function toSortedRows(mapOrSet) {
-  return Array.from(mapOrSet).sort((a, b) => {
-    const left = Array.isArray(a) ? a[0] : a;
-    const right = Array.isArray(b) ? b[0] : b;
-    return left.localeCompare(right);
-  });
-}
-
-function renderPackageTable(title, sourcePath, packageMap) {
-  const entries = toSortedRows(Array.from(packageMap.entries()));
-  if (entries.length === 0) {
-    return `## ${title}\n\nNo packages found.\n`;
-  }
-
-  const rows = entries
-    .map(([name, version]) => {
-      const explicit =
-        coreLinks[name] || coreLinks[name.replace(/^@[^/]+\//, "")];
-      const link = explicit || npmLink(name);
-      return `| [${name}](${link}) | \`${version}\` |`;
-    })
-    .join("\n");
-
-  return [
-    `## ${title}`,
-    "",
-    `Source: \`${sourcePath}\`.`,
-    "",
-    "| Technology | Version specifier |",
-    "|---|---|",
-    rows,
-    "",
-  ].join("\n");
-}
-
-function renderImageTable(imageSet, sourcePaths) {
-  const entries = toSortedRows(imageSet);
-  if (entries.length === 0) {
-    return "## Container images\n\nNo container images found.\n";
-  }
-
-  const rows = entries
-    .map((image) => `| [${image}](${dockerLink(image)}) |`)
-    .join("\n");
-
-  return [
-    "## Container images",
-    "",
-    `Sources: ${sourcePaths.map((p) => `\`${p}\``).join(", ")}.`,
-    "",
-    "| Image |",
-    "|---|",
-    rows,
-    "",
-  ].join("\n");
 }
 
 function renderTable(title, rows) {

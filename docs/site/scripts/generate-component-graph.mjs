@@ -135,48 +135,6 @@ function buildGraph() {
 
 // --- Output ---
 
-function generateMarkdown(graph) {
-  const lines = [];
-  lines.push("```mermaid");
-  lines.push("graph TD");
-
-  // Define node styles by category
-  const nodeIds = [];
-  for (const node of graph.nodes) {
-    const id = node.path.replace(/[^a-zA-Z0-9]/g, "_");
-    nodeIds.push({ id, path: node.path, name: node.name });
-
-    let nodeClass = "default";
-    if (node.path.includes("/components/")) nodeClass = "component";
-    else if (node.path.includes("/store/")) nodeClass = "store";
-    else if (node.path.includes("/hooks/")) nodeClass = "hook";
-    else if (node.path.includes("/lib/")) nodeClass = "lib";
-    else if (node.path.includes("/types/")) nodeClass = "types";
-
-    lines.push(`  ${id}["${node.name}"]:::${nodeClass}`);
-  }
-
-  // Add edge styles
-  lines.push("  classDef default fill:#f9f9f9,stroke:#333,stroke-width:1px;");
-  lines.push("  classDef component fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;");
-  lines.push("  classDef store fill:#fff3e0,stroke:#f57c00,stroke-width:2px;");
-  lines.push("  classDef hook fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;");
-  lines.push("  classDef lib fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;");
-  lines.push("  classDef types fill:#fce4ec,stroke:#c2185b,stroke-width:2px;");
-
-  // Add edges
-  for (const node of graph.nodes) {
-    const fromId = node.path.replace(/[^a-zA-Z0-9]/g, "_");
-    for (const imp of node.imports) {
-      const toId = imp.replace(/[^a-zA-Z0-9]/g, "_");
-      lines.push(`  ${fromId} -->|imports| ${toId}`);
-    }
-  }
-
-  lines.push("```");
-  return lines.join("\n");
-}
-
 function generateTable(graph) {
   const lines = [];
   lines.push("| Component | Path | Imports | Imported By |");
