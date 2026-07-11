@@ -21,6 +21,7 @@ STACK_DIR="${STACK_DIR:-/opt/stacks/veta}"
 STATE_DIR="${STATE_DIR:-$STACK_DIR/state}"
 REPO_URL="${REPO_URL:-https://github.com/milesburton/veta-trading-platform.git}"
 REPO_REF="${REPO_REF:-main}"
+REPO_SLUG="${REPO_SLUG:-milesburton/veta-trading-platform}"
 DEPLOY_SCRIPT="${DEPLOY_SCRIPT:-$STACK_DIR/deploy.sh}"
 
 LAST_DEPLOYED_FILE="$STATE_DIR/last-deployed-sha"
@@ -50,6 +51,89 @@ last_sha() {
   fi
 }
 
+# ls-remote reports a SHA the instant a commit lands on main — often
+# well before the CI workflow that builds and publishes GHCR images for
+# that commit has finished. Deploying immediately means `docker compose
+# pull` finds nothing new (the image tag hasn't been re-pushed yet),
+# `up -d` silently keeps the old container running, and last-deployed-sha
+# still gets marked as this SHA — so no later tick ever retries it.
+# 2026-07-04: this exact race left the frontend a week+ stale in
+# production while auto-pull kept reporting "already at <sha>".
+#
+# Guard against it by requiring every "Publish ... :latest (gated)"
+# check-run for the target SHA to be `completed` before deploying. If
+# none exist yet, or any are still queued/in_progress, the commit's
+# publish step hasn't caught up — skip this tick and let the next one
+# re-check. This does not require a GitHub token: check-runs are
+# readable anonymously on a public repo.
+publish_checks_ready() {
+  local sha="$1"
+  local page=1
+  local total_gated=0
+  local incomplete=0
+  local failed=0
+  while :; do
+    local resp
+    resp=$(curl -sf --max-time 10 \
+      "https://api.github.com/repos/$REPO_SLUG/commits/$sha/check-runs?per_page=100&page=$page") \
+      || { log "check-runs API request failed (network/rate-limit?) — treating as not ready"; return 1; }
+    local page_stats count page_incomplete page_failed returned
+    # Parses the whole page once and prints four counts, defaulting every
+    # field to "" via .get() so a check-run missing an expected key can't
+    # raise and kill the (set -e) caller — it's just counted as neither
+    # complete nor successful, which correctly keeps us in "not ready".
+    page_stats=$(echo "$resp" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+runs=[c for c in d.get("check_runs",[])
+      if str(c.get("name","")).startswith("Publish ") and str(c.get("name","")).endswith(":latest (gated)")]
+incomplete=sum(1 for c in runs if c.get("status") != "completed")
+failed=sum(1 for c in runs if c.get("status") == "completed" and c.get("conclusion") not in ("success", "skipped", "neutral"))
+print(len(runs))
+print(incomplete)
+print(failed)
+print(len(d.get("check_runs",[])))
+') || { log "check-runs response could not be parsed — treating as not ready"; return 1; }
+    count=$(echo "$page_stats" | sed -n '1p')
+    page_incomplete=$(echo "$page_stats" | sed -n '2p')
+    page_failed=$(echo "$page_stats" | sed -n '3p')
+    returned=$(echo "$page_stats" | sed -n '4p')
+    total_gated=$((total_gated + count))
+    incomplete=$((incomplete + page_incomplete))
+    failed=$((failed + page_failed))
+    [[ "$returned" -lt 100 ]] && break
+    page=$((page + 1))
+  done
+  if [[ "$total_gated" -eq 0 ]]; then
+    log "no 'Publish ... :latest (gated)' check-runs found for ${sha:0:7} yet — not ready"
+    return 1
+  fi
+  if [[ "$failed" -gt 0 ]]; then
+    log "$failed/$total_gated publish check-runs FAILED for ${sha:0:7} — refusing to deploy this SHA"
+    return 1
+  fi
+  if [[ "$incomplete" -gt 0 ]]; then
+    log "$incomplete/$total_gated publish check-runs still in progress for ${sha:0:7} — not ready"
+    return 1
+  fi
+  return 0
+}
+
+# [skip ci] commits (release-please screenshot updates, etc.) never get
+# Publish check-runs — CI doesn't run for them at all — so
+# publish_checks_ready would block on them forever. They also carry no
+# new images to wait for, so it's safe to deploy immediately (mainly to
+# pick up any config-file changes via sync_configs).
+is_skip_ci() {
+  local sha="$1"
+  local msg
+  msg=$(curl -sf --max-time 10 \
+    "https://api.github.com/repos/$REPO_SLUG/commits/$sha" \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin).get("commit",{}).get("message",""))' 2>/dev/null) \
+    || return 1
+  [[ "$msg" == *"[skip ci]"* ]]
+}
+
 REMOTE=$(remote_sha)
 if [[ -z "$REMOTE" ]]; then
   log "could not fetch remote SHA — network problem? exiting without deploying"
@@ -62,7 +146,14 @@ if [[ "$REMOTE" == "$LAST" ]]; then
   exit 0
 fi
 
-log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — running deploy"
+if is_skip_ci "$REMOTE"; then
+  log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — [skip ci] commit, no publish to wait for, running deploy"
+elif ! publish_checks_ready "$REMOTE"; then
+  log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — publish not confirmed complete; deferring to next tick"
+  exit 0
+else
+  log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — publish confirmed complete, running deploy"
+fi
 
 # Self-update deploy.sh from the freshly-fetched repo before running it.
 # Otherwise a fix to deploy.sh in main is unreachable: the script can't

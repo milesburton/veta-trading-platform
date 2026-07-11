@@ -6,7 +6,11 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:grafana.com)",
-      "Bash(cd /workspaces/virtual-equities-trading-application *)"
+      "Bash(cd /workspaces/virtual-equities-trading-application *)",
+      "Skill(code-review)",
+      "Skill(code-review:*)",
+      "Skill(loop)",
+      "Skill(loop:*)"
     ],
     "additionalDirectories": [
       "/workspaces/virtual-equities-trading-application/.husky"

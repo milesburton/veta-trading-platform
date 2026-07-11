@@ -26,7 +26,12 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { logger } from "@veta/logger";
 import { createMarketSimClient } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
-import { FillEventSchema, RoutedOrderSchema } from "@veta/schemas/orders";
+import {
+  type FillEvent,
+  FillEventSchema,
+  type RoutedOrder,
+  RoutedOrderSchema,
+} from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 
 const PORT = Number(Deno.env.get("MOMENTUM_ALGO_PORT")) || 5_025;
@@ -83,7 +88,7 @@ await createTypedConsumer("momentum-algo-routed", [
   {
     topic: "orders.routed",
     schema: RoutedOrderSchema,
-    handler: (order) => {
+    handler: (order: RoutedOrder) => {
       if ((order.strategy ?? "").toUpperCase() !== ALGO) return;
       if (order.limitPrice === undefined) {
         logger.warn(`Rejecting ${order.orderId}: missing limitPrice`);
@@ -159,7 +164,7 @@ await createTypedConsumer("momentum-algo-fills", [
   {
     topic: "orders.filled",
     schema: FillEventSchema,
-    handler: (fill) => {
+    handler: (fill: FillEvent) => {
       if ((fill.algo ?? "").toUpperCase() !== ALGO) return;
 
       const order = fill.parentOrderId ? activeOrders.get(fill.parentOrderId) : undefined;

@@ -137,7 +137,7 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
   const busRej = busUnavailable(ctx.producer.isReady());
   if (busRej) return busRej;
 
-  let body: { symbols?: string[]; orderCount?: number; strategy?: string };
+  let body: { symbols?: string[]; orderCount?: number; strategy?: string; quantityRange?: [number, number] };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -147,10 +147,36 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
     });
   }
 
-  const symbols = body.symbols ?? ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA"];
+  // Expanded symbol pool to prevent concentration on a few tickers (incident 2026-05-19).
+  // When the caller does not supply symbols, we rotate across a larger pool so that
+  // repeated load-test invocations naturally spread orders across many assets.
+  const ALL_SYMBOLS = [
+    "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA",
+    "NVDA", "META", "JPM", "GS", "V", "MA",
+    "UNH", "HD", "BAC", "DIS", "NFLX", "ADBE",
+    "CRM", "CSCO", "PEP", "INTC", "AMD",
+  ];
+  const symbols = body.symbols ?? ALL_SYMBOLS;
   const orderCount = Math.min(body.orderCount ?? 100, 500);
   const strategy = body.strategy ?? "LIMIT";
   const jobId = `load-${Date.now()}`;
+
+  const [qtyMin, qtyMax] = body.quantityRange ?? [10, 99];
+  const MAX_QUANTITY = 1_000_000;
+  const quantityRangeValid =
+    Number.isInteger(qtyMin) &&
+    Number.isInteger(qtyMax) &&
+    qtyMin >= 0 &&
+    qtyMax > qtyMin &&
+    qtyMax <= MAX_QUANTITY;
+  if (!quantityRangeValid) {
+    return new Response(
+      JSON.stringify({
+        error: `quantityRange must be integers with 0 <= min < max <= ${MAX_QUANTITY}`,
+      }),
+      { status: 400, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+    );
+  }
 
   const loadTestUserIds = Deno.env.get("LOAD_TEST_USER_IDS");
   if (!loadTestUserIds) {
@@ -210,12 +236,14 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
           ? Number((mid * jitter * 1.02).toFixed(2))
           : Number((mid * jitter * 0.98).toFixed(2));
 
+      const quantity = qtyMin + secureRandomInt(qtyMax - qtyMin + 1);
+
       ctx.producer
         .send("orders.new", {
           clientOrderId: `${jobId}-${i}-${crypto.randomUUID().slice(0, 8)}`,
           asset: symbol,
           side,
-          quantity: 10 + secureRandomInt(90),
+          quantity,
           limitPrice,
           expiresAt: 300,
           strategy,
