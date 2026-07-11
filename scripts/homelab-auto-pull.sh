@@ -71,30 +71,45 @@ publish_checks_ready() {
   local page=1
   local total_gated=0
   local incomplete=0
+  local failed=0
   while :; do
     local resp
     resp=$(curl -sf --max-time 10 \
       "https://api.github.com/repos/$REPO_SLUG/commits/$sha/check-runs?per_page=100&page=$page") \
       || { log "check-runs API request failed (network/rate-limit?) — treating as not ready"; return 1; }
-    local page_gated page_incomplete count
-    page_gated=$(echo "$resp" | python3 -c '
+    local page_stats count page_incomplete page_failed returned
+    # Parses the whole page once and prints four counts, defaulting every
+    # field to "" via .get() so a check-run missing an expected key can't
+    # raise and kill the (set -e) caller — it's just counted as neither
+    # complete nor successful, which correctly keeps us in "not ready".
+    page_stats=$(echo "$resp" | python3 -c '
 import json,sys
 d=json.load(sys.stdin)
-runs=[c for c in d.get("check_runs",[]) if c["name"].startswith("Publish ") and c["name"].endswith(":latest (gated)")]
+runs=[c for c in d.get("check_runs",[])
+      if str(c.get("name","")).startswith("Publish ") and str(c.get("name","")).endswith(":latest (gated)")]
+incomplete=sum(1 for c in runs if c.get("status") != "completed")
+failed=sum(1 for c in runs if c.get("status") == "completed" and c.get("conclusion") not in ("success", "skipped", "neutral"))
 print(len(runs))
-print(sum(1 for c in runs if c["status"] != "completed"))
-')
-    count=$(echo "$page_gated" | sed -n '1p')
-    page_incomplete=$(echo "$page_gated" | sed -n '2p')
+print(incomplete)
+print(failed)
+print(len(d.get("check_runs",[])))
+') || { log "check-runs response could not be parsed — treating as not ready"; return 1; }
+    count=$(echo "$page_stats" | sed -n '1p')
+    page_incomplete=$(echo "$page_stats" | sed -n '2p')
+    page_failed=$(echo "$page_stats" | sed -n '3p')
+    returned=$(echo "$page_stats" | sed -n '4p')
     total_gated=$((total_gated + count))
     incomplete=$((incomplete + page_incomplete))
-    local returned
-    returned=$(echo "$resp" | python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("check_runs",[])))')
+    failed=$((failed + page_failed))
     [[ "$returned" -lt 100 ]] && break
     page=$((page + 1))
   done
   if [[ "$total_gated" -eq 0 ]]; then
     log "no 'Publish ... :latest (gated)' check-runs found for ${sha:0:7} yet — not ready"
+    return 1
+  fi
+  if [[ "$failed" -gt 0 ]]; then
+    log "$failed/$total_gated publish check-runs FAILED for ${sha:0:7} — refusing to deploy this SHA"
     return 1
   fi
   if [[ "$incomplete" -gt 0 ]]; then

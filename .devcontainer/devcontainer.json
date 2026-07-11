@@ -1,93 +1,56 @@
 {
   "name": "Equities Trading Simulator",
-
-  // -------------------------------------------------
-  // 1️⃣ Build
-  // -------------------------------------------------
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-
-  // -------------------------------------------------
-  // 2️⃣ Features
-  // -------------------------------------------------
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
   },
-
-  // -------------------------------------------------
-  // 3️⃣ Workspace
-  // -------------------------------------------------
   "workspaceFolder": "/workspaces/virtual-equities-trading-application",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/virtual-equities-trading-application,type=bind,consistency=cached",
-
-  // -------------------------------------------------
-  // 4️⃣ Networking – static host entries (Docker Desktop friendly)
-  // -------------------------------------------------
-  "extraHosts": {
-    // Spark (the DGX‑Spark node)
-    "spark": "192.168.1.182",
-
-    // Ollama – the same IP as Spark because the LLM server lives there
-    "ollama": "192.168.1.182",
-
-    // Allows the container to reach services that are bound to the Windows host
-    // (useful if you ever run Ollama locally on Windows instead of on the Spark)
-    "host.docker.internal": "host-gateway"
-  },
-
-  // -------------------------------------------------
-  // 5️⃣ Ports to forward automatically (adds a clickable link in VS Code)
-  // -------------------------------------------------
   "forwardPorts": [
-    8080,    // optional Ollama UI (if you run `ollama serve`)
-    11434,   // Ollama REST API (the one you already tested)
-    5005,    // Zoo Code internal gRPC port (used for its own telemetry / health‑check)
-    19530,   // Milvus (example vector DB) – add only if you actually run it
-    5432,    // Postgres (example) – add only if you actually run it
-    6379,    // Redis (example) – add only if you actually run it
-    // keep all the ports you already had for your own services:
-    8080, 3000, 9090, 3100, 5000, 5001, 5002, 5003, 5004,
-    5005, 5006, 5007, 5008, 5009, 5011, 5013, 5014, 5015,
-    5017, 5018, 5021, 5022, 5023, 5024, 9879, 9881
+    8080, 3000, 9090, 3100, 5000, 5001, 5002, 5003, 5004, 5005, 5006, 5007,
+    5008, 5009, 5011, 5013, 5014, 5015, 5017, 5018, 5021, 5022, 5023, 5024,
+    9879, 9881
   ],
-
   "portsAttributes": {
-    "8080":  { "label":"Ollama UI",          "onAutoForward":"notify", "protocol":"http" },
-    "11434": { "label":"Ollama REST API",    "onAutoForward":"notify", "protocol":"http" },
-    "5005":  { "label":"Zoo Code gRPC",      "onAutoForward":"notify", "protocol":"tcp"  },
-
-    // Your original ports (kept unchanged)
-    "3000":  { "label":"Grafana",            "onAutoForward":"notify", "protocol":"http" },
-    "9090":  { "label":"Prometheus",         "onAutoForward":"ignore" },
-    "3100":  { "label":"Loki",               "onAutoForward":"ignore" },
-    "5000":  { "label":"Market Sim",         "onAutoForward":"ignore" },
-    "5001":  { "label":"EMS",                "onAutoForward":"ignore" },
-    "5002":  { "label":"OMS",                "onAutoForward":"ignore" },
-    "5003":  { "label":"Limit Algo",         "onAutoForward":"ignore" },
-    "5004":  { "label":"TWAP Algo",          "onAutoForward":"ignore" },
-    "5006":  { "label":"VWAP Algo",          "onAutoForward":"ignore" },
-    "5007":  { "label":"Observability",      "onAutoForward":"ignore" },
-    "5008":  { "label":"User Service",       "onAutoForward":"ignore" },
-    "5009":  { "label":"Journal",            "onAutoForward":"ignore" },
-    "5011":  { "label":"Gateway (BFF)",      "onAutoForward":"ignore" },
-    "5013":  { "label":"News Aggregator",    "onAutoForward":"ignore" },
-    "5014":  { "label":"Analytics",          "onAutoForward":"ignore" },
-    "5015":  { "label":"Market Data Service","onAutoForward":"ignore" },
-    "5017":  { "label":"Feature Engine",     "onAutoForward":"ignore" },
-    "5018":  { "label":"Signal Engine",      "onAutoForward":"ignore" },
-    "5021":  { "label":"Iceberg Algo",       "onAutoForward":"ignore" },
-    "5022":  { "label":"Sniper Algo",        "onAutoForward":"ignore" },
-    "5023":  { "label":"Arrival Price Algo", "onAutoForward":"ignore" },
-    "5024":  { "label":"LLM Advisory",       "onAutoForward":"ignore" },
-    "9879":  { "label":"FIX Exchange (health)","onAutoForward":"ignore" },
-    "9881":  { "label":"FIX Gateway (WS)",   "onAutoForward":"ignore" }
+    "8080": {
+      "label": "Frontend UI",
+      "onAutoForward": "notify",
+      "protocol": "http",
+      "elevateIfNeeded": false
+    },
+    "3000": {
+      "label": "Grafana",
+      "onAutoForward": "notify",
+      "protocol": "http"
+    },
+    "9090": { "label": "Prometheus", "onAutoForward": "ignore" },
+    "3100": { "label": "Loki", "onAutoForward": "ignore" },
+    "5000": { "label": "Market Sim", "onAutoForward": "ignore" },
+    "5001": { "label": "EMS", "onAutoForward": "ignore" },
+    "5002": { "label": "OMS", "onAutoForward": "ignore" },
+    "5003": { "label": "Limit Algo", "onAutoForward": "ignore" },
+    "5004": { "label": "TWAP Algo", "onAutoForward": "ignore" },
+    "5005": { "label": "POV Algo", "onAutoForward": "ignore" },
+    "5006": { "label": "VWAP Algo", "onAutoForward": "ignore" },
+    "5007": { "label": "Observability", "onAutoForward": "ignore" },
+    "5008": { "label": "User Service", "onAutoForward": "ignore" },
+    "5009": { "label": "Journal", "onAutoForward": "ignore" },
+    "5011": { "label": "Gateway (BFF)", "onAutoForward": "ignore" },
+    "5013": { "label": "News Aggregator", "onAutoForward": "ignore" },
+    "5014": { "label": "Analytics", "onAutoForward": "ignore" },
+    "5015": { "label": "Market Data Service", "onAutoForward": "ignore" },
+    "5017": { "label": "Feature Engine", "onAutoForward": "ignore" },
+    "5018": { "label": "Signal Engine", "onAutoForward": "ignore" },
+    "5021": { "label": "Iceberg Algo", "onAutoForward": "ignore" },
+    "5022": { "label": "Sniper Algo", "onAutoForward": "ignore" },
+    "5023": { "label": "Arrival Price Algo", "onAutoForward": "ignore" },
+    "5024": { "label": "LLM Advisory", "onAutoForward": "ignore" },
+    "9879": { "label": "FIX Exchange (health)", "onAutoForward": "ignore" },
+    "9881": { "label": "FIX Gateway (WS)", "onAutoForward": "ignore" }
   },
-
-  // -------------------------------------------------
-  // 6️⃣ VS Code customizations (settings + extensions)
-  // -------------------------------------------------
   "customizations": {
     "vscode": {
       "settings": {
@@ -95,12 +58,7 @@
         "deno.path": "/home/deno/.deno/bin/deno",
         "security.workspace.trust.startupPrompt": "never",
         "extensions.autoUpdate": true,
-        "extensions.autoCheckUpdates": true,
-
-        // **Tell Zoo Code where Ollama lives** – this is the most common cause of “cannot connect”
-        "zooCode.llmEndpoint": "http://ollama:11434",
-        // If you run the UI (`ollama serve`) you can also expose it:
-        "zooCode.ollamaWebUi": "http://ollama:8080"
+        "extensions.autoCheckUpdates": true
       },
       "extensions": [
         "GitHub.copilot-chat",
@@ -126,10 +84,6 @@
       ]
     }
   },
-
-  // -------------------------------------------------
-  // 7️⃣ Init / mounts of host files
-  // -------------------------------------------------
   "initializeCommand": "mkdir -p $HOME/.ssh $HOME/.config/gh $HOME/.claude && touch $HOME/.gitconfig",
   "remoteUser": "deno",
   "userEnvProbe": "none",
@@ -139,10 +93,6 @@
     "source=${localEnv:HOME}/.gitconfig,target=/home/deno/.gitconfig,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.claude,target=/home/deno/.claude,type=bind,consistency=cached"
   ],
-
-  // -------------------------------------------------
-  // 8️⃣ Post‑create / post‑start hooks
-  // -------------------------------------------------
   "postCreateCommand": "cd ${containerWorkspaceFolder}/frontend && npm ci --ignore-scripts && cd ${containerWorkspaceFolder} && ./frontend/node_modules/.bin/husky",
   "postStartCommand": "CONTAINER_WORKSPACE_FOLDER=${containerWorkspaceFolder} bash ${containerWorkspaceFolder}/.devcontainer/post-start.sh"
 }

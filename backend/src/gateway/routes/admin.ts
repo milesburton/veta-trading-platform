@@ -162,9 +162,18 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
   const jobId = `load-${Date.now()}`;
 
   const [qtyMin, qtyMax] = body.quantityRange ?? [10, 99];
-  if (qtyMax <= qtyMin) {
+  const MAX_QUANTITY = 1_000_000;
+  const quantityRangeValid =
+    Number.isInteger(qtyMin) &&
+    Number.isInteger(qtyMax) &&
+    qtyMin >= 0 &&
+    qtyMax > qtyMin &&
+    qtyMax <= MAX_QUANTITY;
+  if (!quantityRangeValid) {
     return new Response(
-      JSON.stringify({ error: "quantityRange must satisfy max > min" }),
+      JSON.stringify({
+        error: `quantityRange must be integers with 0 <= min < max <= ${MAX_QUANTITY}`,
+      }),
       { status: 400, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
     );
   }
