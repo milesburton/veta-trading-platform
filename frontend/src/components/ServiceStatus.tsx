@@ -63,11 +63,6 @@ export function ServiceStatus({ services }: Props) {
           <span className="tabular-nums text-muted">
             {okCount}/{totalCount}
           </span>
-          {consistent && shortCommit && (
-            <span className="ml-1 font-mono text-muted" title={`All services on commit ${commit}`}>
-              {shortCommit}
-            </span>
-          )}
         </span>
       </button>
 

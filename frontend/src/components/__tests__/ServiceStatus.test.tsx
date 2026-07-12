@@ -41,7 +41,7 @@ test("shows ok/total count in the Services button", () => {
   expect(btn.textContent).toMatch(/1\/2/);
 });
 
-test("shows short commit SHA in button when all required services share one", () => {
+test("does not duplicate the shared commit SHA in the Services button", () => {
   const allOk: ServiceHealth[] = [
     {
       name: "svc-a",
@@ -62,8 +62,11 @@ test("shows short commit SHA in button when all required services share one", ()
   ];
   render(<ServiceStatus services={allOk} />);
   const btn = screen.getByRole("button", { name: /services/i });
-  expect(btn.textContent).toContain("abc1234");
-  expect(btn.textContent).not.toContain("vabc1234");
+  expect(btn.textContent).toContain("2/2");
+  expect(btn.textContent).not.toContain("abc1234");
+
+  fireEvent.click(btn);
+  expect(screen.getByTestId("service-health-commit-link")).toHaveTextContent("abc1234");
 });
 
 test("links the panel-header commit to GitHub when sha is real", () => {
