@@ -294,36 +294,49 @@ function DataFreshness() {
 
 const ENV_BADGE_STYLES: Record<string, { label: string; title: string; cls: string }> = {
   local: {
-    label: "local",
+    label: "Local",
     title: "Local development build",
     cls: "bg-sky-900/50 text-sky-400 border-sky-800",
   },
   uat: {
-    label: "uat",
+    label: "UAT",
     title: "Internal UAT environment — not production",
     cls: "bg-amber-900/50 text-amber-300 border-amber-800",
   },
   fly: {
-    label: "demo",
+    label: "Demo",
     title: "Public Fly.io demo deployment",
+    cls: "bg-emerald-900/40 text-emerald-300 border-emerald-800",
+  },
+  prod: {
+    label: "Production",
+    title: "Production deployment",
     cls: "bg-emerald-900/40 text-emerald-300 border-emerald-800",
   },
 };
 
 function EnvironmentBadge() {
-  if (DEPLOYMENT === "playwright") return null;
-  const style = ENV_BADGE_STYLES[DEPLOYMENT] ?? {
-    label: DEPLOYMENT,
-    title: `${DEPLOYMENT} deployment`,
-    cls: "bg-panel text-default border-divider",
-  };
+  const isPlaywright = DEPLOYMENT === "playwright";
+  const style = isPlaywright
+    ? null
+    : (ENV_BADGE_STYLES[DEPLOYMENT] ?? {
+        label: DEPLOYMENT,
+        title: `${DEPLOYMENT} deployment`,
+        cls: "bg-panel text-default border-divider",
+      });
   return (
     <span
       data-testid="env-badge"
-      title={style.title}
-      className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold uppercase tracking-wider border ${style.cls}`}
+      title={style?.title}
+      className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold border shrink-0 ${style?.cls ?? "bg-panel text-default border-divider"}`}
     >
-      {style.label}
+      <span className="uppercase tracking-widest">VETA</span>
+      {style && (
+        <>
+          <span className="opacity-50">·</span>
+          <span className="font-mono tracking-wider text-[9px]">{style.label}</span>
+        </>
+      )}
     </span>
   );
 }
@@ -531,9 +544,17 @@ export function AppHeader() {
         </div>
       )}
       <div className="flex items-center gap-3 px-4 h-10 bg-surface border-b border-panel text-xs text-label">
-        <span className="text-emerald-400 font-bold tracking-widest uppercase text-[11px] shrink-0">
-          VETA
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <EnvironmentBadge />
+          <BuildInfo
+            buildDate={import.meta.env.VITE_BUILD_DATE}
+            commitSha={import.meta.env.VITE_COMMIT_SHA}
+            version={import.meta.env.VITE_APP_VERSION}
+            className="px-2 py-0.5 rounded border border-panel bg-page/60 text-[10px] text-label tabular-nums"
+          />
+        </div>
+
+        <div className="w-px self-stretch my-2 bg-panel shrink-0" />
 
         <OverflowBar
           className="gap-4 flex-1 min-w-0"
@@ -541,6 +562,13 @@ export function AppHeader() {
           testId="header-controls"
           menuClassName="gap-2 min-w-[200px]"
         >
+          <DataFreshness />
+          <DataDepthIndicator />
+          <MemoryIndicator />
+          <div data-testid="service-health-cluster">
+            <ServiceStatus services={services} />
+          </div>
+
           {user?.role === "trader" && (
             <button
               type="button"
@@ -551,12 +579,16 @@ export function AppHeader() {
               + New Order
             </button>
           )}
-          <DataFreshness />
-          <DataDepthIndicator />
-          <MemoryIndicator />
-          <div data-testid="service-health-cluster">
-            <ServiceStatus services={services} />
-          </div>
+          {user && (
+            <>
+              <div data-testid="theme-selector">
+                <ThemeSwitcher />
+              </div>
+              <LogsButton />
+              <AlertCentreButton services={services} />
+            </>
+          )}
+
           <a
             href="https://veta.mnetcs.com/grafana/"
             target="_blank"
@@ -582,55 +614,6 @@ export function AppHeader() {
             <span>Grafana</span>
           </a>
           <a
-            href="https://discord.gg/tSGgsKnz"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Join the VETA Discord — alerts feed + community"
-            data-testid="discord-link"
-            className="text-label hover:text-secondary transition-colors"
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-              <path d="M20.317 4.369A19.79 19.79 0 0 0 16.558 3a.075.075 0 0 0-.079.037 13.91 13.91 0 0 0-.613 1.265 18.27 18.27 0 0 0-5.487 0A12.5 12.5 0 0 0 9.756 3.037a.078.078 0 0 0-.08-.037A19.74 19.74 0 0 0 5.918 4.37a.07.07 0 0 0-.033.027C3.038 8.514 2.39 12.527 2.7 16.499a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.029.078.078 0 0 0 .085-.028c.462-.63.875-1.297 1.226-1.998a.076.076 0 0 0-.041-.106 13.13 13.13 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.193.372-.292a.075.075 0 0 1 .078-.01c3.927 1.793 8.18 1.793 12.061 0a.075.075 0 0 1 .079.01c.121.099.246.198.373.293a.077.077 0 0 1-.006.128 12.3 12.3 0 0 1-1.873.891.076.076 0 0 0-.04.107c.359.701.773 1.368 1.225 1.998a.076.076 0 0 0 .084.028 19.85 19.85 0 0 0 6.004-3.03.077.077 0 0 0 .032-.056c.371-4.611-.622-8.59-2.632-12.103a.06.06 0 0 0-.031-.029zM8.02 14.42c-1.182 0-2.157-1.087-2.157-2.422 0-1.335.955-2.423 2.157-2.423 1.211 0 2.177 1.097 2.156 2.423 0 1.335-.955 2.422-2.156 2.422zm7.974 0c-1.183 0-2.158-1.087-2.158-2.422 0-1.335.955-2.423 2.158-2.423 1.21 0 2.176 1.097 2.156 2.423 0 1.335-.946 2.422-2.156 2.422z" />
-            </svg>
-            <span className="sr-only">Join the VETA Discord</span>
-          </a>
-          {user && (
-            <button
-              type="button"
-              onClick={() => {
-                bugReportOpen.value = true;
-              }}
-              data-testid="bug-report-trigger"
-              title="Report a bug"
-              className="text-label hover:text-secondary transition-colors"
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M8 2l1.88 1.88" />
-                <path d="M14.12 3.88L16 2" />
-                <path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1" />
-                <path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6Z" />
-                <path d="M12 20v-9" />
-                <path d="M6 13H2" />
-                <path d="M22 13h-4" />
-                <path d="M6 17l-3.5 3" />
-                <path d="M18 17l3.5 3" />
-                <path d="M6 9l-3.5-3" />
-                <path d="M18 9l3.5-3" />
-              </svg>
-              <span className="sr-only">Report a bug</span>
-            </button>
-          )}
-          <a
             href="https://milesburton.github.io/veta-trading-platform/"
             target="_blank"
             rel="noopener noreferrer"
@@ -655,33 +638,66 @@ export function AppHeader() {
             <span>Docs</span>
           </a>
           <a
+            href="https://discord.gg/tSGgsKnz"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Join the VETA Discord — alerts feed + community"
+            data-testid="discord-link"
+            className="flex items-center gap-1 text-[11px] text-label hover:text-secondary transition-colors"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+              <path d="M20.317 4.369A19.79 19.79 0 0 0 16.558 3a.075.075 0 0 0-.079.037 13.91 13.91 0 0 0-.613 1.265 18.27 18.27 0 0 0-5.487 0A12.5 12.5 0 0 0 9.756 3.037a.078.078 0 0 0-.08-.037A19.74 19.74 0 0 0 5.918 4.37a.07.07 0 0 0-.033.027C3.038 8.514 2.39 12.527 2.7 16.499a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.029.078.078 0 0 0 .085-.028c.462-.63.875-1.297 1.226-1.998a.076.076 0 0 0-.041-.106 13.13 13.13 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.193.372-.292a.075.075 0 0 1 .078-.01c3.927 1.793 8.18 1.793 12.061 0a.075.075 0 0 1 .079.01c.121.099.246.198.373.293a.077.077 0 0 1-.006.128 12.3 12.3 0 0 1-1.873.891.076.076 0 0 0-.04.107c.359.701.773 1.368 1.225 1.998a.076.076 0 0 0 .084.028 19.85 19.85 0 0 0 6.004-3.03.077.077 0 0 0 .032-.056c.371-4.611-.622-8.59-2.632-12.103a.06.06 0 0 0-.031-.029zM8.02 14.42c-1.182 0-2.157-1.087-2.157-2.422 0-1.335.955-2.423 2.157-2.423 1.211 0 2.177 1.097 2.156 2.423 0 1.335-.955 2.422-2.156 2.422zm7.974 0c-1.183 0-2.158-1.087-2.158-2.422 0-1.335.955-2.423 2.158-2.423 1.21 0 2.176 1.097 2.156 2.423 0 1.335-.946 2.422-2.156 2.422z" />
+            </svg>
+            <span>Discord</span>
+          </a>
+          <a
             href="https://github.com/milesburton/veta-trading-platform"
             target="_blank"
             rel="noopener noreferrer"
             title="View source on GitHub"
-            className="text-label hover:text-secondary transition-colors"
+            className="flex items-center gap-1 text-[11px] text-label hover:text-secondary transition-colors"
           >
             <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
             </svg>
-            <span className="sr-only">View source on GitHub</span>
+            <span>GitHub</span>
           </a>
           {user && (
-            <>
-              <div data-testid="theme-selector">
-                <ThemeSwitcher />
-              </div>
-              <LogsButton />
-              <AlertCentreButton services={services} />
-            </>
+            <button
+              type="button"
+              onClick={() => {
+                bugReportOpen.value = true;
+              }}
+              data-testid="bug-report-trigger"
+              title="Report a bug"
+              className="flex items-center gap-1 text-[11px] text-label hover:text-secondary transition-colors"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M8 2l1.88 1.88" />
+                <path d="M14.12 3.88L16 2" />
+                <path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1" />
+                <path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6Z" />
+                <path d="M12 20v-9" />
+                <path d="M6 13H2" />
+                <path d="M22 13h-4" />
+                <path d="M6 17l-3.5 3" />
+                <path d="M18 17l3.5 3" />
+                <path d="M6 9l-3.5-3" />
+                <path d="M18 9l3.5-3" />
+              </svg>
+              <span>Report bug</span>
+            </button>
           )}
-          <EnvironmentBadge />
-          <BuildInfo
-            buildDate={import.meta.env.VITE_BUILD_DATE}
-            commitSha={import.meta.env.VITE_COMMIT_SHA}
-            version={import.meta.env.VITE_APP_VERSION}
-            className="px-2 py-0.5 rounded border border-panel bg-page/60 text-[10px] text-label tabular-nums"
-          />
         </OverflowBar>
 
         <div className="flex items-center gap-4 shrink-0">
