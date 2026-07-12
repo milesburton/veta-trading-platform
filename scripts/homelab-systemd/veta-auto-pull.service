@@ -11,4 +11,13 @@ WorkingDirectory=/opt/stacks/veta
 ExecStart=/opt/stacks/veta/auto-pull.sh
 StandardOutput=journal
 StandardError=journal
-TimeoutStartSec=10min
+# A cold pull of every service image (worst case: a large third-party
+# base image like ollama/ollama got a new upstream :latest between
+# deploys) can take well over 10 minutes on homelab bandwidth. A short
+# timeout here doesn't just fail the deploy — since `docker pull`
+# restarts each killed layer from zero rather than resuming, it makes
+# that image's pull un-completable: the next 5-10 min timer tick kills
+# it again before it ever finishes, forever. 2026-07-11: ollama/ollama
+# published a new 4.75GB :latest and wedged auto-pull in exactly this
+# loop for the deploy that also landed this fix.
+TimeoutStartSec=60min
