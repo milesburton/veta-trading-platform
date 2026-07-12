@@ -1,6 +1,7 @@
 import type { ElementHandle, Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import type { AssetDef, AuthUser } from "../GatewayMock.ts";
+import type { TradingLimits } from "../authFixtures.ts";
 import {
   ALGO_TRADER,
   ALGO_TRADER_LIMITS,
@@ -28,7 +29,9 @@ export class AppPage {
     this.page = page;
   }
 
-  async goto(opts: { user?: AuthUser; assets?: AssetDef[]; url?: string } = {}): Promise<this> {
+  async goto(
+    opts: { user?: AuthUser; limits?: TradingLimits; assets?: AssetDef[]; url?: string } = {}
+  ): Promise<this> {
     this.gateway = await GatewayMock.attach(this.page, opts);
     await this.page.addInitScript(() => {
       for (const key of Object.keys(localStorage)) {
@@ -56,7 +59,7 @@ export class AppPage {
   }
 
   async gotoAsAlgoTrader(assets?: AssetDef[]): Promise<this> {
-    await this.goto({ user: ALGO_TRADER, assets });
+    await this.goto({ user: ALGO_TRADER, limits: ALGO_TRADER_LIMITS, assets });
     await this.waitForDashboard();
     this.gateway.sendAuthIdentity({
       user: ALGO_TRADER,
@@ -67,7 +70,7 @@ export class AppPage {
 
   async gotoAsFiTrader(assets?: AssetDef[], workspace?: string): Promise<this> {
     const url = workspace ? `/?ws=${workspace}` : "/";
-    await this.goto({ user: FI_TRADER, assets, url });
+    await this.goto({ user: FI_TRADER, limits: FI_TRADER_LIMITS, assets, url });
     await this.waitForDashboard();
     this.gateway.sendAuthIdentity({
       user: FI_TRADER,

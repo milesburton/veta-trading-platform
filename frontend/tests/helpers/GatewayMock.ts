@@ -107,10 +107,11 @@ export class GatewayMock {
 
   static async attach(
     page: Page,
-    opts: { user?: AuthUser; assets?: AssetDef[] } = {}
+    opts: { user?: AuthUser; limits?: TradingLimits; assets?: AssetDef[] } = {}
   ): Promise<GatewayMock> {
     const mock = new GatewayMock(page);
     const user = opts.user ?? DEFAULT_TRADER;
+    const limits = opts.limits ?? DEFAULT_LIMITS;
     const assets = opts.assets ?? DEFAULT_ASSETS;
 
     await page.route("/api/**", (route) => {
@@ -256,7 +257,11 @@ export class GatewayMock {
     );
 
     await page.route("**/api/user-service/sessions/me", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(user) })
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ...user, limits }),
+      })
     );
 
     await page.routeWebSocket("/ws/gateway", (ws) => {
