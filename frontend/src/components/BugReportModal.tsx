@@ -1,5 +1,9 @@
 import { useSignal } from "@preact/signals-react";
-import { type BugCategory, useSubmitBugReportMutation } from "@veta/frontend/store/gatewayApi.ts";
+import {
+  type BugCategory,
+  type TicketKind,
+  useSubmitBugReportMutation,
+} from "@veta/frontend/store/gatewayApi.ts";
 import type { FormEvent } from "react";
 import { useEffect, useRef } from "react";
 
@@ -16,12 +20,21 @@ const CATEGORIES: ReadonlyArray<{ value: BugCategory; label: string }> = [
   { value: "other", label: "Other" },
 ];
 
+const TICKET_KINDS: ReadonlyArray<{ value: TicketKind; label: string; hint: string }> = [
+  { value: "bug", label: "Bug", hint: "Something is broken or behaves incorrectly." },
+  { value: "feature", label: "Feature", hint: "A capability or workflow you want added." },
+  { value: "comment", label: "Comment", hint: "General product feedback or a question." },
+];
+
 export function BugReportModal({ open, onClose }: Props) {
+  const kind = useSignal<TicketKind>("bug");
   const title = useSignal("");
   const description = useSignal("");
   const category = useSignal<BugCategory>("ui");
   const submitted = useSignal(false);
   const undelivered = useSignal(false);
+  const ticketUrl = useSignal<string | null>(null);
+  const ticketIssueNumber = useSignal<number | null>(null);
   const localError = useSignal<string | null>(null);
   const titleRef = useRef<HTMLInputElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -33,6 +46,8 @@ export function BugReportModal({ open, onClose }: Props) {
     if (!open) return;
     submitted.value = false;
     undelivered.value = false;
+    ticketUrl.value = null;
+    ticketIssueNumber.value = null;
     localError.value = null;
     const focusTimer = setTimeout(() => titleRef.current?.focus(), 30);
     const onKey = (e: KeyboardEvent) => {
@@ -61,6 +76,7 @@ export function BugReportModal({ open, onClose }: Props) {
       return;
     }
     const result = await submitBugReport({
+      kind: kind.value,
       title: t,
       description: d,
       category: category.value,
@@ -68,7 +84,7 @@ export function BugReportModal({ open, onClose }: Props) {
     });
     if ("error" in result) {
       const e = result.error as { status?: number; data?: { error?: string } };
-      if (e.status === 401) localError.value = "Please sign in before submitting bug reports.";
+      if (e.status === 401) localError.value = "Please sign in before raising tickets.";
       else if (e.data?.error) localError.value = e.data.error;
       else localError.value = "Submission failed. Please try again.";
       return;
@@ -77,7 +93,9 @@ export function BugReportModal({ open, onClose }: Props) {
       submitted.value = true;
       title.value = "";
       description.value = "";
-      // 202 from backend signals "received but not delivered to Discord"
+      ticketUrl.value = result.data.ticket?.url ?? null;
+      ticketIssueNumber.value = result.data.ticket?.issueNumber ?? null;
+      // 202 from backend signals "received but no external sink was configured"
       if (result.data.ok === false) {
         undelivered.value = true;
       }
@@ -88,7 +106,7 @@ export function BugReportModal({ open, onClose }: Props) {
     <>
       <button
         type="button"
-        aria-label="Close bug report modal"
+        aria-label="Close ticket modal"
         className="fixed inset-0 z-40 bg-page/70 cursor-default"
         onClick={onClose}
       />
@@ -101,7 +119,7 @@ export function BugReportModal({ open, onClose }: Props) {
       >
         <div className="flex items-center justify-between border-b border-panel px-4 py-3">
           <h2 id="bug-report-heading" className="text-sm font-semibold text-primary">
-            Report a bug
+            Raise a ticket
           </h2>
           <button
             type="button"
@@ -122,10 +140,22 @@ export function BugReportModal({ open, onClose }: Props) {
               Thanks — your report is in.
             </p>
             <p className="text-xs text-muted">
-              {undelivered.value
-                ? "Stored on the server. The Discord channel isn't configured here, so an operator will pick it up on their side."
-                : "Posted to the VETA bug-reports Discord channel."}
+              {ticketUrl.value
+                ? `Created GitHub issue #${ticketIssueNumber.value ?? "?"} and notified the VETA Discord channel.`
+                : undelivered.value
+                  ? "Received by the gateway, but no Discord webhook or GitHub ticketing backend is configured here."
+                  : "Notified the VETA Discord channel. GitHub ticketing is not configured for this environment."}
             </p>
+            {ticketUrl.value && (
+              <a
+                href={ticketUrl.value}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex rounded border border-emerald-700 bg-emerald-900/30 px-3 py-1.5 text-xs text-emerald-300 hover:bg-emerald-900/60"
+              >
+                Open ticket
+              </a>
+            )}
             <button
               type="button"
               data-testid="bug-report-done"
@@ -137,9 +167,41 @@ export function BugReportModal({ open, onClose }: Props) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-4 space-y-3">
+            <fieldset className="space-y-1">
+              <legend className="block text-[10px] font-medium uppercase tracking-wider text-muted">
+                Ticket type
+              </legend>
+              <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Ticket type">
+                {TICKET_KINDS.map((option) => (
+                  <label
+                    key={option.value}
+                    className={`rounded border px-2 py-1.5 text-xs cursor-pointer transition-colors ${
+                      kind.value === option.value
+                        ? "border-emerald-500 bg-emerald-900/30 text-emerald-200"
+                        : "border-divider bg-page text-muted hover:text-default"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="ticket-kind"
+                      aria-label={option.label}
+                      value={option.value}
+                      checked={kind.value === option.value}
+                      onChange={() => {
+                        kind.value = option.value;
+                      }}
+                      disabled={isLoading}
+                      className="sr-only"
+                    />
+                    <span className="block font-medium">{option.label}</span>
+                    <span className="block text-[10px] opacity-80">{option.hint}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <label className="space-y-1 block">
               <span className="block text-[10px] font-medium uppercase tracking-wider text-muted">
-                What went wrong (short title)
+                Short title
               </span>
               <input
                 ref={titleRef}
@@ -177,7 +239,7 @@ export function BugReportModal({ open, onClose }: Props) {
             </label>
             <label className="space-y-1 block">
               <span className="block text-[10px] font-medium uppercase tracking-wider text-muted">
-                What happened, what did you expect?
+                Details
               </span>
               <textarea
                 data-testid="bug-report-description"
@@ -185,7 +247,7 @@ export function BugReportModal({ open, onClose }: Props) {
                 onChange={(e) => {
                   description.value = e.target.value;
                 }}
-                placeholder="Steps to reproduce, what you expected vs what happened…"
+                placeholder="Steps to reproduce, what you expected, or the feedback you want the team to track…"
                 rows={5}
                 maxLength={2000}
                 disabled={isLoading}
@@ -193,7 +255,8 @@ export function BugReportModal({ open, onClose }: Props) {
               />
             </label>
             <p className="text-[10px] text-muted">
-              Your username, current page, and user-agent are sent with the report. Don't include
+              This creates a GitHub issue when ticketing is configured and posts a summary to
+              Discord. Your username, current page, and user-agent are included. Don't include
               passwords or sensitive data.
             </p>
             {localError.value && (
@@ -222,7 +285,7 @@ export function BugReportModal({ open, onClose }: Props) {
                 {isLoading && (
                   <span className="h-3 w-3 rounded-full border border-white/60 border-t-transparent animate-spin" />
                 )}
-                {isLoading ? "Sending…" : "Send report"}
+                {isLoading ? "Sending…" : "Raise ticket"}
               </button>
             </div>
           </form>

@@ -378,7 +378,7 @@ Deno.test("notifyDiscordBug returns false when no webhook is configured", async 
   }
 });
 
-Deno.test("notifyDiscordBug posts as 'VETA Bug Reports' with all optional fields", async () => {
+Deno.test("notifyDiscordBug posts as 'VETA User Tickets' with all optional fields", async () => {
   await withWebhook("https://discord.com/api/webhooks/123/abc", async () => {
     const f = captureFetch();
     try {
@@ -386,6 +386,7 @@ Deno.test("notifyDiscordBug posts as 'VETA Bug Reports' with all optional fields
         {
           title: "Chart freezes on tab switch",
           description: "Steps to reproduce: 1. Open dashboard 2. Switch tab. Result: spinner.",
+          kind: "bug",
           category: "ui",
           url: "https://veta/dashboard",
           userAgent: "Mozilla/5.0 Firefox",
@@ -397,9 +398,10 @@ Deno.test("notifyDiscordBug posts as 'VETA Bug Reports' with all optional fields
       const calls = f.discordCalls();
       assertEquals(calls.length, 1);
       const body = JSON.parse(calls[0].body);
-      assertEquals(body.username, "VETA Bug Reports");
+      assertEquals(body.username, "VETA User Tickets");
       assert(body.content.includes("Chart freezes"));
       assert(body.content.includes("Alice"));
+      assert(body.content.includes("Type: `bug`"));
       assert(body.content.includes("Category: `ui`"));
       assert(body.content.includes("Page: https://veta/dashboard"));
       assert(body.content.includes("UA: `Mozilla/5.0 Firefox`"));

@@ -669,7 +669,7 @@ export function AppHeader() {
                 bugReportOpen.value = true;
               }}
               data-testid="bug-report-trigger"
-              title="Report a bug"
+              title="Raise a ticket"
               className="flex items-center gap-1 text-[11px] text-label hover:text-secondary transition-colors"
             >
               <svg
@@ -695,7 +695,7 @@ export function AppHeader() {
                 <path d="M6 9l-3.5-3" />
                 <path d="M18 9l3.5-3" />
               </svg>
-              <span>Report bug</span>
+              <span>Raise ticket</span>
             </button>
           )}
         </OverflowBar>

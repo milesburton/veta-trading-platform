@@ -208,6 +208,7 @@ export interface PlatformStatus {
 }
 
 export interface BugReportSubmission {
+  kind?: "bug" | "feature" | "comment";
   title: string;
   description: string;
   category?: "ui" | "data" | "auth" | "performance" | "other";
@@ -216,6 +217,13 @@ export interface BugReportSubmission {
 
 export interface BugReportResponse {
   ok: boolean;
+  discordDelivered?: boolean;
+  ticket?: {
+    created: boolean;
+    issueNumber: number | null;
+    url: string | null;
+    reason: string | null;
+  };
   error?: string;
 }
 

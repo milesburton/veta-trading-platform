@@ -220,7 +220,7 @@ export const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   scenarios:
     "Save and replay deterministic trading scenarios — same seed reproduces the same fills, so an algo regression is visible immediately",
   "platform-status":
-    "Last 24h roll-up: service availability, alert counts, bug reports, and last critical event. Bug-report button posts directly to the Discord bug channel. Drives the daily Discord summary at 09:00 UTC.",
+    "Last 24h roll-up: service availability, alert counts, user tickets, and last critical event. Raise-ticket button posts to Discord and creates GitHub issues when configured. Drives the daily Discord summary at 09:00 UTC.",
 };
 
 export const SINGLETON_PANELS: ReadonlySet<PanelId> = new Set([

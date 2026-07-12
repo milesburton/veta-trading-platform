@@ -102,13 +102,19 @@ export async function notifyDiscord(alert: AlertPayload, userId: string): Promis
   });
 }
 
-export interface BugReport {
+export type UserTicketKind = "bug" | "feature" | "comment";
+export type UserTicketCategory = "ui" | "data" | "auth" | "performance" | "other";
+
+export interface UserTicketReport {
+  kind?: UserTicketKind;
   title: string;
   description: string;
-  category?: "ui" | "data" | "auth" | "performance" | "other";
+  category?: UserTicketCategory;
   url?: string;
   userAgent?: string;
 }
+
+export type BugReport = UserTicketReport;
 
 const TITLE_MAX = 120;
 const DESCRIPTION_MAX = 2_000;
@@ -118,14 +124,26 @@ function sanitise(line: string, max: number): string {
   return line.replace(/[\r\n]+/g, " ").slice(0, max);
 }
 
-export function isBugReportValid(report: BugReport): boolean {
+export function isBugReportValid(report: UserTicketReport): boolean {
   if (!report.title || report.title.trim().length < 3) return false;
   if (!report.description || report.description.trim().length < 10) return false;
   return true;
 }
 
+function ticketKindLabel(kind: UserTicketKind | undefined): string {
+  if (kind === "feature") return "Feature request";
+  if (kind === "comment") return "Comment";
+  return "Bug report";
+}
+
+function ticketKindEmoji(kind: UserTicketKind | undefined): string {
+  if (kind === "feature") return "✨";
+  if (kind === "comment") return "💬";
+  return "🐛";
+}
+
 export async function notifyDiscordBug(
-  report: BugReport,
+  report: UserTicketReport,
   userId: string,
   userName: string
 ): Promise<boolean> {
@@ -134,9 +152,10 @@ export async function notifyDiscordBug(
   if (!url) return false;
 
   const lines = [
-    `🐛 **${sanitise(report.title.trim(), TITLE_MAX)}**`,
+    `${ticketKindEmoji(report.kind)} **${ticketKindLabel(report.kind)}: ${sanitise(report.title.trim(), TITLE_MAX)}**`,
     `_by: ${sanitise(userName || userId, 80)} (${sanitise(userId, 80)})_`,
   ];
+  lines.push(`Type: \`${report.kind ?? "bug"}\``);
   if (report.category) lines.push(`Category: \`${report.category}\``);
   if (report.url) lines.push(`Page: ${sanitise(report.url, URL_MAX)}`);
   if (report.userAgent) lines.push(`UA: \`${sanitise(report.userAgent, 200)}\``);
@@ -145,7 +164,7 @@ export async function notifyDiscordBug(
 
   return await postToDiscord({
     url,
-    username: "VETA Bug Reports",
+    username: "VETA User Tickets",
     content: lines.join("\n"),
   });
 }

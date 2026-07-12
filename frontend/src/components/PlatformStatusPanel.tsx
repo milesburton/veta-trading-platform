@@ -9,6 +9,8 @@ import { useEffect, useRef, useState } from "react";
 
 const BUG_CATEGORIES = ["ui", "data", "auth", "performance", "other"] as const;
 type BugCategory = (typeof BUG_CATEGORIES)[number];
+const TICKET_KINDS = ["bug", "feature", "comment"] as const;
+type TicketKind = (typeof TICKET_KINDS)[number];
 
 function formatUptime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -58,6 +60,7 @@ function StatLine({ label, children }: { label: string; children: React.ReactNod
 }
 
 function BugReportDialog({ onClose }: { onClose: () => void }) {
+  const [kind, setKind] = useState<TicketKind>("bug");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<BugCategory>("ui");
@@ -83,6 +86,7 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
     e.preventDefault();
     if (!canSubmit) return;
     const payload: BugReportSubmission = {
+      kind,
       title: title.trim(),
       description: description.trim(),
       category,
@@ -99,6 +103,7 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
     setTitle("");
     setDescription("");
     setCategory("ui");
+    setKind("bug");
     reset();
   }
 
@@ -116,7 +121,7 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
             id="bug-report-dialog-title"
             className="text-sm font-semibold text-primary uppercase tracking-wide"
           >
-            Report a bug
+            Raise a ticket
           </h2>
           <button
             type="button"
@@ -133,13 +138,27 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
           <div className="space-y-3" data-testid="bug-report-result">
             {delivered ? (
               <p className="text-xs text-green-400">
-                ✅ Bug report submitted and posted to the Discord bug channel.
+                ✅ Ticket submitted
+                {response?.ticket?.url
+                  ? ` as GitHub issue #${response.ticket.issueNumber ?? "?"}.`
+                  : " and posted to the Discord channel."}
               </p>
             ) : (
               <p className="text-xs text-amber-300" data-testid="bug-report-queued">
-                ⚠️ Bug report received but the Discord webhook isn't configured, so it wasn't
-                delivered. Ask an admin to set <code>DISCORD_WEBHOOK_URL</code>.
+                ⚠️ Ticket received by the gateway, but no Discord webhook or GitHub ticketing backend
+                is configured. Ask an admin to set <code>DISCORD_BUG_WEBHOOK_URL</code> or{" "}
+                <code>GITHUB_TICKETING_TOKEN</code>.
               </p>
+            )}
+            {response?.ticket?.url && (
+              <a
+                href={response.ticket.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex rounded border border-divider bg-panel px-3 py-1.5 text-xs text-default hover:bg-divider"
+              >
+                Open ticket
+              </a>
             )}
             <button
               type="button"
@@ -152,6 +171,34 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
+            <div>
+              <div className="block text-[10px] font-semibold text-label uppercase tracking-wider pb-1">
+                Type
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {TICKET_KINDS.map((k) => (
+                  <label
+                    key={k}
+                    className={`rounded border px-2 py-1 text-[10px] uppercase tracking-wider cursor-pointer ${
+                      kind === k
+                        ? "border-blue-500 bg-blue-700/30 text-primary"
+                        : "border-divider bg-panel text-label hover:text-default"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="platform-ticket-kind"
+                      aria-label={k}
+                      value={k}
+                      checked={kind === k}
+                      onChange={() => setKind(k)}
+                      className="sr-only"
+                    />
+                    {k}
+                  </label>
+                ))}
+              </div>
+            </div>
             <div>
               <label
                 htmlFor="bug-report-title-input"
@@ -293,7 +340,7 @@ function PlatformStatusContent() {
           }}
           className="rounded border border-amber-700/50 bg-amber-700/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-300 hover:bg-amber-700/40"
         >
-          🐛 Report bug
+          Raise ticket
         </button>
       </div>
 
@@ -370,7 +417,7 @@ function PlatformStatusContent() {
 
       <div className="px-3 py-2 border-b border-panel">
         <div className="text-[10px] font-semibold text-label uppercase tracking-wider pb-1">
-          Bug reports (last 24h)
+          User tickets (last 24h)
         </div>
         {stats.bugReports === 0 ? (
           <div className="text-xs text-muted">none</div>
@@ -383,8 +430,8 @@ function PlatformStatusContent() {
       </div>
 
       <div className="px-3 py-2 text-[10px] text-muted">
-        Daily summary posts to Discord at 09:00 UTC. Real-time alerts and bug reports post
-        immediately. CI failures and PR merges also flow into the channel.
+        Daily summary posts to Discord at 09:00 UTC. Real-time alerts and user tickets post
+        immediately. Tickets also create GitHub issues when ticketing is configured.
       </div>
 
       {showBugDialog.value && (

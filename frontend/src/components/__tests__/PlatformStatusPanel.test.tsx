@@ -125,7 +125,7 @@ describe("PlatformStatusPanel", () => {
     expect(screen.getByText(/97\.0%/)).toBeInTheDocument();
   });
 
-  it("opens the bug-report dialog when Report bug is clicked", () => {
+  it("opens the ticket dialog when Raise ticket is clicked", () => {
     useGetPlatformStatusQueryMock.mockReturnValue({ data: baseStatus });
     render(<PlatformStatusPanel />);
     expect(screen.queryByTestId("bug-report-dialog")).toBeNull();
@@ -142,7 +142,7 @@ describe("PlatformStatusPanel", () => {
     expect(dialog.getAttribute("aria-modal")).toBe("true");
   });
 
-  it("submits a bug report and shows success on ok:true", async () => {
+  it("submits a user ticket and shows success on ok:true", async () => {
     nextSubmitResponse = { ok: true };
     useGetPlatformStatusQueryMock.mockReturnValue({ data: baseStatus });
     render(<PlatformStatusPanel />);
@@ -150,6 +150,7 @@ describe("PlatformStatusPanel", () => {
     fireEvent.change(screen.getByTestId("bug-report-title"), {
       target: { value: "Bad behaviour" },
     });
+    fireEvent.click(screen.getByText("feature"));
     fireEvent.change(screen.getByTestId("bug-report-description"), {
       target: { value: "Repro steps included here so we exceed ten chars." },
     });

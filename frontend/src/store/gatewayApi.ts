@@ -54,8 +54,10 @@ interface LoadGenStartRequest {
 }
 
 export type BugCategory = "ui" | "data" | "auth" | "performance" | "other";
+export type TicketKind = "bug" | "feature" | "comment";
 
 export interface BugReportRequest {
+  kind?: TicketKind;
   title: string;
   description: string;
   category?: BugCategory;
@@ -64,6 +66,13 @@ export interface BugReportRequest {
 
 export interface BugReportResponse {
   ok: boolean;
+  discordDelivered?: boolean;
+  ticket?: {
+    created: boolean;
+    issueNumber: number | null;
+    url: string | null;
+    reason: string | null;
+  };
   error?: string;
 }
 

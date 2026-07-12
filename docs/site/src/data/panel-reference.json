@@ -422,7 +422,7 @@
     {
       "panelId": "platform-status",
       "title": "Platform Status (CI/CD, alerts, bugs)",
-      "description": "Last 24h: services, alerts, bugs. Report a bug from here.",
+      "description": "Last 24h: services, alerts, tickets. Raise a ticket from here.",
       "rendered": false,
       "notes": "not yet captured by walkthrough",
       "screenshot": null

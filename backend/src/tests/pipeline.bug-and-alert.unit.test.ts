@@ -2,13 +2,14 @@
 //
 // Pipeline test for the bug-report + alert fan-out paths. Confirms:
 //
-//   POST /bug-report                       -> Discord (only)
+//   POST /bug-report                       -> Discord + GitHub issue
 //   POST /alerts  (severity = CRITICAL)    -> Discord + GitHub issue
 //   POST /alerts  (severity = WARNING)     -> Discord (only)
 //
 // The notifier only posts to Discord for severities CRITICAL and
 // WARNING — other severities are dropped before any fetch. GitHub
-// issues are reserved for CRITICAL alerts.
+// alert issues are reserved for CRITICAL alerts; user tickets create
+// lower-severity GitHub issues through their own labels.
 //
 // The handlers fan out to outbound fetch calls (Discord webhook, GitHub
 // API, user-service forward). The test installs a fetch mock with
@@ -131,7 +132,7 @@ function withEnv<T>(values: Record<string, string | undefined>, fn: () => Promis
   });
 }
 
-Deno.test("pipeline: POST /bug-report reaches Discord but not GitHub", async () => {
+Deno.test("pipeline: POST /bug-report reaches Discord and creates a user ticket", async () => {
   await withEnv(
     {
       DISCORD_BUG_WEBHOOK_URL: "https://discord.com/api/webhooks/1/bug-channel",
@@ -147,7 +148,8 @@ Deno.test("pipeline: POST /bug-report reaches Discord but not GitHub", async () 
             method: "POST",
             body: JSON.stringify({
               title: "Test bug from E2E suite",
-              description: "This is a synthetic bug report. It should fan out to Discord only.",
+              description: "This is a synthetic user ticket. It should fan out to Discord and GitHub.",
+              kind: "feature",
               category: "ui",
               url: "/dashboard",
             }),
@@ -158,20 +160,26 @@ Deno.test("pipeline: POST /bug-report reaches Discord but not GitHub", async () 
 
         assertEquals(res?.status, 200, "bug-report should return 200 when webhook is set");
         assertEquals(f.discordCalls().length, 1, "bug report should hit Discord exactly once");
+        assertEquals(f.githubIssueCreates().length, 1, "user ticket should create a GitHub issue");
         assertEquals(
-          f.githubIssueCreates().length,
+          f.githubIssueSearches().length,
           0,
-          "bug report must NOT create a GitHub issue; that flow is CRITICAL-alert-only"
+          "user tickets do not run alert-style dedupe searches"
         );
 
         const discordCall = f.discordCalls()[0];
         if (!discordCall) throw new Error("expected a Discord call");
         const discordBody = JSON.parse(discordCall.body!);
-        assertEquals(discordBody.username, "VETA Bug Reports");
+        assertEquals(discordBody.username, "VETA User Tickets");
         assert(
           discordBody.content.includes("Test bug from E2E suite"),
           "Discord payload should contain the bug title"
         );
+        const issueCall = f.githubIssueCreates()[0];
+        if (!issueCall?.body) throw new Error("expected a GitHub issue create payload");
+        const issueBody = JSON.parse(issueCall.body);
+        assertEquals(issueBody.labels.includes("user-ticket"), true);
+        assertEquals(issueBody.labels.includes("type:feature"), true);
       } finally {
         f.restore();
       }
@@ -295,14 +303,16 @@ Deno.test("pipeline: POST /alerts with severity=WARNING reaches Discord but NOT 
   );
 });
 
-Deno.test("pipeline: bug-report responds 202 when Discord webhook is not configured", async () => {
-  // Mirrors the production fallback: if no webhook is set, the report is
-  // accepted but not delivered. The caller gets a 202 so the UI can
-  // surface "queued, not yet delivered" rather than "succeeded".
+Deno.test("pipeline: bug-report responds 202 when no external ticket sink is configured", async () => {
+  // Mirrors the production fallback: if no webhook or GitHub token is
+  // set, the report is accepted by the gateway but has no durable
+  // external sink. The caller gets a 202 so the UI can surface that.
   await withEnv(
     {
       DISCORD_BUG_WEBHOOK_URL: undefined,
       DISCORD_WEBHOOK_URL: undefined,
+      GITHUB_TICKETING_TOKEN: undefined,
+      GITHUB_TICKETING_REPO: undefined,
     },
     async () => {
       const f = installFetchCapture();

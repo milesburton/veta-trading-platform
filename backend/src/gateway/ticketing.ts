@@ -9,6 +9,16 @@ export interface TicketAlertPayload {
   ts?: number;
 }
 
+export interface UserTicketPayload {
+  kind?: "bug" | "feature" | "comment";
+  title: string;
+  description: string;
+  category?: "ui" | "data" | "auth" | "performance" | "other";
+  url?: string;
+  userAgent?: string;
+  ts?: number;
+}
+
 interface CreateIssueResult {
   created: boolean;
   issueNumber: number | null;
@@ -64,6 +74,36 @@ function buildBody(alert: TicketAlertPayload, userId: string, runId: string | nu
   lines.push("---");
   lines.push("_Auto-created from a Discord platform alert._");
   if (runId) lines.push(`_Correlation: ${runId}_`);
+  return lines.join("\n");
+}
+
+function cleanInline(value: string, max: number): string {
+  return value.replace(/[\r\n]+/g, " ").slice(0, max);
+}
+
+function normaliseTicketKind(kind: UserTicketPayload["kind"]): Required<UserTicketPayload>["kind"] {
+  if (kind === "feature" || kind === "comment") return kind;
+  return "bug";
+}
+
+function buildUserTicketTitle(ticket: UserTicketPayload): string {
+  const kind = normaliseTicketKind(ticket.kind);
+  return `[${kind}] ${cleanInline(ticket.title.trim(), 100)}`;
+}
+
+function buildUserTicketBody(ticket: UserTicketPayload, userId: string, userName: string): string {
+  const kind = normaliseTicketKind(ticket.kind);
+  const ts = ticket.ts ?? Date.now();
+  const lines = [
+    `**Type:** ${kind}`,
+    `**Category:** ${ticket.category ?? "other"}`,
+    `**Submitted at:** ${new Date(ts).toISOString()}`,
+    `**Submitted by:** ${cleanInline(userName || userId, 80)} (${cleanInline(userId, 80)})`,
+  ];
+  if (ticket.url) lines.push(`**Page:** ${cleanInline(ticket.url, 500)}`);
+  if (ticket.userAgent) lines.push(`**User agent:** \`${cleanInline(ticket.userAgent, 200)}\``);
+  lines.push("", "**Description:**", "```", ticket.description.trim().slice(0, 4000), "```");
+  lines.push("", "---", "_Created from an in-app VETA user ticket._");
   return lines.join("\n");
 }
 
@@ -196,9 +236,39 @@ export async function createTicketForAlert(
   return { created: true, issueNumber: result.number, url: result.url, reason: null };
 }
 
+export async function createTicketForUserReport(
+  ticket: UserTicketPayload,
+  userId: string,
+  userName: string
+): Promise<CreateIssueResult> {
+  const token = readTokenEnv();
+  if (!token) {
+    return { created: false, issueNumber: null, url: null, reason: "no-token" };
+  }
+  const repo = readRepoEnv();
+  if (!repo) {
+    return { created: false, issueNumber: null, url: null, reason: "no-repo" };
+  }
+
+  const kind = normaliseTicketKind(ticket.kind);
+  const title = buildUserTicketTitle(ticket);
+  const body = buildUserTicketBody(ticket, userId, userName);
+  const labels = ["user-ticket", "auto-created", `type:${kind}`];
+  if (ticket.category) labels.push(`category:${ticket.category}`);
+
+  const result = await createIssue(repo, token, title, body, labels);
+  if (!result.ok) {
+    return { created: false, issueNumber: null, url: null, reason: "github-api-failed" };
+  }
+  logger.info("[ticketing] user ticket issue created", { issue: result.number, url: result.url });
+  return { created: true, issueNumber: result.number, url: result.url, reason: null };
+}
+
 export const _internalForTests = {
   buildTitle,
   buildBody,
+  buildUserTicketTitle,
+  buildUserTicketBody,
   readTokenEnv,
   readRepoEnv,
 };
