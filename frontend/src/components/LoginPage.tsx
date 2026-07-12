@@ -296,9 +296,9 @@ export function LoginPage() {
                   href="https://milesburton.github.io/veta-trading-platform/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors"
+                  className="text-label hover:text-secondary transition-colors"
                 >
-                  Docs &rarr;
+                  User Guide
                 </a>
               </p>
             </div>

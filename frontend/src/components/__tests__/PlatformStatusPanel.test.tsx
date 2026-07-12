@@ -163,7 +163,7 @@ describe("PlatformStatusPanel", () => {
     });
     fireEvent.click(screen.getByTestId("bug-report-submit"));
     await waitFor(() => {
-      expect(screen.getByTestId("bug-report-result").textContent).toMatch(/posted to the Discord/i);
+      expect(screen.getByTestId("bug-report-result").textContent).toMatch(/notified Support/i);
     });
   });
 

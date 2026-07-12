@@ -117,7 +117,7 @@ describe("BugReportModal", () => {
     expect(screen.getByText(/no external ticket sink/i)).toBeInTheDocument();
   });
 
-  it("does not claim Discord was notified for GitHub-only success", async () => {
+  it("does not claim Support was notified for GitHub-only success", async () => {
     mockSubmit.mockResolvedValueOnce({
       data: {
         ok: true,
@@ -141,7 +141,7 @@ describe("BugReportModal", () => {
     });
     expect(screen.getByText(/Created GitHub issue #42/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/Discord notification is not configured or failed/i)
+      screen.getByText(/Support notification is not configured or failed/i)
     ).toBeInTheDocument();
   });
 

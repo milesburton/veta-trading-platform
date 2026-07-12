@@ -617,9 +617,9 @@ export function AppHeader() {
             href="https://milesburton.github.io/veta-trading-platform/"
             target="_blank"
             rel="noopener noreferrer"
-            title="Open documentation site"
+            title="Open the user guide"
             data-testid="docs-link"
-            className="flex items-center gap-1 rounded border border-emerald-700/60 bg-emerald-900/20 px-2 py-0.5 text-[11px] font-medium text-emerald-300 hover:border-emerald-500 hover:bg-emerald-900/40 hover:text-emerald-200 transition-colors"
+            className="flex items-center gap-1 text-[11px] text-label hover:text-secondary transition-colors"
           >
             <svg
               aria-hidden="true"
@@ -635,20 +635,20 @@ export function AppHeader() {
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
-            <span>Docs</span>
+            <span>User Guide</span>
           </a>
           <a
             href="https://discord.gg/tSGgsKnz"
             target="_blank"
             rel="noopener noreferrer"
-            title="Join the VETA Discord — alerts feed + community"
+            title="Open VETA Support"
             data-testid="discord-link"
             className="flex items-center gap-1 text-[11px] text-label hover:text-secondary transition-colors"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
               <path d="M20.317 4.369A19.79 19.79 0 0 0 16.558 3a.075.075 0 0 0-.079.037 13.91 13.91 0 0 0-.613 1.265 18.27 18.27 0 0 0-5.487 0A12.5 12.5 0 0 0 9.756 3.037a.078.078 0 0 0-.08-.037A19.74 19.74 0 0 0 5.918 4.37a.07.07 0 0 0-.033.027C3.038 8.514 2.39 12.527 2.7 16.499a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.029.078.078 0 0 0 .085-.028c.462-.63.875-1.297 1.226-1.998a.076.076 0 0 0-.041-.106 13.13 13.13 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.193.372-.292a.075.075 0 0 1 .078-.01c3.927 1.793 8.18 1.793 12.061 0a.075.075 0 0 1 .079.01c.121.099.246.198.373.293a.077.077 0 0 1-.006.128 12.3 12.3 0 0 1-1.873.891.076.076 0 0 0-.04.107c.359.701.773 1.368 1.225 1.998a.076.076 0 0 0 .084.028 19.85 19.85 0 0 0 6.004-3.03.077.077 0 0 0 .032-.056c.371-4.611-.622-8.59-2.632-12.103a.06.06 0 0 0-.031-.029zM8.02 14.42c-1.182 0-2.157-1.087-2.157-2.422 0-1.335.955-2.423 2.157-2.423 1.211 0 2.177 1.097 2.156 2.423 0 1.335-.955 2.422-2.156 2.422zm7.974 0c-1.183 0-2.158-1.087-2.158-2.422 0-1.335.955-2.423 2.158-2.423 1.21 0 2.176 1.097 2.156 2.423 0 1.335-.946 2.422-2.156 2.422z" />
             </svg>
-            <span>Discord</span>
+            <span>Support</span>
           </a>
           <a
             href="https://github.com/milesburton/veta-trading-platform"

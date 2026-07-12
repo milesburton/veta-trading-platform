@@ -141,10 +141,10 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
                 ✅ Ticket submitted
                 {response?.ticket?.url
                   ? response.discordDelivered
-                    ? ` as GitHub issue #${response.ticket.issueNumber ?? "?"} and posted to Discord.`
-                    : ` as GitHub issue #${response.ticket.issueNumber ?? "?"}. Discord notification is not configured or failed.`
+                    ? ` as GitHub issue #${response.ticket.issueNumber ?? "?"} and notified Support.`
+                    : ` as GitHub issue #${response.ticket.issueNumber ?? "?"}. Support notification is not configured or failed.`
                   : response?.discordDelivered
-                    ? " and posted to the Discord channel."
+                    ? " and notified Support."
                     : "."}
               </p>
             ) : (
@@ -435,8 +435,8 @@ function PlatformStatusContent() {
       </div>
 
       <div className="px-3 py-2 text-[10px] text-muted">
-        Daily summary posts to Discord at 09:00 UTC. Real-time alerts and user tickets post
-        immediately. Tickets also create GitHub issues when ticketing is configured.
+        Daily summary posts to Support at 09:00 UTC. Real-time alerts and user tickets notify
+        Support immediately. Tickets also create GitHub issues when ticketing is configured.
       </div>
 
       {showBugDialog.value && (

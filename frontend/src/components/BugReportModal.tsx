@@ -145,11 +145,11 @@ export function BugReportModal({ open, onClose }: Props) {
             <p className="text-xs text-muted">
               {ticketUrl.value
                 ? discordDelivered.value
-                  ? `Created GitHub issue #${ticketIssueNumber.value ?? "?"} and notified the VETA Discord channel.`
-                  : `Created GitHub issue #${ticketIssueNumber.value ?? "?"}. Discord notification is not configured or failed.`
+                  ? `Created GitHub issue #${ticketIssueNumber.value ?? "?"} and notified Support.`
+                  : `Created GitHub issue #${ticketIssueNumber.value ?? "?"}. Support notification is not configured or failed.`
                 : undelivered.value
                   ? "Received by the gateway, but no external ticket sink is configured or delivery failed."
-                  : "Notified the VETA Discord channel. GitHub ticketing is not configured for this environment."}
+                  : "Notified Support. GitHub ticketing is not configured for this environment."}
             </p>
             {ticketUrl.value && (
               <a
@@ -260,9 +260,8 @@ export function BugReportModal({ open, onClose }: Props) {
               />
             </label>
             <p className="text-[10px] text-muted">
-              When configured, this creates a GitHub issue and can post a summary to Discord. Your
-              username, current page, and user-agent are included. Don't include passwords or
-              sensitive data.
+              When configured, this creates a GitHub issue and can notify Support. Your username,
+              current page, and user-agent are included. Don't include passwords or sensitive data.
             </p>
             {localError.value && (
               <div
