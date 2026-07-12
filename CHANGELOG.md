@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.54.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.53.3...veta-trading-platform-v1.54.0) (2026-07-12)
+
+
+### Features
+
+* **frontend:** reorganise header, combine VETA+env badge, label all icons ([#481](https://github.com/milesburton/veta-trading-platform/issues/481)) ([3ffe6a8](https://github.com/milesburton/veta-trading-platform/commit/3ffe6a8b3a0a7778bafdd633e9492863b12347f0))
+
 ## [1.53.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.53.2...veta-trading-platform-v1.53.3) (2026-07-12)
 
 
