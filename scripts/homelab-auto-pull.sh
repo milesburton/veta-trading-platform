@@ -124,14 +124,28 @@ print(len(d.get("check_runs",[])))
 # publish_checks_ready would block on them forever. They also carry no
 # new images to wait for, so it's safe to deploy immediately (mainly to
 # pick up any config-file changes via sync_configs).
-is_skip_ci() {
+#
+# Detecting this by grepping the commit message for the literal string
+# "[skip ci]" is a trap: a squash-merge concatenates every commit body
+# into the merge commit, and this very script's own commit message
+# *describes* the "[skip ci] bypass" in prose — which then matches the
+# substring check on its own merge commit and wrongly skips the gate for
+# a commit that has real code changes and IS waiting on CI. (Caught live
+# on d62a45a5, the squash-merge of the PR that introduced this check.)
+#
+# Ask GitHub directly instead: a SHA that GitHub Actions skipped has
+# *zero* check-runs of any kind, not just zero Publish ones. That's an
+# unambiguous, content-independent signal.
+has_no_check_runs() {
   local sha="$1"
-  local msg
-  msg=$(curl -sf --max-time 10 \
-    "https://api.github.com/repos/$REPO_SLUG/commits/$sha" \
-    | python3 -c 'import json,sys; print(json.load(sys.stdin).get("commit",{}).get("message",""))' 2>/dev/null) \
+  local resp
+  resp=$(curl -sf --max-time 10 \
+    "https://api.github.com/repos/$REPO_SLUG/commits/$sha/check-runs?per_page=1") \
     || return 1
-  [[ "$msg" == *"[skip ci]"* ]]
+  local total
+  total=$(echo "$resp" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("total_count", -1))' 2>/dev/null) \
+    || return 1
+  [[ "$total" == "0" ]]
 }
 
 REMOTE=$(remote_sha)
@@ -146,8 +160,8 @@ if [[ "$REMOTE" == "$LAST" ]]; then
   exit 0
 fi
 
-if is_skip_ci "$REMOTE"; then
-  log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — [skip ci] commit, no publish to wait for, running deploy"
+if has_no_check_runs "$REMOTE"; then
+  log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — no CI check-runs at all (skip-ci or actions disabled), running deploy"
 elif ! publish_checks_ready "$REMOTE"; then
   log "remote=${REMOTE:0:7} last-deployed=${LAST:0:7} — publish not confirmed complete; deferring to next tick"
   exit 0
