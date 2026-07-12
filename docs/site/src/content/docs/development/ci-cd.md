@@ -90,6 +90,15 @@ GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (37 Docker 
 - Pushes to GHCR (`ghcr.io/milesburton/veta-trading-platform/<service>:latest`)
 - Matrix build: all 37 run simultaneously
 
+### screenshots (~1.5 minutes, path-conditional)
+
+- `Capture UI screenshots` (main only): runs `screenshots.spec.ts` against every dashboard workspace and persona, then commits any changed PNGs to `docs/screenshots/` with `[skip ci]`. These are the images the docs site and README embed.
+- `Capture panel walkthrough screenshots` (main only): same idea, scoped to `docs/panel-walkthrough/screenshots/` for the panel-by-panel walkthrough docs.
+- `PR screenshot diff` (pull requests only): runs the same capture on the PR branch, diffs the result against `docs/screenshots/` on `main`, and posts a `📸 UI screenshots` comment on the PR listing every file that changed. Nothing is committed; this is informational for the reviewer.
+- `PR visual anomalies`: a separate, non-gating check — flags DOM overflow and axe-core accessibility violations across a set of scripted scenarios, posting its own comment. Distinct from the screenshot diff above.
+
+Because of this, contributors do not need to attach screenshots to a PR by hand — a UI-affecting change gets one automatically. The known flake is the "fixed income workspace" scenario (`Compute Spreads` button in `screenshots.spec.ts`, timing out on a `TimeoutError: locator.click`); treat a lone failure there as unrelated to your change unless you touched that panel.
+
 ## Deployment on change
 
 The production server is the only deployment target. The application is served at the deployment URL and Grafana via a secure tunnel from the edge server.
