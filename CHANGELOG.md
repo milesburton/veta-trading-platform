@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.55.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.54.0...veta-trading-platform-v1.55.0) (2026-07-12)
+
+
+### Features
+
+* **ticketing:** create GitHub issues for user tickets ([#483](https://github.com/milesburton/veta-trading-platform/issues/483)) ([48ebe36](https://github.com/milesburton/veta-trading-platform/commit/48ebe3641c7a232c3cbbc5e5ed08c84e39326154))
+
 ## [1.54.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.53.3...veta-trading-platform-v1.54.0) (2026-07-12)
 
 
