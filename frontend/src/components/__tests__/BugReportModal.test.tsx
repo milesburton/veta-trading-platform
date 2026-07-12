@@ -114,7 +114,35 @@ describe("BugReportModal", () => {
     await waitFor(() => {
       expect(screen.getByTestId("bug-report-success")).toBeInTheDocument();
     });
-    expect(screen.getByText(/no Discord webhook or GitHub ticketing backend/i)).toBeInTheDocument();
+    expect(screen.getByText(/no external ticket sink/i)).toBeInTheDocument();
+  });
+
+  it("does not claim Discord was notified for GitHub-only success", async () => {
+    mockSubmit.mockResolvedValueOnce({
+      data: {
+        ok: true,
+        discordDelivered: false,
+        ticket: {
+          created: true,
+          issueNumber: 42,
+          url: "https://github.com/foo/bar/issues/42",
+          reason: null,
+        },
+      },
+    });
+    renderModal();
+    fireEvent.change(screen.getByTestId("bug-report-title"), { target: { value: "Real title" } });
+    fireEvent.change(screen.getByTestId("bug-report-description"), {
+      target: { value: "Long-enough description of what happened." },
+    });
+    fireEvent.click(screen.getByTestId("bug-report-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("bug-report-success")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Created GitHub issue #42/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Discord notification is not configured or failed/i)
+    ).toBeInTheDocument();
   });
 
   it("surfaces a 401 from the backend with a friendly message", async () => {

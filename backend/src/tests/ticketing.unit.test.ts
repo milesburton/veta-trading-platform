@@ -224,6 +224,17 @@ for (const testCase of [
   });
 }
 
+Deno.test("readRepoEnv defaults to the production repo when unset", () => {
+  const prev = Deno.env.get("GITHUB_TICKETING_REPO");
+  Deno.env.delete("GITHUB_TICKETING_REPO");
+  try {
+    assertEquals(_internalForTests.readRepoEnv(), "milesburton/veta-trading-platform");
+  } finally {
+    if (prev !== undefined) Deno.env.set("GITHUB_TICKETING_REPO", prev);
+    else Deno.env.delete("GITHUB_TICKETING_REPO");
+  }
+});
+
 Deno.test("buildBody includes Correlation line when runId is provided", () => {
   const body = _internalForTests.buildBody(
     { severity: "CRITICAL", source: "src", message: "m" },

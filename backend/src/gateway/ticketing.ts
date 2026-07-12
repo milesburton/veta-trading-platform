@@ -36,6 +36,7 @@ interface GithubIssueSearchHit {
 
 const GH_API = "https://api.github.com";
 const DEDUPE_WINDOW_MS = 60 * 60 * 1000;
+const DEFAULT_TICKETING_REPO = "milesburton/veta-trading-platform";
 
 function readTokenEnv(): string | null {
   const token = Deno.env.get("GITHUB_TICKETING_TOKEN") ?? "";
@@ -45,7 +46,7 @@ function readTokenEnv(): string | null {
 }
 
 function readRepoEnv(): string | null {
-  const repo = Deno.env.get("GITHUB_TICKETING_REPO") ?? "";
+  const repo = Deno.env.get("GITHUB_TICKETING_REPO") ?? DEFAULT_TICKETING_REPO;
   if (!/^[^/\s]+\/[^/\s]+$/.test(repo)) return null;
   return repo;
 }

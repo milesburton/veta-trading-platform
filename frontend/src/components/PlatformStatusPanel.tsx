@@ -140,14 +140,19 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
               <p className="text-xs text-green-400">
                 ✅ Ticket submitted
                 {response?.ticket?.url
-                  ? ` as GitHub issue #${response.ticket.issueNumber ?? "?"}.`
-                  : " and posted to the Discord channel."}
+                  ? response.discordDelivered
+                    ? ` as GitHub issue #${response.ticket.issueNumber ?? "?"} and posted to Discord.`
+                    : ` as GitHub issue #${response.ticket.issueNumber ?? "?"}. Discord notification is not configured or failed.`
+                  : response?.discordDelivered
+                    ? " and posted to the Discord channel."
+                    : "."}
               </p>
             ) : (
               <p className="text-xs text-amber-300" data-testid="bug-report-queued">
-                ⚠️ Ticket received by the gateway, but no Discord webhook or GitHub ticketing backend
-                is configured. Ask an admin to set <code>DISCORD_BUG_WEBHOOK_URL</code> or{" "}
-                <code>GITHUB_TICKETING_TOKEN</code>.
+                ⚠️ Ticket received by the gateway, but no external ticket sink is configured or
+                delivery failed. Ask an admin to check <code>DISCORD_BUG_WEBHOOK_URL</code>,{" "}
+                <code>DISCORD_WEBHOOK_URL</code>, <code>GITHUB_TICKETING_TOKEN</code>, and{" "}
+                <code>GITHUB_TICKETING_REPO</code>.
               </p>
             )}
             {response?.ticket?.url && (

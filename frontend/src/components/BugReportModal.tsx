@@ -33,6 +33,7 @@ export function BugReportModal({ open, onClose }: Props) {
   const category = useSignal<BugCategory>("ui");
   const submitted = useSignal(false);
   const undelivered = useSignal(false);
+  const discordDelivered = useSignal(false);
   const ticketUrl = useSignal<string | null>(null);
   const ticketIssueNumber = useSignal<number | null>(null);
   const localError = useSignal<string | null>(null);
@@ -46,6 +47,7 @@ export function BugReportModal({ open, onClose }: Props) {
     if (!open) return;
     submitted.value = false;
     undelivered.value = false;
+    discordDelivered.value = false;
     ticketUrl.value = null;
     ticketIssueNumber.value = null;
     localError.value = null;
@@ -93,6 +95,7 @@ export function BugReportModal({ open, onClose }: Props) {
       submitted.value = true;
       title.value = "";
       description.value = "";
+      discordDelivered.value = result.data.discordDelivered === true;
       ticketUrl.value = result.data.ticket?.url ?? null;
       ticketIssueNumber.value = result.data.ticket?.issueNumber ?? null;
       // 202 from backend signals "received but no external sink was configured"
@@ -141,9 +144,11 @@ export function BugReportModal({ open, onClose }: Props) {
             </p>
             <p className="text-xs text-muted">
               {ticketUrl.value
-                ? `Created GitHub issue #${ticketIssueNumber.value ?? "?"} and notified the VETA Discord channel.`
+                ? discordDelivered.value
+                  ? `Created GitHub issue #${ticketIssueNumber.value ?? "?"} and notified the VETA Discord channel.`
+                  : `Created GitHub issue #${ticketIssueNumber.value ?? "?"}. Discord notification is not configured or failed.`
                 : undelivered.value
-                  ? "Received by the gateway, but no Discord webhook or GitHub ticketing backend is configured here."
+                  ? "Received by the gateway, but no external ticket sink is configured or delivery failed."
                   : "Notified the VETA Discord channel. GitHub ticketing is not configured for this environment."}
             </p>
             {ticketUrl.value && (
@@ -255,9 +260,9 @@ export function BugReportModal({ open, onClose }: Props) {
               />
             </label>
             <p className="text-[10px] text-muted">
-              This creates a GitHub issue when ticketing is configured and posts a summary to
-              Discord. Your username, current page, and user-agent are included. Don't include
-              passwords or sensitive data.
+              When configured, this creates a GitHub issue and can post a summary to Discord. Your
+              username, current page, and user-agent are included. Don't include passwords or
+              sensitive data.
             </p>
             {localError.value && (
               <div

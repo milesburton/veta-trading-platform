@@ -36,6 +36,13 @@ function parseReport(body: unknown): UserTicketReport | null {
   return { kind, title: b.title, description: b.description, category, url };
 }
 
+function deliveryError(reason: string | null): string {
+  if (reason === "github-api-failed") {
+    return "ticket received but Discord delivery and GitHub issue creation failed";
+  }
+  return "ticket received but no Discord webhook or GitHub ticketing token is configured";
+}
+
 export async function handleBugReportRoute(
   req: Request,
   path: string,
@@ -97,7 +104,7 @@ export async function handleBugReportRoute(
         ok: false,
         discordDelivered,
         ticket,
-        error: "ticket received but no Discord webhook or GitHub ticketing backend is configured",
+        error: deliveryError(ticket.reason),
       },
       202
     );
