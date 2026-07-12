@@ -316,21 +316,27 @@ const ENV_BADGE_STYLES: Record<string, { label: string; title: string; cls: stri
 };
 
 function EnvironmentBadge() {
-  if (DEPLOYMENT === "playwright") return null;
-  const style = ENV_BADGE_STYLES[DEPLOYMENT] ?? {
-    label: DEPLOYMENT,
-    title: `${DEPLOYMENT} deployment`,
-    cls: "bg-panel text-default border-divider",
-  };
+  const isPlaywright = DEPLOYMENT === "playwright";
+  const style = isPlaywright
+    ? null
+    : (ENV_BADGE_STYLES[DEPLOYMENT] ?? {
+        label: DEPLOYMENT,
+        title: `${DEPLOYMENT} deployment`,
+        cls: "bg-panel text-default border-divider",
+      });
   return (
     <span
       data-testid="env-badge"
-      title={style.title}
-      className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold border shrink-0 ${style.cls}`}
+      title={style?.title}
+      className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold border shrink-0 ${style?.cls ?? "bg-panel text-default border-divider"}`}
     >
       <span className="uppercase tracking-widest">VETA</span>
-      <span className="opacity-50">·</span>
-      <span className="font-mono uppercase tracking-wider text-[9px]">{style.label}</span>
+      {style && (
+        <>
+          <span className="opacity-50">·</span>
+          <span className="font-mono tracking-wider text-[9px]">{style.label}</span>
+        </>
+      )}
     </span>
   );
 }
