@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.53.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.53.2...veta-trading-platform-v1.53.3) (2026-07-12)
+
+
+### Bug Fixes
+
+* algo type-check, load-test quantity validation, homelab deploy race ([#477](https://github.com/milesburton/veta-trading-platform/issues/477)) ([d62a45a](https://github.com/milesburton/veta-trading-platform/commit/d62a45a501f8591951a63a77e1e7116777791d57))
+* **homelab:** detect skip-ci by absence of check-runs, not message text ([#478](https://github.com/milesburton/veta-trading-platform/issues/478)) ([7833c00](https://github.com/milesburton/veta-trading-platform/commit/7833c00fc6f67b44103d62dac784dc44f7de96d6))
+* **homelab:** raise auto-pull's systemd timeout from 10min to 60min ([#479](https://github.com/milesburton/veta-trading-platform/issues/479)) ([9e2b568](https://github.com/milesburton/veta-trading-platform/commit/9e2b568f575c56bbb7986d9331c4b0ba2a6e237e))
+
 ## [1.53.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.53.1...veta-trading-platform-v1.53.2) (2026-07-04)
 
 
