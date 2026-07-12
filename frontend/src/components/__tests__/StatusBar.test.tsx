@@ -127,7 +127,7 @@ test("shows brand name and time", () => {
   expect(screen.getByText(/\d{1,2}:\d{2}:\d{2}/)).toBeInTheDocument();
 });
 
-test("header exposes Grafana, Discord, Docs, and GitHub external links", () => {
+test("header exposes Grafana, Support, User Guide, and GitHub external links", () => {
   renderBar(true);
   const grafanaLink = screen.getByTestId("grafana-link");
   expect(grafanaLink).toHaveAttribute("href", "https://veta.mnetcs.com/grafana/");
@@ -138,10 +138,12 @@ test("header exposes Grafana, Discord, Docs, and GitHub external links", () => {
   expect(discordLink).toHaveAttribute("href", "https://discord.gg/tSGgsKnz");
   expect(discordLink).toHaveAttribute("target", "_blank");
   expect(discordLink).toHaveAttribute("rel", expect.stringContaining("noopener"));
+  expect(discordLink).toHaveTextContent("Support");
 
   const docsLink = screen.getByTestId("docs-link");
   expect(docsLink).toHaveAttribute("href", "https://milesburton.github.io/veta-trading-platform/");
   expect(docsLink).toHaveAttribute("target", "_blank");
+  expect(docsLink).toHaveTextContent("User Guide");
 });
 
 import { alertAdded } from "@veta/frontend/store/alertsSlice";

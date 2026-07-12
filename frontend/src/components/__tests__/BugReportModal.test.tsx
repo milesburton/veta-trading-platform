@@ -43,9 +43,10 @@ describe("BugReportModal", () => {
     expect(screen.queryByTestId("bug-report-modal")).toBeNull();
   });
 
-  it("renders title, category, description, and submit when open", () => {
+  it("renders type, title, category, description, and submit when open", () => {
     renderModal();
     expect(screen.getByTestId("bug-report-modal")).toBeInTheDocument();
+    expect(screen.getByLabelText("Feature")).toBeInTheDocument();
     expect(screen.getByTestId("bug-report-title")).toBeInTheDocument();
     expect(screen.getByTestId("bug-report-category")).toBeInTheDocument();
     expect(screen.getByTestId("bug-report-description")).toBeInTheDocument();
@@ -83,6 +84,7 @@ describe("BugReportModal", () => {
       target: { value: "Real bug title" },
     });
     fireEvent.change(screen.getByTestId("bug-report-category"), { target: { value: "data" } });
+    fireEvent.click(screen.getByLabelText("Feature"));
     fireEvent.change(screen.getByTestId("bug-report-description"), {
       target: { value: "The blotter shows yesterday's fills as today's." },
     });
@@ -91,6 +93,7 @@ describe("BugReportModal", () => {
       expect(mockSubmit).toHaveBeenCalledTimes(1);
     });
     const arg = mockSubmit.mock.calls[0][0];
+    expect(arg.kind).toBe("feature");
     expect(arg.title).toBe("Real bug title");
     expect(arg.category).toBe("data");
     expect(arg.description).toMatch(/blotter/);
@@ -111,7 +114,35 @@ describe("BugReportModal", () => {
     await waitFor(() => {
       expect(screen.getByTestId("bug-report-success")).toBeInTheDocument();
     });
-    expect(screen.getByText(/operator will pick it up|isn't configured/i)).toBeInTheDocument();
+    expect(screen.getByText(/no external ticket sink/i)).toBeInTheDocument();
+  });
+
+  it("does not claim Support was notified for GitHub-only success", async () => {
+    mockSubmit.mockResolvedValueOnce({
+      data: {
+        ok: true,
+        discordDelivered: false,
+        ticket: {
+          created: true,
+          issueNumber: 42,
+          url: "https://github.com/foo/bar/issues/42",
+          reason: null,
+        },
+      },
+    });
+    renderModal();
+    fireEvent.change(screen.getByTestId("bug-report-title"), { target: { value: "Real title" } });
+    fireEvent.change(screen.getByTestId("bug-report-description"), {
+      target: { value: "Long-enough description of what happened." },
+    });
+    fireEvent.click(screen.getByTestId("bug-report-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("bug-report-success")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Created GitHub issue #42/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Support notification is not configured or failed/i)
+    ).toBeInTheDocument();
   });
 
   it("surfaces a 401 from the backend with a friendly message", async () => {

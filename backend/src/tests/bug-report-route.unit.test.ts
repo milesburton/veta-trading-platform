@@ -7,6 +7,8 @@ import { makeGatewayAuthContext, makeGatewayUnauthContext } from "./test-helpers
 const realFetch = globalThis.fetch;
 const realWebhookAlerts = Deno.env.get("DISCORD_WEBHOOK_URL");
 const realWebhookBug = Deno.env.get("DISCORD_BUG_WEBHOOK_URL");
+const realGithubToken = Deno.env.get("GITHUB_TICKETING_TOKEN");
+const realGithubRepo = Deno.env.get("GITHUB_TICKETING_REPO");
 
 function makeContext(role = "trader"): GatewayContext {
   return makeGatewayAuthContext({ role, name: "Test User" });
@@ -21,12 +23,23 @@ function restoreEnv() {
   else Deno.env.set("DISCORD_WEBHOOK_URL", realWebhookAlerts);
   if (realWebhookBug === undefined) Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
   else Deno.env.set("DISCORD_BUG_WEBHOOK_URL", realWebhookBug);
+  if (realGithubToken === undefined) Deno.env.delete("GITHUB_TICKETING_TOKEN");
+  else Deno.env.set("GITHUB_TICKETING_TOKEN", realGithubToken);
+  if (realGithubRepo === undefined) Deno.env.delete("GITHUB_TICKETING_REPO");
+  else Deno.env.set("GITHUB_TICKETING_REPO", realGithubRepo);
 }
 
 function captureFetch(): { calls: { url: string; body: string }[]; restore: () => void } {
   const calls: { url: string; body: string }[] = [];
   globalThis.fetch = ((url: string, init?: RequestInit) => {
     calls.push({ url, body: init?.body as string });
+    if (String(url).startsWith("https://api.github.com/repos/")) {
+      return Promise.resolve(
+        new Response(JSON.stringify({ number: 77, html_url: "https://github.com/foo/bar/77" }), {
+          status: 201,
+        })
+      );
+    }
     return Promise.resolve(new Response(null, { status: 204 }));
   }) as typeof fetch;
   return {
@@ -100,6 +113,8 @@ Deno.test("rejects too-short description", async () => {
 Deno.test("returns 202 when webhook is not configured (report received but not delivered)", async () => {
   Deno.env.delete("DISCORD_WEBHOOK_URL");
   Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
+  Deno.env.delete("GITHUB_TICKETING_TOKEN");
+  Deno.env.delete("GITHUB_TICKETING_REPO");
   const res = await handleBugReportRoute(
     new Request("http://localhost/bug-report", {
       method: "POST",
@@ -117,6 +132,8 @@ Deno.test("returns 202 when webhook is not configured (report received but not d
 
 Deno.test("posts to dedicated bug webhook when set, marks ok", async () => {
   Deno.env.set("DISCORD_BUG_WEBHOOK_URL", "https://discord.com/api/webhooks/123/abc");
+  Deno.env.delete("GITHUB_TICKETING_TOKEN");
+  Deno.env.delete("GITHUB_TICKETING_REPO");
   const f = captureFetch();
   try {
     const res = await handleBugReportRoute(
@@ -137,7 +154,7 @@ Deno.test("posts to dedicated bug webhook when set, marks ok", async () => {
     assertEquals(f.calls.length, 1);
     assertEquals(f.calls[0].url, "https://discord.com/api/webhooks/123/abc");
     const body = JSON.parse(f.calls[0].body);
-    assertEquals(body.username, "VETA Bug Reports");
+    assertEquals(body.username, "VETA User Tickets");
   } finally {
     f.restore();
     restoreEnv();
@@ -147,6 +164,8 @@ Deno.test("posts to dedicated bug webhook when set, marks ok", async () => {
 Deno.test("falls back to alerts webhook when bug webhook unset", async () => {
   Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
   Deno.env.set("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/999/zzz");
+  Deno.env.delete("GITHUB_TICKETING_TOKEN");
+  Deno.env.delete("GITHUB_TICKETING_REPO");
   const f = captureFetch();
   try {
     const res = await handleBugReportRoute(
@@ -171,6 +190,8 @@ Deno.test("falls back to alerts webhook when bug webhook unset", async () => {
 
 Deno.test("rejects category values not in the allowlist", async () => {
   Deno.env.set("DISCORD_BUG_WEBHOOK_URL", "https://discord.com/api/webhooks/123/abc");
+  Deno.env.delete("GITHUB_TICKETING_TOKEN");
+  Deno.env.delete("GITHUB_TICKETING_REPO");
   const f = captureFetch();
   try {
     const res = await handleBugReportRoute(
@@ -190,6 +211,40 @@ Deno.test("rejects category values not in the allowlist", async () => {
     const body = JSON.parse(f.calls[0].body);
     // Default username; category line should not appear with "rce-attempt"
     assertEquals(body.content.includes("rce-attempt"), false);
+  } finally {
+    f.restore();
+    restoreEnv();
+  }
+});
+
+Deno.test("creates a GitHub issue when ticketing env is configured", async () => {
+  Deno.env.delete("DISCORD_WEBHOOK_URL");
+  Deno.env.delete("DISCORD_BUG_WEBHOOK_URL");
+  Deno.env.set("GITHUB_TICKETING_TOKEN", "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa");
+  Deno.env.set("GITHUB_TICKETING_REPO", "foo/bar");
+  const f = captureFetch();
+  try {
+    const res = await handleBugReportRoute(
+      new Request("http://localhost/bug-report", {
+        method: "POST",
+        body: JSON.stringify({
+          kind: "feature",
+          title: "Add feature",
+          description: "Please add a workspace export flow for users.",
+          category: "other",
+        }),
+      }),
+      "/bug-report",
+      makeContext()
+    );
+    assertEquals(res?.status, 200);
+    const body = await res?.json();
+    assertEquals(body.ticket.created, true);
+    const issueCall = f.calls.find((c) => c.url === "https://api.github.com/repos/foo/bar/issues");
+    if (!issueCall) throw new Error("expected GitHub issue create call");
+    const issueBody = JSON.parse(issueCall.body);
+    assertEquals(issueBody.labels.includes("user-ticket"), true);
+    assertEquals(issueBody.labels.includes("type:feature"), true);
   } finally {
     f.restore();
     restoreEnv();

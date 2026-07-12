@@ -63,7 +63,7 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   "dev-tools": "UAT debugging — fire test alerts, inject trades, manage mute rules",
   "data-depth": "Per-symbol data depth — sortable list with candle counts and span days",
   scenarios: "Save and replay a deterministic trading scenario — same seed, same fills",
-  "platform-status": "Last 24h: services, alerts, bugs. Report a bug from here.",
+  "platform-status": "Last 24h: services, alerts, tickets. Raise a ticket from here.",
 };
 
 export function ComponentPicker() {

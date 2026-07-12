@@ -1,6 +1,10 @@
 // fallow-ignore-file unused-file
 import { assertEquals } from "jsr:@std/assert@0.217";
-import { _internalForTests, createTicketForAlert } from "../gateway/ticketing.ts";
+import {
+  _internalForTests,
+  createTicketForAlert,
+  createTicketForUserReport,
+} from "../gateway/ticketing.ts";
 
 const REAL_TOKEN = Deno.env.get("GITHUB_TICKETING_TOKEN");
 const REAL_REPO = Deno.env.get("GITHUB_TICKETING_REPO");
@@ -220,6 +224,17 @@ for (const testCase of [
   });
 }
 
+Deno.test("readRepoEnv defaults to the production repo when unset", () => {
+  const prev = Deno.env.get("GITHUB_TICKETING_REPO");
+  Deno.env.delete("GITHUB_TICKETING_REPO");
+  try {
+    assertEquals(_internalForTests.readRepoEnv(), "milesburton/veta-trading-platform");
+  } finally {
+    if (prev !== undefined) Deno.env.set("GITHUB_TICKETING_REPO", prev);
+    else Deno.env.delete("GITHUB_TICKETING_REPO");
+  }
+});
+
 Deno.test("buildBody includes Correlation line when runId is provided", () => {
   const body = _internalForTests.buildBody(
     { severity: "CRITICAL", source: "src", message: "m" },
@@ -242,6 +257,72 @@ Deno.test("buildBody includes Detail block when detail is provided", () => {
   );
   assertEquals(body.includes("**Detail:**"), true);
   assertEquals(body.includes("stack trace here"), true);
+});
+
+Deno.test("createTicketForUserReport creates a labelled GitHub issue", async () => {
+  await withValidGithubEnv(async () => {
+    const f = captureFetch(() => {
+      return new Response(
+        JSON.stringify({
+          number: 144,
+          html_url: "https://github.com/foo/bar/issues/144",
+        }),
+        { status: 201 }
+      );
+    });
+    try {
+      const r = await createTicketForUserReport(
+        {
+          kind: "comment",
+          title: "Love the new workspace",
+          description: "The linked panel workflow feels much clearer now.",
+          category: "ui",
+          url: "/dashboard",
+          userAgent: "UnitTest/1.0",
+          ts: 1_700_000_000_000,
+        },
+        "u-1",
+        "Unit Tester"
+      );
+      assertEquals(r.created, true);
+      assertEquals(r.issueNumber, 144);
+      const create = f.calls.find((c) => c.method === "POST");
+      if (!create?.body) throw new Error("expected issue create body");
+      const body = JSON.parse(create.body);
+      assertEquals(body.title, "[comment] Love the new workspace");
+      assertEquals(body.labels.includes("user-ticket"), true);
+      assertEquals(body.labels.includes("type:comment"), true);
+      assertEquals(body.labels.includes("category:ui"), true);
+      assertEquals(body.body.includes("**Type:** comment"), true);
+      assertEquals(body.body.includes("Unit Tester"), true);
+    } finally {
+      f.restore();
+    }
+  });
+});
+
+Deno.test("createTicketForUserReport no-ops when token is missing", async () => {
+  await withEnv(
+    {
+      GITHUB_TICKETING_TOKEN: undefined,
+      GITHUB_TICKETING_REPO: "foo/bar",
+    },
+    async () => {
+      const f = captureFetch(() => new Response(null, { status: 201 }));
+      try {
+        const r = await createTicketForUserReport(
+          { kind: "bug", title: "Broken", description: "Something is broken here." },
+          "u-1",
+          "Unit Tester"
+        );
+        assertEquals(r.created, false);
+        assertEquals(r.reason, "no-token");
+        assertEquals(f.calls.length, 0);
+      } finally {
+        f.restore();
+      }
+    }
+  );
 });
 
 Deno.test("createTicketForAlert ignores deduplicate hits older than the 1h window", async () => {

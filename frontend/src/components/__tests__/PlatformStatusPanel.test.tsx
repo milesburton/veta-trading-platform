@@ -6,6 +6,13 @@ const useGetPlatformStatusQueryMock = vi.fn();
 
 interface SubmitOk {
   ok: boolean;
+  discordDelivered?: boolean;
+  ticket?: {
+    created: boolean;
+    issueNumber: number | null;
+    url: string | null;
+    reason: string | null;
+  };
   error?: string;
 }
 interface SubmitReject {
@@ -29,7 +36,7 @@ vi.mock("@veta/frontend/store/servicesApi.ts", async () => {
     useSubmitBugReportMutation: () => {
       const [state, setState] = useState<{
         isLoading: boolean;
-        data?: { ok: boolean; error?: string };
+        data?: SubmitOk;
         error?: unknown;
       }>({ isLoading: false });
       const trigger = vi.fn((_arg: unknown) => {
@@ -125,7 +132,7 @@ describe("PlatformStatusPanel", () => {
     expect(screen.getByText(/97\.0%/)).toBeInTheDocument();
   });
 
-  it("opens the bug-report dialog when Report bug is clicked", () => {
+  it("opens the ticket dialog when Raise ticket is clicked", () => {
     useGetPlatformStatusQueryMock.mockReturnValue({ data: baseStatus });
     render(<PlatformStatusPanel />);
     expect(screen.queryByTestId("bug-report-dialog")).toBeNull();
@@ -142,20 +149,21 @@ describe("PlatformStatusPanel", () => {
     expect(dialog.getAttribute("aria-modal")).toBe("true");
   });
 
-  it("submits a bug report and shows success on ok:true", async () => {
-    nextSubmitResponse = { ok: true };
+  it("submits a user ticket and shows success on ok:true", async () => {
+    nextSubmitResponse = { ok: true, discordDelivered: true };
     useGetPlatformStatusQueryMock.mockReturnValue({ data: baseStatus });
     render(<PlatformStatusPanel />);
     fireEvent.click(screen.getByTestId("open-bug-report"));
     fireEvent.change(screen.getByTestId("bug-report-title"), {
       target: { value: "Bad behaviour" },
     });
+    fireEvent.click(screen.getByText("feature"));
     fireEvent.change(screen.getByTestId("bug-report-description"), {
       target: { value: "Repro steps included here so we exceed ten chars." },
     });
     fireEvent.click(screen.getByTestId("bug-report-submit"));
     await waitFor(() => {
-      expect(screen.getByTestId("bug-report-result").textContent).toMatch(/posted to the Discord/i);
+      expect(screen.getByTestId("bug-report-result").textContent).toMatch(/notified Support/i);
     });
   });
 
@@ -172,6 +180,7 @@ describe("PlatformStatusPanel", () => {
     await waitFor(() => {
       expect(screen.getByTestId("bug-report-queued")).toBeInTheDocument();
     });
+    expect(screen.getByTestId("bug-report-queued").textContent).toMatch(/GITHUB_TICKETING_REPO/);
   });
 
   it("closes the dialog on Escape key", () => {
