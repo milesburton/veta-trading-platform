@@ -56,6 +56,7 @@ const DESCRIPTIONS = {
   "product-service": "Structured product builder (CDO-like multi-leg baskets)",
   "replay-service": "rrweb session recording and playback",
   "risk-engine": "Pre-trade risk checks (6 checks)",
+  "discord-bot": "Discord Gateway client, welcome message on member join",
 };
 
 const DISPLAY_NAMES = {
@@ -94,6 +95,7 @@ const DISPLAY_NAMES = {
   "product-service": "Product Service",
   "replay-service": "Session Replay",
   "risk-engine": "Risk Engine",
+  "discord-bot": "Discord Bot",
 };
 
 function parseSupervisordPrograms(text) {
