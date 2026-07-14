@@ -1,11 +1,14 @@
 import type { Middleware } from "@reduxjs/toolkit";
+import { SPREAD_WARNING_THRESHOLD_BPS } from "@veta/frontend/domain/ticket/rules/spread-check.ts";
 import {
   alertAdded,
   alertDismissed,
   allAlertsDismissed,
 } from "@veta/frontend/store/alertsSlice.ts";
 import { allBlocksCleared, blockAdded } from "@veta/frontend/store/killSwitchSlice.ts";
+import { orderBookUpdated } from "@veta/frontend/store/marketSlice.ts";
 import { orderPatched } from "@veta/frontend/store/ordersSlice.ts";
+import type { OrderBookSnapshot } from "@veta/frontend/types.ts";
 
 const _origin = typeof window !== "undefined" ? globalThis.location.origin : "";
 const ALERTS_URL = `${_origin}/api/gateway/alerts`;
@@ -40,7 +43,16 @@ function dismissAllAlerts() {
   }).catch(() => {});
 }
 
+function spreadBps(book: OrderBookSnapshot): number | null {
+  const bid = book.bids[0]?.price;
+  const ask = book.asks[0]?.price;
+  if (!bid || !ask || book.mid <= 0) return null;
+  return ((ask - bid) / book.mid) * 10_000;
+}
+
 export const alertsMiddleware: Middleware = (storeAPI) => {
+  const spreadAlertedSymbols = new Set<string>();
+
   if (typeof window !== "undefined") {
     globalThis.addEventListener("workspace-save-error", () => {
       storeAPI.dispatch(
@@ -88,6 +100,29 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
           relatedTopic: "orders.resume",
         })
       );
+    }
+
+    if (orderBookUpdated.match(action)) {
+      const state = storeAPI.getState() as { ui: { selectedAsset: string | null } };
+      const symbol = state.ui.selectedAsset;
+      const book = symbol ? action.payload[symbol] : undefined;
+      if (symbol && book) {
+        const bps = spreadBps(book);
+        const isWide = bps !== null && bps >= SPREAD_WARNING_THRESHOLD_BPS;
+        if (isWide && !spreadAlertedSymbols.has(symbol)) {
+          spreadAlertedSymbols.add(symbol);
+          storeAPI.dispatch(
+            alertAdded({
+              severity: "WARNING",
+              source: "market-data",
+              message: `${symbol} bid-ask spread is ${(bps as number).toFixed(0)} bps — wider than normal`,
+              ts: Date.now(),
+            })
+          );
+        } else if (!isWide) {
+          spreadAlertedSymbols.delete(symbol);
+        }
+      }
     }
 
     if (orderPatched.match(action) && action.payload.patch.status === "rejected") {

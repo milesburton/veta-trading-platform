@@ -3,7 +3,13 @@ import { createSelector, createSlice } from "@reduxjs/toolkit";
 import type { RootState } from "./index.ts";
 
 export type AlertSeverity = "CRITICAL" | "WARNING" | "INFO";
-export type AlertSource = "kill-switch" | "service" | "algo" | "order" | "workspace";
+export type AlertSource =
+  | "kill-switch"
+  | "service"
+  | "algo"
+  | "order"
+  | "workspace"
+  | "market-data";
 
 export interface Alert {
   id: string;

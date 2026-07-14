@@ -10,7 +10,14 @@ import { useRunDemoDayMutation, useRunLoadTestMutation } from "@veta/frontend/st
 import { useAppDispatch, useAppSelector } from "@veta/frontend/store/hooks.ts";
 
 const ALERT_SEVERITIES: AlertSeverity[] = ["CRITICAL", "WARNING", "INFO"];
-const ALERT_SOURCES: AlertSource[] = ["kill-switch", "service", "algo", "order", "workspace"];
+const ALERT_SOURCES: AlertSource[] = [
+  "kill-switch",
+  "service",
+  "algo",
+  "order",
+  "workspace",
+  "market-data",
+];
 
 const PRESET_ALERTS: {
   label: string;

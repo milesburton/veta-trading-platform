@@ -1,13 +1,16 @@
 import type { Alert, AlertSeverity } from "@veta/frontend/store/alertsSlice";
 import { alertAdded, alertDismissed, allAlertsDismissed } from "@veta/frontend/store/alertsSlice";
 import { allBlocksCleared, blockAdded } from "@veta/frontend/store/killSwitchSlice";
+import { orderBookUpdated } from "@veta/frontend/store/marketSlice";
 import { alertsMiddleware } from "@veta/frontend/store/middleware/alertsMiddleware";
 import { orderPatched } from "@veta/frontend/store/ordersSlice";
+import type { OrderBookSnapshot } from "@veta/frontend/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 function createHarness(
   authUser: { id: string } | null = { id: "u1" },
-  initialAlerts: Alert[] = []
+  initialAlerts: Alert[] = [],
+  selectedAsset: string | null = null
 ) {
   const dispatched: unknown[] = [];
   let alerts: Alert[] = [...initialAlerts];
@@ -24,12 +27,22 @@ function createHarness(
     getState: () => ({
       auth: { user: authUser },
       alerts: { alerts },
+      ui: { selectedAsset },
     }),
   };
 
   const next = vi.fn((action: unknown) => action);
   const invoke = alertsMiddleware(storeAPI as never)(next);
   return { dispatched, next, invoke };
+}
+
+function book(bid: number, ask: number): OrderBookSnapshot {
+  return {
+    bids: [{ price: bid, size: 100 }],
+    asks: [{ price: ask, size: 100 }],
+    mid: (bid + ask) / 2,
+    ts: 1000,
+  };
 }
 
 describe("alertsMiddleware", () => {
@@ -163,6 +176,69 @@ describe("alertsMiddleware", () => {
       invoke(orderPatched({ id: "ord-1", patch: { status: "working" } }));
       const alert = dispatched.find((a) => alertAdded.match(a as { type: string }));
       expect(alert).toBeUndefined();
+    });
+  });
+
+  describe("orderBookUpdated – wide spread alert", () => {
+    it("dispatches a WARNING alert when the selected asset's spread exceeds threshold", () => {
+      const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
+      // mid=100, spread=1 -> 100 bps, well above the 50bps warning threshold
+      invoke(orderBookUpdated({ AAPL: book(99.5, 100.5) }));
+      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
+        payload: { severity: string; source: string; message: string };
+      };
+      expect(alert?.payload.severity).toBe("WARNING");
+      expect(alert?.payload.source).toBe("market-data");
+      expect(alert?.payload.message).toContain("AAPL");
+      expect(alert?.payload.message).toContain("bps");
+    });
+
+    it("does NOT alert when spread is within threshold", () => {
+      const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
+      // mid=100, spread=0.01 -> 1 bps, well under threshold
+      invoke(orderBookUpdated({ AAPL: book(99.995, 100.005) }));
+      const alert = dispatched.find(
+        (a) =>
+          alertAdded.match(a as { type: string }) &&
+          (a as { payload: { source: string } }).payload.source === "market-data"
+      );
+      expect(alert).toBeUndefined();
+    });
+
+    it("does NOT alert for a symbol that is not currently selected", () => {
+      const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
+      invoke(orderBookUpdated({ TSLA: book(99.5, 100.5) }));
+      const alert = dispatched.find(
+        (a) =>
+          alertAdded.match(a as { type: string }) &&
+          (a as { payload: { source: string } }).payload.source === "market-data"
+      );
+      expect(alert).toBeUndefined();
+    });
+
+    it("only alerts once per excursion above threshold (edge-triggered)", () => {
+      const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
+      invoke(orderBookUpdated({ AAPL: book(99.5, 100.5) }));
+      invoke(orderBookUpdated({ AAPL: book(99.4, 100.6) }));
+      const marketDataAlerts = dispatched.filter(
+        (a) =>
+          alertAdded.match(a as { type: string }) &&
+          (a as { payload: { source: string } }).payload.source === "market-data"
+      );
+      expect(marketDataAlerts.length).toBe(1);
+    });
+
+    it("re-alerts after the spread returns to normal and widens again", () => {
+      const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
+      invoke(orderBookUpdated({ AAPL: book(99.5, 100.5) }));
+      invoke(orderBookUpdated({ AAPL: book(99.99, 100.01) }));
+      invoke(orderBookUpdated({ AAPL: book(99.5, 100.5) }));
+      const marketDataAlerts = dispatched.filter(
+        (a) =>
+          alertAdded.match(a as { type: string }) &&
+          (a as { payload: { source: string } }).payload.source === "market-data"
+      );
+      expect(marketDataAlerts.length).toBe(2);
     });
   });
 
