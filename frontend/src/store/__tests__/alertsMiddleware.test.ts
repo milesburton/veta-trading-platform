@@ -205,6 +205,27 @@ describe("alertsMiddleware", () => {
       expect(alert).toBeUndefined();
     });
 
+    it("treats a bid of exactly 0 as a real (extreme) spread, not missing data", () => {
+      const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
+      invoke(orderBookUpdated({ AAPL: book(0, 100) }));
+      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
+        payload: { source: string; message: string };
+      };
+      expect(alert?.payload.source).toBe("market-data");
+      expect(alert?.payload.message).toContain("20000 bps");
+    });
+
+    it("does NOT alert when there is no book for the selected symbol (undefined bid/ask)", () => {
+      const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
+      invoke(orderBookUpdated({ AAPL: { bids: [], asks: [], mid: 100, ts: 1000 } }));
+      const alert = dispatched.find(
+        (a) =>
+          alertAdded.match(a as { type: string }) &&
+          (a as { payload: { source: string } }).payload.source === "market-data"
+      );
+      expect(alert).toBeUndefined();
+    });
+
     it("does NOT alert for a symbol that is not currently selected", () => {
       const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
       invoke(orderBookUpdated({ TSLA: book(99.5, 100.5) }));
