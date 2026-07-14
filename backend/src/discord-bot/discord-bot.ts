@@ -15,11 +15,15 @@ export function buildWelcomeMessage(memberMention: string): string {
   return `👋 Welcome ${memberMention} to the VETA community! Check out **#support** if you hit a bug or want to raise a ticket.`;
 }
 
-interface GatewayHello {
+interface GatewayEnvelope {
   op: number;
-  d?: { heartbeat_interval?: number };
+  d?: unknown;
   t?: string;
   s?: number;
+}
+
+interface HelloData {
+  heartbeat_interval?: number;
 }
 
 interface GuildMemberAddPayload {
@@ -88,8 +92,8 @@ function handleReady(): void {
   logger.info("gateway ready");
 }
 
-function handleGuildMemberAdd(payload: GatewayHello): void {
-  const member = payload as unknown as GuildMemberAddPayload;
+function handleGuildMemberAdd(data: unknown): void {
+  const member = data as GuildMemberAddPayload;
   lastEventAt = Date.now();
   if (!WELCOME_CHANNEL_ID || !member.user) return;
   const mention = `<@${member.user.id}>`;
@@ -106,17 +110,17 @@ function connect(gatewayUrl: string): void {
   };
 
   ws.onmessage = (event) => {
-    const payload = JSON.parse(event.data as string) as GatewayHello;
+    const payload = JSON.parse(event.data as string) as GatewayEnvelope;
     if (typeof payload.s === "number") sequence = payload.s;
 
     if (payload.op === 10) {
-      const interval = payload.d?.heartbeat_interval ?? 41_250;
+      const interval = (payload.d as HelloData | undefined)?.heartbeat_interval ?? 41_250;
       heartbeatTimer = startHeartbeat(ws, interval, () => sequence);
       identify(ws);
       return;
     }
     if (payload.op === 0 && payload.t === "READY") return handleReady();
-    if (payload.op === 0 && payload.t === "GUILD_MEMBER_ADD") return handleGuildMemberAdd(payload);
+    if (payload.op === 0 && payload.t === "GUILD_MEMBER_ADD") return handleGuildMemberAdd(payload.d);
   };
 
   ws.onclose = () => {
@@ -151,22 +155,24 @@ async function start(): Promise<void> {
   }
 }
 
-start();
+if (import.meta.main) {
+  start();
 
-Deno.serve({ port: PORT }, (req: Request): Response => {
-  const url = new URL(req.url);
-  if (url.pathname === "/health") {
-    return new Response(
-      JSON.stringify({
-        service: "discord-bot",
-        version: VERSION,
-        status: "ok",
-        configured: Boolean(BOT_TOKEN && WELCOME_CHANNEL_ID),
-        connected: connectedNow,
-        lastEventAt,
-      }),
-      { headers: { "Content-Type": "application/json" } }
-    );
-  }
-  return new Response("not found", { status: 404 });
-});
+  Deno.serve({ port: PORT }, (req: Request): Response => {
+    const url = new URL(req.url);
+    if (url.pathname === "/health") {
+      return new Response(
+        JSON.stringify({
+          service: "discord-bot",
+          version: VERSION,
+          status: "ok",
+          configured: Boolean(BOT_TOKEN && WELCOME_CHANNEL_ID),
+          connected: connectedNow,
+          lastEventAt,
+        }),
+        { headers: { "Content-Type": "application/json" } }
+      );
+    }
+    return new Response("not found", { status: 404 });
+  });
+}

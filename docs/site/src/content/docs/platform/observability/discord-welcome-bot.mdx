@@ -26,7 +26,7 @@ This is a one-time setup you do yourself in the Discord Developer Portal; it can
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and create a **New Application**.
 2. Under **Bot**, click **Add Bot**.
 3. Under **Bot > Privileged Gateway Intents**, enable **Server Members Intent**. Without this, the bot will connect but never receive `GUILD_MEMBER_ADD` events.
-4. Under **Bot**, click **Reset Token** and copy it. This is `DISCORD_BOT_TOKEN` — treat it like any other credential; it grants full control of the bot identity.
+4. Under **Bot**, click **Reset Token** and copy it. This is `DISCORD_BOT_TOKEN`. Treat it like any other credential; it grants full control of the bot identity.
 5. Under **OAuth2 > URL Generator**, select the `bot` scope and the **View Channels** + **Send Messages** permissions, then open the generated URL to invite the bot to your server.
 6. In Discord, right-click the welcome channel and **Copy Channel ID** (enable Developer Mode under User Settings > Advanced if the option isn't visible). This is `DISCORD_WELCOME_CHANNEL_ID`.
 
@@ -53,7 +53,7 @@ docker compose up -d discord-bot
 ```
 
 <Aside type="caution" title="Bot token vs webhook URL">
-`DISCORD_BOT_TOKEN` is a different credential type to `DISCORD_WEBHOOK_URL` / `DISCORD_BUG_WEBHOOK_URL` used elsewhere in the platform. A webhook URL can only post to one fixed channel. A bot token authenticates a persistent identity that can read Gateway events — treat it with the same care as a database credential, not a webhook URL.
+`DISCORD_BOT_TOKEN` is a different credential type to `DISCORD_WEBHOOK_URL` / `DISCORD_BUG_WEBHOOK_URL` used elsewhere in the platform. A webhook URL can only post to one fixed channel. A bot token authenticates a persistent identity that can read Gateway events. Treat it with the same care as a database credential, not a webhook URL.
 </Aside>
 
 ## Message shape
@@ -78,7 +78,7 @@ curl -sf http://localhost:5034/health
 
 - **`configured: false` in `/health`.** `DISCORD_BOT_TOKEN` or `DISCORD_WELCOME_CHANNEL_ID` is unset. Check the server `.env`.
 - **`connected: false` but `configured: true`.** The Gateway connection failed or dropped. Check service logs for `gateway websocket error` or `gateway websocket closed`; the service retries every 5 seconds.
-- **Bot is connected but no message appears on join.** Confirm **Server Members Intent** is enabled in the Developer Portal — this is the most common cause. Also confirm the bot has **Send Messages** permission in the welcome channel specifically, not just server-wide.
+- **Bot is connected but no message appears on join.** Confirm **Server Members Intent** is enabled in the Developer Portal, this is the most common cause. Also confirm the bot has **Send Messages** permission in the welcome channel specifically, not just server-wide.
 - **401 on Gateway connect.** The token is invalid or was reset in the Developer Portal. Regenerate and update `.env`.
 
 <Aside type="tip" title="Rotating the token">

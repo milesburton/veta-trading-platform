@@ -327,9 +327,8 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     composeName: "discord-bot",
     defaultPort: 5034,
     category: "observability",
-    description: "Discord gateway client — posts a welcome message on member join",
+    description: "Discord gateway client, posts a welcome message on member join",
     optional: true,
-    excludeFromGatewayHostEnv: true,
     excludeFromFrontendServices: true,
   },
 ];

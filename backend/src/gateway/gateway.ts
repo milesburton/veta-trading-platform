@@ -982,6 +982,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     replay: REPLAY_URL,
     "replay-service": REPLAY_URL,
     "risk-engine": RISK_ENGINE_URL,
+    "discord-bot": DISCORD_BOT_URL,
   };
 
   // The gateway is the single enforcement point: internal services trust
