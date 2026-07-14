@@ -45,9 +45,17 @@ const SOURCE_LABELS: Record<Alert["source"], string> = {
   algo: "Algo",
   order: "Order",
   workspace: "Workspace",
+  "market-data": "Market Data",
 };
 
-const ALL_SOURCES: AlertSource[] = ["kill-switch", "service", "algo", "order", "workspace"];
+const ALL_SOURCES: AlertSource[] = [
+  "kill-switch",
+  "service",
+  "algo",
+  "order",
+  "workspace",
+  "market-data",
+];
 
 type SeverityFilter = "ALL" | AlertSeverity;
 

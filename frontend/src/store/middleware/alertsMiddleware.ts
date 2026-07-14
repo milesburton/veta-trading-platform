@@ -1,11 +1,14 @@
 import type { Middleware } from "@reduxjs/toolkit";
+import { SPREAD_WARNING_THRESHOLD_BPS } from "@veta/frontend/domain/ticket/rules/spread-check.ts";
 import {
   alertAdded,
   alertDismissed,
   allAlertsDismissed,
 } from "@veta/frontend/store/alertsSlice.ts";
 import { allBlocksCleared, blockAdded } from "@veta/frontend/store/killSwitchSlice.ts";
+import { orderBookUpdated } from "@veta/frontend/store/marketSlice.ts";
 import { orderPatched } from "@veta/frontend/store/ordersSlice.ts";
+import type { OrderBookSnapshot } from "@veta/frontend/types.ts";
 
 const _origin = typeof window !== "undefined" ? globalThis.location.origin : "";
 const ALERTS_URL = `${_origin}/api/gateway/alerts`;
@@ -40,7 +43,19 @@ function dismissAllAlerts() {
   }).catch(() => {});
 }
 
+function spreadBps(book: OrderBookSnapshot): number | null {
+  const bid = book.bids[0]?.price;
+  const ask = book.asks[0]?.price;
+  if (bid === undefined || ask === undefined || !Number.isFinite(book.mid) || book.mid <= 0) {
+    return null;
+  }
+  const bps = ((ask - bid) / book.mid) * 10_000;
+  return Number.isFinite(bps) ? bps : null;
+}
+
 export const alertsMiddleware: Middleware = (storeAPI) => {
+  const spreadAlertedAssets = new Set<string>();
+
   if (typeof window !== "undefined") {
     globalThis.addEventListener("workspace-save-error", () => {
       storeAPI.dispatch(
@@ -88,6 +103,30 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
           relatedTopic: "orders.resume",
         })
       );
+    }
+
+    if (orderBookUpdated.match(action)) {
+      const state = storeAPI.getState() as { ui: { selectedAsset: string | null } };
+      const asset = state.ui.selectedAsset;
+      const book = asset ? action.payload[asset] : undefined;
+      if (asset && book) {
+        const bps = spreadBps(book);
+        if (bps !== null && bps >= SPREAD_WARNING_THRESHOLD_BPS) {
+          if (!spreadAlertedAssets.has(asset)) {
+            spreadAlertedAssets.add(asset);
+            storeAPI.dispatch(
+              alertAdded({
+                severity: "WARNING",
+                source: "market-data",
+                message: `${asset} bid-ask spread is ${bps.toFixed(0)} bps, wider than normal`,
+                ts: Date.now(),
+              })
+            );
+          }
+        } else {
+          spreadAlertedAssets.delete(asset);
+        }
+      }
     }
 
     if (orderPatched.match(action) && action.payload.patch.status === "rejected") {
