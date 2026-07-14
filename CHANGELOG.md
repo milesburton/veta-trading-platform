@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.56.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.55.0...veta-trading-platform-v1.56.0) (2026-07-14)
+
+
+### Features
+
+* **alerts:** raise Discord alert on wide bid-ask spread ([#487](https://github.com/milesburton/veta-trading-platform/issues/487)) ([e6b8b25](https://github.com/milesburton/veta-trading-platform/commit/e6b8b258bbdb358991792dba8b36577b182562ab))
+* **discord-bot:** greet new members via Discord Gateway ([#486](https://github.com/milesburton/veta-trading-platform/issues/486)) ([c8b25c0](https://github.com/milesburton/veta-trading-platform/commit/c8b25c0b182c1c4a71ae4fbd590c57c289db0d3c))
+
 ## [1.55.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.54.0...veta-trading-platform-v1.55.0) (2026-07-12)
 
 
