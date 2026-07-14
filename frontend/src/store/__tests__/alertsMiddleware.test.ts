@@ -45,6 +45,30 @@ function book(bid: number, ask: number): OrderBookSnapshot {
   };
 }
 
+type DispatchedAlertAction = { type: string; payload: Omit<Alert, "id" | "dismissed"> };
+
+function findAlert(dispatched: unknown[], source?: Alert["source"]): DispatchedAlertAction {
+  const action = dispatched.find(
+    (a) =>
+      alertAdded.match(a as { type: string }) &&
+      (source === undefined || (a as DispatchedAlertAction).payload.source === source)
+  ) as DispatchedAlertAction | undefined;
+  if (action === undefined) {
+    throw new Error(
+      `Expected an alertAdded action${source ? ` with source "${source}"` : ""} to have been dispatched, but none was found.`
+    );
+  }
+  return action;
+}
+
+function findMarketDataAlerts(dispatched: unknown[]): DispatchedAlertAction[] {
+  return dispatched.filter(
+    (a) =>
+      alertAdded.match(a as { type: string }) &&
+      (a as DispatchedAlertAction).payload.source === "market-data"
+  ) as DispatchedAlertAction[];
+}
+
 describe("alertsMiddleware", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
@@ -74,12 +98,10 @@ describe("alertsMiddleware", () => {
           fromGateway: true,
         })
       );
-      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
-        payload: { severity: string; message: string };
-      };
-      expect(alert?.payload.severity).toBe("CRITICAL");
-      expect(alert?.payload.message).toContain("Kill switch activated");
-      expect(alert?.payload.message).toContain("all orders halted");
+      const alert = findAlert(dispatched, "kill-switch");
+      expect(alert.payload.severity).toBe("CRITICAL");
+      expect(alert.payload.message).toContain("Kill switch activated");
+      expect(alert.payload.message).toContain("all orders halted");
     });
 
     it("formats user scope in kill-switch alert message", () => {
@@ -94,10 +116,8 @@ describe("alertsMiddleware", () => {
           fromGateway: true,
         })
       );
-      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
-        payload: { message: string };
-      };
-      expect(alert?.payload.message).toContain("user trading halted");
+      const alert = findAlert(dispatched, "kill-switch");
+      expect(alert.payload.message).toContain("user trading halted");
     });
 
     it("formats symbol scope in kill-switch alert message", () => {
@@ -112,10 +132,8 @@ describe("alertsMiddleware", () => {
           fromGateway: true,
         })
       );
-      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
-        payload: { message: string };
-      };
-      expect(alert?.payload.message).toContain("symbol: AAPL, TSLA");
+      const alert = findAlert(dispatched, "kill-switch");
+      expect(alert.payload.message).toContain("symbol: AAPL, TSLA");
     });
 
     it("does NOT dispatch alert when fromGateway is false", () => {
@@ -130,12 +148,12 @@ describe("alertsMiddleware", () => {
           fromGateway: false,
         })
       );
-      const killAlert = dispatched.find(
+      const killAlerts = dispatched.filter(
         (a) =>
           alertAdded.match(a as { type: string }) &&
-          (a as { payload: { source: string } }).payload.source === "kill-switch"
+          (a as DispatchedAlertAction).payload.source === "kill-switch"
       );
-      expect(killAlert).toBeUndefined();
+      expect(killAlerts).toHaveLength(0);
     });
   });
 
@@ -143,11 +161,9 @@ describe("alertsMiddleware", () => {
     it("dispatches an INFO alert when trading resumes", () => {
       const { dispatched, invoke } = createHarness();
       invoke(allBlocksCleared());
-      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
-        payload: { severity: string; message: string };
-      };
-      expect(alert?.payload.severity).toBe("INFO");
-      expect(alert?.payload.message).toContain("Kill switch cleared");
+      const alert = findAlert(dispatched, "kill-switch");
+      expect(alert.payload.severity).toBe("INFO");
+      expect(alert.payload.message).toContain("Kill switch cleared");
     });
   });
 
@@ -155,27 +171,19 @@ describe("alertsMiddleware", () => {
     it("dispatches a WARNING alert when an order is rejected", () => {
       const { dispatched, invoke } = createHarness();
       invoke(orderPatched({ id: "ord-99", patch: { status: "rejected" } }));
-      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
-        payload: {
-          severity: string;
-          message: string;
-          detail?: string;
-          relatedEventId?: string;
-          relatedTopic?: string;
-        };
-      };
-      expect(alert?.payload.severity).toBe("WARNING");
-      expect(alert?.payload.message).toContain("rejected");
-      expect(alert?.payload.detail).toBe("ord-99");
-      expect(alert?.payload.relatedEventId).toBe("ord-99");
-      expect(alert?.payload.relatedTopic).toBe("orders.rejected");
+      const alert = findAlert(dispatched, "order");
+      expect(alert.payload.severity).toBe("WARNING");
+      expect(alert.payload.message).toContain("rejected");
+      expect(alert.payload.detail).toBe("ord-99");
+      expect(alert.payload.relatedEventId).toBe("ord-99");
+      expect(alert.payload.relatedTopic).toBe("orders.rejected");
     });
 
     it("does NOT alert for non-rejected patches", () => {
       const { dispatched, invoke } = createHarness();
       invoke(orderPatched({ id: "ord-1", patch: { status: "working" } }));
-      const alert = dispatched.find((a) => alertAdded.match(a as { type: string }));
-      expect(alert).toBeUndefined();
+      const alerts = dispatched.filter((a) => alertAdded.match(a as { type: string }));
+      expect(alerts).toHaveLength(0);
     });
   });
 
@@ -184,69 +192,43 @@ describe("alertsMiddleware", () => {
       const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
       // mid=100, spread=1 -> 100 bps, well above the 50bps warning threshold
       invoke(orderBookUpdated({ AAPL: book(99.5, 100.5) }));
-      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
-        payload: { severity: string; source: string; message: string };
-      };
-      expect(alert?.payload.severity).toBe("WARNING");
-      expect(alert?.payload.source).toBe("market-data");
-      expect(alert?.payload.message).toContain("AAPL");
-      expect(alert?.payload.message).toContain("bps");
+      const alert = findAlert(dispatched, "market-data");
+      expect(alert.payload.severity).toBe("WARNING");
+      expect(alert.payload.message).toContain("AAPL");
+      expect(alert.payload.message).toContain("bps");
     });
 
     it("does NOT alert when spread is within threshold", () => {
       const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
       // mid=100, spread=0.01 -> 1 bps, well under threshold
       invoke(orderBookUpdated({ AAPL: book(99.995, 100.005) }));
-      const alert = dispatched.find(
-        (a) =>
-          alertAdded.match(a as { type: string }) &&
-          (a as { payload: { source: string } }).payload.source === "market-data"
-      );
-      expect(alert).toBeUndefined();
+      expect(findMarketDataAlerts(dispatched)).toHaveLength(0);
     });
 
     it("treats a bid of exactly 0 as a real (extreme) spread, not missing data", () => {
       const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
       invoke(orderBookUpdated({ AAPL: book(0, 100) }));
-      const alert = dispatched.find((a) => alertAdded.match(a as { type: string })) as {
-        payload: { source: string; message: string };
-      };
-      expect(alert?.payload.source).toBe("market-data");
-      expect(alert?.payload.message).toContain("20000 bps");
+      const alert = findAlert(dispatched, "market-data");
+      expect(alert.payload.message).toContain("20000 bps");
     });
 
     it("does NOT alert when there is no book for the selected symbol (undefined bid/ask)", () => {
       const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
       invoke(orderBookUpdated({ AAPL: { bids: [], asks: [], mid: 100, ts: 1000 } }));
-      const alert = dispatched.find(
-        (a) =>
-          alertAdded.match(a as { type: string }) &&
-          (a as { payload: { source: string } }).payload.source === "market-data"
-      );
-      expect(alert).toBeUndefined();
+      expect(findMarketDataAlerts(dispatched)).toHaveLength(0);
     });
 
     it("does NOT alert for a symbol that is not currently selected", () => {
       const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
       invoke(orderBookUpdated({ TSLA: book(99.5, 100.5) }));
-      const alert = dispatched.find(
-        (a) =>
-          alertAdded.match(a as { type: string }) &&
-          (a as { payload: { source: string } }).payload.source === "market-data"
-      );
-      expect(alert).toBeUndefined();
+      expect(findMarketDataAlerts(dispatched)).toHaveLength(0);
     });
 
     it("only alerts once per excursion above threshold (edge-triggered)", () => {
       const { dispatched, invoke } = createHarness({ id: "u1" }, [], "AAPL");
       invoke(orderBookUpdated({ AAPL: book(99.5, 100.5) }));
       invoke(orderBookUpdated({ AAPL: book(99.4, 100.6) }));
-      const marketDataAlerts = dispatched.filter(
-        (a) =>
-          alertAdded.match(a as { type: string }) &&
-          (a as { payload: { source: string } }).payload.source === "market-data"
-      );
-      expect(marketDataAlerts.length).toBe(1);
+      expect(findMarketDataAlerts(dispatched)).toHaveLength(1);
     });
 
     it("re-alerts after the spread returns to normal and widens again", () => {
@@ -254,12 +236,7 @@ describe("alertsMiddleware", () => {
       invoke(orderBookUpdated({ AAPL: book(99.5, 100.5) }));
       invoke(orderBookUpdated({ AAPL: book(99.99, 100.01) }));
       invoke(orderBookUpdated({ AAPL: book(99.5, 100.5) }));
-      const marketDataAlerts = dispatched.filter(
-        (a) =>
-          alertAdded.match(a as { type: string }) &&
-          (a as { payload: { source: string } }).payload.source === "market-data"
-      );
-      expect(marketDataAlerts.length).toBe(2);
+      expect(findMarketDataAlerts(dispatched)).toHaveLength(2);
     });
   });
 

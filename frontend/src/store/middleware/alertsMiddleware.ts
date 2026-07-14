@@ -54,7 +54,7 @@ function spreadBps(book: OrderBookSnapshot): number | null {
 }
 
 export const alertsMiddleware: Middleware = (storeAPI) => {
-  const spreadAlertedSymbols = new Set<string>();
+  const spreadAlertedAssets = new Set<string>();
 
   if (typeof window !== "undefined") {
     globalThis.addEventListener("workspace-save-error", () => {
@@ -107,24 +107,24 @@ export const alertsMiddleware: Middleware = (storeAPI) => {
 
     if (orderBookUpdated.match(action)) {
       const state = storeAPI.getState() as { ui: { selectedAsset: string | null } };
-      const symbol = state.ui.selectedAsset;
-      const book = symbol ? action.payload[symbol] : undefined;
-      if (symbol && book) {
+      const asset = state.ui.selectedAsset;
+      const book = asset ? action.payload[asset] : undefined;
+      if (asset && book) {
         const bps = spreadBps(book);
         if (bps !== null && bps >= SPREAD_WARNING_THRESHOLD_BPS) {
-          if (!spreadAlertedSymbols.has(symbol)) {
-            spreadAlertedSymbols.add(symbol);
+          if (!spreadAlertedAssets.has(asset)) {
+            spreadAlertedAssets.add(asset);
             storeAPI.dispatch(
               alertAdded({
                 severity: "WARNING",
                 source: "market-data",
-                message: `${symbol} bid-ask spread is ${bps.toFixed(0)} bps, wider than normal`,
+                message: `${asset} bid-ask spread is ${bps.toFixed(0)} bps, wider than normal`,
                 ts: Date.now(),
               })
             );
           }
         } else {
-          spreadAlertedSymbols.delete(symbol);
+          spreadAlertedAssets.delete(asset);
         }
       }
     }
