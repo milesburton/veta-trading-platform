@@ -1456,6 +1456,28 @@ services:
     labels:
       - "traefik.enable=false"
 
+  discord-bot:
+    <<: *deno-service
+    profiles: [trading]
+    command: [
+      "deno",
+      "run",
+      "--allow-all",
+      "/app/backend/src/discord-bot/discord-bot.ts",
+    ]
+    environment:
+      DISCORD_BOT_PORT: "5034"
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      DISCORD_WELCOME_CHANNEL_ID: ${DISCORD_WELCOME_CHANNEL_ID:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5034/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    labels:
+      - "traefik.enable=false"
+
   llm-advisory:
     <<: *deno-medium
     profiles: [trading]
@@ -1636,6 +1658,8 @@ services:
       RISK_ENGINE_PORT: "5032"
       FIX_GATEWAY_HOST: fix-gateway
       FIX_GATEWAY_PORT: "9881"
+      DISCORD_BOT_HOST: discord-bot
+      DISCORD_BOT_PORT: "5034"
       REDPANDA_BROKERS: redpanda:9092
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       DISCORD_BUG_WEBHOOK_URL: ${DISCORD_BUG_WEBHOOK_URL:-}

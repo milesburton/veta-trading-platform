@@ -42,5 +42,6 @@ Ports listed below are the internal listening ports used inside the dev containe
 | 5031 | Session Replay | `replay-service` | rrweb session recording and playback |
 | 5032 | Risk Engine | `risk-engine` | Pre-trade risk checks (6 checks) |
 | 5033 | LLM Worker | `llm-worker` | LLM inference worker (job queue consumer) |
+| 5034 | Discord Bot | `discord-bot` | Discord Gateway client, welcome message on member join |
 | 9880 | FIX Exchange | `fix-exchange` | Simulated FIX 4.2 matching engine |
 | 9881 | FIX Gateway | `fix-gateway` | FIX 4.2 session manager |

@@ -15,7 +15,8 @@
     "src/scenario-engine/scenario-server.ts",
     "src/replay/replay-service.ts",
     "src/rfq/rfq-service.ts",
-    "src/news/news-aggregator.ts"
+    "src/news/news-aggregator.ts",
+    "src/discord-bot/discord-bot.ts"
   ],
   "ignoreDependencies": [
     "@veta/auth",

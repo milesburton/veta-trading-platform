@@ -74,6 +74,7 @@ const NEWS_AGGREGATOR_URL = `http://${Deno.env.get("NEWS_AGGREGATOR_HOST") ?? "l
 const FIX_GATEWAY_URL = `http://${Deno.env.get("FIX_GATEWAY_HOST") ?? "localhost"}:${Deno.env.get("FIX_GATEWAY_PORT") ?? "9881"}`;
 const REPLAY_URL = `http://${Deno.env.get("REPLAY_HOST") ?? "localhost"}:${Deno.env.get("REPLAY_PORT") ?? "5031"}`;
 const RISK_ENGINE_URL = `http://${Deno.env.get("RISK_ENGINE_HOST") ?? "localhost"}:${Deno.env.get("RISK_ENGINE_PORT") ?? "5032"}`;
+const DISCORD_BOT_URL = `http://${Deno.env.get("DISCORD_BOT_HOST") ?? "localhost"}:${Deno.env.get("DISCORD_BOT_PORT") ?? "5034"}`;
 
 const ALLOWED_ORIGINS = new Set(
   (Deno.env.get("CORS_ALLOWED_ORIGINS") ?? "http://localhost:5173,http://localhost:3000")
@@ -492,6 +493,7 @@ type ServiceHealth = {
   llmAdvisory: boolean;
   replay: boolean;
   riskEngine: boolean;
+  discordBot: boolean;
   bus: boolean;
 };
 
@@ -563,6 +565,7 @@ async function refreshHealth(): Promise<void> {
     llmAdvisory,
     replay,
     riskEngine,
+    discordBot,
     bus,
   ] = await Promise.all([
     chk(MARKET_SIM_URL),
@@ -596,6 +599,7 @@ async function refreshHealth(): Promise<void> {
     chk(LLM_ADVISORY_URL),
     chk(REPLAY_URL),
     chk(RISK_ENGINE_URL),
+    chk(DISCORD_BOT_URL),
     chk(KAFKA_RELAY_URL),
   ]);
   cachedHealth = {
@@ -630,6 +634,7 @@ async function refreshHealth(): Promise<void> {
     llmAdvisory,
     replay,
     riskEngine,
+    discordBot,
     bus,
   };
 }
@@ -977,6 +982,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     replay: REPLAY_URL,
     "replay-service": REPLAY_URL,
     "risk-engine": RISK_ENGINE_URL,
+    "discord-bot": DISCORD_BOT_URL,
   };
 
   // The gateway is the single enforcement point: internal services trust

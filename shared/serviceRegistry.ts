@@ -320,6 +320,17 @@ export const SERVICE_REGISTRY: readonly ServiceSpec[] = [
     category: "infra",
     description: "WebSocket bridge to FIX exchange",
   },
+  {
+    id: "discordBot",
+    displayName: "Discord Bot",
+    envPrefix: "DISCORD_BOT",
+    composeName: "discord-bot",
+    defaultPort: 5034,
+    category: "observability",
+    description: "Discord gateway client, posts a welcome message on member join",
+    optional: true,
+    excludeFromFrontendServices: true,
+  },
 ];
 
 export function findService(predicate: (s: ServiceSpec) => boolean): ServiceSpec | undefined {
