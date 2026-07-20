@@ -15,15 +15,15 @@ Seven US venues with weighting, spread multiplier, and depth multiplier. Defined
 
 | MIC | Weight | Spread mult | Depth mult | Notes |
 | --- | ---: | ---: | ---: | --- |
-| `XNAS` | 30% | 1.00 | 1.00 | Nasdaq; baseline reference for spread and depth |
-| `XNYS` | 25% | 1.05 | 1.20 | NYSE; deepest book, slightly wider spread |
-| `ARCX` | 15% | 1.08 | 0.85 | Arca; widest simulated spread |
-| `BATS` | 12% | 0.95 | 0.90 | Cboe BZX; tightest spread, maker-bias rebate |
-| `EDGX` | 8% | 0.98 | 0.75 | Cboe EDGX; tight spread, low depth, maker-bias rebate |
-| `IEX` | 6% | 1.02 | 0.95 | IEX; slightly wider spread (the famous 350-µs delay is not modelled) |
-| `MEMX` | 4% | 0.97 | 0.65 | MEMX; lowest depth |
+| `XNAS` | 30% | 1.00 | 1.00 | Baseline reference |
+| `XNYS` | 25% | 1.05 | 1.20 | Deepest book |
+| `ARCX` | 15% | 1.08 | 0.85 | Widest spread |
+| `BATS` | 12% | 0.95 | 0.90 | Tightest spread |
+| `EDGX` | 8% | 0.98 | 0.75 | Low depth |
+| `IEX` | 6% | 1.02 | 0.95 | Slightly wider spread |
+| `MEMX` | 4% | 0.97 | 0.65 | Lowest depth |
 
-Spread and depth multipliers drive realistic fill behaviour: BATS gets the tightest fills, MEMX runs out of book first.
+Spread and depth multipliers drive realistic fill behaviour: BATS gets the tightest fills, MEMX runs out of book first. `XNAS` (Nasdaq) is the reference venue for both multipliers. `XNYS` (NYSE) has the deepest simulated book but a slightly wider spread. `ARCX` (Arca) carries the widest simulated spread. `BATS` (Cboe BZX) and `EDGX` (Cboe EDGX) apply a maker-bias rebate, with EDGX combining a tight spread with low depth. `IEX`'s famous 350-µs speed bump is not modelled. `MEMX` has the lowest depth of the seven venues.
 
 ## Mode 1: EMS weighted-random (default)
 

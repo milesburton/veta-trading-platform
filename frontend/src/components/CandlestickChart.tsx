@@ -149,13 +149,14 @@ function useCandlestickChartCanvas(
       borderDownColor: COLOR.DOWN,
       wickUpColor: COLOR.UP,
       wickDownColor: COLOR.DOWN,
+      priceScaleId: "right",
     });
     volumeSeriesRef.current = chart.addSeries(HistogramSeries, {
       color: COLOR.UP,
       priceFormat: { type: "volume" },
-      priceScaleId: "volume",
+      priceScaleId: "",
     });
-    chart.priceScale("volume").applyOptions({
+    chart.priceScale("").applyOptions({
       scaleMargins: { top: 0.8, bottom: 0 },
     });
     setFixedBarSpacing(chart);

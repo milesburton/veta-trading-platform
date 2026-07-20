@@ -1,3 +1,5 @@
+import { GENERATED_EQUITIES, GENERATED_EQUITY_NAMES } from "./generatedEquities.ts";
+
 export interface AssetDef {
   symbol: string;
   initialPrice: number;
@@ -18,7 +20,29 @@ export interface AssetDef {
   /** Primary listing exchange MIC code. */
   exchange: "XNAS" | "XNYS" | "XCHI" | "ARCX" | "XCME" | "XNYM" | "XCBT";
   /** ISO 4217 settlement currency. */
-  currency: "USD" | "JPY" | "GBP" | "CAD" | "CHF";
+  currency:
+    | "USD"
+    | "JPY"
+    | "GBP"
+    | "CAD"
+    | "CHF"
+    | "AUD"
+    | "NZD"
+    | "MXN"
+    | "SEK"
+    | "NOK"
+    | "DKK"
+    | "PLN"
+    | "ZAR"
+    | "SGD"
+    | "HKD"
+    | "TRY"
+    | "INR"
+    | "BRL"
+    | "KRW"
+    | "CNH"
+    | "THB"
+    | "ILS";
   /** Asset class — equity (default), fx, or commodity. */
   assetClass?: "equity" | "fx" | "commodity" | "bond";
   /** Simulated ISIN (format: US + 9 uppercase alphanum + 1 check digit). */
@@ -34,7 +58,7 @@ export interface AssetDef {
   lotSize: number;
 }
 
-type RawAsset = Omit<
+export type RawAssetSeed = Omit<
   AssetDef,
   | "marketCapB"
   | "beta"
@@ -51,7 +75,9 @@ type RawAsset = Omit<
   | "assetClass"
 >;
 
-const _RAW_ASSETS: RawAsset[] = [
+type RawAsset = RawAssetSeed;
+
+export const CURATED_EQUITY_SEEDS: RawAsset[] = [
   {
     symbol: "AAPL",
     initialPrice: 189.3,
@@ -2638,6 +2664,7 @@ const COMPANY_NAMES: Record<string, string> = {
 
 function deriveName(symbol: string, sector: string): string {
   if (COMPANY_NAMES[symbol]) return COMPANY_NAMES[symbol];
+  if (GENERATED_EQUITY_NAMES[symbol]) return GENERATED_EQUITY_NAMES[symbol];
   return `${symbol} ${sector}`;
 }
 
@@ -2678,6 +2705,8 @@ function enrichAsset(
   };
 }
 
-export const SP500_ASSETS: AssetDef[] = _RAW_ASSETS.map(enrichAsset);
+export const SP500_ASSETS: AssetDef[] = [...CURATED_EQUITY_SEEDS, ...GENERATED_EQUITIES].map(
+  enrichAsset
+);
 
 export const ASSET_MAP = new Map<string, AssetDef>(SP500_ASSETS.map((a) => [a.symbol, a]));

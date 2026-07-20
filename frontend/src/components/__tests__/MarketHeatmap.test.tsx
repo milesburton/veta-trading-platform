@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
 import {
+  capItemsPerSector,
   collapseSmallTiles,
   MarketHeatmap,
   pctToColor,
@@ -134,6 +135,85 @@ describe("MarketHeatmap helpers", () => {
 
   it("maps the strongest up band", () => {
     expect(pctToColor(10)).toBe(COLOR.HEAT_STRONG_UP);
+  });
+});
+
+describe("capItemsPerSector", () => {
+  function makeItems(count: number, sector = "Technology") {
+    return Array.from({ length: count }, (_, i) => ({
+      symbol: `SYM${i}`,
+      sector,
+      pct: 0.5,
+      size: count - i,
+    }));
+  }
+
+  it("returns items unchanged when under the cap", () => {
+    const items = makeItems(50);
+    expect(capItemsPerSector(items, "Technology", 150)).toEqual(items);
+  });
+
+  it("caps to the largest N items plus a single OTHER tile", () => {
+    const items = makeItems(300);
+    const out = capItemsPerSector(items, "Technology", 150);
+    expect(out).toHaveLength(151);
+    expect(out.slice(0, 150).every((t) => !t.isOther)).toBe(true);
+    const other = out[150];
+    expect(other.isOther).toBe(true);
+    expect(other.symbol).toBe("Technology:OTHER");
+    expect(other.otherCount).toBe(150);
+  });
+
+  it("keeps the largest-size items, not the first N in input order", () => {
+    const items = makeItems(200);
+    const out = capItemsPerSector(items, "Technology", 150);
+    const keptSymbols = new Set(out.slice(0, 150).map((t) => t.symbol));
+    // Items are seeded with descending size (SYM0 largest), so the top 150
+    // by size are SYM0..SYM149.
+    expect(keptSymbols.has("SYM0")).toBe(true);
+    expect(keptSymbols.has("SYM149")).toBe(true);
+    expect(keptSymbols.has("SYM199")).toBe(false);
+  });
+
+  it("aggregates size and volume-weighted pct correctly into the OTHER tile", () => {
+    const items = [
+      { symbol: "A", sector: "T", pct: 2, size: 100 },
+      { symbol: "B", sector: "T", pct: -4, size: 50 },
+    ];
+    const out = capItemsPerSector(items, "T", 1);
+    expect(out).toHaveLength(2);
+    const other = out[1];
+    expect(other.size).toBe(50);
+    expect(other.pct).toBe(-4);
+  });
+});
+
+describe("collapseSmallTiles with a pre-existing OTHER tile", () => {
+  it("merges further collapsed tiles into the single OTHER entry instead of producing a duplicate key", () => {
+    const items = Array.from({ length: 300 }, (_, i) => ({
+      symbol: `SYM${i}`,
+      sector: "Technology",
+      pct: 0.5,
+      size: 300 - i,
+    }));
+    const capped = capItemsPerSector(items, "Technology", 150);
+    // Tight bounds force nearly everything, including the pre-existing
+    // OTHER tile from capItemsPerSector, to collapse further.
+    const out = collapseSmallTiles(capped, { x: 0, y: 0, w: 40, h: 40 }, "Technology");
+    const otherTiles = out.filter((t) => t.symbol === "Technology:OTHER");
+    expect(otherTiles).toHaveLength(1);
+    const symbols = out.map((t) => t.symbol);
+    expect(new Set(symbols).size).toBe(symbols.length);
+  });
+
+  it("preserves the pre-existing OTHER tile untouched when nothing new collapses", () => {
+    const items = [
+      { symbol: "A", sector: "T", pct: 1, size: 100 },
+      { symbol: "T:OTHER", sector: "T", pct: -1, size: 50, isOther: true, otherCount: 5 },
+    ];
+    const out = collapseSmallTiles(items, { x: 0, y: 0, w: 900, h: 500 }, "T");
+    const other = out.find((t) => t.symbol === "T:OTHER");
+    expect(other?.otherCount).toBe(5);
   });
 });
 

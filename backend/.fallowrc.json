@@ -30,7 +30,8 @@
   "dynamicallyLoaded": [
     "db/migrate.ts",
     "db/runMigrations.ts",
-    "scripts/generate-api-docs.ts"
+    "scripts/generate-api-docs.ts",
+    "scripts/generate-instrument-universe.ts"
   ],
   "duplicates": {
     "minOccurrences": 3

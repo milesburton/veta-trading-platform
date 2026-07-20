@@ -29,10 +29,11 @@ Scenarios drive the same OMS, risk-engine, algos and EMS that real orders flow t
 
 Two tables in the `scenarios` schema (migration `0015_scenarios.sql`):
 
-| Table | Contents |
-| --- | --- |
-| `scenarios.scenarios` | One row per saved scenario. Owned by a user via `users.users(id)` cascade. Columns: `id`, `user_id`, `name`, `description`, `spec` (JSONB), `expected` (JSONB), timestamps. Unique on `(user_id, name)`. |
-| `scenarios.runs` | One row per execution. Append-only. Columns: `id`, `scenario_id`, `user_id`, `triggered_at`, `completed_at`, `parent_order_id`, `actual` (JSONB), `diff` (JSONB), `status`, `error`. |
+**`scenarios.scenarios`** — one row per saved scenario. Owned by a user via `users.users(id)` cascade; unique on `(user_id, name)`.
+Columns: `id`, `user_id`, `name`, `description`, `spec` (JSONB), `expected` (JSONB), timestamps.
+
+**`scenarios.runs`** — one row per execution. Append-only.
+Columns: `id`, `scenario_id`, `user_id`, `triggered_at`, `completed_at`, `parent_order_id`, `actual` (JSONB), `diff` (JSONB), `status`, `error`.
 
 The `parent_order_id` column lets you drill from a mismatched run all the way through `journal.events` to the OMS validation, the risk-engine decision, and every child order the EMS produced.
 

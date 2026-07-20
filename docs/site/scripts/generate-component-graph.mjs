@@ -135,6 +135,15 @@ function buildGraph() {
 
 // --- Output ---
 
+const MAX_INLINE_NAMES = 6;
+
+function summarizeNames(paths) {
+  if (paths.length === 0) return "—";
+  const names = paths.map((i) => path.basename(i, path.extname(i)));
+  if (names.length <= MAX_INLINE_NAMES) return names.join(", ");
+  return `${names.slice(0, MAX_INLINE_NAMES).join(", ")}, +${names.length - MAX_INLINE_NAMES} more`;
+}
+
 function generateTable(graph) {
   const lines = [];
   lines.push("| Component | Path | Imports | Imported By |");
@@ -144,12 +153,8 @@ function generateTable(graph) {
   for (const node of sorted) {
     const importCount = node.imports.length;
     const importedByCount = node.importedBy.length;
-    const importList = importCount > 0
-      ? node.imports.map((i) => path.basename(i, path.extname(i))).join(", ")
-      : "—";
-    const importedByList = importedByCount > 0
-      ? node.importedBy.map((i) => path.basename(i, path.extname(i))).join(", ")
-      : "—";
+    const importList = summarizeNames(node.imports);
+    const importedByList = summarizeNames(node.importedBy);
     lines.push(
       `| ${node.name} | \`${node.path}\` | ${importCount} (${importList}) | ${importedByCount} (${importedByList}) |`
     );

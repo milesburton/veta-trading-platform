@@ -20,8 +20,11 @@ The full backend smoke (`smoke.full.tc.test.ts`) groups its 62 checks into three
 | Block | Services booted | Checks |
 | --- | --- | --- |
 | Service health and version | All 29 services | 3 |
-| Core trading flows | Market-sim, EMS, OMS, user-service, journal, gateway, fix-archive, observability, risk-engine, all 9 algo strategies | 41 |
-| Peripheral services | Market-sim, journal, user-service, gateway, plus news, analytics, recommendation, feature, signal, scenario, llm-advisory, replay, rfq, dark-pool, ccp, market-data | 18 |
+| Core trading flows | 9 core services, all 9 algo strategies | 41 |
+| Peripheral services | 4 core services, 12 peripheral services | 18 |
+
+- **Core trading flows** boots: market-sim, EMS, OMS, user-service, journal, gateway, fix-archive, observability, risk-engine.
+- **Peripheral services** boots: market-sim, journal, user-service, gateway, plus news, analytics, recommendation, feature, signal, scenario, llm-advisory, replay, rfq, dark-pool, ccp, market-data.
 
 Every block is gated on `RUN_TESTCONTAINERS=1`, runs inside `scripts/run-testcontainers.sh`, and wraps its body in `try { ... } finally { await stack.teardown() }`.
 

@@ -50,7 +50,7 @@ test(replay): add unit tests for session replay panel
 - Release Please auto-generates version bumps and changelogs.
 - Dependabot auto-merges patch-level dependency updates.
 - CI must be green before merge (integration tests are `continue-on-error` for known flaky strategies).
-- Screenshots are automated, not manual: CI captures the full UI suite on every PR and posts a `📸 UI screenshots` comment showing what changed against the committed baseline. Verify a UI-affecting change in a running instance of the app yourself first; do not rely on unit tests alone to confirm layout or visual behaviour. See [CI/CD Pipeline](/development/ci-cd/) for how screenshot capture and diffing work.
+- Screenshots are automated, not manual: CI captures the full UI suite on every PR and posts a `📸 UI screenshots` comment showing what changed against the committed baseline. Verify a UI-affecting change in a running instance of the app yourself first; do not rely on unit tests alone to confirm layout or visual behaviour. See [CI/CD Pipeline](/veta-trading-platform/development/ci-cd/) for how screenshot capture and diffing work.
 
 ## Documentation standards
 
