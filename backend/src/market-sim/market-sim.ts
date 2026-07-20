@@ -17,7 +17,7 @@ import {
   seedPrice,
   snapshotOpenPrices,
 } from "./priceEngine.ts";
-import { nextRandom } from "./rng.ts";
+import { nextBookRandom, nextRandom } from "./rng.ts";
 import { handleSeedRoute } from "./seedRoute.ts";
 import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
 import {
@@ -172,7 +172,7 @@ function buildBookForVenue(
   depthMult: number,
   now: number
 ): OrderBookSnapshot {
-  const spreadBps = Math.max(3, Math.min(25, dailyVol * 700 * (0.85 + nextRandom() * 0.3)));
+  const spreadBps = Math.max(3, Math.min(25, dailyVol * 700 * (0.85 + nextBookRandom() * 0.3)));
   const halfSpread = mid * (spreadBps / 10_000) * spreadMult;
   const avgLotSize = Math.max(100, Math.round(dailyVolume / 5_000));
   const bids: OrderBookLevel[] = [];
@@ -182,11 +182,11 @@ function buildBookForVenue(
     const decay = Math.max(0.05, 1 - i * 0.09);
     bids.push({
       price: parseFloat((mid - priceStep).toFixed(4)),
-      size: Math.max(100, Math.round(avgLotSize * depthMult * decay * (0.5 + nextRandom()))),
+      size: Math.max(100, Math.round(avgLotSize * depthMult * decay * (0.5 + nextBookRandom()))),
     });
     asks.push({
       price: parseFloat((mid + priceStep).toFixed(4)),
-      size: Math.max(100, Math.round(avgLotSize * depthMult * decay * (0.5 + nextRandom()))),
+      size: Math.max(100, Math.round(avgLotSize * depthMult * decay * (0.5 + nextBookRandom()))),
     });
   }
   return { bids, asks, mid, ts: now };

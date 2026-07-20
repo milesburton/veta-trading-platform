@@ -463,14 +463,25 @@ Deno.test("symbolsNeedingFreshBook returns every symbol again once the full-snap
 
 Deno.test("symbolsNeedingFreshBook includes a symbol if any venue's book is stale even when orderBook's is not", () => {
   const state = createTickDiffState();
-  const initial = makePayloadWithVenues({ AAPL: 100 }, ["XNAS"]);
-  const { nextState } = buildTickDiff(initial, state, 1_000);
 
-  // orderBook's own lastBookPrices baseline is fresh at 100, so a small move
-  // clears orderBook's gate but the venue baseline (also 100) sees the same
-  // move — the union should include AAPL either way this is tracked.
-  const moved = { AAPL: 100 * (1 + (BOOK_MATERIAL_BPS + 1) / 10_000) };
-  const needed = symbolsNeedingFreshBook(moved, nextState, 1_250);
+  const { nextState: afterFull } = buildTickDiff(
+    makePayloadWithVenues({ AAPL: 100 }, ["XNAS"]),
+    state,
+    1_000
+  );
+
+  const movedOnce = 100 * (1 + (BOOK_MATERIAL_BPS + 1) / 10_000);
+  const { nextState: afterVenuelessMove } = buildTickDiff(
+    makePayload({ AAPL: movedOnce }),
+    afterFull,
+    1_250
+  );
+
+  const needed = symbolsNeedingFreshBook(
+    { AAPL: movedOnce },
+    afterVenuelessMove,
+    1_500
+  );
 
   assertEquals(needed, ["AAPL"]);
 });
