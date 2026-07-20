@@ -128,6 +128,32 @@ function diffVenueBooks(
   return { diff, nextLastVenueBookPrices };
 }
 
+/**
+ * Which symbols are worth building a fresh order book for on this tick —
+ * lets a caller skip the expensive per-symbol book-building work entirely
+ * for symbols that buildTickDiff would gate out anyway, instead of
+ * building every symbol's book and discarding most of it after the fact.
+ * Unions orderBook's and every venue's independently-tracked "last book
+ * price" baselines, since they can drift apart over time even though they
+ * share the same BOOK_MATERIAL_BPS threshold.
+ */
+export function symbolsNeedingFreshBook(
+  prices: Record<string, number>,
+  state: TickDiffState,
+  now: number
+): string[] {
+  const dueFull =
+    state.lastFullSnapshotAt === null ||
+    now - state.lastFullSnapshotAt >= FULL_SNAPSHOT_INTERVAL_MS;
+  if (dueFull) return Object.keys(prices);
+
+  const needed = new Set(bookWorthyMovedSymbols(prices, state.lastBookPrices));
+  for (const lastForVenue of Object.values(state.lastVenueBookPrices)) {
+    for (const sym of bookWorthyMovedSymbols(prices, lastForVenue)) needed.add(sym);
+  }
+  return [...needed];
+}
+
 export function buildTickDiff(
   payload: TickPayload,
   state: TickDiffState,
