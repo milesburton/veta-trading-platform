@@ -12,7 +12,7 @@ import {
   generatePrice,
   marketData,
   openPrices,
-  prewarmPrices,
+  prewarmPricesAsync,
   refreshSectorShocks,
   seedPrice,
   snapshotOpenPrices,
@@ -118,14 +118,13 @@ async function seedFromJournal(): Promise<void> {
 
 snapshotOpenPrices();
 const PREWARM_TICKS = Number(Deno.env.get("MARKET_SIM_PREWARM_TICKS")) || 28_080;
-setTimeout(() => {
-  prewarmPrices(PREWARM_TICKS);
+prewarmPricesAsync(PREWARM_TICKS).then(() => {
   snapshotOpenPrices();
   logger.info(`Price engine pre-warmed — intraday moves seeded`);
   seedFromJournal()
     .then(() => snapshotOpenPrices())
     .catch((err) => logger.error("seedFromJournal failed", { err: err as Error }));
-}, 0);
+});
 
 let marketMinute = 0;
 let tickCount = 0;

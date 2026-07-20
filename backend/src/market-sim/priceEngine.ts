@@ -109,6 +109,25 @@ export function prewarmPrices(ticks = 28_080): void {
   }
 }
 
+const PREWARM_CHUNK_TICKS = 200;
+
+/**
+ * Same GBM warm-up as prewarmPrices, but yields to the event loop every
+ * PREWARM_CHUNK_TICKS ticks. At large asset-universe sizes the full
+ * synchronous loop can run long enough to starve HTTP handling (health
+ * checks included) for the whole warm-up; this variant keeps the server
+ * responsive while prewarming continues in the background.
+ */
+export async function prewarmPricesAsync(ticks = 28_080): Promise<void> {
+  let done = 0;
+  while (done < ticks) {
+    const chunk = Math.min(PREWARM_CHUNK_TICKS, ticks - done);
+    prewarmPrices(chunk);
+    done += chunk;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+}
+
 export function refreshSectorShocks() {
   const sectors = new Set(ALL_SEEDED_ASSETS.map((a) => a.sector));
   for (const sector of sectors) {
