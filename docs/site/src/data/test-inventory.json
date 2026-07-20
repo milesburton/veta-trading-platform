@@ -1,8 +1,8 @@
 {
   "backend": {
     "unit": {
-      "files": 67,
-      "cases": 769,
+      "files": 68,
+      "cases": 778,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -54,7 +54,7 @@
         "grafana-renderer.unit.test.ts": 13,
         "platform-stats.unit.test.ts": 11,
         "daily-summary.unit.test.ts": 23,
-        "tickDiff.unit.test.ts": 13,
+        "tickDiff.unit.test.ts": 17,
         "compose-mem-limits.unit.test.ts": 1,
         "process-metrics.unit.test.ts": 4,
         "compose-restart-policies.unit.test.ts": 1,
@@ -70,7 +70,8 @@
         "alerts-route.unit.test.ts": 15,
         "timeScale.unit.test.ts": 8,
         "small-gap-fills.unit.test.ts": 10,
-        "demo-day-attribution.unit.test.ts": 3
+        "demo-day-attribution.unit.test.ts": 3,
+        "marketSimClient.unit.test.ts": 5
       }
     },
     "integration": {
@@ -121,7 +122,7 @@
   "frontend": {
     "unit": {
       "files": 174,
-      "cases": 2013
+      "cases": 2019
     },
     "playwright": {
       "files": 19,

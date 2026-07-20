@@ -20,8 +20,11 @@ The full backend smoke (`smoke.full.tc.test.ts`) groups its 62 checks into three
 | Block | Services booted | Checks |
 | --- | --- | --- |
 | Service health and version | All 29 services | 3 |
-| Core trading flows | Market-sim, EMS, OMS, user-service, journal, gateway, fix-archive, observability, risk-engine, all 9 algo strategies | 41 |
-| Peripheral services | Market-sim, journal, user-service, gateway, plus news, analytics, recommendation, feature, signal, scenario, llm-advisory, replay, rfq, dark-pool, ccp, market-data | 18 |
+| Core trading flows | 9 core services, all 9 algo strategies | 41 |
+| Peripheral services | 4 core services, 12 peripheral services | 18 |
+
+- **Core trading flows** boots: market-sim, EMS, OMS, user-service, journal, gateway, fix-archive, observability, risk-engine.
+- **Peripheral services** boots: market-sim, journal, user-service, gateway, plus news, analytics, recommendation, feature, signal, scenario, llm-advisory, replay, rfq, dark-pool, ccp, market-data.
 
 Every block is gated on `RUN_TESTCONTAINERS=1`, runs inside `scripts/run-testcontainers.sh`, and wraps its body in `try { ... } finally { await stack.teardown() }`.
 
@@ -54,7 +57,7 @@ This is the gate that decides whether a deploy is good. If the backend smoke pas
 
 ## What smoke is not
 
-Smoke does not verify trading logic, P&L math, FIX message shapes, or any business behaviour. Those are covered by [unit](../unit/) and [integration](../testcontainers/) tests. Smoke is the layer that verifies delivery: that the unit-tested code is reachable from a fresh stack boot, with services correctly wired to Postgres and Redpanda, and that the gateway can authenticate users and route orders.
+Smoke does not verify trading logic, P&L maths, FIX message shapes, or any business behaviour. Those are covered by [unit](../unit/) and [integration](../testcontainers/) tests. Smoke is the layer that verifies delivery: that the unit-tested code is reachable from a fresh stack boot, with services correctly wired to Postgres and Redpanda, and that the gateway can authenticate users and route orders.
 
 A smoke failure means a routing, wiring, or auth path is broken. A unit or integration failure means the code logic is broken. The runbooks for these two are different.
 

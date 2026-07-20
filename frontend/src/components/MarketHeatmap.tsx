@@ -130,32 +130,78 @@ export function squarify(items: TileData[], bounds: Rect): LayoutTile[] {
   return result;
 }
 
+// Squarify is O(n) but with real per-tile allocation cost; at a few thousand
+// items per sector it becomes a measurable render bottleneck even though most
+// of those tiles would end up sub-pixel and collapsed into "+N" anyway. Cap
+// the working set before layout runs at all, keeping the largest items (by
+// the same size metric driving the treemap) and folding the remainder into
+// the same synthetic "+N" tile collapseSmallTiles already produces for
+// tiles that are too small to render individually.
+const MAX_TILES_PER_SECTOR = 150;
+export const DRILLDOWN_TILE_CAP = 400;
+
+export function capItemsPerSector(
+  items: TileData[],
+  sector: string,
+  cap: number = MAX_TILES_PER_SECTOR
+): TileData[] {
+  if (items.length <= cap) return items;
+  const sorted = [...items].sort((a, b) => b.size - a.size);
+  const kept = sorted.slice(0, cap);
+  const overflow = sorted.slice(cap);
+  const otherSize = overflow.reduce((s, d) => s + d.size, 0);
+  const otherPct = otherSize > 0 ? overflow.reduce((s, d) => s + d.pct * d.size, 0) / otherSize : 0;
+  return [
+    ...kept,
+    {
+      symbol: `${sector}:OTHER`,
+      sector,
+      pct: otherPct,
+      size: otherSize,
+      isOther: true,
+      otherCount: overflow.length,
+    },
+  ];
+}
+
 export function collapseSmallTiles(items: TileData[], bounds: Rect, sector: string): TileData[] {
   if (items.length === 0) return [];
   const layout = squarify(items, bounds);
   const MIN_PX = 18;
+  // A pre-existing "+N" tile (e.g. from capItemsPerSector) always folds into
+  // whichever "+N" tile this pass produces — whether it lands in the visible
+  // set or the newly-collapsed set — so there is never more than one
+  // `${sector}:OTHER` entry (a second would collide as a React key).
   const visible: TileData[] = [];
   const collapsed: TileData[] = [];
+  let preExistingOther: TileData | null = null;
   for (const lt of layout) {
     const item = items.find((it) => it.symbol === lt.symbol);
     if (!item) continue;
+    if (item.isOther) {
+      preExistingOther = item;
+      continue;
+    }
     if (lt.w - 2 >= MIN_PX && lt.h - 2 >= MIN_PX) {
       visible.push(item);
     } else {
       collapsed.push(item);
     }
   }
-  if (collapsed.length === 0) return items;
-  const otherSize = collapsed.reduce((s, d) => s + d.size, 0);
-  const otherPct =
-    otherSize > 0 ? collapsed.reduce((s, d) => s + d.pct * d.size, 0) / otherSize : 0;
+  if (collapsed.length === 0 && !preExistingOther) return items;
+  if (collapsed.length === 0 && preExistingOther) return [...visible, preExistingOther];
+  const otherSize = collapsed.reduce((s, d) => s + d.size, 0) + (preExistingOther?.size ?? 0);
+  const otherPctNumerator =
+    collapsed.reduce((s, d) => s + d.pct * d.size, 0) +
+    (preExistingOther ? preExistingOther.pct * preExistingOther.size : 0);
+  const otherPct = otherSize > 0 ? otherPctNumerator / otherSize : 0;
   const other: TileData = {
     symbol: `${sector}:OTHER`,
     sector,
     pct: otherPct,
     size: otherSize,
     isOther: true,
-    otherCount: collapsed.length,
+    otherCount: collapsed.length + (preExistingOther?.otherCount ?? 0),
   };
   return [...visible, other];
 }
@@ -284,7 +330,8 @@ export function MarketHeatmap() {
           w: Math.max(sRect.w - SECTOR_GAP * 2, 1),
           h: Math.max(sRect.h - SECTOR_GAP * 2 - (hasLabel ? LABEL_H : 0), 1),
         };
-        const collapsed = collapseSmallTiles(s.items, inner, s.sector);
+        const capped = capItemsPerSector(s.items, s.sector);
+        const collapsed = collapseSmallTiles(capped, inner, s.sector);
         return {
           ...s,
           sRect,
@@ -294,7 +341,14 @@ export function MarketHeatmap() {
       });
 
   const drilledLayout =
-    isDrilled && drilledSector ? squarify(drilledSector.items, { x: 0, y: 0, w: cw, h: ch }) : null;
+    isDrilled && drilledSector
+      ? squarify(
+          // Drill-down has more screen real estate per tile than the packed
+          // overview, so allow a larger cap before collapsing to "+N".
+          capItemsPerSector(drilledSector.items, drilledSector.sector, DRILLDOWN_TILE_CAP),
+          { x: 0, y: 0, w: cw, h: ch }
+        )
+      : null;
 
   const tooltipSymbolRaw = tooltip.value?.symbol ?? null;
   const tooltipSymbol = tooltipSymbolRaw?.includes(":OTHER") ? null : tooltipSymbolRaw;

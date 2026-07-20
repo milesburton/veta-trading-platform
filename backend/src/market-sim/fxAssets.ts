@@ -1,4 +1,5 @@
 import type { AssetDef } from "./sp500Assets.ts";
+import { GENERATED_FX, GENERATED_FX_NAMES } from "./generatedFx.ts";
 
 /** Simulated ISIN: FX + padded symbol + check digit 0. */
 function fxIsin(symbol: string): string {
@@ -28,7 +29,7 @@ const FX_NAMES: Record<string, string> = {
   "EUR/JPY": "Euro / Japanese Yen",
 };
 
-const _RAW_FX: Omit<
+export const CURATED_FX_SEEDS: Omit<
   AssetDef,
   | "marketCapB"
   | "beta"
@@ -123,7 +124,42 @@ const _RAW_FX: Omit<
   },
 ];
 
-export const FX_ASSETS: AssetDef[] = _RAW_FX.map((raw) => ({
+export type RawFxSeed = {
+  symbol: string;
+  initialPrice: number;
+  volatility: number;
+  dailyVolume: number;
+};
+
+function quoteCurrency(symbol: string): AssetDef["currency"] {
+  const [, quote] = symbol.split("/");
+  return (quote ?? "USD") as AssetDef["currency"];
+}
+
+const _GENERATED_RAW_FX: Omit<
+  AssetDef,
+  | "marketCapB"
+  | "beta"
+  | "dividendYield"
+  | "peRatio"
+  | "float"
+  | "isin"
+  | "ric"
+  | "bbgTicker"
+  | "name"
+  | "assetClass"
+>[] = GENERATED_FX.map((raw) => ({
+  symbol: raw.symbol,
+  initialPrice: raw.initialPrice,
+  volatility: raw.volatility,
+  sector: "FX",
+  dailyVolume: raw.dailyVolume,
+  exchange: "XCME" as const,
+  currency: quoteCurrency(raw.symbol),
+  lotSize: 1_000,
+}));
+
+export const FX_ASSETS: AssetDef[] = [...CURATED_FX_SEEDS, ..._GENERATED_RAW_FX].map((raw) => ({
   ...raw,
   assetClass: "fx" as const,
   marketCapB: 0,
@@ -134,7 +170,7 @@ export const FX_ASSETS: AssetDef[] = _RAW_FX.map((raw) => ({
   isin: fxIsin(raw.symbol),
   ric: `${raw.symbol.replace("/", "")}=X`,
   bbgTicker: `${raw.symbol.replace("/", "")} Curncy`,
-  name: FX_NAMES[raw.symbol] ?? raw.symbol,
+  name: FX_NAMES[raw.symbol] ?? GENERATED_FX_NAMES[raw.symbol] ?? raw.symbol,
 }));
 
 export const FX_ASSET_MAP = new Map<string, AssetDef>(FX_ASSETS.map((a) => [a.symbol, a]));

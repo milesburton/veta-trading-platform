@@ -4,28 +4,28 @@ const ROUTES_DIR = "./backend/src/gateway/routes";
 const OUTPUT_FILE = "./docs/api-endpoints.md";
 
 const SERVICE_MAPPINGS: Record<string, string> = {
-  "user-service": "User Service",
+  userService: "User Service",
   analytics: "Analytics Service",
-  "market-data": "Market Data Service",
-  "feature-engine": "Feature Engine",
-  "signal-engine": "Signal Engine",
-  "recommendation-engine": "Recommendation Engine",
-  "scenario-engine": "Scenario Engine",
-  "llm-advisory": "LLM Advisory Service",
-  ems: "EMS (Execution Management System)",
-  oms: "OMS (Order Management System)",
+  marketData: "Market Data Service",
+  featureEngine: "Feature Engine",
+  signalEngine: "Signal Engine",
+  recommendationEngine: "Recommendation Engine",
+  scenarioEngine: "Scenario Engine",
+  llmAdvisory: "LLM Advisory Service",
+  emsUrl: "EMS (Execution Management System)",
+  omsUrl: "OMS (Order Management System)",
   journal: "Journal Service",
-  "market-sim": "Market Simulator",
-  "fix-archive": "FIX Archive",
-  "fix-gateway": "FIX Gateway",
-  "kafka-relay": "Kafka Relay",
-  "news-aggregator": "News Aggregator",
-  "dark-pool": "Dark Pool",
-  "ccp-service": "CCP Service",
-  "rfq-service": "RFQ Service",
-  "product-service": "Product Service",
+  marketSim: "Market Simulator",
+  fixArchive: "FIX Archive",
+  fixGateway: "FIX Gateway",
+  kafkaRelay: "Kafka Relay",
+  newsAggregator: "News Aggregator",
+  darkPool: "Dark Pool",
+  ccpService: "CCP Service",
+  rfqService: "RFQ Service",
+  productService: "Product Service",
   replay: "Replay Service",
-  "risk-engine": "Risk Engine",
+  riskEngine: "Risk Engine",
 };
 
 interface Endpoint {
@@ -56,7 +56,8 @@ const isDescriptionComment = (line: string): boolean =>
   line.startsWith("//") &&
   !line.includes("function") &&
   !line.includes("if (path") &&
-  !line.includes("return null");
+  !line.includes("return null") &&
+  !/^\/\/\s*──/.test(line);
 
 const applyLine = (state: ParseState, rawLine: string): ParseState => {
   const line = rawLine.trim();
@@ -93,8 +94,9 @@ const parseEndpoints = (content: string): Endpoint[] => {
   const endpoints: Endpoint[] = [];
   let state = emptyState();
   for (const line of content.split("\n")) {
+    if (/^\s*if\s*\(path/.test(line)) state = { ...emptyState(), description: state.description };
     state = applyLine(state, line);
-    if (state.path && state.method) {
+    if (state.path && state.method && state.service) {
       endpoints.push(toEndpoint(state));
       state = emptyState();
     }

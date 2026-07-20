@@ -138,7 +138,7 @@ The exported WebM plays in every modern browser, Slack, and most video tools, so
 | Sensitive input data | `sessionRecorder` calls `rrweb.record({ maskAllInputs: true, maskTextClass: "veta-mask", maskTextSelector: "[data-mask]" })` — all `<input>` values are replaced with `*` |
 | Text masking | CSS class `veta-mask` and `data-mask` attributes on elements hide text content |
 | Recording toggle | Only users with `admin` or `compliance` roles can enable/disable recording via the toggle in the Session Replay panel |
-| Session deletion | Only `admin` and `compliance` users see the **Delete** button; it removes session metadata. The database FK (`ON DELETE RESTRICT`) blocks deletion while chunks exist, so event data is retained for compliance. A `409` is returned if chunks are still present. |
+| Session deletion | Only `admin` and `compliance` users see the **Delete** button. The FK (`ON DELETE RESTRICT`) blocks deletion while chunks exist and returns `409`, retaining event data for compliance. |
 | CORS | `replay-service` returns `corsOptions()` on `OPTIONS` preflight requests |
 
 ## Troubleshooting

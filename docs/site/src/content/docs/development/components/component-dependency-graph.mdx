@@ -28,11 +28,11 @@ graph TD
 
 ## Component Inventory
 
-`207` components analyzed.
+`207` components analysed.
 
 | Component | Path | Imports | Imported By |
 | --- | --- | --- | --- |
-| App | `App.tsx` | 20 (AlertToast, ConnectionLostBanner, DashboardLayout, DrawersContext, EnvironmentOverlay, LoginPage, QuickTradeBar, StartupOverlay, StatusBar, WorkspaceBar, TradingContext, useSessionRecording, useWorkspaceSync, alertsSlice, authSlice, hooks, index, observabilitySlice, themeSlice, uiSlice) | 1 (main) |
+| App | `App.tsx` | 20 (AlertToast, ConnectionLostBanner, DashboardLayout, DrawersContext, EnvironmentOverlay, LoginPage, +14 more) | 1 (main) |
 | rbac | `auth/rbac.ts` | 0 (—) | 0 (—) |
 | AdminPanel | `components/AdminPanel.tsx` | 0 (—) | 1 (PopOutHost) |
 | AdvisoryPanel | `components/AdvisoryPanel.tsx` | 0 (—) | 1 (InstrumentAnalysisPanel) |
@@ -57,7 +57,7 @@ graph TD
 | layoutModels | `components/dashboard/layoutModels.ts` | 1 (panelRegistry) | 4 (DashboardLayout, DashboardContext, DashboardLayout, layoutUtils) |
 | layoutUtils | `components/dashboard/layoutUtils.ts` | 2 (layoutModels, panelRegistry) | 3 (DashboardLayout, DashboardContext, DashboardLayout) |
 | panelComponents | `components/dashboard/panelComponents.ts` | 1 (panelRegistry) | 1 (DashboardLayout) |
-| panelRegistry | `components/dashboard/panelRegistry.ts` | 0 (—) | 12 (ChildOrdersPanel, ComponentPicker, DashboardLayout, MarketLadder, OrderBlotter, PopOutHost, StatusBar, DashboardContext, DashboardLayout, layoutModels, layoutUtils, panelComponents) |
+| panelRegistry | `components/dashboard/panelRegistry.ts` | 0 (—) | 12 (ChildOrdersPanel, ComponentPicker, DashboardLayout, MarketLadder, OrderBlotter, PopOutHost, +6 more) |
 | DashboardLayout | `components/DashboardLayout.tsx` | 5 (DashboardContext, DashboardLayout, layoutModels, layoutUtils, panelRegistry) | 6 (App, ComponentPicker, PanelMenu, PopOutHost, TemplatePicker, WorkspaceBar) |
 | DataDepthPanel | `components/DataDepthPanel.tsx` | 1 (DataDepthDrawer) | 0 (—) |
 | DecisionLog | `components/DecisionLog.tsx` | 1 (ContextMenu) | 1 (PopOutHost) |
@@ -99,7 +99,7 @@ graph TD
 | OptionPricingPanel | `components/OptionPricingPanel.tsx` | 0 (—) | 0 (—) |
 | OrderBlotter | `components/OrderBlotter.tsx` | 6 (ContextMenu, panelRegistry, CfRuleEditor, FilterBar, ResizableHeader, PopOutButton) | 1 (PopOutHost) |
 | OrderProgressPanel | `components/OrderProgressPanel.tsx` | 0 (—) | 1 (PopOutHost) |
-| OrderTicket | `components/OrderTicket.tsx` | 8 (AssetSelector, AssetInfoBar, buildAlgoParams, buildTrade, constants, OptionPreview, OrderPreview, StrategyParams) | 1 (PopOutHost) |
+| OrderTicket | `components/OrderTicket.tsx` | 8 (AssetSelector, AssetInfoBar, buildAlgoParams, buildTrade, constants, OptionPreview, +2 more) | 1 (PopOutHost) |
 | AssetInfoBar | `components/OrderTicket/AssetInfoBar.tsx` | 0 (—) | 1 (OrderTicket) |
 | buildAlgoParams | `components/OrderTicket/buildAlgoParams.ts` | 0 (—) | 1 (OrderTicket) |
 | buildTrade | `components/OrderTicket/buildTrade.ts` | 0 (—) | 1 (OrderTicket) |
@@ -110,8 +110,8 @@ graph TD
 | panelDragState | `components/panelDragState.ts` | 0 (—) | 1 (ComponentPicker) |
 | PanelMenu | `components/PanelMenu.tsx` | 1 (DashboardLayout) | 0 (—) |
 | PlatformStatusPanel | `components/PlatformStatusPanel.tsx` | 0 (—) | 0 (—) |
-| PopOutButton | `components/PopOutButton.tsx` | 0 (—) | 8 (AlgoMonitor, ExecutionsPanel, MarketLadder, MyPositionsPanel, ObservabilityPanel, OrderBlotter, RiskDashboardPanel, SessionReplayPanel) |
-| PopOutHost | `components/PopOutHost.tsx` | 17 (AdminPanel, AlgoMonitor, AnalysisPanel, CandlestickChart, DashboardLayout, DecisionLog, panelRegistry, ExecutionsPanel, MarketDepth, MarketHeatmap, MarketLadder, MarketMatch, NewsSourcesPanel, ObservabilityPanel, OrderBlotter, OrderProgressPanel, OrderTicket) | 1 (main) |
+| PopOutButton | `components/PopOutButton.tsx` | 0 (—) | 8 (AlgoMonitor, ExecutionsPanel, MarketLadder, MyPositionsPanel, ObservabilityPanel, OrderBlotter, +2 more) |
+| PopOutHost | `components/PopOutHost.tsx` | 17 (AdminPanel, AlgoMonitor, AnalysisPanel, CandlestickChart, DashboardLayout, DecisionLog, +11 more) | 1 (main) |
 | PopOutPlaceholder | `components/PopOutPlaceholder.tsx` | 0 (—) | 0 (—) |
 | PriceFanPanel | `components/PriceFanPanel.tsx` | 0 (—) | 0 (—) |
 | ProductBookPanel | `components/ProductBookPanel.tsx` | 0 (—) | 0 (—) |
@@ -134,7 +134,7 @@ graph TD
 | SpreadAnalysisPanel | `components/SpreadAnalysisPanel.tsx` | 0 (—) | 0 (—) |
 | StartupOverlay | `components/StartupOverlay.tsx` | 2 (BuildInfo, serviceCatalog) | 1 (App) |
 | serviceCatalog | `components/StartupOverlay/serviceCatalog.ts` | 0 (—) | 1 (StartupOverlay) |
-| StatusBar | `components/StatusBar.tsx` | 13 (AlertDrawer, BugReportModal, BuildInfo, ComponentPicker, DashboardContext, panelRegistry, DataDepthDrawer, DrawersContext, LogsDrawer, KillSwitchButton, OverflowBar, ServiceStatus, TemplatePicker) | 2 (App, LoginPage) |
+| StatusBar | `components/StatusBar.tsx` | 13 (AlertDrawer, BugReportModal, BuildInfo, ComponentPicker, DashboardContext, panelRegistry, +7 more) | 2 (App, LoginPage) |
 | StatusDot | `components/StatusDot.tsx` | 0 (—) | 2 (ServiceRow, ServiceStatus) |
 | StrategyParams | `components/StrategyParams.tsx` | 0 (—) | 1 (OrderTicket) |
 | SymbolSearchBar | `components/SymbolSearchBar.tsx` | 0 (—) | 0 (—) |
@@ -156,7 +156,7 @@ graph TD
 | async-risk | `domain/ticket/async-risk.ts` | 1 (ticket-types) | 1 (useAsyncRisk) |
 | field-definitions | `domain/ticket/field-definitions.ts` | 0 (—) | 1 (resolve-ticket) |
 | field-registry | `domain/ticket/field-registry.ts` | 0 (—) | 1 (resolve-ticket) |
-| resolve-ticket | `domain/ticket/resolve-ticket.ts` | 14 (field-definitions, field-registry, dark-pool, desk-access, instrument-spec, kill-switch, limit-checks, price-collar, role-check, session-rules, spread-check, static-validation, venue-rules, ticket-types) | 1 (useTicketResolution) |
+| resolve-ticket | `domain/ticket/resolve-ticket.ts` | 14 (field-definitions, field-registry, dark-pool, desk-access, instrument-spec, kill-switch, +8 more) | 1 (useTicketResolution) |
 | dark-pool | `domain/ticket/rules/dark-pool.ts` | 0 (—) | 1 (resolve-ticket) |
 | desk-access | `domain/ticket/rules/desk-access.ts` | 0 (—) | 1 (resolve-ticket) |
 | instrument-spec | `domain/ticket/rules/instrument-spec.ts` | 0 (—) | 1 (resolve-ticket) |
@@ -185,7 +185,7 @@ graph TD
 | replayVideoExport | `lib/replayVideoExport.ts` | 0 (—) | 1 (SessionReplayPanel) |
 | sessionRecorder | `lib/sessionRecorder.ts` | 0 (—) | 0 (—) |
 | sha256 | `lib/sha256.ts` | 0 (—) | 0 (—) |
-| main | `main.tsx` | 7 (App, PopOutHost, TradingContext, channel, index, observabilitySlice, servicesApi) | 0 (—) |
+| main | `main.tsx` | 7 (App, PopOutHost, TradingContext, channel, index, observabilitySlice, +1 more) | 0 (—) |
 | setupTests | `setupTests.ts` | 0 (—) | 0 (—) |
 | advisoryApi | `store/advisoryApi.ts` | 2 (advisorySlice, llmSubsystemSlice) | 1 (index) |
 | advisorySlice | `store/advisorySlice.ts` | 1 (safeKey) | 2 (advisoryApi, index) |
@@ -200,7 +200,7 @@ graph TD
 | gridApi | `store/gridApi.ts` | 0 (—) | 1 (index) |
 | gridPrefsSlice | `store/gridPrefsSlice.ts` | 1 (index) | 1 (index) |
 | hooks | `store/hooks.ts` | 1 (index) | 1 (App) |
-| index | `store/index.ts` | 35 (advisoryApi, advisorySlice, alertsSlice, analyticsApi, authSlice, breakersSlice, channel, channelsSlice, feedSlice, gatewayApi, gridApi, gridPrefsSlice, intelligenceSlice, killSwitchSlice, llmSubsystemSlice, marketDataApi, marketSlice, alertsMiddleware, errorTransportMiddleware, gatewayMiddleware, simulationMiddleware, versionWatchMiddleware, newsApi, newsSlice, observabilitySlice, ordersSlice, parseTicketApi, replayApi, riskApi, scenariosApi, servicesApi, themeSlice, uiSlice, userApi, windowSlice) | 8 (App, main, alertsSlice, gridPrefsSlice, hooks, newsSlice, selectors, uiSlice) |
+| index | `store/index.ts` | 35 (advisoryApi, advisorySlice, alertsSlice, analyticsApi, authSlice, breakersSlice, +29 more) | 8 (App, main, alertsSlice, gridPrefsSlice, hooks, newsSlice, +2 more) |
 | intelligenceSlice | `store/intelligenceSlice.ts` | 1 (safeKey) | 1 (index) |
 | killSwitchSlice | `store/killSwitchSlice.ts` | 1 (ordersSlice) | 1 (index) |
 | llmSubsystemSlice | `store/llmSubsystemSlice.ts` | 0 (—) | 2 (advisoryApi, index) |

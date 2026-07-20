@@ -14,6 +14,7 @@ export interface TickPayload {
   volumes: Record<string, number>;
   marketMinute: number;
   orderBook: Record<string, OrderBookSnapshot>;
+  venueBooks?: Record<string, Record<string, OrderBookSnapshot>>;
   sessionPhase: SessionPhase;
 }
 
@@ -21,6 +22,7 @@ export interface TickDiffState {
   lastPrices: Record<string, number>;
   lastVolumes: Record<string, number>;
   lastBookPrices: Record<string, number>;
+  lastVenueBookPrices: Record<string, Record<string, number>>;
   lastOpenPrices: Record<string, number>;
   lastMarketMinute: number | null;
   lastSessionPhase: SessionPhase | null;
@@ -39,6 +41,7 @@ export function createTickDiffState(): TickDiffState {
     lastPrices: {},
     lastVolumes: {},
     lastBookPrices: {},
+    lastVenueBookPrices: {},
     lastOpenPrices: {},
     lastMarketMinute: null,
     lastSessionPhase: null,
@@ -101,6 +104,30 @@ function pick<T>(source: Record<string, T>, keys: readonly string[]): Record<str
   return result;
 }
 
+function diffVenueBooks(
+  venueBooks: Record<string, Record<string, OrderBookSnapshot>>,
+  prices: Record<string, number>,
+  lastVenueBookPrices: Record<string, Record<string, number>>
+): {
+  diff: Record<string, Record<string, OrderBookSnapshot>> | undefined;
+  nextLastVenueBookPrices: Record<string, Record<string, number>>;
+} {
+  let diff: Record<string, Record<string, OrderBookSnapshot>> | undefined;
+  const nextLastVenueBookPrices: Record<string, Record<string, number>> = {};
+
+  for (const [venue, book] of Object.entries(venueBooks)) {
+    const lastForVenue = lastVenueBookPrices[venue] ?? {};
+    const changedSymbols = bookWorthyMovedSymbols(prices, lastForVenue);
+    nextLastVenueBookPrices[venue] = { ...lastForVenue, ...pick(prices, changedSymbols) };
+    if (changedSymbols.length > 0) {
+      diff ??= {};
+      diff[venue] = pick(book, changedSymbols);
+    }
+  }
+
+  return { diff, nextLastVenueBookPrices };
+}
+
 export function buildTickDiff(
   payload: TickPayload,
   state: TickDiffState,
@@ -111,6 +138,12 @@ export function buildTickDiff(
     now - state.lastFullSnapshotAt >= FULL_SNAPSHOT_INTERVAL_MS;
 
   if (dueFull) {
+    const lastVenueBookPrices: Record<string, Record<string, number>> = {};
+    if (payload.venueBooks) {
+      for (const venue of Object.keys(payload.venueBooks)) {
+        lastVenueBookPrices[venue] = { ...payload.prices };
+      }
+    }
     return {
       diff: {
         prices: payload.prices,
@@ -118,6 +151,7 @@ export function buildTickDiff(
         volumes: payload.volumes,
         marketMinute: payload.marketMinute,
         orderBook: payload.orderBook,
+        venueBooks: payload.venueBooks,
         sessionPhase: payload.sessionPhase,
         full: true,
       },
@@ -125,6 +159,7 @@ export function buildTickDiff(
         lastPrices: { ...payload.prices },
         lastVolumes: { ...payload.volumes },
         lastBookPrices: { ...payload.prices },
+        lastVenueBookPrices,
         lastOpenPrices: { ...payload.openPrices },
         lastMarketMinute: payload.marketMinute,
         lastSessionPhase: payload.sessionPhase,
@@ -143,6 +178,9 @@ export function buildTickDiff(
   const openChangedSymbols = changedPriceSymbols(payload.openPrices, state.lastOpenPrices);
   const minuteChanged = payload.marketMinute !== state.lastMarketMinute;
   const phaseChanged = payload.sessionPhase !== state.lastSessionPhase;
+  const venueBooksResult = payload.venueBooks
+    ? diffVenueBooks(payload.venueBooks, payload.prices, state.lastVenueBookPrices)
+    : undefined;
 
   const diff: TickDiff = {};
   if (movedSymbols.length > 0) {
@@ -153,6 +191,9 @@ export function buildTickDiff(
   }
   if (bookSymbols.length > 0) {
     diff.orderBook = pick(payload.orderBook, bookSymbols);
+  }
+  if (venueBooksResult?.diff) {
+    diff.venueBooks = venueBooksResult.diff;
   }
   if (openChangedSymbols.length > 0) {
     diff.openPrices = pick(payload.openPrices, openChangedSymbols);
@@ -168,6 +209,7 @@ export function buildTickDiff(
     bookSymbols.length > 0
       ? { ...state.lastBookPrices, ...pick(payload.prices, bookSymbols) }
       : state.lastBookPrices;
+  const nextLastVenueBookPrices = venueBooksResult?.nextLastVenueBookPrices ?? state.lastVenueBookPrices;
   const nextLastOpenPrices =
     openChangedSymbols.length > 0
       ? { ...state.lastOpenPrices, ...diff.openPrices }
@@ -179,6 +221,7 @@ export function buildTickDiff(
       lastPrices: nextLastPrices,
       lastVolumes: nextLastVolumes,
       lastBookPrices: nextLastBookPrices,
+      lastVenueBookPrices: nextLastVenueBookPrices,
       lastOpenPrices: nextLastOpenPrices,
       lastMarketMinute: payload.marketMinute,
       lastSessionPhase: payload.sessionPhase,
@@ -194,6 +237,7 @@ export function isEmptyDiff(diff: TickDiff): boolean {
     diff.openPrices === undefined &&
     diff.volumes === undefined &&
     diff.orderBook === undefined &&
+    diff.venueBooks === undefined &&
     diff.marketMinute === undefined &&
     diff.sessionPhase === undefined
   );

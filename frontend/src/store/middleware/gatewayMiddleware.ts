@@ -153,38 +153,43 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
 
   const algoLastSeen: Record<string, number> = {};
 
-  let pendingPrices: Record<string, number> | null = null;
-  let pendingOpenPrices: Record<string, number> | null = null;
+  let pendingPrices: Record<string, number> = {};
+  let pendingOpenPrices: Record<string, number> = {};
   let pendingVolumes: Record<string, number> = {};
   let pendingOrderBook: Record<string, OrderBookSnapshot> | null = null;
+  let hasPendingTick = false;
   let tickTimer: ReturnType<typeof setTimeout> | null = null;
 
   function flushTick() {
     tickTimer = null;
-    if (!pendingPrices) return;
+    if (!hasPendingTick) return;
     storeAPI.dispatch(
       marketSlice.actions.tickReceived({
         prices: pendingPrices,
-        openPrices: pendingOpenPrices ?? undefined,
+        openPrices: Object.keys(pendingOpenPrices).length > 0 ? pendingOpenPrices : undefined,
         volumes: pendingVolumes,
         ts: Date.now(),
       })
     );
     if (pendingOrderBook) storeAPI.dispatch(orderBookUpdated(pendingOrderBook));
-    pendingPrices = null;
-    pendingOpenPrices = null;
+    pendingPrices = {};
+    pendingOpenPrices = {};
     pendingVolumes = {};
     pendingOrderBook = null;
+    hasPendingTick = false;
   }
 
   function handleMarketUpdate(data: MarketUpdateData) {
-    pendingPrices = data.prices;
-    if (data.openPrices) pendingOpenPrices = data.openPrices;
+    hasPendingTick = true;
+    if (data.prices) pendingPrices = { ...pendingPrices, ...data.prices };
+    if (data.openPrices) pendingOpenPrices = { ...pendingOpenPrices, ...data.openPrices };
     for (const [sym, vol] of Object.entries(data.volumes ?? {})) {
       if (!isSafeKey(sym)) continue;
       pendingVolumes[sym] = (pendingVolumes[sym] ?? 0) + vol;
     }
-    if (data.orderBook) pendingOrderBook = data.orderBook;
+    if (data.orderBook) {
+      pendingOrderBook = { ...pendingOrderBook, ...data.orderBook };
+    }
     if (data.sessionPhase) {
       storeAPI.dispatch(setSessionPhase(data.sessionPhase as MarketPhase));
     }

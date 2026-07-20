@@ -12,7 +12,7 @@ import {
   generatePrice,
   marketData,
   openPrices,
-  prewarmPrices,
+  prewarmPricesAsync,
   refreshSectorShocks,
   seedPrice,
   snapshotOpenPrices,
@@ -118,14 +118,13 @@ async function seedFromJournal(): Promise<void> {
 
 snapshotOpenPrices();
 const PREWARM_TICKS = Number(Deno.env.get("MARKET_SIM_PREWARM_TICKS")) || 28_080;
-setTimeout(() => {
-  prewarmPrices(PREWARM_TICKS);
+prewarmPricesAsync(PREWARM_TICKS).then(() => {
   snapshotOpenPrices();
   logger.info(`Price engine pre-warmed — intraday moves seeded`);
   seedFromJournal()
     .then(() => snapshotOpenPrices())
     .catch((err) => logger.error("seedFromJournal failed", { err: err as Error }));
-}, 0);
+});
 
 let marketMinute = 0;
 let tickCount = 0;
@@ -268,40 +267,36 @@ setInterval(() => {
   const orderBook = computeOrderBook(marketData, volumes);
   const venueBooks = computeVenueBooks(marketData);
   const sessionPhase = deriveSessionPhase(marketMinute);
-  const tick = {
-    prices: { ...marketData },
-    openPrices: { ...openPrices },
-    volumes,
-    marketMinute,
-    orderBook,
-    venueBooks,
-    sessionPhase,
-  };
-  const msg = JSON.stringify({ event: "marketUpdate", data: tick });
-
-  for (const socket of clients) {
-    try {
-      socket.send(msg);
-    } catch {
-      clients.delete(socket);
-    }
-  }
 
   const { diff, nextState } = buildTickDiff(
     {
-      prices: tick.prices,
-      openPrices: tick.openPrices,
-      volumes: tick.volumes,
-      marketMinute: tick.marketMinute,
-      orderBook: tick.orderBook,
-      sessionPhase: tick.sessionPhase,
+      prices: { ...marketData },
+      openPrices: { ...openPrices },
+      volumes,
+      marketMinute,
+      orderBook,
+      venueBooks,
+      sessionPhase,
     },
     tickDiffState,
     Date.now()
   );
   tickDiffState = nextState;
+
   if (!isEmptyDiff(diff)) {
-    producer?.send("market.ticks", diff).catch(() => {});
+    const msg = JSON.stringify({ event: "marketUpdate", data: diff });
+    for (const socket of clients) {
+      try {
+        socket.send(msg);
+      } catch {
+        clients.delete(socket);
+      }
+    }
+    // venueBooks is SNIPER-only (consumed over the WebSocket via
+    // marketSimClient.ts); no market.ticks consumer reads it, and at the
+    // full universe size it alone can exceed the broker's max message size.
+    const { venueBooks: _venueBooks, ...kafkaDiff } = diff;
+    producer?.send("market.ticks", kafkaDiff).catch(() => {});
   }
 }, 250);
 
@@ -351,6 +346,7 @@ Deno.serve({ port: PORT }, (req) => {
     const orderBook = computeOrderBook(marketData, volumes);
     const venueBooks = computeVenueBooks(marketData);
     const snapshot = {
+      full: true as const,
       prices: { ...marketData },
       volumes,
       marketMinute,

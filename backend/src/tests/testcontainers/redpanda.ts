@@ -5,6 +5,11 @@ const IMAGE = "redpandadata/redpanda:v24.3.4";
 const INTERNAL_KAFKA_PORT = 9092;
 const INTERNAL_ADMIN_PORT = 9644;
 
+// Default Kafka/Redpanda max produce message size (~1MB) is too small for a
+// single tick's orderBook across the full instrument universe. Applied via
+// the admin API post-start since it isn't a `redpanda start` CLI flag.
+const KAFKA_BATCH_MAX_BYTES = 4 * 1024 * 1024;
+
 export interface RedpandaOptions {
   startupTimeoutMs?: number;
 }
@@ -38,6 +43,22 @@ export async function startEphemeralRedpanda(opts: RedpandaOptions = {}): Promis
     .withWaitStrategy(Wait.forLogMessage(/Successfully started Redpanda/, 1))
     .withStartupTimeout(opts.startupTimeoutMs ?? 90_000)
     .start();
+
+  const configResult = await container.exec([
+    "rpk",
+    "cluster",
+    "config",
+    "set",
+    "kafka_batch_max_bytes",
+    String(KAFKA_BATCH_MAX_BYTES),
+    "--api-urls",
+    `localhost:${INTERNAL_ADMIN_PORT}`,
+  ]);
+  if (configResult.exitCode !== 0) {
+    throw new Error(
+      `Failed to set kafka_batch_max_bytes on ephemeral Redpanda: ${configResult.output}`
+    );
+  }
 
   return {
     containerId: container.getId(),
