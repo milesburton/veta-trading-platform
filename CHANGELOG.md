@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.56.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.0...veta-trading-platform-v1.56.1) (2026-07-20)
+
+
+### Bug Fixes
+
+* **market-sim:** resolve CPU contention causing integration test timeouts ([#490](https://github.com/milesburton/veta-trading-platform/issues/490)) ([1b7a079](https://github.com/milesburton/veta-trading-platform/commit/1b7a0795d3ca5a48cce9bc9259ba1eaa36aab115))
+
 ## [1.56.0](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.55.0...veta-trading-platform-v1.56.0) (2026-07-14)
 
 
