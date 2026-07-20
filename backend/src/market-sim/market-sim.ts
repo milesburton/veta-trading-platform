@@ -249,14 +249,6 @@ const clients = new Set<WebSocket>();
 
 let tickDiffState = createTickDiffState();
 
-// The order book / venue book build, diff, and broadcast are the expensive
-// part of a tick at the full instrument universe size — cheap individually
-// (~55ms measured on a dev machine) but enough to starve the event loop
-// under CI's contended CPU when several services boot at once. Prices
-// still advance every PRICE_TICK_MS (preserving TICKS_PER_DAY's volatility
-// scaling exactly); only the broadcast/produce cadence is throttled.
-const BOOK_BUILD_EVERY_N_TICKS = 2;
-
 setInterval(() => {
   tickCount++;
   if (tickCount % TICKS_PER_MINUTE === 0) {
@@ -271,9 +263,6 @@ setInterval(() => {
   for (const asset of Object.keys(marketData)) {
     generatePrice(asset);
   }
-
-  if (tickCount % BOOK_BUILD_EVERY_N_TICKS !== 0) return;
-
   const volumes = computeTickVolumes(marketMinute);
   const orderBook = computeOrderBook(marketData, volumes);
   const venueBooks = computeVenueBooks(marketData);
