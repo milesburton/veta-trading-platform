@@ -11,9 +11,8 @@ import type { BondDef } from "./bondUniverseTypes.ts";
  * totalPeriods = maturityYears x periodsPerYear (semi-annual = 2)
  */
 
-/** Computes an approximate maturity date from a number of semi-annual periods. */
-function maturityFromPeriods(totalPeriods: number): string {
-  const yearsFromNow = totalPeriods / 2;
+function maturityFromPeriods(totalPeriods: number, periodsPerYear = 2): string {
+  const yearsFromNow = totalPeriods / periodsPerYear;
   const d = new Date();
   d.setFullYear(d.getFullYear() + Math.floor(yearsFromNow));
   d.setMonth(d.getMonth() + Math.round((yearsFromNow % 1) * 12));
@@ -26,8 +25,8 @@ export const CURATED_BONDS: BondDef[] = [
     symbol: "US3M",
     description: "3-Month US Treasury Bill",
     couponRate: 0.0,
-    maturityDate: maturityFromPeriods(1),
-    periodsPerYear: 2,
+    maturityDate: maturityFromPeriods(1, 4),
+    periodsPerYear: 4,
     totalPeriods: 1,
     creditRating: "AAA",
     issuer: "UST",
@@ -203,7 +202,7 @@ export const CURATED_BONDS: BondDef[] = [
     totalPeriods: 6,
     creditRating: "AAA",
     issuer: "Corp",
-    sector: "Healthcare",
+    sector: "Health Care",
     initialYield: 0.0498,
     faceValue: 1000,
   },

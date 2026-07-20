@@ -93,14 +93,24 @@ const toEndpoint = (state: ParseState): Endpoint => ({
 const parseEndpoints = (content: string): Endpoint[] => {
   const endpoints: Endpoint[] = [];
   let state = emptyState();
+  let awaitingClose = false;
   for (const line of content.split("\n")) {
-    if (/^\s*if\s*\(path/.test(line)) state = { ...emptyState(), description: state.description };
+    if (/^\s*if\s*\(path/.test(line)) {
+      if (awaitingClose) {
+        endpoints.push(toEndpoint(state));
+      }
+      state = { ...emptyState(), description: state.description };
+      awaitingClose = false;
+    }
     state = applyLine(state, line);
-    if (state.path && state.method && state.service) {
+    if (state.path && state.method) awaitingClose = true;
+    if (awaitingClose && /^\s*}\s*$/.test(line)) {
       endpoints.push(toEndpoint(state));
       state = emptyState();
+      awaitingClose = false;
     }
   }
+  if (awaitingClose) endpoints.push(toEndpoint(state));
   return endpoints;
 };
 
