@@ -20,7 +20,12 @@ import {
 import { nextRandom } from "./rng.ts";
 import { handleSeedRoute } from "./seedRoute.ts";
 import { ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
-import { buildTickDiff, createTickDiffState, isEmptyDiff } from "./tickDiff.ts";
+import {
+  buildTickDiff,
+  createTickDiffState,
+  isEmptyDiff,
+  symbolsNeedingFreshBook,
+} from "./tickDiff.ts";
 
 const PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
@@ -157,6 +162,8 @@ const SOR_VENUES = [
 ] as const;
 type SorVenueMIC = (typeof SOR_VENUES)[number]["mic"];
 
+const LEVELS = 10;
+
 function buildBookForVenue(
   mid: number,
   dailyVol: number,
@@ -168,7 +175,6 @@ function buildBookForVenue(
   const spreadBps = Math.max(3, Math.min(25, dailyVol * 700 * (0.85 + nextRandom() * 0.3)));
   const halfSpread = mid * (spreadBps / 10_000) * spreadMult;
   const avgLotSize = Math.max(100, Math.round(dailyVolume / 5_000));
-  const LEVELS = 10;
   const bids: OrderBookLevel[] = [];
   const asks: OrderBookLevel[] = [];
   for (let i = 0; i < LEVELS; i++) {
@@ -186,13 +192,23 @@ function buildBookForVenue(
   return { bids, asks, mid, ts: now };
 }
 
+/**
+ * Builds order books only for `symbols` rather than every symbol in
+ * `prices`. On the recurring tick, tickDiff.ts's symbolsNeedingFreshBook()
+ * already knows which symbols moved enough to be worth a fresh book —
+ * building the rest anyway (then discarding them when the diff gate drops
+ * them) was the dominant per-tick CPU cost at the full instrument universe
+ * size. A full snapshot still passes every symbol through `symbols`.
+ */
 function computeOrderBook(
   prices: Record<string, number>,
-  _volumes: Record<string, number>
+  symbols: readonly string[]
 ): Record<string, OrderBookSnapshot> {
   const book: Record<string, OrderBookSnapshot> = {};
   const now = Date.now();
-  for (const [symbol, mid] of Object.entries(prices)) {
+  for (const symbol of symbols) {
+    const mid = prices[symbol];
+    if (mid === undefined) continue;
     const asset = ALL_ASSET_MAP.get(symbol);
     book[symbol] = buildBookForVenue(
       mid,
@@ -207,13 +223,16 @@ function computeOrderBook(
 }
 
 function computeVenueBooks(
-  prices: Record<string, number>
+  prices: Record<string, number>,
+  symbols: readonly string[]
 ): Record<SorVenueMIC, Record<string, OrderBookSnapshot>> {
   const result = {} as Record<SorVenueMIC, Record<string, OrderBookSnapshot>>;
   const now = Date.now();
   for (const venue of SOR_VENUES) {
     const book: Record<string, OrderBookSnapshot> = {};
-    for (const [symbol, mid] of Object.entries(prices)) {
+    for (const symbol of symbols) {
+      const mid = prices[symbol];
+      if (mid === undefined) continue;
       const asset = ALL_ASSET_MAP.get(symbol);
       book[symbol] = buildBookForVenue(
         mid,
@@ -249,14 +268,6 @@ const clients = new Set<WebSocket>();
 
 let tickDiffState = createTickDiffState();
 
-// The order book / venue book build, diff, and broadcast are the expensive
-// part of a tick at the full instrument universe size — cheap individually
-// (~55ms measured on a dev machine) but enough to starve the event loop
-// under CI's contended CPU when several services boot at once. Prices
-// still advance every PRICE_TICK_MS (preserving TICKS_PER_DAY's volatility
-// scaling exactly); only the broadcast/produce cadence is throttled.
-const BOOK_BUILD_EVERY_N_TICKS = 2;
-
 setInterval(() => {
   tickCount++;
   if (tickCount % TICKS_PER_MINUTE === 0) {
@@ -272,11 +283,11 @@ setInterval(() => {
     generatePrice(asset);
   }
 
-  if (tickCount % BOOK_BUILD_EVERY_N_TICKS !== 0) return;
-
   const volumes = computeTickVolumes(marketMinute);
-  const orderBook = computeOrderBook(marketData, volumes);
-  const venueBooks = computeVenueBooks(marketData);
+  const now = Date.now();
+  const freshBookSymbols = symbolsNeedingFreshBook(marketData, tickDiffState, now);
+  const orderBook = computeOrderBook(marketData, freshBookSymbols);
+  const venueBooks = computeVenueBooks(marketData, freshBookSymbols);
   const sessionPhase = deriveSessionPhase(marketMinute);
 
   const { diff, nextState } = buildTickDiff(
@@ -290,7 +301,7 @@ setInterval(() => {
       sessionPhase,
     },
     tickDiffState,
-    Date.now()
+    now
   );
   tickDiffState = nextState;
 
@@ -354,8 +365,9 @@ Deno.serve({ port: PORT }, (req) => {
     logger.info(`New WebSocket connection`);
     clients.add(socket);
     const volumes = computeTickVolumes(marketMinute);
-    const orderBook = computeOrderBook(marketData, volumes);
-    const venueBooks = computeVenueBooks(marketData);
+    const allSymbols = Object.keys(marketData);
+    const orderBook = computeOrderBook(marketData, allSymbols);
+    const venueBooks = computeVenueBooks(marketData, allSymbols);
     const snapshot = {
       full: true as const,
       prices: { ...marketData },
