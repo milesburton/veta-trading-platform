@@ -163,6 +163,18 @@ export const gatewayMiddleware: Middleware = (storeAPI) => {
   function flushTick() {
     tickTimer = null;
     if (!hasPendingTick) return;
+    const knownPrices =
+      (storeAPI.getState() as { market?: { prices?: Record<string, number> } }).market?.prices ??
+      {};
+    for (const sym of [
+      ...Object.keys(pendingVolumes),
+      ...Object.keys(pendingOpenPrices),
+      ...Object.keys(pendingOrderBook ?? {}),
+    ]) {
+      if (pendingPrices[sym] === undefined && knownPrices[sym] !== undefined) {
+        pendingPrices[sym] = knownPrices[sym];
+      }
+    }
     storeAPI.dispatch(
       marketSlice.actions.tickReceived({
         prices: pendingPrices,
