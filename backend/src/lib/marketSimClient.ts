@@ -29,30 +29,53 @@ export interface MarketSimClient {
   getLatest(): MarketTick;
 }
 
-function parseTick(data: unknown): MarketTick {
-  if (
-    data !== null &&
-    typeof data === "object" &&
-    "prices" in (data as object) &&
-    "volumes" in (data as object)
-  ) {
-    const d = data as {
-      prices: Record<string, number>;
-      volumes: Record<string, number>;
-      marketMinute: number;
-      venueBooks?: Record<string, Record<string, OrderBookSnapshot>>;
-    };
+export interface RawTickMessage {
+  full?: true;
+  prices?: Record<string, number>;
+  volumes?: Record<string, number>;
+  marketMinute?: number;
+  venueBooks?: Record<string, Record<string, OrderBookSnapshot>>;
+}
+
+function isRawTickMessage(data: unknown): data is RawTickMessage {
+  return data !== null && typeof data === "object";
+}
+
+/**
+ * market-sim broadcasts gated diffs (see tickDiff.ts): most ticks omit
+ * fields that haven't materially changed, so incoming messages must be
+ * merged into the running tick rather than replacing it wholesale — a
+ * plain overwrite would flicker prices/venueBooks to empty between the
+ * periodic full snapshots. A `full` message already contains every
+ * symbol for every venue, so it replaces rather than merges.
+ */
+function mergeVenueBooks(
+  existing: Record<string, Record<string, OrderBookSnapshot>> | undefined,
+  incoming: Record<string, Record<string, OrderBookSnapshot>>
+): Record<string, Record<string, OrderBookSnapshot>> {
+  const venues = new Set([...Object.keys(existing ?? {}), ...Object.keys(incoming)]);
+  return Object.fromEntries(
+    [...venues].map((venue) => [venue, { ...existing?.[venue], ...incoming[venue] }])
+  );
+}
+
+export function mergeTick(latest: MarketTick, data: RawTickMessage): MarketTick {
+  if (data.full) {
     return {
-      prices: d.prices,
-      volumes: d.volumes,
-      marketMinute: d.marketMinute ?? 0,
-      venueBooks: d.venueBooks,
+      prices: data.prices ?? {},
+      volumes: data.volumes ?? {},
+      marketMinute: data.marketMinute ?? latest.marketMinute,
+      venueBooks: data.venueBooks,
     };
   }
+
   return {
-    prices: data as Record<string, number>,
-    volumes: {},
-    marketMinute: 0,
+    prices: data.prices ? { ...latest.prices, ...data.prices } : latest.prices,
+    volumes: data.volumes ? { ...latest.volumes, ...data.volumes } : latest.volumes,
+    marketMinute: data.marketMinute ?? latest.marketMinute,
+    venueBooks: data.venueBooks
+      ? mergeVenueBooks(latest.venueBooks, data.venueBooks)
+      : latest.venueBooks,
   };
 }
 
@@ -78,8 +101,8 @@ export function createMarketSimClient(host: string, port: number): MarketSimClie
     socket.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
-        if (msg.event === "marketData" || msg.event === "marketUpdate") {
-          latest = parseTick(msg.data);
+        if ((msg.event === "marketData" || msg.event === "marketUpdate") && isRawTickMessage(msg.data)) {
+          latest = mergeTick(latest, msg.data);
           for (const cb of callbacks) cb(latest);
         }
       } catch {

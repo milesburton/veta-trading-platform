@@ -328,6 +328,81 @@ Deno.test("volumes diff is independent of price movement", () => {
   assertEquals(diff.volumes, { AAPL: 2_500 });
 });
 
+function makePayloadWithVenues(
+  prices: Record<string, number>,
+  venues: readonly string[]
+): TickPayload {
+  const payload = makePayload(prices);
+  const venueBooks: Record<string, Record<string, ReturnType<typeof makeBook>>> = {};
+  for (const venue of venues) {
+    const book: Record<string, ReturnType<typeof makeBook>> = {};
+    for (const [sym, price] of Object.entries(prices)) book[sym] = makeBook(price);
+    venueBooks[venue] = book;
+  }
+  return { ...payload, venueBooks };
+}
+
+Deno.test("first publish includes venueBooks for every venue in the full snapshot", () => {
+  const state = createTickDiffState();
+  const payload = makePayloadWithVenues({ AAPL: 190 }, ["XNAS", "XNYS"]);
+
+  const { diff } = buildTickDiff(payload, state, 1_000);
+
+  assert(diff.full === true);
+  assert(diff.venueBooks?.XNAS?.AAPL !== undefined);
+  assert(diff.venueBooks?.XNYS?.AAPL !== undefined);
+});
+
+Deno.test("venueBooks is emitted per-venue around the BOOK_MATERIAL_BPS gate boundary", () => {
+  const state = createTickDiffState();
+  const initial = makePayloadWithVenues({ AAPL: 100 }, ["XNAS", "XNYS"]);
+  const { nextState } = buildTickDiff(initial, state, 1_000);
+
+  const justBelow = makePayloadWithVenues(
+    { AAPL: 100 * (1 + (BOOK_MATERIAL_BPS - 0.5) / 10_000) },
+    ["XNAS", "XNYS"]
+  );
+  const { diff: belowDiff, nextState: afterBelow } = buildTickDiff(justBelow, nextState, 1_250);
+  assert(
+    belowDiff.venueBooks === undefined,
+    `expected no venueBooks under ${BOOK_MATERIAL_BPS} bps move, got ${JSON.stringify(belowDiff.venueBooks)}`
+  );
+
+  const justAbove = makePayloadWithVenues(
+    { AAPL: 100 * (1 + (BOOK_MATERIAL_BPS + 0.5) / 10_000) },
+    ["XNAS", "XNYS"]
+  );
+  const { diff: aboveDiff } = buildTickDiff(justAbove, afterBelow, 1_500);
+  assert(aboveDiff.venueBooks?.XNAS?.AAPL !== undefined);
+  assert(aboveDiff.venueBooks?.XNYS?.AAPL !== undefined);
+});
+
+Deno.test("venueBooks diff only includes symbols that moved, per venue", () => {
+  const state = createTickDiffState();
+  const initial = makePayloadWithVenues({ AAPL: 100, MSFT: 400 }, ["XNAS"]);
+  const { nextState } = buildTickDiff(initial, state, 1_000);
+
+  const moved = makePayloadWithVenues(
+    { AAPL: 100 * (1 + (BOOK_MATERIAL_BPS + 1) / 10_000), MSFT: 400 },
+    ["XNAS"]
+  );
+  const { diff } = buildTickDiff(moved, nextState, 1_250);
+
+  assert(diff.venueBooks?.XNAS?.AAPL !== undefined);
+  assert(diff.venueBooks?.XNAS?.MSFT === undefined);
+});
+
+Deno.test("payload without venueBooks never adds a venueBooks key to the diff", () => {
+  const state = createTickDiffState();
+  const payload = makePayload({ AAPL: 190 });
+  const { nextState } = buildTickDiff(payload, state, 1_000);
+
+  const moved = makePayload({ AAPL: 191 });
+  const { diff } = buildTickDiff(moved, nextState, 1_250);
+
+  assert(diff.venueBooks === undefined);
+});
+
 Deno.test("buildTickDiff never produces a full snapshot more often than the configured interval", () => {
   const rng = seededRng(7);
   let prices = makeUniverse(30);
