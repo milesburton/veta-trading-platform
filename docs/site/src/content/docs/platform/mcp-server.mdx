@@ -7,9 +7,9 @@ sidebar:
 
 ## Overview
 
-The **MCP Server** is a Model Context Protocol (MCP) server that enables AI models to securely interact with the VETA trading platform. It provides standardized access to market data, order management, analytics, and trading signals.
+The **MCP Server** is a Model Context Protocol (MCP) server that enables AI models to securely interact with the VETA trading platform. It provides standardised access to market data, order management, analytics, and trading signals.
 
-**MCP (Model Context Protocol)** is an open standard that enables AI models to securely connect to external data sources and tools. It provides a standardized way for:
+**MCP (Model Context Protocol)** is an open standard that enables AI models to securely connect to external data sources and tools. It provides a standardised way for:
 
 - **Tools** — Functions the AI can invoke (e.g., `get_market_data`, `calculate_option_price`)
 - **Resources** — Data the AI can read (e.g., live market data, portfolio summaries)
@@ -165,7 +165,7 @@ Calculate option price using the Black-Scholes model.
 - `underlyingPrice` (number): Current price of the underlying asset
 - `strikePrice` (number): Option strike price
 - `timeToExpiry` (number): Time to expiry in years
-- `volatility` (number): Annualized volatility (e.g., 0.25 for 25%)
+- `volatility` (number): Annualised volatility (e.g., 0.25 for 25%)
 - `riskFreeRate` (number): Risk-free interest rate (e.g., 0.05 for 5%)
 - `optionType` (string): "call" or "put"
 
@@ -227,7 +227,7 @@ PROMPT market_analysis { symbol: "AAPL" }
 
 ## How MCP Benefits the VETA Platform
 
-1. **Standardized AI Integration** — MCP provides a protocol-agnostic way to connect AI models to your trading infrastructure without custom integrations for each model.
+1. **Standardised AI Integration** — MCP provides a protocol-agnostic way to connect AI models to your trading infrastructure without custom integrations for each model.
 
 2. **Security** — MCP enforces permission boundaries. You can control which AI models can access which tools and resources.
 
@@ -342,6 +342,6 @@ app.post("/mcp", async (c) => {
 app.listen(3001);
 ```
 
-## License
+## Licence
 
 MIT

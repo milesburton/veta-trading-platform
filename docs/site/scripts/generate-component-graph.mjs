@@ -215,7 +215,7 @@ graph TD
 
 ## Component Inventory
 
-\`${data.totalComponents}\` components analyzed.
+\`${data.totalComponents}\` components analysed.
 
 ${generateTable(graph)}
 

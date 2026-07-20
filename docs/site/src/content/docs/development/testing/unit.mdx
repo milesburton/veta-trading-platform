@@ -7,7 +7,7 @@ import testInventory from "@docs/data/test-inventory.json";
 
 Unit tests exercise pure functions and isolated components with no HTTP, no
 Postgres, and no Redpanda. They cover the platform's logic primitives: schema
-validation, algo slicing math, FIX parsing, Redux reducers, layout models,
+validation, algo slicing maths, FIX parsing, Redux reducers, layout models,
 ticket-resolution rules, hooks, and analytics formulas. Failures here surface
 as wrong outputs given correct inputs; higher suites cannot localise such
 failures because they observe symptoms (a 200 response with a wrong field)
@@ -55,13 +55,13 @@ The bracket prefix is grep-friendly: `deno test backend/ --filter "[orders-schem
 
 ### What lives in unit tests
 
-If a test needs a running service (Postgres, Redpanda, an HTTP server), it belongs in the [integration suite](../testcontainers/) under the `.tc.test.ts` pattern. Unit tests are for pure logic: schemas, algo slicing, FIX parsing, analytics math, grid filtering.
+If a test needs a running service (Postgres, Redpanda, an HTTP server), it belongs in the [integration suite](../testcontainers/) under the `.tc.test.ts` pattern. Unit tests are for pure logic: schemas, algo slicing, FIX parsing, analytics maths, grid filtering.
 
 Areas with the densest coverage:
 
 - **Schemas** (`orders-schema.unit.test.ts`, `risk-schema.unit.test.ts`, `user-schema.unit.test.ts`, `zod-helpers.unit.test.ts`): round-trip every shape the platform accepts.
-- **Algo strategies** (`algo.unit.test.ts`): slicing math for TWAP, VWAP, POV, ICEBERG, and the other six strategies given a parent order.
-- **Analytics** (`analytics.unit.test.ts`, `black-scholes.unit.test.ts`, `monte-carlo.unit.test.ts`, `volatility-estimator.unit.test.ts`): pricing math.
+- **Algo strategies** (`algo.unit.test.ts`): slicing maths for TWAP, VWAP, POV, ICEBERG, and the other six strategies given a parent order.
+- **Analytics** (`analytics.unit.test.ts`, `black-scholes.unit.test.ts`, `monte-carlo.unit.test.ts`, `volatility-estimator.unit.test.ts`): pricing maths.
 - **OMS / EMS** (`oms.test.ts`, `ems.unit.test.ts`): state transitions and rejection paths.
 - **FIX** (`fixParser.test.ts`): message round-trip.
 - **Devcontainer config** ([`devcontainer.unit.test.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/tests/devcontainer.unit.test.ts)): guards against template-path regressions in `.devcontainer/`. Catches "container won't start" bugs at commit time.
