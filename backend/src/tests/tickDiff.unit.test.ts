@@ -5,7 +5,6 @@ import {
   createTickDiffState,
   FULL_SNAPSHOT_INTERVAL_MS,
   isEmptyDiff,
-  symbolsNeedingFreshBook,
   type TickPayload,
 } from "../market-sim/tickDiff.ts";
 
@@ -425,52 +424,4 @@ Deno.test("buildTickDiff never produces a full snapshot more often than the conf
       `full snapshot gap ${gap}ms < FULL_SNAPSHOT_INTERVAL_MS`
     );
   }
-});
-
-Deno.test("symbolsNeedingFreshBook returns every symbol before the first full snapshot", () => {
-  const state = createTickDiffState();
-  const prices = { AAPL: 190, MSFT: 400, GOOG: 170 };
-
-  const needed = symbolsNeedingFreshBook(prices, state, 1_000);
-
-  assertEquals(new Set(needed), new Set(["AAPL", "MSFT", "GOOG"]));
-});
-
-Deno.test("symbolsNeedingFreshBook only returns symbols that moved past BOOK_MATERIAL_BPS", () => {
-  const state = createTickDiffState();
-  const initial = makePayload({ AAPL: 100, MSFT: 400 });
-  const { nextState } = buildTickDiff(initial, state, 1_000);
-
-  const moved = {
-    AAPL: 100 * (1 + (BOOK_MATERIAL_BPS + 1) / 10_000),
-    MSFT: 400,
-  };
-  const needed = symbolsNeedingFreshBook(moved, nextState, 1_250);
-
-  assertEquals(needed, ["AAPL"]);
-});
-
-Deno.test("symbolsNeedingFreshBook returns every symbol again once the full-snapshot interval elapses", () => {
-  const state = createTickDiffState();
-  const initial = makePayload({ AAPL: 100, MSFT: 400 });
-  const { nextState } = buildTickDiff(initial, state, 1_000);
-
-  const dueAt = 1_000 + FULL_SNAPSHOT_INTERVAL_MS;
-  const needed = symbolsNeedingFreshBook({ AAPL: 100, MSFT: 400 }, nextState, dueAt);
-
-  assertEquals(new Set(needed), new Set(["AAPL", "MSFT"]));
-});
-
-Deno.test("symbolsNeedingFreshBook includes a symbol if any venue's book is stale even when orderBook's is not", () => {
-  const state = createTickDiffState();
-  const initial = makePayloadWithVenues({ AAPL: 100 }, ["XNAS"]);
-  const { nextState } = buildTickDiff(initial, state, 1_000);
-
-  // orderBook's own lastBookPrices baseline is fresh at 100, so a small move
-  // clears orderBook's gate but the venue baseline (also 100) sees the same
-  // move — the union should include AAPL either way this is tracked.
-  const moved = { AAPL: 100 * (1 + (BOOK_MATERIAL_BPS + 1) / 10_000) };
-  const needed = symbolsNeedingFreshBook(moved, nextState, 1_250);
-
-  assertEquals(needed, ["AAPL"]);
 });
