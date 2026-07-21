@@ -13,6 +13,18 @@ on:
   # downstream workflows automatically.
   workflow_dispatch:
 
+# push and pull_request both fire for any branch with an open PR. Their
+# github.ref values differ (refs/heads/<branch> vs refs/pull/<n>/merge), so
+# grouping on github.ref alone would only dedupe within one event type and
+# still let both run in parallel against the same commit, competing for the
+# same runner resources. head_ref is only set for pull_request and is
+# already the bare branch name; ref_name gives the same bare name for push
+# (unlike ref, which is prefixed with refs/heads/), so both events land in
+# the same group per branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   github-health:
     name: GitHub status (advisory)
