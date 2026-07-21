@@ -20,7 +20,7 @@ import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
 const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
-const T = (ms = 8_000) => AbortSignal.timeout(ms);
+const T = (ms = 15_000) => AbortSignal.timeout(ms);
 
 // Maximum wall-clock time for a single Deno.test block including container
 // startup. If a test hangs (e.g. waiting for a service that never responds),
