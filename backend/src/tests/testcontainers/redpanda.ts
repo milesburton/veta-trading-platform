@@ -1,3 +1,4 @@
+import { Kafka } from "npm:kafkajs@2.2.4";
 import { GenericContainer, Wait } from "testcontainers";
 import type { ManagedRedpanda } from "./types.ts";
 
@@ -19,6 +20,32 @@ function pickFreePort(): number {
   const addr = listener.addr as Deno.NetAddr;
   listener.close();
   return addr.port;
+}
+
+const CLUSTER_STABLE_PROBE_TOPIC = "__cluster_stable_probe";
+const CLUSTER_STABLE_POLL_INTERVAL_MS = 250;
+const CLUSTER_STABLE_TIMEOUT_MS = 15_000;
+
+async function waitForClusterStable(brokers: string): Promise<void> {
+  const kafka = new Kafka({ clientId: "cluster-stable-probe", brokers: [brokers] });
+  const admin = kafka.admin();
+  await admin.connect();
+  try {
+    await admin.createTopics({ topics: [{ topic: CLUSTER_STABLE_PROBE_TOPIC, numPartitions: 1 }] });
+
+    const deadline = Date.now() + CLUSTER_STABLE_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      const { topics } = await admin.fetchTopicMetadata({ topics: [CLUSTER_STABLE_PROBE_TOPIC] });
+      const hasLeader = topics[0]?.partitions.every((p) => p.leader >= 0) ?? false;
+      if (hasLeader) return;
+      await new Promise((resolve) => setTimeout(resolve, CLUSTER_STABLE_POLL_INTERVAL_MS));
+    }
+    throw new Error(
+      `Ephemeral Redpanda cluster did not stabilize (probe topic has no leader) within ${CLUSTER_STABLE_TIMEOUT_MS}ms`
+    );
+  } finally {
+    await admin.disconnect();
+  }
 }
 
 export async function startEphemeralRedpanda(opts: RedpandaOptions = {}): Promise<ManagedRedpanda> {
@@ -59,6 +86,8 @@ export async function startEphemeralRedpanda(opts: RedpandaOptions = {}): Promis
       `Failed to set kafka_batch_max_bytes on ephemeral Redpanda: ${configResult.output}`
     );
   }
+
+  await waitForClusterStable(`${host}:${hostPort}`);
 
   return {
     containerId: container.getId(),
