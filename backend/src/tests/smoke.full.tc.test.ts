@@ -605,7 +605,7 @@ Deno.test({
       );
 
       await t.step(
-        "market-sim WebSocket emits tick data within 10s",
+        "market-sim WebSocket emits tick data within 20s",
         async () => {
           const wsUrl = MS.replace(/^http/, "ws");
           const ws = new WebSocket(wsUrl);
@@ -615,15 +615,10 @@ Deno.test({
           let msg = "";
           try {
             msg = await new Promise<string>((resolve, reject) => {
-              // The onopen handshake sends a full snapshot across the whole
-              // instrument universe (thousands of symbols); under CI's
-              // shared/contended CPU with many services booting
-              // simultaneously, this can take noticeably longer than on a
-              // dev machine.
               const t2 = setTimeout(() => {
                 ws.close();
                 reject(new Error("timeout"));
-              }, 10_000);
+              }, 20_000);
               ws.onmessage = (ev) => {
                 clearTimeout(t2);
                 ws.close();

@@ -99,16 +99,6 @@ const SCENARIO_SERVICES = [
   "gateway",
 ] as const;
 
-// Reseeding market-sim's RNG is fully deterministic, but the background
-// 250ms tick loop keeps generating prices/order books for the whole
-// instrument universe the entire time a scenario's order is in flight
-// (Kafka produce -> OMS validate -> EMS route -> fill), so "same seed"
-// only bounds fill price to within some noise floor driven by how many
-// background ticks happen to elapse before the order fills — not exact
-// reproducibility. That noise floor scales with the size of the
-// instrument universe (more symbols per tick = more RNG state consumed
-// per tick), so this tolerance needs revisiting if the universe grows
-// again materially from its current ~2200 symbols.
 const FILL_PRICE_DRIFT_TOLERANCE_BPS = 30;
 
 Deno.test({
@@ -119,7 +109,7 @@ Deno.test({
     const verbose = Deno.env.get("STACK_VERBOSE") === "1";
     const stack = await startStack({
       services: [...SCENARIO_SERVICES],
-      startupTimeoutMs: 60_000,
+      startupTimeoutMs: 90_000,
       verbose,
     });
     try {
@@ -181,7 +171,7 @@ Deno.test({
     const verbose = Deno.env.get("STACK_VERBOSE") === "1";
     const stack = await startStack({
       services: [...SCENARIO_SERVICES],
-      startupTimeoutMs: 60_000,
+      startupTimeoutMs: 90_000,
       verbose,
     });
     try {

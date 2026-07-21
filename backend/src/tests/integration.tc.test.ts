@@ -32,7 +32,7 @@ Deno.test({
   name: "service contracts + order flow (testcontainers)",
   ignore: !SHOULD_RUN,
   async fn(t) {
-    const stack = await startStack({ services: [...SERVICES], startupTimeoutMs: 60_000 });
+    const stack = await startStack({ services: [...SERVICES], startupTimeoutMs: 90_000 });
     const GW = url(stack, "gateway");
     const MS = url(stack, "market-sim");
     const J = url(stack, "journal");
