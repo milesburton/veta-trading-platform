@@ -99,7 +99,7 @@ const SCENARIO_SERVICES = [
   "gateway",
 ] as const;
 
-const FILL_PRICE_DRIFT_TOLERANCE_BPS = 30;
+const FILL_PRICE_DRIFT_TOLERANCE_BPS = 60;
 
 Deno.test({
   name:

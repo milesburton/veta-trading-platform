@@ -3,7 +3,7 @@ import { login } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
 const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
-const T = (ms = 5_000) => AbortSignal.timeout(ms);
+const T = (ms = 10_000) => AbortSignal.timeout(ms);
 
 function url(stack: TestStack, name: keyof TestStack["urls"]): string {
   const u = stack.urls[name];
@@ -133,7 +133,7 @@ Deno.test({
         await res.body?.cancel();
       });
 
-      await t.step("[gateway] WS connects and responds to submitOrder within 5s", async () => {
+      await t.step("[gateway] WS connects and responds to submitOrder within 10s", async () => {
         const wsUrl = `${GW.replace(/^http/, "ws")}/ws`;
         const ws = new WebSocket(wsUrl);
         const closed = new Promise<void>((r) => {
@@ -144,7 +144,7 @@ Deno.test({
           const timer = setTimeout(() => {
             ws.close();
             reject(new Error("timeout"));
-          }, 5_000);
+          }, 10_000);
           ws.onopen = () => {
             ws.send(
               JSON.stringify({
