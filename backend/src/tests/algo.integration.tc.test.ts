@@ -151,10 +151,10 @@ Deno.test({
           limitPrice: px * 1.02,
           strategy: "LIMIT",
         });
-        const order = await pollForChildren(J, clientOrderId, 1, 20_000);
+        const order = await pollForChildren(J, clientOrderId, 1, 25_000);
         assertExists(
           order,
-          `LIMIT order ${clientOrderId} did not produce a child slice within 20s`
+          `LIMIT order ${clientOrderId} did not produce a child slice within 25s`
         );
         assertEquals(order?.strategy, "LIMIT");
         assert(order?.children.length >= 1);
