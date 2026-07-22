@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.56.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.1...veta-trading-platform-v1.56.2) (2026-07-22)
+
+
+### Bug Fixes
+
+* **market-sim:** resolve CPU contention, Redpanda race, and LIMIT fillCount race in integration tests ([#493](https://github.com/milesburton/veta-trading-platform/issues/493)) ([18a7cef](https://github.com/milesburton/veta-trading-platform/commit/18a7cefb189c292fcdc08af9b8bdee0dad64376a))
+* **market-sim:** stop /seed from blocking the event loop during scenario reruns ([#497](https://github.com/milesburton/veta-trading-platform/issues/497)) ([135606f](https://github.com/milesburton/veta-trading-platform/commit/135606f220a84f97c0114d7a853367abc0635415))
+
 ## [1.56.1](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.0...veta-trading-platform-v1.56.1) (2026-07-20)
 
 
