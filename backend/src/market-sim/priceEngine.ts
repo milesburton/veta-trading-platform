@@ -4,17 +4,16 @@ import { FX_ASSET_MAP, FX_ASSETS } from "./fxAssets.ts";
 import { nextRandom } from "./rng.ts";
 import { ASSET_MAP as EQUITY_ASSET_MAP, SP500_ASSETS } from "./sp500Assets.ts";
 
-// 4 ticks/s × 390 min × 60 s/min — scaling daily vol by 1/√N gives
-// fine-grained steps that accumulate realistically over 1-min candles.
+// docs: /platform/market-simulator/
+// #region docs:gbm-constants
 const TICKS_PER_DAY = 93_600;
 
-// Ornstein-Uhlenbeck κ: reverts over ~5000 ticks (≈1.25 trading hours).
 const MEAN_REVERSION_SPEED = 0.0002;
 
 const PRICE_FLOOR_RATIO = 0.1;
 
-// Fraction of each tick's random shock shared with the sector.
 const SECTOR_CORRELATION = 0.35;
+// #endregion docs:gbm-constants
 
 const ALL_SEEDED_ASSETS = [...SP500_ASSETS, ...FX_ASSETS, ...COMMODITY_ASSETS, ...BOND_ASSETS];
 const ALL_ASSET_MAP = new Map([
@@ -87,15 +86,12 @@ export function resetRegime(): void {
 
 let resetInProgress = false;
 
-/**
- * True while resetPriceEngine's chunked prewarm is running. The live tick
- * loop (market-sim.ts's setInterval) checks this before mutating marketData
- * or consuming RNG state, so a tick landing between prewarm chunks can't
- * interleave with the reset and make its outcome timing-dependent.
- */
+// docs: /platform/market-simulator/
+// #region docs:reset-in-progress
 export function isResetInProgress(): boolean {
   return resetInProgress;
 }
+// #endregion docs:reset-in-progress
 
 export async function resetPriceEngine(opts: { prewarmTicks?: number } = {}): Promise<void> {
   resetInProgress = true;
@@ -128,13 +124,8 @@ export function prewarmPrices(ticks = 28_080): void {
 
 const PREWARM_CHUNK_TICKS = 200;
 
-/**
- * Same GBM warm-up as prewarmPrices, but yields to the event loop every
- * PREWARM_CHUNK_TICKS ticks. At large asset-universe sizes the full
- * synchronous loop can run long enough to starve HTTP handling (health
- * checks included) for the whole warm-up; this variant keeps the server
- * responsive while prewarming continues in the background.
- */
+// docs: /platform/market-simulator/
+// #region docs:prewarm-async
 export async function prewarmPricesAsync(ticks = 28_080): Promise<void> {
   let done = 0;
   while (done < ticks) {
@@ -144,6 +135,7 @@ export async function prewarmPricesAsync(ticks = 28_080): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
 }
+// #endregion docs:prewarm-async
 
 export function refreshSectorShocks() {
   const sectors = new Set(ALL_SEEDED_ASSETS.map((a) => a.sector));

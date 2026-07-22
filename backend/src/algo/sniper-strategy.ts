@@ -174,7 +174,6 @@ marketClient.onTick(async (tick) => {
     const marketPrice = tick.prices[order.asset];
     if (!marketPrice) continue;
 
-    // Expiry check
     if (now >= order.expiresAt) {
       const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
       logger.info(`Expired ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`);
@@ -192,7 +191,6 @@ marketClient.onTick(async (tick) => {
       continue;
     }
 
-    // Price trigger
     const triggered =
       (order.side === "BUY" && marketPrice <= order.limitPrice) ||
       (order.side === "SELL" && marketPrice >= order.limitPrice);

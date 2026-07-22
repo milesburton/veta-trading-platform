@@ -183,7 +183,6 @@ marketClient.onTick(async (tick) => {
     const marketPrice = tick.prices[order.asset];
     if (!marketPrice) continue;
 
-    // Expiry check
     if (now >= order.expiresAt) {
       const avgFill = order.filledQty > 0 ? order.costBasis / order.filledQty : 0;
       logger.info(`Expired ${order.orderId}: filled=${order.filledQty} avg=${avgFill.toFixed(4)}`);
@@ -221,21 +220,21 @@ marketClient.onTick(async (tick) => {
       continue;
     }
 
-    // Compute dynamic slice interval based on urgency and remaining duration
+    // docs: /development/playbooks/add-algo-strategy/
+    // #region docs:arrival-price-urgency-scaling
     const durationMs = order.expiresAt - order.receivedAt;
     const durationSecs = durationMs / 1_000;
     const targetSlices = Math.max(1, Math.ceil(durationSecs / BASE_SLICE_INTERVAL_SECS));
-    const urgencyFactor = order.urgency / 50; // urgency=50 → 1×, urgency=100 → 2×, urgency=25 → 0.5×
+    const urgencyFactor = order.urgency / 50;
     let sliceIntervalMs = durationMs / (urgencyFactor * targetSlices);
 
-    // Price is favourable (adverse drift < 0): accelerate by 20%
     if (adverseDriftBps < 0) {
       sliceIntervalMs *= 0.8;
     }
+    // #endregion docs:arrival-price-urgency-scaling
 
     if (now - order.lastSliceAt < sliceIntervalMs) continue;
 
-    // Send a slice
     const sliceQty = Math.min(Math.ceil(order.totalQty / targetSlices), order.totalRemaining);
     if (sliceQty <= 0) continue;
 

@@ -3,6 +3,8 @@ title: Security Posture
 description: Container hardening, threat model, and the residual risks we have not addressed.
 ---
 
+import Source from "@docs/components/Source.astro";
+
 This page describes the container-level defences applied to the trading
 stack, the residual risks we have not addressed, and the
 operational steps required when rolling out hardening changes to the
@@ -83,6 +85,34 @@ on the host (see `scripts/host-prune.sh`).
 Each Deno service gets `/tmp` as a tmpfs mount. Anything that does land
 in `/tmp` exists only in RAM and dies with the container. Nothing
 persists, and no on-disk artefacts survive a restart.
+
+### WebSocket abuse tracking
+
+<Source path="backend/src/gateway/abuseTracker.ts" label="AbuseTracker" />
+
+The gateway's `AbuseTracker` produces escalating decisions against a WebSocket connection and the user behind it:
+
+- **Level 1** (handled by the per-socket frame rate limiter, not `AbuseTracker`): reject a single over-rate frame and send `rateLimited` back to the client. Soft, no state kept.
+- **Level 2** (`AbuseTracker.recordRateLimited`): a single socket hits the per-socket frame limit `ABUSE_PER_SOCKET_THRESHOLD` times within `ABUSE_PER_SOCKET_WINDOW_MS`. Decision: `forceClose`. The socket is closed and a `ws_disconnected_abuse` access event is published.
+- **Level 3** (`AbuseTracker.recordRateLimited` escalating further): a single userId accumulates `ABUSE_USER_FORCE_CLOSE_THRESHOLD` force-closes within `ABUSE_USER_WINDOW_MS`. Decision: `blockUser`. New WebSocket upgrade attempts for that userId are refused for `ABUSE_USER_BACKOFF_MS`, checked by `AbuseTracker.upgradeDecision` before `Deno.upgradeWebSocket` runs.
+
+There is no IP-banning. UserIds are the control surface: unauthenticated sockets share a single anonymous key, so level-3 effects on anonymous traffic apply globally. That matches the threat model above: a real attacker authenticating anonymously is just one of many anonymous callers, so anonymous traffic as a whole is the unit of defence.
+
+All state is in-memory and resets on a gateway restart. That is an accepted trade-off: the structural protection (level 2's force-close ending a chatty client's connection) re-establishes naturally on the client's next request, so a restart does not reopen a window for sustained abuse.
+
+<Source path="backend/src/gateway/routes/websocket.ts" region="docs:ws-upgrade-auth-order" />
+
+Authentication happens before the WebSocket upgrade completes, not after: once a connection is upgraded, there is no way to send an HTTP 401 back to the client, only WebSocket frames. Anonymous connections are still allowed to complete the upgrade, since read-only market data does not require a session. The client IP and User-Agent are also captured once at upgrade time, since `req.headers` is unavailable after the upgrade but both are needed later for the per-IP guest order-submit rate limit and access-event tagging. Auth is resolved eagerly (awaited) before the abuse check runs, so `upgradeDecision` knows which user it is deciding for; if the upgrade is allowed, the same resolved `pendingAuth` is reused for the socket instead of re-validating the token a second time.
+
+## Frontend input hardening
+
+<Source path="frontend/src/store/safeKey.ts" label="isSafeKey" />
+
+`isSafeKey` guards against prototype-pollution and remote-property-injection when a `Record<string, T>` is indexed by a key that originated from external input (a Kafka payload relayed to the browser, a gateway message, or a `?query=` parameter). It rejects `"__proto__"`, `"constructor"`, `"prototype"`, any key containing non-printable characters, and any value too long to plausibly be a legitimate id, before that key is ever used to index a plain object.
+
+<Source path="frontend/src/hooks/useWorkspaceSync.ts" label="SHARED_WORKSPACE_ID_RE" />
+
+Shared workspace IDs are always created server-side as alphanumeric tokens. `useWorkspaceSync` validates an incoming `?shared=` URL parameter against that same shape before issuing a fetch for it: anything containing slashes, dots, or query characters cannot be a real workspace id, so the request is rejected client-side rather than letting a hostile `?shared=` URL get forwarded as part of a request path to a different endpoint.
 
 ## Residual risks (not yet mitigated)
 

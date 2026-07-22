@@ -89,6 +89,8 @@ const activeOrders = new Map<string, ActiveIS>();
  *   urgency = 0  → uniform schedule (u clamped away from 0)
  *   urgency = 1  → first slice takes everything (u clamped away from 1)
  */
+// docs: /development/playbooks/add-algo-strategy/
+// #region docs:is-slice-schedule
 function buildSliceSchedule(
   totalQty: number,
   urgency: number,
@@ -96,17 +98,10 @@ function buildSliceSchedule(
   maxSlices: number,
   durationMs: number
 ): { sliceQtys: number[]; numSlices: number; sliceIntervalMs: number } {
-  // Clamp urgency away from degenerate extremes
   const u = Math.max(0.01, Math.min(0.99, urgency));
 
-  // Number of slices: urgency drives how many geometric terms matter before the
-  // tail becomes negligible. We scale from minSlices (low urgency) to maxSlices
-  // (high urgency) — counter-intuitively, higher urgency concentrates weight in
-  // fewer early slices but we still use maxSlices so the schedule has enough
-  // resolution. The slice *quantities* do the front-loading work.
   const numSlices = Math.round(minSlices + (1 - u) * (maxSlices - minSlices));
 
-  // Raw geometric weights
   const rawWeights: number[] = [];
   for (let i = 0; i < numSlices; i++) {
     rawWeights.push(u * (1 - u) ** i);
@@ -114,21 +109,20 @@ function buildSliceSchedule(
 
   const weightSum = rawWeights.reduce((a, b) => a + b, 0);
 
-  // Convert to quantities (integer, rounding residual to first slice)
-  const sliceQtys: number[] = new Array(numSlices + 1).fill(0); // 1-indexed
+  const sliceQtys: number[] = new Array(numSlices + 1).fill(0);
   let allocated = 0;
   for (let i = 0; i < numSlices; i++) {
     const qty = Math.round((rawWeights[i] / weightSum) * totalQty);
     sliceQtys[i + 1] = qty;
     allocated += qty;
   }
-  // Correct any rounding residual in the first slice
   sliceQtys[1] += totalQty - allocated;
 
   const sliceIntervalMs = durationMs / numSlices;
 
   return { sliceQtys, numSlices, sliceIntervalMs };
 }
+// #endregion docs:is-slice-schedule
 
 await createTypedConsumer("is-algo-routed", [
   {
@@ -295,12 +289,11 @@ marketClient.onTick(async (tick) => {
       continue;
     }
 
-    // Raw drift: positive = price rose since arrival
+    // docs: /development/playbooks/add-algo-strategy/
+    // #region docs:is-adverse-drift
     const rawDriftBps = ((marketPrice - order.arrivalPrice) / order.arrivalPrice) * 10_000;
-    // Adverse drift: positive = market moved against us
-    //   BUY  → price rising is adverse (we pay more than arrival)
-    //   SELL → price falling is adverse (we receive less than arrival)
     const adverseDriftBps = order.side === "BUY" ? rawDriftBps : -rawDriftBps;
+    // #endregion docs:is-adverse-drift
 
     if (adverseDriftBps > order.maxSlippageBps) {
       if (!order.paused) {
@@ -350,8 +343,8 @@ marketClient.onTick(async (tick) => {
 
     if (order.sliceCount >= order.numSlices) continue;
 
-    // When the market is moving in our favour (adverse drift negative), accelerate
-    // by 20% to capture the opportunity before it reverses.
+    // docs: /development/playbooks/add-algo-strategy/
+    // #region docs:is-acceleration-and-tolerance
     let effectiveIntervalMs = order.sliceIntervalMs;
     if (adverseDriftBps < 0) {
       effectiveIntervalMs *= 0.8;
@@ -359,18 +352,15 @@ marketClient.onTick(async (tick) => {
 
     if (now - order.lastSliceAt < effectiveIntervalMs) continue;
 
-    const nextSliceIndex = order.sliceCount + 1; // 1-indexed into sliceQtys
+    const nextSliceIndex = order.sliceCount + 1;
     const scheduledQty = order.sliceQtys[nextSliceIndex] ?? 0;
     const sliceQty = Math.min(scheduledQty, order.totalRemaining);
     if (sliceQty <= 0) continue;
 
-    // Use a small tolerance (0.5 bps of market price) above/below current market
-    // to get passive-ish fills that still have a high chance of execution.
     const aggressionTolerance = marketPrice * 0.0005;
     const childLimitPrice =
-      order.side === "BUY"
-        ? marketPrice + aggressionTolerance // slightly above ask for fills
-        : marketPrice - aggressionTolerance; // slightly below bid for fills
+      order.side === "BUY" ? marketPrice + aggressionTolerance : marketPrice - aggressionTolerance;
+    // #endregion docs:is-acceleration-and-tolerance
 
     order.sliceCount += 1;
     const childId = `${order.orderId}-is-${order.sliceCount}`;

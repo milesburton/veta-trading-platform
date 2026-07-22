@@ -15,8 +15,7 @@ import { classifyRequestSource } from "../requestSource.ts";
 const WS_FRAME_CAPACITY = Number(Deno.env.get("WS_FRAME_CAPACITY")) || 100;
 const WS_FRAME_REFILL_PER_SECOND = Number(Deno.env.get("WS_FRAME_REFILL_PER_SECOND")) || 10;
 
-// One AbuseTracker per gateway process. Persists across socket lifetimes so
-// that user-level backoff outlives any single connection.
+// docs: /platform/security/
 const abuseTracker = new AbuseTracker();
 
 export interface WebSocketRouteDeps {
@@ -37,23 +36,16 @@ export async function handleWebSocketRoute(
   }
 
   const token = getCookieToken(req);
-  // Capture the client IP at upgrade time. `req.headers` is unavailable
-  // after the socket is upgraded but we need it later for the per-IP
-  // guest order-submit rate limit.
+  // docs: /platform/security/
+  // #region docs:ws-upgrade-auth-order
   const remoteIp = clientIp(req);
-  // Same — capture once at upgrade so we can tag every access event the
-  // socket emits later (UA isn't visible post-upgrade either).
   const source = classifyRequestSource(req.headers.get("user-agent"));
-  // Authenticate before upgrading — WebSocket clients can't receive HTTP 401
-  // after upgrade. Anonymous connections are allowed for read-only market data.
   const initialAuthPromise: Promise<AuthResult | null> = token
     ? deps.validateToken(token)
     : Promise.resolve(null);
 
-  // Resolve auth eagerly here so the upgrade-time abuse check knows which user
-  // it's deciding for. If the upgrade is allowed we re-use `pendingAuth` below
-  // instead of re-validating the token.
   const pendingAuth = await initialAuthPromise;
+  // #endregion docs:ws-upgrade-auth-order
   const pendingUserId = pendingAuth?.user.id ?? null;
   const upgradeDecision = abuseTracker.upgradeDecision(pendingUserId);
   if (upgradeDecision.kind === "blockUser") {
@@ -142,7 +134,7 @@ export async function handleWebSocketRoute(
             })
           );
         } catch {
-          // socket may already be tearing down — ignore
+          /* ignore */
         }
         socket.close(1008, "abuse — too many rate-limited frames");
       }

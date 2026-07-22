@@ -1,12 +1,6 @@
 import type { ZodTypeAny, z } from "@veta/zod";
 
-// CORS allowlist for shared @veta/http helpers (proxy.ts and a handful of
-// internal services that import this). The gateway has its own per-request
-// CORS logic; internal services are behind the gateway and rarely accessed
-// cross-origin directly. We opt out of `Access-Control-Allow-Origin: *` —
-// if a future internal service genuinely needs cross-origin browser access,
-// it can compose headers similarly to gateway.ts (reflect Origin when in
-// CORS_ALLOWED_ORIGINS).
+// docs: /reference/api-gateway/
 export const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",

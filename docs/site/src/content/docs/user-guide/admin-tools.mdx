@@ -3,6 +3,8 @@ title: Admin Tools
 description: Mission Control, session replay, user management, and system administration.
 ---
 
+import Source from "@docs/components/Source.astro";
+
 Admin users have access to additional tools for system management, user oversight, and compliance.
 
 ## Mission Control
@@ -68,3 +70,13 @@ PUT /api/gateway/upgrade-status
 ```
 
 This displays an orange banner to all connected traders. Set `inProgress: false` to dismiss.
+
+## Synthetic order attribution
+
+<Source path="backend/src/gateway/routes/admin.ts" label="testTraderIds" />
+
+Both **Load Test** (`/load-test`) and **Demo Day** submit synthetic orders through the same pipeline as real trades. Those orders are always attributed to a trader persona drawn from `LOAD_TEST_USER_IDS`, never to the admin or oncall account that triggered the run: administrators must never appear as the originator of a trade in the audit trail. `requireAdmin`/`requireAdminOrOncall` gates who can invoke these endpoints, so the trader-persona selection happens strictly after that authorization check, and the randomness used to pick a persona, side, size, and delay is non-cryptographic (it shapes fake test traffic only, never a security or auth decision) but still drawn from `crypto.getRandomValues` for an unbiased distribution.
+
+## Load-test symbol pool
+
+The default symbol pool for `/load-test` was expanded after an incident on 2026-05-19 where a narrow default symbol list caused load-test traffic to concentrate on a handful of tickers. When a caller does not supply an explicit `symbols` list, the endpoint rotates across a larger pool so repeated load-test invocations naturally spread orders across many assets instead of repeatedly hammering the same few names.

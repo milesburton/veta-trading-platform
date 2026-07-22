@@ -128,15 +128,8 @@ function diffVenueBooks(
   return { diff, nextLastVenueBookPrices };
 }
 
-/**
- * Which symbols are worth building a fresh order book for on this tick —
- * lets a caller skip the expensive per-symbol book-building work entirely
- * for symbols that buildTickDiff would gate out anyway, instead of
- * building every symbol's book and discarding most of it after the fact.
- * Unions orderBook's and every venue's independently-tracked "last book
- * price" baselines, since they can drift apart over time even though they
- * share the same BOOK_MATERIAL_BPS threshold.
- */
+// docs: /platform/market-simulator/
+// #region docs:symbols-needing-fresh-book
 export function symbolsNeedingFreshBook(
   prices: Record<string, number>,
   state: TickDiffState,
@@ -153,6 +146,7 @@ export function symbolsNeedingFreshBook(
   }
   return [...needed];
 }
+// #endregion docs:symbols-needing-fresh-book
 
 export function buildTickDiff(
   payload: TickPayload,

@@ -110,11 +110,7 @@ const userLimiter = new RateLimiter({
   refillPerSecond: Number(Deno.env.get("RATE_LIMIT_USER_REFILL")) || 120,
 });
 
-// Per-IP rate limit on guest order submissions. Public/anonymous users can
-// place trades when PUBLIC_GUEST_TRADING=true; this stops one IP from
-// flooding the OMS/journal pipeline. Defaults: 10 burst, 1/sec sustained
-// → ~3,600 orders/hour worst case per IP. Authenticated traders are
-// unaffected.
+// docs: /reference/api-gateway/
 const PUBLIC_GUEST_TRADING =
   (Deno.env.get("PUBLIC_GUEST_TRADING") ?? "false").toLowerCase() === "true";
 const guestSubmitLimiter = new RateLimiter({
@@ -136,16 +132,13 @@ function isCsrfSafeMethod(method: string): boolean {
   return method === "GET" || method === "HEAD" || method === "OPTIONS";
 }
 
+// docs: /reference/api-gateway/
+// #region docs:csrf-origin-fallback
 function originIsAllowed(req: Request): boolean {
   const origin = req.headers.get("origin");
   if (origin) return ALLOWED_ORIGINS.has(origin);
-  // Fall back to Referer if Origin is missing (some legacy clients).
   const referer = req.headers.get("referer");
   if (!referer) {
-    // Missing both Origin and Referer is common for non-browser clients
-    // (curl, automation, Electron). The cookie + SameSite=Strict still
-    // protects browser-based CSRF. Allow it; deny only when an origin/referer
-    // is present and unrecognised (the case a malicious site triggers).
     return true;
   }
   try {
@@ -155,6 +148,7 @@ function originIsAllowed(req: Request): boolean {
     return false;
   }
 }
+// #endregion docs:csrf-origin-fallback
 
 async function requireAuth(
   req: Request
@@ -174,8 +168,7 @@ async function requireAuth(
       headers: { "Content-Type": "application/json", ...corsHeaders(req) },
     });
   }
-  // CSRF defence: state-changing methods must come from a trusted origin.
-  // SameSite=Strict on the cookie is the first line; this is belt-and-braces.
+  // docs: /reference/api-gateway/
   if (CSRF_ENFORCE && !isCsrfSafeMethod(req.method) && !originIsAllowed(req)) {
     publishAccessEvent({
       action: "auth_failure",
@@ -215,11 +208,7 @@ async function requireAuth(
   return auth;
 }
 
-// A misconfigured client can produce thousands of identical auth_failure
-// events per second; without a cap the stdout log fills disk in hours. We
-// still publish every event to Kafka (audit trail), but stdout WARN emits
-// are throttled per (action, reason) and the next emit carries a count of
-// suppressed events so the signal isn't lost.
+// docs: /reference/api-gateway/
 const ACCESS_WARN_THROTTLE_MS = Number(Deno.env.get("ACCESS_WARN_THROTTLE_MS")) || 1000;
 const accessWarnState = new Map<string, ThrottleEntry>();
 
@@ -237,7 +226,7 @@ function publishAccessEvent(event: {
 }) {
   const enriched = { ...event, ts: Date.now() };
   producer?.send("user.access", enriched).catch(() => {});
-  // Emit via logger too: alert rules query Loki, not Kafka.
+  // docs: /reference/api-gateway/
   const isWarn = event.action === "auth_failure" || event.action === "ws_rate_limited";
   if (!isWarn) {
     logger.info("access_event", enriched);
@@ -281,10 +270,11 @@ function startConsumers(): void {
     });
   });
   const MARKET_SIM_WS = `ws://${Deno.env.get("MARKET_SIM_HOST") ?? "localhost"}:${Deno.env.get("MARKET_SIM_PORT") ?? "5000"}`;
+  // docs: /reference/api-gateway/
   const connectWsFallback = () => {
     const ws = new WebSocket(MARKET_SIM_WS);
     ws.onmessage = (ev) => {
-      if (Date.now() - lastKafkaTick < 3_000) return; // Kafka flowing — skip
+      if (Date.now() - lastKafkaTick < 3_000) return;
       try {
         const msg = JSON.parse(ev.data as string) as { event?: string; data?: unknown };
         if (msg.event === "marketData" || msg.event === "marketUpdate") {
@@ -306,7 +296,7 @@ function startConsumers(): void {
       const v = value as { userId?: string; userRole?: string };
       if (v.userId) {
         broadcastToUser(v.userId, { event: "orderEvent", topic, data: value });
-        // Compliance / admin oversight: also broadcast to those roles
+        // docs: /reference/api-gateway/
         if (v.userRole !== "compliance" && v.userRole !== "admin") {
           broadcastToRoles(["compliance", "admin"], { event: "orderEvent", topic, data: value });
         }
@@ -458,7 +448,7 @@ function startConsumers(): void {
 
 await startConsumers();
 
-// Fires 29 concurrent fetches — do it on a background interval, not per-request.
+// docs: /reference/api-gateway/
 const HEALTH_REFRESH_MS = 5_000;
 
 type ServiceHealth = {
@@ -757,8 +747,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
   if (path === "/ready" && req.method === "GET") {
     const h = cachedHealth;
-    // Anon callers get a boolean; authed callers get per-service detail.
-    // Per-service detail leaks backend topology to anonymous scanners.
+    // docs: /reference/api-gateway/
     const tokenCookie = getCookieToken(req);
     const isAuthed = tokenCookie ? (await validateToken(tokenCookie)) !== null : false;
 
@@ -985,9 +974,8 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "discord-bot": DISCORD_BOT_URL,
   };
 
-  // The gateway is the single enforcement point: internal services trust
-  // the gateway and don't re-check the caller. Default-deny: anything not
-  // in this map requires `admin`.
+  // docs: /reference/api-gateway/
+  // #region docs:svc-min-roles
   const SVC_MIN_ROLES: Record<string, Set<string>> = {
     "user-service": new Set([
       "viewer",
@@ -1095,6 +1083,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     "replay-service": new Set(["risk-manager", "compliance", "oncall", "admin"]),
     "risk-engine": new Set(["risk-manager", "compliance", "oncall", "admin"]),
   };
+  // #endregion docs:svc-min-roles
 
   const svcMatch = path.match(/^\/api\/([^/]+)(\/.*)?$/);
   if (svcMatch) {
@@ -1102,10 +1091,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const svcPath = svcMatch[2] ?? "/";
     const target = SVC_PROXY[svcName];
     if (target) {
-      // Pre-login allowlist: OAuth flow, demo persona catalogue, /health
-      // probes (the sign-in page renders a degraded-platform indicator
-      // before any session cookie exists). /metrics is deliberately
-      // excluded so Prometheus scrape never leaks via the public gateway.
+      // docs: /reference/api-gateway/
       const PROXY_PUBLIC =
         (svcName === "user-service" &&
           (svcPath.startsWith("/oauth/") ||

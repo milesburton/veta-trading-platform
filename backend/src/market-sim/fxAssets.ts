@@ -10,13 +10,6 @@ function fxIsin(symbol: string): string {
   return `FX${padded}0`;
 }
 
-// FX pairs: price = units of quote currency per 1 unit of base currency.
-// Volatility = approximate daily σ for GBM (FX is lower than equities).
-// dailyVolume = approximate daily notional in millions of units of base (indicative).
-// sector = "FX" — used by heatmap grouping.
-// lotSize = 1000 (standard FX "lot" expressed in base units for display).
-// exchange = "XCME" (CME FX futures venue; spot FX is OTC but we use a single MIC).
-
 const FX_NAMES: Record<string, string> = {
   "EUR/USD": "Euro / US Dollar",
   "GBP/USD": "British Pound / US Dollar",
@@ -29,6 +22,8 @@ const FX_NAMES: Record<string, string> = {
   "EUR/JPY": "Euro / Japanese Yen",
 };
 
+// docs: /platform/market-simulator/
+// #region docs:fx-conventions
 export const CURATED_FX_SEEDS: Omit<
   AssetDef,
   | "marketCapB"
@@ -52,6 +47,7 @@ export const CURATED_FX_SEEDS: Omit<
     currency: "USD",
     lotSize: 1_000,
   },
+  // #endregion docs:fx-conventions
   {
     symbol: "GBP/USD",
     initialPrice: 1.268,

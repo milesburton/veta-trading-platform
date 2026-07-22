@@ -10,13 +10,6 @@ function commodityIsin(symbol: string): string {
   return `CM${padded}0`;
 }
 
-// Commodity futures (front-month continuous contracts).
-// Price in USD per standard contract unit (bbl, MMBtu, troy oz, etc.).
-// Volatility = approximate daily σ (commodities are higher than FX, lower than speculative equities).
-// dailyVolume = approximate daily number of contracts traded.
-// lotSize = 1 contract (quantity in the OMS is always integer contracts).
-// exchange = CME/NYMEX/CBOT venues mapped to a single MIC per commodity.
-
 const COMMODITY_NAMES: Record<string, string> = {
   "CL1!": "WTI Crude Oil Front Month",
   "NG1!": "Natural Gas Front Month",
@@ -33,6 +26,8 @@ const COMMODITY_NAMES: Record<string, string> = {
   "SB1!": "Sugar Front Month",
 };
 
+// docs: /platform/market-simulator/
+// #region docs:commodity-conventions
 export const CURATED_COMMODITY_SEEDS: Omit<
   AssetDef,
   | "marketCapB"
@@ -56,6 +51,7 @@ export const CURATED_COMMODITY_SEEDS: Omit<
     currency: "USD",
     lotSize: 1,
   },
+  // #endregion docs:commodity-conventions
   {
     symbol: "NG1!",
     initialPrice: 3.05,

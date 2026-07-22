@@ -36,8 +36,7 @@ export async function handleLoadgenAnnounceRoute(
 
   const expected = Deno.env.get("LOADGEN_ANNOUNCE_TOKEN") ?? "";
   if (expected.length === 0) {
-    // Endpoint disabled when no token is configured. Returning 404 (rather
-    // than 503) keeps the surface invisible to anyone scanning for it.
+    // docs: /development/testing/loadgen/
     return null;
   }
   const provided = req.headers.get("x-loadgen-token") ?? "";

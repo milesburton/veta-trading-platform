@@ -1865,9 +1865,7 @@ export const CURATED_EQUITY_SEEDS: RawAsset[] = [
   },
 ];
 
-// Curated metadata for the most-traded names.  Remaining assets are filled in
-// algorithmically from their sector/volatility profile so every field is present.
-
+// docs: /platform/market-simulator/
 interface RawMeta {
   marketCapB: number;
   beta: number;
@@ -1875,7 +1873,7 @@ interface RawMeta {
   peRatio: number;
   float: number;
   exchange: "XNAS" | "XNYS" | "XCHI" | "ARCX";
-  lotSize?: number; // override; auto-derived from price if omitted
+  lotSize?: number;
 }
 
 const CURATED_META: Record<string, RawMeta> = {
@@ -2533,21 +2531,19 @@ function deriveIsin(symbol: string): string {
   return `US${padded}0`;
 }
 
-/** Approximate market cap from price × estimated shares outstanding. */
+// docs: /platform/market-simulator/
+// #region docs:derive-heuristics
 function deriveMarketCapB(price: number, dailyVolume: number): number {
-  // Rough estimate: larger ADV → larger float → larger company
-  const sharesOutstandingM = Math.sqrt(dailyVolume / 1_000) * 100; // heuristic
+  const sharesOutstandingM = Math.sqrt(dailyVolume / 1_000) * 100;
   return parseFloat(((price * sharesOutstandingM * 1_000_000) / 1e9).toFixed(1));
 }
 
-/** Derive beta from volatility relative to market volatility (~1.0% daily for SPY). */
 function deriveBeta(volatility: number): number {
   return parseFloat((volatility / 0.01).toFixed(2));
 }
 
-/** Estimate dividend yield: lower-vol, established names pay dividends. */
 function deriveDividendYield(sector: string, volatility: number): number {
-  if (volatility > 0.03) return 0.0; // high-growth / speculative
+  if (volatility > 0.03) return 0.0;
   const base: Record<string, number> = {
     Utilities: 0.035,
     "Consumer Staples": 0.025,
@@ -2565,9 +2561,8 @@ function deriveDividendYield(sector: string, volatility: number): number {
   return parseFloat((base[sector] ?? 0.01).toFixed(4));
 }
 
-/** Rough P/E from sector — growth sectors command higher multiples. */
 function derivePeRatio(sector: string, volatility: number): number {
-  if (volatility > 0.04) return 0; // speculative / loss-making
+  if (volatility > 0.04) return 0;
   const base: Record<string, number> = {
     Technology: 38,
     ETF: 0,
@@ -2584,6 +2579,7 @@ function derivePeRatio(sector: string, volatility: number): number {
   };
   return base[sector] ?? 20;
 }
+// #endregion docs:derive-heuristics
 
 const EXCHANGE_RIC_SUFFIX: Record<string, string> = {
   XNAS: ".OQ",

@@ -85,7 +85,6 @@ marketClient.onTick(async (tick) => {
     const marketPrice = tick.prices[order.asset];
     if (!marketPrice) continue;
 
-    // Expiry
     if (now >= order.expiresAt) {
       await producer
         ?.send("orders.expired", {
@@ -116,8 +115,7 @@ marketClient.onTick(async (tick) => {
         `Triggered ${order.orderId}: ${order.side} ${fillQty} ${order.asset} @ mkt ${marketPrice}`
       );
 
-      // Claim synchronously before the await below so a second tick arriving
-      // while this producer.send() is in flight can't re-trigger the same order.
+      // docs: /development/playbooks/add-algo-strategy/
       order.remainingQty = 0;
       pendingOrders.splice(i, 1);
 

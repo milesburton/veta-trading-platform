@@ -96,6 +96,7 @@ export default defineConfig({
             { label: "Overview", slug: "platform/architecture" },
             { label: "Edge architecture", slug: "platform/edge-architecture" },
             { label: "Service map", slug: "platform/services" },
+            { label: "Market Simulator internals", slug: "platform/market-simulator" },
             { label: "Algo strategies", slug: "platform/algos" },
             { label: "Smart Order Router", slug: "platform/smart-order-router" },
             { label: "Dark Pool", slug: "platform/dark-pool" },
