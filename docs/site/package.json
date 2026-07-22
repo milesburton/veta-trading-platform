@@ -19,8 +19,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@astrojs/starlight": "^0.38.3",
-    "astro": "^6.1.5"
+    "@astrojs/starlight": "^0.41.3",
+    "astro": "^7.1.3"
   },
   "devDependencies": {
     "@astrojs/react": "^5.0.4",
