@@ -43,9 +43,7 @@ import { TemplatePicker } from "./TemplatePicker.tsx";
 
 function useAllServiceHealth(): ServiceHealth[] {
   return SERVICES.map((svc) => {
-    // SERVICES is a module-level constant array; iteration order is stable
-    // across every render so hook order is preserved. Rule of Hooks is
-    // satisfied semantically — biome's static analysis can't see this.
+    // docs: /development/contributing/
     // biome-ignore lint/correctness/useHookAtTopLevel: stable iteration over module-level constant
     const result = useGetServiceHealthQuery(svc, { pollingInterval: 10_000 });
     if (result.data) return result.data;

@@ -3,6 +3,8 @@ title: Continuous load generator
 description: Always-on synthetic trade flow on the production server. Two k6 runners (soak + matrix) plus a token-refresh sidecar. Distinct from the on-demand k6 harness.
 ---
 
+import Source from "@docs/components/Source.astro";
+
 `load.sh on` brings up three containers on the production server:
 
 - **`loadgen-soak`**: k6 with a steady ~50 VUs, restarts every 50 min to
@@ -94,6 +96,12 @@ the gateway logged as `auth_failure` ~1,100 lines/sec, contributing to the
 Fix landed in PR #234's gateway log-throttle plus a one-off `.env.loadgen`
 rotation on the server. The post-fix install command above extracts the
 correct per-user password automatically.
+
+## Discord start/stop announcements
+
+<Source path="backend/src/gateway/routes/loadgen-announce.ts" label="handleLoadgenAnnounceRoute" />
+
+The gateway exposes an internal `/loadgen-announce` endpoint the loadgen containers call on start and stop, so the Discord alerts channel gets a heads-up that the noisy traffic window has begun or ended. The endpoint requires a shared token (`LOADGEN_ANNOUNCE_TOKEN`) sent as `x-loadgen-token`. When that env var is unset, the route returns `404` rather than `503`: a `404` keeps the endpoint indistinguishable from a path that simply does not exist, so it does not advertise its own presence to anyone scanning the gateway's routes.
 
 ## Source
 

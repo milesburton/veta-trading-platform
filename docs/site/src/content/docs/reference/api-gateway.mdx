@@ -4,6 +4,8 @@ description: The Gateway is the sole entry point for all browser traffic.
 ---
 
 import Svc from "@docs/components/Svc.astro";
+import Source from "@docs/components/Source.astro";
+import CodeBlock from "@docs/components/CodeBlock.astro";
 
 The <Svc name="gateway" /> (port 5011) is the sole entry point for all browser traffic. All routes require a valid `veta_user` session cookie except `/health` and `/ready`.
 
@@ -36,3 +38,63 @@ Example: `GET /api/journal/orders` is proxied to `http://localhost:5009/orders` 
 3. Browser connects to /ws → cookie validated → authIdentity event sent
 4. Every HTTP proxy request → cookie re-validated (10s cache)
 ```
+
+## Guest order rate limiting
+
+<Source path="backend/src/gateway/gateway.ts" line={114} label="PUBLIC_GUEST_TRADING" />
+
+When `PUBLIC_GUEST_TRADING=true`, anonymous/public users can place trades. A dedicated per-IP token bucket (10 burst, 1/sec sustained, roughly 3,600 orders/hour worst case per IP) stops one IP from flooding the OMS/journal pipeline. Authenticated traders are not subject to this limiter; they use the separate per-user rate limit instead.
+
+## CSRF defence
+
+<Source path="backend/src/gateway/gateway.ts" region="docs:csrf-origin-fallback" />
+
+State-changing methods (anything that is not `GET`/`HEAD`/`OPTIONS`) must come from a trusted origin. `SameSite=Strict` on the session cookie is the primary CSRF defence; the origin check is a second, independent layer.
+
+`originIsAllowed` falls back to the `Referer` header when `Origin` is missing, since some legacy clients omit `Origin` on same-origin requests. If both headers are absent, the request is allowed rather than denied: this is normal for non-browser clients (curl, automation scripts, the Electron shell), and `SameSite=Strict` already blocks browser-driven CSRF regardless. The check only denies when an origin or referer is present and does not match the allowlist, which is the shape a malicious site's cross-origin request takes.
+
+## Access-event logging
+
+<Source path="backend/src/gateway/gateway.ts" line={216} label="publishAccessEvent" />
+
+Every gate decision publishes a `user.access` event to Kafka (the audit trail) and, for `auth_failure` / `ws_rate_limited` actions, also emits a WARN-level log line, since Grafana alert rules query Loki, not Kafka. A misconfigured client can produce thousands of identical `auth_failure` events per second; without a cap the stdout log fills the disk within hours. Kafka still receives every event for the audit trail, but stdout WARN emits are throttled per `(action, reason)` pair, and the next emitted line after a throttled run carries a `suppressedSince` count so the signal is not lost, only rate-limited.
+
+## Market data fallback path
+
+<Source path="backend/src/gateway/gateway.ts" line={272} label="startConsumers" />
+
+The gateway's primary market-data path is a Kafka consumer on `market.ticks`. It also opens a direct WebSocket to `market-sim` as a fallback: if no Kafka tick has arrived in the last 3 seconds, ticks from the fallback WebSocket are broadcast instead. Once Kafka resumes flowing, the fallback WebSocket's messages are silently dropped again. This keeps the dashboard live during a Redpanda outage without the fallback path fighting the primary path for which tick wins.
+
+Order events for a specific user are additionally broadcast to `compliance` and `admin` roles (unless the acting user already holds one of those roles), giving oversight roles visibility into every trader's order flow without those roles needing to poll each trader individually.
+
+## Health check refresh
+
+<Source path="backend/src/gateway/gateway.ts" line={452} label="HEALTH_REFRESH_MS" />
+
+`/ready` reports status for all 29 backend services. Fetching health from all of them synchronously on every request would mean 29 concurrent fetches per `/ready` call; instead, health is polled on a 5-second background interval and `/ready` serves the cached result. Anonymous callers get a single aggregate boolean; authenticated callers get per-service detail, since per-service detail would otherwise let an anonymous scanner map the backend topology.
+
+## Per-service RBAC
+
+<CodeBlock
+  path="backend/src/gateway/gateway.ts"
+  region="docs:svc-min-roles"
+  title="SVC_MIN_ROLES (excerpt)"
+/>
+
+The gateway is the single enforcement point for role checks on `/api/{service}/*` proxy routes: internal services trust the gateway and do not re-check the caller's role themselves. `SVC_MIN_ROLES` is default-deny, any service not listed in the map requires the `admin` role.
+
+## Pre-login allowlist
+
+A small set of proxy routes are reachable without a session cookie: the OAuth flow (`/oauth/*`, `/auth/*` on `user-service`), the demo persona catalogue (`/personas`), `/health` probes (the sign-in page renders a degraded-platform indicator before any session cookie exists), and the kafka-relay's browser event-ingestion endpoint. `/metrics` is deliberately excluded from every allowlist so a Prometheus scrape never leaks through the public-facing gateway.
+
+## Classifying loadgen traffic
+
+<Source path="backend/src/gateway/requestSource.ts" label="classifyRequestSource" />
+
+`classifyRequestSource` tags a request as `"loadgen"` when its User-Agent starts with `k6/` (the loadgen container's HTTP client). Access events are tagged at the point they are published, which lets alert rules filter continuous [loadgen](/veta-trading-platform/development/testing/loadgen/) traffic out of their Loki queries (`!= "\"source\":\"loadgen\""`) without losing real incident signal. This is deliberately a noise-classification filter only: a real attacker does not advertise "k6" in their User-Agent, so the tag is never trusted for an authentication or authorization decision, only for keeping alerts readable during a load run.
+
+## CORS for internal services
+
+<Source path="backend/src/lib/http.ts" label="CORS_HEADERS" />
+
+`@veta/http`'s `CORS_HEADERS` (used by `proxy.ts` and internal services that import the shared helper) does not include `Access-Control-Allow-Origin: *`. The gateway has its own per-request CORS logic reflecting the request's `Origin` when it is in `CORS_ALLOWED_ORIGINS`; internal services sit behind the gateway and are rarely accessed cross-origin directly, so a wildcard origin is unnecessary exposure. If a future internal service genuinely needs direct cross-origin browser access, it should compose headers the same way `gateway.ts` does rather than opening `CORS_HEADERS` up to all origins.

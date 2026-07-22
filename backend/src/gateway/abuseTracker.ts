@@ -1,30 +1,4 @@
-/**
- * Tracks abuse-shaped behaviour against a websocket connection and the user
- * behind it, producing escalation decisions:
- *
- *   Level 1 (handled by frame rate-limiter): reject a single over-rate frame
- *           and send `rateLimited` back. Soft. Not handled here.
- *
- *   Level 2 (this module): a single socket hits the per-socket frame limit
- *           >= ABUSE_PER_SOCKET_THRESHOLD times within ABUSE_PER_SOCKET_WINDOW_MS.
- *           Decision: forceClose. The socket is force-closed and a
- *           ws_disconnected_abuse access event is published.
- *
- *   Level 3 (this module): a single userId has had >= ABUSE_USER_FORCE_CLOSE_THRESHOLD
- *           force-closes within ABUSE_USER_WINDOW_MS. Decision: blockUser.
- *           New WS upgrade attempts for that userId are refused for
- *           ABUSE_USER_BACKOFF_MS. Cools off automatically.
- *
- * No IP-banning. UserIds are the precise control surface. Unauthenticated
- * sockets share an "anonymous" key, so all level-3 effects on anonymous
- * traffic apply globally. That matches the platform's threat model: a real
- * attacker authenticating anonymously is just one of many.
- *
- * All state is in-memory. A gateway restart resets all blocks. That's fine —
- * the structural protection (level 2's force-close stopping a chatty client
- * from holding a socket open) re-establishes naturally on the next request.
- */
-
+// docs: /platform/security/
 const ABUSE_PER_SOCKET_THRESHOLD = 10;
 const ABUSE_PER_SOCKET_WINDOW_MS = 60_000;
 const ABUSE_USER_FORCE_CLOSE_THRESHOLD = 3;
@@ -108,7 +82,6 @@ export class AbuseTracker {
       return { kind: "ok" };
     }
 
-    // Level 2 triggered — force-close. Also record a force-close for the user.
     const userKey = this.#userKey(userId);
     const us = this.#getOrCreateUserState(userKey);
     us.forceClosedAtMs.push(now);

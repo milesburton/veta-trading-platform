@@ -4,6 +4,8 @@ description: How to land a new execution algorithm (TWAP, POV, etc. shape) in th
 ---
 
 import { Aside } from "@astrojs/starlight/components";
+import Source from "@docs/components/Source.astro";
+import CodeBlock from "@docs/components/CodeBlock.astro";
 
 ## When to use
 
@@ -48,3 +50,43 @@ cd docs/site && npm run generate
 - **Hardcoding venue selection** — child orders should let the EMS choose the venue (see [Smart Order Router](/veta-trading-platform/platform/smart-order-router/)). Only set `venue` explicitly if your algo is doing best-price routing like SNIPER.
 - **Missing tests in `deno.json`** — new test files are not auto-picked-up. Add the path to all three `test*` task definitions in `deno.json`.
 - **Docs auto-gen swallows your description** — the algo generator reads the first sentence (split on `. <Capital>`). Keep the first sentence punchy.
+
+## Execution mechanics reference
+
+The existing drift-sensitive algos share two patterns worth reusing rather than reinventing.
+
+### Adverse-drift sign convention
+
+<Source path="backend/src/algo/is-strategy.ts" region="docs:is-adverse-drift" />
+
+Raw drift (`(marketPrice - arrivalPrice) / arrivalPrice`) is signed relative to price direction, not relative to the order. Whether a given drift is adverse depends on the order's side: for a BUY, a price rise is adverse (the fill costs more than the arrival price); for a SELL, a price fall is adverse (the fill returns less). `adverseDriftBps` flips the sign for SELL orders so that "positive adverse drift" always means "the market moved against this order," letting the rest of the algo (pause/resume, acceleration) reason about a single sign convention regardless of side.
+
+### Accelerating on favourable drift
+
+<CodeBlock
+  path="backend/src/algo/is-strategy.ts"
+  region="docs:is-acceleration-and-tolerance"
+  title="IS: acceleration and aggression tolerance"
+/>
+
+When adverse drift is negative (the market is moving in the order's favour), the next-slice interval is cut by 20% to capture more of the favourable move before it reverses. The child limit price also carries a small aggression tolerance (0.5 bps of market price) on the far side of the market (above for BUY, below for SELL), which produces passive-ish limit orders that still have a high probability of filling against normal market movement, rather than resting exactly at the current price and potentially missing fills entirely.
+
+<Source path="backend/src/algo/arrival-price-strategy.ts" region="docs:arrival-price-urgency-scaling" />
+
+ARRIVAL_PRICE uses a similar 20%-acceleration-on-favourable-drift rule, but scales its base slice interval by `urgency / 50` first: `urgency=50` is the neutral point (1x pace), `urgency=100` doubles the pace, and `urgency=25` halves it. Keep this convention (50 as the neutral midpoint of a 0-100 urgency parameter) if a new algo exposes a similar urgency knob, so the parameter behaves consistently across algos from a trader's perspective.
+
+### Claim before await
+
+<Source path="backend/src/algo/limit-strategy.ts" label="LIMIT trigger handling" />
+
+When a tick triggers a fill, LIMIT marks the order filled (`order.remainingQty = 0`) and removes it from `pendingOrders` synchronously, before the `await producer.send(...)` that follows. Every algo here runs its tick handler on a single-threaded event loop, but `await` still yields control, and another tick can arrive and re-evaluate the same order while the `send()` is in flight. Claiming the order synchronously, before the first `await` in the triggered branch, closes that window: a second tick sees `remainingQty === 0` or finds the order already removed, and cannot re-trigger the same fill. Any new algo with a similar "trigger once, then do async work" shape should claim state the same way, before its first await.
+
+### Front-loaded slice schedules
+
+<CodeBlock
+  path="backend/src/algo/is-strategy.ts"
+  region="docs:is-slice-schedule"
+  title="IS: geometric slice schedule"
+/>
+
+IS front-loads its child order sizes using geometric decay: `rawWeight[i] = urgency * (1 - urgency)^i`, normalised to sum to the total quantity. The number of slices scales from `minSlices` (low urgency) to `maxSlices` (high urgency), which is the opposite of what the geometric decay alone would suggest. Higher urgency concentrates more of the *quantity* into the earliest slices (the decay is steeper), but the schedule still allocates the full `maxSlices` range so there is enough resolution in the tail; it is the slice quantities, not the slice count, that do the front-loading work.

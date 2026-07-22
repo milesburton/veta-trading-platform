@@ -316,10 +316,10 @@ setInterval(() => {
         clients.delete(socket);
       }
     }
-    // venueBooks is SNIPER-only (consumed over the WebSocket via
-    // marketSimClient.ts); no market.ticks consumer reads it, and at the
-    // full universe size it alone can exceed the broker's max message size.
+    // docs: /platform/market-simulator/
+    // #region docs:venuebooks-sniper-only
     const { venueBooks: _venueBooks, ...kafkaDiff } = diff;
+    // #endregion docs:venuebooks-sniper-only
     producer?.send("market.ticks", kafkaDiff).catch(() => {});
   }
 }, 250);

@@ -7,12 +7,14 @@ export function currentMarketMinute(): number {
   return Math.floor(elapsedSecs * TIME_SCALE) % TRADING_DAY_MINUTES;
 }
 
-// U-shaped volume curve: cos²(π*x) peaks at open and close, troughs at midday. Returns [0.3, 1.0].
+// docs: /platform/market-simulator/
+// #region docs:intraday-volume-curve
 export function intradayVolumeFactor(marketMinute: number): number {
   const x = marketMinute / TRADING_DAY_MINUTES;
   const cos = Math.cos(Math.PI * x);
   return 0.3 + 0.7 * cos * cos;
 }
+// #endregion docs:intraday-volume-curve
 
 export function realMsToMarketMinutes(ms: number): number {
   return (ms / 1_000) * TIME_SCALE;

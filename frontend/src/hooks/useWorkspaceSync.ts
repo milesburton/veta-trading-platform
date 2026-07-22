@@ -73,10 +73,7 @@ export async function listSharedWorkspaces(): Promise<SharedWorkspaceEntry[]> {
   return res.json();
 }
 
-// Workspace IDs are created server-side as alphanumeric tokens. Anything
-// outside that shape (slashes, dots, query chars) can't be a real id, so
-// reject before issuing the request to stop a hostile ?shared= URL from
-// being weaponised into a request to a different endpoint.
+// docs: /platform/security/
 const SHARED_WORKSPACE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 export async function fetchSharedWorkspace(id: string): Promise<SharedWorkspaceDetail | null> {

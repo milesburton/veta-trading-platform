@@ -40,10 +40,7 @@ function busUnavailable(producerReady: boolean): Response | null {
   });
 }
 
-// Synthetic orders emitted by admin/oncall tooling (load-test, demo-day) must
-// be attributed to a real trader persona, never to the invoking admin —
-// administrators must never appear as the originator of a trade in the
-// pipeline. The personas come from LOAD_TEST_USER_IDS (existing trader ids).
+// docs: /user-guide/admin-tools/
 export function testTraderIds(): string[] {
   return (Deno.env.get("LOAD_TEST_USER_IDS") ?? "")
     .split(",")
@@ -51,24 +48,15 @@ export function testTraderIds(): string[] {
     .filter(Boolean);
 }
 
-// Uniform float in [0, 1) used only for *simulation jitter* in the
-// admin load-generator below (order side/size/strategy spread, delays).
-// It is not used for keys, tokens, nonces or any security decision.
-//
-// The construction is the canonical full-precision 53-bit mantissa form:
-// take 53 random bits (27 + 26) and divide by 2^53. Every representable
-// double in [0, 1) is produced with equal probability, so the result is
-// unbiased — there is no rounding or modulo that could skew the
-// distribution.
-//
+// docs: /user-guide/admin-tools/
 // codeql[js/biased-cryptographic-random]: false positive — this is the
 // standard unbiased 53-bit-to-double conversion, not a biased
 // division/modulo, and the value is non-cryptographic simulation jitter.
 function secureRandomFloat(): number {
   const buf = new Uint32Array(2);
   crypto.getRandomValues(buf);
-  const hi = buf[0] >>> 5; // top 27 bits
-  const lo = buf[1] >>> 6; // top 26 bits
+  const hi = buf[0] >>> 5;
+  const lo = buf[1] >>> 6;
   return (hi * 2 ** 26 + lo) * 2 ** -53;
 }
 
@@ -147,9 +135,7 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
     });
   }
 
-  // Expanded symbol pool to prevent concentration on a few tickers (incident 2026-05-19).
-  // When the caller does not supply symbols, we rotate across a larger pool so that
-  // repeated load-test invocations naturally spread orders across many assets.
+  // docs: /user-guide/admin-tools/
   const ALL_SYMBOLS = [
     "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA",
     "NVDA", "META", "JPM", "GS", "V", "MA",
@@ -217,12 +203,7 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
   const refPrice = (sym: string) => prices[sym] ?? FALLBACK_REF[sym] ?? 100;
 
   const stride = 1000 / (ORDERS_PER_SECOND_PER_USER * LOAD_TEST_USERS.length);
-  // Non-cryptographic synthetic-order generator. All randomness below
-  // (pickFrom, side coin-flip, jitter, clientOrderId suffix, quantity)
-  // is for shaping fake test traffic, NOT for any security/auth decision.
-  // The picked trader id is a fixed test persona from LOAD_TEST_USER_IDS;
-  // requireAdmin(auth) above gates who can invoke this endpoint, so the
-  // randomness is post-auth.
+  // docs: /user-guide/admin-tools/
   const pickFrom = <T>(xs: readonly T[]): T => xs[secureRandomInt(xs.length)];
   (async () => {
     for (let i = 0; i < orderCount; i++) {
@@ -281,9 +262,7 @@ export async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<
   const busRej = busUnavailable(ctx.producer.isReady());
   if (busRej) return busRej;
 
-  // Demo-day orders are synthetic and must be attributed to a trader persona,
-  // never to the invoking admin/oncall account — admins must not appear as the
-  // originator of a trade.
+  // docs: /user-guide/admin-tools/
   const demoTraders = testTraderIds();
   if (demoTraders.length === 0) {
     return new Response(
