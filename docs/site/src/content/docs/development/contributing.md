@@ -12,7 +12,7 @@ The project uses a **Dev Container**. Open the repository in VS Code or JetBrain
 ## Code standards
 
 - **TypeScript everywhere**: Deno for backend, Vite and React for frontend.
-- **No comments in code**: the codebase should be self-documenting. Exceptions: `biome-ignore` and `eslint-disable` directives.
+- **No comments in code**: the codebase should be self-documenting. Exceptions: `biome-ignore` and `eslint-disable` directives. If a piece of code has non-obvious rationale that a future reader genuinely needs (a workaround for a specific bug, a subtle invariant, why a value was chosen), write that explanation as a docs page instead of a comment, and leave a single-line reference in the code pointing at it, e.g. `// docs: /development/testing/k6-load-testing/`. Use `<Source>` (see [Source References](/veta-trading-platform/development/source-references/)) on the docs side to link back to the exact file or region, so the pair stays in sync and the build fails if either side drifts.
 - **Functional where possible**: pure functions with explicit inputs and outputs over mutable module-level state.
 - **Single source of truth**: shared types in `backend/src/types/`, shared utilities in `backend/src/lib/`, shared frontend utilities in `frontend/src/utils/`.
 - **Import map aliases**: use `@veta/http`, `@veta/messaging`, `@veta/types/orders` etc. instead of relative paths like `../lib/http.ts`.
