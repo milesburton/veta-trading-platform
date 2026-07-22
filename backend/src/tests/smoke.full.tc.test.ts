@@ -1709,7 +1709,7 @@ Deno.test({
               strike: 200,
               expirySecs: 86400,
             }),
-            signal: T(8_000),
+            signal: T(25_000),
           });
           assertEquals(res.status, 200);
           const body = (await res.json()) as {

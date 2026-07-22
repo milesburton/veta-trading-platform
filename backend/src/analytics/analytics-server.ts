@@ -82,7 +82,7 @@ async function resolveSpot(symbol: string): Promise<number | null> {
   if (cachedSpot !== undefined) return cachedSpot;
   try {
     const res = await fetch(`${MARKET_SIM_URL}/assets`, {
-      signal: AbortSignal.timeout(5_000),
+      signal: AbortSignal.timeout(15_000),
     });
     if (res.ok) {
       const assets = (await res.json()) as {
