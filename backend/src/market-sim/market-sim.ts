@@ -10,6 +10,7 @@ import { FX_ASSET_MAP, FX_ASSETS } from "./fxAssets.ts";
 import {
   advanceRegime,
   generatePrice,
+  isResetInProgress,
   marketData,
   openPrices,
   prewarmPricesAsync,
@@ -269,6 +270,7 @@ const clients = new Set<WebSocket>();
 let tickDiffState = createTickDiffState();
 
 setInterval(() => {
+  if (isResetInProgress()) return;
   tickCount++;
   if (tickCount % TICKS_PER_MINUTE === 0) {
     marketMinute = (marketMinute + 1) % 390;

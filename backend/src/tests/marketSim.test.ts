@@ -123,24 +123,24 @@ Deno.test("openPrices remain stable after further price moves", () => {
   assertNotEquals(changed, 0);
 });
 
-Deno.test("resetPriceEngine with prewarmTicks=0 restores anchor prices without prewarming", () => {
+Deno.test("resetPriceEngine with prewarmTicks=0 restores anchor prices without prewarming", async () => {
   seedRng(99);
   seedPrice("AAPL", 100);
   for (let i = 0; i < 50; i++) generatePrice("AAPL");
   const beforeReset = marketData.AAPL;
 
-  resetPriceEngine({ prewarmTicks: 0 });
+  await resetPriceEngine({ prewarmTicks: 0 });
 
   assertNotEquals(marketData.AAPL, beforeReset);
 });
 
-Deno.test("resetPriceEngine default prewarm moves prices further from anchor than prewarmTicks=0", () => {
+Deno.test("resetPriceEngine default prewarm moves prices further from anchor than prewarmTicks=0", async () => {
   seedRng(42);
-  resetPriceEngine({ prewarmTicks: 0 });
+  await resetPriceEngine({ prewarmTicks: 0 });
   const anchorPrice = marketData.AAPL;
 
   seedRng(42);
-  resetPriceEngine();
+  await resetPriceEngine();
   const defaultPrewarmPrice = marketData.AAPL;
 
   assertNotEquals(defaultPrewarmPrice, anchorPrice);
@@ -149,8 +149,8 @@ Deno.test("resetPriceEngine default prewarm moves prices further from anchor tha
   }
 });
 
-Deno.test("generatePrice price floor holds against extreme downward shocks", () => {
-  resetPriceEngine({ prewarmTicks: 0 });
+Deno.test("generatePrice price floor holds against extreme downward shocks", async () => {
+  await resetPriceEngine({ prewarmTicks: 0 });
   seedPrice("AAPL", 100);
   seedRng(7);
   for (let i = 0; i < 5000; i++) generatePrice("AAPL");

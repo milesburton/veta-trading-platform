@@ -36,7 +36,7 @@ export async function handleSeedRoute(
       return json(400, { error: "seed must be a finite number or null" });
     }
     seedRng(seed | 0);
-    resetPriceEngine();
+    await resetPriceEngine();
     opts.onReset?.();
     return json(200, { seed: currentSeed() });
   }

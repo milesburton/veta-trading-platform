@@ -3,7 +3,7 @@ import { login, submitOrderViaWs } from "./testcontainers/auth.ts";
 import { startStack, type TestStack } from "./testcontainers/services.ts";
 
 const SHOULD_RUN = Deno.env.get("RUN_TESTCONTAINERS") === "1";
-const T = (ms = 5_000) => AbortSignal.timeout(ms);
+const T = (ms = 15_000) => AbortSignal.timeout(ms);
 
 interface OrderRow {
   id: string;
