@@ -14,6 +14,7 @@
 [![Docker build](https://img.shields.io/github/actions/workflow/status/milesburton/veta-trading-platform/ci.yml?branch=main&label=docker%20build&logo=docker)](https://github.com/milesburton/veta-trading-platform/actions/workflows/ci.yml)
 [![Secret scan](https://github.com/milesburton/veta-trading-platform/actions/workflows/gitleaks.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/gitleaks.yml)
 [![CodeQL](https://github.com/milesburton/veta-trading-platform/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/milesburton/veta-trading-platform/actions/workflows/codeql.yml)
+[![k6 load tests](https://img.shields.io/badge/k6%20load%20tests-manual%20%2F%20homelab-blue?logo=k6)](https://milesburton.github.io/veta-trading-platform/development/testing/k6-load-testing/)
 
 A simulation-first equities and fixed-income trading platform for paper trading and market-structure analysis. Built around realistic desk segregation, nine execution algorithms, and a pre-trade risk engine that gates every order.
 
