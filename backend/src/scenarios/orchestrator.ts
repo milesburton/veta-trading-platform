@@ -41,7 +41,7 @@ async function reseed(deps: OrchestratorDeps, seed: number): Promise<void> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ seed }),
-    signal: AbortSignal.timeout(8_000),
+    signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) {
     throw new Error(`market-sim /seed responded ${res.status}`);
