@@ -85,17 +85,34 @@ export function resetRegime(): void {
   refreshRegime();
 }
 
-export function resetPriceEngine(opts: { prewarmTicks?: number } = {}): void {
-  for (const a of ALL_SEEDED_ASSETS) {
-    marketData[a.symbol] = a.initialPrice;
-    anchorPrices[a.symbol] = a.initialPrice;
-    openPrices[a.symbol] = a.initialPrice;
+let resetInProgress = false;
+
+/**
+ * True while resetPriceEngine's chunked prewarm is running. The live tick
+ * loop (market-sim.ts's setInterval) checks this before mutating marketData
+ * or consuming RNG state, so a tick landing between prewarm chunks can't
+ * interleave with the reset and make its outcome timing-dependent.
+ */
+export function isResetInProgress(): boolean {
+  return resetInProgress;
+}
+
+export async function resetPriceEngine(opts: { prewarmTicks?: number } = {}): Promise<void> {
+  resetInProgress = true;
+  try {
+    for (const a of ALL_SEEDED_ASSETS) {
+      marketData[a.symbol] = a.initialPrice;
+      anchorPrices[a.symbol] = a.initialPrice;
+      openPrices[a.symbol] = a.initialPrice;
+    }
+    for (const sector of Object.keys(sectorShocks)) delete sectorShocks[sector];
+    marketDrift = 0;
+    regimeCountdown = 0;
+    refreshRegime();
+    await prewarmPricesAsync(opts.prewarmTicks ?? 240);
+  } finally {
+    resetInProgress = false;
   }
-  for (const sector of Object.keys(sectorShocks)) delete sectorShocks[sector];
-  marketDrift = 0;
-  regimeCountdown = 0;
-  refreshRegime();
-  prewarmPrices(opts.prewarmTicks ?? 240);
 }
 
 /** Run `ticks` silent GBM steps so prices start with realistic intraday drift. */
