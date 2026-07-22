@@ -6,13 +6,13 @@ This document describes all available API endpoints in the VETA system.
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| POST | /load-test | originator of a trade. | ❌ |
-| POST | /demo-day | Endpoint for /demo-day | ❌ |
-| POST | /load-gen/start | Endpoint for /load-gen/start | ❌ |
-| POST | /load-gen/stop | Endpoint for /load-gen/stop | ❌ |
-| GET | /load-gen/status | Endpoint for /load-gen/status | ❌ |
-| GET | /scenarios | Endpoint for /scenarios | ❌ |
-| POST | /scenarios | Endpoint for /scenarios | ❌ |
+| POST | /load-test | originator of a trade. | ✅ |
+| POST | /demo-day | Endpoint for /demo-day | ✅ |
+| POST | /load-gen/start | Endpoint for /load-gen/start | ✅ |
+| POST | /load-gen/stop | Endpoint for /load-gen/stop | ✅ |
+| GET | /load-gen/status | Endpoint for /load-gen/status | ✅ |
+| GET | /scenarios | Endpoint for /scenarios | ✅ |
+| POST | /scenarios | Endpoint for /scenarios | ✅ |
 | GET | /me | Endpoint for /me | ✅ |
 | GET | /orders | Endpoint for /orders | ✅ |
 | GET | /products | Endpoint for /products | ✅ |

@@ -2,7 +2,6 @@ let prngState = 0;
 let prngSeed: number | null = null;
 
 function mulberry32(state: number): number {
-  state = (state + 0x6d2b79f5) | 0;
   let t = state;
   t = Math.imul(t ^ (t >>> 15), t | 1);
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);

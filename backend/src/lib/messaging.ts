@@ -57,7 +57,7 @@ function makeKafka(clientId: string): Kafka {
     requestTimeout: 15_000,
     retry: {
       initialRetryTime: 500,
-      retries: 1,
+      retries: 5,
     },
   });
 }

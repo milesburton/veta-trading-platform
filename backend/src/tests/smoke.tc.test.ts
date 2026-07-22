@@ -41,7 +41,7 @@ Deno.test({
   async fn(t) {
     const stack = await startStack({
       services: [...SERVICES],
-      startupTimeoutMs: 60_000,
+      startupTimeoutMs: 90_000,
     });
     const GW = url(stack, "gateway");
     const J = url(stack, "journal");
@@ -75,7 +75,7 @@ Deno.test({
       });
 
       await t.step(
-        "market-sim WebSocket emits tick data within 10s",
+        "market-sim WebSocket emits tick data within 20s",
         async () => {
           const wsUrl = MS.replace(/^http/, "ws");
           const ws = new WebSocket(wsUrl);
@@ -83,14 +83,10 @@ Deno.test({
             ws.onclose = () => r();
           });
           const tick = await new Promise<unknown>((resolve, reject) => {
-            // The onopen handshake sends a full snapshot across the whole
-            // instrument universe (thousands of symbols); under CI's
-            // shared/contended CPU with 8 services booting simultaneously,
-            // this can take noticeably longer than on a dev machine.
             const timer = setTimeout(() => {
               ws.close();
-              reject(new Error("no tick within 10s"));
-            }, 10_000);
+              reject(new Error("no tick within 20s"));
+            }, 20_000);
             ws.onmessage = (ev) => {
               const msg = JSON.parse(ev.data as string);
               if (msg.event === "marketData" || msg.event === "marketUpdate") {

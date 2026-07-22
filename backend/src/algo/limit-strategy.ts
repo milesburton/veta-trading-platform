@@ -111,9 +111,16 @@ marketClient.onTick(async (tick) => {
 
     if (triggered && order.remainingQty > 0) {
       const childId = `${order.orderId}-lim-${now}`;
+      const fillQty = order.remainingQty;
       logger.info(
-        `Triggered ${order.orderId}: ${order.side} ${order.remainingQty} ${order.asset} @ mkt ${marketPrice}`
+        `Triggered ${order.orderId}: ${order.side} ${fillQty} ${order.asset} @ mkt ${marketPrice}`
       );
+
+      // Claim synchronously before the await below so a second tick arriving
+      // while this producer.send() is in flight can't re-trigger the same order.
+      order.remainingQty = 0;
+      pendingOrders.splice(i, 1);
+
       await producer
         ?.send("orders.child", {
           childId,
@@ -122,16 +129,12 @@ marketClient.onTick(async (tick) => {
           algo: "LIMIT",
           asset: order.asset,
           side: order.side,
-          quantity: order.remainingQty,
+          quantity: fillQty,
           limitPrice: order.limitPrice,
           marketPrice,
           ts: now,
         })
         .catch(() => {});
-
-      // Mark as fully sent (EMS will fill and publish orders.filled)
-      order.remainingQty = 0;
-      pendingOrders.splice(i, 1);
     }
   }
 

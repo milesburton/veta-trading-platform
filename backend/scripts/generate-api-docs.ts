@@ -92,6 +92,8 @@ const toEndpoint = (state: ParseState): Endpoint => ({
 
 const parseEndpoints = (content: string): Endpoint[] => {
   const endpoints: Endpoint[] = [];
+  let routeLevelAuth = false;
+  let sawFirstPathBranch = false;
   let state = emptyState();
   let awaitingClose = false;
   for (const line of content.split("\n")) {
@@ -99,14 +101,16 @@ const parseEndpoints = (content: string): Endpoint[] => {
       if (awaitingClose) {
         endpoints.push(toEndpoint(state));
       }
-      state = { ...emptyState(), description: state.description };
+      if (!sawFirstPathBranch && state.requiresAuth) routeLevelAuth = true;
+      sawFirstPathBranch = true;
+      state = { ...emptyState(), description: state.description, requiresAuth: routeLevelAuth };
       awaitingClose = false;
     }
     state = applyLine(state, line);
     if (state.path && state.method) awaitingClose = true;
     if (awaitingClose && /^\s*}\s*$/.test(line)) {
       endpoints.push(toEndpoint(state));
-      state = emptyState();
+      state = { ...emptyState(), requiresAuth: routeLevelAuth };
       awaitingClose = false;
     }
   }

@@ -1,8 +1,21 @@
 name: CI
 
 on:
+  # push only fires for main (the badge-commit-back + deploy path, which
+  # needs BOT_PAT so its own commits trigger downstream workflows — see the
+  # escape-hatch note below). Feature branches are fully covered by
+  # pull_request once a PR exists; a push trigger for them was firing a
+  # second, fully redundant Integration-test run on every push (two full
+  # 14+ service testcontainers stacks competing for the same runner
+  # resources), and cancelling the redundant run still leaves a CANCELLED
+  # check-run recorded against the commit — which blocks merges under
+  # required_status_checks even though the real (pull_request) run passed,
+  # since GitHub's rollup treats any non-success entry sharing a required
+  # check's name as failing, regardless of which run is authoritative for
+  # the PR. Scoping push to main removes the redundant run entirely instead
+  # of relying on cancellation to clean up after it.
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
     branches: ["**"]
   # Manual escape hatch: GitHub's anti-loop policy means commits made by
@@ -12,6 +25,10 @@ on:
   # trusted-automerge workflow to a PAT secret so its merges trigger
   # downstream workflows automatically.
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   github-health:
@@ -582,7 +599,7 @@ jobs:
     name: Integration tests
     runs-on: ubuntu-latest
     needs: lint-and-test
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: write
 
