@@ -2541,9 +2541,7 @@ function deriveMarketCapB(price: number, dailyVolume: number): number {
 function deriveBeta(volatility: number): number {
   return parseFloat((volatility / 0.01).toFixed(2));
 }
-// #endregion docs:derive-heuristics
 
-/** Estimate dividend yield: lower-vol, established names pay dividends. */
 function deriveDividendYield(sector: string, volatility: number): number {
   if (volatility > 0.03) return 0.0;
   const base: Record<string, number> = {
@@ -2563,7 +2561,6 @@ function deriveDividendYield(sector: string, volatility: number): number {
   return parseFloat((base[sector] ?? 0.01).toFixed(4));
 }
 
-/** Rough P/E from sector — growth sectors command higher multiples. */
 function derivePeRatio(sector: string, volatility: number): number {
   if (volatility > 0.04) return 0;
   const base: Record<string, number> = {
@@ -2582,6 +2579,7 @@ function derivePeRatio(sector: string, volatility: number): number {
   };
   return base[sector] ?? 20;
 }
+// #endregion docs:derive-heuristics
 
 const EXCHANGE_RIC_SUFFIX: Record<string, string> = {
   XNAS: ".OQ",
