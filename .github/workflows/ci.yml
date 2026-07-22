@@ -1,8 +1,21 @@
 name: CI
 
 on:
+  # push only fires for main (the badge-commit-back + deploy path, which
+  # needs BOT_PAT so its own commits trigger downstream workflows — see the
+  # escape-hatch note below). Feature branches are fully covered by
+  # pull_request once a PR exists; a push trigger for them was firing a
+  # second, fully redundant Integration-test run on every push (two full
+  # 14+ service testcontainers stacks competing for the same runner
+  # resources), and cancelling the redundant run still leaves a CANCELLED
+  # check-run recorded against the commit — which blocks merges under
+  # required_status_checks even though the real (pull_request) run passed,
+  # since GitHub's rollup treats any non-success entry sharing a required
+  # check's name as failing, regardless of which run is authoritative for
+  # the PR. Scoping push to main removes the redundant run entirely instead
+  # of relying on cancellation to clean up after it.
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
     branches: ["**"]
   # Manual escape hatch: GitHub's anti-loop policy means commits made by
@@ -13,14 +26,6 @@ on:
   # downstream workflows automatically.
   workflow_dispatch:
 
-# push and pull_request both fire for any branch with an open PR. Their
-# github.ref values differ (refs/heads/<branch> vs refs/pull/<n>/merge), so
-# grouping on github.ref alone would only dedupe within one event type and
-# still let both run in parallel against the same commit, competing for the
-# same runner resources. head_ref is only set for pull_request and is
-# already the bare branch name; ref_name gives the same bare name for push
-# (unlike ref, which is prefixed with refs/heads/), so both events land in
-# the same group per branch.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
