@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.56.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.2...veta-trading-platform-v1.56.3) (2026-07-22)
+
+
+### Bug Fixes
+
+* **deps:** patch 4 open Dependabot alerts in frontend/package-lock.json ([#498](https://github.com/milesburton/veta-trading-platform/issues/498)) ([ec2af82](https://github.com/milesburton/veta-trading-platform/commit/ec2af829a78193cd6b0bac2c94e81fb216c8d371))
+
 ## [1.56.2](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.1...veta-trading-platform-v1.56.2) (2026-07-22)
 
 
