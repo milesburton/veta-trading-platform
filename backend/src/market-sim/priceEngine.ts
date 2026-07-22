@@ -85,7 +85,7 @@ export function resetRegime(): void {
   refreshRegime();
 }
 
-export function resetPriceEngine(opts: { prewarmTicks?: number } = {}): void {
+export async function resetPriceEngine(opts: { prewarmTicks?: number } = {}): Promise<void> {
   for (const a of ALL_SEEDED_ASSETS) {
     marketData[a.symbol] = a.initialPrice;
     anchorPrices[a.symbol] = a.initialPrice;
@@ -95,7 +95,7 @@ export function resetPriceEngine(opts: { prewarmTicks?: number } = {}): void {
   marketDrift = 0;
   regimeCountdown = 0;
   refreshRegime();
-  prewarmPrices(opts.prewarmTicks ?? 240);
+  await prewarmPricesAsync(opts.prewarmTicks ?? 240);
 }
 
 /** Run `ticks` silent GBM steps so prices start with realistic intraday drift. */
