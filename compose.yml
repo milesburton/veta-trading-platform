@@ -1,7 +1,19 @@
 name: veta
 
 networks:
+  # internal: true means Docker never adds a default route to this network's
+  # containers — no service on trading-net alone can reach the internet, only
+  # other containers on the same network. This is the primary control for
+  # threat-model Chain 3 (compromised dependency phoning home): a supply-chain
+  # compromise in any of these ~18 services has nowhere to exfiltrate to.
   trading-net:
+    driver: bridge
+    internal: true
+  # The handful of services with a genuine reason to reach the internet
+  # (market-data's external quote providers, the gateway/discord-bot's Discord
+  # webhook, ollama-model-pull's one-shot model download, and traefik as the
+  # public ingress) additionally join this normal, internet-capable network.
+  egress-net:
     driver: bridge
 
 volumes:
@@ -213,8 +225,12 @@ services:
   traefik:
     image: traefik:v3.3
     restart: unless-stopped
+    # Needs egress-net in addition to trading-net: the public ingress, so it
+    # is intentionally internet-reachable by design (not a supply-chain
+    # exfiltration risk in the same sense as the internal services).
     networks:
       - trading-net
+      - egress-net
     mem_limit: 128m
     ports:
       - "80:80"
@@ -269,8 +285,12 @@ services:
   ollama-model-pull:
     image: ollama/ollama:latest
     profiles: [trading]
+    # Needs both: trading-net to reach the ollama container it configures via
+    # OLLAMA_HOST, egress-net to pull the model from registry.ollama.ai. Runs
+    # once at startup and exits (restart: "no"), so the egress window is brief.
     networks:
       - trading-net
+      - egress-net
     cap_drop:
       - ALL
     security_opt:
@@ -1223,6 +1243,11 @@ services:
   market-data:
     <<: *deno-medium
     profiles: [trading]
+    # Needs egress-net in addition to the anchor's trading-net: fetches from
+    # Alpha Vantage, Polygon, Tiingo, and FRED's public APIs.
+    networks:
+      - trading-net
+      - egress-net
     command: [
       "deno",
       "run",
@@ -1460,6 +1485,11 @@ services:
   discord-bot:
     <<: *deno-service
     profiles: [trading]
+    # Needs egress-net in addition to the anchor's trading-net: connects
+    # directly to the Discord gateway (bot API), not just an outbound webhook.
+    networks:
+      - trading-net
+      - egress-net
     command: [
       "deno",
       "run",
@@ -1570,6 +1600,11 @@ services:
 
   gateway:
     <<: *deno-medium
+    # Needs egress-net in addition to the anchor's trading-net: the Discord
+    # webhook notifier (discord-notifier.ts) runs inside this service.
+    networks:
+      - trading-net
+      - egress-net
     command: [
       "deno",
       "run",
