@@ -9,6 +9,9 @@ Load scenarios live in [`k6/`](https://github.com/milesburton/veta-trading-platf
 # Default: small ramp on LIMIT only
 docker compose --profile loadtest run --rm k6
 
+# Higher-volume run: submit 20 orders per request
+ORDER_COUNT=20 docker compose --profile loadtest run --rm k6
+
 # Mixed strategy mix at 50 VUs sustained
 K6_SCRIPT=mixed-strategy.js \
   docker compose --profile loadtest run --rm k6
@@ -152,10 +155,14 @@ Request body:
 ```json
 {
   "symbols": ["AAPL", "MSFT"], // optional; defaults to AAPL, MSFT, GOOGL, AMZN, TSLA
-  "orderCount": 100, // optional; default 100, capped at 500
+  "orderCount": 100, // optional; default 100, capped at 5000
   "strategy": "LIMIT" // optional; LIMIT | TWAP | POV | VWAP | …; default LIMIT
 }
 ```
+
+All k6 scenarios also accept `ORDER_COUNT` (default `1`) to control how many
+orders each request asks the gateway to submit. Total order pressure becomes
+`iterations × ORDER_COUNT`.
 
 The gateway randomises every per-order parameter for the duration of the job: symbol picked uniformly from `symbols`, side `BUY` or `SELL` with 50/50 weight, user picked from `LOAD_TEST_USER_IDS` env, quantity `10 + floor(random()*90)`, limit price `mid * (1 ± random()*2%) * (1.02 if BUY else 0.98)`. The `clientOrderId` is `<jobId>-<i>-<random-suffix>` so risk-engine never sees duplicates.
 

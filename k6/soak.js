@@ -7,6 +7,7 @@ const TOKEN = __ENV.K6_TOKEN || "";
 const RUN_LABEL = __ENV.RUN_LABEL || "soak";
 const DURATION = __ENV.SOAK_DURATION || "30m";
 const TARGET_VUS = Number(__ENV.SOAK_VUS || 25);
+const ORDER_COUNT = Math.max(1, Number(__ENV.ORDER_COUNT || "1"));
 
 const submitDuration = new Trend("veta_loadtest_submit_duration_ms", true);
 const submitOk = new Rate("veta_loadtest_submit_ok");
@@ -36,7 +37,7 @@ export function setup() {
 export default function (data) {
   const strategy = STRATEGIES[Math.floor(Math.random() * STRATEGIES.length)];
   const t0 = Date.now();
-  const res = http.post(`${BASE_URL}/load-test`, JSON.stringify({ orderCount: 1, strategy }), {
+  const res = http.post(`${BASE_URL}/load-test`, JSON.stringify({ orderCount: ORDER_COUNT, strategy }), {
     headers: {
       "Content-Type": "application/json",
       Cookie: `veta_user=${data.token}`,
@@ -71,6 +72,7 @@ export function handleSummary(data) {
     runDate: date,
     runDuration: DURATION,
     runTargetVus: TARGET_VUS,
+    orderCountPerRequest: ORDER_COUNT,
     target: BASE_URL,
     iterations: data.metrics.iterations?.values?.count ?? 0,
     successRate: round(data.metrics.veta_loadtest_submit_ok?.values?.rate ?? 0),

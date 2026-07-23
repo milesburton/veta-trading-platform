@@ -151,17 +151,17 @@ Deno.test("[load] admin can submit 50 orders and receives jobId", async () => {
   assertEquals(result.strategy, "LIMIT");
 });
 
-Deno.test("[load] orderCount is capped at 500", async () => {
+Deno.test("[load] orderCount is capped at 5000", async () => {
   const token = await loginAsAdmin();
   const result = await triggerLoadTest(token, {
-    orderCount: 9999,
+    orderCount: 99999,
     strategy: "LIMIT",
   });
 
   assertEquals(
     result.submitted,
-    500,
-    `Expected submitted to be capped at 500, got ${result.submitted}`
+    5000,
+    `Expected submitted to be capped at 5000, got ${result.submitted}`
   );
 });
 

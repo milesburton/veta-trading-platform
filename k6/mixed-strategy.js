@@ -5,6 +5,7 @@ import { Rate, Trend } from "k6/metrics";
 const BASE_URL = __ENV.BASE_URL || "http://gateway:5011";
 const TOKEN = __ENV.K6_TOKEN || "";
 const RUN_LABEL = __ENV.RUN_LABEL || "mixed-strategy";
+const ORDER_COUNT = Math.max(1, Number(__ENV.ORDER_COUNT || "1"));
 
 const submitDuration = new Trend("veta_loadtest_submit_duration_ms", true);
 const submitOk = new Rate("veta_loadtest_submit_ok");
@@ -63,13 +64,17 @@ export function setup() {
 export default function (data) {
   const strategy = pickStrategy();
   const t0 = Date.now();
-  const res = http.post(`${BASE_URL}/load-test`, JSON.stringify({ orderCount: 1, strategy }), {
+  const res = http.post(
+    `${BASE_URL}/load-test`,
+    JSON.stringify({ orderCount: ORDER_COUNT, strategy }),
+    {
     headers: {
       "Content-Type": "application/json",
       Cookie: `veta_user=${data.token}`,
     },
     tags: { endpoint: "load-test", strategy },
-  });
+    }
+  );
   submitDuration.add(Date.now() - t0, { strategy });
   const ok = check(res, { "submit accepted (202)": (r) => r.status === 202 });
   submitOk.add(ok);
@@ -100,6 +105,7 @@ export function handleSummary(data) {
     runDate: date,
     runStartedAt: new Date(Date.now()).toISOString(),
     target: BASE_URL,
+    orderCountPerRequest: ORDER_COUNT,
     iterations: data.metrics.iterations?.values?.count ?? 0,
     successRate: round(data.metrics.veta_loadtest_submit_ok?.values?.rate ?? 0),
     failureRate: round(1 - (data.metrics.veta_loadtest_submit_ok?.values?.rate ?? 0)),

@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { VolatilityProfilePanel } from "@veta/frontend/components/VolatilityProfilePanel";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
+import * as React from "react";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,6 +11,30 @@ const useGetVolProfileQuery = vi.fn();
 vi.mock("../../store/analyticsApi.ts", () => ({
   useGetVolProfileQuery: (...args: unknown[]) => useGetVolProfileQuery(...args),
 }));
+
+vi.mock("recharts", () => {
+  const MockContainer = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
+  return {
+    ResponsiveContainer: MockContainer,
+    AreaChart: MockContainer,
+    CartesianGrid: () => null,
+    XAxis: () => null,
+    YAxis: () => null,
+    Area: () => null,
+    ReferenceLine: () => null,
+    Tooltip: ({ content }: { content?: React.ReactElement }) => (
+      <div>
+        {content
+          ? React.cloneElement(content, {
+              active: true,
+              label: Date.now(),
+              payload: [{ name: "EWMA Vol", value: 0.25, dataKey: "vol", color: "#60a5fa" }],
+            })
+          : null}
+      </div>
+    ),
+  };
+});
 
 function renderPanel() {
   const store = configureStore({
@@ -106,5 +131,65 @@ describe("VolatilityProfilePanel", () => {
 
     expect(screen.getByText("backend down")).toBeInTheDocument();
     expect(screen.getByText(/Could not load volatility data/i)).toBeInTheDocument();
+  });
+
+  it("hides spot summary when spotPrice is null", () => {
+    useGetVolProfileQuery.mockReturnValue({
+      data: {
+        ewmaVol: 0.25,
+        rollingVol: 0.2,
+        spotPrice: null,
+        computedAt: Date.now(),
+        series: [{ ts: Date.now(), vol: 0.25 }],
+      },
+      isFetching: false,
+      error: undefined,
+    });
+
+    renderPanel();
+
+    expect(screen.queryByText(/Spot \$/i)).not.toBeInTheDocument();
+  });
+
+  it("shows refreshing indicator while fetching", () => {
+    useGetVolProfileQuery.mockReturnValue({
+      data: undefined,
+      isFetching: true,
+      error: undefined,
+    });
+
+    renderPanel();
+
+    expect(screen.getByText(/Refreshing…/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Select a symbol to view vol profile/i)).not.toBeInTheDocument();
+  });
+
+  it("shows empty state when no data and no error", () => {
+    useGetVolProfileQuery.mockReturnValue({
+      data: undefined,
+      isFetching: false,
+      error: undefined,
+    });
+
+    renderPanel();
+
+    expect(screen.getByText(/Select a symbol to view vol profile/i)).toBeInTheDocument();
+  });
+
+  it("falls back to generic error copy when error payload has no message", () => {
+    useGetVolProfileQuery.mockReturnValue({
+      data: undefined,
+      isFetching: false,
+      error: { status: 500 },
+    });
+
+    renderPanel();
+
+    expect(screen.getByText("Failed to load")).toBeInTheDocument();
+  });
+
+  it("shows chart tooltip value when data is present", () => {
+    renderPanel();
+    expect(screen.getByText(/EWMA Vol:/i)).toBeInTheDocument();
   });
 });

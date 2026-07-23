@@ -1,51 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { GreeksSurfacePanel } from "@veta/frontend/components/GreeksSurfacePanel";
+import * as React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const useGetGreeksSurfaceQuery = vi.fn();
+
 vi.mock("../../store/analyticsApi.ts", () => ({
-  useGetGreeksSurfaceQuery: (params: { symbol: string; expirySecs: number }) => {
-    const { symbol, expirySecs } = params;
-    if (symbol === "AAPL" && expirySecs === 30 * 86400) {
-      return {
-        data: {
-          symbol: "AAPL",
-          spotPrice: 175.5,
-          impliedVol: 0.22,
-          expirySecs: 30 * 86400,
-          strikes: [
-            {
-              strike: 170,
-              moneyness: 0.97,
-              callDelta: 0.65,
-              gamma: 0.01,
-              theta: -0.02,
-              vega: 0.04,
-            },
-            {
-              strike: 175,
-              moneyness: 1.0,
-              callDelta: 0.5,
-              gamma: 0.015,
-              theta: -0.015,
-              vega: 0.05,
-            },
-            {
-              strike: 180,
-              moneyness: 1.02,
-              callDelta: 0.35,
-              gamma: 0.01,
-              theta: -0.01,
-              vega: 0.04,
-            },
-          ],
-          computedAt: Date.now(),
-        },
-        isFetching: false,
-        error: null,
-      };
-    }
-    return { data: null, isFetching: false, error: null };
-  },
+  useGetGreeksSurfaceQuery: (...args: unknown[]) => useGetGreeksSurfaceQuery(...args),
 }));
 
 vi.mock("../../store/hooks.ts", () => ({
@@ -66,7 +27,17 @@ vi.mock("recharts", () => {
     ComposedChart: MockContainer,
     CartesianGrid: () => null,
     ReferenceLine: () => null,
-    Tooltip: () => null,
+    Tooltip: ({ content }: { content?: React.ReactElement }) => (
+      <div data-testid="tooltip-mock">
+        {content
+          ? React.cloneElement(content, {
+              active: true,
+              label: 1,
+              payload: [{ name: "delta", value: 0.5, color: "#fff", dataKey: "delta" }],
+            })
+          : null}
+      </div>
+    ),
     Legend: () => null,
     XAxis: () => null,
     YAxis: () => null,
@@ -77,6 +48,52 @@ vi.mock("recharts", () => {
 describe("GreeksSurfacePanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useGetGreeksSurfaceQuery.mockReset();
+    useGetGreeksSurfaceQuery.mockImplementation(
+      (params: { symbol: string; expirySecs: number }) => {
+        const { symbol, expirySecs } = params;
+        if (symbol === "AAPL" && expirySecs === 30 * 86400) {
+          return {
+            data: {
+              symbol: "AAPL",
+              spotPrice: 175.5,
+              impliedVol: 0.22,
+              expirySecs: 30 * 86400,
+              strikes: [
+                {
+                  strike: 170,
+                  moneyness: 0.97,
+                  callDelta: 0.65,
+                  gamma: 0.01,
+                  theta: -0.02,
+                  vega: 0.04,
+                },
+                {
+                  strike: 175,
+                  moneyness: 1.0,
+                  callDelta: 0.5,
+                  gamma: 0.015,
+                  theta: -0.015,
+                  vega: 0.05,
+                },
+                {
+                  strike: 180,
+                  moneyness: 1.02,
+                  callDelta: 0.35,
+                  gamma: 0.01,
+                  theta: -0.01,
+                  vega: 0.04,
+                },
+              ],
+              computedAt: Date.now(),
+            },
+            isFetching: false,
+            error: null,
+          };
+        }
+        return { data: null, isFetching: false, error: null };
+      }
+    );
   });
 
   it("renders the panel header and symbol selector", () => {
@@ -120,5 +137,57 @@ describe("GreeksSurfacePanel", () => {
     render(<GreeksSurfacePanel />);
     // Strikes 170, 175, 180 should appear somewhere
     expect(screen.getAllByText(/170|175|180/).length).toBeGreaterThan(0);
+  });
+
+  it("shows loading indicator while fetching", () => {
+    useGetGreeksSurfaceQuery.mockReturnValue({
+      data: undefined,
+      isFetching: true,
+      error: null,
+    });
+
+    render(<GreeksSurfacePanel />);
+    expect(screen.getByText(/Loading…/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Select a symbol to view Greeks surface/i)).not.toBeInTheDocument();
+  });
+
+  it("shows empty state when no data and no error", () => {
+    useGetGreeksSurfaceQuery.mockReturnValue({
+      data: undefined,
+      isFetching: false,
+      error: null,
+    });
+
+    render(<GreeksSurfacePanel />);
+    expect(screen.getByText(/Select a symbol to view Greeks surface/i)).toBeInTheDocument();
+  });
+
+  it("shows API error message and chart fallback", () => {
+    useGetGreeksSurfaceQuery.mockReturnValue({
+      data: undefined,
+      isFetching: false,
+      error: { data: { error: "surface offline" } },
+    });
+
+    render(<GreeksSurfacePanel />);
+    expect(screen.getByText("surface offline")).toBeInTheDocument();
+    expect(screen.getByText(/Could not load surface data/i)).toBeInTheDocument();
+  });
+
+  it("shows generic error text when payload has no message", () => {
+    useGetGreeksSurfaceQuery.mockReturnValue({
+      data: undefined,
+      isFetching: false,
+      error: { status: 500 },
+    });
+
+    render(<GreeksSurfacePanel />);
+    expect(screen.getByText("Failed to load")).toBeInTheDocument();
+  });
+
+  it("renders tooltip content through recharts tooltip slot", () => {
+    render(<GreeksSurfacePanel />);
+    expect(screen.getByText(/K\/S =/i)).toBeInTheDocument();
+    expect(screen.getByText(/delta:/i)).toBeInTheDocument();
   });
 });

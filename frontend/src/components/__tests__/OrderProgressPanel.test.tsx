@@ -8,8 +8,37 @@ import { ordersSlice } from "@veta/frontend/store/ordersSlice";
 import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
 import type { OrderRecord } from "@veta/frontend/types";
+import * as React from "react";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("recharts", () => {
+  const MockContainer = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
+  return {
+    ResponsiveContainer: MockContainer,
+    PieChart: MockContainer,
+    BarChart: MockContainer,
+    Pie: MockContainer,
+    Bar: MockContainer,
+    XAxis: () => null,
+    YAxis: () => null,
+    Cell: () => null,
+    Tooltip: ({ content }: { content?: React.ReactElement }) => {
+      if (!content) return null;
+      if (content.type && (content.type as { name?: string }).name?.includes("PieTooltipContent")) {
+        return React.cloneElement(content, {
+          active: true,
+          payload: [{ name: "Filled", value: 50 }],
+        });
+      }
+      return React.cloneElement(content, {
+        active: true,
+        label: "ABC123",
+        payload: [{ value: 25 }],
+      });
+    },
+  };
+});
 
 const now = Date.now();
 
@@ -211,5 +240,110 @@ describe("OrderProgressPanel", () => {
     });
     renderPanel([order], "order-multi");
     expect(screen.getByText(/Slice fills/i)).toBeInTheDocument();
+  });
+
+  it("renders 0% when quantity is zero", () => {
+    renderPanel([makeOrder({ id: "order-zero", quantity: 0, filled: 50 })], "order-zero");
+    expect(screen.getByText("0%")).toBeInTheDocument();
+  });
+
+  it("caps percentage at 100 when filled exceeds quantity", () => {
+    renderPanel([makeOrder({ id: "order-over", quantity: 100, filled: 140 })], "order-over");
+    expect(screen.getByText("100%")).toBeInTheDocument();
+  });
+
+  it("shows avg fill and commission when provided", () => {
+    renderPanel(
+      [
+        makeOrder({
+          id: "order-metrics",
+          avgFillPrice: 149.123,
+          totalCommissionUSD: 12.3,
+        }),
+      ],
+      "order-metrics"
+    );
+
+    expect(screen.getByText("$149.12")).toBeInTheDocument();
+    expect(screen.getByText("$12.30")).toBeInTheDocument();
+  });
+
+  it("hides commission when zero", () => {
+    renderPanel([makeOrder({ id: "order-no-comm", totalCommissionUSD: 0 })], "order-no-comm");
+    expect(screen.queryByText(/comm \$/i)).not.toBeInTheDocument();
+  });
+
+  it("does not show slice fills for non-filled or zero-filled children", () => {
+    const order = makeOrder({
+      id: "order-child-filter",
+      children: [
+        {
+          id: "child-working",
+          parentId: "order-child-filter",
+          asset: "AAPL",
+          side: "BUY",
+          quantity: 50,
+          limitPrice: 150,
+          status: "working",
+          filled: 20,
+          submittedAt: now,
+        },
+        {
+          id: "child-zero",
+          parentId: "order-child-filter",
+          asset: "AAPL",
+          side: "BUY",
+          quantity: 50,
+          limitPrice: 150,
+          status: "filled",
+          filled: 0,
+          submittedAt: now,
+        },
+      ],
+    });
+
+    renderPanel([order], "order-child-filter");
+    expect(screen.queryByText(/Slice fills/i)).not.toBeInTheDocument();
+  });
+
+  it("renders tooltip content for pie and bar charts", () => {
+    const order = makeOrder({
+      id: "order-tooltips",
+      children: [
+        {
+          id: "child-tt",
+          parentId: "order-tooltips",
+          asset: "AAPL",
+          side: "BUY",
+          quantity: 50,
+          limitPrice: 150,
+          status: "filled",
+          filled: 25,
+          submittedAt: now,
+        },
+      ],
+    });
+
+    renderPanel([order], "order-tooltips");
+    expect(screen.getByText(/50% filled/i)).toBeInTheDocument();
+    expect(screen.getByText(/Slice ABC123: 25 shares/i)).toBeInTheDocument();
+  });
+
+  it("renders all strategy labels used by colour mapping", () => {
+    renderPanel([makeOrder({ id: "order-pov", strategy: "POV" })], "order-pov");
+    expect(screen.getByText("POV")).toBeInTheDocument();
+
+    renderPanel([makeOrder({ id: "order-vwap", strategy: "VWAP" })], "order-vwap");
+    expect(screen.getByText("VWAP")).toBeInTheDocument();
+  });
+
+  it("renders unknown strategy without crashing", () => {
+    const unknown = makeOrder({
+      id: "order-unknown",
+      strategy: "UNKNOWN" as unknown as OrderRecord["strategy"],
+      algoParams: { strategy: "LIMIT" },
+    });
+    renderPanel([unknown], "order-unknown");
+    expect(screen.getByText("UNKNOWN")).toBeInTheDocument();
   });
 });

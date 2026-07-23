@@ -8,6 +8,14 @@ import { Model } from "flexlayout-react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
+const setDraggedPanelId = vi.fn();
+const clearDraggedPanelId = vi.fn();
+
+vi.mock("../panelDragState.ts", () => ({
+  setDraggedPanelId: (id: string) => setDraggedPanelId(id),
+  clearDraggedPanelId: () => clearDraggedPanelId(),
+}));
+
 function makeStore(
   role:
     | "trader"
@@ -227,5 +235,35 @@ describe("ComponentPicker – add panels", () => {
     renderPicker({ store: makeStore("admin"), activePanelIds: new Set([]) });
     openDropdown();
     expect(screen.getAllByText(/mission control/i).length).toBeGreaterThan(0);
+  });
+
+  it("drag start sets panel transfer payload and closes picker", () => {
+    setDraggedPanelId.mockReset();
+    renderPicker({ activePanelIds: new Set([]) });
+    openDropdown();
+
+    const btn = getPickerBtn("Market Ladder");
+    const dataTransfer = {
+      setData: vi.fn(),
+      effectAllowed: "",
+    } as unknown as DataTransfer;
+
+    if (btn) fireEvent.dragStart(btn, { dataTransfer });
+
+    expect(dataTransfer.setData).toHaveBeenCalledWith("text/panel-id", "market-ladder");
+    expect(dataTransfer.effectAllowed).toBe("copy");
+    expect(setDraggedPanelId).toHaveBeenCalledWith("market-ladder");
+    expect(screen.queryByText(/^Market Ladder/)).not.toBeInTheDocument();
+  });
+
+  it("drag end clears dragged panel state", () => {
+    clearDraggedPanelId.mockReset();
+    renderPicker({ activePanelIds: new Set([]) });
+    openDropdown();
+
+    const btn = getPickerBtn("Market Ladder");
+    if (btn) fireEvent.dragEnd(btn);
+
+    expect(clearDraggedPanelId).toHaveBeenCalled();
   });
 });
