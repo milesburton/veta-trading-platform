@@ -673,12 +673,18 @@ jobs:
           PASSED="${PASSED:-0}"
           echo "{\"schemaVersion\":1,\"label\":\"integration tests\",\"message\":\"${PASSED} passed\",\"color\":\"brightgreen\"}" > docs/badges/integration-tests.json
 
+      - name: Generate smoke test badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          SMOKE=$(awk '/running [0-9]+ tests from \.\/backend\/src\/tests\/smoke(\.full)?\.tc\.test\.ts/ {s+=$2} END {print s+0}' /tmp/tc-test-output.txt)
+          echo "{\"schemaVersion\":1,\"label\":\"smoke tests\",\"message\":\"${SMOKE} passed\",\"color\":\"brightgreen\"}" > docs/badges/smoke-tests.json
+
       - name: Commit integration test badge
         if: github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/badges/integration-tests.json
+          git add docs/badges/integration-tests.json docs/badges/smoke-tests.json
           if ! git diff --staged --quiet; then
             git commit -m "chore(ci): update integration test badge [skip ci]"
             git stash --include-untracked --quiet || true

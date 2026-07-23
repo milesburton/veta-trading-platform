@@ -59,6 +59,75 @@ describe("modelToLayoutItems", () => {
     const ladder = items.find((i) => i.panelType === "market-ladder");
     expect(ladder?.outgoing).toBe(1);
   });
+
+  it("ignores tabs that do not have panelType in config", () => {
+    const model = Model.fromJson({
+      global: {},
+      layout: {
+        type: "row",
+        children: [
+          {
+            type: "tabset",
+            children: [
+              {
+                type: "tab",
+                id: "with-panel",
+                name: "With panel",
+                component: "panel",
+                config: { panelType: "market-ladder" },
+              },
+              {
+                type: "tab",
+                id: "without-panel",
+                name: "No panel",
+                component: "panel",
+                config: {},
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const items = modelToLayoutItems(model);
+    expect(items.map((x) => x.i)).toContain("with-panel");
+    expect(items.map((x) => x.i)).not.toContain("without-panel");
+  });
+
+  it("assigns default grid dimensions for extracted items", () => {
+    const model = Model.fromJson({
+      global: {},
+      layout: {
+        type: "row",
+        children: [
+          {
+            type: "tabset",
+            children: [
+              {
+                type: "tab",
+                id: "dims",
+                name: "Dims",
+                component: "panel",
+                config: { panelType: "market-ladder" },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const [first] = modelToLayoutItems(model);
+    expect(first).toMatchObject({ i: "dims", x: 0, y: 0, w: 4, h: 6 });
+  });
+
+  it("returns empty list when model has no tabs", () => {
+    const model = Model.fromJson({
+      global: {},
+      layout: { type: "row", children: [] },
+    });
+
+    expect(modelToLayoutItems(model)).toEqual([]);
+  });
 });
 
 describe("wouldCreateCycleOut", () => {
@@ -84,6 +153,11 @@ describe("wouldCreateCycleOut", () => {
     ];
     expect(wouldCreateCycleOut(2, "a", items)).toBe(false);
   });
+
+  it("returns false when traversal encounters already visited nodes", () => {
+    const items = [item("a", 1, 3), item("b", 2, 1), item("c", 2, 1), item("d", 1, 2)];
+    expect(wouldCreateCycleOut(4, "a", items)).toBe(false);
+  });
 });
 
 describe("wouldCreateCycleIn", () => {
@@ -107,5 +181,10 @@ describe("wouldCreateCycleIn", () => {
   it("returns false when no cycle exists", () => {
     const items = [item("a", 1, undefined), item("b", undefined, 1)];
     expect(wouldCreateCycleIn(3, "a", items)).toBe(false);
+  });
+
+  it("returns false when downstream listeners have no outgoing channel", () => {
+    const items = [item("a", 1, undefined), item("b", undefined, 1), item("c", undefined, 1)];
+    expect(wouldCreateCycleIn(2, "a", items)).toBe(false);
   });
 });
