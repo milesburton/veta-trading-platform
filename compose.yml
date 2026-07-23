@@ -2,7 +2,7 @@ name: veta
 
 networks:
   # internal: true means Docker never adds a default route to this network's
-  # containers — no service on trading-net alone can reach the internet, only
+  # containers: no service on trading-net alone can reach the internet, only
   # other containers on the same network. This is the primary control for
   # threat-model Chain 3 (compromised dependency phoning home): a supply-chain
   # compromise in any of these ~18 services has nowhere to exfiltrate to.
