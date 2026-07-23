@@ -114,7 +114,20 @@ hurdles in order.
      the miner can consume; alerts on sustained CPU saturation are
      planned.
 4. The miner attempts to phone home.
-   - **Control**: no current egress firewall; this is a known gap.
+   - **Control**: `trading-net` is a Docker `internal: true` network, so
+     the ~18 services that never legitimately call out (OMS, EMS,
+     risk-engine, journal, every algo container, market-sim, and more)
+     have no route to the internet at all, verified directly against
+     production dockerd. A compromise landing in any of them has
+    nowhere to exfiltrate to. The gap is not fully closed: `gateway`
+    (Discord webhook), `market-data` (external quote providers),
+    `discord-bot` (Discord API), `traefik` (public ingress), and the
+    one-shot `ollama-model-pull` bootstrap container also join a
+    second, internet-capable `egress-net` network. A compromise in the
+    long-running internet-facing services still has an outbound path.
+    A DNS-aware allowlisting proxy in front of `egress-net`,
+    restricting those services to only their known destinations, is
+    the natural next step and remains planned.
 
 ### Chain 4: Bot exhausts Kafka topics to OOM the journal
 
@@ -172,6 +185,13 @@ is "Deferred" or "Partially".
   domain; image signing (`cosign`) is planned.
 - **No restore drill.** Backups themselves are deferred; the rehearsal
   is consequently deferred too.
+- **Unrestricted egress from internet-capable services.**
+  `gateway`, `market-data`, `discord-bot`, and `traefik` join
+  `egress-net` and can reach any destination on the internet, not just
+  their known providers. `ollama-model-pull` also joins `egress-net`
+  but only runs briefly at startup. Everything else on `trading-net`
+  alone has no route out at all. A DNS-aware allowlisting proxy for
+  `egress-net` is planned.
 
 ## Out of scope (intentional)
 
