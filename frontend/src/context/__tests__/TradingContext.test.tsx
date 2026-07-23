@@ -153,11 +153,11 @@ describe("TradingProvider – open order ticket", () => {
 });
 
 describe("TradingProvider – hotkeys", () => {
-  it("hotkeys mutate ui state and trigger ticket open", () => {
+it("hotkeys mutate ui state and trigger ticket open", async () => {
+    vi.useFakeTimers();
     hotkeyHandlers.clear();
     openOrderTicketWindow.mockReset();
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: false,
       json: async () => ({}),
     } as Response);
 
