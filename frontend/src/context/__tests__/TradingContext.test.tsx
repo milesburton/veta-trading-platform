@@ -153,7 +153,7 @@ describe("TradingProvider – open order ticket", () => {
 });
 
 describe("TradingProvider – hotkeys", () => {
-it("hotkeys mutate ui state and trigger ticket open", async () => {
+  it("hotkeys mutate ui state and trigger ticket open", async () => {
     vi.useFakeTimers();
     hotkeyHandlers.clear();
     openOrderTicketWindow.mockReset();

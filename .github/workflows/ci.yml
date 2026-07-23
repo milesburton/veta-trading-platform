@@ -676,7 +676,7 @@ jobs:
       - name: Generate smoke test badge
         if: github.ref == 'refs/heads/main'
         run: |
-          SMOKE=$(awk '/running [0-9]+ tests from \.\/backend\/src\/tests\/smoke(\.full)?\.tc\.test\.ts/ {s+=$2} END {print s+0}' /tmp/tc-test-output.txt)
+          SMOKE=$(awk '/running [0-9]+ tests? from \.\/backend\/src\/tests\/smoke(\.full)?\.tc\.test\.ts/ {s+=$2} END {print s+0}' /tmp/tc-test-output.txt)
           echo "{\"schemaVersion\":1,\"label\":\"smoke tests\",\"message\":\"${SMOKE} passed\",\"color\":\"brightgreen\"}" > docs/badges/smoke-tests.json
 
       - name: Commit integration test badge
