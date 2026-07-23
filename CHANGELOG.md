@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.56.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.3...veta-trading-platform-v1.56.4) (2026-07-23)
+
+
+### Bug Fixes
+
+* **compose:** segment the network to close the no-egress-firewall gap ([#505](https://github.com/milesburton/veta-trading-platform/issues/505)) ([1d652a0](https://github.com/milesburton/veta-trading-platform/commit/1d652a0703f1d37ba2720e81e6feb54ff1010f42))
+* **frontend:** correct indentation in TradingContext.test.tsx ([#508](https://github.com/milesburton/veta-trading-platform/issues/508)) ([7bcbae9](https://github.com/milesburton/veta-trading-platform/commit/7bcbae9f675d75645697d5d9936abbb8006b3b62))
+
 ## [1.56.3](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.2...veta-trading-platform-v1.56.3) (2026-07-22)
 
 
