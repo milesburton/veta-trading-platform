@@ -119,13 +119,15 @@ hurdles in order.
      risk-engine, journal, every algo container, market-sim, and more)
      have no route to the internet at all, verified directly against
      production dockerd. A compromise landing in any of them has
-     nowhere to exfiltrate to. The gap is not fully closed: `gateway`
-     (Discord webhook), `market-data` (external quote providers), and
-     `discord-bot` (Discord API) still join a second, internet-capable
-     `egress-net` network, so a compromise in one of those three still
-     has an outbound path. A DNS-aware allowlisting proxy in front of
-     `egress-net`, restricting those three to only their known
-     destinations, is the natural next step and remains planned.
+    nowhere to exfiltrate to. The gap is not fully closed: `gateway`
+    (Discord webhook), `market-data` (external quote providers),
+    `discord-bot` (Discord API), `traefik` (public ingress), and the
+    one-shot `ollama-model-pull` bootstrap container also join a
+    second, internet-capable `egress-net` network. A compromise in the
+    long-running internet-facing services still has an outbound path.
+    A DNS-aware allowlisting proxy in front of `egress-net`,
+    restricting those services to only their known destinations, is
+    the natural next step and remains planned.
 
 ### Chain 4: Bot exhausts Kafka topics to OOM the journal
 
@@ -183,11 +185,13 @@ is "Deferred" or "Partially".
   domain; image signing (`cosign`) is planned.
 - **No restore drill.** Backups themselves are deferred; the rehearsal
   is consequently deferred too.
-- **Unrestricted egress from the three internet-facing services.**
-  `gateway`, `market-data`, and `discord-bot` join `egress-net` and can
-  reach any destination on the internet, not just their known
-  providers. Everything else on `trading-net` alone has no route out
-  at all. A DNS-aware allowlisting proxy for `egress-net` is planned.
+- **Unrestricted egress from internet-capable services.**
+  `gateway`, `market-data`, `discord-bot`, and `traefik` join
+  `egress-net` and can reach any destination on the internet, not just
+  their known providers. `ollama-model-pull` also joins `egress-net`
+  but only runs briefly at startup. Everything else on `trading-net`
+  alone has no route out at all. A DNS-aware allowlisting proxy for
+  `egress-net` is planned.
 
 ## Out of scope (intentional)
 
