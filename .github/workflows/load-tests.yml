@@ -1,0 +1,124 @@
+name: Load tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: k6 scenario script under k6/
+        required: false
+        default: mixed-strategy.js
+        type: choice
+        options:
+          - baseline-limit.js
+          - mixed-strategy.js
+          - burst-open.js
+          - soak.js
+          - risk-stress.js
+      order_count:
+        description: Orders requested per POST /load-test call
+        required: false
+        default: "20"
+        type: string
+      base_url:
+        description: Gateway base URL (defaults to production gateway path)
+        required: false
+        default: https://veta.mnetcs.com/api/gateway
+        type: string
+      run_label:
+        description: Run label suffix
+        required: false
+        default: ci-manual
+        type: string
+  schedule:
+    - cron: "30 3 * * 1"
+
+permissions:
+  contents: write
+
+jobs:
+  k6-load-tests:
+    name: k6 load tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ github.event_name == 'push' && secrets.BOT_PAT || github.token }}
+
+      - name: Resolve run configuration
+        id: cfg
+        run: |
+          SCENARIO="${{ github.event.inputs.scenario }}"
+          [ -n "$SCENARIO" ] || SCENARIO="mixed-strategy.js"
+
+          ORDER_COUNT="${{ github.event.inputs.order_count }}"
+          [ -n "$ORDER_COUNT" ] || ORDER_COUNT="20"
+
+          BASE_URL="${{ github.event.inputs.base_url }}"
+          [ -n "$BASE_URL" ] || BASE_URL="https://veta.mnetcs.com/api/gateway"
+
+          RUN_LABEL="${{ github.event.inputs.run_label }}"
+          [ -n "$RUN_LABEL" ] || RUN_LABEL="ci-weekly"
+
+          echo "scenario=$SCENARIO" >> "$GITHUB_OUTPUT"
+          echo "order_count=$ORDER_COUNT" >> "$GITHUB_OUTPUT"
+          echo "base_url=$BASE_URL" >> "$GITHUB_OUTPUT"
+          echo "run_label=$RUN_LABEL" >> "$GITHUB_OUTPUT"
+
+      - name: Run k6 scenario
+        env:
+          BASE_URL: ${{ steps.cfg.outputs.base_url }}
+          K6_TOKEN: ${{ secrets.K6_TOKEN }}
+          ORDER_COUNT: ${{ steps.cfg.outputs.order_count }}
+          RUN_LABEL: ${{ steps.cfg.outputs.run_label }}
+          K6_SCRIPT: ${{ steps.cfg.outputs.scenario }}
+        run: |
+          if [ -z "${K6_TOKEN:-}" ]; then
+            echo "K6_TOKEN secret is not configured; skipping load test run."
+            exit 0
+          fi
+
+          mkdir -p docs/site/src/data/loadtest
+          docker run --rm \
+            -e BASE_URL="$BASE_URL" \
+            -e K6_TOKEN="$K6_TOKEN" \
+            -e ORDER_COUNT="$ORDER_COUNT" \
+            -e RUN_LABEL="$RUN_LABEL" \
+            -v "$PWD/k6:/scripts:ro" \
+            -v "$PWD/docs/site/src/data/loadtest:/output" \
+            grafana/k6:0.55.0 run \
+            --summary-trend-stats=p(50),p(95),p(99),avg,max,min,med \
+            "/scripts/$K6_SCRIPT"
+
+      - name: Publish load test artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: loadtest-data-${{ github.run_id }}
+          path: docs/site/src/data/loadtest/*
+          retention-days: 30
+
+      - name: Commit loadtest dataset updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/site/src/data/loadtest/*.json docs/site/src/data/loadtest/*.csv || true
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(loadtest): refresh k6 dataset [skip ci]"
+            for i in 1 2 3; do
+              git stash --include-untracked --quiet || true
+              if git pull --rebase origin main; then
+                git stash pop --quiet 2>/dev/null || true
+                if git push; then
+                  echo "Pushed loadtest dataset on attempt $i"
+                  exit 0
+                fi
+              else
+                git rebase --abort 2>/dev/null || true
+                git stash pop --quiet 2>/dev/null || true
+              fi
+              echo "Loadtest dataset push attempt $i failed, retrying..."
+              sleep 2
+            done
+            echo "Failed to publish loadtest dataset after retries"
+            exit 1
+          fi

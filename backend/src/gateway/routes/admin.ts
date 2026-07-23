@@ -143,7 +143,8 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
     "CRM", "CSCO", "PEP", "INTC", "AMD",
   ];
   const symbols = body.symbols ?? ALL_SYMBOLS;
-  const orderCount = Math.min(body.orderCount ?? 100, 500);
+  const maxOrderCount = Math.max(1, Number(Deno.env.get("LOAD_TEST_MAX_ORDERS") ?? "5000"));
+  const orderCount = Math.min(body.orderCount ?? 100, maxOrderCount);
   const strategy = body.strategy ?? "LIMIT";
   const jobId = `load-${Date.now()}`;
 

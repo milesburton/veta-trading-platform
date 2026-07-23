@@ -5,6 +5,7 @@ import { Rate, Trend } from "k6/metrics";
 const BASE_URL = __ENV.BASE_URL || "http://gateway:5011";
 const TOKEN = __ENV.K6_TOKEN || "";
 const RUN_LABEL = __ENV.RUN_LABEL || "risk-stress";
+const ORDER_COUNT = Math.max(1, Number(__ENV.ORDER_COUNT || "1"));
 
 const submitDuration = new Trend("veta_loadtest_submit_duration_ms", true);
 const submitOk = new Rate("veta_loadtest_submit_ok");
@@ -60,7 +61,7 @@ export default function (data) {
   const t0 = Date.now();
   const res = http.post(
     `${BASE_URL}/load-test`,
-    JSON.stringify({ orderCount: 1, strategy: "LIMIT", quantity: profile.quantity }),
+    JSON.stringify({ orderCount: ORDER_COUNT, strategy: "LIMIT", quantity: profile.quantity }),
     {
       headers: {
         "Content-Type": "application/json",
@@ -105,6 +106,7 @@ export function handleSummary(data) {
     runLabel: RUN_LABEL,
     runDate: date,
     target: BASE_URL,
+    orderCountPerRequest: ORDER_COUNT,
     profileMix: PROFILES,
     iterations: data.metrics.iterations?.values?.count ?? 0,
     acceptRate: round(data.metrics.veta_loadtest_accept_rate?.values?.rate ?? 0),
