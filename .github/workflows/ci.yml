@@ -686,7 +686,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/badges/integration-tests.json docs/badges/smoke-tests.json
           if ! git diff --staged --quiet; then
-            git commit -m "chore(ci): update integration test badge [skip ci]"
+            git commit -m "chore(ci): update integration and smoke test badges [skip ci]"
             git stash --include-untracked --quiet || true
             git pull --rebase origin main || { git rebase --abort 2>/dev/null; git stash pop --quiet 2>/dev/null || true; exit 0; }
             git stash pop --quiet 2>/dev/null || true
