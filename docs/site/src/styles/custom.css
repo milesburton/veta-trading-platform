@@ -244,3 +244,13 @@
   opacity: 1;
   transform: translateY(-50%) translateX(0);
 }
+
+@media (min-width: 50rem) {
+  header starlight-theme-select label::before {
+    content: "Theme";
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+    white-space: nowrap;
+    margin-inline-end: 0.15rem;
+  }
+}
