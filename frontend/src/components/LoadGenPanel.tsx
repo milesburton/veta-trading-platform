@@ -58,13 +58,19 @@ export function LoadGenPanel() {
   const ratePerSecond = useSignal<number>(50);
   const autoStopAfterMs = useSignal<number>(60 * 60_000);
   const symbolsCsv = useSignal<string>("");
+  const autoSymbolsCsv = useSignal<string>("");
+  const symbolsEdited = useSignal(false);
   const sizeMin = useSignal<number>(100);
   const sizeMax = useSignal<number>(5_000);
 
   useEffect(() => {
-    if (symbolsCsv.value.trim()) return;
-    symbolsCsv.value = pickDefaultSymbols(assets).join(",");
-  }, [assets, symbolsCsv]);
+    const derived = pickDefaultSymbols(assets).join(",");
+    const current = symbolsCsv.value.trim();
+    if (!symbolsEdited.value && (!current || symbolsCsv.value === autoSymbolsCsv.value)) {
+      symbolsCsv.value = derived;
+      autoSymbolsCsv.value = derived;
+    }
+  }, [assets, autoSymbolsCsv, symbolsCsv, symbolsEdited]);
 
   const { data: status, refetch } = useGetLoadGenStatusQuery(undefined, {
     pollingInterval: 1_000,
@@ -172,6 +178,10 @@ export function LoadGenPanel() {
             ratePerSecond={ratePerSecond}
             autoStopAfterMs={autoStopAfterMs}
             symbolsCsv={symbolsCsv}
+            onSymbolsChange={(value) => {
+              symbolsEdited.value = true;
+              symbolsCsv.value = value;
+            }}
             sizeMin={sizeMin}
             sizeMax={sizeMax}
           />
@@ -256,6 +266,7 @@ interface ConfigFormProps {
   ratePerSecond: { value: number };
   autoStopAfterMs: { value: number };
   symbolsCsv: { value: string };
+  onSymbolsChange: (value: string) => void;
   sizeMin: { value: number };
   sizeMax: { value: number };
 }
@@ -322,7 +333,7 @@ function ConfigForm(p: ConfigFormProps) {
         <input
           type="text"
           value={p.symbolsCsv.value}
-          onChange={(e) => (p.symbolsCsv.value = e.target.value)}
+          onChange={(e) => p.onSymbolsChange(e.target.value)}
           data-testid="load-gen-symbols-input"
           className="w-full px-2 py-1 rounded text-[11px] font-mono bg-panel/40 border border-divider text-default"
         />

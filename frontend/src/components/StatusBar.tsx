@@ -72,12 +72,10 @@ const THEME_OPTIONS: { id: Theme; label: string }[] = [
   { id: "high-contrast", label: "High Contrast" },
 ];
 
-const THEME_LABEL: Record<Theme, string> = {
-  dark: "Dark",
-  darker: "OLED",
-  light: "Light",
-  "high-contrast": "High Contrast",
-};
+const THEME_LABEL = Object.fromEntries(THEME_OPTIONS.map(({ id, label }) => [id, label])) as Record<
+  Theme,
+  string
+>;
 
 export function ThemeSwitcher() {
   const dispatch = useAppDispatch();
