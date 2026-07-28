@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.56.5](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.4...veta-trading-platform-v1.56.5) (2026-07-28)
+
+
+### Bug Fixes
+
+* **ui:** clean header links and clarify theme control ([#509](https://github.com/milesburton/veta-trading-platform/issues/509)) ([fae8af7](https://github.com/milesburton/veta-trading-platform/commit/fae8af7ead047040169dcc088633527eabf36f02))
+
 ## [1.56.4](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.3...veta-trading-platform-v1.56.4) (2026-07-23)
 
 
