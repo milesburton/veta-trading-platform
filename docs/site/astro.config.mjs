@@ -38,18 +38,7 @@ export default defineConfig({
       title: "VETA Trading Platform",
       description:
         "A near real-world equities and fixed income trading platform for paper trading and learning market dynamics.",
-      social: [
-        {
-          icon: "github",
-          label: "GitHub",
-          href: "https://github.com/milesburton/veta-trading-platform",
-        },
-        {
-          icon: "discord",
-          label: "Support",
-          href: "https://discord.gg/tSGgsKnz",
-        },
-      ],
+      social: [],
       logo: {
         alt: "VETA",
         src: "./src/assets/logo.svg",

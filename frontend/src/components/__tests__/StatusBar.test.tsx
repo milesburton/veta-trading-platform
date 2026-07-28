@@ -127,18 +127,12 @@ test("shows brand name and time", () => {
   expect(screen.getByText(/\d{1,2}:\d{2}:\d{2}/)).toBeInTheDocument();
 });
 
-test("header exposes Grafana, Support, User Guide, and GitHub external links", () => {
+test("header exposes Grafana and User Guide external links", () => {
   renderBar(true);
   const grafanaLink = screen.getByTestId("grafana-link");
   expect(grafanaLink).toHaveAttribute("href", "https://veta.mnetcs.com/grafana/");
   expect(grafanaLink).toHaveAttribute("target", "_blank");
   expect(grafanaLink).toHaveAttribute("rel", expect.stringContaining("noopener"));
-
-  const discordLink = screen.getByTestId("discord-link");
-  expect(discordLink).toHaveAttribute("href", "https://discord.gg/tSGgsKnz");
-  expect(discordLink).toHaveAttribute("target", "_blank");
-  expect(discordLink).toHaveAttribute("rel", expect.stringContaining("noopener"));
-  expect(discordLink).toHaveTextContent("Support");
 
   const docsLink = screen.getByTestId("docs-link");
   expect(docsLink).toHaveAttribute("href", "https://milesburton.github.io/veta-trading-platform/");
@@ -251,7 +245,7 @@ describe("StatusBar – theme switcher", () => {
     const store = makeStore(true);
     authenticateStore(store);
     renderWithStore(store);
-    const btn = screen.getByText("Theme");
+    const btn = screen.getByRole("button", { name: /Change theme/i });
     fireEvent.click(btn);
     expect(screen.getByText("Dark")).toBeInTheDocument();
     expect(screen.getByText("OLED")).toBeInTheDocument();
@@ -285,7 +279,7 @@ describe("StatusBar – theme switcher", () => {
         </DashboardContext.Provider>
       </Provider>
     );
-    fireEvent.click(screen.getByText("Theme"));
+    fireEvent.click(screen.getByRole("button", { name: /Change theme/i }));
     fireEvent.click(screen.getByText("OLED"));
     expect(store.getState().theme.theme).toBe("darker");
   });
@@ -294,7 +288,7 @@ describe("StatusBar – theme switcher", () => {
     const store = makeStore(true);
     authenticateStore(store);
     renderWithStore(store);
-    fireEvent.click(screen.getByText("Theme"));
+    fireEvent.click(screen.getByRole("button", { name: /Change theme/i }));
     fireEvent.click(screen.getByLabelText(/Close theme picker/i));
     expect(screen.queryByText("OLED")).not.toBeInTheDocument();
   });
@@ -451,13 +445,11 @@ describe("StatusBar – alert button interactions", () => {
     expect(btn).toBeInTheDocument();
   });
 
-  it("clicking GitHub link does not throw", () => {
+  it("clicking User Guide link does not throw", () => {
     const store = makeStore(true);
     renderWithStore(store);
-    const link = screen.queryByTitle(/View source on GitHub/i);
-    if (link) {
-      fireEvent.click(link);
-    }
+    const link = screen.getByTestId("docs-link");
+    fireEvent.click(link);
     expect(screen.getAllByText(/VETA/)[0]).toBeInTheDocument();
   });
 });

@@ -9,7 +9,7 @@ This page is the structured walk-through of who would attack the
 platform, what they would aim for, and which controls interrupt each
 step of the chain. It is the companion to
 [Professional standards](../professional-standards/): that page is the
-*what* (the capability checklist), this page is the *why* (the
+_what_ (the capability checklist), this page is the _why_ (the
 adversaries and chains those capabilities exist to disrupt). Container
 hardening details are kept on the [Security posture](../security/)
 page and only referenced here. The residual-risks section is
@@ -18,14 +18,14 @@ or "Partially" row on the standards checklist.
 
 ## Adversaries
 
-| Adversary | Capability | What they want | Out of scope |
-| --- | --- | --- | --- |
-| Casual external attacker | Mass scanners, public CVE exploits, no targeted research | Any easy win such as an exposed admin panel, default credentials, or leaked secrets | Targeted social engineering of the operator |
-| Skilled remote attacker | Custom exploits, RCE chains, lateral movement, willing to spend days | Persistence inside the trading network, data exfiltration, ransom | Nation-state-grade zero-days |
-| Compromised dependency author | Indirect access via a malicious npm/Deno package update | Supply-chain foothold inside any service that imports the package | A backdoored Postgres or Linux kernel |
-| Insider with viewer credentials | Legitimate session cookie, viewer role only | Privilege escalation to trader or admin; reading data outside their role | Physical access to the host |
-| Insider with admin credentials | Full admin role; can configure risk, kill, run scenarios | Mistakes that cause loss; or deliberate manipulation of trading | Subverting database-level audit |
-| Network-adjacent attacker | LAN access on the server subnet | Sniffing inter-service traffic, hitting Postgres or Redpanda directly | Compromise of the upstream router or ISP |
+| Adversary                       | Capability                                                           | What they want                                                                      | Out of scope                                |
+| ------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------- |
+| Casual external attacker        | Mass scanners, public CVE exploits, no targeted research             | Any easy win such as an exposed admin panel, default credentials, or leaked secrets | Targeted social engineering of the operator |
+| Skilled remote attacker         | Custom exploits, RCE chains, lateral movement, willing to spend days | Persistence inside the trading network, data exfiltration, ransom                   | Nation-state-grade zero-days                |
+| Compromised dependency author   | Indirect access via a malicious npm/Deno package update              | Supply-chain foothold inside any service that imports the package                   | A backdoored Postgres or Linux kernel       |
+| Insider with viewer credentials | Legitimate session cookie, viewer role only                          | Privilege escalation to trader or admin; reading data outside their role            | Physical access to the host                 |
+| Insider with admin credentials  | Full admin role; can configure risk, kill, run scenarios             | Mistakes that cause loss; or deliberate manipulation of trading                     | Subverting database-level audit             |
+| Network-adjacent attacker       | LAN access on the server subnet                                      | Sniffing inter-service traffic, hitting Postgres or Redpanda directly               | Compromise of the upstream router or ISP    |
 
 For each adversary the assumption is that they are remote unless the
 row says otherwise; that they cannot break TLS at the edge; and that
@@ -33,15 +33,15 @@ they cannot trivially compromise GitHub itself or GHCR.
 
 ## Assets
 
-| Asset | Sensitivity | Where it lives | Who legitimately reads it |
-| --- | --- | --- | --- |
-| Trading limits and risk configuration | High (bypass equals unbounded loss) | Postgres `risk_config_versions` | `risk-engine`, admin role |
-| Order history | High (regulatory artefact, must be tamper-evident) | Postgres `orders`, journal Kafka topic | `journal`, trader, admin |
-| User session tokens | High (direct authentication bypass) | Browser cookie, validated by `user-service` per request | `user-service` |
-| Backend service credentials | High (DB password, broker keys when wired) | `.env` files, host environment | The service that owns the credential |
-| Trading-decision pipeline | High (manipulation is market abuse) | In-memory state across `feature-engine`, `signal-engine`, `risk-engine` | The pipeline services |
-| Audit log integrity | High (needed to reconstruct any incident) | Postgres `audit_events`, journal Kafka topic | `journal`, admin (read), no one (write) |
-| Market data | Low (synthetic or delayed-public) | `market-data` service memory, Redpanda topics | All trading services |
+| Asset                                 | Sensitivity                                        | Where it lives                                                          | Who legitimately reads it               |
+| ------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------- |
+| Trading limits and risk configuration | High (bypass equals unbounded loss)                | Postgres `risk_config_versions`                                         | `risk-engine`, admin role               |
+| Order history                         | High (regulatory artefact, must be tamper-evident) | Postgres `orders`, journal Kafka topic                                  | `journal`, trader, admin                |
+| User session tokens                   | High (direct authentication bypass)                | Browser cookie, validated by `user-service` per request                 | `user-service`                          |
+| Backend service credentials           | High (DB password, broker keys when wired)         | `.env` files, host environment                                          | The service that owns the credential    |
+| Trading-decision pipeline             | High (manipulation is market abuse)                | In-memory state across `feature-engine`, `signal-engine`, `risk-engine` | The pipeline services                   |
+| Audit log integrity                   | High (needed to reconstruct any incident)          | Postgres `audit_events`, journal Kafka topic                            | `journal`, admin (read), no one (write) |
+| Market data                           | Low (synthetic or delayed-public)                  | `market-data` service memory, Redpanda topics                           | All trading services                    |
 
 ## Attack surfaces
 
@@ -100,8 +100,8 @@ hurdles in order.
 4. They try to bypass the risk engine by hitting an undocumented route.
    - **Control**: gateway routes are explicitly enumerated; an audit
      test for "every order-creating route invokes risk-engine" is on
-     the deferred list (see professional-standards: *Bypass-resistance
-     proven by integration test*).
+     the deferred list (see professional-standards: _Bypass-resistance
+     proven by integration test_).
 
 ### Chain 3: Compromised npm dependency ships a crypto-miner
 
@@ -119,15 +119,15 @@ hurdles in order.
      risk-engine, journal, every algo container, market-sim, and more)
      have no route to the internet at all, verified directly against
      production dockerd. A compromise landing in any of them has
-    nowhere to exfiltrate to. The gap is not fully closed: `gateway`
-    (Discord webhook), `market-data` (external quote providers),
-    `discord-bot` (Discord API), `traefik` (public ingress), and the
-    one-shot `ollama-model-pull` bootstrap container also join a
-    second, internet-capable `egress-net` network. A compromise in the
-    long-running internet-facing services still has an outbound path.
-    A DNS-aware allowlisting proxy in front of `egress-net`,
-    restricting those services to only their known destinations, is
-    the natural next step and remains planned.
+     nowhere to exfiltrate to. The gap is not fully closed: `gateway`
+     (Discord webhook), `market-data` (external quote providers),
+     `discord-bot` (Discord API), `traefik` (public ingress), and the
+     one-shot `ollama-model-pull` bootstrap container also join a
+     second, internet-capable `egress-net` network. A compromise in the
+     long-running internet-facing services still has an outbound path.
+     A DNS-aware allowlisting proxy in front of `egress-net`,
+     restricting those services to only their known destinations, is
+     the natural next step and remains planned.
 
 ### Chain 4: Bot exhausts Kafka topics to OOM the journal
 
@@ -139,7 +139,7 @@ hurdles in order.
 3. Topic disk fills up.
    - **Control**: Redpanda retention plus disk-monitor reporting; rate
      limiting per consumer is planned (see professional-standards:
-     *Rate limiting per endpoint, per IP, per user*).
+     _Rate limiting per endpoint, per IP, per user_).
 
 ### Chain 5: XSS via a market-data string, attacker reads session token
 
@@ -208,7 +208,7 @@ gain a new chain before the feature ships.
 The threat model is reviewed alongside any pull request that touches
 an attack-surface file: the gateway, any auth path, the risk engine,
 the journal, container compose files, or CI workflows. New surface
-area means a new row in *Attack surfaces* and a new chain if it
+area means a new row in _Attack surfaces_ and a new chain if it
 introduces a class of attack that the existing chains do not already
 cover. A new control means the relevant chain gets a new bullet. A new
 residual risk means a new entry both here and on

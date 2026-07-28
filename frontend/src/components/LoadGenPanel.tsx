@@ -5,6 +5,8 @@ import {
   useStopLoadGenMutation,
 } from "@veta/frontend/store/gatewayApi.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { AssetDef } from "@veta/frontend/types.ts";
+import { useEffect } from "react";
 
 const RATE_PRESETS = [10, 25, 50, 100, 250, 500] as const;
 const AUTO_STOP_PRESETS = [
@@ -14,18 +16,55 @@ const AUTO_STOP_PRESETS = [
   { label: "24 hours", ms: 24 * 60 * 60_000 },
 ] as const;
 
-const DEFAULT_SYMBOLS = "AAPL,MSFT,GOOGL,AMZN,META,NVDA,TSLA,JPM,V,WMT";
+const FALLBACK_SYMBOLS = [
+  "AAPL",
+  "MSFT",
+  "GOOGL",
+  "AMZN",
+  "META",
+  "NVDA",
+  "TSLA",
+  "JPM",
+  "V",
+  "WMT",
+];
+
+function pickDefaultSymbols(assets: AssetDef[]): string[] {
+  const universe = assets.filter((a) => (a.assetClass ? a.assetClass === "equity" : true));
+  if (universe.length === 0) return FALLBACK_SYMBOLS;
+
+  const present = new Set(universe.map((a) => a.symbol));
+  const preferred = FALLBACK_SYMBOLS.filter((symbol) => present.has(symbol));
+  const ranked = [...universe].sort((a, b) => (b.dailyVolume ?? 0) - (a.dailyVolume ?? 0));
+  const rankedSymbols = ranked.map((a) => a.symbol);
+
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const symbol of [...preferred, ...rankedSymbols]) {
+    if (!symbol || seen.has(symbol)) continue;
+    seen.add(symbol);
+    out.push(symbol);
+    if (out.length >= 10) break;
+  }
+  return out.length > 0 ? out : FALLBACK_SYMBOLS;
+}
 
 export function LoadGenPanel() {
   const user = useAppSelector((s) => s.auth.user);
+  const assets = useAppSelector((s) => s.market.assets);
   const role = user?.role;
   const allowed = role === "admin" || role === "oncall";
 
   const ratePerSecond = useSignal<number>(50);
   const autoStopAfterMs = useSignal<number>(60 * 60_000);
-  const symbolsCsv = useSignal<string>(DEFAULT_SYMBOLS);
+  const symbolsCsv = useSignal<string>("");
   const sizeMin = useSignal<number>(100);
   const sizeMax = useSignal<number>(5_000);
+
+  useEffect(() => {
+    if (symbolsCsv.value.trim()) return;
+    symbolsCsv.value = pickDefaultSymbols(assets).join(",");
+  }, [assets, symbolsCsv]);
 
   const { data: status, refetch } = useGetLoadGenStatusQuery(undefined, {
     pollingInterval: 1_000,

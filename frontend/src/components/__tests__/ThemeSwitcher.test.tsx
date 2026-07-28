@@ -36,7 +36,8 @@ describe("ThemeSwitcher", () => {
         <ThemeSwitcher />
       </Provider>
     );
-    expect(screen.getByText("Theme")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Change theme/i })).toBeInTheDocument();
+    expect(screen.getByText(/Theme: Dark/i)).toBeInTheDocument();
   });
 
   it("opens the menu on click and lists all theme options", () => {
@@ -45,7 +46,7 @@ describe("ThemeSwitcher", () => {
         <ThemeSwitcher />
       </Provider>
     );
-    fireEvent.click(screen.getByText("Theme"));
+    fireEvent.click(screen.getByRole("button", { name: /Change theme/i }));
     for (const label of ["Dark", "OLED", "Light", "High Contrast"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
@@ -58,7 +59,7 @@ describe("ThemeSwitcher", () => {
         <ThemeSwitcher />
       </Provider>
     );
-    fireEvent.click(screen.getByText("Theme"));
+    fireEvent.click(screen.getByRole("button", { name: /Change theme/i }));
     fireEvent.click(screen.getByText("OLED"));
     expect(store.getState().theme.theme).toBe("darker");
     expect(setItemSpy).toHaveBeenCalledWith("veta-theme", "darker");
@@ -70,7 +71,7 @@ describe("ThemeSwitcher", () => {
         <ThemeSwitcher />
       </Provider>
     );
-    fireEvent.click(screen.getByText("Theme"));
+    fireEvent.click(screen.getByRole("button", { name: /Change theme/i }));
     expect(screen.getByText("OLED")).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Close theme picker"));
     expect(screen.queryByText("OLED")).not.toBeInTheDocument();

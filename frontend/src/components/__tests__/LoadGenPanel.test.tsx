@@ -31,6 +31,20 @@ vi.mock("../../store/hooks.ts", () => ({
       auth: {
         user: mockRole ? { id: "u1", role: mockRole, name: "Test", avatar_emoji: "✅" } : null,
       },
+      market: {
+        assets: [
+          { symbol: "AAPL", dailyVolume: 55_000_000, assetClass: "equity" },
+          { symbol: "MSFT", dailyVolume: 20_000_000, assetClass: "equity" },
+          { symbol: "GOOGL", dailyVolume: 25_000_000, assetClass: "equity" },
+          { symbol: "AMZN", dailyVolume: 35_000_000, assetClass: "equity" },
+          { symbol: "META", dailyVolume: 18_000_000, assetClass: "equity" },
+          { symbol: "NVDA", dailyVolume: 45_000_000, assetClass: "equity" },
+          { symbol: "TSLA", dailyVolume: 70_000_000, assetClass: "equity" },
+          { symbol: "JPM", dailyVolume: 11_000_000, assetClass: "equity" },
+          { symbol: "V", dailyVolume: 8_000_000, assetClass: "equity" },
+          { symbol: "WMT", dailyVolume: 9_000_000, assetClass: "equity" },
+        ],
+      },
     };
     return selector(state);
   },
