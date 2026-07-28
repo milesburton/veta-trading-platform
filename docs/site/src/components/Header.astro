@@ -5,6 +5,7 @@ import { BUILD_INFO } from "../generated/build-info";
 const repoUrl = "https://github.com/milesburton/veta-trading-platform";
 const platformUrl = "https://veta.mnetcs.com/";
 const grafanaUrl = "https://veta.mnetcs.com/grafana/";
+const communityUrl = "https://discord.gg/tSGgsKnz";
 const commitUrl =
   BUILD_INFO.commitSha === "unknown"
     ? null
@@ -33,17 +34,6 @@ const tooltip = `Docs built ${
 
   <a
     class="veta-secondary-link"
-    data-testid="github-link"
-    href={repoUrl}
-    target="_blank"
-    rel="noopener"
-    title="Open the GitHub repository"
-  >
-    GitHub
-  </a>
-
-  <a
-    class="veta-secondary-link"
     data-testid="grafana-link"
     href={grafanaUrl}
     target="_blank"
@@ -51,6 +41,17 @@ const tooltip = `Docs built ${
     title="Open service status dashboards"
   >
     Service status
+  </a>
+
+  <a
+    class="veta-secondary-link"
+    data-testid="community-link"
+    href={communityUrl}
+    target="_blank"
+    rel="noopener"
+    title="Open the Discord community"
+  >
+    Community
   </a>
 
   <a

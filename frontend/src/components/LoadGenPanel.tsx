@@ -5,6 +5,8 @@ import {
   useStopLoadGenMutation,
 } from "@veta/frontend/store/gatewayApi.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
+import type { AssetDef } from "@veta/frontend/types.ts";
+import { useEffect } from "react";
 
 const RATE_PRESETS = [10, 25, 50, 100, 250, 500] as const;
 const AUTO_STOP_PRESETS = [
@@ -14,18 +16,61 @@ const AUTO_STOP_PRESETS = [
   { label: "24 hours", ms: 24 * 60 * 60_000 },
 ] as const;
 
-const DEFAULT_SYMBOLS = "AAPL,MSFT,GOOGL,AMZN,META,NVDA,TSLA,JPM,V,WMT";
+const FALLBACK_SYMBOLS = [
+  "AAPL",
+  "MSFT",
+  "GOOGL",
+  "AMZN",
+  "META",
+  "NVDA",
+  "TSLA",
+  "JPM",
+  "V",
+  "WMT",
+];
+
+function pickDefaultSymbols(assets: AssetDef[]): string[] {
+  const universe = assets.filter((a) => (a.assetClass ? a.assetClass === "equity" : true));
+  if (universe.length === 0) return FALLBACK_SYMBOLS;
+
+  const present = new Set(universe.map((a) => a.symbol));
+  const preferred = FALLBACK_SYMBOLS.filter((symbol) => present.has(symbol));
+  const ranked = [...universe].sort((a, b) => (b.dailyVolume ?? 0) - (a.dailyVolume ?? 0));
+  const rankedSymbols = ranked.map((a) => a.symbol);
+
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const symbol of [...preferred, ...rankedSymbols]) {
+    if (!symbol || seen.has(symbol)) continue;
+    seen.add(symbol);
+    out.push(symbol);
+    if (out.length >= 10) break;
+  }
+  return out.length > 0 ? out : FALLBACK_SYMBOLS;
+}
 
 export function LoadGenPanel() {
   const user = useAppSelector((s) => s.auth.user);
+  const assets = useAppSelector((s) => s.market.assets);
   const role = user?.role;
   const allowed = role === "admin" || role === "oncall";
 
   const ratePerSecond = useSignal<number>(50);
   const autoStopAfterMs = useSignal<number>(60 * 60_000);
-  const symbolsCsv = useSignal<string>(DEFAULT_SYMBOLS);
+  const symbolsCsv = useSignal<string>("");
+  const autoSymbolsCsv = useSignal<string>("");
+  const symbolsEdited = useSignal(false);
   const sizeMin = useSignal<number>(100);
   const sizeMax = useSignal<number>(5_000);
+
+  useEffect(() => {
+    const derived = pickDefaultSymbols(assets).join(",");
+    const current = symbolsCsv.value.trim();
+    if (!symbolsEdited.value && (!current || symbolsCsv.value === autoSymbolsCsv.value)) {
+      symbolsCsv.value = derived;
+      autoSymbolsCsv.value = derived;
+    }
+  }, [assets, autoSymbolsCsv, symbolsCsv, symbolsEdited]);
 
   const { data: status, refetch } = useGetLoadGenStatusQuery(undefined, {
     pollingInterval: 1_000,
@@ -133,6 +178,10 @@ export function LoadGenPanel() {
             ratePerSecond={ratePerSecond}
             autoStopAfterMs={autoStopAfterMs}
             symbolsCsv={symbolsCsv}
+            onSymbolsChange={(value) => {
+              symbolsEdited.value = true;
+              symbolsCsv.value = value;
+            }}
             sizeMin={sizeMin}
             sizeMax={sizeMax}
           />
@@ -217,6 +266,7 @@ interface ConfigFormProps {
   ratePerSecond: { value: number };
   autoStopAfterMs: { value: number };
   symbolsCsv: { value: string };
+  onSymbolsChange: (value: string) => void;
   sizeMin: { value: number };
   sizeMax: { value: number };
 }
@@ -283,7 +333,7 @@ function ConfigForm(p: ConfigFormProps) {
         <input
           type="text"
           value={p.symbolsCsv.value}
-          onChange={(e) => (p.symbolsCsv.value = e.target.value)}
+          onChange={(e) => p.onSymbolsChange(e.target.value)}
           data-testid="load-gen-symbols-input"
           className="w-full px-2 py-1 rounded text-[11px] font-mono bg-panel/40 border border-divider text-default"
         />

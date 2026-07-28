@@ -22,7 +22,7 @@ checklist of work in front of us.
 ## Authentication & authorisation
 
 | Capability                                        | State       | Where                                                                                                                                                                                                                                                                          |
-| --- | --- | --- |
+| ------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Real OAuth 2.0 / OIDC against an external IdP     | Deferred    | Currently uses session cookies + dev-mode user-picker. PR pending: switch to GitHub OAuth or self-hosted Keycloak.                                                                                                                                                             |
 | Role-based access control with explicit role list | Implemented | [`frontend/src/auth/rbac.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/src/auth/rbac.ts), [`backend/src/user-service/user-service.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/user-service/user-service.ts) |
 | Per-route authorisation enforced server-side      | Partially   | Most routes go through `requireAuth`, but no integration test proves _every_ route does. Audit pending.                                                                                                                                                                        |
@@ -33,7 +33,7 @@ checklist of work in front of us.
 ## Pre-trade risk and limits
 
 | Capability                                         | State       | Where                                                                                                                                                                                                                                              |
-| --- | --- | --- |
+| -------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pre-trade limits enforced server-side, not just UI | Implemented | OMS calls `risk-engine /check` before publishing `orders.submitted`; fail-closed on risk-engine outage. See [Risk Architecture](../risk-architecture/).                                                                                            |
 | Per-user limits configurable and versioned         | Implemented | Migration [`0014_risk_config_versions.sql`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/db/migrations/0014_risk_config_versions.sql)                                                                                    |
 | Position-aware sizing                              | Implemented | [Risk controls page](../risk/)                                                                                                                                                                                                                     |
@@ -43,7 +43,7 @@ checklist of work in front of us.
 ## Logging, audit, and observability
 
 | Capability                                                      | State                | Where                                                                                                                                                                                    |
-| --- | --- | --- |
+| --------------------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Three-pillar OTel (metrics + traces + logs)                     | Implemented          | [Observability page](../observability/)                                                                                                                                                  |
 | Audit log of every privileged action                            | Partially            | `user.access` events captured; needs append-only / hash-chained storage.                                                                                                                 |
 | Log retention policy documented                                 | Deferred             | No formal retention policy yet.                                                                                                                                                          |
@@ -63,7 +63,7 @@ on the principle that a healthy platform's claim about its error
 rate should be falsifiable.
 
 | Window          | Filter                                                                                            | Recent rate                                                    | Notes                                                                                                                                                                                   |
-| --- | --- | --- | --- |
+| --------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Raw (all spans) | None                                                                                              | ~5%                                                            | Includes by-design 401/403/404 responses (auth gates), `/health` probes that timeout, and connection-refused on services still starting. Not a useful "is it broken" signal on its own. |
 | Filtered        | Excludes `/health`, `/healthz`, `/api/overview`, `/logs/query` paths and 401/403/404 status codes | **target <1%**, currently ~0.4% after the OMS-poll-timeout fix | This is the figure we treat as the operational SLO.                                                                                                                                     |
 
@@ -107,7 +107,7 @@ sometimes time out under load. Each follow-up PR named in the
 ## Container hardening and runtime security
 
 | Capability                                 | State       | Where                                                                                    |
-| --- | --- | --- |
+| ------------------------------------------ | ----------- | ---------------------------------------------------------------------------------------- |
 | `cap_drop: ALL` on every service container | Implemented | [Security posture page](../security/)                                                    |
 | Read-only root filesystems where feasible  | Implemented | [Security posture page](../security/)                                                    |
 | Non-root user inside containers            | Implemented | [Security posture page](../security/)                                                    |
@@ -118,19 +118,19 @@ sometimes time out under load. Each follow-up PR named in the
 
 ## Network exposure and rate limiting
 
-| Capability                                             | State       | Where                                                                                                                                                                                                                                                                                                                                                                                              |
-| --- | --- | --- |
-| Public surface area documented                         | Partially   | [API gateway page](../../reference/api-gateway/) lists routes; no formal exposed-vs-internal classification.                                                                                                                                                                                                                                                                                       |
-| Rate limiting per endpoint, per IP, per user           | Implemented | Token-bucket limiter at the gateway: per-IP cap on every request plus tighter per-user cap on authenticated routes. See [`backend/src/lib/rateLimit.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/rateLimit.ts), wired in [`backend/src/gateway/gateway.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/gateway.ts). |
-| DDoS protection at edge                                | Deferred    | Cloudflare tunnel is the intended posture.                                                                                                                                                                                                                                                                                                                                                         |
-| CSP and security headers (HSTS, X-Frame-Options, etc.) | Deferred    | Frontend currently scores ~B at securityheaders.com. Target A+.                                                                                                                                                                                                                                                                                                                                    |
-| WebSocket origin checking                              | Implemented | Gateway WS handler validates `Origin` header.                                                                                                                                                                                                                                                                                                                                                      |
-| Egress control from application containers            | Partially   | `trading-net` is a Docker `internal: true` network (verified against production dockerd: container-to-container DNS and TCP still work, direct internet connections are refused); the ~18 services with no legitimate reason to call out have no route to the internet at all. `gateway`, `market-data`, `discord-bot`, and `traefik` also join an unrestricted `egress-net` for genuine external connectivity, and `ollama-model-pull` joins it briefly during startup bootstrap. A DNS-aware allowlisting proxy, scoping internet-capable services to only their known destinations, is planned. |
+| Capability                                             | State       | Where                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public surface area documented                         | Partially   | [API gateway page](../../reference/api-gateway/) lists routes; no formal exposed-vs-internal classification.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Rate limiting per endpoint, per IP, per user           | Implemented | Token-bucket limiter at the gateway: per-IP cap on every request plus tighter per-user cap on authenticated routes. See [`backend/src/lib/rateLimit.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/lib/rateLimit.ts), wired in [`backend/src/gateway/gateway.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/backend/src/gateway/gateway.ts).                                                                                                                                                                                                 |
+| DDoS protection at edge                                | Deferred    | Cloudflare tunnel is the intended posture.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| CSP and security headers (HSTS, X-Frame-Options, etc.) | Deferred    | Frontend currently scores ~B at securityheaders.com. Target A+.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| WebSocket origin checking                              | Implemented | Gateway WS handler validates `Origin` header.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Egress control from application containers             | Partially   | `trading-net` is a Docker `internal: true` network (verified against production dockerd: container-to-container DNS and TCP still work, direct internet connections are refused); the ~18 services with no legitimate reason to call out have no route to the internet at all. `gateway`, `market-data`, `discord-bot`, and `traefik` also join an unrestricted `egress-net` for genuine external connectivity, and `ollama-model-pull` joins it briefly during startup bootstrap. A DNS-aware allowlisting proxy, scoping internet-capable services to only their known destinations, is planned. |
 
 ## Code provenance and supply chain
 
 | Capability                                    | State       | Where                                                                                                                                                                                             |
-| --- | --- | --- |
+| --------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Dependency scanning on PRs                    | Implemented | Dependabot enabled + CodeQL `security-and-quality` query suite via [`.github/workflows/codeql.yml`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/codeql.yml). |
 | Secret scanning of git history                | Implemented | [`gitleaks` workflow](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/gitleaks.yml) runs on every push, every PR, and weekly against full history.               |
 | Static analysis on every PR                   | Implemented | CodeQL [`javascript-typescript`](https://github.com/milesburton/veta-trading-platform/blob/main/.github/workflows/codeql.yml) on every PR + main + weekly.                                        |
@@ -141,30 +141,30 @@ sometimes time out under load. Each follow-up PR named in the
 ## Data classification and retention
 
 | Capability                                        | State       | Where                                                                 |
-| --- | --- | --- |
+| ------------------------------------------------- | ----------- | --------------------------------------------------------------------- |
 | Data classification documented                    | Deferred    | Need to identify which fields are PII / PII-equivalent / operational. |
 | Retention policy per data class                   | Deferred    | Journal events currently retained indefinitely.                       |
 | Log scrubbing (no PII / tokens leaking into logs) | Partially   | Logger has some redaction; no test proving completeness.              |
-| Encryption at rest                                | Partially   | Postgres on encrypted disk on the server; not enforced for Fly.      |
+| Encryption at rest                                | Partially   | Postgres on encrypted disk on the server; not enforced for Fly.       |
 | Encryption in transit (public surfaces only)      | Implemented | TLS at the Cloudflare/Fly edge.                                       |
 
 ## Performance and capacity
 
 | Capability                          | State       | Where                                                                                                                                                                                     |
-| --- | --- | --- |
-| Repeatable load-test harness        | Implemented | k6 scenarios in [`k6/`](https://github.com/milesburton/veta-trading-platform/tree/main/k6); see [k6 load testing](../../development/testing/k6-load-testing/).                                        |
+| ----------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repeatable load-test harness        | Implemented | k6 scenarios in [`k6/`](https://github.com/milesburton/veta-trading-platform/tree/main/k6); see [k6 load testing](../../development/testing/k6-load-testing/).                            |
 | Mixed-strategy load (all 9 algos)   | Implemented | [`k6/mixed-strategy.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/mixed-strategy.js): weighted realistic distribution.                                           |
 | Open-bell burst pattern             | Implemented | [`k6/burst-open.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/burst-open.js): 0 to 200 VUs in 30s, hold 5min.                                                    |
 | Sustained soak for memory leaks     | Implemented | [`k6/soak.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/soak.js): 25 VUs for 30min, configurable.                                                                |
 | Risk-engine pressure test           | Implemented | [`k6/risk-stress.js`](https://github.com/milesburton/veta-trading-platform/blob/main/k6/risk-stress.js): weighted under/at/over-limit mix.                                                |
 | Live load-test telemetry to Grafana | Implemented | k6 writes to Prometheus via remote-write; rendered on the **k6 Prometheus** dashboard.                                                                                                    |
 | Performance regression tracking     | Partially   | JSON summaries written per-run to [`docs/site/src/data/loadtest/`](https://github.com/milesburton/veta-trading-platform/tree/main/docs/site/src/data/loadtest); no automated CI gate yet. |
-| Load tests scheduled in CI          | Deferred    | Currently manual; nightly k6 run on the server is a planned follow-up.                                                                                                                   |
+| Load tests scheduled in CI          | Deferred    | Currently manual; nightly k6 run on the server is a planned follow-up.                                                                                                                    |
 
 ## Recovery and operational drills
 
 | Capability                            | State    | Where                                                                          |
-| --- | --- | --- |
+| ------------------------------------- | -------- | ------------------------------------------------------------------------------ |
 | Postgres backup running on schedule   | Deferred | No scheduled backup yet.                                                       |
 | Restore drill performed at least once | Deferred | Untested.                                                                      |
 | Redpanda topic snapshots              | Deferred | No snapshotting.                                                               |
@@ -178,7 +178,7 @@ out of scope for this codebase. The reasoning is documented so that
 the gaps are obvious choices rather than oversights.
 
 | Non-goal                                          | Reasoning                                                                                                                                          |
-| --- | --- |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Customer fund custody                             | Trading platforms either custody funds themselves (heavily regulated) or route to a broker. We route hypothetically, with no real funds in flight. |
 | Real-time market data redistribution              | Bloomberg / Refinitiv vendor licensing is six-figures-per-year. We use synthetic data plus delayed Alpha Vantage quotes.                           |
 | Multi-tenancy                                     | A platform serving multiple users is a different system. This is single-user (your own account, your own broker).                                  |

@@ -6,6 +6,18 @@ const startMutation = vi.fn();
 const stopMutation = vi.fn();
 const refetch = vi.fn();
 let mockRole: string | undefined = "admin";
+let mockAssets: Array<{ symbol: string; dailyVolume: number; assetClass: string }> = [
+  { symbol: "AAPL", dailyVolume: 55_000_000, assetClass: "equity" },
+  { symbol: "MSFT", dailyVolume: 20_000_000, assetClass: "equity" },
+  { symbol: "GOOGL", dailyVolume: 25_000_000, assetClass: "equity" },
+  { symbol: "AMZN", dailyVolume: 35_000_000, assetClass: "equity" },
+  { symbol: "META", dailyVolume: 18_000_000, assetClass: "equity" },
+  { symbol: "NVDA", dailyVolume: 45_000_000, assetClass: "equity" },
+  { symbol: "TSLA", dailyVolume: 70_000_000, assetClass: "equity" },
+  { symbol: "JPM", dailyVolume: 11_000_000, assetClass: "equity" },
+  { symbol: "V", dailyVolume: 8_000_000, assetClass: "equity" },
+  { symbol: "WMT", dailyVolume: 9_000_000, assetClass: "equity" },
+];
 let mockStatus: {
   running: boolean;
   ordersSent?: number;
@@ -31,6 +43,9 @@ vi.mock("../../store/hooks.ts", () => ({
       auth: {
         user: mockRole ? { id: "u1", role: mockRole, name: "Test", avatar_emoji: "✅" } : null,
       },
+      market: {
+        assets: mockAssets,
+      },
     };
     return selector(state);
   },
@@ -44,7 +59,51 @@ describe("LoadGenPanel", () => {
     startMutation.mockReturnValue({ unwrap: () => Promise.resolve({}) });
     stopMutation.mockReturnValue({ unwrap: () => Promise.resolve({}) });
     mockRole = "admin";
+    mockAssets = [
+      { symbol: "AAPL", dailyVolume: 55_000_000, assetClass: "equity" },
+      { symbol: "MSFT", dailyVolume: 20_000_000, assetClass: "equity" },
+      { symbol: "GOOGL", dailyVolume: 25_000_000, assetClass: "equity" },
+      { symbol: "AMZN", dailyVolume: 35_000_000, assetClass: "equity" },
+      { symbol: "META", dailyVolume: 18_000_000, assetClass: "equity" },
+      { symbol: "NVDA", dailyVolume: 45_000_000, assetClass: "equity" },
+      { symbol: "TSLA", dailyVolume: 70_000_000, assetClass: "equity" },
+      { symbol: "JPM", dailyVolume: 11_000_000, assetClass: "equity" },
+      { symbol: "V", dailyVolume: 8_000_000, assetClass: "equity" },
+      { symbol: "WMT", dailyVolume: 9_000_000, assetClass: "equity" },
+    ];
     mockStatus = { running: false };
+  });
+
+  it("replaces fallback defaults when live assets arrive and user has not edited", () => {
+    mockAssets = [];
+    const { rerender } = render(<LoadGenPanel />);
+    const input = screen.getByTestId("load-gen-symbols-input") as HTMLInputElement;
+    expect(input.value).toContain("AAPL");
+
+    mockAssets = [
+      { symbol: "IBM", dailyVolume: 5_000_000, assetClass: "equity" },
+      { symbol: "ORCL", dailyVolume: 6_000_000, assetClass: "equity" },
+    ];
+    rerender(<LoadGenPanel />);
+    expect((screen.getByTestId("load-gen-symbols-input") as HTMLInputElement).value).toBe(
+      "ORCL,IBM"
+    );
+  });
+
+  it("keeps user-entered symbols when live assets arrive later", () => {
+    mockAssets = [];
+    const { rerender } = render(<LoadGenPanel />);
+    const input = screen.getByTestId("load-gen-symbols-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "TSLA,NVDA" } });
+
+    mockAssets = [
+      { symbol: "IBM", dailyVolume: 5_000_000, assetClass: "equity" },
+      { symbol: "ORCL", dailyVolume: 6_000_000, assetClass: "equity" },
+    ];
+    rerender(<LoadGenPanel />);
+    expect((screen.getByTestId("load-gen-symbols-input") as HTMLInputElement).value).toBe(
+      "TSLA,NVDA"
+    );
   });
 
   it("denies access for non-admin / non-oncall roles", () => {
