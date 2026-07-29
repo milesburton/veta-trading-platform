@@ -63,6 +63,9 @@ export async function findOverflows(page: Page): Promise<OverflowFinding[]> {
     const elements = document.querySelectorAll<HTMLElement>("body *");
     for (const el of elements) {
       if (!isVisible(el)) continue;
+      // OverflowBar intentionally clips lower-priority controls and exposes
+      // them through its accessible overflow menu.
+      if (el.dataset.managedOverflow === "true") continue;
       const cs = getComputedStyle(el);
       // Only flag containers that are visibly clipping (not legitimate scrollers).
       if (cs.overflowX === "auto" || cs.overflowX === "scroll") continue;

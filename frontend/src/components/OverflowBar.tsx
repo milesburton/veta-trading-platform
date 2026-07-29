@@ -118,6 +118,7 @@ export function OverflowBar({
     <div
       ref={containerRef}
       data-testid={testId}
+      data-managed-overflow="true"
       className={`flex items-center min-w-0 overflow-hidden ${className}`}
     >
       {items.map((child, i) => (
