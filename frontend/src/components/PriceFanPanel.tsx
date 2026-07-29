@@ -147,7 +147,7 @@ export function PriceFanPanel() {
             Failed to load fan data for {symbol.value}
           </div>
         ) : steps.length === 0 && !isFetching ? (
-          <div className="flex items-center justify-center h-full text-subtle text-[10px]">
+          <div className="flex items-center justify-center h-full text-muted text-[10px]">
             {symbol.value ? `No data for ${symbol.value}` : "Enter a symbol"}
           </div>
         ) : (
