@@ -96,7 +96,7 @@ GitHub Pro provides 20 concurrent jobs. We use up to 40 matrix slots (37 Docker 
 - `Capture UI screenshots` (main only): runs `screenshots.spec.ts` against every dashboard workspace and persona, then commits any changed PNGs to `docs/screenshots/` with `[skip ci]`. These are the images the docs site and README embed.
 - `Capture panel walkthrough screenshots` (main only): same idea, scoped to `docs/panel-walkthrough/screenshots/` for the panel-by-panel walkthrough docs.
 - `PR screenshot diff` (pull requests only): runs the same capture on the PR branch, then runs `git diff -- docs/screenshots/` against whatever is already committed in `docs/screenshots/` on that branch (not a fresh checkout of `main`, so a stale branch can show a misleading diff). Posts a `📸 UI screenshots` comment on the PR listing every file that changed. Nothing is committed; this is informational for the reviewer.
-- `PR visual anomalies`: a separate, non-gating check. Flags DOM overflow and axe-core accessibility violations across a set of scripted scenarios, posting its own comment. Distinct from the screenshot diff above.
+- `PR visual anomalies`: a required, merge-gating check. Flags DOM overflow and axe-core accessibility violations across a set of scripted scenarios, posts its own comment, and fails when any finding is present. Distinct from the screenshot diff above.
 
 Because of this, contributors do not need to attach screenshots to a PR by hand. A UI-affecting change gets one automatically. The known flake is the "fixed income workspace" scenario (`Compute Spreads` button in `screenshots.spec.ts`, timing out on a `TimeoutError: locator.click`); treat a lone failure there as unrelated to your change unless you touched that panel.
 

@@ -3,9 +3,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { DEFAULT_READY_BODY } from "./helpers/constants.ts";
 import { AppPage } from "./helpers/pages/AppPage.ts";
 import { type AnomalyReport, findOverflows } from "./helpers/visualAnomalies.ts";
-import { DEFAULT_READY_BODY } from "./helpers/constants.ts";
 
 const REPORT_DIR = path.resolve(fileURLToPath(import.meta.url), "../../../docs/visual-anomalies");
 
@@ -59,7 +59,7 @@ async function captureAnomalies(
   return report;
 }
 
-test.describe("visual anomalies (informational, non-gating)", () => {
+test.describe("visual anomalies (merge-gating)", () => {
   test("login page", async ({ page }) => {
     const readyBody = JSON.stringify(DEFAULT_READY_BODY);
     await page.route("/api/**", (r) =>
@@ -68,7 +68,9 @@ test.describe("visual anomalies (informational, non-gating)", () => {
     await page.route("/api/gateway/ready", (r) =>
       r.fulfill({ status: 200, contentType: "application/json", body: readyBody })
     );
-    await page.route("**/api/user-service/sessions/me", (r) => r.fulfill({ status: 401, body: "" }));
+    await page.route("**/api/user-service/sessions/me", (r) =>
+      r.fulfill({ status: 401, body: "" })
+    );
     await page.goto("/");
     await page.waitForSelector('[data-testid="login-page"]', { timeout: 10_000 });
     const r = await captureAnomalies(page, "login");

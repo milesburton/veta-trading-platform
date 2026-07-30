@@ -120,7 +120,7 @@ export function YieldCurvePanel() {
       {/* Zone 1: spot yield curve chart */}
       <div className="px-2 pt-2 shrink-0" style={{ height: 180 }}>
         {curve.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-subtle text-[10px]">
+          <div className="flex items-center justify-center h-full text-muted text-[10px]">
             {curveLoading ? "Computing curve…" : "No data"}
           </div>
         ) : (

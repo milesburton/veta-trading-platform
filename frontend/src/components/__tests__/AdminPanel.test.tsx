@@ -3,6 +3,21 @@ import { AdminPanel } from "@veta/frontend/components/AdminPanel";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const updateLimits = vi.fn();
+const updateMarketHours = vi.fn();
+
+vi.mock("../../store/gatewayApi.ts", () => ({
+  useGetMarketHoursQuery: () => ({
+    data: {
+      allowOutOfHours: true,
+      regularSessionOpen: false,
+      timeZone: "America/New_York",
+      regularSession: "09:30–16:00",
+    },
+    isLoading: false,
+    error: null,
+  }),
+  useUpdateMarketHoursMutation: () => [updateMarketHours, { isLoading: false, error: null }],
+}));
 
 vi.mock("../../store/userApi.ts", () => ({
   useGetUsersQuery: () => ({
@@ -52,7 +67,16 @@ vi.mock("../../store/hooks.ts", () => ({
 describe("AdminPanel", () => {
   beforeEach(() => {
     updateLimits.mockReset();
+    updateMarketHours.mockReset();
     updateLimits.mockReturnValue({ unwrap: () => Promise.resolve({}) });
+  });
+
+  it("allows an administrator to toggle out-of-hours trading", () => {
+    render(<AdminPanel />);
+    const toggle = screen.getByRole("switch", { name: /allow out-of-hours trading/i });
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(toggle);
+    expect(updateMarketHours).toHaveBeenCalledWith(false);
   });
 
   it("renders the admin panel header", () => {

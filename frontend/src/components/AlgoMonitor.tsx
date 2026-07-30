@@ -441,7 +441,7 @@ export function AlgoMonitor() {
 
       <div className="min-h-0 overflow-auto flex-1">
         {displayed.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-subtle text-xs">
+          <div className="flex items-center justify-center h-24 text-muted text-xs">
             {tab === "active"
               ? "No active algo orders"
               : tab === "needs-action"

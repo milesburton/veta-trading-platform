@@ -3,7 +3,7 @@ title: Visual anomalies
 description: Non-gating Playwright suite that detects DOM overflows and accessibility violations. Catches bugs that pixel-diff regression misses.
 ---
 
-The visual anomalies suite is informational, not gating. It walks 10 scenarios (login plus every persona's dashboard plus four theme variants of the trader dashboard) and reports two classes of problem that traditional pixel-diff testing misses.
+The visual anomalies suite is a required merge gate. It walks 10 scenarios (login plus every persona's dashboard plus four theme variants of the trader dashboard) and reports two classes of problem that traditional pixel-diff testing misses. Any overflow or axe-core violation fails the check and prevents the pull request from merging.
 
 **File:** [`frontend/tests/visual-anomalies.spec.ts`](https://github.com/milesburton/veta-trading-platform/blob/main/frontend/tests/visual-anomalies.spec.ts)
 **Run:** `cd frontend && npx playwright test tests/visual-anomalies.spec.ts`

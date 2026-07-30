@@ -45,6 +45,7 @@ export function OverflowBar({
       const c = containerRef.current;
       if (!c) return;
       const available = c.clientWidth;
+      const gap = Number.parseFloat(getComputedStyle(c).columnGap) || 0;
       const measured = itemRefs.current.map((el) => {
         if (!el) return 0;
         const live = el.offsetWidth;
@@ -57,8 +58,8 @@ export function OverflowBar({
 
       let used = 0;
       let fit = 0;
-      for (const w of measured) {
-        used += w;
+      for (const [index, w] of measured.entries()) {
+        used += w + (index > 0 ? gap : 0);
         if (used <= available) fit += 1;
         else break;
       }
@@ -66,8 +67,8 @@ export function OverflowBar({
       if (fit < measured.length) {
         let usedWithBurger = BURGER_RESERVE_PX;
         fit = 0;
-        for (const w of measured) {
-          usedWithBurger += w;
+        for (const [index, w] of measured.entries()) {
+          usedWithBurger += w + (index > 0 ? gap : 0);
           if (usedWithBurger <= available) fit += 1;
           else break;
         }
@@ -117,6 +118,7 @@ export function OverflowBar({
     <div
       ref={containerRef}
       data-testid={testId}
+      data-managed-overflow="true"
       className={`flex items-center min-w-0 overflow-hidden ${className}`}
     >
       {items.map((child, i) => (

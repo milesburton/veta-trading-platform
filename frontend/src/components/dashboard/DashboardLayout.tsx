@@ -166,9 +166,7 @@ function ChannelPicker({
               className="w-2 h-2 rounded-full shrink-0"
               style={{ backgroundColor: colour.hex }}
             />
-            <span className="font-mono tabular-nums" style={{ color: colour.hex }}>
-              Ch {current}
-            </span>
+            <span className="font-mono tabular-nums text-label">Ch {current}</span>
           </>
         ) : (
           <span className="font-mono text-subtle">—</span>

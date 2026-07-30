@@ -1138,6 +1138,23 @@ jobs:
           body: ${{ steps.body.outputs.body }}
           edit-mode: replace
 
+      - name: Enforce clean visual anomaly report
+        run: |
+          REPORT=docs/visual-anomalies/report.json
+          if [ ! -f "$REPORT" ]; then
+            echo "::error::Visual anomaly report was not produced"
+            exit 1
+          fi
+
+          total_overflows=$(jq '[.reports[].overflows | length] | add // 0' "$REPORT")
+          total_axe_nodes=$(jq '[.reports[].axe[].nodeCount] | add // 0' "$REPORT")
+          if [ "$total_overflows" -ne 0 ] || [ "$total_axe_nodes" -ne 0 ]; then
+            echo "::error::GUI validation failed: $total_overflows overflow(s), $total_axe_nodes accessibility violation node(s)"
+            exit 1
+          fi
+
+          echo "GUI validation passed with no visual anomalies"
+
   electron:
     name: Electron build & E2E tests
     runs-on: ubuntu-latest

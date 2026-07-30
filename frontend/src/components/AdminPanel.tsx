@@ -1,4 +1,8 @@
 import { useSignal } from "@preact/signals-react";
+import {
+  useGetMarketHoursQuery,
+  useUpdateMarketHoursMutation,
+} from "@veta/frontend/store/gatewayApi.ts";
 import { useAppSelector } from "@veta/frontend/store/hooks.ts";
 import type { UserLimits, UserRow } from "@veta/frontend/store/userApi.ts";
 import {
@@ -169,6 +173,13 @@ export function AdminPanel() {
   const currentUser = useAppSelector((s) => s.auth.user);
   const { data: users = [] } = useGetUsersQuery();
   const journal = useSignal<JournalEntry[]>([]);
+  const {
+    data: marketHours,
+    isLoading: marketHoursLoading,
+    error: marketHoursError,
+  } = useGetMarketHoursQuery(undefined, { skip: currentUser?.role !== "admin" });
+  const [updateMarketHours, { isLoading: marketHoursSaving, error: marketHoursSaveError }] =
+    useUpdateMarketHoursMutation();
 
   useEffect(() => {
     fetch("/api/gateway/api/journal/journal?limit=50", { credentials: "include" })
@@ -184,6 +195,55 @@ export function AdminPanel() {
 
   return (
     <div data-testid="admin-panel" className="h-full overflow-auto p-3 space-y-4 text-xs">
+      <div>
+        <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-2">
+          Market Hours
+        </div>
+        <div className="border border-panel rounded bg-surface/40 p-3 flex items-center justify-between gap-4">
+          <div>
+            <div className="text-secondary font-medium">Allow out-of-hours trading</div>
+            <div className="text-[10px] text-muted mt-1">
+              {marketHours?.allowOutOfHours
+                ? "Simulation continues overnight and at weekends."
+                : `Ticks are limited to ${marketHours?.regularSession ?? "09:30–16:00"} ${
+                    marketHours?.timeZone ?? "America/New_York"
+                  } on weekdays.`}
+            </div>
+            {marketHours && (
+              <div
+                className={`text-[10px] mt-1 ${
+                  marketHours.regularSessionOpen ? "text-emerald-400" : "text-orange-400"
+                }`}
+              >
+                Regular session is currently {marketHours.regularSessionOpen ? "open" : "closed"}
+              </div>
+            )}
+            {(marketHoursError || marketHoursSaveError) && (
+              <div className="text-[10px] text-red-400 mt-1">Unable to update market hours</div>
+            )}
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-label="Allow out-of-hours trading"
+            aria-checked={marketHours?.allowOutOfHours ?? false}
+            disabled={!isAdmin || marketHoursLoading || marketHoursSaving || !marketHours}
+            onClick={() => {
+              if (marketHours) updateMarketHours(!marketHours.allowOutOfHours);
+            }}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              marketHours?.allowOutOfHours ? "bg-emerald-600" : "bg-divider"
+            }`}
+          >
+            <span
+              className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                marketHours?.allowOutOfHours ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
       {/* Trading Limits table */}
       <div>
         <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-2">

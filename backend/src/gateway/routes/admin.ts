@@ -535,11 +535,39 @@ async function handleLoadGenStatus(req: Request, ctx: GatewayContext): Promise<R
   });
 }
 
+async function handleMarketHours(req: Request, ctx: GatewayContext): Promise<Response> {
+  const auth = await ctx.requireAuth(req);
+  if (isResponse(auth)) return auth;
+  const rej = requireAdmin(auth);
+  if (rej) return rej;
+
+  try {
+    const init: RequestInit = { method: req.method, signal: AbortSignal.timeout(5_000) };
+    if (req.method === "PUT") {
+      init.headers = { "Content-Type": "application/json" };
+      init.body = await req.text();
+    }
+    const upstream = await fetch(`${ctx.urls.marketSim}/admin/market-hours`, init);
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  } catch {
+    return new Response(JSON.stringify({ error: "Market simulator unavailable" }), {
+      status: 502,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  }
+}
+
 export function handleAdminRoute(
   req: Request,
   path: string,
   ctx: GatewayContext
 ): Promise<Response | null> | null {
+  if (path === "/admin/market-hours" && (req.method === "GET" || req.method === "PUT")) {
+    return handleMarketHours(req, ctx);
+  }
   if (path === "/load-test" && req.method === "POST") {
     return handleLoadTest(req, ctx);
   }
