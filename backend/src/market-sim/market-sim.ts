@@ -7,6 +7,7 @@ import { intradayVolumeFactor } from "@veta/time-scale";
 import { BOND_ASSET_MAP, BOND_ASSETS } from "./bondAssets.ts";
 import { COMMODITY_ASSET_MAP, COMMODITY_ASSETS } from "./commodityAssets.ts";
 import { FX_ASSET_MAP, FX_ASSETS } from "./fxAssets.ts";
+import { isUsEquityRegularSession, parseAllowOutOfHours } from "./marketHours.ts";
 import {
   advanceRegime,
   generatePrice,
@@ -135,6 +136,7 @@ prewarmPricesAsync(PREWARM_TICKS).then(() => {
 let marketMinute = 0;
 let tickCount = 0;
 const TICKS_PER_MINUTE = 240;
+let allowOutOfHours = parseAllowOutOfHours(Deno.env.get("MARKET_SIM_ALLOW_OUT_OF_HOURS"));
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -271,6 +273,7 @@ let tickDiffState = createTickDiffState();
 
 setInterval(() => {
   if (isResetInProgress()) return;
+  if (!allowOutOfHours && !isUsEquityRegularSession()) return;
   tickCount++;
   if (tickCount % TICKS_PER_MINUTE === 0) {
     marketMinute = (marketMinute + 1) % 390;
@@ -326,7 +329,7 @@ setInterval(() => {
 
 logger.info(`Market Simulator running on ws://localhost:${PORT}`);
 
-Deno.serve({ port: PORT }, (req) => {
+Deno.serve({ port: PORT }, async (req) => {
   const url = new URL(req.url);
 
   if (url.pathname === "/health" && req.method === "GET") {
@@ -345,6 +348,46 @@ Deno.serve({ port: PORT }, (req) => {
     return new Response(JSON.stringify({ ...marketData }), {
       headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
+  }
+
+  if (url.pathname === "/admin/market-hours" && req.method === "GET") {
+    return new Response(
+      JSON.stringify({
+        allowOutOfHours,
+        regularSessionOpen: isUsEquityRegularSession(),
+        timeZone: "America/New_York",
+        regularSession: "09:30–16:00",
+      }),
+      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+    );
+  }
+
+  if (url.pathname === "/admin/market-hours" && req.method === "PUT") {
+    try {
+      const body = (await req.json()) as { allowOutOfHours?: unknown };
+      if (typeof body.allowOutOfHours !== "boolean") {
+        return new Response(JSON.stringify({ error: "allowOutOfHours must be a boolean" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+        });
+      }
+      allowOutOfHours = body.allowOutOfHours;
+      logger.info(`Out-of-hours market simulation ${allowOutOfHours ? "enabled" : "disabled"}`);
+      return new Response(
+        JSON.stringify({
+          allowOutOfHours,
+          regularSessionOpen: isUsEquityRegularSession(),
+          timeZone: "America/New_York",
+          regularSession: "09:30–16:00",
+        }),
+        { headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+      );
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
   }
 
   if (url.pathname === "/seed") {

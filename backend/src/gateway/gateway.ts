@@ -1102,7 +1102,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
       if (!PROXY_PUBLIC) {
         const auth = await requireAuth(req);
         if (isResponse(auth)) return auth;
-        const allowedRoles = SVC_MIN_ROLES[svcName] ?? new Set(["admin"]);
+        const allowedRoles =
+          svcName === "market-sim" && svcPath.startsWith("/admin/")
+            ? new Set(["admin"])
+            : (SVC_MIN_ROLES[svcName] ?? new Set(["admin"]));
         if (!allowedRoles.has(auth.user.role)) {
           publishAccessEvent({
             action: "auth_failure",

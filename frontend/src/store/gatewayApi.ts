@@ -53,6 +53,13 @@ interface LoadGenStartRequest {
   strategyMix?: ReadonlyArray<{ strategy: string; weight: number }>;
 }
 
+export interface MarketHoursConfig {
+  allowOutOfHours: boolean;
+  regularSessionOpen: boolean;
+  timeZone: string;
+  regularSession: string;
+}
+
 export type BugCategory = "ui" | "data" | "auth" | "performance" | "other";
 export type TicketKind = "bug" | "feature" | "comment";
 
@@ -78,11 +85,24 @@ export interface BugReportResponse {
 
 export const gatewayApi = createApi({
   reducerPath: "gatewayApi",
+  tagTypes: ["MarketHours"],
   baseQuery: fetchBaseQuery({
     baseUrl: import.meta.env.VITE_GATEWAY_URL ?? "/api/gateway",
     credentials: "include",
   }),
   endpoints: (builder) => ({
+    getMarketHours: builder.query<MarketHoursConfig, void>({
+      query: () => "/admin/market-hours",
+      providesTags: ["MarketHours"],
+    }),
+    updateMarketHours: builder.mutation<MarketHoursConfig, boolean>({
+      query: (allowOutOfHours) => ({
+        url: "/admin/market-hours",
+        method: "PUT",
+        body: { allowOutOfHours },
+      }),
+      invalidatesTags: ["MarketHours"],
+    }),
     runLoadTest: builder.mutation<LoadTestResult, LoadTestRequest>({
       query: (body) => ({
         url: "/load-test",
@@ -124,6 +144,8 @@ export const gatewayApi = createApi({
 });
 
 export const {
+  useGetMarketHoursQuery,
+  useUpdateMarketHoursMutation,
   useRunLoadTestMutation,
   useRunDemoDayMutation,
   useStartLoadGenMutation,

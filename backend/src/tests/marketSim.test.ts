@@ -1,4 +1,5 @@
 import { assertEquals, assertNotEquals } from "jsr:@std/assert@0.217";
+import { isUsEquityRegularSession, parseAllowOutOfHours } from "../market-sim/marketHours.ts";
 import {
   advanceRegime,
   generatePrice,
@@ -25,6 +26,23 @@ function runSequence(seed: number, ticks: number, asset = "AAPL"): number[] {
   }
   return out;
 }
+
+Deno.test("US regular session observes New York time and weekends", () => {
+  assertEquals(isUsEquityRegularSession(new Date("2026-07-30T13:29:00Z")), false);
+  assertEquals(isUsEquityRegularSession(new Date("2026-07-30T13:30:00Z")), true);
+  assertEquals(isUsEquityRegularSession(new Date("2026-07-30T19:59:00Z")), true);
+  assertEquals(isUsEquityRegularSession(new Date("2026-07-30T20:00:00Z")), false);
+  assertEquals(isUsEquityRegularSession(new Date("2026-01-15T14:30:00Z")), true);
+  assertEquals(isUsEquityRegularSession(new Date("2026-08-01T15:00:00Z")), false);
+});
+
+Deno.test("out-of-hours startup setting defaults on and accepts false aliases", () => {
+  assertEquals(parseAllowOutOfHours(undefined), true);
+  assertEquals(parseAllowOutOfHours("true"), true);
+  assertEquals(parseAllowOutOfHours("false"), false);
+  assertEquals(parseAllowOutOfHours("OFF"), false);
+  assertEquals(parseAllowOutOfHours("0"), false);
+});
 
 Deno.test("seeded price sequence is deterministic", () => {
   const a = runSequence(42, 100);
