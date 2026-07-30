@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.56.7](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.6...veta-trading-platform-v1.56.7) (2026-07-30)
+
+
+### Bug Fixes
+
+* **ci:** gate merges on visual anomalies ([#514](https://github.com/milesburton/veta-trading-platform/issues/514)) ([e30a5be](https://github.com/milesburton/veta-trading-platform/commit/e30a5befb59c40586a4f6adfc2c5dd117d024971))
+
 ## [1.56.6](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.5...veta-trading-platform-v1.56.6) (2026-07-28)
 
 
