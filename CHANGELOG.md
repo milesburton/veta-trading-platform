@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.56.8](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.7...veta-trading-platform-v1.56.8) (2026-07-31)
+
+
+### Bug Fixes
+
+* **market-data:** secure and consolidate live feeds ([#516](https://github.com/milesburton/veta-trading-platform/issues/516)) ([8d9bfc0](https://github.com/milesburton/veta-trading-platform/commit/8d9bfc03784cd9cabc707cbab388dd80909a6026))
+
 ## [1.56.7](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.6...veta-trading-platform-v1.56.7) (2026-07-30)
 
 
