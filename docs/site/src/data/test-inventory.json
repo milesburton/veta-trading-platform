@@ -2,11 +2,11 @@
   "backend": {
     "unit": {
       "files": 68,
-      "cases": 782,
+      "cases": 780,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
-        "marketSim.test.ts": 13,
+        "marketSim.test.ts": 15,
         "rng.test.ts": 9,
         "scenarios.diff.test.ts": 5,
         "scenarios.outcome.test.ts": 7,
@@ -61,7 +61,7 @@
         "abuse-tracker.unit.test.ts": 10,
         "loadgen-announce.unit.test.ts": 14,
         "request-source.unit.test.ts": 4,
-        "yield-curve.unit.test.ts": 10,
+        "yield-curve.unit.test.ts": 6,
         "accessLogThrottle.test.ts": 5,
         "messaging.test.ts": 7,
         "parse-ticket-handler.unit.test.ts": 11,
@@ -122,7 +122,7 @@
   "frontend": {
     "unit": {
       "files": 174,
-      "cases": 2049
+      "cases": 2050
     },
     "playwright": {
       "files": 19,
