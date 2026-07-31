@@ -1244,7 +1244,7 @@ services:
     <<: *deno-medium
     profiles: [trading]
     # Needs egress-net in addition to the anchor's trading-net: fetches from
-    # Alpha Vantage, Polygon, Tiingo, and FRED's public APIs.
+    # Alpha Vantage, Polygon, and Tiingo public APIs.
     networks:
       - trading-net
       - egress-net
@@ -1262,6 +1262,9 @@ services:
       MARKET_DATA_PORT: "5015"
       JOURNAL_HOST: journal
       JOURNAL_PORT: "5009"
+      ALPHA_VANTAGE_KEY: ${ALPHA_VANTAGE_KEY:-}
+      TIINGO_KEY: ${TIINGO_KEY:-}
+      POLYGON_KEY: ${POLYGON_KEY:-}
     volumes:
       - market-data-state:/app/data
     healthcheck:
