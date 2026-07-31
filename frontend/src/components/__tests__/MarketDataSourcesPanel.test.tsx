@@ -95,9 +95,9 @@ beforeEach(() => {
         active: true,
       },
       {
-        id: "fred",
-        label: "FRED",
-        description: "Rates data",
+        id: "tiingo",
+        label: "Tiingo",
+        description: "Equity and FX data",
         enabled: false,
         requiresApiKey: true,
         apiKeyConfigured: false,

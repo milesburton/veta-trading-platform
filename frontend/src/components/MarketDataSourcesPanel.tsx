@@ -210,7 +210,7 @@ export function MarketDataSourcesPanel() {
                         >
                           <option value="synthetic">Synthetic</option>
                           {sources
-                            .filter((s) => s.id !== "synthetic" && s.id !== "fred")
+                            .filter((s) => s.id !== "synthetic")
                             .map((s) => (
                               <option key={s.id} value={s.id} disabled={!s.enabled}>
                                 {s.label}
