@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.56.9](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.8...veta-trading-platform-v1.56.9) (2026-08-01)
+
+
+### Bug Fixes
+
+* **observability:** activate actionable Redpanda alerts ([#518](https://github.com/milesburton/veta-trading-platform/issues/518)) ([0d563b6](https://github.com/milesburton/veta-trading-platform/commit/0d563b6fb57347ac70718d9e621efaa29190c1da))
+
 ## [1.56.8](https://github.com/milesburton/veta-trading-platform/compare/veta-trading-platform-v1.56.7...veta-trading-platform-v1.56.8) (2026-07-31)
 
 
