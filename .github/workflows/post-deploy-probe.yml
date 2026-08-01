@@ -21,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       wait_minutes:
-        description: "Max minutes to wait for the new commit to go live before probing anyway"
+        description: "Max minutes to wait for the new commit to go live"
         type: number
         default: 12
       base_url:
@@ -57,9 +57,9 @@ jobs:
       - name: Wait for the new commit to be live
         env:
           BASE_URL: ${{ inputs.base_url || 'https://veta.mnetcs.com' }}
-          # Hard cap on how long we will wait for auto-pull (5-min timer +
-          # image pull + recreate). Beyond this we probe anyway so a stuck
-          # deploy still surfaces as a probe failure rather than a hang.
+          # Hard cap on how long we wait for auto-pull (5-min timer + image
+          # pull + recreate). Not observing the requested SHA is itself a
+          # failed deployment; availability of an older build is not success.
           MAX_WAIT_MIN: ${{ inputs.wait_minutes || 12 }}
         run: |
           echo "Waiting for ${GITHUB_SHA:0:7} to be live at ${BASE_URL} (up to ${MAX_WAIT_MIN}m)..."
@@ -76,7 +76,8 @@ jobs:
             echo "  not yet: gateway reports '${live:-unreachable}', waiting 20s..."
             sleep 20
           done
-          echo "::warning::${GITHUB_SHA:0:7} not confirmed live within ${MAX_WAIT_MIN}m; probing anyway."
+          echo "::error::${GITHUB_SHA:0:7} not confirmed live within ${MAX_WAIT_MIN}m."
+          exit 1
 
       - name: Run synthetic probe
         env:

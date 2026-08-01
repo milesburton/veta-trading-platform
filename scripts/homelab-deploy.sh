@@ -265,9 +265,11 @@ if [[ -f "$STACK_DIR/observability/docker-compose.lgtm.yml" ]]; then
     fi
 
     log "Updating observability (LGTM) stack..."
-    (cd "$STACK_DIR/observability" && \
-        docker compose -f docker-compose.lgtm.yml up -d 2>&1 | sed 's/^/  /') \
-        || log "⚠ observability up -d returned non-zero; continuing"
+    if ! (cd "$STACK_DIR/observability" && \
+        docker compose -f docker-compose.lgtm.yml up -d 2>&1 | sed 's/^/  /'); then
+        log "❌ observability up -d failed; deployment is incomplete"
+        exit 1
+    fi
 
     declare -A LGTM_BIND_MOUNTS=(
         ["observability/prometheus.yml"]="lgtm-prometheus:/etc/prometheus/prometheus.yml"
@@ -276,6 +278,17 @@ if [[ -f "$STACK_DIR/observability/docker-compose.lgtm.yml" ]]; then
         ["observability/tempo.yaml"]="lgtm-tempo:/etc/tempo/tempo.yaml"
     )
     check_bind_mount_drift LGTM_BIND_MOUNTS
+
+    # Both files are bind-mounted, but neither service reliably reapplies them
+    # merely because their contents changed: Grafana reads provisioned alerts
+    # at startup and Prometheus needs a reload. Restart both so a successful
+    # deploy means the alert definitions now in STACK_DIR are actually active.
+    if ! (cd "$STACK_DIR/observability" && \
+        docker compose -f docker-compose.lgtm.yml restart grafana prometheus 2>&1 \
+            | sed 's/^/  /'); then
+        log "❌ failed to activate observability configuration"
+        exit 1
+    fi
 fi
 
 log "Waiting up to ${MAX_WAIT}s for critical services to be healthy..."
