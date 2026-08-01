@@ -256,9 +256,9 @@ groups:
         execErrState: Error
         for: 30m
         annotations:
-          summary: A Redpanda topic is producing >512 KiB/s for 30m
+          summary: "{{ $labels.redpanda_topic }} producing >512 KiB/s for 30m"
           description: |
-            One or more topics are taking writes at >512 KiB/s
+            Topic {{ $labels.redpanda_topic }} is taking writes at >512 KiB/s
             sustained — that's ~1.5 GiB/hour, ~36 GiB/day. At the
             cluster default retention.bytes=1 GiB and
             log_retention_ms=24h, the partition will hit the byte cap
@@ -313,9 +313,9 @@ groups:
         execErrState: Error
         for: 10m
         annotations:
-          summary: A Redpanda topic is producing >2 MiB/s — disk-fill imminent
+          summary: "{{ $labels.redpanda_topic }} producing >2 MiB/s — disk-fill imminent"
           description: |
-            One or more topics are taking writes at >2 MiB/s. That's
+            Topic {{ $labels.redpanda_topic }} is taking writes at >2 MiB/s. That's
             ~7 GiB/hour. Per-partition retention.bytes will tombstone,
             but multiple hot topics together can still outpace
             deletion. Confirm the producer is intentional; consider
