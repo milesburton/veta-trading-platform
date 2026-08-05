@@ -413,8 +413,8 @@ describe("FIXSession – heartbeat timer", () => {
     session.handleInbound(buildLogonMsg(1, 5));
     sent.length = 0;
 
-    vi.advanceTimersByTime(5001); // → sends TestRequest, sets testReqId
-    vi.advanceTimersByTime(5001); // → timer fires again, testReqId still set → disconnect
+    vi.advanceTimersByTime(5_001); // → sends TestRequest, sets testReqId
+    vi.advanceTimersByTime(5_001); // → timer fires again, testReqId still set → disconnect
     expect(session.sessionState).toBe("DISCONNECTED");
   });
 
