@@ -101,6 +101,14 @@ export function QuickTradeBar() {
       data-testid="quick-trade-bar"
       className="flex items-center gap-3 px-4 h-9 bg-page border-b border-panel text-xs"
     >
+      <button
+        type="button"
+        data-testid="new-order-btn"
+        onClick={() => openOrderTicketWindow(ticketSize)}
+        className="shrink-0 px-3 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-semibold uppercase tracking-wide transition-colors"
+      >
+        + New Order
+      </button>
       <span className="text-[10px] font-semibold tracking-widest uppercase text-emerald-400 shrink-0">
         Quick trade
       </span>
