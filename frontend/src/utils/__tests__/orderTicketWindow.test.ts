@@ -1,4 +1,8 @@
-import { openOrderTicketWindow } from "@veta/frontend/utils/orderTicketWindow.ts";
+import type { OrderRecord } from "@veta/frontend/types.ts";
+import {
+  openOrderTicketWindow,
+  orderToTicketPrefill,
+} from "@veta/frontend/utils/orderTicketWindow.ts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("openOrderTicketWindow", () => {
@@ -55,5 +59,43 @@ describe("openOrderTicketWindow", () => {
       quantity: 500,
       limitPrice: 200,
     });
+  });
+});
+
+describe("orderToTicketPrefill", () => {
+  const baseOrder: OrderRecord = {
+    id: "order-1",
+    submittedAt: 1,
+    asset: "AAPL",
+    side: "BUY",
+    quantity: 500,
+    limitPrice: 200,
+    expiresAt: 2,
+    strategy: "LIMIT",
+    status: "filled",
+    filled: 500,
+    algoParams: { strategy: "LIMIT" },
+    children: [],
+  };
+
+  it("copies the original order fields into a new-order draft", () => {
+    expect(orderToTicketPrefill({ ...baseOrder, timeInForce: "IOC" })).toEqual({
+      side: "BUY",
+      symbol: "AAPL",
+      quantity: 500,
+      limitPrice: 200,
+      strategy: "LIMIT",
+      tif: "IOC",
+    });
+  });
+
+  it("preserves ticket-compatible algo parameters", () => {
+    expect(
+      orderToTicketPrefill({
+        ...baseOrder,
+        strategy: "ICEBERG",
+        algoParams: { strategy: "ICEBERG", visibleQty: 75 },
+      })
+    ).toMatchObject({ strategy: "ICEBERG", icebergVisibleQty: 75 });
   });
 });

@@ -11,11 +11,16 @@ import {
   orderPatched,
   unholdOrdersThunk,
 } from "@veta/frontend/store/ordersSlice.ts";
+import { selectOrderTicketWindowSize } from "@veta/frontend/store/uiSlice.ts";
 import type { ColDef } from "@veta/frontend/types/gridPrefs.ts";
 import type { ChildOrder, OrderRecord, OrderStatus } from "@veta/frontend/types.ts";
 import { ORDER_STATUS_DESCRIPTIONS } from "@veta/frontend/types.ts";
 import { formatTime } from "@veta/frontend/utils/format.ts";
 import { applyCfRules } from "@veta/frontend/utils/gridFilter.ts";
+import {
+  openOrderTicketWindow,
+  orderToTicketPrefill,
+} from "@veta/frontend/utils/orderTicketWindow.ts";
 import { Fragment, useEffect } from "react";
 import type { ContextMenuEntry } from "./ContextMenu.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
@@ -142,6 +147,7 @@ export function OrderBlotter() {
   const lastSubmittedOrderId = useAppSelector((s) => s.orders.lastSubmittedOrderId);
   const userRole = useAppSelector((s) => s.auth.user?.role);
   const userId = useAppSelector((s) => s.auth.user?.id);
+  const orderTicketWindowSize = useAppSelector(selectOrderTicketWindowSize);
   const { containerRef, limit } = useContainerLimit();
   const {
     rows: displayOrders,
@@ -524,6 +530,11 @@ export function OrderBlotter() {
                     <tr
                       data-testid={`order-row-${order.id}`}
                       onClick={(e) => selectOrder(order.id, e)}
+                      onDoubleClick={() => {
+                        if (userRole === "trader") {
+                          openOrderTicketWindow(orderTicketWindowSize, orderToTicketPrefill(order));
+                        }
+                      }}
                       onContextMenu={(e) => openOrderCtxMenu(e, order.id)}
                       aria-selected={
                         selectedIds.value.has(order.id) || selectedOrderId.value === order.id
@@ -531,7 +542,7 @@ export function OrderBlotter() {
                       title={`${order.side} ${order.quantity.toLocaleString()} ${order.asset} @ ${formatPrice(
                         order.asset,
                         order.limitPrice
-                      )} — ${order.status}. Right-click for actions.`}
+                      )} — ${order.status}. Double-click to create a similar order; right-click for actions.`}
                       style={
                         selectedOrderId.value === order.id && channelColour
                           ? {

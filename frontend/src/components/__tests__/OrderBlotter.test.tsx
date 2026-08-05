@@ -9,6 +9,7 @@ import { ordersSlice } from "@veta/frontend/store/ordersSlice";
 import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
 import type { OrderRecord } from "@veta/frontend/types";
+import * as orderTicketWindow from "@veta/frontend/utils/orderTicketWindow";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
@@ -146,6 +147,38 @@ describe("OrderBlotter – single order", () => {
     renderBlotter([makeOrder()]);
     const dashes = screen.getAllByText("—");
     expect(dashes.length).toBeGreaterThan(0);
+  });
+
+  it("opens a prefilled ticket when a trader double-clicks an order", () => {
+    const openTicket = vi
+      .spyOn(orderTicketWindow, "openOrderTicketWindow")
+      .mockImplementation(() => undefined);
+    const order = makeOrder({
+      asset: "MSFT",
+      side: "SELL",
+      quantity: 275,
+      limitPrice: 412.5,
+      strategy: "TWAP",
+      algoParams: { strategy: "TWAP", numSlices: 12, participationCap: 25 },
+      timeInForce: "GTC",
+    });
+
+    renderBlotter([order]);
+    fireEvent.doubleClick(screen.getByTestId(`order-row-${order.id}`));
+
+    expect(openTicket).toHaveBeenCalledWith(
+      { w: 480, h: 780 },
+      {
+        side: "SELL",
+        symbol: "MSFT",
+        quantity: 275,
+        limitPrice: 412.5,
+        strategy: "TWAP",
+        tif: "GTC",
+        twapDurationMinutes: 36,
+      }
+    );
+    openTicket.mockRestore();
   });
 });
 
