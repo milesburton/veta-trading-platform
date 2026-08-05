@@ -12,6 +12,7 @@ import { createProducer, createTypedConsumer } from "@veta/messaging";
 import type { FillEvent, RoutedOrder } from "@veta/schemas/orders";
 import { FillEventSchema, RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
+import { availableSniperQty } from "./sniper-math.ts";
 
 const PORT = Number(Deno.env.get("SNIPER_ALGO_PORT")) || 5_022;
 const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
@@ -56,6 +57,7 @@ interface ActiveSniper {
   maxVenues: number; // 1–3: number of venues to split across
   totalQty: number;
   totalRemaining: number;
+  inFlightQty: number; // routed but not yet acknowledged by a fill
   filledQty: number;
   costBasis: number;
   sliceCount: number;
@@ -91,6 +93,7 @@ await createTypedConsumer("sniper-algo-routed", [
         maxVenues,
         totalQty: order.quantity,
         totalRemaining: order.quantity,
+        inFlightQty: 0,
         filledQty: 0,
         costBasis: 0,
         sliceCount: 0,
@@ -134,6 +137,7 @@ await createTypedConsumer("sniper-algo-fills", [
 
       const qty = fill.filledQty ?? 0;
       const price = fill.avgFillPrice ?? 0;
+      order.inFlightQty = Math.max(0, order.inFlightQty - qty);
       order.filledQty += qty;
       order.costBasis += qty * price;
       order.totalRemaining = Math.max(0, order.totalRemaining - qty);
@@ -195,7 +199,8 @@ marketClient.onTick(async (tick) => {
       (order.side === "BUY" && marketPrice <= order.limitPrice) ||
       (order.side === "SELL" && marketPrice >= order.limitPrice);
 
-    if (!triggered || now < order.cooldownUntil || order.totalRemaining <= 0) continue;
+    const availableQty = availableSniperQty(order.totalRemaining, order.inFlightQty);
+    if (!triggered || now < order.cooldownUntil || availableQty <= 0) continue;
 
     const scored = VENUES.map((v) => ({
       venue: v as SorVenueMIC,
@@ -203,7 +208,7 @@ marketClient.onTick(async (tick) => {
     })).sort((a, b) => (order.side === "BUY" ? a.price - b.price : b.price - a.price));
 
     const selected = scored.slice(0, order.maxVenues);
-    const routeQty = Math.max(1, Math.round((order.totalRemaining * order.aggressionPct) / 100));
+    const routeQty = Math.max(1, Math.round((availableQty * order.aggressionPct) / 100));
 
     let dispatched = 0;
     for (const { venue, price: effectivePrice } of selected) {
@@ -212,7 +217,7 @@ marketClient.onTick(async (tick) => {
       const qty = Math.min(
         Math.max(1, Math.floor(routeQty / selected.length)),
         Math.floor(l1Size * 0.5),
-        order.totalRemaining - dispatched
+        availableQty - dispatched
       );
       if (qty <= 0) break;
 
@@ -223,8 +228,12 @@ marketClient.onTick(async (tick) => {
         `Route ${order.sliceCount} for ${order.orderId}: ${qty} ${order.asset} → ${venue} @ ${effectivePrice.toFixed(4)}`
       );
 
-      await producer
-        ?.send("orders.child", {
+      // Reserve before awaiting the Kafka acknowledgement. Fill events can
+      // arrive as soon as the message is acknowledged; reserving afterward
+      // would race the fill consumer and leave phantom in-flight quantity.
+      order.inFlightQty += qty;
+      try {
+        await producer?.send("orders.child", {
           childId,
           parentOrderId: order.orderId,
           clientOrderId: order.clientOrderId,
@@ -238,8 +247,12 @@ marketClient.onTick(async (tick) => {
           effectivePrice,
           sliceIndex: order.sliceCount,
           ts: now,
-        })
-        .catch(() => {});
+        });
+      } catch (err) {
+        order.inFlightQty = Math.max(0, order.inFlightQty - qty);
+        logger.warn(`Failed to route ${childId}`, { err });
+        continue;
+      }
 
       dispatched += qty;
     }
@@ -255,6 +268,7 @@ marketClient.onTick(async (tick) => {
         venuesUsed: selected.map((v) => v.venue),
         routed: dispatched,
         totalRemaining: order.totalRemaining,
+        inFlightQty: order.inFlightQty,
         filledQty: order.filledQty,
         ts: now,
       })

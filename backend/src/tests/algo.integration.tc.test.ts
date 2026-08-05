@@ -236,7 +236,9 @@ Deno.test({
             quantity: 50,
             limitPrice: px * 1.05,
             strategy: "SNIPER",
-            algoParams: { strategy: "SNIPER" },
+            // A fully aggressive wave may fan out across at most maxVenues.
+            // The in-flight guard prevents another wave before fills arrive.
+            algoParams: { strategy: "SNIPER", aggressionPct: 100, maxVenues: 3 },
           });
           const order = await pollForChildren(J, clientOrderId, 1, 30_000);
           assertExists(order);

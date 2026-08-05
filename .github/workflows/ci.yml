@@ -1486,7 +1486,10 @@ jobs:
   deploy-gate:
     name: Deploy gate (compose + smoke)
     runs-on: ubuntu-latest
-    needs: [docker-base, docker-services]
+    # Never validate or publish deployable images from a commit whose
+    # integration suite failed. Previously publish-latest could succeed while
+    # the overall workflow was red because this dependency was missing.
+    needs: [integration, docker-base, docker-services]
     timeout-minutes: 30
     permissions:
       contents: read

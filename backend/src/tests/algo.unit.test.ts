@@ -1,4 +1,11 @@
 import { assert, assertAlmostEquals, assertEquals } from "jsr:@std/assert@0.217";
+import { availableSniperQty } from "../algo/sniper-math.ts";
+
+Deno.test("[sniper] does not reroute quantity already in flight", () => {
+  assertEquals(availableSniperQty(50, 40), 10);
+  assertEquals(availableSniperQty(50, 50), 0);
+  assertEquals(availableSniperQty(50, 60), 0);
+});
 
 // ── TWAP slice sizing ─────────────────────────────────────────────────────────
 
