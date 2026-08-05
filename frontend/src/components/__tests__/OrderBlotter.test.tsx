@@ -9,6 +9,7 @@ import { ordersSlice } from "@veta/frontend/store/ordersSlice";
 import { uiSlice } from "@veta/frontend/store/uiSlice";
 import { windowSlice } from "@veta/frontend/store/windowSlice";
 import type { OrderRecord } from "@veta/frontend/types";
+import * as orderTicketWindow from "@veta/frontend/utils/orderTicketWindow";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
@@ -71,7 +72,7 @@ function makeStore(
       auth: {
         user: { id: userId, name: userId, role, avatar_emoji: "🙂" },
         limits: {
-          max_order_qty: 10000,
+          max_order_qty: 10_000,
           max_daily_notional: 1_000_000,
           allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
           allowed_desks: ["equity"],
@@ -146,6 +147,38 @@ describe("OrderBlotter – single order", () => {
     renderBlotter([makeOrder()]);
     const dashes = screen.getAllByText("—");
     expect(dashes.length).toBeGreaterThan(0);
+  });
+
+  it("opens a prefilled ticket when a trader double-clicks an order", () => {
+    const openTicket = vi
+      .spyOn(orderTicketWindow, "openOrderTicketWindow")
+      .mockImplementation(() => undefined);
+    const order = makeOrder({
+      asset: "MSFT",
+      side: "SELL",
+      quantity: 275,
+      limitPrice: 412.5,
+      strategy: "TWAP",
+      algoParams: { strategy: "TWAP", numSlices: 12, participationCap: 25 },
+      timeInForce: "GTC",
+    });
+
+    renderBlotter([order]);
+    fireEvent.doubleClick(screen.getByTestId(`order-row-${order.id}`));
+
+    expect(openTicket).toHaveBeenCalledWith(
+      { w: 480, h: 780 },
+      {
+        side: "SELL",
+        symbol: "MSFT",
+        quantity: 275,
+        limitPrice: 412.5,
+        strategy: "TWAP",
+        tif: "GTC",
+        twapDurationMinutes: 36,
+      }
+    );
+    openTicket.mockRestore();
   });
 });
 
@@ -557,7 +590,7 @@ describe("OrderBlotter – last submitted order", () => {
         auth: {
           user: { id: "alice", name: "alice", role: "trader" as const, avatar_emoji: "🙂" },
           limits: {
-            max_order_qty: 10000,
+            max_order_qty: 10_000,
             max_daily_notional: 1_000_000,
             allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
             allowed_desks: ["equity"],
@@ -725,6 +758,42 @@ describe("OrderBlotter – row context menu actions", () => {
     );
     fireEvent.contextMenu(screen.getByText("AAPL"));
     expect(() => fireEvent.click(screen.getByText(/Force kill/i))).not.toThrow();
+  });
+
+  it("a trader can open a prefilled ticket via 'Create similar order...' in the context menu", () => {
+    const openTicket = vi
+      .spyOn(orderTicketWindow, "openOrderTicketWindow")
+      .mockImplementation(() => undefined);
+    const order = makeOrder({ id: "o1", asset: "AAPL", userId: "alice" });
+    renderBlotter([order]);
+
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    fireEvent.click(screen.getByText(/Create similar order/i));
+
+    expect(openTicket).toHaveBeenCalledTimes(1);
+    openTicket.mockRestore();
+  });
+
+  it("disables 'Create similar order...' for non-trader roles", () => {
+    mockUseGridQuery.mockReturnValue(
+      defaultQueryResult([makeOrder({ id: "o1", asset: "AAPL", userId: "trader-bob" })])
+    );
+    render(
+      <Provider store={makeStore("risk-manager", "risk-1")}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "order-blotter",
+            panelType: "order-blotter",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <OrderBlotter />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    expect(screen.getByText(/Create similar order/i).closest("button")).toBeDisabled();
   });
 });
 
