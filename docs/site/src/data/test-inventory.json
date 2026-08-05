@@ -2,7 +2,7 @@
   "backend": {
     "unit": {
       "files": 68,
-      "cases": 782,
+      "cases": 783,
       "perFile": {
         "unit.test.ts": 16,
         "fixParser.test.ts": 19,
@@ -22,7 +22,7 @@
         "feature-store.unit.test.ts": 4,
         "signal-engine.test.ts": 7,
         "weight-store.unit.test.ts": 3,
-        "algo.unit.test.ts": 43,
+        "algo.unit.test.ts": 44,
         "ems.unit.test.ts": 22,
         "zod-helpers.unit.test.ts": 9,
         "orders-schema.unit.test.ts": 21,
