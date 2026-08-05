@@ -78,7 +78,7 @@ export function OrderTicket() {
 
   const optionType = useSignal<"call" | "put">("call");
   const optionStrike = useSignal("");
-  const optionExpiry = useSignal(String(30 * 86400));
+  const optionExpiry = useSignal(String(30 * 86_400));
   const optionQuote = useSignal<OptionQuoteResponse | null>(null);
   const quoteFetching = useSignal(false);
 

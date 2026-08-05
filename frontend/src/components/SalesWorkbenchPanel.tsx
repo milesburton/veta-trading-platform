@@ -321,8 +321,8 @@ export function SalesWorkbenchPanel() {
                   <span className="text-amber-300 tabular-nums font-semibold">
                     $
                     {(markupRfq.side === "BUY"
-                      ? markupRfq.dealerBestPrice * (1 + Number(markupBps.value) / 10000)
-                      : markupRfq.dealerBestPrice * (1 - Number(markupBps.value) / 10000)
+                      ? markupRfq.dealerBestPrice * (1 + Number(markupBps.value) / 10_000)
+                      : markupRfq.dealerBestPrice * (1 - Number(markupBps.value) / 10_000)
                     ).toFixed(2)}
                   </span>
                 </div>

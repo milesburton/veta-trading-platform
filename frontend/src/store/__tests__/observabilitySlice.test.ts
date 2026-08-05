@@ -81,7 +81,7 @@ describe("eventReceived", () => {
   it("preserves event payload", () => {
     const event: ObsEvent = {
       type: "trade.executed",
-      ts: 12345,
+      ts: 12_345,
       payload: { qty: 100, price: 150 },
     };
     const state = reducer(initialState, eventReceived(event));

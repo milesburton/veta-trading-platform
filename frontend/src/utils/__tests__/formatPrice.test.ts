@@ -11,7 +11,7 @@ describe("formatPrice", () => {
   it("formats FX symbols (contain '/') to 4 decimals", () => {
     expect(formatPrice("EUR/USD", 1.0876)).toBe("1.0876");
     expect(formatPrice("GBP/USD", 1.27)).toBe("1.2700");
-    expect(formatPrice("USD/JPY", 153.12349)).toBe("153.1235");
+    expect(formatPrice("USD/JPY", 153.123_49)).toBe("153.1235");
   });
 
   it("defaults to 2 decimals when symbol is undefined", () => {
@@ -25,7 +25,7 @@ describe("formatPrice", () => {
 
   it("handles negative prices", () => {
     expect(formatPrice("AAPL", -1.5)).toBe("-1.50");
-    expect(formatPrice("EUR/USD", -1.234567)).toBe("-1.2346");
+    expect(formatPrice("EUR/USD", -1.234_567)).toBe("-1.2346");
   });
 
   it("handles zero", () => {

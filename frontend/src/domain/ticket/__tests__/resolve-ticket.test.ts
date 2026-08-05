@@ -77,8 +77,8 @@ describe("resolveTicket", () => {
     it.each([
       [15_000, 189.5, "qty-exceeds-limit", true],
       [10_000, 189.5, "qty-exceeds-limit", false],
-      [5_000, 300, "notional-exceeds-limit", true],
-      [3_333, 300, "notional-exceeds-limit", false],
+      [5000, 300, "notional-exceeds-limit", true],
+      [3333, 300, "notional-exceeds-limit", false],
     ] as const)("qty=%d price=%d → %s present=%s", (qty, price, ruleId, expected) => {
       const r = resolveTicket(makeCtx(withDraft({ quantity: qty, limitPrice: price })));
       expect(r.errors.some((d) => d.ruleId === ruleId)).toBe(expected);
@@ -215,7 +215,7 @@ describe("resolveTicket", () => {
         "option has no quote",
         {
           strike: 150,
-          expirySecs: 86400,
+          expirySecs: 86_400,
           hasQuote: false,
           isFetching: false,
         },
@@ -223,7 +223,7 @@ describe("resolveTicket", () => {
       ],
       [
         "option strike is zero",
-        { strike: 0, expirySecs: 86400, hasQuote: true, isFetching: false },
+        { strike: 0, expirySecs: 86_400, hasQuote: true, isFetching: false },
         "option-strike-required",
       ],
     ] as const)("errors when %s", (_desc, optionOverrides, ruleId) => {
@@ -268,7 +268,7 @@ describe("resolveTicket", () => {
           option: {
             optionType: "call",
             strike: 150,
-            expirySecs: 86400,
+            expirySecs: 86_400,
             hasQuote: false,
             isFetching: true,
           },

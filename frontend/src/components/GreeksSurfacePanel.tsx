@@ -24,11 +24,11 @@ import {
 } from "recharts";
 
 const EXPIRY_PRESETS = [
-  { label: "7d", secs: 7 * 86400 },
-  { label: "14d", secs: 14 * 86400 },
-  { label: "30d", secs: 30 * 86400 },
-  { label: "60d", secs: 60 * 86400 },
-  { label: "90d", secs: 90 * 86400 },
+  { label: "7d", secs: 7 * 86_400 },
+  { label: "14d", secs: 14 * 86_400 },
+  { label: "30d", secs: 30 * 86_400 },
+  { label: "60d", secs: 60 * 86_400 },
+  { label: "90d", secs: 90 * 86_400 },
 ];
 
 interface TooltipPayloadItem {
@@ -65,7 +65,7 @@ function SurfaceTooltip({
 export function GreeksSurfacePanel() {
   const symbols = useAppSelector(selectSymbols);
   const symbol = useSignal(symbols[0] ?? "AAPL");
-  const expirySecs = useSignal(30 * 86400);
+  const expirySecs = useSignal(30 * 86_400);
 
   const { data, isFetching, error } = useGetGreeksSurfaceQuery(
     { symbol: symbol.value, expirySecs: expirySecs.value },

@@ -121,7 +121,7 @@ export function scoreOption(
   return {
     optionType,
     strike: K,
-    expirySecs: Math.round(T * 365 * 86400),
+    expirySecs: Math.round(T * 365 * 86_400),
     price,
     score,
     signalStrength: scoreToStrength(score),
@@ -197,7 +197,7 @@ export function scoreOptionWithSignal(
   return {
     optionType,
     strike: K,
-    expirySecs: Math.round(T * 365 * 86400),
+    expirySecs: Math.round(T * 365 * 86_400),
     price,
     score,
     signalStrength: scoreToStrength(score),
@@ -229,4 +229,4 @@ export function generateStrikes(S: number): number[] {
 /**
  * Standard expiry ladder in seconds.
  */
-export const DEFAULT_EXPIRIES_SECS = [7, 14, 30, 60, 90].map((d) => d * 86400);
+export const DEFAULT_EXPIRIES_SECS = [7, 14, 30, 60, 90].map((d) => d * 86_400);

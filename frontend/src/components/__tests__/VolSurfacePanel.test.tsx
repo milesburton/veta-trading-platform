@@ -17,7 +17,7 @@ vi.mock("../../store/analyticsApi.ts", () => ({
           moneyness: 1,
           impliedVol: 0.25,
           expiryLabel: "7d",
-          expirySecs: 7 * 86400,
+          expirySecs: 7 * 86_400,
         },
       ],
       computedAt: Date.now(),
@@ -63,7 +63,7 @@ describe("VolSurfacePanel", () => {
     expect(dispatch.mock.calls[0][0]).toEqual(
       expect.objectContaining({
         type: "ui/setOptionPrefill",
-        payload: { strike: 150, expirySecs: 7 * 86400 },
+        payload: { strike: 150, expirySecs: 7 * 86_400 },
       })
     );
   });

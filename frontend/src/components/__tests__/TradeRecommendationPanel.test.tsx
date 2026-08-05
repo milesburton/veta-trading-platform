@@ -43,7 +43,7 @@ describe("TradeRecommendationPanel", () => {
             {
               optionType: "call",
               strike: 155,
-              expirySecs: 30 * 86400,
+              expirySecs: 30 * 86_400,
               price: 4.321,
               score: 68,
               signalStrength: "STRONG_BUY",
@@ -118,7 +118,7 @@ describe("TradeRecommendationPanel", () => {
             {
               optionType: "put",
               strike: 145,
-              expirySecs: 7 * 86400,
+              expirySecs: 7 * 86_400,
               price: 1.5,
               score: 60,
               signalStrength: "STRONG_SELL",
@@ -150,7 +150,7 @@ describe("TradeRecommendationPanel", () => {
             {
               optionType: "call",
               strike: 150,
-              expirySecs: 14 * 86400,
+              expirySecs: 14 * 86_400,
               price: 2,
               score: 10,
               signalStrength: "NEUTRAL",
@@ -182,7 +182,7 @@ describe("TradeRecommendationPanel", () => {
             {
               optionType: "put",
               strike: 145,
-              expirySecs: 7 * 86400,
+              expirySecs: 7 * 86_400,
               price: 1,
               score: -75,
               signalStrength: "STRONG_SELL",
@@ -232,7 +232,7 @@ describe("TradeRecommendationPanel", () => {
             {
               optionType: "call",
               strike: 155,
-              expirySecs: 30 * 86400,
+              expirySecs: 30 * 86_400,
               price: 4,
               score: 70,
               signalStrength: "STRONG_BUY",
@@ -271,7 +271,7 @@ describe("TradeRecommendationPanel", () => {
             {
               optionType: "call",
               strike: 150,
-              expirySecs: 7 * 86400,
+              expirySecs: 7 * 86_400,
               price: 3,
               score: 50,
               signalStrength: "BUY",
@@ -300,7 +300,7 @@ describe("TradeRecommendationPanel", () => {
             {
               optionType: "call",
               strike: 155,
-              expirySecs: 30 * 86400,
+              expirySecs: 30 * 86_400,
               price: 4,
               score: 70,
               signalStrength: "STRONG_BUY",

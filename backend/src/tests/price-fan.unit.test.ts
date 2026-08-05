@@ -4,7 +4,7 @@ import { priceFan } from "../analytics/price-fan.ts";
 const SPOT = 100;
 const VOL = 0.2;
 const RATE = 0.05;
-const STEP_SECS = 86400;
+const STEP_SECS = 86_400;
 const PATHS = 1000;
 
 function runPriceFan(steps: number, seedKey: string, vol = VOL, stepSecs = STEP_SECS) {

@@ -15,8 +15,8 @@ import {
 // ── Venue fill capacity ───────────────────────────────────────────────────────
 
 Deno.test("[ems/fill] filled qty capped at participation cap × tick volume", () => {
-  const { filledQty } = computeFill(10_000, 1_000, "XNAS");
-  assertEquals(filledQty, Math.floor(1_000 * PARTICIPATION_CAP * VENUE_DEPTH_MULT.XNAS));
+  const { filledQty } = computeFill(10_000, 1000, "XNAS");
+  assertEquals(filledQty, Math.floor(1000 * PARTICIPATION_CAP * VENUE_DEPTH_MULT.XNAS));
 });
 
 Deno.test("[ems/fill] filled qty never exceeds requested qty", () => {
@@ -153,7 +153,7 @@ Deno.test("[ems/venue] deterministic at boundary: rand=0 selects first venue aft
 
 Deno.test("[ems/execId] format is EX followed by 8 zero-padded digits", () => {
   assertEquals(execId(1), "EX00000001");
-  assertEquals(execId(99999999), "EX99999999");
+  assertEquals(execId(99_999_999), "EX99999999");
 });
 
 Deno.test("[ems/execId] sequential IDs are unique and increasing", () => {

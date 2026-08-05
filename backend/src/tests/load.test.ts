@@ -154,7 +154,7 @@ Deno.test("[load] admin can submit 50 orders and receives jobId", async () => {
 Deno.test("[load] orderCount is capped at 5000", async () => {
   const token = await loginAsAdmin();
   const result = await triggerLoadTest(token, {
-    orderCount: 99999,
+    orderCount: 99_999,
     strategy: "LIMIT",
   });
 

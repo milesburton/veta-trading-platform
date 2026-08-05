@@ -61,10 +61,10 @@ function refreshRegime() {
   regimeCountdown = 30 + Math.floor(nextRandom() * 270);
   const r = nextRandom();
   if (r < 0.4) marketDrift = 0;
-  else if (r < 0.65) marketDrift = 0.0000008;
-  else if (r < 0.85) marketDrift = -0.0000008;
-  else if (r < 0.93) marketDrift = 0.0000025;
-  else marketDrift = -0.0000025;
+  else if (r < 0.65) marketDrift = 0.000_000_8;
+  else if (r < 0.85) marketDrift = -0.000_000_8;
+  else if (r < 0.93) marketDrift = 0.000_002_5;
+  else marketDrift = -0.000_002_5;
 }
 
 function randn(): number {

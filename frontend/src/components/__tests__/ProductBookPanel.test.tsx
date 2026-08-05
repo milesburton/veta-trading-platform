@@ -22,7 +22,7 @@ const issuedProduct = {
     { legId: "l-1", type: "equity", symbol: "AAPL", weight: 0.6, quantity: 10 },
     { legId: "l-2", type: "bond", symbol: "UST10Y", weight: 0.4, quantity: 5 },
   ],
-  targetNotional: 2000000,
+  targetNotional: 2_000_000,
   currency: "USD",
   createdBy: "sales-1",
   issuedAt: Date.now(),
@@ -197,7 +197,7 @@ describe("ProductBookPanel", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
         JSON.stringify([
-          { ...issuedProduct, productId: "p-k", name: "Thousands", targetNotional: 25000 },
+          { ...issuedProduct, productId: "p-k", name: "Thousands", targetNotional: 25_000 },
           { ...issuedProduct, productId: "p-small", name: "Small", targetNotional: 500 },
         ]),
         { status: 200 }

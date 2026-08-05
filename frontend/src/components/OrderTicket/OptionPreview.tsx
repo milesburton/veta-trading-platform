@@ -14,8 +14,8 @@ export function OptionPreview({ qty, premium }: { qty: number; premium: number }
         $
         {notional >= 1_000_000
           ? `${(notional / 1_000_000).toFixed(2)}M`
-          : notional >= 1_000
-            ? `${(notional / 1_000).toFixed(1)}K`
+          : notional >= 1000
+            ? `${(notional / 1000).toFixed(1)}K`
             : fmt2(notional)}
         {" notional"}
       </span>

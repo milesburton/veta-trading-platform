@@ -71,7 +71,7 @@ function makeStore(
       auth: {
         user: { id: userId, name: userId, role, avatar_emoji: "🙂" },
         limits: {
-          max_order_qty: 10000,
+          max_order_qty: 10_000,
           max_daily_notional: 1_000_000,
           allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
           allowed_desks: ["equity"],
@@ -557,7 +557,7 @@ describe("OrderBlotter – last submitted order", () => {
         auth: {
           user: { id: "alice", name: "alice", role: "trader" as const, avatar_emoji: "🙂" },
           limits: {
-            max_order_qty: 10000,
+            max_order_qty: 10_000,
             max_daily_notional: 1_000_000,
             allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
             allowed_desks: ["equity"],

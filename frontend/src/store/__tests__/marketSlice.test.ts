@@ -618,8 +618,8 @@ describe("orderBookUpdated", () => {
 
   it("overwrites previous orderBook entirely", () => {
     const first = {
-      AAPL: { bids: [], asks: [], mid: 150, ts: 1_000 },
-      MSFT: { bids: [], asks: [], mid: 300, ts: 1_000 },
+      AAPL: { bids: [], asks: [], mid: 150, ts: 1000 },
+      MSFT: { bids: [], asks: [], mid: 300, ts: 1000 },
     };
     const stateWithBook = reducer(initialState, orderBookUpdated(first));
     const second = {

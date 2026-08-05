@@ -54,7 +54,7 @@ describe("OptionPricingPanel", () => {
           symbol: "AAPL",
           optionType: "put",
           strike: 150,
-          expirySecs: 30 * 86400,
+          expirySecs: 30 * 86_400,
           spotPrice: 150.25,
           impliedVol: 0.24,
           price: 5.1,
@@ -93,7 +93,7 @@ describe("OptionPricingPanel", () => {
         symbol: "AAPL",
         optionType: "put",
         strike: 150,
-        expirySecs: 30 * 86400,
+        expirySecs: 30 * 86_400,
       });
     });
   });
@@ -124,7 +124,7 @@ describe("OptionPricingPanel", () => {
   it("consumes an option prefill and clears it on mount", async () => {
     mockState = {
       market: { prices: {} },
-      ui: { optionPrefill: { strike: 175.5, expirySecs: 14 * 86400 } },
+      ui: { optionPrefill: { strike: 175.5, expirySecs: 14 * 86_400 } },
     };
 
     render(<OptionPricingPanel />);
@@ -180,7 +180,7 @@ describe("OptionPricingPanel", () => {
       expect(getQuote).toHaveBeenCalled();
     });
     const arg = getQuote.mock.calls[0][0];
-    expect(arg.expirySecs).toBeGreaterThan(30 * 86400);
+    expect(arg.expirySecs).toBeGreaterThan(30 * 86_400);
   });
 
   it("ignores an empty custom date and keeps the preset expiry", async () => {

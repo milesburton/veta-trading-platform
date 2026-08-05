@@ -15,8 +15,8 @@ import type { RoutedOrder } from "@veta/schemas/orders";
 import { RoutedOrderSchema } from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweepIndexed, subscribeNewsSignals } from "./common-http.ts";
 
-const PORT = Number(Deno.env.get("POV_ALGO_PORT")) || 5_005;
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
+const PORT = Number(Deno.env.get("POV_ALGO_PORT")) || 5005;
+const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const POV_RATE = Number(Deno.env.get("POV_PERCENTAGE")) / 100 || 0.1;
 const MIN_SLICE = Number(Deno.env.get("POV_MIN_SLICE")) || 10;

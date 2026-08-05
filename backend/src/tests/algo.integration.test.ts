@@ -547,8 +547,8 @@ Deno.test("[algo] MOMENTUM order routes at least one tranche within 120s", async
   let fired: string | null = null;
   while (Date.now() < deadline) {
     const [buyOrder, sellOrder] = await Promise.all([
-      pollForOrder(buyId, 5_000),
-      pollForOrder(sellId, 5_000),
+      pollForOrder(buyId, 5000),
+      pollForOrder(sellId, 5000),
     ]);
     if (buyOrder && buyOrder.children.length >= 1) {
       fired = buyId;

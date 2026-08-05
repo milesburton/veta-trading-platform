@@ -57,7 +57,7 @@ const REASON_LABELS: Record<string, string> = {
 };
 
 function fmtExpiry(secs: number): string {
-  return `${Math.round(secs / 86400)}d`;
+  return `${Math.round(secs / 86_400)}d`;
 }
 
 function ScoreBar({ score }: { score: number }) {

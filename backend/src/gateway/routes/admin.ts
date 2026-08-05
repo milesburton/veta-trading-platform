@@ -62,7 +62,7 @@ function secureRandomFloat(): number {
 
 function secureRandomInt(maxExclusive: number): number {
   if (maxExclusive <= 0) return 0;
-  const limit = Math.floor(0x1_0000_0000 / maxExclusive) * maxExclusive;
+  const limit = Math.floor(0x1_00_00_00_00 / maxExclusive) * maxExclusive;
   const buf = new Uint32Array(1);
   let value: number;
   do {
@@ -125,7 +125,12 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
   const busRej = busUnavailable(ctx.producer.isReady());
   if (busRej) return busRej;
 
-  let body: { symbols?: string[]; orderCount?: number; strategy?: string; quantityRange?: [number, number] };
+  let body: {
+    symbols?: string[];
+    orderCount?: number;
+    strategy?: string;
+    quantityRange?: [number, number];
+  };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -137,10 +142,28 @@ async function handleLoadTest(req: Request, ctx: GatewayContext): Promise<Respon
 
   // docs: /user-guide/admin-tools/
   const ALL_SYMBOLS = [
-    "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA",
-    "NVDA", "META", "JPM", "GS", "V", "MA",
-    "UNH", "HD", "BAC", "DIS", "NFLX", "ADBE",
-    "CRM", "CSCO", "PEP", "INTC", "AMD",
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "TSLA",
+    "NVDA",
+    "META",
+    "JPM",
+    "GS",
+    "V",
+    "MA",
+    "UNH",
+    "HD",
+    "BAC",
+    "DIS",
+    "NFLX",
+    "ADBE",
+    "CRM",
+    "CSCO",
+    "PEP",
+    "INTC",
+    "AMD",
   ];
   const symbols = body.symbols ?? ALL_SYMBOLS;
   const maxOrderCount = Math.max(1, Number(Deno.env.get("LOAD_TEST_MAX_ORDERS") ?? "5000"));
@@ -368,17 +391,17 @@ export async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<
           0,
           3_000
         ),
-        ...makeWave(ALL_ASSETS, 40, limitMix, 0.55, 4_000, 10_000),
-        ...makeWave(LARGE_CAP, 20, algoHeavyMix, 0.5, 15_000, 8_000),
+        ...makeWave(ALL_ASSETS, 40, limitMix, 0.55, 4000, 10_000),
+        ...makeWave(LARGE_CAP, 20, algoHeavyMix, 0.5, 15_000, 8000),
       ];
       break;
     }
     case "volatile": {
       scenarioLabel = "Volatile Session";
       waves = [
-        ...makeWave(ALL_ASSETS, 40, volatilityMix, 0.7, 0, 5_000),
-        ...makeWave(ALL_ASSETS, 40, volatilityMix, 0.65, 6_000, 5_000),
-        ...makeWave(ALL_ASSETS, 20, limitMix, 0.5, 12_000, 5_000),
+        ...makeWave(ALL_ASSETS, 40, volatilityMix, 0.7, 0, 5000),
+        ...makeWave(ALL_ASSETS, 40, volatilityMix, 0.65, 6000, 5000),
+        ...makeWave(ALL_ASSETS, 20, limitMix, 0.5, 12_000, 5000),
       ];
       break;
     }
@@ -431,11 +454,11 @@ export async function handleDemoDay(req: Request, ctx: GatewayContext): Promise<
     default: {
       scenarioLabel = "Standard Trading Day";
       waves = [
-        ...makeWave(ALL_ASSETS, 30, limitMix, 0.55, 0, 6_000),
-        ...makeWave(ALL_ASSETS, 25, algoHeavyMix, 0.5, 7_000, 8_000),
-        ...makeWave(LARGE_CAP, 20, limitMix, 0.6, 16_000, 6_000),
-        ...makeWave(ALL_ASSETS, 15, volatilityMix, 0.45, 23_000, 5_000),
-        ...makeWave(FIN_ASSETS, 10, algoHeavyMix, 0.5, 29_000, 4_000),
+        ...makeWave(ALL_ASSETS, 30, limitMix, 0.55, 0, 6000),
+        ...makeWave(ALL_ASSETS, 25, algoHeavyMix, 0.5, 7000, 8000),
+        ...makeWave(LARGE_CAP, 20, limitMix, 0.6, 16_000, 6000),
+        ...makeWave(ALL_ASSETS, 15, volatilityMix, 0.45, 23_000, 5000),
+        ...makeWave(FIN_ASSETS, 10, algoHeavyMix, 0.5, 29_000, 4000),
       ];
       break;
     }

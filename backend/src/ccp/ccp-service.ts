@@ -350,7 +350,7 @@ fillsConsumer?.onMessage((_topic, raw) => {
 
   // Settlement date from the fill payload; fall back to T+2 for equity
   const settlDate =
-    fill.settlementDate ?? new Date(Date.now() + 2 * 86400_000).toISOString().slice(0, 10);
+    fill.settlementDate ?? new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
 
   novate(
     fill.execId,
@@ -373,7 +373,7 @@ rfqConsumer?.onMessage((_topic, raw) => {
 
   const desk = exec.desk ?? "fi";
   const settlDate =
-    exec.settlementDate ?? new Date(Date.now() + 86400_000).toISOString().slice(0, 10);
+    exec.settlementDate ?? new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
 
   novate(
     exec.execId,

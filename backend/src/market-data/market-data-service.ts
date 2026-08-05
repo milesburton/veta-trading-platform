@@ -55,16 +55,10 @@ export interface DataSource {
   pollIntervalMs?: number;
 }
 
-const PROVIDERS: ProviderDef[] = [
-  alphaVantageProvider,
-  tiingoProvider,
-  polygonProvider,
-];
+const PROVIDERS: ProviderDef[] = [alphaVantageProvider, tiingoProvider, polygonProvider];
 
 /** Providers eligible for per-symbol overrides (excludes streaming Polygon) */
-const POLL_PROVIDERS: ProviderDef[] = PROVIDERS.filter((p) =>
-  p.id !== "polygon"
-);
+const POLL_PROVIDERS: ProviderDef[] = PROVIDERS.filter((p) => p.id !== "polygon");
 
 let pausedSources: Set<string> = new Set();
 
@@ -110,7 +104,7 @@ async function loadOverrides(): Promise<void> {
       Object.entries(data).map(([symbol, source]) => [
         symbol,
         source === "alpha-vantage-fx" ? "alpha-vantage" : source,
-      ]),
+      ])
     );
     logger.info(`Loaded ${overrides.size} overrides from ${OVERRIDES_FILE}`);
   } catch {
@@ -140,7 +134,7 @@ async function loadFeedState(): Promise<void> {
       pausedSources = new Set(
         data.pausedSources.map((source) =>
           source === "alpha-vantage-fx" ? "alpha-vantage" : source
-        ),
+        )
       );
     } else if (data.feedPaused === true) {
       pausedSources = new Set(["alpha-vantage"]);
@@ -186,7 +180,7 @@ function restartPolygonStream(): void {
     (quote: CachedQuote) => {
       quoteCache.set(quote.symbol, quote);
     },
-    POLYGON_KEY,
+    POLYGON_KEY
   );
 }
 
@@ -246,11 +240,8 @@ if (ALPHA_VANTAGE_KEY) {
   const toSeed = symbolsForProvider("alpha-vantage");
   for (let i = 0; i < toSeed.length; i++) {
     setTimeout(
-      () =>
-        alphaVantageProvider.seedHistory?.(toSeed[i], JOURNAL_URL).catch(
-          () => {},
-        ),
-      i * 2_000,
+      () => alphaVantageProvider.seedHistory?.(toSeed[i], JOURNAL_URL).catch(() => {}),
+      i * 2000
     );
     setTimeout(
       () =>
@@ -304,16 +295,10 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     // Find provider (include synthetic as non-togglable)
     const provider = PROVIDERS.find((p) => p.id === sourceId);
     if (!provider) {
-      return json(
-        { error: `Source "${sourceId}" does not support toggling` },
-        400,
-      );
+      return json({ error: `Source "${sourceId}" does not support toggling` }, 400);
     }
     if (!provider.togglable) {
-      return json(
-        { error: `Source "${sourceId}" does not support toggling` },
-        400,
-      );
+      return json({ error: `Source "${sourceId}" does not support toggling` }, 400);
     }
 
     if (pausedSources.has(sourceId)) {
@@ -358,10 +343,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
 
     // Validate source IDs — build valid set from all known providers + synthetic
-    const validSources = new Set<string>([
-      "synthetic",
-      ...PROVIDERS.map((p) => p.id),
-    ]);
+    const validSources = new Set<string>(["synthetic", ...PROVIDERS.map((p) => p.id)]);
     for (const [sym, src] of Object.entries(body.overrides)) {
       if (!validSources.has(src)) {
         return json({ error: `Unknown source: ${src} for symbol ${sym}` }, 400);
@@ -409,7 +391,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         {
           error: `Symbol ${symbol} is not configured for a real data source`,
         },
-        404,
+        404
       );
     }
 
@@ -429,7 +411,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         {
           error: `No quote available for ${symbol} yet — fetch triggered`,
         },
-        404,
+        404
       );
     }
     return json(cached);

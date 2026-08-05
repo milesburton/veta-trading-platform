@@ -148,7 +148,7 @@ function createFakeOtelApi() {
         }
       ) => {
         propagationState.activeContexts.push(context);
-        setter.set(carrier, "traceparent", 12345);
+        setter.set(carrier, "traceparent", 12_345);
         propagationState.injected.push({
           key: "traceparent",
           value: String(carrier.traceparent),

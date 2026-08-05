@@ -7,11 +7,11 @@ import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
 import { useMemo } from "react";
 
 const EXPIRY_OPTIONS = [
-  { label: "7d", secs: 7 * 86400 },
-  { label: "14d", secs: 14 * 86400 },
-  { label: "30d", secs: 30 * 86400 },
-  { label: "60d", secs: 60 * 86400 },
-  { label: "90d", secs: 90 * 86400 },
+  { label: "7d", secs: 7 * 86_400 },
+  { label: "14d", secs: 14 * 86_400 },
+  { label: "30d", secs: 30 * 86_400 },
+  { label: "60d", secs: 60 * 86_400 },
+  { label: "90d", secs: 90 * 86_400 },
 ];
 
 type CellMetric = "pnl" | "pnlPct" | "optionPrice" | "mean" | "p95";
@@ -109,7 +109,7 @@ export function ScenarioMatrixPanel() {
   const symbol = useSignal(symbols[0] ?? "AAPL");
   const optionType = useSignal<OptionType>("call");
   const strike = useSignal(currentPrice ? currentPrice.toFixed(2) : "");
-  const expirySecs = useSignal(30 * 86400);
+  const expirySecs = useSignal(30 * 86_400);
   const metric = useSignal<CellMetric>("pnl");
   const result = useSignal<ScenarioResponse | null>(null);
   const spotRange = useSignal(20);

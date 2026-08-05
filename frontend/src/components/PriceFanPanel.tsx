@@ -30,12 +30,12 @@ const HORIZONS: HorizonPreset[] = [
   { label: "1h", steps: 6, stepSecs: 600 },
   { label: "4h", steps: 8, stepSecs: 1800 },
   { label: "1d", steps: 24, stepSecs: 3600 },
-  { label: "1w", steps: 7, stepSecs: 86400 },
+  { label: "1w", steps: 7, stepSecs: 86_400 },
 ];
 
 function formatStepLabel(tSecs: number, stepSecs: number): string {
   const total = tSecs;
-  if (stepSecs >= 86400) return `+${Math.round(total / 86400)}d`;
+  if (stepSecs >= 86_400) return `+${Math.round(total / 86_400)}d`;
   if (stepSecs >= 3600) return `+${Math.round(total / 3600)}h`;
   return `+${Math.round(total / 60)}m`;
 }

@@ -329,8 +329,8 @@ Deno.test("[risk-checks] self-cross: BUY when SELL is working for different symb
 
 Deno.test("[risk-checks] ADV scenarios", () => {
   const cases = [
-    { volumes: { AAPL: 1_000 }, quantity: 50, code: null },
-    { volumes: { AAPL: 1_000 }, quantity: 51, code: "ORDER_SIZE_VS_ADV" },
+    { volumes: { AAPL: 1000 }, quantity: 50, code: null },
+    { volumes: { AAPL: 1000 }, quantity: 51, code: "ORDER_SIZE_VS_ADV" },
     { volumes: {}, quantity: 1_000_000, code: null },
     { volumes: { AAPL: 0 }, quantity: 1_000_000, code: null },
   ] as const;

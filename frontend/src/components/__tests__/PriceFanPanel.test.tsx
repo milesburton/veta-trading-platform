@@ -46,7 +46,7 @@ describe("PriceFanPanel", () => {
     const args = useGetPriceFanQuery.mock.calls.map((call) => call[0]);
     expect(args).toContainEqual({ symbol: "AAPL", steps: 24, stepSecs: 3600 });
     expect(args).toContainEqual({ symbol: "MSFT", steps: 24, stepSecs: 3600 });
-    expect(args).toContainEqual({ symbol: "MSFT", steps: 7, stepSecs: 86400 });
+    expect(args).toContainEqual({ symbol: "MSFT", steps: 7, stepSecs: 86_400 });
   });
 
   it("shows no-data and error states", () => {

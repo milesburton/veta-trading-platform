@@ -55,8 +55,8 @@ Deno.test("[black-scholes] normCdf returns valid values", () => {
 
   const knownValues = [
     { input: 0, expected: 0.5 },
-    { input: 1, expected: 0.8413447460685429 },
-    { input: -1, expected: 0.15865525393145707 },
+    { input: 1, expected: 0.841_344_746_068_542_9 },
+    { input: -1, expected: 0.158_655_253_931_457_07 },
   ];
 
   for (const { input, expected } of knownValues) {

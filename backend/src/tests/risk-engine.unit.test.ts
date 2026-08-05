@@ -194,7 +194,7 @@ Deno.test("[risk-engine] ADV: oversized order is rejected", async () => {
     userId: "test-adv-big",
     symbol: "AAPL",
     side: "BUY",
-    quantity: 50000,
+    quantity: 50_000,
     limitPrice: 192.0,
   });
 

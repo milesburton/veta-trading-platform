@@ -177,8 +177,8 @@ Deno.test("computeNewsVelocity: no news â†’ 0; counts only recent items for this
     makeNews({
       id: "n3",
       tickers: ["MSFT"],
-      ts: now - 5_000,
-      publishedAt: now - 5_000,
+      ts: now - 5000,
+      publishedAt: now - 5000,
     }), // different symbol
     makeNews({ id: "n4", ts: now - 200_000, publishedAt: now - 200_000 }), // AAPL, too old
   ];
@@ -206,8 +206,8 @@ Deno.test("computeSentimentDelta: improving sentiment â†’ positive; worsening â†
   const posFresh = makeNews({
     id: "n1",
     sentimentScore: 0.8,
-    ts: now - 5_000,
-    publishedAt: now - 5_000,
+    ts: now - 5000,
+    publishedAt: now - 5000,
   });
   assertEquals(computeSentimentDelta("AAPL", [negOld, posFresh]) > 0, true, "improving");
 
@@ -220,8 +220,8 @@ Deno.test("computeSentimentDelta: improving sentiment â†’ positive; worsening â†
   const negFresh = makeNews({
     id: "n2",
     sentimentScore: -0.8,
-    ts: now - 5_000,
-    publishedAt: now - 5_000,
+    ts: now - 5000,
+    publishedAt: now - 5000,
   });
   assertEquals(computeSentimentDelta("AAPL", [posOld, negFresh]) < 0, true, "worsening");
 });

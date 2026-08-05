@@ -68,8 +68,8 @@ Deno.test("[analytics] black-scholes - normCdf returns valid values", () => {
 
   // Test known values with relaxed tolerance
   assertAlmostEquals(normCdf(0), 0.5, 1e-6);
-  assertAlmostEquals(normCdf(1), 0.8413447460685429, 1e-6);
-  assertAlmostEquals(normCdf(-1), 0.15865525393145707, 1e-6);
+  assertAlmostEquals(normCdf(1), 0.841_344_746_068_542_9, 1e-6);
+  assertAlmostEquals(normCdf(-1), 0.158_655_253_931_457_07, 1e-6);
 });
 
 Deno.test("[analytics] black-scholes - normPdf returns valid values", () => {

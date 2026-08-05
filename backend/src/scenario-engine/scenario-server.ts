@@ -32,64 +32,64 @@ serveJsonService({
   // fallow-ignore-next-line complexity
   handler: async (req, url, path) => {
     if (path === "/scenario" && req.method === "POST") {
-    let body: ScenarioRequest;
-    try {
-      body = (await req.json()) as ScenarioRequest;
-    } catch {
-      return json({ error: "Invalid JSON body" }, 400);
-    }
-
-    const { symbol, shocks } = body;
-    if (!symbol || !Array.isArray(shocks)) {
-      return json({ error: "symbol and shocks[] are required" }, 400);
-    }
-
-    let fv: FeatureVector | null = null;
-    try {
-      const res = await fetch(`${FEATURE_ENGINE_URL}/features/${encodeURIComponent(symbol)}`, {
-        signal: AbortSignal.timeout(3_000),
-      });
-      if (res.ok) fv = (await res.json()) as FeatureVector;
-    } catch {
-      /* ignored */
-    }
-
-    if (!fv) {
-      return json({ error: `No feature data available for ${symbol}` }, 503);
-    }
-
-    let weights = { ...DEFAULT_WEIGHTS };
-    try {
-      const res = await fetch(`${SIGNAL_ENGINE_URL}/weights`, {
-        signal: AbortSignal.timeout(2_000),
-      });
-      if (res.ok) weights = (await res.json()) as typeof weights;
-    } catch {
-      /* use defaults */
-    }
-
-    const baseline = scoreFeatureVector(fv, weights);
-
-    const shockedFv: FeatureVector = { ...fv };
-    for (const shock of shocks) {
-      if (shock.factor in shockedFv) {
-        (shockedFv as unknown as Record<string, number>)[shock.factor] =
-          (shockedFv as unknown as Record<string, number>)[shock.factor] + shock.delta;
+      let body: ScenarioRequest;
+      try {
+        body = (await req.json()) as ScenarioRequest;
+      } catch {
+        return json({ error: "Invalid JSON body" }, 400);
       }
-    }
 
-    const shocked = scoreFeatureVector(shockedFv, weights);
-    const delta = shocked.score - baseline.score;
+      const { symbol, shocks } = body;
+      if (!symbol || !Array.isArray(shocks)) {
+        return json({ error: "symbol and shocks[] are required" }, 400);
+      }
 
-    const result: ScenarioResult = {
-      symbol,
-      baseline,
-      shocked,
-      delta,
-      shocksApplied: shocks,
-    };
+      let fv: FeatureVector | null = null;
+      try {
+        const res = await fetch(`${FEATURE_ENGINE_URL}/features/${encodeURIComponent(symbol)}`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        if (res.ok) fv = (await res.json()) as FeatureVector;
+      } catch {
+        /* ignored */
+      }
 
-    return json(result);
+      if (!fv) {
+        return json({ error: `No feature data available for ${symbol}` }, 503);
+      }
+
+      let weights = { ...DEFAULT_WEIGHTS };
+      try {
+        const res = await fetch(`${SIGNAL_ENGINE_URL}/weights`, {
+          signal: AbortSignal.timeout(2000),
+        });
+        if (res.ok) weights = (await res.json()) as typeof weights;
+      } catch {
+        /* use defaults */
+      }
+
+      const baseline = scoreFeatureVector(fv, weights);
+
+      const shockedFv: FeatureVector = { ...fv };
+      for (const shock of shocks) {
+        if (shock.factor in shockedFv) {
+          (shockedFv as unknown as Record<string, number>)[shock.factor] =
+            (shockedFv as unknown as Record<string, number>)[shock.factor] + shock.delta;
+        }
+      }
+
+      const shocked = scoreFeatureVector(shockedFv, weights);
+      const delta = shocked.score - baseline.score;
+
+      const result: ScenarioResult = {
+        symbol,
+        baseline,
+        shocked,
+        delta,
+        shocksApplied: shocks,
+      };
+
+      return json(result);
     }
 
     return json({ error: "Not Found" }, 404);

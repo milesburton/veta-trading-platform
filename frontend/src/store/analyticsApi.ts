@@ -50,7 +50,7 @@ export const analyticsApi = createApi({
     }),
     getGreeksSurface: builder.query<GreeksSurfaceResponse, { symbol: string; expirySecs?: number }>(
       {
-        query: ({ symbol, expirySecs = 30 * 86400 }) =>
+        query: ({ symbol, expirySecs = 30 * 86_400 }) =>
           `/analytics/greeks-surface/${encodeURIComponent(symbol)}?expirySecs=${expirySecs}`,
       }
     ),

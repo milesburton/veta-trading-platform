@@ -67,7 +67,7 @@ describe("parseTradePaste", () => {
 
   it("handles comma-separated quantities", () => {
     const result = parseTradePaste("BUY 10,000 AAPL", ASSETS);
-    expect(result?.quantity).toBe(10000);
+    expect(result?.quantity).toBe(10_000);
   });
 
   it("handles quantity with shares suffix", () => {

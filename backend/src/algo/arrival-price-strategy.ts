@@ -18,11 +18,16 @@ import "https://deno.land/std@0.210.0/dotenv/load.ts";
 import { logger } from "@veta/logger";
 import { createMarketSimClient } from "@veta/market-client";
 import { createProducer, createTypedConsumer } from "@veta/messaging";
-import { FillEventSchema, FillEvent, RoutedOrderSchema, type RoutedOrder } from "@veta/schemas/orders";
+import {
+  FillEventSchema,
+  FillEvent,
+  RoutedOrderSchema,
+  type RoutedOrder,
+} from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 
-const PORT = Number(Deno.env.get("ARRIVAL_PRICE_ALGO_PORT")) || 5_023;
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
+const PORT = Number(Deno.env.get("ARRIVAL_PRICE_ALGO_PORT")) || 5023;
+const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const ALGO = "ARRIVAL_PRICE" as const;

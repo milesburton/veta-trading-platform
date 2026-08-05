@@ -109,7 +109,7 @@ function makeContext(): GatewayContext {
         user: { id: "u-test", name: "E2E Tester", role: "admin", avatar_emoji: "🧪" },
         limits: {
           max_order_qty: 1000,
-          max_daily_notional: 1000000,
+          max_daily_notional: 1_000_000,
           allowed_strategies: ["LIMIT"],
         },
       }),
@@ -148,7 +148,8 @@ Deno.test("pipeline: POST /bug-report reaches Discord and creates a user ticket"
             method: "POST",
             body: JSON.stringify({
               title: "Test bug from E2E suite",
-              description: "This is a synthetic user ticket. It should fan out to Discord and GitHub.",
+              description:
+                "This is a synthetic user ticket. It should fan out to Discord and GitHub.",
               kind: "feature",
               category: "ui",
               url: "/dashboard",

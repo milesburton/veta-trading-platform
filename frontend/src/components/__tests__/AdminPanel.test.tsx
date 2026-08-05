@@ -41,12 +41,12 @@ vi.mock("../../store/userApi.ts", () => ({
       userId === "u1"
         ? {
             max_order_qty: 1000,
-            max_daily_notional: 50000,
+            max_daily_notional: 50_000,
             allowed_strategies: ["LIMIT", "TWAP"],
           }
         : {
-            max_order_qty: 10000,
-            max_daily_notional: 500000,
+            max_order_qty: 10_000,
+            max_daily_notional: 500_000,
             allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
           },
   }),

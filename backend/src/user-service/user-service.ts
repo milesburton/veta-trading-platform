@@ -333,7 +333,7 @@ async function getUserFromToken(token: string | null) {
 }
 
 const DEFAULT_TRADING_LIMITS = {
-  max_order_qty: 10000,
+  max_order_qty: 10_000,
   max_daily_notional: 1_000_000,
   allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
   allowed_desks: ["equity"],
@@ -600,7 +600,9 @@ async function handle(req: Request): Promise<Response> {
           [userId, parsed.data]
         );
         logger.info("preferences.updated", { userId, ts: Date.now() });
-        producer?.send("user.preferences", { event: "updated", userId, ts: Date.now() }).catch(() => {});
+        producer
+          ?.send("user.preferences", { event: "updated", userId, ts: Date.now() })
+          .catch(() => {});
         return json({ success: true });
       } finally {
         client.release();
@@ -891,7 +893,7 @@ async function handle(req: Request): Promise<Response> {
         {
           access_token: session.token,
           token_type: "bearer",
-          expires_in: 28800,
+          expires_in: 28_800,
           scope: "openid profile",
           user: session.user,
         },
@@ -936,7 +938,7 @@ async function handle(req: Request): Promise<Response> {
         {
           access_token: session.token,
           token_type: "bearer",
-          expires_in: 28800,
+          expires_in: 28_800,
           scope: entry.scope,
           user: session.user,
         },

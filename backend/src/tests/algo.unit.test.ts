@@ -74,8 +74,8 @@ function povSlice(
 }
 
 Deno.test("[pov] slice is povRate fraction of tick volume", () => {
-  assertEquals(povSlice(1_000, 0.1, 10, 5_000, 9_999), 100);
-  assertEquals(povSlice(2_000, 0.05, 10, 5_000, 9_999), 100);
+  assertEquals(povSlice(1000, 0.1, 10, 5000, 9999), 100);
+  assertEquals(povSlice(2000, 0.05, 10, 5000, 9999), 100);
 });
 
 Deno.test("[pov] slice never exceeds maxSlice", () => {
@@ -137,10 +137,10 @@ Deno.test("[vwap] high-volume tick dominates vwap", () => {
 
 Deno.test("[vwap] window evicts oldest entries", () => {
   let buf: PriceVolPoint[] = [];
-  for (let i = 0; i < 5; i++) buf = updateHistory(buf, 50, 1_000, 3);
-  buf = updateHistory(buf, 200, 1_000, 3);
-  buf = updateHistory(buf, 200, 1_000, 3);
-  buf = updateHistory(buf, 200, 1_000, 3);
+  for (let i = 0; i < 5; i++) buf = updateHistory(buf, 50, 1000, 3);
+  buf = updateHistory(buf, 200, 1000, 3);
+  buf = updateHistory(buf, 200, 1000, 3);
+  buf = updateHistory(buf, 200, 1000, 3);
   assertEquals(buf.length, 3);
   assertAlmostEquals(rollingVwap(buf), 200, 1e-9);
 });

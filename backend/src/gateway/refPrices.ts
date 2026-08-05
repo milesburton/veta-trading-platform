@@ -16,10 +16,7 @@ export interface RefPriceCache {
   refresh(): Promise<void>;
 }
 
-export function createRefPriceCache(
-  marketSimUrl: string,
-  refreshMs: number = 1_000
-): RefPriceCache {
+export function createRefPriceCache(marketSimUrl: string, refreshMs: number = 1000): RefPriceCache {
   const cache: Record<string, number> = {};
   let lastRefreshAt = 0;
 

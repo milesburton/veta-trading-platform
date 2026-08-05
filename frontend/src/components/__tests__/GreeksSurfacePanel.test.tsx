@@ -52,13 +52,13 @@ describe("GreeksSurfacePanel", () => {
     useGetGreeksSurfaceQuery.mockImplementation(
       (params: { symbol: string; expirySecs: number }) => {
         const { symbol, expirySecs } = params;
-        if (symbol === "AAPL" && expirySecs === 30 * 86400) {
+        if (symbol === "AAPL" && expirySecs === 30 * 86_400) {
           return {
             data: {
               symbol: "AAPL",
               spotPrice: 175.5,
               impliedVol: 0.22,
-              expirySecs: 30 * 86400,
+              expirySecs: 30 * 86_400,
               strikes: [
                 {
                   strike: 170,

@@ -18,7 +18,7 @@ const MOCK_QUOTE = {
   symbol: "AAPL",
   optionType: "call" as const,
   strike: 155,
-  expirySecs: 30 * 86400,
+  expirySecs: 30 * 86_400,
   spotPrice: 155,
   impliedVol: 0.28,
   price: 4.23,

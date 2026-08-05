@@ -42,7 +42,7 @@ function baseSession(
     modelId: "mock-v1",
     jobsProcessed: 0,
     jobsFailed: 0,
-    pid: 12345,
+    pid: 12_345,
     exitReason: null,
     ...overrides,
   };

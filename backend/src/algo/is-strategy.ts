@@ -32,8 +32,8 @@ import {
 } from "@veta/schemas/orders";
 import { serveAlgoHealth, startExpirySweep, subscribeNewsSignals } from "./common-http.ts";
 
-const PORT = Number(Deno.env.get("IS_ALGO_PORT")) || 5_026;
-const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5_000;
+const PORT = Number(Deno.env.get("IS_ALGO_PORT")) || 5026;
+const MARKET_SIM_PORT = Number(Deno.env.get("MARKET_SIM_PORT")) || 5000;
 const MARKET_SIM_HOST = Deno.env.get("MARKET_SIM_HOST") || "localhost";
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const ALGO = "IS" as const;

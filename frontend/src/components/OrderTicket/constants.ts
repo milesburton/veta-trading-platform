@@ -16,9 +16,9 @@ export const TIF_OPTIONS = [
 export type TifValue = (typeof TIF_OPTIONS)[number]["value"];
 
 export const OPTION_EXPIRIES = [
-  { label: "7d", secs: 7 * 86400 },
-  { label: "14d", secs: 14 * 86400 },
-  { label: "30d", secs: 30 * 86400 },
-  { label: "60d", secs: 60 * 86400 },
-  { label: "90d", secs: 90 * 86400 },
+  { label: "7d", secs: 7 * 86_400 },
+  { label: "14d", secs: 14 * 86_400 },
+  { label: "30d", secs: 30 * 86_400 },
+  { label: "60d", secs: 60 * 86_400 },
+  { label: "90d", secs: 90 * 86_400 },
 ];
