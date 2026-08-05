@@ -147,7 +147,7 @@ log "Restarting stack (gateway replicas=$GATEWAY_REPLICAS)..."
 # dependency, or the Docker daemon race condition where remove/create
 # overlap on container names during a recreate). We retry once after a
 # short pause — most race-induced failures clear within seconds.
-if ! docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d \
+if ! docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d --no-build \
         --scale "gateway=$GATEWAY_REPLICAS"; then
     log "⚠ up -d returned non-zero — pausing 10s and retrying once"
     sleep 10
@@ -156,9 +156,9 @@ if ! docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d \
     if [[ -n "$ORPHANS" ]]; then
         echo "$ORPHANS" | xargs -r docker rm -f >/dev/null 2>&1 || true
     fi
-    docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d \
+    docker compose "${COMPOSE_FILES[@]}" "${PROFILES[@]}" up -d --no-build \
         --scale "gateway=$GATEWAY_REPLICAS" \
-        || log "⚠ retry also returned non-zero; per-service verification will decide"
+        || { log "❌ retry also returned non-zero; aborting deployment"; exit 1; }
 fi
 
 # Detect bind-mount drift on single-file mounts and restart the affected
