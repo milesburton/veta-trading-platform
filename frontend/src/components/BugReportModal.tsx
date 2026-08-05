@@ -36,6 +36,7 @@ export function BugReportModal({ open, onClose }: Props) {
   const discordDelivered = useSignal(false);
   const ticketUrl = useSignal<string | null>(null);
   const ticketIssueNumber = useSignal<number | null>(null);
+  const ticketFailureReason = useSignal<string | null>(null);
   const localError = useSignal<string | null>(null);
   const titleRef = useRef<HTMLInputElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -50,6 +51,7 @@ export function BugReportModal({ open, onClose }: Props) {
     discordDelivered.value = false;
     ticketUrl.value = null;
     ticketIssueNumber.value = null;
+    ticketFailureReason.value = null;
     localError.value = null;
     const focusTimer = setTimeout(() => titleRef.current?.focus(), 30);
     const onKey = (e: KeyboardEvent) => {
@@ -98,6 +100,7 @@ export function BugReportModal({ open, onClose }: Props) {
       discordDelivered.value = result.data.discordDelivered === true;
       ticketUrl.value = result.data.ticket?.url ?? null;
       ticketIssueNumber.value = result.data.ticket?.issueNumber ?? null;
+      ticketFailureReason.value = result.data.ticket?.reason ?? null;
       // 202 from backend signals "received but no external sink was configured"
       if (result.data.ok === false) {
         undelivered.value = true;
@@ -142,6 +145,12 @@ export function BugReportModal({ open, onClose }: Props) {
             <p data-testid="bug-report-success" className="text-sm text-primary font-medium">
               Thanks — your report is in.
             </p>
+            {discordDelivered.value && !ticketUrl.value && ticketFailureReason.value && (
+              <p className="text-xs text-amber-300" data-testid="github-ticketing-warning">
+                Support was notified, but GitHub issue creation failed ({ticketFailureReason.value}
+                ). An administrator should check the GitHub ticketing health.
+              </p>
+            )}
             <p className="text-xs text-muted">
               {ticketUrl.value
                 ? discordDelivered.value

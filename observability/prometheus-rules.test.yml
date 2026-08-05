@@ -4,6 +4,30 @@ rule_files:
 evaluation_interval: 1m
 
 tests:
+  - name: GithubTicketingUnavailable fires after a sustained failed probe
+    interval: 1m
+    input_series:
+      - series: 'github_ticketing_healthy{job="gateway"}'
+        values: '0x15'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: GithubTicketingUnavailable
+        exp_alerts: []
+      - eval_time: 11m
+        alertname: GithubTicketingUnavailable
+        exp_alerts:
+          - exp_labels:
+              alertname: GithubTicketingUnavailable
+              job: gateway
+              severity: warning
+            exp_annotations:
+              summary: GitHub user-ticket delivery unavailable for 10m
+              description: |
+                The VETA gateway cannot validate its GitHub ticketing credential or reach the
+                configured repository. User bug reports may still reach Discord, but GitHub issues
+                will not be created. Check the Platform Status ticketing state and rotate the
+                github_ticketing_token Docker secret if it is unauthorised or forbidden.
+
   - name: RedpandaTopicWriteRateHigh fires when a non-market topic sustains >512 KiB/s
     interval: 1m
     input_series:

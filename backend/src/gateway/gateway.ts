@@ -33,10 +33,13 @@ import { handleScenariosRoute } from "./routes/scenarios.ts";
 import { handleTelemetryRoute } from "./routes/telemetry.ts";
 import { handleWebSocketRoute } from "./routes/websocket.ts";
 import { handleHealth, handleSystemStatus, makeMarketSimWsProxy } from "./system-status.ts";
+import { getTicketingHealth, startTicketingHealthMonitor } from "./ticketing.ts";
 
 const PORT = Number(Deno.env.get("GATEWAY_PORT")) || 5_011;
 const VERSION = Deno.env.get("COMMIT_SHA") || "dev";
 const STARTED_AT = Date.now();
+
+startTicketingHealthMonitor();
 
 registerLogSink((level, msg, raw) => {
   recordLogLine({ service: "gateway", level, message: msg }, raw);
@@ -737,6 +740,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         uptimeMs: Date.now() - STARTED_AT,
         services: cachedHealth ?? {},
         stats: platformStats.snapshot(),
+        ticketing: getTicketingHealth(),
       }),
       {
         status: 200,

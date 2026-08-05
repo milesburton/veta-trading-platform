@@ -205,6 +205,21 @@ export interface PlatformStatus {
   uptimeMs: number;
   services: Record<string, boolean>;
   stats: PlatformStatsSnapshot;
+  ticketing: {
+    state:
+      | "unknown"
+      | "healthy"
+      | "missing"
+      | "misconfigured"
+      | "unauthorised"
+      | "forbidden"
+      | "rate-limited"
+      | "unreachable";
+    healthy: boolean;
+    checkedAt: number | null;
+    statusCode: number | null;
+    repo: string | null;
+  };
 }
 
 export interface BugReportSubmission {
