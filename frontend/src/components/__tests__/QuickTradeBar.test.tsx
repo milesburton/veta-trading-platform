@@ -2,7 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { authSlice } from "@veta/frontend/store/authSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
-import { uiSlice } from "@veta/frontend/store/uiSlice";
+import { setOrderTicketWindowSize, uiSlice } from "@veta/frontend/store/uiSlice";
 import * as orderTicketWindow from "@veta/frontend/utils/orderTicketWindow";
 import { Provider } from "react-redux";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -119,7 +119,9 @@ describe("QuickTradeBar — new order", () => {
     const openTicket = vi
       .spyOn(orderTicketWindow, "openOrderTicketWindow")
       .mockImplementation(() => undefined);
-    renderBar(makeStore());
+    const store = makeStore();
+    store.dispatch(setOrderTicketWindowSize({ w: 713, h: 917 }));
+    renderBar(store);
 
     const newOrder = screen.getByTestId("new-order-btn");
     const quickTradeLabel = screen.getByText("Quick trade");
@@ -128,7 +130,7 @@ describe("QuickTradeBar — new order", () => {
     ).toBeTruthy();
 
     fireEvent.click(newOrder);
-    expect(openTicket).toHaveBeenCalledWith({ w: 480, h: 780 });
+    expect(openTicket).toHaveBeenCalledWith({ w: 713, h: 917 });
   });
 });
 
