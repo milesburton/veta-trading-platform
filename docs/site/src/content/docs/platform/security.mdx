@@ -54,9 +54,9 @@ inside the container, the kernel refuses to honour the bit. The class of
 ### Non-root execution (Deno services)
 
 The shared base Dockerfile (`docker/base/Dockerfile`) ends with
-`USER deno:deno`, mapping all Deno-based trading services to UID 1000
+`USER deno:deno`, mapping all Deno-based trading services to UID 1993
 inside their containers. An attacker who lands RCE has the privileges
-of UID 1000, not 0. Combined with capability drop, the post-exploit
+of UID 1993, not 0. Combined with capability drop, the post-exploit
 position is meaningfully constrained.
 
 The infrastructure containers (`postgres`, `redpanda`, `traefik`,

@@ -67,6 +67,7 @@ services:
     <<: *prod-defaults
     image: ghcr.io/milesburton/veta-trading-platform/base:latest
     build: !reset null
+    profiles: !reset []
 
   market-sim:
     <<: *prod-defaults
