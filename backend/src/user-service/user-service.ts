@@ -602,7 +602,7 @@ async function handle(req: Request): Promise<Response> {
         logger.info("preferences.updated", { userId, ts: Date.now() });
         producer
           ?.send("user.preferences", { event: "updated", userId, ts: Date.now() })
-          .catch(() => {});
+          ?.catch(() => {});
         return json({ success: true });
       } finally {
         client.release();
