@@ -131,8 +131,8 @@ describe("alertsSlice — dedupe", () => {
   it("re-firing brings the existing alert back to the top", () => {
     const t0 = 1_700_000_000_000;
     let state = reducer(undefined, alertAdded({ ...BASE_ALERT, ts: t0, message: "old" }));
-    state = reducer(state, alertAdded({ ...BASE_ALERT, ts: t0 + 1000, message: "newer" }));
-    state = reducer(state, alertAdded({ ...BASE_ALERT, ts: t0 + 2000, message: "old" }));
+    state = reducer(state, alertAdded({ ...BASE_ALERT, ts: t0 + 1_000, message: "newer" }));
+    state = reducer(state, alertAdded({ ...BASE_ALERT, ts: t0 + 2_000, message: "old" }));
     expect(state.alerts[0].message).toBe("old");
     expect(state.alerts[0].count).toBe(2);
     expect(state.alerts[1].message).toBe("newer");
