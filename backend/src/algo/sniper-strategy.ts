@@ -232,8 +232,13 @@ marketClient.onTick(async (tick) => {
       // arrive as soon as the message is acknowledged; reserving afterward
       // would race the fill consumer and leave phantom in-flight quantity.
       order.inFlightQty += qty;
+      if (!producer) {
+        order.inFlightQty = Math.max(0, order.inFlightQty - qty);
+        logger.warn(`Failed to route ${childId}: producer unavailable`);
+        continue;
+      }
       try {
-        await producer?.send("orders.child", {
+        await producer.send("orders.child", {
           childId,
           parentOrderId: order.orderId,
           clientOrderId: order.clientOrderId,
