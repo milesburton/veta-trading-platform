@@ -151,7 +151,7 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
               <p className="text-xs text-amber-300" data-testid="bug-report-queued">
                 ⚠️ Ticket received by the gateway, but no external ticket sink is configured or
                 delivery failed. Ask an admin to check <code>DISCORD_BUG_WEBHOOK_URL</code>,{" "}
-                <code>DISCORD_WEBHOOK_URL</code>, <code>GITHUB_TICKETING_TOKEN</code>, and{" "}
+                <code>DISCORD_WEBHOOK_URL</code>, the mounted GitHub ticketing secret, and{" "}
                 <code>GITHUB_TICKETING_REPO</code>.
               </p>
             )}
