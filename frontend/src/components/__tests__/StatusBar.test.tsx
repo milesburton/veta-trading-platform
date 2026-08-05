@@ -636,43 +636,6 @@ describe("StatusBar – pinned alerts panel", () => {
 });
 
 describe("StatusBar – authenticated user", () => {
-  it("renders new-order button for trader role", () => {
-    const store = makeStore(true);
-    store.dispatch({
-      type: "auth/setUser",
-      payload: {
-        id: "alice",
-        name: "Alice",
-        role: "trader",
-        avatar_emoji: "👩",
-      },
-    });
-    render(
-      <Provider store={store}>
-        <DashboardContext.Provider
-          value={{
-            layout: DEFAULT_LAYOUT,
-            setLayout: vi.fn(),
-            activePanelIds: new Set(),
-            addPanel: vi.fn(),
-            removePanel: vi.fn(),
-            removeTabById: vi.fn(),
-            resetLayout: vi.fn(),
-            storageKey: "dashboard-layout",
-            model: Model.fromJson({
-              global: {},
-              layout: { type: "row", children: [] },
-            }),
-            setModel: vi.fn(),
-          }}
-        >
-          <StatusBar />
-        </DashboardContext.Provider>
-      </Provider>
-    );
-    expect(screen.getByTestId("new-order-btn")).toBeInTheDocument();
-  });
-
   it("renders user info and logout for admin", () => {
     const store = makeStore(true);
     store.dispatch({
@@ -975,23 +938,6 @@ describe("StatusBar – update banner reload", () => {
       expect(reload).toHaveBeenCalledTimes(1);
     } finally {
       Object.defineProperty(window, "location", { configurable: true, value: original });
-    }
-  });
-});
-
-describe("StatusBar – new order button", () => {
-  it("opens the order ticket window for traders", () => {
-    const open = vi.fn();
-    const originalOpen = globalThis.open;
-    globalThis.open = open as unknown as typeof globalThis.open;
-    try {
-      const store = makeStore(true);
-      authenticateStore(store);
-      renderWithStore(store);
-      fireEvent.click(screen.getByTestId("new-order-btn"));
-      expect(open).toHaveBeenCalledTimes(1);
-    } finally {
-      globalThis.open = originalOpen;
     }
   });
 });

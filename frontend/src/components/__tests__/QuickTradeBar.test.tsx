@@ -2,10 +2,10 @@ import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { authSlice } from "@veta/frontend/store/authSlice";
 import { marketSlice } from "@veta/frontend/store/marketSlice";
-import { uiSlice } from "@veta/frontend/store/uiSlice";
+import { setOrderTicketWindowSize, uiSlice } from "@veta/frontend/store/uiSlice";
 import * as orderTicketWindow from "@veta/frontend/utils/orderTicketWindow";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const parseTicketMock = vi.fn();
 const useParseTicketMutationMock = vi.fn();
@@ -33,6 +33,10 @@ import { QuickTradeBar } from "@veta/frontend/components/QuickTradeBar";
 
 beforeEach(() => {
   setMutationResult();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 function makeStore(
@@ -107,6 +111,26 @@ describe("QuickTradeBar — visibility", () => {
   it("renders for a trader", () => {
     renderBar(makeStore());
     expect(screen.getByTestId("quick-trade-bar")).toBeInTheDocument();
+  });
+});
+
+describe("QuickTradeBar — new order", () => {
+  it("opens a blank order ticket from the action to the left of Quick trade", () => {
+    const openTicket = vi
+      .spyOn(orderTicketWindow, "openOrderTicketWindow")
+      .mockImplementation(() => undefined);
+    const store = makeStore();
+    store.dispatch(setOrderTicketWindowSize({ w: 713, h: 917 }));
+    renderBar(store);
+
+    const newOrder = screen.getByTestId("new-order-btn");
+    const quickTradeLabel = screen.getByText("Quick trade");
+    expect(
+      newOrder.compareDocumentPosition(quickTradeLabel) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+
+    fireEvent.click(newOrder);
+    expect(openTicket).toHaveBeenCalledWith({ w: 713, h: 917 });
   });
 });
 

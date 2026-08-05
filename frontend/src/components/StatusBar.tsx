@@ -16,14 +16,10 @@ import {
 } from "@veta/frontend/store/servicesApi.ts";
 import type { Theme } from "@veta/frontend/store/themeSlice.ts";
 import { saveTheme, setTheme } from "@veta/frontend/store/themeSlice.ts";
-import {
-  dismissUpdateAvailable,
-  selectOrderTicketWindowSize,
-} from "@veta/frontend/store/uiSlice.ts";
+import { dismissUpdateAvailable } from "@veta/frontend/store/uiSlice.ts";
 import { useLogoutMutation } from "@veta/frontend/store/userApi.ts";
 import type { ServiceHealth } from "@veta/frontend/types.ts";
 import { formatUtcTime } from "@veta/frontend/utils/clock.ts";
-import { openOrderTicketWindow } from "@veta/frontend/utils/orderTicketWindow.ts";
 import type { IJsonModel, TabNode } from "flexlayout-react";
 import { Actions, Model } from "flexlayout-react";
 import { useCallback, useEffect, useRef } from "react";
@@ -479,7 +475,6 @@ export function AppHeader() {
   const updateAvailable = useAppSelector((s) => s.ui.updateAvailable);
   const upgradeStatus = useAppSelector((s) => s.ui.upgradeStatus);
   const user = useAppSelector((s) => s.auth.user);
-  const orderTicketWindowSize = useAppSelector(selectOrderTicketWindowSize);
   const services = useAllServiceHealth();
   const time = useSignal(formatUtcTime(new Date()));
   const bugReportOpen = useSignal(false);
@@ -577,16 +572,6 @@ export function AppHeader() {
             <ServiceStatus services={services} />
           </div>
 
-          {user?.role === "trader" && (
-            <button
-              type="button"
-              data-testid="new-order-btn"
-              onClick={() => openOrderTicketWindow(orderTicketWindowSize)}
-              className="px-3 py-1 text-[11px] font-semibold rounded bg-emerald-700 hover:bg-emerald-600 text-white transition-colors uppercase tracking-wide"
-            >
-              + New Order
-            </button>
-          )}
           {user && (
             <>
               <LogsButton />
