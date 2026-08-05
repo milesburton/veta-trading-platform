@@ -1,5 +1,6 @@
 // fallow-ignore-file unused-file
 import { logger } from "@veta/logger";
+import { recordGauge } from "@veta/telemetry";
 
 export interface TicketAlertPayload {
   severity?: string;
@@ -26,6 +27,24 @@ interface CreateIssueResult {
   reason: string | null;
 }
 
+export type TicketingHealthState =
+  | "unknown"
+  | "healthy"
+  | "missing"
+  | "misconfigured"
+  | "unauthorised"
+  | "forbidden"
+  | "rate-limited"
+  | "unreachable";
+
+export interface TicketingHealth {
+  state: TicketingHealthState;
+  healthy: boolean;
+  checkedAt: number | null;
+  statusCode: number | null;
+  repo: string | null;
+}
+
 interface GithubIssueSearchHit {
   number: number;
   html_url: string;
@@ -39,10 +58,109 @@ const DEDUPE_WINDOW_MS = 60 * 60 * 1000;
 const DEFAULT_TICKETING_REPO = "milesburton/veta-trading-platform";
 
 function readTokenEnv(): string | null {
-  const token = Deno.env.get("GITHUB_TICKETING_TOKEN") ?? "";
+  const secretFile =
+    Deno.env.get("GITHUB_TICKETING_TOKEN_FILE") ?? "/run/secrets/github_ticketing_token";
+  let token = "";
+  try {
+    token = Deno.readTextFileSync(secretFile).trim();
+  } catch {
+    token = (Deno.env.get("GITHUB_TICKETING_TOKEN") ?? "").trim();
+  }
   if (token.length < 20) return null;
   if (token.includes("REPLACE_ME")) return null;
   return token;
+}
+
+let ticketingHealth: TicketingHealth = {
+  state: "unknown",
+  healthy: false,
+  checkedAt: null,
+  statusCode: null,
+  repo: readRepoEnv(),
+};
+
+function classifyGithubStatus(status: number, rateRemaining: string | null): TicketingHealthState {
+  if (status === 401) return "unauthorised";
+  if (status === 403 && rateRemaining === "0") return "rate-limited";
+  if (status === 403 || status === 404) return "forbidden";
+  if (status === 429) return "rate-limited";
+  return status >= 200 && status < 300 ? "healthy" : "unreachable";
+}
+
+async function publishTicketingHealth(next: TicketingHealth): Promise<TicketingHealth> {
+  ticketingHealth = next;
+  await recordGauge("github_ticketing_healthy", next.healthy ? 1 : 0, {
+    description: "Whether the GitHub user-ticket integration passed its latest probe",
+    attributes: { state: next.state },
+  });
+  await recordGauge("github_ticketing_last_check_timestamp_seconds", (next.checkedAt ?? 0) / 1000);
+  return next;
+}
+
+export function getTicketingHealth(): TicketingHealth {
+  return { ...ticketingHealth };
+}
+
+export async function probeTicketingHealth(): Promise<TicketingHealth> {
+  const checkedAt = Date.now();
+  const token = readTokenEnv();
+  const repo = readRepoEnv();
+  if (!token) {
+    return await publishTicketingHealth({
+      state: "missing",
+      healthy: false,
+      checkedAt,
+      statusCode: null,
+      repo,
+    });
+  }
+  if (!repo) {
+    return await publishTicketingHealth({
+      state: "misconfigured",
+      healthy: false,
+      checkedAt,
+      statusCode: null,
+      repo: null,
+    });
+  }
+  try {
+    const res = await fetch(`${GH_API}/repos/${repo}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "User-Agent": "veta-gateway-ticketing-health",
+      },
+      signal: AbortSignal.timeout(8_000),
+    });
+    const state = classifyGithubStatus(res.status, res.headers.get("x-ratelimit-remaining"));
+    const next = { state, healthy: state === "healthy", checkedAt, statusCode: res.status, repo };
+    if (!next.healthy) {
+      logger.warn("[ticketing] GitHub health probe failed", {
+        state,
+        status: res.status,
+        requestId: res.headers.get("x-github-request-id") ?? "unknown",
+      });
+    }
+    return await publishTicketingHealth(next);
+  } catch (err) {
+    logger.warn("[ticketing] GitHub health probe unreachable", {
+      err: err instanceof Error ? err.message : String(err),
+    });
+    return await publishTicketingHealth({
+      state: "unreachable",
+      healthy: false,
+      checkedAt,
+      statusCode: null,
+      repo,
+    });
+  }
+}
+
+export function startTicketingHealthMonitor(
+  intervalMs = 5 * 60_000
+): ReturnType<typeof setInterval> {
+  probeTicketingHealth().catch(() => {});
+  return setInterval(() => probeTicketingHealth().catch(() => {}), intervalMs);
 }
 
 function readRepoEnv(): string | null {
@@ -181,10 +299,42 @@ async function createIssue(
       body: JSON.stringify({ title, body, labels }),
       signal: AbortSignal.timeout(8_000),
     });
-    if (!res.ok) return { ok: false, number: null, url: null };
+    if (!res.ok) {
+      const state = classifyGithubStatus(res.status, res.headers.get("x-ratelimit-remaining"));
+      await publishTicketingHealth({
+        state,
+        healthy: false,
+        checkedAt: Date.now(),
+        statusCode: res.status,
+        repo,
+      });
+      logger.warn("[ticketing] GitHub issue creation failed", {
+        state,
+        status: res.status,
+        requestId: res.headers.get("x-github-request-id") ?? "unknown",
+      });
+      return { ok: false, number: null, url: null };
+    }
     const json = (await res.json()) as { number: number; html_url: string };
+    await publishTicketingHealth({
+      state: "healthy",
+      healthy: true,
+      checkedAt: Date.now(),
+      statusCode: res.status,
+      repo,
+    });
     return { ok: true, number: json.number, url: json.html_url };
-  } catch {
+  } catch (err) {
+    await publishTicketingHealth({
+      state: "unreachable",
+      healthy: false,
+      checkedAt: Date.now(),
+      statusCode: null,
+      repo,
+    });
+    logger.warn("[ticketing] GitHub issue creation unreachable", {
+      err: err instanceof Error ? err.message : String(err),
+    });
     return { ok: false, number: null, url: null };
   }
 }

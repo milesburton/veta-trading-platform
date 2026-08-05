@@ -65,6 +65,13 @@ const baseStatus = {
   startedAt: 0,
   uptimeMs: 60 * 60 * 1000,
   services: { gateway: true, oms: true, ems: true },
+  ticketing: {
+    state: "healthy" as const,
+    healthy: true,
+    checkedAt: 1,
+    statusCode: 200,
+    repo: "milesburton/veta-trading-platform",
+  },
   stats: {
     windowStart: 0,
     windowEnd: 0,
@@ -140,6 +147,17 @@ describe("PlatformStatusPanel", () => {
     expect(screen.getByTestId("bug-report-dialog")).toBeInTheDocument();
   });
 
+  it("shows a failed GitHub ticketing health state", () => {
+    useGetPlatformStatusQueryMock.mockReturnValue({
+      data: {
+        ...baseStatus,
+        ticketing: { ...baseStatus.ticketing, healthy: false, state: "unauthorised" },
+      },
+    });
+    render(<PlatformStatusPanel />);
+    expect(screen.getByTestId("github-ticketing-health")).toHaveTextContent("unauthorised");
+  });
+
   it("dialog declares accessible role and aria-modal", () => {
     useGetPlatformStatusQueryMock.mockReturnValue({ data: baseStatus });
     render(<PlatformStatusPanel />);
@@ -164,6 +182,25 @@ describe("PlatformStatusPanel", () => {
     fireEvent.click(screen.getByTestId("bug-report-submit"));
     await waitFor(() => {
       expect(screen.getByTestId("bug-report-result").textContent).toMatch(/notified Support/i);
+    });
+  });
+
+  it("warns when Discord succeeds but GitHub issue creation fails", async () => {
+    nextSubmitResponse = {
+      ok: true,
+      discordDelivered: true,
+      ticket: { created: false, issueNumber: null, url: null, reason: "unauthorised" },
+    };
+    useGetPlatformStatusQueryMock.mockReturnValue({ data: baseStatus });
+    render(<PlatformStatusPanel />);
+    fireEvent.click(screen.getByTestId("open-bug-report"));
+    fireEvent.change(screen.getByTestId("bug-report-title"), { target: { value: "Bug title" } });
+    fireEvent.change(screen.getByTestId("bug-report-description"), {
+      target: { value: "Some description text long enough" },
+    });
+    fireEvent.click(screen.getByTestId("bug-report-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("github-ticketing-warning")).toHaveTextContent("unauthorised");
     });
   });
 

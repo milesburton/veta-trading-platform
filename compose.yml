@@ -1702,7 +1702,6 @@ services:
       REDPANDA_BROKERS: redpanda:9092
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       DISCORD_BUG_WEBHOOK_URL: ${DISCORD_BUG_WEBHOOK_URL:-}
-      GITHUB_TICKETING_TOKEN: ${GITHUB_TICKETING_TOKEN:-}
       GITHUB_TICKETING_REPO: ${GITHUB_TICKETING_REPO:-milesburton/veta-trading-platform}
       # Shared secret for the /loadgen-announce endpoint. When unset, the
       # endpoint is invisible (returns 404). When set, k6 loop scripts post

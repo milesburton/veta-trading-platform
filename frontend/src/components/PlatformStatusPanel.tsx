@@ -151,7 +151,7 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
               <p className="text-xs text-amber-300" data-testid="bug-report-queued">
                 ⚠️ Ticket received by the gateway, but no external ticket sink is configured or
                 delivery failed. Ask an admin to check <code>DISCORD_BUG_WEBHOOK_URL</code>,{" "}
-                <code>DISCORD_WEBHOOK_URL</code>, <code>GITHUB_TICKETING_TOKEN</code>, and{" "}
+                <code>DISCORD_WEBHOOK_URL</code>, the mounted GitHub ticketing secret, and{" "}
                 <code>GITHUB_TICKETING_REPO</code>.
               </p>
             )}
@@ -164,6 +164,13 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
               >
                 Open ticket
               </a>
+            )}
+            {response?.discordDelivered && response.ticket && !response.ticket.created && (
+              <p className="text-xs text-amber-300" data-testid="github-ticketing-warning">
+                Support was notified, but GitHub issue creation failed (
+                {response.ticket.reason ?? "unknown error"}). An administrator should check the
+                GitHub ticketing health.
+              </p>
             )}
             <button
               type="button"
@@ -424,6 +431,19 @@ function PlatformStatusContent() {
         <div className="text-[10px] font-semibold text-label uppercase tracking-wider pb-1">
           User tickets (last 24h)
         </div>
+        <StatLine label="GitHub delivery">
+          <span
+            data-testid="github-ticketing-health"
+            className={data.ticketing.healthy ? "text-green-400" : "text-red-400"}
+          >
+            {data.ticketing.healthy ? "healthy" : data.ticketing.state}
+          </span>
+          {data.ticketing.checkedAt && (
+            <span className="ml-2 text-muted">
+              checked {relativeTime(now, data.ticketing.checkedAt)}
+            </span>
+          )}
+        </StatLine>
         {stats.bugReports === 0 ? (
           <div className="text-xs text-muted">none</div>
         ) : (

@@ -4,6 +4,7 @@ import {
   _internalForTests,
   createTicketForAlert,
   createTicketForUserReport,
+  probeTicketingHealth,
 } from "../gateway/ticketing.ts";
 
 const REAL_TOKEN = Deno.env.get("GITHUB_TICKETING_TOKEN");
@@ -18,6 +19,43 @@ const CRITICAL_ALERT = {
   source: "src",
   message: "m",
 } as const;
+
+Deno.test("probeTicketingHealth reports an invalid credential without exposing it", async () => {
+  await withValidGithubEnv(async () => {
+    const f = captureFetch(
+      () =>
+        new Response("bad credentials", {
+          status: 401,
+          headers: { "x-github-request-id": "safe-request-id" },
+        })
+    );
+    try {
+      const health = await probeTicketingHealth();
+      assertEquals(health.state, "unauthorised");
+      assertEquals(health.healthy, false);
+      assertEquals(health.statusCode, 401);
+      assertEquals(JSON.stringify(health).includes(VALID_GITHUB_ENV.GITHUB_TICKETING_TOKEN), false);
+    } finally {
+      f.restore();
+    }
+  });
+});
+
+Deno.test("readTokenEnv prefers the mounted secret file", async () => {
+  const file = await Deno.makeTempFile();
+  await Deno.writeTextFile(file, "ghp_bbbbbbbbbbbbbbbbbbbbbbbbbb\n");
+  try {
+    await withEnv(
+      {
+        GITHUB_TICKETING_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaa",
+        GITHUB_TICKETING_TOKEN_FILE: file,
+      },
+      async () => assertEquals(_internalForTests.readTokenEnv(), "ghp_bbbbbbbbbbbbbbbbbbbbbbbbbb")
+    );
+  } finally {
+    await Deno.remove(file);
+  }
+});
 
 function withEnv<T>(values: Record<string, string | undefined>, fn: () => Promise<T>): Promise<T> {
   const prev: Record<string, string | undefined> = {};

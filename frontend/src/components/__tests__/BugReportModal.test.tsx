@@ -145,6 +145,25 @@ describe("BugReportModal", () => {
     ).toBeInTheDocument();
   });
 
+  it("warns when Support is notified but GitHub ticketing fails", async () => {
+    mockSubmit.mockResolvedValueOnce({
+      data: {
+        ok: true,
+        discordDelivered: true,
+        ticket: { created: false, issueNumber: null, url: null, reason: "unauthorised" },
+      },
+    });
+    renderModal();
+    fireEvent.change(screen.getByTestId("bug-report-title"), { target: { value: "Real title" } });
+    fireEvent.change(screen.getByTestId("bug-report-description"), {
+      target: { value: "Long-enough description of what happened." },
+    });
+    fireEvent.click(screen.getByTestId("bug-report-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("github-ticketing-warning")).toHaveTextContent("unauthorised");
+    });
+  });
+
   it("surfaces a 401 from the backend with a friendly message", async () => {
     mockSubmit.mockResolvedValueOnce({ error: { status: 401 } });
     renderModal();
