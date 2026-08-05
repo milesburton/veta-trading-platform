@@ -74,7 +74,7 @@ hurdles in order.
 
 1. Attacker finds a remote-code-execution bug in a service.
 2. They get shell as the service's UID inside its container.
-   - **Control**: Deno services run as `deno:deno` (UID 1000), not root.
+   - **Control**: Deno services run as `deno:deno` (UID 1993), not root.
 3. They try to escalate via setuid binary.
    - **Control**: `no-new-privileges:true` blocks the bit.
 4. They try raw-socket scanning the docker network.

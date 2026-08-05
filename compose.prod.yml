@@ -5,8 +5,9 @@ x-prod-image: &prod-defaults
   restart: unless-stopped
 
 secrets:
-  # Provisioned on the host with mode 0600. It is deliberately outside .env
-  # so Compose never places the GitHub credential in a container environment.
+  # Provisioned on the host as root:1993 mode 0640 (1993 is the unprivileged
+  # deno group in the gateway image). It is deliberately outside .env so
+  # Compose never places the GitHub credential in a container environment.
   github_ticketing_token:
     file: ./secrets/github_ticketing_token
 
@@ -58,6 +59,15 @@ services:
       - "traefik.http.routers.frontend.middlewares=origin-ratelimit"
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
       - "traefik.http.routers.frontend.priority=1"
+
+  # This helper shares the Deno base image and supplies its own command in
+  # compose.yml. Giving it a published production image prevents image-only
+  # homelab deployments from depending on a locally built veta-discord-bot.
+  discord-bot:
+    <<: *prod-defaults
+    image: ghcr.io/milesburton/veta-trading-platform/base:latest
+    build: !reset null
+    profiles: !reset []
 
   market-sim:
     <<: *prod-defaults

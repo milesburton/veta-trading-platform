@@ -60,8 +60,7 @@ RUN deno cache \
     backend/src/llm-advisory/worker.ts \
     observability/kafka-relay.ts
 
-# Drop privileges. The denoland/deno image ships a deno user (UID 1000).
-# Anything mounted writable at runtime must be chown-ed to 1000:1000 on the
-# host. See scripts/fix-uat-permissions.sh for the migration helper.
+# Drop privileges. The denoland/deno:2.7.1 image ships a deno user (UID/GID 1993).
+# Anything mounted writable at runtime must be chown-ed to 1993:1993 on the host.
 RUN chown -R deno:deno /app /deno-cache
 USER deno:deno
