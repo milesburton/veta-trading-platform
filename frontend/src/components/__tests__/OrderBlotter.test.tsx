@@ -72,7 +72,7 @@ function makeStore(
       auth: {
         user: { id: userId, name: userId, role, avatar_emoji: "🙂" },
         limits: {
-          max_order_qty: 10000,
+          max_order_qty: 10_000,
           max_daily_notional: 1_000_000,
           allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
           allowed_desks: ["equity"],
@@ -590,7 +590,7 @@ describe("OrderBlotter – last submitted order", () => {
         auth: {
           user: { id: "alice", name: "alice", role: "trader" as const, avatar_emoji: "🙂" },
           limits: {
-            max_order_qty: 10000,
+            max_order_qty: 10_000,
             max_daily_notional: 1_000_000,
             allowed_strategies: ["LIMIT", "TWAP", "POV", "VWAP"],
             allowed_desks: ["equity"],
@@ -758,6 +758,42 @@ describe("OrderBlotter – row context menu actions", () => {
     );
     fireEvent.contextMenu(screen.getByText("AAPL"));
     expect(() => fireEvent.click(screen.getByText(/Force kill/i))).not.toThrow();
+  });
+
+  it("a trader can open a prefilled ticket via 'Create similar order...' in the context menu", () => {
+    const openTicket = vi
+      .spyOn(orderTicketWindow, "openOrderTicketWindow")
+      .mockImplementation(() => undefined);
+    const order = makeOrder({ id: "o1", asset: "AAPL", userId: "alice" });
+    renderBlotter([order]);
+
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    fireEvent.click(screen.getByText(/Create similar order/i));
+
+    expect(openTicket).toHaveBeenCalledTimes(1);
+    openTicket.mockRestore();
+  });
+
+  it("disables 'Create similar order...' for non-trader roles", () => {
+    mockUseGridQuery.mockReturnValue(
+      defaultQueryResult([makeOrder({ id: "o1", asset: "AAPL", userId: "trader-bob" })])
+    );
+    render(
+      <Provider store={makeStore("risk-manager", "risk-1")}>
+        <ChannelContext.Provider
+          value={{
+            instanceId: "order-blotter",
+            panelType: "order-blotter",
+            outgoing: null,
+            incoming: null,
+          }}
+        >
+          <OrderBlotter />
+        </ChannelContext.Provider>
+      </Provider>
+    );
+    fireEvent.contextMenu(screen.getByText("AAPL"));
+    expect(screen.getByText(/Create similar order/i).closest("button")).toBeDisabled();
   });
 });
 

@@ -268,6 +268,16 @@ export function OrderBlotter() {
         icon: "↗",
         onClick: () => broadcast({ selectedAsset: order.asset }),
       },
+      {
+        label: "Create similar order...",
+        icon: "⧉",
+        disabled: multi || userRole !== "trader",
+        title:
+          userRole !== "trader"
+            ? "Insufficient permissions"
+            : "Open a prefilled ticket based on this order",
+        onClick: () => openOrderTicketWindow(orderTicketWindowSize, orderToTicketPrefill(order)),
+      },
       { separator: true },
       {
         label: "Copy order ID",

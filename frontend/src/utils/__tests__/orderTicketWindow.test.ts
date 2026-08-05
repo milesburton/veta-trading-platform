@@ -98,4 +98,43 @@ describe("orderToTicketPrefill", () => {
       })
     ).toMatchObject({ strategy: "ICEBERG", icebergVisibleQty: 75 });
   });
+
+  it("drops an out-of-range TWAP duration instead of failing the whole prefill", () => {
+    const prefill = orderToTicketPrefill({
+      ...baseOrder,
+      strategy: "TWAP",
+      algoParams: { strategy: "TWAP", numSlices: 1000, participationCap: 25 },
+    });
+    expect(prefill.twapDurationMinutes).toBeUndefined();
+    expect(prefill).toMatchObject({ side: "BUY", symbol: "AAPL", quantity: 500, limitPrice: 200 });
+  });
+
+  it("drops an out-of-range iceberg visible quantity", () => {
+    const prefill = orderToTicketPrefill({
+      ...baseOrder,
+      strategy: "ICEBERG",
+      algoParams: { strategy: "ICEBERG", visibleQty: 200_000_000 },
+    });
+    expect(prefill.icebergVisibleQty).toBeUndefined();
+    expect(prefill.symbol).toBe("AAPL");
+  });
+
+  it("drops an out-of-range POV participation rate", () => {
+    const prefill = orderToTicketPrefill({
+      ...baseOrder,
+      strategy: "POV",
+      algoParams: {
+        strategy: "POV",
+        participationRate: 150,
+        minSliceSize: 10,
+        maxSliceSize: 1000,
+      },
+    });
+    expect(prefill.povRatePercent).toBeUndefined();
+    expect(prefill.symbol).toBe("AAPL");
+  });
+
+  it("drops a GTD time-in-force since the ticket does not accept it", () => {
+    expect(orderToTicketPrefill({ ...baseOrder, timeInForce: "GTD" }).tif).toBeUndefined();
+  });
 });
